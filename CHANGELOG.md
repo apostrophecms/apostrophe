@@ -18,7 +18,6 @@ for piece and page types, allowing "virtual piece types" on the back end that
 deal with many content types to give better hints to the UI.
 * Respect the `_aposAutopublish` property of a document if present, otherwise
 fall back to module configuration.
-
 * For convenience in custom editor components, pass the new prop `type`, the original type of the document being copied or edited.
 * For better results in custom editor components, pass the prop `copyOfId`, which implies
 the custom editor should fetch the original itself by its means of choice.
@@ -32,6 +31,7 @@ specify both a `props` object for additional properties to be passed to
 their modal and a `docProps` object to map properties from the document
 to props of their choosing.
 * Adds support to add context labels in admin bar.
+* Adds `$and` operator on `addContextOperation` `if` property in order to check multiple fields before showing or hiding a context operation.
 
 ### Fixes
 
