@@ -1,7 +1,8 @@
 // Structured logging for Apostrophe.
 //
 // This module is generic, low level implementation. For logging inside of a module,
-// see `logInfo`, `logError`, etc. methods in `@apostrophecms/module`.
+// see `logInfo`, `logError`, etc. methods available in every module
+// via the base class, @apostrophecms/module.
 //
 // ### `logger`
 //
@@ -103,9 +104,19 @@ module.exports = {
   },
   init(self) {
     self.filters = {};
+    self.filterCache = {};
     self.initFilters();
   },
   methods(self) {
+    const isProduction = process.env.NODE_ENV === 'production';
+    const formatObj = isProduction
+      ? JSON.stringify
+      : (obj) => JSON.stringify(obj, null, 2);
+
+    const formatString = !isProduction
+      ? (str, args) => (args.length > 1) ? str.trim() + '\n' : str
+      : (str) => str;
+
     return {
       // Normalize the filters. Detect configuration and set defaults
       // per the current NODE_ENV if needed.
@@ -134,7 +145,7 @@ module.exports = {
           return;
         }
         // Add environment specific severity levels if no severity is specified.
-        if (!self.filters['*'].severity || self.filters['*'].severity.length === 0) {
+        if (!self.filters['*'].severity) {
           self.filters['*'] = {
             ...self.filters['*'],
             severity: self.getDefaultSeverity(process.env.NODE_ENV === 'production')
@@ -142,20 +153,20 @@ module.exports = {
         }
 
         // Handle wildcards and validate.
-        Object.keys(self.filters).forEach((module) => {
-          Object.keys(self.filters[module]).forEach((type) => {
-            if (self.filters[module][type] === true || self.filters[module][type] === '*') {
-              self.filters[module][type] = type === 'severity'
+        for (const [ module, config ] of Object.entries(self.filters)) {
+          for (const [ type, value ] of Object.entries(config)) {
+            if (value === true || value === '*') {
+              self.filters[module][type] = (type === 'severity')
                 ? self.getDefaultSeverity(false)
                 : [ '*' ];
             }
-            if (!Array.isArray(self.filters[module][type]) || self.filters[module][type].length === 0) {
+            if (!Array.isArray(self.filters[module][type])) {
               throw new Error(
                 `Invalid ${type} filter for module ${module}: ${JSON.stringify(self.filters[module][type])}`
               );
             }
-          });
-        });
+          }
+        }
       },
       // Convert a string filter configuration to an object.
       // Example:
@@ -296,7 +307,7 @@ module.exports = {
         data.type = eventType;
         data.severity = severity;
 
-        data = self.processRequestData(req, data);
+        self.processRequestData(req, data);
 
         return [ message, data ];
       },
@@ -307,29 +318,12 @@ module.exports = {
           return data;
         }
 
-        // Keep the proper property order for better readability.
-        const message = {};
-        if (self.options.messageAs) {
-          message[self.options.messageAs] = data[self.options.messageAs];
-        }
-        const {
-          module: _module, type, severity, ...rest
-        } = data;
-
-        return {
-          ...message,
-          module: _module,
-          type,
-          severity,
-          // https://expressjs.com/en/api.html#req.originalUrl
-          url: req.originalUrl,
-          path: req.path,
-          method: req.method,
-          ip: req.ip,
-          query: req.query,
-          requestId: req.requestId || self.apos.util.generateId(),
-          ...rest
-        };
+        data.url = req.originalUrl;
+        data.path = req.path;
+        data.method = req.method;
+        data.ip = req.ip;
+        data.query = req.query;
+        data.requestId = req.requestId || self.apos.util.generateId();
       },
 
       // Assess the module filter configuration and determine if the log
@@ -353,19 +347,23 @@ module.exports = {
         } else {
           [ severity, eventType ] = args;
         }
-        const module = moduleSelf.__meta?.name ?? '__unknown__';
+        const aposModule = moduleSelf.__meta?.name ?? '__unknown__';
+        const cacheId = `${aposModule}:${severity}:${eventType}`;
+        if (typeof self.filterCache[cacheId] !== 'undefined') {
+          return self.filterCache[cacheId];
+        }
 
         // Consolidate and match severity and event type.
         const severityArr = [
           ...new Set([
             ...self.filters['*'].severity,
-            ...(self.filters[module]?.severity || [])
+            ...(self.filters[aposModule]?.severity || [])
           ])
         ];
         const eventsArr = [
           ...new Set([
             ...(self.filters['*'].events || []),
-            ...(self.filters[module]?.events || [])
+            ...(self.filters[aposModule]?.events || [])
           ])
         ];
         const severityMatch = severityArr.includes(severity);
@@ -373,7 +371,8 @@ module.exports = {
           ? eventsArr.includes(eventType) || eventsArr.includes('*')
           : severityMatch;
 
-        return severityMatch || eventsMatch;
+        self.filterCache[cacheId] = severityMatch || eventsMatch;
+        return self.filterCache[cacheId];
       },
 
       // Stringify object arguments. If the environment is not `production`,
@@ -381,16 +380,9 @@ module.exports = {
       // This method is meant to be used from the methods of a custom `logger`.
       // See the default logger implementation in `util/lib/logger.js` for an example.
       formatLogByEnv(args) {
-        const formatObj = process.env.NODE_ENV === 'production'
-          ? JSON.stringify
-          : (obj) => JSON.stringify(obj, null, 2);
-        const formatString = process.env.NODE_ENV !== 'production' && args.length > 1
-          ? (str) => str.trim() + '\n'
-          : (str) => str;
-
         return args.map((arg) => {
           if (typeof arg === 'string') {
-            return formatString(arg);
+            return formatString(arg, args);
           }
           if (_.isPlainObject(arg)) {
             return formatObj(arg);

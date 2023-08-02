@@ -842,7 +842,7 @@ module.exports = {
       // for legacy calls and when `@apostrophecms/log` has been configured
       // with `messageAs: 'someKey'`.
       // This change is backwards compatible with the previous behavior because
-      // `messageAs` is newly introduced option. Custom loggers should adapt
+      // `messageAs` is a newly introduced option. Custom loggers should adapt
       // to this change when using `messageAs`.
       // `args` is the argument array passed to the any log method.
       // The result (when required) is an array with a single object.
