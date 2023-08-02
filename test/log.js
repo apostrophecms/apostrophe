@@ -961,4 +961,280 @@ describe('structured logging', function () {
       });
     });
   });
+
+  describe('legacy logging with :messageAs"', function () {
+    before(async function () {
+      await t.destroy(apos);
+      apos = await t.create({
+        modules: {
+          '@apostrophecms/log': {
+            options: {
+              messageAs: 'msg'
+            }
+          }
+        }
+      });
+    });
+
+    after(async function () {
+      delete process.env.APOS_FILTER_LOGS;
+      await t.destroy(apos);
+      apos = null;
+    });
+
+    it('should log object: debug', function () {
+      let savedArgs = [];
+      const saved = apos.util.logger.debug;
+      apos.util.logger.debug = (...args) => {
+        savedArgs = args;
+      };
+
+      savedArgs = [];
+      apos.util.debug('some message');
+      assert.deepEqual(savedArgs, [ { msg: 'some message' } ]);
+
+      savedArgs = [];
+      apos.util.debug({ foo: 'bar' });
+      assert.deepEqual(savedArgs, [ { foo: 'bar' } ]);
+
+      savedArgs = [];
+      apos.util.debug('some message', { foo: 'bar' });
+      assert.deepEqual(savedArgs, [ {
+        foo: 'bar',
+        msg: 'some message'
+      } ]);
+
+      savedArgs = [];
+      apos.util.debug('some message', 'more', { foo: 'bar' });
+      assert.deepEqual(savedArgs, [ {
+        foo: 'bar',
+        msg: 'some message',
+        args: [ 'more' ]
+      } ]);
+
+      savedArgs = [];
+      apos.util.debug({ foo: 'bar' }, 'some message', 'more');
+      assert.deepEqual(savedArgs, [ {
+        foo: 'bar',
+        msg: 'some message',
+        args: [ 'more' ]
+      } ]);
+
+      apos.util.logger.debug = saved;
+    });
+
+    it('should log object: log', function () {
+      let savedArgs = [];
+      const saved = apos.util.logger.log;
+      apos.util.logger.log = (...args) => {
+        savedArgs = args;
+      };
+
+      savedArgs = [];
+      apos.util.log('some message');
+      assert.deepEqual(savedArgs, [ { msg: 'some message' } ]);
+
+      savedArgs = [];
+      apos.util.log({ foo: 'bar' });
+      assert.deepEqual(savedArgs, [ { foo: 'bar' } ]);
+
+      savedArgs = [];
+      apos.util.log('some message', { foo: 'bar' });
+      assert.deepEqual(savedArgs, [ {
+        foo: 'bar',
+        msg: 'some message'
+      } ]);
+
+      savedArgs = [];
+      apos.util.log('some message', 'more', { foo: 'bar' });
+      assert.deepEqual(savedArgs, [ {
+        foo: 'bar',
+        msg: 'some message',
+        args: [ 'more' ]
+      } ]);
+
+      savedArgs = [];
+      apos.util.log({ foo: 'bar' }, 'some message', 'more');
+      assert.deepEqual(savedArgs, [ {
+        foo: 'bar',
+        msg: 'some message',
+        args: [ 'more' ]
+      } ]);
+
+      apos.util.logger.log = saved;
+    });
+
+    it('should log object: info', function () {
+      let savedArgs = [];
+      const saved = apos.util.logger.info;
+      apos.util.logger.info = (...args) => {
+        savedArgs = args;
+      };
+
+      savedArgs = [];
+      apos.util.info('some message');
+      assert.deepEqual(savedArgs, [ { msg: 'some message' } ]);
+
+      savedArgs = [];
+      apos.util.info({ foo: 'bar' });
+      assert.deepEqual(savedArgs, [ { foo: 'bar' } ]);
+
+      savedArgs = [];
+      apos.util.info('some message', { foo: 'bar' });
+      assert.deepEqual(savedArgs, [ {
+        foo: 'bar',
+        msg: 'some message'
+      } ]);
+
+      savedArgs = [];
+      apos.util.info('some message', 'more', { foo: 'bar' });
+      assert.deepEqual(savedArgs, [ {
+        foo: 'bar',
+        msg: 'some message',
+        args: [ 'more' ]
+      } ]);
+
+      savedArgs = [];
+      apos.util.info({ foo: 'bar' }, 'some message', 'more');
+      assert.deepEqual(savedArgs, [ {
+        foo: 'bar',
+        msg: 'some message',
+        args: [ 'more' ]
+      } ]);
+
+      apos.util.logger.info = saved;
+    });
+
+    it('should log object: warn', function () {
+      let savedArgs = [];
+      const saved = apos.util.logger.warn;
+      apos.util.logger.warn = (...args) => {
+        savedArgs = args;
+      };
+
+      savedArgs = [];
+      apos.util.warn('some message');
+      assert.deepEqual(savedArgs, [ { msg: 'some message' } ]);
+
+      savedArgs = [];
+      apos.util.warn({ foo: 'bar' });
+      assert.deepEqual(savedArgs, [ { foo: 'bar' } ]);
+
+      savedArgs = [];
+      apos.util.warn('some message', { foo: 'bar' });
+      assert.deepEqual(savedArgs, [ {
+        foo: 'bar',
+        msg: 'some message'
+      } ]);
+
+      savedArgs = [];
+      apos.util.warn('some message', 'more', { foo: 'bar' });
+      assert.deepEqual(savedArgs, [ {
+        foo: 'bar',
+        msg: 'some message',
+        args: [ 'more' ]
+      } ]);
+
+      savedArgs = [];
+      apos.util.warn({ foo: 'bar' }, 'some message', 'more');
+      assert.deepEqual(savedArgs, [ {
+        foo: 'bar',
+        msg: 'some message',
+        args: [ 'more' ]
+      } ]);
+
+      apos.util.logger.warn = saved;
+    });
+
+    it('should log object: error', function () {
+      let savedArgs = [];
+      const saved = apos.util.logger.error;
+      apos.util.logger.error = (...args) => {
+        savedArgs = args;
+      };
+
+      savedArgs = [];
+      apos.util.error('some message');
+      assert.deepEqual(savedArgs, [ { msg: 'some message' } ]);
+
+      savedArgs = [];
+      apos.util.error({ foo: 'bar' });
+      assert.deepEqual(savedArgs, [ { foo: 'bar' } ]);
+
+      savedArgs = [];
+      apos.util.error('some message', { foo: 'bar' });
+      assert.deepEqual(savedArgs, [ {
+        foo: 'bar',
+        msg: 'some message'
+      } ]);
+
+      savedArgs = [];
+      apos.util.error('some message', 'more', { foo: 'bar' });
+      assert.deepEqual(savedArgs, [ {
+        foo: 'bar',
+        msg: 'some message',
+        args: [ 'more' ]
+      } ]);
+
+      savedArgs = [];
+      apos.util.error({ foo: 'bar' }, 'some message', 'more');
+      assert.deepEqual(savedArgs, [ {
+        foo: 'bar',
+        msg: 'some message',
+        args: [ 'more' ]
+      } ]);
+
+      apos.util.logger.error = saved;
+    });
+
+    it('should log object: warnDev', function () {
+      let savedArgs = [];
+      const saved = apos.util.logger.warn;
+      apos.util.logger.warn = (...args) => {
+        savedArgs = args;
+      };
+
+      savedArgs = [];
+      apos.util.warnDev('some message');
+      assert.deepEqual(savedArgs, [ {
+        msg: 'some message',
+        args: [ '\n⚠️ ', '\n' ]
+      } ]);
+
+      savedArgs = [];
+      apos.util.warnDev({ foo: 'bar' });
+      assert.deepEqual(savedArgs, [ {
+        foo: 'bar',
+        args: [ '\n⚠️ ', '\n' ]
+      }
+      ]);
+
+      savedArgs = [];
+      apos.util.warnDev('some message', { foo: 'bar' });
+      assert.deepEqual(savedArgs, [ {
+        foo: 'bar',
+        msg: 'some message',
+        args: [ '\n⚠️ ', '\n' ]
+      } ]);
+
+      savedArgs = [];
+      apos.util.warnDev('some message', 'more', { foo: 'bar' });
+      assert.deepEqual(savedArgs, [ {
+        foo: 'bar',
+        msg: 'some message',
+        args: [ '\n⚠️ ', 'more', '\n' ]
+      } ]);
+
+      savedArgs = [];
+      apos.util.warnDev({ foo: 'bar' }, 'some message', 'more');
+      assert.deepEqual(savedArgs, [ {
+        foo: 'bar',
+        msg: 'some message',
+        args: [ '\n⚠️ ', 'more', '\n' ]
+      } ]);
+
+      apos.util.logger.warn = saved;
+    });
+
+  });
 });
