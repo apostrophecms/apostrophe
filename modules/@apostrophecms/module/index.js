@@ -57,6 +57,7 @@ module.exports = {
 
     self.__helpers = {};
     self.templateData = self.options.templateData || {};
+    self.__structuredLoggingEnabled = false;
 
     if (self.apos.asset) {
       if (!self.apos.asset.chains) {
@@ -74,6 +75,11 @@ module.exports = {
     // Routes in their final ready-to-add-to-Express form
     self._routes = [];
 
+    // Enable structured logging after util module is initialized.
+    if (self.apos.util && (self.apos.util !== self)) {
+      self.__structuredLoggingEnabled = true;
+    }
+
     // Add i18next phrases if we started up after the i18n module,
     // which will call this for us if we start up before it
     if (self.apos.i18n && (self.apos.i18n !== self)) {
@@ -89,6 +95,10 @@ module.exports = {
 
   methods(self) {
     return {
+      // `self.logInfo`, `self.logError`, etc. available for every module except
+      // `error`, `util` and the `log` module itself.
+      ...require('./lib/log')(self),
+
       compileSectionRoutes(section) {
         _.each(self[section] || {}, function(routes, method) {
           _.each(routes, function(config, name) {
