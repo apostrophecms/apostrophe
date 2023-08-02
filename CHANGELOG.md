@@ -7,6 +7,7 @@
 * Accessibility improved for navigation inside modals and various UI elements.
 Pages/Docs Manager and Doc Editor modal now have better keyboard accessibility.
 They keep the focus on elements inside modals and give it back to their parent modal when closed.
+This implementation is evolving and will likely switch to use the `dialog` HTML element soon.
 * Adds support for a new `if` property in `addContextOperation` in order to show or not a context operation based on the current document properties.
 * Add `update-doc-fields` event to call `AposDocEditor.updateDocFields` method
 * Add schema field `hidden` property to always hide a field
