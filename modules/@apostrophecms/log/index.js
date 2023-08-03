@@ -108,11 +108,11 @@ module.exports = {
     self.initFilters();
   },
   methods(self) {
+    // Keep those inside the methods because of tests.
     const isProduction = process.env.NODE_ENV === 'production';
     const formatObj = isProduction
       ? JSON.stringify
       : (obj) => JSON.stringify(obj, null, 2);
-
     const formatString = !isProduction
       ? (str, args) => (args.length > 1) ? str.trim() + '\n' : str
       : (str) => str;
@@ -148,7 +148,7 @@ module.exports = {
         if (!self.filters['*'].severity) {
           self.filters['*'] = {
             ...self.filters['*'],
-            severity: self.getDefaultSeverity(process.env.NODE_ENV === 'production')
+            severity: self.getDefaultSeverity(isProduction)
           };
         }
 
@@ -266,29 +266,32 @@ module.exports = {
       //
       // Returns [ data ] or [ message, data ] depending on option.messageAs.
       // `data` is always an object containing at least a `type` and `severity` properties.
-      processLoggerArgs(moduleSelf, ...args) {
-        let severity;
+      processLoggerArgs(moduleSelf, severity, ...args) {
         let req;
         let eventType;
         let message;
-        let data;
+        let obj;
+        const data = {};
 
         // Detect `req` argument with a simple duck type check - apos `req` object
         // has always a translate `t` function.
-        if (args[1] && typeof args[1].t === 'function') {
-          [ severity, req, eventType, message, data ] = args;
+        if (args[0] && typeof args[0].t === 'function') {
+          [ req, eventType, message, obj ] = args;
         } else {
-          [ severity, eventType, message, data ] = args;
+          [ eventType, message, obj ] = args;
         }
 
+        if (typeof severity !== 'string') {
+          throw new Error('Severity must be a string.');
+        }
         if (typeof eventType !== 'string') {
           throw new Error('Event type must be a string');
         }
         if (_.isPlainObject(message)) {
-          data = message;
+          obj = message;
           message = undefined;
         }
-        data = data ? { ...data } : {};
+        obj = obj ? { ...obj } : {};
         const aposModule = moduleSelf.__meta?.name ?? '__unknown__';
 
         if (typeof message === 'string' && message.trim().length > 0) {
@@ -302,14 +305,20 @@ module.exports = {
         }
         if (self.options.messageAs) {
           data[self.options.messageAs] = message;
+          delete obj[self.options.messageAs];
         }
         data.module = aposModule;
         data.type = eventType;
         data.severity = severity;
 
         self.processRequestData(req, data);
+        // Don't override system properties.
+        delete obj.module;
+        delete obj.type;
+        delete obj.severity;
+        Object.assign(data, obj);
 
-        return [ message, data ];
+        return self.options.messageAs ? [ data ] : [ message, data ];
       },
 
       // Enrich the `data` argument with additional information from the request.

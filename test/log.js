@@ -1329,6 +1329,24 @@ describe('structured logging', function () {
   });
 
   describe('apiError', function () {
+    let user;
+    let jar;
+    let aposError;
+    let consoleError;
+    let generateId;
+
+    async function login() {
+      // Create user and initialize session.
+      if (!user) {
+        user = await t.createAdmin(apos, {
+          username: 'admin',
+          password: 'admin'
+        });
+      }
+      jar = await t.getUserJar(apos, user);
+      await apos.http.get('/', { jar });
+    }
+
     before(async function () {
       await t.destroy(apos);
       apos = await t.create({
@@ -1353,9 +1371,15 @@ describe('structured logging', function () {
           'test-module': {
             apiRoutes(self) {
               return {
-                get: {
+                post: {
                   async conflict(req) {
-                    throw self.apos.error('conflict', 'Conflict error', { some: 'data' });
+                    const err = self.apos.error(
+                      'conflict',
+                      'Conflict error',
+                      { some: 'data' }
+                    );
+                    err.path = 'some.field';
+                    throw err;
                   }
                 }
               };
@@ -1363,6 +1387,16 @@ describe('structured logging', function () {
           }
         }
       });
+      await login();
+      aposError = apos.util.logger.error;
+      generateId = apos.util.generateId;
+      consoleError = console.error;
+    });
+
+    afterEach(async function () {
+      apos.util.logger.error = aposError;
+      apos.util.generateId = generateId;
+      console.error = consoleError;
     });
 
     after(async function () {
@@ -1370,20 +1404,63 @@ describe('structured logging', function () {
       apos = null;
     });
 
-    it.only('should log conflict error', async function () {
-      await t.createAdmin(apos, {
-        username: 'admin',
-        password: 'admin'
-      });
-      await apos.http.get('/');
-      const jar = await t.loginAs(apos, 'admin', 'admin');
-      // try {
-      //   await apos.http.get('/api/v1/test-module/conflict', {
-      //     jar
-      //   });
-      // } catch (e) {
-      //   console.log(e);
-      // }
+    it('should log invalid error', async function () {
+      apos.util.generateId = () => 'test-id';
+      let savedArgs = [];
+      apos.util.logger.error = (...args) => {
+        savedArgs = args;
+      };
+      try {
+        await apos.http.post('/api/v1/test-piece', {
+          body: {},
+          jar
+        });
+      } catch (e) {
+        //
+      }
+      assert.equal(savedArgs[0], 'test-piece: api-error-invalid: invalid');
+      assert.equal(savedArgs[1].module, 'test-piece');
+      assert.equal(savedArgs[1].type, 'api-error-invalid');
+      assert.equal(savedArgs[1].severity, 'error');
+      assert.equal(savedArgs[1].url, '/api/v1/test-piece');
+      assert.equal(savedArgs[1].path, '/api/v1/test-piece');
+      assert.equal(savedArgs[1].method, 'POST');
+      assert(savedArgs[1].ip);
+      assert.deepEqual(savedArgs[1].query, {});
+      assert.equal(savedArgs[1].requestId, 'test-id');
+      assert.equal(savedArgs[1].name, 'invalid');
+      assert.equal(Array.isArray(savedArgs[1].stack), true);
+      assert.equal(savedArgs[1].errorPath, undefined);
+      assert.deepEqual(savedArgs[1].data.errors, [
+        {
+          name: 'required',
+          code: 422,
+          message: 'required',
+          data: {},
+          path: 'title'
+        },
+        {
+          name: 'required',
+          code: 422,
+          message: 'required',
+          data: {},
+          path: 'field1'
+        },
+        {
+          name: 'required',
+          code: 422,
+          message: 'required',
+          data: {},
+          path: 'field2'
+        }
+      ]);
+
+      // Test the property order
+      savedArgs = [];
+      apos.util.logger.error = aposError;
+      console.error = (...args) => {
+        savedArgs = args;
+      };
 
       try {
         await apos.http.post('/api/v1/test-piece', {
@@ -1391,8 +1468,99 @@ describe('structured logging', function () {
           jar
         });
       } catch (e) {
-        console.log(e);
+        //
       }
+      // Skip IP as it might get changed in CI
+      assert.equal(savedArgs[0], 'test-piece: api-error-invalid: invalid\n');
+      assert.equal(
+        savedArgs[1].startsWith(
+`{
+  "module": "test-piece",
+  "type": "api-error-invalid",
+  "severity": "error",
+  "url": "/api/v1/test-piece",
+  "path": "/api/v1/test-piece",
+  "method": "POST",
+`
+        ),
+        true
+      );
+      assert.equal(
+        savedArgs[1].includes(
+`
+  "query": {},
+  "requestId": "test-id",
+  "name": "invalid",
+  "status": 400,
+  "stack": [
+`
+        ),
+        true
+      );
+      assert.equal(
+        savedArgs[1].endsWith(
+`
+  ],
+  "data": {
+    "errors": [
+      {
+        "name": "required",
+        "code": 422,
+        "message": "required",
+        "data": {},
+        "path": "title"
+      },
+      {
+        "name": "required",
+        "code": 422,
+        "message": "required",
+        "data": {},
+        "path": "field1"
+      },
+      {
+        "name": "required",
+        "code": 422,
+        "message": "required",
+        "data": {},
+        "path": "field2"
+      }
+    ]
+  }
+}`
+        ),
+        true
+      );
+
+    });
+
+    it('should log conflict error with data and custom message', async function () {
+      apos.util.generateId = () => 'test-id';
+      let savedArgs = [];
+      apos.util.logger.error = (...args) => {
+        savedArgs = args;
+      };
+      try {
+        await apos.http.post('/api/v1/test-module/conflict', {
+          qs: { foo: 'bar' },
+          jar
+        });
+      } catch (e) {
+        //
+      }
+      assert.equal(savedArgs[0], 'test-module: api-error-conflict: Conflict error');
+      assert.equal(savedArgs[1].module, 'test-module');
+      assert.equal(savedArgs[1].type, 'api-error-conflict');
+      assert.equal(savedArgs[1].severity, 'error');
+      assert.equal(savedArgs[1].url, '/api/v1/test-module/conflict?foo=bar');
+      assert.equal(savedArgs[1].path, '/api/v1/test-module/conflict');
+      assert.equal(savedArgs[1].method, 'POST');
+      assert(savedArgs[1].ip);
+      assert.deepEqual(savedArgs[1].query, { foo: 'bar' });
+      assert.equal(savedArgs[1].requestId, 'test-id');
+      assert.equal(savedArgs[1].name, 'conflict');
+      assert.equal(Array.isArray(savedArgs[1].stack), true);
+      assert.equal(savedArgs[1].errorPath, 'some.field');
+      assert.deepEqual(savedArgs[1].data, { some: 'data' });
     });
   });
 });
