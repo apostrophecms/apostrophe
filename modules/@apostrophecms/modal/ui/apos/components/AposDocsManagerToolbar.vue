@@ -266,19 +266,13 @@ export default {
       operation.modal ? await this.modalOperation(operation) : await this.confirmOperation(operation);
     },
     async modalOperation({
-      modal, label, ...rest
+      modal, ...rest
     }) {
-      const interpolations = {
-        count: this.checkedCount,
-        type: this.checkedCount === 1
-          ? this.$t(this.labels.singular).toLowerCase()
-          : this.$t(this.labels.plural).toLowerCase()
-      };
-
       await apos.modal.execute(modal, {
-        label,
-        title: `${this.$t(label)} ${interpolations.type}`,
-        description: this.$t('aposImportExport:exportModalDescription', interpolations),
+        count: this.checkedCount,
+        moduleName: this.checkedCount === 1
+          ? this.$t(this.labels.singular).toLowerCase()
+          : this.$t(this.labels.plural).toLowerCase(),
         ...rest
       });
     },

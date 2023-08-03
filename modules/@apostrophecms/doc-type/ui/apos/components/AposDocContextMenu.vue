@@ -428,6 +428,10 @@ export default {
 
     },
     async customAction(doc, operation) {
+      if (operation.label) {
+        operation.moduleName = this.moduleName;
+      }
+
       await apos.modal.execute(operation.modal, {
         moduleName: operation.moduleName,
         // For backwards compatibility
@@ -435,6 +439,7 @@ export default {
         ...docProps(doc),
         ...operation.props
       });
+
       function docProps(doc) {
         return Object.fromEntries(Object.entries(operation.docProps || {}).map(([ key, value ]) => {
           return [ key, doc[value] ];
