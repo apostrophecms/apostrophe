@@ -268,8 +268,17 @@ export default {
     async modalOperation({
       modal, label, ...rest
     }) {
+      const interpolations = {
+        count: this.checkedCount,
+        type: this.checkedCount === 1
+          ? this.$t(this.labels.singular).toLowerCase()
+          : this.$t(this.labels.plural).toLowerCase()
+      };
+
       await apos.modal.execute(modal, {
-        moduleName: label,
+        label,
+        title: `${this.$t(label)} ${interpolations.type}`,
+        description: this.$t('aposImportExport:exportModalDescription', interpolations),
         ...rest
       });
     },
