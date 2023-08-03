@@ -188,10 +188,6 @@ export default {
     },
     getDefault() {
       const widget = {};
-      if (this.readOnly) {
-        return widget;
-      }
-
       this.schema.forEach(field => {
         if (field.name.startsWith('_')) {
           return;

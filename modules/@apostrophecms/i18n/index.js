@@ -4,6 +4,34 @@
 //
 // `apos.i18n.i18next` can be used to directly access the `i18next` npm module instance if necessary.
 // It usually is not necessary. Use `req.t` if you need to localize in a route.
+//
+// ## Options
+//
+// ### `locales` TODO
+//
+// ### `defaultLocale` TODO
+//
+// ### `adminLocales`
+//
+// Controls what admin UI language can be set per user. If set, `adminLocale` user field
+// will be automatically added to the user schema.
+// Contains an array of objects with `label` and `value` properties:
+// ```js
+// {
+//   label: 'English',
+//   value: 'en'
+// }
+// ```
+//
+// ### `defaultAdminLocale`
+//
+// The default admin UI language. If `adminLocales` are configured, it should
+// should match a `value` property from the list. Furthermore, it will be used
+// as the default value for the`adminLocale` user field. If it is not set,
+// but `adminLocales` is set, then the default is to display the admin UI
+// in the same language as the website content.
+// Example: `defaultLocale: 'fr'`.
+//
 
 const i18next = require('i18next');
 const fs = require('fs');
@@ -55,6 +83,12 @@ module.exports = {
     self.locales = self.getLocales();
     self.hostnamesInUse = Object.values(self.locales).find(locale => locale.hostname);
     self.defaultLocale = self.options.defaultLocale || Object.keys(self.locales)[0];
+    // Contains label/value object for each locale
+    self.adminLocales = self.options.adminLocales || [];
+    // Contains only the string value of the default admin locale (e.g. 'en').
+    // If adminLocales are configured, it should be one of them. Otherwise,
+    // it can be any valid locale string identifier.
+    self.defaultAdminLocale = self.options.defaultAdminLocale || null;
     // Lint the locale configurations
     for (const [ key, options ] of Object.entries(self.locales)) {
       if (!options) {
@@ -69,6 +103,15 @@ module.exports = {
       if (options.prefix && options.prefix.match(/\/.*?\//)) {
         throw self.apos.error('invalid', `Locale prefixes must not contain more than one forward slash ("/").\nUse hyphens as separators. Check locale "${key}".`);
       }
+    }
+    if (!Array.isArray(self.adminLocales)) {
+      throw self.apos.error('invalid', 'The "adminLocales" option must be an array.');
+    }
+    if (self.defaultAdminLocale && typeof self.defaultAdminLocale !== 'string') {
+      throw self.apos.error('invalid', 'The "defaultAdminLocale" option must be a string.');
+    }
+    if (self.defaultAdminLocale && self.adminLocales.length && !self.adminLocales.some(al => al.value === self.defaultAdminLocale)) {
+      throw self.apos.error('invalid', `The value of "defaultAdminLocale" "${self.defaultAdminLocale}" doesn't match any of the existing "adminLocales" values.`);
     }
     const fallbackLng = [ self.defaultLocale ];
     // In case the default locale also has inadequate admin UI phrases
@@ -574,10 +617,13 @@ module.exports = {
         }
       },
       getBrowserData(req) {
+        const adminLocale = req.user?.adminLocale === ''
+          ? req.locale
+          : req.user?.adminLocale || self.defaultAdminLocale || req.locale;
         const i18n = {
-          [req.locale]: self.getBrowserBundles(req.locale)
+          [adminLocale]: self.getBrowserBundles(adminLocale)
         };
-        if (req.locale !== self.defaultLocale) {
+        if (adminLocale !== self.defaultLocale) {
           i18n[self.defaultLocale] = self.getBrowserBundles(self.defaultLocale);
         }
         // In case the default locale also has inadequate admin UI phrases
@@ -587,6 +633,7 @@ module.exports = {
         const result = {
           i18n,
           locale: req.locale,
+          adminLocale,
           defaultLocale: self.defaultLocale,
           defaultNamespace: self.defaultNamespace,
           locales: self.locales,
