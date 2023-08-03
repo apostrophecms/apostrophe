@@ -754,7 +754,7 @@ module.exports = {
           if (requirementsToVerify.length) {
             const token = cuid();
 
-            await self.bearerTokens.insert({
+            await self.bearerTokens.insertOne({
               _id: token,
               userId: user._id,
               requirementsToVerify,
@@ -782,7 +782,7 @@ module.exports = {
             return {};
           } else {
             const token = cuid();
-            await self.bearerTokens.insert({
+            await self.bearerTokens.insertOne({
               _id: token,
               userId: user._id,
               expires: new Date(new Date().getTime() + (self.options.bearerTokens.lifetime || (86400 * 7 * 2)) * 1000)
