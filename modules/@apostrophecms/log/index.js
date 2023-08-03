@@ -338,10 +338,11 @@ module.exports = {
 
         self.processRequestData(req, data);
         // Don't override system properties.
-        delete obj.module;
-        delete obj.type;
-        delete obj.severity;
-        Object.assign(data, obj);
+        Object.assign(data, obj, {
+          module: aposModule,
+          type: eventType,
+          severity
+        });
 
         return self.options.messageAs ? [ data ] : [ message, data ];
       },
