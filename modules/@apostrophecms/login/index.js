@@ -480,8 +480,10 @@ module.exports = {
       //
       // If the user's login SUCCEEDS, the return value is
       // the `user` object.
+      // `attempts` and `ip` are sent due to logging needs. They won't
+      // be available with passport.
 
-      async verifyLogin(username, password) {
+      async verifyLogin(username, password, attempts, ip) {
         const req = self.apos.task.getReq();
         const user = await self.apos.user.find(req, {
           $or: [
@@ -492,14 +494,29 @@ module.exports = {
         }).toObject();
 
         if (!user) {
+          self.logInfo('incorrect-username', {
+            username,
+            ip,
+            attempts: attempts + 1
+          });
           await Promise.delay(1000);
           return false;
         }
         try {
           await self.apos.user.verifyPassword(user, password);
+          self.logInfo('correct-password', {
+            username,
+            ip,
+            attempts: attempts
+          });
           return user;
         } catch (err) {
           if (err.name === 'invalid') {
+            self.logInfo('incorrect-password', {
+              username,
+              ip,
+              attempts: attempts + 1
+            });
             await Promise.delay(1000);
             return false;
           } else {
@@ -642,12 +659,21 @@ module.exports = {
             _id: token.userId
           });
           await self.passportLogin(req, user);
+          // No access to login attempts in the final phase.
+          self.logInfo('complete', {
+            username: user.username,
+            ip: req.ip
+          });
         } else {
           delete token.requirementsToVerify;
           self.bearerTokens.updateOne(token, {
             $unset: {
               requirementsToVerify: 1
             }
+          });
+          self.logInfo('complete', {
+            username: user.username,
+            ip: req.ip
           });
           return {
             token
@@ -697,6 +723,7 @@ module.exports = {
         }
 
         const { cachedAttempts, reached } = await self.checkLoginAttempts(username);
+        const logAttempts = cachedAttempts ?? 0;
 
         if (reached) {
           throw self.apos.error('invalid', req.t('apostrophe:loginMaxAttemptsReached', {
@@ -716,7 +743,7 @@ module.exports = {
               throw e;
             }
           }
-          const user = await self.apos.login.verifyLogin(username, password);
+          const user = await self.apos.login.verifyLogin(username, password, logAttempts, req.ip);
           if (!user) {
           // For security reasons we may not tell the user which case applies
             throw self.apos.error('invalid', req.t('apostrophe:loginPageBadCredentials'));
@@ -747,6 +774,11 @@ module.exports = {
           if (session) {
             await self.passportLogin(req, user);
             await self.clearLoginAttempts(user.username);
+            self.logInfo('complete', {
+              username,
+              ip: req.ip,
+              attempts: logAttempts
+            });
             return {};
           } else {
             const token = cuid();
@@ -757,6 +789,11 @@ module.exports = {
             });
 
             await self.clearLoginAttempts(user.username);
+            self.logInfo('complete', {
+              username,
+              ip: req.ip,
+              attempts: logAttempts
+            });
 
             return {
               token

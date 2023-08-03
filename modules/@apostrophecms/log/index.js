@@ -108,16 +108,41 @@ module.exports = {
     self.initFilters();
   },
   methods(self) {
-    // Keep those inside the methods because of tests.
+    // Keep those inside the methods because of performance.
+    // Do not move to the root because of tests.
     const isProduction = process.env.NODE_ENV === 'production';
+    const isTest = self.options.apos?.options?.test;
+    const utilInspect = require('node:util').inspect;
+
+    const formatDevObj = isTest
+      ? (obj) => JSON.stringify(obj, null, 2)
+      : (obj) => utilInspect(obj, {
+        depth: null,
+        colors: true
+      });
     const formatObj = isProduction
       ? JSON.stringify
-      : (obj) => JSON.stringify(obj, null, 2);
+      : formatDevObj;
     const formatString = !isProduction
       ? (str, args) => (args.length > 1) ? str.trim() + '\n' : str
       : (str) => str;
 
     return {
+      // Stringify object arguments. If the environment is not `production`,
+      // pretty print the objects and add a new line at the end of string arguments.
+      // This method is meant to be used from the methods of a custom `logger`.
+      // See the default logger implementation in `util/lib/logger.js` for an example.
+      formatLogByEnv(args) {
+        return args.map((arg) => {
+          if (typeof arg === 'string') {
+            return formatString(arg, args);
+          }
+          if (_.isPlainObject(arg)) {
+            return formatObj(arg);
+          }
+          return arg;
+        });
+      },
       // Normalize the filters. Detect configuration and set defaults
       // per the current NODE_ENV if needed.
       // Convert `{ *: true }` to an object with all severity levels.
@@ -382,22 +407,6 @@ module.exports = {
 
         self.filterCache[cacheId] = severityMatch || eventsMatch;
         return self.filterCache[cacheId];
-      },
-
-      // Stringify object arguments. If the environment is not `production`,
-      // pretty print the objects and add a new line at the end of string arguments.
-      // This method is meant to be used from the methods of a custom `logger`.
-      // See the default logger implementation in `util/lib/logger.js` for an example.
-      formatLogByEnv(args) {
-        return args.map((arg) => {
-          if (typeof arg === 'string') {
-            return formatString(arg, args);
-          }
-          if (_.isPlainObject(arg)) {
-            return formatObj(arg);
-          }
-          return arg;
-        });
       }
     };
   }
