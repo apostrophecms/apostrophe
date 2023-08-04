@@ -480,10 +480,10 @@ module.exports = {
       //
       // If the user's login SUCCEEDS, the return value is
       // the `user` object.
-      // `attempts` and `ip` are sent due to logging needs. They won't
+      // `attempts`,  `ip` and `requestId` are optional, sent for only logging needs. They won't
       // be available with passport.
 
-      async verifyLogin(username, password, attempts, ip) {
+      async verifyLogin(username, password, attempts = 0, ip, requestId) {
         const req = self.apos.task.getReq();
         const user = await self.apos.user.find(req, {
           $or: [
@@ -497,7 +497,8 @@ module.exports = {
           self.logInfo('incorrect-username', {
             username,
             ip,
-            attempts: attempts + 1
+            attempts: attempts + 1,
+            requestId
           });
           await Promise.delay(1000);
           return false;
@@ -507,7 +508,8 @@ module.exports = {
           self.logInfo('correct-password', {
             username,
             ip,
-            attempts: attempts
+            attempts: attempts,
+            requestId
           });
           return user;
         } catch (err) {
@@ -515,7 +517,8 @@ module.exports = {
             self.logInfo('incorrect-password', {
               username,
               ip,
-              attempts: attempts + 1
+              attempts: attempts + 1,
+              requestId
             });
             await Promise.delay(1000);
             return false;
@@ -660,9 +663,8 @@ module.exports = {
           });
           await self.passportLogin(req, user);
           // No access to login attempts in the final phase.
-          self.logInfo('complete', {
-            username: user.username,
-            ip: req.ip
+          self.logInfo(req, 'complete', {
+            username: user.username
           });
         } else {
           delete token.requirementsToVerify;
@@ -671,9 +673,8 @@ module.exports = {
               requirementsToVerify: 1
             }
           });
-          self.logInfo('complete', {
-            username: user.username,
-            ip: req.ip
+          self.logInfo(req, 'complete', {
+            username: user.username
           });
           return {
             token
@@ -743,7 +744,14 @@ module.exports = {
               throw e;
             }
           }
-          const user = await self.apos.login.verifyLogin(username, password, logAttempts, req.ip);
+          // send log information
+          const user = await self.apos.login.verifyLogin(
+            username,
+            password,
+            logAttempts,
+            self.apos.structuredLog.getIp(req),
+            self.apos.structuredLog.getRequestId(req)
+          );
           if (!user) {
           // For security reasons we may not tell the user which case applies
             throw self.apos.error('invalid', req.t('apostrophe:loginPageBadCredentials'));
@@ -774,9 +782,8 @@ module.exports = {
           if (session) {
             await self.passportLogin(req, user);
             await self.clearLoginAttempts(user.username);
-            self.logInfo('complete', {
+            self.logInfo(req, 'complete', {
               username,
-              ip: req.ip,
               attempts: logAttempts
             });
             return {};
@@ -789,9 +796,8 @@ module.exports = {
             });
 
             await self.clearLoginAttempts(user.username);
-            self.logInfo('complete', {
+            self.logInfo(req, 'complete', {
               username,
-              ip: req.ip,
               attempts: logAttempts
             });
 

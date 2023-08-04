@@ -356,9 +356,24 @@ module.exports = {
         data.url = req.originalUrl;
         data.path = req.path;
         data.method = req.method;
-        data.ip = req.ip;
+        data.ip = self.getIp(req);
         data.query = req.query;
-        data.requestId = req.requestId || self.apos.util.generateId();
+        data.requestId = self.getRequestId(req);
+      },
+
+      // Helper to get the IP address from the request.
+      // Can be overriden.
+      getIp(req) {
+        return req.ip;
+      },
+
+      // Helper to get unique request id. It will be generated (once) if not present.
+      // Can be refatored to express level in the future.
+      getRequestId(req) {
+        if (!req.requestId) {
+          req.requestId = self.apos.util.generateId();
+        }
+        return req.requestId;
       },
 
       // Assess the module filter configuration and determine if the log

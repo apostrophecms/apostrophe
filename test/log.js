@@ -1630,9 +1630,12 @@ describe('structured logging', function () {
       } catch (e) {
         //
       }
+
       assert.equal(savedArgs[0], '@apostrophecms/login: incorrect-username');
       assert(savedArgs[1].ip);
+      assert(savedArgs[1].requestId);
       delete savedArgs[1].ip;
+      delete savedArgs[1].requestId;
       assert.deepEqual(savedArgs[1], {
         module: '@apostrophecms/login',
         type: 'incorrect-username',
@@ -1679,7 +1682,9 @@ describe('structured logging', function () {
       }
       assert.equal(savedArgs[0], '@apostrophecms/login: incorrect-password');
       assert(savedArgs[1].ip);
+      assert(savedArgs[1].requestId);
       delete savedArgs[1].ip;
+      delete savedArgs[1].requestId;
       assert.deepEqual(savedArgs[1], {
         module: '@apostrophecms/login',
         type: 'incorrect-password',
@@ -1741,11 +1746,17 @@ describe('structured logging', function () {
       }
       assert.equal(savedArgs[0], '@apostrophecms/login: complete');
       assert(savedArgs[1].ip);
+      assert(savedArgs[1].requestId);
       delete savedArgs[1].ip;
+      delete savedArgs[1].requestId;
       assert.deepEqual(savedArgs[1], {
         module: '@apostrophecms/login',
         type: 'complete',
         severity: 'info',
+        url: '/api/v1/@apostrophecms/login/login',
+        path: '/api/v1/@apostrophecms/login/login',
+        method: 'POST',
+        query: {},
         username: 'admin',
         attempts: 1
       });
