@@ -21,22 +21,27 @@
       <span class="apos-admin-bar__title__separator">
         —
       </span>
-      <AposContextMenu
-        v-if="!isUnpublished"
-        class="apos-admin-bar__title__document"
-        :button="draftButton"
-        :menu="draftMenu"
-        :disabled="hasCustomUi || isUnpublished"
-        @item-clicked="switchDraftMode"
-        menu-offset="13, 10"
-        menu-placement="bottom-end"
-      />
-      <AposLabel
-        v-else
-        :label="'apostrophe:draft'"
-        :tooltip="'apostrophe:notYetPublished'"
-        :modifiers="['apos-is-warning', 'apos-is-filled']"
-      />
+      <div
+        v-if="!isAutopublished"
+        class="apos-admin-bar__title__context"
+      >
+        <AposContextMenu
+          v-if="!isUnpublished"
+          class="apos-admin-bar__title__document"
+          :button="draftButton"
+          :menu="draftMenu"
+          :disabled="hasCustomUi || isUnpublished"
+          @item-clicked="switchDraftMode"
+          menu-offset="13, 10"
+          menu-placement="bottom-end"
+        />
+        <AposLabel
+          v-else
+          :label="'apostrophe:draft'"
+          :tooltip="'apostrophe:notYetPublished'"
+          :modifiers="['apos-is-warning', 'apos-is-filled']"
+        />
+      </div>
       <AposLabel
         class="apos-admin-bar__title-context-label"
         v-for="{id, label, tooltip = '', modifiers = []} in moduleOptions.contextLabels"
@@ -117,6 +122,9 @@ export default {
     },
     moduleOptions() {
       return window.apos.adminBar;
+    },
+    isAutopublished() {
+      return this.context._aposAutopublish || window.apos.modules[this.context.type].autopublish || false;
     }
   },
   mounted() {
@@ -148,6 +156,7 @@ export default {
   align-items: center;
   white-space: nowrap;
 
+  &__context,
   &__document-title,
   &__separator {
     display: inline-flex;

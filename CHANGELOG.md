@@ -1,5 +1,11 @@
 # Changelog
 
+## UNRELEASED
+
+### Changes
+
+* Hide save button during in-context editing if the document is autopublished. 
+
 ## 3.53.0 (2023-08-03)
 
 ### Adds

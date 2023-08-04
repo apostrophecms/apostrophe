@@ -36,7 +36,7 @@
         :show-preview="false"
       />
       <AposButton
-        v-if="canSwitchToPreviewMode"
+        v-if="canSwitchToPreviewMode && !isAutopublished"
         class="apos-admin-bar__context-button"
         label="apostrophe:preview" :tooltip="{
           content: 'apostrophe:previewTooltip',
@@ -46,7 +46,7 @@
         @click="switchEditMode(false)"
       />
       <AposButton
-        v-if="editMode"
+        v-if="editMode && !isAutopublished"
         type="primary" :label="publishLabel"
         :disabled="!readyToPublish"
         class="apos-admin-bar__btn apos-admin-bar__context-button"
@@ -124,6 +124,9 @@ export default {
           return 'apostrophe:submit';
         }
       }
+    },
+    isAutopublished() {
+      return this.context._aposAutopublish || window.apos.modules[this.context.type].autopublish || false;
     },
     hasBeenPublishedThisPageload() {
       return (this.context.lastPublishedAt > this.mountedAt) || ((this.context.submitted && this.context.submitted.at) > this.mountedAt);
