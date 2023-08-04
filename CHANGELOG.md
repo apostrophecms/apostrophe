@@ -1,5 +1,11 @@
 # Changelog
 
+## UNRELEASED
+
+### Adds
+
+* Add `@apostrophecms/settings` translations.
+
 ## 3.53.0 (2023-08-03)
 
 ### Adds
