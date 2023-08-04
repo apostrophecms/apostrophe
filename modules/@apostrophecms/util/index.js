@@ -5,7 +5,7 @@
 
 // ## Options
 //
-// ### `logger`
+// ### `logger` (LEGACY)
 //
 // A function which accepts `apos` and returns an object with
 // at least `info`, `debug`, `warn` and `error` methods. These methods should
@@ -16,6 +16,11 @@
 // `apos.util.error`, etc. are routed through this object
 // by Apostrophe. This provides compatibility out of
 // the box with many popular logging modules, including `winston`.
+// NOTE: this option is deprecated, you should configure `@apostrophecms/log`
+// module instead. This option will still work for BC reasons, but switching
+// to structured logging and module `self.logInfo()`, `self.logError()`, etc
+// is highly recommended.
+// Read more in the`@apostrophecms/log` module documentation.
 
 const _ = require('lodash');
 const he = require('he');
