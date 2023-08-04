@@ -428,7 +428,7 @@ export default {
 
     },
     async customAction(doc, operation) {
-      if (operation.label) {
+      if (operation.currentModuleName) {
         operation.moduleName = this.moduleName;
       }
 
