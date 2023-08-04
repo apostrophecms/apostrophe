@@ -391,6 +391,8 @@
   "treeError": "Ocurrió un error al actualizar el árbol web.",
   "type": "Tipo",
   "typeWithCount": "{{ type }} ({{ count }})",
+  "uiLanguageLabel": "Idioma de la interfaz de usuario",
+  "uiLanguageWebsite": "Igual que el sitio web",
   "unableToSwitchModes": "No se pudo cambiar de modo.",
   "undo": "Revertir",
   "undoFailed": "La operación no se pudo revertir",

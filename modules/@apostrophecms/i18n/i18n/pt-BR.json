@@ -388,6 +388,8 @@
   "treeError": "Ocorreu um erro ao atualizar a árvore da página.",
   "type": "Tipo",
   "typeWithCount": "{{ type }} ({{ count }})",
+  "uiLanguageLabel": "Idioma da IU",
+  "uiLanguageWebsite": "Igual ao site",
   "unableToSwitchModes": "Incapaz de mudar de modo.",
   "undo": "Desfazer",
   "undoFailed": "A operação não pode ser desfeita.",

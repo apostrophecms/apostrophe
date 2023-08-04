@@ -409,6 +409,8 @@
   "treeError": "Pri aktualizácii stromu stránok sa vyskytla chyba.",
   "type": "Typ",
   "typeWithCount": "{{ type }} ({{ count }})",
+  "uiLanguageLabel": "Jazyk používateľského rozhrania",
+  "uiLanguageWebsite": "Rovnaké ako webové stránky",
   "unableToSwitchModes": "Režimy nie je možné prepnúť.",
   "undo": "Vrátenie späť",
   "undoFailed": "Operáciu nebolo možné vrátiť späť.",

@@ -412,6 +412,8 @@
   "treeError": "Beim Aktualisieren des Seitenbaums ist ein Fehler aufgetreten.",
   "type": "Typ",
   "typeWithCount": "{{ type }} ({{ count }})",
+  "uiLanguageLabel": "UI-Sprache",
+  "uiLanguageWebsite": "Gleich wie Website",
   "unableToSwitchModes": "Modus kann nicht geändert werden.",
   "undo": "Rückgängig",
   "undoFailed": "Änderung konnte nicht Rückgängig gemacht werden.",

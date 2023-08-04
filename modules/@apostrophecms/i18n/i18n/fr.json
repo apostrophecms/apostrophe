@@ -405,6 +405,8 @@
   "treeError": "Une erreur s'est produite lors de la mise à jour de l'arborescence des pages.",
   "type": "Type",
   "typeWithCount": "{{ type }} ({{ count }})",
+  "uiLanguageLabel": "Langue de l'interface utilisateur",
+  "uiLanguageWebsite": "Identique au site Web",
   "unableToSwitchModes": "Impossible de changer de mode.",
   "undo": "Annuler",
   "undoFailed": "L'opération n'a pas pu être annulée.",
