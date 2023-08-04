@@ -1328,7 +1328,7 @@ describe('structured logging', function () {
     });
   });
 
-  describe('apiError', function () {
+  describe('route error', function () {
     let user;
     let jar;
     let aposError;
@@ -1393,7 +1393,7 @@ describe('structured logging', function () {
       consoleError = console.error;
     });
 
-    afterEach(async function () {
+    beforeEach(async function () {
       apos.util.logger.error = aposError;
       apos.util.generateId = generateId;
       console.error = consoleError;
@@ -1561,6 +1561,194 @@ describe('structured logging', function () {
       assert.equal(Array.isArray(savedArgs[1].stack), true);
       assert.equal(savedArgs[1].errorPath, 'some.field');
       assert.deepEqual(savedArgs[1].data, { some: 'data' });
+    });
+  });
+
+  describe('login', function () {
+    let user;
+    let aposInfo;
+
+    async function createInstance() {
+      apos = await t.create({
+        modules: {
+          '@apostrophecms/log': {
+            options: {
+              filter: {
+                '*': {
+                  severity: [ 'info' ]
+                },
+                '@apostrophecms/login': {
+                  events: [
+                    'incorrect-username',
+                    'incorrect-password',
+                    'correct-password',
+                    'complete'
+                  ]
+                }
+              }
+            }
+          }
+        }
+      });
+      aposInfo = apos.util.logger.info;
+      user = await t.createAdmin(apos, {
+        username: 'admin',
+        password: 'admin'
+      });
+      user.password = 'admin';
+    }
+
+    before(async function () {
+      await t.destroy(apos);
+      await createInstance();
+    });
+
+    beforeEach(async function () {
+      apos.util.logger.info = aposInfo;
+    });
+
+    after(async function () {
+      await t.destroy(apos);
+      apos = null;
+    });
+
+    it('should log incorrect username', async function () {
+      let savedArgs = [];
+      apos.util.logger.info = (...args) => {
+        savedArgs = args;
+      };
+      const jar = apos.http.jar();
+      try {
+        await apos.http.post('/api/v1/@apostrophecms/login/login', {
+          body: {
+            username: 'incorrect',
+            password: user.password,
+            session: true
+          },
+          jar
+        });
+      } catch (e) {
+        //
+      }
+      assert.equal(savedArgs[0], '@apostrophecms/login: incorrect-username');
+      assert(savedArgs[1].ip);
+      delete savedArgs[1].ip;
+      assert.deepEqual(savedArgs[1], {
+        module: '@apostrophecms/login',
+        type: 'incorrect-username',
+        severity: 'info',
+        username: 'incorrect',
+        attempts: 1
+      });
+
+      savedArgs = [];
+      try {
+        await apos.http.post('/api/v1/@apostrophecms/login/login', {
+          body: {
+            username: 'incorrect',
+            password: user.password,
+            session: true
+          },
+          jar
+        });
+      } catch (e) {
+        //
+      }
+      assert.equal(savedArgs[1].attempts, 2);
+    });
+
+    it('should log incorrect password', async function () {
+      await t.destroy(apos);
+      await createInstance();
+      let savedArgs = [];
+      apos.util.logger.info = (...args) => {
+        savedArgs = args;
+      };
+      const jar = apos.http.jar();
+      try {
+        await apos.http.post('/api/v1/@apostrophecms/login/login', {
+          body: {
+            username: user.password,
+            password: 'incorrect',
+            session: true
+          },
+          jar
+        });
+      } catch (e) {
+        //
+      }
+      assert.equal(savedArgs[0], '@apostrophecms/login: incorrect-password');
+      assert(savedArgs[1].ip);
+      delete savedArgs[1].ip;
+      assert.deepEqual(savedArgs[1], {
+        module: '@apostrophecms/login',
+        type: 'incorrect-password',
+        severity: 'info',
+        username: user.username,
+        attempts: 1
+      });
+
+      savedArgs = [];
+      try {
+        await apos.http.post('/api/v1/@apostrophecms/login/login', {
+          body: {
+            username: user.password,
+            password: 'incorrect',
+            session: true
+          },
+          jar
+        });
+      } catch (e) {
+        //
+      }
+      assert.equal(savedArgs[1].attempts, 2);
+    });
+
+    it('should log login complete', async function () {
+      await t.destroy(apos);
+      await createInstance();
+
+      const jar = apos.http.jar();
+      try {
+        await apos.http.post('/api/v1/@apostrophecms/login/login', {
+          body: {
+            username: user.password,
+            password: 'incorrect',
+            session: true
+          },
+          jar
+        });
+      } catch (e) {
+        //
+      }
+
+      let savedArgs = [];
+      apos.util.logger.info = (...args) => {
+        savedArgs = args;
+      };
+      savedArgs = [];
+      try {
+        await apos.http.post('/api/v1/@apostrophecms/login/login', {
+          body: {
+            username: user.password,
+            password: user.password,
+            session: true
+          },
+          jar
+        });
+      } catch (e) {
+        //
+      }
+      assert.equal(savedArgs[0], '@apostrophecms/login: complete');
+      assert(savedArgs[1].ip);
+      delete savedArgs[1].ip;
+      assert.deepEqual(savedArgs[1], {
+        module: '@apostrophecms/login',
+        type: 'complete',
+        severity: 'info',
+        username: 'admin',
+        attempts: 1
+      });
     });
   });
 });
