@@ -1217,7 +1217,7 @@ module.exports = {
         self.contextOperations = [
           ...self.contextOperations
             .filter(op => op.action !== operation.action),
-            operation
+          operation
         ];
 
         function validate ({
