@@ -1,12 +1,13 @@
 # Changelog
 
-## UNRELEASED
+## 3.53.0 (2023-08-03)
 
 ### Adds
 
 * Accessibility improved for navigation inside modals and various UI elements.
 Pages/Docs Manager and Doc Editor modal now have better keyboard accessibility.
 They keep the focus on elements inside modals and give it back to their parent modal when closed.
+This implementation is evolving and will likely switch to use the `dialog` HTML element soon.
 * Adds support for a new `if` property in `addContextOperation` in order to show or not a context operation based on the current document properties.
 * Add `update-doc-fields` event to call `AposDocEditor.updateDocFields` method
 * Add schema field `hidden` property to always hide a field
@@ -18,7 +19,6 @@ for piece and page types, allowing "virtual piece types" on the back end that
 deal with many content types to give better hints to the UI.
 * Respect the `_aposAutopublish` property of a document if present, otherwise
 fall back to module configuration.
-
 * For convenience in custom editor components, pass the new prop `type`, the original type of the document being copied or edited.
 * For better results in custom editor components, pass the prop `copyOfId`, which implies
 the custom editor should fetch the original itself by its means of choice.
@@ -32,6 +32,10 @@ specify both a `props` object for additional properties to be passed to
 their modal and a `docProps` object to map properties from the document
 to props of their choosing.
 * Adds support to add context labels in admin bar.
+* Adds support for admin UI language configuration in the `@apostrophecms/i18n` module. The new options allow control over the default admin UI language and configures the list of languages, that any individual logged in user can choose from. See the [documentation](https://v3.docs.apostrophecms.org/reference/modules/i18n.html) for more details.
+* Adds `adminLocale` User field to allow users to set their preferred admin UI language, but only when the `@apostrophecms/i18n` is configured accordingly (see above). 
+* Adds `@apostrophecms/settings` module and a "Personal Settings" feature. See the [documentation](https://v3.docs.apostrophecms.org/reference/modules/settings.html) for more details.
+* Adds `$and` operator on `addContextOperation` `if` property in order to check multiple fields before showing or hiding a context operation.
 
 ### Fixes
 
