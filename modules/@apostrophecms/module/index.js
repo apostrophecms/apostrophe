@@ -241,18 +241,30 @@ module.exports = {
           });
         }
         const response = getResponse(err);
-        // err.stack includes basic description of error
-        if (Object.keys(response.data).length > 1) {
-          response.fn(`${req.method} ${req.url}: \n\n${err.stack}\n\n${JSON.stringify(response.data, null, '  ')}`);
-        } else {
-          response.fn(req.method + ' ' + req.url + ': ' + '\n\n' + err.stack);
-        }
+        logError(req, response, err);
         req.res.status(response.code);
         return req.res.send({
           name: response.name,
           data: response.data,
           message: response.message
         });
+        function logError(req, response, error) {
+          const typeTrail = response.code === 500 ? '' : `-${response.name}`;
+          try {
+            self.logError(req, `api-error${typeTrail}`, response.message, {
+              name: response.name,
+              status: response.code,
+              stack: error.stack.split('\n').slice(1).map(line => line.trim()),
+              errorPath: response.path,
+              data: response.data
+            });
+          } catch (e) {
+            // We can't afford to throw here, it would hang the response.
+            e.message = 'Structured logging error: ' + e.message;
+            // eslint-disable-next-line no-console
+            console.error(e);
+          }
+        }
         function getResponse(err) {
           let name, data, code, fn, message, path;
           if (err && err.name && self.apos.http.errors[err.name]) {
