@@ -1205,11 +1205,10 @@ module.exports = {
 
       addContextOperation(operation) {
         if (arguments.length === 2) {
-          operation = arguments[1];
           // For backwards compatibility. `moduleName` is rarely needed
           // so it should not be a separate argument in new code.
           operation = {
-            ...operation,
+            ...arguments[1],
             moduleName: arguments[0]
           };
         }
