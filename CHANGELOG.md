@@ -1,5 +1,11 @@
 # Changelog
 
+## UNRELEASED
+
+### Adds
+
+* Adds `@apostrophecms/log` module to allow structured logging. All modules have `logDebug`, `logInfo`, `logWarn` and `logError` methods now. See the [documentation](https://v3.docs.apostrophecms.org/guide/logging.html) for more details.
+
 ## 3.53.0 (2023-08-03)
 
 ### Adds
