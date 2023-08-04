@@ -2,6 +2,10 @@
 
 ## UNRELEASED
 
+### Adds
+
+* Add `@apostrophecms/settings` translations.
+
 ### Changes
 
 * Beginning with this release, the correct `moduleName` for typical
