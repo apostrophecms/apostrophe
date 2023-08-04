@@ -332,17 +332,17 @@ module.exports = {
           data[self.options.messageAs] = message;
           delete obj[self.options.messageAs];
         }
+        // Preserve the property order.
         data.module = aposModule;
         data.type = eventType;
         data.severity = severity;
 
         self.processRequestData(req, data);
         // Don't override system properties.
-        Object.assign(data, obj, {
-          module: aposModule,
-          type: eventType,
-          severity
-        });
+        Object.assign(data, obj);
+        data.module = aposModule;
+        data.type = eventType;
+        data.severity = severity;
 
         return self.options.messageAs ? [ data ] : [ message, data ];
       },
