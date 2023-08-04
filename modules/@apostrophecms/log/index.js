@@ -128,7 +128,7 @@ module.exports = {
       : (str) => str;
 
     return {
-      // Stringify object arguments. If the environment is not `production`,
+      // Stringify object arguments. If `NODE_ENV` is not `production`,
       // pretty print the objects and add a new line at the end of string arguments.
       // This method is meant to be used from the methods of a custom `logger`.
       // See the default logger implementation in `util/lib/logger.js` for an example.
