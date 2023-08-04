@@ -1,9 +1,10 @@
 # Changelog
 
-## Unreleased
+## UNRELEASED
 
 ### Adds
 
+* Add `@apostrophecms/settings` translations.
 * Add the ability to have custom modals for batch operations.
 
 ## 3.53.0 (2023-08-03)
