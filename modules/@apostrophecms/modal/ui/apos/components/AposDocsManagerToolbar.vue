@@ -274,9 +274,7 @@ export default {
     }) {
       await apos.modal.execute(modal, {
         count: this.checkedCount,
-        moduleName: this.checkedCount === 1
-          ? this.$t(this.labels.singular).toLowerCase()
-          : this.$t(this.labels.plural).toLowerCase(),
+        moduleName: this.moduleName,
         ...rest
       });
     },
