@@ -428,10 +428,6 @@ export default {
 
     },
     async customAction(doc, operation) {
-      if (operation.currentModuleName) {
-        operation.moduleName = this.moduleName;
-      }
-
       await apos.modal.execute(operation.modal, {
         moduleName: operation.moduleName,
         // For backwards compatibility

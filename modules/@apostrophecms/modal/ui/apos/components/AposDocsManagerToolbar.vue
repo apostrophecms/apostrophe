@@ -127,6 +127,10 @@ export default {
     checkedCount: {
       type: Number,
       required: true
+    },
+    moduleName: {
+      type: String,
+      required: true
     }
   },
   emits: [
