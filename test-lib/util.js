@@ -29,7 +29,7 @@ async function destroy(apos) {
   }
 };
 
-async function create(options) {
+async function create(options = {}) {
   const config = {
     shortName: options.shortName || `test-${cuid()}`,
     argv: {

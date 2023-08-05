@@ -4,6 +4,7 @@
 
 ### Adds
 
+* Add `@apostrophecms/log` module to allow structured logging. All modules have `logDebug`, `logInfo`, `logWarn` and `logError` methods now. See the [documentation](https://v3.docs.apostrophecms.org/guide/logging.html) for more details.
 * Add `@apostrophecms/settings` translations.
 
 ## 3.53.0 (2023-08-03)

@@ -57,6 +57,7 @@ module.exports = {
 
     self.__helpers = {};
     self.templateData = self.options.templateData || {};
+    self.__structuredLoggingEnabled = false;
 
     if (self.apos.asset) {
       if (!self.apos.asset.chains) {
@@ -74,6 +75,11 @@ module.exports = {
     // Routes in their final ready-to-add-to-Express form
     self._routes = [];
 
+    // Enable structured logging after util module is initialized.
+    if (self.apos.util && (self.apos.util !== self)) {
+      self.__structuredLoggingEnabled = true;
+    }
+
     // Add i18next phrases if we started up after the i18n module,
     // which will call this for us if we start up before it
     if (self.apos.i18n && (self.apos.i18n !== self)) {
@@ -89,6 +95,10 @@ module.exports = {
 
   methods(self) {
     return {
+      // `self.logInfo`, `self.logError`, etc. available for every module except
+      // `error`, `util` and the `log` module itself.
+      ...require('./lib/log')(self),
+
       compileSectionRoutes(section) {
         _.each(self[section] || {}, function(routes, method) {
           _.each(routes, function(config, name) {
@@ -231,18 +241,30 @@ module.exports = {
           });
         }
         const response = getResponse(err);
-        // err.stack includes basic description of error
-        if (Object.keys(response.data).length > 1) {
-          response.fn(`${req.method} ${req.url}: \n\n${err.stack}\n\n${JSON.stringify(response.data, null, '  ')}`);
-        } else {
-          response.fn(req.method + ' ' + req.url + ': ' + '\n\n' + err.stack);
-        }
+        logError(req, response, err);
         req.res.status(response.code);
         return req.res.send({
           name: response.name,
           data: response.data,
           message: response.message
         });
+        function logError(req, response, error) {
+          const typeTrail = response.code === 500 ? '' : `-${response.name}`;
+          try {
+            self.logError(req, `api-error${typeTrail}`, response.message, {
+              name: response.name,
+              status: response.code,
+              stack: error.stack.split('\n').slice(1).map(line => line.trim()),
+              errorPath: response.path,
+              data: response.data
+            });
+          } catch (e) {
+            // We can't afford to throw here, it would hang the response.
+            e.message = 'Structured logging error: ' + e.message;
+            // eslint-disable-next-line no-console
+            console.error(e);
+          }
+        }
         function getResponse(err) {
           let name, data, code, fn, message, path;
           if (err && err.name && self.apos.http.errors[err.name]) {
