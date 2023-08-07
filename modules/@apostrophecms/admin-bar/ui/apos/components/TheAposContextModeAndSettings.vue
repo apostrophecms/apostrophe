@@ -126,7 +126,7 @@ export default {
       }
     },
     isAutopublished() {
-      return this.context._aposAutopublish || window.apos.modules[this.context.type].autopublish || false;
+      return this.context._aposAutopublish ?? (window.apos.modules[this.context.type].autopublish || false);
     },
     hasBeenPublishedThisPageload() {
       return (this.context.lastPublishedAt > this.mountedAt) || ((this.context.submitted && this.context.submitted.at) > this.mountedAt);

@@ -124,7 +124,7 @@ export default {
       return window.apos.adminBar;
     },
     isAutopublished() {
-      return this.context._aposAutopublish || window.apos.modules[this.context.type].autopublish || false;
+      return this.context._aposAutopublish ?? (window.apos.modules[this.context.type].autopublish || false);
     }
   },
   mounted() {
