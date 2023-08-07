@@ -428,13 +428,14 @@ export default {
 
     },
     async customAction(doc, operation) {
-      await apos.modal.execute(operation.modal, {
-        moduleName: operation.moduleName,
+      const props = {
+        moduleName: operation.moduleName || this.moduleName,
         // For backwards compatibility
         doc,
         ...docProps(doc),
         ...operation.props
-      });
+      };
+      await apos.modal.execute(operation.modal, props);
       function docProps(doc) {
         return Object.fromEntries(Object.entries(operation.docProps || {}).map(([ key, value ]) => {
           return [ key, doc[value] ];

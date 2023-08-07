@@ -415,7 +415,7 @@ module.exports = {
         }
       },
       addContextMenu() {
-        self.apos.doc.addContextOperation(self.__meta.name, {
+        self.apos.doc.addContextOperation({
           action: 'shareDraft',
           context: 'update',
           label: 'apostrophe:shareDraft',

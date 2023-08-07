@@ -159,7 +159,7 @@ describe('Docs', function() {
     assert(person._friends[0].slug === 'larry');
   });
 
-  it('should support custom context menu (required only)', async function() {
+  it('should support custom context menu (legacy, required only)', async function() {
     const operation = {
       context: 'update',
       action: 'test',
@@ -176,7 +176,7 @@ describe('Docs', function() {
       moduleName: 'test-people'
     });
   });
-  it('should support custom context menu (with optional)', async function() {
+  it('should support custom context menu (legacy, with optional)', async function() {
     apos.doc.contextOperations = [];
     const operation = {
       context: 'update',
@@ -194,6 +194,39 @@ describe('Docs', function() {
       ...operation,
       moduleName: 'test-people'
     });
+  });
+
+  it('should support custom context menu (modern, required only)', async function() {
+    const operation = {
+      context: 'update',
+      action: 'test2',
+      label: 'Menu Label',
+      modal: 'SomeModalComponent'
+    };
+    const initialLength = apos.doc.contextOperations.length;
+
+    apos.doc.addContextOperation(operation);
+
+    assert.strictEqual(apos.doc.contextOperations.length, initialLength + 1);
+    // Front end is responsible for inferring moduleName here
+    assert.deepStrictEqual(apos.doc.contextOperations.find(op => op.action === 'test2'), operation);
+  });
+  it('should support custom context menu (modern, with optional)', async function() {
+    apos.doc.contextOperations = [];
+    const operation = {
+      context: 'update',
+      action: 'test',
+      label: 'Menu Label',
+      modal: 'SomeModalComponent',
+      manuallyPublished: true,
+      modifiers: [ 'danger' ]
+    };
+    assert.strictEqual(apos.doc.contextOperations.length, 0);
+
+    apos.doc.addContextOperation(operation);
+    assert.strictEqual(apos.doc.contextOperations.length, 1);
+    // Front end is responsible for inferring moduleName here
+    assert.deepStrictEqual(apos.doc.contextOperations[0], operation);
   });
 
   it('should override custom context menu', async function() {

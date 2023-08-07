@@ -8,6 +8,18 @@
 * Add `@apostrophecms/settings` translations.
 * Add the ability to have custom modals for batch operations.
 
+### Changes
+
+* Beginning with this release, the correct `moduleName` for typical
+actions on the context document is automatically passed to the
+modal associated with a custom context operation, unless `moduleName`
+is explicitly specified. The `moduleName` parameter to `addContextOperation`
+is no longer required and should not be passed at all in most cases
+(just pass the object argument). If you do wish to specify a `moduleName`
+to override that prop given to the modal, then it is recommended to pass
+it as a `moduleName` property of the object, not as a separate argument.
+For backwards compatibility the two-argument syntax is still permitted.
+
 ## 3.53.0 (2023-08-03)
 
 ### Adds
