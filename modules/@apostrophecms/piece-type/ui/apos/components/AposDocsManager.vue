@@ -72,6 +72,7 @@
             :is-relationship="!!relationshipField"
             :checked-count="checked.length"
             :batch-operations="moduleOptions.batchOperations"
+            :module-name="moduleName"
             @select-click="selectAll"
             @search="onSearch"
             @page-change="updatePage"

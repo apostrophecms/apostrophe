@@ -6,6 +6,7 @@
 
 * Add `@apostrophecms/log` module to allow structured logging. All modules have `logDebug`, `logInfo`, `logWarn` and `logError` methods now. See the [documentation](https://v3.docs.apostrophecms.org/guide/logging.html) for more details.
 * Add `@apostrophecms/settings` translations.
+* Add the ability to have custom modals for batch operations.
 
 ## 3.53.0 (2023-08-03)
 
@@ -40,7 +41,7 @@ their modal and a `docProps` object to map properties from the document
 to props of their choosing.
 * Adds support to add context labels in admin bar.
 * Adds support for admin UI language configuration in the `@apostrophecms/i18n` module. The new options allow control over the default admin UI language and configures the list of languages, that any individual logged in user can choose from. See the [documentation](https://v3.docs.apostrophecms.org/reference/modules/i18n.html) for more details.
-* Adds `adminLocale` User field to allow users to set their preferred admin UI language, but only when the `@apostrophecms/i18n` is configured accordingly (see above). 
+* Adds `adminLocale` User field to allow users to set their preferred admin UI language, but only when the `@apostrophecms/i18n` is configured accordingly (see above).
 * Adds `@apostrophecms/settings` module and a "Personal Settings" feature. See the [documentation](https://v3.docs.apostrophecms.org/reference/modules/settings.html) for more details.
 * Adds `$and` operator on `addContextOperation` `if` property in order to check multiple fields before showing or hiding a context operation.
 

@@ -57,6 +57,7 @@
             :disable="relationshipErrors === 'min'"
             :displayed-items="items.length"
             :checked-count="checked.length"
+            :module-name="moduleName"
             @page-change="updatePage"
             @select-click="selectClick"
             @search="search"

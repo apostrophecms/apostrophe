@@ -127,6 +127,10 @@ export default {
     checkedCount: {
       type: Number,
       required: true
+    },
+    moduleName: {
+      type: String,
+      required: true
     }
   },
   emits: [
@@ -263,7 +267,16 @@ export default {
     async beginGroupedOperation(action, operations) {
       const operation = operations.find(o => o.action === action);
 
-      await this.confirmOperation(operation);
+      operation.modal ? await this.modalOperation(operation) : await this.confirmOperation(operation);
+    },
+    async modalOperation({
+      modal, ...rest
+    }) {
+      await apos.modal.execute(modal, {
+        count: this.checkedCount,
+        moduleName: this.moduleName,
+        ...rest
+      });
     },
     async confirmOperation ({
       modalOptions = {}, action, operations, label, ...rest
