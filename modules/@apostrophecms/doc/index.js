@@ -1147,40 +1147,76 @@ module.exports = {
           'slug'
         ];
       },
-      // Add context menu operation to be used in AposDocContextMenu.
-      // Expected operation format is:
+
+      // Add a context menu operation to be offered in AposDocContextMenu, the
+      // "kebab menu" that provides extra operations on the current document or
+      // a document listed in a manager modal.
+      //
+      // The required format is:
+      //
       // {
       //   context: 'update',
       //   action: 'someAction',
       //   modal: 'ModalComponent',
-      //   label: 'Context Menu Label',
-      //   conditions: ['canEdit']
+      //   label: 'Context Menu Item Label',
+      //   conditions: ['canEdit'],
+      //   moduleName: 'some-specific-module'
       // }
-      // All properties are required except conditions.
-      // The only supported `context` for now is `update`.
+      //
+      // All properties are required except for `conditions`, `moduleName`,
+      // `modifiers` and `manuallyPublished`.
+      //
+      // Context operations are universal, e.g. they are displayed by the context
+      // menu no matter what the content type is, unless overridden by `conditions`.
+      //
       // `action` is the operation identifier and should be globally unique.
-      // Overriding existing custom actions is possible (the last wins).
-      // `modal` is the name of the modal component to be opened.
-      // `label` is the menu label to be shown when expanding the context menu.
-      // Additional optional `modifiers` property is supported - button modifiers
+      // For convenience, if several modules add an operation with the same `action`,
+      // it is only added once. This prevents duplicates if all subclasses of
+      // `doc-type` or `piece-type` register the same operation.
+      //
+      // `context` currently must be `update`.
+      //
+      // `modal` is the name of the modal component to be opened by the operation.
+      //
+      // `label` is the menu item label to be shown when expanding the context menu.
+      //
+      // An additional `moduleName` property is supported. If it is not given,
+      // it will be inferred from the `type` of the document in context, with all page
+      // types using the page module (not their type-specific module). This is almost
+      // always correct, therefore it only makes sense to pass an explicit
+      // `moduleName` option here if the action API should be invoked on a different module
+      // than expected.
+      //
+      // An additional optional `modifiers` property is supported - button modifiers
       // as supported by `AposContextMenu` (e.g. modifiers: [ 'danger' ]).
+      //
       // An optional `manuallyPublished` boolean property is supported - if true
       // the menu will be shown only for docs which have `autopublish: false` and
       // `localized: true` options.
-      // `conditions` defines the needed permission actions to be run on the current doc
-      // in order to display the operation.
-      // It must be an array containing one or multiple of these available values:
+      //
+      // `conditions` defines the circumstances under which the opetion should be displayed.
+      // If all `conditions` are not met, the item is not displayed for this particular
+      // document.
+      //
+      // `conditions` may be an array containing one or multiple of these values:
+      //
       // 'canPublish', 'canEdit', 'canDismissSubmission', 'canDiscardDraft',
       // 'canLocalize', 'canArchive', 'canUnpublish', 'canCopy', 'canRestore'.
-      addContextOperation(moduleName, operation) {
+
+      addContextOperation(operation) {
+        if (arguments.length === 2) {
+          // For backwards compatibility. `moduleName` is rarely needed
+          // so it should not be a separate argument in new code.
+          operation = {
+            ...arguments[1],
+            moduleName: arguments[0]
+          };
+        }
         validate(operation);
         self.contextOperations = [
           ...self.contextOperations
             .filter(op => op.action !== operation.action),
-          {
-            ...operation,
-            moduleName
-          }
+          operation
         ];
 
         function validate ({
