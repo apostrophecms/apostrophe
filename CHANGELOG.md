@@ -10,6 +10,7 @@
 
 ### Changes
 
+* Hide save button during in-context editing if the document is autopublished. 
 * Beginning with this release, the correct `moduleName` for typical
 actions on the context document is automatically passed to the
 modal associated with a custom context operation, unless `moduleName`
