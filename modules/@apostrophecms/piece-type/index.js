@@ -1164,8 +1164,8 @@ module.exports = {
 
         return browserOptions;
       },
-      find(_super, req, criteria, projection) {
-        return _super(req, criteria, projection).defaultSort(self.options.sort || { updatedAt: -1 });
+      find(_super, req, criteria, options) {
+        return _super(req, criteria, options).defaultSort(self.options.sort || { updatedAt: -1 });
       },
       newInstance(_super) {
         if (!self.options.singletonAuto) {
