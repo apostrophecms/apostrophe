@@ -36,6 +36,7 @@ For backwards compatibility the two-argument syntax is still permitted.
 
 * Fixes a downstream bug in the `getFieldsByCategory` method in the `AposEditorMixin.js` by checking for a property before accessing it.
 * Changes were detected in various fields such as integers, which caused the "Update" button to be active even when there was no actual modification in the doc.
+* Fix a bug that prevented adding multiple operations in a same batch operation group.
 
 ## 3.53.0 (2023-08-03)
 
