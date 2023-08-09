@@ -10,6 +10,8 @@
 
 ### Changes
 
+* Rename misleading `projection` parameter into `options` in `self.find` method signature for
+`@apostrophecms/any-doc-type`, `@apostrophecms/any-page-type` & `@apostrophecms/piece-type`.
 * Hide save button during in-context editing if the document is autopublished. 
 * Beginning with this release, the correct `moduleName` for typical
 actions on the context document is automatically passed to the
