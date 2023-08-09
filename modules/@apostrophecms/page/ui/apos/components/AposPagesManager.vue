@@ -20,6 +20,10 @@
       />
     </template>
     <template #primaryControls>
+      <AposUtilityOperations
+        :module-options="moduleOptions"
+        :has-relationship-field="!!relationshipField"
+      />
       <AposContextMenu
         v-if="relationshipField"
         :menu="moreMenu"
