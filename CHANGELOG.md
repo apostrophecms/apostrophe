@@ -7,7 +7,7 @@
 * Add `@apostrophecms/log` module to allow structured logging. All modules have `logDebug`, `logInfo`, `logWarn` and `logError` methods now. See the [documentation](https://v3.docs.apostrophecms.org/guide/logging.html) for more details.
 * Add `@apostrophecms/settings` translations.
 * Add the ability to have custom modals for batch operations.
-* Add the possibility to display utility operations inside a 3-dots menu on the page manager, as we already do on the docs manager.
+* Add the possibility to display utility operations inside a 3-dots menu on the page manager, the same way it is done for the docs manager.
 
 ### Changes
 
