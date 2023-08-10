@@ -68,8 +68,7 @@ export default {
         type: 'subtle',
         modifiers: [ 'small', 'no-motion' ]
       },
-      pageSetMenuSelection: 'live',
-      gettingPages: false
+      pageSetMenuSelection: 'live'
     };
   },
   computed: {
