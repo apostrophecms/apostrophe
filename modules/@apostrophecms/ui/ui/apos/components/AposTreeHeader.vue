@@ -96,8 +96,8 @@ export default {
         }
 
         // Set the column width to the spacer width plus 15 for extra wiggle
-        // room.
-        colWidths[col.property] = ref.clientWidth + 15;
+        // room. Add additional width if specified.
+        colWidths[col.property] = ref.clientWidth + 15 + (col.extraWidth ?? 0);
       });
       this.$emit('calculated', colWidths);
     },

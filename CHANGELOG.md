@@ -8,7 +8,7 @@
 * Add `@apostrophecms/settings` translations.
 * Add the ability to have custom modals for batch operations.
 * Add the possibility to display utility operations inside a 3-dots menu on the page manager, the same way it is done for the docs manager.
-* Move Pages Manager modal business logic to a mixin.
+* Move Pages Manager modal business logic to a mixin. Add `extraWidth` page tree option (number) to allow control over the tree cell width.
 
 ### Changes
 
