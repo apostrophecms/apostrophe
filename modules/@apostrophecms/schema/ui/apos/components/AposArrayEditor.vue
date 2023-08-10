@@ -84,11 +84,11 @@
 </template>
 
 <script>
-import aposArrayEditorLogic from '../logic/AposArrayEditor';
+import AposArrayEditorLogic from '../logic/AposArrayEditor';
 
 export default {
   name: 'AposArrayEditor',
-  mixins: [ aposArrayEditorLogic ]
+  mixins: [ AposArrayEditorLogic ]
 };
 </script>
 
