@@ -49,7 +49,7 @@ export function detectFieldChange(field, v1, v2) {
     // detected as a change when selected.
     if (
       (v1 === false && v2 !== false) ||
-      (v2 === false && v1 !== false)
+      (v1 !== false && v2 === false)
     ) {
       return true;
     }
