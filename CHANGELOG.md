@@ -24,6 +24,9 @@ to override that prop given to the modal, then it is recommended to pass
 it as a `moduleName` property of the object, not as a separate argument.
 For backwards compatibility the two-argument syntax is still permitted.
 
+## Fixes
+* Fixes a downstream bug in the `getFieldsByCategory` method in the `AposEditorMixin.js` by checking for a property before accessing it.
+
 ## 3.53.0 (2023-08-03)
 
 ### Adds
