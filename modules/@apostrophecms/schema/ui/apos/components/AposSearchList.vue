@@ -41,10 +41,10 @@
 </template>
 
 <script>
-import AposInputSearchListLogic from '../logic/AposInputSearchList';
+import AposSearchListLogic from '../logic/AposSearchList';
 export default {
-  name: 'AposInputSearchList',
-  mixins: [ AposInputSearchListLogic ]
+  name: 'AposSearchList',
+  mixins: [ AposSearchListLogic ]
 };
 </script>
 
