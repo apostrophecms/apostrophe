@@ -5,7 +5,7 @@ const { SemanticAttributes } = require('@opentelemetry/semantic-conventions');
 const expressCacheOnDemand = require('express-cache-on-demand')();
 
 module.exports = {
-  cascades: [ 'batchOperations' ],
+  cascades: [ 'batchOperations', 'utilityOperations' ],
   options: {
     alias: 'page',
     types: [
@@ -659,6 +659,13 @@ database.`);
               };
             }
           }
+        },
+        composeUtilityOperations() {
+          self.utilityOperations = Object.entries(self.utilityOperations || {})
+            .map(([ action, properties ]) => ({
+              action,
+              ...properties
+            }));
         }
       },
       'apostrophe:ready': {
@@ -830,6 +837,7 @@ database.`);
           browserOptions.localized &&
           Object.keys(self.apos.i18n.locales).length > 1 &&
           Object.values(self.apos.i18n.locales).some(locale => locale._edit);
+        browserOptions.utilityOperations = self.utilityOperations;
         return browserOptions;
       },
       // Returns a query that finds pages the current user can edit
