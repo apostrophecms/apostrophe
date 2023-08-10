@@ -44,7 +44,16 @@ export function detectFieldChange(field, v1, v2) {
   if (isEqual(v1, v2)) {
     return false;
   } else if (!v1 && !v2) {
-    return v1 !== v2;
+    // False values from select,
+    // radio and boolean fields are
+    // detected as a change when selected.
+    if (
+      (v1 === false && v2 !== false) ||
+      (v2 === false && v1 !== false)
+    ) {
+      return true;
+    }
+    return false;
   } else if (!v1 && Array.isArray(v2) && v2.length === 0) {
     return false;
   } else {
