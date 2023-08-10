@@ -108,7 +108,7 @@ export default {
     // 'utility' or 'other', or the entire schema if followedByCategory
     // is falsy
     getFieldsByCategory(followedByCategory) {
-      if (followedByCategory) {
+      if (followedByCategory && this.utilityFields) {
         return (followedByCategory === 'other')
           ? this.schema.filter(field => !this.utilityFields.includes(field.name))
           : this.schema.filter(field => this.utilityFields.includes(field.name));
