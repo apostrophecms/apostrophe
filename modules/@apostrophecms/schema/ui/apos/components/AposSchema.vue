@@ -56,10 +56,10 @@
 </template>
 
 <script>
-import AposInputSchemaLogic from '../logic/AposInputSchema';
+import AposSchemaLogic from '../logic/AposSchema';
 export default {
-  name: 'AposInputSchema',
-  mixins: [ AposInputSchemaLogic ]
+  name: 'AposSchema',
+  mixins: [ AposSchemaLogic ]
 };
 </script>
 
