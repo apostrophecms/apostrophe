@@ -342,7 +342,6 @@ module.exports = {
         if (doc.level > 0) {
           const { lastTargetId, lastPosition } = await self.apos.page.inferLastTargetIdAndPosition(doc);
           // Replay the high level positioning used to place it in the draft locale
-          console.log(lastTargetId, lastPosition);
           return self.apos.page.insert(_req, lastTargetId.replace(':draft', ':published'), lastPosition, published, options);
         } else if (!doc.level) {
           // Insert the home page

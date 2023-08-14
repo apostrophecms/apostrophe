@@ -1070,11 +1070,9 @@ module.exports = {
                     // Almost impossible (race conditions like someone removing it while we're in the modal)
                     throw self.apos.error('notfound');
                   }
-                  console.log(`Original path of original target is ${originalTarget.path}`);
                   const criteria = {
                     path: self.apos.page.getParentPath(originalTarget)
                   };
-                  console.log('***', criteria);
                   const localizedTarget = await actionModule.find(toReq, criteria).archived(null).areas(false).relationships(false).toObject();
                   if (!localizedTarget) {
                     throw self.apos.error('notfound', req.t('apostrophe:parentNotLocalized'), {
