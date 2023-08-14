@@ -386,6 +386,42 @@ describe('Pages', function() {
     assert.strictEqual(page.path, `${homeId.replace(':en:published', '')}/another-parent/parent/sibling`);
   });
 
+  it('inferred page relationships are correct', async function() {
+    const req = apos.task.getReq();
+    const pages = await apos.page.find(req, {}).toArray();
+    for (const page of pages) {
+      if (page.level === 0) {
+        continue;
+      }
+      const { lastTargetId, lastPosition } = await apos.page.inferLastTargetIdAndPosition(page);
+      const parentPath = page.path.split('/').slice(0, page.path.split('/').length - 1).join('/');
+      assert(pages.find(p => p.path === parentPath));
+      const peers = pages.filter(p => p.path.match(apos.page.matchDescendants(parentPath)) && (p.level === page.level));
+      if (peers.length === 1) {
+        const parent = pages.find(p => p._id === lastTargetId);
+        assert(parent);
+        assert(page.path.startsWith(parent.path));
+        assert([ 'firstChild', 'lastChild' ].includes(lastPosition));
+      } else if (page.rank === Math.max(...peers.map(peer => peer.rank))) {
+        assert.strictEqual(lastPosition, 'lastChild');
+        const parent = pages.find(p => p._id === lastTargetId);
+        assert(parent);
+        assert(page.path.startsWith(parent.path));
+      } else if (page.rank === Math.min(...peers.map(peer => peer.rank))) {
+        assert.strictEqual(lastPosition, 'firstChild');
+        const parent = pages.find(p => p._id === lastTargetId);
+        assert(parent);
+        assert(page.path.startsWith(parent.path));
+      } else if (lastPosition === 'after') {
+        const peer = pages.find(p => p._id === lastTargetId);
+        assert(peer);
+        assert(page.rank > peer.rank);
+      } else {
+        throw new Error(`Unexpected position for ${page.path}: ${lastPosition}`);
+      }
+    }
+  });
+
   it('should be able to serve a page', async function() {
     const response = await apos.http.get('/another-parent/parent/child', {
       fullResponse: true
