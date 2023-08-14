@@ -698,7 +698,7 @@ module.exports = {
             // Make the query available to templates for easy access to
             // filter settings etc.
             query: req.query,
-            url: unrefreshed(req.url)
+            url: unrefreshed(req.prefix + req.url)
           };
 
           _.extend(args, data);
