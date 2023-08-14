@@ -399,8 +399,6 @@ module.exports = {
       },
       copyForPublication(_super, req, from, to) {
         _super(req, from, to);
-        const newMode = to.aposLocale.endsWith(':published') ? ':published' : ':draft';
-        const oldMode = (newMode === ':published') ? ':draft' : ':published';
         to.parkedId = from.parkedId;
         to.parked = from.parked;
       },
