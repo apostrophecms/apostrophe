@@ -24,6 +24,11 @@ to override that prop given to the modal, then it is recommended to pass
 it as a `moduleName` property of the object, not as a separate argument.
 For backwards compatibility the two-argument syntax is still permitted.
 
+### Fixes
+
+* Resolved data integrity issue with certain page tree operations by inferring the best peer to position the page relative to rather
+than attempting to remember the most recent move operation.
+
 ## 3.53.0 (2023-08-03)
 
 ### Adds

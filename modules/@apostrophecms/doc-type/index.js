@@ -1054,8 +1054,7 @@ module.exports = {
               });
             } else {
               // A page that is not the home page, being replicated for the first time
-              const lastTargetId = draft.aposLastTargetId;
-              let lastPosition = draft.aposLastPosition;
+              let { lastTargetId, lastPosition } = await self.apos.page.inferLastTargetIdAndPosition(draft);
               let localizedTargetId = lastTargetId.replace(`:${draft.aposLocale}`, `:${toLocale}:draft`);
               const localizedTarget = await actionModule.find(toReq, self.apos.page.getIdCriteria(localizedTargetId)).archived(null).areas(false).relationships(false).toObject();
               if (!localizedTarget) {
@@ -1071,9 +1070,12 @@ module.exports = {
                     // Almost impossible (race conditions like someone removing it while we're in the modal)
                     throw self.apos.error('notfound');
                   }
-                  const localizedTarget = await actionModule.find(toReq, {
+                  console.log(`Original path of original target is ${originalTarget.path}`);
+                  const criteria = {
                     path: self.apos.page.getParentPath(originalTarget)
-                  }).archived(null).areas(false).relationships(false).toObject();
+                  };
+                  console.log('***', criteria);
+                  const localizedTarget = await actionModule.find(toReq, criteria).archived(null).areas(false).relationships(false).toObject();
                   if (!localizedTarget) {
                     throw self.apos.error('notfound', req.t('apostrophe:parentNotLocalized'), {
                       // Also provide as data for code that prefers to localize client side
