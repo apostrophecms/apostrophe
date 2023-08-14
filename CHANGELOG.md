@@ -8,6 +8,8 @@
 * Add `@apostrophecms/settings` translations.
 * Add the ability to have custom modals for batch operations.
 * Add the possibility to display utility operations inside a 3-dots menu on the page manager, the same way it is done for the docs manager.
+* Move `AposDocContextMenu.vue` business logic to a mixin.
+* Move Pages Manager modal business logic to a mixin. Add `column.extraWidth` option (number) for `AposTreeHeader.vue` to allow control over the tree cell width.
 
 ### Changes
 
@@ -28,6 +30,8 @@ For backwards compatibility the two-argument syntax is still permitted.
 
 * Resolved data integrity issue with certain page tree operations by inferring the best peer to position the page relative to rather
 than attempting to remember the most recent move operation.
+* Fixes a downstream bug in the `getFieldsByCategory` method in the `AposEditorMixin.js` by checking for a property before accessing it.
+* Changes were detected in various fields such as integers, which caused the "Update" button to be active even when there was no actual modification in the doc.
 
 ## 3.53.0 (2023-08-03)
 
