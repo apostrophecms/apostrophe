@@ -12,6 +12,8 @@
 the same way that `if` tests properties of the document to determine if the operation should be
 offered for a particular document. Note that not all options are passed to the front end unless
 `getBrowserData` is extended to suit the need.
+* Move Pages Manager modal business logic to a mixin.
+* Add `column.extraWidth` option (number) for `AposTreeHeader.vue` to allow control over the tree cell width.
 
 ### Changes
 
@@ -27,6 +29,11 @@ is no longer required and should not be passed at all in most cases
 to override that prop given to the modal, then it is recommended to pass
 it as a `moduleName` property of the object, not as a separate argument.
 For backwards compatibility the two-argument syntax is still permitted.
+
+### Fixes
+
+* Fixes a downstream bug in the `getFieldsByCategory` method in the `AposEditorMixin.js` by checking for a property before accessing it.
+* Changes were detected in various fields such as integers, which caused the "Update" button to be active even when there was no actual modification in the doc.
 
 ## 3.53.0 (2023-08-03)
 
