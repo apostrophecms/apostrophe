@@ -26,6 +26,7 @@ For backwards compatibility the two-argument syntax is still permitted.
 
 ## Fixes
 * Fixes a downstream bug in the `getFieldsByCategory` method in the `AposEditorMixin.js` by checking for a property before accessing it.
+* Fixes local prefixing for pagination of piec-type index pages
 
 ## 3.53.0 (2023-08-03)
 
