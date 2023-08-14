@@ -8,6 +8,10 @@
 * Add `@apostrophecms/settings` translations.
 * Add the ability to have custom modals for batch operations.
 * Add the possibility to display utility operations inside a 3-dots menu on the page manager, the same way it is done for the docs manager.
+* Custom context operations now accept a `moduleIf` property, which tests options at the module level
+the same way that `if` tests properties of the document to determine if the operation should be
+offered for a particular document. Note that not all options are passed to the front end unless
+`getBrowserData` is extended to suit the need.
 
 ### Changes
 
