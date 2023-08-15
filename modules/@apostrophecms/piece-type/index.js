@@ -614,7 +614,7 @@ module.exports = {
 
             // Return the operation group with the new operation added.
             return {
-              name: groupName,
+              action: groupName,
               ...groupProperties,
               operations: [
                 ...(acc[groupName] && acc[groupName].operations) || [],
