@@ -35,6 +35,7 @@ For backwards compatibility the two-argument syntax is still permitted.
 ### Fixes
 
 * Fixes a downstream bug in the `getFieldsByCategory` method in the `AposEditorMixin.js` by checking for a property before accessing it.
+* In Nunjucks templates, `data.url` now includes any sitewide and locale URL prefixes. This fixes local prefixing for pagination of piece-type index pages.
 * Changes were detected in various fields such as integers, which caused the "Update" button to be active even when there was no actual modification in the doc.
 * Fix a bug that prevented adding multiple operations in the same batch operation group.
 
