@@ -8,6 +8,8 @@
 * Add `@apostrophecms/settings` translations.
 * Add the ability to have custom modals for batch operations.
 * Add the possibility to display utility operations inside a 3-dots menu on the page manager, the same way it is done for the docs manager.
+* Move `AposDocContextMenu.vue` business logic to a mixin.
+* Move Pages Manager modal business logic to a mixin. Add `column.extraWidth` option (number) for `AposTreeHeader.vue` to allow control over the tree cell width.
 
 ### Changes
 
@@ -24,9 +26,11 @@ to override that prop given to the modal, then it is recommended to pass
 it as a `moduleName` property of the object, not as a separate argument.
 For backwards compatibility the two-argument syntax is still permitted.
 
-## Fixes
+### Fixes
+
 * Fixes a downstream bug in the `getFieldsByCategory` method in the `AposEditorMixin.js` by checking for a property before accessing it.
 * In Nunjucks templates, `data.url` now includes any sitewide and locale URL prefixes. This fixes local prefixing for pagination of piece-type index pages.
+* Changes were detected in various fields such as integers, which caused the "Update" button to be active even when there was no actual modification in the doc.
 
 ## 3.53.0 (2023-08-03)
 
