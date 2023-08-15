@@ -2495,12 +2495,9 @@ database.`);
       async inferLastTargetIdAndPosition(doc) {
         const parentPath = self.getParentPath(doc);
         const parentAposDocId = parentPath.split('/').pop();
-        let parentId;
-        if (doc.aposLocale) {
-          parentId = `${parentAposDocId}:${doc.aposLocale}`;
-        } else {
-          parentId = parentAposDocId;
-        }
+        const parentId = doc.aposLocale
+          ? `${parentAposDocId}:${doc.aposLocale}`
+          : parentAposDocId;
         const peerCriteria = {
           path: self.matchDescendants(parentPath),
           level: doc.level

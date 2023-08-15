@@ -123,9 +123,14 @@ module.exports = {
           });
           if (published && (doc.level > 0)) {
             const { lastTargetId, lastPosition } = await self.apos.page.inferLastTargetIdAndPosition(doc);
-            return self.apos.page.move(req.clone({
-              mode: 'published'
-            }), published._id, lastTargetId.replace(':draft', ':published'), lastPosition);
+            return self.apos.page.move(
+              req.clone({
+                mode: 'published'
+              }),
+              published._id,
+              lastTargetId.replace(':draft', ':published'),
+              lastPosition
+            );
           }
         }
       },
@@ -202,7 +207,12 @@ module.exports = {
             return;
           }
           const { lastTargetId, lastPosition } = await self.apos.page.inferLastTargetIdAndPosition(result.published);
-          await self.apos.page.move(publishedReq, result.published._id, lastTargetId, lastPosition);
+          await self.apos.page.move(
+            publishedReq,
+            result.published._id,
+            lastTargetId,
+            lastPosition
+          );
           const published = await self.apos.page.findOneForEditing(publishedReq, {
             _id: result.published._id
           });
@@ -327,7 +337,13 @@ module.exports = {
         if (doc.level > 0) {
           const { lastTargetId, lastPosition } = await self.apos.page.inferLastTargetIdAndPosition(doc);
           // Replay the high level positioning used to place it in the published locale
-          return self.apos.page.insert(_req, lastTargetId.replace(':published', ':draft'), lastPosition, draft, options);
+          return self.apos.page.insert(
+            _req,
+            lastTargetId.replace(':published', ':draft'),
+            lastPosition,
+            draft,
+            options
+          );
         } else {
           // Insert the home page
           return self.apos.doc.insert(_req, draft, options);
@@ -342,8 +358,13 @@ module.exports = {
         if (doc.level > 0) {
           const { lastTargetId, lastPosition } = await self.apos.page.inferLastTargetIdAndPosition(doc);
           // Replay the high level positioning used to place it in the draft locale
-          return self.apos.page.insert(_req, lastTargetId.replace(':draft', ':published'), lastPosition, published, options);
-        } else if (!doc.level) {
+          return self.apos.page.insert(
+            _req,
+            lastTargetId.replace(':draft', ':published'),
+            lastPosition,
+            published,
+            options);
+        } else {
           // Insert the home page
           Object.assign(published, {
             path: doc.path,

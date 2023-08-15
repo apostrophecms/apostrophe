@@ -1056,7 +1056,12 @@ module.exports = {
               // A page that is not the home page, being replicated for the first time
               let { lastTargetId, lastPosition } = await self.apos.page.inferLastTargetIdAndPosition(draft);
               let localizedTargetId = lastTargetId.replace(`:${draft.aposLocale}`, `:${toLocale}:draft`);
-              const localizedTarget = await actionModule.find(toReq, self.apos.page.getIdCriteria(localizedTargetId)).archived(null).areas(false).relationships(false).toObject();
+              const localizedTarget = await actionModule
+                .find(toReq, self.apos.page.getIdCriteria(localizedTargetId))
+                .archived(null)
+                .areas(false)
+                .relationships(false)
+                .toObject();
               if (!localizedTarget) {
                 if ((lastPosition === 'firstChild') || (lastPosition === 'lastChild')) {
                   throw self.apos.error('notfound', req.t('apostrophe:parentNotLocalized'), {
