@@ -176,7 +176,7 @@ export default {
     },
     customOperationsByContext() {
       return this.customOperations.filter(({
-        manuallyPublished, hasUrl, conditions, context, if: ifProps
+        manuallyPublished, hasUrl, conditions, context, if: ifProps, moduleIf
       }) => {
         if (typeof manuallyPublished === 'boolean' && manuallyPublished !== this.manuallyPublished) {
           return false;
@@ -194,12 +194,12 @@ export default {
           }
         }
 
-        if (ifProps) {
-          const canSeeOperation = checkIfConditions(this.doc, ifProps);
+        ifProps = ifProps || {};
+        moduleIf = moduleIf || {};
+        const canSeeOperation = checkIfConditions(this.doc, ifProps) && checkIfConditions(this.moduleOptions, moduleIf);
 
-          if (!canSeeOperation) {
-            return false;
-          }
+        if (!canSeeOperation) {
+          return false;
         }
 
         return context === 'update' && this.isUpdateOperation;
