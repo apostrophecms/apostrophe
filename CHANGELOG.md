@@ -14,6 +14,8 @@ offered for a particular document. Note that not all options are passed to the f
 `getBrowserData` is extended to suit the need.
 * Move Pages Manager modal business logic to a mixin.
 * Add `column.extraWidth` option (number) for `AposTreeHeader.vue` to allow control over the tree cell width.
+* Move `AposDocContextMenu.vue` business logic to a mixin.
+* Move Pages Manager modal business logic to a mixin. Add `column.extraWidth` option (number) for `AposTreeHeader.vue` to allow control over the tree cell width.
 
 ### Changes
 
