@@ -40,6 +40,8 @@ than attempting to remember the most recent move operation.
 * In Nunjucks templates, `data.url` now includes any sitewide and locale URL prefixes. This fixes local prefixing for pagination of piece-type index pages.
 * Changes were detected in various fields such as integers, which caused the "Update" button to be active even when there was no actual modification in the doc.
 * Fix a bug that prevented adding multiple operations in the same batch operation group.
+* The `getTarget` method of the page module should use `findForEditing` to make sure it is able to see
+pages that would be filtered out of a public view by project level or npm module overrides.
 
 ## 3.53.0 (2023-08-03)
 
