@@ -1227,7 +1227,10 @@ database.`);
       // "page."
       async getTarget(req, targetId, position) {
         const criteria = self.getIdCriteria(targetId);
-        const target = await self.find(req, criteria).permission(false).archived(null).areas(false).ancestors({
+        // Use findForEditing to ensure we get improvements to that method from
+        // npm modules that make the query more inclusive. Then explicitly shut off
+        // things we know we don't want to be blocked by
+        const target = await self.findForEditing(req, criteria).permission(false).archived(null).areas(false).ancestors({
           depth: 1,
           archived: null,
           orphan: null,
