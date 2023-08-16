@@ -872,8 +872,6 @@ database.`);
         position = normalized.position;
         return self.withLock(req, async () => {
           let peers;
-          page.aposLastTargetId = targetId;
-          page.aposLastPosition = position;
           const target = await self.getTarget(req, targetId, position);
           if (!target) {
             throw self.apos.error('notfound');
@@ -1211,8 +1209,6 @@ database.`);
             }
             moved.level = level;
             moved.rank = rank;
-            moved.aposLastTargetId = targetId;
-            moved.aposLastPosition = position;
             // Are we in the archive? Our new parent reveals that
             if (parent.archived) {
               moved.archived = true;
@@ -2061,9 +2057,7 @@ database.`);
             page.rank = rank;
             const $set = {
               path: page.path,
-              rank: page.rank,
-              aposLastTargetId: home.aposDocId,
-              aposLastPosition: 'lastChild'
+              rank: page.rank
             };
             if (argv['new-slug']) {
               $set.slug = argv['new-slug'];
@@ -2497,6 +2491,45 @@ database.`);
             await self.apos.attachment.recomputeAllDocReferences();
           }
         });
+      },
+      async inferLastTargetIdAndPosition(doc) {
+        const parentPath = self.getParentPath(doc);
+        const parentAposDocId = parentPath.split('/').pop();
+        const parentId = doc.aposLocale
+          ? `${parentAposDocId}:${doc.aposLocale}`
+          : parentAposDocId;
+        const peerCriteria = {
+          path: self.matchDescendants(parentPath),
+          level: doc.level
+        };
+        if (doc.aposLocale) {
+          peerCriteria.aposLocale = doc.aposLocale;
+        }
+        const peers = await self.apos.doc.db.find(peerCriteria).sort({
+          rank: 1
+        }).project({
+          _id: 1
+        }).toArray();
+        let targetId;
+        let position;
+        const index = peers.findIndex(peer => peer._id === doc._id);
+        if (index === -1) {
+          throw new Error('Cannot find page among its peers');
+        }
+        if (index === 0) {
+          targetId = parentId;
+          position = 'firstChild';
+        } else if (index === (peers.length - 1)) {
+          targetId = parentId;
+          position = 'lastChild';
+        } else {
+          targetId = peers[index - 1]._id;
+          position = 'after';
+        }
+        return {
+          lastTargetId: targetId,
+          lastPosition: position
+        };
       }
     };
   },

@@ -121,10 +121,16 @@ module.exports = {
           }, {
             permission: false
           });
-          if (published && doc.aposLastTargetId) {
-            return self.apos.page.move(req.clone({
-              mode: 'published'
-            }), published._id, doc.aposLastTargetId.replace(':draft', ':published'), doc.aposLastPosition);
+          if (published && (doc.level > 0)) {
+            const { lastTargetId, lastPosition } = await self.apos.page.inferLastTargetIdAndPosition(doc);
+            return self.apos.page.move(
+              req.clone({
+                mode: 'published'
+              }),
+              published._id,
+              lastTargetId.replace(':draft', ':published'),
+              lastPosition
+            );
           }
         }
       },
@@ -200,7 +206,13 @@ module.exports = {
             // chance we need to "replay" such a move
             return;
           }
-          await self.apos.page.move(publishedReq, result.published._id, result.published.aposLastTargetId, result.published.aposLastPosition);
+          const { lastTargetId, lastPosition } = await self.apos.page.inferLastTargetIdAndPosition(result.published);
+          await self.apos.page.move(
+            publishedReq,
+            result.published._id,
+            lastTargetId,
+            lastPosition
+          );
           const published = await self.apos.page.findOneForEditing(publishedReq, {
             _id: result.published._id
           });
@@ -322,27 +334,37 @@ module.exports = {
           ...options,
           setModified: false
         };
-        if (doc.aposLastTargetId) {
+        if (doc.level > 0) {
+          const { lastTargetId, lastPosition } = await self.apos.page.inferLastTargetIdAndPosition(doc);
           // Replay the high level positioning used to place it in the published locale
-          return self.apos.page.insert(_req, doc.aposLastTargetId.replace(':published', ':draft'), doc.aposLastPosition, draft, options);
-        } else if (!doc.level) {
+          return self.apos.page.insert(
+            _req,
+            lastTargetId.replace(':published', ':draft'),
+            lastPosition,
+            draft,
+            options
+          );
+        } else {
           // Insert the home page
           return self.apos.doc.insert(_req, draft, options);
-        } else {
-          throw new Error('Page inserted without using the page APIs, has no aposLastTargetId and aposLastPosition, cannot insert equivalent draft');
         }
       },
-      // Called for you when a page is inserted in
-      // the published locale, to ensure there is an equivalent
-      // draft page. You don't need to invoke this.
+      // Called for you when a page is published for the first time.
+      // You don't need to invoke this.
       async insertPublishedOf(req, doc, published, options = {}) {
         const _req = req.clone({
           mode: 'published'
         });
-        if (doc.aposLastTargetId) {
-          // Replay the high level positioning used to place it in the published locale
-          return self.apos.page.insert(_req, doc.aposLastTargetId.replace(':draft', ':published'), doc.aposLastPosition, published, options);
-        } else if (!doc.level) {
+        if (doc.level > 0) {
+          const { lastTargetId, lastPosition } = await self.apos.page.inferLastTargetIdAndPosition(doc);
+          // Replay the high level positioning used to place it in the draft locale
+          return self.apos.page.insert(
+            _req,
+            lastTargetId.replace(':draft', ':published'),
+            lastPosition,
+            published,
+            options);
+        } else {
           // Insert the home page
           Object.assign(published, {
             path: doc.path,
@@ -352,8 +374,6 @@ module.exports = {
             parkedId: doc.parkedId
           });
           return self.apos.doc.insert(_req, published, options);
-        } else {
-          throw new Error('insertPublishedOf called on a page that was never inserted via the standard page APIs, has no aposLastTargetId and aposLastPosition, cannot insert equivalent published page');
         }
       },
       // Update a page. The `options` argument may be omitted entirely.
@@ -399,13 +419,6 @@ module.exports = {
       },
       copyForPublication(_super, req, from, to) {
         _super(req, from, to);
-        const newMode = to.aposLocale.endsWith(':published') ? ':published' : ':draft';
-        const oldMode = (newMode === ':published') ? ':draft' : ':published';
-        // Home pages will not have this
-        if (from.aposLastTargetId) {
-          to.aposLastTargetId = from.aposLastTargetId.replace(oldMode, newMode);
-          to.aposLastPosition = from.aposLastPosition;
-        }
         to.parkedId = from.parkedId;
         to.parked = from.parked;
       },

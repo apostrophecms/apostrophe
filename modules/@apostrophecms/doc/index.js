@@ -322,8 +322,7 @@ module.exports = {
           path: { $exists: 1 },
           slug: /^\//
         }).project({
-          path: 1,
-          aposLastTargetId: 1
+          path: 1
         }).toArray();
         for (const pair of pairs) {
           const [ from, to ] = pair;
@@ -386,15 +385,6 @@ module.exports = {
           }
           if (isPage) {
             for (const page of pages) {
-              if (page.aposLastTargetId === from) {
-                await self.apos.doc.db.updateOne({
-                  _id: page._id
-                }, {
-                  $set: {
-                    aposLastTargetId: to
-                  }
-                });
-              }
               if (page.path.includes(oldAposDocId)) {
                 await self.apos.doc.db.updateOne({
                   _id: page._id
