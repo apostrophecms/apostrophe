@@ -1226,7 +1226,7 @@ database.`);
       // value. `position` is used to prevent attempts to move after the archive
       // "page."
       async getTarget(req, targetId, position) {
-        const criteria = self.getIdCriteria(targetId);
+        const criteria = self.getIdCriteria(self.inferIdLocaleAndMode(req, targetId));
         // Use findForEditing to ensure we get improvements to that method from
         // npm modules that make the query more inclusive. Then explicitly shut off
         // things we know we don't want to be blocked by

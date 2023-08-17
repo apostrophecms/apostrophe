@@ -335,6 +335,27 @@ describe('Pages', function() {
     assert(subPage.level === 3);
   });
 
+  it('is able to insert a draft subpage from published parent id', async function() {
+
+    const subPageInfo = {
+      slug: '/parent/sub-draft-page',
+      visibility: 'public',
+      type: 'test-page',
+      title: 'Sub Draft Page'
+    };
+    console.log('PARENT PAGE', newPage);
+
+    const subPage = await apos.page.insert(
+      apos.task.getReq({ mode: 'draft' }),
+      // ensure it ends with ":published"
+      newPage._id.replace(':draft', ':published'),
+      'lastChild',
+      subPageInfo
+    );
+    // Should not throw 'notfound'.
+    assert(subPage);
+  });
+
   // MOVING
 
   it('is able to move root/parent/sibling/cousin after root/parent', async function() {

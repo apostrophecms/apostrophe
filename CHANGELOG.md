@@ -1,5 +1,11 @@
 # Changelog
 
+## UNPUBLISHED
+
+### Fixes
+
+* Infer parent ID mode from the request when retrieving the parent (target) page to avoid `notfound`.
+
 ## 3.54.0 (2023-08-16)
 
 ### Adds
