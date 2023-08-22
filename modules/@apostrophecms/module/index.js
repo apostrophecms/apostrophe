@@ -251,7 +251,7 @@ module.exports = {
         function logError(req, response, error) {
           const typeTrail = response.code === 500 ? '' : `-${response.name}`;
           // Log the actual error, not the message meant for the browser.
-          const msg = response.message !== err.message
+          const msg = response.code === 500
             ? err.message
             : response.message;
           try {
