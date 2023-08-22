@@ -5,7 +5,8 @@
 ### Fixes
 
 * Infer parent ID mode from the request when retrieving the parent (target) page to avoid `notfound`.
-* Log the actual REST API error message and not the one meant for the user. 
+* Log the actual REST API error message and not the one meant for the user.
+* Hide dash on autopublished pages title.
 
 ## 3.54.0 (2023-08-16)
 
@@ -29,7 +30,7 @@ offered for a particular document. Note that not all options are passed to the f
 * Rename misleading `projection` parameter into `options` in `self.find` method signature for
 `@apostrophecms/any-doc-type`, `@apostrophecms/any-page-type` & `@apostrophecms/piece-type`.
 **This was never really a projection in A3,** so it is not a backwards compatibility issue.
-* Hide save button during in-context editing if the document is autopublished. 
+* Hide save button during in-context editing if the document is autopublished.
 * Beginning with this release, the correct `moduleName` for typical
 actions on the context document is automatically passed to the
 modal associated with a custom context operation, unless `moduleName`
