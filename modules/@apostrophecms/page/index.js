@@ -127,7 +127,7 @@ module.exports = {
       getAll: [
         ...self.enableCacheOnDemand ? [ expressCacheOnDemand ] : [],
         async (req) => {
-          self.publicApiCheck(req);
+          await self.publicApiCheckAsync(req);
           const all = self.apos.launder.boolean(req.query.all);
           const archived = self.apos.launder.booleanOrNull(req.query.archived);
           const flat = self.apos.launder.boolean(req.query.flat);
@@ -215,7 +215,7 @@ module.exports = {
         async (req, _id) => {
           _id = self.inferIdLocaleAndMode(req, _id);
           // Edit access to draft is sufficient to fetch either
-          self.publicApiCheck(req);
+          await self.publicApiCheckAsync(req);
           const criteria = self.getIdCriteria(_id);
           const result = await self.getRestQuery(req).permission(false).and(criteria).toObject();
 
@@ -253,7 +253,7 @@ module.exports = {
       //
       // This call is atomic with respect to other REST write operations on pages.
       async post(req) {
-        self.publicApiCheck(req);
+        await self.publicApiCheckAsync(req);
         let targetId = self.apos.launder.string(req.body._targetId);
         let position = self.apos.launder.string(req.body._position || 'lastChild');
         // Here we have to normalize before calling insert because we
@@ -338,7 +338,7 @@ module.exports = {
 
       async put(req, _id) {
         _id = self.inferIdLocaleAndMode(req, _id);
-        self.publicApiCheck(req);
+        await self.publicApiCheckAsync(req);
 
         return self.withLock(req, async () => {
           const page = await self.findForEditing(req, { _id }).toObject();
@@ -385,7 +385,7 @@ module.exports = {
       },
       async delete(req, _id) {
         _id = self.inferIdLocaleAndMode(req, _id);
-        self.publicApiCheck(req);
+        await self.publicApiCheckAsync(req);
         const page = await self.findOneForEditing(req, {
           _id
         });
@@ -396,9 +396,9 @@ module.exports = {
       // You may pass `_targetId` and `_position` to move the page within the tree. `_position`
       // may be `before`, `after` or `inside`. To move a page into or out of the archive, set
       // `archived` to `true` or `false`.
-      patch(req, _id) {
+      async patch(req, _id) {
         _id = self.inferIdLocaleAndMode(req, _id);
-        self.publicApiCheck(req);
+        await self.publicApiCheckAsync(req);
         return self.patch(req, _id);
       }
     };
@@ -2280,7 +2280,10 @@ database.`);
         return self.apos.doc.getManager(page.type)
           .allowedSchema(req, page, parentPage);
       },
-      getRestQuery(req) {
+      // Can be extended on a project level with `_super(req, true)` to disable
+      // permission check and public API projection. You shouldn't do this
+      // if you're not sure what you're doing.
+      getRestQuery(req, omitPermissionCheck = false) {
         const query = self.find(req)
           .ancestors(true)
           .children(true)
@@ -2288,7 +2291,7 @@ database.`);
           .applyBuildersSafely(req.query);
         // Minimum standard for a REST query without a public projection
         // is being allowed to view drafts on the site
-        if (!self.canAccessApi(req)) {
+        if (!omitPermissionCheck && !self.canAccessApi(req)) {
           if (!self.options.publicApiProjection) {
             // Shouldn't be needed thanks to publicApiCheck, but be sure
             query.and({
@@ -2333,6 +2336,11 @@ database.`);
             throw self.apos.error('notfound');
           }
         }
+      },
+      // An async version of the above. It can be overridden to implement
+      // an asynchronous check of the public API permissions.
+      async publicApiCheckAsync(req) {
+        return self.publicApiCheck(req);
       },
       getAllProjection() {
         return {

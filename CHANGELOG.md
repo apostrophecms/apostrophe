@@ -2,6 +2,10 @@
 
 ## UNPUBLISHED
 
+### Adds
+
+* Add `publicApiCheckAsync` wrapper method (and use it internally) to allow for async permission checks of REST APIs. This feature doesn't introduce any breaking changes.
+
 ### Fixes
 
 * Infer parent ID mode from the request when retrieving the parent (target) page to avoid `notfound`.
