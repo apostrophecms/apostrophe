@@ -250,8 +250,12 @@ module.exports = {
         });
         function logError(req, response, error) {
           const typeTrail = response.code === 500 ? '' : `-${response.name}`;
+          // Log the actual error, not the message meant for the browser.
+          const msg = response.code === 500
+            ? err.message
+            : response.message;
           try {
-            self.logError(req, `api-error${typeTrail}`, response.message, {
+            self.logError(req, `api-error${typeTrail}`, msg, {
               name: response.name,
               status: response.code,
               stack: error.stack.split('\n').slice(1).map(line => line.trim()),
