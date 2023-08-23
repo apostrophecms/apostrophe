@@ -195,7 +195,8 @@ module.exports = {
           job = await self.start(options);
 
           const notification = await self.triggerNotification(req, 'progress', {
-            jobId: job._id
+            jobId: job._id,
+            dismiss: options.dismissProgressNotification
           });
 
           run({ notificationId: notification.noteId });
