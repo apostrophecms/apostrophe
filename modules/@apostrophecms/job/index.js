@@ -120,8 +120,7 @@ module.exports = {
             // can't show progress.
             jobId: total && job._id,
             ids,
-            action: options.action,
-            ...(options.notificationOptions || {})
+            action: options.action
           });
 
           return {
@@ -157,8 +156,7 @@ module.exports = {
             await self.end(job, good, results);
             // Trigger the completed notification.
             await self.triggerNotification(req, 'completed', {
-              dismiss: true,
-              ...(options.notificationOptions || {})
+              dismiss: true
             });
             // Dismiss the progress notification. It will delay 4 seconds
             // because "completed" notification will dismiss in 5 and we want
@@ -197,8 +195,7 @@ module.exports = {
           job = await self.start(options);
 
           const notification = await self.triggerNotification(req, 'progress', {
-            jobId: job._id,
-            ...(options.notificationOptions || {})
+            jobId: job._id
           });
 
           run({ notificationId: notification.noteId });
@@ -244,8 +241,7 @@ module.exports = {
             // Trigger the completed notification.
             await self.triggerNotification(req, 'completed', {
               count: total,
-              dismiss: true,
-              ...(options.notificationOptions || {})
+              dismiss: true
             }, results);
             // Dismiss the progress notification. It will delay 4 seconds
             // because "completed" notification will dismiss in 5 and we want
@@ -270,9 +266,9 @@ module.exports = {
           return {};
         }
 
-        const event = options.resultsEvent && results
+        const event = req.body.messages.resultsEventName && results
           ? {
-            name: options.resultsEvent,
+            name: req.body.messages.resultsEventName,
             data: { ...results }
           }
           : null;
