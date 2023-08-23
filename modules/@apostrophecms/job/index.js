@@ -120,7 +120,8 @@ module.exports = {
             // can't show progress.
             jobId: total && job._id,
             ids,
-            action: options.action
+            action: options.action,
+            ...(options.notificationOptions || {})
           });
 
           return {
@@ -156,7 +157,8 @@ module.exports = {
             await self.end(job, good, results);
             // Trigger the completed notification.
             await self.triggerNotification(req, 'completed', {
-              dismiss: true
+              dismiss: true,
+              ...(options.notificationOptions || {})
             });
             // Dismiss the progress notification. It will delay 4 seconds
             // because "completed" notification will dismiss in 5 and we want
@@ -196,7 +198,7 @@ module.exports = {
 
           const notification = await self.triggerNotification(req, 'progress', {
             jobId: job._id,
-            dismiss: options.dismissProgressNotification
+            ...(options.notificationOptions || {})
           });
 
           run({ notificationId: notification.noteId });
@@ -242,8 +244,9 @@ module.exports = {
             // Trigger the completed notification.
             await self.triggerNotification(req, 'completed', {
               count: total,
-              dismiss: true
-            });
+              dismiss: true,
+              ...(options.notificationOptions || {})
+            }, results);
             // Dismiss the progress notification. It will delay 4 seconds
             // because "completed" notification will dismiss in 5 and we want
             // to maintain the feeling of process order for users.
@@ -262,10 +265,17 @@ module.exports = {
       //   array
       // No messages are required, but they provide helpful information to
       // end users.
-      async triggerNotification(req, stage, options = {}) {
+      async triggerNotification(req, stage, options = {}, results) {
         if (!req.body || !req.body.messages || !req.body.messages[stage]) {
           return {};
         }
+
+        const event = options.resultsEvent && results
+          ? {
+            name: options.resultsEvent,
+            data: { ...results }
+          }
+          : null;
 
         return self.apos.notification.trigger(req, req.body.messages[stage], {
           interpolate: {
@@ -278,6 +288,7 @@ module.exports = {
             action: options.action,
             ids: options.ids
           },
+          event,
           icon: req.body.messages.icon || 'database-export-icon',
           type: options.type || 'success',
           return: true
