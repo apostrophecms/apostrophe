@@ -739,5 +739,102 @@ module.exports = {
         return finalData;
       }
     };
+  },
+  tasks(self) {
+    return {
+      // Reset the database. Drops ALL collections. If you have
+      // collections in the same database unrelated to Apostrophe they WILL
+      // be removed.
+      //
+      // Then Apostrophe carries out the usual reinitialization of collection
+      // indexes and creation of parked pages, etc.
+      //
+      // PLEASE NOTE: this will drop collections UNRELATED to apostrophe.
+      // If that is a concern for you, drop Apostrophe's collections yourself
+      // and start up your app, which will recreate them.
+      'remove-empty-paragraph': {
+        usage: 'Usage: node app @apostrophecms/rich-text-widget:remove-empty-paragraph\n\nTODO.\n',
+        task: async () => {
+          const iterator = async (doc, widget, dotPath) => {
+            if (widget.type !== self.name) {
+              return;
+            }
+
+            const updates = {};
+            if (widget.content.includes('<p>')) {
+              const dom = cheerio.load(widget.content);
+              const paragraph = dom('body').find('p');
+
+              paragraph.each((index, element) => {
+                const isEmpty = /^(\s|&nbsp;)*$/.test(dom(element).text());
+                isEmpty && dom(element).remove();
+
+                if (isEmpty) {
+                  updates[dotPath] = {
+                    ...widget,
+                    content: dom('body').html()
+                  };
+                }
+              });
+            }
+
+            if (Object.keys(updates).length) {
+              // console.log({ contentNew: updates[dotPath].content, dotPath, contentOld: widget.content });
+              await self.apos.doc.db.updateOne(
+                { _id: doc._id },
+                { $set: updates }
+              );
+              self.apos.util.log(`Document ${doc._id} rich-texts have been updated`);
+            }
+          };
+
+          return self.apos.migration.eachWidget({}, iterator);
+        }
+      },
+      'lint-fix': {
+        usage: 'Usage: node app @apostrophecms/rich-text-widget:lint-fix\n\nTODO.\n',
+        task: async () => {
+          const iterator = async (doc, widget, dotPath) => {
+            if (widget.type !== self.name) {
+              return;
+            }
+
+            const updates = {};
+            if (widget.content.includes('<figure')) {
+              const dom = cheerio.load(widget.content);
+              const figure = dom('body').find('p:empty+figure,figure+p:empty');
+              const parent = figure.parent().contents();
+
+              parent.each((index, element) => {
+                const isParagraphEmpty = element.type === 'tag' && element.name === 'p' && dom(element).text() === '';
+                isParagraphEmpty && dom(element).remove();
+
+                const isNonWhitespaceTextNode = element.type === 'text' && /^\s*$/.test(element.data) === false;
+                isNonWhitespaceTextNode && dom(element).wrap('<p></p>');
+
+                const hasUpdate = isParagraphEmpty || isNonWhitespaceTextNode;
+                if (hasUpdate) {
+                  updates[dotPath] = {
+                    ...widget,
+                    content: dom('body').html()
+                  };
+                }
+              });
+            }
+
+            if (Object.keys(updates).length) {
+              // console.log({ contentNew: updates[dotPath].content, dotPath, contentOld: widget.content });
+              await self.apos.doc.db.updateOne(
+                { _id: doc._id },
+                { $set: updates }
+              );
+              self.apos.util.log(`Document ${doc._id} rich-texts have been updated`);
+            }
+          };
+
+          return self.apos.migration.eachWidget({}, iterator);
+        }
+      }
+    };
   }
 };
