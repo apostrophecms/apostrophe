@@ -5,6 +5,7 @@
 ### Adds
 
 * Add `publicApiCheckAsync` wrapper method (and use it internally) to allow for async permission checks of REST APIs. This feature doesn't introduce any breaking changes.
+* Add ability to add custom rich-text-widget options per area.
 
 ### Fixes
 
