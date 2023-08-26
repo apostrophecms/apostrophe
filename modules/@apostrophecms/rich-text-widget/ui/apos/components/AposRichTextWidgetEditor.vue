@@ -546,7 +546,8 @@ export default {
       return (apos.tiptapExtensions || [])
         .map(extension => extension({
           styles: this.editorOptions.styles.map(this.localizeStyle),
-          types: this.tiptapTypes
+          types: this.tiptapTypes,
+          ...((({ styles, ...editorOptions }) => editorOptions)(this.editorOptions))
         }));
     },
     showFloatingMenu({
