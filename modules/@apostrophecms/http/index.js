@@ -162,6 +162,7 @@ module.exports = {
       // `fullResponse` (if true, return an object with `status`, `headers` and `body`
       // properties, rather than returning the body directly; the individual `headers` are canonicalized
       // to lowercase names. If a header appears multiple times an array is returned for it)
+      // `originalResponse` (if true, return the response object exactly as it is returned by node-fetch)
       //
       // If the status code is >= 400 an error is thrown. The error object will be
       // similar to a `fullResponse` object, with a `status` property.
@@ -224,6 +225,9 @@ module.exports = {
           (res.headers.raw()['set-cookie'] || []).forEach(cookie => {
             options.jar.setCookieSync(cookie, url);
           });
+        }
+        if (options.originalResponse) {
+          return res;
         }
         awaitedBody = true;
         body = await getBody();
