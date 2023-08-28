@@ -794,6 +794,52 @@ module.exports = {
       'lint-fix': {
         usage: 'Usage: node app @apostrophecms/rich-text-widget:lint-fix\n\nTODO.\n',
         task: async () => {
+          const blockNodes = [
+            'address',
+            'article',
+            'aside',
+            'blockquote',
+            'canvas',
+            'dd',
+            'div',
+            'dl',
+            'dt',
+            'fieldset',
+            'figcaption',
+            'figure',
+            'footer',
+            'form',
+            'h1',
+            'h2',
+            'h3',
+            'h4',
+            'h5',
+            'h6',
+            'header',
+            'hr',
+            'li',
+            'main',
+            'nav',
+            'noscript',
+            'ol',
+            'p',
+            'pre',
+            'section',
+            'table',
+            'tfoot',
+            'ul',
+            'video'
+          ];
+          const append = ({
+            dom,
+            wrapper,
+            element
+          }) => {
+            return wrapper
+              ? wrapper.append(element) && wrapper
+              : dom(element).wrap('<p></p>').parent();
+          };
+
           const iterator = async (doc, widget, dotPath) => {
             if (widget.type !== self.name) {
               return;
@@ -802,17 +848,31 @@ module.exports = {
             const updates = {};
             if (widget.content.includes('<figure')) {
               const dom = cheerio.load(widget.content);
-              const figure = dom('body').find('p:empty+figure,figure+p:empty');
+              // reference: https://stackoverflow.com/questions/28855070/css-select-element-without-text-inside
+              const figure = dom('body').find('p:not(:has(:not(:empty)))+figure,figure+p:not(:has(:not(:empty)))');
               const parent = figure.parent().contents();
+
+              let wrapper = null;
 
               parent.each((index, element) => {
                 const isParagraphEmpty = element.type === 'tag' && element.name === 'p' && dom(element).text() === '';
                 isParagraphEmpty && dom(element).remove();
 
                 const isNonWhitespaceTextNode = element.type === 'text' && /^\s*$/.test(element.data) === false;
-                isNonWhitespaceTextNode && dom(element).wrap('<p></p>');
+                isNonWhitespaceTextNode && (wrapper = append({
+                  dom,
+                  wrapper,
+                  element
+                }));
 
-                const hasUpdate = isParagraphEmpty || isNonWhitespaceTextNode;
+                const isInlineNode = element.type === 'tag' && blockNodes.includes(element.name) === false;
+                isInlineNode && (wrapper = append({
+                  dom,
+                  wrapper,
+                  element
+                }));
+
+                const hasUpdate = isParagraphEmpty || isNonWhitespaceTextNode || isInlineNode;
                 if (hasUpdate) {
                   updates[dotPath] = {
                     ...widget,
@@ -823,7 +883,6 @@ module.exports = {
             }
 
             if (Object.keys(updates).length) {
-              // console.log({ contentNew: updates[dotPath].content, dotPath, contentOld: widget.content });
               await self.apos.doc.db.updateOne(
                 { _id: doc._id },
                 { $set: updates }
