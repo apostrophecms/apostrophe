@@ -754,7 +754,7 @@ module.exports = {
       // and start up your app, which will recreate them.
       'remove-empty-paragraph': {
         usage: 'Usage: node app @apostrophecms/rich-text-widget:remove-empty-paragraph\n\nTODO.\n',
-        task: async () => {
+        task: () => {
           const iterator = async (doc, widget, dotPath) => {
             if (widget.type !== self.name) {
               return;
@@ -793,7 +793,7 @@ module.exports = {
       },
       'lint-fix': {
         usage: 'Usage: node app @apostrophecms/rich-text-widget:lint-fix\n\nTODO.\n',
-        task: async () => {
+        task: () => {
           const blockNodes = [
             'address',
             'article',
@@ -855,8 +855,8 @@ module.exports = {
               let wrapper = null;
 
               parent.each((index, element) => {
-                const isParagraphEmpty = element.type === 'tag' && element.name === 'p' && dom(element).text() === '';
-                isParagraphEmpty && dom(element).remove();
+                const isFigure = element.type === 'tag' && element.name === 'figure';
+                isFigure && (wrapper = null);
 
                 const isNonWhitespaceTextNode = element.type === 'text' && /^\s*$/.test(element.data) === false;
                 isNonWhitespaceTextNode && (wrapper = append({
@@ -872,7 +872,7 @@ module.exports = {
                   element
                 }));
 
-                const hasUpdate = isParagraphEmpty || isNonWhitespaceTextNode || isInlineNode;
+                const hasUpdate = isNonWhitespaceTextNode || isInlineNode;
                 if (hasUpdate) {
                   updates[dotPath] = {
                     ...widget,
