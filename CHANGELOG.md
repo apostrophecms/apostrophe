@@ -8,6 +8,7 @@
 
 ### Fixes
 
+* Refresh schema field with same name in `AposDocEditor` when the schema changes.
 * Infer parent ID mode from the request when retrieving the parent (target) page to avoid `notfound`.
 * Log the actual REST API error message and not the one meant for the user.
 * Hide dash on autopublished pages title.
