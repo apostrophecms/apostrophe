@@ -52,7 +52,8 @@ module.exports = {
     publishRole: 'admin',
     viewRole: 'admin',
     showPermissions: true,
-    relationshipSuggestionIcon: 'account-box-icon'
+    relationshipSuggestionIcon: 'account-box-icon',
+    export: false
   },
   fields(self, options) {
     const fields = {};
