@@ -59,6 +59,7 @@ export default () => {
   // `qs` (pass object; builds a query string, does not support recursion)
   // `send`: by default, `options.body` is sent as JSON if it is an object and it is not a
   // `FormData` object. If `send` is set to `json`, it is always sent as JSON.
+  //
   // `body` (request body, not for GET; if an object or array, sent as JSON, otherwise sent as-is, unless
   // the `send` option is set)
   // `parse` (can be 'json` to always parse the response body as JSON, otherwise the response body is
@@ -79,6 +80,16 @@ export default () => {
   // even if the site has a site-wide prefix or locale prefix.
   // It can become handy when the given url is already prefixed,
   // which is the case when using the document's computed `_url` field for instance.
+  //
+  // `bigFile`: if true, files (via `FormData` as `body`) are uploaded using Apostrophe's big
+  // file protocol rather than the usual `multipart/form-data` encoding. This works only with
+  // Apostrophe routes that use `apos.bigFileMiddleware`. This protocol is useful for
+  // files that might exceed the maximum POST size of a proxy server, such as nginx.
+  // In addition, if a zipfile is uploaded that contains an `aposAttachments` folder,
+  // its contents will be automatically accepted as attachments, as long as the user
+  // has appropriate permissions to upload attachments. The original zipfile reaches
+  // the original route with an `aposAttachmentsManifest.json` file in lieu of the
+  // attachments already processed, avoiding local disk space concerns.
   //
   // If the status code is >= 400 an error is thrown. The error object will be
   // similar to a `fullResponse` object, with a `status` property.
@@ -181,7 +192,26 @@ export default () => {
     });
     if (sendJson) {
       data = JSON.stringify(options.body);
-    } else {
+    } else if (options.bigFile) {
+      const { id } = await apos.http.remote(method, url, {
+        body: {
+          aposBigFile: 'start',
+          ...Object.fromEntries(data.entries().map([ name, value ] => {
+            if ((typeof value) === 'string') {
+              return [ name, value ];
+            } else if (value instanceof Blob) {
+              return [ name, true ];
+            } else {
+              throw new Error(`${name} has unrecognized value type in bigFile upload for ${url}`);
+            }
+          }))
+        }
+      });
+
+      for (const [ name, value ] of data.entries()) {
+        if (value instanceof Blob) {
+          
+        }
       data = options.body;
     }
     xmlhttp.addEventListener('load', function() {
