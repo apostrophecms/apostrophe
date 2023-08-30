@@ -5,6 +5,8 @@
 ### Adds
 
 * Add `publicApiCheckAsync` wrapper method (and use it internally) to allow for async permission checks of REST APIs. This feature doesn't introduce any breaking changes.
+* Add `@apostrophecms/rich-text-widget:lint-fix-figure` task to wrap text nodes in paragraph tags when next to figure tag. Figure tags are not valid children of paragraph tags.
+* Add `@apostrophecms/rich-text-widget:remove-empty-paragraph` task to remove empty paragraphs from all existing rich-texts.
 
 ### Fixes
 

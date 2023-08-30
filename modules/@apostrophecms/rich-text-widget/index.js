@@ -3,6 +3,7 @@
 
 const sanitizeHtml = require('sanitize-html');
 const cheerio = require('cheerio');
+const prompts = require('prompts');
 
 module.exports = {
   extend: '@apostrophecms/widget-type',
@@ -741,20 +742,24 @@ module.exports = {
     };
   },
   tasks(self) {
+    const confirm = async () => {
+      const { value } = await prompts(
+        {
+          type: 'confirm',
+          name: 'value',
+          message: 'This task will perform an update on all existing rich-text widget. You should manually backup your database before running this command in case it becomes necessary to revert the changes. Do you want to continue?',
+          initial: true
+        }
+      );
+
+      console.log(value, typeof value);
+      return value;
+    };
+
     return {
-      // Reset the database. Drops ALL collections. If you have
-      // collections in the same database unrelated to Apostrophe they WILL
-      // be removed.
-      //
-      // Then Apostrophe carries out the usual reinitialization of collection
-      // indexes and creation of parked pages, etc.
-      //
-      // PLEASE NOTE: this will drop collections UNRELATED to apostrophe.
-      // If that is a concern for you, drop Apostrophe's collections yourself
-      // and start up your app, which will recreate them.
       'remove-empty-paragraph': {
-        usage: 'Usage: node app @apostrophecms/rich-text-widget:remove-empty-paragraph\n\nTODO.\n',
-        task: () => {
+        usage: 'Usage: node app @apostrophecms/rich-text-widget:remove-empty-paragraph\n\nRemove empty paragraph. If a paragraph contains no visible text or only blank characters, it will be removed.\n',
+        task: async () => {
           const iterator = async (doc, widget, dotPath) => {
             if (widget.type !== self.name) {
               return;
@@ -779,7 +784,6 @@ module.exports = {
             }
 
             if (Object.keys(updates).length) {
-              // console.log({ contentNew: updates[dotPath].content, dotPath, contentOld: widget.content });
               await self.apos.doc.db.updateOne(
                 { _id: doc._id },
                 { $set: updates }
@@ -788,12 +792,14 @@ module.exports = {
             }
           };
 
-          return self.apos.migration.eachWidget({}, iterator);
+          const isAccepted = await confirm();
+
+          return isAccepted && self.apos.migration.eachWidget({}, iterator);
         }
       },
-      'lint-fix': {
-        usage: 'Usage: node app @apostrophecms/rich-text-widget:lint-fix\n\nTODO.\n',
-        task: () => {
+      'lint-fix-figure': {
+        usage: 'Usage: node app @apostrophecms/rich-text-widget:lint-fix-figure\n\nFigure tags is allowed inside paragraph. This task will look for figure tag next to empty paragraph and wrap the text node around inside paragraph.\n',
+        task: async () => {
           const blockNodes = [
             'address',
             'article',
@@ -891,7 +897,9 @@ module.exports = {
             }
           };
 
-          return self.apos.migration.eachWidget({}, iterator);
+          const isAccepted = await confirm();
+
+          return isAccepted && self.apos.migration.eachWidget({}, iterator);
         }
       }
     };
