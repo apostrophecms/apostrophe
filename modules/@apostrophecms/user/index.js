@@ -53,7 +53,10 @@ module.exports = {
     viewRole: 'admin',
     showPermissions: true,
     relationshipSuggestionIcon: 'account-box-icon',
-    export: false
+    importExport: {
+      import: false,
+      export: false
+    }
   },
   fields(self, options) {
     const fields = {};
