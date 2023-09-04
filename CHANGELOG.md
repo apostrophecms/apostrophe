@@ -1,10 +1,10 @@
 # Changelog
 
-## UNPUBLISHED
+## 3.55.0
 
 ### Adds
 
-* Add `publicApiCheckAsync` wrapper method (and use it internally) to allow for async permission checks of REST APIs. This feature doesn't introduce any breaking changes.
+* Add `publicApiCheckAsync` wrapper method (and use it internally) to allow for overrides to do async permission checks of REST APIs. This feature doesn't introduce any breaking changes because the default implementation still invokes `publicApiCheck` in case developers have overridden it.
 
 ### Fixes
 
