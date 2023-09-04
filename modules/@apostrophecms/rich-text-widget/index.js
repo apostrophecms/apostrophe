@@ -752,7 +752,6 @@ module.exports = {
         }
       );
 
-      console.log(value, typeof value);
       return value;
     };
 
