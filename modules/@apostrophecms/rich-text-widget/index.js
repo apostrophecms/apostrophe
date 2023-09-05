@@ -742,12 +742,16 @@ module.exports = {
     };
   },
   tasks(self) {
-    const confirm = async () => {
+    const confirm = async (force) => {
+      if (force) {
+        return force;
+      }
+
       const { value } = await prompts(
         {
           type: 'confirm',
           name: 'value',
-          message: 'This task will perform an update on all existing rich-text widget. You should manually backup your database before running this command in case it becomes necessary to revert the changes. Do you want to continue?',
+          message: 'This task will perform an update on all existing rich-text widget. You should manually backup your database before running this command in case it becomes necessary to revert the changes. You can add --force to the command to skip this message\nDo you want to continue?',
           initial: true
         }
       );
@@ -758,7 +762,7 @@ module.exports = {
     return {
       'remove-empty-paragraph': {
         usage: 'Usage: node app @apostrophecms/rich-text-widget:remove-empty-paragraph\n\nRemove empty paragraph. If a paragraph contains no visible text or only blank characters, it will be removed.\n',
-        task: async () => {
+        task: async (argv) => {
           const iterator = async (doc, widget, dotPath) => {
             if (widget.type !== self.name) {
               return;
@@ -791,14 +795,14 @@ module.exports = {
             }
           };
 
-          const isAccepted = await confirm();
+          const isAccepted = await confirm(argv.force);
 
           return isAccepted && self.apos.migration.eachWidget({}, iterator);
         }
       },
       'lint-fix-figure': {
         usage: 'Usage: node app @apostrophecms/rich-text-widget:lint-fix-figure\n\nFigure tags is allowed inside paragraph. This task will look for figure tag next to empty paragraph and wrap the text node around inside paragraph.\n',
-        task: async () => {
+        task: async (argv) => {
           const blockNodes = [
             'address',
             'article',
@@ -896,7 +900,7 @@ module.exports = {
             }
           };
 
-          const isAccepted = await confirm();
+          const isAccepted = await confirm(argv.force);
 
           return isAccepted && self.apos.migration.eachWidget({}, iterator);
         }
