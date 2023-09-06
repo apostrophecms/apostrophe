@@ -1,14 +1,20 @@
 # Changelog
 
-## UNPUBLISHED
+## UNRELEASED
 
 ### Adds
 
-* Add `publicApiCheckAsync` wrapper method (and use it internally) to allow for async permission checks of REST APIs. This feature doesn't introduce any breaking changes.
 * Add ability for custom tiptap extensions to access the options passed to rich text widgets at the area level
+
+## 3.55.0
+
+### Adds
+
+* Add `publicApiCheckAsync` wrapper method (and use it internally) to allow for overrides to do async permission checks of REST APIs. This feature doesn't introduce any breaking changes because the default implementation still invokes `publicApiCheck` in case developers have overridden it.
 
 ### Fixes
 
+* Refresh schema field with same name in `AposDocEditor` when the schema changes.
 * Infer parent ID mode from the request when retrieving the parent (target) page to avoid `notfound`.
 * Log the actual REST API error message and not the one meant for the user.
 * Hide dash on autopublished pages title.
