@@ -1,5 +1,11 @@
 # Changelog
 
+## UNRELEASED
+
+### Adds
+
+* Add ability for custom tiptap extensions to access the options passed to rich text widgets at the area level
+
 ## 3.55.0
 
 ### Adds
