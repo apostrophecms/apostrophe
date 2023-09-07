@@ -10,7 +10,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "apostrophe": "file:../."
+    "apostrophe": "file:../../."
   },
   "workspaces": [
     "workspace-a"
