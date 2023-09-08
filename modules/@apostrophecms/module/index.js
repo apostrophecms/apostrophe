@@ -418,13 +418,11 @@ module.exports = {
       // `data.query` (req.query)
       //
       // This method is async in 3.x and must be awaited.
+      //
+      // No longer deprecated because it is a useful override point
+      // for this part of the behavior of sendPage.
 
       async renderPage(req, template, data) {
-        // TODO Remove in next major version.
-        self.apos.util.warnDevOnce(
-          'deprecate-renderPage',
-          'self.renderPage() is deprecated. Use self.sendPage() instead.'
-        );
         return self.apos.template.renderPageForModule(req, template, data, self);
       },
 
@@ -482,9 +480,8 @@ module.exports = {
           try {
             await self.apos.page.emit('beforeSend', req);
             await self.apos.area.loadDeferredWidgets(req);
-            req.res.send(
-              await self.apos.template.renderPageForModule(req, template, data, self)
-            );
+            const result = await self.renderPage(req, template, data);
+            req.res.send(result);
             span.setStatus({ code: telemetry.api.SpanStatusCode.OK });
           } catch (err) {
             telemetry.handleError(span, err);

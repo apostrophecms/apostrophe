@@ -5,6 +5,12 @@
 ### Adds
 
 * Add ability for custom tiptap extensions to access the options passed to rich text widgets at the area level
+* The actual invocation of `renderPageForModule` by the `sendPage` method of all modules has been
+factored out to `renderPage`, which is no longer deprecated. This provides a convenient override point
+for those who wish to substitute something else for Nunjucks or just wrap the HTML in a larger data
+structure. For consistent results, one might also choose override the `renderWidget` and `render`
+methods of the `@apostrophecms/area` module, which are used to render content while editing.
+Thanks to Michelin for their support of this work.
 
 ## 3.55.0
 
