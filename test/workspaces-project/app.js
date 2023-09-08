@@ -1,7 +1,11 @@
 module.exports = {
+  root: module,
   shortName: 'workspaces-project',
   modules: {
-    // '@apostrophecms-pro/document-versions': {}, // TODO remove, should warn if enabled
-    '@apostrophecms/sitemap': {}
+    '@apostrophecms/sitemap': {
+      options: {
+        baseUrl: 'http://localhost:3000'
+      }
+    }
   }
 };

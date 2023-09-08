@@ -2,31 +2,28 @@ const assert = require('assert').strict;
 const t = require('../test-lib/test.js');
 const app = require('./workspaces-project/app.js');
 
-describe.only('workspaces dependencies', function() {
+describe('workspaces dependencies', function() {
   this.timeout(t.timeout);
 
-  it('should allow workspace dependencies in the project', async function() {
+  it('should allow workspaces dependency in the project', async function() {
     let apos;
 
     try {
       apos = await t.create(app);
+      const { server } = apos.modules['@apostrophecms/express'];
+      const { port } = server.address();
 
-      const actual = {
-        debug: apos.util.info('debug'),
-        info: apos.util.info('info'),
-        warn: apos.util.info('warn'),
-        error: apos.util.info('error')
-      };
+      const actual = apos.util.logger.getMessages();
       const expected = {
-        debug: [ 'debug' ],
-        info: [ 'Listening at http://localhost:xxxxx', 'info' ],
-        warn: [ 'warn' ],
-        error: [ 'error' ]
+        debug: [],
+        info: [ `Listening at http://localhost:${port}` ],
+        warn: [],
+        error: []
       };
 
       assert.deepEqual(actual, expected);
     } catch (error) {
-      assert.fail(error.message);
+      assert.fail('Should have found @apostrophecms/sitemap hidden in workspace-a as a valid dependency. '.concat(error.message));
     } finally {
       apos && await t.destroy(apos);
     }
