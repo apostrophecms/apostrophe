@@ -746,7 +746,7 @@ module.exports = {
         return true;
       }
 
-      console.log('This task will perform an update on all existing rich-text widget. You should manually backup your database before running this command in case it becomes necessary to revert the changes. You can add --force to the command to skip this message\nDo you want to continue?');
+      console.log('This task will perform an update on all existing rich-text widget. You should manually backup your database before running this command in case it becomes necessary to revert the changes. You can add --confirm to the command to skip this message and run the command');
 
       return false;
     };
