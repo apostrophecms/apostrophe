@@ -1,9 +1,16 @@
-const assert = require('assert').strict;
+const assert = require('node:assert').strict;
+const util = require('node:util');
+const { exec } = require('node:child_process');
+const path = require('node:path');
 const t = require('../test-lib/test.js');
 const app = require('./workspaces-project/app.js');
 
 describe('workspaces dependencies', function() {
   this.timeout(t.timeout);
+
+  before(async function() {
+    await util.promisify(exec)('npm ci', { cwd: path.resolve(process.cwd(), 'test/workspaces-project') });
+  });
 
   it('should allow workspaces dependency in the project', async function() {
     let apos;
