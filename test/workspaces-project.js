@@ -9,7 +9,7 @@ describe('workspaces dependencies', function() {
   this.timeout(t.timeout);
 
   before(async function() {
-    await util.promisify(exec)('npm ci', { cwd: path.resolve(process.cwd(), 'test/workspaces-project') });
+    await util.promisify(exec)('npm install', { cwd: path.resolve(process.cwd(), 'test/workspaces-project') });
   });
 
   it('should allow workspaces dependency in the project', async function() {
