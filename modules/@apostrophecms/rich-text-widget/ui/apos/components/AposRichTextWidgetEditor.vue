@@ -545,6 +545,7 @@ export default {
     aposTiptapExtensions() {
       return (apos.tiptapExtensions || [])
         .map(extension => extension({
+          ...this.editorOptions,
           styles: this.editorOptions.styles.map(this.localizeStyle),
           types: this.tiptapTypes
         }));

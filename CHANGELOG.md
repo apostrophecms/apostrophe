@@ -4,6 +4,7 @@
 
 ### Adds
 
+* Add ability for custom tiptap extensions to access the options passed to rich text widgets at the area level
 * Add support for [npm workspaces](https://docs.npmjs.com/cli/v10/configuring-npm/package-json#workspaces) dependencies. A workspace dependency can now be used as an Apostrophe module even if it is not a direct dependency of the Apostrophe project. Only direct workspaces dependencies of the Apostrophe project are supported. For instance, I have an Apostrophe project called `website`. `website` is set with two [npm workspaces](https://docs.npmjs.com/cli/v10/using-npm/workspaces), `workspace-a` & `workspace-b`. `workspace-a` `package.json` contains a module named `blog` as a dependency. `website` can reference `blog` as enabled in the `modules` configuration.
 
 ## 3.55.0
