@@ -18,12 +18,12 @@ describe('workspaces dependencies', function() {
     try {
       apos = await t.create(app);
       const { server } = apos.modules['@apostrophecms/express'];
-      const { port } = server.address();
+      const { address, port } = server.address();
 
       const actual = apos.util.logger.getMessages();
       const expected = {
         debug: [],
-        info: [ `Listening at http://localhost:${port}` ],
+        info: [ `Listening at http://${address}:${port}` ],
         warn: [],
         error: []
       };
