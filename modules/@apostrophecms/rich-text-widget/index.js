@@ -3,7 +3,6 @@
 
 const sanitizeHtml = require('sanitize-html');
 const cheerio = require('cheerio');
-const prompts = require('prompts');
 
 module.exports = {
   extend: '@apostrophecms/widget-type',
@@ -742,26 +741,19 @@ module.exports = {
     };
   },
   tasks(self) {
-    const confirm = async (force) => {
-      if (force) {
-        return force;
+    const confirm = async (isConfirmed) => {
+      if (isConfirmed) {
+        return true;
       }
 
-      const { value } = await prompts(
-        {
-          type: 'confirm',
-          name: 'value',
-          message: 'This task will perform an update on all existing rich-text widget. You should manually backup your database before running this command in case it becomes necessary to revert the changes. You can add --force to the command to skip this message\nDo you want to continue?',
-          initial: true
-        }
-      );
+      console.log('This task will perform an update on all existing rich-text widget. You should manually backup your database before running this command in case it becomes necessary to revert the changes. You can add --force to the command to skip this message\nDo you want to continue?');
 
-      return value;
+      return false;
     };
 
     return {
       'remove-empty-paragraph': {
-        usage: 'Usage: node app @apostrophecms/rich-text-widget:remove-empty-paragraph\n\nRemove empty paragraph. If a paragraph contains no visible text or only blank characters, it will be removed.\n',
+        usage: 'Usage: node app @apostrophecms/rich-text-widget:remove-empty-paragraph --confirm\n\nRemove empty paragraph. If a paragraph contains no visible text or only blank characters, it will be removed.\n',
         task: async (argv) => {
           const iterator = async (doc, widget, dotPath) => {
             if (widget.type !== self.name) {
@@ -795,13 +787,13 @@ module.exports = {
             }
           };
 
-          const isAccepted = await confirm(argv.force);
+          const isConfirmed = await confirm(argv.confirm);
 
-          return isAccepted && self.apos.migration.eachWidget({}, iterator);
+          return isConfirmed && self.apos.migration.eachWidget({}, iterator);
         }
       },
       'lint-fix-figure': {
-        usage: 'Usage: node app @apostrophecms/rich-text-widget:lint-fix-figure\n\nFigure tags is allowed inside paragraph. This task will look for figure tag next to empty paragraph and wrap the text node around inside paragraph.\n',
+        usage: 'Usage: node app @apostrophecms/rich-text-widget:lint-fix-figure --confirm\n\nFigure tags is allowed inside paragraph. This task will look for figure tag next to empty paragraph and wrap the text node around inside paragraph.\n',
         task: async (argv) => {
           const blockNodes = [
             'address',
@@ -900,9 +892,9 @@ module.exports = {
             }
           };
 
-          const isAccepted = await confirm(argv.force);
+          const isConfirmed = await confirm(argv.confirm);
 
-          return isAccepted && self.apos.migration.eachWidget({}, iterator);
+          return isConfirmed && self.apos.migration.eachWidget({}, iterator);
         }
       }
     };
