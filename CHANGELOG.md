@@ -4,6 +4,8 @@
 
 ### Adds
 
+* Add `@apostrophecms/rich-text-widget:lint-fix-figure` task to wrap text nodes in paragraph tags when next to figure tag. Figure tags are not valid children of paragraph tags.
+* Add `@apostrophecms/rich-text-widget:remove-empty-paragraph` task to remove empty paragraphs from all existing rich-texts.
 * Add ability for custom tiptap extensions to access the options passed to rich text widgets at the area level
 
 ## 3.55.0
