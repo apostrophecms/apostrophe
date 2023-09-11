@@ -1,6 +1,20 @@
 # Changelog
 
-## 3.55.1
+## UNRELEASED
+
+### Adds
+
+* Add `@apostrophecms/rich-text-widget:lint-fix-figure` task to wrap text nodes in paragraph tags when next to figure tag. Figure tags are not valid children of paragraph tags.
+* Add `@apostrophecms/rich-text-widget:remove-empty-paragraph` task to remove empty paragraphs from all existing rich-texts.
+* Add ability for custom tiptap extensions to access the options passed to rich text widgets at the area level
+* The actual invocation of `renderPageForModule` by the `sendPage` method of all modules has been
+factored out to `renderPage`, which is no longer deprecated. This provides a convenient override point
+for those who wish to substitute something else for Nunjucks or just wrap the HTML in a larger data
+structure. For consistent results, one might also choose to override the `renderWidget` and `render`
+methods of the `@apostrophecms/area` module, which are used to render content while editing.
+Thanks to Michelin for their support of this work.
+
+## 3.55.1 (2023-09-11)
 
 ### Fixes
 
@@ -8,7 +22,7 @@
 a politely `Error`-derived object with a `stack` property. Previously this resulted in an error message about the logging
 system itself, which was not useful for debugging the original exception.
 
-## 3.55.0
+## 3.55.0 (2023-08-30)
 
 ### Adds
 
