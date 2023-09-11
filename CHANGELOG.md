@@ -1,5 +1,13 @@
 # Changelog
 
+## 3.55.1
+
+### Fixes
+
+* The structured logging for API routes now responds properly if an API route throws a `string` as an exception, rather than
+a politely `Error`-derived object with a `stack` property. Previously this resulted in an error message about the logging
+system itself, which was not useful for debugging the original exception.
+
 ## 3.55.0
 
 ### Adds
