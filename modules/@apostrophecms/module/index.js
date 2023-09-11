@@ -258,7 +258,7 @@ module.exports = {
             self.logError(req, `api-error${typeTrail}`, msg, {
               name: response.name,
               status: response.code,
-              stack: error.stack.split('\n').slice(1).map(line => line.trim()),
+              stack: (error.stack || '').split('\n').slice(1).map(line => line.trim()),
               errorPath: response.path,
               data: response.data
             });

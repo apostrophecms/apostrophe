@@ -14,7 +14,15 @@ structure. For consistent results, one might also choose to override the `render
 methods of the `@apostrophecms/area` module, which are used to render content while editing.
 Thanks to Michelin for their support of this work.
 
-## 3.55.0
+## 3.55.1 (2023-09-11)
+
+### Fixes
+
+* The structured logging for API routes now responds properly if an API route throws a `string` as an exception, rather than
+a politely `Error`-derived object with a `stack` property. Previously this resulted in an error message about the logging
+system itself, which was not useful for debugging the original exception.
+
+## 3.55.0 (2023-08-30)
 
 ### Adds
 
