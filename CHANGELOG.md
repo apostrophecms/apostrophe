@@ -4,10 +4,26 @@
 
 ### Adds
 
+* Add `@apostrophecms/rich-text-widget:lint-fix-figure` task to wrap text nodes in paragraph tags when next to figure tag. Figure tags are not valid children of paragraph tags.
+* Add `@apostrophecms/rich-text-widget:remove-empty-paragraph` task to remove empty paragraphs from all existing rich-texts.
 * Add ability for custom tiptap extensions to access the options passed to rich text widgets at the area level
 * Add support for [npm workspaces](https://docs.npmjs.com/cli/v10/configuring-npm/package-json#workspaces) dependencies. A workspace dependency can now be used as an Apostrophe module even if it is not a direct dependency of the Apostrophe project. Only direct workspaces dependencies of the Apostrophe project are supported, meaning this will only work with workspaces set in the Apostrophe project. Workspaces set in npm modules are not supported, please use [`bundle`](https://v3.docs.apostrophecms.org/reference/module-api/module-overview.html#bundle) instead. For instance, I have an Apostrophe project called `website`. `website` is set with two [npm workspaces](https://docs.npmjs.com/cli/v10/using-npm/workspaces), `workspace-a` & `workspace-b`. `workspace-a` `package.json` contains a module named `blog` as a dependency. `website` can reference `blog` as enabled in the `modules` configuration.
+* The actual invocation of `renderPageForModule` by the `sendPage` method of all modules has been
+factored out to `renderPage`, which is no longer deprecated. This provides a convenient override point
+for those who wish to substitute something else for Nunjucks or just wrap the HTML in a larger data
+structure. For consistent results, one might also choose to override the `renderWidget` and `render`
+methods of the `@apostrophecms/area` module, which are used to render content while editing.
+Thanks to Michelin for their support of this work.
 
-## 3.55.0
+## 3.55.1 (2023-09-11)
+
+### Fixes
+
+* The structured logging for API routes now responds properly if an API route throws a `string` as an exception, rather than
+a politely `Error`-derived object with a `stack` property. Previously this resulted in an error message about the logging
+system itself, which was not useful for debugging the original exception.
+
+## 3.55.0 (2023-08-30)
 
 ### Adds
 
