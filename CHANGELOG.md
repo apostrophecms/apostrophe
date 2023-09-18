@@ -1,5 +1,11 @@
 # Changelog
 
+## UNRELEASED
+
+### Adds
+
+* Italian translation i18n file created for the Apostrophe Admin-UI. Thanks to [Antonello Zanini](https://github.com/Tonel) for this contribution.
+
 ## 3.56.0 (2023-09-13)
 
 ### Adds
