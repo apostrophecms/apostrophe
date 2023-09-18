@@ -386,8 +386,7 @@ module.exports = {
       // This method returns `attachment` where `attachment` is an attachment
       // object, suitable for passing to the `url` API and for use as the value
       // of a `type: 'attachment'` schema field.
-      async insert(req, file, options) {
-        options = options || {};
+      async insert(req, file, options = {}) {
         let extension = path.extname(file.name);
         if (extension && extension.length) {
           extension = extension.substr(1);
@@ -403,7 +402,7 @@ module.exports = {
           }));
         }
         const info = {
-          _id: self.apos.util.generateId(),
+          _id: options.existingId ?? self.apos.util.generateId(),
           group: group.name,
           createdAt: new Date(),
           name: self.apos.util.slugify(path.basename(file.name, path.extname(file.name))),
@@ -432,7 +431,11 @@ module.exports = {
         }
         if (self.isSized(extension)) {
           // For images we correct automatically for common file extension mistakes
-          const result = await Promise.promisify(self.uploadfs.copyImageIn)(file.path, '/attachments/' + info._id + '-' + info.name, { sizes: self.imageSizes });
+          const result = await Promise.promisify(self.uploadfs.copyImageIn)(
+            file.path,
+            '/attachments/' + info._id + '-' + info.name,
+            { sizes: self.imageSizes }
+          );
           info.extension = result.extension;
           info.width = result.width;
           info.height = result.height;
