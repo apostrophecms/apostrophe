@@ -168,6 +168,7 @@ module.exports = {
               }
 
               const attachment = await self.insert(req, file);
+
               self.all({ attachment }, { annotate: true });
 
               return attachment;
@@ -401,8 +402,13 @@ module.exports = {
             extensions: accepted.join(req.t('apostrophe:listJoiner'))
           }));
         }
+
+        if (options.attachmentId && await self.apos.attachment.db.findOne({ _id: options.attachmentId })) {
+          throw self.apos.error('invalid', `An attachment with the ID ${options.attachmentId} already exists`);
+        }
+
         const info = {
-          _id: options.existingId ?? self.apos.util.generateId(),
+          _id: options.attachmentId ?? self.apos.util.generateId(),
           group: group.name,
           createdAt: new Date(),
           name: self.apos.util.slugify(path.basename(file.name, path.extname(file.name))),
