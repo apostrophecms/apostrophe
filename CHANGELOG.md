@@ -6,6 +6,10 @@
 
 * Italian translation i18n file created for the Apostrophe Admin-UI. Thanks to [Antonello Zanini](https://github.com/Tonel) for this contribution.
 
+### Fixes
+
+* The `118n` module now ignores non-JSON files within the i18n folder of any module and does not crash the build process.
+
 ## 3.56.0 (2023-09-13)
 
 ### Adds
