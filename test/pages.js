@@ -343,7 +343,6 @@ describe('Pages', function() {
       type: 'test-page',
       title: 'Sub Draft Page'
     };
-    console.log('PARENT PAGE', newPage);
 
     const subPage = await apos.page.insert(
       apos.task.getReq({ mode: 'draft' }),
