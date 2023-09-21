@@ -523,7 +523,15 @@ module.exports = {
               self.namespaces[ns].browser = self.namespaces[ns].browser ||
                 (metadata[ns] && metadata[ns].browser);
               const namespaceDir = path.join(localizationsDir, ns);
+              if (!fs.statSync(namespaceDir).isDirectory()) {
+                // Handle files in the namespace that aren't JSON files
+                continue;
+              }
               for (const localizationFile of fs.readdirSync(namespaceDir)) {
+                if (!localizationFile.endsWith('.json')) {
+                  // A JSON file for the default namespace, already handled
+                  continue;
+                }
                 const fullLocalizationFile = path.join(namespaceDir, localizationFile);
                 const data = JSON.parse(fs.readFileSync(fullLocalizationFile));
                 const locale = localizationFile.replace('.json', '');
