@@ -404,7 +404,7 @@ module.exports = {
         }
 
         if (options.attachmentId && await self.apos.attachment.db.findOne({ _id: options.attachmentId })) {
-          throw self.apos.error('invalid', `An attachment with the ID ${options.attachmentId} already exists`);
+          throw self.apos.error('invalid', 'duplicate');
         }
 
         const info = {
@@ -415,8 +415,8 @@ module.exports = {
           title: self.apos.util.sortify(path.basename(file.name, path.extname(file.name))),
           extension: extension,
           type: 'attachment',
-          docIds: [],
-          archivedDocIds: []
+          docIds: options.docIds || [],
+          archivedDocIds: options.archivedDocIds || []
         };
         if (!(options.permissions === false)) {
           if (!self.apos.permission.can(req, 'upload-attachment')) {
@@ -463,6 +463,17 @@ module.exports = {
         await self.db.insertOne(info);
         return info;
       },
+
+      async update(req, file, attachment) {
+        await self.alterAttachment(attachment, 'remove');
+        await self.apos.attachment.db.deleteOne({ _id: attachment._id });
+        await self.insert(req, file, {
+          attachmentId: attachment._id,
+          docIds: attachment.docIds,
+          archivedDocIds: attachment.archivedDocIds
+        });
+      },
+
       // Given a path to a local svg file, sanitize any XSS attack vectors that
       // may be present in the file. The caller is responsible for catching any
       // exception thrown and treating that as an invalid file but there is no
