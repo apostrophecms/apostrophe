@@ -379,7 +379,7 @@ module.exports = {
       // No promise is returned as this method just updates
       // the job tracking information in the background.
       setTotal(job, total) {
-        self.db.updateOne({ _id: job._id }, { $set: { total: total } }, function (err) {
+        return self.db.updateOne({ _id: job._id }, { $set: { total: total } }, function (err) {
           if (err) {
             self.apos.util.error(err);
           }
