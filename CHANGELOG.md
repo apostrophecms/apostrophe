@@ -5,6 +5,7 @@
 ### Adds
 
 * Italian translation i18n file created for the Apostrophe Admin-UI. Thanks to [Antonello Zanini](https://github.com/Tonel) for this contribution.
+* Fixed date in piece type being displayed as current date in column when set as undefined and without default value.
 
 ## 3.56.0 (2023-09-13)
 
