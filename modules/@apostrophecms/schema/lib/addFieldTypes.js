@@ -592,6 +592,11 @@ module.exports = (self) => {
         // If the max requirement isn't met, leave as-is.
         return;
       }
+      if (!newDateVal && !field.def){
+        // If no inputted date or default date, leave as empty
+        destination[field.name] = ''
+        return;
+      }
 
       destination[field.name] = self.apos.launder.date(newDateVal, field.def);
     },
