@@ -1,5 +1,12 @@
 # Changelog
 
+## UNRELEASED
+
+### Fixes
+
+* Bump dependency on `oembetter` to ensure support for Vimeo after they
+decided to remove oembed meta tags from their video pages.
+
 ## 2.227.3 (2023-06-08)
 
 ### Fixes
