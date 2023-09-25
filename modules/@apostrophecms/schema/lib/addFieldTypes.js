@@ -584,17 +584,17 @@ module.exports = (self) => {
         destination[field.name] = null;
         return;
       }
+      if (!newDateVal && !field.def){
+        // If no inputted date or default date, leave as empty
+        destination[field.name] = null
+        return;
+      }
       if (field.min && newDateVal && (newDateVal < field.min)) {
         // If the min requirement isn't met, leave as-is.
         return;
       }
       if (field.max && newDateVal && (newDateVal > field.max)) {
         // If the max requirement isn't met, leave as-is.
-        return;
-      }
-      if (!newDateVal && !field.def){
-        // If no inputted date or default date, leave as empty
-        destination[field.name] = ''
         return;
       }
 
