@@ -6,6 +6,12 @@
 
 * Italian translation i18n file created for the Apostrophe Admin-UI. Thanks to [Antonello Zanini](https://github.com/Tonel) for this contribution.
 
+### Fixes
+
+* Bumped dependency on `oembetter` to ensure Vimeo starts working again
+for everyone with this release. This is necessary because Vimeo stopped
+offering oembed discovery meta tags on their video pages.
+
 ## 3.56.0 (2023-09-13)
 
 ### Adds
