@@ -10,8 +10,6 @@ on:
 jobs:
   check_outdated_dependencies:
     runs-on: ubuntu-latest
-    outputs:
-      outdated_output: ${{ steps.outdated.outputs.outdated_dependencies }}
     steps:
       - name: Git checkout
         uses: actions/checkout@v2
@@ -26,7 +24,7 @@ jobs:
         id: outdated
         run: echo "outdated_dependencies=hey" >> "$GITHUB_OUTPUT"
       - name: Report Status
-        run: echo $GITHUB_OUTPUT
+        run: echo $OUTDATED_DEPENDENCIES
         env:
           OUTDATED_DEPENDENCIES: ${{ steps.outdated.outputs.outdated_dependencies }}
       # - name: Report Status
