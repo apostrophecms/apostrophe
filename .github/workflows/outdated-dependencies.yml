@@ -24,14 +24,15 @@ jobs:
         id: outdated
         run: |
           {
-            echo 'outdated_dependencies<<EOF'
+            echo 'OUTDATED_DEPENDENCIES<<delimiter'
+            echo delimiter
             npm outdated
-            echo EOF
+            echo delimiter
           } >> "$GITHUB_ENV"
       - name: Report Status
         run: echo $OUTDATED_DEPENDENCIES
         env:
-          OUTDATED_DEPENDENCIES: ${{ steps.outdated.outputs.outdated_dependencies }}
+          OUTDATED_DEPENDENCIES: ${{ steps.outdated.outputs.OUTDATED_DEPENDENCIES }}
       # - name: Report Status
       #   if: always()
       #   uses: ravsamhq/notify-slack-action@v2
