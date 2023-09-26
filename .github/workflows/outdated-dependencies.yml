@@ -25,14 +25,19 @@ jobs:
       - name: Check outdated dependencies
         id: outdated
         run: |
-          OUTDATED=$(npm outdated)
+          npm outdated
+          {
+            echo 'OUTDATED_DEPENDENCIES<<delimiter'
+            echo $(npm outdated)
+            echo delimiter
+          } >> "$GITHUB_ENV"
       # TODO: remove debug
       - name: Report Status
         if: always()
         uses: ravsamhq/notify-slack-action@v2
         with:
           status: ${{ job.status }}
-          footer: "<{run_url}|View Run> | $OUTDATED"
+          footer: "<{run_url}|View Run> | $OUTDATED_DEPENDENCIES"
           notify_when: "failure"
           notification_title: "outdated dependencies"
         env:
