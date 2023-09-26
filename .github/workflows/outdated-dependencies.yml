@@ -39,7 +39,7 @@ jobs:
         with:
           status: ${{ job.status }}
           footer: "<{run_url}|View Run> | $OUTDATED_DEPENDENCIES"
-          notify_when: "failure"
+          notify_when: "success"
           notification_title: "outdated dependencies"
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.ACTION_MONITORING_SLACK }}
