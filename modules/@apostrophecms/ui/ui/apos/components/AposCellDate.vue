@@ -18,7 +18,7 @@ export default {
   computed: {
     formattedDate () {
       const value = this.get(this.header.name);
-      return value ? this.formatDateColumn(value) : "";
+      return value ? this.formatDateColumn(value) : '';
     }
   },
   methods: {
