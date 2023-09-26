@@ -32,13 +32,13 @@ jobs:
           } >> "$GITHUB_ENV"
       - name: Report Status
         run: echo $OUTDATED_DEPENDENCIES
-      # - name: Report Status
-      #   if: always()
-      #   uses: ravsamhq/notify-slack-action@v2
-      #   with:
-      #     status: ${{ job.status }}
-      #     footer: "<{run_url}|View Run> | $OUTDATED_DEPENDENCIES"
-      #     notify_when: "failure"
-      #     notification_title: "outdated dependencies"
-      #   env:
-      #     SLACK_WEBHOOK_URL: ${{ secrets.ACTION_MONITORING_SLACK }}
+      - name: Report Status
+        if: always()
+        uses: ravsamhq/notify-slack-action@v2
+        with:
+          status: ${{ job.status }}
+          footer: "<{run_url}|View Run> | $OUTDATED_DEPENDENCIES"
+          notify_when: "failure"
+          notification_title: "outdated dependencies"
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.ACTION_MONITORING_SLACK }}
