@@ -30,6 +30,7 @@ jobs:
             echo $(npm outdated)
             echo delimiter
           } >> "$GITHUB_ENV"
+          npm outdated
       # TODO: remove debug
       - name: Report Status
         if: always()
