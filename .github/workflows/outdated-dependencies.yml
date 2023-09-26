@@ -23,10 +23,9 @@ jobs:
       - name: Check outdated dependencies
         id: outdated
         run: |
-          npm outdated > ./outdated
           {
             echo 'OUTDATED_DEPENDENCIES<<EOF'
-            cat ./outdated
+            npm outdated
             echo EOF
           } >> "$GITHUB_ENV"
       - name: Report Status
