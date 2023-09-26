@@ -25,8 +25,7 @@ jobs:
         run: |
           {
             echo 'OUTDATED_DEPENDENCIES<<EOF'
-            echo $(npm outdated --json)
-            echo EOF
+            echo $(npm outdated)
           } >> "$GITHUB_ENV"
       - name: Report Status
         run: echo env.OUTDATED_DEPENDENCIES
