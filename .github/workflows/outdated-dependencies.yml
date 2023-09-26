@@ -35,7 +35,7 @@ jobs:
         uses: ravsamhq/notify-slack-action@v2
         with:
           status: ${{ job.status }}
-          message_format: "{emoji} *{workflow}* {status_message} in <{repo_url}|{repo}>"
+          message_format: "{emoji} *{workflow}* {status_message} in <{repo_url}|{repo}> ${{ env.OUTDATED_DEPENDENCIES }}"
           notify_when: "failure"
           notification_title: "outdated dependencies"
         env:
