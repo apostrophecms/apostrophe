@@ -10,6 +10,8 @@ on:
 jobs:
   check_outdated_dependencies:
     runs-on: ubuntu-latest
+    outputs:
+      outdated_output: ${{ steps.outdated.outputs.outdated_dependencies }}
     steps:
       - name: Git checkout
         uses: actions/checkout@v2
@@ -21,11 +23,12 @@ jobs:
       # - name: Install dependencies
       #   run: npm install
       - name: Check outdated dependencies
-        id: run_outdated
-        run: export OUTPUT=$(echo heyy)
+        id: outdated
+        run: echo "outdated_dependencies=hey" >> "$GITHUB_OUTPUT"
       - name: Report Status
-        # run: echo ${{ steps.run_outdated.outputs.result }}
-        run: echo $OUTPUT
+        run: echo $OUTDATED_DEPENDENCIES
+        env:
+          OUTDATED_DEPENDENCIES: ${{ steps.outdated.outputs.outdated_dependencies }}
       # - name: Report Status
       #   if: always()
       #   uses: ravsamhq/notify-slack-action@v2
