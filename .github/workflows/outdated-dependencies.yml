@@ -26,7 +26,7 @@ jobs:
         run: |
           {
             echo 'OUTDATED_DEPENDENCIES<<delimiter'
-            echo $(npm outdated)
+            echo $(npm outdated --json)
             echo delimiter
           } >> "$GITHUB_ENV"
           npm outdated
@@ -36,8 +36,10 @@ jobs:
         with:
           status: ${{ job.status }}
           message_format: |
-            "{emoji} *{workflow}* {status_message} in <{repo_url}|{repo}>
-            ```${{ env.OUTDATED_DEPENDENCIES }}```"
+            {emoji} *{workflow}* {status_message} in <{repo_url}|{repo}>
+            ```json
+            ${{ env.OUTDATED_DEPENDENCIES }}
+            ```
           notify_when: "failure"
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.ACTION_MONITORING_SLACK }}
