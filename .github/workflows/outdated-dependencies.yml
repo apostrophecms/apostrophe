@@ -38,8 +38,7 @@ jobs:
         uses: ravsamhq/notify-slack-action@v2
         with:
           status: ${{ job.status }}
-          message: $OUTDATED_DEPENDENCIES
-          footer: "<{run_url}|View Run>"
+          footer: "<{run_url}|View Run> | $OUTDATED_DEPENDENCIES"
           notify_when: "failure"
           notification_title: "outdated dependencies"
         env:
