@@ -28,12 +28,14 @@ jobs:
         id: run_outdated
         run: npm outdated >> "$GITHUB_OUTPUT"
       - name: Report Status
-        if: always()
-        uses: ravsamhq/notify-slack-action@v2
-        with:
-          status: ${{ job.status }}
-          footer: "<{run_url}|View Run> | $GITHUB_OUTPUT"
-          notify_when: "failure"
-          notification_title: "outdated dependencies"
-        env:
-          SLACK_WEBHOOK_URL: ${{ secrets.ACTION_MONITORING_SLACK }}
+        run: echo $GITHUB_OUTPUT
+      # - name: Report Status
+      #   if: always()
+      #   uses: ravsamhq/notify-slack-action@v2
+      #   with:
+      #     status: ${{ job.status }}
+      #     footer: "<{run_url}|View Run> | $GITHUB_OUTPUT"
+      #     notify_when: "failure"
+      #     notification_title: "outdated dependencies"
+      #   env:
+      #     SLACK_WEBHOOK_URL: ${{ secrets.ACTION_MONITORING_SLACK }}
