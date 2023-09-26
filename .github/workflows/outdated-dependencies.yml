@@ -1,8 +1,9 @@
 name: Check outdated dependencies
 on:
-  schedule:
-    # Runs Mon-Fri at 0:00 UTC ( 00:00 EST )
-    - cron: "0 0 * * 1-5"
+  # TODO: uncomment schedule
+  # schedule:
+  #   # Runs Mon-Fri at 0:00 UTC ( 00:00 EST )
+  #   - cron: "0 0 * * 1-5"
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
 
