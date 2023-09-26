@@ -37,9 +37,10 @@ jobs:
           status: ${{ job.status }}
           message_format: |
             {emoji} *{workflow}* {status_message} in <{repo_url}|{repo}>
-            ```json
+            ```
             ${{ env.OUTDATED_DEPENDENCIES }}
             ```
           notify_when: "failure"
+          notification_title: "Outdated dependencies"
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.ACTION_MONITORING_SLACK }}
