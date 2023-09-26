@@ -22,11 +22,11 @@ jobs:
       #   run: npm install
       - name: Check outdated dependencies
         id: outdated
-        run: echo "outdated_dependencies=$(echo yo)" >> "$GITHUB_OUTPUT"
+        run: echo "$(echo yo)" >> "$GITHUB_OUTPUT"
       - name: Report Status
         run: echo $OUTDATED_DEPENDENCIES
         env:
-          OUTDATED_DEPENDENCIES: ${{ steps.outdated.outputs.outdated_dependencies }}
+          OUTDATED_DEPENDENCIES: ${{ steps.outdated.outputs }}
       # - name: Report Status
       #   if: always()
       #   uses: ravsamhq/notify-slack-action@v2
