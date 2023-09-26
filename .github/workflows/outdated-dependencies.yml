@@ -25,9 +25,9 @@ jobs:
         id: outdated
         run: |
           {
-            echo 'OUTDATED_DEPENDENCIES<<delimiter'
+            echo 'OUTDATED_DEPENDENCIES<<EOL'
             echo $(npm outdated)
-            echo delimiter
+            echo EOL
           } >> "$GITHUB_ENV"
           npm outdated
       - name: Report Status
@@ -38,7 +38,7 @@ jobs:
           message_format: |
             {emoji} *{workflow}* {status_message} in <{repo_url}|{repo}>
             ```
-            ${{ npm outdated }}
+            ${{ env.OUTDATED_DEPENDENCIES }}
             ```
           notify_when: "failure"
           notification_title: "Outdated dependencies"
