@@ -25,9 +25,9 @@ jobs:
         id: outdated
         run: |
           {
-            echo 'OUTDATED_DEPENDENCIES<<delimiter'
-            echo $(npm outdated -p)
-            echo delimiter
+            echo 'OUTDATED_DEPENDENCIES<<apostrophe'
+            echo $(npm outdated)
+            echo apostrophe
           } >> "$GITHUB_ENV"
           npm outdated
       - name: Report Status
