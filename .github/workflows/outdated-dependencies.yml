@@ -19,8 +19,8 @@ jobs:
         uses: actions/setup-node@v1
         with:
           node-version: 18
-      # - name: Install dependencies
-      #   run: npm install
+      - name: Install dependencies
+        run: npm install
       - name: Check outdated dependencies
         id: outdated
         run: |
@@ -38,10 +38,9 @@ jobs:
           message_format: |
             {emoji} *{workflow}* {status_message} in <{repo_url}|{repo}>
             ```
-            ${OUTPUT//MISSING/HELLO}
+            ${{ env.OUTDATED_DEPENDENCIES }}
             ```
           notify_when: "failure"
           notification_title: "Outdated dependencies"
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.ACTION_MONITORING_SLACK }}
-          OUTPUT: ${{ env.OUTDATED_DEPENDENCIES }}
