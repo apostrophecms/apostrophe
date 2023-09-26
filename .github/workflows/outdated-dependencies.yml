@@ -26,7 +26,7 @@ jobs:
         id: outdated
         run: echo "outdated_dependencies=hey" >> "$GITHUB_OUTPUT"
       - name: Report Status
-        run: echo $OUTDATED_DEPENDENCIES
+        run: echo $GITHUB_OUTPUT
         env:
           OUTDATED_DEPENDENCIES: ${{ steps.outdated.outputs.outdated_dependencies }}
       # - name: Report Status
