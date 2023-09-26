@@ -22,7 +22,7 @@ jobs:
       #   run: npm install
       - name: Check outdated dependencies
         id: outdated
-        run: echo "outdated_dependencies=hey" >> "$GITHUB_OUTPUT"
+        run: echo "outdated_dependencies=$(echo yo)" >> "$GITHUB_OUTPUT"
       - name: Report Status
         run: echo $OUTDATED_DEPENDENCIES
         env:
