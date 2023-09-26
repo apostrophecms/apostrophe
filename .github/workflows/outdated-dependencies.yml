@@ -38,7 +38,7 @@ jobs:
           message_format: |
             {emoji} *{workflow}* {status_message} in <{repo_url}|{repo}>
             ```
-            ${{ env.OUTDATED_DEPENDENCIES//MISSING/HELLO }}
+            ${{ env.OUTDATED_DEPENDENCIES//'MISSING'/'HELLO' }}
             ```
           notify_when: "failure"
           notification_title: "Outdated dependencies"
