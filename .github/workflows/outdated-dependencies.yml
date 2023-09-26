@@ -22,7 +22,10 @@ jobs:
         uses: actions/setup-node@v1
         with:
           node-version: ${{ matrix.node-version }}
-      - id: run_outdated
+      - name: Install dependencies
+        run: npm install
+      - name: Check outdated dependencies
+        id: run_outdated
         run: npm outdated >> "$GITHUB_OUTPUT"
       - name: Report Status
         if: always()
