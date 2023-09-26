@@ -13,8 +13,8 @@ jobs:
     strategy:
       matrix:
         node-version: [18]
-    # outputs:
-    #   output: ${{ steps.run_outdated.outputs }}
+    outputs:
+      output: ${{ steps.run_outdated.outputs.result }}
     steps:
       - name: Git checkout
         uses: actions/checkout@v2
@@ -27,7 +27,7 @@ jobs:
       #   run: npm install
       - name: Check outdated dependencies
         id: run_outdated
-        run: npm outdated >> "$GITHUB_OUTPUT"
+        run: echo "result=$(npm outdated)" >> "$GITHUB_OUTPUT"
       - name: Report Status
         run: echo $GITHUB_OUTPUT
       # - name: Report Status
