@@ -1,5 +1,7 @@
 name: Check outdated dependencies
 on:
+  push:
+    branches: ["pro-4734-check-outdated-deps"]
   # TODO: uncomment schedule
   # schedule:
   #   # Runs Mon-Fri at 0:00 UTC ( 00:00 EST )
@@ -24,9 +26,9 @@ jobs:
         id: outdated
         run: |
           {
-            echo 'OUTDATED_DEPENDENCIES<<hey'
+            echo 'OUTDATED_DEPENDENCIES<<delimiter'
             echo $(npm outdated)
-            echo hey
+            echo delimiter
           } >> "$GITHUB_ENV"
       - name: Report Status
         run: echo env.OUTDATED_DEPENDENCIES
