@@ -10,18 +10,15 @@ on:
 jobs:
   check:
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        node-version: [18]
     outputs:
       output: ${{ steps.run_outdated.outputs.result }}
     steps:
       - name: Git checkout
         uses: actions/checkout@v2
-      - name: Use Node.js ${{ matrix.node-version }}
+      - name: Use Node.js 18
         uses: actions/setup-node@v1
         with:
-          node-version: ${{ matrix.node-version }}
+          node-version: 18
       # TODO: uncomment install
       # - name: Install dependencies
       #   run: npm install
