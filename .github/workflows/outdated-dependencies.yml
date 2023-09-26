@@ -8,7 +8,7 @@ on:
   workflow_dispatch:
 
 jobs:
-  check:
+  check_outdated_dependencies:
     runs-on: ubuntu-latest
     steps:
       - name: Git checkout
@@ -22,10 +22,10 @@ jobs:
       #   run: npm install
       - name: Check outdated dependencies
         id: run_outdated
-        run: echo heyy >> "$GITHUB_OUTPUT"
+        run: OUTPUT=$(echo heyy)
       - name: Report Status
         # run: echo ${{ steps.run_outdated.outputs.result }}
-        run: echo $GITHUB_OUTPUT
+        run: echo $OUTPUT
       # - name: Report Status
       #   if: always()
       #   uses: ravsamhq/notify-slack-action@v2
