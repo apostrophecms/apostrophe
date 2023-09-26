@@ -22,7 +22,7 @@ jobs:
       #   run: npm install
       - name: Check outdated dependencies
         id: run_outdated
-        run: OUTPUT=$(echo heyy)
+        run: export OUTPUT=$(echo heyy)
       - name: Report Status
         # run: echo ${{ steps.run_outdated.outputs.result }}
         run: echo $OUTPUT
