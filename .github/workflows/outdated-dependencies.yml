@@ -23,7 +23,7 @@ jobs:
         with:
           node-version: ${{ matrix.node-version }}
       - id: run_outdated
-        run: npm version >> "$GITHUB_OUTPUT"
+        run: npm outdated >> "$GITHUB_OUTPUT"
       - name: Report Status
         if: always()
         uses: ravsamhq/notify-slack-action@v2
