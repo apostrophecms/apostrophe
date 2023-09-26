@@ -10,8 +10,6 @@ on:
 jobs:
   check:
     runs-on: ubuntu-latest
-    outputs:
-      output: ${{ steps.run_outdated.outputs.result }}
     steps:
       - name: Git checkout
         uses: actions/checkout@v2
@@ -24,8 +22,9 @@ jobs:
       #   run: npm install
       - name: Check outdated dependencies
         id: run_outdated
-        run: echo "result=$(npm outdated)" >> "$GITHUB_OUTPUT"
+        run: echo heyy >> "$GITHUB_OUTPUT"
       - name: Report Status
+        # run: echo ${{ steps.run_outdated.outputs.result }}
         run: echo $GITHUB_OUTPUT
       # - name: Report Status
       #   if: always()
