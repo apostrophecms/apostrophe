@@ -25,20 +25,25 @@ jobs:
         id: outdated
         # run: npm outdated | awk '{ print $0 >> "$GITHUB_ENV" }'
         run: |
-          TITI=$(npm outdated) || echo "ok"
-          echo $TITI
-          echo "TOTO=\"$TITI\"" >> $GITHUB_ENV
-      - name: Report Status
-        if: always()
-        uses: ravsamhq/notify-slack-action@v2
-        with:
-          status: ${{ job.status }}
-          message_format: |
-            {emoji} *{workflow}* {status_message} in <{repo_url}|{repo}>
-            ```
-            ${{ env.TOTO }}
-            ```
-          # notify_when: "failure"
-          notification_title: "Outdated dependencies"
-        env:
-          SLACK_WEBHOOK_URL: ${{ secrets.ACTION_MONITORING_SLACK }}
+          output="This is line 1.
+            This is line 2.
+            This is line 3."
+          echo "$output"
+      - name: Yo
+        run: |
+          multiline_output="${{ steps.outdated.outputs.result }}"
+          echo "$multiline_output"
+      # - name: Report Status
+      #   if: always()
+      #   uses: ravsamhq/notify-slack-action@v2
+      #   with:
+      #     status: ${{ job.status }}
+      #     message_format: |
+      #       {emoji} *{workflow}* {status_message} in <{repo_url}|{repo}>
+      #       ```
+      #       ${{ env.TOTO }}
+      #       ```
+      #     # notify_when: "failure"
+      #     notification_title: "Outdated dependencies"
+      #   env:
+      #     SLACK_WEBHOOK_URL: ${{ secrets.ACTION_MONITORING_SLACK }}
