@@ -33,6 +33,7 @@ jobs:
       - name: Yo
         run: |
           multiline_output="${{ steps.outdated.outputs.output }}"
+          echo $multiline_output
           echo env.output
       # - name: Report Status
       #   if: always()
