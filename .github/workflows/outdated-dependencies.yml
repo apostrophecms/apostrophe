@@ -14,7 +14,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Set Multiline Output
-        id: multiline_output
         run: |
           # Use the echo command to set a multiline output
           output="This is line 1.
@@ -22,12 +21,12 @@ jobs:
           This is line 3."
 
           # Use double quotes to preserve the newlines and whitespaces
-          echo "::set-output name=multiline_output::$output"
+          echo "$output" > output.txt
 
       - name: Use Multiline Output
         run: |
-          # Retrieve the multiline output from the previous step
-          multiline_output="${{ steps.multiline_output.outputs.multiline_output }}"
+          # Read the multiline output from the temporary file
+          multiline_output=$(cat output.txt)
 
           # Use the multiline output in subsequent steps or for other purposes
           echo "Multiline Output:"
