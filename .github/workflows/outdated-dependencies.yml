@@ -29,14 +29,14 @@ jobs:
         if: failure()
         run: |
           outdated_dependencies=$(cat output)
-          repo="$github.repository"
-          repo_url="$github.server_url/$repo"
-          run_url="$repo_url/actions/runs/${{ job.run_id }}"
-          text="⚠️ The <$repo_url|$repo> project has outdated dependencies:
+          repo="${{ github.repository }}"
+          repo_url="${{ github.server_url }}/${{ repo }}"
+          run_url="${{ repo_url }}/actions/runs/${{ job.run_id }}"
+          text="⚠️ The <${{ repo_url }}|${{ repo }}> project has outdated dependencies:
           \`\`\`
           $outdated_dependencies
           \`\`\`
-          <{run_url}|View Run> | "
+          <${{ run_url }}|View Run>"
           payload="{\"text\": \"$text\"}"
           curl -X POST -H 'Content-type: application/json' --data "$payload" $SLACK_WEBHOOK_URL
         env:
