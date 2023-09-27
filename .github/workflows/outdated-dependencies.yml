@@ -21,12 +21,12 @@ jobs:
           This is line 3."
 
           # Use double quotes to preserve the newlines and whitespaces
-          echo "$output" > output.txt
+          echo "$output" > output
 
       - name: Use Multiline Output
         run: |
           # Read the multiline output from the temporary file
-          multiline_output=$(cat output.txt)
+          multiline_output=$(cat output)
 
           # Use the multiline output in subsequent steps or for other purposes
           echo "Multiline Output:"
