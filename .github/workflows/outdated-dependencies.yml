@@ -31,7 +31,7 @@ jobs:
           outdated_dependencies=$(cat output)
           repo="$github.repository"
           repo_url="$github.server_url/$repo"
-          run_url="${repo_url}/actions/runs/${job.run_id}"
+          run_url="$repo_url/actions/runs/${{ job.run_id }}"
           text="⚠️ The <$repo_url|$repo> project has outdated dependencies:
           \`\`\`
           $outdated_dependencies
