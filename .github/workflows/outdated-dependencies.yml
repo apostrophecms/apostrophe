@@ -19,8 +19,8 @@ jobs:
         uses: actions/setup-node@v1
         with:
           node-version: 18
-      - name: Install dependencies
-        run: npm install
+      # - name: Install dependencies
+      #   run: npm install
       - name: Check outdated dependencies
         run: |
           outdated_dependencies=$(npm outdated) || echo "OKKKKKKKKKKKKKKKKKKKKK"
