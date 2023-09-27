@@ -29,7 +29,7 @@ jobs:
             echo $(npm outdated)
             echo delimiter
           } >> "$GITHUB_ENV"
-          npm outdated
+          echo $OUTDATED_DEPENDENCIES
       - name: Report Status
         if: always()
         uses: ravsamhq/notify-slack-action@v2
