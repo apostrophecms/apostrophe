@@ -29,6 +29,7 @@ jobs:
             This is line 2.
             This is line 3."
           echo "$output"
+      #  SAOULE
       - name: Yo
         run: |
           multiline_output="${{ steps.outdated.outputs.output }}"
