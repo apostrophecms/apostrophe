@@ -26,7 +26,7 @@ jobs:
         run: |
           {
             echo 'OUTDATED_DEPENDENCIES<<delimiter'
-            echo $(npm outdated)
+            echo $(npm outdated | awk '{print $0 "\n"}')
             echo delimiter
           } >> "$GITHUB_ENV"
           npm outdated
