@@ -25,8 +25,8 @@ jobs:
         id: outdated
         # run: npm outdated | awk '{ print $0 >> "$GITHUB_ENV" }'
         run: |
-          echo 'TOTO="@babel/eslint-parser        7.21.8  7.22.15  7.22.15  node_modules/@babel/eslint-parser     here     apostrophe"' >> "$GITHUB_ENV"
-          echo $TOTO
+          echo 'TOTO="@babel/eslint-parser        7.21.8  7.22.15  7.22.15  node_modules/@babel/eslint-parser     here     apostrophe"' >> $GITHUB_ENV
+          cat $GITHUB_ENV
       - name: Report Status
         if: always()
         uses: ravsamhq/notify-slack-action@v2
