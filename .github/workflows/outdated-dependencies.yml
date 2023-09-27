@@ -25,7 +25,7 @@ jobs:
         id: outdated
         # run: npm outdated | awk '{ print $0 >> "$GITHUB_ENV" }'
         run: |
-          OUTPUT="$(npm outdated)"
+          OUTPUT="$(npm outdated)" || echo "do not fail"
           echo $OUTPUT
       - name: Report Status
         if: always()
