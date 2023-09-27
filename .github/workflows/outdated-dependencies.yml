@@ -31,7 +31,7 @@ jobs:
           echo "$output"
       - name: Yo
         run: |
-          multiline_output="${{ steps.outdated.outputs.result }}"
+          multiline_output="${{ steps.outdated.outputs.output }}"
           echo "$multiline_output"
       # - name: Report Status
       #   if: always()
