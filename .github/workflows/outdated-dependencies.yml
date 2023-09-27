@@ -30,10 +30,10 @@ jobs:
         run: |
           outdated_dependencies=$(cat output)
           text="⚠️ The <${{ github.repositoryUrl }}|${{ github.repository }}> project has outdated dependencies:
-
-          \`\`\`$outdated_dependencies\`\`\`
-          "
-          payload="{\"text\": \"$text\"}"
+          \`\`\`
+          $outdated_dependencies
+          \`\`\`"
+          payload="{\"text\": $text}"
           curl -X POST -H 'Content-type: application/json' --data "$payload" $SLACK_WEBHOOK_URL
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.ACTION_MONITORING_SLACK }}
