@@ -13,39 +13,59 @@ jobs:
   check_outdated_dependencies:
     runs-on: ubuntu-latest
     steps:
-      - name: Git checkout
-        uses: actions/checkout@v2
-      - name: Use Node.js 18
-        uses: actions/setup-node@v1
-        with:
-          node-version: 18
-      # - name: Install dependencies
-      #   run: npm install
-      - name: Check outdated dependencies
-        id: outdated
-        # run: npm outdated | awk '{ print $0 >> "$GITHUB_ENV" }'
+      - name: Set Multiline Output
+        id: multiline_output
         run: |
+          # Use the echo command to set a multiline output
           output="This is line 1.
-            This is line 2.
-            This is line 3."
-          echo "$output"
-      #  SAOULE
-      - name: Yo
+          This is line 2.
+          This is line 3."
+
+          # Use double quotes to preserve the newlines and whitespaces
+          echo "::set-output name=multiline_output::$output"
+
+      - name: Use Multiline Output
         run: |
-          multiline_output="${{ steps.outdated.outputs.output }}"
-          echo $multiline_output
-          echo env.output
-      # - name: Report Status
-      #   if: always()
-      #   uses: ravsamhq/notify-slack-action@v2
-      #   with:
-      #     status: ${{ job.status }}
-      #     message_format: |
-      #       {emoji} *{workflow}* {status_message} in <{repo_url}|{repo}>
-      #       ```
-      #       ${{ env.TOTO }}
-      #       ```
-      #     # notify_when: "failure"
-      #     notification_title: "Outdated dependencies"
-      #   env:
-      #     SLACK_WEBHOOK_URL: ${{ secrets.ACTION_MONITORING_SLACK }}
+          # Retrieve the multiline output from the previous step
+          multiline_output="${{ steps.multiline_output.outputs.multiline_output }}"
+
+          # Use the multiline output in subsequent steps or for other purposes
+          echo "Multiline Output:"
+          echo "$multiline_output"
+    # steps:
+    #   - name: Git checkout
+    #     uses: actions/checkout@v2
+    #   - name: Use Node.js 18
+    #     uses: actions/setup-node@v1
+    #     with:
+    #       node-version: 18
+    #   # - name: Install dependencies
+    #   #   run: npm install
+    #   - name: Check outdated dependencies
+    #     id: outdated
+    #     # run: npm outdated | awk '{ print $0 >> "$GITHUB_ENV" }'
+    #     run: |
+    #       output="This is line 1.
+    #         This is line 2.
+    #         This is line 3."
+    #       echo "$output"
+    #   #  SAOULE
+    #   - name: Yo
+    #     run: |
+    #       multiline_output="${{ steps.outdated.outputs.output }}"
+    #       echo $multiline_output
+    #       echo env.output
+    #   # - name: Report Status
+    #   #   if: always()
+    #   #   uses: ravsamhq/notify-slack-action@v2
+    #   #   with:
+    #   #     status: ${{ job.status }}
+    #   #     message_format: |
+    #   #       {emoji} *{workflow}* {status_message} in <{repo_url}|{repo}>
+    #   #       ```
+    #   #       ${{ env.TOTO }}
+    #   #       ```
+    #   #     # notify_when: "failure"
+    #   #     notification_title: "Outdated dependencies"
+    #   #   env:
+    #   #     SLACK_WEBHOOK_URL: ${{ secrets.ACTION_MONITORING_SLACK }}
