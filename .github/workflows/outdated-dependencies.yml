@@ -19,15 +19,18 @@ jobs:
         uses: actions/setup-node@v1
         with:
           node-version: 18
-      # - name: Install dependencies
-      #   run: npm install
+      - name: Install dependencies
+        run: npm install
       - name: Check outdated dependencies
         run: |
-          outdated_dependencies=$(npm outdated)
+          outdated_dependencies=$(npm outdated) || echo "OKKKKKKKKKKKKKKKKKKKKK"
+          exit_status=$?
+          echo $outdated_dependencies > output
+          exit $exit_status
       - name: Report Status
         if: failure()
         run: |
-          # outdated_dependencies=$(cat output)
+          outdated_dependencies=$(cat output)
           text="The project has outdated dependencies:
 
           \`\`\`$outdated_dependencies\`\`\`
