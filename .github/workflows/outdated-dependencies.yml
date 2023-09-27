@@ -24,13 +24,10 @@ jobs:
       - name: Check outdated dependencies
         run: |
           outdated_dependencies=$(npm outdated)
-          exit_status=$?
-          echo $outdated_dependencies > output
-          exit $exit_status
       - name: Report Status
         if: failure()
         run: |
-          outdated_dependencies=$(cat output)
+          # outdated_dependencies=$(cat output)
           text="The project has outdated dependencies:
 
           \`\`\`$outdated_dependencies\`\`\`
