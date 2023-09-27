@@ -25,7 +25,7 @@ jobs:
         id: outdated
         # run: npm outdated | awk '{ print $0 >> "$GITHUB_ENV" }'
         run: |
-          TITI=$(npm outdated)
+          TITI=$(npm outdated) || echo "ok"
           echo "TOTO=$TITI" >> $GITHUB_ENV
           cat $GITHUB_ENV
       - name: Report Status
