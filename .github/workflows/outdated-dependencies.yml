@@ -25,7 +25,7 @@ jobs:
         id: outdated
         # run: npm outdated | awk '{ print $0 >> "$GITHUB_ENV" }'
         run: |
-          echo 'OUTPUT="@babel/eslint-parser        7.21.8  7.22.15  7.22.15  node_modules/@babel/eslint-parser     here     apostrophe"'
+          OUTPUT="@babel/eslint-parser        7.21.8  7.22.15  7.22.15  node_modules/@babel/eslint-parser     here     apostrophe"
           echo $OUTPUT
       - name: Report Status
         if: always()
