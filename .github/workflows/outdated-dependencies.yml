@@ -35,7 +35,7 @@ jobs:
           message_format: |
             {emoji} *{workflow}* {status_message} in <{repo_url}|{repo}>
             ```
-            $( cat $GITHUB_ENV )
+            ${{ cat $GITHUB_ENV }}
             ```
           # notify_when: "failure"
           notification_title: "Outdated dependencies"
