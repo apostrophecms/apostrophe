@@ -21,20 +21,15 @@ jobs:
           node-version: 18
       # - name: Install dependencies
       #   run: npm install
-      # - name: Check outdated dependencies
-      #   id: outdated
-      #   run: |
-      #     {
-      #       echo 'OUTDATED_DEPENDENCIES<<delimiter'
-      #       echo $(npm outdated | awk '{print $0 "HELLO \n \\n \\\n" \n \\n \\\n}')
-      #       echo delimiter
-      #     } >> "$GITHUB_ENV"
-      #     npm outdated
       - name: Check outdated dependencies
         id: outdated
         run: |
-          npm outdated > hello
-          cat hello
+          {
+            echo "OUTDATED_DEPENDENCIES<<delimiter"
+            echo $(npm outdated)
+            echo delimiter
+          } >> "$GITHUB_ENV"
+          npm outdated
       - name: Report Status
         if: always()
         uses: ravsamhq/notify-slack-action@v2
