@@ -13,15 +13,16 @@ jobs:
   check_outdated_dependencies:
     runs-on: ubuntu-latest
     steps:
+      - name: Git checkout
+        uses: actions/checkout@v2
+      - name: Use Node.js 18
+        uses: actions/setup-node@v1
+        with:
+          node-version: 18
       - name: Set Multiline Output
         run: |
-          # Use the echo command to set a multiline output
-          output="This is line 1.
-          This is line 2.
-          This is line 3."
-
           # Use double quotes to preserve the newlines and whitespaces
-          echo "$output" > output
+          echo "$(npm outdated)" > output
 
       - name: Use Multiline Output
         run: |
