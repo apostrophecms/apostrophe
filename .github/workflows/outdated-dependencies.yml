@@ -33,7 +33,7 @@ jobs:
       - name: Yo
         run: |
           multiline_output="${{ steps.outdated.outputs.output }}"
-          echo "$output"
+          echo env.output
       # - name: Report Status
       #   if: always()
       #   uses: ravsamhq/notify-slack-action@v2
