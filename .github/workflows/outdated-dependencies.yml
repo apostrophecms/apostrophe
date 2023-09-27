@@ -37,7 +37,7 @@ jobs:
             ```
             ${{ env.TOTO }}
             ```
-          notify_when: "failure"
+          # notify_when: "failure"
           notification_title: "Outdated dependencies"
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.ACTION_MONITORING_SLACK }}
