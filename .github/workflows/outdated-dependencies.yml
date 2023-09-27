@@ -23,15 +23,13 @@ jobs:
       #   run: npm install
       - name: Check outdated dependencies
         run: |
-          outdated_dependencies=$(npm outdated) || echo "OKKKKKKKKKKKKKKKKKKKKK"
-          exit_status=$?
-          echo $outdated_dependencies > output
-          exit $exit_status
+          echo "$(npm outdated)" > output
+          npm outdated
       - name: Report Status
         if: failure()
         run: |
           outdated_dependencies=$(cat output)
-          text="The project has outdated dependencies:
+          text="⚠️ The <${{ github.repositoryUrl }}|${{ github.repository }}> project has outdated dependencies:
 
           \`\`\`$outdated_dependencies\`\`\`
           "
