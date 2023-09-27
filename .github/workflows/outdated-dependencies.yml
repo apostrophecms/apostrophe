@@ -35,9 +35,7 @@ jobs:
         if: always()
         run: |
           multiline_output=$(cat output)
-          payload="{\"text\": \"$multiline_output\"}"
-
-          # Send the payload to Slack using curl
+          payload="{\"text\": \"```$multiline_output```\"}"
           curl -X POST -H 'Content-type: application/json' --data "$payload" $SLACK_WEBHOOK_URL
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.ACTION_MONITORING_SLACK }}
