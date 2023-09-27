@@ -23,13 +23,10 @@ jobs:
       #   run: npm install
       - name: Check outdated dependencies
         id: outdated
+        # run: npm outdated | awk '{ print $0 >> "$GITHUB_ENV" }'
         run: |
-          {
-            echo "OUTDATED_DEPENDENCIES<<delimiter"
-            echo $(npm outdated)
-            echo delimiter
-          } >> "$GITHUB_ENV"
-          echo $OUTDATED_DEPENDENCIES
+          echo 'TOTO="@babel/eslint-parser        7.21.8  7.22.15  7.22.15  node_modules/@babel/eslint-parser     here     apostrophe"' >> "$GITHUB_ENV"
+          echo $TOTO
       - name: Report Status
         if: always()
         uses: ravsamhq/notify-slack-action@v2
@@ -38,7 +35,7 @@ jobs:
           message_format: |
             {emoji} *{workflow}* {status_message} in <{repo_url}|{repo}>
             ```
-            ${{ env.OUTDATED_DEPENDENCIES }}
+            ${{ env.TOTO }}
             ```
           notify_when: "failure"
           notification_title: "Outdated dependencies"
