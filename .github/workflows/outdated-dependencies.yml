@@ -19,11 +19,10 @@ jobs:
         uses: actions/setup-node@v1
         with:
           node-version: 18
-      - name: Set Multiline Output
-        run: |
-          # Use double quotes to preserve the newlines and whitespaces
-          echo "$(npm outdated)" > output
-
+      - name: Install dependencies
+        run: npm install
+      - name: Check outdated dependencies
+        run: echo "$(npm outdated)" > output
       - name: Use Multiline Output
         run: |
           # Read the multiline output from the temporary file
@@ -32,40 +31,19 @@ jobs:
           # Use the multiline output in subsequent steps or for other purposes
           echo "Multiline Output:"
           echo "$multiline_output"
-    # steps:
-    #   - name: Git checkout
-    #     uses: actions/checkout@v2
-    #   - name: Use Node.js 18
-    #     uses: actions/setup-node@v1
-    #     with:
-    #       node-version: 18
-    #   # - name: Install dependencies
-    #   #   run: npm install
-    #   - name: Check outdated dependencies
-    #     id: outdated
-    #     # run: npm outdated | awk '{ print $0 >> "$GITHUB_ENV" }'
-    #     run: |
-    #       output="This is line 1.
-    #         This is line 2.
-    #         This is line 3."
-    #       echo "$output"
-    #   #  SAOULE
-    #   - name: Yo
-    #     run: |
-    #       multiline_output="${{ steps.outdated.outputs.output }}"
-    #       echo $multiline_output
-    #       echo env.output
-    #   # - name: Report Status
-    #   #   if: always()
-    #   #   uses: ravsamhq/notify-slack-action@v2
-    #   #   with:
-    #   #     status: ${{ job.status }}
-    #   #     message_format: |
-    #   #       {emoji} *{workflow}* {status_message} in <{repo_url}|{repo}>
-    #   #       ```
-    #   #       ${{ env.TOTO }}
-    #   #       ```
-    #   #     # notify_when: "failure"
-    #   #     notification_title: "Outdated dependencies"
-    #   #   env:
-    #   #     SLACK_WEBHOOK_URL: ${{ secrets.ACTION_MONITORING_SLACK }}
+      - name: Report Status
+        if: always()
+        uses: ravsamhq/notify-slack-action@v2
+        with:
+          status: ${{ job.status }}
+          message_format: |
+            {emoji} *{workflow}* {status_message} in <{repo_url}|{repo}>
+            ```
+            ${{ env.multiline_output }}
+            ${{ env.OUTDATED_DEPENDENCIES }}
+            ```
+          # notify_when: "failure"
+          notification_title: "Outdated dependencies"
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.ACTION_MONITORING_SLACK }}
+          OUTDATED_DEPENDENCIES: ${{ env.multiline_output }}
