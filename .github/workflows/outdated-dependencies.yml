@@ -33,17 +33,27 @@ jobs:
           echo "$multiline_output"
       - name: Report Status
         if: always()
-        uses: ravsamhq/notify-slack-action@v2
-        with:
-          status: ${{ job.status }}
-          message_format: |
-            {emoji} *{workflow}* {status_message} in <{repo_url}|{repo}>
-            ```
-            ${{ env.multiline_output }}
-            ${{ env.OUTDATED_DEPENDENCIES }}
-            ```
-          # notify_when: "failure"
-          notification_title: "Outdated dependencies"
+        run: |
+          multiline_output=$(cat output)
+          payload="{\"text\": \"$multiline_output\"}"
+
+          # Send the payload to Slack using curl
+          curl -X POST -H 'Content-type: application/json' --data "$payload" $SLACK_WEBHOOK_URL
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.ACTION_MONITORING_SLACK }}
-          OUTDATED_DEPENDENCIES: ${{ env.multiline_output }}
+      # - name: Report Status
+      #   if: always()
+      #   uses: ravsamhq/notify-slack-action@v2
+      #   with:
+      #     status: ${{ job.status }}
+      #     message_format: |
+      #       {emoji} *{workflow}* {status_message} in <{repo_url}|{repo}>
+      #       ```
+      #       ${{ env.multiline_output }}
+      #       ${{ env.OUTDATED_DEPENDENCIES }}
+      #       ```
+      #     # notify_when: "failure"
+      #     notification_title: "Outdated dependencies"
+      #   env:
+      #     SLACK_WEBHOOK_URL: ${{ secrets.ACTION_MONITORING_SLACK }}
+      #     OUTDATED_DEPENDENCIES: ${{ env.multiline_output }}
