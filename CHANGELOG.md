@@ -13,6 +13,10 @@
 for everyone with this release. This is necessary because Vimeo stopped
 offering oembed discovery meta tags on their video pages.
 
+### Fixes
+
+* The `118n` module now ignores non-JSON files within the i18n folder of any module and does not crash the build process.
+
 ## 3.56.0 (2023-09-13)
 
 ### Adds

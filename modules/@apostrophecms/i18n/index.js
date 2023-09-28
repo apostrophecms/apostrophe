@@ -523,7 +523,15 @@ module.exports = {
               self.namespaces[ns].browser = self.namespaces[ns].browser ||
                 (metadata[ns] && metadata[ns].browser);
               const namespaceDir = path.join(localizationsDir, ns);
+              if (!fs.statSync(namespaceDir).isDirectory()) {
+                // Skip non-directory items, such as hidden files
+                continue;
+              }
               for (const localizationFile of fs.readdirSync(namespaceDir)) {
+                if (!localizationFile.endsWith('.json')) {
+                  // Exclude parsing of non-JSON files, like hidden files, in the namespace directory
+                  continue;
+                }
                 const fullLocalizationFile = path.join(namespaceDir, localizationFile);
                 const data = JSON.parse(fs.readFileSync(fullLocalizationFile));
                 const locale = localizationFile.replace('.json', '');
