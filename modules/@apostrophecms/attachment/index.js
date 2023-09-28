@@ -465,8 +465,12 @@ module.exports = {
       },
 
       async update(req, file, attachment) {
-        await self.alterAttachment(attachment, 'remove');
-        await self.apos.attachment.db.deleteOne({ _id: attachment._id });
+        const existing = await self.db.findOne({ _id: attachment._id });
+        if (!existing) {
+          throw self.apos.error('notfound');
+        }
+        await self.alterAttachment(existing, 'remove');
+        await self.db.deleteOne({ _id: existing._id });
         await self.insert(req, file, {
           attachmentId: attachment._id,
           docIds: attachment.docIds,
