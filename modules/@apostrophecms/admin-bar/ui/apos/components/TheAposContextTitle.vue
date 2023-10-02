@@ -18,13 +18,13 @@
       <span class="apos-admin-bar__title__document-title">
         {{ context.title }}
       </span>
-      <span class="apos-admin-bar__title__separator">
-        —
-      </span>
       <div
         v-if="!isAutopublished"
         class="apos-admin-bar__title__context"
       >
+        <span class="apos-admin-bar__title__separator">
+          —
+        </span>
         <AposContextMenu
           v-if="!isUnpublished"
           class="apos-admin-bar__title__document"

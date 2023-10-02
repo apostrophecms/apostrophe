@@ -232,7 +232,7 @@ module.exports = {
       getAll: [
         ...enableCacheOnDemand ? [ expressCacheOnDemand ] : [],
         async (req) => {
-          self.publicApiCheck(req);
+          await self.publicApiCheckAsync(req);
           const query = self.getRestQuery(req);
           if (!query.get('perPage')) {
             query.perPage(
@@ -272,7 +272,7 @@ module.exports = {
         ...enableCacheOnDemand ? [ expressCacheOnDemand ] : [],
         async (req, _id) => {
           _id = self.inferIdLocaleAndMode(req, _id);
-          self.publicApiCheck(req);
+          await self.publicApiCheckAsync(req);
           const doc = self.removeForbiddenFields(
             req,
             await self.getRestQuery(req).and({ _id }).toObject()
@@ -299,7 +299,7 @@ module.exports = {
         }
       ],
       async post(req) {
-        self.publicApiCheck(req);
+        await self.publicApiCheckAsync(req);
         if (req.body._newInstance) {
           const newInstance = self.newInstance();
           newInstance._previewable = self.addUrlsViaModule && (await self.addUrlsViaModule.readyToAddUrlsToPieces(req, self.name));
@@ -310,12 +310,12 @@ module.exports = {
       },
       async put(req, _id) {
         _id = self.inferIdLocaleAndMode(req, _id);
-        self.publicApiCheck(req);
+        await self.publicApiCheckAsync(req);
         return self.convertUpdateAndRefresh(req, req.body, _id);
       },
       async delete(req, _id) {
         _id = self.inferIdLocaleAndMode(req, _id);
-        self.publicApiCheck(req);
+        await self.publicApiCheckAsync(req);
         const piece = await self.findOneForEditing(req, {
           _id
         });
@@ -323,7 +323,7 @@ module.exports = {
       },
       async patch(req, _id) {
         _id = self.inferIdLocaleAndMode(req, _id);
-        self.publicApiCheck(req);
+        await self.publicApiCheckAsync(req);
         return self.convertPatchAndRefresh(req, req.body, _id);
       }
     };
@@ -1028,10 +1028,13 @@ module.exports = {
         piece.title = 'Generated #' + (i + 1);
         return piece;
       },
-      getRestQuery(req) {
+      // Can be extended on a project level with `_super(req, true)` to disable
+      // permission check and public API projection. You shouldn't do this
+      // if you're not sure what you're doing.
+      getRestQuery(req, omitPermissionCheck = false) {
         const query = self.find(req).attachments(true);
         query.applyBuildersSafely(req.query);
-        if (!self.canAccessApi(req)) {
+        if (!omitPermissionCheck && !self.canAccessApi(req)) {
           if (!self.options.publicApiProjection) {
             // Shouldn't be needed thanks to publicApiCheck, but be sure
             query.and({
@@ -1057,6 +1060,11 @@ module.exports = {
             throw self.apos.error('notfound');
           }
         }
+      },
+      // An async version of the above. It can be overridden to implement
+      // an asynchronous check of the public API permissions.
+      async publicApiCheckAsync(req) {
+        return self.publicApiCheck(req);
       },
       // If the piece does not yet have a slug, add one based on the
       // title; throw an error if there is no title
