@@ -1,5 +1,13 @@
 # Changelog
 
+## Unreleased
+
+### Add
+
+* Allows to insert attachments with a given ID, as well as with `docIds` and `atchiveDocIds` to preserve related docs.
+* Adds an `update` method to the attachment module, that update the mongoDB doc and the associated file.
+* Adds an option to the `http` `remote` method to allow receiving the original response from `node-fetch` that is a stream.
+
 ## 3.57.0 2023-09-27
 
 ### Adds
