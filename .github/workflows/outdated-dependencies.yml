@@ -1,37 +1,43 @@
 name: Check outdated dependencies
 on:
-  # TODO: uncomment schedule
-  # schedule:
-  #   # Runs Mon-Fri at 0:00 UTC ( 00:00 EST )
-  #   - cron: "0 0 * * 1-5"
+  schedule:
+    # Runs every Monday at 8:00
+    - cron: "0 8 * * MON"
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
 
 jobs:
-  check:
+  check_outdated_dependencies:
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        node-version: [18]
-    # outputs:
-    #   output: ${{ steps.run_outdated.outputs }}
     steps:
       - name: Git checkout
         uses: actions/checkout@v2
-      - name: Use Node.js ${{ matrix.node-version }}
+      - name: Use Node.js 18
         uses: actions/setup-node@v1
         with:
-          node-version: ${{ matrix.node-version }}
-      - id: run_outdated
-        run: npm outdated >> "$GITHUB_OUTPUT"
+          node-version: 18
+      - name: Install dependencies
+        run: npm install
+      - name: Check outdated dependencies
+        run: |
+          echo "$(npm outdated)" > output
+          npm outdated
       - name: Report Status
-        if: always()
-        uses: ravsamhq/notify-slack-action@v2
-        with:
-          status: ${{ job.status }}
-          message_format: "{emoji} *{workflow}* {status_message} in <{repo_url}|{repo}>"
-          footer: "<{run_url}|View Run> | $GITHUB_OUTPUT"
-          notify_when: "failure"
-          notification_title: "outdated dependencies"
+        if: failure()
+        run: |
+          outdated_dependencies=$(cat output)
+
+          repo="${{ github.repository }}"
+          repo_url="${{ github.server_url }}/$repo"
+          run_url="$repo_url/actions/runs/${{ github.run_id }}"
+
+          text="⚠️ The <$repo_url|$repo> project has outdated dependencies:
+          \`\`\`
+          $outdated_dependencies
+          \`\`\`
+          <$run_url|View Run>"
+
+          payload="{\"text\": \"$text\"}"
+          curl -X POST -H 'Content-type: application/json' --data "$payload" $SLACK_WEBHOOK_URL
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.ACTION_MONITORING_SLACK }}
