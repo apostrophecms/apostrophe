@@ -168,7 +168,6 @@ module.exports = {
               }
 
               const attachment = await self.insert(req, file);
-
               self.all({ attachment }, { annotate: true });
 
               return attachment;
@@ -415,8 +414,8 @@ module.exports = {
           title: self.apos.util.sortify(path.basename(file.name, path.extname(file.name))),
           extension: extension,
           type: 'attachment',
-          docIds: options.docIds || [],
-          archivedDocIds: options.archivedDocIds || []
+          docIds: options.docIds ?? [],
+          archivedDocIds: options.archivedDocIds ?? []
         };
         if (!(options.permissions === false)) {
           if (!self.apos.permission.can(req, 'upload-attachment')) {
