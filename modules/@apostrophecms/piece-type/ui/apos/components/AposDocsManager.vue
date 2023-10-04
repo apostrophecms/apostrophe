@@ -108,27 +108,7 @@
             }"
           />
           <div v-else class="apos-pieces-manager__empty">
-
-            <!-- <AposEmptyState :empty-state="emptyDisplay" /> -->
-            <img class="apos-pieces-manager__empty-image" src="apos-frontend/default/modules/@apostrophecms/ui/document.svg">
-            <div class="apos-pieces-manager__empty-title">
-              No matching {{ moduleLabels.plural.toLowerCase() }}
-            </div>
-            <div class="apos-pieces-manager__empty-description">
-              No {{ $t(moduleLabels.plural).toLowerCase() }} match the current filter, or you haven't created any yet.
-            </div>
-            <div
-              v-if="moduleOptions.canEdit && moduleOptions.showCreate"
-              class="apos-pieces-manager__empty-controls"
-            >
-              <AposButton
-                :label="{
-                  key: 'apostrophe:newDocType',
-                  type: $t(moduleOptions.label)
-                }" type="primary"
-                @click="create"
-              />
-            </div>
+            <AposEmptyState :empty-state="emptyDisplay" />
           </div>
         </template>
       </AposModalBody>
@@ -160,8 +140,7 @@ export default {
         active: false,
         triggerFocusRefresh: 0,
         type: 'overlay',
-        showModal: false,
-        width: 'two-thirds'
+        showModal: false
       },
       headers: [],
       items: [],
@@ -494,7 +473,6 @@ export default {
   // `apos-media-manager__empty`. We should combine somehow.
   .apos-pieces-manager__empty {
     display: flex;
-    flex-direction: column;
     justify-content: center;
     align-items: center;
     width: 100%;
@@ -508,21 +486,5 @@ export default {
 
   .apos-pieces-manager__relationship__counts {
     margin-bottom: 20px;
-  }
-
-  .apos-pieces-manager__empty-image {
-    max-width: 200px;
-    margin-bottom: $spacing-base;
-  }
-
-  .apos-pieces-manager__empty-title {
-    @include type-title;
-    margin-bottom: $spacing-base;
-  }
-
-  .apos-pieces-manager__empty-description {
-    @include type-large;
-    color: var(--a-base-4);
-    margin-bottom: $spacing-double;
   }
 </style>

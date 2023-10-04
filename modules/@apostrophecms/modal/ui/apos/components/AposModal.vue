@@ -16,7 +16,7 @@
       @focus.capture="storeFocusedElement"
       data-apos-modal
     >
-      <transition name="fade">
+      <transition :name="transitionType">
         <div
           @click="close"
           v-if="modal.showModal"
@@ -282,24 +282,24 @@ export default {
   .apos-modal__inner {
     z-index: $z-index-modal;
     position: fixed;
-    top: 0;
-    right: 0;
-    bottom: 0;
-    left: 0;
+    top: $spacing-base;
+    right: $spacing-base;
+    bottom: $spacing-base;
+    left: $spacing-base;
     display: grid;
-    width: calc(100vw - #{$spacing-base * 2});
-    height: calc(100vh - #{$spacing-base * 2});
-    margin: auto;
     grid-template-rows: auto 1fr auto;
-    border-radius: var(--a-border-radius-large);
+    height: calc(100vh - #{$spacing-base * 2});
+    border-radius: var(--a-border-radius);
     background-color: var(--a-background-primary);
     border: 1px solid var(--a-base-9);
     color: var(--a-text-primary);
 
     @include media-up(lap) {
-      width: calc(100vw - #{$spacing-double * 2});
+      top: $spacing-double;
+      right: $spacing-double;
+      bottom: $spacing-double;
+      left: $spacing-double;
       height: calc(100vh - #{$spacing-double * 2});
-      // margin: $spacing-double;
     }
 
     .apos-modal--slide & {
@@ -350,14 +350,14 @@ export default {
     }
 
     .apos-modal--overlay & {
-      transform: scale(1) translateY(0);
+      transform: scale(1);
       transition: opacity 0.15s ease, transform 0.15s ease;
     }
 
     &.fade-enter,
     &.fade-leave-to {
       opacity: 0;
-      transform: scale(0.95) translateY(30px);
+      transform: scale(0.95);
     }
   }
 
