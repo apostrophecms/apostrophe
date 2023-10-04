@@ -2,8 +2,12 @@
 
 ## 3.57.0 2023-09-27
 
+### Changes
+* Removes a 25px gap used to prevent in-context widget UI from overlapping with the admin bar
+* Simplifies the way in-context widget state is rendered via modifier classes
 ### Adds
 
+* Widgets detect whether or not their in-context editing UI will collide with the admin bar and adjust it appropriately.
 * Italian translation i18n file created for the Apostrophe Admin-UI. Thanks to [Antonello Zanini](https://github.com/Tonel) for this contribution.
 * Fixed date in piece type being displayed as current date in column when set as undefined and without default value. Thanks to [TheSaddestBread](https://github.com/AllanKoder) for this contribution.
 
