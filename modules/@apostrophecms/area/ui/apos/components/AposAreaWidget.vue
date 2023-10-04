@@ -7,19 +7,17 @@
     :data-area-label="widgetLabel"
     :data-apos-widget-foreign="foreign ? 1 : 0"
     :data-apos-widget-id="widget._id"
-    ref="widget"
   >
     <div
       class="apos-area-widget-inner"
-      :class="containerClasses"
+      :class="ui.container"
       @mouseover="mouseover($event)"
       @mouseleave="mouseleave"
       @click="getFocus($event, widget._id)"
     >
       <div
         class="apos-area-widget-controls apos-area-widget__label"
-        ref="label"
-        :class="labelsClasses"
+        :class="ui.labels"
       >
         <ol class="apos-area-widget__breadcrumbs">
           <li class="apos-area-widget__breadcrumb apos-area-widget__breadcrumb--widget-icon">
@@ -58,7 +56,7 @@
       </div>
       <div
         class="apos-area-widget-controls apos-area-widget-controls--add apos-area-widget-controls--add--top"
-        :class="addClasses"
+        :class="ui.addTop"
       >
         <AposAreaMenu
           v-if="!foreign"
@@ -75,7 +73,7 @@
       </div>
       <div
         class="apos-area-widget-controls apos-area-widget-controls--modify"
-        :class="controlsClasses"
+        :class="ui.controls"
       >
         <AposWidgetControls
           v-if="!foreign"
@@ -100,7 +98,7 @@
       -->
       <div
         class="apos-area-widget-guard"
-        :class="{'apos-is-disabled': isFocused}"
+        :class="{'apos-is-disabled': focused}"
       />
       <!-- Still used for contextual editing components -->
       <component
@@ -111,7 +109,7 @@
         :value="widget"
         @update="$emit('update', $event)"
         :doc-id="docId"
-        :focused="isFocused"
+        :focused="focused"
         :key="generation"
       />
       <component
@@ -130,7 +128,7 @@
       />
       <div
         class="apos-area-widget-controls apos-area-widget-controls--add apos-area-widget-controls--add--bottom"
-        :class="addClasses"
+        :class="ui.addBottom"
       >
         <AposAreaMenu
           v-if="!foreign"
@@ -150,6 +148,7 @@
 </template>
 
 <script>
+import { klona } from 'klona';
 import AposIndicator from '../../../../ui/ui/apos/components/AposIndicator.vue';
 
 export default {
@@ -226,15 +225,38 @@ export default {
   },
   emits: [ 'clone', 'up', 'down', 'remove', 'edit', 'cut', 'copy', 'update', 'add', 'changed' ],
   data() {
+    const initialState = {
+      controls: {
+        show: false
+      },
+      container: {
+        highlight: false,
+        focus: false
+      },
+      add: {
+        bottom: {
+          show: false,
+          focus: false
+        },
+        top: {
+          show: false,
+          focus: false
+        }
+      },
+      labels: {
+        show: false
+      }
+    };
     return {
-      mounted: false, // hack around needing DOM to be rendered for computed classes
-      isSuppressed: false,
+      blankState: klona(initialState),
+      state: klona(initialState),
+      highlightable: false,
+      focused: false,
       classes: {
         show: 'apos-is-visible',
         open: 'apos-is-open',
         focus: 'apos-is-focused',
-        highlight: 'apos-is-highlighted',
-        adjust: 'apos-is-ui-adjusted'
+        highlight: 'apos-is-highlighted'
       },
       breadcrumbs: {
         $lastEl: null,
@@ -272,54 +294,71 @@ export default {
     moduleOptions() {
       return window.apos.area;
     },
-    isFocused() {
-      if (this.isSuppressed) {
+    isSuppressed() {
+      if (this.focused) {
         return false;
-      } else {
-        if (this.widgetFocused === this.widget._id) {
-          document.addEventListener('click', this.unfocus);
-        }
-        return this.widgetFocused === this.widget._id;
       }
+
+      if (this.highlightable) {
+        return false;
+      }
+
+      return !(this.hovered || this.nonForeignHovered);
     },
-    isHovered() {
+    hovered() {
       return this.widgetHovered === this.widget._id;
-    },
-    isHighlighted() {
-      const $parent = this.getParent();
-      return $parent && $parent.dataset.areaWidget === this.widgetFocused;
     },
     nonForeignHovered() {
       return this.nonForeignWidgetHovered === this.widget._id;
     },
-    controlsClasses() {
-      return {
-        [this.classes.show]: this.isFocused
+    // Sets up all the interaction classes based on the current
+    // state. If our widget is suppressed, return a blank UI state and reset
+    // our real one.
+    ui() {
+      const state = {
+        controls: this.state.controls.show ? this.classes.show : null,
+        labels: this.state.labels.show ? this.classes.show : null,
+        container: this.state.container.focus ? this.classes.focus
+          : ((this.state.container.highlight || this.nonForeignHovered) ? this.classes.highlight : null),
+        addTop: this.state.add.top.focus ? this.classes.focus
+          : ((this.state.add.top.show || this.nonForeignHovered) ? this.classes.show : null),
+        addBottom: this.state.add.bottom.focus ? this.classes.focus
+          : ((this.state.add.bottom.show || this.nonForeignHovered) ? this.classes.show : null)
       };
-    },
-    containerClasses() {
-      const classes = {
-        [this.classes.highlight]: this.isHighlighted || this.isHovered,
-        [this.classes.focus]: this.isFocused
-      };
-      if (this.mounted) {
-        classes[this.classes.adjust] = this.adjustUi();
+
+      if (this.isSuppressed) {
+        this.resetState();
+        return this.blankState;
       }
-      return classes;
-    },
-    labelsClasses() {
-      return {
-        [this.classes.show]: this.isHovered || this.isFocused
-      };
-    },
-    addClasses() {
-      return {
-        [this.classes.show]: this.isHovered || this.isFocused
-      };
+
+      return state;
     },
     foreign() {
       // Cast to boolean is necessary to satisfy prop typing
       return !!(this.docId && (window.apos.adminBar.contextId !== this.docId));
+    }
+  },
+  watch: {
+    widgetFocused (newVal) {
+      if (newVal === this.widget._id) {
+        this.focus();
+      } else {
+        // reset everything
+        this.resetState();
+        this.focused = false;
+      }
+      const $parent = this.getParent();
+      if (
+        $parent &&
+        $parent.dataset.areaWidget === newVal
+      ) {
+        // Our parent was focused
+        this.resetState();
+        this.state.container.highlight = true;
+        this.highlightable = true;
+      } else {
+        this.highlightable = false;
+      }
     }
   },
   created() {
@@ -333,7 +372,6 @@ export default {
     }
   },
   mounted() {
-    this.mounted = true;
     // AposAreaEditor is listening for keyboard input that triggers
     // a 'focus my parent' plea
     apos.bus.$on('widget-focus-parent', this.focusParent);
@@ -354,21 +392,11 @@ export default {
     apos.bus.$off('widget-focus-parent', this.focusParent);
   },
   methods: {
-
-    // Determine whether or not we should adjust the label based on its position to the admin bar
-    adjustUi() {
-      const { height: labelHeight } = this.$refs.label.getBoundingClientRect();
-      const { top: widgetTop } = this.$refs.widget.getBoundingClientRect();
-      const adminBarHeight = window.apos.modules['@apostrophecms/admin-bar'].height;
-      const offsetTop = widgetTop + window.scrollY;
-      return offsetTop - labelHeight < adminBarHeight;
-    },
-
     // Focus parent, useful for obtrusive UI
     focusParent() {
       // Something above us asked the focused widget to try and focus its parent
       // We only care about this if we're focused ...
-      if (this.isFocused) {
+      if (this.focused) {
         const $parent = this.getParent();
         // .. And have a parent
         if ($parent) {
@@ -380,7 +408,6 @@ export default {
     // Ask the parent AposAreaEditor to make us focused
     getFocus(e, id) {
       e.stopPropagation();
-      this.isSuppressed = false;
       apos.bus.$emit('widget-focus', id);
     },
 
@@ -389,6 +416,15 @@ export default {
       if (e) {
         e.stopPropagation();
       }
+      if (this.focused) {
+        return;
+      }
+      if (!this.foreign) {
+        this.state.add.top.show = true;
+        this.state.add.bottom.show = true;
+      }
+      this.state.container.highlight = true;
+      this.state.labels.show = true;
       const closest = this.foreign && this.$el.closest('[data-apos-widget-foreign="0"]');
       const closestId = closest && closest.getAttribute('data-apos-widget-id');
       apos.bus.$emit('widget-hover', {
@@ -398,16 +434,41 @@ export default {
     },
 
     mouseleave() {
-      if (this.isHovered) {
+      if (!this.highlightable) {
+        // Force highlight when a parent has been focused
+        this.state.container.highlight = false;
+      }
+      if (!this.focused) {
+        this.state.labels.show = false;
+        this.state.add.top.show = false;
+        this.state.add.bottom.show = false;
+      }
+      if (this.hovered) {
         apos.bus.$emit('widget-hover', {
           _id: null,
           nonForeignId: null
         });
       }
     },
+
+    focus(e) {
+      if (e) {
+        e.stopPropagation();
+      }
+      this.focused = true;
+      this.state.container.focus = true;
+      this.state.controls.show = true;
+      this.state.add.top.show = true;
+      this.state.add.bottom.show = true;
+      this.state.labels.show = true;
+      document.addEventListener('click', this.unfocus);
+    },
+
     unfocus(event) {
       if (!this.$el.contains(event.target)) {
-        this.isSuppressed = true;
+        this.focused = false;
+        this.resetState();
+        this.highlightable = false;
         document.removeEventListener('click', this.unfocus);
         apos.bus.$emit('widget-focus', null);
       }
@@ -424,11 +485,12 @@ export default {
       }
     },
 
+    resetState() {
+      this.state = klona(this.blankState);
+    },
+
     getParent() {
-      if (!this.mounted) {
-        return false;
-      }
-      return this.$el.parentNode ? apos.util.closest(this.$el.parentNode, '[data-area-widget]') : false;
+      return apos.util.closest(this.$el.parentNode, '[data-area-widget]');
     },
 
     // Hacky way to get the parents tree of a widget
@@ -491,14 +553,6 @@ export default {
       outline: 1px dashed var(--a-primary);
       &::v-deep .apos-rich-text-editor__editor.apos-is-visually-empty {
         box-shadow: none;
-      }
-    }
-    &.apos-is-ui-adjusted {
-      .apos-area-widget-controls--modify {
-        transform: translate3d(-10px, 50px, 0);
-      }
-      .apos-area-widget__label {
-        transform: translate(-10px, 10px);
       }
     }
 
@@ -650,7 +704,6 @@ export default {
     right: 0;
     display: flex;
     transform: translateY(-100%);
-    transition: opacity 0.3s ease;
   }
 
   .apos-area-widget-inner .apos-area-widget-inner .apos-area-widget__label {
