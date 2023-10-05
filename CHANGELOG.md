@@ -1,5 +1,11 @@
 # Changelog
 
+## UNRELEASED
+
+### Fixes
+
+* Improve the `can` method of the permission module in order to hide warnings by always providing to it the `type` property of a doc or widget and getting the appropriate manager.
+
 ## 3.57.0 2023-09-27
 
 ### Adds
