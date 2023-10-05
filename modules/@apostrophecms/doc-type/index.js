@@ -1615,7 +1615,6 @@ module.exports = {
           },
           finalize() {
             let projection = query.get('project') || {};
-            console.log('🚀 ~ file: index.js:1618 ~ finalize ~ projection:', projection);
             // Keys beginning with `_` are computed values
             // (exception: `_id`). They do not make sense
             // in MongoDB projections. However Apostrophe
@@ -1671,7 +1670,6 @@ module.exports = {
               // contains a search or not
               delete projection.textScore;
             }
-            // console.log('projection', projection);
             query.set('project', projection);
           }
         },
