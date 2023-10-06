@@ -468,12 +468,36 @@ module.exports = {
         if (!existing) {
           throw self.apos.error('notfound');
         }
+
+        const projection = {
+          _id: 1,
+          archived: 1
+        };
+
+        const existingRelatedDocs = await self.apos.doc.db.find({
+          $or: [
+            { _id: { $in: attachment.docIds } },
+            { aposDocId: { $in: attachment.archivedDocIds } }
+          ]
+        }, { projection }).toArray();
+
+        const { docIds, archivedDocIds } = existingRelatedDocs
+          .reduce(({ docIds, archivedDocIds }, doc) => {
+            return {
+              docIds: [ ...docIds, ...!doc.archived ? [ doc._id ] : [] ],
+              archivedDocIds: [ ...archivedDocIds, ...doc.archived ? [ doc._id ] : [] ]
+            };
+          }, {
+            docIds: [],
+            archivedDocIds: []
+          });
+
         await self.alterAttachment(existing, 'remove');
         await self.db.deleteOne({ _id: existing._id });
         await self.insert(req, file, {
           attachmentId: attachment._id,
-          docIds: attachment.docIds,
-          archivedDocIds: attachment.archivedDocIds
+          docIds: _.uniq([ ...docIds, ...existing.docIds || [] ]),
+          archivedDocIds: _.uniq([ ...archivedDocIds, ...existing.archivedDocIds || [] ])
         });
       },
 
