@@ -475,10 +475,7 @@ module.exports = {
         };
 
         const existingRelatedDocs = await self.apos.doc.db.find({
-          $or: [
-            { _id: { $in: attachment.docIds } },
-            { aposDocId: { $in: attachment.archivedDocIds } }
-          ]
+          _id: { $in: [ ...attachment.docIds, ...attachment.archivedDocIds ] }
         }, { projection }).toArray();
 
         const { docIds, archivedDocIds } = existingRelatedDocs
