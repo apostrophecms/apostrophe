@@ -5,7 +5,7 @@
 ### Adds
 
 * Widget schema can now follow the parent schema via the similar to introduced in the `array` field type syntax (`<` prefix). In order a parent followed field to be available to the widget schema, the area field should follow it. For example, if area follows the root schema `title` field via `following: ['title']`, any field from a widget schema inside that area can do `following: ['<title']`.
-* Followed by an area values are now available in custom widget preview Vue components (registered with widget option `options.widget = 'MyComponentPreview'`). Those components will also receive additional `area-field` prop (the parent area field definition object).
+* Followed by an area values are now available in custom widget preview Vue components (registered with widget option `options.widget = 'MyComponentPreview'`). Those components will also receive additional `area-field` and `widget` props (the parent area and widget field definition objects respectively).
 
 ## 3.57.0 2023-09-27
 

@@ -120,6 +120,7 @@
         :id="widget._id"
         :area-field-id="fieldId"
         :area-field="field"
+        :widget="widget"
         :following-values="followingValuesWithParent"
         :value="widget"
         :foreign="foreign"
