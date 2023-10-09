@@ -31,7 +31,7 @@ jobs:
           repo_url="${{ github.server_url }}/$repo"
           run_url="$repo_url/actions/runs/${{ github.run_id }}"
 
-          text="⚠️ The <$repo_url|$repo> project has outdated dependencies:
+          text="ℹ️ The <$repo_url|$repo> project has outdated dependencies:
           \`\`\`
           $outdated_dependencies
           \`\`\`
