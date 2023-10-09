@@ -8,7 +8,6 @@ export default {
     areaFieldId: String,
     value: Object,
     // Ignored for server side rendering
-    widget: Object,
     areaField: Object,
     followingValues: Object,
     // Fix missing prop rendered as `[object Object]` attribute in the DOM

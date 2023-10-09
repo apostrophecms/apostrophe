@@ -120,14 +120,13 @@
         :id="widget._id"
         :area-field-id="fieldId"
         :area-field="field"
-        :widget="widget"
         :following-values="followingValuesWithParent"
         :value="widget"
         :foreign="foreign"
         @edit="$emit('edit', i);"
         :doc-id="docId"
         :rendering="rendering"
-        :key="`${generation}-preveiw`"
+        :key="`${generation}-preview`"
       />
       <div
         class="apos-area-widget-controls apos-area-widget-controls--add apos-area-widget-controls--add--bottom"
