@@ -6,6 +6,11 @@ export default {
     type: String,
     areaFieldId: String,
     value: Object,
+    // Ignored for server side rendering
+    areaField: Object,
+    followingValues: Object,
+    // Fix missing prop rendered as `[object Object]` attribute in the DOM
+    options: Object,
     rendering: {
       type: Object,
       default() {
