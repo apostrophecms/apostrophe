@@ -6,10 +6,19 @@
 
 * Ensure Apostrophe can make appropriate checks by always including `type` in the projection even if it is not explicitly listed.
 
-## 3.57.0 2023-09-27
-
 ### Adds
 
+* Widget schema can now follow the parent schema via the similar to introduced in the `array` field type syntax (`<` prefix). In order a parent followed field to be available to the widget schema, the area field should follow it. For example, if area follows the root schema `title` field via `following: ['title']`, any field from a widget schema inside that area can do `following: ['<title']`.
+* The values of fields followed by an `area` field are now available in custom widget preview Vue components (registered with widget option `options.widget = 'MyComponentPreview'`). Those components will also receive additional `areaField` prop (the parent area field definition object).
+
+## 3.57.0 2023-09-27
+
+### Changes
+* Removes a 25px gap used to prevent in-context widget UI from overlapping with the admin bar
+* Simplifies the way in-context widget state is rendered via modifier classes
+### Adds
+
+* Widgets detect whether or not their in-context editing UI will collide with the admin bar and adjust it appropriately.
 * Italian translation i18n file created for the Apostrophe Admin-UI. Thanks to [Antonello Zanini](https://github.com/Tonel) for this contribution.
 * Fixed date in piece type being displayed as current date in column when set as undefined and without default value. Thanks to [TheSaddestBread](https://github.com/AllanKoder) for this contribution.
 
