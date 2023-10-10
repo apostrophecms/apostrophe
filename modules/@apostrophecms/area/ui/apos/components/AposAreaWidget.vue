@@ -121,12 +121,14 @@
         :type="widget.type"
         :id="widget._id"
         :area-field-id="fieldId"
+        :area-field="field"
+        :following-values="followingValuesWithParent"
         :value="widget"
         :foreign="foreign"
         @edit="$emit('edit', i);"
         :doc-id="docId"
         :rendering="rendering"
-        :key="generation"
+        :key="`${generation}-preview`"
       />
       <div
         class="apos-area-widget-controls apos-area-widget-controls--add apos-area-widget-controls--add--bottom"
@@ -191,8 +193,18 @@ export default {
         return {};
       }
     },
+    followingValues: {
+      type: Object,
+      default() {
+        return {};
+      }
+    },
     next: {
       type: Array,
+      required: true
+    },
+    field: {
+      type: Object,
       required: true
     },
     fieldId: {
@@ -244,6 +256,14 @@ export default {
     };
   },
   computed: {
+    // Passed only to the preview layer (custom preview components).
+    followingValuesWithParent() {
+      return Object.entries(this.followingValues || {})
+        .reduce((acc, [ key, value ]) => {
+          acc[`<${key}`] = value;
+          return acc;
+        }, {});
+    },
     bottomContextMenuOptions() {
       return {
         ...this.contextMenuOptions,
