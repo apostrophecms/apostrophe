@@ -22,6 +22,7 @@
           :id="next._id"
           :field-id="field._id"
           :field="field"
+          :following-values="followingValues"
           :generation="generation"
           @changed="changed"
         />
