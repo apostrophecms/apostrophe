@@ -2,6 +2,11 @@
 
 ## UNRELEASED
 
+### Fixes
+
+* Ensure Apostrophe can make appropriate checks by always including `type` in the projection even if it is not explicitly listed.
+* Never try to annotate a widget with permissions the way we annotate a document, even if the widget is simulating a document.
+
 ### Adds
 
 * Widget schema can now follow the parent schema via the similar to introduced in the `array` field type syntax (`<` prefix). In order a parent followed field to be available to the widget schema, the area field should follow it. For example, if area follows the root schema `title` field via `following: ['title']`, any field from a widget schema inside that area can do `following: ['<title']`.

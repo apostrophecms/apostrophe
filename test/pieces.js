@@ -1000,8 +1000,9 @@ describe('Pieces', function() {
     const keys = Object.keys(response);
 
     assert(response);
-    assert(keys.length === 2);
-    assert(keys.every((key) => [ '_id', 'title' ].includes(key)));
+
+    // type is available by default
+    assert([ '_id', 'type', 'title' ].every(expectedKey => keys.includes(expectedKey)));
   });
 
   it('can GET a single article with reverse relationships', async function() {
