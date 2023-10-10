@@ -5,6 +5,8 @@
 ### Fixes
 
 * Ensure Apostrophe can make appropriate checks by always including `type` in the projection even if it is not explicitly listed.
+* Never try to annotate a widget with permissions the way we annotate a document, even if the widget is simulating a document
+for purposes of calling loaders in an editing situation.
 
 ## 3.57.0 2023-09-27
 
