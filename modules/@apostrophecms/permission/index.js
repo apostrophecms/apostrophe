@@ -61,11 +61,7 @@ module.exports = {
         }
         const type = docOrType && (docOrType.type || docOrType);
         const doc = (docOrType && docOrType._id) ? docOrType : null;
-        let manager = type && self.apos.doc.getManager(type);
-        if (doc && !manager) {
-          // Fallback to an appropriate manager module
-          manager = self.apos.util.getManagerOf(doc);
-        }
+        const manager = type && self.apos.doc.getManager(type);
         if (type && !manager) {
           self.apos.util.warn('A permission.can() call was made with a type that has no manager:', type);
           return false;

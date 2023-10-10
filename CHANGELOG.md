@@ -4,7 +4,7 @@
 
 ### Fixes
 
-* Improve the `can` method of the permission module in order to hide warnings by always providing to it the `type` property of a doc or widget and getting the appropriate manager.
+* Ensure Apostrophe can make appropriate checks by always including `type` in the projection even if it is not explicitly listed.
 
 ## 3.57.0 2023-09-27
 

@@ -685,7 +685,7 @@ module.exports = {
       },
       // Given a widget or doc, return the appropriate manager module.
       getManagerOf(object) {
-        if (!object.metaType || object.metaType === 'doc') {
+        if (object.metaType === 'doc') {
           return self.apos.doc.getManager(object.type);
         } else if (object.metaType === 'widget') {
           return self.apos.area.getWidgetManager(object.type);
