@@ -1624,6 +1624,12 @@ module.exports = {
             // to the projection instead.
             const add = [];
             const remove = [];
+
+            // Add type in projection by default
+            if (!_.isEmpty(projection)) {
+              add.push('type');
+            }
+
             for (const [ key, val ] of Object.entries(projection)) {
               if (!val) {
                 // For a negative projection this is just

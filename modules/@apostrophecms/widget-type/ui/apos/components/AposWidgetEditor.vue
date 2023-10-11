@@ -77,6 +77,10 @@ export default {
     focused: {
       type: Boolean,
       default: false
+    },
+    parentFollowingValues: {
+      type: Object,
+      default: null
     }
   },
   emits: [ 'safe-close', 'modal-result' ],
