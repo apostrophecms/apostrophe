@@ -242,7 +242,7 @@ module.exports = {
             await self.triggerNotification(req, 'completed', {
               count: total,
               dismiss: true
-            });
+            }, results);
             // Dismiss the progress notification. It will delay 4 seconds
             // because "completed" notification will dismiss in 5 and we want
             // to maintain the feeling of process order for users.
@@ -261,10 +261,17 @@ module.exports = {
       //   array
       // No messages are required, but they provide helpful information to
       // end users.
-      async triggerNotification(req, stage, options = {}) {
+      async triggerNotification(req, stage, options = {}, results) {
         if (!req.body || !req.body.messages || !req.body.messages[stage]) {
           return {};
         }
+
+        const event = req.body.messages.resultsEventName && results
+          ? {
+            name: req.body.messages.resultsEventName,
+            data: { ...results }
+          }
+          : null;
 
         return self.apos.notification.trigger(req, req.body.messages[stage], {
           interpolate: {
@@ -277,6 +284,7 @@ module.exports = {
             action: options.action,
             ids: options.ids
           },
+          event,
           icon: req.body.messages.icon || 'database-export-icon',
           type: options.type || 'success',
           return: true

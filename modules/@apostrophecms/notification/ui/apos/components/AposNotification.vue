@@ -71,6 +71,7 @@ export default {
         route: `${apos.modules['@apostrophecms/job'].action}/${this.notification.job._id}`,
         processed: 0,
         total: 1,
+        percentage: 0,
         action: this.notification.job.action
       } : null
     };

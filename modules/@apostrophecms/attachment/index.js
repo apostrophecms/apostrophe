@@ -386,8 +386,7 @@ module.exports = {
       // This method returns `attachment` where `attachment` is an attachment
       // object, suitable for passing to the `url` API and for use as the value
       // of a `type: 'attachment'` schema field.
-      async insert(req, file, options) {
-        options = options || {};
+      async insert(req, file, options = {}) {
         let extension = path.extname(file.name);
         if (extension && extension.length) {
           extension = extension.substr(1);
@@ -402,16 +401,21 @@ module.exports = {
             extensions: accepted.join(req.t('apostrophe:listJoiner'))
           }));
         }
+
+        if (options.attachmentId && await self.apos.attachment.db.findOne({ _id: options.attachmentId })) {
+          throw self.apos.error('invalid', 'duplicate');
+        }
+
         const info = {
-          _id: self.apos.util.generateId(),
+          _id: options.attachmentId ?? self.apos.util.generateId(),
           group: group.name,
           createdAt: new Date(),
           name: self.apos.util.slugify(path.basename(file.name, path.extname(file.name))),
           title: self.apos.util.sortify(path.basename(file.name, path.extname(file.name))),
           extension: extension,
           type: 'attachment',
-          docIds: [],
-          archivedDocIds: []
+          docIds: options.docIds ?? [],
+          archivedDocIds: options.archivedDocIds ?? []
         };
         if (!(options.permissions === false)) {
           if (!self.apos.permission.can(req, 'upload-attachment')) {
@@ -432,7 +436,11 @@ module.exports = {
         }
         if (self.isSized(extension)) {
           // For images we correct automatically for common file extension mistakes
-          const result = await Promise.promisify(self.uploadfs.copyImageIn)(file.path, '/attachments/' + info._id + '-' + info.name, { sizes: self.imageSizes });
+          const result = await Promise.promisify(self.uploadfs.copyImageIn)(
+            file.path,
+            '/attachments/' + info._id + '-' + info.name,
+            { sizes: self.imageSizes }
+          );
           info.extension = result.extension;
           info.width = result.width;
           info.height = result.height;
@@ -454,6 +462,51 @@ module.exports = {
         await self.db.insertOne(info);
         return info;
       },
+
+      async update(req, file, attachment) {
+        const existing = await self.db.findOne({ _id: attachment._id });
+        if (!existing) {
+          throw self.apos.error('notfound');
+        }
+
+        const projection = {
+          _id: 1,
+          archived: 1
+        };
+
+        const existingRelatedDocs = await self.apos.doc.db
+          .find({
+            _id: {
+              $in: [
+                ...existing.docIds,
+                ...existing.archivedDocIds,
+                ...attachment.docIds,
+                ...attachment.archivedDocIds
+              ]
+            }
+          }, { projection })
+          .toArray();
+
+        const { docIds, archivedDocIds } = existingRelatedDocs
+          .reduce(({ docIds, archivedDocIds }, doc) => {
+            return {
+              docIds: [ ...docIds, ...!doc.archived ? [ doc._id ] : [] ],
+              archivedDocIds: [ ...archivedDocIds, ...doc.archived ? [ doc._id ] : [] ]
+            };
+          }, {
+            docIds: [],
+            archivedDocIds: []
+          });
+
+        await self.alterAttachment(existing, 'remove');
+        await self.db.deleteOne({ _id: existing._id });
+        await self.insert(req, file, {
+          attachmentId: attachment._id,
+          docIds: _.uniq([ ...docIds, ...existing.docIds || [] ]),
+          archivedDocIds: _.uniq([ ...archivedDocIds, ...existing.archivedDocIds || [] ])
+        });
+      },
+
       // Given a path to a local svg file, sanitize any XSS attack vectors that
       // may be present in the file. The caller is responsible for catching any
       // exception thrown and treating that as an invalid file but there is no
