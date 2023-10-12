@@ -11,8 +11,8 @@
 
 * Widget schema can now follow the parent schema via the similar to introduced in the `array` field type syntax (`<` prefix). In order a parent followed field to be available to the widget schema, the area field should follow it. For example, if area follows the root schema `title` field via `following: ['title']`, any field from a widget schema inside that area can do `following: ['<title']`.
 * The values of fields followed by an `area` field are now available in custom widget preview Vue components (registered with widget option `options.widget = 'MyComponentPreview'`). Those components will also receive additional `areaField` prop (the parent area field definition object).
-* Allows to insert attachments with a given ID, as well as with `docIds` and `atchiveDocIds` to preserve related docs.
-* Adds an `update` method to the attachment module, that update the mongoDB doc and the associated file.
+* Allows to insert attachments with a given ID, as well as with `docIds` and `archiveDocIds` to preserve related docs.
+* Adds an `update` method to the attachment module, that updates the mongoDB doc and the associated file.
 * Adds an option to the `http` `remote` method to allow receiving the original response from `node-fetch` that is a stream.
 
 ## 3.57.0 2023-09-27
