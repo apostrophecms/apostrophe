@@ -1,6 +1,6 @@
 # Changelog
 
-## UNRELEASED
+## 3.58.0 (2023-10-12)
 
 ### Fixes
 
