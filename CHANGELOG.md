@@ -6,6 +6,7 @@
 
 * Ensure Apostrophe can make appropriate checks by always including `type` in the projection even if it is not explicitly listed.
 * Never try to annotate a widget with permissions the way we annotate a document, even if the widget is simulating a document.
+* The `areas` query builder now works properly when an array of area names has been specified.
 
 ### Adds
 

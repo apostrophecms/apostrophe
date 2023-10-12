@@ -2234,7 +2234,7 @@ module.exports = {
                   const dotPath = info.dotPath;
                   if (setting && Array.isArray(setting)) {
                     if (!_.includes(setting, dotPath)) {
-                      return;
+                      continue;
                     }
                   }
                   if (doc._edit) {
