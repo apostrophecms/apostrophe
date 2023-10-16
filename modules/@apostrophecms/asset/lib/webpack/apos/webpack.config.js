@@ -4,8 +4,6 @@ const scss = require('./webpack.scss');
 const vue = require('./webpack.vue');
 const js = require('./webpack.js');
 
-let BundleAnalyzerPlugin;
-
 module.exports = ({
   importFile,
   modulesDir,
