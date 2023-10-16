@@ -1,5 +1,12 @@
 # Changelog
 
+## UNRELEASED
+
+### Fixes
+
+* Include `type` in the projection only if there are no exclusions in the projection. Needed to prevent `Cannot do
+exclusion on field in inclusion projection` error.
+
 ## 3.58.0 (2023-10-12)
 
 ### Fixes
