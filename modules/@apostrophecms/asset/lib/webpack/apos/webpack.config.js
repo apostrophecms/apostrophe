@@ -6,10 +6,6 @@ const js = require('./webpack.js');
 
 let BundleAnalyzerPlugin;
 
-if (process.env.APOS_BUNDLE_ANALYZER) {
-  BundleAnalyzerPlugin = require('webpack-bundle-analyzer').BundleAnalyzerPlugin;
-}
-
 module.exports = ({
   importFile,
   modulesDir,
@@ -84,8 +80,7 @@ module.exports = ({
       ],
       symlinks: false
     },
-    stats: 'verbose',
-    plugins: process.env.APOS_BUNDLE_ANALYZER ? [ new BundleAnalyzerPlugin() ] : []
+    stats: 'verbose'
   };
 
   return merge(config, ...tasks);

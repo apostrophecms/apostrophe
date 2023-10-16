@@ -130,7 +130,7 @@
     "tinycolor2": "^1.4.2",
     "tough-cookie": "^4.0.0",
     "underscore.string": "^3.3.4",
-    "uploadfs": "^1.22.1",
+    "uploadfs": "^1.22.3",
     "v-tooltip": "^2.0.3",
     "vue": "^2.6.14",
     "vue-advanced-cropper": "^1.10.1",
@@ -157,8 +157,7 @@
     "stylelint": "^14.6.1",
     "stylelint-declaration-strict-value": "^1.8.0",
     "stylelint-order": "^5.0.0",
-    "vue-eslint-parser": "^7.1.1",
-    "webpack-bundle-analyzer": "^3.9.0"
+    "vue-eslint-parser": "^7.1.1"
   },
   "browserslist": [
     "ie >= 10"
