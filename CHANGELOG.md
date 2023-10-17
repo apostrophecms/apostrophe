@@ -1,5 +1,16 @@
 # Changelog
 
+## 3.58.1 (2023-10-16)
+
+### Security
+
+* Update `uploadfs` to guarantee users get a fix for a [potential security vulnerability in `sharp`](https://security.snyk.io/vuln/SNYK-JS-SHARP-5922108).
+This was theoretically exploitable only by users with permission to upload media to Apostrophe
+* Remove the webpack bundle analyzer feature, which had been nonfunctional for some time, to address a harmless npm audit warning
+* Note: there is one remaining `npm audit` warning regarding `postcss`. This is not a true vulnerability because only developers
+with access to the entire codebase can modify styles passed to `postcss` by Apostrophe, but we are working with upstream
+developers to determine the best steps to clear the warning
+
 ## 3.58.0 (2023-10-12)
 
 ### Fixes
