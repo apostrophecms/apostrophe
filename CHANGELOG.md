@@ -1,13 +1,6 @@
 # Changelog
 
-## UNRELEASED
-
-### Fixes
-
-* Include `type` in the projection only if there are no exclusions in the projection. Needed to prevent `Cannot do
-exclusion on field in inclusion projection` error.
-
-## 3.58.1 (2023-10-16)
+## 3.58.1 (2023-10-18)
 
 ### Security
 
@@ -17,6 +10,11 @@ This was theoretically exploitable only by users with permission to upload media
 * Note: there is one remaining `npm audit` warning regarding `postcss`. This is not a true vulnerability because only developers
 with access to the entire codebase can modify styles passed to `postcss` by Apostrophe, but we are working with upstream
 developers to determine the best steps to clear the warning
+
+### Fixes
+
+* Automatically add `type` to the projection only if there are no exclusions in the projection. Needed to prevent `Cannot do
+exclusion on field in inclusion projection` error.
 
 ## 3.58.0 (2023-10-12)
 
