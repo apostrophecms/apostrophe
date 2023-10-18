@@ -1,3 +1,7 @@
+// Supported field conditional behaviors, you should be able to add another one here to see it working
+const conditionalBehaviors = [ 'if', 'requiredIf' ];
+const conditionalBehaviorsObject = Object.fromEntries(conditionalBehaviors.map((key) => ([ key, [] ])));
+
 // Evaluate the external conditions found in each field
 // via API calls - made in parallel for performance-
 // and store their result for reusability.
@@ -109,18 +113,20 @@ export function conditionalFields(
   values,
   externalConditionsResults
 ) {
-  const conditionalFields = {};
+  const conditionalFields = { ...conditionalBehaviorsObject };
 
   while (true) {
     let change = false;
     for (const field of schema) {
-      if (field.if) {
-        const result = evaluate(field.if);
-        const previous = conditionalFields[field.name];
-        if (previous !== result) {
-          change = true;
+      for (const conditionType of conditionalBehaviors) {
+        if (field[conditionType]) {
+          const result = evaluate(field.if);
+          const previous = conditionalFields[conditionType][field.name];
+          if (previous !== result) {
+            change = true;
+          }
+          conditionalFields[conditionType][field.name] = result;
         }
-        conditionalFields[field.name] = result;
       }
     }
     if (!change) {
@@ -128,12 +134,17 @@ export function conditionalFields(
     }
   }
 
-  const result = {};
+  const result = { ...conditionalBehaviorsObject };
+
   for (const field of fields) {
-    if (field.if) {
-      result[field.name] = conditionalFields[field.name];
+    for (const conditionType of conditionalBehaviors) {
+      if (field[conditionType]) {
+        result[conditionType][field.name] = conditionalFields[conditionType][field.name];
+      }
+
     }
   }
+
   return result;
 
   function evaluate(clause) {
