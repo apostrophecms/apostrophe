@@ -1626,7 +1626,8 @@ module.exports = {
             const remove = [];
 
             // Add type in projection by default
-            if (!_.isEmpty(projection)) {
+            const hasExclusion = Object.values(projection).some(value => !value);
+            if (!_.isEmpty(projection) && !hasExclusion) {
               add.push('type');
             }
 
