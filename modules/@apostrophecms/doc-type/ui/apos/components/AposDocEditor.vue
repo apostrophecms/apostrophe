@@ -452,7 +452,7 @@ export default {
         const canEdit = docData._edit || this.moduleOptions.canEdit;
         this.readOnly = canEdit === false;
         if (canEdit && !await this.lock(this.getOnePath, this.docId)) {
-          await this.lockNotAvailable();
+          this.lockNotAvailable();
           return;
         }
       } catch {
