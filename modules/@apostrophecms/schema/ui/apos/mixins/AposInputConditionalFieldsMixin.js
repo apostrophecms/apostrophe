@@ -11,12 +11,14 @@
  * having sub-schema (like `AposInputObject`).
  */
 
-import { conditionalFields, evaluateExternalConditions } from '../lib/conditionalFields';
+import {
+  conditionalFields, evaluateExternalConditions, conditionTypesObject
+} from '../lib/conditionalFields';
 
 export default {
   data() {
     return {
-      externalConditionsResults: {}
+      externalConditionsResults: { ...conditionTypesObject }
     };
   },
 
