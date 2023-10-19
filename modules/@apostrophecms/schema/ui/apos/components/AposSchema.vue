@@ -39,8 +39,8 @@
         v-model="fieldState[field.name]"
         :is="fieldComponentMap[field.type]"
         :following-values="followingValues[field.name]"
-        :condition-met="conditionalFields.if[field.name]"
-        :condition-met-required="conditionalFields.requiredIf[field.name]"
+        :condition-met="conditionalFields?.if[field.name]"
+        :condition-met-required="conditionalFields?.requiredIf[field.name]"
         :field="fields[field.name].field"
         :modifiers="fields[field.name].modifiers"
         :display-options="getDisplayOptions(field.name)"
@@ -60,10 +60,7 @@
 import AposSchemaLogic from '../logic/AposSchema';
 export default {
   name: 'AposSchema',
-  mixins: [ AposSchemaLogic ],
-  mounted() {
-    console.log('this.conditionalFields', this.conditionalFields);
-  }
+  mixins: [ AposSchemaLogic ]
 };
 </script>
 
