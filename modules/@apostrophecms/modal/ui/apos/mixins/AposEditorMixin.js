@@ -15,7 +15,9 @@
  */
 
 import { klona } from 'klona';
-import { evaluateExternalConditions, conditionalFields } from 'Modules/@apostrophecms/schema/lib/conditionalFields.js';
+import {
+  evaluateExternalConditions, conditionalFields, conditionTypesObject
+} from 'Modules/@apostrophecms/schema/lib/conditionalFields.js';
 
 export default {
   data() {
@@ -27,7 +29,7 @@ export default {
       restoreOnly: false,
       readOnly: false,
       changed: [],
-      externalConditionsResults: {}
+      externalConditionsResults: { ...conditionTypesObject }
     };
   },
 

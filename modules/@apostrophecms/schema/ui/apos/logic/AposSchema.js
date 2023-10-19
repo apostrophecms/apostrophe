@@ -1,4 +1,5 @@
 import { detectFieldChange } from 'Modules/@apostrophecms/schema/lib/detectChange';
+import { conditionTypesObject } from '../lib/conditionalFields';
 
 export default {
   name: 'AposSchema',
@@ -38,7 +39,7 @@ export default {
     conditionalFields: {
       type: Object,
       default() {
-        return {};
+        return { ...conditionTypesObject };
       }
     },
     modifiers: {
@@ -262,7 +263,7 @@ export default {
       }
 
       // Might not be a conditional field at all, so test explicitly for false
-      if (this.conditionalFields[name] === false) {
+      if (this.conditionalFields.if[name] === false) {
         return false;
       }
 
