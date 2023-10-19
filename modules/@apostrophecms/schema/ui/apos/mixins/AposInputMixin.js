@@ -26,6 +26,10 @@ export default {
       type: Boolean,
       required: false
     },
+    conditionMetRequired: {
+      type: Boolean,
+      required: false
+    },
     triggerValidation: {
       type: Boolean,
       default: false
@@ -89,6 +93,11 @@ export default {
     },
     effectiveError () {
       return this.error || this.serverError;
+    },
+    isRequired() {
+      return this.conditionMetRequired == null
+        ? this.field.required
+        : this.conditionMetRequired;
     }
   },
   watch: {
