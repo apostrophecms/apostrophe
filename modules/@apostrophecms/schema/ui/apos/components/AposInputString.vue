@@ -12,7 +12,7 @@
           v-model="next" :placeholder="$t(field.placeholder)"
           @keydown.enter="enterEmit"
           :disabled="field.readOnly"
-          :required="field.required"
+          :required="isRequired"
           :id="uid" :tabindex="tabindex"
         />
         <input
@@ -21,7 +21,7 @@
           :placeholder="$t(field.placeholder)"
           @keydown.enter="enterEmit"
           :disabled="field.readOnly || field.disabled"
-          :required="field.required"
+          :required="isRequired"
           :id="uid" :tabindex="tabindex"
           :step="step"
         >
