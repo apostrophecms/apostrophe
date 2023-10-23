@@ -237,7 +237,7 @@ const hasAreaWithoutWidgets = {
 
 const warnMessages = [];
 
-describe('Schemas', function() {
+describe.only('Schemas', function() {
 
   this.timeout(t.timeout);
 
@@ -2380,6 +2380,216 @@ describe('Schemas', function() {
       ];
 
       assert.deepEqual(actual, expected);
+    });
+
+    it.only('should enforce required property with ifRequired boolean', async function() {
+      const req = apos.task.getReq();
+      const schema = apos.schema.compose({
+        addFields: [
+          {
+            name: 'age',
+            type: 'integer',
+            required: false
+          },
+          {
+            name: 'shoeSize',
+            type: 'integer',
+            requiredIf: {
+              age: true
+            }
+          }
+        ]
+      });
+      const output = {};
+      await apos.schema.convert(req, schema, {
+        shoeSize: '6',
+        age: '18'
+      }, output);
+      assert(output.shoeSize === 6);
+    });
+
+    it.only('should error required property with ifRequired', async function() {
+      const schema = apos.schema.compose({
+        addFields: [
+          {
+            name: 'age',
+            type: 'integer',
+            required: false
+          },
+          {
+            name: 'shoeSize',
+            type: 'integer',
+            requiredIf: {
+              age: true
+            }
+          }
+        ]
+      });
+      await testSchemaError(schema, {
+        shoeSize: '',
+        age: '18'
+      }, 'shoeSize', 'required');
+    });
+
+    it.only('should enforce required property with ifRequired string', async function() {
+      const req = apos.task.getReq();
+      const schema = apos.schema.compose({
+        addFields: [
+          {
+            name: 'age',
+            type: 'integer',
+            required: false
+          },
+          {
+            name: 'shoeSize',
+            type: 'integer',
+            requiredIf: {
+              age: '18'
+            }
+          }
+        ]
+      });
+      const output = {};
+      await apos.schema.convert(req, schema, {
+        shoeSize: '',
+        age: '17'
+      }, output);
+      assert(output.shoeSize === null);
+    });
+
+    it.only('should error required property with ifRequired string', async function() {
+      const schema = apos.schema.compose({
+        addFields: [
+          {
+            name: 'age',
+            type: 'integer',
+            required: false
+          },
+          {
+            name: 'shoeSize',
+            type: 'integer',
+            requiredIf: {
+              age: '18'
+            }
+          }
+        ]
+      });
+      await testSchemaError(schema, {
+        shoeSize: '',
+        age: '18'
+      }, 'shoeSize', 'required');
+    });
+
+    it.only('should enforce required property with ifRequired number', async function() {
+      const req = apos.task.getReq();
+      const schema = apos.schema.compose({
+        addFields: [
+          {
+            name: 'age',
+            type: 'integer',
+            required: false
+          },
+          {
+            name: 'shoeSize',
+            type: 'integer',
+            requiredIf: {
+              age: 18
+            }
+          }
+        ]
+      });
+      const output = {};
+      await apos.schema.convert(req, schema, {
+        shoeSize: '',
+        age: 17
+      }, output);
+      assert(output.shoeSize === null);
+    });
+
+    it.only('should error required property with ifRequired number', async function() {
+      const schema = apos.schema.compose({
+        addFields: [
+          {
+            name: 'age',
+            type: 'integer',
+            required: false
+          },
+          {
+            name: 'shoeSize',
+            type: 'integer',
+            requiredIf: {
+              age: 18
+            }
+          }
+        ]
+      });
+      await testSchemaError(schema, {
+        shoeSize: '',
+        age: 18
+      }, 'shoeSize', 'required');
+    });
+
+    it.only('should enforce required property with ifRequired default AND', async function() {
+      const req = apos.task.getReq();
+      const schema = apos.schema.compose({
+        addFields: [
+          {
+            name: 'prop1',
+            type: 'string',
+            required: false
+          },
+          {
+            name: 'prop2',
+            type: 'boolean',
+            required: false
+          },
+          {
+            name: 'requiredIfProp',
+            type: 'integer',
+            requiredIf: {
+              prop1: 'test',
+              prop2: true
+            }
+          }
+        ]
+      });
+      const output = {};
+      await apos.schema.convert(req, schema, {
+        requiredIfProp: null,
+        prop1: 'test',
+        prop2: false
+      }, output);
+      assert(output.requiredIfProp === null);
+    });
+
+    it.only('should error required property with ifRequired default AND', async function() {
+      const schema = apos.schema.compose({
+        addFields: [
+          {
+            name: 'prop1',
+            type: 'string',
+            required: false
+          },
+          {
+            name: 'prop2',
+            type: 'boolean',
+            required: false
+          },
+          {
+            name: 'requiredIfProp',
+            type: 'integer',
+            requiredIf: {
+              prop1: 'test',
+              prop2: true
+            }
+          }
+        ]
+      });
+      await testSchemaError(schema, {
+        requiredIfProp: null,
+        prop1: 'test',
+        prop2: true
+      }, 'requiredIfProp', 'required');
     });
   });
 });

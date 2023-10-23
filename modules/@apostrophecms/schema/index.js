@@ -511,7 +511,7 @@ module.exports = {
 
           if (convert) {
             try {
-              const isRequired = self.isFieldRequired({
+              const isRequired = await self.isFieldRequired({
                 req,
                 field,
                 destination
@@ -631,9 +631,8 @@ module.exports = {
         destination,
         conditionalFields
       }) {
-        const {
-          if: clause, name: fieldName, moduleName: fieldModuleName
-        } = field;
+        const { name: fieldName, moduleName: fieldModuleName } = field;
+        const clause = field.if || field.requiredIf;
         let result = true;
         for (const [ key, val ] of Object.entries(clause)) {
           if (key === '$or') {
@@ -686,11 +685,20 @@ module.exports = {
             continue;
           }
 
-          if (conditionalFields[key] === false) {
+          if (field.requiredIf) {
+            if (typeof val === 'boolean' && !destination[key]) {
+              result = false;
+            }
+            if ((typeof val === 'string' || typeof val === 'number') && destination[key] != val) {
+              result = false;
+            }
+          }
+
+          if (conditionalFields?.[key] === false) {
             result = false;
             break;
           }
-          if (val !== destination[key]) {
+          if (val !== destination[key] && !field.requiredIf) {
             result = false;
             break;
           }
