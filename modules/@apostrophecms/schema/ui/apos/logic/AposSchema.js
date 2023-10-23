@@ -146,8 +146,8 @@ export default {
     conditionalFields: {
       deep: true,
       handler(newVal, oldVal) {
-        for (const conditionType of oldVal) {
-          for (const field in oldVal[conditionType]) {
+        for (const conditionType of Object.keys(oldVal)) {
+          for (const field of Object.keys(oldVal[conditionType])) {
             if (
               !this.fieldState[field] ||
                 (newVal[conditionType][field] === oldVal[conditionType][field]) ||
