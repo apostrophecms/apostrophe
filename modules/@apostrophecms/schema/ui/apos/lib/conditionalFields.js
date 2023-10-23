@@ -1,3 +1,8 @@
+// Supported field conditional types,
+// you can add a condition type to this array to make it available to the frontend
+const conditionTypes = [ 'if', 'requiredIf' ];
+export const conditionTypesObject = Object.fromEntries(conditionTypes.map((key) => ([ key, {} ])));
+
 // Evaluate the external conditions found in each field
 // via API calls - made in parallel for performance-
 // and store their result for reusability.
@@ -5,50 +10,52 @@
 // `docId` - the current docId (from prop or context)
 // `$t` - the i18n function (usually `this.$t`)
 export async function evaluateExternalConditions(schema, docId, $t) {
-  let externalConditionsResults = {};
+  const externalConditionsResults = { ...conditionTypesObject };
 
   for (const field of schema) {
-    if (field.if) {
-      const externalConditionKeys = Object
-        .entries(field.if)
-        .flatMap(getExternalConditionKeys)
-        .filter(Boolean);
-
-      const uniqExternalConditionKeys = [ ...new Set(externalConditionKeys) ];
-
-      let results = [];
-
-      try {
-        const promises = uniqExternalConditionKeys
-          .map(key => externalConditionsResults[key] !== undefined
-            ? null
-            : evaluateExternalCondition(key, field._id, docId)
-          )
+    for (const conditionType of conditionTypes) {
+      if (field[conditionType]) {
+        const externalConditionKeys = Object
+          .entries(field[conditionType])
+          .flatMap((entry) => getExternalConditionKeys(entry, conditionType))
           .filter(Boolean);
 
-        results = await Promise.all(promises);
+        const uniqExternalConditionKeys = [ ...new Set(externalConditionKeys) ];
 
-        externalConditionsResults = {
-          ...externalConditionsResults,
-          ...Object.fromEntries(results)
-        };
-      } catch (error) {
-        await apos.notify($t('apostrophe:errorEvaluatingExternalCondition', { name: field.name }), {
-          type: 'danger',
-          icon: 'alert-circle-icon',
-          dismiss: true,
-          localize: false
-        });
+        try {
+          const promises = uniqExternalConditionKeys
+            .map(key => externalConditionsResults[conditionType][key] !== undefined
+              ? null
+              : evaluateExternalCondition(key, field._id, docId)
+            )
+            .filter(Boolean);
+
+          const results = await Promise.all(promises);
+
+          externalConditionsResults[conditionType] = {
+            ...externalConditionsResults[conditionType],
+            ...Object.fromEntries(results)
+          };
+        } catch (error) {
+          await apos.notify($t('apostrophe:errorEvaluatingExternalCondition', { name: field.name }), {
+            type: 'danger',
+            icon: 'alert-circle-icon',
+            dismiss: true,
+            localize: false
+          });
+        }
       }
     }
   }
+
   return externalConditionsResults;
 
-  function getExternalConditionKeys([ key, val ]) {
+  function getExternalConditionKeys([ key, val ], conditionType) {
     if (key === '$or') {
-      return val.flatMap(nested => Object.entries(nested).map(getExternalConditionKeys));
+      return val.flatMap(nested => Object.entries(nested)
+        .map((entry) => getExternalConditionKeys(entry, conditionType)));
     }
-    if (isExternalCondition(key)) {
+    if (isExternalCondition(key, conditionType)) {
       return key;
     }
     return null;
@@ -71,7 +78,7 @@ export async function evaluateExternalCondition(conditionKey, fieldId, docId) {
   return [ conditionKey, result ];
 }
 // Checking if key ends with a closing parenthesis here to throw later if any argument is passed.
-export function isExternalCondition(conditionKey) {
+export function isExternalCondition(conditionKey, conditionType) {
   if (!conditionKey.endsWith(')')) {
     return false;
   }
@@ -79,7 +86,7 @@ export function isExternalCondition(conditionKey) {
   const [ methodDefinition ] = conditionKey.split('(');
 
   if (!conditionKey.endsWith('()')) {
-    console.warn(`Warning in \`if\` definition: "${methodDefinition}()" should not be passed any argument.`);
+    console.warn(`Warning in \`${conditionType}\` definition: "${methodDefinition}()" should not be passed any argument.`);
   }
 
   return true;
@@ -109,18 +116,20 @@ export function conditionalFields(
   values,
   externalConditionsResults
 ) {
-  const conditionalFields = {};
+  const conditionalFields = { ...conditionTypesObject };
 
   while (true) {
     let change = false;
     for (const field of schema) {
-      if (field.if) {
-        const result = evaluate(field.if);
-        const previous = conditionalFields[field.name];
-        if (previous !== result) {
-          change = true;
+      for (const conditionType of conditionTypes) {
+        if (field[conditionType]) {
+          const result = evaluate(field[conditionType], conditionType);
+          const previous = conditionalFields[conditionType][field.name];
+          if (previous !== result) {
+            change = true;
+          }
+          conditionalFields[conditionType][field.name] = result;
         }
-        conditionalFields[field.name] = result;
       }
     }
     if (!change) {
@@ -128,15 +137,19 @@ export function conditionalFields(
     }
   }
 
-  const result = {};
+  const result = { ...conditionTypesObject };
+
   for (const field of fields) {
-    if (field.if) {
-      result[field.name] = conditionalFields[field.name];
+    for (const conditionType of conditionTypes) {
+      if (field[conditionType]) {
+        result[conditionType][field.name] = conditionalFields[conditionType][field.name];
+      }
     }
   }
+
   return result;
 
-  function evaluate(clause) {
+  function evaluate(clause, conditionType) {
     let result = true;
     for (const [ key, val ] of Object.entries(clause)) {
       if (key === '$or') {
@@ -149,8 +162,8 @@ export function conditionalFields(
         continue;
       }
 
-      if (isExternalCondition(key)) {
-        if (externalConditionsResults[key] !== val) {
+      if (isExternalCondition(key, conditionType)) {
+        if (externalConditionsResults[conditionType][key] !== val) {
           result = false;
           break;
         }
