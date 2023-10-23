@@ -143,17 +143,26 @@ export default {
       // repopulate the schema.
       this.populateDocData();
     },
-    conditionalFields(newVal, oldVal) {
-      for (const field in oldVal) {
-        if (!this.fieldState[field] || (newVal[field] === oldVal[field]) || !this.fieldState[field].ranValidation) {
-          continue;
-        }
+    conditionalFields: {
+      deep: true,
+      handler(newVal, oldVal) {
+        for (const conditionType of oldVal) {
+          for (const field in oldVal[conditionType]) {
+            if (
+              !this.fieldState[field] ||
+                (newVal[conditionType][field] === oldVal[conditionType][field]) ||
+                !this.fieldState[field].ranValidation
+            ) {
+              continue;
+            }
 
-        if (
-          (newVal[field] === false) ||
-          (newVal[field] && this.fieldState[field].ranValidation)
-        ) {
-          this.$emit('validate');
+            if (
+              (newVal[conditionType][field] === false) ||
+              (newVal[conditionType][field] && this.fieldState[field].ranValidation)
+            ) {
+              this.$emit('validate');
+            }
+          }
         }
       }
     }
