@@ -16,7 +16,7 @@
 
 import { klona } from 'klona';
 import {
-  evaluateExternalConditions, conditionalFields, conditionTypesObject
+  evaluateExternalConditions, getConditionalFields, conditionTypesObject
 } from 'Modules/@apostrophecms/schema/lib/conditionalFields.js';
 
 export default {
@@ -131,8 +131,8 @@ export default {
     // the returned object will contain properties only for conditional fields
     // in that category, although they may be conditional upon fields in either
     // category.
-    conditionalFields(followedByCategory) {
-      return conditionalFields(
+    getConditionalFields(followedByCategory) {
+      return getConditionalFields(
         this.schema,
         this.getFieldsByCategory(followedByCategory),
         // currentDoc for arrays, docFields for all other editors

@@ -15,7 +15,7 @@
           :schema="schema"
           :value="docFields"
           :following-values="followingValues()"
-          :conditional-fields="conditionalFields()"
+          :conditional-fields="getConditionalFields()"
           :server-errors="serverErrors"
           :modifiers="['small']"
           @input="updateDocFields"

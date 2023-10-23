@@ -21,7 +21,7 @@
               @input="updateDocFields"
               @validate="triggerValidate"
               :following-values="followingValues()"
-              :conditional-fields="conditionalFields()"
+              :conditional-fields="getConditionalFields()"
               ref="schema"
             />
           </div>

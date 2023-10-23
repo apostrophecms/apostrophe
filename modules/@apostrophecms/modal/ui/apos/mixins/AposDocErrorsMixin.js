@@ -4,7 +4,6 @@ export default {
   data: () => ({
     fieldErrors: {},
     errorCount: 0
-
   }),
   mounted () {
     this.prepErrors();
