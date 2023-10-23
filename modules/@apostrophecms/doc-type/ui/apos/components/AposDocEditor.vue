@@ -64,7 +64,7 @@
               :trigger-validation="triggerValidation"
               :utility-rail="false"
               :following-values="followingValues('other')"
-              :conditional-fields="conditionalFields"
+              :conditional-fields="getConditionalFields('other')"
               :doc-id="docId"
               :value="docFields"
               :server-errors="serverErrors"
@@ -89,7 +89,7 @@
             :trigger-validation="triggerValidation"
             :utility-rail="true"
             :following-values="followingUtils"
-            :conditional-fields="conditionalFields"
+            :conditional-fields="getConditionalFields('util')"
             :doc-id="docId"
             :value="docFields"
             @input="updateDocFields"
@@ -172,8 +172,7 @@ export default {
       readOnly: false,
       restoreOnly: false,
       saveMenu: null,
-      generation: 0,
-      conditionalFields: { ...conditionTypesObject }
+      generation: 0
     };
   },
   computed: {
@@ -343,7 +342,6 @@ export default {
     }
   },
   async mounted() {
-    this.conditionalFields = this.getConditionalFields();
     this.modal.active = true;
     // After computed properties become available
     this.saveMenu = this.computeSaveMenu();
