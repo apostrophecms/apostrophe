@@ -143,29 +143,50 @@ export default {
       // repopulate the schema.
       this.populateDocData();
     },
-    conditionalFields: {
-      deep: true,
-      handler(newVal, oldVal) {
-        for (const conditionType of Object.keys(oldVal)) {
-          for (const field of Object.keys(oldVal[conditionType])) {
-            if (
-              !this.fieldState[field] ||
-                (newVal[conditionType][field] === oldVal[conditionType][field]) ||
-                !this.fieldState[field].ranValidation
-            ) {
-              continue;
-            }
+    'conditionalFields.if'(newVal, oldVal) {
 
-            if (
-              (newVal[conditionType][field] === false) ||
-              (newVal[conditionType][field] && this.fieldState[field].ranValidation)
-            ) {
-              this.$emit('validate');
-            }
-          }
+      for (const field in oldVal) {
+        if (field === 'description') {
+          console.log('newVal[field]', newVal[field]);
+          console.log('oldVal{field}', oldVal[field]);
+        }
+        if (!this.fieldState[field] || (newVal[field] === oldVal[field]) || !this.fieldState[field].ranValidation) {
+          continue;
+        }
+
+        if (
+          (newVal[field] === false) ||
+          (newVal[field] && this.fieldState[field].ranValidation)
+        ) {
+          this.$emit('validate');
         }
       }
     }
+    /* conditionalFields(newVal, oldVal) { */
+    /*   for (const conditionType of Object.keys(oldVal)) { */
+    /*     for (const field of Object.keys(oldVal[conditionType])) { */
+    /*       if (field === 'description') { */
+    /*         console.log('err', this.fieldState[field]?.error); */
+    /*         console.log('newVal: ', newVal[conditionType][field]); */
+    /*         console.log('oldVal: ', oldVal[conditionType][field]); */
+    /*       } */
+    /*       if ( */
+    /*         !this.fieldState[field] || */
+    /*         (newVal[conditionType][field] === oldVal[conditionType][field]) || */
+    /*         !this.fieldState[field].ranValidation */
+    /*       ) { */
+    /*         continue; */
+    /*       } */
+    /**/
+    /*       if ( */
+    /*         (newVal[conditionType][field] === false) || */
+    /*         (newVal[conditionType][field] && this.fieldState[field].ranValidation) */
+    /*       ) { */
+    /*         this.$emit('validate'); */
+    /*       } */
+    /*     } */
+    /*   } */
+    /* } */
   },
   created() {
     this.populateDocData();
