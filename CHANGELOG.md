@@ -1,5 +1,11 @@
 # Changelog
 
+## UNRELEASED
+
+### Changes
+
+* Webpack warnings about package size during the build process have been turned off by default.
+
 ## 3.58.1 (2023-10-18)
 
 ### Security

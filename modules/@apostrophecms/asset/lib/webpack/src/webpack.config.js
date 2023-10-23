@@ -31,6 +31,9 @@ module.exports = ({
   const moduleName = es5 ? 'nomodule' : 'module';
   const pnpmModulePath = apos.isPnpm ? [ path.join(apos.selfDir, '../') ] : [];
   const config = {
+    performance: {
+      hints: false
+    },
     entry: {
       [mainBundleName]: importFile,
       ...bundles
