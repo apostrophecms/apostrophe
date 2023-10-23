@@ -110,7 +110,7 @@ export function isExternalCondition(conditionKey, conditionType) {
 // `values` - the schema (all) values
 // `externalConditionsResults` - the results of the external conditions,
 // as returned by `evaluateExternalConditions`
-export function conditionalFields(
+export function getConditionalFields(
   schema,
   fields,
   values,

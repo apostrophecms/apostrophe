@@ -133,6 +133,7 @@ export default {
       // If the field is conditional and isn't shown, disregard any errors.
       const error = this.conditionMet === false ? false
         : this.validate(this.next);
+
       this.$emit('input', {
         data: error ? this.next : this.convert(this.next),
         error,

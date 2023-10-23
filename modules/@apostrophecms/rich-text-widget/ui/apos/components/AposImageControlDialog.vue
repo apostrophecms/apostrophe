@@ -20,7 +20,7 @@
         :key="lastSelectionTime"
         :generation="generation"
         :following-values="followingValues()"
-        :conditional-fields="conditionalFields()"
+        :conditional-fields="getConditionalFields()"
       />
       <footer class="apos-image-control__footer">
         <AposButton

@@ -16,7 +16,7 @@
             :generation="generation"
             :doc-id="docId"
             v-model="schemaInput"
-            :conditional-fields="conditionalFields(values)"
+            :conditional-fields="getConditionalFields(values)"
             :following-values="followingValuesWithParent"
             ref="schema"
           />

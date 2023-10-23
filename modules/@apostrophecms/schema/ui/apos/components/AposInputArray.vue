@@ -65,7 +65,7 @@
               :modifiers="['small', 'inverted']"
               :doc-id="docId"
               :following-values="getFollowingValues(item)"
-              :conditional-fields="conditionalFields(item.schemaInput?.data || {})"
+              :conditional-fields="getConditionalFields(item.schemaInput?.data || {})"
               :field-style="field.style"
             >
               <template #before>

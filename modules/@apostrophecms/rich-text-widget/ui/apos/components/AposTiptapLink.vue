@@ -43,7 +43,7 @@
           :key="lastSelectionTime"
           :generation="generation"
           :following-values="followingValues()"
-          :conditional-fields="conditionalFields()"
+          :conditional-fields="getConditionalFields()"
         />
         <footer class="apos-link-control__footer">
           <AposButton

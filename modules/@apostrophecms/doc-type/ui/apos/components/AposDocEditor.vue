@@ -64,7 +64,7 @@
               :trigger-validation="triggerValidation"
               :utility-rail="false"
               :following-values="followingValues('other')"
-              :conditional-fields="conditionalFields('other')"
+              :conditional-fields="getConditionalFields()"
               :doc-id="docId"
               :value="docFields"
               :server-errors="serverErrors"
@@ -89,7 +89,7 @@
             :trigger-validation="triggerValidation"
             :utility-rail="true"
             :following-values="followingUtils"
-            :conditional-fields="conditionalFields('utility')"
+            :conditional-fields="getConditionalFields()"
             :doc-id="docId"
             :value="docFields"
             @input="updateDocFields"
@@ -115,6 +115,7 @@ import AposArchiveMixin from 'Modules/@apostrophecms/ui/mixins/AposArchiveMixin'
 import AposAdvisoryLockMixin from 'Modules/@apostrophecms/ui/mixins/AposAdvisoryLockMixin';
 import AposDocErrorsMixin from 'Modules/@apostrophecms/modal/mixins/AposDocErrorsMixin';
 import { detectDocChange } from 'Modules/@apostrophecms/schema/lib/detectChange';
+import { conditionTypesObject } from 'Modules/@apostrophecms/schema/lib/conditionalFields.js';
 
 export default {
   name: 'AposDocEditor',
@@ -171,7 +172,8 @@ export default {
       readOnly: false,
       restoreOnly: false,
       saveMenu: null,
-      generation: 0
+      generation: 0,
+      conditionalFields: { ...conditionTypesObject }
     };
   },
   computed: {
@@ -341,6 +343,7 @@ export default {
     }
   },
   async mounted() {
+    this.conditionalFields = this.getConditionalFields();
     this.modal.active = true;
     // After computed properties become available
     this.saveMenu = this.computeSaveMenu();

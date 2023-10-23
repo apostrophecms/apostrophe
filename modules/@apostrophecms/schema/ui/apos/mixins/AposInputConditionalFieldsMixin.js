@@ -12,7 +12,7 @@
  */
 
 import {
-  conditionalFields, evaluateExternalConditions, conditionTypesObject
+  getConditionalFields, evaluateExternalConditions, conditionTypesObject
 } from '../lib/conditionalFields';
 
 export default {
@@ -47,8 +47,8 @@ export default {
     // in that category, although they may be conditional upon fields in either
     // category.
     // `values` - the schema (all) values
-    conditionalFields(values) {
-      return conditionalFields(
+    getConditionalFields(values) {
+      return getConditionalFields(
         this.schema,
         this.schema,
         values,
