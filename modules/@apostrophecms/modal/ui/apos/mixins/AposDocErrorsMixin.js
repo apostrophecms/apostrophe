@@ -27,17 +27,19 @@ export default {
           }
         });
       }
+
       this.updateErrorCount();
     },
     updateErrorCount() {
       let count = 0;
-      for (const key in this.fieldErrors) {
-        for (const errKey in this.fieldErrors[key]) {
-          if (this.fieldErrors[key][errKey]) {
+      for (const group in this.fieldErrors) {
+        for (const field in this.fieldErrors[group]) {
+          if (this.fieldErrors[group][field]) {
             count++;
           }
         }
       }
+
       this.errorCount = count;
     },
     prepErrors() {
