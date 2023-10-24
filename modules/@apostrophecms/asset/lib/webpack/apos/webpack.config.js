@@ -24,6 +24,9 @@ module.exports = ({
 
   const pnpmModulePath = apos.isPnpm ? [ path.join(apos.selfDir, '../') ] : [];
   const config = {
+    performance: {
+      hints: false
+    },
     entry: importFile,
     // Ensure that the correct version of vue-loader is found
     context: __dirname,

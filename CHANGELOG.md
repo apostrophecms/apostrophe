@@ -1,5 +1,11 @@
 # Changelog
 
+## UNRELEASED
+
+### Changes
+
+* Webpack warnings about package size during the admin UI build process have been turned off by default. Warnings are still enabled for the public build, where a large bundle can be problematic for SEO.
+
 ## 3.58.1 (2023-10-18)
 
 ### Security
