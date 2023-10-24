@@ -64,7 +64,7 @@
               :trigger-validation="triggerValidation"
               :utility-rail="false"
               :following-values="followingValues('other')"
-              :conditional-fields="getConditionalFields('other')"
+              :conditional-fields="conditionalFields"
               :doc-id="docId"
               :value="docFields"
               :server-errors="serverErrors"
@@ -89,7 +89,7 @@
             :trigger-validation="triggerValidation"
             :utility-rail="true"
             :following-values="followingUtils"
-            :conditional-fields="getConditionalFields('util')"
+            :conditional-fields="conditionalFields"
             :doc-id="docId"
             :value="docFields"
             @input="updateDocFields"
@@ -172,7 +172,8 @@ export default {
       readOnly: false,
       restoreOnly: false,
       saveMenu: null,
-      generation: 0
+      generation: 0,
+      conditionalFields: { ...conditionTypesObject }
     };
   },
   computed: {
@@ -322,7 +323,7 @@ export default {
   },
   watch: {
     'docFields.data.type': {
-      handler(newVal, oldVal) {
+      handler(newVal) {
         if (this.moduleName !== '@apostrophecms/page') {
           return;
         }
@@ -342,6 +343,8 @@ export default {
     }
   },
   async mounted() {
+    this.conditionalFields = this.getConditionalFields();
+
     this.modal.active = true;
     // After computed properties become available
     this.saveMenu = this.computeSaveMenu();
@@ -680,6 +683,15 @@ export default {
         ...this.docFields.data,
         ...value.data
       };
+
+      this.conditionalFields = this.getConditionalFields();
+
+      /* const conditionalFields = this.getConditionalFields(); */
+      /* for (const [ type, fields ] of Object.entries(conditionalFields)) { */
+      /*   for (const [ name, value ] of Object.entries(fields)) { */
+      /*     this.$set(this.conditionalFields[type], name, value); */
+      /*   } */
+      /* } */
     },
     getAposSchema(field) {
       if (field.group.name === 'utility') {
