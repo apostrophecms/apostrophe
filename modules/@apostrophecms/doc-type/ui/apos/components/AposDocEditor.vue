@@ -684,7 +684,11 @@ export default {
         ...value.data
       };
 
-      this.conditionalFields = this.getConditionalFields();
+      for (const [ conditionType, fields ] of Object.entries(this.getConditionalFields())) {
+        for (const [ field, val ] of Object.entries(fields)) {
+          this.$set(this.conditionalFields[conditionType], field, val);
+        }
+      }
     },
     getAposSchema(field) {
       if (field.group.name === 'utility') {
