@@ -2713,6 +2713,85 @@ describe.only('Schemas', function() {
         prop1: 'test2'
       }, 'requiredIfProp', 'required');
     });
+
+    it.only('should enforce required property with ifRequired nested boolean', async function() {
+      const req = apos.task.getReq();
+      const schema = apos.schema.compose({
+        addFields: [
+          {
+            name: 'prop1',
+            type: 'object',
+            required: false,
+            fields: {
+              add: {
+                subfield: {
+                  type: 'string'
+                }
+              }
+            },
+            schema: [
+              {
+                name: 'subfield',
+                type: 'string'
+              }
+            ]
+          },
+          {
+            name: 'requiredIfProp',
+            type: 'integer',
+            requiredIf: {
+              'prop1.subfield': 'test'
+            }
+          }
+        ]
+      });
+      const output = {};
+      await apos.schema.convert(req, schema, {
+        requiredIfProp: null,
+        prop1: {
+          subfield: ''
+        }
+      }, output);
+      assert(output.requiredIfProp === null);
+    });
+
+    it.only('should error required property with ifRequired nested boolean', async function() {
+      const schema = apos.schema.compose({
+        addFields: [
+          {
+            name: 'prop1',
+            type: 'object',
+            required: false,
+            fields: {
+              add: {
+                subfield: {
+                  type: 'string'
+                }
+              }
+            },
+            schema: [
+              {
+                name: 'subfield',
+                type: 'string'
+              }
+            ]
+          },
+          {
+            name: 'requiredIfProp',
+            type: 'integer',
+            requiredIf: {
+              'prop1.subfield': 'test'
+            }
+          }
+        ]
+      });
+      await testSchemaError(schema, {
+        requiredIfProp: null,
+        prop1: {
+          subfield: 'test'
+        }
+      }, 'requiredIfProp', 'required');
+    });
   });
 });
 

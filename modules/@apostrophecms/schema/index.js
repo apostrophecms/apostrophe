@@ -465,7 +465,7 @@ module.exports = {
         });
       },
 
-      async isFieldRequired(field, destination) {
+      async isFieldRequired(field, data, destination) {
         return field.requiredIf
           ? await evaluate(field.requiredIf, destination)
           : field.required;
@@ -474,6 +474,8 @@ module.exports = {
           let result = true;
 
           for (const [ key, val ] of Object.entries(clause)) {
+            const destinationKey = _.get(destination, key);
+
             if (key === '$or') {
               const results = await Promise.all(val.map(clause => evaluate(clause, destination)));
               if (!results.some((value) => value)) {
@@ -483,16 +485,17 @@ module.exports = {
               continue;
             } else if (val.$ne) {
               // eslint-disable-next-line eqeqeq
-              if (val.$ne == destination[key]) {
+              if (val.$ne == destinationKey) {
                 result = false;
+                break;
               }
             }
 
-            if (typeof val === 'boolean' && !destination[key]) {
+            if (typeof val === 'boolean' && !destinationKey) {
               result = false;
             }
             // eslint-disable-next-line eqeqeq
-            if ((typeof val === 'string' || typeof val === 'number') && destination[key] != val) {
+            if ((typeof val === 'string' || typeof val === 'number') && destinationKey != val) {
               result = false;
             }
           }
@@ -540,7 +543,7 @@ module.exports = {
 
           if (convert) {
             try {
-              const isRequired = await self.isFieldRequired(field, destination);
+              const isRequired = await self.isFieldRequired(field, data, destination);
               await convert(
                 req,
                 {
