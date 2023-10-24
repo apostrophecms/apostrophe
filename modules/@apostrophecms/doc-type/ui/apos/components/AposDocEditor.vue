@@ -173,7 +173,7 @@ export default {
       restoreOnly: false,
       saveMenu: null,
       generation: 0,
-      conditionalFields: { ...getConditionTypesObject() }
+      conditionalFields: getConditionTypesObject()
     };
   },
   computed: {

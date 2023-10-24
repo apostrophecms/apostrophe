@@ -1,7 +1,8 @@
 // Supported field conditional types,
 // you can add a condition type to this array to make it available to the frontend
 const conditionTypes = [ 'if', 'requiredIf' ];
-export const getConditionTypesObject = () => Object.fromEntries(conditionTypes.map((key) => ([ key, {} ])));
+export const getConditionTypesObject = () => Object
+  .fromEntries(conditionTypes.map((key) => ([ key, {} ])));
 
 // Evaluate the external conditions found in each field
 // via API calls - made in parallel for performance-
@@ -10,7 +11,7 @@ export const getConditionTypesObject = () => Object.fromEntries(conditionTypes.m
 // `docId` - the current docId (from prop or context)
 // `$t` - the i18n function (usually `this.$t`)
 export async function evaluateExternalConditions(schema, docId, $t) {
-  const externalConditionsResults = { ...getConditionTypesObject() };
+  const externalConditionsResults = getConditionTypesObject();
 
   for (const field of schema) {
     for (const conditionType of conditionTypes) {
@@ -116,7 +117,7 @@ export function getConditionalFields(
   values,
   externalConditionsResults
 ) {
-  const conditionalFields = { ...getConditionTypesObject() };
+  const conditionalFields = getConditionTypesObject();
 
   while (true) {
     let change = false;
@@ -137,7 +138,7 @@ export function getConditionalFields(
     }
   }
 
-  const result = { ...getConditionTypesObject() };
+  const result = getConditionTypesObject();
 
   for (const field of fields) {
     for (const conditionType of conditionTypes) {
