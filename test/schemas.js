@@ -2402,13 +2402,13 @@ describe.only('Schemas', function() {
       });
       const output = {};
       await apos.schema.convert(req, schema, {
-        shoeSize: '6',
-        age: '18'
+        shoeSize: '',
+        age: ''
       }, output);
-      assert(output.shoeSize === 6);
+      assert(output.shoeSize === null);
     });
 
-    it.only('should error required property with ifRequired', async function() {
+    it.only('should error required property with ifRequired boolean', async function() {
       const schema = apos.schema.compose({
         addFields: [
           {
@@ -2589,6 +2589,128 @@ describe.only('Schemas', function() {
         requiredIfProp: null,
         prop1: 'test',
         prop2: true
+      }, 'requiredIfProp', 'required');
+    });
+
+    it.only('should enforce required property with ifRequired logical OR', async function() {
+      const req = apos.task.getReq();
+      const schema = apos.schema.compose({
+        addFields: [
+          {
+            name: 'prop1',
+            type: 'string',
+            required: false
+          },
+          {
+            name: 'prop2',
+            type: 'boolean',
+            required: false
+          },
+          {
+            name: 'requiredIfProp',
+            type: 'integer',
+            requiredIf: {
+              $or: [
+                { prop1: 'test' },
+                { prop2: true }
+              ]
+            }
+          }
+        ]
+      });
+      const output = {};
+      await apos.schema.convert(req, schema, {
+        requiredIfProp: null,
+        prop1: 'test2',
+        prop2: false
+      }, output);
+      assert(output.requiredIfProp === null);
+    });
+
+    it.only('should error required property with ifRequired logical OR', async function() {
+      const schema = apos.schema.compose({
+        addFields: [
+          {
+            name: 'prop1',
+            type: 'string',
+            required: false
+          },
+          {
+            name: 'prop2',
+            type: 'boolean',
+            required: false
+          },
+          {
+            name: 'requiredIfProp',
+            type: 'integer',
+            requiredIf: {
+              $or: [
+                { prop1: 'test' },
+                { prop2: true }
+              ]
+            }
+          }
+        ]
+      });
+      await testSchemaError(schema, {
+        requiredIfProp: null,
+        prop1: 'test2',
+        prop2: true
+      }, 'requiredIfProp', 'required');
+    });
+
+    it.only('should enforce required property with ifRequired not equal match', async function() {
+      const req = apos.task.getReq();
+      const schema = apos.schema.compose({
+        addFields: [
+          {
+            name: 'prop1',
+            type: 'string',
+            required: false
+          },
+          {
+            name: 'prop2',
+            type: 'boolean',
+            required: false
+          },
+          {
+            name: 'requiredIfProp',
+            type: 'integer',
+            requiredIf: { prop1: { $ne: 'test' } }
+          }
+        ]
+      });
+      const output = {};
+      await apos.schema.convert(req, schema, {
+        requiredIfProp: null,
+        prop1: 'test'
+      }, output);
+      assert(output.requiredIfProp === null);
+    });
+
+    it.only('should error required property with ifRequired not equal match', async function() {
+      const schema = apos.schema.compose({
+        addFields: [
+          {
+            name: 'prop1',
+            type: 'string',
+            required: false
+          },
+          {
+            name: 'prop2',
+            type: 'boolean',
+            required: false
+          },
+          {
+            name: 'requiredIfProp',
+            type: 'integer',
+            requiredIf: { prop1: { $ne: 'test' } }
+          }
+        ]
+      });
+      await testSchemaError(schema, {
+        requiredIfProp: null,
+        prop1: 'test2'
       }, 'requiredIfProp', 'required');
     });
   });

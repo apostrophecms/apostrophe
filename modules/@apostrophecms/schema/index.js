@@ -465,11 +465,40 @@ module.exports = {
         });
       },
 
-      async isFieldRequired(args) {
-        const { field } = args;
+      async isFieldRequired(field, destination) {
         return field.requiredIf
-          ? await self.evaluate(args)
+          ? await evaluate(field.requiredIf, destination)
           : field.required;
+
+        async function evaluate(clause, destination) {
+          let result = true;
+
+          for (const [ key, val ] of Object.entries(clause)) {
+            if (key === '$or') {
+              const results = await Promise.all(val.map(clause => evaluate(clause, destination)));
+              if (!results.some((value) => value)) {
+                result = false;
+                break;
+              }
+              continue;
+            } else if (val.$ne) {
+              // eslint-disable-next-line eqeqeq
+              if (val.$ne == destination[key]) {
+                result = false;
+              }
+            }
+
+            if (typeof val === 'boolean' && !destination[key]) {
+              result = false;
+            }
+            // eslint-disable-next-line eqeqeq
+            if ((typeof val === 'string' || typeof val === 'number') && destination[key] != val) {
+              result = false;
+            }
+          }
+
+          return result;
+        }
       },
 
       // Convert submitted `data` object according to `schema`, sanitizing it
@@ -511,11 +540,7 @@ module.exports = {
 
           if (convert) {
             try {
-              const isRequired = await self.isFieldRequired({
-                req,
-                field,
-                destination
-              });
+              const isRequired = await self.isFieldRequired(field, destination);
               await convert(
                 req,
                 {
@@ -583,7 +608,7 @@ module.exports = {
       // Determine whether the given field is visible
       // based on `if` conditions of all fields
 
-      async isVisible(req, schema, destination, name) {
+      async isVisible(req, schema, object, name) {
         const conditionalFields = {};
         const errors = {};
 
@@ -592,12 +617,7 @@ module.exports = {
           for (const field of schema) {
             if (field.if) {
               try {
-                const result = await self.evaluate({
-                  req,
-                  field,
-                  destination,
-                  conditionalFields
-                });
+                const result = await evaluate(field.if, field.name, field.moduleName);
                 const previous = conditionalFields[field.name];
                 if (previous !== result) {
                   change = true;
@@ -623,87 +643,56 @@ module.exports = {
         } else {
           return true;
         }
-      },
 
-      async evaluate({
-        req,
-        field,
-        destination,
-        conditionalFields
-      }) {
-        const { name: fieldName, moduleName: fieldModuleName } = field;
-        const clause = field.if || field.requiredIf;
-        let result = true;
-        for (const [ key, val ] of Object.entries(clause)) {
-          if (key === '$or') {
-            const results = await Promise.all(
-              val.map((clause) =>
-                self.evaluate({
-                  req,
-                  field,
-                  destination,
-                  conditionalFields
-                })
-              )
-            );
+        async function evaluate(clause, fieldName, fieldModuleName) {
+          let result = true;
+          for (const [ key, val ] of Object.entries(clause)) {
+            if (key === '$or') {
+              const results = await Promise.all(val.map(clause => evaluate(clause, fieldName, fieldModuleName)));
 
-            if (!results.some(({ value }) => value)) {
+              if (!results.some(({ value }) => value)) {
+                result = false;
+                break;
+              }
+
+              // No need to go further here, the key is an "$or" condition...
+              continue;
+            }
+
+            // Handle external conditions:
+            //  - `if: { 'methodName()': true }`
+            //  - `if: { 'moduleName:methodName()': 'expected value' }`
+            // Checking if key ends with a closing parenthesis here to throw later if any argument is passed.
+            if (key.endsWith(')')) {
+              let externalConditionResult;
+
+              try {
+                externalConditionResult = await self.evaluateMethod(req, key, fieldName, fieldModuleName, object._id);
+              } catch (error) {
+                throw self.apos.error('invalid', error.message);
+              }
+
+              if (externalConditionResult !== val) {
+                result = false;
+                break;
+              };
+
+              // Stop there, this is an external condition thus
+              // does not need to be checked against doc fields.
+              continue;
+            }
+
+            if (conditionalFields[key] === false) {
               result = false;
               break;
             }
-
-            // No need to go further here, the key is an "$or" condition...
-            continue;
-          }
-
-          // Handle external conditions:
-          //  - `if: { 'methodName()': true }`
-          //  - `if: { 'moduleName:methodName()': 'expected value' }`
-          // Checking if key ends with a closing parenthesis here to throw later if any argument is passed.
-          if (key.endsWith(')')) {
-            let externalConditionResult;
-
-            try {
-              externalConditionResult = await self.evaluateMethod(
-                req,
-                key,
-                fieldName,
-                fieldModuleName,
-                destination._id
-              );
-            } catch (error) {
-              throw self.apos.error('invalid', error.message);
-            }
-
-            if (externalConditionResult !== val) {
+            if (val !== object[key]) {
               result = false;
               break;
             }
-
-            // Stop there, this is an external condition thus
-            // does not need to be checked against doc fields.
-            continue;
           }
-
-          if (field.requiredIf) {
-            if (typeof val === 'boolean' && !destination[key]) {
-              result = false;
-            }
-            if ((typeof val === 'string' || typeof val === 'number') && destination[key] != val) {
-              result = false;
-            }
-          }
-
-          if (conditionalFields?.[key] === false) {
-            result = false;
-            break;
-          }
-          if (val !== destination[key] && !field.requiredIf) {
-            result = false;
-            break;
-          }
+          return result;
         }
-        return result;
       },
 
       async evaluateMethod(req, methodKey, fieldName, fieldModuleName, docId = null, optionalParenthesis = false) {
