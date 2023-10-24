@@ -18,7 +18,7 @@ import {
 export default {
   data() {
     return {
-      externalConditionsResults: { ...getConditionTypesObject() }
+      externalConditionsResults: getConditionTypesObject()
     };
   },
 

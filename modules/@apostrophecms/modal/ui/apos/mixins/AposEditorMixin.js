@@ -29,7 +29,7 @@ export default {
       restoreOnly: false,
       readOnly: false,
       changed: [],
-      externalConditionsResults: { ...getConditionTypesObject() }
+      externalConditionsResults: getConditionTypesObject()
     };
   },
 

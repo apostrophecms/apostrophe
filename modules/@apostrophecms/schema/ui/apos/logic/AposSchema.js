@@ -39,7 +39,7 @@ export default {
     conditionalFields: {
       type: Object,
       default() {
-        return { ...getConditionTypesObject() };
+        return getConditionTypesObject();
       }
     },
     modifiers: {
