@@ -52,7 +52,7 @@ export default {
             name: key,
             label: this.groups[key].label,
             fields,
-            isVisible: this.conditionalFields
+            isVisible: this.conditionalFields?.if
               ? fields.some(field => this.conditionalFields.if[field] !== false)
               : true
           });
