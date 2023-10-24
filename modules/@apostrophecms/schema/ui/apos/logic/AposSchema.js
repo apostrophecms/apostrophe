@@ -144,75 +144,10 @@ export default {
       this.populateDocData();
     },
 
-    /* 'conditionalFields.if.description'(val, oldVal) { */
-    /*   console.log('val: ', val, oldVal); */
-    /* }, */
-
-    /* conditionalFields: { */
-    /*   handler(newVal, oldVal) { */
-    /*     console.log('new val if: ', newVal.description); */
-    /*     console.log('old val if: ', oldVal.description); */
-    /**/
-    /*     for (const field of Object.keys(newVal)) { */
-    /*       if ( */
-    /*         !this.fieldState[field] || */
-    /*         (newVal[field] === oldVal[field]) || */
-    /*         !this.fieldState[field].ranValidation */
-    /*       ) { */
-    /*         continue; */
-    /*       } */
-    /**/
-    /*       if ( */
-    /*         (newVal[field] === false) || */
-    /*         (newVal[field] && this.fieldState[field].ranValidation) */
-    /*       ) { */
-    /*         this.$emit('validate'); */
-    /*       } */
-    /*     } */
-    /*   } */
-    /* }, */
-
-    /* conditionalFields(newVal, oldVal) { */
-    /*   console.log('new val if: ', newVal.description); */
-    /*   console.log('old val if: ', oldVal.description); */
-    /*   for (const field in oldVal) { */
-    /*     if (!this.fieldState[field] || (newVal[field] === oldVal[field]) || !this.fieldState[field].ranValidation) { */
-    /*       continue; */
-    /*     } */
-    /**/
-    /*     if ( */
-    /*       (newVal[field] === false) || */
-    /*       (newVal[field] && this.fieldState[field].ranValidation) */
-    /*     ) { */
-    /*       this.$emit('validate'); */
-    /*     } */
-    /*   } */
-    /* } */
-
     conditionalFields: {
       deep: true,
       handler(newVal, oldVal) {
-        console.log('new val: ', newVal.if.description);
-        console.log('old val: ', oldVal.if.description);
-
-        for (const conditionType of Object.keys(newVal)) {
-          for (const field of Object.keys(newVal[conditionType])) {
-            if (
-              !this.fieldState[field] ||
-              (newVal[conditionType][field] === oldVal[conditionType][field]) ||
-              !this.fieldState[field].ranValidation
-            ) {
-              continue;
-            }
-
-            if (
-              (newVal[conditionType][field] === false) ||
-              (newVal[conditionType][field] && this.fieldState[field].ranValidation)
-            ) {
-              this.$emit('validate');
-            }
-          }
-        }
+        this.$emit('validate');
       }
     }
   },
