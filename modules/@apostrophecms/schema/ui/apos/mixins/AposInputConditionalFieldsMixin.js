@@ -12,13 +12,13 @@
  */
 
 import {
-  getConditionalFields, evaluateExternalConditions, conditionTypesObject
+  getConditionalFields, evaluateExternalConditions, getConditionTypesObject
 } from '../lib/conditionalFields';
 
 export default {
   data() {
     return {
-      externalConditionsResults: { ...conditionTypesObject }
+      externalConditionsResults: { ...getConditionTypesObject() }
     };
   },
 

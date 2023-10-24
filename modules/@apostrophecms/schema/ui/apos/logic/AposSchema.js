@@ -1,5 +1,5 @@
 import { detectFieldChange } from 'Modules/@apostrophecms/schema/lib/detectChange';
-import { conditionTypesObject } from '../lib/conditionalFields';
+import { getConditionTypesObject } from '../lib/conditionalFields';
 
 export default {
   name: 'AposSchema',
@@ -39,7 +39,7 @@ export default {
     conditionalFields: {
       type: Object,
       default() {
-        return { ...conditionTypesObject };
+        return { ...getConditionTypesObject() };
       }
     },
     modifiers: {
@@ -148,8 +148,7 @@ export default {
     /*   console.log('val: ', val, oldVal); */
     /* }, */
 
-    /* 'conditionalFields.if': { */
-    /*   deep: true, */
+    /* conditionalFields: { */
     /*   handler(newVal, oldVal) { */
     /*     console.log('new val if: ', newVal.description); */
     /*     console.log('old val if: ', oldVal.description); */
@@ -169,6 +168,23 @@ export default {
     /*       ) { */
     /*         this.$emit('validate'); */
     /*       } */
+    /*     } */
+    /*   } */
+    /* }, */
+
+    /* conditionalFields(newVal, oldVal) { */
+    /*   console.log('new val if: ', newVal.description); */
+    /*   console.log('old val if: ', oldVal.description); */
+    /*   for (const field in oldVal) { */
+    /*     if (!this.fieldState[field] || (newVal[field] === oldVal[field]) || !this.fieldState[field].ranValidation) { */
+    /*       continue; */
+    /*     } */
+    /**/
+    /*     if ( */
+    /*       (newVal[field] === false) || */
+    /*       (newVal[field] && this.fieldState[field].ranValidation) */
+    /*     ) { */
+    /*       this.$emit('validate'); */
     /*     } */
     /*   } */
     /* } */
