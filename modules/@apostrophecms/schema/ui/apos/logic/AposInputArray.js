@@ -118,7 +118,7 @@ export default {
       if (this.items.find(item => item.schemaInput.hasErrors)) {
         return 'invalid';
       }
-      if (this.field.required && !value.length) {
+      if (this.isRequired && !value.length) {
         return 'required';
       }
       if (this.field.min && value.length < this.field.min) {

@@ -118,7 +118,7 @@ export default {
           message: 'apostrophe:slugInUse'
         };
       }
-      if (this.field.required) {
+      if (this.isRequired) {
         if (!value.length) {
           return 'required';
         }
