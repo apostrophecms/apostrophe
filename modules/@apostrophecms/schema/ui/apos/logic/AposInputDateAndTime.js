@@ -24,7 +24,7 @@ export default {
       }
     },
     validate() {
-      if (this.field.required && !this.next) {
+      if (this.isRequired && !this.next) {
         return 'required';
       }
     },

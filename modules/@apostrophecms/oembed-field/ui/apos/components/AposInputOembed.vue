@@ -83,7 +83,7 @@ export default {
         value = {};
       }
 
-      if (!value.url && !this.field.required) {
+      if (!value.url && !this.isRequired) {
         // field is now empty and not required, not an error
         return false;
       }
@@ -99,7 +99,7 @@ export default {
         } : 'invalid';
       }
 
-      if (this.field.required) {
+      if (this.isRequired) {
         if (!value || !value.url) {
           return 'required';
         }

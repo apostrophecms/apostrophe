@@ -12,7 +12,7 @@ export default {
   },
   methods: {
     validate(value) {
-      if (this.field.required) {
+      if (this.isRequired) {
         if (!value.length) {
           return { message: 'required' };
         }

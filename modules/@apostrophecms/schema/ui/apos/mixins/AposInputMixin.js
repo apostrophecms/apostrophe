@@ -95,9 +95,11 @@ export default {
       return this.error || this.serverError;
     },
     isRequired() {
-      return this.conditionMetRequired == null
-        ? this.field.required
-        : this.conditionMetRequired;
+      if (this.field.required || this.conditionMetRequired == null) {
+        return this.field.required;
+      }
+
+      return this.conditionMetRequired;
     }
   },
   watch: {

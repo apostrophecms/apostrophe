@@ -46,7 +46,7 @@ export default {
         : this.field.min - 1;
     },
     validate(value) {
-      if (this.field.required) {
+      if (this.isRequired) {
         if (!value) {
           return 'required';
         }
