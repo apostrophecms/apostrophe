@@ -11,7 +11,7 @@ export default {
       return (uid + JSON.stringify(value)).replace(/\s+/g, '');
     },
     validate(value) {
-      if (this.field.required && (value === '')) {
+      if (this.isRequired && (value === '')) {
         return 'required';
       }
 
