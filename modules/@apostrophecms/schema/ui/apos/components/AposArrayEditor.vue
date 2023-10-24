@@ -65,7 +65,7 @@
                     :schema="schema"
                     :trigger-validation="triggerValidation"
                     :following-values="followingValues()"
-                    :conditional-fields="getConditionalFields()"
+                    :conditional-fields="conditionalFields"
                     :value="currentDoc"
                     @input="currentDocUpdate"
                     @validate="triggerValidate"
