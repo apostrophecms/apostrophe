@@ -153,7 +153,7 @@ export function getConditionalFields(
     let result = true;
     for (const [ key, val ] of Object.entries(clause)) {
       if (key === '$or') {
-        if (!val.some(clause => evaluate(clause))) {
+        if (!val.some(clause => evaluate(clause, conditionType))) {
           result = false;
           break;
         }
@@ -173,7 +173,7 @@ export function getConditionalFields(
         continue;
       }
 
-      if (conditionalFields[key] === false) {
+      if (conditionalFields[conditionType][key] === false) {
         result = false;
         break;
       }
