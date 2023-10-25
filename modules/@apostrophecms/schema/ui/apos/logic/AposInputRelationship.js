@@ -124,7 +124,7 @@ export default {
     validate(value) {
       this.checkLimit();
 
-      if (this.isRequired && !value.length) {
+      if (this.field.required && !value.length) {
         return { message: 'required' };
       }
 

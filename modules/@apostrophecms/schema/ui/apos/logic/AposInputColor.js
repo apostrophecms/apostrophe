@@ -78,7 +78,7 @@ export default {
       this.next = this.tinyColorObj.toString(this.format);
     },
     validate(value) {
-      if (this.isRequired) {
+      if (this.field.required) {
         if (!value) {
           return 'required';
         }

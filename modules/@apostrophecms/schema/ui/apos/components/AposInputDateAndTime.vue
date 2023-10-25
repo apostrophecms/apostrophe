@@ -9,7 +9,7 @@
     <template #body>
       <div class="apos-input-wrapper">
         <AposToggle
-          v-if="!isRequired"
+          v-if="!field.required"
           v-model="disabled"
           class="apos-toggle"
           @toggle="toggle"
