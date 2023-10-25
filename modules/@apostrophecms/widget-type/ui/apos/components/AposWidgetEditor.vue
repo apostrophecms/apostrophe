@@ -21,7 +21,7 @@
               @input="updateDocFields"
               @validate="triggerValidate"
               :following-values="followingValues()"
-              :conditional-fields="getConditionalFields()"
+              :conditional-fields="conditionalFields"
               ref="schema"
             />
           </div>
@@ -46,6 +46,7 @@
 import AposModifiedMixin from 'Modules/@apostrophecms/ui/mixins/AposModifiedMixin';
 import AposEditorMixin from 'Modules/@apostrophecms/modal/mixins/AposEditorMixin';
 import { detectDocChange } from 'Modules/@apostrophecms/schema/lib/detectChange';
+import { getConditionTypesObject } from 'Modules/@apostrophecms/schema/lib/conditionalFields';
 import cuid from 'cuid';
 import { klona } from 'klona';
 
@@ -98,7 +99,8 @@ export default {
         type: 'slide',
         showModal: false
       },
-      triggerValidation: false
+      triggerValidation: false,
+      conditionalFields: getConditionTypesObject()
     };
   },
   computed: {
@@ -136,6 +138,7 @@ export default {
     }
   },
   async mounted() {
+    this.conditionalFields = this.getConditionalFields();
     apos.area.widgetOptions = [
       klona(this.options),
       ...apos.area.widgetOptions
@@ -163,6 +166,12 @@ export default {
   methods: {
     updateDocFields(value) {
       this.docFields = value;
+
+      for (const [ conditionType, fields ] of Object.entries(this.getConditionalFields())) {
+        for (const [ field, val ] of Object.entries(fields)) {
+          this.$set(this.conditionalFields[conditionType], field, val);
+        }
+      }
     },
     async save() {
       this.triggerValidation = true;

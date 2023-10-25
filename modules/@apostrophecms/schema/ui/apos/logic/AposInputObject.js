@@ -2,9 +2,11 @@
 import AposInputMixin from 'Modules/@apostrophecms/schema/mixins/AposInputMixin.js';
 import AposInputFollowingMixin from 'Modules/@apostrophecms/schema/mixins/AposInputFollowingMixin.js';
 import AposInputConditionalFieldsMixin from 'Modules/@apostrophecms/schema/mixins/AposInputConditionalFieldsMixin.js';
+import { getConditionTypesObject } from 'Modules/@apostrophecms/schema/lib/conditionalFields';
 
 export default {
   name: 'AposInputObject',
+  emits: [ 'validate' ],
   mixins: [
     AposInputMixin,
     AposInputFollowingMixin,
@@ -32,7 +34,8 @@ export default {
       schemaInput: {
         data: next
       },
-      next
+      next,
+      conditionalFields: getConditionTypesObject()
     };
   },
   computed: {
@@ -70,9 +73,13 @@ export default {
     }
   },
   async created() {
-    await this.evaluateExternalConditions();
+    this.conditionalFields = this.getConditionalFields(this.values);
+    await this.evaluateExternalConditions(this.values);
   },
   methods: {
+    emitValidate() {
+      this.$emit('validate');
+    },
     validate (value) {
       if (this.schemaInput.hasErrors) {
         return 'invalid';
@@ -81,6 +88,14 @@ export default {
     // Return next at mount or when generation changes
     getNext() {
       return this.value?.data ? this.value.data : (this.field.def || {});
+    },
+
+    evaluateConditionalFields() {
+      for (const [ conditionType, fields ] of Object.entries(this.getConditionalFields(this.values))) {
+        for (const [ field, val ] of Object.entries(fields)) {
+          this.$set(this.conditionalFields[conditionType], field, val);
+        }
+      }
     }
   }
 };
