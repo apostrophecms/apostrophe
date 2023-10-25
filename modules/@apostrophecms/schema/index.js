@@ -658,7 +658,6 @@ module.exports = {
         } else {
           return true;
         }
-
         async function evaluate(clause, fieldName, fieldModuleName) {
           let result = true;
           for (const [ key, val ] of Object.entries(clause)) {
