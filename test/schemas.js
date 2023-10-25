@@ -237,7 +237,7 @@ const hasAreaWithoutWidgets = {
 
 const warnMessages = [];
 
-describe.only('Schemas', function() {
+describe('Schemas', function() {
 
   this.timeout(t.timeout);
 
@@ -2382,7 +2382,7 @@ describe.only('Schemas', function() {
       assert.deepEqual(actual, expected);
     });
 
-    it.only('should enforce required property with ifRequired boolean', async function() {
+    it('should enforce required property with ifRequired boolean', async function() {
       const req = apos.task.getReq();
       const schema = apos.schema.compose({
         addFields: [
@@ -2408,7 +2408,7 @@ describe.only('Schemas', function() {
       assert(output.shoeSize === null);
     });
 
-    it.only('should error required property with ifRequired boolean', async function() {
+    it('should error required property with ifRequired boolean', async function() {
       const schema = apos.schema.compose({
         addFields: [
           {
@@ -2431,7 +2431,7 @@ describe.only('Schemas', function() {
       }, 'shoeSize', 'required');
     });
 
-    it.only('should enforce required property with ifRequired string', async function() {
+    it('should enforce required property with ifRequired string', async function() {
       const req = apos.task.getReq();
       const schema = apos.schema.compose({
         addFields: [
@@ -2457,7 +2457,7 @@ describe.only('Schemas', function() {
       assert(output.shoeSize === null);
     });
 
-    it.only('should error required property with ifRequired string', async function() {
+    it('should error required property with ifRequired string', async function() {
       const schema = apos.schema.compose({
         addFields: [
           {
@@ -2480,7 +2480,7 @@ describe.only('Schemas', function() {
       }, 'shoeSize', 'required');
     });
 
-    it.only('should enforce required property with ifRequired number', async function() {
+    it('should enforce required property with ifRequired number', async function() {
       const req = apos.task.getReq();
       const schema = apos.schema.compose({
         addFields: [
@@ -2506,7 +2506,7 @@ describe.only('Schemas', function() {
       assert(output.shoeSize === null);
     });
 
-    it.only('should error required property with ifRequired number', async function() {
+    it('should error required property with ifRequired number', async function() {
       const schema = apos.schema.compose({
         addFields: [
           {
@@ -2529,7 +2529,126 @@ describe.only('Schemas', function() {
       }, 'shoeSize', 'required');
     });
 
-    it.only('should enforce required property with ifRequired logical AND', async function() {
+    it('should enforce required property with ifRequired number min', async function() {
+      const req = apos.task.getReq();
+      const schema = apos.schema.compose({
+        addFields: [
+          {
+            name: 'age',
+            type: 'integer',
+            required: false
+          },
+          {
+            name: 'shoeSize',
+            type: 'integer',
+            requiredIf: {
+              age: {
+                min: 18
+              }
+            }
+          }
+        ]
+      });
+      const output = {};
+      await apos.schema.convert(req, schema, {
+        shoeSize: '',
+        age: 17
+      }, output);
+      assert(output.shoeSize === null);
+    });
+
+    it('should error required property with ifRequired number min', async function() {
+      const schema = apos.schema.compose({
+        addFields: [
+          {
+            name: 'age',
+            type: 'integer',
+            required: false
+          },
+          {
+            name: 'prop2',
+            type: 'boolean',
+            required: false
+          },
+          {
+            name: 'shoeSize',
+            type: 'integer',
+            requiredIf: {
+              age: {
+                min: 18
+              }
+            }
+          }
+        ]
+      });
+      await testSchemaError(schema, {
+        shoeSize: '',
+        age: 19,
+        prop2: false
+      }, 'shoeSize', 'required');
+    });
+
+    it('should enforce required property with ifRequired number max', async function() {
+      const req = apos.task.getReq();
+      const schema = apos.schema.compose({
+        addFields: [
+          {
+            name: 'age',
+            type: 'integer',
+            required: false
+          },
+          {
+            name: 'shoeSize',
+            type: 'integer',
+            requiredIf: {
+              age: {
+                min: 18,
+                max: 36
+              }
+            }
+          }
+        ]
+      });
+      const output = {};
+      await apos.schema.convert(req, schema, {
+        shoeSize: '',
+        age: 37
+      }, output);
+      assert(output.shoeSize === null);
+    });
+
+    it('should error required property with ifRequired number max', async function() {
+      const schema = apos.schema.compose({
+        addFields: [
+          {
+            name: 'age',
+            type: 'integer',
+            required: false
+          },
+          {
+            name: 'prop2',
+            type: 'boolean',
+            required: false
+          },
+          {
+            name: 'shoeSize',
+            type: 'integer',
+            requiredIf: {
+              age: {
+                min: 18,
+                max: 36
+              }
+            }
+          }
+        ]
+      });
+      await testSchemaError(schema, {
+        shoeSize: '',
+        age: 36
+      }, 'shoeSize', 'required');
+    });
+
+    it('should enforce required property with ifRequired logical AND', async function() {
       const req = apos.task.getReq();
       const schema = apos.schema.compose({
         addFields: [
@@ -2562,7 +2681,7 @@ describe.only('Schemas', function() {
       assert(output.requiredIfProp === null);
     });
 
-    it.only('should error required property with ifRequired logical AND', async function() {
+    it('should error required property with ifRequired logical AND', async function() {
       const schema = apos.schema.compose({
         addFields: [
           {
@@ -2592,7 +2711,7 @@ describe.only('Schemas', function() {
       }, 'requiredIfProp', 'required');
     });
 
-    it.only('should enforce required property with ifRequired logical OR', async function() {
+    it('should enforce required property with ifRequired logical OR', async function() {
       const req = apos.task.getReq();
       const schema = apos.schema.compose({
         addFields: [
@@ -2627,7 +2746,7 @@ describe.only('Schemas', function() {
       assert(output.requiredIfProp === null);
     });
 
-    it.only('should error required property with ifRequired logical OR', async function() {
+    it('should error required property with ifRequired logical OR', async function() {
       const schema = apos.schema.compose({
         addFields: [
           {
@@ -2659,7 +2778,7 @@ describe.only('Schemas', function() {
       }, 'requiredIfProp', 'required');
     });
 
-    it.only('should enforce required property with ifRequired not equal match', async function() {
+    it('should enforce required property with ifRequired not equal match', async function() {
       const req = apos.task.getReq();
       const schema = apos.schema.compose({
         addFields: [
@@ -2688,7 +2807,7 @@ describe.only('Schemas', function() {
       assert(output.requiredIfProp === null);
     });
 
-    it.only('should error required property with ifRequired not equal match', async function() {
+    it('should error required property with ifRequired not equal match', async function() {
       const schema = apos.schema.compose({
         addFields: [
           {
@@ -2714,7 +2833,7 @@ describe.only('Schemas', function() {
       }, 'requiredIfProp', 'required');
     });
 
-    it.only('should enforce required property with ifRequired nested boolean', async function() {
+    it('should enforce required property with ifRequired nested boolean', async function() {
       const req = apos.task.getReq();
       const schema = apos.schema.compose({
         addFields: [
@@ -2755,7 +2874,7 @@ describe.only('Schemas', function() {
       assert(output.requiredIfProp === null);
     });
 
-    it.only('should error required property with ifRequired nested boolean', async function() {
+    it('should error required property with ifRequired nested boolean', async function() {
       const schema = apos.schema.compose({
         addFields: [
           {
@@ -2793,7 +2912,7 @@ describe.only('Schemas', function() {
       }, 'requiredIfProp', 'required');
     });
 
-    it.only('should enforce required property with ifRequired nested string', async function() {
+    it('should enforce required property with ifRequired nested string', async function() {
       const req = apos.task.getReq();
       const schema = apos.schema.compose({
         addFields: [
@@ -2834,7 +2953,7 @@ describe.only('Schemas', function() {
       assert(output.requiredIfProp === null);
     });
 
-    it.only('should error required property with ifRequired nested string', async function() {
+    it('should error required property with ifRequired nested string', async function() {
       const schema = apos.schema.compose({
         addFields: [
           {
@@ -2872,7 +2991,7 @@ describe.only('Schemas', function() {
       }, 'requiredIfProp', 'required');
     });
 
-    it.only('should enforce required property with ifRequired nested number', async function() {
+    it('should enforce required property with ifRequired nested number', async function() {
       const req = apos.task.getReq();
       const schema = apos.schema.compose({
         addFields: [
@@ -2913,7 +3032,7 @@ describe.only('Schemas', function() {
       assert(output.requiredIfProp === null);
     });
 
-    it.only('should error required property with ifRequired nested number', async function() {
+    it('should error required property with ifRequired nested number', async function() {
       const schema = apos.schema.compose({
         addFields: [
           {
@@ -2951,7 +3070,7 @@ describe.only('Schemas', function() {
       }, 'requiredIfProp', 'required');
     });
 
-    it.only('should enforce required property with ifRequired nested logical AND', async function() {
+    it('should enforce required property with ifRequired nested logical AND', async function() {
       const req = apos.task.getReq();
       const schema = apos.schema.compose({
         addFields: [
@@ -2999,7 +3118,7 @@ describe.only('Schemas', function() {
       assert(output.requiredIfProp === null);
     });
 
-    it.only('should error required property with ifRequired nested logical AND', async function() {
+    it('should error required property with ifRequired nested logical AND', async function() {
       const schema = apos.schema.compose({
         addFields: [
           {
@@ -3044,7 +3163,7 @@ describe.only('Schemas', function() {
       }, 'requiredIfProp', 'required');
     });
 
-    it.only('should enforce required property with ifRequired nested logical OR', async function() {
+    it('should enforce required property with ifRequired nested logical OR', async function() {
       const req = apos.task.getReq();
       const schema = apos.schema.compose({
         addFields: [
@@ -3094,7 +3213,7 @@ describe.only('Schemas', function() {
       assert(output.requiredIfProp === null);
     });
 
-    it.only('should error required property with ifRequired nested logical OR', async function() {
+    it('should error required property with ifRequired nested logical OR', async function() {
       const schema = apos.schema.compose({
         addFields: [
           {
@@ -3141,7 +3260,7 @@ describe.only('Schemas', function() {
       }, 'requiredIfProp', 'required');
     });
 
-    it.only('should enforce required property with ifRequired nested not equal match', async function() {
+    it('should enforce required property with ifRequired nested not equal match', async function() {
       const req = apos.task.getReq();
       const schema = apos.schema.compose({
         addFields: [
@@ -3182,7 +3301,7 @@ describe.only('Schemas', function() {
       assert(output.requiredIfProp === null);
     });
 
-    it.only('should error required property with ifRequired nested not equal match', async function() {
+    it('should error required property with ifRequired nested not equal match', async function() {
       const schema = apos.schema.compose({
         addFields: [
           {

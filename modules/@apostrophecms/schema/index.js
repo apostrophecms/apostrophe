@@ -467,17 +467,17 @@ module.exports = {
 
       async isFieldRequired(field, data, destination) {
         return field.requiredIf
-          ? await evaluate(field.requiredIf, destination)
+          ? evaluate(field.requiredIf, destination)
           : field.required;
 
-        async function evaluate(clause, destination) {
+        function evaluate(clause, destination) {
           let result = true;
 
           for (const [ key, val ] of Object.entries(clause)) {
             const destinationKey = _.get(destination, key);
 
             if (key === '$or') {
-              const results = await Promise.all(val.map(clause => evaluate(clause, destination)));
+              const results = val.map(clause => evaluate(clause, destination));
               if (!results.some((value) => value)) {
                 result = false;
                 break;
@@ -491,9 +491,21 @@ module.exports = {
               }
             }
 
+            if (val.min) {
+              if (destinationKey < val.min) {
+                result = false;
+              }
+            }
+            if (val.max) {
+              if (destinationKey > val.max) {
+                result = false;
+              }
+            }
+
             if (typeof val === 'boolean' && !destinationKey) {
               result = false;
             }
+
             // eslint-disable-next-line eqeqeq
             if ((typeof val === 'string' || typeof val === 'number') && destinationKey != val) {
               result = false;
