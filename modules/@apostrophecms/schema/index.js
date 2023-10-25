@@ -465,7 +465,7 @@ module.exports = {
         });
       },
 
-      async isFieldRequired(field, data, destination) {
+      async isFieldRequired(field, destination) {
         return field.requiredIf
           ? evaluate(field.requiredIf, destination)
           : field.required;
@@ -555,7 +555,7 @@ module.exports = {
 
           if (convert) {
             try {
-              const isRequired = await self.isFieldRequired(field, data, destination);
+              const isRequired = await self.isFieldRequired(field, destination);
               await convert(
                 req,
                 {
