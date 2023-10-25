@@ -85,7 +85,7 @@ export default {
       if (typeof value === 'string' && !value.length) {
         // Also correct for float and integer because Vue coerces
         // number fields to either a number or the empty string
-        return this.isRequired ? 'required' : false;
+        return this.field.required ? 'required' : false;
       }
 
       const minMaxFields = [

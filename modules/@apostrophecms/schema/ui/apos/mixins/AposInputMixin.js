@@ -92,13 +92,6 @@ export default {
     },
     effectiveError () {
       return this.error || this.serverError;
-    },
-    isRequired() {
-      if (this.field.required || this.conditionMetRequired == null) {
-        return this.field.required;
-      }
-
-      return this.conditionMetRequired;
     }
   },
   watch: {

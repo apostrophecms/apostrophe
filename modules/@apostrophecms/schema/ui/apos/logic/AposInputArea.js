@@ -62,7 +62,7 @@ export default {
       this.next = this.value.data || this.getEmptyValue();
     },
     validate(value) {
-      if (this.isRequired) {
+      if (this.field.required) {
         if (!value.items.length) {
           return 'required';
         }

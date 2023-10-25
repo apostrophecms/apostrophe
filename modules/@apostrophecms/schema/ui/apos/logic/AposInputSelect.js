@@ -23,7 +23,7 @@ export default {
   },
   methods: {
     validate(value) {
-      if (this.isRequired && (value === null)) {
+      if (this.field.required && (value === null)) {
         return 'required';
       }
 

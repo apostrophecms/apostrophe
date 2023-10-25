@@ -9,7 +9,7 @@ export default {
       next: (this.value && this.value.data) || null,
       date: '',
       time: '',
-      disabled: !this.isRequired,
+      disabled: !this.field.required,
       invalid: false
     };
   },
@@ -17,7 +17,7 @@ export default {
     this.initDateAndTime();
   },
   watch: {
-    isRequired(val) {
+    'field.required'(val) { // TODO: Make sure it works and is needed
       if (val) {
         this.disabled = false;
         if (this.date) {
@@ -39,7 +39,7 @@ export default {
         return 'invalid';
       }
 
-      if (this.isRequired && !this.next) {
+      if (this.field.required && !this.next) {
         return 'required';
       }
     },

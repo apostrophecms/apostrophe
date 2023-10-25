@@ -12,7 +12,7 @@ export default {
     },
     validate(value) {
       const validValue = this.choices.some((choice) => choice.value === value);
-      if (this.isRequired && !validValue && !value) {
+      if (this.field.required && !validValue && !value) {
         return 'required';
       }
 
