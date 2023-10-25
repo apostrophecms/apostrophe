@@ -147,7 +147,7 @@ export default {
     conditionalFields: {
       deep: true,
       handler(newVal, oldVal) {
-        this.$emit('validate');
+        this.emitValidate();
       }
     }
   },
@@ -155,6 +155,9 @@ export default {
     this.populateDocData();
   },
   methods: {
+    emitValidate() {
+      this.$emit('validate');
+    },
     getDisplayOptions(fieldName) {
       let options = {};
       if (this.displayOptions) {
