@@ -225,9 +225,9 @@ export default {
         return this.schema;
       }
       const currentItem = this.items.find(item => item.open) || this.items[this.items.length - 1];
-      const conditions = this.getConditionalFields(currentItem?.schemaInput?.data || {});
+      const conditions = this.getConditionalFields(currentItem?.schemaInput?.data || { });
       return this.schema.filter(
-        field => conditions[field.name] !== false
+        field => conditions.if[field.name] !== false
       );
     }
   }
