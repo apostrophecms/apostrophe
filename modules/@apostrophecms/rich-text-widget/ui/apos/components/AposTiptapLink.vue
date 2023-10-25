@@ -52,9 +52,11 @@
             :modifiers="formModifiers"
           />
           <AposButton
-            type="primary" label="apostrophe:save"
-            @click="save"
+            type="primary"
+            label="apostrophe:save"
             :modifiers="formModifiers"
+            :disabled="docFields.hasErrors"
+            @click="save"
           />
         </footer>
       </AposContextMenuDialog>
@@ -145,6 +147,7 @@ export default {
           name: 'href',
           label: this.$t('apostrophe:url'),
           type: 'string',
+          required: true,
           if: {
             linkTo: '_url'
           }
