@@ -9,11 +9,22 @@ export default {
       next: (this.value && this.value.data) || null,
       date: '',
       time: '',
-      disabled: !this.field.required
+      disabled: !this.isRequired,
+      invalid: false
     };
   },
   mounted () {
     this.initDateAndTime();
+  },
+  watch: {
+    isRequired(val) {
+      if (val) {
+        this.disabled = false;
+        if (this.date) {
+          this.setDateAndTime();
+        }
+      }
+    }
   },
   methods: {
     toggle() {
@@ -23,7 +34,11 @@ export default {
         this.next = null;
       }
     },
-    validate() {
+    validate(value) {
+      if (this.invalid) {
+        return 'invalid';
+      }
+
       if (this.isRequired && !this.next) {
         return 'required';
       }
@@ -37,9 +52,11 @@ export default {
     },
     setDateAndTime() {
       if (this.date) {
+        this.invalid = false;
         this.next = dayjs(`${this.date} ${this.time}`.trim()).toISOString();
         this.disabled = false;
       } else {
+        this.invalid = true;
         this.next = null;
         this.disabled = true;
       }
