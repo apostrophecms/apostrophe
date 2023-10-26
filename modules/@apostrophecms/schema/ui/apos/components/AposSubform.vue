@@ -7,15 +7,15 @@
           {{ $t(subform.label) }}
         </span>
         <AposSchema
-          :class="{ 'apos-subform__disabled': busy }"
-          data-apos-test="subformSchema"
-          :data-apos-test-name="subform.name"
           ref="schema"
+          data-apos-test="subformSchema"
+          :class="{ 'apos-subform__disabled': busy }"
+          :data-apos-test-name="subform.name"
           :trigger-validation="triggerValidation"
           :schema="schema"
           :value="docFields"
           :following-values="followingValues()"
-          :conditional-fields="getConditionalFields()"
+          :conditional-fields="conditionalFields"
           :server-errors="serverErrors"
           :modifiers="['small']"
           @input="updateDocFields"

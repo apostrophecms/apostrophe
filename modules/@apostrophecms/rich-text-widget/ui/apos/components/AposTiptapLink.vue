@@ -43,7 +43,8 @@
           :key="lastSelectionTime"
           :generation="generation"
           :following-values="followingValues()"
-          :conditional-fields="getConditionalFields()"
+          :conditional-fields="conditionalFields"
+          @input="evaluateConditionalFields()"
         />
         <footer class="apos-link-control__footer">
           <AposButton
@@ -203,6 +204,9 @@ export default {
         this.close();
       }
     }
+  },
+  created() {
+    this.evaluateConditionalFields();
   },
   methods: {
     removeLink() {

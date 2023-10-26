@@ -42,7 +42,8 @@
           :key="lastSelectionTime"
           :generation="generation"
           :following-values="followingValues()"
-          :conditional-fields="getConditionalFields()"
+          :conditional-fields="conditionalFields"
+          @input="evaluateConditionalFields()"
         />
         <footer class="apos-anchor-control__footer">
           <AposButton
@@ -138,6 +139,9 @@ export default {
         this.close();
       }
     }
+  },
+  created() {
+    this.evaluateConditionalFields();
   },
   methods: {
     removeAnchor() {
