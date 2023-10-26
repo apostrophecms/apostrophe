@@ -60,10 +60,6 @@ export default {
     }
   },
 
-  async created() {
-    await this.evaluateExternalConditions();
-  },
-
   methods: {
     // Evaluate the external conditions found in each field
     // via API calls -made in parallel for performance-

@@ -48,7 +48,6 @@ export async function evaluateExternalConditions(schema, docId, $t) {
       }
     }
   }
-
   return externalConditionsResults;
 
   function getExternalConditionKeys([ key, val ], conditionType) {

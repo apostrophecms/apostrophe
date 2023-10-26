@@ -132,6 +132,7 @@ export default {
   },
   async mounted() {
     this.modal.active = true;
+    await this.evaluateExternalConditions();
     this.evaluateConditionalFields();
     if (this.next.length) {
       this.select(this.next[0]._id);
