@@ -1,6 +1,7 @@
-import AposInputMixin from 'Modules/@apostrophecms/schema/mixins/AposInputMixin.js';
-import AposInputFollowingMixin from 'Modules/@apostrophecms/schema/mixins/AposInputFollowingMixin.js';
-import AposInputConditionalFieldsMixin from 'Modules/@apostrophecms/schema/mixins/AposInputConditionalFieldsMixin.js';
+import AposInputMixin from 'Modules/@apostrophecms/schema/mixins/AposInputMixin';
+import AposInputFollowingMixin from 'Modules/@apostrophecms/schema/mixins/AposInputFollowingMixin';
+import AposInputConditionalFieldsMixin from 'Modules/@apostrophecms/schema/mixins/AposInputConditionalFieldsMixin';
+import { getConditionTypesObject } from 'Modules/@apostrophecms/schema/lib/conditionalFields';
 
 import cuid from 'cuid';
 import { klona } from 'klona';
@@ -15,6 +16,7 @@ export default {
     AposInputFollowingMixin,
     AposInputConditionalFieldsMixin
   ],
+  emits: [ 'validate' ],
   props: {
     generation: {
       type: Number,
@@ -24,11 +26,14 @@ export default {
   },
   data() {
     const next = this.getNext();
-    const data = {
+    const items = modelItems(next, this.field);
+
+    return {
       next,
-      items: modelItems(next, this.field)
+      items,
+      itemsConditionalFields: Object
+        .fromEntries(items.map(({ _id }) => [ _id, getConditionTypesObject() ]))
     };
-    return data;
   },
   computed: {
     // required by the conditional fields mixin
@@ -110,10 +115,27 @@ export default {
   },
   async created() {
     if (this.field.inline) {
+      this.setItemsConditionalFields();
       await this.evaluateExternalConditions();
     }
   },
   methods: {
+    getItemsSchema(_id) {
+      return (this.items.find((item) => item._id === _id))?.schemaInput.data;
+    },
+    setItemsConditionalFields(itemId) {
+      if (itemId) {
+        this.evaluateConditionalFields(this.getItemsSchema(itemId), this.itemsConditionalFields[itemId]);
+        return;
+      }
+
+      for (const [ _id, conditionalFields ] of Object.entries(this.itemsConditionalFields)) {
+        this.evaluateConditionalFields(this.getItemsSchema(_id), conditionalFields);
+      }
+    },
+    emitValidate() {
+      this.$emit('validate');
+    },
     validate(value) {
       if (this.items.find(item => item.schemaInput.hasErrors)) {
         return 'invalid';
@@ -172,13 +194,15 @@ export default {
     getNext() {
       // Next should consistently be an array.
       return (this.value && Array.isArray(this.value.data))
-        ? this.value.data : (this.field.def || []);
+        ? this.value.data
+        : (this.field.def || []);
     },
     disableAdd() {
       return this.field.max && (this.items.length >= this.field.max);
     },
     remove(_id) {
       this.items = this.items.filter(item => item._id !== _id);
+      delete this.itemsConditionalFields[_id];
     },
     add() {
       const _id = cuid();
@@ -189,6 +213,7 @@ export default {
         },
         open: alwaysExpand(this.field)
       });
+      this.itemsConditionalFields[_id] = getConditionTypesObject();
       this.openInlineItem(_id);
     },
     newInstance() {
@@ -224,10 +249,11 @@ export default {
       if (this.field.style !== 'table') {
         return this.schema;
       }
-      const currentItem = this.items.find(item => item.open) || this.items[this.items.length - 1];
-      const conditions = this.getConditionalFields(currentItem?.schemaInput?.data || { });
+      const currentItem = this.items.find(item => item.open) ||
+        this.items[this.items.length - 1];
+
       return this.schema.filter(
-        field => conditions.if[field.name] !== false
+        field => this.setItemsConditionalFields[currentItem._id]?.if[field.name] !== false
       );
     }
   }
@@ -239,7 +265,7 @@ function modelItems(items, field) {
     return {
       _id: item._id || cuid(),
       schemaInput: {
-        data: item
+        data: item || {}
       },
       open
     };

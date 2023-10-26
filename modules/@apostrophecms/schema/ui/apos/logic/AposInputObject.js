@@ -73,7 +73,7 @@ export default {
     }
   },
   async created() {
-    this.conditionalFields = this.getConditionalFields(this.values);
+    this.evaluateConditionalFields(this.values);
     await this.evaluateExternalConditions(this.values);
   },
   methods: {
@@ -88,14 +88,6 @@ export default {
     // Return next at mount or when generation changes
     getNext() {
       return this.value?.data ? this.value.data : (this.field.def || {});
-    },
-
-    evaluateConditionalFields() {
-      for (const [ conditionType, fields ] of Object.entries(this.getConditionalFields(this.values))) {
-        for (const [ field, val ] of Object.entries(fields)) {
-          this.$set(this.conditionalFields[conditionType], field, val);
-        }
-      }
     }
   }
 };

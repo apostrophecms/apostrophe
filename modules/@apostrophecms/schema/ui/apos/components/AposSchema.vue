@@ -50,7 +50,7 @@
         :ref="field.name"
         :generation="generation"
         @update-doc-data="onUpdateDocData"
-        @validate="emitValidate"
+        @validate="emitValidate()"
       />
     </component>
     <slot name="after" />

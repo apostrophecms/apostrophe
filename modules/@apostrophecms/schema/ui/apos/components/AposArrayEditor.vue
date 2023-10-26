@@ -67,11 +67,11 @@
                     :following-values="followingValues()"
                     :conditional-fields="conditionalFields"
                     :value="currentDoc"
-                    @input="currentDocUpdate"
-                    @validate="triggerValidate"
                     :server-errors="currentDocServerErrors"
                     ref="schema"
                     :doc-id="docId"
+                    @input="currentDocUpdate"
+                    @validate="triggerValidate"
                   />
                 </div>
               </div>

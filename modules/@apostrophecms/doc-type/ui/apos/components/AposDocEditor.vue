@@ -115,7 +115,6 @@ import AposArchiveMixin from 'Modules/@apostrophecms/ui/mixins/AposArchiveMixin'
 import AposAdvisoryLockMixin from 'Modules/@apostrophecms/ui/mixins/AposAdvisoryLockMixin';
 import AposDocErrorsMixin from 'Modules/@apostrophecms/modal/mixins/AposDocErrorsMixin';
 import { detectDocChange } from 'Modules/@apostrophecms/schema/lib/detectChange';
-import { getConditionTypesObject } from 'Modules/@apostrophecms/schema/lib/conditionalFields.js';
 
 export default {
   name: 'AposDocEditor',
@@ -172,8 +171,7 @@ export default {
       readOnly: false,
       restoreOnly: false,
       saveMenu: null,
-      generation: 0,
-      conditionalFields: getConditionTypesObject()
+      generation: 0
     };
   },
   computed: {
@@ -343,7 +341,7 @@ export default {
     }
   },
   async mounted() {
-    this.conditionalFields = this.getConditionalFields();
+    this.evaluateConditionalFields();
 
     this.modal.active = true;
     // After computed properties become available
@@ -684,11 +682,7 @@ export default {
         ...value.data
       };
 
-      for (const [ conditionType, fields ] of Object.entries(this.getConditionalFields())) {
-        for (const [ field, val ] of Object.entries(fields)) {
-          this.$set(this.conditionalFields[conditionType], field, val);
-        }
-      }
+      this.evaluateConditionalFields();
     },
     getAposSchema(field) {
       if (field.group.name === 'utility') {

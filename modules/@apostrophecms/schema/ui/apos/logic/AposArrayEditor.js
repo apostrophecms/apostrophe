@@ -4,7 +4,6 @@ import cuid from 'cuid';
 import { klona } from 'klona';
 import { get } from 'lodash';
 import { detectDocChange } from 'Modules/@apostrophecms/schema/lib/detectChange';
-import { getConditionTypesObject } from '../lib/conditionalFields';
 
 export default {
   name: 'AposArrayEditor',
@@ -63,8 +62,7 @@ export default {
       triggerValidation: false,
       minError: false,
       maxError: false,
-      cancelDescription: 'apostrophe:arrayCancelDescription',
-      conditionalFields: getConditionTypesObject()
+      cancelDescription: 'apostrophe:arrayCancelDescription'
     };
   },
   computed: {
@@ -134,7 +132,7 @@ export default {
   },
   async mounted() {
     this.modal.active = true;
-    this.conditionalFields = this.getConditionalFields();
+    this.evaluateConditionalFields();
     if (this.next.length) {
       this.select(this.next[0]._id);
     }
@@ -182,12 +180,7 @@ export default {
     },
     currentDocUpdate(currentDoc) {
       this.currentDoc = currentDoc;
-
-      for (const [ conditionType, fields ] of Object.entries(this.getConditionalFields())) {
-        for (const [ field, val ] of Object.entries(fields)) {
-          this.$set(this.conditionalFields[conditionType], field, val);
-        }
-      }
+      this.evaluateConditionalFields();
     },
     async add() {
       if (await this.validate(true, false)) {
