@@ -341,9 +341,8 @@ export default {
     }
   },
   async mounted() {
-    this.evaluateConditionalFields();
-
     this.modal.active = true;
+    await this.evaluateExternalConditions();
     // After computed properties become available
     this.saveMenu = this.computeSaveMenu();
     this.cancelDescription = {
@@ -351,6 +350,7 @@ export default {
       type: this.$t(this.moduleOptions.label)
     };
     if (this.docId) {
+      this.evaluateConditionalFields();
       await this.loadDoc();
       try {
         if (this.manuallyPublished) {
@@ -374,6 +374,8 @@ export default {
       }
       this.modal.triggerFocusRefresh++;
     } else if (this.copyOfId) {
+      this.evaluateConditionalFields();
+
       // Because the page or piece manager might give us just a projected,
       // minimum number of properties otherwise, and because we need to
       // make sure we use our preferred module to fetch the content
@@ -407,6 +409,8 @@ export default {
     } else {
       this.$nextTick(async () => {
         await this.loadNewInstance();
+        console.log('this.externalConditions', this.externalConditionsResults.if);
+        this.evaluateConditionalFields();
         this.modal.triggerFocusRefresh++;
       });
     }

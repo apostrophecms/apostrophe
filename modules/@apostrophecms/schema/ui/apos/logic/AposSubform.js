@@ -88,7 +88,8 @@ export default {
     }
   },
   // If we don't do this, we get stale initial values.
-  created() {
+  async mounted() {
+    await this.evaluateExternalConditions();
     this.evaluateConditionalFields();
     this.docFields.data = klona(this.values);
   },

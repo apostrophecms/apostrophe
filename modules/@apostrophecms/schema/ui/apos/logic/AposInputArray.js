@@ -113,10 +113,10 @@ export default {
       }
     }
   },
-  async created() {
+  async mounted() {
     if (this.field.inline) {
-      this.setItemsConditionalFields();
       await this.evaluateExternalConditions();
+      this.setItemsConditionalFields();
     }
   },
   methods: {

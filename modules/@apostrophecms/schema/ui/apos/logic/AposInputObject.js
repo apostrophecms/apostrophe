@@ -34,8 +34,7 @@ export default {
       schemaInput: {
         data: next
       },
-      next,
-      conditionalFields: getConditionTypesObject()
+      next
     };
   },
   computed: {
@@ -73,8 +72,8 @@ export default {
     }
   },
   async created() {
-    this.evaluateConditionalFields(this.values);
     await this.evaluateExternalConditions(this.values);
+    this.evaluateConditionalFields(this.values);
   },
   methods: {
     emitValidate() {

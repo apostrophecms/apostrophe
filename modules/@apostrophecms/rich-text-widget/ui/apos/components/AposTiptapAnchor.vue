@@ -140,7 +140,8 @@ export default {
       }
     }
   },
-  created() {
+  async mounted() {
+    await this.evaluateExternalConditions();
     this.evaluateConditionalFields();
   },
   methods: {

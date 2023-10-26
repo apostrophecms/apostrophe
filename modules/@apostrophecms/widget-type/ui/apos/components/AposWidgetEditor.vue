@@ -136,6 +136,7 @@ export default {
     }
   },
   async mounted() {
+    await this.evaluateExternalConditions();
     this.evaluateConditionalFields();
     apos.area.widgetOptions = [
       klona(this.options),
