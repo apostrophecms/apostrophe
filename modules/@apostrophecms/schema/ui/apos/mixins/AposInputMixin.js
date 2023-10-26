@@ -113,6 +113,11 @@ export default {
       if (value) {
         this.validateAndEmit();
       }
+    },
+    focus(value) {
+      if (!value) {
+        this.validateAndEmit();
+      }
     }
   },
   methods: {
