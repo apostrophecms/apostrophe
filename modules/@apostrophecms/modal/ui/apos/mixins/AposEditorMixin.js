@@ -29,7 +29,8 @@ export default {
       restoreOnly: false,
       readOnly: false,
       changed: [],
-      externalConditionsResults: getConditionTypesObject()
+      externalConditionsResults: getConditionTypesObject(),
+      conditionalFields: getConditionTypesObject()
     };
   },
 
@@ -139,6 +140,14 @@ export default {
         this.currentDoc ? this.currentDoc.data : this.docFields.data,
         this.externalConditionsResults
       );
+    },
+
+    evaluateConditionalFields() {
+      for (const [ conditionType, fields ] of Object.entries(this.getConditionalFields())) {
+        for (const [ field, val ] of Object.entries(fields)) {
+          this.$set(this.conditionalFields[conditionType], field, val);
+        }
+      }
     },
 
     // Overridden by components that split the fields into several AposSchemas

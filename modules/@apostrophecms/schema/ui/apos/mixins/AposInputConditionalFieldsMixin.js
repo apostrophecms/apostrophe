@@ -18,7 +18,8 @@ import {
 export default {
   data() {
     return {
-      externalConditionsResults: getConditionTypesObject()
+      externalConditionsResults: getConditionTypesObject(),
+      conditionalFields: getConditionTypesObject()
     };
   },
 
@@ -54,6 +55,14 @@ export default {
         values,
         this.externalConditionsResults
       );
+    },
+
+    evaluateConditionalFields(values) {
+      for (const [ conditionType, fields ] of Object.entries(this.getConditionalFields(values))) {
+        for (const [ field, val ] of Object.entries(fields)) {
+          this.$set(this.conditionalFields[conditionType], field, val);
+        }
+      }
     }
   }
 };
