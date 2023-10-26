@@ -20,7 +20,8 @@
         :key="lastSelectionTime"
         :generation="generation"
         :following-values="followingValues()"
-        :conditional-fields="getConditionalFields()"
+        :conditional-fields="conditionalFields"
+        @input="evaluateConditionalFields()"
       />
       <footer class="apos-image-control__footer">
         <AposButton
@@ -29,9 +30,11 @@
           :modifiers="formModifiers"
         />
         <AposButton
-          type="primary" label="apostrophe:save"
-          @click="save"
+          type="primary"
+          label="apostrophe:save"
           :modifiers="formModifiers"
+          :disabled="docFields.hasErrors"
+          @click="save"
         />
       </footer>
     </AposContextMenuDialog>
@@ -111,6 +114,9 @@ export default {
         window.removeEventListener('keydown', this.keyboardHandler);
       }
     }
+  },
+  created() {
+    this.evaluateConditionalFields();
   },
   methods: {
     cancel() {
