@@ -46,7 +46,6 @@
 import AposModifiedMixin from 'Modules/@apostrophecms/ui/mixins/AposModifiedMixin';
 import AposEditorMixin from 'Modules/@apostrophecms/modal/mixins/AposEditorMixin';
 import { detectDocChange } from 'Modules/@apostrophecms/schema/lib/detectChange';
-import { getConditionTypesObject } from 'Modules/@apostrophecms/schema/lib/conditionalFields';
 import cuid from 'cuid';
 import { klona } from 'klona';
 
@@ -99,8 +98,7 @@ export default {
         type: 'slide',
         showModal: false
       },
-      triggerValidation: false,
-      conditionalFields: getConditionTypesObject()
+      triggerValidation: false
     };
   },
   computed: {
@@ -138,7 +136,7 @@ export default {
     }
   },
   async mounted() {
-    this.conditionalFields = this.getConditionalFields();
+    this.evaluateConditionalFields();
     apos.area.widgetOptions = [
       klona(this.options),
       ...apos.area.widgetOptions
@@ -166,12 +164,7 @@ export default {
   methods: {
     updateDocFields(value) {
       this.docFields = value;
-
-      for (const [ conditionType, fields ] of Object.entries(this.getConditionalFields())) {
-        for (const [ field, val ] of Object.entries(fields)) {
-          this.$set(this.conditionalFields[conditionType], field, val);
-        }
-      }
+      this.evaluateConditionalFields();
     },
     async save() {
       this.triggerValidation = true;
