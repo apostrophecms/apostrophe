@@ -40,7 +40,7 @@ module.exports = {
     self.enableAddUrlsToPieces();
   },
   methods(self) {
-    return {
+    const methods = {
 
       // Extend this method for your piece type to call additional
       // query builders by default.
@@ -212,8 +212,11 @@ module.exports = {
       // for their design.
 
       chooseParentPage(pages, piece) {
-        if (pages.length > 1) {
-          self.apos.util.warnDevOnce(`${self.__meta.name}/chooseParentPage`, `Your site has more than one ${self.name} page, but does not override the chooseParentPage method in ${self.__meta.name} to choose the right one for individual ${self.pieces.name}. You should also override filterByIndexPage. for ${self.pieces.name} will point to an arbitrarily chosen page.`);
+        // Complain if this method is called with more than one page without an
+        // extension to make it smart enough to presumably do something intelligent
+        // in that situation. Don't complain though if this is just a call to _super
+        if ((self.originalChooseParentPage === self.chooseParentPage) && (pages.length > 1)) {
+          self.apos.util.warnDevOnce(`${self.__meta.name}/chooseParentPage`, `Your site has more than one ${self.name} page, but does not extend the chooseParentPage\nmethod in ${self.__meta.name} to choose the right one for individual ${self.pieces.name}. You should also extend filterByIndexPage.\nOtherwise URLs for each ${self.pieces.name} will point to an arbitrarily chosen page.`);
         }
         return pages[0];
       },
@@ -309,6 +312,9 @@ module.exports = {
         }
       }
     };
+
+    self.originalChooseParentPage = methods.chooseParentPage;
+    return methods;
   },
   extendMethods(self) {
     return {
