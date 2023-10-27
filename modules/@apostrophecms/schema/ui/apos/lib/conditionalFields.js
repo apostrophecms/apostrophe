@@ -150,12 +150,10 @@ export function getConditionalFields(
   return result;
 
   function evaluate(clause, conditionType) {
-    let result = true;
     for (const [ key, val ] of Object.entries(clause)) {
       if (key === '$or') {
         if (!val.some(clause => evaluate(clause, conditionType))) {
-          result = false;
-          break;
+          return false;
         }
 
         // No need to go further here, the key is an "$or" condition...
@@ -164,8 +162,7 @@ export function getConditionalFields(
 
       if (isExternalCondition(key, conditionType)) {
         if (externalConditionsResults[conditionType][key] !== val) {
-          result = false;
-          break;
+          return false;
         }
 
         // Stop there, this is an external condition thus
@@ -174,21 +171,18 @@ export function getConditionalFields(
       }
 
       if (conditionalFields[conditionType][key] === false) {
-        result = false;
-        break;
+        return false;
       }
 
       const fieldValue = values[key];
 
       if (Array.isArray(fieldValue)) {
-        result = fieldValue.includes(val);
-        break;
+        return fieldValue.includes(val);
       }
       if (val !== fieldValue) {
-        result = false;
-        break;
+        return false;
       }
     }
-    return result;
+    return true;
   }
 }
