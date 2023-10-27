@@ -38,11 +38,9 @@ module.exports = {
     self.piecesFilters = self.options.piecesFilters || [];
 
     self.enableAddUrlsToPieces();
-
-    self.originalChooseParentPage = self.chooseParentPage;
   },
   methods(self) {
-    return {
+    const methods = {
 
       // Extend this method for your piece type to call additional
       // query builders by default.
@@ -314,6 +312,9 @@ module.exports = {
         }
       }
     };
+
+    self.originalChooseParentPage = methods.chooseParentPage;
+    return methods;
   },
   extendMethods(self) {
     return {
