@@ -14,6 +14,25 @@ when you have chosen to do this via `extendMethods`, so that you can call `_supe
 receiving this warning. The default implementation still just returns the first page found, but always following the
 `_super()` pattern here opens the door to npm modules that `improve` `@apostrophecms/piece-page` to do something more
 sophisticated by default.
+* `area` fields now have a sensible default value, e.g. an object with an `_id`, a `metaType` and
+an empty `items` array. While the area may not initially satisfy its `min` or `required` setting,
+that will be enforced on save. The purpose of a fallback default is to ensure a call to `newInstance`
+for a page or piece produces a sensible data structure. This is not retroactive e.g. it is not a migration.
+It simplifies certain issues going forward in new projects.
+
+### Adds
+
+* An adapter for Astro is under development with support from Michelin.
+Starting with this release, adapters for external fronts, i.e. "back for front"
+frameworks such as Astro, may now be implemented more easily. Apostrophe recognizes the
+`x-requested-with: AposExternalFront` header and the `apos-external-front-key` header.
+If both are present and `apos-external-front-key` matches the `APOS_EXTERNAL_FRONT_KEY`
+environment variable, then Apostrophe returns JSON in place of a normal page response.
+This mechanism is also available for the `render-widget` route.
+* Schema field types may now set `def` to a function. If `def` is a function then
+it is invoked with no arguments and its return value is used directly, without cloning.
+Note this is only permitted for the fallback `def` of the field type itself. It is *not*
+permitted for an individual field.
 
 ## 3.58.1 (2023-10-18)
 

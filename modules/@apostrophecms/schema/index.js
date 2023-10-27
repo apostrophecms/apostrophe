@@ -369,7 +369,11 @@ module.exports = {
         const instance = {};
         for (const field of schema) {
           if (field.def !== undefined) {
-            instance[field.name] = klona(field.def);
+            if ((typeof field.def) === 'function') {
+              instance[field.name] = field.def();
+            } else {
+              instance[field.name] = klona(field.def);
+            }
           } else {
             // All fields should have an initial value in the database
             instance[field.name] = null;
