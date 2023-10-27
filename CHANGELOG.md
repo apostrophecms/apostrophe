@@ -6,6 +6,15 @@
 
 * Webpack warnings about package size during the admin UI build process have been turned off by default. Warnings are still enabled for the public build, where a large bundle can be problematic for SEO.
 
+### Fixes
+
+* Apostrophe warns you if you have more than one piece page for the same piece type and you have not overridden `chooseParentPage`
+to help Apostrophe decide which page is suitable as the `_url` of each piece. Beginning with this release, Apostrophe can recognize
+when you have chosen to do this via `extendMethods`, so that you can call `_super()` to fall back to the default implementation without
+receiving this warning. The default implementation still just returns the first page found, but always following the
+`_super()` pattern here opens the door to npm modules that `improve` `@apostrophecms/piece-page` to do something more
+sophisticated by default.
+
 ## 3.58.1 (2023-10-18)
 
 ### Security
