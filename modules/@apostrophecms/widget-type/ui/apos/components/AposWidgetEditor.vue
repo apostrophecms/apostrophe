@@ -137,7 +137,7 @@ export default {
   },
   async mounted() {
     await this.evaluateExternalConditions();
-    this.evaluateConditionalFields();
+    this.evaluateConditions();
     apos.area.widgetOptions = [
       klona(this.options),
       ...apos.area.widgetOptions
@@ -165,7 +165,7 @@ export default {
   methods: {
     updateDocFields(value) {
       this.docFields = value;
-      this.evaluateConditionalFields();
+      this.evaluateConditions();
     },
     async save() {
       this.triggerValidation = true;

@@ -19,7 +19,7 @@
             :doc-id="docId"
             :conditional-fields="conditionalFields"
             :following-values="followingValuesWithParent"
-            @input="evaluateConditionalFields(values)"
+            @input="evaluateConditions(values)"
             @validate="emitValidate()"
           />
         </div>

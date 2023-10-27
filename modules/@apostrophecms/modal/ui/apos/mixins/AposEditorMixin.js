@@ -138,12 +138,8 @@ export default {
       );
     },
 
-    evaluateConditionalFields() {
-      for (const [ conditionType, fields ] of Object.entries(this.getConditionalFields())) {
-        for (const [ field, val ] of Object.entries(fields)) {
-          this.$set(this.conditionalFields[conditionType], field, val);
-        }
-      }
+    evaluateConditions() {
+      this.conditionalFields = this.getConditionalFields();
     },
 
     // Overridden by components that split the fields into several AposSchemas

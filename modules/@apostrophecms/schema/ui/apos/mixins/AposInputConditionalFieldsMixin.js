@@ -57,12 +57,8 @@ export default {
       );
     },
 
-    evaluateConditionalFields(values = {}, conditionalFields = this.conditionalFields) {
-      for (const [ conditionType, fields ] of Object.entries(this.getConditionalFields(values))) {
-        for (const [ field, val ] of Object.entries(fields)) {
-          this.$set(conditionalFields[conditionType], field, val);
-        }
-      }
+    evaluateConditions(values = {}, conditionalFields = this.conditionalFields) {
+      conditionalFields = this.getConditionalFields(values);
     }
   }
 };

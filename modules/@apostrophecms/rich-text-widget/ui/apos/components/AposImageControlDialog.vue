@@ -21,7 +21,7 @@
         :generation="generation"
         :following-values="followingValues()"
         :conditional-fields="conditionalFields"
-        @input="evaluateConditionalFields()"
+        @input="evaluateConditions()"
       />
       <footer class="apos-image-control__footer">
         <AposButton
@@ -117,7 +117,7 @@ export default {
   },
   async mounted() {
     await this.evaluateExternalConditions();
-    this.evaluateConditionalFields();
+    this.evaluateConditions();
   },
   methods: {
     cancel() {

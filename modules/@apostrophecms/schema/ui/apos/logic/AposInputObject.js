@@ -73,7 +73,7 @@ export default {
   },
   async created() {
     await this.evaluateExternalConditions(this.values);
-    this.evaluateConditionalFields(this.values);
+    this.evaluateConditions(this.values);
   },
   methods: {
     emitValidate() {
