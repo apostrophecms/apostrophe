@@ -57,8 +57,8 @@ export default {
       );
     },
 
-    evaluateConditions(values = {}, conditionalFields = this.conditionalFields) {
-      conditionalFields = this.getConditionalFields(values);
+    evaluateConditions(values = {}) {
+      this.conditionalFields = this.getConditionalFields(values);
     }
   }
 };

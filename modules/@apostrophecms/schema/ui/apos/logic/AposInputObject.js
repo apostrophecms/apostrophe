@@ -2,7 +2,6 @@
 import AposInputMixin from 'Modules/@apostrophecms/schema/mixins/AposInputMixin.js';
 import AposInputFollowingMixin from 'Modules/@apostrophecms/schema/mixins/AposInputFollowingMixin.js';
 import AposInputConditionalFieldsMixin from 'Modules/@apostrophecms/schema/mixins/AposInputConditionalFieldsMixin.js';
-import { getConditionTypesObject } from 'Modules/@apostrophecms/schema/lib/conditionalFields';
 
 export default {
   name: 'AposInputObject',
