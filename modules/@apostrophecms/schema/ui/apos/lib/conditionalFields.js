@@ -118,22 +118,12 @@ export function getConditionalFields(
 ) {
   const conditionalFields = getConditionTypesObject();
 
-  while (true) {
-    let change = false;
-    for (const field of schema) {
-      for (const conditionType of conditionTypes) {
-        if (field[conditionType]) {
-          const result = evaluate(field[conditionType], conditionType);
-          const previous = conditionalFields[conditionType][field.name];
-          if (previous !== result) {
-            change = true;
-          }
-          conditionalFields[conditionType][field.name] = result;
-        }
+  for (const field of schema) {
+    for (const conditionType of conditionTypes) {
+      if (field[conditionType]) {
+        const result = evaluate(field[conditionType], conditionType);
+        conditionalFields[conditionType][field.name] = result;
       }
-    }
-    if (!change) {
-      break;
     }
   }
 
