@@ -1246,6 +1246,12 @@ module.exports = {
         if (field.if && field.if.$or && !Array.isArray(field.if.$or)) {
           fail(`$or conditional must be an array of conditions. Current $or configuration: ${JSON.stringify(field.if.$or)}`);
         }
+        if (field.requiredIf && field.requiredIf.$or && !Array.isArray(field.requiredIf.$or)) {
+          fail(`$or conditional must be an array of conditions. Current $or configuration: ${JSON.stringify(field.requiredIf.$or)}`);
+        }
+        if (field.if && field.if.$or && !Array.isArray(field.if.$or)) {
+          fail(`$or conditional must be an array of conditions. Current $or configuration: ${JSON.stringify(field.if.$or)}`);
+        }
         if (!field.editPermission && field.permission) {
           field.editPermission = field.permission;
         }
