@@ -465,6 +465,57 @@ module.exports = {
         });
       },
 
+      async isFieldRequired(field, destination) {
+        return field.requiredIf
+          ? evaluate(field.requiredIf, destination)
+          : field.required;
+
+        function evaluate(clause, destination) {
+          let result = true;
+
+          for (const [ key, val ] of Object.entries(clause)) {
+            const destinationKey = _.get(destination, key);
+
+            if (key === '$or') {
+              const results = val.map(clause => evaluate(clause, destination));
+              if (!results.some((value) => value)) {
+                result = false;
+                break;
+              }
+              continue;
+            } else if (val.$ne) {
+              // eslint-disable-next-line eqeqeq
+              if (val.$ne == destinationKey) {
+                result = false;
+                break;
+              }
+            }
+
+            if (val.min) {
+              if (destinationKey < val.min) {
+                result = false;
+              }
+            }
+            if (val.max) {
+              if (destinationKey > val.max) {
+                result = false;
+              }
+            }
+
+            if (typeof val === 'boolean' && !destinationKey) {
+              result = false;
+            }
+
+            // eslint-disable-next-line eqeqeq
+            if ((typeof val === 'string' || typeof val === 'number') && destinationKey != val) {
+              result = false;
+            }
+          }
+
+          return result;
+        }
+      },
+
       // Convert submitted `data` object according to `schema`, sanitizing it
       // and populating the appropriate properties of `destination` with it.
       //
@@ -504,7 +555,16 @@ module.exports = {
 
           if (convert) {
             try {
-              await convert(req, field, data, destination);
+              const isRequired = await self.isFieldRequired(field, destination);
+              await convert(
+                req,
+                {
+                  ...field,
+                  required: isRequired
+                },
+                data,
+                destination
+              );
             } catch (error) {
               if (Array.isArray(error)) {
                 const invalid = self.apos.error('invalid', {
