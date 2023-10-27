@@ -125,12 +125,12 @@ export default {
     },
     setItemsConditionalFields(itemId) {
       if (itemId) {
-        this.evaluateConditions(this.getItemsSchema(itemId), this.itemsConditionalFields[itemId]);
+        this.itemsConditionalFields[itemId] = this.getConditionalFields(this.getItemsSchema(itemId));
         return;
       }
 
-      for (const [ _id, conditionalFields ] of Object.entries(this.itemsConditionalFields)) {
-        this.evaluateConditions(this.getItemsSchema(_id), conditionalFields);
+      for (const _id of Object.keys(this.itemsConditionalFields)) {
+        this.itemsConditionalFields[_id] = this.getConditionalFields(this.getItemsSchema(_id));
       }
     },
     emitValidate() {
