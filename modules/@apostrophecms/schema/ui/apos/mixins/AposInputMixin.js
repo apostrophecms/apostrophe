@@ -26,10 +26,6 @@ export default {
       type: Boolean,
       required: false
     },
-    conditionMetRequired: {
-      type: Boolean,
-      required: false
-    },
     triggerValidation: {
       type: Boolean,
       default: false
