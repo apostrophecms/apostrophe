@@ -350,7 +350,7 @@ export default {
       type: this.$t(this.moduleOptions.label)
     };
     if (this.docId) {
-      this.evaluateConditionalFields();
+      this.evaluateConditions();
       await this.loadDoc();
       try {
         if (this.manuallyPublished) {
@@ -374,7 +374,7 @@ export default {
       }
       this.modal.triggerFocusRefresh++;
     } else if (this.copyOfId) {
-      this.evaluateConditionalFields();
+      this.evaluateConditions();
 
       // Because the page or piece manager might give us just a projected,
       // minimum number of properties otherwise, and because we need to
@@ -409,8 +409,7 @@ export default {
     } else {
       this.$nextTick(async () => {
         await this.loadNewInstance();
-        console.log('this.externalConditions', this.externalConditionsResults.if);
-        this.evaluateConditionalFields();
+        this.evaluateConditions();
         this.modal.triggerFocusRefresh++;
       });
     }
@@ -686,7 +685,7 @@ export default {
         ...value.data
       };
 
-      this.evaluateConditionalFields();
+      this.evaluateConditions();
     },
     getAposSchema(field) {
       if (field.group.name === 'utility') {

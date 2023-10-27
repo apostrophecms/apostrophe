@@ -155,9 +155,22 @@ export default {
     },
 
     conditionalFields: {
-      deep: true,
-      handler(newVal, oldVal) {
-        this.emitValidate();
+      handler(val, oldVal) {
+        // eslint-disable-next-line no-labels
+        for (const [ conditionType, conditions ] of Object.entries(val)) {
+          for (const [ field, value ] of Object.entries(conditions)) {
+            if (
+              (value === oldVal[conditionType][field]) ||
+              !this.fieldState[field] ||
+              !this.fieldState[field].ranValidation
+            ) {
+              continue;
+            }
+
+            this.emitValidate();
+            return;
+          }
+        }
       }
     }
   },

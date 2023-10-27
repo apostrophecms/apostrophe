@@ -133,7 +133,7 @@ export default {
   async mounted() {
     this.modal.active = true;
     await this.evaluateExternalConditions();
-    this.evaluateConditionalFields();
+    this.evaluateConditions();
     if (this.next.length) {
       this.select(this.next[0]._id);
     }
@@ -181,7 +181,7 @@ export default {
     },
     currentDocUpdate(currentDoc) {
       this.currentDoc = currentDoc;
-      this.evaluateConditionalFields();
+      this.evaluateConditions();
     },
     async add() {
       if (await this.validate(true, false)) {

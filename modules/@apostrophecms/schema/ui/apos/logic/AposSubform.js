@@ -90,7 +90,7 @@ export default {
   // If we don't do this, we get stale initial values.
   async mounted() {
     await this.evaluateExternalConditions();
-    this.evaluateConditionalFields();
+    this.evaluateConditions();
     this.docFields.data = klona(this.values);
   },
   beforeDestroy() {
@@ -108,7 +108,7 @@ export default {
     },
     updateDocFields(value) {
       this.docFields = value;
-      this.evaluateConditionalFields();
+      this.evaluateConditions();
     },
     async submit() {
       this.triggerValidation = true;
