@@ -213,7 +213,7 @@ export default {
         },
         open: alwaysExpand(this.field)
       });
-      this.itemsConditionalFields[_id] = getConditionTypesObject();
+      this.setItemsConditionalFields(_id);
       this.openInlineItem(_id);
     },
     newInstance() {
