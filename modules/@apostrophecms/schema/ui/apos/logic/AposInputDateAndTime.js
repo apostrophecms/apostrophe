@@ -9,15 +9,14 @@ export default {
       next: (this.value && this.value.data) || null,
       date: '',
       time: '',
-      disabled: !this.field.required,
-      invalid: false
+      disabled: !this.field.required
     };
   },
   mounted () {
     this.initDateAndTime();
   },
   watch: {
-    'field.required'(val) { // TODO: Make sure it works and is needed
+    'field.required'(val) {
       if (val) {
         this.disabled = false;
         if (this.date) {
@@ -34,11 +33,7 @@ export default {
         this.next = null;
       }
     },
-    validate(value) {
-      if (this.invalid) {
-        return 'invalid';
-      }
-
+    validate() {
       if (this.field.required && !this.next) {
         return 'required';
       }
@@ -52,15 +47,12 @@ export default {
     },
     setDateAndTime() {
       if (this.date) {
-        this.invalid = false;
         this.next = dayjs(`${this.date} ${this.time}`.trim()).toISOString();
         this.disabled = false;
       } else {
-        this.invalid = true;
         this.next = null;
         this.disabled = true;
       }
     }
   }
-
 };
