@@ -4,12 +4,6 @@ const scss = require('./webpack.scss');
 const vue = require('./webpack.vue');
 const js = require('./webpack.js');
 
-let BundleAnalyzerPlugin;
-
-if (process.env.APOS_BUNDLE_ANALYZER) {
-  BundleAnalyzerPlugin = require('webpack-bundle-analyzer').BundleAnalyzerPlugin;
-}
-
 module.exports = ({
   importFile,
   modulesDir,
@@ -30,6 +24,9 @@ module.exports = ({
 
   const pnpmModulePath = apos.isPnpm ? [ path.join(apos.selfDir, '../') ] : [];
   const config = {
+    performance: {
+      hints: false
+    },
     entry: importFile,
     // Ensure that the correct version of vue-loader is found
     context: __dirname,
@@ -84,8 +81,7 @@ module.exports = ({
       ],
       symlinks: false
     },
-    stats: 'verbose',
-    plugins: process.env.APOS_BUNDLE_ANALYZER ? [ new BundleAnalyzerPlugin() ] : []
+    stats: 'verbose'
   };
 
   return merge(config, ...tasks);

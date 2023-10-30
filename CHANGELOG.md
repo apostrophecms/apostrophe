@@ -1,5 +1,36 @@
 # Changelog
 
+## UNRELEASED
+
+### Changes
+
+* Webpack warnings about package size during the admin UI build process have been turned off by default. Warnings are still enabled for the public build, where a large bundle can be problematic for SEO.
+
+### Fixes
+
+* Apostrophe warns you if you have more than one piece page for the same piece type and you have not overridden `chooseParentPage`
+to help Apostrophe decide which page is suitable as the `_url` of each piece. Beginning with this release, Apostrophe can recognize
+when you have chosen to do this via `extendMethods`, so that you can call `_super()` to fall back to the default implementation without
+receiving this warning. The default implementation still just returns the first page found, but always following the
+`_super()` pattern here opens the door to npm modules that `improve` `@apostrophecms/piece-page` to do something more
+sophisticated by default.
+
+## 3.58.1 (2023-10-18)
+
+### Security
+
+* Update `uploadfs` to guarantee users get a fix for a [potential security vulnerability in `sharp`](https://security.snyk.io/vuln/SNYK-JS-SHARP-5922108).
+This was theoretically exploitable only by users with permission to upload media to Apostrophe
+* Remove the webpack bundle analyzer feature, which had been nonfunctional for some time, to address a harmless npm audit warning
+* Note: there is one remaining `npm audit` warning regarding `postcss`. This is not a true vulnerability because only developers
+with access to the entire codebase can modify styles passed to `postcss` by Apostrophe, but we are working with upstream
+developers to determine the best steps to clear the warning
+
+### Fixes
+
+* Automatically add `type` to the projection only if there are no exclusions in the projection. Needed to prevent `Cannot do
+exclusion on field in inclusion projection` error.
+
 ## 3.58.0 (2023-10-12)
 
 ### Fixes
