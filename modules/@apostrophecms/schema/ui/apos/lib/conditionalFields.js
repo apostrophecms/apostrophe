@@ -25,9 +25,9 @@ export async function evaluateExternalConditions(schema, docId, $t) {
 
         try {
           const promises = uniqExternalConditionKeys
-            .map(key => externalConditionsResults[conditionType][key] !== undefined
+            .map(key => (externalConditionsResults[conditionType][key] !== undefined
               ? null
-              : evaluateExternalCondition(key, field._id, docId)
+              : evaluateExternalCondition(key, field._id, docId))
             )
             .filter(Boolean);
 
@@ -169,6 +169,14 @@ export function getConditionalFields(
       if (Array.isArray(fieldValue)) {
         return fieldValue.includes(val);
       }
+
+      if (val.min) {
+        return fieldValue >= val.min;
+      }
+      if (val.max) {
+        return fieldValue <= val.min;
+      }
+
       if (val !== fieldValue) {
         return false;
       }
