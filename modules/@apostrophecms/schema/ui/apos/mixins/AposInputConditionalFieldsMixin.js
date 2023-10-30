@@ -12,13 +12,14 @@
  */
 
 import {
-  conditionalFields, evaluateExternalConditions, conditionTypesObject
+  getConditionalFields, evaluateExternalConditions, getConditionTypesObject
 } from '../lib/conditionalFields';
 
 export default {
   data() {
     return {
-      externalConditionsResults: { ...conditionTypesObject }
+      externalConditionsResults: getConditionTypesObject(),
+      conditionalFields: getConditionTypesObject()
     };
   },
 
@@ -47,13 +48,17 @@ export default {
     // in that category, although they may be conditional upon fields in either
     // category.
     // `values` - the schema (all) values
-    conditionalFields(values) {
-      return conditionalFields(
+    getConditionalFields(values) {
+      return getConditionalFields(
         this.schema,
         this.schema,
         values,
         this.externalConditionsResults
       );
+    },
+
+    evaluateConditions(values = {}) {
+      this.conditionalFields = this.getConditionalFields(values);
     }
   }
 };

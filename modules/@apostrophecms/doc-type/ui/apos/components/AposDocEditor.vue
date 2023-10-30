@@ -64,7 +64,7 @@
               :trigger-validation="triggerValidation"
               :utility-rail="false"
               :following-values="followingValues('other')"
-              :conditional-fields="conditionalFields('other')"
+              :conditional-fields="conditionalFields"
               :doc-id="docId"
               :value="docFields"
               :server-errors="serverErrors"
@@ -89,7 +89,7 @@
             :trigger-validation="triggerValidation"
             :utility-rail="true"
             :following-values="followingUtils"
-            :conditional-fields="conditionalFields('utility')"
+            :conditional-fields="conditionalFields"
             :doc-id="docId"
             :value="docFields"
             @input="updateDocFields"
@@ -321,7 +321,7 @@ export default {
   },
   watch: {
     'docFields.data.type': {
-      handler(newVal, oldVal) {
+      handler(newVal) {
         if (this.moduleName !== '@apostrophecms/page') {
           return;
         }
@@ -342,6 +342,7 @@ export default {
   },
   async mounted() {
     this.modal.active = true;
+    await this.evaluateExternalConditions();
     // After computed properties become available
     this.saveMenu = this.computeSaveMenu();
     this.cancelDescription = {
@@ -349,6 +350,7 @@ export default {
       type: this.$t(this.moduleOptions.label)
     };
     if (this.docId) {
+      this.evaluateConditions();
       await this.loadDoc();
       try {
         if (this.manuallyPublished) {
@@ -372,6 +374,8 @@ export default {
       }
       this.modal.triggerFocusRefresh++;
     } else if (this.copyOfId) {
+      this.evaluateConditions();
+
       // Because the page or piece manager might give us just a projected,
       // minimum number of properties otherwise, and because we need to
       // make sure we use our preferred module to fetch the content
@@ -405,6 +409,7 @@ export default {
     } else {
       this.$nextTick(async () => {
         await this.loadNewInstance();
+        this.evaluateConditions();
         this.modal.triggerFocusRefresh++;
       });
     }
@@ -679,6 +684,8 @@ export default {
         ...this.docFields.data,
         ...value.data
       };
+
+      this.evaluateConditions();
     },
     getAposSchema(field) {
       if (field.group.name === 'utility') {

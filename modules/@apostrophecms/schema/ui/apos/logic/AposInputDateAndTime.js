@@ -15,6 +15,16 @@ export default {
   mounted () {
     this.initDateAndTime();
   },
+  watch: {
+    'field.required'(val) {
+      if (val) {
+        this.disabled = false;
+        if (this.date) {
+          this.setDateAndTime();
+        }
+      }
+    }
+  },
   methods: {
     toggle() {
       this.disabled = !this.disabled;
@@ -45,5 +55,4 @@ export default {
       }
     }
   }
-
 };
