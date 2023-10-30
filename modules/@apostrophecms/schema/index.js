@@ -390,7 +390,7 @@ module.exports = {
           // A workaround specifically for objects. These too need
           // to have reasonable values in parked pages and any other
           // situation where the data never passes through the UI
-          if ((field.type === 'object') && (!instance[field.name])) {
+          if ((field.type === 'object') && ((!instance[field.name]) || _.isEmpty(instance[field.name]))) {
             instance[field.name] = self.newInstance(field.schema);
           }
         }

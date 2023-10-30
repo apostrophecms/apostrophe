@@ -884,7 +884,6 @@ module.exports = {
       },
 
       async annotateDataForExternalFront(req, template, data) {
-        console.log('AD');
         const docs = self.getDocsForExternalFront(req, template, data);
         for (const doc of docs) {
           self.annotateDocForExternalFront(doc);
