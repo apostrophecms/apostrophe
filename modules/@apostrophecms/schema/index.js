@@ -696,6 +696,19 @@ module.exports = {
               continue;
             }
 
+            if (val.min) {
+              if (object[key] < val.min) {
+                result = false;
+                break;
+              }
+            }
+            if (val.max) {
+              if (object[key] > val.max) {
+                result = false;
+                break;
+              }
+            }
+
             if (conditionalFields[key] === false) {
               result = false;
               break;
