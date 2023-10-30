@@ -424,73 +424,12 @@ module.exports = {
 
       async renderPage(req, template, data) {
         if (req.aposExternalFront) {
-          await self.annotateDataForExternalFront(req, template, data);
-          self.pruneDataForExternalFront(req, template, data);
+          await self.apos.template.annotateDataForExternalFront(req, template, data);
+          self.apos.template.pruneDataForExternalFront(req, template, data);
           // Reply with JSON
           return data;
         }
         return self.apos.template.renderPageForModule(req, template, data, self);
-      },
-
-      async annotateDataForExternalFront(req, template, data) {
-        const docs = self.getDocsForExternalFront(req, template, data);
-        for (const doc of docs) {
-          self.annotateDocForExternalFront(doc);
-        }
-        data.aposBodyData = await self.apos.template.getBodyData(req);
-        return data;
-      },
-
-      pruneDataForExternalFront(req, data, template) {
-        return data;
-      },
-
-      getDocsForExternalFront(req, template, data) {
-        return [ data.page, data.piece, ...(data.pieces || []) ].filter(doc => !!doc);
-      },
-
-      annotateDocForExternalFront(doc) {
-        self.apos.doc.walk(doc, (o, k, v) => {
-          if (v && v.metaType === 'area') {
-            const manager = self.apos.util.getManagerOf(o);
-            if (!manager) {
-              self.apos.util.warnDevOnce('noManagerForDocInExternalFront', `No manager for: ${o.metaType} ${o.type || ''}`);
-              return;
-            }
-            const field = manager.schema.find(f => f.name === k);
-            if (!field) {
-              self.apos.util.warnDevOnce('noSchemaFieldForAreaInExternalFront', `Area ${k} has no matching schema field in ${o.metaType} ${o.type || ''}`);
-              return;
-            }
-            return self.annotateAreaForExternalFront(field, v);
-          }
-        });
-      },
-
-      // Annotate an area for easy rendering by an external front end
-      // such as Astro. This includes adding the `field`, `options`, `widgets`
-      // and `choices` properties, and guaranteeing that `items` exists,
-      // at least as an empty array.
-
-      annotateAreaForExternalFront(field, area) {
-        area.field = field;
-        area.options = field.options;
-        // Really widget configurations, but the method name is already set in stone
-        const widgets = self.apos.area.getWidgets(area.options);
-        area.choices = Object.entries(widgets).map(([ name, options ]) => {
-          const manager = self.apos.area.widgetManagers[name];
-          return manager && {
-            name,
-            icon: manager.options.icon,
-            label: options.addLabel || manager.label || `No label for ${name}`
-          };
-        }).filter(choice => !!choice);
-        area.items ||= [];
-        if (area._docId) {
-          for (const item of area.items) {
-            item._docId = area._docId;
-          }
-        }
       },
 
       // This method generates and sends a complete HTML page to the browser.

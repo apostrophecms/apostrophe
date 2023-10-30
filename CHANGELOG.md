@@ -19,6 +19,10 @@ an empty `items` array. While the area may not initially satisfy its `min` or `r
 that will be enforced on save. The purpose of a fallback default is to ensure a call to `newInstance`
 for a page or piece produces a sensible data structure. This is not retroactive e.g. it is not a migration.
 It simplifies certain issues going forward in new projects.
+* `newInstance` always returns a reasonable non-null empty value for area and
+object fields in case the document is inserted without being passed through
+the editor, e.g. in a parked page like the home page. This simplifies
+the new external front feature.
 
 ### Adds
 
@@ -29,10 +33,9 @@ frameworks such as Astro, may now be implemented more easily. Apostrophe recogni
 If both are present and `apos-external-front-key` matches the `APOS_EXTERNAL_FRONT_KEY`
 environment variable, then Apostrophe returns JSON in place of a normal page response.
 This mechanism is also available for the `render-widget` route.
-* Schema field types may now set `def` to a function. If `def` is a function then
-it is invoked with no arguments and its return value is used directly, without cloning.
-Note this is only permitted for the fallback `def` of the field type itself. It is *not*
-permitted for an individual field.
+* Like `type`, `metaType` is always included in projections. This helps
+ensure that `apos.util.getManagerOf()` can be used on any object returned
+by the Apostrophe APIs.
 
 ## 3.58.1 (2023-10-18)
 

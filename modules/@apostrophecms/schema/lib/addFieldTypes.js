@@ -90,13 +90,6 @@ module.exports = (self) => {
           manager.addSearchTexts(item, texts);
         }
       }
-    },
-    def() {
-      return {
-        _id: self.apos.util.generateId(),
-        metaType: 'area',
-        items: []
-      }
     }
   });
 
