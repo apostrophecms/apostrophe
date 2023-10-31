@@ -38,7 +38,7 @@ To get started with Apostrophe 3, follow these steps to set up a local developme
 
 #### Prerequisites
 
-We recommend installing the following with [Homebrew](https://brew.sh/) on macOS. If you're on Linux, you should use your package manager (apt or yum). If you're on Windows, we recommend the Windows Subsystem for Linux.
+We recommend installing the following with [Homebrew](https://brew.sh/) on macOS. If you're on Linux, you should use your package manager (apt or yum). If you're on Windows, we recommend to use Windows Subsystem for Linux.
 
 | Software | Minimum Version | Notes
 | ------------- | ------------- | -----
