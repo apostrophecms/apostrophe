@@ -465,55 +465,80 @@ module.exports = {
         });
       },
 
-      async isFieldRequired(field, destination) {
-        return field.requiredIf
-          ? evaluate(field.requiredIf, destination)
-          : field.required;
+      async evaluateCondition(req, field, clause, destination, conditionalFields) {
+        for (const [ key, val ] of Object.entries(clause)) {
+          const destinationKey = _.get(destination, key);
 
-        function evaluate(clause, destination) {
-          let result = true;
-
-          for (const [ key, val ] of Object.entries(clause)) {
-            const destinationKey = _.get(destination, key);
-
-            if (key === '$or') {
-              const results = val.map(clause => evaluate(clause, destination));
-              if (!results.some((value) => value)) {
-                result = false;
-                break;
-              }
-              continue;
-            } else if (val.$ne) {
-              // eslint-disable-next-line eqeqeq
-              if (val.$ne == destinationKey) {
-                result = false;
-                break;
-              }
+          if (key === '$or') {
+            const results = await Promise.all(val.map(clause => self.evaluateCondition(req, field, clause, destination, conditionalFields)));
+            const testResults = _.isPlainObject(results?.[0])
+              ? results.some(({ value }) => value)
+              : results.some((value) => value);
+            if (!testResults) {
+              return false;
             }
-
-            if (val.min) {
-              if (destinationKey < val.min) {
-                result = false;
-              }
-            }
-            if (val.max) {
-              if (destinationKey > val.max) {
-                result = false;
-              }
-            }
-
-            if (typeof val === 'boolean' && !destinationKey) {
-              result = false;
-            }
-
+            continue;
+          } else if (val.$ne) {
             // eslint-disable-next-line eqeqeq
-            if ((typeof val === 'string' || typeof val === 'number') && destinationKey != val) {
-              result = false;
+            if (val.$ne == destinationKey) {
+              return false;
             }
           }
 
-          return result;
+          // Handle external conditions:
+          //  - `if: { 'methodName()': true }`
+          //  - `if: { 'moduleName:methodName()': 'expected value' }`
+          // Checking if key ends with a closing parenthesis here to throw later if any argument is passed.
+          if (key.endsWith(')')) {
+            let externalConditionResult;
+
+            try {
+              externalConditionResult = await self.evaluateMethod(req, key, field.name, field.moduleName, destination._id);
+            } catch (error) {
+              throw self.apos.error('invalid', error.message);
+            }
+
+            if (externalConditionResult !== val) {
+              return false;
+            };
+
+            // Stop there, this is an external condition thus
+            // does not need to be checked against doc fields.
+            continue;
+          }
+
+          if (val.min) {
+            if (destinationKey < val.min) {
+              return false;
+            }
+          }
+          if (val.max) {
+            if (destinationKey > val.max) {
+              return false;
+            }
+          }
+
+          if (conditionalFields?.[key] === false) {
+            return false;
+          }
+
+          if (typeof val === 'boolean' && !destinationKey) {
+            return false;
+          }
+
+          // eslint-disable-next-line eqeqeq
+          if ((typeof val === 'string' || typeof val === 'number') && destinationKey != val) {
+            return false;
+          }
         }
+
+        return true;
+      },
+
+      async isFieldRequired(req, field, destination) {
+        return field.requiredIf
+          ? await self.evaluateCondition(req, field, field.requiredIf, destination)
+          : field.required;
       },
 
       // Convert submitted `data` object according to `schema`, sanitizing it
@@ -555,7 +580,7 @@ module.exports = {
 
           if (convert) {
             try {
-              const isRequired = await self.isFieldRequired(field, destination);
+              const isRequired = await self.isFieldRequired(req, field, destination);
               await convert(
                 req,
                 {
@@ -632,7 +657,7 @@ module.exports = {
           for (const field of schema) {
             if (field.if) {
               try {
-                const result = await evaluate(field.if, field.name, field.moduleName);
+                const result = await self.evaluateCondition(req, field, field.if, object, conditionalFields);
                 const previous = conditionalFields[field.name];
                 if (previous !== result) {
                   change = true;
@@ -657,68 +682,6 @@ module.exports = {
           return conditionalFields[name];
         } else {
           return true;
-        }
-        async function evaluate(clause, fieldName, fieldModuleName) {
-          let result = true;
-          for (const [ key, val ] of Object.entries(clause)) {
-            if (key === '$or') {
-              const results = await Promise.all(val.map(clause => evaluate(clause, fieldName, fieldModuleName)));
-
-              if (!results.some(({ value }) => value)) {
-                result = false;
-                break;
-              }
-
-              // No need to go further here, the key is an "$or" condition...
-              continue;
-            }
-
-            // Handle external conditions:
-            //  - `if: { 'methodName()': true }`
-            //  - `if: { 'moduleName:methodName()': 'expected value' }`
-            // Checking if key ends with a closing parenthesis here to throw later if any argument is passed.
-            if (key.endsWith(')')) {
-              let externalConditionResult;
-
-              try {
-                externalConditionResult = await self.evaluateMethod(req, key, fieldName, fieldModuleName, object._id);
-              } catch (error) {
-                throw self.apos.error('invalid', error.message);
-              }
-
-              if (externalConditionResult !== val) {
-                result = false;
-                break;
-              };
-
-              // Stop there, this is an external condition thus
-              // does not need to be checked against doc fields.
-              continue;
-            }
-
-            if (val.min) {
-              if (object[key] < val.min) {
-                result = false;
-                break;
-              }
-            }
-            if (val.max) {
-              if (object[key] > val.max) {
-                result = false;
-                break;
-              }
-            }
-
-            if (conditionalFields[key] === false) {
-              result = false;
-              break;
-            }
-            if (val !== object[key]) {
-              result = false;
-              break;
-            }
-          }
-          return result;
         }
       },
 
