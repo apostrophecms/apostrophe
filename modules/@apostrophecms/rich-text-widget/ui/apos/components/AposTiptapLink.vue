@@ -219,6 +219,7 @@ export default {
       if (this.hasSelection) {
         this.active = !this.active;
         this.populateFields();
+        this.evaluateConditions();
       }
     },
     close() {
