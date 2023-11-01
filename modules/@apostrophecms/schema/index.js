@@ -374,6 +374,25 @@ module.exports = {
             // All fields should have an initial value in the database
             instance[field.name] = null;
           }
+          // A workaround specifically for areas. They must have a
+          // unique `_id` which makes `klona` a poor way to establish
+          // a default, and we don't pass functions in schema
+          // definitions, but top-level areas should always exist
+          // for reasonable results if the output of `newInstance`
+          // is saved without further editing on the front end
+          if ((field.type === 'area') && (!instance[field.name])) {
+            instance[field.name] = {
+              metaType: 'area',
+              items: [],
+              _id: self.apos.util.generateId()
+            };
+          }
+          // A workaround specifically for objects. These too need
+          // to have reasonable values in parked pages and any other
+          // situation where the data never passes through the UI
+          if ((field.type === 'object') && ((!instance[field.name]) || _.isEmpty(instance[field.name]))) {
+            instance[field.name] = self.newInstance(field.schema);
+          }
         }
         return instance;
       },
