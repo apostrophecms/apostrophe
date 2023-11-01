@@ -48,7 +48,6 @@ export async function evaluateExternalConditions(schema, docId, $t) {
       }
     }
   }
-
   return externalConditionsResults;
 
   function getExternalConditionKeys([ key, val ], conditionType) {
@@ -170,6 +169,14 @@ export function getConditionalFields(
       if (Array.isArray(fieldValue)) {
         return fieldValue.includes(val);
       }
+
+      if (val.min) {
+        return fieldValue >= val.min;
+      }
+      if (val.max) {
+        return fieldValue <= val.min;
+      }
+
       if (val !== fieldValue) {
         return false;
       }
