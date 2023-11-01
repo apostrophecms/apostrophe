@@ -68,6 +68,13 @@ module.exports = {
             return manager.loadIfSuitable(req, [ widget ]);
           }
           async function render() {
+            if (req.aposExternalFront) {
+              const result = {
+                ...req.data,
+                widget
+              };
+              return result;
+            }
             return self.renderWidget(req, type, widget, options);
           }
         }

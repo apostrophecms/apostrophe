@@ -14,6 +14,23 @@ when you have chosen to do this via `extendMethods`, so that you can call `_supe
 receiving this warning. The default implementation still just returns the first page found, but always following the
 `_super()` pattern here opens the door to npm modules that `improve` `@apostrophecms/piece-page` to do something more
 sophisticated by default.
+* `newInstance` always returns a reasonable non-null empty value for area and
+object fields in case the document is inserted without being passed through
+the editor, e.g. in a parked page like the home page. This simplifies
+the new external front feature.
+
+### Adds
+
+* An adapter for Astro is under development with support from Michelin.
+Starting with this release, adapters for external fronts, i.e. "back for front"
+frameworks such as Astro, may now be implemented more easily. Apostrophe recognizes the
+`x-requested-with: AposExternalFront` header and the `apos-external-front-key` header.
+If both are present and `apos-external-front-key` matches the `APOS_EXTERNAL_FRONT_KEY`
+environment variable, then Apostrophe returns JSON in place of a normal page response.
+This mechanism is also available for the `render-widget` route.
+* Like `type`, `metaType` is always included in projections. This helps
+ensure that `apos.util.getManagerOf()` can be used on any object returned
+by the Apostrophe APIs.
 
 ## 3.58.1 (2023-10-18)
 

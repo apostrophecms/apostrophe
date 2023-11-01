@@ -1629,6 +1629,7 @@ module.exports = {
             const hasExclusion = Object.values(projection).some(value => !value);
             if (!_.isEmpty(projection) && !hasExclusion) {
               add.push('type');
+              add.push('metaType');
             }
 
             for (const [ key, val ] of Object.entries(projection)) {

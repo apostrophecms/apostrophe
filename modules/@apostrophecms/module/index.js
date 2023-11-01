@@ -423,6 +423,12 @@ module.exports = {
       // for this part of the behavior of sendPage.
 
       async renderPage(req, template, data) {
+        if (req.aposExternalFront) {
+          await self.apos.template.annotateDataForExternalFront(req, template, data);
+          self.apos.template.pruneDataForExternalFront(req, template, data);
+          // Reply with JSON
+          return data;
+        }
         return self.apos.template.renderPageForModule(req, template, data, self);
       },
 
