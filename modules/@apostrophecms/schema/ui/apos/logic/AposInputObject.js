@@ -5,6 +5,7 @@ import AposInputConditionalFieldsMixin from 'Modules/@apostrophecms/schema/mixin
 
 export default {
   name: 'AposInputObject',
+  emits: [ 'validate' ],
   mixins: [
     AposInputMixin,
     AposInputFollowingMixin,
@@ -44,7 +45,7 @@ export default {
       return this.field.schema;
     },
     values() {
-      return this.schemaInput.data;
+      return this.schemaInput.data || {};
     }
   },
   watch: {
@@ -70,9 +71,13 @@ export default {
     }
   },
   async created() {
-    await this.evaluateExternalConditions();
+    await this.evaluateExternalConditions(this.values);
+    this.evaluateConditions(this.values);
   },
   methods: {
+    emitValidate() {
+      this.$emit('validate');
+    },
     validate (value) {
       if (this.schemaInput.hasErrors) {
         return 'invalid';
@@ -80,7 +85,7 @@ export default {
     },
     // Return next at mount or when generation changes
     getNext() {
-      return this.value ? this.value.data : (this.field.def || {});
+      return this.value?.data ? this.value.data : (this.field.def || {});
     }
   }
 };

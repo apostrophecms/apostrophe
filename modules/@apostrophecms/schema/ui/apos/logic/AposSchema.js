@@ -1,5 +1,5 @@
 import { detectFieldChange } from 'Modules/@apostrophecms/schema/lib/detectChange';
-import { conditionTypesObject } from '../lib/conditionalFields';
+import { getConditionTypesObject } from '../lib/conditionalFields';
 
 export default {
   name: 'AposSchema',
@@ -39,7 +39,7 @@ export default {
     conditionalFields: {
       type: Object,
       default() {
-        return { ...conditionTypesObject };
+        return getConditionTypesObject();
       }
     },
     modifiers: {
@@ -100,20 +100,30 @@ export default {
   },
   computed: {
     fields() {
-      const fields = {};
-      this.schema.forEach(item => {
-        fields[item.name] = {};
-        fields[item.name].field = item;
-        fields[item.name].value = {
-          data: this.value[item.name]
+      return this.schema.reduce((acc, item) => {
+        const { requiredIf } = this.conditionalFields;
+        const required = Object.hasOwn(requiredIf, item.name)
+          ? requiredIf[item.name]
+          : item.required;
+
+        return {
+          ...acc,
+          [item.name]: {
+            field: {
+              ...item,
+              required
+            },
+            value: {
+              data: this.value[item.name]
+            },
+            serverError: this.serverErrors && this.serverErrors[item.name],
+            modifiers: [
+              ...(this.modifiers || []),
+              ...(item.modifiers || [])
+            ]
+          }
         };
-        fields[item.name].serverError = this.serverErrors && this.serverErrors[item.name];
-        fields[item.name].modifiers = [
-          ...(this.modifiers || []),
-          ...(item.modifiers || [])
-        ];
-      });
-      return fields;
+      }, {});
     }
   },
   watch: {
@@ -143,17 +153,23 @@ export default {
       // repopulate the schema.
       this.populateDocData();
     },
-    conditionalFields(newVal, oldVal) {
-      for (const field in oldVal) {
-        if (!this.fieldState[field] || (newVal[field] === oldVal[field]) || !this.fieldState[field].ranValidation) {
-          continue;
-        }
 
-        if (
-          (newVal[field] === false) ||
-          (newVal[field] && this.fieldState[field].ranValidation)
-        ) {
-          this.$emit('validate');
+    conditionalFields: {
+      handler(val, oldVal) {
+        // eslint-disable-next-line no-labels
+        for (const [ conditionType, conditions ] of Object.entries(val)) {
+          for (const [ field, value ] of Object.entries(conditions)) {
+            if (
+              (value === oldVal[conditionType][field]) ||
+              !this.fieldState[field] ||
+              !this.fieldState[field].ranValidation
+            ) {
+              continue;
+            }
+
+            this.emitValidate();
+            return;
+          }
         }
       }
     }
@@ -162,6 +178,9 @@ export default {
     this.populateDocData();
   },
   methods: {
+    emitValidate() {
+      this.$emit('validate');
+    },
     getDisplayOptions(fieldName) {
       let options = {};
       if (this.displayOptions) {

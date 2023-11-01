@@ -21,7 +21,7 @@
               @input="updateDocFields"
               @validate="triggerValidate"
               :following-values="followingValues()"
-              :conditional-fields="conditionalFields()"
+              :conditional-fields="conditionalFields"
               ref="schema"
             />
           </div>
@@ -136,11 +136,13 @@ export default {
     }
   },
   async mounted() {
+    this.modal.active = true;
+    await this.evaluateExternalConditions();
+    this.evaluateConditions();
     apos.area.widgetOptions = [
       klona(this.options),
       ...apos.area.widgetOptions
     ];
-    this.modal.active = true;
   },
   destroyed() {
     apos.area.widgetOptions = apos.area.widgetOptions.slice(1);
@@ -163,6 +165,7 @@ export default {
   methods: {
     updateDocFields(value) {
       this.docFields = value;
+      this.evaluateConditions();
     },
     async save() {
       this.triggerValidation = true;

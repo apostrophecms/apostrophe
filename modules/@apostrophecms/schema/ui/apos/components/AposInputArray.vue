@@ -1,7 +1,9 @@
 <template>
   <AposInputWrapper
-    :field="field" :error="effectiveError"
-    :uid="uid" :items="next"
+    :field="field"
+    :error="effectiveError"
+    :uid="uid"
+    :items="next"
     :display-options="displayOptions"
   >
     <template #additional>
@@ -54,19 +56,21 @@
             :id="listId"
           >
             <AposSchema
+              v-model="item.schemaInput"
               v-for="(item, index) in items"
-              :key="item._id"
-              :schema="schema"
               class="apos-input-array-inline-item"
               :class="item.open && !alwaysExpand ? 'apos-input-array-inline-item--active' : null"
-              v-model="item.schemaInput"
+              :key="item._id"
+              :schema="schema"
               :trigger-validation="triggerValidation"
               :generation="generation"
               :modifiers="['small', 'inverted']"
               :doc-id="docId"
               :following-values="getFollowingValues(item)"
-              :conditional-fields="conditionalFields(item.schemaInput?.data || {})"
+              :conditional-fields="itemsConditionalFields[item._id]"
               :field-style="field.style"
+              @input="setItemsConditionalFields(item._id)"
+              @validate="emitValidate()"
             >
               <template #before>
                 <component

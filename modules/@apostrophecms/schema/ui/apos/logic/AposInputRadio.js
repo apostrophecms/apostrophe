@@ -11,11 +11,12 @@ export default {
       return (uid + JSON.stringify(value)).replace(/\s+/g, '');
     },
     validate(value) {
-      if (this.field.required && (value === '')) {
+      const validValue = this.choices.some((choice) => choice.value === value);
+      if (this.field.required && !validValue && !value) {
         return 'required';
       }
 
-      if (value && !this.choices.find(choice => choice.value === value)) {
+      if (value && !validValue) {
         return 'invalid';
       }
 

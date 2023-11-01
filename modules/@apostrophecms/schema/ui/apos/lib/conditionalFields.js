@@ -1,7 +1,8 @@
 // Supported field conditional types,
 // you can add a condition type to this array to make it available to the frontend
 const conditionTypes = [ 'if', 'requiredIf' ];
-export const conditionTypesObject = Object.fromEntries(conditionTypes.map((key) => ([ key, {} ])));
+export const getConditionTypesObject = () => Object
+  .fromEntries(conditionTypes.map((key) => ([ key, {} ])));
 
 // Evaluate the external conditions found in each field
 // via API calls - made in parallel for performance-
@@ -10,7 +11,7 @@ export const conditionTypesObject = Object.fromEntries(conditionTypes.map((key) 
 // `docId` - the current docId (from prop or context)
 // `$t` - the i18n function (usually `this.$t`)
 export async function evaluateExternalConditions(schema, docId, $t) {
-  const externalConditionsResults = { ...conditionTypesObject };
+  const externalConditionsResults = getConditionTypesObject();
 
   for (const field of schema) {
     for (const conditionType of conditionTypes) {
@@ -24,9 +25,9 @@ export async function evaluateExternalConditions(schema, docId, $t) {
 
         try {
           const promises = uniqExternalConditionKeys
-            .map(key => externalConditionsResults[conditionType][key] !== undefined
+            .map(key => (externalConditionsResults[conditionType][key] !== undefined
               ? null
-              : evaluateExternalCondition(key, field._id, docId)
+              : evaluateExternalCondition(key, field._id, docId))
             )
             .filter(Boolean);
 
@@ -110,34 +111,24 @@ export function isExternalCondition(conditionKey, conditionType) {
 // `values` - the schema (all) values
 // `externalConditionsResults` - the results of the external conditions,
 // as returned by `evaluateExternalConditions`
-export function conditionalFields(
+export function getConditionalFields(
   schema,
   fields,
   values,
   externalConditionsResults
 ) {
-  const conditionalFields = { ...conditionTypesObject };
+  const conditionalFields = getConditionTypesObject();
 
-  while (true) {
-    let change = false;
-    for (const field of schema) {
-      for (const conditionType of conditionTypes) {
-        if (field[conditionType]) {
-          const result = evaluate(field[conditionType], conditionType);
-          const previous = conditionalFields[conditionType][field.name];
-          if (previous !== result) {
-            change = true;
-          }
-          conditionalFields[conditionType][field.name] = result;
-        }
+  for (const field of schema) {
+    for (const conditionType of conditionTypes) {
+      if (field[conditionType]) {
+        const result = evaluate(field[conditionType], conditionType);
+        conditionalFields[conditionType][field.name] = result;
       }
-    }
-    if (!change) {
-      break;
     }
   }
 
-  const result = { ...conditionTypesObject };
+  const result = getConditionTypesObject();
 
   for (const field of fields) {
     for (const conditionType of conditionTypes) {
@@ -150,12 +141,10 @@ export function conditionalFields(
   return result;
 
   function evaluate(clause, conditionType) {
-    let result = true;
     for (const [ key, val ] of Object.entries(clause)) {
       if (key === '$or') {
-        if (!val.some(clause => evaluate(clause))) {
-          result = false;
-          break;
+        if (!val.some(clause => evaluate(clause, conditionType))) {
+          return false;
         }
 
         // No need to go further here, the key is an "$or" condition...
@@ -164,8 +153,7 @@ export function conditionalFields(
 
       if (isExternalCondition(key, conditionType)) {
         if (externalConditionsResults[conditionType][key] !== val) {
-          result = false;
-          break;
+          return false;
         }
 
         // Stop there, this is an external condition thus
@@ -173,22 +161,19 @@ export function conditionalFields(
         continue;
       }
 
-      if (conditionalFields[key] === false) {
-        result = false;
-        break;
+      if (conditionalFields[conditionType][key] === false) {
+        return false;
       }
 
       const fieldValue = values[key];
 
       if (Array.isArray(fieldValue)) {
-        result = fieldValue.includes(val);
-        break;
+        return fieldValue.includes(val);
       }
       if (val !== fieldValue) {
-        result = false;
-        break;
+        return false;
       }
     }
-    return result;
+    return true;
   }
 }
