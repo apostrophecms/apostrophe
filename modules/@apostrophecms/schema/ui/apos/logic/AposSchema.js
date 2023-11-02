@@ -155,12 +155,12 @@ export default {
     },
 
     conditionalFields: {
-      handler(val, oldVal) {
+      handler(newVal, oldVal) {
         // eslint-disable-next-line no-labels
-        for (const [ conditionType, conditions ] of Object.entries(val)) {
+        for (const [ conditionType, conditions ] of Object.entries(oldVal)) {
           for (const [ field, value ] of Object.entries(conditions)) {
             if (
-              (value === oldVal[conditionType][field]) ||
+              (value === newVal[conditionType][field]) ||
               !this.fieldState[field] ||
               !this.fieldState[field].ranValidation
             ) {
