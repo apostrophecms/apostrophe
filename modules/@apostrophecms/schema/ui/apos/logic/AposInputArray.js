@@ -253,7 +253,7 @@ export default {
         this.items[this.items.length - 1];
 
       return this.schema.filter(
-        field => this.setItemsConditionalFields[currentItem._id]?.if[field.name] !== false
+        field => this.itemsConditionalFields[currentItem._id]?.if[field.name] !== false
       );
     }
   }
