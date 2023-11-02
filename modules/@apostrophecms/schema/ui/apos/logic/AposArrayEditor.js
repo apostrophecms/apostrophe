@@ -20,6 +20,10 @@ export default {
       required: true,
       type: Object
     },
+    inputSchema: {
+      type: Array,
+      required: true
+    },
     serverError: {
       type: Object,
       default: null
@@ -80,7 +84,8 @@ export default {
     },
     schema() {
       // For AposDocEditorMixin
-      return (this.field.schema || []).filter(field => apos.schema.components.fields[field.type]);
+      return (this.inputSchema || this.field.schema || [])
+        .filter(field => apos.schema.components.fields[field.type]);
     },
     countLabel() {
       return this.$t('apostrophe:numberAdded', {

@@ -182,6 +182,7 @@ export default {
     async edit() {
       const result = await apos.modal.execute('AposArrayEditor', {
         field: this.field,
+        inputSchema: this.schema,
         items: this.next,
         serverError: this.serverError,
         docId: this.docId,
