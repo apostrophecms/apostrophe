@@ -26,7 +26,7 @@ export default {
   },
   data() {
     const next = this.getNext();
-    const items = modelItems(next, this.field);
+    const items = modelItems(next, this.field, this.schema);
 
     return {
       next,
@@ -41,7 +41,7 @@ export default {
       return this.field.schema;
     },
     alwaysExpand() {
-      return alwaysExpand(this.field);
+      return alwaysExpand(this.field, this.schema);
     },
     listId() {
       return `sortableList-${cuid()}`;
@@ -82,7 +82,7 @@ export default {
   watch: {
     generation() {
       this.next = this.getNext();
-      this.items = modelItems(this.next, this.field);
+      this.items = modelItems(this.next, this.field, this.schema);
     },
     items: {
       deep: true,
@@ -212,14 +212,14 @@ export default {
         schemaInput: {
           data: this.newInstance()
         },
-        open: alwaysExpand(this.field)
+        open: alwaysExpand(this.field, this.schema)
       });
       this.setItemsConditionalFields(_id);
       this.openInlineItem(_id);
     },
     newInstance() {
       const instance = {};
-      for (const field of this.field.schema) {
+      for (const field of this.schema) {
         if (field.def !== undefined) {
           instance[field.name] = klona(field.def);
         }
@@ -260,9 +260,9 @@ export default {
   }
 };
 
-function modelItems(items, field) {
+function modelItems(items, field, schema) {
   return items.map(item => {
-    const open = alwaysExpand(field);
+    const open = alwaysExpand(field, schema);
     return {
       _id: item._id || cuid(),
       schemaInput: {
@@ -273,12 +273,12 @@ function modelItems(items, field) {
   });
 }
 
-function alwaysExpand(field) {
+function alwaysExpand(field, schema) {
   if (!field.inline) {
     return false;
   }
   if (field.inline.alwaysExpand === undefined) {
-    return field.schema.length < 3;
+    return schema.length < 3;
   }
   return field.inline.alwaysExpand;
 }
