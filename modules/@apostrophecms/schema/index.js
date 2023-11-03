@@ -526,15 +526,11 @@ module.exports = {
             continue;
           }
 
-          if (val.min) {
-            if (destinationKey < val.min) {
-              return false;
-            }
+          if (val.min && destinationKey < val.min) {
+            return false;
           }
-          if (val.max) {
-            if (destinationKey > val.max) {
-              return false;
-            }
+          if (val.max && destinationKey > val.max) {
+            return false;
           }
 
           if (conditionalFields?.[key] === false) {

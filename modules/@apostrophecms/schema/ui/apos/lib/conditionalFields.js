@@ -170,11 +170,11 @@ export function getConditionalFields(
         return fieldValue.includes(val);
       }
 
-      if (val.min) {
-        return fieldValue >= val.min;
+      if (val.min && fieldValue < val.min) {
+        return false;
       }
-      if (val.max) {
-        return fieldValue <= val.min;
+      if (val.max && fieldValue > val.max) {
+        return false;
       }
 
       if (val !== fieldValue) {
