@@ -1,6 +1,6 @@
 # Changelog
 
-## UNRELEASED
+## 3.59.0 (2023-11-03)
 
 ### Changes
 
