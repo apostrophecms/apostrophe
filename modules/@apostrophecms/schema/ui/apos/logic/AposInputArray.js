@@ -26,7 +26,8 @@ export default {
   },
   data() {
     const next = this.getNext();
-    const items = modelItems(next, this.field, this.schema);
+    // this.schema is a computed property and is not available in data, that's why we use this.field.schema here instead
+    const items = modelItems(next, this.field, this.field.schema);
 
     return {
       next,
