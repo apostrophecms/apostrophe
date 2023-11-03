@@ -39,7 +39,7 @@
         v-model="fieldState[field.name]"
         :is="fieldComponentMap[field.type]"
         :following-values="followingValues[field.name]"
-        :condition-met="conditionalFields[field.name]"
+        :condition-met="conditionalFields?.if[field.name]"
         :field="fields[field.name].field"
         :modifiers="fields[field.name].modifiers"
         :display-options="getDisplayOptions(field.name)"
@@ -49,6 +49,7 @@
         :ref="field.name"
         :generation="generation"
         @update-doc-data="onUpdateDocData"
+        @validate="emitValidate()"
       />
     </component>
     <slot name="after" />

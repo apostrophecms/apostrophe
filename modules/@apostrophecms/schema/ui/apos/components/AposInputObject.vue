@@ -11,14 +11,16 @@
       <div class="apos-input-object">
         <div class="apos-input-wrapper">
           <AposSchema
+            v-model="schemaInput"
+            ref="schema"
             :schema="schema"
             :trigger-validation="triggerValidation"
             :generation="generation"
             :doc-id="docId"
-            v-model="schemaInput"
-            :conditional-fields="conditionalFields(values)"
+            :conditional-fields="conditionalFields"
             :following-values="followingValuesWithParent"
-            ref="schema"
+            @input="evaluateConditions(values)"
+            @validate="emitValidate()"
           />
         </div>
       </div>

@@ -43,7 +43,8 @@
           :key="lastSelectionTime"
           :generation="generation"
           :following-values="followingValues()"
-          :conditional-fields="conditionalFields()"
+          :conditional-fields="conditionalFields"
+          @input="evaluateConditions()"
         />
         <footer class="apos-link-control__footer">
           <AposButton
@@ -52,9 +53,11 @@
             :modifiers="formModifiers"
           />
           <AposButton
-            type="primary" label="apostrophe:save"
-            @click="save"
+            type="primary"
+            label="apostrophe:save"
             :modifiers="formModifiers"
+            :disabled="docFields.hasErrors"
+            @click="save"
           />
         </footer>
       </AposContextMenuDialog>
@@ -145,6 +148,7 @@ export default {
           name: 'href',
           label: this.$t('apostrophe:url'),
           type: 'string',
+          required: true,
           if: {
             linkTo: '_url'
           }
@@ -201,6 +205,10 @@ export default {
       }
     }
   },
+  async mounted() {
+    await this.evaluateExternalConditions();
+    this.evaluateConditions();
+  },
   methods: {
     removeLink() {
       this.docFields.data = {};
@@ -211,6 +219,7 @@ export default {
       if (this.hasSelection) {
         this.active = !this.active;
         this.populateFields();
+        this.evaluateConditions();
       }
     },
     close() {

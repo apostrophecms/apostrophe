@@ -1,6 +1,7 @@
-import AposInputMixin from 'Modules/@apostrophecms/schema/mixins/AposInputMixin.js';
-import AposInputFollowingMixin from 'Modules/@apostrophecms/schema/mixins/AposInputFollowingMixin.js';
-import AposInputConditionalFieldsMixin from 'Modules/@apostrophecms/schema/mixins/AposInputConditionalFieldsMixin.js';
+import AposInputMixin from 'Modules/@apostrophecms/schema/mixins/AposInputMixin';
+import AposInputFollowingMixin from 'Modules/@apostrophecms/schema/mixins/AposInputFollowingMixin';
+import AposInputConditionalFieldsMixin from 'Modules/@apostrophecms/schema/mixins/AposInputConditionalFieldsMixin';
+import { getConditionTypesObject } from 'Modules/@apostrophecms/schema/lib/conditionalFields';
 
 import cuid from 'cuid';
 import { klona } from 'klona';
@@ -15,6 +16,7 @@ export default {
     AposInputFollowingMixin,
     AposInputConditionalFieldsMixin
   ],
+  emits: [ 'validate' ],
   props: {
     generation: {
       type: Number,
@@ -24,11 +26,15 @@ export default {
   },
   data() {
     const next = this.getNext();
-    const data = {
+    // this.schema is a computed property and is not available in data, that's why we use this.field.schema here instead
+    const items = modelItems(next, this.field, this.field.schema);
+
+    return {
       next,
-      items: modelItems(next, this.field)
+      items,
+      itemsConditionalFields: Object
+        .fromEntries(items.map(({ _id }) => [ _id, getConditionTypesObject() ]))
     };
-    return data;
   },
   computed: {
     // required by the conditional fields mixin
@@ -36,7 +42,7 @@ export default {
       return this.field.schema;
     },
     alwaysExpand() {
-      return alwaysExpand(this.field);
+      return alwaysExpand(this.field, this.schema);
     },
     listId() {
       return `sortableList-${cuid()}`;
@@ -77,7 +83,7 @@ export default {
   watch: {
     generation() {
       this.next = this.getNext();
-      this.items = modelItems(this.next, this.field);
+      this.items = modelItems(this.next, this.field, this.schema);
     },
     items: {
       deep: true,
@@ -108,12 +114,29 @@ export default {
       }
     }
   },
-  async created() {
+  async mounted() {
     if (this.field.inline) {
       await this.evaluateExternalConditions();
+      this.setItemsConditionalFields();
     }
   },
   methods: {
+    getItemsSchema(_id) {
+      return (this.items.find((item) => item._id === _id))?.schemaInput.data;
+    },
+    setItemsConditionalFields(itemId) {
+      if (itemId) {
+        this.itemsConditionalFields[itemId] = this.getConditionalFields(this.getItemsSchema(itemId));
+        return;
+      }
+
+      for (const _id of Object.keys(this.itemsConditionalFields)) {
+        this.itemsConditionalFields[_id] = this.getConditionalFields(this.getItemsSchema(_id));
+      }
+    },
+    emitValidate() {
+      this.$emit('validate');
+    },
     validate(value) {
       if (this.items.find(item => item.schemaInput.hasErrors)) {
         return 'invalid';
@@ -160,6 +183,7 @@ export default {
     async edit() {
       const result = await apos.modal.execute('AposArrayEditor', {
         field: this.field,
+        inputSchema: this.schema,
         items: this.next,
         serverError: this.serverError,
         docId: this.docId,
@@ -172,13 +196,15 @@ export default {
     getNext() {
       // Next should consistently be an array.
       return (this.value && Array.isArray(this.value.data))
-        ? this.value.data : (this.field.def || []);
+        ? this.value.data
+        : (this.field.def || []);
     },
     disableAdd() {
       return this.field.max && (this.items.length >= this.field.max);
     },
     remove(_id) {
       this.items = this.items.filter(item => item._id !== _id);
+      delete this.itemsConditionalFields[_id];
     },
     add() {
       const _id = cuid();
@@ -187,13 +213,14 @@ export default {
         schemaInput: {
           data: this.newInstance()
         },
-        open: alwaysExpand(this.field)
+        open: alwaysExpand(this.field, this.schema)
       });
+      this.setItemsConditionalFields(_id);
       this.openInlineItem(_id);
     },
     newInstance() {
       const instance = {};
-      for (const field of this.field.schema) {
+      for (const field of this.schema) {
         if (field.def !== undefined) {
           instance[field.name] = klona(field.def);
         }
@@ -224,34 +251,35 @@ export default {
       if (this.field.style !== 'table') {
         return this.schema;
       }
-      const currentItem = this.items.find(item => item.open) || this.items[this.items.length - 1];
-      const conditions = this.conditionalFields(currentItem?.schemaInput?.data || {});
+      const currentItem = this.items.find(item => item.open) ||
+        this.items[this.items.length - 1];
+
       return this.schema.filter(
-        field => conditions[field.name] !== false
+        field => this.itemsConditionalFields[currentItem._id]?.if[field.name] !== false
       );
     }
   }
 };
 
-function modelItems(items, field) {
+function modelItems(items, field, schema) {
   return items.map(item => {
-    const open = alwaysExpand(field);
+    const open = alwaysExpand(field, schema);
     return {
       _id: item._id || cuid(),
       schemaInput: {
-        data: item
+        data: item || {}
       },
       open
     };
   });
 }
 
-function alwaysExpand(field) {
+function alwaysExpand(field, schema) {
   if (!field.inline) {
     return false;
   }
   if (field.inline.alwaysExpand === undefined) {
-    return field.schema.length < 3;
+    return schema.length < 3;
   }
   return field.inline.alwaysExpand;
 }

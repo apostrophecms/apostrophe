@@ -15,7 +15,9 @@
  */
 
 import { klona } from 'klona';
-import { evaluateExternalConditions, conditionalFields } from 'Modules/@apostrophecms/schema/lib/conditionalFields.js';
+import {
+  evaluateExternalConditions, getConditionalFields, getConditionTypesObject
+} from 'Modules/@apostrophecms/schema/lib/conditionalFields.js';
 
 export default {
   data() {
@@ -27,7 +29,8 @@ export default {
       restoreOnly: false,
       readOnly: false,
       changed: [],
-      externalConditionsResults: {}
+      externalConditionsResults: getConditionTypesObject(),
+      conditionalFields: getConditionTypesObject()
     };
   },
 
@@ -55,10 +58,6 @@ export default {
         }
       }
     }
-  },
-
-  async created() {
-    await this.evaluateExternalConditions();
   },
 
   methods: {
@@ -129,14 +128,18 @@ export default {
     // the returned object will contain properties only for conditional fields
     // in that category, although they may be conditional upon fields in either
     // category.
-    conditionalFields(followedByCategory) {
-      return conditionalFields(
+    getConditionalFields(followedByCategory) {
+      return getConditionalFields(
         this.schema,
         this.getFieldsByCategory(followedByCategory),
         // currentDoc for arrays, docFields for all other editors
         this.currentDoc ? this.currentDoc.data : this.docFields.data,
         this.externalConditionsResults
       );
+    },
+
+    evaluateConditions() {
+      this.conditionalFields = this.getConditionalFields();
     },
 
     // Overridden by components that split the fields into several AposSchemas

@@ -14,7 +14,7 @@ export default {
         parentFollowing[`<${key}`] = val;
       }
 
-      for (const field of this.field.schema) {
+      for (const field of this.schema) {
         if (field.following) {
           const following = Array.isArray(field.following) ? field.following : [ field.following ];
           followingValues[field.name] = {};
