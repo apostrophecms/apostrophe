@@ -7,20 +7,31 @@
       :label="tool.label"
       :icon-only="!!tool.icon"
       :icon="tool.icon || false"
+      :icon-size="tool.iconSize || 16"
       :modifiers="['no-border', 'no-motion']"
       :tooltip="{
         content: tool.label,
         placement: 'top',
         delay: 650
       }"
-      @close="close"
     />
-    <AposImageControlDialog
-      :active="active"
-      :editor="editor"
-      @close="close"
-      @click.stop="$event => null"
-    />
+    <div
+      v-if="active"
+      v-click-outside-element="close"
+      class="apos-popover apos-image-control__dialog"
+      x-placement="bottom"
+      :class="{
+        'apos-is-triggered': active,
+        'apos-has-selection': hasSelection
+      }"
+    >
+      <AposImageControlDialog
+        :active="active"
+        :editor="editor"
+        @cancel="close"
+        @click.stop="$event => null"
+      />
+    </div>
   </div>
 </template>
 
@@ -45,6 +56,13 @@ export default {
   computed: {
     buttonActive() {
       return this.editor.isActive('image');
+    },
+    hasSelection() {
+      const { state } = this.editor;
+      const { selection } = this.editor.state;
+      const { from, to } = selection;
+      const text = state.doc.textBetween(from, to, '');
+      return text !== '';
     }
   },
   methods: {
@@ -63,6 +81,20 @@ export default {
   .apos-image-control {
     position: relative;
     display: inline-block;
+  }
+
+  .apos-image-control__dialog {
+    z-index: $z-index-modal;
+    position: absolute;
+    top: calc(100% + 5px);
+    left: -15px;
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .apos-image-control__dialog.apos-is-triggered.apos-has-selection {
+    opacity: 1;
+    pointer-events: auto;
   }
 
   .apos-is-active {
