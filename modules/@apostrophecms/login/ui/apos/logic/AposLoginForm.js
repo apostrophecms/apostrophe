@@ -41,6 +41,9 @@ export default {
     beforeSubmitRequirements() {
       return this.requirements.filter(requirement => requirement.phase === 'beforeSubmit');
     },
+    uponSubmitRequirements() {
+      return this.requirements.filter(requirement => requirement.phase === 'uponSubmit');
+    },
     // The currently active requirement expecting a solo presentation.
     // Currently it only concerns `afterPasswordVerified` requirements.
     // beforeSubmit requirements are not presented solo.
@@ -95,6 +98,10 @@ export default {
       }
       this.busy = true;
       this.error = '';
+      // apos.bus.$emit('@apostrophecms/login:before-submit');
+      this.uponSubmitRequirements.forEach(async requirement => {
+        this.doc.data = await requirement.callback(this.doc.data);
+      });
 
       await this.invokeInitialLoginApi();
     },
@@ -234,6 +241,7 @@ function getRequirements() {
   });
   return [
     ...requirements.filter(r => r.phase === 'beforeSubmit'),
+    ...requirements.filter(r => r.phase === 'uponSubmit'),
     ...requirements.filter(r => r.phase === 'afterPasswordVerified')
   ];
 }

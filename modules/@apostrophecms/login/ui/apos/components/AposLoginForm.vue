@@ -30,6 +30,16 @@
           @done="requirementDone(requirement, $event)"
           @block="requirementBlock(requirement)"
         />
+        <template v-if="phase === 'uponSubmit'">
+          <Component
+            v-for="requirement in uponSubmitRequirements"
+            :key="requirement.name"
+            :is="requirement.component"
+            v-bind="getRequirementProps(requirement.name)"
+            @done="requirementDone(requirement, $event)"
+            @block="requirementBlock(requirement)"
+          />
+        </template>
         <AposButton
           data-apos-test="loginSubmit"
           :busy="busy"

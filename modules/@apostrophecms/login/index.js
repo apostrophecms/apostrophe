@@ -734,8 +734,17 @@ module.exports = {
 
         try {
           // Initial login step
-          const { earlyRequirements, lateRequirements } = self.filterRequirements();
+          const { earlyRequirements, onTimeRequirements, lateRequirements } = self.filterRequirements();
           for (const [ name, requirement ] of Object.entries(earlyRequirements)) {
+            try {
+              await requirement.verify(req, req.body.requirements && req.body.requirements[name]);
+            } catch (e) {
+              e.data = e.data || {};
+              e.data.requirement = name;
+              throw e;
+            }
+          }
+          for (const [ name, requirement ] of Object.entries(onTimeRequirements)) {
             try {
               await requirement.verify(req, req.body.requirements && req.body.requirements[name]);
             } catch (e) {
@@ -813,15 +822,12 @@ module.exports = {
       },
 
       filterRequirements() {
+        const requirements = Object.entries(self.requirements);
+
         return {
-          earlyRequirements: Object.fromEntries(
-            Object.entries(self.requirements)
-              .filter(([ _, requirement ]) => requirement.phase === 'beforeSubmit')
-          ),
-          lateRequirements: Object.fromEntries(
-            Object.entries(self.requirements)
-              .filter(([ _, requirement ]) => requirement.phase === 'afterPasswordVerified')
-          )
+          earlyRequirements: Object.fromEntries(requirements.filter(([ , requirement ]) => requirement.phase === 'beforeSubmit')),
+          onTimeRequirements: Object.fromEntries(requirements.filter(requirement => requirement.phase === 'uponSubmit')),
+          lateRequirements: Object.fromEntries(requirements.filter(([ , requirement ]) => requirement.phase === 'afterPasswordVerified'))
         };
       },
 
