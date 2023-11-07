@@ -99,6 +99,7 @@ module.exports = {
       ], 'info');
       const icon = self.apos.launder.string(req.body.icon);
       const message = self.apos.launder.string(req.body.message);
+      const classes = self.apos.launder.strings(req.body.classes);
       const interpolate = launderInterpolate(req.body.interpolate);
       const dismiss = self.apos.launder.integer(req.body.dismiss);
       let buttons = req.body.buttons;
@@ -118,6 +119,7 @@ module.exports = {
         }));
       }
       return self.trigger(req, message, {
+        classes,
         interpolate,
         dismiss,
         icon,
@@ -280,7 +282,8 @@ module.exports = {
           localize: has(req.body, 'localize')
             ? self.apos.launder.boolean(req.body.localize) : true,
           job: options.job || null,
-          event: options.event
+          event: options.event,
+          classes: options.classes || null
         };
 
         if (copiedOptions.dismiss === true) {

@@ -1,5 +1,12 @@
 # Changelog
 
+## UNRELEASED
+
+### Adds
+
+* Add the possibility to add custom classes to notifications.  
+Setting the `apos-notification--hidden` class will hide the notification, which can be useful when we only care about the event carried by it.
+
 ## 3.59.0 (2023-11-03)
 
 ### Changes
