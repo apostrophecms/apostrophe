@@ -38,7 +38,8 @@
 import AposInputSlugLogic from '../logic/AposInputSlug';
 export default {
   name: 'AposInputSlug',
-  mixins: [ AposInputSlugLogic ]
+  mixins: [ AposInputSlugLogic ],
+  emits: [ 'return' ]
 };
 </script>
 
