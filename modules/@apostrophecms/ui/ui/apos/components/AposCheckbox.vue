@@ -14,10 +14,11 @@
     >
     <span class="apos-input-indicator" aria-hidden="true">
       <component
+        v-if="isChecked(checked)"
         :is="`${
           choice.indeterminate ? 'minus-icon' : 'check-bold-icon'
         }`"
-        :size="10" v-if="checked && checked.includes(choice.value)"
+        :size="10"
       />
     </span>
     <span
@@ -39,7 +40,7 @@ export default {
   },
   props: {
     checked: {
-      type: [ Array, Boolean, String ],
+      type: [ Array, Boolean ],
       default: false
     },
     choice: {
@@ -83,6 +84,11 @@ export default {
     }
   },
   methods: {
+    isChecked(checked) {
+      return Array.isArray(checked)
+        ? checked.includes(this.choice.value)
+        : checked;
+    },
     // This event is only necessary if the parent needs to do *more* than simply
     // keep track of an array of checkbox values. For example, AposTagApply
     // does extra work with indeterminate values.
