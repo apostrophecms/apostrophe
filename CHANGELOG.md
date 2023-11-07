@@ -1,5 +1,12 @@
 # Changelog
 
+## UNRELEASED
+
+### Fixes
+
+* We can now close the image modal in rich-text widgets when we click outside of the modal.
+The click on the cancel button now works too.
+
 ## 3.59.0 (2023-11-03)
 
 ### Changes
