@@ -2,12 +2,14 @@
   <div class="apos-modal-tabs">
     <ul class="apos-modal-tabs__tabs">
       <li
-        class="apos-modal-tabs__tab" v-for="tab in tabs"
+        class="apos-modal-tabs__tab"
+        v-for="tab in tabs"
         :key="tab.name"
+        v-show="tab.isVisible !== false"
       >
         <button
           :id="tab.name" class="apos-modal-tabs__btn"
-          :aria-selected="tab.name === currentTab ? true : false"
+          :aria-selected="tab.name === current ? true : false"
           @click="selectTab"
         >
           {{ $t(tab.label) }}
@@ -41,9 +43,6 @@ export default {
   },
   emits: [ 'select-tab' ],
   computed: {
-    currentTab() {
-      return this.current || this.tabs[0].name;
-    },
     tabErrors() {
       const errors = {};
       for (const key in this.errors) {

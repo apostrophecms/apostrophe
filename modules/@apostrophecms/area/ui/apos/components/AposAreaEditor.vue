@@ -43,9 +43,11 @@
         :i="i"
         :options="options"
         :next="next"
+        :following-values="followingValues"
         :doc-id="docId"
         :context-menu-options="contextMenuOptions"
         :field-id="fieldId"
+        :field="field"
         :disabled="field && field.readOnly"
         :widget-hovered="hoveredWidget"
         :non-foreign-widget-hovered="hoveredNonForeignWidget"
@@ -107,6 +109,12 @@ export default {
       type: Array,
       default() {
         return [];
+      }
+    },
+    followingValues: {
+      type: Object,
+      default() {
+        return {};
       }
     },
     choices: {
@@ -249,6 +257,8 @@ export default {
     },
     updateWidgetFocused(widgetId) {
       this.focusedWidget = widgetId;
+      // Attached to window so that modals can see the area is active
+      window.apos.focusedWidget = widgetId;
     },
     async up(i) {
       if (this.docId === window.apos.adminBar.contextId) {
@@ -368,7 +378,8 @@ export default {
           value: widget,
           options: this.widgetOptionsByType(widget.type),
           type: widget.type,
-          docId: this.docId
+          docId: this.docId,
+          parentFollowingValues: this.followingValues
         });
         apos.area.activeEditor = null;
         apos.bus.$off('apos-refreshing', cancelRefresh);
@@ -465,7 +476,8 @@ export default {
           value: null,
           options: this.widgetOptionsByType(name),
           type: name,
-          docId: this.docId
+          docId: this.docId,
+          parentFollowingValues: this.followingValues
         });
         apos.area.activeEditor = null;
         if (widget) {

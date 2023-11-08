@@ -51,8 +51,7 @@ export default {
   },
   data () {
     return {
-      next: (this.value && this.value.data !== undefined)
-        ? this.value.data : '',
+      next: (this.value && this.value.data !== undefined) ? this.value.data : '',
       error: false,
       // This is just meant to be sufficient to prevent unintended collisions
       // in the UI between id attributes
@@ -122,13 +121,12 @@ export default {
     // internal representation used for editing (a string, for instance)
     validateAndEmit () {
       // If the field is conditional and isn't shown, disregard any errors.
-      const error = this.conditionMet === false ? false
-        : this.validate(this.next);
+      const error = this.conditionMet === false ? false : this.validate(this.next);
+
       this.$emit('input', {
         data: error ? this.next : this.convert(this.next),
         error,
-        ranValidation: this.conditionMet === false ? this.value.ranValidation
-          : true
+        ranValidation: this.conditionMet === false ? this.value.ranValidation : true
       });
     },
     watchValue () {

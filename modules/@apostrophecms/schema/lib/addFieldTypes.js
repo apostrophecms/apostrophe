@@ -95,9 +95,8 @@ module.exports = (self) => {
 
   self.addFieldType({
     name: 'string',
-    convert: function (req, field, data, destination) {
+    convert(req, field, data, destination) {
       destination[field.name] = self.apos.launder.string(data[field.name], field.def);
-
       destination[field.name] = checkStringLength(destination[field.name], field.min, field.max);
       // If field is required but empty (and client side didn't catch that)
       // This is new and until now if JS client side failed, then it would
@@ -105,8 +104,16 @@ module.exports = (self) => {
       if (field.required && (_.isUndefined(data[field.name]) || !data[field.name].toString().length)) {
         throw self.apos.error('required');
       }
+
+      if (field.pattern) {
+        const regex = new RegExp(field.pattern);
+
+        if (!regex.test(destination[field.name])) {
+          throw self.apos.error('invalid');
+        }
+      }
     },
-    index: function (value, field, texts) {
+    index(value, field, texts) {
       const silent = field.silent === undefined ? true : field.silent;
       texts.push({
         weight: field.weight || 15,
@@ -114,10 +121,22 @@ module.exports = (self) => {
         silent: silent
       });
     },
-    isEmpty: function (field, value) {
+    isEmpty(field, value) {
       return !value.length;
     },
-    addQueryBuilder: function (field, query) {
+    validate(field, options, warn, fail) {
+      if (!field.pattern) {
+        return;
+      }
+
+      const isRegexInstance = field.pattern instanceof RegExp;
+      if (!isRegexInstance && typeof field.pattern !== 'string') {
+        fail('The pattern property must be a RegExp or a String');
+      }
+
+      field.pattern = isRegexInstance ? field.pattern.source : field.pattern;
+    },
+    addQueryBuilder(field, query) {
       query.addBuilder(field.name, {
         finalize: function () {
           if (self.queryBuilderInterested(query, field.name)) {
@@ -143,13 +162,9 @@ module.exports = (self) => {
     // if field.page is true, expect a page slug (slashes allowed,
     // leading slash required). Otherwise, expect a object-style slug
     // (no slashes at all)
-    convert: function (req, field, data, destination) {
-      const options = {
-        def: field.def
-      };
-      if (field.page) {
-        options.allow = '/';
-      }
+    convert (req, field, data, destination) {
+      const options = self.getSlugFieldOptions(field, data);
+
       destination[field.name] = self.apos.util.slugify(self.apos.launder.string(data[field.name], field.def), options);
 
       if (field.page) {
@@ -569,6 +584,11 @@ module.exports = (self) => {
         destination[field.name] = null;
         return;
       }
+      if (!newDateVal && !field.def) {
+        // If no inputted date or default date, leave as empty
+        destination[field.name] = null;
+        return;
+      }
       if (field.min && newDateVal && (newDateVal < field.min)) {
         // If the min requirement isn't met, leave as-is.
         return;
@@ -756,9 +776,9 @@ module.exports = (self) => {
         const { name: uniqueFieldName, label: uniqueFieldLabel } = field.schema.find(subfield => subfield.unique) || [];
         if (uniqueFieldName) {
           const duplicates = data
-            .map(item => Array.isArray(item[uniqueFieldName])
+            .map(item => (Array.isArray(item[uniqueFieldName])
               ? item[uniqueFieldName][0]._id
-              : item[uniqueFieldName])
+              : item[uniqueFieldName]))
             .filter((item, index, array) => array.indexOf(item) !== index);
           if (duplicates.length) {
             throw self.apos.error('duplicate', `${req.t(uniqueFieldLabel)} in ${req.t(field.label)} must be unique`);
@@ -978,6 +998,9 @@ module.exports = (self) => {
     },
 
     relate: async function (req, field, objects, options) {
+      if ((!self.apos.doc?.replicateReached) && (!field.idsStorage)) {
+        self.apos.util.warnDevOnce('premature-relationship-query', 'Database queries for types with relationships may fail if made before the @apostrophecms/doc:beforeReplicate event');
+      }
       return self.relationshipDriver(req, joinr.byArray, false, objects, field.idsStorage, field.fieldsStorage, field.name, options);
     },
 
@@ -1109,6 +1132,9 @@ module.exports = (self) => {
     name: 'relationshipReverse',
     vueComponent: false,
     relate: async function (req, field, objects, options) {
+      if ((!self.apos.doc?.replicateReached) && (!field.idsStorage)) {
+        self.apos.util.warnDevOnce('premature-relationship-query', 'Database queries for types with relationships may fail if made before the @apostrophecms/doc:beforeReplicate event');
+      }
       return self.relationshipDriver(req, joinr.byArrayReverse, true, objects, field.idsStorage, field.fieldsStorage, field.name, options);
     },
     validate: function (field, options, warn, fail) {

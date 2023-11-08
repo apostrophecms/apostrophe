@@ -3,6 +3,7 @@
     v-apos-tooltip="tooltip"
     class="apos-button__wrapper"
     :class="{ 'apos-button__wrapper--block': modifiers.includes('block') }"
+    :data-apos-test="actionTestLabel"
   >
     <component
       :is="href ? 'a' : 'button'"
@@ -55,6 +56,10 @@ export default {
     label: {
       type: [ String, Object ],
       default: 'apostrophe:provideButtonLabel'
+    },
+    action: {
+      type: String,
+      default: null
     },
     interpolate: {
       type: Object,
@@ -199,6 +204,11 @@ export default {
     },
     isDisabled() {
       return this.disabled || this.busy;
+    },
+    actionTestLabel() {
+      return this.action
+        ? `${this.action}Trigger`
+        : false;
     }
   },
   methods: {
@@ -533,17 +543,6 @@ export default {
     padding: 10px;
     .apos-button__icon {
       margin-right: 0;
-    }
-  }
-
-  .apos-button--rich-text {
-    background-color: var(--a-background);
-    border-radius: 0;
-    &:hover {
-      background-color: var(--a-base-8);
-    }
-    &:focus, &:active {
-      background-color: var(--a-base-9);
     }
   }
 

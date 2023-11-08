@@ -95,8 +95,7 @@ export default {
         active: false,
         type: 'overlay',
         showModal: false,
-        disableHeader: true,
-        trapFocus: true
+        disableHeader: true
       },
       formValues: null
     };

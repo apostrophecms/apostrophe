@@ -1,5 +1,6 @@
 module.exports = {
   modules: {
+    '@apostrophecms/log': {},
     '@apostrophecms/error': {},
     '@apostrophecms/util': {},
     '@apostrophecms/i18n': {},
@@ -46,6 +47,7 @@ module.exports = {
     '@apostrophecms/video-widget': {},
     '@apostrophecms/ui': {},
     '@apostrophecms/user': {},
+    '@apostrophecms/settings': {},
     '@apostrophecms/image': {},
     '@apostrophecms/image-tag': {},
     '@apostrophecms/file': {},

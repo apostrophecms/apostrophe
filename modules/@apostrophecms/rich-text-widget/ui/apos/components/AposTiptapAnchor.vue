@@ -8,6 +8,11 @@
       :icon-only="!!tool.icon"
       :icon="tool.icon || false"
       :modifiers="['no-border', 'no-motion']"
+      :tooltip="{
+        content: tool.label,
+        placement: 'top',
+        delay: 650
+      }"
     />
     <div
       v-if="active"
@@ -33,12 +38,12 @@
           :schema="schema"
           :trigger-validation="triggerValidation"
           v-model="docFields"
-          :utility-rail="false"
           :modifiers="formModifiers"
           :key="lastSelectionTime"
           :generation="generation"
           :following-values="followingValues()"
-          :conditional-fields="conditionalFields()"
+          :conditional-fields="conditionalFields"
+          @input="evaluateConditions()"
         />
         <footer class="apos-anchor-control__footer">
           <AposButton
@@ -134,6 +139,10 @@ export default {
         this.close();
       }
     }
+  },
+  async mounted() {
+    await this.evaluateExternalConditions();
+    this.evaluateConditions();
   },
   methods: {
     removeAnchor() {

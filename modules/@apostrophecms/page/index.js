@@ -5,7 +5,7 @@ const { SemanticAttributes } = require('@opentelemetry/semantic-conventions');
 const expressCacheOnDemand = require('express-cache-on-demand')();
 
 module.exports = {
-  cascades: [ 'batchOperations' ],
+  cascades: [ 'batchOperations', 'utilityOperations' ],
   options: {
     alias: 'page',
     types: [
@@ -100,6 +100,7 @@ module.exports = {
     self.enableBrowserData();
     self.addLegacyMigrations();
     self.addMisreplicatedParkedPagesMigration();
+    self.addDuplicateParkedPagesMigration();
     await self.createIndexes();
   },
   restApiRoutes(self) {
@@ -126,7 +127,7 @@ module.exports = {
       getAll: [
         ...self.enableCacheOnDemand ? [ expressCacheOnDemand ] : [],
         async (req) => {
-          self.publicApiCheck(req);
+          await self.publicApiCheckAsync(req);
           const all = self.apos.launder.boolean(req.query.all);
           const archived = self.apos.launder.booleanOrNull(req.query.archived);
           const flat = self.apos.launder.boolean(req.query.flat);
@@ -214,7 +215,7 @@ module.exports = {
         async (req, _id) => {
           _id = self.inferIdLocaleAndMode(req, _id);
           // Edit access to draft is sufficient to fetch either
-          self.publicApiCheck(req);
+          await self.publicApiCheckAsync(req);
           const criteria = self.getIdCriteria(_id);
           const result = await self.getRestQuery(req).permission(false).and(criteria).toObject();
 
@@ -252,15 +253,14 @@ module.exports = {
       //
       // This call is atomic with respect to other REST write operations on pages.
       async post(req) {
-        self.publicApiCheck(req);
-        req.body._position = req.body._position || 'lastChild';
+        await self.publicApiCheckAsync(req);
         let targetId = self.apos.launder.string(req.body._targetId);
-        let position = self.apos.launder.string(req.body._position);
+        let position = self.apos.launder.string(req.body._position || 'lastChild');
         // Here we have to normalize before calling insert because we
         // need the parent page to call newChild(). insert calls again but
         // sees there's no work to be done, so no performance hit
         const normalized = await self.getTargetIdAndPosition(req, null, targetId, position);
-        targetId = normalized.targetId;
+        targetId = normalized.targetId || '_home';
         position = normalized.position;
         const copyingId = self.apos.launder.id(req.body._copyingId);
         const input = _.omit(req.body, '_targetId', '_position', '_copyingId');
@@ -272,7 +272,7 @@ module.exports = {
         if (req.body._newInstance) {
           // If we're looking for a fresh page instance and aren't saving yet,
           // simply get a new page doc and return it
-          const parentPage = await self.findForEditing(req, { _id: targetId })
+          const parentPage = await self.findForEditing(req, self.getIdCriteria(targetId))
             .permission('edit', '@apostrophecms/any-page-type').toObject();
           const newChild = self.newChild(parentPage);
           newChild._previewable = true;
@@ -280,7 +280,12 @@ module.exports = {
         }
 
         return self.withLock(req, async () => {
-          const targetPage = await self.findForEditing(req, targetId ? self.getIdCriteria(targetId) : { level: 0 }).ancestors(true).permission('edit').toObject();
+          const targetPage = await self
+            .findForEditing(req, self.getIdCriteria(targetId))
+            .ancestors(true)
+            .permission('edit')
+            .toObject();
+
           if (!targetPage) {
             throw self.apos.error('notfound');
           }
@@ -333,9 +338,10 @@ module.exports = {
 
       async put(req, _id) {
         _id = self.inferIdLocaleAndMode(req, _id);
-        self.publicApiCheck(req);
+        await self.publicApiCheckAsync(req);
+
         return self.withLock(req, async () => {
-          const page = await self.find(req, { _id }).toObject();
+          const page = await self.findForEditing(req, { _id }).toObject();
           if (!page) {
             throw self.apos.error('notfound');
           }
@@ -379,7 +385,7 @@ module.exports = {
       },
       async delete(req, _id) {
         _id = self.inferIdLocaleAndMode(req, _id);
-        self.publicApiCheck(req);
+        await self.publicApiCheckAsync(req);
         const page = await self.findOneForEditing(req, {
           _id
         });
@@ -390,9 +396,9 @@ module.exports = {
       // You may pass `_targetId` and `_position` to move the page within the tree. `_position`
       // may be `before`, `after` or `inside`. To move a page into or out of the archive, set
       // `archived` to `true` or `false`.
-      patch(req, _id) {
+      async patch(req, _id) {
         _id = self.inferIdLocaleAndMode(req, _id);
-        self.publicApiCheck(req);
+        await self.publicApiCheckAsync(req);
         return self.patch(req, _id);
       }
     };
@@ -653,6 +659,13 @@ database.`);
               };
             }
           }
+        },
+        composeUtilityOperations() {
+          self.utilityOperations = Object.entries(self.utilityOperations || {})
+            .map(([ action, properties ]) => ({
+              action,
+              ...properties
+            }));
         }
       },
       'apostrophe:ready': {
@@ -824,6 +837,7 @@ database.`);
           browserOptions.localized &&
           Object.keys(self.apos.i18n.locales).length > 1 &&
           Object.values(self.apos.i18n.locales).some(locale => locale._edit);
+        browserOptions.utilityOperations = self.utilityOperations;
         return browserOptions;
       },
       // Returns a query that finds pages the current user can edit
@@ -858,8 +872,6 @@ database.`);
         position = normalized.position;
         return self.withLock(req, async () => {
           let peers;
-          page.aposLastTargetId = targetId;
-          page.aposLastPosition = position;
           const target = await self.getTarget(req, targetId, position);
           if (!target) {
             throw self.apos.error('notfound');
@@ -1197,8 +1209,6 @@ database.`);
             }
             moved.level = level;
             moved.rank = rank;
-            moved.aposLastTargetId = targetId;
-            moved.aposLastPosition = position;
             // Are we in the archive? Our new parent reveals that
             if (parent.archived) {
               moved.archived = true;
@@ -1216,8 +1226,11 @@ database.`);
       // value. `position` is used to prevent attempts to move after the archive
       // "page."
       async getTarget(req, targetId, position) {
-        const criteria = self.getIdCriteria(targetId);
-        const target = await self.find(req, criteria).permission(false).archived(null).areas(false).ancestors({
+        const criteria = self.getIdCriteria(self.inferIdLocaleAndMode(req, targetId));
+        // Use findForEditing to ensure we get improvements to that method from
+        // npm modules that make the query more inclusive. Then explicitly shut off
+        // things we know we don't want to be blocked by
+        const target = await self.findForEditing(req, criteria).permission(false).archived(null).areas(false).ancestors({
           depth: 1,
           archived: null,
           orphan: null,
@@ -1959,7 +1972,10 @@ database.`);
           delete _item._children;
           if (!parent) {
             // Parking the home page for the first time
-            _item.aposDocId = self.apos.util.generateId();
+            _item.aposDocId = await self.apos.doc.bestAposDocId({
+              level: 0,
+              slug: '/'
+            });
             _item.path = _item.aposDocId;
             _item.lastPublishedAt = new Date();
             return self.apos.doc.insert(req, _item);
@@ -2001,6 +2017,61 @@ database.`);
         const count = await self.apos.doc.db.updateOne({ slug: slug }, { $unset: { parked: 1 } });
         if (!count) {
           throw 'No page with that slug was found.';
+        }
+      },
+      // Reattach a page as the last child of the home page even if
+      // the page tree properties are corrupted
+      async reattachTask(argv) {
+        if (argv._.length !== 2) {
+          throw new Error('Wrong number of arguments');
+        }
+        const modes = [ 'draft', 'published' ];
+        const slugOrId = argv._[1];
+        for (const mode of modes) {
+          // Note that page moves are autopublished
+          const req = self.apos.task.getReq({
+            mode
+          });
+          const home = await self.findOneForEditing(req, {
+            slug: '/'
+          });
+          if (!home) {
+            throw `No home page was found in ${req.locale}. Exiting.`;
+          }
+          const page = await self.findOneForEditing(req, {
+            $or: [
+              {
+                slug: slugOrId
+              },
+              {
+                _id: slugOrId
+              }
+            ]
+          });
+          if (!page) {
+            console.log(`No page with that slug or _id was found in ${req.locale}:${req.mode}.`);
+          } else {
+            const rank = (await self.apos.doc.db.find({
+              path: self.matchDescendants(home),
+              aposLocale: req.locale,
+              level: home.level + 1
+            }).project({ rank: 1 }).sort({ rank: 1 }).toArray()).reduce((memo, page) => Math.max(memo, page.rank), 0) + 1;
+            page.path = `${home.path}/${page.aposDocId}`;
+            page.rank = rank;
+            const $set = {
+              path: page.path,
+              rank: page.rank
+            };
+            if (argv['new-slug']) {
+              $set.slug = argv['new-slug'];
+            }
+            await self.apos.doc.db.updateOne({
+              _id: page._id
+            }, {
+              $set
+            });
+            console.log(`Reattached as the last child of the home page in ${req.locale}:${req.mode}.`);
+          }
         }
       },
       // Invoked by the @apostrophecms/version module.
@@ -2209,7 +2280,10 @@ database.`);
         return self.apos.doc.getManager(page.type)
           .allowedSchema(req, page, parentPage);
       },
-      getRestQuery(req) {
+      // Can be extended on a project level with `_super(req, true)` to disable
+      // permission check and public API projection. You shouldn't do this
+      // if you're not sure what you're doing.
+      getRestQuery(req, omitPermissionCheck = false) {
         const query = self.find(req)
           .ancestors(true)
           .children(true)
@@ -2217,7 +2291,7 @@ database.`);
           .applyBuildersSafely(req.query);
         // Minimum standard for a REST query without a public projection
         // is being allowed to view drafts on the site
-        if (!self.canAccessApi(req)) {
+        if (!omitPermissionCheck && !self.canAccessApi(req)) {
           if (!self.options.publicApiProjection) {
             // Shouldn't be needed thanks to publicApiCheck, but be sure
             query.and({
@@ -2262,6 +2336,11 @@ database.`);
             throw self.apos.error('notfound');
           }
         }
+      },
+      // An async version of the above. It can be overridden to implement
+      // an asynchronous check of the public API permissions.
+      async publicApiCheckAsync(req) {
+        return self.publicApiCheck(req);
       },
       getAllProjection() {
         return {
@@ -2365,6 +2444,103 @@ database.`);
             }
           }
         });
+      },
+      addDuplicateParkedPagesMigration() {
+        self.apos.migration.add('duplicate-parked-pages', async () => {
+          let parkedPages = await self.apos.doc.db.find({
+            parkedId: {
+              $ne: null
+            }
+          }).toArray();
+          const parkedIds = [ ...new Set(parkedPages.map(page => page.parkedId)) ];
+          const names = Object.keys(self.apos.i18n.locales);
+          const locales = [
+            ...names.map(locale => `${locale}:draft`),
+            ...names.map(locale => `${locale}:published`),
+            ...names.map(locale => `${locale}:previous`)
+          ];
+          let changes = 0;
+          const winners = new Map();
+          for (const locale of locales) {
+            for (const parkedId of parkedIds) {
+              let matches = parkedPages.filter(page =>
+                (page.parkedId === parkedId) &&
+                (page.aposLocale === locale)
+              );
+              if (matches.length > 0) {
+                if (!winners.has(parkedId)) {
+                  winners.set(parkedId, matches[0].aposDocId);
+                }
+              }
+              if (matches.length > 1) {
+                matches = matches.sort((a, b) => a.createdAt - b.createdAt);
+                const ids = matches.slice(1).map(page => page._id);
+                await self.apos.doc.db.removeMany({
+                  _id: {
+                    $in: ids
+                  }
+                });
+                parkedPages = parkedPages.filter(page => !ids.includes(page._id));
+                changes++;
+              }
+            }
+          }
+          const idChanges = [];
+          for (const parkedId of parkedIds) {
+            const aposDocId = winners.get(parkedId);
+            const matches = parkedPages.filter(page => page.parkedId === parkedId);
+            for (const match of matches) {
+              if (match.aposDocId !== aposDocId) {
+                idChanges.push([ match._id, match._id.replace(match.aposDocId, aposDocId) ]);
+              }
+            }
+          }
+          if (idChanges.length) {
+            // Also calls self.apos.attachment.recomputeAllDocReferences
+            await self.apos.doc.changeDocIds(idChanges);
+          } else if (changes > 0) {
+            await self.apos.attachment.recomputeAllDocReferences();
+          }
+        });
+      },
+      async inferLastTargetIdAndPosition(doc) {
+        const parentPath = self.getParentPath(doc);
+        const parentAposDocId = parentPath.split('/').pop();
+        const parentId = doc.aposLocale
+          ? `${parentAposDocId}:${doc.aposLocale}`
+          : parentAposDocId;
+        const peerCriteria = {
+          path: self.matchDescendants(parentPath),
+          level: doc.level
+        };
+        if (doc.aposLocale) {
+          peerCriteria.aposLocale = doc.aposLocale;
+        }
+        const peers = await self.apos.doc.db.find(peerCriteria).sort({
+          rank: 1
+        }).project({
+          _id: 1
+        }).toArray();
+        let targetId;
+        let position;
+        const index = peers.findIndex(peer => peer._id === doc._id);
+        if (index === -1) {
+          throw new Error('Cannot find page among its peers');
+        }
+        if (index === 0) {
+          targetId = parentId;
+          position = 'firstChild';
+        } else if (index === (peers.length - 1)) {
+          targetId = parentId;
+          position = 'lastChild';
+        } else {
+          targetId = peers[index - 1]._id;
+          position = 'after';
+        }
+        return {
+          lastTargetId: targetId,
+          lastPosition: position
+        };
       }
     };
   },
@@ -2380,6 +2556,10 @@ database.`);
       unpark: {
         usage: 'Usage: node app @apostrophecms/page:unpark /page/slug\n\nThis unparks a page that was formerly locked in a specific\nposition in the page tree.',
         task: self.unparkTask
+      },
+      reattach: {
+        usage: 'Usage: node app @apostrophecms/page:reattach _id-or-slug',
+        task: self.reattachTask
       }
     };
   }

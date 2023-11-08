@@ -129,6 +129,9 @@ export default {
     },
     canRedo() {
       return this.undone.length > 0;
+    },
+    autopublish() {
+      return this.context.autopublish ?? this.moduleOptions.autopublish;
     }
   },
   watch: {
@@ -525,6 +528,19 @@ export default {
         return;
       }
 
+      const { action } = window.apos.modules[this.context.type];
+      const doc = await apos.http.get(`${action}/${this.context.aposDocId}`, {
+        qs: {
+          aposMode: this.draftMode,
+          project: { _url: 1 }
+        }
+      });
+
+      if (this.urlDiffers(doc._url)) {
+        // Slug changed, change browser URL to reflect the actual url of the doc
+        history.replaceState(null, '', doc._url);
+      }
+
       const qs = {
         ...apos.http.parseQuery(window.location.search),
         aposRefresh: '1',
@@ -533,14 +549,15 @@ export default {
           aposEdit: '1'
         } : {})
       };
-      const url = apos.http.addQueryToUrl(window.location.href, qs);
-      const content = await apos.http.get(url, {
+
+      const content = await apos.http.get(doc._url, {
         qs,
         headers: {
           'Cache-Control': 'no-cache'
         },
         draft: true,
-        busy: true
+        busy: true,
+        prefix: false
       });
 
       refreshable.innerHTML = content;
@@ -701,7 +718,7 @@ export default {
     },
     async getPublished() {
       const moduleOptions = window.apos.modules[this.context.type];
-      const manuallyPublished = moduleOptions.localized && !moduleOptions.autopublish;
+      const manuallyPublished = moduleOptions.localized && !this.autopublish;
       if (manuallyPublished && this.context.lastPublishedAt) {
         const action = window.apos.modules[this.context.type].action;
         const doc = await apos.http.get(`${action}/${this.context._id}`, {

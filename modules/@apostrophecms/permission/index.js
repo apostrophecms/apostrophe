@@ -227,8 +227,13 @@ module.exports = {
       annotate(req, action, objects) {
         const property = `_${action}`;
         for (const object of objects) {
-          if (self.can(req, action, object)) {
-            object[property] = true;
+          // Not appropriate to annotate widgets even if they
+          // are being treated as docs to access other "after"
+          // handlers
+          if (!object._virtual) {
+            if (self.can(req, action, object)) {
+              object[property] = true;
+            }
           }
         }
       },

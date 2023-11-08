@@ -16,7 +16,8 @@
       menu-offset="1, 10"
       menu-placement="bottom-end"
       ref="contextMenu"
-      @open="focus"
+      @open="menuOpen"
+      @close="menuClose"
     >
       <dl
         class="apos-button-split__menu__dialog" role="menu"
@@ -31,6 +32,7 @@
           role="menuitemradio"
           :value="item.action"
           ref="choices"
+          @keydown="cycleElementsToFocus"
         >
           <AposIndicator
             v-if="action === item.action"
@@ -52,9 +54,13 @@
 </template>
 
 <script>
+import AposFocusMixin from 'Modules/@apostrophecms/modal/mixins/AposFocusMixin';
 
 export default {
   name: 'AposButtonSplit',
+  mixins: [
+    AposFocusMixin
+  ],
   props: {
     menu: {
       type: Array,
@@ -133,11 +139,22 @@ export default {
       }
       this.setButton(initial);
     },
-    focus() {
-      // takes a moment to be on screen and focusable
-      setTimeout(() => {
-        this.$refs.choices[0].focus();
-      }, 200);
+    trapFocus() {
+      const selectedElementIndex = this.menu.findIndex(i => i.action === this.action) || 0;
+
+      // use map to keep items order:
+      this.elementsToFocus = this.menu.map(
+        i => this.$refs.choices.find(choice => choice.value === i.action)
+      );
+
+      this.focusElement(this.elementsToFocus[selectedElementIndex]);
+    },
+    menuOpen() {
+      // TODO: find another way to wait for elements to be visible
+      setTimeout(this.trapFocus, 200);
+    },
+    menuClose() {
+      this.focusLastModalFocusedElement();
     }
   }
 };

@@ -64,14 +64,15 @@
               :trigger-validation="triggerValidation"
               :utility-rail="false"
               :following-values="followingValues('other')"
-              :conditional-fields="conditionalFields('other')"
+              :conditional-fields="conditionalFields"
               :doc-id="docId"
               :value="docFields"
-              @input="updateDocFields"
-              @validate="triggerValidate"
               :server-errors="serverErrors"
               :ref="tab.name"
               :generation="generation"
+              @input="updateDocFields"
+              @validate="triggerValidate"
+              @update-doc-data="onUpdateDocFields"
             />
           </div>
         </template>
@@ -88,7 +89,7 @@
             :trigger-validation="triggerValidation"
             :utility-rail="true"
             :following-values="followingUtils"
-            :conditional-fields="conditionalFields('utility')"
+            :conditional-fields="conditionalFields"
             :doc-id="docId"
             :value="docFields"
             @input="updateDocFields"
@@ -140,8 +141,12 @@ export default {
       type: String,
       default: null
     },
-    copyOf: {
-      type: Object,
+    type: {
+      type: String,
+      default: null
+    },
+    copyOfId: {
+      type: String,
       default: null
     }
   },
@@ -153,6 +158,7 @@ export default {
       fieldErrors: {},
       modal: {
         active: false,
+        triggerFocusRefresh: 0,
         type: 'overlay',
         showModal: false
       },
@@ -265,22 +271,12 @@ export default {
         };
       }
     },
-    currentFields() {
-      if (this.currentTab) {
-        const tabFields = this.tabs.find((item) => {
-          return item.name === this.currentTab;
-        });
-        return this.filterOutParkedFields(tabFields.fields);
-      } else {
-        return [];
-      }
-    },
     saveLabel() {
       if (this.restoreOnly) {
         return 'apostrophe:restore';
       } else if (this.manuallyPublished) {
         if (this.canPublish) {
-          if (this.copyOf) {
+          if (this.copyOfId) {
             return 'apostrophe:publish';
           } else if (this.original && this.original.lastPublishedAt) {
             return 'apostrophe:update';
@@ -288,7 +284,7 @@ export default {
             return 'apostrophe:publish';
           }
         } else {
-          if (this.copyOf) {
+          if (this.copyOfId) {
             return 'apostrophe:submit';
           } else if (this.original && this.original.lastPublishedAt) {
             return 'apostrophe:submitUpdate';
@@ -325,7 +321,7 @@ export default {
   },
   watch: {
     'docFields.data.type': {
-      handler(newVal, oldVal) {
+      handler(newVal) {
         if (this.moduleName !== '@apostrophecms/page') {
           return;
         }
@@ -346,6 +342,7 @@ export default {
   },
   async mounted() {
     this.modal.active = true;
+    await this.evaluateExternalConditions();
     // After computed properties become available
     this.saveMenu = this.computeSaveMenu();
     this.cancelDescription = {
@@ -353,6 +350,7 @@ export default {
       type: this.$t(this.moduleOptions.label)
     };
     if (this.docId) {
+      this.evaluateConditions();
       await this.loadDoc();
       try {
         if (this.manuallyPublished) {
@@ -374,19 +372,27 @@ export default {
           });
         }
       }
-    } else if (this.copyOf) {
-      const newInstance = klona(this.copyOf);
+      this.modal.triggerFocusRefresh++;
+    } else if (this.copyOfId) {
+      this.evaluateConditions();
+
+      // Because the page or piece manager might give us just a projected,
+      // minimum number of properties otherwise, and because we need to
+      // make sure we use our preferred module to fetch the content
+      const newInstance = await apos.http.get(`${this.moduleOptions.action}/${this.copyOfId}`, {
+        busy: true
+      });
       delete newInstance.parked;
-      newInstance.title = `Copy of ${this.copyOf.title}`;
-      if (this.copyOf.slug.startsWith('/')) {
-        const matches = this.copyOf.slug.match(/\/([^/]+)$/);
+      newInstance.title = `Copy of ${newInstance.title}`;
+      if (newInstance.slug.startsWith('/')) {
+        const matches = newInstance.slug.match(/\/([^/]+)$/);
         if (matches) {
           newInstance.slug = `${apos.page.page.slug}/copy-of-${matches[1]}`;
         } else {
           newInstance.slug = '/copy-of-home-page';
         }
       } else {
-        newInstance.slug = this.copyOf.slug.replace(/([^/]+)$/, 'copy-of-$1');
+        newInstance.slug = newInstance.slug.replace(/([^/]+)$/, 'copy-of-$1');
       }
       delete newInstance._id;
       delete newInstance._url;
@@ -399,9 +405,12 @@ export default {
       this.docFields.data = newInstance;
       this.prepErrors();
       this.docReady = true;
+      this.modal.triggerFocusRefresh++;
     } else {
-      this.$nextTick(() => {
-        this.loadNewInstance();
+      this.$nextTick(async () => {
+        await this.loadNewInstance();
+        this.evaluateConditions();
+        this.modal.triggerFocusRefresh++;
       });
     }
     apos.bus.$on('content-changed', this.onContentChanged);
@@ -448,7 +457,7 @@ export default {
         const canEdit = docData._edit || this.moduleOptions.canEdit;
         this.readOnly = canEdit === false;
         if (canEdit && !await this.lock(this.getOnePath, this.docId)) {
-          await this.lockNotAvailable();
+          this.lockNotAvailable();
           return;
         }
       } catch {
@@ -505,7 +514,7 @@ export default {
       await this.restore(this.original);
       await this.loadDoc();
     },
-    async onSave(navigate = false) {
+    async onSave({ navigate = false } = {}) {
       if (this.canPublish || !this.manuallyPublished) {
         await this.save({
           andPublish: this.manuallyPublished,
@@ -566,8 +575,8 @@ export default {
           body._targetId = apos.page.page._id.replace(':published', ':draft');
           body._position = 'lastChild';
         }
-        if (this.copyOf) {
-          body._copyingId = this.copyOf._id;
+        if (this.copyOfId) {
+          body._copyingId = this.copyOfId;
         }
       }
       let doc;
@@ -665,12 +674,18 @@ export default {
         itemName: `${this.moduleName}:editor`
       });
     },
+    onUpdateDocFields(value) {
+      this.updateDocFields(value);
+      this.generation++;
+    },
     updateDocFields(value) {
       this.updateFieldErrors(value.fieldState);
       this.docFields.data = {
         ...this.docFields.data,
         ...value.data
       };
+
+      this.evaluateConditions();
     },
     getAposSchema(field) {
       if (field.group.name === 'utility') {

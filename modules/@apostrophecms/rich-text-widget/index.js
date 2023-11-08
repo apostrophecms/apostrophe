@@ -77,7 +77,8 @@ module.exports = {
         component: 'AposTiptapButton',
         label: 'apostrophe:richTextBold',
         icon: 'format-bold-icon',
-        command: 'toggleBold'
+        command: 'toggleBold',
+        iconSize: 18
       },
       italic: {
         component: 'AposTiptapButton',
@@ -95,7 +96,8 @@ module.exports = {
         component: 'AposTiptapButton',
         label: 'apostrophe:richTextStrikethrough',
         icon: 'format-strikethrough-variant-icon',
-        command: 'toggleStrike'
+        command: 'toggleStrike',
+        iconSize: 14
       },
       superscript: {
         component: 'AposTiptapButton',
@@ -119,7 +121,8 @@ module.exports = {
       link: {
         component: 'AposTiptapLink',
         label: 'apostrophe:richTextLink',
-        icon: 'link-icon'
+        icon: 'link-icon',
+        iconSize: 18
       },
       anchor: {
         component: 'AposTiptapAnchor',
@@ -142,7 +145,8 @@ module.exports = {
         component: 'AposTiptapButton',
         label: 'apostrophe:richTextBlockquote',
         icon: 'format-quote-close-icon',
-        command: 'toggleBlockquote'
+        command: 'toggleBlockquote',
+        iconSize: 20
       },
       codeBlock: {
         component: 'AposTiptapButton',
@@ -435,7 +439,7 @@ module.exports = {
             },
             {
               tag: 'img',
-              attributes: [ 'src' ]
+              attributes: [ 'src', 'alt' ]
             }
           ]
         };
@@ -733,6 +737,165 @@ module.exports = {
           imageStyles: self.options.imageStyles
         };
         return finalData;
+      }
+    };
+  },
+  tasks(self) {
+    const confirm = async (isConfirmed) => {
+      if (isConfirmed) {
+        return true;
+      }
+
+      console.log('This task will perform an update on all existing rich-text widget. You should manually backup your database before running this command in case it becomes necessary to revert the changes. You can add --confirm to the command to skip this message and run the command');
+
+      return false;
+    };
+
+    return {
+      'remove-empty-paragraph': {
+        usage: 'Usage: node app @apostrophecms/rich-text-widget:remove-empty-paragraph --confirm\n\nRemove empty paragraph. If a paragraph contains no visible text or only blank characters, it will be removed.\n',
+        task: async (argv) => {
+          const iterator = async (doc, widget, dotPath) => {
+            if (widget.type !== self.name) {
+              return;
+            }
+
+            const updates = {};
+            if (widget.content.includes('<p>')) {
+              const dom = cheerio.load(widget.content);
+              const paragraph = dom('body').find('p');
+
+              paragraph.each((index, element) => {
+                const isEmpty = /^(\s|&nbsp;)*$/.test(dom(element).text());
+                isEmpty && dom(element).remove();
+
+                if (isEmpty) {
+                  updates[dotPath] = {
+                    ...widget,
+                    content: dom('body').html()
+                  };
+                }
+              });
+            }
+
+            if (Object.keys(updates).length) {
+              await self.apos.doc.db.updateOne(
+                { _id: doc._id },
+                { $set: updates }
+              );
+              self.apos.util.log(`Document ${doc._id} rich-texts have been updated`);
+            }
+          };
+
+          const isConfirmed = await confirm(argv.confirm);
+
+          return isConfirmed && self.apos.migration.eachWidget({}, iterator);
+        }
+      },
+      'lint-fix-figure': {
+        usage: 'Usage: node app @apostrophecms/rich-text-widget:lint-fix-figure --confirm\n\nFigure tags is allowed inside paragraph. This task will look for figure tag next to empty paragraph and wrap the text node around inside paragraph.\n',
+        task: async (argv) => {
+          const blockNodes = [
+            'address',
+            'article',
+            'aside',
+            'blockquote',
+            'canvas',
+            'dd',
+            'div',
+            'dl',
+            'dt',
+            'fieldset',
+            'figcaption',
+            'figure',
+            'footer',
+            'form',
+            'h1',
+            'h2',
+            'h3',
+            'h4',
+            'h5',
+            'h6',
+            'header',
+            'hr',
+            'li',
+            'main',
+            'nav',
+            'noscript',
+            'ol',
+            'p',
+            'pre',
+            'section',
+            'table',
+            'tfoot',
+            'ul',
+            'video'
+          ];
+          const append = ({
+            dom,
+            wrapper,
+            element
+          }) => {
+            return wrapper
+              ? wrapper.append(element) && wrapper
+              : dom(element).wrap('<p></p>').parent();
+          };
+
+          const iterator = async (doc, widget, dotPath) => {
+            if (widget.type !== self.name) {
+              return;
+            }
+
+            const updates = {};
+            if (widget.content.includes('<figure')) {
+              const dom = cheerio.load(widget.content);
+              // reference: https://stackoverflow.com/questions/28855070/css-select-element-without-text-inside
+              const figure = dom('body').find('p:not(:has(:not(:empty)))+figure,figure+p:not(:has(:not(:empty)))');
+              const parent = figure.parent().contents();
+
+              let wrapper = null;
+
+              parent.each((index, element) => {
+                const isFigure = element.type === 'tag' && element.name === 'figure';
+                isFigure && (wrapper = null);
+
+                const isNonWhitespaceTextNode = element.type === 'text' && /^\s*$/.test(element.data) === false;
+                isNonWhitespaceTextNode && (wrapper = append({
+                  dom,
+                  wrapper,
+                  element
+                }));
+
+                const isInlineNode = element.type === 'tag' && blockNodes.includes(element.name) === false;
+                isInlineNode && (wrapper = append({
+                  dom,
+                  wrapper,
+                  element
+                }));
+
+                const hasUpdate = isNonWhitespaceTextNode || isInlineNode;
+                if (hasUpdate) {
+                  updates[dotPath] = {
+                    ...widget,
+                    content: dom('body').html()
+                  };
+                }
+              });
+            }
+
+            if (Object.keys(updates).length) {
+              await self.apos.doc.db.updateOne(
+                { _id: doc._id },
+                { $set: updates }
+              );
+              self.apos.util.log(`Document ${doc._id} rich-texts have been updated`);
+            }
+          };
+
+          const isConfirmed = await confirm(argv.confirm);
+
+          return isConfirmed && self.apos.migration.eachWidget({}, iterator);
+        }
       }
     };
   }

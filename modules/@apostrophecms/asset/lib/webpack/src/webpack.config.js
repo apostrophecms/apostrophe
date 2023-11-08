@@ -3,14 +3,16 @@ const merge = require('webpack-merge').merge;
 const scssTask = require('./webpack.scss');
 const srcBuildNames = [ 'src-build', 'src-es5-build' ];
 
-let BundleAnalyzerPlugin;
-
-if (process.env.APOS_BUNDLE_ANALYZER) {
-  BundleAnalyzerPlugin = require('webpack-bundle-analyzer').BundleAnalyzerPlugin;
-}
-
 module.exports = ({
-  importFile, modulesDir, outputPath, outputFilename, bundles = {}, es5, es5TaskFn
+  importFile,
+  modulesDir,
+  outputPath,
+  outputFilename,
+  // it's a Set, not an array
+  pnpmModulesResolvePaths,
+  bundles = {},
+  es5,
+  es5TaskFn
 }, apos) => {
   const mainBundleName = outputFilename.replace('.js', '');
   const taskFns = [ scssTask, ...(es5 ? [ es5TaskFn ] : []) ];
@@ -27,6 +29,7 @@ module.exports = ({
   );
 
   const moduleName = es5 ? 'nomodule' : 'module';
+  const pnpmModulePath = apos.isPnpm ? [ path.join(apos.selfDir, '../') ] : [];
   const config = {
     entry: {
       [mainBundleName]: importFile,
@@ -57,7 +60,16 @@ module.exports = ({
       extensions: [ '*', '.js' ],
       // Make sure css-loader and postcss-loader can always be found, even
       // if npm didn't hoist them
-      modules: [ 'node_modules', 'node_modules/apostrophe/node_modules' ]
+      modules: [
+        'node_modules',
+        // 1. Allow webpack to find loaders from dependencies of any project level packages (pnpm),
+        // empty if not pnpm
+        ...[ ...pnpmModulesResolvePaths ],
+        // 2. Allow webpack to find loaders from core dependencies (pnpm), empty if not pnpm
+        ...pnpmModulePath,
+        // 3. npm related paths
+        'node_modules/apostrophe/node_modules'
+      ]
     },
     resolve: {
       extensions: [ '*', '.js' ],
@@ -67,6 +79,12 @@ module.exports = ({
       },
       modules: [
         'node_modules',
+        // 1. Allow webpack to find imports from dependencies of any project level packages (pnpm),
+        // empty if not pnpm
+        ...[ ...pnpmModulesResolvePaths ],
+        // 2. Allow webpack to find imports from core dependencies (pnpm), empty if not pnpm
+        ...pnpmModulePath,
+        // 3. npm related paths
         `${apos.npmRootDir}/node_modules`,
         // Make sure core-js and regenerator-runtime can always be found, even
         // if npm didn't hoist them
@@ -75,7 +93,7 @@ module.exports = ({
       symlinks: false
     },
     stats: 'verbose',
-    plugins: process.env.APOS_BUNDLE_ANALYZER ? [ new BundleAnalyzerPlugin() ] : []
+    plugins: []
   };
 
   if (es5) {

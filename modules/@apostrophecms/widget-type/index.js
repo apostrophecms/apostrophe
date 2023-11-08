@@ -103,6 +103,10 @@ module.exports = {
     placeholderClass: 'apos-placeholder'
   },
   init(self) {
+    const badFieldName = Object.keys(self.fields).indexOf('type') !== -1;
+    if (badFieldName) {
+      throw new Error(`The ${self.__meta.name} module contains a forbidden field property name: "type".`);
+    }
 
     self.enableBrowserData();
 

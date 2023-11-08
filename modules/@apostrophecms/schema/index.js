@@ -374,6 +374,25 @@ module.exports = {
             // All fields should have an initial value in the database
             instance[field.name] = null;
           }
+          // A workaround specifically for areas. They must have a
+          // unique `_id` which makes `klona` a poor way to establish
+          // a default, and we don't pass functions in schema
+          // definitions, but top-level areas should always exist
+          // for reasonable results if the output of `newInstance`
+          // is saved without further editing on the front end
+          if ((field.type === 'area') && (!instance[field.name])) {
+            instance[field.name] = {
+              metaType: 'area',
+              items: [],
+              _id: self.apos.util.generateId()
+            };
+          }
+          // A workaround specifically for objects. These too need
+          // to have reasonable values in parked pages and any other
+          // situation where the data never passes through the UI
+          if ((field.type === 'object') && ((!instance[field.name]) || _.isEmpty(instance[field.name]))) {
+            instance[field.name] = self.newInstance(field.schema);
+          }
         }
         return instance;
       },
@@ -465,6 +484,78 @@ module.exports = {
         });
       },
 
+      async evaluateCondition(req, field, clause, destination, conditionalFields) {
+        for (const [ key, val ] of Object.entries(clause)) {
+          const destinationKey = _.get(destination, key);
+
+          if (key === '$or') {
+            const results = await Promise.all(val.map(clause => self.evaluateCondition(req, field, clause, destination, conditionalFields)));
+            const testResults = _.isPlainObject(results?.[0])
+              ? results.some(({ value }) => value)
+              : results.some((value) => value);
+            if (!testResults) {
+              return false;
+            }
+            continue;
+          } else if (val.$ne) {
+            // eslint-disable-next-line eqeqeq
+            if (val.$ne == destinationKey) {
+              return false;
+            }
+          }
+
+          // Handle external conditions:
+          //  - `if: { 'methodName()': true }`
+          //  - `if: { 'moduleName:methodName()': 'expected value' }`
+          // Checking if key ends with a closing parenthesis here to throw later if any argument is passed.
+          if (key.endsWith(')')) {
+            let externalConditionResult;
+
+            try {
+              externalConditionResult = await self.evaluateMethod(req, key, field.name, field.moduleName, destination._id);
+            } catch (error) {
+              throw self.apos.error('invalid', error.message);
+            }
+
+            if (externalConditionResult !== val) {
+              return false;
+            };
+
+            // Stop there, this is an external condition thus
+            // does not need to be checked against doc fields.
+            continue;
+          }
+
+          if (val.min && destinationKey < val.min) {
+            return false;
+          }
+          if (val.max && destinationKey > val.max) {
+            return false;
+          }
+
+          if (conditionalFields?.[key] === false) {
+            return false;
+          }
+
+          if (typeof val === 'boolean' && !destinationKey) {
+            return false;
+          }
+
+          // eslint-disable-next-line eqeqeq
+          if ((typeof val === 'string' || typeof val === 'number') && destinationKey != val) {
+            return false;
+          }
+        }
+
+        return true;
+      },
+
+      async isFieldRequired(req, field, destination) {
+        return field.requiredIf
+          ? await self.evaluateCondition(req, field, field.requiredIf, destination)
+          : field.required;
+      },
+
       // Convert submitted `data` object according to `schema`, sanitizing it
       // and populating the appropriate properties of `destination` with it.
       //
@@ -504,7 +595,16 @@ module.exports = {
 
           if (convert) {
             try {
-              await convert(req, field, data, destination);
+              const isRequired = await self.isFieldRequired(req, field, destination);
+              await convert(
+                req,
+                {
+                  ...field,
+                  required: isRequired
+                },
+                data,
+                destination
+              );
             } catch (error) {
               if (Array.isArray(error)) {
                 const invalid = self.apos.error('invalid', {
@@ -523,15 +623,29 @@ module.exports = {
         const errorsList = [];
 
         for (const error of errors) {
-          if ((error.name === 'required' || error.name === 'mandatory')) {
+          if (error.path) {
             // `self.isVisible` will only throw for required fields that have
             // an external condition containing an unknown module or method:
             const isVisible = await self.isVisible(req, schema, destination, error.path);
 
             if (!isVisible) {
-              // It is not reasonable to enforce required for
-              // fields hidden via conditional fields
-              continue;
+              // It is not reasonable to enforce required,
+              // min, max or anything else for fields
+              // hidden via "if" as the user cannot correct it
+              // and it will not be used. If the user changes
+              // the conditional field later then they won't
+              // be able to save until the erroneous field
+              // is corrected
+              const name = error.path;
+              const field = schema.find(field => field.name === name);
+              if (field) {
+                // To protect against security issues, an invalid value
+                // for a field that is not visible should be quietly discarded.
+                // We only worry about this if the value is not valid, as otherwise
+                // it's a kindness to save the work so the user can toggle back to it
+                destination[field.name] = klona((field.def !== undefined) ? field.def : self.fieldTypes[field.type]?.def);
+                continue;
+              }
             }
           }
 
@@ -558,7 +672,7 @@ module.exports = {
           for (const field of schema) {
             if (field.if) {
               try {
-                const result = await evaluate(field.if, field.name, field.moduleName);
+                const result = await self.evaluateCondition(req, field, field.if, object, conditionalFields);
                 const previous = conditionalFields[field.name];
                 if (previous !== result) {
                   change = true;
@@ -583,55 +697,6 @@ module.exports = {
           return conditionalFields[name];
         } else {
           return true;
-        }
-        async function evaluate(clause, fieldName, fieldModuleName) {
-          let result = true;
-          for (const [ key, val ] of Object.entries(clause)) {
-            if (key === '$or') {
-              const results = await Promise.all(val.map(clause => evaluate(clause, fieldName, fieldModuleName)));
-
-              if (!results.some(({ value }) => value)) {
-                result = false;
-                break;
-              }
-
-              // No need to go further here, the key is an "$or" condition...
-              continue;
-            }
-
-            // Handle external conditions:
-            //  - `if: { 'methodName()': true }`
-            //  - `if: { 'moduleName:methodName()': 'expected value' }`
-            // Checking if key ends with a closing parenthesis here to throw later if any argument is passed.
-            if (key.endsWith(')')) {
-              let externalConditionResult;
-
-              try {
-                externalConditionResult = await self.evaluateMethod(req, key, fieldName, fieldModuleName, object._id);
-              } catch (error) {
-                throw self.apos.error('invalid', error.message);
-              }
-
-              if (externalConditionResult !== val) {
-                result = false;
-                break;
-              };
-
-              // Stop there, this is an external condition thus
-              // does not need to be checked against doc fields.
-              continue;
-            }
-
-            if (conditionalFields[key] === false) {
-              result = false;
-              break;
-            }
-            if (val !== object[key]) {
-              result = false;
-              break;
-            }
-          }
-          return result;
         }
       },
 
@@ -1090,7 +1155,7 @@ module.exports = {
           const idsStorage = field.idsStorage;
           const ids = await query.toDistinct(idsStorage);
           const manager = self.apos.doc.getManager(field.withType);
-          const relationshipQuery = manager.find(query.req, { aposDocId: { $in: ids } }).project(manager.getAutocompleteProjection({ field: field }));
+          const relationshipQuery = manager.find(query.req, { aposDocId: { $in: ids } }).project(manager.getRelationshipQueryBuilderChoicesProjection({ field: field }));
           if (field.builders) {
             relationshipQuery.applyBuilders(field.builders);
           }
@@ -1226,8 +1291,14 @@ module.exports = {
         if (!field.label && !field.contextual) {
           field.label = _.startCase(field.name.replace(/^_/, ''));
         }
+        if (field.hidden && field.hidden !== true && field.hidden !== false) {
+          fail(`hidden must be a boolean, "${field.hidden}" provided.`);
+        }
         if (field.if && field.if.$or && !Array.isArray(field.if.$or)) {
           fail(`$or conditional must be an array of conditions. Current $or configuration: ${JSON.stringify(field.if.$or)}`);
+        }
+        if (field.requiredIf && field.requiredIf.$or && !Array.isArray(field.requiredIf.$or)) {
+          fail(`$or conditional must be an array of conditions. Current $or configuration: ${JSON.stringify(field.requiredIf.$or)}`);
         }
         if (!field.editPermission && field.permission) {
           field.editPermission = field.permission;
@@ -1559,15 +1630,18 @@ module.exports = {
         for (const field of schema) {
           if (field.type === 'array') {
             for (const item of (doc[field.name] || [])) {
+              item._originalId = item._id;
               item._id = self.apos.util.generateId();
               self.regenerateIds(req, field.schema, item);
             }
           } else if (field.type === 'object') {
-            this.regenerateIds(req, field.schema, doc[field.name] || {});
+            self.regenerateIds(req, field.schema, doc[field.name] || {});
           } else if (field.type === 'area') {
             if (doc[field.name]) {
+              doc[field.name]._originalId = doc[field.name]._id;
               doc[field.name]._id = self.apos.util.generateId();
               for (const item of (doc[field.name].items || [])) {
+                item._originalId = item._id;
                 item._id = self.apos.util.generateId();
                 const schema = self.apos.area.getWidgetManager(item.type).schema;
                 self.regenerateIds(req, schema, item);
@@ -1614,8 +1688,17 @@ module.exports = {
         } catch (error) {
           throw self.apos.error('invalid', error.message);
         }
-      }
+      },
 
+      getSlugFieldOptions(field, data) {
+        const options = {
+          def: field.def
+        };
+        if (field.page) {
+          options.allow = '/';
+        }
+        return options;
+      }
     };
   },
   apiRoutes(self) {

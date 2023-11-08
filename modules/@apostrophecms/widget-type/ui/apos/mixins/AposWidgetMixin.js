@@ -2,10 +2,16 @@ import { isEqual } from 'lodash';
 
 export default {
   props: {
+    // NOTE: docId is always null, investigate if needed
     docId: String,
     type: String,
     areaFieldId: String,
     value: Object,
+    // Ignored for server side rendering
+    areaField: Object,
+    followingValues: Object,
+    // Fix missing prop rendered as `[object Object]` attribute in the DOM
+    options: Object,
     rendering: {
       type: Object,
       default() {

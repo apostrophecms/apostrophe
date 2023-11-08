@@ -1,8 +1,14 @@
 <template>
-  <div>
+  <div :aria-controls="`insert-menu-${value._id}`" @keydown="handleUIKeydown">
     <bubble-menu
       class="bubble-menu"
-      :tippy-options="{ duration: 100, zIndex: 2000 }"
+      :tippy-options="{
+        maxWidth: 'none',
+        duration: 300,
+        zIndex: 2000,
+        animation: 'fade',
+        inertia: true
+      }"
       :editor="editor"
       v-if="editor"
     >
@@ -10,7 +16,6 @@
         menu-placement="top"
         class-list="apos-rich-text-toolbar"
         :has-tip="false"
-        :modifiers="['unpadded']"
       >
         <div class="apos-rich-text-toolbar__inner">
           <component
@@ -26,43 +31,64 @@
       </AposContextMenuDialog>
     </bubble-menu>
     <floating-menu
-      class="apos-rich-text-insert-menu" :should-show="showFloatingMenu"
-      :editor="editor" :tippy-options="{ duration: 100, zIndex: 2000 }"
       v-if="editor"
+      class="apos-rich-text-insert-menu"
+      :tippy-options="{ duration: 100, zIndex: 2000, placement: 'bottom-start' }"
+      :should-show="showFloatingMenu"
+      :editor="editor"
+      role="listbox"
+      tabindex="0"
+      ref="insertMenu"
+      :id="`insert-menu-${value._id}`"
+      :key="insertMenuKey"
     >
       <div class="apos-rich-text-insert-menu-heading">
         {{ $t('apostrophe:richTextInsertMenuHeading') }}
       </div>
       <div
-        v-for="(item, index) in insert"
-        :key="`${item}-${index}`"
-        class="apos-rich-text-insert-menu-item"
+        class="apos-rich-text-insert-menu-wrapper"
+        @keydown.prevent.arrow-up="focusInsertMenuItem(true)"
+        @keydown.prevent.arrow-down="focusInsertMenuItem()"
+        @keydown="closeInsertMenu"
       >
-        <div class="apos-rich-text-insert-menu-icon">
-          <AposIndicator
-            :icon="insertMenu[item].icon"
-            :icon-size="35"
-            class="apos-button__icon"
-            fill-color="currentColor"
-            @click="activateInsertMenuItem(item, insertMenu[item])"
-          />
-          <component
-            v-if="item === activeInsertMenuComponent?.name"
-            :is="activeInsertMenuComponent.component"
-            :active="true"
-            :editor="editor"
-            :options="editorOptions"
-            @before-commands="removeSlash"
-            @close="closeInsertMenuItem"
-            @click.stop="$event => null"
-          />
-        </div>
-        <div
-          class="apos-rich-text-insert-menu-label"
+        <button
+          v-for="(item, index) in insert"
+          :key="`${item}-${index}`"
+          class="apos-rich-text-insert-menu-item"
+          role="option"
+          data-insert-menu-item
           @click="activateInsertMenuItem(item, insertMenu[item])"
         >
-          <h4>{{ $t(insertMenu[item].label) }}</h4>
-          <p>{{ $t(insertMenu[item].description) }}</p>
+          <div class="apos-rich-text-insert-menu-icon">
+            <AposIndicator
+              :icon="insertMenu[item].icon"
+              :icon-size="24"
+              class="apos-button__icon"
+              fill-color="currentColor"
+            />
+          </div>
+          <div class="apos-rich-text-insert-menu-label">
+            <h4>{{ $t(insertMenu[item].label) }}</h4>
+            <p>{{ $t(insertMenu[item].description) }}</p>
+          </div>
+        </button>
+        <div class="apos-rich-text-insert-menu-components">
+          <div
+            v-for="(item, index) in insert"
+            :key="`${item}-${index}-component`"
+          >
+            <component
+              v-if="item === activeInsertMenuComponent?.name"
+              :is="activeInsertMenuComponent.component"
+              :active="true"
+              :editor="editor"
+              :options="editorOptions"
+              @before-commands="removeSlash"
+              @cancel="cancelInsertMenuItem"
+              @done="closeInsertMenuItem"
+              @close="closeInsertMenuItem"
+            />
+          </div>
         </div>
       </div>
     </floating-menu>
@@ -85,7 +111,23 @@ import {
   BubbleMenu,
   FloatingMenu
 } from '@tiptap/vue-3';
-import StarterKit from '@tiptap/starter-kit';
+// Starter Kit extensions
+import BlockQuote from '@tiptap/extension-blockquote';
+import Bold from '@tiptap/extension-bold';
+import BulletList from '@tiptap/extension-bullet-list';
+import Code from '@tiptap/extension-code';
+import CodeBlock from '@tiptap/extension-code-block';
+import Dropcursor from '@tiptap/extension-dropcursor';
+import Gapcursor from '@tiptap/extension-gapcursor';
+import HardBreak from '@tiptap/extension-hard-break';
+import History from '@tiptap/extension-history';
+import HorizontalRule from '@tiptap/extension-horizontal-rule';
+import Italic from '@tiptap/extension-italic';
+import OrderedList from '@tiptap/extension-ordered-list';
+import Paragraph from '@tiptap/extension-paragraph';
+import Strike from '@tiptap/extension-strike';
+import Text from '@tiptap/extension-text';
+// End starter kit extensions
 import TextAlign from '@tiptap/extension-text-align';
 import Highlight from '@tiptap/extension-highlight';
 import Underline from '@tiptap/extension-underline';
@@ -143,8 +185,11 @@ export default {
       },
       pending: null,
       isFocused: null,
+      isShowingInsert: false,
       showPlaceholder: null,
-      activeInsertMenuComponent: null
+      activeInsertMenuComponent: null,
+      suppressInsertMenu: false,
+      insertMenuKey: null
     };
   },
   computed: {
@@ -178,10 +223,10 @@ export default {
     },
     autofocus() {
       // Only true for a new rich text widget
-      return !this.stripPlaceholderBrs(this.value.content).length;
+      return !this.value.content.length;
     },
     initialContent() {
-      const content = this.transformNamedAnchors(this.stripPlaceholderBrs(this.value.content));
+      const content = this.transformNamedAnchors(this.value.content);
       if (content.length) {
         return content;
       }
@@ -245,17 +290,33 @@ export default {
           this.emitWidgetUpdate();
         }
       }
+    },
+    isShowingInsert(newVal) {
+      if (newVal) {
+        this.focusInsertMenuItem(false, 0);
+      }
     }
   },
   mounted() {
+    this.insertMenuKey = this.generateKey();
     // Cleanly namespace it so we don't conflict with other uses and instances
     const CustomPlaceholder = Placeholder.extend();
     const extensions = [
-      StarterKit.configure({
-        document: false,
-        heading: false,
-        listItem: false
-      }),
+      BlockQuote,
+      Bold,
+      BulletList,
+      Code,
+      CodeBlock,
+      Dropcursor,
+      Gapcursor,
+      HardBreak,
+      History,
+      HorizontalRule,
+      Italic,
+      OrderedList,
+      Paragraph,
+      Strike,
+      Text,
       TextAlign.configure({
         types: [ 'heading', 'paragraph', 'defaultNode' ]
       }),
@@ -272,7 +333,7 @@ export default {
           const text = this.$t(this.placeholderText);
           return text;
         },
-        emptyNodeClass: this.insert.length ? 'apos-is-empty' : 'apos-is-empty-without-insert'
+        emptyNodeClass: 'apos-is-empty'
       }),
       FloatingMenu
     ]
@@ -315,6 +376,22 @@ export default {
     apos.bus.$off('apos-refreshing', this.onAposRefreshing);
   },
   methods: {
+    generateKey() {
+      return Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+    },
+    handleUIKeydown(e) {
+      if (e.key === 'Escape') {
+        this.doSuppressInsertMenu();
+      } else {
+        this.suppressInsertMenu = false;
+      }
+    },
+    doSuppressInsertMenu() {
+      this.suppressInsertMenu = true;
+      this.activeInsertMenuComponent = null;
+      this.insertMenuKey = this.generateKey();
+      this.editor.commands.focus();
+    },
     onAposRefreshing(refreshOptions) {
       if (this.activeInsertMenuComponent) {
         refreshOptions.refresh = false;
@@ -334,6 +411,7 @@ export default {
         // least once per second if the user is actively typing
         return;
       }
+
       this.pending = setTimeout(() => {
         this.emitWidgetUpdate();
       }, 1000);
@@ -343,25 +421,11 @@ export default {
         clearTimeout(this.pending);
         this.pending = null;
       }
-      let content = this.editor.getHTML();
-      content = this.restorePlaceholderBrs(content);
+      const content = this.editor.getHTML();
       const widget = this.docFields.data;
       widget.content = content;
       // ... removes need for deep watching in parent
       this.$emit('update', { ...widget });
-    },
-    // Restore placeholder BRs for empty paragraphs. ProseMirror adds these
-    // temporarily so the editing experience doesn't break due to contenteditable
-    // issues with empty paragraphs, but strips them on save; however
-    // seeing them while editing creates a WYSIWYG expectation
-    // on the user's part, so we must maintain them
-    restorePlaceholderBrs(html) {
-      return html.replace(/<(p[^>]*)>(\s*)<\/p>/gi, '<$1><br /></p>');
-    },
-    // Strip the placeholder BRs again when populating the editor.
-    // Otherwise they get doubled by ProseMirror
-    stripPlaceholderBrs(html) {
-      return html.replace(/<(p[^>]*)>\s*<br \/>\s*<\/p>/gi, '<$1></p>');
     },
     // Legacy content may have `id` and `name` attributes on anchor tags
     // but our tiptap anchor extension needs them on a separate `span`, so nest
@@ -481,28 +545,39 @@ export default {
     aposTiptapExtensions() {
       return (apos.tiptapExtensions || [])
         .map(extension => extension({
+          ...this.editorOptions,
           styles: this.editorOptions.styles.map(this.localizeStyle),
           types: this.tiptapTypes
         }));
     },
-    showFloatingMenu({ state }) {
-      if (!this.insertMenu || !this.insert.length) {
+    showFloatingMenu({
+      state, oldState
+    }) {
+      const hasChanges = JSON.stringify(state?.doc.toJSON()) !== JSON.stringify(oldState?.doc.toJSON());
+      const { $to } = state.selection;
+
+      if (
+        !this.insertMenu ||
+        !this.insert.length ||
+        !hasChanges ||
+        ($to.nodeAfter && $to.nodeAfter.text) ||
+        this.suppressInsertMenu
+      ) {
+        this.isShowingInsert = false;
         return false;
       }
-      const { $from, $to } = state.selection;
+
       if (state.selection.empty) {
         if ($to.nodeBefore && $to.nodeBefore.text) {
           const text = $to.nodeBefore.text;
-          // Only show when the user has just entered a '/' character or
-          // an insert menu component is active
-          if (text === '/') {
+          if (text.slice(-1) === '/') {
+            this.isShowingInsert = true;
             return true;
           }
         }
-        return false;
-      } else if (state.doc.textBetween($from, $to, ' ') === '/') {
-        return true;
       }
+
+      this.isShowingInsert = false;
       return false;
     },
     activateInsertMenuItem(name, info) {
@@ -522,7 +597,7 @@ export default {
       const { $to } = state.selection;
       if (state.selection.empty && $to?.nodeBefore?.text) {
         const text = $to.nodeBefore.text;
-        if (text === '/') {
+        if (text.slice(-1) === '/') {
           const pos = this.editor.view.state.selection.$anchor.pos;
           // Select the slash so an insert operation can replace it
           this.editor.commands.setTextSelection({
@@ -536,6 +611,38 @@ export default {
     closeInsertMenuItem() {
       this.removeSlash();
       this.activeInsertMenuComponent = null;
+    },
+    cancelInsertMenuItem() {
+      this.doSuppressInsertMenu();
+    },
+    closeInsertMenu(e) {
+      if (
+        [ 'ArrowUp', 'ArrowDown', 'Enter', ' ' ].includes(e.key) ||
+        this.activeInsertMenuComponent
+      ) {
+        return;
+      }
+      this.editor.commands.focus();
+      this.activeInsertMenuComponent = null;
+      // Only insert character keys
+      if (e.key.length === 1) {
+        this.editor.commands.insertContent(e.key);
+      }
+    },
+    focusInsertMenuItem(prev = false, index) {
+      if (this.activeInsertMenuComponent) {
+        return;
+      }
+      const buttons = Array.from(this.$refs.insertMenu.$el.querySelectorAll('[data-insert-menu-item]'));
+      const currentIndex = buttons.findIndex(el => el === document.activeElement);
+      let targetIndex = prev ? currentIndex - 1 : currentIndex + 1;
+      if (targetIndex >= buttons.length) {
+        targetIndex = 0;
+      }
+      if (targetIndex < 0) {
+        targetIndex = buttons.length - 1;
+      }
+      buttons[index || targetIndex]?.focus();
     }
   }
 };
@@ -556,10 +663,95 @@ function traverseNextNode(node) {
 
 <style lang="scss" scoped>
 
+  $z-index-button-background: 1;
+  $z-index-button-foreground: 2;
+
   .apos-rich-text-toolbar.editor-menu-bubble {
     z-index: $z-index-manager-toolbar;
     position: absolute;
     transform: translate3d(-50%, -50%, 0);
+  }
+
+  .apos-rich-text-toolbar ::v-deep {
+
+    & > .apos-context-menu__pane {
+      padding: 8px;
+      border: 1px solid var(--a-primary-transparent-25);
+      background-color: var(--a-background-primary);
+      border-radius: var(--a-border-radius-large);
+    }
+
+    .apos-is-active .apos-button--rich-text:after,
+    .apos-button--rich-text:hover:after,
+    .apos-button--rich-text:active:after,
+    .apos-button--rich-text:focus:after {
+      opacity: 1;
+      transform: scale(1.15) translateY(0);
+    }
+
+    .apos-is-active .apos-button--rich-text:after {
+      background-color: var(--a-primary-transparent-10);
+    }
+
+    .apos-is-active .apos-button--rich-text:hover:after {
+      background-color: var(--a-primary-transparent-15);
+    }
+
+    .apos-button--rich-text .apos-button__icon {
+      transition: all 0.3s var(--a-transition-timing-bounce);
+    }
+
+    .apos-button--rich-text {
+      position: relative;
+      width: 24px;
+      height: 24px;
+      padding: 0;
+      border: none;
+      border-radius: var(--a-border-radius);
+      background-color: transparent;
+      color: var(--a-base-1);
+      &:hover {
+        background-color: transparent;
+      }
+      &:hover:after {
+        background-color: var(--a-base-9);
+      }
+      &:active {
+        background-color: transparent;
+      }
+      &:active .apos-button__icon {
+        transform: scale(0.8);
+      }
+      &:active:after, &:focus:after {
+        background-color: var(--a-primary-transparent-25);
+      }
+      &:after {
+        content: '';
+        z-index: $z-index-button-background;
+        position: absolute;
+        top: 0;
+        left: 0;
+        display: block;
+        width: 100%;
+        height: 100%;
+        background-color: transparent;
+        transition:
+          opacity 0.5s var(--a-transition-timing-bounce),
+          transform 0.5s var(--a-transition-timing-bounce),
+          background-color 0.5s ease;
+        opacity: 0;
+        transform: scale(0.3) translateY(-4px);
+      }
+    }
+
+    .apos-button--rich-text .apos-button__content {
+      z-index: $z-index-button-foreground;
+      position: relative;
+    }
+
+    .apos-is-active {
+      background-color: transparent;
+    }
   }
 
   .apos-rich-text-toolbar.editor-menu-bar {
@@ -569,38 +761,60 @@ function traverseNextNode(node) {
 
   .apos-rich-text-toolbar__inner {
     display: flex;
+    flex-wrap: wrap;
     align-items: stretch;
-    height: 35px;
-    background-color: var(--a-background-primary);
-    color: var(--a-text-primary);
-    border-radius: var(--a-border-radius);
+    max-width: 100%;
+    height: auto;
+    gap: 4px;
   }
 
-  .apos-rich-text-toolbar ::v-deep .apos-is-active {
-    background-color: var(--a-base-9);
+  .apos-rich-text-editor__editor ::v-deep .ProseMirror {
+    @include apos-transition();
   }
 
   .apos-rich-text-editor__editor ::v-deep .ProseMirror:focus {
     outline: none;
   }
 
-  .apos-rich-text-editor__editor ::v-deep .ProseMirror:focus p.apos-is-empty::before,
-  .apos-rich-text-editor__editor.apos-is-visually-empty ::v-deep .ProseMirror:focus p:first-of-type::before {
+  .apos-rich-text-editor__editor ::v-deep .ProseMirror {
+    padding: 10px 0;
+  }
+
+  .apos-rich-text-editor__editor ::v-deep .ProseMirror:focus p.apos-is-empty::after {
+    display: block;
+    margin: 5px 0 10px;
+    color: var(--a-primary-transparent-50);
+    font-size: var(--a-type-smaller);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-weight: 600;
+    border-top: 1px solid var(--a-primary-transparent-50);
+    padding-top: 5px;
     content: attr(data-placeholder);
-    float: left;
     pointer-events: none;
-    height: 0;
-    color: var(--a-base-4);
   }
 
   .apos-rich-text-editor__editor {
     @include apos-transition();
     position: relative;
     border-radius: var(--a-border-radius);
-    box-shadow: 0 0 0 1px transparent;
+    background-color: transparent;
   }
+
+  .apos-rich-text-editor__editor ::v-deep [data-tippy-root] {
+    transition: all 0.4s var(--a-transition-timing-bounce);
+    /* stylelint-disable-next-line time-min-milliseconds */
+    transition-delay: 0.1s;
+  }
+
+  .apos-rich-text-editor__editor ::v-deep .tippy-box[data-animation='fade'][data-state='hidden'] {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+
   .apos-rich-text-editor__editor.apos-is-visually-empty {
-    box-shadow: 0 0 0 1px var(--a-primary-transparent-50);
+    background-color: var(--a-primary-transparent-10);
+    min-height: 50px;
   }
   .apos-rich-text-editor__editor_after {
     @include type-small;
@@ -613,9 +827,7 @@ function traverseNextNode(node) {
     width: 200px;
     height: 10px;
     margin: auto;
-    margin-top: 7.5px;
-    margin-bottom: 7.5px;
-    color: var(--a-base-5);
+    color: var(--a-primary-transparent-50);
     opacity: 0;
     visibility: hidden;
     pointer-events: none;
@@ -666,12 +878,9 @@ function traverseNextNode(node) {
   }
 
   .apos-rich-text-insert-menu {
-    display: flex;
-    flex-direction: column;
     cursor: pointer;
     user-select: none;
-    gap: 16px;
-    padding: 16px;
+    min-width: 350px;
     border-radius: var(--a-border-radius);
     box-shadow: var(--a-box-shadow);
     background-color: var(--a-background-primary);
@@ -681,33 +890,87 @@ function traverseNextNode(node) {
     font-size: var(--a-type-base);
   }
 
+  .apos-rich-text-insert-menu-wrapper {
+    display: flex;
+    flex-direction: column;
+  }
+
   .apos-rich-text-insert-menu-item {
+    all: unset;
     display: flex;
     flex-direction: row;
-    gap: 16px;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--a-base-9);
+    @include apos-transition();
+    &:last-of-type {
+      border-bottom: none;
+    }
     &:hover {
-      color: var(--a-text-primary);
+      background-color: var(--a-primary-transparent-10);
+    }
+    &:active, &:focus {
+      background-color: var(--a-primary);
+      color: var(--a-white);
     }
   }
 
   .apos-rich-text-insert-menu-label {
     display: flex;
     flex-direction: column;
+    gap: 5px;
     h4, p {
-      margin: 4px;
+      margin: 0;
       font-family: var(--a-family-default);
-      font-size: var(--a-type-base);
     }
     h4 {
-      font-weight: bold;
+      font-weight: 500;
+      font-size: var(--a-type-large);
+    }
+    p {
+      font-size: var(--a-type-label);
     }
   }
   .apos-rich-text-insert-menu-icon {
-    // Positions the popover meaningfully
     position: relative;
+    display: flex;
+    width: 40px;
+    height: 40px;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid var(--a-base-8);
+    color: var(--a-text-primary);
+    background-color: var(--a-white);
+    border-radius: var(--a-border-radius);
   }
 
   .apos-rich-text-insert-menu-heading {
-    color: var(--a-base-5);
+    padding: 12px 16px;
+    background-color: var(--a-base-9);
+    color: var(--a-base-2);
+    font-weight: 500;
+    border-bottom: 1px solid var(--a-base-7);
+    font-size: var(--a-type-label);
+    letter-spacing: 0.25px;
+  }
+
+  ::v-deep .ProseMirror {
+    > * + * {
+      margin-top: 0.75em;
+    }
+  }
+
+  ::v-deep .ProseMirror-gapcursor {
+    position: relative;
+    display: block;
+    height: 20px;
+
+    &:after {
+      width: 1px;
+      height: 20px;
+      border-left: 1px solid #000;
+      border-top: 0 none;
+    }
   }
 </style>

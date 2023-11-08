@@ -6,7 +6,6 @@ module.exports = (self) => {
     addLegacyMigrations() {
       self.addDeduplicateRanksMigration();
       self.addFixHomePagePathMigration();
-      self.addMissingLastTargetIdAndPositionMigration();
       self.addArchivedMigration();
     },
     addArchivedMigration() {
@@ -98,62 +97,6 @@ module.exports = (self) => {
           $set: {
             path: home._id.replace(/:.*$/)
           }
-        });
-      });
-    },
-    addMissingLastTargetIdAndPositionMigration() {
-      self.apos.migration.add('missing-last-target-id-and-position', async () => {
-        await self.apos.migration.eachDoc({
-          slug: /^\//,
-          // Home page should not have them, that's OK
-          level: {
-            $gte: 0
-          },
-          aposLastTargetId: {
-            $exists: 0
-          }
-        }, 5, async (doc) => {
-          const parentPath = self.getParentPath(doc);
-          const parentAposDocId = parentPath.split('/').pop();
-          let parentId;
-          if (doc.aposLocale) {
-            parentId = `${parentAposDocId}:${doc.aposLocale}`;
-          } else {
-            parentId = parentAposDocId;
-          }
-          const peerCriteria = {
-            path: self.matchDescendants(parentPath),
-            level: doc.level
-          };
-          if (doc.aposLocale) {
-            peerCriteria.aposLocale = doc.aposLocale;
-          }
-          const peers = await self.apos.doc.db.find(peerCriteria).sort({
-            rank: 1
-          }).project({
-            _id: 1
-          }).toArray();
-          let targetId;
-          let position;
-          const index = peers.findIndex(peer => peer._id === doc._id);
-          if (index === -1) {
-            return;
-          }
-          if (index === 0) {
-            targetId = parentId;
-            position = 'firstChild';
-          } else {
-            targetId = peers[index - 1]._id;
-            position = 'after';
-          }
-          return self.apos.doc.db.updateOne({
-            _id: doc._id
-          }, {
-            $set: {
-              aposLastTargetId: targetId,
-              aposLastPosition: position
-            }
-          });
         });
       });
     }

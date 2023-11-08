@@ -4,6 +4,34 @@
 //
 // `apos.i18n.i18next` can be used to directly access the `i18next` npm module instance if necessary.
 // It usually is not necessary. Use `req.t` if you need to localize in a route.
+//
+// ## Options
+//
+// ### `locales` TODO
+//
+// ### `defaultLocale` TODO
+//
+// ### `adminLocales`
+//
+// Controls what admin UI language can be set per user. If set, `adminLocale` user field
+// will be automatically added to the user schema.
+// Contains an array of objects with `label` and `value` properties:
+// ```js
+// {
+//   label: 'English',
+//   value: 'en'
+// }
+// ```
+//
+// ### `defaultAdminLocale`
+//
+// The default admin UI language. If `adminLocales` are configured, it should
+// should match a `value` property from the list. Furthermore, it will be used
+// as the default value for the`adminLocale` user field. If it is not set,
+// but `adminLocales` is set, then the default is to display the admin UI
+// in the same language as the website content.
+// Example: `defaultLocale: 'fr'`.
+//
 
 const i18next = require('i18next');
 const fs = require('fs');
@@ -55,6 +83,12 @@ module.exports = {
     self.locales = self.getLocales();
     self.hostnamesInUse = Object.values(self.locales).find(locale => locale.hostname);
     self.defaultLocale = self.options.defaultLocale || Object.keys(self.locales)[0];
+    // Contains label/value object for each locale
+    self.adminLocales = self.options.adminLocales || [];
+    // Contains only the string value of the default admin locale (e.g. 'en').
+    // If adminLocales are configured, it should be one of them. Otherwise,
+    // it can be any valid locale string identifier.
+    self.defaultAdminLocale = self.options.defaultAdminLocale || null;
     // Lint the locale configurations
     for (const [ key, options ] of Object.entries(self.locales)) {
       if (!options) {
@@ -69,6 +103,15 @@ module.exports = {
       if (options.prefix && options.prefix.match(/\/.*?\//)) {
         throw self.apos.error('invalid', `Locale prefixes must not contain more than one forward slash ("/").\nUse hyphens as separators. Check locale "${key}".`);
       }
+    }
+    if (!Array.isArray(self.adminLocales)) {
+      throw self.apos.error('invalid', 'The "adminLocales" option must be an array.');
+    }
+    if (self.defaultAdminLocale && typeof self.defaultAdminLocale !== 'string') {
+      throw self.apos.error('invalid', 'The "defaultAdminLocale" option must be a string.');
+    }
+    if (self.defaultAdminLocale && self.adminLocales.length && !self.adminLocales.some(al => al.value === self.defaultAdminLocale)) {
+      throw self.apos.error('invalid', `The value of "defaultAdminLocale" "${self.defaultAdminLocale}" doesn't match any of the existing "adminLocales" values.`);
     }
     const fallbackLng = [ self.defaultLocale ];
     // In case the default locale also has inadequate admin UI phrases
@@ -201,6 +244,47 @@ module.exports = {
         const aposExpressModule = self.apos.modules['@apostrophecms/express'];
         req.session.cookie = new ExpressSessionCookie(aposExpressModule.sessionOptions.cookie);
         return res.redirect(self.apos.url.build(req.url, { aposCrossDomainSessionToken: null }));
+      },
+      // If the `redirectToFirstLocale` option is enabled
+      // and the homepage is requested,
+      // redirects to the first locale configured with the
+      // current requested hostname when all of the locales
+      // configured with that hostname do have a prefix.
+      //
+      // However, if the request does not match any explicit
+      // hostnames assigned to locales, redirects to the first
+      // locale that does not have a configured hostname, if
+      // all the locales without a hostname do have a prefix.
+      redirectToFirstLocale(req, res, next) {
+        if (!self.options.redirectToFirstLocale) {
+          return next();
+        }
+        if (req.path !== '' && req.path !== '/') {
+          return next();
+        }
+
+        const locales = Object.values(
+          self.filterPrivateLocales(req, self.locales)
+        );
+        const localesWithoutHostname = locales.filter(
+          locale => !locale.hostname
+        );
+        const localesWithCurrentHostname = locales.filter(
+          locale => locale.hostname && locale.hostname.split(':')[0] === req.hostname
+        );
+
+        const localesToCheck = localesWithCurrentHostname.length
+          ? localesWithCurrentHostname
+          : localesWithoutHostname;
+
+        if (!localesToCheck.length || !localesToCheck.every(locale => locale.prefix)) {
+          return next();
+        }
+
+        // Add / for home page and to avoid being redirected again in the `locale` middleware:
+        const redirectUrl = `${localesToCheck[0].prefix}/`;
+
+        return res.redirect(redirectUrl);
       },
       locale(req, res, next) {
         // Support for a single aposLocale query param that
@@ -439,7 +523,15 @@ module.exports = {
               self.namespaces[ns].browser = self.namespaces[ns].browser ||
                 (metadata[ns] && metadata[ns].browser);
               const namespaceDir = path.join(localizationsDir, ns);
+              if (!fs.statSync(namespaceDir).isDirectory()) {
+                // Skip non-directory items, such as hidden files
+                continue;
+              }
               for (const localizationFile of fs.readdirSync(namespaceDir)) {
+                if (!localizationFile.endsWith('.json')) {
+                  // Exclude parsing of non-JSON files, like hidden files, in the namespace directory
+                  continue;
+                }
                 const fullLocalizationFile = path.join(namespaceDir, localizationFile);
                 const data = JSON.parse(fs.readFileSync(fullLocalizationFile));
                 const locale = localizationFile.replace('.json', '');
@@ -533,10 +625,13 @@ module.exports = {
         }
       },
       getBrowserData(req) {
+        const adminLocale = req.user?.adminLocale === ''
+          ? req.locale
+          : req.user?.adminLocale || self.defaultAdminLocale || req.locale;
         const i18n = {
-          [req.locale]: self.getBrowserBundles(req.locale)
+          [adminLocale]: self.getBrowserBundles(adminLocale)
         };
-        if (req.locale !== self.defaultLocale) {
+        if (adminLocale !== self.defaultLocale) {
           i18n[self.defaultLocale] = self.getBrowserBundles(self.defaultLocale);
         }
         // In case the default locale also has inadequate admin UI phrases
@@ -546,6 +641,7 @@ module.exports = {
         const result = {
           i18n,
           locale: req.locale,
+          adminLocale,
           defaultLocale: self.defaultLocale,
           defaultNamespace: self.defaultNamespace,
           locales: self.locales,
@@ -666,6 +762,37 @@ module.exports = {
               .entries(locales)
               .filter(([ name, options ]) => options.private !== true)
           );
+      },
+      // Rename a locale. This is time consuming and should be
+      // avoided when possible. If `keep` is present it must be set
+      // to either `oldLocale` or `newLocale` and indicates which version
+      // is kept in the event of a conflict
+      async rename(oldLocale, newLocale, { keep } = {}) {
+        let renamed = 0;
+        let kept = 0;
+        if (!oldLocale) {
+          throw new Error('You must specify --old');
+        }
+        if (!newLocale) {
+          throw new Error('You must specify --new');
+        }
+        if (oldLocale === newLocale) {
+          throw new Error('The old and new locales must be different');
+        }
+        if (keep && (!(keep === oldLocale) && !(keep === newLocale))) {
+          throw new Error('--keep must match --old or --new');
+        }
+        const ids = await self.apos.doc.db.find({ aposLocale: new RegExp(`^${self.apos.util.regExpQuote(oldLocale)}:`) }).project({ _id: 1 }).toArray();
+        ({
+          renamed,
+          kept
+        } = await self.apos.doc.changeDocIds(ids.map(doc => [ doc._id, doc._id.replace(`:${oldLocale}`, `:${newLocale}`) ]), {
+          keep: (keep === oldLocale) ? 'old' : (keep === newLocale) ? 'new' : false
+        }));
+        return {
+          renamed,
+          kept
+        };
       }
     };
   },
@@ -677,67 +804,10 @@ module.exports = {
           const oldLocale = self.apos.launder.string(argv.old);
           const newLocale = self.apos.launder.string(argv.new);
           const keep = self.apos.launder.string(argv.keep);
-          let renamed = 0;
-          let kept = 0;
-          if (!oldLocale) {
-            throw new Error('You must specify --old');
-          }
-          if (!newLocale) {
-            throw new Error('You must specify --new');
-          }
-          if (oldLocale === newLocale) {
-            throw new Error('The old and new locales must be different');
-          }
-          if (keep && (!(keep === oldLocale) && !(keep === newLocale))) {
-            throw new Error('--keep must match --old or --new');
-          }
-          await self.apos.migration.eachDoc({ aposLocale: new RegExp(`^${self.apos.util.regExpQuote(oldLocale)}:`) }, async doc => {
-            const newDoc = {
-              ...doc,
-              aposLocale: doc.aposLocale.replace(oldLocale, newLocale),
-              _id: doc._id.replace(`:${oldLocale}`, `:${newLocale}`)
-            };
-            try {
-              // Remove old first to cut down on duplicate key conflicts due to
-              // custom properties
-              await self.apos.doc.db.removeOne({ _id: doc._id });
-              await self.apos.doc.db.insertOne(newDoc);
-              renamed++;
-            } catch (e) {
-              // First reinsert old doc to prevent content loss on new doc insert failure
-              await self.apos.doc.db.insertOne(doc);
-              if (!self.apos.doc.isUniqueError(e)) {
-                throw e;
-              }
-              const existing = await self.apos.doc.db.findOne({ _id: newDoc._id });
-              if (!existing) {
-                // We don't know the cause of this error
-                throw e;
-              }
-              if (keep === newLocale) {
-                // New content already exists in new locale, delete old locale
-                // and keep new
-                await self.apos.doc.db.removeOne({ _id: doc._id });
-                kept++;
-              } else if (keep === oldLocale) {
-                // We want to keep the old locale's content. Once again we
-                // need to remove the old doc first to cut down on conflicts
-                try {
-                  await self.apos.doc.db.removeOne({ _id: doc._id });
-                  await self.apos.doc.db.deleteOne({ _id: newDoc._id });
-                  await self.apos.doc.db.insertOne(newDoc);
-                } catch (e) {
-                  // Reinsert old doc to prevent content loss on new doc insert failure
-                  await self.apos.doc.db.insertOne(doc);
-                  throw e;
-                }
-                kept++;
-              } else {
-                console.error('A conflict occurred. Use --keep to specify a locale to keep and retry');
-                throw e;
-              }
-            }
-          });
+          const {
+            renamed,
+            kept
+          } = await self.rename(oldLocale, newLocale, { keep });
           console.log(`Renamed ${renamed} documents from ${oldLocale} to ${newLocale}`);
           if (keep) {
             console.log(`Due to conflicts, kept ${kept} documents from ${keep}`);

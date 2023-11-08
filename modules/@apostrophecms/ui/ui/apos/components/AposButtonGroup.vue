@@ -68,9 +68,10 @@ export default {
     overflow: hidden;
     padding: 5px;
     border: 1px solid var(--a-background-inverted);
-    border-radius: var(--a-border-radius);
+    border-radius: var(--a-border-radius-large);
     color: var(--a-text-primary);
     background-color: var(--a-background-primary);
+    gap: 4px;
   }
 
   .apos-button-group--vertical .apos-button-group__inner {

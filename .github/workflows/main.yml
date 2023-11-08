@@ -1,5 +1,3 @@
-# This is a basic workflow to help you get started with Actions
-
 name: Tests
 
 # Controls when the action will run.
@@ -20,8 +18,8 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        node-version: [16, 18]
-        mongodb-version: [4.4, 5.0, 6.0]
+        node-version: [18, 20]
+        mongodb-version: [4.4, 5.0, 6.0, 7.0]
 
     # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
@@ -37,9 +35,6 @@ jobs:
         uses: supercharge/mongodb-github-action@1.3.0
         with:
           mongodb-version: ${{ matrix.mongodb-version }}
-
-      # Exit status must be succesful in the end
-      - run:  ( ( node --version | grep v14 ) && npm install -g npm@8 ) || echo "npm OK"
 
       - run: npm install
 

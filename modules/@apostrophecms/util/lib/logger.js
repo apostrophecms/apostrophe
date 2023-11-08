@@ -1,7 +1,9 @@
 // Default logger. You may pass an alternate implementation
 // as the `logger` top-level option when configuring Apostrophe.
 
-module.exports = function(apos) {
+module.exports = function (apos) {
+  const logModule = apos.structuredLog;
+
   return {
     // Log a message. The default
     // implementation wraps `console.log` and passes on
@@ -11,9 +13,9 @@ module.exports = function(apos) {
     // substitution strings in mind. See the
     // `console.log` documentation.
 
-    log: function(msg) {
+    log: function(...args) {
       // eslint-disable-next-line no-console
-      console.log.apply(console, arguments);
+      console.log(...logModule.formatLogByEnv(args));
     },
 
     // Log an informational message.
@@ -22,9 +24,9 @@ module.exports = function(apos) {
     // substitution strings in mind. See the
     // `console.log` documentation.
 
-    info: function(msg) {
+    info: function(...args) {
       // eslint-disable-next-line no-console
-      console.info.apply(console, arguments);
+      console.info(...logModule.formatLogByEnv(args));
     },
 
     // Log a debug message. Invokes
@@ -35,15 +37,9 @@ module.exports = function(apos) {
     // substitution strings in mind. See the
     // `console.log` documentation.
 
-    debug: function(msg) {
+    debug: function(...args) {
       // eslint-disable-next-line no-console
-      if (console.debug) {
-        // eslint-disable-next-line no-console
-        console.debug.apply(console, arguments);
-      } else {
-        // eslint-disable-next-line no-console
-        console.log.apply(console, arguments);
-      }
+      console.debug(...logModule.formatLogByEnv(args));
     },
 
     // Log an error message. The default implementation
@@ -54,9 +50,9 @@ module.exports = function(apos) {
     // substitution strings in mind. See the
     // `console.error` documentation.
 
-    error: function(msg) {
+    error: function(...args) {
       // eslint-disable-next-line no-console
-      console.error.apply(console, arguments);
+      console.error(...logModule.formatLogByEnv(args));
     },
     // Log a warning. The default implementation wraps
     // `console.warn` and passes on all arguments,
@@ -70,9 +66,15 @@ module.exports = function(apos) {
     // called for situations less dire than
     // `apos.util.error`.
 
-    warn: function(msg) {
+    warn: function(...args) {
       // eslint-disable-next-line no-console
-      console.warn.apply(console, arguments);
+      console.warn(...logModule.formatLogByEnv(args));
+    },
+
+    // Automatically tear down the logger if available.
+
+    async destroy() {
+      // Nothing to do
     }
   };
 };

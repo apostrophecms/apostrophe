@@ -57,6 +57,7 @@ module.exports = {
 
     self.__helpers = {};
     self.templateData = self.options.templateData || {};
+    self.__structuredLoggingEnabled = false;
 
     if (self.apos.asset) {
       if (!self.apos.asset.chains) {
@@ -74,6 +75,11 @@ module.exports = {
     // Routes in their final ready-to-add-to-Express form
     self._routes = [];
 
+    // Enable structured logging after util module is initialized.
+    if (self.apos.util && (self.apos.util !== self)) {
+      self.__structuredLoggingEnabled = true;
+    }
+
     // Add i18next phrases if we started up after the i18n module,
     // which will call this for us if we start up before it
     if (self.apos.i18n && (self.apos.i18n !== self)) {
@@ -89,6 +95,10 @@ module.exports = {
 
   methods(self) {
     return {
+      // `self.logInfo`, `self.logError`, etc. available for every module except
+      // `error`, `util` and the `log` module itself.
+      ...require('./lib/log')(self),
+
       compileSectionRoutes(section) {
         _.each(self[section] || {}, function(routes, method) {
           _.each(routes, function(config, name) {
@@ -231,18 +241,34 @@ module.exports = {
           });
         }
         const response = getResponse(err);
-        // err.stack includes basic description of error
-        if (Object.keys(response.data).length > 1) {
-          response.fn(`${req.method} ${req.url}: \n\n${err.stack}\n\n${JSON.stringify(response.data, null, '  ')}`);
-        } else {
-          response.fn(req.method + ' ' + req.url + ': ' + '\n\n' + err.stack);
-        }
+        logError(req, response, err);
         req.res.status(response.code);
         return req.res.send({
           name: response.name,
           data: response.data,
           message: response.message
         });
+        function logError(req, response, error) {
+          const typeTrail = response.code === 500 ? '' : `-${response.name}`;
+          // Log the actual error, not the message meant for the browser.
+          const msg = response.code === 500
+            ? err.message
+            : response.message;
+          try {
+            self.logError(req, `api-error${typeTrail}`, msg, {
+              name: response.name,
+              status: response.code,
+              stack: (error.stack || '').split('\n').slice(1).map(line => line.trim()),
+              errorPath: response.path,
+              data: response.data
+            });
+          } catch (e) {
+            // We can't afford to throw here, it would hang the response.
+            e.message = 'Structured logging error: ' + e.message;
+            // eslint-disable-next-line no-console
+            console.error(e);
+          }
+        }
         function getResponse(err) {
           let name, data, code, fn, message, path;
           if (err && err.name && self.apos.http.errors[err.name]) {
@@ -392,13 +418,17 @@ module.exports = {
       // `data.query` (req.query)
       //
       // This method is async in 3.x and must be awaited.
+      //
+      // No longer deprecated because it is a useful override point
+      // for this part of the behavior of sendPage.
 
       async renderPage(req, template, data) {
-        // TODO Remove in next major version.
-        self.apos.util.warnDevOnce(
-          'deprecate-renderPage',
-          'self.renderPage() is deprecated. Use self.sendPage() instead.'
-        );
+        if (req.aposExternalFront) {
+          await self.apos.template.annotateDataForExternalFront(req, template, data);
+          self.apos.template.pruneDataForExternalFront(req, template, data);
+          // Reply with JSON
+          return data;
+        }
         return self.apos.template.renderPageForModule(req, template, data, self);
       },
 
@@ -456,9 +486,8 @@ module.exports = {
           try {
             await self.apos.page.emit('beforeSend', req);
             await self.apos.area.loadDeferredWidgets(req);
-            req.res.send(
-              await self.apos.template.renderPageForModule(req, template, data, self)
-            );
+            const result = await self.renderPage(req, template, data);
+            req.res.send(result);
             span.setStatus({ code: telemetry.api.SpanStatusCode.OK });
           } catch (err) {
             telemetry.handleError(span, err);

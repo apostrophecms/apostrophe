@@ -1,7 +1,7 @@
 <template>
   <div
     v-if="active"
-    v-click-outside-element="close"
+    v-click-outside-element="cancel"
     class="apos-popover apos-image-control__dialog"
     x-placement="bottom"
     :class="{
@@ -16,23 +16,25 @@
         :schema="schema"
         :trigger-validation="triggerValidation"
         v-model="docFields"
-        :utility-rail="false"
         :modifiers="formModifiers"
         :key="lastSelectionTime"
         :generation="generation"
         :following-values="followingValues()"
-        :conditional-fields="conditionalFields()"
+        :conditional-fields="conditionalFields"
+        @input="evaluateConditions()"
       />
       <footer class="apos-image-control__footer">
         <AposButton
           type="default" label="apostrophe:cancel"
-          @click="close"
+          @click="cancel"
           :modifiers="formModifiers"
         />
         <AposButton
-          type="primary" label="apostrophe:save"
-          @click="save"
+          type="primary"
+          label="apostrophe:save"
           :modifiers="formModifiers"
+          :disabled="docFields.hasErrors"
+          @click="save"
         />
       </footer>
     </AposContextMenuDialog>
@@ -55,7 +57,7 @@ export default {
       required: true
     }
   },
-  emits: [ 'before-commands', 'close' ],
+  emits: [ 'before-commands', 'done', 'cancel' ],
   data() {
     return {
       generation: 1,
@@ -113,9 +115,16 @@ export default {
       }
     }
   },
+  async mounted() {
+    await this.evaluateExternalConditions();
+    this.evaluateConditions();
+  },
   methods: {
-    close() {
-      this.$emit('close');
+    cancel() {
+      this.$emit('cancel');
+    },
+    done() {
+      this.$emit('done');
     },
     save() {
       this.triggerValidation = true;
@@ -125,23 +134,25 @@ export default {
         }
         const image = this.docFields.data._image[0];
         this.docFields.data.imageId = image && image.aposDocId;
+        this.docFields.data.alt = image && image.alt;
         this.$emit('before-commands');
         this.editor.commands.setImage({
           imageId: this.docFields.data.imageId,
           caption: this.docFields.data.caption,
-          style: this.docFields.data.style
+          style: this.docFields.data.style,
+          alt: this.docFields.data.alt
         });
-        this.close();
+        this.done();
       });
     },
     keyboardHandler(e) {
       if (e.keyCode === 27) {
-        this.close();
+        this.cancel();
       }
       if (e.keyCode === 13) {
         if (this.docFields.data.href || e.metaKey) {
           this.save();
-          this.close();
+          this.done();
         }
         e.preventDefault();
       }

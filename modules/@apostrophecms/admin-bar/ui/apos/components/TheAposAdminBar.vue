@@ -8,11 +8,21 @@
     <nav class="apos-admin-bar" ref="adminBar">
       <div class="apos-admin-bar__row">
         <AposLogoPadless class="apos-admin-bar__logo" />
-        <TheAposAdminBarMenu :items="items" />
+        <TheAposAdminBarMenu :items="menuItems" />
         <TheAposAdminBarLocale v-if="hasLocales()" />
-        <TheAposAdminBarUser data-apos-test="authenticatedUserMenuTrigger" class="apos-admin-bar__user" />
+        <TheAposAdminBarUser
+          data-apos-test="authenticatedUserMenuTrigger"
+          class="apos-admin-bar__user"
+          :items="userItems"
+        />
       </div>
       <TheAposContextBar @mounted="setSpacer" />
+      <component
+        v-for="bar in bars"
+        v-bind="bar.props || {}"
+        :key="bar.id"
+        :is="bar.componentName"
+      />
     </nav>
   </div>
 </template>
@@ -29,6 +39,20 @@ export default {
       default: function () {
         return [];
       }
+    }
+  },
+  computed: {
+    menuItems() {
+      return this.items.filter(item => !item.options?.user);
+    },
+    userItems() {
+      return this.items.filter(item => item.options?.user);
+    },
+    moduleOptions() {
+      return window.apos.adminBar;
+    },
+    bars() {
+      return this.moduleOptions.bars;
     }
   },
   async mounted() {
@@ -112,11 +136,6 @@ export default {
   &.apos-admin-bar__control-set__group {
     position: absolute;
   }
-}
-
-// make space for a widget's breadcrumbs that are flush with the admin bar
-.apos-admin-bar-spacer {
-  margin-bottom: 25px;
 }
 
 </style>

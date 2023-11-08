@@ -3,8 +3,10 @@ export default {
   defaultPlacement: 'bottom-end',
   defaultTemplate: `
     <div class="apos-tooltip" role="tooltip">
-      <div class="apos-tooltip__arrow"></div>
-      <div class="apos-tooltip__inner"></div>
+      <div class="apos-tooltip__wrapper">
+        <div class="apos-tooltip__arrow"></div>
+        <div class="apos-tooltip__inner"></div>
+      </div>
     </div>`,
   defaultArrowSelector: '.apos-tooltip__arrow',
   defaultInnerSelector: '.apos-tooltip__inner'

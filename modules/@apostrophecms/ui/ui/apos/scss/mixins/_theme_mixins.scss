@@ -20,7 +20,10 @@ $input-color-disabled: var(--a-base-4);
 
 @mixin apos-primary-mixin($color) {
   --a-primary: #{$color};
+  --a-primary-transparent-90: #{transparentize($color, 0.1)};
+  --a-primary-transparent-25: #{transparentize($color, 0.75)};
   --a-primary-transparent-50: #{transparentize($color, 0.5)};
+  --a-primary-transparent-15: #{transparentize($color, 0.85)};
   --a-primary-transparent-10: #{transparentize($color, 0.9)};
   --a-primary-dark-10: #{mix(#000, $color, 10%)};
   --a-primary-dark-15: #{mix(#000, $color, 15%)};

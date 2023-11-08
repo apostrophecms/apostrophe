@@ -91,6 +91,8 @@ module.exports = {
     self.items = [];
     self.groups = [];
     self.groupLabels = {};
+    self.bars = [];
+    self.contextLabels = [];
     self.enableBrowserData();
   },
   handlers(self) {
@@ -142,6 +144,10 @@ module.exports = {
       // for screenreaders only. The contextUtility functionality is typically used for
       // experiences that temporarily change the current editing context.
       //
+      // If `options.user` is true, the menu bar item will appear
+      // on the user's personal dropdown, where "Log Out" appears. Such items
+      // cannot be grouped further.
+
       // If an `options.when` function is provided, it will be invoked with
       // `req` to test whether this admin bar item should be displayed or not.
 
@@ -349,8 +355,63 @@ module.exports = {
           contextId: context && context._id,
           tabId: cuid(),
           contextEditorName,
-          pageTree: self.options.pageTree && self.apos.permission.can(req, 'edit', '@apostrophecms/any-page-type', 'draft')
+          pageTree: self.options.pageTree && self.apos.permission.can(req, 'edit', '@apostrophecms/any-page-type', 'draft'),
+          bars: self.bars,
+          contextLabels: self.contextLabels
         };
+      },
+
+      // Add custom bars and place the ones
+      // that have `last: true` at the end
+      // of the list so that they will be
+      // displayed below the others.
+      //
+      // Example:
+      //
+      // ```js
+      // self.addBar({
+      //   id: 'template',
+      //   componentName: 'TheAposTemplateBar',
+      //   props: { content: 'Some content' },
+      //   last: true
+      // });
+      // ```
+      addBar(bar) {
+        self.bars.push(bar);
+
+        self.bars.sort((a, b) => {
+          if (a.last === true && b.last === true) {
+            return 0;
+          }
+          return b.last === true ? -1 : 1;
+        });
+      },
+
+      // Add custom context labels and place the ones
+      // that have `last: true` at the end
+      // of the list so that they will be
+      // displayed after the others.
+      //
+      // Example:
+      //
+      // ```js
+      // self.addContextLabel({
+      //   id: 'myLabel'
+      //   label: 'apos:myLabel',
+      //   tooltip: 'apos:myTooltip',
+      //   last: true,
+      //   modifiers: ['apos-is-warning', 'apos-is-filled']
+      // });
+      // ```
+      addContextLabel(label) {
+        self.contextLabels.push(label);
+
+        self.contextLabels.sort((a, b) => {
+          if (a.last === true && b.last === true) {
+            return 0;
+          }
+          return b.last === true ? -1 : 1;
+        });
       }
     };
   }

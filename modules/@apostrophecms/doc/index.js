@@ -1,6 +1,7 @@
 const _ = require('lodash');
 const cuid = require('cuid');
 const { SemanticAttributes } = require('@opentelemetry/semantic-conventions');
+const { klona } = require('klona');
 
 // This module is responsible for managing all of the documents (apostrophe "docs")
 // in the `aposDocs` mongodb collection.
@@ -296,6 +297,138 @@ module.exports = {
   },
   methods(self) {
     return {
+      // `pairs` is an array of arrays, each containing an old _id
+      // and a new _id that should replace it.
+      //
+      // `aposDocId` is implicitly updated, `path` is updated if a page,
+      // and all references found in relationships are updated via reverse
+      // relationship id lookups, after which attachment references are updated.
+      // This is a slow operation, which is why this method should be called only
+      // by migrations and tasks that remedy an unexpected situation. _id is
+      // meant to be an immutable property, this method is a workaround
+      // for situations like a renamed locale or a replication bug fix.
+      //
+      // If `keep` is set to `'old'` the old document's content wins
+      // in the event of a conflict. If `keep` is set to `'new'` the
+      // new document's content wins in the event of a conflict.
+      // If `keep` is not set, a `conflict` error is thrown in the
+      // event of a conflict.
+
+      async changeDocIds(pairs, { keep } = {}) {
+        let renamed = 0;
+        let kept = 0;
+        // Get page paths up front so we can avoid multiple queries when working on path changes
+        const pages = await self.apos.doc.db.find({
+          path: { $exists: 1 },
+          slug: /^\//
+        }).project({
+          path: 1
+        }).toArray();
+        for (const pair of pairs) {
+          const [ from, to ] = pair;
+          const existing = await self.apos.doc.db.findOne({ _id: from });
+          if (!existing) {
+            throw self.apos.error('notfound');
+          }
+          const replacement = klona(existing);
+          await self.apos.doc.db.removeOne({ _id: from });
+          const oldAposDocId = existing.aposDocId;
+          replacement._id = to;
+          const parts = to.split(':');
+          replacement.aposDocId = parts[0];
+          // Watch out for nonlocalized types, don't set aposLocale for them
+          if (parts.length > 1) {
+            replacement.aposLocale = parts.slice(1).join(':');
+          }
+          const isPage = self.apos.page.isPage(existing);
+          if (isPage) {
+            replacement.path = existing.path.replace(existing.aposDocId, replacement.aposDocId);
+          }
+          try {
+            await self.apos.doc.db.insertOne(replacement);
+            renamed++;
+          } catch (e) {
+            // First reinsert old doc to prevent content loss on new doc insert failure
+            await self.apos.doc.db.insertOne(existing);
+            if (!self.apos.doc.isUniqueError(e)) {
+              // We cannot fix this error
+              throw e;
+            }
+            const existingReplacement = await self.apos.doc.db.findOne({ _id: replacement._id });
+            if (!existingReplacement) {
+              // We don't know the cause of this error
+              throw e;
+            }
+            if (keep === 'new') {
+              // New content already exists in new locale, delete old locale
+              // and keep new
+              await self.apos.doc.db.removeOne({ _id: existing._id });
+              kept++;
+            } else if (keep === 'old') {
+              // We want to keep the old content, but with the new
+              // identifiers. Once again we need to remove the old doc first
+              // to cut down on conflicts
+              try {
+                await self.apos.doc.db.deleteOne({ _id: existing._id });
+                await self.apos.doc.db.deleteOne({ _id: replacement._id });
+                await self.apos.doc.db.insertOne(replacement);
+                renamed++;
+              } catch (e) {
+                // Reinsert old doc to prevent content loss on new doc insert failure
+                await self.apos.doc.db.insertOne(existing);
+                throw e;
+              }
+              kept++;
+            } else {
+              throw self.apos.error('conflict');
+            }
+          }
+          if (isPage) {
+            for (const page of pages) {
+              if (page.path.includes(oldAposDocId)) {
+                await self.apos.doc.db.updateOne({
+                  _id: page._id
+                }, {
+                  $set: {
+                    path: page.path.replace(oldAposDocId, replacement.aposDocId)
+                  }
+                });
+              }
+            }
+          }
+          if (existing.relatedReverseIds?.length) {
+            const relatedDocs = await self.apos.doc.db.find({
+              aposDocId: { $in: existing.relatedReverseIds }
+            }).toArray();
+            for (const doc of relatedDocs) {
+              replaceId(doc, oldAposDocId, replacement.aposDocId);
+              await self.apos.doc.db.replaceOne({
+                _id: doc._id
+              }, doc);
+            }
+          }
+        }
+        await self.apos.attachment.recomputeAllDocReferences();
+        return {
+          renamed,
+          kept
+        };
+        function replaceId(obj, oldId, newId) {
+          if (obj == null) {
+            return;
+          }
+          if ((typeof obj) !== 'object') {
+            return;
+          }
+          for (const key of Object.keys(obj)) {
+            if (obj[key] === oldId) {
+              obj[key] = newId;
+            } else {
+              replaceId(obj[key], oldId, newId);
+            }
+          }
+        }
+      },
       async enableCollection() {
         self.db = await self.apos.db.collection('aposDocs');
       },
@@ -1004,34 +1137,116 @@ module.exports = {
           'slug'
         ];
       },
-      // Add context menu operation to be used in AposDocContextMenu.
-      // Expected operation format is:
+
+      // Add a context menu operation to be offered in AposDocContextMenu, the
+      // "kebab menu" that provides extra operations on the current document or
+      // a document listed in a manager modal.
+      //
+      // The required format is:
+      //
       // {
       //   context: 'update',
       //   action: 'someAction',
       //   modal: 'ModalComponent',
-      //   label: 'Context Menu Label'
+      //   label: 'Context Menu Item Label',
+      //   conditions: ['canEdit'],
+      //   moduleName: 'some-specific-module'
       // }
-      // All properties are required.
-      // The only supported `context` for now is `update`.
+      //
+      // All properties are required except for `conditions`, `moduleName`,
+      // `modifiers` and `manuallyPublished`.
+      //
+      // Context operations are universal, e.g. they are displayed by the context
+      // menu no matter what the content type is, unless overridden by `conditions`.
+      //
       // `action` is the operation identifier and should be globally unique.
-      // Overriding existing custom actions is possible (the last wins).
-      // `modal` is the name of the modal component to be opened.
-      // `label` is the menu label to be shown when expanding the context menu.
-      // Additional optional `modifiers` property is supported - button modifiers
+      // For convenience, if several modules add an operation with the same `action`,
+      // it is only added once. This prevents duplicates if all subclasses of
+      // `doc-type` or `piece-type` register the same operation.
+      //
+      // `context` currently must be `update`.
+      //
+      // `modal` is the name of the modal component to be opened by the operation.
+      //
+      // `label` is the menu item label to be shown when expanding the context menu.
+      //
+      // An additional `moduleName` property is supported. If it is not given,
+      // it will be inferred from the `type` of the document in context, with all page
+      // types using the page module (not their type-specific module). This is almost
+      // always correct, therefore it only makes sense to pass an explicit
+      // `moduleName` option here if the action API should be invoked on a different module
+      // than expected.
+      //
+      // An additional optional `modifiers` property is supported - button modifiers
       // as supported by `AposContextMenu` (e.g. modifiers: [ 'danger' ]).
+      //
       // An optional `manuallyPublished` boolean property is supported - if true
       // the menu will be shown only for docs which have `autopublish: false` and
       // `localized: true` options.
-      addContextOperation(moduleName, operation) {
+      //
+      // `conditions` defines the circumstances under which the opetion should be displayed.
+      // If all `conditions` are not met, the item is not displayed for this particular
+      // document.
+      //
+      // `conditions` may be an array containing one or multiple of these values:
+      //
+      // 'canPublish', 'canEdit', 'canDismissSubmission', 'canDiscardDraft',
+      // 'canLocalize', 'canArchive', 'canUnpublish', 'canCopy', 'canRestore'.
+
+      addContextOperation(operation) {
+        if (arguments.length === 2) {
+          // For backwards compatibility. `moduleName` is rarely needed
+          // so it should not be a separate argument in new code.
+          operation = {
+            ...arguments[1],
+            moduleName: arguments[0]
+          };
+        }
+        validate(operation);
         self.contextOperations = [
           ...self.contextOperations
             .filter(op => op.action !== operation.action),
-          {
-            ...operation,
-            moduleName
-          }
+          operation
         ];
+
+        function validate ({
+          action, context, label, modal, conditions, if: ifProps
+        }) {
+          const allowedConditions = [
+            'canPublish',
+            'canEdit',
+            'canDismissSubmission',
+            'canDiscardDraft',
+            'canLocalize',
+            'canArchive',
+            'canUnpublish',
+            'canCopy',
+            'canRestore'
+          ];
+
+          if (!action || !context || !label || !modal) {
+            throw self.apos.error('invalid', 'addContextOperation requires action, context, label and modal properties.');
+          }
+
+          if (
+            conditions &&
+            (!Array.isArray(conditions) ||
+            conditions.some((perm) => !allowedConditions.includes(perm)))
+          ) {
+            throw self.apos.error(
+              'invalid', `The conditions property in addContextOperation must be an array containing one or multiple of these values:\n\t${allowedConditions.join('\n\t')}.`
+            );
+          }
+
+          if (
+            ifProps &&
+            (typeof ifProps !== 'object' || Array.isArray(ifProps))
+          ) {
+            throw self.apos.error(
+              'invalid', 'The if property in addContextOperation must be an object containing properties and values that will be checked against the current document in order to show or not the context operation.'
+            );
+          }
+        }
       },
       getBrowserData(req) {
         return {
@@ -1142,6 +1357,7 @@ module.exports = {
             type: module.name
           });
         }
+        self.replicateReached = true;
         // Include the criteria array in the event so that more entries can be pushed to it
         await self.emit('beforeReplicate', criteria);
         // We can skip the core work of this method if there is only one locale,
@@ -1301,6 +1517,11 @@ module.exports = {
             }
           });
         });
+      },
+
+      async bestAposDocId(criteria) {
+        const existing = await self.apos.doc.db.findOne(criteria, { projection: { aposDocId: 1 } });
+        return existing?.aposDocId || self.apos.util.generateId();
       },
 
       ...require('./lib/legacy-migrations')(self)

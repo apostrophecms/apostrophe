@@ -17,6 +17,7 @@
             </h2>
             <Close
               class="apos-share-draft__close"
+              tabindex="0"
               :title="$t('apostrophe:close')"
               :size="18"
               @click.prevent="close"
@@ -48,6 +49,7 @@
                   v-model="shareUrl"
                   type="text"
                   disabled
+                  tabindex="-1"
                   class="apos-share-draft__url"
                 >
                 <a
@@ -93,8 +95,7 @@ export default {
         active: false,
         type: 'overlay',
         showModal: false,
-        disableHeader: true,
-        trapFocus: true
+        disableHeader: true
       },
       shareUrl: '',
       disabled: true

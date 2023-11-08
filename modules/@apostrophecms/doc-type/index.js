@@ -193,6 +193,12 @@ module.exports = {
     if (!self.options.name) {
       self.options.name = self.__meta.name;
     }
+    if (self.options.singletonAuto) {
+      self.options.singleton = true;
+    }
+    if (self.options.replicate === undefined) {
+      self.options.replicate = self.options.localized && self.options.singletonAuto;
+    }
     self.name = self.options.name;
     // Each doc-type has an array of fields which will be updated
     // if the document is moved to the archive. In most cases 'slug'
@@ -409,7 +415,7 @@ module.exports = {
         }
       },
       addContextMenu() {
-        self.apos.doc.addContextOperation(self.__meta.name, {
+        self.apos.doc.addContextOperation({
           action: 'shareDraft',
           context: 'update',
           label: 'apostrophe:shareDraft',
@@ -508,6 +514,26 @@ module.exports = {
       //
       // `query.field` will contain the schema field definition for
       // the relationship the user is attempting to match titles from.
+      getRelationshipQueryBuilderChoicesProjection(query) {
+        const projection = self.getAutocompleteProjection(query);
+
+        return {
+          ...projection,
+          title: 1,
+          type: 1,
+          _id: 1,
+          _url: 1,
+          slug: 1
+        };
+      },
+      // Returns a MongoDB projection object to be used when querying
+      // for this type if all that is needed is a title for display
+      // in an autocomplete menu. Default behavior is to
+      // return only the `title`, `_id` and `slug` properties.
+      // Removing any of these three is not recommended.
+      //
+      // `query.field` will contain the schema field definition for
+      // the relationship the user is attempting to match titles from.
       getAutocompleteProjection(query) {
         return {
           title: 1,
@@ -524,6 +550,11 @@ module.exports = {
       // event start dates and similar information that helps the
       // user distinguish between docs.
       getAutocompleteTitle(doc, query) {
+        // TODO Remove in next major version.
+        self.apos.util.warnDevOnce(
+          'deprecate-get-autocomplete-title',
+          'self.getAutocompleteTitle() is deprecated. Use the autocomplete(\'...\') query builder instead. More info at https://v3.docs.apostrophecms.org/reference/query-builders.html#autocomplete'
+        );
         return doc.title;
       },
       // Used by `@apostrophecms/version` to label changes that
@@ -615,6 +646,12 @@ module.exports = {
       //
       // We don't launder the input here, see the 'autocomplete' route.
       async autocomplete(req, query) {
+        // TODO Remove in next major version.
+        self.apos.util.warnDevOnce(
+          'deprecate-autocomplete',
+          'self.autocomplete() is deprecated. Use the autocomplete(\'...\') query builder instead. More info at https://v3.docs.apostrophecms.org/reference/query-builders.html#autocomplete'
+        );
+
         const _query = query.find(req, {}).sort('search');
         if (query.extendAutocompleteQuery) {
           query.extendAutocompleteQuery(_query);
@@ -1017,10 +1054,14 @@ module.exports = {
               });
             } else {
               // A page that is not the home page, being replicated for the first time
-              const lastTargetId = draft.aposLastTargetId;
-              let lastPosition = draft.aposLastPosition;
+              let { lastTargetId, lastPosition } = await self.apos.page.inferLastTargetIdAndPosition(draft);
               let localizedTargetId = lastTargetId.replace(`:${draft.aposLocale}`, `:${toLocale}:draft`);
-              const localizedTarget = await actionModule.find(toReq, self.apos.page.getIdCriteria(localizedTargetId)).archived(null).areas(false).relationships(false).toObject();
+              const localizedTarget = await actionModule
+                .find(toReq, self.apos.page.getIdCriteria(localizedTargetId))
+                .archived(null)
+                .areas(false)
+                .relationships(false)
+                .toObject();
               if (!localizedTarget) {
                 if ((lastPosition === 'firstChild') || (lastPosition === 'lastChild')) {
                   throw self.apos.error('notfound', req.t('apostrophe:parentNotLocalized'), {
@@ -1034,9 +1075,10 @@ module.exports = {
                     // Almost impossible (race conditions like someone removing it while we're in the modal)
                     throw self.apos.error('notfound');
                   }
-                  const localizedTarget = await actionModule.find(toReq, {
+                  const criteria = {
                     path: self.apos.page.getParentPath(originalTarget)
-                  }).archived(null).areas(false).relationships(false).toObject();
+                  };
+                  const localizedTarget = await actionModule.find(toReq, criteria).archived(null).areas(false).relationships(false).toObject();
                   if (!localizedTarget) {
                     throw self.apos.error('notfound', req.t('apostrophe:parentNotLocalized'), {
                       // Also provide as data for code that prefers to localize client side
@@ -1442,7 +1484,9 @@ module.exports = {
         browserOptions.schema = self.allowedSchema(req);
         browserOptions.localized = self.isLocalized();
         browserOptions.autopublish = self.options.autopublish;
-        browserOptions.previewDraft = self.isLocalized() && !browserOptions.autopublish && self.options.previewDraft;
+        browserOptions.previewDraft = self.isLocalized() &&
+          !browserOptions.autopublish &&
+          self.options.previewDraft;
 
         return browserOptions;
       }
@@ -1580,6 +1624,14 @@ module.exports = {
             // to the projection instead.
             const add = [];
             const remove = [];
+
+            // Add type in projection by default
+            const hasExclusion = Object.values(projection).some(value => !value);
+            if (!_.isEmpty(projection) && !hasExclusion) {
+              add.push('type');
+              add.push('metaType');
+            }
+
             for (const [ key, val ] of Object.entries(projection)) {
               if (!val) {
                 // For a negative projection this is just
@@ -2184,7 +2236,7 @@ module.exports = {
                   const dotPath = info.dotPath;
                   if (setting && Array.isArray(setting)) {
                     if (!_.includes(setting, dotPath)) {
-                      return;
+                      continue;
                     }
                   }
                   if (doc._edit) {

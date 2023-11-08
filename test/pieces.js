@@ -1000,8 +1000,24 @@ describe('Pieces', function() {
     const keys = Object.keys(response);
 
     assert(response);
-    assert(keys.length === 2);
-    assert(keys.every((key) => [ '_id', 'title' ].includes(key)));
+
+    // type is available by default
+    assert([ '_id', 'type', 'title' ].every(expectedKey => keys.includes(expectedKey)));
+  });
+
+  it('can GET a single product using projections with fields omission', async function() {
+    const response = await apos.http.get(`/api/v1/product/${relatedProductId}`, {
+      qs: {
+        project: {
+          highSearchText: 0,
+          highSearchWords: 0,
+          lowSearchText: 0,
+          searchSummary: 0
+        }
+      }
+    });
+
+    assert(response);
   });
 
   it('can GET a single article with reverse relationships', async function() {

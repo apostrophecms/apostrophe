@@ -74,6 +74,7 @@ module.exports = {
     }
     self.enableBrowserData();
     await self.enableBearerTokens();
+    self.addToAdminBar();
   },
   handlers(self) {
     return {
@@ -479,8 +480,10 @@ module.exports = {
       //
       // If the user's login SUCCEEDS, the return value is
       // the `user` object.
+      // `attempts`,  `ip` and `requestId` are optional, sent for only logging needs. They won't
+      // be available with passport.
 
-      async verifyLogin(username, password) {
+      async verifyLogin(username, password, attempts = 0, ip, requestId) {
         const req = self.apos.task.getReq();
         const user = await self.apos.user.find(req, {
           $or: [
@@ -491,14 +494,32 @@ module.exports = {
         }).toObject();
 
         if (!user) {
+          self.logInfo('incorrect-username', {
+            username,
+            ip,
+            attempts: attempts + 1,
+            requestId
+          });
           await Promise.delay(1000);
           return false;
         }
         try {
           await self.apos.user.verifyPassword(user, password);
+          self.logInfo('correct-password', {
+            username,
+            ip,
+            attempts: attempts,
+            requestId
+          });
           return user;
         } catch (err) {
           if (err.name === 'invalid') {
+            self.logInfo('incorrect-password', {
+              username,
+              ip,
+              attempts: attempts + 1,
+              requestId
+            });
             await Promise.delay(1000);
             return false;
           } else {
@@ -641,12 +662,19 @@ module.exports = {
             _id: token.userId
           });
           await self.passportLogin(req, user);
+          // No access to login attempts in the final phase.
+          self.logInfo(req, 'complete', {
+            username: user.username
+          });
         } else {
           delete token.requirementsToVerify;
           self.bearerTokens.updateOne(token, {
             $unset: {
               requirementsToVerify: 1
             }
+          });
+          self.logInfo(req, 'complete', {
+            username: user.username
           });
           return {
             token
@@ -696,6 +724,7 @@ module.exports = {
         }
 
         const { cachedAttempts, reached } = await self.checkLoginAttempts(username);
+        const logAttempts = cachedAttempts ?? 0;
 
         if (reached) {
           throw self.apos.error('invalid', req.t('apostrophe:loginMaxAttemptsReached', {
@@ -715,7 +744,14 @@ module.exports = {
               throw e;
             }
           }
-          const user = await self.apos.login.verifyLogin(username, password);
+          // send log information
+          const user = await self.apos.login.verifyLogin(
+            username,
+            password,
+            logAttempts,
+            self.apos.structuredLog.getIp(req),
+            self.apos.structuredLog.getRequestId(req)
+          );
           if (!user) {
           // For security reasons we may not tell the user which case applies
             throw self.apos.error('invalid', req.t('apostrophe:loginPageBadCredentials'));
@@ -726,7 +762,7 @@ module.exports = {
           if (requirementsToVerify.length) {
             const token = cuid();
 
-            await self.bearerTokens.insert({
+            await self.bearerTokens.insertOne({
               _id: token,
               userId: user._id,
               requirementsToVerify,
@@ -746,16 +782,24 @@ module.exports = {
           if (session) {
             await self.passportLogin(req, user);
             await self.clearLoginAttempts(user.username);
+            self.logInfo(req, 'complete', {
+              username,
+              attempts: logAttempts
+            });
             return {};
           } else {
             const token = cuid();
-            await self.bearerTokens.insert({
+            await self.bearerTokens.insertOne({
               _id: token,
               userId: user._id,
               expires: new Date(new Date().getTime() + (self.options.bearerTokens.lifetime || (86400 * 7 * 2)) * 1000)
             });
 
             await self.clearLoginAttempts(user.username);
+            self.logInfo(req, 'complete', {
+              username,
+              attempts: logAttempts
+            });
 
             return {
               token
@@ -850,7 +894,20 @@ module.exports = {
           namespace,
           key: username
         });
+      },
+
+      addToAdminBar() {
+        self.apos.adminBar.add(
+          `${self.__meta.name}-logout`,
+          'apostrophe:logOut',
+          false,
+          {
+            user: true,
+            last: true
+          }
+        );
       }
+
     };
   },
 
@@ -878,7 +935,11 @@ module.exports = {
               if (err) {
                 return callback(err);
               }
-              await self.emit('afterSessionLogin', req);
+              try {
+                await self.emit('afterSessionLogin', req);
+              } catch (e) {
+                return callback(e);
+              }
               // Make sure no handler removed req.user
               if (req.user) {
                 // Mark the login timestamp. Middleware takes care of ensuring

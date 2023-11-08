@@ -5,11 +5,13 @@
         v-if="canSelectAll"
         label="apostrophe:select"
         type="outline"
+        :modifiers="['small']"
         text-color="var(--a-base-1)"
         :icon-only="true"
         :icon="checkboxIcon"
         @click="selectAll"
         ref="selectAll"
+        data-apos-test="selectAll"
       />
       <div
         v-for="{
@@ -24,9 +26,10 @@
         <AposButton
           v-if="!operations"
           :label="label"
-          :icon-only="true"
+          :action="action"
           :icon="icon"
           :disabled="!checkedCount"
+          :modifiers="['small']"
           type="outline"
           @click="confirmOperation({ action, label, ...rest })"
         />
@@ -121,8 +124,16 @@ export default {
       type: Number,
       required: true
     },
+    checked: {
+      type: Array,
+      default: () => []
+    },
     checkedCount: {
       type: Number,
+      required: true
+    },
+    moduleName: {
+      type: String,
       required: true
     }
   },
@@ -260,7 +271,16 @@ export default {
     async beginGroupedOperation(action, operations) {
       const operation = operations.find(o => o.action === action);
 
-      await this.confirmOperation(operation);
+      operation.modal ? await this.modalOperation(operation) : await this.confirmOperation(operation);
+    },
+    async modalOperation({
+      modal, ...rest
+    }) {
+      await apos.modal.execute(modal, {
+        checked: this.checked,
+        moduleName: this.moduleName,
+        ...rest
+      });
     },
     async confirmOperation ({
       modalOptions = {}, action, operations, label, ...rest
@@ -302,7 +322,12 @@ export default {
 </script>
 
 <style lang="scss" scoped>
-  .apos-manager-toolbar ::v-deep .apos-field--search {
-    width: 250px;
+  .apos-manager-toolbar ::v-deep {
+    .apos-field--search {
+      width: 250px;
+    }
+    .apos-input {
+      height: 32px;
+    }
   }
 </style>

@@ -26,17 +26,39 @@ module.exports = {
     // publicApiProjection: {
     //   title: 1,
     //   _url: 1,
+    // },
+    // By default the manager modal will get all the pieces fields below + all manager columns
+    // you can enable a projection using
+    // managerApiProjection: {
+    //   _id: 1,
+    //   _url: 1,
+    //   aposDocId: 1,
+    //   aposLocale: 1,
+    //   aposMode: 1,
+    //   docPermissions: 1,
+    //   slug: 1,
+    //   title: 1,
+    //   type: 1,
+    //   visibility: 1
     // }
   },
-  fields: {
-    add: {
-      slug: {
-        type: 'slug',
-        label: 'apostrophe:slug',
-        following: [ 'title', 'archived' ],
-        required: true
-      }
-    }
+  fields(self) {
+    return {
+      add: {
+        slug: {
+          type: 'slug',
+          label: 'apostrophe:slug',
+          following: [ 'title', 'archived' ],
+          required: true
+        }
+      },
+      remove: self.options.singletonAuto ? [
+        'title',
+        'slug',
+        'archived',
+        'visibility'
+      ] : []
+    };
   },
   columns(self) {
     return {
@@ -157,7 +179,7 @@ module.exports = {
         label: 'apostrophe:restore',
         messages: {
           progress: 'Restoring {{ type }}...',
-          completed: 'Restoring {{ count }} {{ type }}.'
+          completed: 'Restored {{ count }} {{ type }}.'
         },
         icon: 'archive-arrow-up-icon',
         if: {
@@ -181,6 +203,10 @@ module.exports = {
   init(self) {
     if (!self.options.name) {
       throw new Error('@apostrophecms/pieces require name option');
+    }
+    const badFieldName = Object.keys(self.fields).indexOf('type') !== -1;
+    if (badFieldName) {
+      throw new Error(`The ${self.__meta.name} module contains a forbidden field property name: "type".`);
     }
     if (!self.options.label) {
       // Englishify it
@@ -206,7 +232,7 @@ module.exports = {
       getAll: [
         ...enableCacheOnDemand ? [ expressCacheOnDemand ] : [],
         async (req) => {
-          self.publicApiCheck(req);
+          await self.publicApiCheckAsync(req);
           const query = self.getRestQuery(req);
           if (!query.get('perPage')) {
             query.perPage(
@@ -246,7 +272,7 @@ module.exports = {
         ...enableCacheOnDemand ? [ expressCacheOnDemand ] : [],
         async (req, _id) => {
           _id = self.inferIdLocaleAndMode(req, _id);
-          self.publicApiCheck(req);
+          await self.publicApiCheckAsync(req);
           const doc = self.removeForbiddenFields(
             req,
             await self.getRestQuery(req).and({ _id }).toObject()
@@ -273,7 +299,7 @@ module.exports = {
         }
       ],
       async post(req) {
-        self.publicApiCheck(req);
+        await self.publicApiCheckAsync(req);
         if (req.body._newInstance) {
           const newInstance = self.newInstance();
           newInstance._previewable = self.addUrlsViaModule && (await self.addUrlsViaModule.readyToAddUrlsToPieces(req, self.name));
@@ -284,12 +310,12 @@ module.exports = {
       },
       async put(req, _id) {
         _id = self.inferIdLocaleAndMode(req, _id);
-        self.publicApiCheck(req);
+        await self.publicApiCheckAsync(req);
         return self.convertUpdateAndRefresh(req, req.body, _id);
       },
       async delete(req, _id) {
         _id = self.inferIdLocaleAndMode(req, _id);
-        self.publicApiCheck(req);
+        await self.publicApiCheckAsync(req);
         const piece = await self.findOneForEditing(req, {
           _id
         });
@@ -297,7 +323,7 @@ module.exports = {
       },
       async patch(req, _id) {
         _id = self.inferIdLocaleAndMode(req, _id);
-        self.publicApiCheck(req);
+        await self.publicApiCheckAsync(req);
         return self.convertPatchAndRefresh(req, req.body, _id);
       }
     };
@@ -588,7 +614,7 @@ module.exports = {
 
             // Return the operation group with the new operation added.
             return {
-              name: groupName,
+              action: groupName,
               ...groupProperties,
               operations: [
                 ...(acc[groupName] && acc[groupName].operations) || [],
@@ -1002,10 +1028,13 @@ module.exports = {
         piece.title = 'Generated #' + (i + 1);
         return piece;
       },
-      getRestQuery(req) {
+      // Can be extended on a project level with `_super(req, true)` to disable
+      // permission check and public API projection. You shouldn't do this
+      // if you're not sure what you're doing.
+      getRestQuery(req, omitPermissionCheck = false) {
         const query = self.find(req).attachments(true);
         query.applyBuildersSafely(req.query);
-        if (!self.canAccessApi(req)) {
+        if (!omitPermissionCheck && !self.canAccessApi(req)) {
           if (!self.options.publicApiProjection) {
             // Shouldn't be needed thanks to publicApiCheck, but be sure
             query.and({
@@ -1031,6 +1060,11 @@ module.exports = {
             throw self.apos.error('notfound');
           }
         }
+      },
+      // An async version of the above. It can be overridden to implement
+      // an asynchronous check of the public API permissions.
+      async publicApiCheckAsync(req) {
+        return self.publicApiCheck(req);
       },
       // If the piece does not yet have a slug, add one based on the
       // title; throw an error if there is no title
@@ -1063,7 +1097,49 @@ module.exports = {
             return self.apos.permission.can(req, batchOperation.permission, self.name);
           }
           return true;
+
         });
+      },
+      getManagerApiProjection(req) {
+        if (!self.options.managerApiProjection) {
+          return null;
+        }
+
+        const projection = { ...self.options.managerApiProjection };
+        self.columns.forEach(({ name }) => {
+          const column = (name.startsWith('draft:') || name.startsWith('published:'))
+            ? name.replace(/^(draft|published):/, '')
+            : name;
+
+          projection[column] = 1;
+        });
+
+        return projection;
+      },
+      async insertIfMissing() {
+        if (!self.options.singletonAuto) {
+          return;
+        }
+        // Insert at startup
+        const req = self.apos.task.getReq();
+        const criteria = {
+          type: self.name
+        };
+        if (self.options.localized) {
+          criteria.aposLocale = {
+            $in: Object.keys(self.apos.i18n.locales).map(locale => [ `${locale}:published`, `${locale}:draft` ]).flat()
+          };
+        }
+        const existing = await self.apos.doc.db.findOne(criteria, { _id: 1 });
+        if (!existing) {
+          const _new = {
+            ...self.newInstance(),
+            aposDocId: await self.apos.doc.bestAposDocId({
+              type: self.name
+            })
+          };
+          await self.insert(req, _new);
+        }
       }
     };
   },
@@ -1092,11 +1168,27 @@ module.exports = {
           editorModal: 'AposDocEditor',
           managerModal: 'AposDocsManager'
         });
+        browserOptions.managerApiProjection = self.getManagerApiProjection(req);
 
         return browserOptions;
       },
-      find(_super, req, criteria, projection) {
-        return _super(req, criteria, projection).defaultSort(self.options.sort || { updatedAt: -1 });
+      find(_super, req, criteria, options) {
+        return _super(req, criteria, options).defaultSort(self.options.sort || { updatedAt: -1 });
+      },
+      newInstance(_super) {
+        if (!self.options.singletonAuto) {
+          return _super();
+        }
+        const slug = self.apos.util.slugify(self.options.singletonAuto?.slug || self.name);
+        return {
+          ..._super(),
+          // These fields are removed from the editable schema of singletons,
+          // but we assign them directly for broader compatibility
+          slug,
+          title: slug,
+          archived: false,
+          visibility: 'public'
+        };
       }
     };
   },

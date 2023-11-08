@@ -18,23 +18,37 @@
       <span class="apos-admin-bar__title__document-title">
         {{ context.title }}
       </span>
-      <span class="apos-admin-bar__title__separator">
-        —
-      </span>
-      <AposContextMenu
-        v-if="!isUnpublished"
-        class="apos-admin-bar__title__document"
-        :button="draftButton"
-        :menu="draftMenu"
-        :disabled="hasCustomUi || isUnpublished"
-        @item-clicked="switchDraftMode"
-        menu-offset="13, 10"
-        menu-placement="bottom-end"
-      />
+      <div
+        v-if="!isAutopublished"
+        class="apos-admin-bar__title__context"
+      >
+        <span class="apos-admin-bar__title__separator">
+          —
+        </span>
+        <AposContextMenu
+          v-if="!isUnpublished"
+          class="apos-admin-bar__title__document"
+          :button="draftButton"
+          :menu="draftMenu"
+          :disabled="hasCustomUi || isUnpublished"
+          @item-clicked="switchDraftMode"
+          menu-offset="13, 10"
+          menu-placement="bottom-end"
+        />
+        <AposLabel
+          v-else
+          :label="'apostrophe:draft'"
+          :tooltip="'apostrophe:notYetPublished'"
+          :modifiers="['apos-is-warning', 'apos-is-filled']"
+        />
+      </div>
       <AposLabel
-        v-else
-        label="apostrophe:draft" :modifiers="['apos-is-warning', 'apos-is-filled']"
-        tooltip="apostrophe:notYetPublished"
+        class="apos-admin-bar__title-context-label"
+        v-for="{id, label, tooltip = '', modifiers = []} in moduleOptions.contextLabels"
+        :key="id"
+        :label="label"
+        :tooltip="tooltip"
+        :modifiers="modifiers"
       />
     </span>
   </transition-group>
@@ -105,6 +119,12 @@ export default {
     },
     canTogglePublishDraftMode() {
       return !this.isUnpublished && !this.hasCustomUi;
+    },
+    moduleOptions() {
+      return window.apos.adminBar;
+    },
+    isAutopublished() {
+      return this.context._aposAutopublish ?? (window.apos.modules[this.context.type].autopublish || false);
     }
   },
   mounted() {
@@ -136,6 +156,7 @@ export default {
   align-items: center;
   white-space: nowrap;
 
+  &__context,
   &__document-title,
   &__separator {
     display: inline-flex;
@@ -155,6 +176,10 @@ export default {
   &__document {
     margin-top: 3.5px;
   }
+}
+
+.apos-admin-bar__title-context-label  {
+  margin-left: 5px;
 }
 
 .apos-admin-bar__title__indicator {

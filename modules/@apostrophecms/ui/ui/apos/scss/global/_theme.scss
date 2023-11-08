@@ -5,6 +5,7 @@
   --a-success: #00bf9a;
   --a-success-fade: #00bf9a30;
   --a-warning: #ffce00;
+  --a-warning-dark: #a75c07;
   --a-warning-fade: #ffce0030;
   --a-progress-bg: #2c354d;
 
@@ -28,6 +29,7 @@
 
   // Borders
   --a-border-radius: 5px;
+  --a-border-radius-large: 10px;
   --a-box-shadow: 0 3px 13px 4px rgba(0, 0, 0, 0.08);
 
   // Backgrounds
@@ -82,6 +84,8 @@
 
   // Admin styles
   --a-widget-margin: 0;
+
+  --a-transition-timing-bounce: cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 .apos-theme-dark {

@@ -1,5 +1,366 @@
 # Changelog
 
+## 3.59.0 (2023-11-03)
+
+### Changes
+
+* Webpack warnings about package size during the admin UI build process have been turned off by default. Warnings are still enabled for the public build, where a large bundle can be problematic for SEO.
+
+### Fixes
+
+* Apostrophe warns you if you have more than one piece page for the same piece type and you have not overridden `chooseParentPage`
+to help Apostrophe decide which page is suitable as the `_url` of each piece. Beginning with this release, Apostrophe can recognize
+when you have chosen to do this via `extendMethods`, so that you can call `_super()` to fall back to the default implementation without
+receiving this warning. The default implementation still just returns the first page found, but always following the
+`_super()` pattern here opens the door to npm modules that `improve` `@apostrophecms/piece-page` to do something more
+sophisticated by default.
+* `newInstance` always returns a reasonable non-null empty value for area and
+object fields in case the document is inserted without being passed through
+the editor, e.g. in a parked page like the home page. This simplifies
+the new external front feature.
+
+### Adds
+
+* An adapter for Astro is under development with support from Michelin.
+Starting with this release, adapters for external fronts, i.e. "back for front"
+frameworks such as Astro, may now be implemented more easily. Apostrophe recognizes the
+`x-requested-with: AposExternalFront` header and the `apos-external-front-key` header.
+If both are present and `apos-external-front-key` matches the `APOS_EXTERNAL_FRONT_KEY`
+environment variable, then Apostrophe returns JSON in place of a normal page response.
+This mechanism is also available for the `render-widget` route.
+* Like `type`, `metaType` is always included in projections. This helps
+ensure that `apos.util.getManagerOf()` can be used on any object returned
+by the Apostrophe APIs.
+
+## 3.58.1 (2023-10-18)
+
+### Security
+
+* Update `uploadfs` to guarantee users get a fix for a [potential security vulnerability in `sharp`](https://security.snyk.io/vuln/SNYK-JS-SHARP-5922108).
+This was theoretically exploitable only by users with permission to upload media to Apostrophe
+* Remove the webpack bundle analyzer feature, which had been nonfunctional for some time, to address a harmless npm audit warning
+* Note: there is one remaining `npm audit` warning regarding `postcss`. This is not a true vulnerability because only developers
+with access to the entire codebase can modify styles passed to `postcss` by Apostrophe, but we are working with upstream
+developers to determine the best steps to clear the warning
+
+### Fixes
+
+* Automatically add `type` to the projection only if there are no exclusions in the projection. Needed to prevent `Cannot do
+exclusion on field in inclusion projection` error.
+
+## 3.58.0 (2023-10-12)
+
+### Fixes
+
+* Ensure Apostrophe can make appropriate checks by always including `type` in the projection even if it is not explicitly listed.
+* Never try to annotate a widget with permissions the way we annotate a document, even if the widget is simulating a document.
+* The `areas` query builder now works properly when an array of area names has been specified.
+
+### Adds
+
+* Widget schema can now follow the parent schema via the similar to introduced in the `array` field type syntax (`<` prefix). In order a parent followed field to be available to the widget schema, the area field should follow it. For example, if area follows the root schema `title` field via `following: ['title']`, any field from a widget schema inside that area can do `following: ['<title']`.
+* The values of fields followed by an `area` field are now available in custom widget preview Vue components (registered with widget option `options.widget = 'MyComponentPreview'`). Those components will also receive additional `areaField` prop (the parent area field definition object).
+* Allows to insert attachments with a given ID, as well as with `docIds` and `archivedDocIds` to preserve related docs.
+* Adds an `update` method to the attachment module, that updates the mongoDB doc and the associated file.
+* Adds an option to the `http` `remote` method to allow receiving the original response from `node-fetch` that is a stream.
+
+## 3.57.0 2023-09-27
+
+### Changes
+* Removes a 25px gap used to prevent in-context widget UI from overlapping with the admin bar
+* Simplifies the way in-context widget state is rendered via modifier classes
+### Adds
+
+* Widgets detect whether or not their in-context editing UI will collide with the admin bar and adjust it appropriately.
+* Italian translation i18n file created for the Apostrophe Admin-UI. Thanks to [Antonello Zanini](https://github.com/Tonel) for this contribution.
+* Fixed date in piece type being displayed as current date in column when set as undefined and without default value. Thanks to [TheSaddestBread](https://github.com/AllanKoder) for this contribution.
+
+### Fixes
+
+* Bumped dependency on `oembetter` to ensure Vimeo starts working again
+for everyone with this release. This is necessary because Vimeo stopped
+offering oembed discovery meta tags on their video pages.
+
+### Fixes
+
+* The `118n` module now ignores non-JSON files within the i18n folder of any module and does not crash the build process.
+
+## 3.56.0 (2023-09-13)
+
+### Adds
+
+* Add ability for custom tiptap extensions to access the options passed to rich text widgets at the area level.
+* Add support for [npm workspaces](https://docs.npmjs.com/cli/v10/configuring-npm/package-json#workspaces) dependencies. A workspace dependency can now be used as an Apostrophe module even if it is not a direct dependency of the Apostrophe project. Only direct workspaces dependencies of the Apostrophe project are supported, meaning this will only work with workspaces set in the Apostrophe project. Workspaces set in npm modules are not supported, please use [`bundle`](https://v3.docs.apostrophecms.org/reference/module-api/module-overview.html#bundle) instead. For instance, I have an Apostrophe project called `website`. `website` is set with two [npm workspaces](https://docs.npmjs.com/cli/v10/using-npm/workspaces), `workspace-a` & `workspace-b`. `workspace-a` `package.json` contains a module named `blog` as a dependency. `website` can reference `blog` as enabled in the Apostrophe `modules` configuration.
+* The actual invocation of `renderPageForModule` by the `sendPage` method of all modules has been
+factored out to `renderPage`, which is no longer deprecated. This provides a convenient override point
+for those who wish to substitute something else for Nunjucks or just wrap the HTML in a larger data
+structure. For consistent results, one might also choose to override the `renderWidget` and `render`
+methods of the `@apostrophecms/area` module, which are used to render content while editing.
+Thanks to Michelin for their support of this work.
+* Add `@apostrophecms/rich-text-widget:lint-fix-figure` task to wrap text nodes in paragraph tags when next to figure tags. Figure tags are not valid children of paragraph tags.
+* Add `@apostrophecms/rich-text-widget:remove-empty-paragraph` task to remove empty paragraphs from all existing rich-texts.
+
+## 3.55.1 (2023-09-11)
+
+### Fixes
+
+* The structured logging for API routes now responds properly if an API route throws a `string` as an exception, rather than
+a politely `Error`-derived object with a `stack` property. Previously this resulted in an error message about the logging
+system itself, which was not useful for debugging the original exception.
+
+## 3.55.0 (2023-08-30)
+
+### Adds
+
+* Add `publicApiCheckAsync` wrapper method (and use it internally) to allow for overrides to do async permission checks of REST APIs. This feature doesn't introduce any breaking changes because the default implementation still invokes `publicApiCheck` in case developers have overridden it.
+
+### Fixes
+
+* Refresh schema field with same name in `AposDocEditor` when the schema changes.
+* Infer parent ID mode from the request when retrieving the parent (target) page to avoid `notfound`.
+* Log the actual REST API error message and not the one meant for the user.
+* Hide dash on autopublished pages title.
+
+## 3.54.0 (2023-08-16)
+
+### Adds
+
+* Add `@apostrophecms/log` module to allow structured logging. All modules have `logDebug`, `logInfo`, `logWarn` and `logError` methods now. See the [documentation](https://v3.docs.apostrophecms.org/guide/logging.html) for more details.
+* Add `@apostrophecms/settings` translations.
+* Add the ability to have custom modals for batch operations.
+* Add the possibility to display utility operations inside a 3-dots menu on the page manager, the same way it is done for the docs manager.
+* Custom context operations now accept a `moduleIf` property, which tests options at the module level
+the same way that `if` tests properties of the document to determine if the operation should be
+offered for a particular document. Note that not all options are passed to the front end unless
+`getBrowserData` is extended to suit the need.
+* Move Pages Manager modal business logic to a mixin.
+* Add `column.extraWidth` option (number) for `AposTreeHeader.vue` to allow control over the tree cell width.
+* Move `AposDocContextMenu.vue` business logic to a mixin.
+* Move Pages Manager modal business logic to a mixin. Add `column.extraWidth` option (number) for `AposTreeHeader.vue` to allow control over the tree cell width.
+
+### Changes
+
+* Rename misleading `projection` parameter into `options` in `self.find` method signature for
+`@apostrophecms/any-doc-type`, `@apostrophecms/any-page-type` & `@apostrophecms/piece-type`.
+**This was never really a projection in A3,** so it is not a backwards compatibility issue.
+* Hide save button during in-context editing if the document is autopublished.
+* Beginning with this release, the correct `moduleName` for typical
+actions on the context document is automatically passed to the
+modal associated with a custom context operation, unless `moduleName`
+is explicitly specified. The `moduleName` parameter to `addContextOperation`
+is no longer required and should not be passed at all in most cases
+(just pass the object argument). If you do wish to specify a `moduleName`
+to override that prop given to the modal, then it is recommended to pass
+it as a `moduleName` property of the object, not as a separate argument.
+For backwards compatibility the two-argument syntax is still permitted.
+
+### Fixes
+
+* Resolved data integrity issue with certain page tree operations by inferring the best peer to position the page relative to rather
+than attempting to remember the most recent move operation.
+* Fixes a downstream bug in the `getFieldsByCategory` method in the `AposEditorMixin.js` by checking for a property before accessing it.
+* In Nunjucks templates, `data.url` now includes any sitewide and locale URL prefixes. This fixes local prefixing for pagination of piece-type index pages.
+* Changes were detected in various fields such as integers, which caused the "Update" button to be active even when there was no actual modification in the doc.
+* Fix a bug that prevented adding multiple operations in the same batch operation group.
+* The `getTarget` method of the page module should use `findForEditing` to make sure it is able to see
+pages that would be filtered out of a public view by project level or npm module overrides.
+
+## 3.53.0 (2023-08-03)
+
+### Adds
+
+* Accessibility improved for navigation inside modals and various UI elements.
+Pages/Docs Manager and Doc Editor modal now have better keyboard accessibility.
+They keep the focus on elements inside modals and give it back to their parent modal when closed.
+This implementation is evolving and will likely switch to use the `dialog` HTML element soon.
+* Adds support for a new `if` property in `addContextOperation` in order to show or not a context operation based on the current document properties.
+* Add `update-doc-fields` event to call `AposDocEditor.updateDocFields` method
+* Add schema field `hidden` property to always hide a field
+* Hide empty schema tabs in `AposDocEditor` when all fields are hidden due to `if` conditions
+* The front end UI now respects the `_aposEditorModal` and `_aposAutopublish`
+properties of a document if present, and otherwise falls back to module
+configuration. This is a powerful addition to custom editor components
+for piece and page types, allowing "virtual piece types" on the back end that
+deal with many content types to give better hints to the UI.
+* Respect the `_aposAutopublish` property of a document if present, otherwise
+fall back to module configuration.
+* For convenience in custom editor components, pass the new prop `type`, the original type of the document being copied or edited.
+* For better results in custom editor components, pass the prop `copyOfId`, which implies
+the custom editor should fetch the original itself by its means of choice.
+For backwards compatibility `copyOf` is still passed, but it may be an
+incomplete projection and should not be used in new code.
+* Custom context operations now receive a `docId` prop, which should
+be used in preference to `doc` because `doc` may be an incomplete
+projection.
+* Those creating custom context operations for documents can now
+specify both a `props` object for additional properties to be passed to
+their modal and a `docProps` object to map properties from the document
+to props of their choosing.
+* Adds support to add context labels in admin bar.
+* Adds support for admin UI language configuration in the `@apostrophecms/i18n` module. The new options allow control over the default admin UI language and configures the list of languages, that any individual logged in user can choose from. See the [documentation](https://v3.docs.apostrophecms.org/reference/modules/i18n.html) for more details.
+* Adds `adminLocale` User field to allow users to set their preferred admin UI language, but only when the `@apostrophecms/i18n` is configured accordingly (see above).
+* Adds `@apostrophecms/settings` module and a "Personal Settings" feature. See the [documentation](https://v3.docs.apostrophecms.org/reference/modules/settings.html) for more details.
+* Adds `$and` operator on `addContextOperation` `if` property in order to check multiple fields before showing or hiding a context operation.
+
+### Fixes
+
+* `AposDocEditor` `onSave` method signature. We now always expect an object when a parameter is passed to the function to check
+the value of `navigate` flag.
+* Fixes a problem in the rich text editor where the slash would not be deleted after item selectin from the insert menu.
+* Modules that have a `public` or `i18n` subdirectory no longer generate a
+warning if they export no code.
+* Clean up focus parent event handlers when components are destroyed. Prevents a slow degradation of performance while editing.
+Thanks to [Joshua N. Miller](https://github.com/jmiller-rise8).
+* Fixes a visual discrepancy in the rich text editor where empty paragraphs would appear smaller in preview mode compared to edit mode.
+
+### Changes
+
+* To make life easier for module developers, modules that are `npm link`ed to
+the project no longer have to be listed in `package.json` as
+dependencies. To prevent surprises this is still a requirement for modules
+that are not symlinked.
+
+## 3.52.0 (2023-07-06)
+
+### Changes
+
+* Foreign widget UI no longer uses inverted theme styles.
+
+### Adds
+
+* Allows users to double-click a nested widget's breadcrumb entry and open its editor.
+* Adds support for a new `conditions` property in `addContextOperation` and validation of `addContextOperation` configuration.
+
+### Fixes
+
+* The API now allows the user to create a page without defining the page target ID. By default it takes the Home page.
+* Users are no longer blocked from saving documents when a field is hidden
+by an `if` condition fails to satisfy a condition such as `min` or `max`
+or is otherwise invalid. Instead the invalid value is discarded for safety.
+Note that `required` has always been ignored when an `if` condition is not
+satisfied.
+* Errors thrown in `@apostrophecms/login:afterSessionLogin` event handlers are now properly passed back to Passport as such, avoiding a process restart.
+
+## 3.51.1 (2023-06-23)
+
+## Fixes
+
+* Fix a regression introduced in 3.51.0 - conditional fields work again in the array editor dialog box.
+
+## 3.51.0 (2023-06-21)
+
+### Adds
+
+* Items can now be added to the user's personal menu in the
+admin bar, alongside the "Log Out" option. To do so, specify
+the `user: true` option when calling `self.apos.adminBar.add`.
+This should be reserved for items that manage personal settings.
+* When duplicating another document, the `_id` properties of
+array items, widgets and areas are still regenerated to ensure
+uniqueness across documents. However, an `_originalId` property
+is now available for reference while the document remains in memory.
+This facilitates change detection within array items in
+`beforeSave` handlers and the like.
+* Adds the possibility to add custom admin bars via the `addBar()` method from the `admin-bar` module.
+* Adds support for conditional fields within `array` and `object` field schema. See the [documentation](https://v3.docs.apostrophecms.org/guide/conditional-fields/) for more information.
+
+### Fixes
+
+* Uses `findForEditing` method in the page put route.
+* The "Duplicate" option in the page or piece manager now correctly duplicates the
+entire document. This was a regression introduced in 3.48.0. The "Duplicate" option
+in the editor dialog box always worked correctly.
+
+### Changes
+
+* Browser URL now changes to reflect the slug of the document according to the mode that is being viewed.
+
+## 3.50.0 (2023-06-09)
+
+### Adds
+
+* As a further fix for issues that could ensue before the improvements
+to locale renaming support that were released in 3.49.0, an
+`@apostrophecms/page:reattach` task has been added. This command line task
+takes the `_id` or `slug` of a page and reattaches it to the page tree as
+the last child of the home page, even if page tree data for that page
+is corrupted. You may wish to use the `--new-slug` and `--locale` options. This task should not
+be needed in normal circumstances.
+
+## 3.49.0 (2023-06-08)
+
+### Changes
+
+* Updates area UX to not display Add Content controls when a widget is focused.
+* Updates area UX to unfocus widget on esc key.
+* Updates widget UI to use dashed outlines instead of borders to indicate bounds.
+* Updates UI for Insert Menu.
+* Updates Insert Menu UX to allow mid-node insertion.
+* Rich Text Widget's Insert components are now expected to emit `done` and `cancel` for proper RT cleanup. `close` still supported for BC, acts as `done`.
+* Migrated the business logic of the login-related Vue components to external mixins, so that the templates and styles can be overridden by
+copying the component `.vue` file to project level without copying all of the business logic. If you have already copied the components to style them,
+we encourage you to consider replacing your `script` tag with the new version, which just imports the mixin, so that fixes we make there will be
+available in your project.
+
+### Adds
+
+* Adds keyboard accessibility to Insert menu.
+* Adds regex pattern feature for string fields.
+* Adds `pnpm` support. Introduces new optional Apostrophe root configuration `pnpm` to force opt-in/out when auto detection fails. See the [documentation](https://v3.docs.apostrophecms.org/guide/using-pnpm.html) for more details.
+* Adds a warning if database queries involving relationships
+are made before the last `apostrophe:modulesRegistered` handler has fired.
+If you need to call Apostrophe's `find()` methods at startup,
+it is best to wait for the `@apostrophecms/doc:beforeReplicate` event.
+* Allow `@` when a piece is a template and `/@` for page templates (doc-template-library module).
+* Adds a `prefix` option to the http frontend util module.
+If explicitly set to `false`, prevents the prefix from being automatically added to the URL,
+when making calls with already-prefixed URLs for instance.
+* Adds the `redirectToFirstLocale` option to the `i18n` module to prevent users from reaching a version of their site that would not match any locale when requesting the site without a locale prefix in the URL.
+* If just one instance of a piece type should always exist (per locale if localized), the
+`singletonAuto` option may now be set to `true` or to an object with a `slug` option in
+order to guarantee it. This implicitly sets `singleton: true` as well. This is now used
+internally by `@apostrophecms/global` as well as the optional `@apostrophecms-pro/palette` module.
+
+### Fixes
+
+* Fix 404 error when viewing/editing a doc which draft has a different version of the slug than the published one.
+* Fixed a bug where multiple home pages can potentially be inserted into the database if the
+default locale is renamed. Introduced the `async apos.doc.bestAposDocId(criteria)` method to
+help identify the right `aposDocId` when inserting a document that might exist in
+other locales.
+* Fixed a bug where singletons like the global doc might not be inserted at all if they
+exist under the former name of the default locale and there are no other locales.
+
+## 3.48.0 (2023-05-26)
+
+### Adds
+
+* For performance, add `apos.modules['piece-type']getManagerApiProjection` method to reduce the amount of data returned in the manager
+    modal. The projection will contain the fields returned in the method in addition to the existing manager modal
+    columns.
+* Add `apos.schema.getRelationshipQueryBuilderChoicesProjection` method to set the projection used in
+    `apos.schema.relationshipQueryBuilderChoices`.
+* Rich-text inline images now copies the `alt` attribute from the original image from the Media Library.
+
+### Changes
+
+* Remove `stripPlaceholderBrs` and `restorePlaceholderBrs` from `AposRichTextWidgetEditor.vue` component.
+* Change tiptap `Gapcursor` display to use a vertical blinking cursor instead of an horizontal cursor, which allow users to add text before and after inline images and tables.
+* You can set `max-width` on `.apos-rich-text-toolbar__inner` to define the width of the rich-text toolbar. It will now
+    flow on multiple lines if needed.
+* The `utilityRail` prop of `AposSchema` now defaults to `false`, removing
+the need to explicitly pass it in almost all contexts.
+* Mark `apos.modules['doc-type']` methods `getAutocompleteTitle`, `getAutocompleteProjection` and `autocomplete` as
+    deprecated. Our admin UI does not use them, it uses the `autocomplete('...')` query builder.
+    More info at https://v3.docs.apostrophecms.org/reference/query-builders.html#autocomplete'.
+* Print a warning with a clear explanation if a module's `index.js` file contains
+no `module.exports` object (often due to a typo), or it is empty.
+
+### Fixes
+
+* Now errors and exits when a piece-type or widget-type module has a field object with the property `type`. Thanks to [NuktukDev](https://github.com/nuktukdev) for this contribution.
+* Add a default page type value to prevent the dropdown from containing an empty value.
+
 ## 3.47.0 (2023-05-05)
 
 ### Changes
@@ -75,10 +436,10 @@ shouldn't close the link dialog etc.
 
 ### Fixes
 
-* Fix various issues on conditional fields that were occurring when adding new widgets with default values or selecting a falsy value in a field that has a conditional field relying on it.  
+* Fix various issues on conditional fields that were occurring when adding new widgets with default values or selecting a falsy value in a field that has a conditional field relying on it.
 Populate new or existing doc instances with default values and add an empty `null` choice to select fields that do not have a default value (required or not) and to the ones configured with dynamic choices.
 * Rich text widgets save more reliably when many actions are taken quickly just before save.
-* Fix an issue in the `oembed` field where the value was kept in memory after cancelling the widget editor, which resulted in saving the value if the widget was nested and the parent widget was saved.  
+* Fix an issue in the `oembed` field where the value was kept in memory after cancelling the widget editor, which resulted in saving the value if the widget was nested and the parent widget was saved.
 Also improve the `oembed` field UX by setting the input as `readonly` rather than `disabled` when fetching the video metadata, in order to avoid losing its focus when typing.
 
 ## 3.44.0 (2023-04-13)

@@ -7,31 +7,36 @@
   >
     <template #body>
       <label
-        class="apos-choice-label" :for="getChoiceId(uid, choice.value)"
-        v-for="choice in choices" :key="choice.value"
+        class="apos-choice-label"
+        v-for="{label, value, tooltip} in choices"
+        :key="value"
+        :for="getChoiceId(uid, value)"
         :class="{'apos-choice-label--disabled': field.readOnly}"
       >
         <input
-          type="radio" class="apos-sr-only apos-input--choice apos-input--radio"
-          :value="JSON.stringify(choice.value)" :name="field.name"
-          :id="getChoiceId(uid, choice.value)"
-          :checked="next === choice.value"
+          type="radio"
+          class="apos-sr-only apos-input--choice apos-input--radio"
+          :id="getChoiceId(uid, value)"
+          :value="JSON.stringify(value)"
+          :name="field.name"
+          :checked="next === value"
           tabindex="1"
           :disabled="field.readOnly"
           @change="change($event.target.value)"
         >
         <span class="apos-input-indicator" aria-hidden="true">
           <component
-            :is="`${next === choice.value ? 'check-bold-icon' : 'span'}`"
-            :size="8" v-if="next === choice.value"
+            v-if="next === value"
+            :is="`${next === value ? 'check-bold-icon' : 'span'}`"
+            :size="8"
           />
         </span>
         <span class="apos-choice-label-text">
-          {{ $t(choice.label) }}
+          {{ $t(label) }}
           <AposIndicator
-            v-if="choice.tooltip"
+            v-if="tooltip"
             class="apos-choice-label-info"
-            :tooltip="choice.tooltip"
+            :tooltip="tooltip"
             :icon-size="14"
             icon="information-icon"
           />
@@ -42,34 +47,10 @@
 </template>
 
 <script>
-import AposInputMixin from 'Modules/@apostrophecms/schema/mixins/AposInputMixin';
-import AposInputChoicesMixin from 'Modules/@apostrophecms/schema/mixins/AposInputChoicesMixin';
-import InformationIcon from 'vue-material-design-icons/Information.vue';
-
+import AposInputRadioLogic from '../logic/AposInputRadio';
 export default {
   name: 'AposInputRadio',
-  components: { InformationIcon },
-  mixins: [ AposInputMixin, AposInputChoicesMixin ],
-  methods: {
-    getChoiceId(uid, value) {
-      return (uid + JSON.stringify(value)).replace(/\s+/g, '');
-    },
-    validate(value) {
-      if (this.field.required && (value === '')) {
-        return 'required';
-      }
-
-      if (value && !this.choices.find(choice => choice.value === value)) {
-        return 'invalid';
-      }
-
-      return false;
-    },
-    change(value) {
-      // Allows expression of non-string values
-      this.next = this.choices.find(choice => choice.value === JSON.parse(value)).value;
-    }
-  }
+  mixins: [ AposInputRadioLogic ]
 };
 </script>
 

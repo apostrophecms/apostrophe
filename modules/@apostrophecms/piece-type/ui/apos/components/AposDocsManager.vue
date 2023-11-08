@@ -70,8 +70,10 @@
             :labels="moduleLabels"
             :displayed-items="items.length"
             :is-relationship="!!relationshipField"
+            :checked="checked"
             :checked-count="checked.length"
             :batch-operations="moduleOptions.batchOperations"
+            :module-name="moduleName"
             @select-click="selectAll"
             @search="onSearch"
             @page-change="updatePage"
@@ -137,6 +139,7 @@ export default {
     return {
       modal: {
         active: false,
+        triggerFocusRefresh: 0,
         type: 'overlay',
         showModal: false
       },
@@ -230,6 +233,7 @@ export default {
     this.modal.active = true;
     await this.getPieces();
     await this.getAllPiecesTotal();
+    this.modal.triggerFocusRefresh++;
 
     apos.bus.$on('content-changed', this.getPieces);
     apos.bus.$on('command-menu-manager-create-new', this.create);
@@ -316,6 +320,10 @@ export default {
       const {
         currentPage, pages, results, choices
       } = await this.request({
+        ...(
+          this.moduleOptions.managerApiProjection &&
+          { project: this.moduleOptions.managerApiProjection }
+        ),
         page: this.currentPage
       });
 

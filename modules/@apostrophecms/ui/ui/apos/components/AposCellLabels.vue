@@ -38,13 +38,7 @@ import AposCellMixin from 'Modules/@apostrophecms/ui/mixins/AposCellMixin';
 
 export default {
   name: 'AposCellLabels',
-  mixins: [ AposCellMixin ],
-  computed: {
-    manuallyPublished() {
-      const module = apos.modules[this.item.type];
-      return module.localized && !module.autopublish;
-    }
-  }
+  mixins: [ AposCellMixin ]
 };
 </script>
 

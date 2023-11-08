@@ -639,36 +639,11 @@ module.exports = {
             [SemanticAttributes.CODE_FUNCTION]: 'renderPageForModule',
             [SemanticAttributes.CODE_NAMESPACE]: self.__meta.name
           });
-
-          let scene = req.user ? 'apos' : 'public';
-          if (req.scene) {
-            scene = req.scene;
-          } else {
-            req.scene = scene;
-          }
-          span.setAttribute(telemetry.Attributes.SCENE, scene);
           span.setAttribute(telemetry.Attributes.TEMPLATE, template);
 
-          const aposBodyData = {
-            modules: {},
-            prefix: req.prefix,
-            sitePrefix: self.apos.prefix,
-            shortName: self.apos.shortName,
-            locale: req.locale,
-            csrfCookieName: self.apos.csrfCookieName,
-            tabId: self.apos.util.generateId(),
-            uploadsUrl: self.apos.attachment.uploadfs.getUrl(),
-            assetBaseUrl: self.apos.asset.getAssetBaseUrl(),
-            scene
-          };
-          if (req.user) {
-            aposBodyData.user = {
-              title: req.user.title,
-              _id: req.user._id,
-              username: req.user.username
-            };
-          }
-          await self.emit('addBodyData', req, aposBodyData);
+          const aposBodyData = await self.getBodyData(req);
+          span.setAttribute(telemetry.Attributes.SCENE, aposBodyData.scene);
+
           self.addBodyDataAttribute(req, { apos: JSON.stringify(aposBodyData) });
 
           // Always the last call; signifies we're done initializing the
@@ -693,12 +668,12 @@ module.exports = {
           const args = {
             outerLayout: decorate ? '@apostrophecms/template:outerLayout.html' : '@apostrophecms/template:refreshLayout.html',
             permissions: req.user && (req.user._permissions || {}),
-            scene,
+            scene: aposBodyData.scene,
             refreshing: !decorate,
             // Make the query available to templates for easy access to
             // filter settings etc.
             query: req.query,
-            url: unrefreshed(req.url)
+            url: unrefreshed(req.prefix + req.url)
           };
 
           _.extend(args, data);
@@ -715,7 +690,7 @@ module.exports = {
             const content = await telemetry.startActiveSpan(spanRenderName, async (spanRender) => {
               spanRender.setAttribute(SemanticAttributes.CODE_FUNCTION, 'render');
               spanRender.setAttribute(SemanticAttributes.CODE_NAMESPACE, module.__meta.name);
-              spanRender.setAttribute(telemetry.Attributes.SCENE, scene);
+              spanRender.setAttribute(telemetry.Attributes.SCENE, aposBodyData.scene);
               spanRender.setAttribute(telemetry.Attributes.TEMPLATE, template);
 
               try {
@@ -723,7 +698,7 @@ module.exports = {
                 spanRender.setStatus({ code: telemetry.api.SpanStatusCode.OK });
                 const filledContent = self.insertBundlesMarkup({
                   page: req.data.bestPage,
-                  scene,
+                  scene: aposBodyData.scene,
                   template,
                   content,
                   scriptsPlaceholder: req.scriptsPlaceholder,
@@ -772,6 +747,38 @@ module.exports = {
             return url.replace('&aposRefresh=1', '');
           }
         }
+      },
+
+      async getBodyData(req) {
+        let scene = req.user ? 'apos' : 'public';
+        if (req.scene) {
+          scene = req.scene;
+        } else {
+          req.scene = scene;
+        }
+
+        const aposBodyData = {
+          modules: {},
+          prefix: req.prefix,
+          sitePrefix: self.apos.prefix,
+          shortName: self.apos.shortName,
+          locale: req.locale,
+          csrfCookieName: self.apos.csrfCookieName,
+          tabId: self.apos.util.generateId(),
+          uploadsUrl: self.apos.attachment.uploadfs.getUrl(),
+          assetBaseUrl: self.apos.asset.getAssetBaseUrl(),
+          scene
+        };
+        if (req.user) {
+          aposBodyData.user = {
+            title: req.user.title,
+            _id: req.user._id,
+            username: req.user.username
+          };
+        }
+        await self.emit('addBodyData', req, aposBodyData);
+
+        return aposBodyData;
       },
 
       // Log the given template error with timestamp and user information
@@ -874,6 +881,67 @@ module.exports = {
         const key = end + '-' + location;
         self.insertions[key] = self.insertions[key] || [];
         self.insertions[key].push(componentName);
+      },
+
+      async annotateDataForExternalFront(req, template, data) {
+        const docs = self.getDocsForExternalFront(req, template, data);
+        for (const doc of docs) {
+          self.annotateDocForExternalFront(doc);
+        }
+        data.aposBodyData = await self.getBodyData(req);
+        return data;
+      },
+
+      pruneDataForExternalFront(req, data, template) {
+        return data;
+      },
+
+      getDocsForExternalFront(req, template, data) {
+        return [ data.page, data.piece, ...(data.pieces || []) ].filter(doc => !!doc);
+      },
+
+      annotateDocForExternalFront(doc) {
+        self.apos.doc.walk(doc, (o, k, v) => {
+          if (v && v.metaType === 'area') {
+            const manager = self.apos.util.getManagerOf(o);
+            if (!manager) {
+              self.apos.util.warnDevOnce('noManagerForDocInExternalFront', `No manager for: ${o.metaType} ${o.type || ''}`);
+              return;
+            }
+            const field = manager.schema.find(f => f.name === k);
+            if (!field) {
+              self.apos.util.warnDevOnce('noSchemaFieldForAreaInExternalFront', `Area ${k} has no matching schema field in ${o.metaType} ${o.type || ''}`);
+              return;
+            }
+            return self.annotateAreaForExternalFront(field, v);
+          }
+        });
+      },
+
+      // Annotate an area for easy rendering by an external front end
+      // such as Astro. This includes adding the `field`, `options`, `widgets`
+      // and `choices` properties, and guaranteeing that `items` exists,
+      // at least as an empty array.
+
+      annotateAreaForExternalFront(field, area) {
+        area.field = field;
+        area.options = field.options;
+        // Really widget configurations, but the method name is already set in stone
+        const widgets = self.apos.area.getWidgets(area.options);
+        area.choices = Object.entries(widgets).map(([ name, options ]) => {
+          const manager = self.apos.area.widgetManagers[name];
+          return manager && {
+            name,
+            icon: manager.options.icon,
+            label: options.addLabel || manager.label || `No label for ${name}`
+          };
+        }).filter(choice => !!choice);
+        area.items ||= [];
+        if (area._docId) {
+          for (const item of area.items) {
+            item._docId = area._docId;
+          }
+        }
       }
     };
   }
