@@ -4,7 +4,7 @@ import LocalizedVTooltip from './localized-v-tooltip';
 import tooltipOptions from './tooltip-options';
 import VueAposI18Next from './i18next';
 
-export default async (appConfig) => {
+export default (appConfig) => {
   const app = createApp(appConfig);
 
   app.use(LocalizedVTooltip, tooltipOptions);
