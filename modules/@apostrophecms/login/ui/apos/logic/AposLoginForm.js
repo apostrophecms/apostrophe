@@ -86,6 +86,38 @@ export default {
       } else {
         return null;
       }
+    },
+    uponSubmitRequirements: {
+      deep: true,
+      async handler(newVal) {
+        console.log(newVal);
+        if (this.phase !== 'uponSubmit') {
+          return;
+        }
+
+        const isUponSubmitRequirementsPending = newVal.some(requirement => requirement.done === null);
+        if (isUponSubmitRequirementsPending) {
+          return;
+        }
+
+        const isUponSubmitRequirementsDone = newVal.every(requirement => requirement.done === true) || this.uponSubmitRequirements.length === 0;
+        if (isUponSubmitRequirementsDone) {
+          await this.postSubmit();
+
+          return;
+        }
+
+        const isUponSubmitRequirementsBlocked = newVal.some(requirement => requirement.done === false);
+        if (isUponSubmitRequirementsBlocked) {
+          for (const requirement of this.uponSubmitRequirements) {
+            requirement.done = null;
+            requirement.value = null;
+          }
+          this.phase = 'beforeSubmit';
+          this.busy = false;
+          this.error = '';
+        }
+      }
     }
   },
   created() {
@@ -98,11 +130,16 @@ export default {
       }
       this.busy = true;
       this.error = '';
-      // apos.bus.$emit('@apostrophecms/login:before-submit');
-      this.uponSubmitRequirements.forEach(async requirement => {
-        this.doc.data = await requirement.callback(this.doc.data);
-      });
 
+      this.uponSubmitRequirements.length
+        ? this.uponSubmit()
+        : await this.postSubmit();
+    },
+    uponSubmit() {
+      this.phase = 'uponSubmit';
+      // Note: uponSubmitRequirements watcher will handle the next step
+    },
+    async postSubmit() {
       await this.invokeInitialLoginApi();
     },
     async invokeInitialLoginApi() {
@@ -176,7 +213,7 @@ export default {
       const requirement = this.requirements
         .find(requirement => requirement.name === requirementDone.name);
 
-      if (requirement.phase === 'beforeSubmit') {
+      if (requirement.phase === 'beforeSubmit' || requirement.phase === 'uponSubmit') {
         requirement.done = true;
         requirement.value = value;
         return;
@@ -233,7 +270,7 @@ function getRequirements() {
       name,
       component: requirement.component || name,
       ...requirement,
-      done: false,
+      done: null,
       value: null,
       success: null,
       error: null

@@ -2,7 +2,7 @@
   <div
     key="1"
     class="apos-login-form"
-    v-if="phase === 'beforeSubmit'"
+    v-if="phase === 'beforeSubmit' || phase === 'uponSubmit'"
   >
     <TheAposLoginHeader
       :env="context.env"
