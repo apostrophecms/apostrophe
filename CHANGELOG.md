@@ -6,6 +6,8 @@
 
 * Add the possibility to add custom classes to notifications.  
 Setting the `apos-notification--hidden` class will hide the notification, which can be useful when we only care about the event carried by it.
+* Give the possibility to add horizontal rules from the insert menu of the rich text editor with the following widget option: `insert: [ 'horizontalRule' ]`.  
+Improve also the UX to focus back the editor after inserting a horizontal rule or a table.
 
 ## 3.59.0 (2023-11-03)
 
