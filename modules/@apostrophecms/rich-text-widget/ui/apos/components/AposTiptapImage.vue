@@ -15,23 +15,12 @@
         delay: 650
       }"
     />
-    <div
-      v-if="active"
-      v-click-outside-element="close"
-      class="apos-popover apos-image-control__dialog"
-      x-placement="bottom"
-      :class="{
-        'apos-is-triggered': active,
-        'apos-has-selection': hasSelection
-      }"
-    >
-      <AposImageControlDialog
-        :active="active"
-        :editor="editor"
-        @cancel="close"
-        @click.stop="$event => null"
-      />
-    </div>
+    <AposImageControlDialog
+      :active="active"
+      :editor="editor"
+      @cancel="close"
+      @click.stop="$event => null"
+    />
   </div>
 </template>
 
@@ -54,22 +43,34 @@ export default {
     };
   },
   computed: {
-    buttonActive() {
-      return this.editor.isActive('image');
+    attributes() {
+      return this.editor.getAttributes('image');
     },
-    hasSelection() {
-      const { state } = this.editor;
-      const { selection } = this.editor.state;
-      const { from, to } = selection;
-      const text = state.doc.textBetween(from, to, '');
-      return text !== '';
+    buttonActive() {
+      return this.attributes.imageId || this.active;
+    }
+  },
+  watch: {
+    'attributes.imageId': {
+      handler(newVal, oldVal) {
+        if (newVal === oldVal) {
+          return;
+        }
+
+        this.close();
+      }
     }
   },
   methods: {
     click() {
       this.active = !this.active;
+      // this.populateFields();
     },
     close() {
+      if (!this.active) {
+        return;
+      }
+
       this.active = false;
       this.editor.chain().focus();
     }
@@ -81,20 +82,6 @@ export default {
   .apos-image-control {
     position: relative;
     display: inline-block;
-  }
-
-  .apos-image-control__dialog {
-    z-index: $z-index-modal;
-    position: absolute;
-    top: calc(100% + 5px);
-    left: -15px;
-    opacity: 0;
-    pointer-events: none;
-  }
-
-  .apos-image-control__dialog.apos-is-triggered.apos-has-selection {
-    opacity: 1;
-    pointer-events: auto;
   }
 
   .apos-is-active {

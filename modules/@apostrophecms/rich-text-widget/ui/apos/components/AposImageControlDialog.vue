@@ -99,7 +99,14 @@ export default {
   },
   computed: {
     lastSelectionTime() {
-      return this.editor.view.lastSelectionTime;
+      return this.editor.view.input.lastSelectionTime;
+    },
+    hasSelection() {
+      const { state } = this.editor;
+      const { selection } = this.editor.state;
+      const { from, to } = selection;
+      const text = state.doc.textBetween(from, to, '');
+      return text !== '';
     },
     schema() {
       return this.originalSchema;
@@ -109,9 +116,19 @@ export default {
     active(newVal) {
       if (newVal) {
         window.addEventListener('keydown', this.keyboardHandler);
-        this.populateFields();
+        this.click();
       } else {
         window.removeEventListener('keydown', this.keyboardHandler);
+      }
+    },
+    'editor.view.input.lastSelectionTime': {
+      handler(newVal, oldVal) {
+        this.populateFields();
+      }
+    },
+    hasSelection(newVal, oldVal) {
+      if (!newVal) {
+        this.close();
       }
     }
   },
@@ -120,6 +137,12 @@ export default {
     this.evaluateConditions();
   },
   methods: {
+    click() {
+      if (this.hasSelection) {
+        this.populateFields();
+        this.evaluateConditions();
+      }
+    },
     cancel() {
       this.$emit('cancel');
     },

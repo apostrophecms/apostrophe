@@ -168,11 +168,14 @@ export default {
     };
   },
   computed: {
+    attributes() {
+      return this.editor.getAttributes('link');
+    },
     buttonActive() {
-      return this.editor.getAttributes('link').href || this.active;
+      return this.attributes.href || this.active;
     },
     lastSelectionTime() {
-      return this.editor.view.lastSelectionTime;
+      return this.editor.view.input.lastSelectionTime;
     },
     hasSelection() {
       const { state } = this.editor;
@@ -186,6 +189,15 @@ export default {
     }
   },
   watch: {
+    'attributes.href': {
+      handler(newVal, oldVal) {
+        if (newVal === oldVal) {
+          return;
+        }
+
+        this.close();
+      }
+    },
     active(newVal) {
       if (newVal) {
         this.hasLinkOnOpen = !!(this.docFields.data.href);
@@ -194,7 +206,7 @@ export default {
         window.removeEventListener('keydown', this.keyboardHandler);
       }
     },
-    'editor.view.lastSelectionTime': {
+    'editor.view.input.lastSelectionTime': {
       handler(newVal, oldVal) {
         this.populateFields();
       }
@@ -265,7 +277,7 @@ export default {
     },
     async populateFields() {
       try {
-        const attrs = this.editor.getAttributes('link');
+        const attrs = this.attributes;
         if (attrs.target) {
           // checkboxes field expects an array
           attrs.target = [ attrs.target ];
