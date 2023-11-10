@@ -850,8 +850,8 @@ database.`);
         const query = self.find(req, criteria, options).permission('edit').archived(null);
         return query;
       },
-      // Insert a page. `targetId` must be an existing page id, and
-      // `position` may be `before`, `inside` or `after`. Alternatively
+      // Insert a page. `targetId` must be an existing page id, `_archive` or
+      // `_home`, and `position` may be `before`, `inside` or `after`. Alternatively
       // `position` may be a zero-based offset for the new child
       // of `targetId` (note that the `rank` property of sibling pages
       // is not strictly ascending, so use an array index into `_children` to
@@ -930,9 +930,15 @@ database.`);
               return self.insert(req, target._id, 'before', page, options);
             }
             page.rank = target.rank + 1;
-            const index = peers.findIndex(peer => peer.id === target._id);
+            console.log(`from rank ${target.rank} to rank ${page.rank} for ${page.slug}`);
+            console.log(`Looking for ${target._id} among peer ids:`);
+            console.log(peers.map(peer => peer._id).join(' '));
+            const index = peers.findIndex(peer => peer._id === target._id);
             if (index !== -1) {
               pushed = peers.slice(index + 1).map(peer => peer._id);
+              console.log(`pushing ${pushed.length} for: ${page.title}`);
+            } else {
+              console.log(`not pushing for ${page.title} there were ${peers.length} peers index is ${index}`);
             }
           }
           if (pushed.length) {
@@ -2519,7 +2525,8 @@ database.`);
         const peers = await self.apos.doc.db.find(peerCriteria).sort({
           rank: 1
         }).project({
-          _id: 1
+          _id: 1,
+          slug: 1
         }).toArray();
         let targetId;
         let position;
@@ -2535,6 +2542,7 @@ database.`);
           position = 'lastChild';
         } else {
           targetId = peers[index - 1]._id;
+          console.log('>>> ' + peers[index - 1].slug);
           position = 'after';
         }
         return {

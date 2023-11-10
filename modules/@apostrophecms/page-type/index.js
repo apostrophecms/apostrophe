@@ -336,6 +336,7 @@ module.exports = {
         };
         if (doc.level > 0) {
           const { lastTargetId, lastPosition } = await self.apos.page.inferLastTargetIdAndPosition(doc);
+          console.log(`lastTargetId: ${lastTargetId} lastPosition: ${lastPosition}`);
           // Replay the high level positioning used to place it in the published locale
           return self.apos.page.insert(
             _req,
