@@ -64,6 +64,11 @@ export default {
     color: var(--a-base-1);
   }
 
+  .apos-is-sensitive {
+    border-color: var(--a-sensitive-medium);
+    color: var(--a-sensitive);
+  }
+
   .apos-is-warning.apos-is-filled {
     background-color: var(--a-warning-fade);
   }
