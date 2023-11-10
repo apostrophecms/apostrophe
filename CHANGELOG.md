@@ -2,6 +2,10 @@
 
 ## UNRELEASED
 
+### Adds
+
+* Add `uponSubmit` requirement in the `@apostrophecms/login` module. `uponSubmit` requirements are checked each time the user submit the login form. See the documentation for more information.
+
 ### Fixes
 
 * We can now close the image modal in rich-text widgets when we click outside of the modal.
