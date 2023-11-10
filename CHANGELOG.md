@@ -4,6 +4,8 @@
 
 ### Adds
 
+* Add the possibility to add custom classes to notifications.  
+Setting the `apos-notification--hidden` class will hide the notification, which can be useful when we only care about the event carried by it.
 * Add `uponSubmit` requirement in the `@apostrophecms/login` module. `uponSubmit` requirements are checked each time the user submit the login form. See the documentation for more information.
 
 ### Fixes
