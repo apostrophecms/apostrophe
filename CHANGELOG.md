@@ -2,6 +2,11 @@
 
 ## UNRELEASED
 
+### Adds
+
+* Add the possibility to add custom classes to notifications.  
+Setting the `apos-notification--hidden` class will hide the notification, which can be useful when we only care about the event carried by it.
+
 ### Fixes
 
 * We can now close the image modal in rich-text widgets when we click outside of the modal.

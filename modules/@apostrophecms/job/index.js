@@ -285,6 +285,7 @@ module.exports = {
             ids: options.ids
           },
           event,
+          classes: options.classes,
           icon: req.body.messages.icon || 'database-export-icon',
           type: options.type || 'success',
           return: true
