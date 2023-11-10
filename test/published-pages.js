@@ -85,14 +85,16 @@ describe('Pages', function() {
       aposLocale: 'en:published'
     }).project({
       slug: 1,
-      rank: 1
+      rank: 1,
+      title: 1
     }).toArray();
     const draftPages = await apos.doc.db.find({
       level: 1,
       aposLocale: 'en:draft'
     }).project({
       slug: 1,
-      rank: 1
+      rank: 1,
+      title: 1
     }).toArray();
     for (let i = 1; (i <= 10); i++) {
       assert(draftPages.find(page => (page.rank === i - 1) && page.title === `test-child-${i}`));
