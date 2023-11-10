@@ -1,10 +1,7 @@
 const t = require('../test-lib/test.js');
 const assert = require('assert');
-const _ = require('lodash');
 
 let apos;
-let homeId;
-const apiKey = 'this is a test api key';
 
 describe('Pages', function() {
 
@@ -20,15 +17,6 @@ describe('Pages', function() {
     apos = await t.create({
       root: module,
       modules: {
-        '@apostrophecms/express': {
-          options: {
-            apiKeys: {
-              [apiKey]: {
-                role: 'admin'
-              }
-            }
-          }
-        },
         '@apostrophecms/page': {
           options: {
             park: [],
@@ -80,34 +68,18 @@ describe('Pages', function() {
       assert(fetchedPage.lastPublishedAt);
       assert(draft.lastPublishedAt.getTime() === fetchedPage.lastPublishedAt.getTime());
     }
-    const publishedPages = await apos.doc.db.find({
-      level: 1,
-      aposLocale: 'en:published'
-    }).project({
-      slug: 1,
-      rank: 1,
-      title: 1
-    }).toArray();
-    const draftPages = await apos.doc.db.find({
-      level: 1,
-      aposLocale: 'en:draft'
-    }).project({
-      slug: 1,
-      rank: 1,
-      title: 1
-    }).toArray();
     assert(checkRanks('en:published'));
     assert(checkRanks('en:draft'));
   });
 
   it('Can fix the ranks after intentionally messing them up', async function() {
-    for (i = 5; (i <= 10); i++) {
+    for (let i = 5; (i <= 10); i++) {
       await apos.doc.db.updateMany({
         title: `test-child-${i}`
       }, {
         $set: {
           rank: i - 2
-        }        
+        }
       });
     }
     try {

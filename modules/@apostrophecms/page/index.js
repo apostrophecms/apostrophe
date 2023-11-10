@@ -2539,7 +2539,7 @@ database.`);
               children.sort((a, b) => a.rank - b.rank);
               let lastRank = null;
               let bad = false;
-              for (child of children) {
+              for (const child of children) {
                 if (child.rank === lastRank) {
                   bad = true;
                   break;
