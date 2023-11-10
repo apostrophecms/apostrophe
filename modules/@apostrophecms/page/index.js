@@ -101,6 +101,8 @@ module.exports = {
     self.addLegacyMigrations();
     self.addMisreplicatedParkedPagesMigration();
     self.addDuplicateParkedPagesMigration();
+    self.apos.migration.add('deduplicateRanks2', self.deduplicateRanks2Migration);
+    self.apos.migration.add('missingLastPublishedAt', self.missingLastPublishedAtMigration);
     await self.createIndexes();
   },
   restApiRoutes(self) {
@@ -930,15 +932,9 @@ database.`);
               return self.insert(req, target._id, 'before', page, options);
             }
             page.rank = target.rank + 1;
-            console.log(`from rank ${target.rank} to rank ${page.rank} for ${page.slug}`);
-            console.log(`Looking for ${target._id} among peer ids:`);
-            console.log(peers.map(peer => peer._id).join(' '));
             const index = peers.findIndex(peer => peer._id === target._id);
             if (index !== -1) {
               pushed = peers.slice(index + 1).map(peer => peer._id);
-              console.log(`pushing ${pushed.length} for: ${page.title}`);
-            } else {
-              console.log(`not pushing for ${page.title} there were ${peers.length} peers index is ${index}`);
             }
           }
           if (pushed.length) {
@@ -2509,6 +2505,84 @@ database.`);
           }
         });
       },
+      async deduplicateRanks2Migration() {
+        for (const locale of Object.keys(self.apos.i18n.locales)) {
+          for (const mode of [ 'previous', 'draft', 'published' ]) {
+            const pages = await self.apos.doc.db.find({
+              slug: /^\//,
+              aposLocale: `${locale}:${mode}`
+            }, {
+              path: 1,
+              rank: 1,
+              slug: 1
+            }).toArray();
+            const pagesByPath = new Map();
+            for (const page of pages) {
+              page._children = [];
+              pagesByPath.set(page.path, page);
+            }
+            for (const page of pages) {
+              if (page.level === 0) {
+                // Home page has no parent
+                continue;
+              }
+              const parentPath = self.getParentPath(page);
+              const parent = pagesByPath.get(parentPath);
+              if (!parent) {
+                self.apos.util.error(`Warning: page ${page._id} has no parent in the tree`);
+                continue;
+              }
+              parent._children.push(page);
+            }
+            for (const page of pages) {
+              const children = page._children;
+              children.sort((a, b) => a.rank - b.rank);
+              let lastRank = null;
+              let bad = false;
+              for (child of children) {
+                if (child.rank === lastRank) {
+                  bad = true;
+                  break;
+                }
+                lastRank = child.rank;
+              }
+              if (bad) {
+                self.apos.util.warn(`Fixing ranks for children of ${page.slug} in ${page.aposLocale}`);
+                for (let i = 0; (i < children.length); i++) {
+                  await self.apos.doc.db.updateOne({
+                    _id: children[i]._id
+                  }, {
+                    $set: {
+                      rank: i
+                    }
+                  });
+                }
+              }
+            }
+          }
+        }
+      },
+      missingLastPublishedAtMigration() {
+        return self.apos.migration.eachDoc({
+          aposMode: 'published',
+          lastPublishedAt: null
+        }, async doc => {
+          const draft = await self.apos.doc.db.findOne({
+            _id: doc._id.replace(':published', ':draft')
+          });
+          if (!draft) {
+            self.apos.util.error(`Warning: published document has no matching draft: ${doc._id}`);
+            return;
+          }
+          await self.apos.doc.db.updateOne({
+            _id: doc._id
+          }, {
+            $set: {
+              lastPublishedAt: draft.lastPublishedAt
+            }
+          });
+        });
+      },
       async inferLastTargetIdAndPosition(doc) {
         const parentPath = self.getParentPath(doc);
         const parentAposDocId = parentPath.split('/').pop();
@@ -2525,8 +2599,7 @@ database.`);
         const peers = await self.apos.doc.db.find(peerCriteria).sort({
           rank: 1
         }).project({
-          _id: 1,
-          slug: 1
+          _id: 1
         }).toArray();
         let targetId;
         let position;
@@ -2542,7 +2615,6 @@ database.`);
           position = 'lastChild';
         } else {
           targetId = peers[index - 1]._id;
-          console.log('>>> ' + peers[index - 1].slug);
           position = 'after';
         }
         return {

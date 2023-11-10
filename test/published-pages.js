@@ -96,11 +96,75 @@ describe('Pages', function() {
       rank: 1,
       title: 1
     }).toArray();
-    for (let i = 1; (i <= 10); i++) {
-      assert(draftPages.find(page => (page.rank === i - 1) && page.title === `test-child-${i}`));
-      assert(publishedPages.find(page => (page.rank === i - 1) && page.title === `test-child-${i}`));
+    assert(checkRanks('en:published'));
+    assert(checkRanks('en:draft'));
+  });
+
+  it('Can fix the ranks after intentionally messing them up', async function() {
+    for (i = 5; (i <= 10); i++) {
+      await apos.doc.db.updateMany({
+        title: `test-child-${i}`
+      }, {
+        $set: {
+          rank: i - 2
+        }        
+      });
     }
-    assert(draftPages.find(page => (page.slug === '/archive') && (page.rank === 10)));
-    assert(publishedPages.find(page => (page.slug === '/archive') && (page.rank === 10)));
+    try {
+      await checkRanks('en:published');
+      assert(false);
+    } catch (e) {
+      // Good, supposed to fail
+    }
+    try {
+      await checkRanks('en:draft');
+      assert(false);
+    } catch (e) {
+      // Good, supposed to fail
+    }
+    await apos.page.deduplicateRanks2Migration();
+    await checkRanks('en:published');
+    await checkRanks('en:draft');
+  });
+
+  it('Can fix lastPublishedAt after intentionally messing it up', async function() {
+    let published = await apos.doc.db.findOne({
+      aposLocale: 'en:published',
+      slug: '/test-child-1'
+    });
+    assert(published.lastPublishedAt);
+    await apos.doc.db.updateOne({
+      _id: published._id
+    }, {
+      $unset: {
+        lastPublishedAt: 1
+      }
+    });
+    published = await apos.doc.db.findOne({
+      aposLocale: 'en:published',
+      slug: '/test-child-1'
+    });
+    assert(!published.lastPublishedAt);
+    await apos.page.missingLastPublishedAtMigration();
+    published = await apos.doc.db.findOne({
+      aposLocale: 'en:published',
+      slug: '/test-child-1'
+    });
+    assert(published.lastPublishedAt);
   });
 });
+
+async function checkRanks(aposLocale) {
+  const pages = await apos.doc.db.find({
+    level: 1,
+    aposLocale
+  }).project({
+    slug: 1,
+    rank: 1,
+    title: 1
+  }).toArray();
+  for (let i = 1; (i <= 10); i++) {
+    assert(pages.find(page => (page.rank === i - 1) && page.title === `test-child-${i}`));
+  }
+  assert(pages.find(page => (page.slug === '/archive') && (page.rank === 10)));
+}

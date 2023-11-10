@@ -7,6 +7,16 @@
 * Add the possibility to add custom classes to notifications.  
 Setting the `apos-notification--hidden` class will hide the notification, which can be useful when we only care about the event carried by it.
 
+### Fixes
+
+* Pages inserted directly in the published mode are now given a
+correct `lastPublishedAt` property, correcting several bugs relating
+to the page tree.
+* A migration has been added to introduce `lastPublishedAt` wherever
+it is missing for existing pages.
+* Fixed a bug that prevented page ranks from renumbering properly during "insert after" operations.
+* Added a one-time migration to make existing page ranks unique among peers.
+
 ## 3.59.0 (2023-11-03)
 
 ### Changes
