@@ -18,6 +18,12 @@
             *
           </span>
           <span
+            v-if="field.tag" class="apos-field__tag"
+            :class="{[`apos-field__tag--${field.tag.type}`]: field.tag.type}"
+          >
+            {{ $t(field.tag.value || field.tag) }}
+          </span>
+          <span
             v-if="(field.help || field.htmlHelp) && displayOptions.helpTooltip"
             class="apos-field__help-tooltip"
           >
@@ -117,6 +123,30 @@ export default {
 
 .apos-field__required {
   color: var(--a-danger);
+}
+
+.apos-field__tag {
+  color: var(--a-background-inverted);
+  font-size: var(--a-type-tiny);
+  font-weight: 600;
+  letter-spacing: 0.25px;
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  height: 20px;
+  padding: 0 4px;
+  background-color: #F3F3F3;
+  border-width: 1px;
+  border-style: solid;
+  border-radius: 4px;
+  border-color: #CACACA;
+  margin-left: 5px;
+
+  &--danger {
+    color: #643810;
+    border-color: #E2C7B9;
+    background-color: #FFF3E7;
+  }
 }
 
 .apos-field__help-tooltip {
