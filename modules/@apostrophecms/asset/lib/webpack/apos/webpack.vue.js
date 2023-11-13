@@ -8,10 +8,20 @@ module.exports = (options, apos) => {
           test: /\.vue$/,
           loader: 'vue-loader',
           options: {
-            sourceMap: true
+            sourceMap: true,
+            compilerOptions: {
+              compatConfig: {
+                MODE: 2
+              }
+            }
           }
         }
       ]
+    },
+    resolve: {
+      alias: {
+        vue: '@vue/compat'
+      }
     },
     plugins: [
       // make sure to include the plugin for the magic
