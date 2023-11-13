@@ -34,8 +34,7 @@
     "vue/max-attributes-per-line": [
       "warn",
       {
-        "singleline": 2,
-        "multiline": 2
+        "singleline": 2
       }
     ],
     "vue/singleline-html-element-content-newline": [
@@ -51,8 +50,7 @@
           "textarea"
         ]
       }
-    ],
-    "vue/attributes-order": 0
+    ]
   },
   "overrides": [
     {
