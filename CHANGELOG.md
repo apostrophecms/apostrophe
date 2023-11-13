@@ -9,6 +9,13 @@ Setting the `apos-notification--hidden` class will hide the notification, which 
 * Give the possibility to add horizontal rules from the insert menu of the rich text editor with the following widget option: `insert: [ 'horizontalRule' ]`.  
 Improve also the UX to focus back the editor after inserting a horizontal rule or a table.
 
+### Fixes
+
+* The `render-widget` route now provides an `options` property on the widget, so that
+schema-level options of the widget are available to the external front end when
+rendering a newly added or edited widget in the editor. Note that when rendering a full page,
+this information is already available on the parent area: `area.options.widgets[widget.type]`
+
 ## 3.59.0 (2023-11-03)
 
 ### Changes
