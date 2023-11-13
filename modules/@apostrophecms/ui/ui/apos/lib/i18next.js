@@ -67,7 +67,7 @@ export default {
     // property for instance. You may also specify
     // `localize: false` to pass a string through without
     // invoking i18next.
-    app.provide('$t', $t);
+    app.config.globalProperties.$t = $t;
 
     function $t(key, options = {}) {
       if ((key !== null) && ((typeof key) === 'object')) {
