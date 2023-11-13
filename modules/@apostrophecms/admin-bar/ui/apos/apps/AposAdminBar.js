@@ -9,19 +9,3 @@ export default function() {
     app.mount('#apos-admin-bar');
   }
 };
-
-/* { */
-/*     el: '#apos-admin-bar', */
-/*     computed: { */
-/*       apos () { */
-/*         return window.apos; */
-/*       } */
-/*     }, */
-/*     render: function (h) { */
-/*       return h('TheAposAdminBar', { */
-/*         props: { */
-/*           items: apos.adminBar.items */
-/*         } */
-/*       }); */
-/*     } */
-/*   } */

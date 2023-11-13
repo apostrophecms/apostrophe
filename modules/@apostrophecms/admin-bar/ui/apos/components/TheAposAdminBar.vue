@@ -33,23 +33,12 @@ import AposThemeMixin from 'Modules/@apostrophecms/ui/mixins/AposThemeMixin';
 export default {
   name: 'TheAposAdminBar',
   mixins: [ AposThemeMixin ],
-  /* props: { */
-  /*   items: { */
-  /*     type: Array, */
-  /*     default: function () { */
-  /*       return []; */
-  /*     } */
-  /*   } */
-  /* }, */
   data() {
     return {
-      items: apos.adminBar.items
+      items: apos.adminBar.items || []
     };
   },
   computed: {
-    /* apos() { */
-    /*   return window.apos; */
-    /* }, */
     menuItems() {
       return this.items.filter(item => !item.options?.user);
     },
@@ -64,6 +53,7 @@ export default {
     }
   },
   mounted() {
+    console.log('this.items', this.items);
     this.setSpacer();
   },
   methods: {
