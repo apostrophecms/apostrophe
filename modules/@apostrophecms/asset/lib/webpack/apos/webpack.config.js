@@ -64,6 +64,7 @@ module.exports = ({
     resolve: {
       extensions: [ '.*', '.js', '.vue', '.json' ],
       alias: {
+        /* vue$: '../../../../../../node_modules/@vue/runtime-dom', */
         vue$: '@vue/runtime-dom',
         /* vue: '@vue/compat', */
         // resolve apostrophe modules

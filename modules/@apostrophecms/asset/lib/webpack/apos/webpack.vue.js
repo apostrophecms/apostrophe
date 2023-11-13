@@ -8,12 +8,12 @@ module.exports = (options, apos) => {
           test: /\.vue$/,
           loader: 'vue-loader',
           options: {
-            sourceMap: true,
-            compilerOptions: {
-              compatConfig: {
-                MODE: 2
-              }
-            }
+            sourceMap: true
+            /* compilerOptions: { */
+            /*   compatConfig: { */
+            /*     MODE: 2 */
+            /*   } */
+            /* } */
           }
         }
       ]
