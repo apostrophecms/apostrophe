@@ -18,11 +18,6 @@ module.exports = (options, apos) => {
         }
       ]
     },
-    resolve: {
-      alias: {
-        vue: '@vue/compat'
-      }
-    },
     plugins: [
       // make sure to include the plugin for the magic
       new VueLoaderPlugin()
