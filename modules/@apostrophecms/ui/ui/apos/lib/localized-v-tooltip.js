@@ -1,14 +1,14 @@
 // Vue plugin. Create a new directive with i18n support by applying the decorator
 // pattern to VTooltip, then add it to the Vue instance
 
-import { VTooltip } from 'v-tooltip';
+import { VTooltip } from 'floating-vue';
 
 export default {
   install(app, options) {
 
     const directive = {};
 
-    Object.assign(VTooltip.options, options);
+    Object.assign(VTooltip.options || {}, options);
     let instance;
 
     // Right now VTooltip only uses bind, but be forwards-compatible

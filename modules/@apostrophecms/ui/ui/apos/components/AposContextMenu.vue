@@ -45,14 +45,14 @@
 
 <script>
 import {
-  VPopover
-} from 'v-tooltip';
+  Popper
+} from 'floating-vue';
 import AposThemeMixin from 'Modules/@apostrophecms/ui/mixins/AposThemeMixin';
 
 export default {
   name: 'AposContextMenu',
   components: {
-    'v-popover': VPopover
+    'v-popover': Popper
   },
   mixins: [ AposThemeMixin ],
   props: {
