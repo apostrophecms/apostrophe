@@ -239,13 +239,22 @@ module.exports = {
           })) {
             return;
           }
+          const lastPublishedAt = doc.createdAt || new Date();
           const draft = {
             ...doc,
             _id: draftId,
             aposLocale: draftLocale,
-            lastPublishedAt: doc.createdAt || new Date()
+            lastPublishedAt
           };
-          return manager.insertDraftOf(req, doc, draft, options);
+          await manager.insertDraftOf(req, doc, draft, options);
+          // Published doc must know it is published, otherwise various bugs ensue
+          return self.apos.doc.db.updateOne({
+            _id: doc._id
+          }, {
+            $set: {
+              lastPublishedAt
+            }
+          });
         }
       },
       fixUniqueError: {
