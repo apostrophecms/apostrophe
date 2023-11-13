@@ -55,6 +55,7 @@ describe('Pages', function() {
       page.type = 'test-page';
       const { _id } = await apos.page.insert(req, '_home', 'lastChild', page, {});
       const fetchedPage = await apos.page.find(req, { _id }).toObject();
+      assert.strictEqual(fetchedPage.aposMode, 'published');
       assert(fetchedPage);
       const draftReq = req.clone({
         mode: 'draft'
@@ -63,6 +64,7 @@ describe('Pages', function() {
         aposDocId: fetchedPage.aposDocId
       }).toObject();
       assert(draft);
+      assert.strictEqual(draft.aposMode, 'draft');
       assert(draft.level === fetchedPage.level);
       assert(draft.lastPublishedAt);
       assert(fetchedPage.lastPublishedAt);
