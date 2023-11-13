@@ -1,4 +1,5 @@
 import createApp from 'Modules/@apostrophecms/ui/lib/vue';
+import TheAposNotifications from '../components/TheAposNotifications.vue';
 
 export default function() {
   if (!apos.login.user) {
@@ -7,10 +8,7 @@ export default function() {
     return;
   }
 
-  return createApp({
-    el: '#apos-notification',
-    render: function (h) {
-      return h('TheAposNotifications');
-    }
-  });
+  const app = createApp(TheAposNotifications);
+
+  app.mount('#apos-notification');
 };
