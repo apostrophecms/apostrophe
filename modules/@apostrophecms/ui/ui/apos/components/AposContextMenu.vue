@@ -110,16 +110,12 @@ export default {
       event: null
     };
   },
-  mouted() {
-    console.log('this.menuPlacement', this.menuPlacement);
-  },
   computed: {
     popoverClass() {
       const classes = [ 'apos-popover' ].concat(this.themeClass);
       this.popoverModifiers.forEach(m => {
         classes.push(`apos-popover--${m}`);
       });
-      console.log('classes', classes);
       return classes;
     },
     classList() {

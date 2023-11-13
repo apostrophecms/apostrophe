@@ -4,8 +4,8 @@
     class="apos-admin-bar-wrapper"
     :class="themeClass"
   >
-    <div class="apos-admin-bar-spacer" ref="spacer" />
-    <nav class="apos-admin-bar" ref="adminBar">
+    <div ref="spacer" class="apos-admin-bar-spacer" />
+    <nav ref="adminBar" class="apos-admin-bar">
       <div class="apos-admin-bar__row">
         <AposLogoPadless class="apos-admin-bar__logo" />
         <TheAposAdminBarMenu :items="menuItems" />
@@ -18,10 +18,10 @@
       </div>
       <TheAposContextBar @mounted="setSpacer" />
       <component
-        v-for="bar in bars"
         v-bind="bar.props || {}"
-        :key="bar.id"
         :is="bar.componentName"
+        v-for="bar in bars"
+        :key="bar.id"
       />
     </nav>
   </div>
@@ -53,7 +53,6 @@ export default {
     }
   },
   mounted() {
-    console.log('this.items', this.items);
     this.setSpacer();
   },
   methods: {
