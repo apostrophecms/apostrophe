@@ -44,7 +44,7 @@
             <AposButton
               type="quiet"
               @click="foreign ? $emit('edit', i) : null"
-              @dblclick.native="(!foreign && !isContextual) ? $emit('edit', i) : null"
+              @dblclick="(!foreign && !isContextual) ? $emit('edit', i) : null"
               :label="foreign ? {
                 key: 'apostrophe:editWidgetType',
                 label: $t(widgetLabel)

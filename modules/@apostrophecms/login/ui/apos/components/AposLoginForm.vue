@@ -24,9 +24,9 @@
         >{{ $t('apostrophe:loginResetPassword') }}</a>
         <Component
           v-for="requirement in beforeSubmitRequirements"
+          v-bind="getRequirementProps(requirement.name)"
           :key="requirement.name"
           :is="requirement.component"
-          v-bind="getRequirementProps(requirement.name)"
           @done="requirementDone(requirement, $event)"
           @block="requirementBlock(requirement)"
         />

@@ -2,12 +2,12 @@
 <template>
   <div ref="root">
     <draggable
+      v-bind="dragOptions"
       class="apos-slat-list"
       tag="ol"
       role="list"
       :list="next"
       :move="onMove"
-      v-bind="dragOptions"
       @start="isDragging=true"
       @end="isDragging=false"
       :id="listId"

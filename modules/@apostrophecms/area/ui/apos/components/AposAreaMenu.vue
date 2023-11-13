@@ -1,8 +1,8 @@
 <template>
   <AposButton
     v-if="options.expanded"
-    :disabled="disabled"
     v-bind="buttonOptions"
+    :disabled="disabled"
     @click="openExpandedMenu(index)"
     role="button"
   />

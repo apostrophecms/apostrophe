@@ -3,9 +3,9 @@
     id="apos-modals" :class="themeClass"
   >
     <component
+      v-bind="modal.props"
       v-for="modal in stack" :key="modal.id"
       :is="modal.componentName"
-      v-bind="modal.props"
       @modal-result="modal.result = $event"
       @safe-close="resolve(modal)"
     />

@@ -1,9 +1,9 @@
 <template>
   <VueDraggable
+    v-bind="dragOptions"
     tag="ol"
     class="apos-tree__list"
     :list="myRows"
-    v-bind="dragOptions"
     @start="startDrag"
     @end="endDrag"
   >

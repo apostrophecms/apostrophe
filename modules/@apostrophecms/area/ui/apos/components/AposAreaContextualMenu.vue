@@ -1,9 +1,9 @@
 <template>
   <div class="apos-area-menu" :class="{'apos-is-focused': groupIsFocused}">
     <AposContextMenu
+      v-bind="extendedContextMenuOptions"
       :disabled="isDisabled"
       :button="buttonOptions"
-      v-bind="extendedContextMenuOptions"
       @open="menuOpen"
       @close="menuClose"
       ref="contextMenu"

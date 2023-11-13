@@ -48,11 +48,11 @@
             <th />
           </thead>
           <draggable
+            v-bind="dragOptions"
             class="apos-input-array-inline"
             :tag="field.style === 'table' ? 'tbody' : 'div'"
             role="list"
             :list="items"
-            v-bind="dragOptions"
             :id="listId"
           >
             <AposSchema

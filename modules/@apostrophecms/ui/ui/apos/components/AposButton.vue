@@ -6,8 +6,9 @@
     :data-apos-test="actionTestLabel"
   >
     <component
-      :is="href ? 'a' : 'button'"
+      v-bind="attrs"
       v-on="href ? {} : {click: click}"
+      :is="href ? 'a' : 'button'"
       :href="href.length ? href : false"
       class="apos-button"
       :class="modifierClass"
@@ -17,7 +18,6 @@
       :role="role"
       :id="attrs.id ? attrs.id : id"
       :style="{color: textColor}"
-      v-bind="attrs"
     >
       <transition name="fade">
         <AposSpinner :color="spinnerColor" v-if="busy" />

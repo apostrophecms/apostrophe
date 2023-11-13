@@ -43,8 +43,8 @@
       /> -->
       <AposButton
         v-if="!foreign"
-        :disabled="disabled || maxReached"
         v-bind="cloneButton"
+        :disabled="disabled || maxReached"
         @click="$emit('clone')"
         :tooltip="{
           content: 'apostrophe:duplicate',
@@ -54,8 +54,8 @@
       />
       <AposButton
         v-if="!foreign"
-        :disabled="disabled"
         v-bind="removeButton"
+        :disabled="disabled"
         @click="$emit('remove')"
         :tooltip="{
           content: 'apostrophe:delete',
