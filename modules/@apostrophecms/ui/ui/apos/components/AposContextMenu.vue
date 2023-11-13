@@ -2,34 +2,32 @@
   <div class="apos-context-menu">
     <slot name="prebutton" />
     <v-popover
-      @hide="hide"
-      @show="show"
-      :offset="menuOffset"
-      trigger="manual"
+      :class="popoverClass"
+      :distance="menuOffset"
+      :skidding="menuOffset"
+      :triggers="['click']"
+      :shown="isOpen"
+      :auto-hide="true"
       :placement="menuPlacement"
-      :open="isOpen"
-      :delay="{ show: 0, hide: 0 }"
-      :popover-class="popoverClass"
-      popover-wrapper-class="apos-popover__wrapper"
-      popover-inner-class="apos-popover__inner"
+      @on-hide="hide"
     >
       <!-- TODO refactor buttons to take a single config obj -->
       <AposButton
         v-bind="button"
+        ref="button"
         class="apos-context-menu__btn"
         data-apos-test="contextMenuTrigger"
-        @click.stop="buttonClicked($event)"
+        role="button"
         :state="buttonState"
-        ref="button"
         :disabled="disabled"
         :tooltip="tooltip"
-        role="button"
         :attrs="{
           'aria-haspopup': 'menu',
           'aria-expanded': isOpen ? true : false
         }"
+        @click.stop="buttonClicked($event)"
       />
-      <template #popover class="apos-popover__slot">
+      <template #popper class="apos-popover__slot">
         <AposContextMenuDialog
           :menu-placement="menuPlacement"
           :class-list="classList"
@@ -45,14 +43,14 @@
 
 <script>
 import {
-  Popper
+  Dropdown
 } from 'floating-vue';
 import AposThemeMixin from 'Modules/@apostrophecms/ui/mixins/AposThemeMixin';
 
 export default {
   name: 'AposContextMenu',
   components: {
-    'v-popover': Popper
+    'v-popover': Dropdown
   },
   mixins: [ AposThemeMixin ],
   props: {
@@ -112,12 +110,16 @@ export default {
       event: null
     };
   },
+  mouted() {
+    console.log('this.menuPlacement', this.menuPlacement);
+  },
   computed: {
     popoverClass() {
       const classes = [ 'apos-popover' ].concat(this.themeClass);
       this.popoverModifiers.forEach(m => {
         classes.push(`apos-popover--${m}`);
       });
+      console.log('classes', classes);
       return classes;
     },
     classList() {
@@ -218,18 +220,18 @@ export default {
 }
 
 .apos-context-menu {
-  & ::v-deep .apos-popover__wrapper,
-  & ::v-deep div:not([class]),
-  & ::v-deep .apos-context-menu__dialog,
-  & ::v-deep .apos-popover,
-  & ::v-deep .apos-popover__inner {
+  & ::deep(.v-popper__wrapper),
+  & ::deep(div:not([class])),
+  & ::deep(.apos-context-menu__dialog),
+  & ::deep(.v-popover__popper),
+  & ::deep(.v-popper__inner ){
     &:focus {
       outline: none;
     }
   }
 }
 
-.apos-popover {
+.v-popper__popper {
   z-index: $z-index-modal;
   display: block;
 
@@ -264,7 +266,7 @@ export default {
   }
 }
 
-.apos-popover--z-index-in-context {
+.v-popper__popper--z-index-in-context {
   z-index: $z-index-widget-focused-controls;
 }
 
