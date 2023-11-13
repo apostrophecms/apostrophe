@@ -2,7 +2,7 @@ export default {
   distance: '11',
   skidding: '11',
   placement: 'bottom-end'
-  /* defaultTemplate: ` */
+  /* defaultHtml: ` */
   /*   <div class="apos-tooltip" role="tooltip"> */
   /*     <div class="apos-tooltip__wrapper"> */
   /*       <div class="apos-tooltip__arrow"></div> */
