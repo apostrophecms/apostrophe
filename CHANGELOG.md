@@ -20,6 +20,12 @@ it is missing for existing pages.
 * Added a one-time migration to make existing page ranks unique among peers.
 * Fix `if` and `requiredIf` fields inside array.
 
+## 3.59.1 (2023-11-14)
+
+### Fixes
+
+* Fix `if` and `requiredIf` fields inside arrays. With regard to `if`, this is a hotfix for a regression introduced in 3.59.0.
+
 ## 3.59.0 (2023-11-03)
 
 ### Changes
