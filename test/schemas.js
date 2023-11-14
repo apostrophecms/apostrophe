@@ -2381,7 +2381,9 @@ describe('Schemas', function() {
 
       assert.deepEqual(actual, expected);
     });
+  });
 
+  describe('field if|ifRequired', function () {
     it('should enforce required property not equal match', async function() {
       const req = apos.task.getReq();
       const schema = apos.schema.compose({
@@ -2468,10 +2470,7 @@ describe('Schemas', function() {
           subfield: false
         }
       }, output);
-      console.log('output', require('util').inspect(output, {
-        colors: true,
-        depth: 1
-      }));
+
       assert(!output.requiredProp);
     });
 
@@ -2956,48 +2955,49 @@ describe('Schemas', function() {
       const schema = apos.schema.compose({
         addFields: [
           {
-            name: 'age',
-            type: 'integer',
+            name: 'prop1',
+            type: 'boolean',
             required: false
           },
           {
-            name: 'shoeSize',
-            type: 'integer',
+            name: 'prop2',
+            type: 'string',
             requiredIf: {
-              age: true
+              prop1: true
             }
           }
         ]
       });
       const output = {};
       await apos.schema.convert(req, schema, {
-        shoeSize: '',
-        age: ''
+        prop1: false,
+        prop2: ''
       }, output);
-      assert(output.shoeSize === null);
+
+      assert(output.prop2 === '');
     });
 
     it('should error required property with ifRequired boolean', async function() {
       const schema = apos.schema.compose({
         addFields: [
           {
-            name: 'age',
-            type: 'integer',
+            name: 'prop1',
+            type: 'boolean',
             required: false
           },
           {
-            name: 'shoeSize',
-            type: 'integer',
+            name: 'prop2',
+            type: 'string',
             requiredIf: {
-              age: true
+              prop1: true
             }
           }
         ]
       });
       await testSchemaError(schema, {
-        shoeSize: '',
-        age: '18'
-      }, 'shoeSize', 'required');
+        prop1: true,
+        prop2: ''
+      }, 'prop2', 'required');
     });
 
     it('should enforce required property with ifRequired string', async function() {
@@ -3006,7 +3006,7 @@ describe('Schemas', function() {
         addFields: [
           {
             name: 'age',
-            type: 'integer',
+            type: 'string',
             required: false
           },
           {
@@ -3031,7 +3031,7 @@ describe('Schemas', function() {
         addFields: [
           {
             name: 'age',
-            type: 'integer',
+            type: 'string',
             required: false
           },
           {
@@ -4080,7 +4080,6 @@ describe('Schemas', function() {
 
       await testSchemaError(schema, {}, 'age', 'required');
     });
-
   });
 });
 

@@ -498,10 +498,10 @@ module.exports = {
             }
             continue;
           } else if (val.$ne) {
-            // eslint-disable-next-line eqeqeq
-            if (val.$ne == destinationKey) {
+            if (val.$ne === destinationKey) {
               return false;
             }
+            continue;
           }
 
           // Handle external conditions:
@@ -526,23 +526,21 @@ module.exports = {
             continue;
           }
 
-          if (val.min && destinationKey < val.min) {
-            return false;
-          }
-          if (val.max && destinationKey > val.max) {
-            return false;
+          if (val.min || val.max) {
+            if (destinationKey < val.min) {
+              return false;
+            }
+            if (destinationKey > val.max) {
+              return false;
+            }
+            continue;
           }
 
           if (conditionalFields?.[key] === false) {
             return false;
           }
 
-          if (typeof val === 'boolean' && !destinationKey) {
-            return false;
-          }
-
-          // eslint-disable-next-line eqeqeq
-          if ((typeof val === 'string' || typeof val === 'number') && destinationKey != val) {
+          if (destinationKey !== val) {
             return false;
           }
         }
