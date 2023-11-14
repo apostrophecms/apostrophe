@@ -1,5 +1,25 @@
 # Changelog
 
+## UNRELEASED
+
+### Adds
+
+* Add the possibility to add custom classes to notifications.
+Setting the `apos-notification--hidden` class will hide the notification, which can be useful when we only care about the event carried by it.
+* Give the possibility to add horizontal rules from the insert menu of the rich text editor with the following widget option: `insert: [ 'horizontalRule' ]`.
+Improve also the UX to focus back the editor after inserting a horizontal rule or a table.
+
+### Fixes
+
+* Pages inserted directly in the published mode are now given a
+correct `lastPublishedAt` property, correcting several bugs relating
+to the page tree.
+* A migration has been added to introduce `lastPublishedAt` wherever
+it is missing for existing pages.
+* Fixed a bug that prevented page ranks from renumbering properly during "insert after" operations.
+* Added a one-time migration to make existing page ranks unique among peers.
+* Fix `if` and `requiredIf` fields inside array.
+
 ## 3.59.1 (2023-11-14)
 
 ### Fixes
