@@ -2675,6 +2675,120 @@ describe('Schemas', function() {
       }, 'requiredProp', 'required');
     });
 
+    it('should enforce required property number min', async function() {
+      const req = apos.task.getReq();
+      const schema = apos.schema.compose({
+        addFields: [
+          {
+            name: 'prop1',
+            type: 'integer',
+            required: false
+          },
+          {
+            name: 'prop2',
+            type: 'string',
+            required: true,
+            if: {
+              prop1: {
+                min: 0,
+                max: 10
+              }
+            }
+          }
+        ]
+      });
+      const output = {};
+      await apos.schema.convert(req, schema, {
+        prop1: -1,
+        prop2: ''
+      }, output);
+      assert(output.prop2 === '');
+    });
+
+    it('should error required property number min', async function() {
+      const schema = apos.schema.compose({
+        addFields: [
+          {
+            name: 'prop1',
+            type: 'integer',
+            required: false
+          },
+          {
+            name: 'prop2',
+            type: 'string',
+            required: true,
+            if: {
+              prop1: {
+                min: 0,
+                max: 10
+              }
+            }
+          }
+        ]
+      });
+      await testSchemaError(schema, {
+        prop1: 0,
+        prop2: ''
+      }, 'prop2', 'required');
+    });
+
+    it('should enforce required property number max', async function() {
+      const req = apos.task.getReq();
+      const schema = apos.schema.compose({
+        addFields: [
+          {
+            name: 'prop1',
+            type: 'integer',
+            required: false
+          },
+          {
+            name: 'prop2',
+            type: 'string',
+            required: true,
+            if: {
+              prop1: {
+                min: -10,
+                max: 0
+              }
+            }
+          }
+        ]
+      });
+      const output = {};
+      await apos.schema.convert(req, schema, {
+        prop1: 1,
+        prop2: ''
+      }, output);
+      assert(output.prop2 === '');
+    });
+
+    it('should error required property number max', async function() {
+      const schema = apos.schema.compose({
+        addFields: [
+          {
+            name: 'prop1',
+            type: 'integer',
+            required: false
+          },
+          {
+            name: 'prop2',
+            type: 'string',
+            required: true,
+            if: {
+              prop1: {
+                min: -10,
+                max: 0
+              }
+            }
+          }
+        ]
+      });
+      await testSchemaError(schema, {
+        prop1: 0,
+        prop2: ''
+      }, 'prop2', 'required');
+    });
+
     it('should enforce required property nested logical AND', async function() {
       const req = apos.task.getReq();
       const schema = apos.schema.compose({
@@ -3135,11 +3249,6 @@ describe('Schemas', function() {
             required: false
           },
           {
-            name: 'prop2',
-            type: 'boolean',
-            required: false
-          },
-          {
             name: 'shoeSize',
             type: 'integer',
             requiredIf: {
@@ -3152,8 +3261,60 @@ describe('Schemas', function() {
       });
       await testSchemaError(schema, {
         shoeSize: '',
-        age: 19,
-        prop2: false
+        age: 19
+      }, 'shoeSize', 'required');
+    });
+
+    it('should enforce required property with ifRequired number min 0', async function() {
+      const req = apos.task.getReq();
+      const schema = apos.schema.compose({
+        addFields: [
+          {
+            name: 'age',
+            type: 'integer',
+            required: false
+          },
+          {
+            name: 'shoeSize',
+            type: 'integer',
+            requiredIf: {
+              age: {
+                min: 1
+              }
+            }
+          }
+        ]
+      });
+      const output = {};
+      await apos.schema.convert(req, schema, {
+        shoeSize: '',
+        age: 0
+      }, output);
+      assert(output.shoeSize === null);
+    });
+
+    it('should error required property with ifRequired number min 0', async function() {
+      const schema = apos.schema.compose({
+        addFields: [
+          {
+            name: 'age',
+            type: 'integer',
+            required: false
+          },
+          {
+            name: 'shoeSize',
+            type: 'integer',
+            requiredIf: {
+              age: {
+                min: 0
+              }
+            }
+          }
+        ]
+      });
+      await testSchemaError(schema, {
+        shoeSize: '',
+        age: 0
       }, 'shoeSize', 'required');
     });
 
@@ -3195,11 +3356,6 @@ describe('Schemas', function() {
             required: false
           },
           {
-            name: 'prop2',
-            type: 'boolean',
-            required: false
-          },
-          {
             name: 'shoeSize',
             type: 'integer',
             requiredIf: {
@@ -3215,6 +3371,61 @@ describe('Schemas', function() {
         shoeSize: '',
         age: 36
       }, 'shoeSize', 'required');
+    });
+
+    it('should enforce required property with ifRequired number max 0', async function() {
+      const req = apos.task.getReq();
+      const schema = apos.schema.compose({
+        addFields: [
+          {
+            name: 'prop1',
+            type: 'integer',
+            required: false
+          },
+          {
+            name: 'prop2',
+            type: 'string',
+            requiredIf: {
+              prop1: {
+                min: -10,
+                max: 0
+              }
+            }
+          }
+        ]
+      });
+      const output = {};
+      await apos.schema.convert(req, schema, {
+        prop1: 1,
+        prop2: ''
+      }, output);
+      assert(output.prop2 === '');
+    });
+
+    it('should error required property with ifRequired number max 0', async function() {
+      const schema = apos.schema.compose({
+        addFields: [
+          {
+            name: 'prop1',
+            type: 'integer',
+            required: false
+          },
+          {
+            name: 'prop2',
+            type: 'string',
+            requiredIf: {
+              prop1: {
+                min: -10,
+                max: 0
+              }
+            }
+          }
+        ]
+      });
+      await testSchemaError(schema, {
+        prop1: 0,
+        prop2: ''
+      }, 'prop2', 'required');
     });
 
     it('should enforce required property with ifRequired logical AND', async function() {

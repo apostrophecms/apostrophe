@@ -526,7 +526,11 @@ module.exports = {
             continue;
           }
 
-          if (val.min || val.max) {
+          // test with Object.prototype for the case val.min === 0
+          if (
+            Object.prototype.hasOwnProperty.call(val, 'min') ||
+            Object.prototype.hasOwnProperty.call(val, 'max')
+          ) {
             if (destinationKey < val.min) {
               return false;
             }
