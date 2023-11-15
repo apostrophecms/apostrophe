@@ -69,7 +69,7 @@ export default {
               return true;
             } catch (e) {
               await apos.notify(e.message, {
-                type: 'error',
+                type: 'danger',
                 localize: false
               });
               return false;
