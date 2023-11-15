@@ -71,6 +71,7 @@ module.exports = {
             if (req.aposExternalFront) {
               const result = {
                 ...req.data,
+                options,
                 widget
               };
               return result;

@@ -11,6 +11,10 @@ Improve also the UX to focus back the editor after inserting a horizontal rule o
 
 ### Fixes
 
+* The `render-widget` route now provides an `options` property on the widget, so that
+schema-level options of the widget are available to the external front end when
+rendering a newly added or edited widget in the editor. Note that when rendering a full page,
+this information is already available on the parent area: `area.options.widgets[widget.type]`
 * Pages inserted directly in the published mode are now given a
 correct `lastPublishedAt` property, correcting several bugs relating
 to the page tree.
