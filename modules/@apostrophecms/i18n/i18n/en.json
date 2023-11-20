@@ -424,7 +424,6 @@
   "selectOneLabel": "Select {{ typeLabel }}",
   "selectPage": "Select Page",
   "selectedMenuItem": "✓ {{ label }}",
-  "sensitive": "Sensitive",
   "sentenceJoiner": " ",
   "settings": "Personal Settings",
   "shareDraft": "Share Draft",
