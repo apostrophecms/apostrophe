@@ -138,9 +138,8 @@ export default {
   async mounted() {
     this.modal.active = true;
     await this.evaluateExternalConditions();
-    this.evaluateConditions();
     if (this.next.length) {
-      this.select(this.next[0]._id);
+      await this.select(this.next[0]._id);
     }
     if (this.serverError && this.serverError.data && this.serverError.data.errors) {
       const first = this.serverError.data.errors[0];
@@ -168,6 +167,7 @@ export default {
           hasErrors: false,
           data: this.next.find(item => item._id === _id)
         };
+        this.evaluateConditions();
         this.triggerValidation = false;
       }
     },
@@ -193,7 +193,7 @@ export default {
         const item = this.newInstance();
         item._id = cuid();
         this.next.push(item);
-        this.select(item._id);
+        await this.select(item._id);
         this.updateMinMax();
       }
     },
