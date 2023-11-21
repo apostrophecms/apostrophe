@@ -1,33 +1,11 @@
 import createApp from 'Modules/@apostrophecms/ui/lib/vue';
+import TheAposCommandMenu from '../components/TheAposCommandMenu.vue';
 
 export default function() {
   // Careful, login page is in user scene but has no command menu
   if (apos.commandMenu) {
-    const theAposCommandMenu = createApp({
-      el: '#apos-command-menu',
-      computed: {
-        apos () {
-          return window.apos;
-        }
-      },
-      methods: {
-        getModal() {
-          return this.$refs.commandMenu.modal;
-        }
-      },
-      render(h) {
-        return h(
-          apos.commandMenu.components.the,
-          {
-            ref: 'commandMenu',
-            props: {
-              groups: apos.commandMenu.groups,
-              modals: apos.commandMenu.modals
-            }
-          }
-        );
-      }
-    });
+    const app = createApp(TheAposCommandMenu);
+    const theAposCommandMenu = app.mount('#apos-command-menu');
 
     apos.commandMenu.getModal = theAposCommandMenu.getModal;
   }
