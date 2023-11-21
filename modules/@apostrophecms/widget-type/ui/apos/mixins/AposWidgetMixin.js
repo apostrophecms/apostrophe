@@ -44,7 +44,7 @@ export default {
       apos.bus.$emit('widget-rendering');
       const parameters = {
         _docId: this.docId,
-        widget: this.value,
+        widget: this.modelValue,
         areaFieldId: this.areaFieldId,
         type: this.type
       };
@@ -77,7 +77,7 @@ export default {
       }
 
       return {
-        [placeholderClass]: this.value.aposPlaceholder === true
+        [placeholderClass]: this.modelValue.aposPlaceholder === true
       };
     }
   }
