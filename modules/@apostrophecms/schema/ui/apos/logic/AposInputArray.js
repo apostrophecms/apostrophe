@@ -195,8 +195,8 @@ export default {
     },
     getNext() {
       // Next should consistently be an array.
-      return (this.value && Array.isArray(this.value.data))
-        ? this.value.data
+      return (this.modelValue && Array.isArray(this.modelValue.data))
+        ? this.modelValue.data
         : (this.field.def || []);
     },
     disableAdd() {

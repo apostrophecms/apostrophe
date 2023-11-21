@@ -1,13 +1,17 @@
 <template>
   <AposModal
-    class="apos-doc-editor" :modal="modal"
+    class="apos-doc-editor"
+    :modal="modal"
     :modal-title="modalTitle"
-    @inactive="modal.active = false" @show-modal="modal.showModal = true"
-    @esc="confirmAndCancel" @no-modal="$emit('safe-close')"
+    @inactive="modal.active = false"
+    @show-modal="modal.showModal = true"
+    @esc="confirmAndCancel"
+    @no-modal="$emit('safe-close')"
   >
     <template #secondaryControls>
       <AposButton
-        type="default" label="apostrophe:cancel"
+        type="default"
+        label="apostrophe:cancel"
         @click="confirmAndCancel"
       />
     </template>
@@ -23,10 +27,11 @@
       />
       <AposButton
         v-if="restoreOnly"
-        type="primary" :label="saveLabel"
+        type="primary"
+        :label="saveLabel"
         :disabled="saveDisabled"
-        @click="onRestore"
         :tooltip="errorTooltip"
+        @click="onRestore"
       />
       <AposButtonSplit
         v-else-if="saveMenu"
@@ -41,8 +46,8 @@
     <template #leftRail>
       <AposModalRail>
         <AposModalTabs
-          :key="tabKey"
           v-if="tabs.length"
+          :key="tabKey"
           :current="currentTab"
           :tabs="tabs"
           :errors="fieldErrors"
@@ -58,6 +63,7 @@
               v-for="tab in tabs"
               v-show="tab.name === currentTab"
               :key="tab.name"
+              :ref="tab.name"
               :changed="changed"
               :schema="groups[tab.name].schema"
               :current-fields="groups[tab.name].fields"
@@ -66,9 +72,8 @@
               :following-values="followingValues('other')"
               :conditional-fields="conditionalFields"
               :doc-id="docId"
-              :value="docFields"
+              :model-value="docFields"
               :server-errors="serverErrors"
-              :ref="tab.name"
               :generation="generation"
               @input="updateDocFields"
               @validate="triggerValidate"
@@ -83,6 +88,7 @@
         <div class="apos-doc-editor__utility">
           <AposSchema
             v-if="docReady"
+            ref="utilitySchema"
             :schema="groups['utility'].schema"
             :changed="changed"
             :current-fields="groups['utility'].fields"
@@ -91,13 +97,12 @@
             :following-values="followingUtils"
             :conditional-fields="conditionalFields"
             :doc-id="docId"
-            :value="docFields"
-            @input="updateDocFields"
-            @validate="triggerValidate"
+            :model-value="docFields"
             :modifiers="['small', 'inverted']"
-            ref="utilitySchema"
             :server-errors="serverErrors"
             :generation="generation"
+            @input="updateDocFields"
+            @validate="triggerValidate"
           />
         </div>
       </AposModalRail>

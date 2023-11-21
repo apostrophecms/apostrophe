@@ -10,7 +10,7 @@
       <option
         v-for="choice in choices"
         :key="JSON.stringify(choice.value)"
-        :value="JSON.stringify(choice.value)"
+        :model-value="JSON.stringify(choice.value)"
         :selected="choice.value === selected"
       >
         {{ $t(choice.label) }}

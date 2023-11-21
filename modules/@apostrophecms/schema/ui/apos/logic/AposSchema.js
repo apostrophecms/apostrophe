@@ -4,7 +4,7 @@ import { getConditionTypesObject } from '../lib/conditionalFields';
 export default {
   name: 'AposSchema',
   props: {
-    value: {
+    modelValue: {
       type: Object,
       required: true
     },
@@ -114,7 +114,7 @@ export default {
               required
             },
             value: {
-              data: this.value[item.name]
+              data: this.modelValue[item.name]
             },
             serverError: this.serverErrors && this.serverErrors[item.name],
             modifiers: [
@@ -201,18 +201,18 @@ export default {
       const fieldState = {};
 
       // Though not in the schema, keep track of the _id field.
-      if (this.value.data._id) {
-        next.data._id = this.value.data._id;
-        fieldState._id = { data: this.value.data._id };
+      if (this.modelValue.data._id) {
+        next.data._id = this.modelValue.data._id;
+        fieldState._id = { data: this.modelValue.data._id };
       }
       // Though not *always* in the schema, keep track of the archived status.
-      if (this.value.data.archived !== undefined) {
-        next.data.archived = this.value.data.archived;
-        fieldState.archived = { data: this.value.data.archived };
+      if (this.modelValue.data.archived !== undefined) {
+        next.data.archived = this.modelValue.data.archived;
+        fieldState.archived = { data: this.modelValue.data.archived };
       }
 
       this.schema.forEach(field => {
-        const value = this.value.data[field.name];
+        const value = this.modelValue.data[field.name];
         fieldState[field.name] = {
           error: false,
           data: (value === undefined) ? field.def : value
@@ -256,7 +256,7 @@ export default {
           changeFound = true;
           this.next.data[field.name] = this.fieldState[field.name].data;
         } else {
-          this.next.data[field.name] = this.value.data[field.name];
+          this.next.data[field.name] = this.modelValue.data[field.name];
         }
       });
       if (

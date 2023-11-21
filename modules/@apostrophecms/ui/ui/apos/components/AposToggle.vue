@@ -12,7 +12,7 @@
 
 export default {
   props: {
-    value: {
+    modelValue: {
       type: Boolean,
       required: true
     }

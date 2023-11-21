@@ -1,38 +1,48 @@
 <template>
   <AposInputWrapper
-    :modifiers="modifiers" :field="field"
-    :error="effectiveError" :uid="uid"
+    :modifiers="modifiers"
+    :field="field"
+    :error="effectiveError"
+    :uid="uid"
     :display-options="displayOptions"
   >
     <template #body>
       <div :class="classList">
         <input
-          class="apos-sr-only apos-boolean__input apos-boolean__input--true"
-          type="radio" :id="`${uid}-true`"
-          :value="true" @change="setValue(true)"
-          :checked="value.data === true"
-          :disabled="field.readOnly"
+          :id="`${uid}-true`"
           ref="true"
+          class="apos-sr-only apos-boolean__input apos-boolean__input--true"
+          type="radio"
+          :model-value="true"
+          :checked="modelValue.data === true"
+          :disabled="field.readOnly"
+          @change="setValue(true)"
         >
         <label :for="`${uid}-true`" class="apos-boolean__label apos-input">
           <circle-icon
-            :size="12" class="apos-boolean__icon"
-            title="" v-show="!field.toggle"
+            v-show="!field.toggle"
+            :size="12"
+            class="apos-boolean__icon"
+            title=""
           />
           {{ trueLabel || 'Yes' }}
         </label>
         <input
-          class="apos-sr-only apos-boolean__input apos-boolean__input--false"
-          type="radio" :id="`${uid}-false`"
-          :value="false" @change="setValue(false)"
-          :checked="value.data === false"
-          :disabled="field.readOnly"
+          :id="`${uid}-false`"
           ref="false"
+          class="apos-sr-only apos-boolean__input apos-boolean__input--false"
+          type="radio"
+          :model-value="false"
+          :checked="modelValue.data === false"
+          :disabled="field.readOnly"
+          @change="setValue(false)"
         >
         <label :for="`${uid}-false`" class="apos-boolean__label apos-input">
           <circle-icon
-            :size="12" class="apos-boolean__icon"
-            title="" v-show="!field.toggle"
+            v-show="!field.toggle"
+            :size="12"
+            class="apos-boolean__icon"
+            title=""
           />
           {{ falseLabel || 'No' }}
         </label>

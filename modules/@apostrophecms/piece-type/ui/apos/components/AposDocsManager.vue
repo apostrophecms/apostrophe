@@ -44,14 +44,14 @@
           <div class="apos-pieces-manager__relationship__counts">
             <AposMinMaxCount
               :field="relationshipField"
-              :value="checkedDocs"
+              :model-value="checkedDocs"
             />
           </div>
           <AposSlatList
             class="apos-pieces-manager__relationship__items"
             @input="setCheckedDocs"
             @item-clicked="editRelationship"
-            :value="checkedDocs"
+            :model-value="checkedDocs"
             :relationship-schema="relationshipField?.schema"
           />
         </div>

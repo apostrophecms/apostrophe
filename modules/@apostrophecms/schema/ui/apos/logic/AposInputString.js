@@ -5,6 +5,7 @@ export default {
   mixins: [ AposInputMixin ],
   emits: [ 'return' ],
   data () {
+    console.log('this.modelValue', this.modelValue);
     return {
       step: undefined,
       wasPopulated: false
@@ -28,7 +29,7 @@ export default {
       }
     },
     classes () {
-      return [ 'apos-input', `apos-input--${this.type}`, this.value.duplicate && 'apos-input--error' ];
+      return [ 'apos-input', `apos-input--${this.type}`, this.modelValue.duplicate && 'apos-input--error' ];
     },
     icon () {
       if (this.error) {

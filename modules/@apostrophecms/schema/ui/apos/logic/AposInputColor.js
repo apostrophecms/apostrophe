@@ -31,7 +31,7 @@ export default {
       return {
         label: this.field.label,
         type: 'color',
-        color: this.value.data || ''
+        color: this.modelValue.data || ''
       };
     },
     format() {

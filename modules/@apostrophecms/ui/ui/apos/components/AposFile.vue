@@ -34,7 +34,7 @@
     </label>
     <div v-if="fileOrAttachment" class="apos-file-files">
       <AposSlatList
-        :value="[fileOrAttachment]"
+        :model-value="[fileOrAttachment]"
         @input="update"
         :disabled="attachmentDisabled"
       />

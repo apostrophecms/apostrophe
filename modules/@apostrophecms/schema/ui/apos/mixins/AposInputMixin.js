@@ -4,7 +4,7 @@ export default {
   props: {
     // The value passed in from the parent component through the v-model
     // directive.
-    value: {
+    modelValue: {
       type: Object,
       required: true
     },
@@ -51,7 +51,7 @@ export default {
   },
   data () {
     return {
-      next: (this.value && this.value.data !== undefined) ? this.value.data : '',
+      next: (this.modelValue && this.modelValue.data !== undefined) ? this.modelValue.data : '',
       error: false,
       // This is just meant to be sufficient to prevent unintended collisions
       // in the UI between id attributes
@@ -126,12 +126,12 @@ export default {
       this.$emit('input', {
         data: error ? this.next : this.convert(this.next),
         error,
-        ranValidation: this.conditionMet === false ? this.value.ranValidation : true
+        ranValidation: this.conditionMet === false ? this.modelValue.ranValidation : true
       });
     },
     watchValue () {
-      this.error = this.value.error;
-      this.next = this.value.data;
+      this.error = this.modelValue.error;
+      this.next = this.modelValue.data;
     },
     watchNext () {
       this.validateAndEmit();

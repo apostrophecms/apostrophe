@@ -6,7 +6,7 @@ export default {
     docId: String,
     type: String,
     areaFieldId: String,
-    value: Object,
+    modelValue: Object,
     // Ignored for server side rendering
     areaField: Object,
     followingValues: Object,
@@ -20,7 +20,7 @@ export default {
     }
   },
   watch: {
-    value: {
+    modelValue: {
       handler() {
         this.renderContent();
       }

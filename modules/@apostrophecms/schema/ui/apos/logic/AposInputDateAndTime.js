@@ -6,7 +6,7 @@ export default {
   emits: [ 'return' ],
   data() {
     return {
-      next: (this.value && this.value.data) || null,
+      next: (this.modelValue && this.modelValue.data) || null,
       date: '',
       time: '',
       disabled: !this.field.required

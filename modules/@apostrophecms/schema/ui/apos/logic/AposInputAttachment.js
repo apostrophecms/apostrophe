@@ -9,8 +9,8 @@ export default {
     return {
       // Next should consistently be an object or null (an attachment field with
       // no value yet is null, per server side).
-      next: (this.value && (typeof this.value.data === 'object'))
-        ? this.value.data : (this.field.def || null),
+      next: (this.modelValue && (typeof this.modelValue.data === 'object'))
+        ? this.modelValue.data : (this.field.def || null),
       disabled: false,
       uploading: false
     };
@@ -61,7 +61,7 @@ export default {
           });
 
           this.$emit('upload-complete');
-          this.value.data = attachment;
+          this.modelValue.data = attachment;
         } catch (error) {
           console.error('Error uploading file.', error);
           const msg = error.body && error.body.message ? error.body.message : this.$t('apostrophe:uploadError');

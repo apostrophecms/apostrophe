@@ -49,13 +49,13 @@
           <div class="apos-pages-manager__relationship__counts">
             <AposMinMaxCount
               :field="relationshipField"
-              :value="checkedDocs"
+              :model-value="checkedDocs"
             />
           </div>
           <AposSlatList
             class="apos-pages-manager__relationship__items"
             @input="setCheckedDocs"
-            :value="checkedDocs"
+            :model-value="checkedDocs"
           />
         </div>
       </AposModalRail>

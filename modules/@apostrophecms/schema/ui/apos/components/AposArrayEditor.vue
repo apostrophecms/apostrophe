@@ -48,7 +48,7 @@
             @input="update"
             @select="select"
             :selected="currentId"
-            :value="withLabels(next)"
+            :model-value="withLabels(next)"
           />
         </div>
       </AposModalRail>
@@ -66,7 +66,7 @@
                     :trigger-validation="triggerValidation"
                     :following-values="followingValues()"
                     :conditional-fields="conditionalFields"
-                    :value="currentDoc"
+                    :model-value="currentDoc"
                     :server-errors="currentDocServerErrors"
                     ref="schema"
                     :doc-id="docId"

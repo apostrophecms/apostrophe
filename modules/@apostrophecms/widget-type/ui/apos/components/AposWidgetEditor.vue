@@ -1,13 +1,17 @@
 <template>
   <AposModal
     class="apos-widget-editor"
-    :modal="modal" :modal-title="editLabel"
-    @inactive="modal.active = false" @show-modal="modal.showModal = true"
-    @esc="confirmAndCancel" @no-modal="$emit('safe-close')"
+    :modal="modal"
+    :modal-title="editLabel"
+    @inactive="modal.active = false"
+    @show-modal="modal.showModal = true"
+    @esc="confirmAndCancel"
+    @no-modal="$emit('safe-close')"
   >
     <template #breadcrumbs>
       <AposModalBreadcrumbs
-        v-if="breadcrumbs && breadcrumbs.length" :items="breadcrumbs"
+        v-if="breadcrumbs && breadcrumbs.length"
+        :items="breadcrumbs"
       />
     </template>
     <template #main>
@@ -15,14 +19,14 @@
         <template #bodyMain>
           <div class="apos-widget-editor__body">
             <AposSchema
+              ref="schema"
               :trigger-validation="triggerValidation"
               :schema="schema"
-              :value="docFields"
-              @input="updateDocFields"
-              @validate="triggerValidate"
+              :model-value="docFields"
               :following-values="followingValues()"
               :conditional-fields="conditionalFields"
-              ref="schema"
+              @input="updateDocFields"
+              @validate="triggerValidate"
             />
           </div>
         </template>
@@ -30,13 +34,15 @@
     </template>
     <template #footer>
       <AposButton
-        type="default" label="apostrophe:cancel"
+        type="default"
+        label="apostrophe:cancel"
         @click="confirmAndCancel"
       />
       <AposButton
-        type="primary" @click="save"
+        type="primary"
         :label="saveLabel"
         :disabled="docFields.hasErrors"
+        @click="save"
       />
     </template>
   </AposModal>
@@ -67,7 +73,7 @@ export default {
       required: true,
       type: Object
     },
-    value: {
+    modelValue: {
       required: false,
       type: Object,
       default() {
@@ -86,7 +92,7 @@ export default {
   emits: [ 'safe-close', 'modal-result' ],
   data() {
     return {
-      id: this.value && this.value._id,
+      id: this.modelValue && this.modelValue._id,
       original: null,
       docFields: {
         data: {},
@@ -150,11 +156,11 @@ export default {
   created() {
     const defaults = this.getDefault();
 
-    if (this.value) {
-      this.original = klona(this.value);
+    if (this.modelValue) {
+      this.original = klona(this.modelValue);
       this.docFields.data = {
         ...defaults,
-        ...this.value
+        ...this.modelValue
       };
       return;
     }

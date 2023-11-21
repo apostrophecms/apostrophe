@@ -6,7 +6,7 @@
   >
     <input
       type="checkbox" class="apos-sr-only apos-input--choice apos-input--checkbox"
-      :value="choice.value" :name="field.name"
+      :model-value="choice.value" :name="field.name"
       :id="id" :aria-label="choice.label || field.label"
       :tabindex="tabindex" :disabled="field.readOnly || choice.readOnly"
       v-model="checkProxy"

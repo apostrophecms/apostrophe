@@ -64,7 +64,7 @@
         v-if="hasSearch"
         @input="search" @return="search($event, true)"
         :field="searchField.field"
-        :status="searchField.status" :value="searchField.value"
+        :status="searchField.status" :model-value="searchField.value"
         :modifiers="['small']"
         ref="search"
       />

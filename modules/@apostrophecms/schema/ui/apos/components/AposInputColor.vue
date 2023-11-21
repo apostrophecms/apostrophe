@@ -18,7 +18,7 @@
           >
             <Picker
               v-bind="pickerOptions"
-              :value="next"
+              :model-value="next"
               @input="update"
             />
           </AposContextMenu>

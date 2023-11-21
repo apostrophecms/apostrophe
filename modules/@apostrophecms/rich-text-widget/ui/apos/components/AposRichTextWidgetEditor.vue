@@ -1,6 +1,7 @@
 <template>
   <div :aria-controls="`insert-menu-${value._id}`" @keydown="handleUIKeydown">
     <bubble-menu
+      v-if="editor"
       class="bubble-menu"
       :tippy-options="{
         maxWidth: 'none',
@@ -10,7 +11,6 @@
         inertia: true
       }"
       :editor="editor"
-      v-if="editor"
     >
       <AposContextMenuDialog
         menu-placement="top"
@@ -19,9 +19,9 @@
       >
         <div class="apos-rich-text-toolbar__inner">
           <component
+            :is="(tools[item] && tools[item].component) || 'AposTiptapUndefined'"
             v-for="(item, index) in toolbar"
             :key="item + '-' + index"
-            :is="(tools[item] && tools[item].component) || 'AposTiptapUndefined'"
             :name="item"
             :tool="tools[item]"
             :options="editorOptions"
@@ -32,15 +32,15 @@
     </bubble-menu>
     <floating-menu
       v-if="editor"
+      :id="`insert-menu-${value._id}`"
+      ref="insertMenu"
+      :key="insertMenuKey"
       class="apos-rich-text-insert-menu"
       :tippy-options="{ duration: 100, zIndex: 2000, placement: 'bottom-start' }"
       :should-show="showFloatingMenu"
       :editor="editor"
       role="listbox"
       tabindex="0"
-      ref="insertMenu"
-      :id="`insert-menu-${value._id}`"
-      :key="insertMenuKey"
     >
       <div class="apos-rich-text-insert-menu-heading">
         {{ $t('apostrophe:richTextInsertMenuHeading') }}
@@ -78,8 +78,8 @@
             :key="`${item}-${index}-component`"
           >
             <component
-              v-if="item === activeInsertMenuComponent?.name"
               :is="activeInsertMenuComponent.component"
+              v-if="item === activeInsertMenuComponent?.name"
               :active="true"
               :editor="editor"
               :options="editorOptions"
@@ -97,7 +97,8 @@
     </div>
     <div
       v-if="showPlaceholder !== null && (!placeholderText || !isFocused)"
-      class="apos-rich-text-editor__editor_after" :class="editorModifiers"
+      class="apos-rich-text-editor__editor_after"
+      :class="editorModifiers"
     >
       {{ $t('apostrophe:emptyRichTextWidget') }}
     </div>
@@ -155,7 +156,7 @@ export default {
       type: Object,
       required: true
     },
-    value: {
+    modelValue: {
       type: Object,
       default() {
         return {};
@@ -179,7 +180,7 @@ export default {
       editor: null,
       docFields: {
         data: {
-          ...this.value
+          ...this.modelValue
         },
         hasErrors: false
       },
@@ -223,10 +224,10 @@ export default {
     },
     autofocus() {
       // Only true for a new rich text widget
-      return !this.value.content.length;
+      return !this.modelValue.content.length;
     },
     initialContent() {
-      const content = this.transformNamedAnchors(this.value.content);
+      const content = this.transformNamedAnchors(this.modelValue.content);
       if (content.length) {
         return content;
       }
@@ -257,7 +258,7 @@ export default {
     },
     isVisuallyEmpty () {
       const div = document.createElement('div');
-      div.innerHTML = this.value.content;
+      div.innerHTML = this.modelValue.content;
       return !div.textContent;
     },
     editorModifiers () {

@@ -16,7 +16,7 @@
       >
         <option
           v-for="num in totalPages" :key="num"
-          :value="num"
+          :model-value="num"
         >
           {{ $t('apostrophe:pageNumber', { number: num }) }}
         </option>

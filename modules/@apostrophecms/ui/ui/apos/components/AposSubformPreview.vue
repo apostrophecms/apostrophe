@@ -36,7 +36,7 @@ export default {
         return this.$t(this.subform.help);
       }
       let preview = this.subform.preview;
-      const values = inferFieldValues(this.subform.schema, this.values, this.$t);
+      const values = inferFieldValues(this.subform.schema, this.modelValues, this.$t);
 
       if (!preview) {
         preview = this.subform.fields

@@ -3,6 +3,7 @@
   <div ref="root">
     <draggable
       v-bind="dragOptions"
+      :id="listId"
       class="apos-slat-list"
       tag="ol"
       role="list"
@@ -10,28 +11,27 @@
       :move="onMove"
       @start="isDragging=true"
       @end="isDragging=false"
-      :id="listId"
     >
       <transition-group type="transition" name="apos-flip-list">
         <AposSlat
           v-for="item in next"
-          class="apos-slat-list__item"
-          @remove="remove"
-          @engage="engage"
-          @disengage="disengage"
-          @select="select"
-          @move="move"
-          @item-clicked="$emit('item-clicked', item)"
           :key="item._id"
+          class="apos-slat-list__item"
           :item="item"
           :selected="selected === item._id"
           :class="{'apos-slat-list__item--disabled' : disabled, 'apos-input--error': duplicate}"
           :disabled="disabled"
+          @remove="remove"
           :engaged="engaged === item._id"
+          @engage="engage"
           :parent="listId"
+          @disengage="disengage"
           :slat-count="next.length"
+          @select="select"
           :removable="removable"
+          @move="move"
           :relationship-schema="relationshipSchema"
+          @item-clicked="$emit('item-clicked', item)"
           :editor-label="editorLabel"
           :editor-icon="editorIcon"
         />
@@ -50,7 +50,7 @@ export default {
     draggable
   },
   props: {
-    value: {
+    modelValue: {
       type: Array,
       required: true
     },
@@ -89,7 +89,7 @@ export default {
       isDragging: false,
       delayedDragging: false,
       engaged: null,
-      next: this.value.slice()
+      next: this.modelValue.slice()
     };
   },
   computed: {
@@ -115,13 +115,13 @@ export default {
       });
     },
     value() {
-      this.next = this.value.slice();
+      this.next = this.modelValue.slice();
     },
     next(newValue, oldValue) {
       let equal = true;
-      if (newValue.length === this.value.length) {
+      if (newValue.length === this.modelValue.length) {
         for (let i = 0; (i < newValue.length); i++) {
-          if ((newValue[i]._id !== this.value[i]._id) || (newValue[i].title !== this.value[i].title)) {
+          if ((newValue[i]._id !== this.modelValue[i]._id) || (newValue[i].title !== this.modelValue[i].title)) {
             equal = false;
             break;
           }

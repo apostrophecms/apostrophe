@@ -1,6 +1,7 @@
 <template>
   <AposInputWrapper
-    :field="field" :error="effectiveError"
+    :field="field"
+    :error="effectiveError"
     :uid="uid"
     :modifiers="modifiers"
     :display-options="displayOptions"
@@ -10,19 +11,19 @@
         v-if="field.style === 'combo' && choices.length"
         :choices="choices"
         :field="field"
-        :value="value"
+        :model-value="modelValue"
         @select-items="selectItems"
       />
 
       <AposCheckbox
-        v-else
-        :for="getChoiceId(uid, choice.value)"
         v-for="choice in choices"
-        :key="choice.value"
+        v-else
         :id="getChoiceId(uid, choice.value)"
+        :key="choice.value"
+        v-model="modelValue.data"
+        :for="getChoiceId(uid, choice.value)"
         :choice="choice"
         :field="field"
-        v-model="value.data"
       />
     </template>
   </AposInputWrapper>
