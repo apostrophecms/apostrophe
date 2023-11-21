@@ -10,12 +10,14 @@
     <template #secondaryControls>
       <AposButton
         v-if="relationshipField"
-        type="default" label="apostrophe:cancel"
+        type="default"
+        label="apostrophe:cancel"
         @click="confirmAndCancel"
       />
       <AposButton
         v-else
-        type="default" label="apostrophe:exit"
+        type="default"
+        label="apostrophe:exit"
         @click="confirmAndCancel"
       />
     </template>
@@ -28,12 +30,14 @@
         v-if="relationshipField"
         :menu="moreMenu"
         menu-placement="bottom-end"
-        @item-clicked="moreMenuHandler"
         :button="moreMenuButton"
+        @item-clicked="moreMenuHandler"
       />
       <AposButton
-        v-else type="primary"
-        label="apostrophe:newPage" @click="create()"
+        v-else
+        type="primary"
+        label="apostrophe:newPage"
+        @click="create()"
       />
       <AposButton
         v-if="relationshipField"
@@ -54,32 +58,32 @@
           </div>
           <AposSlatList
             class="apos-pages-manager__relationship__items"
-            @input="setCheckedDocs"
             :model-value="checkedDocs"
+            @input="setCheckedDocs"
           />
         </div>
       </AposModalRail>
     </template>
     <template #main>
       <AposModalBody>
-        <template #bodyHeader v-if="!relationshipField">
+        <template v-if="!relationshipField" #bodyHeader>
           <AposModalToolbar>
             <template #rightControls>
               <AposContextMenu
                 :menu="pageSetMenu"
                 menu-placement="bottom-end"
-                @item-clicked="pageSetMenuSelection = $event"
                 :button="pageSetMenuButton"
+                @item-clicked="pageSetMenuSelection = $event"
               />
             </template>
           </AposModalToolbar>
         </template>
         <template #bodyMain>
           <AposTree
+            v-model:checked="checked"
             :items="items"
             :headers="headers"
             :icons="icons"
-            v-model="checked"
             :options="treeOptions"
             @update="update"
           />

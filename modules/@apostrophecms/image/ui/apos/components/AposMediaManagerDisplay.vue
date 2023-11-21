@@ -11,14 +11,16 @@
         @create-placeholder="$emit('create-placeholder', $event)"
       />
       <div
-        class="apos-media-manager-display__cell" v-for="item in items"
+        v-for="item in items"
         :key="idFor(item)"
+        class="apos-media-manager-display__cell"
         :class="{'apos-is-selected': checked.includes(item._id)}"
         :style="getCellStyles(item)"
       >
         <div class="apos-media-manager-display__checkbox">
           <AposCheckbox
             v-show="item._id !== 'placeholder' && !options.hideCheckboxes"
+            v-model="checkedProxy"
             tabindex="-1"
             :field="{
               name: item._id,
@@ -28,10 +30,10 @@
               disabled: options.disableUnchecked && !checked.includes(item._id)
             }"
             :choice="{ value: item._id }"
-            v-model="checkedProxy"
           />
         </div>
         <button
+          ref="btns"
           :disabled="
             item._id === 'placeholder' ||
               (options.disableUnchecked && !checked.includes(item._id))
@@ -40,7 +42,6 @@
           @click.exact="$emit('select', item._id)"
           @click.shift="$emit('select-series', item._id)"
           @click.meta="$emit('select-another', item._id)"
-          ref="btns"
         >
           <div
             v-if="item.dimensions"
@@ -64,9 +65,9 @@
         aria-hidden="true"
       >
         <button
+          ref="btns"
           disabled="true"
           class="apos-media-manager-display__select"
-          ref="btns"
         />
       </div>
     </div>
@@ -78,10 +79,6 @@ import cuid from 'cuid';
 
 export default {
   // Custom model to handle the v-model connection on the parent.
-  model: {
-    prop: 'checked',
-    event: 'change'
-  },
   props: {
     canEdit: {
       type: Boolean,
@@ -122,10 +119,10 @@ export default {
     }
   },
   emits: [
+    'update:checked',
     'select',
     'select-series',
     'select-another',
-    'change',
     'upload-started',
     'upload-complete',
     'create-placeholder'
@@ -137,7 +134,7 @@ export default {
         return this.checked;
       },
       set(val) {
-        this.$emit('change', val);
+        this.$emit('update:checked', val);
       }
     }
   },
