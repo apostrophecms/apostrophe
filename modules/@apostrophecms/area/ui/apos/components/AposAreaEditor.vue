@@ -22,7 +22,6 @@
       </template>
       <template v-else>
         <AposAreaMenu
-          @add="add"
           :context-menu-options="contextMenuOptions"
           :empty="true"
           :index="0"
@@ -30,14 +29,15 @@
           :max-reached="maxReached"
           :disabled="field && field.readOnly"
           :widget-options="options.widgets"
+          @add="add"
         />
       </template>
     </div>
     <div class="apos-areas-widgets-list">
       <AposAreaWidget
         v-for="(widget, i) in next"
-        :area-id="areaId"
         :key="widget._id"
+        :area-id="areaId"
         :widget="widget"
         :generation="generation"
         :i="i"
@@ -375,7 +375,7 @@ export default {
         apos.area.activeEditor = this;
         apos.bus.$on('apos-refreshing', cancelRefresh);
         const result = await apos.modal.execute(componentName, {
-          value: widget,
+          modelValue: widget,
           options: this.widgetOptionsByType(widget.type),
           type: widget.type,
           docId: this.docId,
@@ -473,7 +473,7 @@ export default {
         const componentName = this.widgetEditorComponent(name);
         apos.area.activeEditor = this;
         const widget = await apos.modal.execute(componentName, {
-          value: null,
+          modelValue: null,
           options: this.widgetOptionsByType(name),
           type: name,
           docId: this.docId,

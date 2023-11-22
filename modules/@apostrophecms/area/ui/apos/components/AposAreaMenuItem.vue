@@ -1,9 +1,10 @@
 <template>
   <button
-    @click="click" class="apos-area-menu__button"
+    class="apos-area-menu__button"
     :class="{ 'apos-area-menu__button--separated': item.type }"
     :data-action="item.name"
     :tabindex="String(tabindex)"
+    @click="click"
     @keydown.prevent.arrow-down="$emit('down')"
     @keydown.prevent.arrow-up="$emit('up')"
   >
@@ -15,10 +16,10 @@
     </div>
     <div class="apos-area-menu__item-content">
       <component
+        :is="item.icon"
         v-if="item.icon"
         :size="15"
         class="apos-area-menu__item-icon"
-        :is="item.icon"
       />
       {{ $t(item.label) }}
     </div>
