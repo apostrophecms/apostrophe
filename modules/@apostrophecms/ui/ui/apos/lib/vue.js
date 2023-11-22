@@ -4,8 +4,8 @@ import LocalizedVTooltip from './localized-v-tooltip';
 import tooltipOptions from './tooltip-options';
 import VueAposI18Next from './i18next';
 
-export default (appConfig) => {
-  const app = createApp(appConfig);
+export default (appConfig, props = {}) => {
+  const app = createApp(appConfig, props);
 
   app.use(LocalizedVTooltip, tooltipOptions);
   app.use(ClickOutsideElement);
