@@ -1,5 +1,5 @@
 <template>
-  <div :aria-controls="`insert-menu-${value._id}`" @keydown="handleUIKeydown">
+  <div :aria-controls="`insert-menu-${modelValue._id}`" @keydown="handleUIKeydown">
     <bubble-menu
       v-if="editor"
       class="bubble-menu"
@@ -32,7 +32,7 @@
     </bubble-menu>
     <floating-menu
       v-if="editor"
-      :id="`insert-menu-${value._id}`"
+      :id="`insert-menu-${modelValue._id}`"
       ref="insertMenu"
       :key="insertMenuKey"
       class="apos-rich-text-insert-menu"
