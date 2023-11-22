@@ -33,10 +33,11 @@ import AposThemeMixin from 'Modules/@apostrophecms/ui/mixins/AposThemeMixin';
 export default {
   name: 'TheAposAdminBar',
   mixins: [ AposThemeMixin ],
-  data() {
-    return {
-      items: apos.adminBar.items || []
-    };
+  props: {
+    items: {
+      type: Array,
+      required: true
+    }
   },
   computed: {
     menuItems() {
