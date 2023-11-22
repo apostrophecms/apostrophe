@@ -14,7 +14,7 @@
           :icon="
             set.field.type === 'select' ? 'unfold-more-horizontal-icon' : ''
           "
-          @input="input($event, set.name)"
+          @update:model-value="input($event, set.name)"
         />
       </div>
     </div>
