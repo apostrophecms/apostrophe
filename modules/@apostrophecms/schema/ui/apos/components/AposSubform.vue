@@ -13,7 +13,7 @@
           :data-apos-test-name="subform.name"
           :trigger-validation="triggerValidation"
           :schema="schema"
-          :value="docFields"
+          :model-value="docFields"
           :following-values="followingValues()"
           :conditional-fields="conditionalFields"
           :server-errors="serverErrors"

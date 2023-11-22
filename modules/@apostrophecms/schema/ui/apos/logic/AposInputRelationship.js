@@ -6,8 +6,8 @@ export default {
   mixins: [ AposInputMixin ],
   emits: [ 'input' ],
   data () {
-    const next = (this.value && Array.isArray(this.value.data))
-      ? klona(this.value.data) : (klona(this.field.def) || []);
+    const next = (this.modelValue && Array.isArray(this.modelValue.data))
+      ? klona(this.modelValue.data) : (klona(this.field.def) || []);
 
     // Remember relationship subfield values even if a document
     // is temporarily deselected, easing the user's pain if they
@@ -99,7 +99,7 @@ export default {
       return widgetOptions.minSize || [];
     },
     duplicate () {
-      return this.value.duplicate ? 'apos-input--error' : null;
+      return this.modelValue.duplicate ? 'apos-input--error' : null;
     }
   },
   watch: {
@@ -205,9 +205,9 @@ export default {
       }, 200);
     },
     watchValue () {
-      this.error = this.value.error;
+      this.error = this.modelValue.error;
       // Ensure the internal state is an array.
-      this.next = Array.isArray(this.value.data) ? this.value.data : [];
+      this.next = Array.isArray(this.modelValue.data) ? this.modelValue.data : [];
     },
     async choose () {
       const result = await apos.modal.execute(this.chooserComponent, {

@@ -3,15 +3,15 @@
     <template #leftControls>
       <AposButton
         v-if="canSelectAll"
+        ref="selectAll"
         label="apostrophe:select"
         type="outline"
         :modifiers="['small']"
         text-color="var(--a-base-1)"
         :icon-only="true"
         :icon="checkboxIcon"
-        @click="selectAll"
-        ref="selectAll"
         data-apos-test="selectAll"
+        @click="selectAll"
       />
       <div
         v-for="{
@@ -50,8 +50,10 @@
     <template #rightControls>
       <AposPager
         v-if="!options.noPager && totalPages !== 0"
-        @click="registerPageChange" @change="registerPageChange"
-        :total-pages="totalPages" :current-page="currentPage"
+        :total-pages="totalPages"
+        :current-page="currentPage"
+        @click="registerPageChange"
+        @change="registerPageChange"
       />
       <AposFilterMenu
         v-if="filters.length"
@@ -62,11 +64,13 @@
       />
       <AposInputString
         v-if="hasSearch"
-        @input="search" @return="search($event, true)"
         :field="searchField.field"
-        :status="searchField.status" :value="searchField.value"
-        :modifiers="['small']"
+        :status="searchField.status"
         ref="search"
+        :model-value="searchField.value"
+        :modifiers="['small']"
+        @input="search"
+        @return="search($event, true)"
       />
     </template>
   </AposModalToolbar>
@@ -183,6 +187,7 @@ export default {
     }
   },
   mounted () {
+    console.log('this.checked', this.checked);
     this.computeActiveOperations();
     apos.bus.$on('command-menu-manager-select-all', this.selectAll);
     apos.bus.$on('command-menu-manager-archive-selected', this.archiveSelected);

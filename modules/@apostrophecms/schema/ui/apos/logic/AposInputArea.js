@@ -16,7 +16,7 @@ export default {
   },
   data () {
     return {
-      next: this.value.data || this.getEmptyValue(),
+      next: this.modelValue.data || this.getEmptyValue(),
       error: false,
       // This is just meant to be sufficient to prevent unintended collisions
       // in the UI between id attributes
@@ -58,8 +58,8 @@ export default {
       };
     },
     watchValue () {
-      this.error = this.value.error;
-      this.next = this.value.data || this.getEmptyValue();
+      this.error = this.modelValue.error;
+      this.next = this.modelValue.data || this.getEmptyValue();
     },
     validate(value) {
       if (this.field.required) {

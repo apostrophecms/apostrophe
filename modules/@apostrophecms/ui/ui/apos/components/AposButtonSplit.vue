@@ -30,7 +30,7 @@
           @click="selectionHandler(item.action)"
           :aria-checked="item.action === action ? 'true' : 'false'"
           role="menuitemradio"
-          :value="item.action"
+          :model-value="item.action"
           ref="choices"
           @keydown="cycleElementsToFocus"
         >

@@ -85,7 +85,7 @@ export default {
     },
     // Return next at mount or when generation changes
     getNext() {
-      return this.value?.data ? this.value.data : (this.field.def || {});
+      return this.modelValue?.data ? this.modelValue.data : (this.field.def || {});
     }
   }
 };

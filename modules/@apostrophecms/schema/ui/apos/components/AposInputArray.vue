@@ -9,7 +9,7 @@
     <template #additional>
       <AposMinMaxCount
         :field="field"
-        :value="next"
+        :model-value="next"
       />
     </template>
     <template #body>

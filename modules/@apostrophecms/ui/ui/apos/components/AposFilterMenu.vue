@@ -9,7 +9,7 @@
         <component
           :is="map[set.field.type]"
           :field="set.field"
-          :value="set.value"
+          :model-value="set.value"
           :status="set.status"
           :icon="
             set.field.type === 'select' ? 'unfold-more-horizontal-icon' : ''

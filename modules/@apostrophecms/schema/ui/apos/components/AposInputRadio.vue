@@ -1,23 +1,24 @@
 <template>
   <AposInputWrapper
-    :field="field" :error="effectiveError"
+    :field="field"
+    :error="effectiveError"
     :uid="uid"
     :display-options="displayOptions"
     :modifiers="modifiers"
   >
     <template #body>
       <label
-        class="apos-choice-label"
         v-for="{label, value, tooltip} in choices"
         :key="value"
+        class="apos-choice-label"
         :for="getChoiceId(uid, value)"
         :class="{'apos-choice-label--disabled': field.readOnly}"
       >
         <input
+          :id="getChoiceId(uid, value)"
           type="radio"
           class="apos-sr-only apos-input--choice apos-input--radio"
-          :id="getChoiceId(uid, value)"
-          :value="JSON.stringify(value)"
+          :model-value="JSON.stringify(value)"
           :name="field.name"
           :checked="next === value"
           tabindex="1"
@@ -26,8 +27,8 @@
         >
         <span class="apos-input-indicator" aria-hidden="true">
           <component
-            v-if="next === value"
             :is="`${next === value ? 'check-bold-icon' : 'span'}`"
+            v-if="next === value"
             :size="8"
           />
         </span>

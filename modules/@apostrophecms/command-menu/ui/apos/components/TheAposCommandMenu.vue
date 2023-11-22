@@ -29,7 +29,9 @@ export default {
         return new Promise(() => {
           setTimeout(resolve, ms);
         });
-      }
+      },
+      groups: apos.commandMenu.groups,
+      modals: apos.commandMenu.modals
     };
   },
   computed: {
@@ -97,6 +99,9 @@ export default {
     apos.bus.$off('modal-resolved', this.updateModal);
   },
   methods: {
+    getModal() {
+      return this.modal;
+    },
     getFirstNonShortcutModal(index = -1) {
       const modal = apos.modal.getAt(index);
       const properties = apos.modal.getProperties(modal.id);

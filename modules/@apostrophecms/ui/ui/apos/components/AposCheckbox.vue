@@ -1,15 +1,20 @@
 <template>
   <label
-    class="apos-choice-label" :for="id"
+    class="apos-choice-label"
+    :for="id"
     :class="{'apos-choice-label--disabled': field.readOnly}"
     :tabindex="{'-1' : field.hideLabel}"
   >
     <input
-      type="checkbox" class="apos-sr-only apos-input--choice apos-input--checkbox"
-      :value="choice.value" :name="field.name"
-      :id="id" :aria-label="choice.label || field.label"
-      :tabindex="tabindex" :disabled="field.readOnly || choice.readOnly"
+      :id="id"
       v-model="checkProxy"
+      type="checkbox"
+      class="apos-sr-only apos-input--choice apos-input--checkbox"
+      :model-value="choice.value"
+      :name="field.name"
+      :aria-label="choice.label || field.label"
+      :tabindex="tabindex"
+      :disabled="field.readOnly || choice.readOnly"
       @change="updateThis"
     >
     <span class="apos-input-indicator" aria-hidden="true">
@@ -17,11 +22,13 @@
         :is="`${
           choice.indeterminate ? 'minus-icon' : 'check-bold-icon'
         }`"
-        :size="10" v-if="checked && checked.includes(choice.value)"
+        v-if="modelValue && modelValue.includes(choice.value)"
+        :size="10"
       />
     </span>
     <span
-      :class="{'apos-sr-only': field.hideLabel }" v-if="choice.label"
+      v-if="choice.label"
+      :class="{'apos-sr-only': field.hideLabel }"
       class="apos-choice-label-text"
     >
       {{ $t(choice.label) }}
@@ -32,13 +39,8 @@
 <script>
 
 export default {
-  // Custom model to handle the v-model connection on the parent.
-  model: {
-    prop: 'checked',
-    event: 'change'
-  },
   props: {
-    checked: {
+    modelValue: {
       type: [ Array, Boolean, String ],
       default: false
     },
@@ -71,7 +73,7 @@ export default {
     // Handle the local check state within this component.
     checkProxy: {
       get() {
-        return this.checked;
+        return this.modelValue;
       },
       set(val) {
         // TODO: Move indeterminate to `status`

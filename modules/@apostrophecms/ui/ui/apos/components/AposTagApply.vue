@@ -7,7 +7,7 @@
       <AposInputString
         @input="updateSearchInput"
         @return="create"
-        :field="searchField" :value="searchValue"
+        :field="searchField" :model-value="searchValue"
         :status="searchStatus" ref="textInput"
       />
       <div class="apos-apply-tag__create">

@@ -46,8 +46,8 @@ export default {
   emits: [ 'return' ],
   data () {
     return {
-      next: (this.value && this.value.data)
-        ? { ...this.value.data } : {},
+      next: (this.modelValue && this.modelValue.data)
+        ? { ...this.modelValue.data } : {},
       oembedResult: {},
       dynamicRatio: '',
       oembedError: null,

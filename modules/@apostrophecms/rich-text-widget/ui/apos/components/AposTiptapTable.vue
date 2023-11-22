@@ -8,7 +8,7 @@
     >
       <option
         v-for="action in actions"
-        :value="action.name"
+        :model-value="action.name"
         :key="action.name"
       >
         {{ $t(action.label) }}

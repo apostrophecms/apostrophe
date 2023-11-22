@@ -20,7 +20,7 @@
       <AposMinMaxCount
         v-if="field.max > 1"
         :field="field"
-        :value="next"
+        :model-value="next"
       />
     </template>
     <template #body>
@@ -54,7 +54,7 @@
           v-if="next.length"
           @input="updateSelected"
           @item-clicked="editRelationship"
-          :value="next"
+          :model-value="next"
           :duplicate="duplicate"
           :disabled="field.readOnly"
           :relationship-schema="field.schema"

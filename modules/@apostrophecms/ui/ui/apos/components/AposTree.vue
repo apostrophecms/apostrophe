@@ -7,8 +7,10 @@
       @calculated="setWidths"
     />
     <AposTreeHeader
-      :headers="headers" :icons="icons"
-      :col-widths="colWidths" :hidden="options.hideHeader"
+      :headers="headers"
+      :icons="icons"
+      :col-widths="colWidths"
+      :hidden="options.hideHeader"
     />
     <AposTreeRows
       v-model="checkedProxy"
@@ -18,10 +20,10 @@
       :col-widths="colWidths"
       :level="1"
       :nested="nested"
-      @update="update"
       list-id="root"
       :options="options"
       :tree-id="treeId"
+      @update="update"
     />
   </div>
 </template>
@@ -32,10 +34,6 @@ import cuid from 'cuid';
 
 export default {
   name: 'AposTree',
-  model: {
-    prop: 'checked',
-    event: 'change'
-  },
   props: {
     headers: {
       type: Array,
@@ -72,7 +70,7 @@ export default {
       }
     }
   },
-  emits: [ 'update', 'change' ],
+  emits: [ 'update', 'update:checked' ],
   data() {
     return {
       // Copy the `items` property to mutate with VueDraggable.
@@ -89,7 +87,7 @@ export default {
         return this.checked;
       },
       set(val) {
-        this.$emit('change', val);
+        this.$emit('update:checked', val);
       }
     },
     spacingRow() {

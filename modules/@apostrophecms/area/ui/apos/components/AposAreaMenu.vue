@@ -3,12 +3,11 @@
     v-if="options.expanded"
     v-bind="buttonOptions"
     :disabled="disabled"
-    @click="openExpandedMenu(index)"
     role="button"
+    @click="openExpandedMenu(index)"
   />
   <AposAreaContextualMenu
     v-else
-    @add="$emit('add', $event);"
     :button-options="buttonOptions"
     :context-menu-options="contextMenuOptions"
     :empty="true"
@@ -17,6 +16,7 @@
     :options="options"
     :max-reached="maxReached"
     :disabled="disabled"
+    @add="$emit('add', $event);"
   />
 </template>
 

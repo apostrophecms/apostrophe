@@ -6,7 +6,7 @@ export default {
     docId: String,
     type: String,
     areaFieldId: String,
-    value: Object,
+    modelValue: Object,
     // Ignored for server side rendering
     areaField: Object,
     followingValues: Object,
@@ -20,7 +20,7 @@ export default {
     }
   },
   watch: {
-    value: {
+    modelValue: {
       handler() {
         this.renderContent();
       }
@@ -44,7 +44,7 @@ export default {
       apos.bus.$emit('widget-rendering');
       const parameters = {
         _docId: this.docId,
-        widget: this.value,
+        widget: this.modelValue,
         areaFieldId: this.areaFieldId,
         type: this.type
       };
@@ -77,7 +77,7 @@ export default {
       }
 
       return {
-        [placeholderClass]: this.value.aposPlaceholder === true
+        [placeholderClass]: this.modelValue.aposPlaceholder === true
       };
     }
   }

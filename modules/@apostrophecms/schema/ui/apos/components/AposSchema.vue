@@ -24,20 +24,22 @@
 -->
 <template>
   <component
-    class="apos-schema"
     :is="fieldStyle === 'table' ? 'tr' : 'div'"
+    class="apos-schema"
   >
     <slot name="before" />
     <component
-      v-for="field in schema" :key="field.name.concat(field._id ?? '')"
-      :data-apos-field="field.name"
       :is="fieldStyle === 'table' ? 'td' : 'div'"
+      v-for="field in schema"
       v-show="displayComponent(field)"
+      :key="field.name.concat(field._id ?? '')"
+      :data-apos-field="field.name"
     >
       <component
-        v-show="displayComponent(field)"
-        v-model="fieldState[field.name]"
         :is="fieldComponentMap[field.type]"
+        v-show="displayComponent(field)"
+        :ref="field.name"
+        v-model="fieldState[field.name]"
         :following-values="followingValues[field.name]"
         :condition-met="conditionalFields?.if[field.name]"
         :field="fields[field.name].field"
@@ -46,7 +48,6 @@
         :trigger-validation="triggerValidation"
         :server-error="fields[field.name].serverError"
         :doc-id="docId"
-        :ref="field.name"
         :generation="generation"
         @update-doc-data="onUpdateDocData"
         @validate="emitValidate()"

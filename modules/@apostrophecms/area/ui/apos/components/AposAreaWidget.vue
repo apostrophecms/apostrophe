@@ -1,13 +1,13 @@
 
 <template>
   <div
+    ref="widget"
     class="apos-area-widget-wrapper"
     :class="{'apos-area-widget-wrapper--foreign': foreign}"
     :data-area-widget="widget._id"
     :data-area-label="widgetLabel"
     :data-apos-widget-foreign="foreign ? 1 : 0"
     :data-apos-widget-id="widget._id"
-    ref="widget"
   >
     <div
       class="apos-area-widget-inner"
@@ -17,8 +17,8 @@
       @click="getFocus($event, widget._id)"
     >
       <div
-        class="apos-area-widget-controls apos-area-widget__label"
         ref="label"
+        class="apos-area-widget-controls apos-area-widget__label"
         :class="labelsClasses"
       >
         <ol class="apos-area-widget__breadcrumbs">
@@ -33,18 +33,16 @@
           >
             <AposButton
               type="quiet"
-              @click="getFocus($event, item.id)"
               :label="item.label"
               icon="chevron-right-icon"
               :icon-size="9"
               :modifiers="['icon-right', 'no-motion']"
+              @click="getFocus($event, item.id)"
             />
           </li>
           <li class="apos-area-widget__breadcrumb" data-apos-widget-breadcrumb="0">
             <AposButton
               type="quiet"
-              @click="foreign ? $emit('edit', i) : null"
-              @dblclick="(!foreign && !isContextual) ? $emit('edit', i) : null"
               :label="foreign ? {
                 key: 'apostrophe:editWidgetType',
                 label: $t(widgetLabel)
@@ -52,6 +50,8 @@
               :tooltip="!isContextual && 'apostrophe:editWidgetForeignTooltip'"
               :icon-size="11"
               :modifiers="['no-motion']"
+              @click="foreign ? $emit('edit', i) : null"
+              @dblclick="(!foreign && !isContextual) ? $emit('edit', i) : null"
             />
           </li>
         </ol>
@@ -63,14 +63,14 @@
         <AposAreaMenu
           v-if="!foreign"
           :max-reached="maxReached"
-          @add="$emit('add', $event);"
-          @menu-open="toggleMenuFocus($event, 'top', true)"
-          @menu-close="toggleMenuFocus($event, 'top', false)"
           :context-menu-options="contextMenuOptions"
           :index="i"
           :widget-options="widgets"
           :options="options"
           :disabled="disabled"
+          @add="$emit('add', $event);"
+          @menu-open="toggleMenuFocus($event, 'top', true)"
+          @menu-close="toggleMenuFocus($event, 'top', false)"
         />
       </div>
       <div
@@ -104,31 +104,31 @@
       />
       <!-- Still used for contextual editing components -->
       <component
-        v-if="isContextual && !foreign"
         :is="widgetEditorComponent(widget.type)"
+        v-if="isContextual && !foreign"
+        :key="generation"
         :options="widgetOptions"
         :type="widget.type"
-        :value="widget"
-        @update="$emit('update', $event)"
+        :model-value="widget"
         :doc-id="docId"
         :focused="isFocused"
-        :key="generation"
+        @update="$emit('update', $event)"
       />
       <component
-        v-else
         :is="widgetComponent(widget.type)"
+        v-else
+        :id="widget._id"
+        :key="`${generation}-preview`"
         :options="widgetOptions"
         :type="widget.type"
-        :id="widget._id"
         :area-field-id="fieldId"
         :area-field="field"
         :following-values="followingValuesWithParent"
-        :value="widget"
+        :model-value="widget"
         :foreign="foreign"
-        @edit="$emit('edit', i);"
         :doc-id="docId"
         :rendering="rendering"
-        :key="`${generation}-preview`"
+        @edit="$emit('edit', i);"
       />
       <div
         class="apos-area-widget-controls apos-area-widget-controls--add apos-area-widget-controls--add--bottom"
@@ -137,12 +137,12 @@
         <AposAreaMenu
           v-if="!foreign"
           :max-reached="maxReached"
-          @add="$emit('add', $event)"
           :context-menu-options="bottomContextMenuOptions"
           :index="i + 1"
           :widget-options="widgets"
           :options="options"
           :disabled="disabled"
+          @add="$emit('add', $event)"
           @menu-open="toggleMenuFocus($event, 'bottom', true)"
           @menu-close="toggleMenuFocus($event, 'bottom', false)"
         />
@@ -271,7 +271,8 @@ export default {
       };
     },
     widgetIcon() {
-      const natural = this.contextMenuOptions.menu.filter(item => item.name === this.widget.type)[0]?.icon || 'shape-icon';
+      const natural = this.contextMenuOptions.menu
+        .filter(item => item.name === this.widget.type)[0]?.icon || 'shape-icon';
       return this.foreign ? 'earth-icon' : natural;
     },
     widgetLabel() {
