@@ -96,7 +96,7 @@
           </component>
         </div>
         <AposTreeRows
-          ref="tree-branches"
+          :ref="(el) => treeBranches.push(el)"
           v-model="checkedProxy"
           data-apos-branch-height
           :data-list-row="row._id"
@@ -183,6 +183,11 @@ export default {
     }
   },
   emits: [ 'update', 'change' ],
+  data() {
+    return {
+      treeBranches: []
+    };
+  },
   computed: {
     // Handle the local check state within this component.
     checkedProxy: {
@@ -205,7 +210,6 @@ export default {
     }
   },
   mounted() {
-    console.log('this.myRows', this.rows);
     // Use $nextTick to make sure attributes like `clientHeight` are settled.
     this.$nextTick(() => {
       if (!this.$refs['tree-branches']) {
@@ -216,10 +220,15 @@ export default {
   },
   methods: {
     setHeights() {
-      this.$refs['tree-branches'].forEach(branch => {
+      console.log('this.treeBranches.length', this.treeBranches.length);
+      this.treeBranches.forEach(branch => {
+        console.log('branch', branch);
         // Add padding to the max-height to avoid needing a `resize`
         // event listener updating values.
+        console.log('branch.clientHeight', branch.clientHeight);
+        console.log('branch.$el.clientHeight', branch.$el.clientHeight);
         const height = branch.$el.clientHeight + 20;
+        console.log('height', height);
         branch.$el.setAttribute('data-apos-branch-height', `${height}px`);
         branch.$el.style.maxHeight = `${height}px`;
       });
@@ -228,7 +237,7 @@ export default {
     endDrag(event) {
       this.$emit('update', event);
       this.$nextTick(() => {
-        if (!this.$refs['tree-branches']) {
+        if (!this.treeBranches.length) {
           return;
         }
         this.setHeights();
