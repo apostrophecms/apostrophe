@@ -6,11 +6,11 @@ import { getConditionTypesObject } from 'Modules/@apostrophecms/schema/lib/condi
 import cuid from 'cuid';
 import { klona } from 'klona';
 import { get } from 'lodash';
-import draggable from 'vuedraggable';
+import { Sortable } from 'sortablejs-vue3';
 
 export default {
   name: 'AposInputArray',
-  components: { draggable },
+  components: { draggable: Sortable },
   mixins: [
     AposInputMixin,
     AposInputFollowingMixin,

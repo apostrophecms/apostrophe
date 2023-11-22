@@ -21,19 +21,19 @@
           :selected="selected === item._id"
           :class="{'apos-slat-list__item--disabled' : disabled, 'apos-input--error': duplicate}"
           :disabled="disabled"
-          @remove="remove"
           :engaged="engaged === item._id"
-          @engage="engage"
           :parent="listId"
-          @disengage="disengage"
           :slat-count="next.length"
-          @select="select"
           :removable="removable"
-          @move="move"
           :relationship-schema="relationshipSchema"
-          @item-clicked="$emit('item-clicked', item)"
           :editor-label="editorLabel"
           :editor-icon="editorIcon"
+          @remove="remove"
+          @engage="engage"
+          @disengage="disengage"
+          @select="select"
+          @move="move"
+          @item-clicked="$emit('item-clicked', item)"
         />
       </transition-group>
     </draggable>
@@ -41,13 +41,13 @@
 </template>
 
 <script>
-import draggable from 'vuedraggable';
+import { Sortable } from 'sortablejs-vue3';
 import cuid from 'cuid';
 
 export default {
   name: 'AposSlatList',
   components: {
-    draggable
+    draggable: Sortable
   },
   props: {
     modelValue: {
@@ -83,7 +83,7 @@ export default {
       default: null
     }
   },
-  emits: [ 'update', 'item-clicked', 'select', 'input' ],
+  emits: [ 'update', 'item-clicked', 'select', 'update:modelValue' ],
   data() {
     return {
       isDragging: false,
@@ -130,7 +130,7 @@ export default {
         equal = false;
       }
       if (!equal) {
-        this.$emit('input', this.next);
+        this.$emit('update:modelValue', this.next);
       }
     }
   },
