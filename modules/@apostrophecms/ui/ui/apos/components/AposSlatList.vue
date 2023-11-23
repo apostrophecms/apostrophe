@@ -4,6 +4,7 @@
     <draggable
       v-bind="dragOptions"
       :id="listId"
+      item-key="_id"
       class="apos-slat-list"
       tag="ol"
       role="list"
@@ -12,30 +13,30 @@
       @start="isDragging=true"
       @end="isDragging=false"
     >
-      <transition-group type="transition" name="apos-flip-list">
-        <AposSlat
-          v-for="item in next"
-          :key="item._id"
-          class="apos-slat-list__item"
-          :item="item"
-          :selected="selected === item._id"
-          :class="{'apos-slat-list__item--disabled' : disabled, 'apos-input--error': duplicate}"
-          :disabled="disabled"
-          :engaged="engaged === item._id"
-          :parent="listId"
-          :slat-count="next.length"
-          :removable="removable"
-          :relationship-schema="relationshipSchema"
-          :editor-label="editorLabel"
-          :editor-icon="editorIcon"
-          @remove="remove"
-          @engage="engage"
-          @disengage="disengage"
-          @select="select"
-          @move="move"
-          @item-clicked="$emit('item-clicked', item)"
-        />
-      </transition-group>
+      <template #item="{element: item}">
+        <transition-group type="transition" name="apos-flip-list">
+          <AposSlat
+            class="apos-slat-list__item"
+            :item="item"
+            :selected="selected === item._id"
+            :class="{'apos-slat-list__item--disabled' : disabled, 'apos-input--error': duplicate}"
+            :disabled="disabled"
+            :engaged="engaged === item._id"
+            :parent="listId"
+            :slat-count="next.length"
+            :removable="removable"
+            :relationship-schema="relationshipSchema"
+            :editor-label="editorLabel"
+            :editor-icon="editorIcon"
+            @remove="remove"
+            @engage="engage"
+            @disengage="disengage"
+            @select="select"
+            @move="move"
+            @item-clicked="$emit('item-clicked', item)"
+          />
+        </transition-group>
+      </template>
     </draggable>
   </div>
 </template>

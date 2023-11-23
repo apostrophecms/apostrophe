@@ -1,6 +1,7 @@
 <template>
   <draggable
     v-bind="dragOptions"
+    item-key="_id"
     class="apos-tree__list"
     tag="ol"
     :list="rows"
@@ -9,7 +10,6 @@
   >
     <template #item="{element: row}">
       <li
-        :key="row._id"
         :data-row-id="row._id"
         data-apos-tree-row
         :class="getRowClasses(row)"

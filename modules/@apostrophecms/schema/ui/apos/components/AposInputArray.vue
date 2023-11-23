@@ -50,74 +50,75 @@
           <draggable
             v-bind="dragOptions"
             :id="listId"
+            item-key="_id"
             class="apos-input-array-inline"
             :tag="field.style === 'table' ? 'tbody' : 'div'"
             role="list"
             :list="items"
           >
-            <AposSchema
-              v-for="(item, index) in items"
-              :key="item._id"
-              v-model="item.schemaInput"
-              class="apos-input-array-inline-item"
-              :class="item.open && !alwaysExpand ? 'apos-input-array-inline-item--active' : null"
-              :schema="schema"
-              :trigger-validation="triggerValidation"
-              :generation="generation"
-              :modifiers="['small', 'inverted']"
-              :doc-id="docId"
-              :following-values="getFollowingValues(item)"
-              :conditional-fields="itemsConditionalFields[item._id]"
-              :field-style="field.style"
-              @update:model-value="setItemsConditionalFields(item._id)"
-              @validate="emitValidate()"
-            >
-              <template #before>
-                <component
-                  :is="field.style === 'table' ? 'td' : 'div'"
-                  class="apos-input-array-inline-item-controls"
-                >
-                  <AposIndicator
-                    v-if="field.draggable"
-                    icon="drag-icon"
-                    class="apos-drag-handle"
-                  />
-                  <AposButton
-                    v-if="field.style !== 'table' && item.open && !alwaysExpand"
-                    class="apos-input-array-inline-collapse"
-                    :icon-size="15"
-                    label="apostrophe:close"
-                    icon="unfold-less-horizontal-icon"
-                    type="subtle"
-                    :modifiers="['inline', 'no-motion']"
-                    :icon-only="true"
-                    @click="closeInlineItem(item._id)"
-                  />
-                </component>
-                <h3
-                  v-if="field.style !== 'table' && !item.open && !alwaysExpand"
-                  class="apos-input-array-inline-label"
-                  @click="openInlineItem(item._id)"
-                >
-                  {{ getLabel(item._id, index) }}
-                </h3>
-              </template>
-              <template #after>
-                <component
-                  :is="field.style === 'table' ? 'td' : 'div'"
-                  class="apos-input-array-inline-item-controls--remove"
-                >
-                  <AposButton
-                    label="apostrophe:removeItem"
-                    icon="trash-can-outline-icon"
-                    type="subtle"
-                    :modifiers="['inline', 'danger', 'no-motion']"
-                    :icon-only="true"
-                    @click="remove(item._id)"
-                  />
-                </component>
-              </template>
-            </AposSchema>
+            <template #item="{element: item, index}">
+              <AposSchema
+                v-model="item.schemaInput"
+                class="apos-input-array-inline-item"
+                :class="item.open && !alwaysExpand ? 'apos-input-array-inline-item--active' : null"
+                :schema="schema"
+                :trigger-validation="triggerValidation"
+                :generation="generation"
+                :modifiers="['small', 'inverted']"
+                :doc-id="docId"
+                :following-values="getFollowingValues(item)"
+                :conditional-fields="itemsConditionalFields[item._id]"
+                :field-style="field.style"
+                @update:model-value="setItemsConditionalFields(item._id)"
+                @validate="emitValidate()"
+              >
+                <template #before>
+                  <component
+                    :is="field.style === 'table' ? 'td' : 'div'"
+                    class="apos-input-array-inline-item-controls"
+                  >
+                    <AposIndicator
+                      v-if="field.draggable"
+                      icon="drag-icon"
+                      class="apos-drag-handle"
+                    />
+                    <AposButton
+                      v-if="field.style !== 'table' && item.open && !alwaysExpand"
+                      class="apos-input-array-inline-collapse"
+                      :icon-size="15"
+                      label="apostrophe:close"
+                      icon="unfold-less-horizontal-icon"
+                      type="subtle"
+                      :modifiers="['inline', 'no-motion']"
+                      :icon-only="true"
+                      @click="closeInlineItem(item._id)"
+                    />
+                  </component>
+                  <h3
+                    v-if="field.style !== 'table' && !item.open && !alwaysExpand"
+                    class="apos-input-array-inline-label"
+                    @click="openInlineItem(item._id)"
+                  >
+                    {{ getLabel(item._id, index) }}
+                  </h3>
+                </template>
+                <template #after>
+                  <component
+                    :is="field.style === 'table' ? 'td' : 'div'"
+                    class="apos-input-array-inline-item-controls--remove"
+                  >
+                    <AposButton
+                      label="apostrophe:removeItem"
+                      icon="trash-can-outline-icon"
+                      type="subtle"
+                      :modifiers="['inline', 'danger', 'no-motion']"
+                      :icon-only="true"
+                      @click="remove(item._id)"
+                    />
+                  </component>
+                </template>
+              </AposSchema>
+            </template>
           </draggable>
         </component>
         <AposButton
