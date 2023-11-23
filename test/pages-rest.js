@@ -192,6 +192,7 @@ describe('Pages REST', function() {
   });
 
   it('should be able to use db to insert documents', async function() {
+    const lastPublishedAt = new Date();
     const testItems = [
       {
         _id: 'parent:en:published',
@@ -202,7 +203,8 @@ describe('Pages REST', function() {
         visibility: 'public',
         path: `${homeId.replace(':en:published', '')}/parent`,
         level: 1,
-        rank: 0
+        rank: 0,
+        lastPublishedAt
       },
       {
         _id: 'child:en:published',
@@ -213,7 +215,8 @@ describe('Pages REST', function() {
         visibility: 'public',
         path: `${homeId.replace(':en:published', '')}/parent/child`,
         level: 2,
-        rank: 0
+        rank: 0,
+        lastPublishedAt
       },
       {
         _id: 'grandchild:en:published',
@@ -224,7 +227,8 @@ describe('Pages REST', function() {
         visibility: 'public',
         path: `${homeId.replace(':en:published', '')}/parent/child/grandchild`,
         level: 3,
-        rank: 0
+        rank: 0,
+        lastPublishedAt
       },
       {
         _id: 'sibling:en:published',
@@ -235,8 +239,8 @@ describe('Pages REST', function() {
         visibility: 'public',
         path: `${homeId.replace(':en:published', '')}/parent/sibling`,
         level: 2,
-        rank: 1
-
+        rank: 1,
+        lastPublishedAt
       },
       {
         _id: 'cousin:en:published',
@@ -247,7 +251,8 @@ describe('Pages REST', function() {
         visibility: 'public',
         path: `${homeId.replace(':en:published', '')}/parent/sibling/cousin`,
         level: 3,
-        rank: 0
+        rank: 0,
+        lastPublishedAt
       },
       {
         _id: 'another-parent:en:published',
@@ -258,7 +263,8 @@ describe('Pages REST', function() {
         visibility: 'public',
         path: `${homeId.replace(':en:published', '')}/another-parent`,
         level: 1,
-        rank: 1
+        rank: 1,
+        lastPublishedAt
       },
       {
         _id: 'neighbor:en:published',
@@ -269,7 +275,8 @@ describe('Pages REST', function() {
         visibility: 'public',
         path: `${homeId.replace(':en:published', '')}/neighbor`,
         level: 1,
-        rank: 2
+        rank: 2,
+        lastPublishedAt
       }
     ];
 
@@ -482,7 +489,6 @@ describe('Pages REST', function() {
       },
       jar
     });
-
     const cousin = await apos.http.get('/api/v1/@apostrophecms/page/cousin:en:published', { jar });
     const sibling = await apos.http.get('/api/v1/@apostrophecms/page/sibling:en:published', { jar });
 

@@ -220,6 +220,11 @@ module.exports = {
         label: 'apostrophe:image',
         description: 'apostrophe:imageDescription',
         component: 'AposImageControlDialog'
+      },
+      horizontalRule: {
+        icon: 'minus-icon',
+        label: 'apostrophe:richTextHorizontalRule',
+        action: 'setHorizontalRule'
       }
     },
     // Additional properties used in executing tiptap commands
