@@ -101,9 +101,9 @@ export default function() {
 
       el.parentNode.replaceChild(apos.area.activeEditor.$el, el);
     } else {
-
       const app = createApp(AposAreaEditor, {
         options,
+        id: data._id,
         items: data.items,
         choices,
         docId: _docId,
