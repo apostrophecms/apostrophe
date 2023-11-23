@@ -590,6 +590,7 @@ export default {
       } else {
         this.removeSlash();
         this.editor.commands[info.action || name]();
+        this.editor.commands.focus();
       }
     },
     removeSlash() {
