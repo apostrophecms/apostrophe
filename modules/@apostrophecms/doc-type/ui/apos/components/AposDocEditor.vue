@@ -75,7 +75,7 @@
               :model-value="docFields"
               :server-errors="serverErrors"
               :generation="generation"
-              @input="updateDocFields"
+              @update:model-value="updateDocFields"
               @validate="triggerValidate"
               @update-doc-data="onUpdateDocFields"
             />
@@ -101,7 +101,7 @@
             :modifiers="['small', 'inverted']"
             :server-errors="serverErrors"
             :generation="generation"
-            @input="updateDocFields"
+            @update:model-value="updateDocFields"
             @validate="triggerValidate"
           />
         </div>
@@ -463,7 +463,7 @@ export default {
         this.readOnly = canEdit === false;
         if (canEdit && !await this.lock(this.getOnePath, this.docId)) {
           this.lockNotAvailable();
-          return;
+
         }
       } catch {
         await apos.notify('apostrophe:loadDocFailed', {

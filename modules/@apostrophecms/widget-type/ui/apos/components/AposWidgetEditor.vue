@@ -25,7 +25,7 @@
               :model-value="docFields"
               :following-values="followingValues()"
               :conditional-fields="conditionalFields"
-              @input="updateDocFields"
+              @update:model-value="updateDocFields"
               @validate="triggerValidate"
             />
           </div>

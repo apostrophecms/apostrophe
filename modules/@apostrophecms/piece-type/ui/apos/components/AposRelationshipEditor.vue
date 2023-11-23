@@ -50,7 +50,7 @@
                 :current-fields="groups[tab.name].fields"
                 :model-value="docFields"
                 :trigger-validation="triggerValidation"
-                @input="updateDocFields"
+                @update:model-value="updateDocFields"
               />
             </div>
           </AposModalTabsBody>

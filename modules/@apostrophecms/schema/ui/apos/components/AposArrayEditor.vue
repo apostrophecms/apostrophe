@@ -1,19 +1,24 @@
 <template>
   <AposModal
-    class="apos-array-editor" :modal="modal"
+    class="apos-array-editor"
+    :modal="modal"
     :modal-title="modalTitle"
-    @inactive="modal.active = false" @show-modal="modal.showModal = true"
-    @esc="confirmAndCancel" @no-modal="$emit('safe-close')"
+    @inactive="modal.active = false"
+    @show-modal="modal.showModal = true"
+    @esc="confirmAndCancel"
+    @no-modal="$emit('safe-close')"
   >
     <template #secondaryControls>
       <AposButton
-        type="default" label="apostrophe:cancel"
+        type="default"
+        label="apostrophe:cancel"
         @click="confirmAndCancel"
       />
     </template>
     <template #primaryControls>
       <AposButton
-        type="primary" label="apostrophe:save"
+        type="primary"
+        label="apostrophe:save"
         :disabled="!valid"
         @click="submit"
       />
@@ -45,10 +50,10 @@
           </div>
           <AposSlatList
             class="apos-modal-array-items__items"
-            @input="update"
-            @select="select"
             :selected="currentId"
             :model-value="withLabels(next)"
+            @input="update"
+            @select="select"
           />
         </div>
       </AposModalRail>
@@ -62,15 +67,15 @@
                 <div class="apos-array-item__body">
                   <AposSchema
                     v-if="currentId"
+                    ref="schema"
                     :schema="schema"
                     :trigger-validation="triggerValidation"
                     :following-values="followingValues()"
                     :conditional-fields="conditionalFields"
                     :model-value="currentDoc"
                     :server-errors="currentDocServerErrors"
-                    ref="schema"
                     :doc-id="docId"
-                    @input="currentDocUpdate"
+                    @update:model-value="currentDocUpdate"
                     @validate="triggerValidate"
                   />
                 </div>

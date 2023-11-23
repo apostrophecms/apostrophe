@@ -2,7 +2,6 @@
   <div class="apos-anchor-control">
     <AposButton
       type="rich-text"
-      @click="click"
       :class="{ 'apos-is-active': buttonActive }"
       :label="tool.label"
       :icon-only="!!tool.icon"
@@ -13,6 +12,7 @@
         placement: 'top',
         delay: 650
       }"
+      @click="click"
     />
     <div
       v-if="active"
@@ -30,31 +30,33 @@
         <div v-if="hasAnchorOnOpen" class="apos-anchor-control__remove">
           <AposButton
             type="quiet"
-            @click="removeAnchor"
             label="apostrophe:removeRichTextAnchor"
+            @click="removeAnchor"
           />
         </div>
         <AposSchema
+          :key="lastSelectionTime"
+          v-model="docFields"
           :schema="schema"
           :trigger-validation="triggerValidation"
-          v-model="docFields"
           :modifiers="formModifiers"
-          :key="lastSelectionTime"
           :generation="generation"
           :following-values="followingValues()"
           :conditional-fields="conditionalFields"
-          @input="evaluateConditions()"
+          @update:model-value="evaluateConditions()"
         />
         <footer class="apos-anchor-control__footer">
           <AposButton
-            type="default" label="apostrophe:cancel"
-            @click="close"
+            type="default"
+            label="apostrophe:cancel"
             :modifiers="formModifiers"
+            @click="close"
           />
           <AposButton
-            type="primary" label="apostrophe:save"
-            @click="save"
+            type="primary"
+            label="apostrophe:save"
             :modifiers="formModifiers"
+            @click="save"
           />
         </footer>
       </AposContextMenuDialog>

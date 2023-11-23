@@ -19,8 +19,8 @@
           class="apos-input-array-inline-empty"
         >
           <component
-            v-if="field.whenEmpty.icon"
             :is="field.whenEmpty.icon"
+            v-if="field.whenEmpty.icon"
             :size="50"
           />
           <label
@@ -31,8 +31,8 @@
           </label>
         </div>
         <component
-          v-if="items.length"
           :is="field.style === 'table' ? 'table' : 'div'"
+          v-if="items.length"
           :class="field.style === 'table' ? 'apos-input-array-inline-table' : 'apos-input-array-inline-standard'"
         >
           <thead
@@ -49,18 +49,18 @@
           </thead>
           <draggable
             v-bind="dragOptions"
+            :id="listId"
             class="apos-input-array-inline"
             :tag="field.style === 'table' ? 'tbody' : 'div'"
             role="list"
             :list="items"
-            :id="listId"
           >
             <AposSchema
-              v-model="item.schemaInput"
               v-for="(item, index) in items"
+              :key="item._id"
+              v-model="item.schemaInput"
               class="apos-input-array-inline-item"
               :class="item.open && !alwaysExpand ? 'apos-input-array-inline-item--active' : null"
-              :key="item._id"
               :schema="schema"
               :trigger-validation="triggerValidation"
               :generation="generation"
@@ -69,7 +69,7 @@
               :following-values="getFollowingValues(item)"
               :conditional-fields="itemsConditionalFields[item._id]"
               :field-style="field.style"
-              @input="setItemsConditionalFields(item._id)"
+              @update:model-value="setItemsConditionalFields(item._id)"
               @validate="emitValidate()"
             >
               <template #before>
@@ -95,8 +95,8 @@
                   />
                 </component>
                 <h3
-                  class="apos-input-array-inline-label"
                   v-if="field.style !== 'table' && !item.open && !alwaysExpand"
+                  class="apos-input-array-inline-label"
                   @click="openInlineItem(item._id)"
                 >
                   {{ getLabel(item._id, index) }}
@@ -133,9 +133,9 @@
         <label class="apos-input-wrapper">
           <AposButton
             :label="editLabel"
-            @click="edit"
             :disabled="field.readOnly"
             :tooltip="tooltip"
+            @click="edit"
           />
         </label>
       </div>

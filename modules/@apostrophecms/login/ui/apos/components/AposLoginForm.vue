@@ -1,8 +1,8 @@
 <template>
   <div
+    v-if="phase === 'beforeSubmit'"
     key="1"
     class="apos-login-form"
-    v-if="phase === 'beforeSubmit'"
   >
     <TheAposLoginHeader
       :env="context.env"
@@ -11,22 +11,22 @@
     />
 
     <div class="apos-login-form__body">
-      <form @submit.prevent="submit" data-apos-test="loginForm">
+      <form data-apos-test="loginForm" @submit.prevent="submit">
         <AposSchema
-          :schema="schema"
           v-model="doc"
+          :schema="schema"
         />
         <a
-          href="#"
           v-if="passwordResetEnabled"
+          href="#"
           class="apos-login-form__link"
           @click.prevent="$emit('set-stage', 'forgotPassword')"
         >{{ $t('apostrophe:loginResetPassword') }}</a>
         <Component
-          v-for="requirement in beforeSubmitRequirements"
           v-bind="getRequirementProps(requirement.name)"
-          :key="requirement.name"
           :is="requirement.component"
+          v-for="requirement in beforeSubmitRequirements"
+          :key="requirement.name"
           @done="requirementDone(requirement, $event)"
           @block="requirementBlock(requirement)"
         />
@@ -45,9 +45,9 @@
     </div>
   </div>
   <div
+    v-else-if="activeSoloRequirement"
     key="2"
     class="apos-login-form"
-    v-else-if="activeSoloRequirement"
   >
     <TheAposLoginHeader
       :env="context.env"
@@ -57,9 +57,9 @@
     />
     <div class="apos-login-form__body">
       <Component
-        v-if="!fetchingRequirementProps"
         v-bind="getRequirementProps(activeSoloRequirement.name)"
         :is="activeSoloRequirement.component"
+        v-if="!fetchingRequirementProps"
         :success="activeSoloRequirement.success"
         :error="activeSoloRequirement.error"
         @done="requirementDone(activeSoloRequirement, $event)"
