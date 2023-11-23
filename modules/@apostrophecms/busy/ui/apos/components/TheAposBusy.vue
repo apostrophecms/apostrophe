@@ -76,7 +76,7 @@ export default {
   z-index: $z-index-default;
   width: 60px;
   height: 60px;
-  & ::v-deep svg {
+  &:deep(svg) {
     width: 100%;
     height: 100%;
   }

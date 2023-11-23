@@ -181,15 +181,15 @@ export default {
 $z-index-button-background: 1;
 $z-index-button-foreground: 2;
 
-.apos-area-modify-controls ::v-deep {
-  .apos-button__content {
+.apos-area-modify-controls {
+  :deep(.apos-button__content) {
     z-index: $z-index-button-foreground;
     position: relative;
   }
-  .apos-button__icon {
+  :deep(.apos-button__icon) {
     transition: all 0.3s var(--a-transition-timing-bounce);
   }
-  .apos-button {
+  :deep(.apos-button) {
     background-color: transparent;
 
     &:not([disabled]):hover:after {

@@ -831,7 +831,7 @@ export default {
 .apos-i18n-localize {
   @include type-base;
 
-  ::v-deep .apos-modal__inner {
+  :deep(.apos-modal__inner) {
     $width: 565px;
     $vertical-spacing: 95px;
     $horizontal-spacing: calc(calc(100vw - #{$width}) / 2);
@@ -843,20 +843,20 @@ export default {
     height: calc(100vh - #{$vertical-spacing * 2});
   }
 
-  ::v-deep .apos-modal__main--with-left-rail {
+  :deep(.apos-modal__main--with-left-rail) {
     grid-template-columns: 30% 70%;
   }
 
-  ::v-deep .apos-modal__body-inner {
+  :deep(.apos-modal__body-inner) {
     padding: $spacing-triple $spacing-triple $spacing-double;
   }
 
-  ::v-deep .apos-wizard__content .apos-modal__body-footer {
+  :deep(.apos-wizard__content .apos-modal__body-footer) {
     flex-direction: row-reverse;
     border-top: 1px solid var(--a-base-9);
   }
 
-  ::v-deep .apos-busy__spinner {
+  :deep(.apos-busy__spinner) {
     display: inline-block;
   }
 }
@@ -890,7 +890,7 @@ export default {
   border: none;
 }
 
-::v-deep .apos-field--toLocalize {
+:deep(.apos-field--toLocalize) {
   margin-bottom: $spacing-triple;
 }
 
@@ -901,7 +901,7 @@ export default {
   font-weight: 400;
   color: var(--a-base-3);
 
-  ::v-deep .material-design-icon {
+  :deep(.material-design-icon) {
     position: relative;
     top: 3px;
     color: var(--a-base-5);
@@ -944,7 +944,7 @@ export default {
   }
 }
 
-.apos-locale-button ::v-deep .apos-button {
+.apos-locale-button :deep(.apos-button) {
   font-size: var(--a-type-small);
 }
 

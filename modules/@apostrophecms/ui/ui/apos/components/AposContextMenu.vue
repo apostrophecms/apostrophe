@@ -216,11 +216,11 @@ export default {
 }
 
 .apos-context-menu {
-  & ::deep(.v-popper__wrapper),
-  & ::deep(div:not([class])),
-  & ::deep(.apos-context-menu__dialog),
-  & ::deep(.v-popover__popper),
-  & ::deep(.v-popper__inner ){
+  &:deep(.v-popper__wrapper),
+  &:deep(div:not([class])),
+  &:deep(.apos-context-menu__dialog),
+  &:deep(.v-popover__popper),
+  &:deep(.v-popper__inner ){
     &:focus {
       outline: none;
     }

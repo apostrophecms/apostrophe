@@ -248,7 +248,7 @@ export default {
   }
 
   // special schema style for this use
-  .apos-anchor-control ::v-deep .apos-field--target {
+  .apos-anchor-control :deep(.apos-field--target) {
     .apos-field__label {
       display: none;
     }

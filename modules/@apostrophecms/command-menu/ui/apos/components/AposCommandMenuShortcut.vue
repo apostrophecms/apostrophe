@@ -125,11 +125,11 @@ export default {
 </script>
 
 <style lang="scss" scoped>
-::v-deep .apos-modal__body {
+:deep(.apos-modal__body) {
   padding: 0;
 }
 
-::v-deep .apos-modal__inner {
+:deep(.apos-modal__inner) {
   top: auto;
   left: auto;
   max-width: 700px;
@@ -137,7 +137,7 @@ export default {
   border-radius: $spacing-base + $spacing-half;
 }
 
-::v-deep .apos-modal__overlay {
+:deep(.apos-modal__overlay) {
   display: none;
 }
 
@@ -153,7 +153,7 @@ export default {
     padding: 0 $spacing-base + $spacing-half;
   }
 
-  ::v-deep .apos-button {
+  :deep(.apos-button) {
     display: inline-flex;
     align-items: center;
     box-sizing: border-box;
@@ -176,7 +176,7 @@ export default {
 }
 
 .apos-command-menu-key {
-  ::v-deep button {
+  :deep(button) {
     width: $spacing-double;
     height: $spacing-double;
     padding: 3px $spacing-half;

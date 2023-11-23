@@ -149,7 +149,7 @@ export default {
 
 <style lang="scss" scoped>
   .apos-input__embed {
-    ::v-deep iframe {
+    :deep(iframe) {
       max-width: 100%;
     }
 
@@ -158,7 +158,7 @@ export default {
       width: 100%;
       height: 0;
 
-      ::v-deep iframe {
+      :deep(iframe) {
         position: absolute;
         top: 0;
         left: 0;

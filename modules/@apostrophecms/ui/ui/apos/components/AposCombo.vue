@@ -475,7 +475,7 @@ export default {
     cursor: not-allowed;
   }
 
-  ::v-deep .apos-indicator {
+  :deep(.apos-indicator) {
     width: 10px;
     height: 10px;
   }

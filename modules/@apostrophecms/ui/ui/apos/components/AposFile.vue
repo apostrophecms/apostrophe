@@ -200,7 +200,7 @@ export default {
     justify-content: center;
     pointer-events: none;
     // v-html goofiness
-    & ::v-deep .apos-file-highlight {
+    &:deep(.apos-file-highlight) {
       color: var(--a-primary);
       font-weight: var(--a-weight-bold);
     }

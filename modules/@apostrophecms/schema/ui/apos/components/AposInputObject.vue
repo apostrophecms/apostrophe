@@ -43,7 +43,7 @@ export default {
   .apos-input-wrapper {
     margin: 20px 0 0 19px;
   }
-  .apos-input-object ::v-deep .apos-schema .apos-field {
+  .apos-input-object :deep(.apos-schema .apos-field) {
     margin-bottom: 30px;
   }
 </style>

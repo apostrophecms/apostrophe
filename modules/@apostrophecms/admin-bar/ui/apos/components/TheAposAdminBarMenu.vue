@@ -177,15 +177,15 @@ export default {
   align-items: center;
 }
 
-.apos-admin-bar__sub ::v-deep .apos-context-menu__btn {
+.apos-admin-bar__sub :deep(.apos-context-menu__btn) {
   border-radius: 0;
 }
 
-.apos-admin-bar__sub ::v-deep .apos-context-menu__popup {
+.apos-admin-bar__sub :deep(.apos-context-menu__popup) {
   top: calc(100% + 5px);
 }
 
-::v-deep .apos-admin-bar__create {
+:deep(.apos-admin-bar__create) {
   margin-left: 10px;
 
   .apos-context-menu__btn {

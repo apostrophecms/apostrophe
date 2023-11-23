@@ -281,7 +281,7 @@ export default {
     line-height: var(--a-line-tallest);
   }
 
-  .apos-notification__label ::v-deep button {
+  .apos-notification__label :deep(button) {
     @include apos-button-reset();
     text-decoration: underline;
     text-decoration-color: var(--a-success);

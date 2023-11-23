@@ -327,11 +327,11 @@ export default {
 </script>
 
 <style lang="scss" scoped>
-  .apos-manager-toolbar ::v-deep {
-    .apos-field--search {
+  .apos-manager-toolbar {
+    :deep(.apos-field--search) {
       width: 250px;
     }
-    .apos-input {
+    :deep(.apos-input) {
       height: 32px;
     }
   }

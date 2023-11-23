@@ -355,7 +355,7 @@ function getOptions() {
   }
 
   // special schema style for this use
-  .apos-link-control ::v-deep .apos-field--target {
+  .apos-link-control :deep(.apos-field--target) {
     .apos-field__label {
       display: none;
     }

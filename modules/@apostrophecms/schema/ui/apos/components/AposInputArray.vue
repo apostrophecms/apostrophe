@@ -152,7 +152,7 @@ export default {
 };
 </script>
 <style lang="scss" scoped>
-  ::v-deep .apos-field--array.apos-field--error-duplicate {
+  :deep(.apos-field--array.apos-field--error-duplicate) {
     .apos-input {
       border-color: var(--a-base-8);
     }
@@ -166,7 +166,7 @@ export default {
       border-color: var(--a-danger);
     }
   }
-  ::v-deep .apos-input-relationship {
+  :deep(.apos-input-relationship) {
     .apos-button__wrapper {
       display: none;
     }
@@ -220,7 +220,7 @@ export default {
       background-color: transparent;
     }
 
-    td, ::v-deep td {
+    td, :deep(td) {
       padding: $spacing-base;
       border: 1px solid var(--a-base-9);
       vertical-align: middle;
@@ -234,12 +234,12 @@ export default {
       border: none;
       background-color: transparent;
     }
-    tr.apos-is-dragging, ::v-deep tr.apos-is-dragging {
+    tr.apos-is-dragging, :deep(tr.apos-is-dragging) {
       td, &:hover td {
         background: var(--a-base-4);
       }
     }
-    tr:hover, ::v-deep tr:hover {
+    tr:hover, :deep(tr:hover) {
       td {
         background-color: var(--a-base-10);
       }
@@ -248,52 +248,50 @@ export default {
       }
     }
 
-    ::v-deep {
-      .apos-field__info {
+      :deep(.apos-field__info) {
         padding-top: 0;
       }
-      .apos-field__label {
+       :deep(.apos-field__label) {
         display: none;
       }
-      .apos-input-wrapper {
+       :deep(.apos-input-wrapper) {
         padding: 0 4px;
       }
-      .apos-input--select {
+       :deep(.apos-input--select) {
         min-width: 130px;
       }
-      .apos-input--relationship {
+       :deep(.apos-input--relationship) {
         width: 100%;
         min-width: 150px;
       }
-      .apos-schema .apos-field.apos-field--small,
-      .apos-schema .apos-field.apos-field--micro,
-      .apos-schema .apos-field.apos-field--margin-micro {
+       :deep(.apos-schema .apos-field.apos-field--small),
+       :deep(.apos-schema .apos-field.apos-field--micro),
+       :deep(.apos-schema .apos-field.apos-field--margin-micro) {
         margin-bottom: 0;
       }
-      .apos-search {
+       :deep(.apos-search) {
         z-index: calc(#{$z-index-widget-focused-controls} + 1);
         position: absolute;
         top: 35px;
         width: 100%;
         min-width: 350px;
       }
-      .apos-slat-list .apos-slat,
-      .apos-input-relationship__items {
+       :deep(.apos-slat-list .apos-slat),
+       :deep(.apos-input-relationship__items) {
         margin-top: 0;
         margin-bottom: 0;
       }
-      .apos-input-relationship__input-wrapper :disabled {
+       :deep(.apos-input-relationship__input-wrapper :disabled) {
         display: none;
       }
-      .apos-field__error {
+       :deep(.apos-field__error) {
         position: absolute;
         bottom: 13px;
         left: $spacing-base;
       }
-      .apos-field--relationship .apos-field__error {
+       :deep(.apos-field--relationship .apos-field__error) {
         z-index: calc(#{$z-index-widget-focused-controls} + 1);
       }
-    }
   }
 
   .apos-input-array-inline-standard {
@@ -303,7 +301,7 @@ export default {
       left: $spacing-base;
     }
 
-    ::v-deep .apos-schema {
+    :deep(.apos-schema) {
       position: relative;
       display: grid;
       grid-template-columns: 35px auto 35px;

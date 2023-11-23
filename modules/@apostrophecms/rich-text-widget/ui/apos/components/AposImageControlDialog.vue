@@ -240,7 +240,7 @@ function getOptions() {
   }
 
   // special schema style for this use
-  .apos-image-control ::v-deep .apos-field--target {
+  .apos-image-control :deep(.apos-field--target) {
     .apos-field__label {
       display: none;
     }
