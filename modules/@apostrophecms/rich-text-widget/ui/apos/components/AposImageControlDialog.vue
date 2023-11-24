@@ -1,7 +1,7 @@
 <template>
   <div
     v-if="active"
-    v-click-outside-element="cancel"
+    v-click-outside-element="close"
     class="apos-popover apos-image-control__dialog"
     x-placement="bottom"
     :class="{
@@ -26,7 +26,7 @@
       <footer class="apos-image-control__footer">
         <AposButton
           type="default" label="apostrophe:cancel"
-          @click="cancel"
+          @click="close"
           :modifiers="formModifiers"
         />
         <AposButton
@@ -55,9 +55,13 @@ export default {
     active: {
       type: Boolean,
       required: true
+    },
+    hasSelection: {
+      type: Boolean,
+      required: true
     }
   },
-  emits: [ 'before-commands', 'done', 'cancel' ],
+  emits: [ 'before-commands', 'close' ],
   data() {
     return {
       generation: 1,
@@ -92,43 +96,48 @@ export default {
         {
           name: 'caption',
           label: this.$t('apostrophe:caption'),
-          type: 'string'
+          type: 'string',
+          def: ''
         }
       ]
     };
   },
   computed: {
+    attributes() {
+      return this.editor.getAttributes('image');
+    },
     lastSelectionTime() {
       return this.editor.view.input.lastSelectionTime;
-    },
-    hasSelection() {
-      const { state } = this.editor;
-      const { selection } = this.editor.state;
-      const { from, to } = selection;
-      const text = state.doc.textBetween(from, to, '');
-      return text !== '';
     },
     schema() {
       return this.originalSchema;
     }
   },
   watch: {
-    active(newVal) {
+    'attributes.imageId': {
+      handler(newVal, oldVal) {
+        if (newVal === oldVal) {
+          return;
+        }
+
+        this.close();
+      }
+    },
+    active(newVal, oldVal) {
       if (newVal) {
         window.addEventListener('keydown', this.keyboardHandler);
-        this.click();
       } else {
         window.removeEventListener('keydown', this.keyboardHandler);
+      }
+
+      if (this.hasSelection) {
+        this.populateFields();
+        this.evaluateConditions();
       }
     },
     'editor.view.input.lastSelectionTime': {
       handler(newVal, oldVal) {
         this.populateFields();
-      }
-    },
-    hasSelection(newVal, oldVal) {
-      if (!newVal) {
-        this.close();
       }
     }
   },
@@ -137,17 +146,8 @@ export default {
     this.evaluateConditions();
   },
   methods: {
-    click() {
-      if (this.hasSelection) {
-        this.populateFields();
-        this.evaluateConditions();
-      }
-    },
-    cancel() {
-      this.$emit('cancel');
-    },
-    done() {
-      this.$emit('done');
+    close() {
+      this.$emit('close');
     },
     save() {
       this.triggerValidation = true;
@@ -165,24 +165,24 @@ export default {
           style: this.docFields.data.style,
           alt: this.docFields.data.alt
         });
-        this.done();
+        this.close();
       });
     },
     keyboardHandler(e) {
       if (e.keyCode === 27) {
-        this.cancel();
+        this.close();
       }
       if (e.keyCode === 13) {
         if (this.docFields.data.href || e.metaKey) {
           this.save();
-          this.done();
+          this.close();
         }
         e.preventDefault();
       }
     },
     async populateFields() {
       try {
-        const attrs = this.editor.getAttributes('image');
+        const attrs = this.attributes;
         this.docFields.data = {};
         this.schema.forEach((item) => {
           this.docFields.data[item.name] = attrs[item.name] || '';

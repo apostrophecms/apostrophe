@@ -18,8 +18,8 @@
     <AposImageControlDialog
       :active="active"
       :editor="editor"
-      @cancel="close"
-      @click.stop="$event => null"
+      :has-selection="hasSelection"
+      @close="close"
     />
   </div>
 </template>
@@ -42,37 +42,38 @@ export default {
       active: false
     };
   },
+  watch: {
+    hasSelection(newVal, oldVal) {
+      if (!newVal) {
+        this.close();
+      }
+    }
+  },
   computed: {
     attributes() {
       return this.editor.getAttributes('image');
     },
     buttonActive() {
       return this.attributes.imageId || this.active;
-    }
-  },
-  watch: {
-    'attributes.imageId': {
-      handler(newVal, oldVal) {
-        if (newVal === oldVal) {
-          return;
-        }
-
-        this.close();
-      }
-    }
+    },
+    hasSelection() {
+      const { selection } = this.editor.state;
+      const { content = [] } = selection.content().content;
+      const [ { type } = {} ] = content;
+      return type?.name === 'image';
+    },
   },
   methods: {
     click() {
-      this.active = !this.active;
-      // this.populateFields();
+      if (this.hasSelection) {
+        this.active = !this.active;
+      }
     },
     close() {
-      if (!this.active) {
-        return;
+      if (this.active) {
+        this.active = false;
+        this.editor.chain().focus();
       }
-
-      this.active = false;
-      this.editor.chain().focus();
     }
   }
 };
