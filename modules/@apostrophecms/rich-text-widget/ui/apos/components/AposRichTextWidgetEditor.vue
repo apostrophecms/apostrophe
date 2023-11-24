@@ -258,6 +258,7 @@ export default {
     isVisuallyEmpty () {
       const div = document.createElement('div');
       div.innerHTML = this.value.content;
+      console.log({ isVisuallyEmpty: div.textContent });
       return !div.textContent;
     },
     editorModifiers () {
@@ -556,6 +557,7 @@ export default {
       const hasChanges = JSON.stringify(state?.doc.toJSON()) !== JSON.stringify(oldState?.doc.toJSON());
       const { $to } = state.selection;
 
+      console.log({ insert: this.insert, hasChanges, suppressInsertMenu: this.suppressInsertMenu, isShowingInsert: this.isShowingInsert, stateSelectionEmpty: state.selection.empty });
       if (
         !this.insertMenu ||
         !this.insert.length ||
@@ -596,18 +598,18 @@ export default {
     removeSlash() {
       const state = this.editor.state;
       const { $to } = state.selection;
-      if (state.selection.empty && $to?.nodeBefore?.text) {
-        const text = $to.nodeBefore.text;
-        if (text.slice(-1) === '/') {
-          const pos = this.editor.view.state.selection.$anchor.pos;
-          // Select the slash so an insert operation can replace it
-          this.editor.commands.setTextSelection({
-            from: pos - 1,
-            to: pos
-          });
-          this.editor.commands.deleteSelection();
-        }
-      }
+      // if (state.selection.empty && $to?.nodeBefore?.text) {
+      //   const text = $to.nodeBefore.text;
+      //   if (text.slice(-1) === '/') {
+      //     const pos = this.editor.view.state.selection.$anchor.pos;
+      //     // Select the slash so an insert operation can replace it
+      //     this.editor.commands.setTextSelection({
+      //       from: pos - 1,
+      //       to: pos
+      //     });
+      //     this.editor.commands.deleteSelection();
+      //   }
+      // }
     },
     closeInsertMenuItem() {
       this.removeSlash();

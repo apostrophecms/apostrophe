@@ -43,7 +43,11 @@ export default {
     };
   },
   watch: {
+    active(newVal, oldVal) {
+      console.log({ key: 'watch:active(tiptapImage)', hasSelection: this.hasSelection, newVal, oldVal });
+    },
     hasSelection(newVal, oldVal) {
+      console.log({ key: 'watch:hasSelection', hasSelection: this.hasSelection, newVal, oldVal });
       if (!newVal) {
         this.close();
       }
@@ -57,19 +61,31 @@ export default {
       return this.attributes.imageId || this.active;
     },
     hasSelection() {
+      const { state } = this.editor;
       const { selection } = this.editor.state;
+
+      // Text is selected
+      const { from, to } = selection;
+      const text = state.doc.textBetween(from, to, '');
+
+      // Image node is selected
       const { content = [] } = selection.content().content;
       const [ { type } = {} ] = content;
-      return type?.name === 'image';
+
+      return text !== '' || type?.name === 'image';
     },
   },
   methods: {
     click() {
+      console.log({ key: 'click', hasSelection: this.hasSelection, active: this.active });
+      // this.editor.chain().focus();
+      // this.editor.commands.focus();
       if (this.hasSelection) {
         this.active = !this.active;
       }
     },
     close() {
+      console.log({ key: 'close', active: this.active });
       if (this.active) {
         this.active = false;
         this.editor.chain().focus();

@@ -6,7 +6,7 @@
     x-placement="bottom"
     :class="{
       'apos-is-triggered': active,
-      'apos-has-selection': true
+      'apos-has-selection': hasSelection
     }"
   >
     <AposContextMenuDialog
@@ -124,21 +124,26 @@ export default {
       }
     },
     active(newVal, oldVal) {
+      console.log({ key: 'watch:active', hasSelection: this.hasSelection, newVal, oldVal });
       if (newVal) {
         window.addEventListener('keydown', this.keyboardHandler);
       } else {
         window.removeEventListener('keydown', this.keyboardHandler);
       }
 
-      if (this.hasSelection) {
+      if (newVal !== oldVal && this.hasSelection) {
         this.populateFields();
         this.evaluateConditions();
       }
     },
-    'editor.view.input.lastSelectionTime': {
-      handler(newVal, oldVal) {
-        this.populateFields();
+    lastSelectionTime(newVal, oldVal) {
+      console.log({ key: 'lastSelectionTime', newVal, oldVal });
+      if (newVal === oldVal) {
+        return;
       }
+
+      this.populateFields();
+      this.evaluateConditions();
     }
   },
   async mounted() {
@@ -181,6 +186,7 @@ export default {
       }
     },
     async populateFields() {
+      console.log({ key: 'populateFields' });
       try {
         const attrs = this.attributes;
         this.docFields.data = {};

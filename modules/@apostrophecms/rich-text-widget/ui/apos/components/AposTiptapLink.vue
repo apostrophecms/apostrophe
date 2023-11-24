@@ -175,6 +175,7 @@ export default {
       return this.attributes.href || this.active;
     },
     lastSelectionTime() {
+      this.populateFields();
       return this.editor.view.input.lastSelectionTime;
     },
     hasSelection() {
@@ -204,11 +205,6 @@ export default {
         window.addEventListener('keydown', this.keyboardHandler);
       } else {
         window.removeEventListener('keydown', this.keyboardHandler);
-      }
-    },
-    'editor.view.input.lastSelectionTime': {
-      handler(newVal, oldVal) {
-        this.populateFields();
       }
     },
     hasSelection(newVal, oldVal) {
