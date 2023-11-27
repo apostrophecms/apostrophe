@@ -24,6 +24,9 @@ it is missing for existing pages.
 * Added a one-time migration to make existing page ranks unique among peers.
 * Fix `if` and `requiredIf` fields inside array.
 * Fixes conditional fields not being properly updated when switching items in array editor.
+* The `beforeSend` event for pages and the loading of deferred widgets are now
+handled in `renderPage` with the proper timing so that areas can be annotated
+successfully for "external front" use.
 
 ## 3.59.1 (2023-11-14)
 
