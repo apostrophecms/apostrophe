@@ -276,35 +276,15 @@ module.exports = {
       },
 
       // Implementation detail of `renderBody` responsible for
-      // creating the input object passed to Nunjucks for rendering,
-      // with `data` merged into the `.data` property,
-      // `apos` available separately, `__req` available separately, etc.
+      // creating the input object passed to the template engine e.g. Nunjucks.
+      // Includes both serializable data like `user` and non-JSON-friendly
+      // properties like `apos`, `getOptions()` and `__req`. If you are only
+      // interested in serializable data use `getRenderDataArgs`
 
       getRenderArgs(req, data, module) {
-        const merged = {};
-
-        if (data) {
-          _.defaults(merged, data);
-        }
-
-        const args = {};
-
-        args.data = merged;
-
-        if (req.data) {
-          _.defaults(merged, req.data);
-        }
-        _.defaults(merged, {
-          user: req.user,
-          permissions: (req.user && req.user._permissions) || {}
-        });
-
-        if (module.templateData) {
-          _.defaults(merged, module.templateData);
-        }
-
-        args.data.locale = args.data.locale || req.locale;
-
+        const args = {
+          data: self.getRenderDataArgs(req, data, module)
+        };
         args.apos = self.templateApos;
         args.__t = req.t;
         args.__ = key => {
@@ -326,6 +306,33 @@ module.exports = {
           return optionModule.getOption(req, key, def);
         };
         return args;
+      },
+
+      // Just the external front-compatible parts of `getRenderArgs` that
+      // go into `args.data` for Nunjucks, e.g. merging `req.data` and `data`, adding
+      // `req.user` as `user`, etc.
+
+      getRenderDataArgs(req, data, module) {
+        const merged = {};
+
+        if (data) {
+          _.defaults(merged, data);
+        }
+
+        if (req.data) {
+          _.defaults(merged, req.data);
+        }
+        _.defaults(merged, {
+          user: req.user,
+          permissions: (req.user && req.user._permissions) || {}
+        });
+
+        if (module.templateData) {
+          _.defaults(merged, module.templateData);
+        }
+
+        merged.locale = merged.locale || req.locale;
+        return merged;
       },
 
       // Fetch a nunjucks environment in which `include`, `extends`, etc. search
@@ -897,7 +904,7 @@ module.exports = {
       },
 
       getDocsForExternalFront(req, template, data) {
-        return [ data.page, data.piece, ...(data.pieces || []) ].filter(doc => !!doc);
+        return [ data.home, ...(data.page?._ancestors || []), ...(data.page?._children || []), data.page, data.piece, ...(data.pieces || []) ].filter(doc => !!doc);
       },
 
       annotateDocForExternalFront(doc) {

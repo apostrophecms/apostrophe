@@ -431,6 +431,7 @@ module.exports = {
         await self.apos.page.emit('beforeSend', req);
         await self.apos.area.loadDeferredWidgets(req);
         if (req.aposExternalFront) {
+          data = self.apos.template.getRenderDataArgs(req, data, self);
           await self.apos.template.annotateDataForExternalFront(req, template, data);
           self.apos.template.pruneDataForExternalFront(req, template, data);
           // Reply with JSON
