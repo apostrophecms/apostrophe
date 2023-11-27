@@ -212,7 +212,7 @@ export default {
     right: 0;
   }
 
-  &::v-deep .apos-button__label {
+  &:deep(.apos-button__label) {
     @include type-small;
     color: var(--a-primary);
     font-weight: var(--a-weight-bold);

@@ -18,7 +18,7 @@
           :conditional-fields="conditionalFields"
           :server-errors="serverErrors"
           :modifiers="['small']"
-          @input="updateDocFields"
+          @update:model-value="updateDocFields"
           @validate="triggerValidate"
         />
         <div class="apos-subform__controls">

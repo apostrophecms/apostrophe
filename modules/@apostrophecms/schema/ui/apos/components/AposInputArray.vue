@@ -19,8 +19,8 @@
           class="apos-input-array-inline-empty"
         >
           <component
-            v-if="field.whenEmpty.icon"
             :is="field.whenEmpty.icon"
+            v-if="field.whenEmpty.icon"
             :size="50"
           />
           <label
@@ -31,8 +31,8 @@
           </label>
         </div>
         <component
-          v-if="items.length"
           :is="field.style === 'table' ? 'table' : 'div'"
+          v-if="items.length"
           :class="field.style === 'table' ? 'apos-input-array-inline-table' : 'apos-input-array-inline-standard'"
         >
           <thead
@@ -49,75 +49,76 @@
           </thead>
           <draggable
             v-bind="dragOptions"
+            :id="listId"
+            item-key="_id"
             class="apos-input-array-inline"
             :tag="field.style === 'table' ? 'tbody' : 'div'"
             role="list"
             :list="items"
-            :id="listId"
           >
-            <AposSchema
-              v-model="item.schemaInput"
-              v-for="(item, index) in items"
-              class="apos-input-array-inline-item"
-              :class="item.open && !alwaysExpand ? 'apos-input-array-inline-item--active' : null"
-              :key="item._id"
-              :schema="schema"
-              :trigger-validation="triggerValidation"
-              :generation="generation"
-              :modifiers="['small', 'inverted']"
-              :doc-id="docId"
-              :following-values="getFollowingValues(item)"
-              :conditional-fields="itemsConditionalFields[item._id]"
-              :field-style="field.style"
-              @input="setItemsConditionalFields(item._id)"
-              @validate="emitValidate()"
-            >
-              <template #before>
-                <component
-                  :is="field.style === 'table' ? 'td' : 'div'"
-                  class="apos-input-array-inline-item-controls"
-                >
-                  <AposIndicator
-                    v-if="field.draggable"
-                    icon="drag-icon"
-                    class="apos-drag-handle"
-                  />
-                  <AposButton
-                    v-if="field.style !== 'table' && item.open && !alwaysExpand"
-                    class="apos-input-array-inline-collapse"
-                    :icon-size="15"
-                    label="apostrophe:close"
-                    icon="unfold-less-horizontal-icon"
-                    type="subtle"
-                    :modifiers="['inline', 'no-motion']"
-                    :icon-only="true"
-                    @click="closeInlineItem(item._id)"
-                  />
-                </component>
-                <h3
-                  class="apos-input-array-inline-label"
-                  v-if="field.style !== 'table' && !item.open && !alwaysExpand"
-                  @click="openInlineItem(item._id)"
-                >
-                  {{ getLabel(item._id, index) }}
-                </h3>
-              </template>
-              <template #after>
-                <component
-                  :is="field.style === 'table' ? 'td' : 'div'"
-                  class="apos-input-array-inline-item-controls--remove"
-                >
-                  <AposButton
-                    label="apostrophe:removeItem"
-                    icon="trash-can-outline-icon"
-                    type="subtle"
-                    :modifiers="['inline', 'danger', 'no-motion']"
-                    :icon-only="true"
-                    @click="remove(item._id)"
-                  />
-                </component>
-              </template>
-            </AposSchema>
+            <template #item="{element: item, index}">
+              <AposSchema
+                v-model="item.schemaInput"
+                class="apos-input-array-inline-item"
+                :class="item.open && !alwaysExpand ? 'apos-input-array-inline-item--active' : null"
+                :schema="schema"
+                :trigger-validation="triggerValidation"
+                :generation="generation"
+                :modifiers="['small', 'inverted']"
+                :doc-id="docId"
+                :following-values="getFollowingValues(item)"
+                :conditional-fields="itemsConditionalFields[item._id]"
+                :field-style="field.style"
+                @update:model-value="setItemsConditionalFields(item._id)"
+                @validate="emitValidate()"
+              >
+                <template #before>
+                  <component
+                    :is="field.style === 'table' ? 'td' : 'div'"
+                    class="apos-input-array-inline-item-controls"
+                  >
+                    <AposIndicator
+                      v-if="field.draggable"
+                      icon="drag-icon"
+                      class="apos-drag-handle"
+                    />
+                    <AposButton
+                      v-if="field.style !== 'table' && item.open && !alwaysExpand"
+                      class="apos-input-array-inline-collapse"
+                      :icon-size="15"
+                      label="apostrophe:close"
+                      icon="unfold-less-horizontal-icon"
+                      type="subtle"
+                      :modifiers="['inline', 'no-motion']"
+                      :icon-only="true"
+                      @click="closeInlineItem(item._id)"
+                    />
+                  </component>
+                  <h3
+                    v-if="field.style !== 'table' && !item.open && !alwaysExpand"
+                    class="apos-input-array-inline-label"
+                    @click="openInlineItem(item._id)"
+                  >
+                    {{ getLabel(item._id, index) }}
+                  </h3>
+                </template>
+                <template #after>
+                  <component
+                    :is="field.style === 'table' ? 'td' : 'div'"
+                    class="apos-input-array-inline-item-controls--remove"
+                  >
+                    <AposButton
+                      label="apostrophe:removeItem"
+                      icon="trash-can-outline-icon"
+                      type="subtle"
+                      :modifiers="['inline', 'danger', 'no-motion']"
+                      :icon-only="true"
+                      @click="remove(item._id)"
+                    />
+                  </component>
+                </template>
+              </AposSchema>
+            </template>
           </draggable>
         </component>
         <AposButton
@@ -133,9 +134,9 @@
         <label class="apos-input-wrapper">
           <AposButton
             :label="editLabel"
-            @click="edit"
             :disabled="field.readOnly"
             :tooltip="tooltip"
+            @click="edit"
           />
         </label>
       </div>
@@ -151,7 +152,7 @@ export default {
 };
 </script>
 <style lang="scss" scoped>
-  ::v-deep .apos-field--array.apos-field--error-duplicate {
+  :deep(.apos-field--array.apos-field--error-duplicate) {
     .apos-input {
       border-color: var(--a-base-8);
     }
@@ -165,7 +166,7 @@ export default {
       border-color: var(--a-danger);
     }
   }
-  ::v-deep .apos-input-relationship {
+  :deep(.apos-input-relationship) {
     .apos-button__wrapper {
       display: none;
     }
@@ -219,7 +220,7 @@ export default {
       background-color: transparent;
     }
 
-    td, ::v-deep td {
+    td, :deep(td) {
       padding: $spacing-base;
       border: 1px solid var(--a-base-9);
       vertical-align: middle;
@@ -233,12 +234,12 @@ export default {
       border: none;
       background-color: transparent;
     }
-    tr.apos-is-dragging, ::v-deep tr.apos-is-dragging {
+    tr.apos-is-dragging, :deep(tr.apos-is-dragging) {
       td, &:hover td {
         background: var(--a-base-4);
       }
     }
-    tr:hover, ::v-deep tr:hover {
+    tr:hover, :deep(tr:hover) {
       td {
         background-color: var(--a-base-10);
       }
@@ -247,52 +248,50 @@ export default {
       }
     }
 
-    ::v-deep {
-      .apos-field__info {
+      :deep(.apos-field__info) {
         padding-top: 0;
       }
-      .apos-field__label {
+       :deep(.apos-field__label) {
         display: none;
       }
-      .apos-input-wrapper {
+       :deep(.apos-input-wrapper) {
         padding: 0 4px;
       }
-      .apos-input--select {
+       :deep(.apos-input--select) {
         min-width: 130px;
       }
-      .apos-input--relationship {
+       :deep(.apos-input--relationship) {
         width: 100%;
         min-width: 150px;
       }
-      .apos-schema .apos-field.apos-field--small,
-      .apos-schema .apos-field.apos-field--micro,
-      .apos-schema .apos-field.apos-field--margin-micro {
+       :deep(.apos-schema .apos-field.apos-field--small),
+       :deep(.apos-schema .apos-field.apos-field--micro),
+       :deep(.apos-schema .apos-field.apos-field--margin-micro) {
         margin-bottom: 0;
       }
-      .apos-search {
+       :deep(.apos-search) {
         z-index: calc(#{$z-index-widget-focused-controls} + 1);
         position: absolute;
         top: 35px;
         width: 100%;
         min-width: 350px;
       }
-      .apos-slat-list .apos-slat,
-      .apos-input-relationship__items {
+       :deep(.apos-slat-list .apos-slat),
+       :deep(.apos-input-relationship__items) {
         margin-top: 0;
         margin-bottom: 0;
       }
-      .apos-input-relationship__input-wrapper :disabled {
+       :deep(.apos-input-relationship__input-wrapper :disabled) {
         display: none;
       }
-      .apos-field__error {
+       :deep(.apos-field__error) {
         position: absolute;
         bottom: 13px;
         left: $spacing-base;
       }
-      .apos-field--relationship .apos-field__error {
+       :deep(.apos-field--relationship .apos-field__error) {
         z-index: calc(#{$z-index-widget-focused-controls} + 1);
       }
-    }
   }
 
   .apos-input-array-inline-standard {
@@ -302,7 +301,7 @@ export default {
       left: $spacing-base;
     }
 
-    ::v-deep .apos-schema {
+    :deep(.apos-schema) {
       position: relative;
       display: grid;
       grid-template-columns: 35px auto 35px;

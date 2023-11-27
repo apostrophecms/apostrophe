@@ -94,7 +94,7 @@ export default {
 .apos-settings {
   @include type-base;
 
-  ::v-deep .apos-modal__inner {
+  :deep(.apos-modal__inner) {
     // 1/2 or 2/3 width
     // $width: calc(100vw / 2);
     $width: min(700px, calc(calc(100vw / 3) * 2));
@@ -109,16 +109,16 @@ export default {
     height: calc(100vh - #{$vertical-spacing * 2});
   }
 
-  ::v-deep .apos-modal__main--with-left-rail {
+  :deep(.apos-modal__main--with-left-rail) {
     grid-template-columns: 25% 75%;
   }
 
-  ::v-deep .apos-modal__body-inner {
+  :deep(.apos-modal__body-inner) {
     // padding: $spacing-triple $spacing-triple $spacing-double;
     padding: $spacing-double $spacing-triple;
   }
 
-  ::v-deep .apos-modal__header__main {
+  :deep(.apos-modal__header__main) {
     // padding: $spacing-triple $spacing-triple $spacing-double;
     padding: $spacing-double $spacing-triple;
   }

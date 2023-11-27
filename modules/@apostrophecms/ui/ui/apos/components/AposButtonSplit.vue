@@ -208,7 +208,7 @@ export default {
     font-size: var(--a-type-base);
   }
 
-  .apos-button-split__button ::v-deep .apos-button {
+  .apos-button-split__button :deep(.apos-button) {
     padding-right: $spacing-quadruple + $spacing-base;
     margin-top: 0;
     margin-bottom: 0;
@@ -219,14 +219,13 @@ export default {
     top: 0;
     right: 0;
     height: 100%;
-    ::v-deep {
-      .v-popover,
-      .trigger,
-      .apos-button__wrapper {
-        height: 100%;
-      }
+
+    :deep(.v-popover),
+    :deep(.trigger),
+    :deep(.apos-button__wrapper) {
+      height: 100%;
     }
-    ::v-deep .apos-button {
+    :deep(.apos-button) {
       display: flex;
       box-sizing: border-box;
       height: 100%;

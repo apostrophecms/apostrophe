@@ -66,23 +66,23 @@ export default {
 </script>
 
 <style lang="scss" scoped>
-  .apos-schema ::v-deep .apos-field__wrapper {
+  .apos-schema :deep(.apos-field__wrapper) {
     max-width: $input-max-width;
   }
-  .apos-schema ::v-deep .apos-field__wrapper.apos-field__wrapper--full-width {
+  .apos-schema :deep(.apos-field__wrapper.apos-field__wrapper--full-width) {
     max-width: inherit;
   }
 
-  .apos-schema ::v-deep .apos-field__wrapper--area {
+  .apos-schema :deep(.apos-field__wrapper--area) {
     max-width: 100%;
   }
 
-  .apos-schema ::v-deep img {
+  .apos-schema :deep(img) {
     max-width: 100%;
   }
 
   .apos-field {
-    .apos-schema ::v-deep & {
+    :deep(.apos-schema) & {
       margin-bottom: $spacing-quadruple;
       &.apos-field--small,
       &.apos-field--micro,
@@ -94,7 +94,7 @@ export default {
       }
     }
 
-    .apos-schema ::v-deep .apos-toolbar & {
+    .apos-schema :deep(.apos-toolbar) & {
       margin-bottom: 0;
     }
   }

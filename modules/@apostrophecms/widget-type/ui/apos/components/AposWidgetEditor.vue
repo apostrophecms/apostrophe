@@ -25,7 +25,7 @@
               :model-value="docFields"
               :following-values="followingValues()"
               :conditional-fields="conditionalFields"
-              @input="updateDocFields"
+              @update:model-value="updateDocFields"
               @validate="triggerValidate"
             />
           </div>
@@ -219,7 +219,7 @@ export default {
 </script>
 
 <style lang="scss" scoped>
-  .apos-widget-editor ::v-deep .apos-modal__inner {
+  .apos-widget-editor :deep(.apos-modal__inner) {
     max-width: 458px;
   }
 </style>

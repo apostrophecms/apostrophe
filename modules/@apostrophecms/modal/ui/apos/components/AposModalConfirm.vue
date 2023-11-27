@@ -167,7 +167,7 @@ export default {
   justify-content: center;
 }
 
-::v-deep .apos-modal__inner {
+:deep(.apos-modal__inner) {
   top: auto;
   right: auto;
   bottom: auto;
@@ -177,17 +177,17 @@ export default {
   text-align: center;
 }
 
-::v-deep .apos-modal__overlay {
+:deep(.apos-modal__overlay) {
   .apos-modal + .apos-confirm & {
     display: block;
   }
 }
 
-::v-deep .apos-modal__body {
+:deep(.apos-modal__body) {
   padding: 60px;
 }
 
-::v-deep .apos-modal__body-main {
+:deep(.apos-modal__body-main) {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -223,7 +223,7 @@ export default {
   margin-top: $spacing-base;
 }
 
-::v-deep .apos-schema .apos-field {
+:deep(.apos-schema .apos-field) {
   margin-bottom: $spacing-base;
 }
 

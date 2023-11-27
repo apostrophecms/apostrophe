@@ -458,7 +458,7 @@ export default {
 </script>
 
 <style lang="scss" scoped>
-.apos-media-manager ::v-deep .apos-media-manager-toolbar {
+.apos-media-manager :deep(.apos-media-manager-toolbar) {
   z-index: $z-index-manager-toolbar;
   position: relative;
 }

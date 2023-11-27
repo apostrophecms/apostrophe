@@ -213,7 +213,7 @@ export default {
   justify-content: center;
 }
 
-::v-deep .apos-modal__inner {
+:deep(.apos-modal__inner) {
   top: auto;
   right: auto;
   bottom: auto;
@@ -223,17 +223,17 @@ export default {
   border-radius: 15px;
 }
 
-::v-deep .apos-modal__overlay {
+:deep(.apos-modal__overlay) {
   .apos-modal + .apos-share-draft & {
     display: block;
   }
 }
 
-::v-deep .apos-modal__body {
+:deep(.apos-modal__body) {
   padding: 20px;
 }
 
-::v-deep .apos-modal__body-main {
+:deep(.apos-modal__body-main) {
   display: flex;
   flex-direction: column;
   align-items: center;

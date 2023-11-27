@@ -510,7 +510,7 @@ export default {
     }
     &.apos-is-focused {
       outline: 1px dashed var(--a-primary);
-      &::v-deep .apos-rich-text-editor__editor.apos-is-visually-empty {
+      &:deep(.apos-rich-text-editor__editor.apos-is-visually-empty) {
         box-shadow: none;
       }
     }
@@ -570,11 +570,11 @@ export default {
   .apos-area-widget-controls--modify {
     right: 0;
     transform: translate3d(-10px, 30px, 0);
-    ::v-deep .apos-button-group__inner {
+    :deep(.apos-button-group__inner) {
       border: 1px solid var(--a-primary-transparent-25);
       box-shadow: var(--a-box-shadow);
     }
-    ::v-deep .apos-button-group .apos-button {
+    :deep(.apos-button-group) .apos-button {
       width: 32px;
       height: 32px;
       padding: 0;
@@ -601,9 +601,9 @@ export default {
     transform: translate(-50%, -50%);
   }
 
-  .apos-area-widget-controls--add ::v-deep {
+  .apos-area-widget-controls--add {
 
-    .apos-button__wrapper {
+    :deep(.apos-button__wrapper) {
       padding: 8px;
 
       &:hover .apos-button:not([disabled]) {
@@ -627,11 +627,11 @@ export default {
       }
     }
 
-    .apos-button__icon {
+    :deep(.apos-button__icon) {
       margin-right: 0;
     }
 
-    .apos-button__label {
+    :deep(.apos-button__label) {
       display: inline-block;
       overflow: hidden;
       max-width: 0;
@@ -641,7 +641,7 @@ export default {
       font-size: var(--a-type-small);
     }
 
-    .apos-button {
+    :deep(.apos-button) {
       display: flex;
       align-items: center;
       justify-content: center;
@@ -659,7 +659,7 @@ export default {
     transform: translate(-50%, 50%);
   }
 
-  .apos-area-widget-inner ::v-deep .apos-context-menu__popup.apos-is-visible {
+  .apos-area-widget-inner :deep(.apos-context-menu__popup.apos-is-visible) {
     top: calc(100% + 20px);
     left: 50%;
     transform: translate(-50%, 0);
@@ -691,7 +691,7 @@ export default {
   }
 
   .apos-area-widget__breadcrumb,
-  .apos-area-widget__breadcrumb ::v-deep .apos-button__content {
+  .apos-area-widget__breadcrumb :deep(.apos-button__content) {
     @include type-help;
     padding: 2px;
     white-space: nowrap;
@@ -700,7 +700,7 @@ export default {
   }
 
   .apos-area-widget__breadcrumbs:hover .apos-area-widget__breadcrumb,
-  .apos-area-widget__breadcrumbs:hover .apos-area-widget__breadcrumb ::v-deep .apos-button__content {
+  .apos-area-widget__breadcrumbs:hover .apos-area-widget__breadcrumb :deep(.apos-button__content) {
     color: var(--a-text-primary);
   }
 
@@ -722,7 +722,7 @@ export default {
     color: var(--a-text-primary);
   }
 
-  .apos-area-widget__breadcrumb ::v-deep .apos-button {
+  .apos-area-widget__breadcrumb :deep(.apos-button) {
     color: var(--a-primary-dark-10);
     &:hover, &:active, &:focus {
       text-decoration: none;

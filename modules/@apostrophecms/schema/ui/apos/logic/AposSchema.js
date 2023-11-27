@@ -81,7 +81,7 @@ export default {
     }
   },
   emits: [
-    'input',
+    'update:model-value',
     'reset',
     'validate',
     'update-doc-data'
@@ -269,7 +269,7 @@ export default {
 
       if (changeFound) {
         // ... removes need for deep watch at parent level
-        this.$emit('input', { ...this.next });
+        this.$emit('update:model-value', { ...this.next });
       }
     },
     displayComponent({ name, hidden = false }) {

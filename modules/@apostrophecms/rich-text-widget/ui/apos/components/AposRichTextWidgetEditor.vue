@@ -673,7 +673,7 @@ function traverseNextNode(node) {
     transform: translate3d(-50%, -50%, 0);
   }
 
-  .apos-rich-text-toolbar ::v-deep {
+  :deep(.apos-rich-text-toolbar) {
 
     & > .apos-context-menu__pane {
       padding: 8px;
@@ -769,19 +769,19 @@ function traverseNextNode(node) {
     gap: 4px;
   }
 
-  .apos-rich-text-editor__editor ::v-deep .ProseMirror {
+  .apos-rich-text-editor__editor :deep(.ProseMirror) {
     @include apos-transition();
   }
 
-  .apos-rich-text-editor__editor ::v-deep .ProseMirror:focus {
+  .apos-rich-text-editor__editor :deep(.ProseMirror:focus) {
     outline: none;
   }
 
-  .apos-rich-text-editor__editor ::v-deep .ProseMirror {
+  .apos-rich-text-editor__editor :deep(.ProseMirror) {
     padding: 10px 0;
   }
 
-  .apos-rich-text-editor__editor ::v-deep .ProseMirror:focus p.apos-is-empty::after {
+  .apos-rich-text-editor__editor :deep(.ProseMirror:focus p.apos-is-empty::after) {
     display: block;
     margin: 5px 0 10px;
     color: var(--a-primary-transparent-50);
@@ -802,13 +802,13 @@ function traverseNextNode(node) {
     background-color: transparent;
   }
 
-  .apos-rich-text-editor__editor ::v-deep [data-tippy-root] {
+  .apos-rich-text-editor__editor :deep([data-tippy-root]) {
     transition: all 0.4s var(--a-transition-timing-bounce);
     /* stylelint-disable-next-line time-min-milliseconds */
     transition-delay: 0.1s;
   }
 
-  .apos-rich-text-editor__editor ::v-deep .tippy-box[data-animation='fade'][data-state='hidden'] {
+  .apos-rich-text-editor__editor :deep(.tippy-box[data-animation='fade'][data-state='hidden']) {
     opacity: 0;
     transform: scale(0.9);
   }
@@ -841,36 +841,36 @@ function traverseNextNode(node) {
       visibility: visible;
     }
   }
-  .apos-rich-text-toolbar__inner ::v-deep > .apos-rich-text-editor__control {
+  :deep(.apos-rich-text-toolbar__inner > .apos-rich-text-editor__control) {
     /* Addresses a Safari-only situation where it inherits the
       `::-webkit-scrollbar-button` 2px margin. */
     margin: 0;
   }
 
   // So editors can find anchors again
-  .apos-rich-text-editor__editor ::v-deep span[id] {
+  .apos-rich-text-editor__editor :deep(span[id]) {
     text-decoration: underline dotted;
   }
 
   // So editors can find table cells while editing tables
 
-  .apos-rich-text-editor__editor ::v-deep table {
+  .apos-rich-text-editor__editor :deep(table) {
     min-width: 100%;
     min-height: 200px;
   }
 
-  .apos-rich-text-editor__editor ::v-deep th, .apos-rich-text-editor__editor ::v-deep td {
+  .apos-rich-text-editor__editor :deep(th), .apos-rich-text-editor__editor :deep(td) {
     outline: dotted;
   }
 
   // So editors can identify the cells that would take part
   // in a merge operation
-  .apos-rich-text-editor__editor ::v-deep .selectedCell {
+  .apos-rich-text-editor__editor :deep(.selectedCell) {
     // Should be visible on any background, light mode or dark mode
     backdrop-filter: invert(0.1);
   }
 
-  .apos-rich-text-editor__editor ::v-deep figure.ProseMirror-selectednode {
+  .apos-rich-text-editor__editor :deep(figure.ProseMirror-selectednode) {
     opacity: 0.5;
   }
 
@@ -956,13 +956,13 @@ function traverseNextNode(node) {
     letter-spacing: 0.25px;
   }
 
-  ::v-deep .ProseMirror {
+  :deep(.ProseMirror) {
     > * + * {
       margin-top: 0.75em;
     }
   }
 
-  ::v-deep .ProseMirror-gapcursor {
+  :deep(.ProseMirror-gapcursor) {
     position: relative;
     display: block;
     height: 20px;

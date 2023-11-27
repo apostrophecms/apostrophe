@@ -121,7 +121,7 @@ export default {
     }
   },
 
-  emits: [ 'select-items', 'toggle', 'input' ],
+  emits: [ 'select-items', 'toggle', 'update:modelValue' ],
   data () {
 
     return {
@@ -163,7 +163,7 @@ export default {
   methods: {
     onTypeheadInput(e) {
       this.thInput = e.target.value;
-      this.$emit('input', this.thInput);
+      this.$emit('update:modelValue', this.thInput);
     },
     onTypeheadKey(e) {
       const stop = () => {
@@ -276,7 +276,7 @@ export default {
       this.focusedItemIndex = null;
       this.$refs.list.scrollTo({ top: 0 });
       this.thInput = '';
-      this.$emit('input', this.thInput);
+      this.$emit('update:modelValue', this.thInput);
     },
     getBoxResizeObserver() {
       return new ResizeObserver(([ { target } ]) => {
@@ -475,7 +475,7 @@ export default {
     cursor: not-allowed;
   }
 
-  ::v-deep .apos-indicator {
+  :deep(.apos-indicator) {
     width: 10px;
     height: 10px;
   }

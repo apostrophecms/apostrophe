@@ -2,7 +2,6 @@
   <div class="apos-link-control">
     <AposButton
       type="rich-text"
-      @click="click"
       :class="{ 'apos-is-active': buttonActive }"
       :label="tool.label"
       :icon-only="!!tool.icon"
@@ -14,6 +13,7 @@
         placement: 'top',
         delay: 650
       }"
+      @click="click"
     />
     <div
       v-if="active"
@@ -31,26 +31,27 @@
         <div v-if="hasLinkOnOpen" class="apos-link-control__remove">
           <AposButton
             type="quiet"
-            @click="removeLink"
             label="apostrophe:removeLink"
+            @click="removeLink"
           />
         </div>
         <AposSchema
+          :key="lastSelectionTime"
+          v-model="docFields"
           :schema="schema"
           :trigger-validation="triggerValidation"
-          v-model="docFields"
           :modifiers="formModifiers"
-          :key="lastSelectionTime"
           :generation="generation"
           :following-values="followingValues()"
           :conditional-fields="conditionalFields"
-          @input="evaluateConditions()"
+          @update:model-value="evaluateConditions()"
         />
         <footer class="apos-link-control__footer">
           <AposButton
-            type="default" label="apostrophe:cancel"
-            @click="close"
+            type="default"
+            label="apostrophe:cancel"
             :modifiers="formModifiers"
+            @click="close"
           />
           <AposButton
             type="primary"
@@ -354,7 +355,7 @@ function getOptions() {
   }
 
   // special schema style for this use
-  .apos-link-control ::v-deep .apos-field--target {
+  .apos-link-control :deep(.apos-field--target) {
     .apos-field__label {
       display: none;
     }

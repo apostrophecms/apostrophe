@@ -64,7 +64,7 @@ export default {
       flex-direction: column;
     }
   }
-  .apos-login-form__submit ::v-deep .apos-button {
+  .apos-login-form__submit :deep(.apos-button) {
     height: 47px;
   }
 </style>

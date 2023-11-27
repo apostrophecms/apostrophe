@@ -1,122 +1,132 @@
 <template>
-  <li
-    v-for="row in myRows"
-    :key="row._id"
-    :data-row-id="row._id"
-    data-apos-tree-row
-    :class="getRowClasses(row)"
-    :aria-role="options.selectable ? 'button' : null"
-    :tabindex="options.selectable ? 0 : null"
-    v-on="options.selectable ? {
-      'click': selectRow,
-      'keydown': keydownRow
-    } : {}"
+  <draggable
+    v-bind="dragOptions"
+    item-key="_id"
+    class="apos-tree__list"
+    tag="ol"
+    :list="rows"
+    @start="startDrag"
+    @end="endDrag"
   >
-    <div class="apos-tree__row-data">
-      <button
-        v-if="row._children && row._children.length > 0"
-        class="apos-tree__row__toggle"
-        data-apos-tree-toggle
-        :aria-label="$t('apostrophe:toggleSection')"
-        :aria-expanded="!options.startCollapsed"
-        @click="toggleSection($event)"
+    <template #item="{element: row}">
+      <li
+        :data-row-id="row._id"
+        data-apos-tree-row
+        :class="getRowClasses(row)"
+        :aria-role="options.selectable ? 'button' : null"
+        :tabindex="options.selectable ? 0 : null"
+        v-on="options.selectable ? {
+          'click': selectRow,
+          'keydown': keydownRow
+        } : {}"
       >
-        <AposIndicator
-          icon="chevron-down-icon"
-          class="apos-tree__row__toggle-icon"
-        />
-      </button>
-      <component
-        :is="getEffectiveType(col, row)"
-        v-for="(col, index) in headers"
-        :key="`${col.property}-${index}`"
-        :draft="row"
-        :published="row._publishedDoc"
-        :header="col"
-        :href="(getEffectiveType(col, row) === 'a') ? row[col.property] : false"
-        :target="col.type === 'link' ? '_blank' : false"
-        :class="getCellClasses(col, row)"
-        :disabled="getCellDisabled(col, row)"
-        :data-col="col.property"
-        :style="getCellStyles(col.property, index)"
-        @click="((getEffectiveType(col, row) === 'button') && col.action) ? $emit(col.action, row._id) : null"
-      >
-        <AposIndicator
-          v-if="options.draggable && index === 0 && !row.parked"
-          icon="drag-icon"
-          class="apos-tree__row__icon apos-tree__row__icon--handle"
-        />
-        <AposIndicator
-          v-if="index === 0 && row.parked && row.type !== '@apostrophecms/archive-page'"
-          icon="lock-icon"
-          class="apos-tree__row__icon apos-tree__row__icon--parked"
-          tooltip="apostrophe:pageIsParked"
-        />
-        <AposIndicator
-          v-if="index === 0 && row.type === '@apostrophecms/archive-page'"
-          icon="lock-icon"
-          class="apos-tree__row__icon apos-tree__row__icon--parked"
-          tooltip="apostrophe:cannotMoveArchive"
-        />
-        <AposCheckbox
-          v-if="options.bulkSelect && index === 0"
+        <div class="apos-tree__row-data">
+          <button
+            v-if="row._children && row._children.length > 0"
+            class="apos-tree__row__toggle"
+            data-apos-tree-toggle
+            :aria-label="$t('apostrophe:toggleSection')"
+            :aria-expanded="!options.startCollapsed"
+            @click="toggleSection($event)"
+          >
+            <AposIndicator
+              icon="chevron-down-icon"
+              class="apos-tree__row__toggle-icon"
+            />
+          </button>
+          <component
+            :is="getEffectiveType(col, row)"
+            v-for="(col, index) in headers"
+            :key="`${col.property}-${index}`"
+            :draft="row"
+            :published="row._publishedDoc"
+            :header="col"
+            :href="(getEffectiveType(col, row) === 'a') ? row[col.property] : false"
+            :target="col.type === 'link' ? '_blank' : false"
+            :class="getCellClasses(col, row)"
+            :disabled="getCellDisabled(col, row)"
+            :data-col="col.property"
+            :style="getCellStyles(col.property, index)"
+            @click="((getEffectiveType(col, row) === 'button') && col.action) ? $emit(col.action, row._id) : null"
+          >
+            <AposIndicator
+              v-if="options.draggable && index === 0 && !row.parked"
+              icon="drag-icon"
+              class="apos-tree__row__icon apos-tree__row__icon--handle"
+            />
+            <AposIndicator
+              v-if="index === 0 && row.parked && row.type !== '@apostrophecms/archive-page'"
+              icon="lock-icon"
+              class="apos-tree__row__icon apos-tree__row__icon--parked"
+              tooltip="apostrophe:pageIsParked"
+            />
+            <AposIndicator
+              v-if="index === 0 && row.type === '@apostrophecms/archive-page'"
+              icon="lock-icon"
+              class="apos-tree__row__icon apos-tree__row__icon--parked"
+              tooltip="apostrophe:cannotMoveArchive"
+            />
+            <AposCheckbox
+              v-if="options.bulkSelect && index === 0"
+              v-model="checkedProxy"
+              class="apos-tree__row__checkbox"
+              tabindex="-1"
+              :field="{
+                name: row._id,
+                hideLabel: true,
+                label: {
+                  key: 'apostrophe:toggleSelectionOf',
+                  title: row.title
+                },
+                disableFocus: true
+              }"
+              :choice="{ value: row._id }"
+            />
+            <span class="apos-tree__cell__value">
+              <AposIndicator
+                v-if="getEffectiveIcon(col, row)"
+                :icon="getEffectiveIcon(col, row)"
+                class="apos-tree__cell__icon"
+                :icon-size="getEffectiveIconSize(col, row)"
+              />
+              <span v-if="getEffectiveCellLabel(col, row)" class="apos-tree__cell__label">
+                {{ getEffectiveCellLabel(col, row) }}
+              </span>
+            </span>
+          </component>
+        </div>
+        <AposTreeRows
+          :ref="(el) => treeBranches.push(el)"
           v-model="checkedProxy"
-          class="apos-tree__row__checkbox"
-          tabindex="-1"
-          :field="{
-            name: row._id,
-            hideLabel: true,
-            label: {
-              key: 'apostrophe:toggleSelectionOf',
-              title: row.title
-            },
-            disableFocus: true
+          data-apos-branch-height
+          :data-list-row="row._id"
+          :rows="row._children"
+          :headers="headers"
+          :icons="icons"
+          :col-widths="colWidths"
+          :level="level + 1"
+          :nested="nested"
+          :list-id="row._id"
+          :tree-id="treeId"
+          :options="options"
+          :class="{ 'apos-is-collapsed': options.startCollapsed }"
+          :style="{
+            'max-height': options.startCollapsed ? '0' : null
           }"
-          :choice="{ value: row._id }"
+          @update="$emit('update', $event)"
         />
-        <span class="apos-tree__cell__value">
-          <AposIndicator
-            v-if="getEffectiveIcon(col, row)"
-            :icon="getEffectiveIcon(col, row)"
-            class="apos-tree__cell__icon"
-            :icon-size="getEffectiveIconSize(col, row)"
-          />
-          <span v-if="getEffectiveCellLabel(col, row)" class="apos-tree__cell__label">
-            {{ getEffectiveCellLabel(col, row) }}
-          </span>
-        </span>
-      </component>
-    </div>
-    <AposTreeRows
-      ref="tree-branches"
-      v-model="checkedProxy"
-      data-apos-branch-height
-      :data-list-row="row._id"
-      :rows="row._children"
-      :headers="headers"
-      :icons="icons"
-      :col-widths="colWidths"
-      :level="level + 1"
-      :nested="nested"
-      :list-id="row._id"
-      :tree-id="treeId"
-      :options="options"
-      :class="{ 'apos-is-collapsed': options.startCollapsed }"
-      :style="{
-        'max-height': options.startCollapsed ? '0' : null
-      }"
-      @update="$emit('update', $event)"
-    />
-  </li>
+      </li>
+    </template>
+  </draggable>
 </template>
 
 <script>
-import VueDraggable from 'vuedraggable';
+import { Sortable } from 'sortablejs-vue3';
 
 export default {
   name: 'AposTreeRows',
   components: {
-    VueDraggable
+    draggable: Sortable
   },
   // Custom model to handle the v-model connection on the parent.
   props: {
@@ -173,10 +183,12 @@ export default {
     }
   },
   emits: [ 'update', 'change' ],
+  data() {
+    return {
+      treeBranches: []
+    };
+  },
   computed: {
-    myRows() {
-      return this.rows;
-    },
     // Handle the local check state within this component.
     checkedProxy: {
       get() {
@@ -185,9 +197,6 @@ export default {
       set(val) {
         this.$emit('change', val);
       }
-    },
-    isOpen() {
-      return true;
     },
     dragOptions() {
       return {
@@ -211,10 +220,15 @@ export default {
   },
   methods: {
     setHeights() {
-      this.$refs['tree-branches'].forEach(branch => {
+      console.log('this.treeBranches.length', this.treeBranches.length);
+      this.treeBranches.forEach(branch => {
+        console.log('branch', branch);
         // Add padding to the max-height to avoid needing a `resize`
         // event listener updating values.
+        console.log('branch.clientHeight', branch.clientHeight);
+        console.log('branch.$el.clientHeight', branch.$el.clientHeight);
         const height = branch.$el.clientHeight + 20;
+        console.log('height', height);
         branch.$el.setAttribute('data-apos-branch-height', `${height}px`);
         branch.$el.style.maxHeight = `${height}px`;
       });
@@ -223,7 +237,7 @@ export default {
     endDrag(event) {
       this.$emit('update', event);
       this.$nextTick(() => {
-        if (!this.$refs['tree-branches']) {
+        if (!this.treeBranches.length) {
           return;
         }
         this.setHeights();
@@ -488,7 +502,7 @@ export default {
   .apos-tree__row__icon {
     margin-right: 0.25em;
 
-    ::v-deep .material-design-icon__svg {
+    :deep(.material-design-icon__svg) {
       transition: fill 0.2s ease;
       fill: var(--a-base-5);
     }
@@ -499,8 +513,8 @@ export default {
     &:active {
       cursor: grabbing;
     }
-    .sortable-chosen & ::v-deep .material-design-icon__svg,
-    &:hover ::v-deep .material-design-icon__svg {
+    .sortable-chosen &:deep(.material-design-icon__svg,)
+    &:hover :deep(.material-design-icon__svg) {
       fill: var(--a-base-2);
     }
   }
@@ -542,7 +556,7 @@ export default {
     align-self: center;
   }
 
-  .apos-tree__cell.apos-is-published ::v-deep .apos-tree__cell__icon {
+  .apos-tree__cell.apos-is-published :deep(.apos-tree__cell__icon) {
     color: var(--a-success);
   }
 

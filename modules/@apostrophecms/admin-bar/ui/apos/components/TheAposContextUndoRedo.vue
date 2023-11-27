@@ -93,7 +93,7 @@ export default {
 };
 </script>
 <style lang="scss" scoped>
-  ::v-deep .apos-admin-bar__context-button.apos-button__wrapper {
+  :deep(.apos-admin-bar__context-button.apos-button__wrapper) {
     display: flex;
   }
 </style>

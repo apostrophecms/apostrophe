@@ -52,7 +52,7 @@ export default {
     display: inline-flex;
   }
 
-  .apos-button-group ::v-deep .apos-button {
+  .apos-button-group :deep(.apos-button) {
     background-color: var(--a-background-primary);
     border: none;
     &:hover {
@@ -81,13 +81,13 @@ export default {
   // group-specific style overrides
 
   // transform weirds this out
-  .apos-button-group ::v-deep .apos-button:hover,
-  .apos-button-group ::v-deep .apos-button:focus {
+  .apos-button-group :deep(.apos-button:hover,)
+  .apos-button-group :deep(.apos-button:focus) {
     transform: none;
   }
 
   // border throws off bounding shell
-  .apos-button-group ::v-deep .apos-button:focus {
+  .apos-button-group :deep(.apos-button:focus) {
     border: none;
   }
 
@@ -97,7 +97,7 @@ export default {
       background-color: var(--a-background-inverted);
       color: var(--a-text-inverted);
     }
-    & ::v-deep .apos-button {
+    &:deep(.apos-button) {
       border: none;
       background-color: var(--a-background-inverted);
       color: var(--a-text-inverted);
@@ -116,7 +116,7 @@ export default {
       border: 1px solid var(--a-primary-dark-10);
       color: var(--a-primary-dark-10);
     }
-    & ::v-deep .apos-button {
+    &:deep(.apos-button) {
       background-color: var(--a-background-primary);
       color: var(--a-primary-dark-10);
       &:hover {

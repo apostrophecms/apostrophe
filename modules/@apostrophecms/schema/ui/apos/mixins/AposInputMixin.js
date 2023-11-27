@@ -1,6 +1,6 @@
 export default {
   // Implements v-model pattern
-  emits: [ 'input' ],
+  emits: [ 'update:modelValue' ],
   props: {
     // The value passed in from the parent component through the v-model
     // directive.
@@ -91,7 +91,7 @@ export default {
     }
   },
   watch: {
-    value: {
+    modelValue: {
       deep: true,
       handler (value) {
         this.watchValue();
@@ -123,7 +123,7 @@ export default {
       // If the field is conditional and isn't shown, disregard any errors.
       const error = this.conditionMet === false ? false : this.validate(this.next);
 
-      this.$emit('input', {
+      this.$emit('update:modelValue', {
         data: error ? this.next : this.convert(this.next),
         error,
         ranValidation: this.conditionMet === false ? this.modelValue.ranValidation : true

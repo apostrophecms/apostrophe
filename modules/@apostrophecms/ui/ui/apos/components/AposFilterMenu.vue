@@ -14,7 +14,7 @@
           :icon="
             set.field.type === 'select' ? 'unfold-more-horizontal-icon' : ''
           "
-          @input="input($event, set.name)"
+          @update:model-value="input($event, set.name)"
         />
       </div>
     </div>
@@ -133,7 +133,7 @@ export default {
 .apos-filters-menu {
   min-width: 140px;
 
-  ::v-deep .apos-input--select {
+  :deep(.apos-input--select) {
     padding-top: 10px;
     padding-bottom: 10px;
     background-color: var(--a-base-10);
@@ -141,7 +141,7 @@ export default {
   }
 }
 
-.apos-filters-menu ::v-deep .apos-field__label {
+.apos-filters-menu :deep(.apos-field__label) {
   display: block;
   width: 100%;
   padding-bottom: 10px;

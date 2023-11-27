@@ -141,7 +141,7 @@ export default {
   padding: 10px 0;
 }
 
-.apos-context-menu__dialog ::v-deep .apos-schema .apos-field {
+.apos-context-menu__dialog :deep(.apos-schema .apos-field) {
   margin-bottom: 20px;
   .apos-field__help {
     margin-top: 5px;
