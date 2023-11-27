@@ -1,7 +1,11 @@
 import {
+  // findChildrenInRange,
   mergeAttributes,
-  Node
+  Node,
+  nodeInputRule
 } from '@tiptap/core';
+
+const inputRegex = /!\[(.+|:?)]\((\S+)(?:(?:\s+)["'](\S+)["'])?\)/;
 
 export default options => {
   return Node.create({
@@ -10,6 +14,10 @@ export default options => {
     addOptions() {
       return {
         addPasteHandler: true,
+        renderText({ options, node }) {
+          console.log({ options, node });
+          return node.attrs.imageId;
+        },
         HTMLAttributes: {}
       };
     },
@@ -24,7 +32,26 @@ export default options => {
 
     draggable: true,
 
-    isolating: false,
+    isolating: true,
+
+    // addAttributes2() {
+    //   return {
+    //     src: {
+    //       default: null,
+    //       parseHTML: element => element.querySelector('img')?.getAttribute('src'),
+    //     },
+
+    //     alt: {
+    //       default: null,
+    //       parseHTML: element => element.querySelector('img')?.getAttribute('alt'),
+    //     },
+
+    //     title: {
+    //       default: null,
+    //       parseHTML: element => element.querySelector('img')?.getAttribute('title'),
+    //     },
+    //   }
+    // },
 
     addAttributes() {
       return {
@@ -123,6 +150,28 @@ export default options => {
             .run();
         }
       };
+    },
+
+    renderText({ node }) {
+      console.log('renderText', node);
+      return this.options.renderText({
+        options: this.options,
+        node,
+      })
+    },
+
+    addInputRules() {
+      return [
+        nodeInputRule({
+          find: inputRegex,
+          type: this.type,
+          getAttributes: match => {
+            const [, src, alt, title] = match
+
+            return { src, alt, title }
+          },
+        }),
+      ]
     }
   });
 };

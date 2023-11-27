@@ -445,6 +445,10 @@ module.exports = {
             {
               tag: 'img',
               attributes: [ 'src', 'alt' ]
+            },
+            {
+              tag: 'figcaption',
+              attributes: []
             }
           ]
         };
