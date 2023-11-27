@@ -4,11 +4,14 @@
 // each app
 
 import i18next from 'i18next';
+let i18n;
 
 export default {
 
   install(app, options) {
-    const i18n = options.i18n;
+    if (!i18n) {
+      i18n = options.i18n;
+    }
 
     const fallbackLng = [ i18n.defaultLocale ];
     // In case the default locale also has inadequate admin UI phrases
@@ -68,57 +71,58 @@ export default {
     // `localize: false` to pass a string through without
     // invoking i18next.
     app.config.globalProperties.$t = $t;
-
-    function $t(key, options = {}) {
-      if ((key !== null) && ((typeof key) === 'object')) {
-        options = key;
-        key = options.key;
-      }
-      if (options.localize === false) {
-        return key;
-      }
-      // Check carefully for empty string and equivalent scenarios
-      // before doing any work
-      if (key == null) {
-        return '';
-      }
-      key += '';
-      if (!key.length) {
-        return '';
-      }
-      const result = i18next.t(key, {
-        lng: i18n.adminLocale,
-        ...options
-      });
-      if (i18n.show) {
-        if (result === key) {
-          if (key.match(/^\S+:/)) {
-            // The l10n key does not have a value assigned (or the key is
-            // actually the same as the phrase). The key seems to have a
-            // namespace, so might be from the Apostrophe UI.
-            return `❌ ${result}`;
-          } else {
-            // The l10n key does not have a value assigned (or the key is
-            // actually the same as the phrase). It is in the default namespace.
-            return `🕳 ${result}`;
-          }
-        } else {
-          // The phrase is fully localized.
-          return `🌍 ${result}`;
-        }
-      } else {
-        return result;
-      }
-    };
-
-    function canonicalize(locale) {
-      const [ language, territory ] = locale.split('-');
-      if (territory) {
-        return `${language}-${territory.toUpperCase()}`;
-      }
-      return locale;
-    }
-
   }
-
 };
+
+export function $t(key, options = {}) {
+  if (!i18n) {
+    return '';
+  }
+  if ((key !== null) && ((typeof key) === 'object')) {
+    options = key;
+    key = options.key;
+  }
+  if (options.localize === false) {
+    return key;
+  }
+  // Check carefully for empty string and equivalent scenarios
+  // before doing any work
+  if (key == null) {
+    return '';
+  }
+  key += '';
+  if (!key.length) {
+    return '';
+  }
+  const result = i18next.t(key, {
+    lng: i18n.adminLocale,
+    ...options
+  });
+  if (i18n.show) {
+    if (result === key) {
+      if (key.match(/^\S+:/)) {
+        // The l10n key does not have a value assigned (or the key is
+        // actually the same as the phrase). The key seems to have a
+        // namespace, so might be from the Apostrophe UI.
+        return `❌ ${result}`;
+      } else {
+        // The l10n key does not have a value assigned (or the key is
+        // actually the same as the phrase). It is in the default namespace.
+        return `🕳 ${result}`;
+      }
+    } else {
+      // The phrase is fully localized.
+      return `🌍 ${result}`;
+    }
+  } else {
+    return result;
+  }
+};
+
+function canonicalize(locale) {
+  const [ language, territory ] = locale.split('-');
+  if (territory) {
+    return `${language}-${territory.toUpperCase()}`;
+  }
+  return locale;
+}
