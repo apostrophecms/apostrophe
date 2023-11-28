@@ -1,17 +1,11 @@
 <template>
   <div class="apos-context-menu">
     <slot name="prebutton" />
-    <v-popover
+    <div
+      ref="dropdown"
+      class="apos-context-menu__dropdown"
       :class="popoverClass"
-      :distance="menuOffset"
-      :skidding="menuOffset"
-      :triggers="['click']"
-      :shown="isOpen"
-      :auto-hide="true"
-      :placement="menuPlacement"
-      @on-hide="hide"
     >
-      <!-- TODO refactor buttons to take a single config obj -->
       <AposButton
         v-bind="button"
         ref="button"
@@ -27,147 +21,198 @@
         }"
         @click.stop="buttonClicked($event)"
       />
-      <template #popper class="apos-popover__slot">
-        <AposContextMenuDialog
-          :menu-placement="menuPlacement"
-          :class-list="classList"
-          :menu="menu"
-          @item-clicked="menuItemClicked"
+      <Teleport to="body">
+        <div
+          ref="dropdownContent"
+          class="apos-context-menu__dropdown-content"
+          :style="dropdownContentStyle"
+          :aria-hidden="!isOpen"
         >
-          <slot />
-        </AposContextMenuDialog>
-      </template>
-    </v-popover>
+          <AposContextMenuDialog
+            :menu-placement="menuPlacement"
+            :class-list="classList"
+            :menu="menu"
+            @item-clicked="menuItemClicked"
+          >
+            <slot />
+          </AposContextMenuDialog>
+        </div>
+      </Teleport>
+    </div>
   </div>
 </template>
 
-<script>
+<script setup>
 import {
-  Dropdown
-} from 'floating-vue';
-import AposThemeMixin from 'Modules/@apostrophecms/ui/mixins/AposThemeMixin';
+  ref, onMounted, computed, watch
+} from 'vue';
+import {
+  computePosition, offset, shift
+} from '@floating-ui/dom';
+import { useAposTheme } from 'Modules/@apostrophecms/ui/composables/AposTheme';
 
-export default {
-  name: 'AposContextMenu',
-  components: {
-    'v-popover': Dropdown
+const props = defineProps({
+  menu: {
+    type: Array,
+    default: null
   },
-  mixins: [ AposThemeMixin ],
-  props: {
-    menu: {
-      type: Array,
-      default: null
-    },
-    unpadded: {
-      type: Boolean,
-      default: false
-    },
-    modifiers: {
-      type: Array,
-      default() {
-        return [];
-      }
-    },
-    button: {
-      type: Object,
-      default() {
-        return {
-          label: 'Context Menu Label',
-          iconOnly: true,
-          icon: 'label-icon',
-          type: 'outline'
-        };
-      }
-    },
-    menuPlacement: {
-      type: String,
-      default: 'bottom'
-    },
-    menuOffset: {
-      type: [ Number, String ],
-      default: 15
-    },
-    disabled: {
-      type: Boolean,
-      default: false
-    },
-    tooltip: {
-      type: [ String, Boolean ],
-      default: false
-    },
-    popoverModifiers: {
-      type: Array,
-      default() {
-        return [];
-      }
+  unpadded: {
+    type: Boolean,
+    default: false
+  },
+  modifiers: {
+    type: Array,
+    default() {
+      return [];
     }
   },
-  emits: [ 'open', 'close', 'item-clicked' ],
-  data() {
-    return {
-      isOpen: false,
-      position: '',
-      event: null
-    };
-  },
-  computed: {
-    popoverClass() {
-      const classes = [ 'apos-popover' ].concat(this.themeClass);
-      this.popoverModifiers.forEach(m => {
-        classes.push(`apos-popover--${m}`);
-      });
-      return classes;
-    },
-    classList() {
-      const classes = [];
-      const baseClass = 'apos-context-menu__popup';
-      classes.push(`${baseClass}--tip-alignment-${this.menuPlacement}`);
-      if (this.modifiers) {
-        this.modifiers.forEach((m) => {
-          classes.push(`${baseClass}--${m}`);
-        });
-      }
-      if (this.menu || this.unpadded) {
-        classes.push(`${baseClass}--unpadded`);
-      }
-      return classes.join(' ');
-    },
-    buttonState() {
-      return this.open ? [ 'active' ] : null;
+  button: {
+    type: Object,
+    default() {
+      return {
+        label: 'Context Menu Label',
+        iconOnly: true,
+        icon: 'label-icon',
+        type: 'outline'
+      };
     }
   },
-  watch: {
-    isOpen(newVal, oldVal) {
-      if (newVal) {
-        this.$emit('open', this.event);
-      } else {
-        this.$emit('close', this.event);
-      }
-    }
+  menuPlacement: {
+    type: String,
+    default: 'bottom'
   },
-  methods: {
-    show() {
-      this.isOpen = true;
-    },
-    hide() {
-      this.isOpen = false;
-    },
-    buttonClicked(e) {
-      this.isOpen = !this.isOpen;
-      this.event = e;
-    },
-    menuItemClicked(name) {
-      this.$emit('item-clicked', name);
-      this.hide();
+  menuOffset: {
+    type: [ Number, String ],
+    default: 15
+  },
+  disabled: {
+    type: Boolean,
+    default: false
+  },
+  tooltip: {
+    type: [ String, Boolean ],
+    default: false
+  },
+  popoverModifiers: {
+    type: Array,
+    default() {
+      return [];
     }
   }
-};
+});
+
+console.log('props.menuPlacement', props.menuPlacement);
+
+const emit = defineEmits([ 'open', 'close', 'item-clicked' ]);
+
+const isOpen = ref(false);
+const position = ref('');
+const event = ref(null);
+const dropdown = ref();
+const dropdownContent = ref();
+const dropdownContentStyle = ref({});
+
+const popoverClass = computed(() => {
+  const classes = [ 'apos-popover' ].concat(themeClass.value);
+  props.popoverModifiers.forEach(m => {
+    classes.push(`apos-popover--${m}`);
+  });
+  return classes;
+});
+
+const classList = computed(() => {
+  const classes = [];
+  const baseClass = 'apos-context-menu__popup';
+  classes.push(`${baseClass}--tip-alignment-${props.menuPlacement}`);
+  if (props.modifiers) {
+    props.modifiers.forEach((m) => {
+      classes.push(`${baseClass}--${m}`);
+    });
+  }
+  if (props.menu || props.unpadded) {
+    classes.push(`${baseClass}--unpadded`);
+  }
+  return classes.join(' ');
+});
+
+const buttonState = computed(() => {
+  return isOpen.value ? [ 'active' ] : null;
+});
+
+watch(isOpen, (newVal) => {
+  if (newVal) {
+    emit('open', event.value);
+  } else {
+    emit('close', event.value);
+  }
+});
+
+onMounted(() => {
+  setDropdownPosition();
+});
+
+const { themeClass } = useAposTheme();
+
+function hide() {
+  isOpen.value = false;
+}
+
+function buttonClicked(e) {
+  isOpen.value = !isOpen.value;
+  event.value = e;
+}
+
+function menuItemClicked(name) {
+  emit('item-clicked', name);
+  hide();
+}
+
+async function setDropdownPosition() {
+  const {
+    x, y, middleware
+  } = await computePosition(dropdown.value, dropdownContent.value, {
+    placement: props.placement,
+    middleware: [
+      offset(11),
+      shift({ padding: 5 })
+      /* arrow({ */
+      /*   element: arrowEl, */
+      /*   padding: 10 */
+      /* }) */
+    ]
+  });
+
+  dropdownContentStyle.value = {
+    left: `${x}px`,
+    top: `${y}px`
+  };
+  /* Object.assign(dropdownContentStyle.value, { */
+  /*   left: `${x}px`, */
+  /*   top: `${y}px` */
+  /* }); */
+}
 </script>
 
 <style lang="scss">
 
-.apos-context-menu {
-  position: relative;
+/* .apos-context-menu { */
+/*   position: relative; */
+/* } */
+
+.apos-context-menu__dropdown-content {
+  position: absolute;
+  z-index: $z-index-notifications;
+
+  &[aria-hidden='true'] {
+    visibility: hidden;
+    opacity: 0;
+  }
+
+  &[aria-hidden='false'] {
+    visibility: visible;
+    opacity: 1;
+  }
+
 }
 
 .apos-context-menu__popup--unpadded .apos-context-menu__pane  {
