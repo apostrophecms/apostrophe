@@ -54,6 +54,13 @@
   },
   "overrides": [
     {
+      "files": "*.vue",
+      "globals": {
+        "defineProps": "readable",
+        "defineEmits": "readable"
+      }
+    },
+    {
       "files": [
         "**/ui/**/*.js"
       ],
