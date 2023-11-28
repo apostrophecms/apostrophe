@@ -1,6 +1,6 @@
 import {
   mergeAttributes,
-  Node,
+  Node
 } from '@tiptap/core';
 
 export default options => {
@@ -109,6 +109,7 @@ export default options => {
       return {
         setImage: (attrs) => ({ chain }) => {
           return chain()
+            .focus()
             .insertContent({
               type: this.name,
               attrs,

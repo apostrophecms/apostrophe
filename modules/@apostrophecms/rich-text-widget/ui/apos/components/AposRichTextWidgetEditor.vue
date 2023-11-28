@@ -356,14 +356,12 @@ export default {
       // function so that it can rely on the focus state set by these event
       // listeners, but the placeholder function is called synchronously...
       onFocus: () => {
-        console.log('focus');
         this.isFocused = true;
         this.$nextTick(() => {
           this.showPlaceholder = false;
         });
       },
       onBlur: () => {
-        console.log('blur');
         this.isFocused = false;
         this.$nextTick(() => {
           this.showPlaceholder = true;
