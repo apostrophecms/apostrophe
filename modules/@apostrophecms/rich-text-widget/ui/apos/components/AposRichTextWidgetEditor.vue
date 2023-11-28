@@ -329,7 +329,7 @@ export default {
       TableHeader,
       TableRow,
       CustomPlaceholder.configure({
-        placeholder: ({ node }) => {
+        placeholder: () => {
           const text = this.$t(this.placeholderText);
           return text;
         },

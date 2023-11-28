@@ -116,6 +116,7 @@ export default {
   watch: {
     'attributes.imageId': {
       handler(newVal, oldVal) {
+        console.log('attributes.imageId', newVal, oldVal);
         if (newVal === oldVal) {
           return;
         }
@@ -124,6 +125,7 @@ export default {
       }
     },
     active(newVal, oldVal) {
+      console.log('active', newVal, oldVal);
       if (newVal) {
         window.addEventListener('keydown', this.keyboardHandler);
       } else {
@@ -136,6 +138,7 @@ export default {
       }
     },
     lastSelectionTime(newVal, oldVal) {
+      console.log('lastSelectionTime', newVal, oldVal);
       if (newVal === oldVal) {
         return;
       }

@@ -80,7 +80,6 @@ export default {
     close() {
       if (this.active) {
         this.active = false;
-        // this.editor.chain().focus();
       }
     }
   }
