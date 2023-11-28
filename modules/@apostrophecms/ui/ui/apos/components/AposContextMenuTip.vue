@@ -49,16 +49,4 @@ export default {
   .apos-context-menu__tip--alignment-end {
     right: 20px;
   }
-
-  .apos-popover[x-placement^='bottom'] .apos-context-menu__tip {
-    top: -10px;
-    bottom: auto;
-  }
-
-  .apos-popover[x-placement^='top'] .apos-context-menu__tip {
-    top: auto;
-    bottom: -10px;
-    transform: rotate(180deg);
-  }
-
 </style>

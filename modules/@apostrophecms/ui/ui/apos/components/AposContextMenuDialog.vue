@@ -6,6 +6,7 @@
   >
     <AposContextMenuTip
       v-if="hasTip"
+      class="apos-context-menu__tip"
       :align="tipAlignment"
       :origin="menuOrigin"
       x-placement="bottom"
@@ -14,15 +15,16 @@
       <slot>
         <ul
           v-if="menu"
-          class="apos-context-menu__items" role="menu"
+          class="apos-context-menu__items"
+          role="menu"
         >
           <AposContextMenuItem
             v-for="item in menu"
             :key="item.action"
             :data-apos-test-context-menu-item="item.action"
             :menu-item="item"
-            @clicked="menuItemClicked"
             :open="isOpen"
+            @clicked="menuItemClicked"
           />
         </ul>
       </slot>
@@ -148,4 +150,14 @@ export default {
   }
 }
 
+.apos-context-menu__tip[x-placement^='bottom'] {
+  top: -10px;
+  bottom: auto;
+}
+
+.apos-context-menu__tip[x-placement^='top'] {
+  top: auto;
+  bottom: -10px;
+  transform: rotate(180deg);
+}
 </style>
