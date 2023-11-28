@@ -124,7 +124,6 @@ export default {
       }
     },
     active(newVal, oldVal) {
-      // console.log({ key: 'watch:active', hasSelection: this.hasSelection, newVal, oldVal });
       if (newVal) {
         window.addEventListener('keydown', this.keyboardHandler);
       } else {
@@ -137,7 +136,6 @@ export default {
       }
     },
     lastSelectionTime(newVal, oldVal) {
-      // console.log({ key: 'lastSelectionTime', newVal, oldVal });
       if (newVal === oldVal) {
         return;
       }
@@ -186,8 +184,6 @@ export default {
       }
     },
     async populateFields() {
-      // this.editor.view.focus();
-      // console.log({ key: 'populateFields' });
       try {
         const attrs = this.attributes;
         this.docFields.data = {};

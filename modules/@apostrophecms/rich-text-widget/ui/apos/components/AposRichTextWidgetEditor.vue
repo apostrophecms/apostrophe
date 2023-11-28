@@ -258,7 +258,6 @@ export default {
     isVisuallyEmpty () {
       const div = document.createElement('div');
       div.innerHTML = this.value.content;
-      // console.log({ isVisuallyEmpty: div.textContent });
       return !div.textContent;
     },
     editorModifiers () {
@@ -559,7 +558,6 @@ export default {
       const hasChanges = JSON.stringify(state?.doc.toJSON()) !== JSON.stringify(oldState?.doc.toJSON());
       const { $to } = state.selection;
 
-      // console.log({ insert: this.insert, hasChanges, suppressInsertMenu: this.suppressInsertMenu, isShowingInsert: this.isShowingInsert, stateSelectionEmpty: state.selection.empty });
       if (
         !this.insertMenu ||
         !this.insert.length ||
@@ -572,7 +570,6 @@ export default {
       }
 
       if (state.selection.empty) {
-        // console.log({ empty: state.selection.empty });
         if ($to.nodeBefore && $to.nodeBefore.text) {
           const text = $to.nodeBefore.text;
           if (text.slice(-1) === '/') {
@@ -587,7 +584,6 @@ export default {
     },
     activateInsertMenuItem(name, info) {
       // Select the / and remove it
-      console.log({ name, info });
       if (info.component) {
         this.activeInsertMenuComponent = {
           name,
@@ -623,7 +619,6 @@ export default {
       this.doSuppressInsertMenu();
     },
     closeInsertMenu(e) {
-      console.log({ key: e.key, activeInsertMenuComponent: this.activeInsertMenuComponent });
       if (
         [ 'ArrowUp', 'ArrowDown', 'Enter', ' ' ].includes(e.key) ||
         this.activeInsertMenuComponent
@@ -638,7 +633,6 @@ export default {
       }
     },
     focusInsertMenuItem(prev = false, index) {
-      console.log({ prev, index, activeInsertMenuComponent: this.activeInsertMenuComponent });
       if (this.activeInsertMenuComponent) {
         return;
       }
