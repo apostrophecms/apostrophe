@@ -32,21 +32,31 @@ export default {
         }
         const tooltipId = `tooltip__${cuid()}`;
 
-        el.addEventListener('mouseenter', setupShowTooltip({
+        // Attach event listeners to elements to retrieve them in beforeUnmount
+        el.aposShowTooltipListener = setupShowTooltip({
           el,
           value: binding.value,
           tooltipTimeout,
           delayTimeout,
           tooltipId,
           localized
-        }));
-
-        el.addEventListener('mouseleave', setupHideTooltip({
+        });
+        el.aposHideTooltipListener = setupHideTooltip({
           tooltipId,
           tooltipTimeout,
           delayTimeout,
           delay
-        }));
+        });
+
+        el.addEventListener('mouseenter', el.aposShowTooltipListener);
+        el.addEventListener('mouseleave', el.aposHideTooltipListener);
+      },
+      beforeUnmount(el, binding, vnodes) {
+        if (el.aposHideTooltipListener) {
+          el.aposHideTooltipListener(true);
+        }
+        el.removeEventListener('mouseenter', el.aposShowTooltipListener);
+        el.removeEventListener('mouseleave', el.aposHideTooltipListener);
       }
     });
 
@@ -69,6 +79,10 @@ export default {
         }
 
         const tooltipEl = existingEl || document.querySelector(`#${tooltipId}`);
+        if (!tooltipEl) {
+          return;
+        }
+
         const arrowEl = tooltipEl.querySelector('.apos-tooltip__arrow');
 
         const {
@@ -107,8 +121,17 @@ export default {
     function setupHideTooltip({
       tooltipId, tooltipTimeout, delayTimeout, delay
     }) {
-      return () => {
+      return (immediate = false) => {
         const tooltipEl = document.querySelector(`#${tooltipId}`);
+        if (!tooltipEl) {
+          return;
+        }
+
+        if (immediate) {
+          tooltipEl.remove();
+          return;
+        }
+
         if (delay) {
           delayTimeout = setTimeout(() => {
             tooltipEl.setAttribute('aria-hidden', true);
