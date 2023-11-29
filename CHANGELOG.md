@@ -22,7 +22,6 @@ to the page tree.
 it is missing for existing pages.
 * Fixed a bug that prevented page ranks from renumbering properly during "insert after" operations.
 * Added a one-time migration to make existing page ranks unique among peers.
-* Fix `if` and `requiredIf` fields inside array.
 * Fixes conditional fields not being properly updated when switching items in array editor.
 * The `beforeSend` event for pages and the loading of deferred widgets are now
 handled in `renderPage` with the proper timing so that areas can be annotated
