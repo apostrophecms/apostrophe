@@ -23,7 +23,9 @@
       />
       <Teleport to="body">
         <div
+          v-if="isOpen"
           ref="dropdownContent"
+          v-click-outside-element="hide"
           class="apos-context-menu__dropdown-content"
           :style="dropdownContentStyle"
           :aria-hidden="!isOpen"
@@ -44,7 +46,7 @@
 
 <script setup>
 import {
-  ref, onMounted, computed, watch
+  ref, computed, watch, nextTick
 } from 'vue';
 import {
   computePosition, offset, shift
@@ -101,10 +103,7 @@ const props = defineProps({
   }
 });
 
-console.log('props.menuPlacement', props.menuPlacement);
-
 const emit = defineEmits([ 'open', 'close', 'item-clicked' ]);
-
 const isOpen = ref(false);
 const position = ref('');
 const event = ref(null);
@@ -140,15 +139,12 @@ const buttonState = computed(() => {
 });
 
 watch(isOpen, (newVal) => {
+  emit(newVal ? 'open' : 'close', event.value);
   if (newVal) {
-    emit('open', event.value);
-  } else {
-    emit('close', event.value);
+    nextTick(() => {
+      setDropdownPosition();
+    });
   }
-});
-
-onMounted(() => {
-  setDropdownPosition();
 });
 
 const { themeClass } = useAposTheme();
@@ -169,16 +165,12 @@ function menuItemClicked(name) {
 
 async function setDropdownPosition() {
   const {
-    x, y, middleware
+    x, y
   } = await computePosition(dropdown.value, dropdownContent.value, {
     placement: props.placement,
     middleware: [
       offset(11),
       shift({ padding: 5 })
-      /* arrow({ */
-      /*   element: arrowEl, */
-      /*   padding: 10 */
-      /* }) */
     ]
   });
 
@@ -186,10 +178,6 @@ async function setDropdownPosition() {
     left: `${x}px`,
     top: `${y}px`
   };
-  /* Object.assign(dropdownContentStyle.value, { */
-  /*   left: `${x}px`, */
-  /*   top: `${y}px` */
-  /* }); */
 }
 </script>
 
