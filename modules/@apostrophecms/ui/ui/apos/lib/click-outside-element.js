@@ -1,16 +1,17 @@
 export default {
-  install(Vue, options) {
-    Vue.directive('click-outside-element', {
-      bind(el, binding) {
-        el.aposClickOutsideHandler = (event) => {
-          if ((el !== event.target) && !el.contains(event.target) && !apos.modal.onTopOf(event.target, el)) {
-            binding.value(event);
-          }
-        };
-        document.body.addEventListener('click', el.aposClickOutsideHandler);
+  install(app, options) {
+    const setClickOutsideHandler = (el, binding) => (event) => {
+      if ((el !== event.target) && !el.contains(event.target) && !apos.modal.onTopOf(event.target, el)) {
+        binding.value(event);
+      }
+    };
+
+    app.directive('click-outside-element', {
+      beforeMount(el, binding) {
+        document.body.addEventListener('click', setClickOutsideHandler(el, binding));
       },
-      unbind(el) {
-        document.body.removeEventListener('click', el.aposClickOutsideHandler);
+      unbind(el, binding) {
+        document.body.removeEventListener('click', setClickOutsideHandler(el, binding));
       }
     });
   }
