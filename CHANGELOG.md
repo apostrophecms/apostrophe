@@ -31,6 +31,7 @@ successfully for "external front" use.
 including the `home` property etc. Note that the responsibility to avoid passing any nonserializable
 or excessively large data in `req.data` falls on the developer when choosing to use the
 `apos-external-front` feature.
+* Wraps the group label in the expanded preview menu component in `$t()` to allow translation
 
 ## 3.59.1 (2023-11-14)
 
