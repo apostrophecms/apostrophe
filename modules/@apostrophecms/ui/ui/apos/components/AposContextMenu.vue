@@ -146,9 +146,14 @@ const buttonState = computed(() => {
 watch(isOpen, (newVal) => {
   emit(newVal ? 'open' : 'close', event.value);
   if (newVal) {
+    window.addEventListener('resize', setDropdownPosition);
+    window.addEventListener('scroll', setDropdownPosition);
     nextTick(() => {
       setDropdownPosition();
     });
+  } else {
+    window.removeEventListener('resize', setDropdownPosition);
+    window.removeEventListener('scroll', setDropdownPosition);
   }
 });
 
@@ -163,7 +168,6 @@ onBeforeUnmount(() => {
 });
 
 function hideWhenOtherOpen(id) {
-  console.log('id', id);
   if (menuId.value !== id) {
     hide();
   }
@@ -189,6 +193,9 @@ function menuItemClicked(name) {
 }
 
 async function setDropdownPosition() {
+  if (!dropdown.value || !dropdownContent.value) {
+    return;
+  }
   const {
     x, y, middlewareData, placement: dropdownPlacement
   } = await computePosition(dropdown.value, dropdownContent.value, {
