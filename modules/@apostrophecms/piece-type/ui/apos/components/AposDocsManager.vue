@@ -427,7 +427,9 @@ export default {
       });
       if (result) {
         const index = this.checkedDocs.findIndex(_item => _item._id === item._id);
-        this.$set(this.checkedDocs, index, {
+        // TODO verify it's still reactive, should be based on the doc
+        // Or use a filter here
+        this.checkedDocs.splice(index, 1, {
           ...this.checkedDocs[index],
           _fields: result
         });

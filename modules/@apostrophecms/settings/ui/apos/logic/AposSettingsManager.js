@@ -90,7 +90,7 @@ export default {
       this.expanded = event.value ? event.name : null;
       if (this.expanded) {
         clearTimeout(this.subformUpdateTimeouts[event.name]);
-        this.$delete(this.subformUpdateTimeouts, event.name);
+        delete this.setSubformValues[event.name];
       }
     },
     async submit(event) {
@@ -125,9 +125,9 @@ export default {
     },
     setUpdatedTimeout(name, ms = 3000) {
       const updateTimeout = setTimeout(() => {
-        this.$delete(this.subformUpdateTimeouts, name);
+        delete this.subformUpdateTimeouts[name];
       }, ms);
-      this.$set(this.subformUpdateTimeouts, name, updateTimeout);
+      this.subformUpdateTimeouts[name] = updateTimeout;
     },
     async loadData() {
       const result = await apos.http.get(this.action, {
