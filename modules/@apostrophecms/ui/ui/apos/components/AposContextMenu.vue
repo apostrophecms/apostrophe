@@ -47,12 +47,13 @@
 
 <script setup>
 import {
-  ref, computed, watch, nextTick
+  ref, computed, watch, nextTick, onMounted, onBeforeUnmount
 } from 'vue';
 import {
   computePosition, offset, shift, flip, arrow
 } from '@floating-ui/dom';
 import { useAposTheme } from 'Modules/@apostrophecms/ui/composables/AposTheme';
+import cuid from 'cuid';
 
 const props = defineProps({
   menu: {
@@ -105,13 +106,14 @@ const props = defineProps({
 });
 
 const emit = defineEmits([ 'open', 'close', 'item-clicked' ]);
+
+const menuId = ref(cuid());
 const isOpen = ref(false);
 const placement = ref(props.menuPlacement);
 const event = ref(null);
 const dropdown = ref();
 const dropdownContent = ref();
 const dropdownContentStyle = ref({});
-/* const arrowStyle = ref({}); */
 const arrowEl = ref();
 
 const popoverClass = computed(() => {
@@ -152,11 +154,27 @@ watch(isOpen, (newVal) => {
 
 const { themeClass } = useAposTheme();
 
+onMounted(() => {
+  apos.bus.$on('context-menu-opened', hideWhenOtherOpen);
+});
+
+onBeforeUnmount(() => {
+  apos.bus.$off('context-menu-opened');
+});
+
+function hideWhenOtherOpen(id) {
+  console.log('id', id);
+  if (menuId.value !== id) {
+    hide();
+  }
+}
+
 function hide() {
   isOpen.value = false;
 }
 
 function buttonClicked(e) {
+  apos.bus.$emit('context-menu-opened', menuId.value);
   isOpen.value = !isOpen.value;
   event.value = e;
 }
