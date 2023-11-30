@@ -222,13 +222,9 @@ export default {
     setHeights() {
       console.log('this.treeBranches.length', this.treeBranches.length);
       this.treeBranches.forEach(branch => {
-        console.log('branch', branch);
         // Add padding to the max-height to avoid needing a `resize`
         // event listener updating values.
-        console.log('branch.clientHeight', branch.clientHeight);
-        console.log('branch.$el.clientHeight', branch.$el.clientHeight);
         const height = branch.$el.clientHeight + 20;
-        console.log('height', height);
         branch.$el.setAttribute('data-apos-branch-height', `${height}px`);
         branch.$el.style.maxHeight = `${height}px`;
       });
