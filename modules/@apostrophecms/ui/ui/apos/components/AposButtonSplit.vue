@@ -9,29 +9,31 @@
       @click="$emit('click', action)"
     />
     <AposContextMenu
+      ref="contextMenu"
       class="apos-button-split__menu"
       :menu="menu"
       :button="contextMenuButton"
       :disabled="disabled"
       menu-offset="1, 10"
       menu-placement="bottom-end"
-      ref="contextMenu"
       @open="menuOpen"
       @close="menuClose"
     >
       <dl
-        class="apos-button-split__menu__dialog" role="menu"
+        class="apos-button-split__menu__dialog"
+        role="menu"
         :aria-label="menuLabel"
       >
         <button
-          v-for="item in menu" :key="item.action"
+          v-for="item in menu"
+          :key="item.action"
+          ref="choices"
           class="apos-button-split__menu__dialog-item"
           :class="{ 'apos-is-selected': item.action === action }"
-          @click="selectionHandler(item.action)"
           :aria-checked="item.action === action ? 'true' : 'false'"
           role="menuitemradio"
           :model-value="item.action"
-          ref="choices"
+          @click="selectionHandler(item.action)"
           @keydown="cycleElementsToFocus"
         >
           <AposIndicator
@@ -220,7 +222,7 @@ export default {
     right: 0;
     height: 100%;
 
-    :deep(.v-popover),
+    :deep(.apos-popover),
     :deep(.trigger),
     :deep(.apos-button__wrapper) {
       height: 100%;
