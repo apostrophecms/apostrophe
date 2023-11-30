@@ -175,7 +175,6 @@ export default {
       return this.attributes.href || this.active;
     },
     lastSelectionTime() {
-      this.populateFields();
       return this.editor.view.input.lastSelectionTime;
     },
     hasSelection() {
