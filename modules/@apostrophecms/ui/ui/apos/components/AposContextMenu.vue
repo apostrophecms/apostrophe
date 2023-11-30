@@ -31,10 +31,11 @@
           :aria-hidden="!isOpen"
         >
           <AposContextMenuDialog
-            :menu-placement="menuPlacement"
+            :menu-placement="placement"
             :class-list="classList"
             :menu="menu"
             @item-clicked="menuItemClicked"
+            @set-arrow="setArrow"
           >
             <slot />
           </AposContextMenuDialog>
@@ -49,7 +50,7 @@ import {
   ref, computed, watch, nextTick
 } from 'vue';
 import {
-  computePosition, offset, shift
+  computePosition, offset, shift, flip, arrow
 } from '@floating-ui/dom';
 import { useAposTheme } from 'Modules/@apostrophecms/ui/composables/AposTheme';
 
@@ -105,11 +106,13 @@ const props = defineProps({
 
 const emit = defineEmits([ 'open', 'close', 'item-clicked' ]);
 const isOpen = ref(false);
-const position = ref('');
+const placement = ref(props.menuPlacement);
 const event = ref(null);
 const dropdown = ref();
 const dropdownContent = ref();
 const dropdownContentStyle = ref({});
+/* const arrowStyle = ref({}); */
+const arrowEl = ref();
 
 const popoverClass = computed(() => {
   const classes = [ 'apos-popover' ].concat(themeClass.value);
@@ -158,6 +161,10 @@ function buttonClicked(e) {
   event.value = e;
 }
 
+function setArrow(el) {
+  arrowEl.value = el;
+}
+
 function menuItemClicked(name) {
   emit('item-clicked', name);
   hide();
@@ -165,19 +172,31 @@ function menuItemClicked(name) {
 
 async function setDropdownPosition() {
   const {
-    x, y
+    x, y, middlewareData, placement: dropdownPlacement
   } = await computePosition(dropdown.value, dropdownContent.value, {
-    placement: props.placement,
+    placement: props.menuPlacement,
     middleware: [
-      offset(11),
-      shift({ padding: 5 })
+      offset(15),
+      shift({ padding: 5 }),
+      flip(),
+      arrow({
+        element: arrowEl.value,
+        padding: 5
+      })
     ]
   });
 
+  placement.value = dropdownPlacement;
   dropdownContentStyle.value = {
     left: `${x}px`,
     top: `${y}px`
   };
+
+  const { x: arrowX, y: arrowY } = middlewareData.arrow;
+  Object.assign(arrowEl.value.style, {
+    ...arrowX && { left: `${arrowX}px` },
+    ...arrowY && { top: `${arrowY}px` }
+  });
 }
 </script>
 
@@ -190,6 +209,7 @@ async function setDropdownPosition() {
 .apos-context-menu__dropdown-content {
   position: absolute;
   z-index: $z-index-notifications;
+  width: max-content;
 
   &[aria-hidden='true'] {
     visibility: hidden;

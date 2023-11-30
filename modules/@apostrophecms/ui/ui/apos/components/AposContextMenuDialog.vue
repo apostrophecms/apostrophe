@@ -8,8 +8,8 @@
       v-if="hasTip"
       class="apos-context-menu__tip"
       :align="tipAlignment"
-      :origin="menuOrigin"
-      x-placement="bottom"
+      :x-placement="placementSide"
+      @set-arrow="emitSetArrow"
     />
     <div class="apos-context-menu__pane">
       <slot>
@@ -32,71 +32,71 @@
   </div>
 </template>
 
-<script>
+<script setup>
+import {
+  computed
+} from 'vue';
 
-export default {
-  name: 'AposContextMenuDialog',
-  props: {
-    menuPlacement: {
-      type: String,
-      required: true
-    },
-    menu: {
-      type: Array,
-      default: null
-    },
-    classList: {
-      type: String,
-      default: ''
-    },
-    isOpen: {
-      type: Boolean,
-      default: false
-    },
-    modifiers: {
-      type: Array,
-      default() {
-        return [];
-      }
-    },
-    hasTip: {
-      type: Boolean,
-      default: true
+const props = defineProps({
+  menuPlacement: {
+    type: String,
+    required: true
+  },
+  menu: {
+    type: Array,
+    default: null
+  },
+  classList: {
+    type: String,
+    default: ''
+  },
+  isOpen: {
+    type: Boolean,
+    default: false
+  },
+  modifiers: {
+    type: Array,
+    default() {
+      return [];
     }
   },
-  emits: [ 'item-clicked' ],
-  data() {
-    return {
-    };
-  },
-  computed: {
-    menuPositions () {
-      return this.menuPlacement.split('-');
-    },
-    menuOrigin() {
-      return this.menuPositions[0];
-    },
-    tipAlignment() {
-      if (!this.menuPositions[1]) {
-        return 'center';
-      } else {
-        return this.menuPositions[1];
-      }
-    },
-    classes() {
-      const classes = this.classList.split(' ');
-      this.modifiers.forEach(c => {
-        classes.push(`apos-context-menu__dialog--${c}`);
-      });
-      return classes.join(' ');
-    }
-  },
-  methods: {
-    menuItemClicked(action) {
-      this.$emit('item-clicked', action);
-    }
+  hasTip: {
+    type: Boolean,
+    default: true
   }
-};
+});
+
+const emit = defineEmits([ 'item-clicked', 'set-arrow' ]);
+
+const menuPositions = computed(() => {
+  return props.menuPlacement.split('-');
+});
+
+const placementSide = computed(() => {
+  return menuPositions.value[0];
+});
+
+const tipAlignment = computed(() => {
+  return !menuPositions.value[1]
+    ? 'center'
+    : menuPositions.value[1];
+});
+
+const classes = computed(() => {
+  const classes = props.classList.split(' ');
+  props.modifiers.forEach(c => {
+    classes.push(`apos-context-menu__dialog--${c}`);
+  });
+  return classes.join(' ');
+});
+
+function menuItemClicked(action) {
+  emit('item-clicked', action);
+}
+
+function emitSetArrow(arrowEl) {
+  emit('set-arrow', arrowEl);
+}
 </script>
 
 <style lang="scss">
