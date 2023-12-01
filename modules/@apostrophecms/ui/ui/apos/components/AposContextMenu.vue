@@ -27,6 +27,7 @@
           ref="dropdownContent"
           v-click-outside-element="hide"
           class="apos-context-menu__dropdown-content"
+          data-apos-menu
           :style="dropdownContentStyle"
           :aria-hidden="!isOpen"
         >

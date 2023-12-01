@@ -31,6 +31,9 @@ export default function() {
 // sometimes Vue removes elements from the DOM before
 // we can examine their relationships.
 function onTopOf(el1, el2) {
+  if (el2.matches('[data-apos-menu]')) {
+    return false;
+  }
   if (!el1.isConnected) {
     // If el1 is no longer in the DOM we can't make a proper determination,
     // returning true prevents unwanted things like click-outside-element
