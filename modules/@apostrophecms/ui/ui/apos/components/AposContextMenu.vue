@@ -3,8 +3,7 @@
     <slot name="prebutton" />
     <div
       ref="dropdown"
-      class="apos-context-menu__dropdown"
-      :class="popoverClass"
+      class="apos-popover__btn apos-context-menu__dropdown"
     >
       <AposButton
         v-bind="button"
@@ -27,6 +26,7 @@
           ref="dropdownContent"
           v-click-outside-element="hide"
           class="apos-context-menu__dropdown-content"
+          :class="popoverClass"
           data-apos-menu
           :style="dropdownContentStyle"
           :aria-hidden="!isOpen"
@@ -107,6 +107,7 @@ const props = defineProps({
 });
 
 const emit = defineEmits([ 'open', 'close', 'item-clicked' ]);
+defineExpose({ hide });
 
 const menuId = ref(cuid());
 const isOpen = ref(false);
@@ -294,55 +295,55 @@ async function setDropdownPosition() {
   padding: 10px 0;
 }
 
-.apos-context-menu {
-  &:deep(.v-popper__wrapper),
-  &:deep(div:not([class])),
-  &:deep(.apos-context-menu__dialog),
-  &:deep(.v-popover__popper),
-  &:deep(.v-popper__inner ){
-    &:focus {
-      outline: none;
-    }
-  }
-}
+/* .apos-context-menu { */
+/*   &:deep(.v-popper__wrapper), */
+/*   &:deep(div:not([class])), */
+/*   &:deep(.apos-context-menu__dialog), */
+/*   &:deep(.v-popover__popper), */
+/*   &:deep(.v-popper__inner ){ */
+/*     &:focus { */
+/*       outline: none; */
+/*     } */
+/*   } */
+/* } */
 
-.v-popper__popper {
-  z-index: $z-index-modal;
-  display: block;
+/* .v-popper__popper { */
+/*   z-index: $z-index-modal; */
+/*   display: block; */
+/**/
+/*   .tooltip-arrow { */
+/*     display: none; */
+/*   } */
+/**/
+/*   &[x-placement^='top'] { */
+/*     margin-bottom: 5px; */
+/*   } */
+/**/
+/*   &[x-placement^='bottom'] { */
+/*     margin-top: 5px; */
+/*   } */
+/**/
+/*   &[x-placement$='end'] { */
+/*     margin-right: -15px; */
+/*   } */
+/**/
+/*   &[x-placement$='start'] { */
+/*     margin-left: -15px; */
+/*   } */
+/**/
+/*   &[aria-hidden='true'] { */
+/*     visibility: hidden; */
+/*     opacity: 0; */
+/*   } */
+/**/
+/*   &[aria-hidden='false'] { */
+/*     visibility: visible; */
+/*     opacity: 1; */
+/*   } */
+/* } */
 
-  .tooltip-arrow {
-    display: none;
-  }
-
-  &[x-placement^='top'] {
-    margin-bottom: 5px;
-  }
-
-  &[x-placement^='bottom'] {
-    margin-top: 5px;
-  }
-
-  &[x-placement$='end'] {
-    margin-right: -15px;
-  }
-
-  &[x-placement$='start'] {
-    margin-left: -15px;
-  }
-
-  &[aria-hidden='true'] {
-    visibility: hidden;
-    opacity: 0;
-  }
-
-  &[aria-hidden='false'] {
-    visibility: visible;
-    opacity: 1;
-  }
-}
-
-.v-popper__popper--z-index-in-context {
-  z-index: $z-index-widget-focused-controls;
-}
+/* .v-popper__popper--z-index-in-context { */
+/*   z-index: $z-index-widget-focused-controls; */
+/* } */
 
 </style>
