@@ -18,7 +18,7 @@
           :id="getChoiceId(uid, value)"
           type="radio"
           class="apos-sr-only apos-input--choice apos-input--radio"
-          :model-value="JSON.stringify(value)"
+          :value="JSON.stringify(value)"
           :name="field.name"
           :checked="next === value"
           tabindex="1"
