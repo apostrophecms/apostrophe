@@ -166,7 +166,7 @@ onMounted(() => {
 });
 
 onBeforeUnmount(() => {
-  apos.bus.$off('context-menu-opened');
+  apos.bus.$off('context-menu-opened', hideWhenOtherOpen);
 });
 
 function hideWhenOtherOpen(id) {
