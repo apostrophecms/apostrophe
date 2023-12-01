@@ -57,7 +57,8 @@
       "files": "*.vue",
       "globals": {
         "defineProps": "readable",
-        "defineEmits": "readable"
+        "defineEmits": "readable",
+        "defineExpose": "readable"
       }
     },
     {
