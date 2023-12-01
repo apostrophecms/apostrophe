@@ -107,7 +107,6 @@ const props = defineProps({
 });
 
 const emit = defineEmits([ 'open', 'close', 'item-clicked' ]);
-defineExpose({ hide });
 
 const menuId = ref(cuid());
 const isOpen = ref(false);
@@ -117,6 +116,10 @@ const dropdown = ref();
 const dropdownContent = ref();
 const dropdownContentStyle = ref({});
 const arrowEl = ref();
+
+defineExpose({
+  hide
+});
 
 const popoverClass = computed(() => {
   const classes = [ 'apos-popover' ].concat(themeClass.value);
@@ -190,6 +193,7 @@ function setArrow(el) {
 }
 
 function menuItemClicked(name) {
+  console.log('=====> item clicked <=====');
   emit('item-clicked', name);
   hide();
 }

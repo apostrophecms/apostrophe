@@ -197,7 +197,7 @@ export default {
       // Potential TODO: If we find ourselves manually flipping these bits in other AposContextMenu overrides
       // we should consider refactoring contextmenus to be able to self close when any click takes place within their el
       // as it is often the logical experience (not always, see tag menus and filters)
-      this.$refs.contextMenu.isOpen = false;
+      this.$refs.contextMenu.hide();
       this.$emit('add', {
         ...item,
         index: this.index
