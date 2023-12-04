@@ -1,39 +1,42 @@
 <template>
   <AposContextMenu
-    @open="open = $event"
     menu-placement="bottom-end"
+    @open="open = $event"
   >
     <div class="apos-apply-tag-menu__inner">
       <AposInputString
+        ref="textInput"
+        :field="searchField"
+        :model-value="searchValue"
+        :status="searchStatus"
         @input="updateSearchInput"
         @return="create"
-        :field="searchField" :model-value="searchValue"
-        :status="searchStatus" ref="textInput"
       />
       <div class="apos-apply-tag__create">
         <AposButton
-          @click="create"
           :label="createLabel"
           type="quiet"
           :disabled="disabledCreate"
           :disable-focus="!open"
+          @click="create"
         />
       </div>
       <transition name="fade">
         <div>
           <ol v-if="searchTags.length && !creating" class="apos-apply-tag-menu__tags">
             <li
-              class="apos-apply-tag-menu__tag" v-for="tag in searchTags"
+              v-for="tag in searchTags"
               :key="`${keyPrefix}-${tag.slug}`"
+              class="apos-apply-tag-menu__tag"
             >
               <AposCheckbox
                 v-if="checkboxes[tag.slug]"
+                v-model="checked"
                 :field="checkboxes[tag.slug].field"
                 :status="checkboxes[tag.slug].status"
                 :choice="checkboxes[tag.slug].choice"
-                v-model="checked"
-                @updated="updateTag"
                 :disable-focus="!open"
+                @updated="updateTag"
               />
             </li>
           </ol>
@@ -41,11 +44,11 @@
             <p class="apos-apply-tag-menu__empty-message">
               We couldn't find any matching tags. Perhaps
               <AposButton
-                @click="create"
                 :label="`create ${searchInputValue} ?`"
                 type="quiet"
                 :disabled="disabledCreate"
                 :disable-focus="!open"
+                @click="create"
               />
             </p>
             <span class="apos-apply-tag-menu__empty-icon">

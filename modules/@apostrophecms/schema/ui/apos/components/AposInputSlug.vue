@@ -1,33 +1,38 @@
 <template>
   <AposInputWrapper
-    :modifiers="modifiers" :field="field"
-    :error="effectiveError" :uid="uid"
+    :modifiers="modifiers"
+    :field="field"
+    :error="effectiveError"
+    :uid="uid"
     :display-options="displayOptions"
   >
     <template #body>
       <div :class="wrapperClasses">
         <span
-          class="apos-input__slug-locale-prefix"
           v-if="localePrefix"
-          @click="passFocus"
           v-apos-tooltip="'apostrophe:cannotChangeSlugPrefix'"
+          class="apos-input__slug-locale-prefix"
+          @click="passFocus"
         >
           {{ localePrefix }}
         </span>
         <input
+          v-model="next"
+          :id="uid"
           :class="classes"
-          v-model="next" :type="type"
+          :type="type"
           :placeholder="$t(field.placeholder)"
-          @keydown.enter="$emit('return')"
-          :disabled="field.readOnly" :required="field.required"
-          :id="uid" :tabindex="tabindex"
           ref="input"
+          :disabled="field.readOnly"
+          :required="field.required"
+          :tabindex="tabindex"
+          @keydown.enter="$emit('return')"
         >
         <component
+          :is="icon"
           v-if="icon"
           :size="iconSize"
           class="apos-input-icon"
-          :is="icon"
         />
       </div>
     </template>
