@@ -2,27 +2,28 @@
   <div class="apos-area-menu" :class="{'apos-is-focused': groupIsFocused}">
     <AposContextMenu
       v-bind="extendedContextMenuOptions"
+      ref="contextMenu"
       :disabled="isDisabled"
       :button="buttonOptions"
-      @open="menuOpen"
-      @close="menuClose"
-      ref="contextMenu"
       :popover-modifiers="inContext ? ['z-index-in-context'] : []"
     >
       <ul class="apos-area-menu__wrapper">
         <li
-          class="apos-area-menu__item"
           v-for="(item, itemIndex) in myMenu"
           :key="item.type ? `${item.type}_${item.label}` : item.label"
-          :class="{'apos-has-group': item.items}"
           :ref="`item-${itemIndex}`"
+          class="apos-area-menu__item"
+          :class="{'apos-has-group': item.items}"
         >
           <dl v-if="item.items" class="apos-area-menu__group">
             <dt>
               <button
-                :for="item.label" class="apos-area-menu__group-label"
-                v-if="item.items" tabindex="0"
+                v-if="item.items"
                 :id="`${menuId}-trigger-${itemIndex}`"
+                ref="groupButton"
+                :for="item.label"
+                class="apos-area-menu__group-label"
+                tabindex="0"
                 :aria-controls="`${menuId}-group-${itemIndex}`"
                 @focus="groupFocused"
                 @blur="groupBlurred"
@@ -33,33 +34,33 @@
                 @keydown.prevent.arrow-up="switchGroup(itemIndex, -1)"
                 @keydown.prevent.home="switchGroup(itemIndex, 0)"
                 @keydown.prevent.end="switchGroup(itemIndex, null)"
-                ref="groupButton"
               >
                 <span>{{ item.label }}</span>
                 <chevron-up-icon
                   class="apos-area-menu__group-chevron"
-                  :class="{'apos-is-active': itemIndex === active}" :size="13"
+                  :class="{'apos-is-active': itemIndex === active}"
+                  :size="13"
                 />
               </button>
             </dt>
             <dd class="apos-area-menu__group-list" role="region">
               <ul
+                :id="`${menuId}-group-${itemIndex}`"
                 class="apos-area-menu__items apos-area-menu__items--accordion"
                 :class="{'apos-is-active': active === itemIndex}"
-                :id="`${menuId}-group-${itemIndex}`"
                 :aria-labelledby="`${menuId}-trigger-${itemIndex}`"
                 :aria-expanded="active === itemIndex ? 'true' : 'false'"
               >
                 <li
-                  class="apos-area-menu__item"
                   v-for="(child, childIndex) in item.items"
                   :key="child.name"
                   :ref="`child-${index}-${childIndex}`"
+                  class="apos-area-menu__item"
                 >
                   <AposAreaMenuItem
-                    @click="add(child)"
                     :item="child"
                     :tabbable="itemIndex === active"
+                    @click="add(child)"
                     @up="switchItem(`child-${itemIndex}-${childIndex - 1}`, -1)"
                     @down="switchItem(`child-${itemIndex}-${childIndex + 1}`, 1)"
                   />
@@ -69,8 +70,8 @@
           </dl>
           <AposAreaMenuItem
             v-else
-            @click="add(item)"
             :item="item"
+            @click="add(item)"
             @up="switchItem(`item-${itemIndex - 1}`, -1)"
             @down="switchItem(`item-${itemIndex + 1}`, 1)"
           />
@@ -118,7 +119,7 @@ export default {
       }
     }
   },
-  emits: [ 'menu-close', 'menu-open', 'add' ],
+  emits: [ 'add' ],
   data() {
     return {
       active: 0,
@@ -192,17 +193,11 @@ export default {
     this.inContext = !apos.util.closest(this.$el, '[data-apos-schema-area]');
   },
   methods: {
-    menuClose(e) {
-      this.$emit('menu-close', e);
-    },
-    menuOpen(e) {
-      this.$emit('menu-open', e);
-    },
     async add(item) {
       // Potential TODO: If we find ourselves manually flipping these bits in other AposContextMenu overrides
       // we should consider refactoring contextmenus to be able to self close when any click takes place within their el
       // as it is often the logical experience (not always, see tag menus and filters)
-      this.$refs.contextMenu.isOpen = false;
+      this.$refs.contextMenu.hide();
       this.$emit('add', {
         ...item,
         index: this.index

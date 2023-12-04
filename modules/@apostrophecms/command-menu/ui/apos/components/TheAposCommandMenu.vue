@@ -24,14 +24,7 @@ export default {
     return {
       previousKey: '',
       modal: 'default',
-      keyboardShortcutListener() {},
-      delay(resolve, ms) {
-        return new Promise(() => {
-          setTimeout(resolve, ms);
-        });
-      },
-      groups: apos.commandMenu.groups,
-      modals: apos.commandMenu.modals
+      keyboardShortcutListener() {}
     };
   },
   computed: {
@@ -99,6 +92,11 @@ export default {
     apos.bus.$off('modal-resolved', this.updateModal);
   },
   methods: {
+    delay(resolve, ms) {
+      return new Promise(() => {
+        setTimeout(resolve, ms);
+      });
+    },
     getModal() {
       return this.modal;
     },

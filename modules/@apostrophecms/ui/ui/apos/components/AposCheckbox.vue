@@ -10,7 +10,7 @@
       v-model="checkProxy"
       type="checkbox"
       class="apos-sr-only apos-input--choice apos-input--checkbox"
-      :model-value="choice.value"
+      :value="choice.value"
       :name="field.name"
       :aria-label="choice.label || field.label"
       :tabindex="tabindex"

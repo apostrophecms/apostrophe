@@ -5,7 +5,6 @@ export default {
   mixins: [ AposInputMixin ],
   emits: [ 'return' ],
   data () {
-    console.log('this.modelValue', this.modelValue);
     return {
       step: undefined,
       wasPopulated: false

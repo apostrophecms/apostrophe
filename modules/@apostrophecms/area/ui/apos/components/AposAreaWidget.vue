@@ -69,8 +69,6 @@
           :options="options"
           :disabled="disabled"
           @add="$emit('add', $event);"
-          @menu-open="toggleMenuFocus($event, 'top', true)"
-          @menu-close="toggleMenuFocus($event, 'top', false)"
         />
       </div>
       <div
@@ -143,8 +141,6 @@
           :options="options"
           :disabled="disabled"
           @add="$emit('add', $event)"
-          @menu-open="toggleMenuFocus($event, 'bottom', true)"
-          @menu-close="toggleMenuFocus($event, 'bottom', false)"
         />
       </div>
     </div>
@@ -431,17 +427,6 @@ export default {
         this.isSuppressed = true;
         document.removeEventListener('click', this.unfocus);
         apos.bus.$emit('widget-focus', null);
-      }
-    },
-
-    toggleMenuFocus(event, name, value) {
-      if (event) {
-        event.cancelBubble = true;
-      }
-      this.state.add[name].focus = value;
-
-      if (value) {
-        this.focus();
       }
     },
 

@@ -232,7 +232,10 @@ export default {
 
       if (result) {
         const index = this.next.findIndex(_item => _item._id === item._id);
-        this.$set(this.next, index, {
+
+        // TODO verify it's still reactive, should be based on the doc
+        // Or use a filter here
+        this.next.splice(index, 1, {
           ...this.next[index],
           _fields: result
         });

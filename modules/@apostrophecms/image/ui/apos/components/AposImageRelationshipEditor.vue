@@ -64,7 +64,7 @@
                 W
               </label>
               <input
-                :model-value="docFields.data.width"
+                :value="docFields.data.width"
                 class="apos-input apos-input--text"
                 type="number"
                 :min="minWidth"
@@ -78,7 +78,7 @@
                 H
               </label>
               <input
-                :model-value="docFields.data.height"
+                :value="docFields.data.height"
                 class="apos-input apos-input--text"
                 type="number"
                 :min="minHeight"

@@ -5,13 +5,13 @@
     </div>
     <div class="apos-subform-preview__value" :class="{ 'is-help': !!subform.help }">
       <component
+        :is="subform.previewComponent"
         v-if="subform.previewComponent"
         class="apos-subform-preview__value-block"
-        :is="subform.previewComponent"
         :subform="subform"
         :values="values"
       />
-      <span class="apos-subform-preview__value-block" v-else>
+      <span v-else class="apos-subform-preview__value-block">
         {{ previewValue }}
       </span>
     </div>
@@ -36,7 +36,7 @@ export default {
         return this.$t(this.subform.help);
       }
       let preview = this.subform.preview;
-      const values = inferFieldValues(this.subform.schema, this.modelValues, this.$t);
+      const values = inferFieldValues(this.subform.schema, this.values, this.$t);
 
       if (!preview) {
         preview = this.subform.fields

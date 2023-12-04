@@ -7,8 +7,8 @@
   >
     <component
       v-bind="attrs"
-      v-on="href ? {} : {click: click}"
       :is="href ? 'a' : 'button'"
+      :id="attrs.id ? attrs.id : id"
       :href="href.length ? href : false"
       class="apos-button"
       :class="modifierClass"
@@ -16,11 +16,11 @@
       :disabled="isDisabled"
       :type="buttonType"
       :role="role"
-      :id="attrs.id ? attrs.id : id"
       :style="{color: textColor}"
+      v-on="href ? {} : {click: click}"
     >
       <transition name="fade">
-        <AposSpinner :color="spinnerColor" v-if="busy" />
+        <AposSpinner v-if="busy" :color="spinnerColor" />
       </transition>
       <span
         v-if="colorStyle"

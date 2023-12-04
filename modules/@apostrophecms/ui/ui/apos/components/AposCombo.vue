@@ -58,7 +58,7 @@
           class="apos-combo__typehead"
           type="text"
           :placeholder="$t('apostrophe:search')"
-          :model-value="thInput"
+          :value="thInput"
           @input="onTypeheadInput"
           @keydown="onTypeheadKey"
         >

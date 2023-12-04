@@ -6,32 +6,34 @@
       :label="label"
       :disabled="disabled"
       :tooltip="tooltip"
-      @click="$emit('click', action)"
+      @click="emit('click', action)"
     />
     <AposContextMenu
+      ref="contextMenu"
       class="apos-button-split__menu"
       :menu="menu"
       :button="contextMenuButton"
       :disabled="disabled"
       menu-offset="1, 10"
       menu-placement="bottom-end"
-      ref="contextMenu"
       @open="menuOpen"
       @close="menuClose"
     >
       <dl
-        class="apos-button-split__menu__dialog" role="menu"
+        class="apos-button-split__menu__dialog"
+        role="menu"
         :aria-label="menuLabel"
       >
         <button
-          v-for="item in menu" :key="item.action"
+          v-for="item in menu"
+          :key="item.action"
+          ref="choices"
           class="apos-button-split__menu__dialog-item"
           :class="{ 'apos-is-selected': item.action === action }"
-          @click="selectionHandler(item.action)"
           :aria-checked="item.action === action ? 'true' : 'false'"
           role="menuitemradio"
-          :model-value="item.action"
-          ref="choices"
+          :value="item.action"
+          @click="selectionHandler(item.action)"
           @keydown="cycleElementsToFocus"
         >
           <AposIndicator
@@ -53,111 +55,121 @@
   </div>
 </template>
 
-<script>
-import AposFocusMixin from 'Modules/@apostrophecms/modal/mixins/AposFocusMixin';
+<script setup>
+import {
+  ref, onMounted, computed, watch, nextTick
+} from 'vue';
+import { useAposFocus } from 'Modules/@apostrophecms/modal/composables/AposFocus';
 
-export default {
-  name: 'AposButtonSplit',
-  mixins: [
-    AposFocusMixin
-  ],
-  props: {
-    menu: {
-      type: Array,
-      required: true
-    },
-    menuLabel: {
-      type: String,
-      required: true
-    },
-    type: {
-      type: String,
-      default: 'primary'
-    },
-    disabled: {
-      type: Boolean,
-      default: false
-    },
-    tooltip: {
-      type: [ String, Object ],
-      default: null
-    },
-    selected: {
-      // corresponds to a menu item action
-      type: String,
-      default: null
-    }
-  },
-  emits: [ 'click' ],
-  data() {
-    return {
-      label: null,
-      action: null,
-      button: {
-        type: this.type,
-        modifiers: [ 'no-motion' ]
-      },
-      contextMenuButton: {
-        iconOnly: true,
-        icon: 'chevron-down-icon',
-        modifiers: [ 'no-motion' ],
-        type: this.type
-      }
-    };
-  },
-  computed: {
-    modifiers() {
-      const classes = [];
-      classes.push(`apos-button-split--type-${this.button.type}`);
-      return classes;
-    }
-  },
-  watch: {
-    menu() {
-      this.initialize();
-    }
-  },
-  mounted() {
-    this.initialize();
-  },
-  methods: {
-    // sets the label and emitted action of the button
-    setButton(action) {
-      this.action = action;
-      this.label = this.menu.find(i => i.action === action).label;
-    },
-    selectionHandler(action) {
-      this.setButton(action);
-      this.$refs.contextMenu.hide();
-    },
-    initialize() {
-      let initial = this.menu[0].action || null;
-      if (this.selected && this.menu.find(i => i.action === this.selected)) {
-        initial = this.selected;
-      } else if (this.menu.find(i => i.def)) {
-        initial = this.menu.find(i => i.def).action;
-      }
-      this.setButton(initial);
-    },
-    trapFocus() {
-      const selectedElementIndex = this.menu.findIndex(i => i.action === this.action) || 0;
+const {
+  elementsToFocus,
+  cycleElementsToFocus,
+  focusElement,
+  focuslastmodalfocusedelement
+} = useAposFocus();
 
-      // use map to keep items order:
-      this.elementsToFocus = this.menu.map(
-        i => this.$refs.choices.find(choice => choice.value === i.action)
-      );
-
-      this.focusElement(this.elementsToFocus[selectedElementIndex]);
-    },
-    menuOpen() {
-      // TODO: find another way to wait for elements to be visible
-      setTimeout(this.trapFocus, 200);
-    },
-    menuClose() {
-      this.focusLastModalFocusedElement();
-    }
+const props = defineProps({
+  menu: {
+    type: Array,
+    required: true
+  },
+  menuLabel: {
+    type: String,
+    required: true
+  },
+  type: {
+    type: String,
+    default: 'primary'
+  },
+  disabled: {
+    type: Boolean,
+    default: false
+  },
+  tooltip: {
+    type: [ String, Object ],
+    default: null
+  },
+  selected: {
+    // corresponds to a menu item action
+    type: String,
+    default: null
   }
-};
+});
+
+const emit = defineEmits([ 'click' ]);
+
+const label = ref(null);
+const action = ref(null);
+const button = ref({
+  type: props.type,
+  modifiers: [ 'no-motion' ]
+});
+const contextMenu = ref();
+const choices = ref([]);
+const contextMenuButton = ref({
+  iconOnly: true,
+  icon: 'chevron-down-icon',
+  modifiers: [ 'no-motion' ],
+  type: props.type
+});
+
+const modifiers = computed(() => {
+  const classes = [];
+  classes.push(`apos-button-split--type-${button.value.type}`);
+  return classes;
+});
+
+watch(props.menu, () => {
+  initialize();
+});
+
+onMounted(() => {
+  initialize();
+});
+
+// sets the label and emitted action of the button
+function setButton(btnAction) {
+  action.value = btnAction;
+  label.value = props.menu.find(i => i.action === btnAction).label;
+}
+
+function selectionHandler(btnAction) {
+  setButton(btnAction);
+  contextMenu.value.hide();
+}
+
+function initialize() {
+  let initial = props.menu[0].action || null;
+  if (props.selected && props.menu.find(i => i.action === props.selected)) {
+    initial = props.selected;
+  } else if (props.menu.find(i => i.def)) {
+    initial = props.menu.find(i => i.def).action;
+  }
+
+  setButton(initial);
+}
+
+function trapFocus() {
+  const selectedElementIndex = props.menu.findIndex(i => i.action === action.value) || 0;
+
+  // use map to keep items order:
+  elementsToFocus.value = props.menu.map(
+    ({ action }) => choices.value.find(choice => {
+      return choice.value === action;
+    })
+  );
+
+  focusElement(elementsToFocus.value[selectedElementIndex]);
+}
+function menuOpen() {
+  nextTick(() => {
+    trapFocus();
+  });
+}
+
+function menuClose() {
+  focuslastmodalfocusedelement();
+}
 </script>
 <style lang="scss" scoped>
   .apos-button-split {
@@ -220,7 +232,7 @@ export default {
     right: 0;
     height: 100%;
 
-    :deep(.v-popover),
+    :deep(.apos-popover__btn),
     :deep(.trigger),
     :deep(.apos-button__wrapper) {
       height: 100%;

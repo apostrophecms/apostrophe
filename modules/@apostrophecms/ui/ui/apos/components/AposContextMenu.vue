@@ -1,17 +1,10 @@
 <template>
   <div class="apos-context-menu">
     <slot name="prebutton" />
-    <v-popover
-      :class="popoverClass"
-      :distance="menuOffset"
-      :skidding="menuOffset"
-      :triggers="['click']"
-      :shown="isOpen"
-      :auto-hide="true"
-      :placement="menuPlacement"
-      @on-hide="hide"
+    <div
+      ref="dropdown"
+      class="apos-popover__btn apos-context-menu__dropdown"
     >
-      <!-- TODO refactor buttons to take a single config obj -->
       <AposButton
         v-bind="button"
         ref="button"
@@ -27,147 +20,238 @@
         }"
         @click.stop="buttonClicked($event)"
       />
-      <template #popper class="apos-popover__slot">
-        <AposContextMenuDialog
-          :menu-placement="menuPlacement"
-          :class-list="classList"
-          :menu="menu"
-          @item-clicked="menuItemClicked"
+      <Teleport to="body">
+        <div
+          v-if="isOpen"
+          ref="dropdownContent"
+          v-click-outside-element="hide"
+          class="apos-context-menu__dropdown-content"
+          :class="popoverClass"
+          data-apos-menu
+          :style="dropdownContentStyle"
+          :aria-hidden="!isOpen"
         >
-          <slot />
-        </AposContextMenuDialog>
-      </template>
-    </v-popover>
+          <AposContextMenuDialog
+            :menu-placement="placement"
+            :class-list="classList"
+            :menu="menu"
+            @item-clicked="menuItemClicked"
+            @set-arrow="setArrow"
+          >
+            <slot />
+          </AposContextMenuDialog>
+        </div>
+      </Teleport>
+    </div>
   </div>
 </template>
 
-<script>
+<script setup>
 import {
-  Dropdown
-} from 'floating-vue';
-import AposThemeMixin from 'Modules/@apostrophecms/ui/mixins/AposThemeMixin';
+  ref, computed, watch, nextTick, onMounted, onBeforeUnmount
+} from 'vue';
+import {
+  computePosition, offset, shift, flip, arrow
+} from '@floating-ui/dom';
+import { useAposTheme } from 'Modules/@apostrophecms/ui/composables/AposTheme';
+import cuid from 'cuid';
 
-export default {
-  name: 'AposContextMenu',
-  components: {
-    'v-popover': Dropdown
+const props = defineProps({
+  menu: {
+    type: Array,
+    default: null
   },
-  mixins: [ AposThemeMixin ],
-  props: {
-    menu: {
-      type: Array,
-      default: null
-    },
-    unpadded: {
-      type: Boolean,
-      default: false
-    },
-    modifiers: {
-      type: Array,
-      default() {
-        return [];
-      }
-    },
-    button: {
-      type: Object,
-      default() {
-        return {
-          label: 'Context Menu Label',
-          iconOnly: true,
-          icon: 'label-icon',
-          type: 'outline'
-        };
-      }
-    },
-    menuPlacement: {
-      type: String,
-      default: 'bottom'
-    },
-    menuOffset: {
-      type: [ Number, String ],
-      default: 15
-    },
-    disabled: {
-      type: Boolean,
-      default: false
-    },
-    tooltip: {
-      type: [ String, Boolean ],
-      default: false
-    },
-    popoverModifiers: {
-      type: Array,
-      default() {
-        return [];
-      }
+  unpadded: {
+    type: Boolean,
+    default: false
+  },
+  modifiers: {
+    type: Array,
+    default() {
+      return [];
     }
   },
-  emits: [ 'open', 'close', 'item-clicked' ],
-  data() {
-    return {
-      isOpen: false,
-      position: '',
-      event: null
-    };
-  },
-  computed: {
-    popoverClass() {
-      const classes = [ 'apos-popover' ].concat(this.themeClass);
-      this.popoverModifiers.forEach(m => {
-        classes.push(`apos-popover--${m}`);
-      });
-      return classes;
-    },
-    classList() {
-      const classes = [];
-      const baseClass = 'apos-context-menu__popup';
-      classes.push(`${baseClass}--tip-alignment-${this.menuPlacement}`);
-      if (this.modifiers) {
-        this.modifiers.forEach((m) => {
-          classes.push(`${baseClass}--${m}`);
-        });
-      }
-      if (this.menu || this.unpadded) {
-        classes.push(`${baseClass}--unpadded`);
-      }
-      return classes.join(' ');
-    },
-    buttonState() {
-      return this.open ? [ 'active' ] : null;
+  button: {
+    type: Object,
+    default() {
+      return {
+        label: 'Context Menu Label',
+        iconOnly: true,
+        icon: 'label-icon',
+        type: 'outline'
+      };
     }
   },
-  watch: {
-    isOpen(newVal, oldVal) {
-      if (newVal) {
-        this.$emit('open', this.event);
-      } else {
-        this.$emit('close', this.event);
-      }
-    }
+  menuPlacement: {
+    type: String,
+    default: 'bottom'
   },
-  methods: {
-    show() {
-      this.isOpen = true;
-    },
-    hide() {
-      this.isOpen = false;
-    },
-    buttonClicked(e) {
-      this.isOpen = !this.isOpen;
-      this.event = e;
-    },
-    menuItemClicked(name) {
-      this.$emit('item-clicked', name);
-      this.hide();
+  menuOffset: {
+    type: [ Number, String ],
+    default: 15
+  },
+  disabled: {
+    type: Boolean,
+    default: false
+  },
+  tooltip: {
+    type: [ String, Boolean ],
+    default: false
+  },
+  popoverModifiers: {
+    type: Array,
+    default() {
+      return [];
     }
   }
-};
+});
+
+const emit = defineEmits([ 'open', 'close', 'item-clicked' ]);
+
+const menuId = ref(cuid());
+const isOpen = ref(false);
+const placement = ref(props.menuPlacement);
+const event = ref(null);
+const dropdown = ref();
+const dropdownContent = ref();
+const dropdownContentStyle = ref({});
+const arrowEl = ref();
+
+defineExpose({
+  hide
+});
+
+const popoverClass = computed(() => {
+  const classes = [ 'apos-popover' ].concat(themeClass.value);
+  props.popoverModifiers.forEach(m => {
+    classes.push(`apos-popover--${m}`);
+  });
+  return classes;
+});
+
+const classList = computed(() => {
+  const classes = [];
+  const baseClass = 'apos-context-menu__popup';
+  classes.push(`${baseClass}--tip-alignment-${props.menuPlacement}`);
+  if (props.modifiers) {
+    props.modifiers.forEach((m) => {
+      classes.push(`${baseClass}--${m}`);
+    });
+  }
+  if (props.menu || props.unpadded) {
+    classes.push(`${baseClass}--unpadded`);
+  }
+  return classes.join(' ');
+});
+
+const buttonState = computed(() => {
+  return isOpen.value ? [ 'active' ] : null;
+});
+
+watch(isOpen, (newVal) => {
+  emit(newVal ? 'open' : 'close', event.value);
+  if (newVal) {
+    window.addEventListener('resize', setDropdownPosition);
+    window.addEventListener('scroll', setDropdownPosition);
+    nextTick(() => {
+      setDropdownPosition();
+    });
+  } else {
+    window.removeEventListener('resize', setDropdownPosition);
+    window.removeEventListener('scroll', setDropdownPosition);
+  }
+});
+
+const { themeClass } = useAposTheme();
+
+onMounted(() => {
+  apos.bus.$on('context-menu-opened', hideWhenOtherOpen);
+});
+
+onBeforeUnmount(() => {
+  apos.bus.$off('context-menu-opened', hideWhenOtherOpen);
+});
+
+function hideWhenOtherOpen(id) {
+  if (menuId.value !== id) {
+    hide();
+  }
+}
+
+function hide() {
+  isOpen.value = false;
+}
+
+function buttonClicked(e) {
+  apos.bus.$emit('context-menu-opened', menuId.value);
+  isOpen.value = !isOpen.value;
+  event.value = e;
+}
+
+function setArrow(el) {
+  arrowEl.value = el;
+}
+
+function menuItemClicked(name) {
+  console.log('=====> item clicked <=====');
+  emit('item-clicked', name);
+  hide();
+}
+
+async function setDropdownPosition() {
+  if (!dropdown.value || !dropdownContent.value) {
+    return;
+  }
+  const {
+    x, y, middlewareData, placement: dropdownPlacement
+  } = await computePosition(dropdown.value, dropdownContent.value, {
+    placement: props.menuPlacement,
+    middleware: [
+      offset(15),
+      shift({ padding: 5 }),
+      flip(),
+      arrow({
+        element: arrowEl.value,
+        padding: 5
+      })
+    ]
+  });
+
+  placement.value = dropdownPlacement;
+  dropdownContentStyle.value = {
+    left: `${x}px`,
+    top: `${y}px`
+  };
+
+  const { x: arrowX, y: arrowY } = middlewareData.arrow;
+  Object.assign(arrowEl.value.style, {
+    ...arrowX && { left: `${arrowX}px` },
+    ...arrowY && { top: `${arrowY}px` }
+  });
+}
 </script>
 
 <style lang="scss">
 
-.apos-context-menu {
-  position: relative;
+/* .apos-context-menu { */
+/*   position: relative; */
+/* } */
+
+.apos-context-menu__dropdown-content {
+  position: absolute;
+  z-index: $z-index-notifications;
+  width: max-content;
+
+  &[aria-hidden='true'] {
+    visibility: hidden;
+    opacity: 0;
+  }
+
+  &[aria-hidden='false'] {
+    visibility: visible;
+    opacity: 1;
+  }
+
 }
 
 .apos-context-menu__popup--unpadded .apos-context-menu__pane  {
@@ -215,55 +299,55 @@ export default {
   padding: 10px 0;
 }
 
-.apos-context-menu {
-  &:deep(.v-popper__wrapper),
-  &:deep(div:not([class])),
-  &:deep(.apos-context-menu__dialog),
-  &:deep(.v-popover__popper),
-  &:deep(.v-popper__inner ){
-    &:focus {
-      outline: none;
-    }
-  }
-}
+/* .apos-context-menu { */
+/*   &:deep(.v-popper__wrapper), */
+/*   &:deep(div:not([class])), */
+/*   &:deep(.apos-context-menu__dialog), */
+/*   &:deep(.v-popover__popper), */
+/*   &:deep(.v-popper__inner ){ */
+/*     &:focus { */
+/*       outline: none; */
+/*     } */
+/*   } */
+/* } */
 
-.v-popper__popper {
-  z-index: $z-index-modal;
-  display: block;
+/* .v-popper__popper { */
+/*   z-index: $z-index-modal; */
+/*   display: block; */
+/**/
+/*   .tooltip-arrow { */
+/*     display: none; */
+/*   } */
+/**/
+/*   &[x-placement^='top'] { */
+/*     margin-bottom: 5px; */
+/*   } */
+/**/
+/*   &[x-placement^='bottom'] { */
+/*     margin-top: 5px; */
+/*   } */
+/**/
+/*   &[x-placement$='end'] { */
+/*     margin-right: -15px; */
+/*   } */
+/**/
+/*   &[x-placement$='start'] { */
+/*     margin-left: -15px; */
+/*   } */
+/**/
+/*   &[aria-hidden='true'] { */
+/*     visibility: hidden; */
+/*     opacity: 0; */
+/*   } */
+/**/
+/*   &[aria-hidden='false'] { */
+/*     visibility: visible; */
+/*     opacity: 1; */
+/*   } */
+/* } */
 
-  .tooltip-arrow {
-    display: none;
-  }
-
-  &[x-placement^='top'] {
-    margin-bottom: 5px;
-  }
-
-  &[x-placement^='bottom'] {
-    margin-top: 5px;
-  }
-
-  &[x-placement$='end'] {
-    margin-right: -15px;
-  }
-
-  &[x-placement$='start'] {
-    margin-left: -15px;
-  }
-
-  &[aria-hidden='true'] {
-    visibility: hidden;
-    opacity: 0;
-  }
-
-  &[aria-hidden='false'] {
-    visibility: visible;
-    opacity: 1;
-  }
-}
-
-.v-popper__popper--z-index-in-context {
-  z-index: $z-index-widget-focused-controls;
-}
+/* .v-popper__popper--z-index-in-context { */
+/*   z-index: $z-index-widget-focused-controls; */
+/* } */
 
 </style>

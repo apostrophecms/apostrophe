@@ -81,9 +81,8 @@ export default {
     max-width: 100%;
   }
 
-  .apos-field {
-    :deep(.apos-schema) & {
-      margin-bottom: $spacing-quadruple;
+  .apos-schema :deep(.apos-field) {
+    margin-bottom: $spacing-quadruple;
       &.apos-field--small,
       &.apos-field--micro,
       &.apos-field--margin-micro {
@@ -92,10 +91,5 @@ export default {
       &.apos-field--margin-none {
         margin-bottom: 0;
       }
-    }
-
-    .apos-schema :deep(.apos-toolbar) & {
-      margin-bottom: 0;
-    }
   }
 </style>
