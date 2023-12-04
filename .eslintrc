@@ -58,7 +58,10 @@
       "globals": {
         "defineProps": "readable",
         "defineEmits": "readable",
-        "defineExpose": "readable"
+        "defineExpose": "readable",
+        "defineOptions": "readable",
+        "defineModel": "readable",
+        "defineSlots": "readable"
       }
     },
     {
