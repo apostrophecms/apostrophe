@@ -9,7 +9,7 @@ export default {
         };
         document.body.addEventListener('click', el.aposClickOutsideHandler);
       },
-      unbind(el, binding) {
+      beforeUnmount(el, binding) {
         document.body.removeEventListener('click', el.aposClickOutsideHandler);
       }
     });
