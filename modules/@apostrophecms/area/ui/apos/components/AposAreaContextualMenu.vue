@@ -301,7 +301,7 @@ export default {
 
   &:hover,
   &:focus {
-  &:deep(.apos-area-menu__item-icon) {
+    &:deep(.apos-area-menu__item-icon) {
       color: var(--a-primary);
     }
   }

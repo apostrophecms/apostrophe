@@ -248,50 +248,50 @@ export default {
       }
     }
 
-      :deep(.apos-field__info) {
-        padding-top: 0;
-      }
-       :deep(.apos-field__label) {
-        display: none;
-      }
-       :deep(.apos-input-wrapper) {
-        padding: 0 4px;
-      }
-       :deep(.apos-input--select) {
-        min-width: 130px;
-      }
-       :deep(.apos-input--relationship) {
-        width: 100%;
-        min-width: 150px;
-      }
-       :deep(.apos-schema .apos-field.apos-field--small),
-       :deep(.apos-schema .apos-field.apos-field--micro),
-       :deep(.apos-schema .apos-field.apos-field--margin-micro) {
-        margin-bottom: 0;
-      }
-       :deep(.apos-search) {
-        z-index: calc(#{$z-index-widget-focused-controls} + 1);
-        position: absolute;
-        top: 35px;
-        width: 100%;
-        min-width: 350px;
-      }
-       :deep(.apos-slat-list .apos-slat),
-       :deep(.apos-input-relationship__items) {
-        margin-top: 0;
-        margin-bottom: 0;
-      }
-       :deep(.apos-input-relationship__input-wrapper :disabled) {
-        display: none;
-      }
-       :deep(.apos-field__error) {
-        position: absolute;
-        bottom: 13px;
-        left: $spacing-base;
-      }
-       :deep(.apos-field--relationship .apos-field__error) {
-        z-index: calc(#{$z-index-widget-focused-controls} + 1);
-      }
+    :deep(.apos-field__info) {
+      padding-top: 0;
+    }
+    :deep(.apos-field__label) {
+      display: none;
+    }
+    :deep(.apos-input-wrapper) {
+      padding: 0 4px;
+    }
+    :deep(.apos-input--select) {
+      min-width: 130px;
+    }
+    :deep(.apos-input--relationship) {
+      width: 100%;
+      min-width: 150px;
+    }
+    :deep(.apos-schema .apos-field.apos-field--small),
+    :deep(.apos-schema .apos-field.apos-field--micro),
+    :deep(.apos-schema .apos-field.apos-field--margin-micro) {
+      margin-bottom: 0;
+    }
+    :deep(.apos-search) {
+      z-index: calc(#{$z-index-widget-focused-controls} + 1);
+      position: absolute;
+      top: 35px;
+      width: 100%;
+      min-width: 350px;
+    }
+    :deep(.apos-slat-list .apos-slat),
+    :deep(.apos-input-relationship__items) {
+      margin-top: 0;
+      margin-bottom: 0;
+    }
+    :deep(.apos-input-relationship__input-wrapper :disabled) {
+      display: none;
+    }
+    :deep(.apos-field__error) {
+      position: absolute;
+      bottom: 13px;
+      left: $spacing-base;
+    }
+    :deep(.apos-field--relationship .apos-field__error) {
+      z-index: calc(#{$z-index-widget-focused-controls} + 1);
+    }
   }
 
   .apos-input-array-inline-standard {

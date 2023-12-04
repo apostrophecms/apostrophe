@@ -83,13 +83,13 @@ export default {
 
   .apos-schema :deep(.apos-field) {
     margin-bottom: $spacing-quadruple;
-      &.apos-field--small,
-      &.apos-field--micro,
-      &.apos-field--margin-micro {
-        margin-bottom: $spacing-double;
-      }
-      &.apos-field--margin-none {
-        margin-bottom: 0;
-      }
+    &.apos-field--small,
+    &.apos-field--micro,
+    &.apos-field--margin-micro {
+      margin-bottom: $spacing-double;
+    }
+    &.apos-field--margin-none {
+      margin-bottom: 0;
+    }
   }
 </style>

@@ -26,7 +26,7 @@ span.apos-tree__cell:first-of-type {
   margin-left: 5px;
 }
 
-.apos-tree__cell[disabled="true"] {
+.apos-tree__cell[disabled='true'] {
   color: $input-color-disabled;
   &:hover {
     cursor: not-allowed;

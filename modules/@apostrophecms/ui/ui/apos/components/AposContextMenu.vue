@@ -232,14 +232,9 @@ async function setDropdownPosition() {
 </script>
 
 <style lang="scss">
-
-/* .apos-context-menu { */
-/*   position: relative; */
-/* } */
-
 .apos-context-menu__dropdown-content {
-  position: absolute;
   z-index: $z-index-notifications;
+  position: absolute;
   width: max-content;
 
   &[aria-hidden='true'] {
@@ -251,7 +246,6 @@ async function setDropdownPosition() {
     visibility: visible;
     opacity: 1;
   }
-
 }
 
 .apos-context-menu__popup--unpadded .apos-context-menu__pane  {
