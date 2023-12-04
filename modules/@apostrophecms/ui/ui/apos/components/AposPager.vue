@@ -3,20 +3,24 @@
     <AposButton
       :disabled="currentPage == 1"
       class="apos-pager__btn"
+      type="outline"
+      icon="chevron-left-icon"
       :modifiers="['small']"
-      type="outline" @click="incrementPage(-1)"
-      :icon-only="true" icon="chevron-left-icon"
+      :icon-only="true"
       :label="prevButtonLabel"
+      @click="incrementPage(-1)"
     />
     <div class="apos-input-wrapper">
       <select
-        :disabled="totalPages <= 1"
+        v-model="selectedPage"
         class="apos-pager__page-select apos-input apos-input--select"
-        v-model="selectedPage" :aria-label="$t('apostrophe:selectPage')"
+        :disabled="totalPages <= 1"
+        :aria-label="$t('apostrophe:selectPage')"
       >
         <option
-          v-for="num in totalPages" :key="num"
-          :model-value="num"
+          v-for="num in totalPages"
+          :key="num"
+          :value="num"
         >
           {{ $t('apostrophe:pageNumber', { number: num }) }}
         </option>
@@ -25,11 +29,13 @@
     </div>
     <AposButton
       :disabled="currentPage >= totalPages"
+      type="outline"
       class="apos-pager__btn"
+      icon="chevron-right-icon"
       :modifiers="['small']"
-      type="outline" @click="incrementPage(1)"
-      :icon-only="true" icon="chevron-right-icon"
+      :icon-only="true"
       :label="nextButtonLabel"
+      @click="incrementPage(1)"
     />
   </nav>
 </template>
