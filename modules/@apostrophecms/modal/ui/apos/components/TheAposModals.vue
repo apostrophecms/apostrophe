@@ -130,36 +130,6 @@ export default {
         mode: 'alert',
         options
       });
-    },
-
-    onTopOf(el1, el2) {
-      if (!el1.isConnected) {
-        // If el1 is no longer in the DOM we can't make a proper determination,
-        // returning true prevents unwanted things like click-outside-element
-        // events from firing
-        return true;
-      }
-      if (!el1.matches('[data-apos-modal]')) {
-        el1 = el1.closest('[data-apos-modal]') || document;
-      }
-      if (!el2.matches('[data-apos-modal]')) {
-        el2 = el2.closest('[data-apos-modal]') || document;
-      }
-      if (el1 === document) {
-        return false;
-      }
-      if (el2 === document) {
-        return true;
-      }
-      const index1 = this.stack.findIndex(modal => modal.$el === el1);
-      const index2 = this.stack.findIndex(modal => modal.$el === el2);
-      if (index1 === -1) {
-        throw new Error('apos.modal.onTopOf: el1 is not in the modal stack');
-      }
-      if (index2 === -1) {
-        throw new Error('apos.modal.onTopOf: el2 is not in the modal stack');
-      }
-      return index1 > index2;
     }
   }
 };
