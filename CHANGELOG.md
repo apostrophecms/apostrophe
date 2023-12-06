@@ -1,5 +1,13 @@
 # Changelog
 
+## 3.60.1 (2023-12-06)
+
+### Fixes
+
+* corrected an issue where the use of the doc template library can result in errors at startup when
+replicating certain content to new locales. This was not a bug in the doc template library.
+Apostrophe was not invoking `findForEditing` where it should have.
+
 ## 3.60.0 (2023-11-29)
 
 ### Adds

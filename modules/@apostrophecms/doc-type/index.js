@@ -1057,7 +1057,7 @@ module.exports = {
               let { lastTargetId, lastPosition } = await self.apos.page.inferLastTargetIdAndPosition(draft);
               let localizedTargetId = lastTargetId.replace(`:${draft.aposLocale}`, `:${toLocale}:draft`);
               const localizedTarget = await actionModule
-                .find(toReq, self.apos.page.getIdCriteria(localizedTargetId))
+                .findForEditing(toReq, self.apos.page.getIdCriteria(localizedTargetId))
                 .archived(null)
                 .areas(false)
                 .relationships(false)
@@ -1070,7 +1070,7 @@ module.exports = {
                     parentNotLocalized: true
                   });
                 } else {
-                  const originalTarget = await actionModule.find(req, self.apos.page.getIdCriteria(lastTargetId)).archived(null).areas(false).relationships(false).toObject();
+                  const originalTarget = await actionModule.findForEditing(req, self.apos.page.getIdCriteria(lastTargetId)).archived(null).areas(false).relationships(false).toObject();
                   if (!originalTarget) {
                     // Almost impossible (race conditions like someone removing it while we're in the modal)
                     throw self.apos.error('notfound');
@@ -1078,7 +1078,7 @@ module.exports = {
                   const criteria = {
                     path: self.apos.page.getParentPath(originalTarget)
                   };
-                  const localizedTarget = await actionModule.find(toReq, criteria).archived(null).areas(false).relationships(false).toObject();
+                  const localizedTarget = await actionModule.findForEditing(toReq, criteria).archived(null).areas(false).relationships(false).toObject();
                   if (!localizedTarget) {
                     throw self.apos.error('notfound', req.t('apostrophe:parentNotLocalized'), {
                       // Also provide as data for code that prefers to localize client side
