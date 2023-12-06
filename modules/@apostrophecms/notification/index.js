@@ -1,6 +1,6 @@
 // This module provides a framework for triggering notifications
 // within the Apostrophe admin UI. Notifications may be triggered
-// either on the browser or the server side, via `apos.notice`.
+// either on the browser or the server side, via `apos.notify`.
 //
 // ## Options
 //
@@ -209,17 +209,17 @@ module.exports = {
           action: self.action
         };
       },
-      // Call with `req`, then a message key as found in the localization files,
-      // followed by an `options` object if desired.
-      //
-      // If you do not have a `req` it is acceptable to pass a user `_id` string
+      // When used server-side, call with `req` as the first argument,
+      // or if you do not have a `req` it is acceptable to pass a user `_id` string
       // in place of `req`. Someone must be the recipient.
       //
-      // `message` should be a key that exists in a localization file. If it does not
-      // it will be displayed directly as a fallback.
+      // When called client-side, this first argument should be ommitted.
       //
-      // `options.type` styles the notification and may be set to `error`,
-      // `warning` or `success`. If not set, a "plain" default style is used.
+      // The `message` argument should be a key that exists in a localization file.
+      // If it does not, it will be displayed directly as a fallback.
+      //
+      // The `options.type` styles the notification and may be set to `error`, `danger`
+      // `warning`, `info` or `success`. If not set, a "plain" default style is used.
       //
       // If `options.dismiss` is set to `true`, the message will auto-dismiss after 5 seconds.
       // If it is set to a number of seconds, it will dismiss after that number of seconds.
