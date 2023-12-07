@@ -213,12 +213,12 @@ module.exports = {
       // or if you do not have a `req` it is acceptable to pass a user `_id` string
       // in place of `req`. Someone must be the recipient.
       //
-      // When called client-side, this first argument should be ommitted.
+      // When called client-side, there is no req argument because the recipient is always the current user.
       //
       // The `message` argument should be a key that exists in a localization file.
       // If it does not, it will be displayed directly as a fallback.
       //
-      // The `options.type` styles the notification and may be set to `error`, `danger`
+      // The `options.type` styles the notification and may be set to `error`, `danger`,
       // `warning`, `info` or `success`. If not set, a "plain" default style is used.
       //
       // If `options.dismiss` is set to `true`, the message will auto-dismiss after 5 seconds.
