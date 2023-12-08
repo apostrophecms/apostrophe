@@ -335,8 +335,11 @@ module.exports = {
       optionsToSanitizeHtml(options) {
         return {
           ...sanitizeHtml.defaults,
-          allowedTags: self.toolbarToAllowedTags(options),
-          allowedAttributes: self.toolbarToAllowedAttributes(options),
+          allowedTags: [...self.toolbarToAllowedTags(options), 'pre'],
+          allowedAttributes: {
+            ...self.toolbarToAllowedAttributes(options),
+            'pre': ['*']
+          },
           allowedClasses: self.toolbarToAllowedClasses(options),
           allowedStyles: self.toolbarToAllowedStyles(options)
         };
