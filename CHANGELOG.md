@@ -2,6 +2,10 @@
 
 ## UNRELEASED
 
+### Adds
+
+* Add a `validate` method to the `url` field type to allow the use of the `pattern` property.
+
 ### Fixes
 
 * Pass on complete annotation information for nested areas when adding or editing a nested widget using an external front, like Astro.
