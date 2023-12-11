@@ -553,6 +553,18 @@ module.exports = (self) => {
       // always return a valid string
       return '';
     },
+    validate(field, options, warn, fail) {
+      if (!field.pattern) {
+        return;
+      }
+
+      const isRegexInstance = field.pattern instanceof RegExp;
+      if (!isRegexInstance && typeof field.pattern !== 'string') {
+        fail('The pattern property must be a RegExp or a String');
+      }
+
+      field.pattern = isRegexInstance ? field.pattern.source : field.pattern;
+    },
     addQueryBuilder(field, query) {
       query.addBuilder(field.name, {
         finalize: function () {
