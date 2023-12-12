@@ -5,6 +5,7 @@
 ### Fixes
 
 * Fix `if` on pages. When you open the `AposDocEditor` modal on pages, you now see an up to date view of the visible fields.
+* Pass on complete annotation information for nested areas when adding or editing a nested widget using an external front, like Astro.
 
 ## 3.60.1 (2023-12-06)
 
