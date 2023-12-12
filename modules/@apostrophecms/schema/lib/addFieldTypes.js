@@ -544,6 +544,18 @@ module.exports = (self) => {
     vueComponent: 'AposInputString',
     async convert(req, field, data, destination) {
       destination[field.name] = self.apos.launder.url(data[field.name], field.def, true);
+
+      if (field.required && (_.isUndefined(data[field.name]) || !data[field.name].toString().length)) {
+        throw self.apos.error('required');
+      }
+
+      if (field.pattern) {
+        const regex = new RegExp(field.pattern);
+
+        if (!regex.test(destination[field.name])) {
+          throw self.apos.error('invalid');
+        }
+      }
     },
     diffable: function (value) {
       // URLs are fine to diff and display
