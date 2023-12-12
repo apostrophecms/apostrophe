@@ -545,7 +545,7 @@ module.exports = (self) => {
     async convert(req, field, data, destination) {
       destination[field.name] = self.apos.launder.url(data[field.name], field.def, true);
 
-      if (field.required && (_.isUndefined(data[field.name]) || !data[field.name].toString().length)) {
+      if (field.required && data[field.name] == null) {
         throw self.apos.error('required');
       }
 
