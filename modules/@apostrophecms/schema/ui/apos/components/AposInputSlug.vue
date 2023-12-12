@@ -22,6 +22,7 @@
           :disabled="field.readOnly" :required="field.required"
           :id="uid" :tabindex="tabindex"
           ref="input"
+          :autocomplete="field.autocomplete"
         >
         <component
           v-if="icon"

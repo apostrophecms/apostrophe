@@ -14,6 +14,7 @@
           :disabled="field.readOnly"
           :required="field.required"
           :id="uid" :tabindex="tabindex"
+          :autocomplete="field.autocomplete"
         />
         <input
           v-else :class="classes"
@@ -24,6 +25,7 @@
           :required="field.required"
           :id="uid" :tabindex="tabindex"
           :step="step"
+          :autocomplete="field.autocomplete"
         >
         <component
           v-if="icon"
