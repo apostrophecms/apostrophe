@@ -24,7 +24,7 @@ export default options => {
 
     draggable: true,
 
-    isolating: false,
+    isolating: true,
 
     addAttributes() {
       return {
@@ -109,6 +109,7 @@ export default options => {
       return {
         setImage: (attrs) => ({ chain }) => {
           return chain()
+            .focus()
             .insertContent({
               type: this.name,
               attrs,

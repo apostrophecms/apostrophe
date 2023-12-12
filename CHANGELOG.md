@@ -5,6 +5,12 @@
 ### Fixes
 
 * Pass on complete annotation information for nested areas when adding or editing a nested widget using an external front, like Astro.
+* We can now close the image modal in rich-text widgets when we click outside of the modal.
+The click on the cancel button now works too.
+
+### Adds
+
+* Add `uponSubmit` requirement in the `@apostrophecms/login` module. `uponSubmit` requirements are checked each time the user submit the login form. See the documentation for more information.
 
 ## 3.60.1 (2023-12-06)
 
@@ -20,14 +26,11 @@ Apostrophe was not invoking `findForEditing` where it should have.
 
 * Add the possibility to add custom classes to notifications.
 Setting the `apos-notification--hidden` class will hide the notification, which can be useful when we only care about the event carried by it.
-* Add `uponSubmit` requirement in the `@apostrophecms/login` module. `uponSubmit` requirements are checked each time the user submit the login form. See the documentation for more information.
 * Give the possibility to add horizontal rules from the insert menu of the rich text editor with the following widget option: `insert: [ 'horizontalRule' ]`.
 Improve also the UX to focus back the editor after inserting a horizontal rule or a table.
 
 ### Fixes
 
-* We can now close the image modal in rich-text widgets when we click outside of the modal.
-The click on the cancel button now works too.
 * The `render-widget` route now provides an `options` property on the widget, so that
 schema-level options of the widget are available to the external front end when
 rendering a newly added or edited widget in the editor. Note that when rendering a full page,

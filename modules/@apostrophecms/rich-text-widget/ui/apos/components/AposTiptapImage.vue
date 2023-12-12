@@ -15,23 +15,12 @@
         delay: 650
       }"
     />
-    <div
-      v-if="active"
-      v-click-outside-element="close"
-      class="apos-popover apos-image-control__dialog"
-      x-placement="bottom"
-      :class="{
-        'apos-is-triggered': active,
-        'apos-has-selection': hasSelection
-      }"
-    >
-      <AposImageControlDialog
-        :active="active"
-        :editor="editor"
-        @cancel="close"
-        @click.stop="$event => null"
-      />
-    </div>
+    <AposImageControlDialog
+      :active="active"
+      :editor="editor"
+      :has-selection="hasSelection"
+      @close="close"
+    />
   </div>
 </template>
 
@@ -53,25 +42,45 @@ export default {
       active: false
     };
   },
+  watch: {
+    hasSelection(newVal, oldVal) {
+      if (!newVal) {
+        this.close();
+      }
+    }
+  },
   computed: {
+    attributes() {
+      return this.editor.getAttributes('image');
+    },
     buttonActive() {
-      return this.editor.isActive('image');
+      return this.attributes.imageId || this.active;
     },
     hasSelection() {
       const { state } = this.editor;
       const { selection } = this.editor.state;
+
+      // Text is selected
       const { from, to } = selection;
       const text = state.doc.textBetween(from, to, '');
-      return text !== '';
+
+      // Image node is selected
+      const { content = [] } = selection.content().content;
+      const [ { type } = {} ] = content;
+
+      return text !== '' || type?.name === 'image';
     }
   },
   methods: {
     click() {
-      this.active = !this.active;
+      if (this.hasSelection) {
+        this.active = !this.active;
+      }
     },
     close() {
-      this.active = false;
-      this.editor.chain().focus();
+      if (this.active) {
+        this.active = false;
+      }
     }
   }
 };
@@ -81,20 +90,6 @@ export default {
   .apos-image-control {
     position: relative;
     display: inline-block;
-  }
-
-  .apos-image-control__dialog {
-    z-index: $z-index-modal;
-    position: absolute;
-    top: calc(100% + 5px);
-    left: -15px;
-    opacity: 0;
-    pointer-events: none;
-  }
-
-  .apos-image-control__dialog.apos-is-triggered.apos-has-selection {
-    opacity: 1;
-    pointer-events: auto;
   }
 
   .apos-is-active {
