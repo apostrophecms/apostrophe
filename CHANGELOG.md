@@ -5,6 +5,8 @@
 ### Fixes
 
 * Pass on complete annotation information for nested areas when adding or editing a nested widget using an external front, like Astro.
+* We can now close the image modal in rich-text widgets when we click outside of the modal.
+The click on the cancel button now works too.
 
 ## 3.60.1 (2023-12-06)
 
@@ -51,11 +53,6 @@ or excessively large data in `req.data` falls on the developer when choosing to 
 ### Fixes
 
 * Fix `if` and `requiredIf` fields inside arrays. With regard to `if`, this is a hotfix for a regression introduced in 3.59.0.
-
-### Fixes
-
-* We can now close the image modal in rich-text widgets when we click outside of the modal.
-The click on the cancel button now works too.
 
 ## 3.59.0 (2023-11-03)
 
