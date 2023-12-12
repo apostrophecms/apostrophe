@@ -2,6 +2,20 @@
 
 ## UNRELEASED
 
+### Fixes
+
+* Pass on complete annotation information for nested areas when adding or editing a nested widget using an external front, like Astro.
+
+## 3.60.1 (2023-12-06)
+
+### Fixes
+
+* corrected an issue where the use of the doc template library can result in errors at startup when
+replicating certain content to new locales. This was not a bug in the doc template library.
+Apostrophe was not invoking `findForEditing` where it should have.
+
+## 3.60.0 (2023-11-29)
+
 ### Adds
 
 * Add the possibility to add custom classes to notifications.
@@ -22,8 +36,15 @@ to the page tree.
 it is missing for existing pages.
 * Fixed a bug that prevented page ranks from renumbering properly during "insert after" operations.
 * Added a one-time migration to make existing page ranks unique among peers.
-* Fix `if` and `requiredIf` fields inside array.
 * Fixes conditional fields not being properly updated when switching items in array editor.
+* The `beforeSend` event for pages and the loading of deferred widgets are now
+handled in `renderPage` with the proper timing so that areas can be annotated
+successfully for "external front" use.
+* The external front now receives 100% of the serialization-friendly data that Nunjucks receives,
+including the `home` property etc. Note that the responsibility to avoid passing any nonserializable
+or excessively large data in `req.data` falls on the developer when choosing to use the
+`apos-external-front` feature.
+* Wraps the group label in the expanded preview menu component in `$t()` to allow translation
 
 ## 3.59.1 (2023-11-14)
 
