@@ -1,5 +1,11 @@
 # Changelog
 
+## UNRELEASED
+
+### Fixes
+
+* Fix `if` on pages. When you open the `AposDocEditor` modal on pages, you now see an up to date view of the visible fields.
+
 ## 3.60.1 (2023-12-06)
 
 ### Fixes
