@@ -2,6 +2,10 @@
 
 ## UNRELEASED
 
+### Adds
+
+* Add `autocomplete` attribute to schema fields that implement it (cf. [HTML attribute: autocomplete](https://developer.mozilla.org/en-US/docs/Web/HTML/Attributes/autocomplete)).
+
 ### Fixes
 
 * Pass on complete annotation information for nested areas when adding or editing a nested widget using an external front, like Astro.
