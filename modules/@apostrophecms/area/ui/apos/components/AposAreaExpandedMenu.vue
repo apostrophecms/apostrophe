@@ -16,7 +16,7 @@
             :key="groupIndex"
             class="apos-widget-group"
           >
-            <h2 class="apos-widget-group__label" v-if="group.label">{{ group.label }}</h2>
+            <h2 class="apos-widget-group__label" v-if="group.label">{{ $t(group.label) }}</h2>
             <div
               :class="[
                 `apos-widget-group--${group.columns}-column${
