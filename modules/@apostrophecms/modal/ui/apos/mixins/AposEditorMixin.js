@@ -55,6 +55,7 @@ export default {
       async handler() {
         if (this.moduleName === '@apostrophecms/page') {
           await this.evaluateExternalConditions();
+          this.evaluateConditions();
         }
       }
     }
