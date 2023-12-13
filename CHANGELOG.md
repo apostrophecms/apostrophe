@@ -4,7 +4,10 @@
 
 ### Adds
 
+
+* Add a `validate` method to the `url` field type to allow the use of the `pattern` property.
 * Add `autocomplete` attribute to schema fields that implement it (cf. [HTML attribute: autocomplete](https://developer.mozilla.org/en-US/docs/Web/HTML/Attributes/autocomplete)).
+
 
 ### Fixes
 
