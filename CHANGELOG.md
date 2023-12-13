@@ -5,6 +5,8 @@
 ### Fixes
 
 * Pass on complete annotation information for nested areas when adding or editing a nested widget using an external front, like Astro.
+* Pass on the module name and the full, namespaced template name to external front ends, e.g. Astro.
+Also make this information available to other related methods for future and project-level use.
 
 ## 3.60.1 (2023-12-06)
 
