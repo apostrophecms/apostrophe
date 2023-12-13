@@ -5,6 +5,8 @@
 ### Fixes
 
 * Pass on complete annotation information for nested areas when adding or editing a nested widget using an external front, like Astro.
+* We can now close the image modal in rich-text widgets when we click outside of the modal.
+The click on the cancel button now works too.
 
 ## 3.60.1 (2023-12-06)
 

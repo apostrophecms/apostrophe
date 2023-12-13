@@ -26,6 +26,7 @@
 import AposInputPasswordLogic from '../logic/AposInputPassword';
 export default {
   name: 'AposInputPassword',
-  mixins: [ AposInputPasswordLogic ]
+  mixins: [ AposInputPasswordLogic ],
+  emits: [ 'return' ]
 };
 </script>
