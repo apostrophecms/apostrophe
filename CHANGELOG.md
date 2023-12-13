@@ -4,11 +4,17 @@
 
 ### Adds
 
+
 * Add a `validate` method to the `url` field type to allow the use of the `pattern` property.
+* Add `autocomplete` attribute to schema fields that implement it (cf. [HTML attribute: autocomplete](https://developer.mozilla.org/en-US/docs/Web/HTML/Attributes/autocomplete)).
+
 
 ### Fixes
 
+* Fix `if` on pages. When you open the `AposDocEditor` modal on pages, you now see an up to date view of the visible fields.
 * Pass on complete annotation information for nested areas when adding or editing a nested widget using an external front, like Astro.
+* We can now close the image modal in rich-text widgets when we click outside of the modal.
+The click on the cancel button now works too.
 
 ## 3.60.1 (2023-12-06)
 

@@ -88,7 +88,8 @@ import AposArrayEditorLogic from '../logic/AposArrayEditor';
 
 export default {
   name: 'AposArrayEditor',
-  mixins: [ AposArrayEditorLogic ]
+  mixins: [ AposArrayEditorLogic ],
+  emits: [ 'safe-close' ]
 };
 </script>
 

@@ -22,6 +22,7 @@
           :disabled="field.readOnly" :required="field.required"
           :id="uid" :tabindex="tabindex"
           ref="input"
+          :autocomplete="field.autocomplete"
         >
         <component
           v-if="icon"
@@ -38,7 +39,8 @@
 import AposInputSlugLogic from '../logic/AposInputSlug';
 export default {
   name: 'AposInputSlug',
-  mixins: [ AposInputSlugLogic ]
+  mixins: [ AposInputSlugLogic ],
+  emits: [ 'return' ]
 };
 </script>
 
