@@ -7,19 +7,19 @@
       :label="tool.label"
       :icon-only="!!tool.icon"
       :icon="tool.icon || false"
+      :icon-size="tool.iconSize || 16"
       :modifiers="['no-border', 'no-motion']"
       :tooltip="{
         content: tool.label,
         placement: 'top',
         delay: 650
       }"
-      @close="close"
     />
     <AposImageControlDialog
       :active="active"
       :editor="editor"
+      :has-selection="hasSelection"
       @close="close"
-      @click.stop="$event => null"
     />
   </div>
 </template>
@@ -42,18 +42,45 @@ export default {
       active: false
     };
   },
+  watch: {
+    hasSelection(newVal, oldVal) {
+      if (!newVal) {
+        this.close();
+      }
+    }
+  },
   computed: {
+    attributes() {
+      return this.editor.getAttributes('image');
+    },
     buttonActive() {
-      return this.editor.isActive('image');
+      return this.attributes.imageId || this.active;
+    },
+    hasSelection() {
+      const { state } = this.editor;
+      const { selection } = this.editor.state;
+
+      // Text is selected
+      const { from, to } = selection;
+      const text = state.doc.textBetween(from, to, '');
+
+      // Image node is selected
+      const { content = [] } = selection.content().content;
+      const [ { type } = {} ] = content;
+
+      return text !== '' || type?.name === 'image';
     }
   },
   methods: {
     click() {
-      this.active = !this.active;
+      if (this.hasSelection) {
+        this.active = !this.active;
+      }
     },
     close() {
-      this.active = false;
-      this.editor.chain().focus();
+      if (this.active) {
+        this.active = false;
+      }
     }
   }
 };

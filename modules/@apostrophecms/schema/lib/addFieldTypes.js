@@ -544,6 +544,18 @@ module.exports = (self) => {
     vueComponent: 'AposInputString',
     async convert(req, field, data, destination) {
       destination[field.name] = self.apos.launder.url(data[field.name], field.def, true);
+
+      if (field.required && (data[field.name] == null || !data[field.name].toString().length)) {
+        throw self.apos.error('required');
+      }
+
+      if (field.pattern) {
+        const regex = new RegExp(field.pattern);
+
+        if (!regex.test(destination[field.name])) {
+          throw self.apos.error('invalid');
+        }
+      }
     },
     diffable: function (value) {
       // URLs are fine to diff and display
@@ -552,6 +564,18 @@ module.exports = (self) => {
       }
       // always return a valid string
       return '';
+    },
+    validate(field, options, warn, fail) {
+      if (!field.pattern) {
+        return;
+      }
+
+      const isRegexInstance = field.pattern instanceof RegExp;
+      if (!isRegexInstance && typeof field.pattern !== 'string') {
+        fail('The pattern property must be a RegExp or a String');
+      }
+
+      field.pattern = isRegexInstance ? field.pattern.source : field.pattern;
     },
     addQueryBuilder(field, query) {
       query.addBuilder(field.name, {

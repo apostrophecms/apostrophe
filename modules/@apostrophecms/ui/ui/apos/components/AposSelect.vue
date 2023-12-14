@@ -5,6 +5,7 @@
       :class="classes"
       :uid="uid"
       :disabled="disabled"
+      :autocomplete="autocomplete"
       @change="change($event.target.value)"
     >
       <option
@@ -61,6 +62,10 @@ export default {
     disabled: {
       type: Boolean,
       default: false
+    },
+    autocomplete: {
+      type: String,
+      default: null
     }
   },
   emits: [ 'change' ],
