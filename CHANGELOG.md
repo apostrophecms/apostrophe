@@ -536,6 +536,7 @@ those writing mocha tests of Apostrophe modules.
 * Hide the suggestion help from the relationship input list when the user starts typing a search term.
 * Hide the suggestion hint from the relationship input list when the user starts typing a search term except when there are no matches to display.
 * Disable context menu for related items when their `relationship` field has no sub-[`fields`](https://v3.docs.apostrophecms.org/guide/relationships.html#providing-context-with-fields) configured.
+* Logic for checking whether we are running a unit test of an external module under mocha now uses `includes` for a simpler, safer test that should be more cross-platform.
 
 ## 3.42.0 (2023-03-16)
 
