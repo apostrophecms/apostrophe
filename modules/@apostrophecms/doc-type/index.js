@@ -225,8 +225,8 @@ module.exports = {
   handlers(self) {
     return {
       beforeSave: {
-        prepareForStorage(req, doc) {
-          self.apos.schema.prepareForStorage(req, doc);
+        prepareForStorage(req, doc, options) {
+          self.apos.schema.prepareForStorage(req, doc, options);
         },
         async updateCacheField(req, doc) {
           await self.updateCacheField(req, doc);
