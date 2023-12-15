@@ -530,7 +530,7 @@ async function apostrophe(options, telemetry, rootSpan) {
         throw new Error('mocha does not seem to be running, is this really a test?');
       }
       while (m) {
-        if (m.parent && m.parent.filename.incluces(testFor)) {
+        if (m.parent && m.parent.filename.includes(testFor)) {
           return m;
         } else if (!m.parent) {
           // Mocha v10 doesn't inject mocha paths inside `module`, therefore, we only detect the parent until the last parent. But we can get Mocha running using `require.main` - Amin
