@@ -637,18 +637,16 @@ module.exports = (self) => {
         finalize: function () {
           if (self.queryBuilderInterested(query, field.name)) {
             const value = query.get(field.name);
-            let criteria;
+            const criteria = {};
             if (Array.isArray(value)) {
-              criteria = {};
               criteria[field.name] = {
                 $gte: value[0],
                 $lte: value[1]
               };
             } else {
-              criteria = {};
               criteria[field.name] = self.apos.launder.date(value);
-              query.and(criteria);
             }
+            query.and(criteria);
           }
         },
         launder: function (value) {
