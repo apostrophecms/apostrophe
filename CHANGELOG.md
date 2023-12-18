@@ -4,10 +4,9 @@
 
 ### Adds
 
-
 * Add a `validate` method to the `url` field type to allow the use of the `pattern` property.
 * Add `autocomplete` attribute to schema fields that implement it (cf. [HTML attribute: autocomplete](https://developer.mozilla.org/en-US/docs/Web/HTML/Attributes/autocomplete)).
-
+* Adds tag property to fields in order to show a tag next to the field title (used in advanced permission for the admin field). Adds new sensitive label color.
 
 ### Fixes
 
@@ -17,6 +16,7 @@
 Also make this information available to other related methods for future and project-level use.
 * We can now close the image modal in rich-text widgets when we click outside of the modal.
 The click on the cancel button now works too.
+* Fixes the AposCheckbox component to be used standalone, accepts a single model value instead of an array.
 
 ## 3.60.1 (2023-12-06)
 
