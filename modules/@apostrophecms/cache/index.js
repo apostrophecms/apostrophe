@@ -79,6 +79,15 @@ module.exports = {
         return self.cacheCollection.removeMany({ namespace });
       },
 
+      // Delete a single key and value from the cache.
+
+      async delete(username, namespace) {
+        await self.cacheCollection.deleteOne({
+          namespace,
+          key: username
+        });
+      },
+
       // Establish the collection that will store all of the caches and
       // set up its indexes.
 
