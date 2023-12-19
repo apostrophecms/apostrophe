@@ -858,7 +858,7 @@ module.exports = {
       // has the appropriate permissions for the doc's type and content.
       testInsertPermissions(req, doc, options) {
         if (!(options.permissions === false)) {
-          if (!self.apos.permission.can(req, 'edit', doc)) {
+          if (!self.apos.permission.can(req, 'create', doc)) {
             throw self.apos.error('forbidden');
           }
         }

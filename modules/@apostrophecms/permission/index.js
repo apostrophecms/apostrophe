@@ -259,7 +259,7 @@ module.exports = {
           permissions.push({
             name: 'create',
             label: 'apostrophe:create',
-            value: self.can(req, 'edit', module.name)
+            value: self.can(req, 'create', module.name)
           });
         }
         permissions.push({
