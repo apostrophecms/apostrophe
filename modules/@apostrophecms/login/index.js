@@ -889,7 +889,7 @@ module.exports = {
         };
       },
 
-      async clearLoginAttempts (namespace = loginAttemptsNamespace, username) {
+      async clearLoginAttempts (username, namespace = loginAttemptsNamespace) {
         await self.apos.cache.delete(namespace, username);
       },
 
