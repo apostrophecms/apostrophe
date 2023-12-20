@@ -17,6 +17,12 @@
           <span v-if="field.required" class="apos-field__required">
             *
           </span>
+          <AposLabel
+            class="apos-field__tag"
+            v-if="field.tag"
+            :label="field.tag.value || field.tag"
+            :modifiers="[ `apos-is-${field.tag.type || 'success'}`, 'apos-is-filled' ]"
+          />
           <span
             v-if="(field.help || field.htmlHelp) && displayOptions.helpTooltip"
             class="apos-field__help-tooltip"
@@ -117,6 +123,10 @@ export default {
 
 .apos-field__required {
   color: var(--a-danger);
+}
+
+.apos-field__tag {
+  margin-left: 5px;
 }
 
 .apos-field__help-tooltip {

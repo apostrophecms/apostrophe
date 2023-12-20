@@ -1,6 +1,7 @@
 <template>
   <span
-    class="apos-label" :class="modifiers"
+    class="apos-label"
+    :class="modifiers"
     v-apos-tooltip="tooltip"
   >
     {{ $t(label) }}
@@ -49,6 +50,11 @@ export default {
     border-color: var(--a-danger);
   }
 
+  .apos-is-sensitive {
+    border-color: var(--a-sensitive-medium);
+    color: var(--a-sensitive);
+  }
+
   .apos-is-success {
     border-color: var(--a-success);
   }
@@ -58,12 +64,21 @@ export default {
     color: var(--a-base-1);
   }
 
+  .apos-is-sensitive {
+    border-color: var(--a-sensitive-medium);
+    color: var(--a-sensitive);
+  }
+
   .apos-is-warning.apos-is-filled {
     background-color: var(--a-warning-fade);
   }
 
   .apos-is-error.apos-is-filled {
     background-color: var(--a-danger-fade);
+  }
+
+  .apos-is-sensitive.apos-is-filled {
+    background-color: var(--a-sensitive-light);
   }
 
   .apos-is-success.apos-is-filled {

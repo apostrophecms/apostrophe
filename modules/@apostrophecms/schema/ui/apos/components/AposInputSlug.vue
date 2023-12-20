@@ -18,7 +18,7 @@
           :class="classes"
           v-model="next" :type="type"
           :placeholder="$t(field.placeholder)"
-          @keydown.enter="$emit('return')"
+          @keydown.enter="emitReturn"
           :disabled="field.readOnly" :required="field.required"
           :id="uid" :tabindex="tabindex"
           ref="input"

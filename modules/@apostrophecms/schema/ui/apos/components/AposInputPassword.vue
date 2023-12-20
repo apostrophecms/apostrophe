@@ -16,7 +16,7 @@
           :id="uid"
           :tabindex="tabindex"
           :autocomplete="field.autocomplete"
-          @keydown.enter="$emit('return')"
+          @keydown.enter="emitReturn"
         >
       </div>
     </template>

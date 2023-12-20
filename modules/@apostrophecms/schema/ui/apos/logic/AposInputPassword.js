@@ -36,6 +36,9 @@ export default {
         }
       }
       return false;
+    },
+    emitReturn() {
+      this.$emit('return');
     }
   }
 };
