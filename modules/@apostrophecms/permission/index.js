@@ -82,7 +82,7 @@ module.exports = {
           return (role === 'contributor') || (role === 'editor');
         }
 
-        if (action === 'edit') {
+        if (action === 'edit' || action === 'create') {
           return canEdit();
         }
 
@@ -95,9 +95,7 @@ module.exports = {
         }
 
         if (action === 'delete') {
-          return doc && !doc.lastPublishedAt
-            ? self.can(req, 'edit', doc)
-            : self.can(req, 'publish', doc);
+          canDelete();
         }
 
         throw self.apos.error('invalid', 'That action is not implemented');
@@ -130,6 +128,14 @@ module.exports = {
             return false;
           }
           return role === 'editor';
+        }
+
+        function canDelete() {
+          if (doc && (!doc.lastPublishedAt || doc.aposMode === 'draft')) {
+            return self.can(req, 'edit', doc);
+          }
+
+          return self.can(req, 'publish', doc || type);
         }
       },
 
