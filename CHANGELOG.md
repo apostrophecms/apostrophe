@@ -10,6 +10,7 @@
 
 ### Fixes
 
+* Fix `date` schema field query builder to work with arrays.
 * Fix `if` on pages. When you open the `AposDocEditor` modal on pages, you now see an up to date view of the visible fields.
 * Pass on complete annotation information for nested areas when adding or editing a nested widget using an external front, like Astro.
 * Pass on the module name and the full, namespaced template name to external front ends, e.g. Astro.
