@@ -364,6 +364,9 @@ export default {
         }
       }
       return choices;
+    },
+    emitSafeClose() {
+      this.$emit('safe-close');
     }
   }
 };
