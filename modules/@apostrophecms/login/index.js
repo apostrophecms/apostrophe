@@ -889,8 +889,8 @@ module.exports = {
         };
       },
 
-      async clearLoginAttempts (username, namespace = loginAttemptsNamespace) {
-        await self.apos.cache.delete(username, namespace);
+      async clearLoginAttempts (namespace = loginAttemptsNamespace, username) {
+        await self.apos.cache.delete(namespace, username);
       },
 
       addToAdminBar() {
