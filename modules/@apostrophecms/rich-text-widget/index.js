@@ -404,7 +404,8 @@ module.exports = {
               'href',
               'id',
               'name',
-              'target'
+              'target',
+              'aria-label'
             ]
           },
           alignLeft: {

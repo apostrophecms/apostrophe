@@ -90,6 +90,7 @@ export default {
     return {
       generation: 1,
       href: null,
+      'aria-label': null,
       target: null,
       active: false,
       hasLinkOnOpen: false,
@@ -152,6 +153,12 @@ export default {
           if: {
             linkTo: '_url'
           }
+        },
+        {
+          name: 'aria-label',
+          label: 'Aria Label',
+          type: 'string',
+          required: false
         },
         {
           name: 'target',
@@ -251,7 +258,8 @@ export default {
         }
         this.editor.commands.setLink({
           target: this.docFields.data.target[0],
-          href: this.docFields.data.href
+          href: this.docFields.data.href,
+          'aria-label': this.docFields.data['aria-label']
         });
         this.close();
       });
