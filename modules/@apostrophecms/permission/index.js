@@ -71,46 +71,65 @@ module.exports = {
           self.apos.util.warn('A permission.can() call was made with a type that has no manager:', type);
           return false;
         }
+
         if (action === 'view') {
-          if (manager && manager.options.viewRole && (ranks[role] < ranks[manager.options.viewRole])) {
-            return false;
-          } else if (((typeof docOrType) === 'object') && (docOrType.visibility !== 'public')) {
-            return (role === 'guest') || (role === 'contributor') || (role === 'editor');
-          } else {
-            return true;
-          }
-        } else if (action === 'view-draft') {
+          return canView();
+        }
+
+        if (action === 'view-draft') {
           // Checked at the middleware level to determine if req.mode should
           // be allowed to be set to draft at all
           return (role === 'contributor') || (role === 'editor');
-        } else if (action === 'edit') {
-          if (manager && manager.options.editRole && (ranks[role] < ranks[manager.options.editRole])) {
+        }
+
+        if (action === 'edit') {
+          return canEdit();
+        }
+
+        if (action === 'publish') {
+          return canPublish();
+        }
+
+        if (action === 'upload-attachment') {
+          return (role === 'contributor') || (role === 'editor');
+        }
+
+        if (action === 'delete') {
+          return doc && !doc.lastPublishedAt
+            ? self.can(req, 'edit', doc)
+            : self.can(req, 'publish', doc);
+        }
+
+        throw self.apos.error('invalid', 'That action is not implemented');
+
+        function checkRoleConfig (permRole) {
+          return manager && manager.options[permRole] &&
+            (ranks[role] < ranks[manager.options[permRole]]);
+        }
+
+        function canView() {
+          if (checkRoleConfig('viewRole')) {
+            return false;
+          } else if (((typeof docOrType) === 'object') && (docOrType.visibility !== 'public')) {
+            return (role === 'guest') || (role === 'contributor') || (role === 'editor');
+          }
+          return true;
+        }
+
+        function canEdit() {
+          if (checkRoleConfig('editRole')) {
             return false;
           } else if (mode === 'draft') {
             return (role === 'contributor') || (role === 'editor');
-          } else {
-            return role === 'editor';
           }
-        } else if (action === 'publish') {
-          if (manager && manager.options.publishRole && (ranks[role] < ranks[manager.options.publishRole])) {
-            return false;
-          } else {
-            return role === 'editor';
-          }
-        } else if (action === 'upload-attachment') {
-          if ((role === 'contributor') || (role === 'editor')) {
-            return true;
-          } else {
+          return role === 'editor';
+        }
+
+        function canPublish() {
+          if (checkRoleConfig('publishRole')) {
             return false;
           }
-        } else if (action === 'delete') {
-          if (doc && !doc.lastPublishedAt) {
-            return self.can(req, 'edit', doc);
-          } else {
-            return self.can(req, 'publish', doc);
-          }
-        } else {
-          throw self.apos.error('invalid', 'That action is not implemented');
+          return role === 'editor';
         }
       },
 
