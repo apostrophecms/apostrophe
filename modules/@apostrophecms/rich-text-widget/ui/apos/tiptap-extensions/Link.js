@@ -8,14 +8,6 @@ export default (options) => {
         linkOnPaste: true,
         HTMLAttributes: {}
       };
-    },
-    addAttributes() {
-      return {
-        'aria-label': {
-          default: null
-        }
-      };
-    },
-  
+    }
   });
 };
