@@ -5,7 +5,8 @@ export default (options) => {
       return {
         ...this.parent?.(),
         openOnClick: false,
-        linkOnPaste: true
+        linkOnPaste: true,
+        HTMLAttributes: {}
       };
     },
     addAttributes() {
