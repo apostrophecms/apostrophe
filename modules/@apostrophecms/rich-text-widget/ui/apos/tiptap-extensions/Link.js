@@ -12,20 +12,8 @@ export default (options) => {
       return {
         'aria-label': {
           default: null
-        },
-        href: {
-          default: null,
-        },
-        target: {
-          default: this.options.HTMLAttributes.target
-        },
-        rel: {
-          default: this.options.HTMLAttributes.rel
-        },
-        class: {
-          default: this.options.HTMLAttributes.class
-        },
-      }
+        }
+      };
     },
   
   });
