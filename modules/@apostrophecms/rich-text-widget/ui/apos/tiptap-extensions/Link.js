@@ -5,19 +5,13 @@ export default (options) => {
       return {
         ...this.parent?.(),
         openOnClick: false,
-        linkOnPaste: true,
-        HTMLAttributes: {
-          target: '_blank',
-          rel: 'noopener noreferrer nofollow',
-          class: null,
-          'aria-label': null
-        }
+        linkOnPaste: true
       };
     },
     addAttributes() {
       return {
         'aria-label': {
-          default: this.options.HTMLAttributes['aria-label']
+          default: null
         },
         href: {
           default: null,
