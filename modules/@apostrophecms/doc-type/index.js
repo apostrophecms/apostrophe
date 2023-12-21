@@ -1499,7 +1499,7 @@ module.exports = {
           label,
           pluralLabel,
           relatedDocument: self.options.relatedDocument,
-          canCreate: self.apos.permission.can(req, 'create', self.name),
+          canCreate: self.apos.permission.can(req, 'create', self.name, 'draft'),
           canEdit: self.apos.permission.can(req, 'edit', self.name, 'draft'),
           canPublish: self.apos.permission.can(req, 'publish', self.name),
           canArchive: self.apos.permission.can(req, 'archive', self.name)

@@ -78,7 +78,7 @@ module.exports = {
           // Checked at the middleware level to determine if req.mode should
           // be allowed to be set to draft at all
           return (role === 'contributor') || (role === 'editor');
-        } else if (action === 'edit') {
+        } else if (action === 'edit' || action === 'create' || action === 'archive') {
           if (manager && manager.options.editRole && (ranks[role] < ranks[manager.options.editRole])) {
             return false;
           } else if (mode === 'draft') {
@@ -105,6 +105,10 @@ module.exports = {
             return self.can(req, 'publish', doc);
           }
         } else {
+          console.log('action', require('util').inspect(action, {
+            colors: true,
+            depth: 1
+          }));
           throw self.apos.error('invalid', 'That action is not implemented');
         }
       },
@@ -175,7 +179,7 @@ module.exports = {
 
             return query;
           }
-        } else if (action === 'edit') {
+        } else if (action === 'edit' || action === 'create' || action === 'archive') {
           if (role === 'contributor') {
             return {
               aposMode: {

@@ -128,6 +128,9 @@ export default {
     },
     pageSetMenuSelectionIsLive() {
       return this.pageSetMenuSelection === 'live';
+    },
+    canCreate() {
+      return this.moduleOptions.canCreate;
     }
   },
   watch: {
