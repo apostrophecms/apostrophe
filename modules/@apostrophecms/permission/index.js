@@ -105,10 +105,6 @@ module.exports = {
             return self.can(req, 'publish', doc);
           }
         } else {
-          console.log('action', require('util').inspect(action, {
-            colors: true,
-            depth: 1
-          }));
           throw self.apos.error('invalid', 'That action is not implemented');
         }
       },
