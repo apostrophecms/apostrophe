@@ -4,6 +4,16 @@
 
 ### Adds
 
+* Add testing for the `float` schema field query builder.
+
+### Fixes
+
+* Fix the `launder` and `finalize` methods of the `float` schema field query builder.
+
+## 3.61.0 (2023-12-21)
+
+### Adds
+
 * Add a `validate` method to the `url` field type to allow the use of the `pattern` property.
 * Add `autocomplete` attribute to schema fields that implement it (cf. [HTML attribute: autocomplete](https://developer.mozilla.org/en-US/docs/Web/HTML/Attributes/autocomplete)).
 * Add the `delete` method to the `@apostrophecms/cache` module so we don't have to rely on direct MongoDB manipulation to remove a cache item.
