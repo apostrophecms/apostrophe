@@ -273,6 +273,9 @@ export default {
     },
     passFocus() {
       this.$refs.input.focus();
+    },
+    emitReturn() {
+      this.$emit('return');
     }
   }
 };

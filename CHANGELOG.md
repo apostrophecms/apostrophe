@@ -2,12 +2,22 @@
 
 ## UNRELEASED
 
+### Adds
+
+* Add a `validate` method to the `url` field type to allow the use of the `pattern` property.
+* Add `autocomplete` attribute to schema fields that implement it (cf. [HTML attribute: autocomplete](https://developer.mozilla.org/en-US/docs/Web/HTML/Attributes/autocomplete)).
+* Adds tag property to fields in order to show a tag next to the field title (used in advanced permission for the admin field). Adds new sensitive label color.
+
 ### Fixes
 
+* Fix `date` schema field query builder to work with arrays.
 * Fix `if` on pages. When you open the `AposDocEditor` modal on pages, you now see an up to date view of the visible fields.
 * Pass on complete annotation information for nested areas when adding or editing a nested widget using an external front, like Astro.
+* Pass on the module name and the full, namespaced template name to external front ends, e.g. Astro.
+Also make this information available to other related methods for future and project-level use.
 * We can now close the image modal in rich-text widgets when we click outside of the modal.
 The click on the cancel button now works too.
+* Fixes the AposCheckbox component to be used standalone, accepts a single model value instead of an array.
 
 ## 3.60.1 (2023-12-06)
 
@@ -527,6 +537,7 @@ those writing mocha tests of Apostrophe modules.
 * Hide the suggestion help from the relationship input list when the user starts typing a search term.
 * Hide the suggestion hint from the relationship input list when the user starts typing a search term except when there are no matches to display.
 * Disable context menu for related items when their `relationship` field has no sub-[`fields`](https://v3.docs.apostrophecms.org/guide/relationships.html#providing-context-with-fields) configured.
+* Logic for checking whether we are running a unit test of an external module under mocha now uses `includes` for a simpler, safer test that should be more cross-platform.
 
 ## 3.42.0 (2023-03-16)
 
