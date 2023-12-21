@@ -67,6 +67,16 @@ describe('Schema Field Query Builders', function() {
     });
     assert.strictEqual(queriedArticles.results.length, 3);
   });
+
+  it('should not retrieve any documents if they are outside the specified range', async function() {
+    const queriedArticles = await apos.http.get('/api/v1/article', {
+      qs: {
+        float: [ 11, 40 ],
+        apikey: [ apikey ]
+      }
+    });
+    assert.strictEqual(queriedArticles.results.length, 0);
+  });
 });
 
 function seedArticles(instance) {
