@@ -890,10 +890,7 @@ module.exports = {
       },
 
       async clearLoginAttempts (username, namespace = loginAttemptsNamespace) {
-        await self.apos.cache.cacheCollection.deleteOne({
-          namespace,
-          key: username
-        });
+        await self.apos.cache.delete(namespace, username);
       },
 
       addToAdminBar() {
