@@ -5,10 +5,12 @@
 ### Adds
 
 * Add testing for the `float` schema field query builder.
+* Add testing for the `integer` schema field query builder.
 
 ### Fixes
 
 * Fix the `launder` and `finalize` methods of the `float` schema field query builder.
+* Fix the `launder` and `finalize` methods of the `integer` schema field query builder.
 
 ## 3.61.0 (2023-12-21)
 
