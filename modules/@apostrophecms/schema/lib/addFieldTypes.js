@@ -461,6 +461,7 @@ module.exports = (self) => {
                 $gte: value[0],
                 $lte: value[1]
               };
+              query.and(criteria);
             } else {
               criteria = {};
               criteria[field.name] = self.apos.launder.integer(value);
@@ -471,8 +472,14 @@ module.exports = (self) => {
         choices: async function () {
           return self.sortedDistinct(field.name, query);
         },
-        launder: function (s) {
-          return self.apos.launder.integer(s, null);
+        launder: function (value) {
+          const launderInteger = (v) => self.apos.launder.integer(v, null);
+
+          if (Array.isArray(value)) {
+            return value.map(launderInteger);
+          } else {
+            return launderInteger(value);
+          }
         }
       });
     }
