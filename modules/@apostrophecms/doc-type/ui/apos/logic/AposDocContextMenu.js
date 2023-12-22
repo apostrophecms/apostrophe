@@ -262,7 +262,7 @@ export default {
     },
     canArchive() {
       return (
-        this.canEdit &&
+        this.context._archive &&
         this.context._id &&
         !this.moduleOptions.singleton &&
         !this.context.archived &&
