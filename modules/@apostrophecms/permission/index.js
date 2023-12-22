@@ -59,6 +59,11 @@ module.exports = {
         if (role === 'admin') {
           return true;
         }
+
+        if (action === 'create' || action === 'archive') {
+          action = 'edit';
+        }
+
         const type = docOrType && (docOrType.type || docOrType);
         const doc = (docOrType && docOrType._id) ? docOrType : null;
         const manager = type && self.apos.doc.getManager(type);
@@ -78,7 +83,7 @@ module.exports = {
           // Checked at the middleware level to determine if req.mode should
           // be allowed to be set to draft at all
           return (role === 'contributor') || (role === 'editor');
-        } else if (action === 'edit' || action === 'create' || action === 'archive') {
+        } else if (action === 'edit') {
           if (manager && manager.options.editRole && (ranks[role] < ranks[manager.options.editRole])) {
             return false;
           } else if (mode === 'draft') {
@@ -117,6 +122,11 @@ module.exports = {
         if (role === 'admin') {
           return {};
         }
+
+        if (action === 'create' || action === 'archive') {
+          action = 'edit';
+        }
+
         const restrictedViewTypes = Object.keys(self.apos.doc.managers).filter(name => ranks[self.apos.doc.getManager(name).options.viewRole] > ranks[role]);
         const restrictedEditTypes = Object.keys(self.apos.doc.managers).filter(name => ranks[self.apos.doc.getManager(name).options.editRole] > ranks[role]);
         const restrictedPublishTypes = Object.keys(self.apos.doc.managers).filter(name => ranks[self.apos.doc.getManager(name).options.publishRole] > ranks[role]);
@@ -175,7 +185,7 @@ module.exports = {
 
             return query;
           }
-        } else if (action === 'edit' || action === 'create' || action === 'archive') {
+        } else if (action === 'edit') {
           if (role === 'contributor') {
             return {
               aposMode: {
