@@ -275,7 +275,7 @@ module.exports = {
           // If we're looking for a fresh page instance and aren't saving yet,
           // simply get a new page doc and return it
           const parentPage = await self.findForEditing(req, self.getIdCriteria(targetId))
-            .permission('edit', '@apostrophecms/any-page-type').toObject();
+            .permission('create', '@apostrophecms/any-page-type').toObject();
           const newChild = self.newChild(parentPage);
           newChild._previewable = true;
           return newChild;
@@ -285,7 +285,7 @@ module.exports = {
           const targetPage = await self
             .findForEditing(req, self.getIdCriteria(targetId))
             .ancestors(true)
-            .permission('edit')
+            .permission('create')
             .toObject();
 
           if (!targetPage) {
@@ -311,7 +311,10 @@ module.exports = {
             copyingId
           });
           await self.insert(req, targetPage._id, position, page, { lock: false });
-          return self.findOneForEditing(req, { _id: page._id }, { attachments: true });
+          return self.findOneForEditing(req, { _id: page._id }, {
+            attachments: true,
+            permission: false
+          });
         });
       },
       // Consider using `PATCH` instead unless you're sure you have 100% up to date
@@ -828,7 +831,8 @@ database.`);
         }
         browserOptions.name = self.__meta.name;
         browserOptions.canPublish = self.apos.permission.can(req, 'publish', '@apostrophecms/any-page-type');
-        browserOptions.quickCreate = self.options.quickCreate && self.apos.permission.can(req, 'edit', '@apostrophecms/any-page-type', 'draft');
+        browserOptions.canCreate = self.apos.permission.can(req, 'create', '@apostrophecms/any-page-type', 'draft');
+        browserOptions.quickCreate = self.options.quickCreate && self.apos.permission.can(req, 'create', '@apostrophecms/any-page-type', 'draft');
         browserOptions.localized = true;
         browserOptions.autopublish = false;
         // A list of all valid page types, including parked pages etc. This is

@@ -59,6 +59,11 @@ module.exports = {
         if (role === 'admin') {
           return true;
         }
+
+        if (action === 'create' || action === 'archive') {
+          action = 'edit';
+        }
+
         const type = docOrType && (docOrType.type || docOrType);
         const doc = (docOrType && docOrType._id) ? docOrType : null;
         const manager = type && self.apos.doc.getManager(type);
@@ -117,6 +122,11 @@ module.exports = {
         if (role === 'admin') {
           return {};
         }
+
+        if (action === 'create' || action === 'archive') {
+          action = 'edit';
+        }
+
         const restrictedViewTypes = Object.keys(self.apos.doc.managers).filter(name => ranks[self.apos.doc.getManager(name).options.viewRole] > ranks[role]);
         const restrictedEditTypes = Object.keys(self.apos.doc.managers).filter(name => ranks[self.apos.doc.getManager(name).options.editRole] > ranks[role]);
         const restrictedPublishTypes = Object.keys(self.apos.doc.managers).filter(name => ranks[self.apos.doc.getManager(name).options.publishRole] > ranks[role]);
@@ -259,7 +269,7 @@ module.exports = {
           permissions.push({
             name: 'create',
             label: 'apostrophe:create',
-            value: self.can(req, 'edit', module.name)
+            value: self.can(req, 'create', module.name)
           });
         }
         permissions.push({

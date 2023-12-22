@@ -1499,8 +1499,10 @@ module.exports = {
           label,
           pluralLabel,
           relatedDocument: self.options.relatedDocument,
+          canCreate: self.apos.permission.can(req, 'create', self.name, 'draft'),
           canEdit: self.apos.permission.can(req, 'edit', self.name, 'draft'),
-          canPublish: self.apos.permission.can(req, 'publish', self.name)
+          canPublish: self.apos.permission.can(req, 'publish', self.name),
+          canArchive: self.apos.permission.can(req, 'archive', self.name)
         };
         browserOptions.canLocalize = browserOptions.canEdit &&
           self.options.localized &&
@@ -1868,8 +1870,10 @@ module.exports = {
           after(results) {
             // In all cases we mark the docs with ._edit and ._publish if
             // the req is permitted to do those things
+            self.apos.permission.annotate(query.req, 'create', results);
             self.apos.permission.annotate(query.req, 'edit', results);
             self.apos.permission.annotate(query.req, 'publish', results);
+            self.apos.permission.annotate(query.req, 'archive', results);
           }
         },
 
