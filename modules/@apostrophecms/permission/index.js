@@ -210,7 +210,7 @@ module.exports = {
 
             return query;
           }
-        } else if (action === 'edit') {
+        } else if ([ 'edit', 'create', 'delete' ].includes(action)) {
           if (role === 'contributor') {
             return {
               aposMode: {
