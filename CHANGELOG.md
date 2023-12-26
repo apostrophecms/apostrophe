@@ -1,5 +1,11 @@
 # Changelog
 
+### Unreleased
+
+### Adds
+
+* Adds support in can and criteria methods for `create` and `delete`.
+
 ## 3.61.0 (2023-12-21)
 
 ### Adds
