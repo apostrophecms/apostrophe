@@ -82,7 +82,7 @@ module.exports = {
           return (role === 'contributor') || (role === 'editor');
         }
 
-        if (action === 'edit' || action === 'create') {
+        if ([ 'edit', 'create' ].includes(action)) {
           return canEdit();
         }
 
@@ -95,7 +95,7 @@ module.exports = {
         }
 
         if (action === 'delete') {
-          canDelete();
+          return canDelete();
         }
 
         throw self.apos.error('invalid', 'That action is not implemented');
