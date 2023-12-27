@@ -60,7 +60,8 @@ module.exports = {
           return true;
         }
 
-        if (action === 'create' || action === 'archive') {
+        // TODO: remove this
+        if (action === 'archive') {
           action = 'edit';
         }
 
@@ -135,7 +136,7 @@ module.exports = {
             return self.can(req, 'edit', doc);
           }
 
-          return self.can(req, 'publish', doc || type);
+          return self.can(req, 'publish', docOrType);
         }
       },
 
