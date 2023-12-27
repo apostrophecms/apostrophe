@@ -60,11 +60,6 @@ module.exports = {
           return true;
         }
 
-        // TODO: remove this
-        if (action === 'archive') {
-          action = 'edit';
-        }
-
         const type = docOrType && (docOrType.type || docOrType);
         const doc = (docOrType && docOrType._id) ? docOrType : null;
         const manager = type && self.apos.doc.getManager(type);
@@ -95,7 +90,7 @@ module.exports = {
           return (role === 'contributor') || (role === 'editor');
         }
 
-        if (action === 'delete') {
+        if ([ 'delete', 'archive' ].includes(action)) {
           return canDelete();
         }
 
@@ -132,11 +127,11 @@ module.exports = {
         }
 
         function canDelete() {
-          if (doc && (!doc.lastPublishedAt || doc.aposMode === 'draft')) {
-            return self.can(req, 'edit', doc);
+          if (doc && (!doc.lastPublishedAt)) {
+            return self.can(req, 'edit', doc, mode);
           }
 
-          return self.can(req, 'publish', docOrType);
+          return self.can(req, 'publish', docOrType, mode);
         }
       },
 
