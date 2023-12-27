@@ -144,10 +144,6 @@ module.exports = {
           return {};
         }
 
-        if (action === 'create' || action === 'archive') {
-          action = 'edit';
-        }
-
         const restrictedViewTypes = Object.keys(self.apos.doc.managers).filter(name => ranks[self.apos.doc.getManager(name).options.viewRole] > ranks[role]);
         const restrictedEditTypes = Object.keys(self.apos.doc.managers).filter(name => ranks[self.apos.doc.getManager(name).options.editRole] > ranks[role]);
         const restrictedPublishTypes = Object.keys(self.apos.doc.managers).filter(name => ranks[self.apos.doc.getManager(name).options.publishRole] > ranks[role]);
