@@ -127,7 +127,7 @@ module.exports = {
         }
 
         function canDelete() {
-          if (doc && (!doc.lastPublishedAt)) {
+          if (doc && (!doc.lastPublishedAt || doc.aposMode === 'draft')) {
             return self.can(req, 'edit', doc, mode);
           }
 
