@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+### Adds
+
+* Adds support for `type` query parameter for page autocomplete. This allows to filter the results by page type. Example: `/api/v1/@apostrophecms/page?autocomplete=something&type=my-page-type`.
+
 ## 3.61.0 (2023-12-21)
 
 ### Adds
