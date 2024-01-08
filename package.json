@@ -132,7 +132,7 @@
     "underscore.string": "^3.3.4",
     "uploadfs": "^1.22.3",
     "v-tooltip": "^2.0.3",
-    "vue": "2.6.15",
+    "vue": "2.7.15",
     "vue-advanced-cropper": "^1.10.1",
     "vue-loader": "^15.10.0",
     "vue-material-design-icons": "~4.12.1",
