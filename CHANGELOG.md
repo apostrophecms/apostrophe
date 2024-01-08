@@ -1,5 +1,12 @@
 # Changelog
 
+## 3.61.1 (2023-01-08)
+
+### Fixes
+
+* Pinned Vue dependency to 2.7.15. Released on December 24th, Vue 2.7.16 broke the rich text toolbar
+in Apostrophe.
+
 ## 3.61.0 (2023-12-21)
 
 ### Adds
