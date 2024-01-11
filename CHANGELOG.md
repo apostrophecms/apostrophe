@@ -1,22 +1,25 @@
 # Changelog
 
-### Unreleased
+## UNRELEASED
 
 ### Adds
 
-* Adds support in can and criteria methods for `create` and `delete`.
-
-## 3.61.0 (2023-12-21)
-
-### Adds
-
+* Adds support for `type` query parameter for page autocomplete. This allows to filter the results by page type. Example: `/api/v1/@apostrophecms/page?autocomplete=something&type=my-page-type`.
 * Add testing for the `float` schema field query builder.
 * Add testing for the `integer` schema field query builder.
+* Adds support in can and criteria methods for `create` and `delete`.
 
 ### Fixes
 
 * Fix the `launder` and `finalize` methods of the `float` schema field query builder.
 * Fix the `launder` and `finalize` methods of the `integer` schema field query builder.
+
+
+## 3.61.1 (2023-01-08)
+
+### Fixes
+
+* Pinned Vue dependency to 2.7.15. Released on December 24th, Vue 2.7.16 broke the rich text toolbar in Apostrophe.
 
 ## 3.61.0 (2023-12-21)
 
