@@ -104,7 +104,8 @@ module.exports = {
         function canView() {
           if (checkRoleConfig('viewRole')) {
             return false;
-          } else if (((typeof docOrType) === 'object') && (docOrType.visibility !== 'public')) {
+          }
+          if ((typeof docOrType === 'object') && (docOrType.visibility !== 'public')) {
             return (role === 'guest') || (role === 'contributor') || (role === 'editor');
           }
           return true;
@@ -113,7 +114,8 @@ module.exports = {
         function canEdit() {
           if (checkRoleConfig('editRole')) {
             return false;
-          } else if (mode === 'draft') {
+          }
+          if (mode === 'draft') {
             return (role === 'contributor') || (role === 'editor');
           }
           return role === 'editor';
