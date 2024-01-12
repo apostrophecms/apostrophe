@@ -122,6 +122,9 @@ module.exports = {
       // The user must have some page editing privileges to use it. The 10 best
       // matches are returned as an object with a `results` property containing the
       // array of pages.
+      // If ?type=x is present, only pages of that type are returned. This query
+      // parameter is only used in conjunction with ?autocomplete=x. It will be
+      // ignored otherwise.
       //
       // If querying for draft pages, you may add ?published=1 to attach a
       // `_publishedDoc` property to each draft that also exists in a published form.
@@ -139,11 +142,22 @@ module.exports = {
             if (!self.apos.permission.can(req, 'view', '@apostrophecms/any-page-type')) {
               throw self.apos.error('forbidden');
             }
+
+            const type = self.apos.launder.string(req.query.type);
+            if (type.length && !self.apos.permission.can(req, 'view', type)) {
+              throw self.apos.error('forbidden');
+            }
+
+            const query = self.getRestQuery(req).permission(false).limit(10).relationships(false)
+              .areas(false);
+            if (type.length) {
+              query.type(type);
+            }
+
             return {
               // For consistency with the pieces REST API we
               // use a results property when returning a flat list
-              results: await self.getRestQuery(req).permission(false).limit(10).relationships(false)
-                .areas(false).toArray()
+              results: await query.toArray()
             };
           }
 
