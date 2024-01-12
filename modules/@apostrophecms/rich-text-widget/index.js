@@ -83,7 +83,7 @@ module.exports = {
         }
       },
       group: {
-        basic: {
+        link: {
           fields: [
             'linkTo',
             ...linkWithType.map(type => `_${type}`),

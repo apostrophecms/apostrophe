@@ -86,16 +86,8 @@ export default {
     }
   },
   data() {
-    // const linkWithType = getOptions().linkWithType;
-    const attrs = getOptions().linkSchema
-      .filter(field => field.htmlAttribute)
-      .reduce((obj, field) => {
-        obj[field.name] = null;
-        return obj;
-      }, {});
 
     return {
-      ...attrs,
       generation: 1,
       href: null,
       // target: null,
@@ -107,73 +99,6 @@ export default {
       },
       formModifiers: [ 'small', 'margin-micro' ],
       originalSchema: getOptions().linkSchema
-      // originalSchema: [
-      //   {
-      //     name: 'linkTo',
-      //     label: this.$t('apostrophe:linkTo'),
-      //     type: 'select',
-      //     def: linkWithType[0],
-      //     required: true,
-      //     choices: [
-      //       ...(linkWithType.map(type => {
-      //         return {
-      //           // Should already be localized server side
-      //           label: apos.modules[type].label,
-      //           value: type
-      //         };
-      //       })),
-      //       {
-      //         // TODO this needs i18n
-      //         label: this.$t('apostrophe:url'),
-      //         // Value that will never be a doc type
-      //         value: '_url'
-      //       }
-      //     ]
-      //   },
-      //   ...getOptions().linkWithType.map(type => ({
-      //     name: `_${type}`,
-      //     type: 'relationship',
-      //     label: apos.modules[type].label,
-      //     withType: type,
-      //     required: true,
-      //     max: 1,
-      //     browse: true,
-      //     if: {
-      //       linkTo: type
-      //     }
-      //   })),
-      //   {
-      //     name: 'updateTitle',
-      //     label: this.$t('apostrophe:updateTitle'),
-      //     type: 'boolean',
-      //     def: true,
-      //     if: {
-      //       $or: linkWithType.map(type => ({
-      //         linkTo: type
-      //       }))
-      //     }
-      //   },
-      //   {
-      //     name: 'href',
-      //     label: this.$t('apostrophe:url'),
-      //     type: 'string',
-      //     required: true,
-      //     if: {
-      //       linkTo: '_url'
-      //     }
-      //   },
-      //   {
-      //     name: 'target',
-      //     label: this.$t('apostrophe:linkTarget'),
-      //     type: 'checkboxes',
-      //     choices: [
-      //       {
-      //         label: this.$t('apostrophe:openLinkInNewTab'),
-      //         value: '_blank'
-      //       }
-      //     ]
-      //   }
-      // ]
     };
   },
   computed: {
@@ -262,16 +187,17 @@ export default {
           delete this.docFields.data.target;
         }
 
-        const attrs = this.schemaHtmlAttributes.reduce((attrs, field) => {
+        const attrs = this.schemaHtmlAttributes.reduce((acc, field) => {
           const value = this.docFields.data[field.name];
           if (field.type === 'checkboxes' && !value?.[0]) {
-            return attrs;
+            return acc;
           }
-          if (field.type === 'boolean' && value === false) {
-            return attrs;
+          if (field.type === 'boolean') {
+            acc[field.name] = value === true ? '' : null;
+            return acc;
           }
-          attrs[field.name] = Array.isArray(value) ? value[0] : value;
-          return attrs;
+          acc[field.name] = Array.isArray(value) ? value[0] : value;
+          return acc;
         }, {});
         attrs.href = this.docFields.data.href;
         this.editor.commands.setLink(attrs);
@@ -303,7 +229,9 @@ export default {
             return;
           }
           if (item.htmlAttribute && item.type === 'boolean') {
-            this.docFields.data[item.name] = !!attrs[item.name];
+            this.docFields.data[item.name] = attrs[item.name] === null
+              ? null
+              : (attrs[item.name] === '');
             return;
           }
           this.docFields.data[item.name] = attrs[item.name] || '';
@@ -388,7 +316,7 @@ function getOptions() {
   }
 
   // special schema style for this use
-  .apos-link-control ::v-deep .apos-field--target {
+  .apos-link-control ::v-deep .apos-field--checkboxes {
     .apos-field__label {
       display: none;
     }

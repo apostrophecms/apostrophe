@@ -29,7 +29,7 @@ describe.only('Rich Text Widget', function () {
       value: '_url'
     });
     assert.deepEqual(richText.linkFieldsGroups, {
-      basic: {
+      link: {
         fields: [
           'linkTo',
           '_@apostrophecms/any-page-type',
@@ -79,7 +79,7 @@ describe.only('Rich Text Widget', function () {
       value: '_url'
     });
     assert.deepEqual(richText.linkFieldsGroups, {
-      basic: {
+      link: {
         fields: [
           'linkTo',
           '_@apostrophecms/any-page-type',
@@ -156,7 +156,7 @@ describe.only('Rich Text Widget', function () {
             },
             remove: [ 'target' ],
             group: {
-              basic: {
+              link: {
                 fields: [
                   'not-attribute',
                   'data-foo',
