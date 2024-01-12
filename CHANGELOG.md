@@ -7,6 +7,7 @@
 * Adds support for `type` query parameter for page autocomplete. This allows to filter the results by page type. Example: `/api/v1/@apostrophecms/page?autocomplete=something&type=my-page-type`.
 * Add testing for the `float` schema field query builder.
 * Add testing for the `integer` schema field query builder.
+* Adds support in can and criteria methods for `create` and `delete`.
 
 ### Fixes
 
