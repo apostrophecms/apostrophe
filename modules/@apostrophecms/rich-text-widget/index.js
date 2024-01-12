@@ -6,6 +6,95 @@ const cheerio = require('cheerio');
 
 module.exports = {
   extend: '@apostrophecms/widget-type',
+  cascades: [ 'linkFields' ],
+  linkFields(self, options) {
+    const linkWithType = (Array.isArray(options.linkWithType)
+      ? options.linkWithType
+      : [ options.linkWithType ]);
+
+    // Labels are not available at the time the schema is built,
+    // they are added on modulesRegistered.
+    const linkWithTypeChoices = linkWithType
+      .map(type => ({
+        label: type,
+        value: type
+      }))
+      .concat([
+        {
+          label: 'apostrophe:url',
+          value: '_url'
+        }
+      ]);
+
+    const linkWithTypeFields = linkWithType.reduce((fields, type) => {
+      const name = `_${type}`;
+      fields[name] = {
+        type: 'relationship',
+        label: type,
+        withType: type,
+        required: true,
+        max: 1,
+        browse: true,
+        if: {
+          linkTo: type
+        }
+      };
+      return fields;
+    }, {});
+    linkWithTypeFields.updateTitle = {
+      label: 'apostrophe:updateTitle',
+      type: 'boolean',
+      def: true,
+      if: {
+        $or: linkWithType.map(type => ({
+          linkTo: type
+        }))
+      }
+    };
+
+    return {
+      add: {
+        linkTo: {
+          label: 'apostrophe:linkTo',
+          type: 'select',
+          choices: linkWithTypeChoices,
+          required: true,
+          def: linkWithTypeChoices[0].value
+        },
+        ...linkWithTypeFields,
+        href: {
+          label: 'apostrophe:url',
+          type: 'string',
+          required: true,
+          if: {
+            linkTo: '_url'
+          }
+        },
+        target: {
+          label: 'apostrophe:linkTarget',
+          type: 'checkboxes',
+          htmlAttribute: true,
+          choices: [
+            {
+              label: 'apostrophe:openLinkInNewTab',
+              value: '_blank'
+            }
+          ]
+        }
+      },
+      group: {
+        basic: {
+          fields: [
+            'linkTo',
+            ...linkWithType.map(type => `_${type}`),
+            'updateTitle',
+            'href',
+            'target'
+          ]
+        }
+      }
+    };
+  },
   options: {
     icon: 'format-text-icon',
     label: 'apostrophe:richText',
@@ -270,6 +359,18 @@ module.exports = {
     'format-color-highlight-icon': 'FormatColorHighlight',
     'table-icon': 'Table'
   },
+  handlers(self) {
+    return {
+      'apostrophe:modulesRegistered': {
+        validateAndFixLinkWithTypes() {
+          self.validateAndFixLinkWithTypes();
+        },
+        composeLinkSchema() {
+          self.composeLinkSchema();
+        }
+      }
+    };
+  },
   methods(self) {
     return {
       // Return just the rich text of the widget, which may be undefined or null if it has not yet been edited
@@ -404,7 +505,9 @@ module.exports = {
               'href',
               'id',
               'name',
-              'target'
+              ...self.linkSchema
+                .filter(field => field.htmlAttribute)
+                .map(field => field.name)
             ]
           },
           alignLeft: {
@@ -675,6 +778,59 @@ module.exports = {
           }
         }
         return content;
+      },
+      // Validate the types provided for links, update labels derived from
+      // corresponding modules, as they are not available at the time
+      // the schema is generated.
+      validateAndFixLinkWithTypes() {
+        const linkWithType = (Array.isArray(self.options.linkWithType)
+          ? self.options.linkWithType
+          : [ self.options.linkWithType ]);
+
+        for (const type of linkWithType) {
+          if (!self.apos.modules[type]) {
+            throw new Error(
+              `The linkWithType option of rich text widget "${type}" must be a valid module type`
+            );
+          }
+
+          self.linkFields[`_${type}`].label = getLabel(type);
+          const choice = self.linkFields.linkTo.choices
+            .find(choice => choice.value === type);
+
+          choice.label = getLabel(type);
+        }
+
+        function getLabel(type) {
+          if ([ '@apostrophecms/any-page-type', '@apostrophecms/page' ].includes(type)) {
+            return 'apostrophe:page';
+          }
+          return self.apos.modules[type].options?.label ?? type;
+        }
+      },
+      // Compose and register the link schema.
+      composeLinkSchema() {
+        self.linkSchema = self.apos.schema.compose({
+          addFields: self.apos.schema.fieldsToArray(`Links ${self.__meta.name}`, self.linkFields),
+          arrangeFields: self.apos.schema.groupsToArray(self.linkFieldsGroups)
+        }, self);
+        const forbiddenFields = [
+          '_id'
+        ];
+        self.linkSchema.forEach((field) => {
+          if (forbiddenFields.includes(field.name)) {
+            throw new Error('Doc type ' + self.name + ': the field name ' + field.name + ' is forbidden');
+          }
+        });
+        self.apos.schema.validate(self.linkSchema, {
+          type: 'doc type',
+          subtype: self.__meta.name
+        });
+        // Don't allow htmlAttribute on href, it's a special case.
+        if (self.linkSchema.find(field => field.name === 'href')?.htmlAttribute) {
+          throw new Error('The link field "href" can not have "htmlAttribute: true"');
+        }
+        self.apos.schema.register('widget', self.__meta.name, self.linkSchema);
       }
     };
   },
@@ -739,6 +895,7 @@ module.exports = {
           // Not optional in presence of an insert menu, it's not acceptable UX without it
           placeholderTextWithInsertMenu: self.options.placeholderTextWithInsertMenu,
           linkWithType: Array.isArray(self.options.linkWithType) ? self.options.linkWithType : [ self.options.linkWithType ],
+          linkSchema: self.linkSchema,
           imageStyles: self.options.imageStyles
         };
         return finalData;
