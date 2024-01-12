@@ -156,7 +156,7 @@ module.exports = {
           description: 'apostrophe:publishingBatchConfirmation',
           confirmationButton: 'apostrophe:publishingBatchConfirmationButton'
         },
-        permission: 'edit'
+        permission: 'publish'
       },
       archive: {
         label: 'apostrophe:archive',
@@ -173,7 +173,7 @@ module.exports = {
           description: 'apostrophe:archivingBatchConfirmation',
           confirmationButton: 'apostrophe:archivingBatchConfirmationButton'
         },
-        permission: 'edit'
+        permission: 'delete'
       },
       restore: {
         label: 'apostrophe:restore',
@@ -1153,14 +1153,18 @@ module.exports = {
         browserOptions.batchOperations = self.checkBatchOperationsPermissions(req);
         browserOptions.utilityOperations = self.utilityOperations;
         browserOptions.insertViaUpload = self.options.insertViaUpload;
-        browserOptions.quickCreate = !self.options.singleton && self.options.quickCreate && self.apos.permission.can(req, 'create', self.name, 'draft');
+        browserOptions.quickCreate = !self.options.singleton && self.options.quickCreate && browserOptions.canCreate;
         browserOptions.singleton = self.options.singleton;
         browserOptions.showCreate = !self.options.singleton && self.options.showCreate;
         browserOptions.showDismissSubmission = self.options.showDismissSubmission;
         browserOptions.showArchive = self.options.showArchive;
-        browserOptions.showDiscardDraft = self.options.showDiscardDraft;
-        browserOptions.canEdit = self.apos.permission.can(req, 'edit', self.name, 'draft');
+        // We pass a fake object to the can method because we don't want to check for the publish permission here
+        browserOptions.showDiscardDraft = self.options.showDiscardDraft && self.apos.permission.can(req, 'delete', {
+          _id: 'any',
+          type: self.name
+        });
         browserOptions.canPublish = self.apos.permission.can(req, 'edit', self.name, 'publish');
+
         _.defaults(browserOptions, {
           components: {}
         });
