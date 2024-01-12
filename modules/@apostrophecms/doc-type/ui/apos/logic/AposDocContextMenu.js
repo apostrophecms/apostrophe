@@ -262,7 +262,7 @@ export default {
     },
     canArchive() {
       return (
-        this.context._archive &&
+        this.context._delete &&
         this.context._id &&
         !this.moduleOptions.singleton &&
         !this.context.archived &&
