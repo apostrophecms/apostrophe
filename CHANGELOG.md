@@ -13,7 +13,6 @@
 
 * Fix the `launder` and `finalize` methods of the `float` schema field query builder.
 * Fix the `launder` and `finalize` methods of the `integer` schema field query builder.
-* Rollbacks modifications that changed the delete `permission` name in `archive`.
 
 
 ## 3.61.1 (2023-01-08)
