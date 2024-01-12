@@ -1,7 +1,7 @@
 const assert = require('assert/strict');
 const t = require('../test-lib/test.js');
 
-describe.only('Rich Text Widget', function () {
+describe('Rich Text Widget', function () {
   let apos;
   this.timeout(t.timeout);
 
