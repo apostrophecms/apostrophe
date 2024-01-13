@@ -19,6 +19,7 @@ coverage
 test/package.json
 test/public
 test/apos-build
+test/workspaces-project/node_modules
 
 # We do not commit CSS, only LESS, with the exception of a few vendor CSS files we don't have LESS for
 */public/css/*.css
