@@ -28,17 +28,6 @@ describe('Rich Text Widget', function () {
       label: 'apostrophe:url',
       value: '_url'
     });
-    assert.deepEqual(richText.linkFieldsGroups, {
-      link: {
-        fields: [
-          'linkTo',
-          '_@apostrophecms/any-page-type',
-          'updateTitle',
-          'href',
-          'target'
-        ]
-      }
-    });
   });
 
   it('should support custom rich text link types', async function () {
@@ -78,31 +67,11 @@ describe('Rich Text Widget', function () {
       label: 'apostrophe:url',
       value: '_url'
     });
-    assert.deepEqual(richText.linkFieldsGroups, {
-      link: {
-        fields: [
-          'linkTo',
-          '_@apostrophecms/any-page-type',
-          '_article',
-          'updateTitle',
-          'href',
-          'target'
-        ]
-      }
-    });
     // Shouls allow the HTML attributes in the schema
     const attributes = richText
       .toolbarToAllowedAttributes(richText.options.defaultOptions);
 
     assert(attributes.a.includes('target'));
-
-    // Should find field by ID (and thus support remote methods)
-    assert(richText.linkSchema.length > 0);
-    const target = richText.linkSchema.find(field => field.name === 'target');
-    assert(target);
-    assert(target._id);
-    const found = apos.schema.getFieldById(target._id);
-    assert.deepEqual(found, target);
   });
 
   it('should support link schema management and html attributes', async function () {
@@ -113,19 +82,19 @@ describe('Rich Text Widget', function () {
         '@apostrophecms/rich-text-widget': {
           linkFields: {
             add: {
-              'not-attribute': {
-                label: 'Not Attribute',
+              notAnAttribute: {
+                label: 'Not An Attribute',
                 type: 'string'
               },
-              'aria-label': {
+              ariaLabel: {
                 label: 'Aria Label',
                 type: 'string',
-                htmlAttribute: true
+                htmlAttribute: 'aria-label'
               },
-              'data-foo': {
+              dataFoo: {
                 label: 'Data Foo',
                 type: 'select',
-                htmlAttribute: true,
+                htmlAttribute: 'data-foo',
                 choices: [
                   {
                     label: 'Foo',
@@ -137,15 +106,15 @@ describe('Rich Text Widget', function () {
                   }
                 ]
               },
-              'data-bool': {
+              dataBool: {
                 label: 'Data Bar',
                 type: 'boolean',
-                htmlAttribute: true
+                htmlAttribute: 'data-bool'
               },
-              'data-single-choice': {
+              dataSingleChoice: {
                 label: 'Data Choice',
                 type: 'checkboxes',
-                htmlAttribute: true,
+                htmlAttribute: 'data-single-choice',
                 choices: [
                   {
                     label: 'Foo',
@@ -154,18 +123,7 @@ describe('Rich Text Widget', function () {
                 ]
               }
             },
-            remove: [ 'target' ],
-            group: {
-              link: {
-                fields: [
-                  'not-attribute',
-                  'data-foo',
-                  'data-bool',
-                  'data-single-choice',
-                  'aria-label'
-                ]
-              }
-            }
+            remove: [ 'target' ]
           }
         }
       }
@@ -173,36 +131,25 @@ describe('Rich Text Widget', function () {
 
     const richText = apos.modules['@apostrophecms/rich-text-widget'];
     assert(richText.linkFields);
-    assert(richText.linkFields['aria-label']);
-    assert(richText.linkFields['data-foo']);
-    assert(richText.linkFields['data-bool']);
-    assert(richText.linkFields['data-single-choice']);
+    assert(richText.linkFields.ariaLabel);
+    assert(richText.linkFields.dataFoo);
+    assert(richText.linkFields.dataBool);
+    assert(richText.linkFields.dataSingleChoice);
     assert(richText.linkSchema.length > 0);
 
-    const ariaLabel = richText.linkSchema.find(field => field.name === 'aria-label');
-    const dataFoo = richText.linkSchema.find(field => field.name === 'data-foo');
-    const dataBool = richText.linkSchema.find(field => field.name === 'data-bool');
-    const dataSingleChoice = richText.linkSchema.find(field => field.name === 'data-single-choice');
-    const target = richText.linkSchema.find(field => field.name === 'target');
-    const notAttribute = richText.linkSchema.find(field => field.name === 'not-attribute');
+    const ariaLabel = richText.linkSchema.find(field => field.htmlAttribute === 'aria-label');
+    const dataFoo = richText.linkSchema.find(field => field.htmlAttribute === 'data-foo');
+    const dataBool = richText.linkSchema.find(field => field.htmlAttribute === 'data-bool');
+    const dataSingleChoice = richText.linkSchema.find(field => field.htmlAttribute === 'data-single-choice');
+    const target = richText.linkSchema.find(field => field.htmlAttribute === 'target');
+    const notAttribute = richText.linkSchema.find(field => field.htmlAttribute === 'not-attribute');
 
     assert(ariaLabel);
-    assert(ariaLabel.htmlAttribute);
     assert(dataFoo);
-    assert(dataFoo.htmlAttribute);
     assert(dataBool);
-    assert(dataBool.htmlAttribute);
     assert(dataSingleChoice);
-    assert(dataSingleChoice.htmlAttribute);
-    assert(notAttribute);
-    assert(!notAttribute.htmlAttribute);
+    assert.equal(typeof notAttribute, 'undefined');
     assert.equal(typeof target, 'undefined');
-
-    // Groups are respected
-    assert.equal(
-      richText.linkSchema[richText.linkSchema.length - 1].name,
-      'aria-label'
-    );
 
     // Allows the HTML attributes in the schema
     const attributes = richText

@@ -15,6 +15,7 @@ npm-debug.log
 coverage
 /node_modules
 /test/node_modules
+/test/workspaces-project/node_modules
 test/package.json
 test/public
 test/apos-build

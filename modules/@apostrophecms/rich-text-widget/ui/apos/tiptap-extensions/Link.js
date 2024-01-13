@@ -13,9 +13,9 @@ export default (options) => {
       return {
         ...this.parent?.(),
         ...apos.modules['@apostrophecms/rich-text-widget'].linkSchema
-          .filter(field => field.htmlAttribute)
+          .filter(field => !!field.htmlAttribute)
           .reduce((obj, field) => {
-            obj[field.name] = { default: field.def ?? null };
+            obj[field.htmlAttribute] = { default: field.def ?? null };
             return obj;
           }, {})
       };

@@ -122,7 +122,7 @@ export default {
       return this.originalSchema;
     },
     schemaHtmlAttributes() {
-      return this.schema.filter(item => (item.htmlAttribute ?? false));
+      return this.schema.filter(item => !!item.htmlAttribute);
     }
   },
   watch: {
@@ -193,10 +193,10 @@ export default {
             return acc;
           }
           if (field.type === 'boolean') {
-            acc[field.name] = value === true ? '' : null;
+            acc[field.htmlAttribute] = value === true ? '' : null;
             return acc;
           }
-          acc[field.name] = Array.isArray(value) ? value[0] : value;
+          acc[field.htmlAttribute] = Array.isArray(value) ? value[0] : value;
           return acc;
         }, {});
         attrs.href = this.docFields.data.href;
@@ -225,13 +225,17 @@ export default {
         this.docFields.data = {};
         this.schema.forEach((item) => {
           if (item.htmlAttribute && item.type === 'checkboxes') {
-            this.docFields.data[item.name] = attrs[item.name] ? [ attrs[item.name] ] : [];
+            this.docFields.data[item.name] = attrs[item.htmlAttribute] ? [ attrs[item.htmlAttribute] ] : [];
             return;
           }
           if (item.htmlAttribute && item.type === 'boolean') {
-            this.docFields.data[item.name] = attrs[item.name] === null
+            this.docFields.data[item.name] = attrs[item.htmlAttribute] === null
               ? null
-              : (attrs[item.name] === '');
+              : (attrs[item.htmlAttribute] === '');
+            return;
+          }
+          if (item.htmlAttribute) {
+            this.docFields.data[item.name] = attrs[item.htmlAttribute] || '';
             return;
           }
           this.docFields.data[item.name] = attrs[item.name] || '';

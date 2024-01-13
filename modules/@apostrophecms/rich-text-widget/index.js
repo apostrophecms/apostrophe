@@ -73,23 +73,12 @@ module.exports = {
         target: {
           label: 'apostrophe:linkTarget',
           type: 'checkboxes',
-          htmlAttribute: true,
+          htmlAttribute: 'target',
           choices: [
             {
               label: 'apostrophe:openLinkInNewTab',
               value: '_blank'
             }
-          ]
-        }
-      },
-      group: {
-        link: {
-          fields: [
-            'linkTo',
-            ...linkWithType.map(type => `_${type}`),
-            'updateTitle',
-            'href',
-            'target'
           ]
         }
       }
@@ -507,7 +496,7 @@ module.exports = {
               'name',
               ...self.linkSchema
                 .filter(field => field.htmlAttribute)
-                .map(field => field.name)
+                .map(field => field.htmlAttribute)
             ]
           },
           alignLeft: {
@@ -814,23 +803,17 @@ module.exports = {
           addFields: self.apos.schema.fieldsToArray(`Links ${self.__meta.name}`, self.linkFields),
           arrangeFields: self.apos.schema.groupsToArray(self.linkFieldsGroups)
         }, self);
-        const forbiddenFields = [
-          '_id'
-        ];
-        self.linkSchema.forEach((field) => {
-          if (forbiddenFields.includes(field.name)) {
-            throw new Error('Doc type ' + self.name + ': the field name ' + field.name + ' is forbidden');
-          }
-        });
+
         self.apos.schema.validate(self.linkSchema, {
-          type: 'doc type',
+          type: 'link',
           subtype: self.__meta.name
         });
-        // Don't allow htmlAttribute on href, it's a special case.
-        if (self.linkSchema.find(field => field.name === 'href')?.htmlAttribute) {
-          throw new Error('The link field "href" can not have "htmlAttribute: true"');
+
+        // Don't allow htmlAttribute `href`, it's a special case.
+        const hrefField = self.linkSchema.find(field => field.htmlAttribute === 'href');
+        if (hrefField) {
+          throw new Error(`Field "${hrefField.name}" validation error: "htmlAttribute: href" is not allowed.`);
         }
-        self.apos.schema.register('widget', self.__meta.name, self.linkSchema);
       }
     };
   },
