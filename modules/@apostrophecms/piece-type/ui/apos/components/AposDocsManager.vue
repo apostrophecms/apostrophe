@@ -29,9 +29,8 @@
         :disabled="!!relationshipErrors"
         @click="saveRelationship"
       />
-      <!-- Currently we cannot create a document if we can't edit them -->
       <AposButton
-        v-else-if="moduleOptions.canCreate && moduleOptions.canEdit && moduleOptions.showCreate"
+        v-else-if="moduleOptions.canCreate && moduleOptions.showCreate"
         :label="{
           key: 'apostrophe:newDocType',
           type: $t(moduleOptions.label)
