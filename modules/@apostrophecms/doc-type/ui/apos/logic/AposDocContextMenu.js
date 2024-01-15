@@ -264,7 +264,7 @@ export default {
         !this.moduleOptions.singleton &&
         !this.context.archived &&
         !this.context.parked &&
-        ((this.moduleOptions.canPublish && this.context.lastPublishedAt) || !this.manuallyPublished)
+        ((this.canPublish && this.context.lastPublishedAt) || !this.manuallyPublished)
       );
     },
     canUnpublish() {
