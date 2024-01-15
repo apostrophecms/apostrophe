@@ -43,6 +43,7 @@
           :disabled="getCellDisabled(col, row)"
           :data-col="col.property"
           :style="getCellStyles(col.property, index)"
+          :options="moduleOptions"
           @click="((getEffectiveType(col, row) === 'button') && col.action) ? $emit(col.action, row._id) : null"
         >
           <AposIndicator
@@ -108,6 +109,7 @@
         :style="{
           'max-height': options.startCollapsed ? '0' : null
         }"
+        :module-options="moduleOptions"
         @update="$emit('update', $event)"
         v-model="checkedProxy"
       />
@@ -179,6 +181,12 @@ export default {
     treeId: {
       type: String,
       required: true
+    },
+    moduleOptions: {
+      type: Object,
+      default() {
+        return {};
+      }
     }
   },
   emits: [ 'update', 'change' ],
@@ -210,6 +218,7 @@ export default {
     }
   },
   mounted() {
+    console.log('this.moduleOptions', this.moduleOptions);
     // Use $nextTick to make sure attributes like `clientHeight` are settled.
     this.$nextTick(() => {
       if (!this.$refs['tree-branches']) {

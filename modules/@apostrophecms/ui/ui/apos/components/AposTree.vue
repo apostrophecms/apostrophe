@@ -22,6 +22,7 @@
       list-id="root"
       :options="options"
       :tree-id="treeId"
+      :module-options="moduleOptions"
     />
   </div>
 </template>
@@ -68,6 +69,12 @@ export default {
     options: {
       type: Object,
       default () {
+        return {};
+      }
+    },
+    moduleOptions: {
+      type: Object,
+      default() {
         return {};
       }
     }
