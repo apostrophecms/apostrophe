@@ -408,6 +408,10 @@ module.exports = {
         const page = await self.findOneForEditing(req, {
           _id
         });
+
+        if (!page) {
+          throw self.apos.error('notfound');
+        }
         return self.delete(req, page);
       },
       // Patch some properties of the page.
