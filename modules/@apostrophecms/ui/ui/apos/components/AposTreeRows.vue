@@ -218,7 +218,6 @@ export default {
     }
   },
   mounted() {
-    console.log('this.moduleOptions', this.moduleOptions);
     // Use $nextTick to make sure attributes like `clientHeight` are settled.
     this.$nextTick(() => {
       if (!this.$refs['tree-branches']) {

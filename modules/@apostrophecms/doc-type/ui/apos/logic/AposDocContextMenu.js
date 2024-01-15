@@ -245,10 +245,6 @@ export default {
       if (!this.context._id) {
         return false;
       }
-      // TODO: Should we remove this check since done backend?
-      if (!this.canEdit) {
-        return false;
-      }
       return (
         (!this.context.lastPublishedAt) &&
         !this.moduleOptions.singleton
