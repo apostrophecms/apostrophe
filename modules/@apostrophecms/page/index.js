@@ -853,16 +853,13 @@ database.`);
         // not a menu of choices for creating a page manually
         browserOptions.validPageTypes = self.apos.instancesOf('@apostrophecms/page-type').map(module => module.__meta.name);
         browserOptions.canEdit = self.apos.permission.can(req, 'edit', '@apostrophecms/any-page-type', 'draft');
-        // TODO: check why not checked in frontend
-        /* browserOptions.showDiscardDraft = self.apos.permission.can(req, 'delete', { */
-        /*   _id: 'any', */
-        /*   type: '@apostrophecms/any-page-type' */
-        /* }, 'draft'); */
         browserOptions.canLocalize = browserOptions.canEdit &&
           browserOptions.localized &&
           Object.keys(self.apos.i18n.locales).length > 1 &&
           Object.values(self.apos.i18n.locales).some(locale => locale._edit);
         browserOptions.utilityOperations = self.utilityOperations;
+        browserOptions.showDiscardDraft = self.apos.permission.can(req, 'delete', '@apostrophecms/any-page-type', 'draft');
+
         return browserOptions;
       },
       // Returns a query that finds pages the current user can edit

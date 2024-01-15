@@ -1158,11 +1158,8 @@ module.exports = {
         browserOptions.showCreate = !self.options.singleton && self.options.showCreate;
         browserOptions.showDismissSubmission = self.options.showDismissSubmission;
         browserOptions.showArchive = self.options.showArchive;
-        // We pass a fake object to the can method because we don't want to check for the publish permission here
-        browserOptions.showDiscardDraft = self.options.showDiscardDraft && self.apos.permission.can(req, 'delete', {
-          _id: 'any',
-          type: self.name
-        });
+        browserOptions.showDiscardDraft = self.options.showDiscardDraft !== false &&
+          self.apos.permission.can(req, 'delete', self.name, 'draft');
         browserOptions.canPublish = self.apos.permission.can(req, 'edit', self.name, 'publish');
 
         _.defaults(browserOptions, {
