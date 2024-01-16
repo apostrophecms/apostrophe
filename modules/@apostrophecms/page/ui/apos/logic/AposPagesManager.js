@@ -130,11 +130,7 @@ export default {
       return this.pageSetMenuSelection === 'live';
     },
     canCreate() {
-      const page = this.pagesFlat.find(page => page.aposDocId === this.moduleOptions.page.aposDocId);
-      if (page) {
-        return page._create;
-      }
-      return false;
+      return this.moduleOptions.canCreate;
     }
   },
   watch: {
