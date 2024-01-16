@@ -245,9 +245,6 @@ export default {
       if (!this.context._id) {
         return false;
       }
-      if (!this.canEdit) {
-        return false;
-      }
       return (
         (!this.context.lastPublishedAt) &&
         !this.moduleOptions.singleton
@@ -262,12 +259,12 @@ export default {
     },
     canArchive() {
       return (
-        this.context._archive &&
+        this.context._delete &&
         this.context._id &&
         !this.moduleOptions.singleton &&
         !this.context.archived &&
         !this.context.parked &&
-        ((this.moduleOptions.canPublish && this.context.lastPublishedAt) || !this.manuallyPublished)
+        ((this.canPublish && this.context.lastPublishedAt) || !this.manuallyPublished)
       );
     },
     canUnpublish() {

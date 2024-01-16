@@ -90,7 +90,7 @@ module.exports = {
           return (role === 'contributor') || (role === 'editor');
         }
 
-        if ([ 'delete', 'archive' ].includes(action)) {
+        if (action === 'delete') {
           return canDelete();
         }
 

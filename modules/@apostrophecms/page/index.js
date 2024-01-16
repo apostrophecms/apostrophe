@@ -408,6 +408,10 @@ module.exports = {
         const page = await self.findOneForEditing(req, {
           _id
         });
+
+        if (!page) {
+          throw self.apos.error('notfound');
+        }
         return self.delete(req, page);
       },
       // Patch some properties of the page.
@@ -858,6 +862,8 @@ database.`);
           Object.keys(self.apos.i18n.locales).length > 1 &&
           Object.values(self.apos.i18n.locales).some(locale => locale._edit);
         browserOptions.utilityOperations = self.utilityOperations;
+        browserOptions.showDiscardDraft = self.apos.permission.can(req, 'delete', '@apostrophecms/any-page-type', 'draft');
+
         return browserOptions;
       },
       // Returns a query that finds pages the current user can edit
