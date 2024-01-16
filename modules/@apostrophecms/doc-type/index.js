@@ -1502,7 +1502,7 @@ module.exports = {
           canCreate: self.apos.permission.can(req, 'create', self.name, 'draft'),
           canEdit: self.apos.permission.can(req, 'edit', self.name, 'draft'),
           canPublish: self.apos.permission.can(req, 'publish', self.name),
-          canArchive: self.apos.permission.can(req, 'archive', self.name)
+          canArchive: self.apos.permission.can(req, 'delete', self.name)
         };
         browserOptions.canLocalize = browserOptions.canEdit &&
           self.options.localized &&
@@ -1872,7 +1872,7 @@ module.exports = {
             // the req is permitted to do those things
             self.apos.permission.annotate(query.req, 'edit', results);
             self.apos.permission.annotate(query.req, 'publish', results);
-            self.apos.permission.annotate(query.req, 'archive', results);
+            self.apos.permission.annotate(query.req, 'delete', results);
           }
         },
 

@@ -195,9 +195,14 @@ export default {
 
       return this.moduleOptions.canPublish;
     },
+    canCreate() {
+      return this.original &&
+        !this.original._id &&
+        this.moduleOptions.canCreate;
+    },
     saveDisabled() {
-      if (!this.canEdit) {
-        return true;
+      if (!this.canCreate && !this.canEdit) {
+        return false;
       }
       if (this.restoreOnly) {
         // Can always restore if it's a read-only view of the archive

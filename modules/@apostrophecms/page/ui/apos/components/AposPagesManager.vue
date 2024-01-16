@@ -81,6 +81,7 @@
             :icons="icons"
             v-model="checked"
             :options="treeOptions"
+            :module-options="moduleOptions"
             @update="update"
           />
         </template>
