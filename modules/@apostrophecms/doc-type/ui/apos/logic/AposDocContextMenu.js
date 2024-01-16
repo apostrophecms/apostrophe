@@ -48,6 +48,12 @@ export default {
         return true;
       }
     },
+    canDeleteDraft: {
+      type: Boolean,
+      default() {
+        return true;
+      }
+    },
     showCopy: {
       type: Boolean,
       default() {
@@ -243,6 +249,9 @@ export default {
         return false;
       }
       if (!this.context._id) {
+        return false;
+      }
+      if (!this.canDeleteDraft && !this.context._delete) {
         return false;
       }
       return (
