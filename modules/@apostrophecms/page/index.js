@@ -862,7 +862,7 @@ database.`);
           Object.keys(self.apos.i18n.locales).length > 1 &&
           Object.values(self.apos.i18n.locales).some(locale => locale._edit);
         browserOptions.utilityOperations = self.utilityOperations;
-        browserOptions.showDiscardDraft = self.apos.permission.can(req, 'delete', '@apostrophecms/any-page-type', 'draft');
+        browserOptions.canDeleteDraft = self.apos.permission.can(req, 'delete', '@apostrophecms/any-page-type', 'draft');
 
         return browserOptions;
       },

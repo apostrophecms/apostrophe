@@ -1158,9 +1158,8 @@ module.exports = {
         browserOptions.showCreate = !self.options.singleton && self.options.showCreate;
         browserOptions.showDismissSubmission = self.options.showDismissSubmission;
         browserOptions.showArchive = self.options.showArchive;
-        browserOptions.showDiscardDraft = self.options.showDiscardDraft !== false &&
-          self.apos.permission.can(req, 'delete', self.name, 'draft');
-        browserOptions.canPublish = self.apos.permission.can(req, 'edit', self.name, 'publish');
+        browserOptions.showDiscardDraft = self.options.showDiscardDraft;
+        browserOptions.canDeleteDraft = self.apos.permission.can(req, 'delete', self.name, 'draft');
 
         _.defaults(browserOptions, {
           components: {}
