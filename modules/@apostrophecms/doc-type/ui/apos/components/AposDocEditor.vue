@@ -202,7 +202,7 @@ export default {
     },
     saveDisabled() {
       if (!this.canCreate && !this.canEdit) {
-        return false;
+        return true;
       }
       if (this.restoreOnly) {
         // Can always restore if it's a read-only view of the archive
