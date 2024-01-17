@@ -11,6 +11,7 @@
       :name="field.name"
       :id="id" :aria-label="choice.label || field.label"
       :tabindex="tabindex" :disabled="field.readOnly || choice.readOnly"
+      :is-indeterminate="choice.indeterminate === true ? 'true' : 'false'"
       @change="update"
     >
     <span class="apos-input-indicator" aria-hidden="true">

@@ -134,7 +134,7 @@ export default {
       if (page) {
         return page._create;
       }
-      return false;
+      return this.moduleOptions.canCreate;
     }
   },
   watch: {

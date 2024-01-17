@@ -906,7 +906,7 @@ database.`);
           if ((position === 'before') || (position === 'after')) {
             parent = await self.findForEditing(req, {
               path: self.getParentPath(target)
-            }).children({
+            }, { permission: 'create' }).children({
               depth: 1,
               archived: null,
               orphan: null,
@@ -922,7 +922,7 @@ database.`);
             throw self.apos.error('notfound');
           }
           if (options.permissions !== false) {
-            if (!parent._edit) {
+            if (!parent._create) {
               throw self.apos.error('forbidden');
             }
           }
