@@ -16,7 +16,7 @@ $spacing-quadruple: $spacing-base * 4;
 $input-padding: $spacing-base * 1.5;
 $boolean-padding: $spacing-double;
 
-$input-color-disabled: var(--a-base-4);
+$input-color-disabled: var(--a-base-7);
 
 @mixin apos-primary-mixin($color) {
   --a-primary: #{$color};
