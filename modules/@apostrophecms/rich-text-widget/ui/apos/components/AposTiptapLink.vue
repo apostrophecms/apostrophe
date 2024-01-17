@@ -86,11 +86,11 @@ export default {
     }
   },
   data() {
-    const linkWithType = getOptions().linkWithType;
+
     return {
       generation: 1,
       href: null,
-      target: null,
+      // target: null,
       active: false,
       hasLinkOnOpen: false,
       triggerValidation: false,
@@ -98,73 +98,7 @@ export default {
         data: {}
       },
       formModifiers: [ 'small', 'margin-micro' ],
-      originalSchema: [
-        {
-          name: 'linkTo',
-          label: this.$t('apostrophe:linkTo'),
-          type: 'select',
-          def: linkWithType[0],
-          required: true,
-          choices: [
-            ...(linkWithType.map(type => {
-              return {
-                // Should already be localized server side
-                label: apos.modules[type].label,
-                value: type
-              };
-            })),
-            {
-              // TODO this needs i18n
-              label: this.$t('apostrophe:url'),
-              // Value that will never be a doc type
-              value: '_url'
-            }
-          ]
-        },
-        ...getOptions().linkWithType.map(type => ({
-          name: `_${type}`,
-          type: 'relationship',
-          label: apos.modules[type].label,
-          withType: type,
-          required: true,
-          max: 1,
-          browse: true,
-          if: {
-            linkTo: type
-          }
-        })),
-        {
-          name: 'updateTitle',
-          label: this.$t('apostrophe:updateTitle'),
-          type: 'boolean',
-          def: true,
-          if: {
-            $or: linkWithType.map(type => ({
-              linkTo: type
-            }))
-          }
-        },
-        {
-          name: 'href',
-          label: this.$t('apostrophe:url'),
-          type: 'string',
-          required: true,
-          if: {
-            linkTo: '_url'
-          }
-        },
-        {
-          name: 'target',
-          label: this.$t('apostrophe:linkTarget'),
-          type: 'checkboxes',
-          choices: [
-            {
-              label: this.$t('apostrophe:openLinkInNewTab'),
-              value: '_blank'
-            }
-          ]
-        }
-      ]
+      originalSchema: getOptions().linkSchema
     };
   },
   computed: {
@@ -186,6 +120,9 @@ export default {
     },
     schema() {
       return this.originalSchema;
+    },
+    schemaHtmlAttributes() {
+      return this.schema.filter(item => !!item.htmlAttribute);
     }
   },
   watch: {
@@ -249,10 +186,22 @@ export default {
         if (this.docFields.data.target && !this.docFields.data.href) {
           delete this.docFields.data.target;
         }
-        this.editor.commands.setLink({
-          target: this.docFields.data.target[0],
-          href: this.docFields.data.href
-        });
+
+        const attrs = this.schemaHtmlAttributes.reduce((acc, field) => {
+          const value = this.docFields.data[field.name];
+          if (field.type === 'checkboxes' && !value?.[0]) {
+            return acc;
+          }
+          if (field.type === 'boolean') {
+            acc[field.htmlAttribute] = value === true ? '' : null;
+            return acc;
+          }
+          acc[field.htmlAttribute] = Array.isArray(value) ? value[0] : value;
+          return acc;
+        }, {});
+        attrs.href = this.docFields.data.href;
+        this.editor.commands.setLink(attrs);
+
         this.close();
       });
     },
@@ -272,13 +221,23 @@ export default {
     },
     async populateFields() {
       try {
-        const attrs = this.attributes;
-        if (attrs.target) {
-          // checkboxes field expects an array
-          attrs.target = [ attrs.target ];
-        }
+        const attrs = { ...this.attributes };
         this.docFields.data = {};
         this.schema.forEach((item) => {
+          if (item.htmlAttribute && item.type === 'checkboxes') {
+            this.docFields.data[item.name] = attrs[item.htmlAttribute] ? [ attrs[item.htmlAttribute] ] : [];
+            return;
+          }
+          if (item.htmlAttribute && item.type === 'boolean') {
+            this.docFields.data[item.name] = attrs[item.htmlAttribute] === null
+              ? null
+              : (attrs[item.htmlAttribute] === '');
+            return;
+          }
+          if (item.htmlAttribute) {
+            this.docFields.data[item.name] = attrs[item.htmlAttribute] || '';
+            return;
+          }
           this.docFields.data[item.name] = attrs[item.name] || '';
         });
         const matches = this.docFields.data.href.match(/^#apostrophe-permalink-(.*)\?updateTitle=(\d)$/);
@@ -361,7 +320,7 @@ function getOptions() {
   }
 
   // special schema style for this use
-  .apos-link-control ::v-deep .apos-field--target {
+  .apos-link-control ::v-deep .apos-field--checkboxes {
     .apos-field__label {
       display: none;
     }

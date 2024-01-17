@@ -8,6 +8,17 @@ export default (options) => {
         linkOnPaste: true,
         HTMLAttributes: {}
       };
+    },
+    addAttributes() {
+      return {
+        ...this.parent?.(),
+        ...apos.modules['@apostrophecms/rich-text-widget'].linkSchema
+          .filter(field => !!field.htmlAttribute)
+          .reduce((obj, field) => {
+            obj[field.htmlAttribute] = { default: field.def ?? null };
+            return obj;
+          }, {})
+      };
     }
   });
 };

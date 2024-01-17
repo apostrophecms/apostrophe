@@ -7,6 +7,7 @@
 * Adds support for `type` query parameter for page autocomplete. This allows to filter the results by page type. Example: `/api/v1/@apostrophecms/page?autocomplete=something&type=my-page-type`.
 * Add testing for the `float` schema field query builder.
 * Add testing for the `integer` schema field query builder.
+* Add support for link HTML attributes in the rich text widget via configurable fields `linkFields`, extendable on a project level (same as it's done for `fields`). Add an `htmlAttribute` property to the standard fields that map directly to an HTML attribute, except `href` (see special case below), and set it accordingly, even if it is the same as the field name. Setting `htmlAttribute: 'href'` is not allowed and will throw a schema validation exception (on application boot).
 * Adds support in can and criteria methods for `create` and `delete`.
 
 ### Fixes
