@@ -1160,7 +1160,6 @@ module.exports = {
         browserOptions.showArchive = self.options.showArchive;
         browserOptions.showDiscardDraft = self.options.showDiscardDraft;
         browserOptions.canDeleteDraft = self.apos.permission.can(req, 'delete', self.name, 'draft');
-        browserOptions.canPublish = self.apos.permission.can(req, 'edit', self.name, 'publish');
 
         _.defaults(browserOptions, {
           components: {}
