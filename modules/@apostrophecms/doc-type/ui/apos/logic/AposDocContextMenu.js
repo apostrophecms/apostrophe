@@ -254,7 +254,7 @@ export default {
       if (!this.context.lastPublishedAt && !this.canDeleteDraft && !this.context._delete) {
         return false;
       }
-      if (this.context.lastPublishedAt && !this.canEdit) {
+      if (this.context.lastPublishedAt && (!this.context.modified || !this.context._edit)) {
         return false;
       }
       return (
@@ -276,7 +276,7 @@ export default {
         !this.moduleOptions.singleton &&
         !this.context.archived &&
         !this.context.parked &&
-        ((this.canPublish && this.context.lastPublishedAt) || !this.manuallyPublished)
+        (Boolean(this.canPublish && this.context.lastPublishedAt) || !this.manuallyPublished)
       );
     },
     canUnpublish() {
