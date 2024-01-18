@@ -155,10 +155,13 @@ export default {
   },
   computed: {
     moduleOptions() {
+      if (!this.activeMedia) {
+        console.trace();
+      }
       return window.apos.modules[this.activeMedia.type] || {};
     },
     canLocalize() {
-      return this.moduleOptions.canLocalize && this.activeMedia._id;
+      return this.activeMedia?._id && this.moduleOptions.canLocalize;
     },
     moreMenu() {
       const menu = [ {
@@ -171,7 +174,7 @@ export default {
           action: 'localize'
         });
       }
-      if (this.activeMedia._id && !this.restoreOnly) {
+      if (this.activeMedia?._id && !this.restoreOnly) {
         menu.push({
           label: 'apostrophe:archiveImage',
           action: 'archive',
@@ -215,6 +218,9 @@ export default {
   watch: {
     'docFields.data': {
       handler(newData, oldData) {
+        newData = newData || {};
+        oldData = oldData || {};
+        const activeMedia = this.activeMedia || {};
         this.$nextTick(() => {
           // If either old or new state are an empty object, it's not "modified."
           if (!(Object.keys(oldData).length > 0 && Object.keys(newData).length > 0)) {
@@ -224,12 +230,12 @@ export default {
           }
         });
 
-        if ((this.activeMedia.attachment && !newData.attachment)) {
+        if ((activeMedia.attachment && !newData.attachment)) {
           this.updateActiveAttachment({});
         } else if (
-          (newData.attachment && !this.activeMedia.attachment) ||
-          (this.activeMedia.attachment && !newData.attachment) ||
-          !isEqual(newData.attachment, this.activeMedia.attachment)
+          (newData.attachment && !activeMedia.attachment) ||
+          (activeMedia.attachment && !newData.attachment) ||
+          !isEqual(newData.attachment, activeMedia.attachment)
         ) {
           this.updateActiveAttachment(newData.attachment);
         }
@@ -250,13 +256,13 @@ export default {
     async updateActiveDoc(newMedia) {
       this.showReplace = false;
       this.activeMedia = klona(newMedia);
-      this.restoreOnly = !!this.activeMedia.archived;
+      this.restoreOnly = !!this.activeMedia?.archived;
       this.original = klona(newMedia);
       this.docFields.data = klona(newMedia);
       this.generateLipKey();
       await this.unlock();
       // Distinguish between an actual doc and an empty placeholder
-      if (newMedia._id) {
+      if (newMedia?._id) {
         if (!await this.lock(`${this.moduleOptions.action}/${newMedia._id}`)) {
           this.lockNotAvailable();
         }
