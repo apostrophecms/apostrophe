@@ -251,7 +251,10 @@ export default {
       if (!this.context._id) {
         return false;
       }
-      if (!this.canDeleteDraft && !this.context._delete) {
+      if (!this.context.lastPublishedAt && !this.canDeleteDraft && !this.context._delete) {
+        return false;
+      }
+      if (this.context.lastPublishedAt && !this.canEdit) {
         return false;
       }
       return (
