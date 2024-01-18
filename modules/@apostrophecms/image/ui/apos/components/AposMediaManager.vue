@@ -71,7 +71,6 @@
             :accept="accept"
             :items="items"
             :module-options="moduleOptions"
-            :can-edit="moduleOptions.canEdit"
             @edit="updateEditing"
             v-model="checked"
             @select="select"
