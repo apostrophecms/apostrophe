@@ -171,7 +171,7 @@ export default {
           action: 'localize'
         });
       }
-      if (this.activeMedia._id && !this.restoreOnly) {
+      if (this.activeMedia._id && this.activeMedia._delete && !this.restoreOnly) {
         menu.push({
           label: 'apostrophe:archiveImage',
           action: 'archive',
