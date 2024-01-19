@@ -160,6 +160,9 @@ export default {
     canLocalize() {
       return this.moduleOptions.canLocalize && this.activeMedia._id;
     },
+    canArchive() {
+      return this.moduleOptions.canArchive && this.activeMedia._id && !this.restoreOnly;
+    },
     moreMenu() {
       const menu = [ {
         label: 'apostrophe:discardChanges',
@@ -171,7 +174,7 @@ export default {
           action: 'localize'
         });
       }
-      if (this.activeMedia._id && !this.restoreOnly) {
+      if (this.canArchive) {
         menu.push({
           label: 'apostrophe:archiveImage',
           action: 'archive',

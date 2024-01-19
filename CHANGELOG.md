@@ -15,7 +15,7 @@
 
 * Fix the `launder` and `finalize` methods of the `float` schema field query builder.
 * Fix the `launder` and `finalize` methods of the `integer` schema field query builder.
-
+* Archive images: remove menu for users without permission `archive` on images
 
 ## 3.61.1 (2023-01-08)
 
