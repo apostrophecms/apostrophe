@@ -161,7 +161,7 @@ export default {
       return this.moduleOptions.canLocalize && this.activeMedia._id;
     },
     canArchive() {
-      return this.moduleOptions.canArchive && this.activeMedia._id && !this.restoreOnly;
+      return this.moduleOptions.canArchive && this.activeMedia._id && this.activeMedia._delete && !this.restoreOnly;
     },
     moreMenu() {
       const menu = [ {
