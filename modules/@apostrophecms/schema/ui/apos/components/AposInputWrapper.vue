@@ -3,7 +3,7 @@
     class="apos-field__wrapper"
     :class="{
       [`apos-field__wrapper--${field.type}`]: true,
-      'apos-field__wrapper--full-width': field.type === 'array' && field.style === 'table'
+      'apos-field__wrapper--full-width': modifiers.includes('full-width')
     }"
   >
     <component :is="wrapEl" :class="classList">
@@ -74,6 +74,7 @@ export default {
 .apos-field__wrapper {
   position: relative;
 }
+
 .apos-field__wrapper.apos-field__wrapper--full-width {
   max-width: 100%;
 }

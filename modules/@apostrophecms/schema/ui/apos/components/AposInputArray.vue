@@ -5,6 +5,9 @@
     :uid="uid"
     :items="next"
     :display-options="displayOptions"
+    :modifiers="[
+      ...field.style === 'table' ? ['full-width'] : []
+    ]"
   >
     <template #additional>
       <AposMinMaxCount
