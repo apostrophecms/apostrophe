@@ -8,8 +8,9 @@
 * Add testing for the `float` schema field query builder.
 * Add testing for the `integer` schema field query builder.
 * Add support for link HTML attributes in the rich text widget via configurable fields `linkFields`, extendable on a project level (same as it's done for `fields`). Add an `htmlAttribute` property to the standard fields that map directly to an HTML attribute, except `href` (see special case below), and set it accordingly, even if it is the same as the field name. Setting `htmlAttribute: 'href'` is not allowed and will throw a schema validation exception (on application boot).
-* Adds support in can and criteria methods for `create` and `delete`.
+* Adds support in `can` and `criteria` methods for `create` and `delete`.
 * Changes support for image upload from `canEdit` to `canCreate`.
+* The media manager is compatible with per-doc permissions granted via the `@apostrophecms-pro/advanced-permission` module.
 
 ### Fixes
 
