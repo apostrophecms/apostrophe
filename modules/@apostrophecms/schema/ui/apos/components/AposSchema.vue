@@ -69,12 +69,9 @@ export default {
   .apos-schema ::v-deep .apos-field__wrapper {
     max-width: $input-max-width;
   }
+
   .apos-schema ::v-deep .apos-field__wrapper.apos-field__wrapper--full-width {
     max-width: inherit;
-  }
-
-  .apos-schema ::v-deep .apos-field__wrapper--area {
-    max-width: 100%;
   }
 
   .apos-schema ::v-deep img {
