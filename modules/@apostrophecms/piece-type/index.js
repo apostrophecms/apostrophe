@@ -1136,7 +1136,8 @@ module.exports = {
             ...self.newInstance(),
             aposDocId: await self.apos.doc.bestAposDocId({
               type: self.name
-            })
+            }),
+            _create: true
           };
           await self.insert(req, _new);
         }
