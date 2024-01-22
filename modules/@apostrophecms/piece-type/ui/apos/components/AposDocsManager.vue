@@ -218,7 +218,8 @@ export default {
     const DEBOUNCE_TIMEOUT = 500;
     this.onSearch = debounce(this.search, DEBOUNCE_TIMEOUT);
 
-    this.moduleOptions.filters.forEach(filter => {
+    // TODO: handle filters?
+    (this.moduleOptions.filters || []).forEach(filter => {
       this.filterValues[filter.name] = filter.def;
       if (!filter.choices) {
         this.queryExtras.choices = this.queryExtras.choices || [];
@@ -311,11 +312,34 @@ export default {
       });
     },
     async getPieces () {
+      console.log('🚀 ~ getPieces ~ getPieces:');
       if (this.holdQueries) {
         return;
       }
 
       this.holdQueries = true;
+
+      const type = this.relationshipField?.withType;
+      const isPage = apos.modules['@apostrophecms/page'].validPageTypes
+        .includes(type);
+
+      if (isPage) {
+        const qs = {
+          type,
+          withPublished: 1
+        };
+
+        const { results } = await apos.http.get(this.moduleOptions.action, {
+          qs,
+          busy: true,
+          draft: true
+        });
+
+        this.items = results;
+        console.log('🚀 ~ getPieces ~ this.items :', this.items);
+
+        return;
+      }
 
       const {
         currentPage, pages, results, choices
@@ -325,6 +349,10 @@ export default {
           { project: this.moduleOptions.managerApiProjection }
         ),
         page: this.currentPage
+      });
+
+      console.log('results', {
+        currentPage, pages, results, choices
       });
 
       this.currentPage = currentPage;

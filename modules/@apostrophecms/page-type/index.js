@@ -5,9 +5,50 @@ const pathToRegexp = require('path-to-regexp');
 module.exports = {
   extend: '@apostrophecms/doc-type',
   options: {
+    perPage: 10,
     // Pages should never be considered "related documents" when localizing another document etc.
     relatedDocument: false
   },
+  // TODO: add filters?
+  // filters: {
+  //   add: {
+  //     visibility: {
+  //       label: 'apostrophe:visibility',
+  //       inputType: 'radio',
+  //       choices: [
+  //         {
+  //           value: 'public',
+  //           label: 'apostrophe:public'
+  //         },
+  //         {
+  //           value: 'loginRequired',
+  //           label: 'apostrophe:loginRequired'
+  //         },
+  //         {
+  //           value: null,
+  //           label: 'apostrophe:any'
+  //         }
+  //       ],
+  //       def: null
+  //     },
+  //     archived: {
+  //       label: 'apostrophe:archived',
+  //       inputType: 'radio',
+  //       choices: [
+  //         {
+  //           value: false,
+  //           label: 'apostrophe:live'
+  //         },
+  //         {
+  //           value: true,
+  //           label: 'apostrophe:archived'
+  //         }
+  //       ],
+  //       def: false,
+  //       required: true
+  //     }
+  //   }
+  // },
   fields(self) {
     return {
       add: {
@@ -421,6 +462,29 @@ module.exports = {
             throw self.apos.error('invalid', 'Page has neither a slug beginning with / or a title, giving up');
           }
         }
+      },
+      getRestQuery(req, omitPermissionCheck = false) {
+        const query = self.find(req)
+          .ancestors(true)
+          .children(true)
+          .attachments(true)
+          .applyBuildersSafely(req.query);
+        // Minimum standard for a REST query without a public projection
+        // is being allowed to view drafts on the site
+        if (!omitPermissionCheck && !self.canAccessApi(req)) {
+          if (!self.options.publicApiProjection) {
+            // Shouldn't be needed thanks to publicApiCheck, but be sure
+            query.and({
+              _id: null
+            });
+          } else {
+            query.project({
+              ...self.options.publicApiProjection,
+              cacheInvalidatedAt: 1
+            });
+          }
+        }
+        return query;
       }
     };
   },
