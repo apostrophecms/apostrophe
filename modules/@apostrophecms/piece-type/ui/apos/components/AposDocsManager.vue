@@ -218,8 +218,8 @@ export default {
     const DEBOUNCE_TIMEOUT = 500;
     this.onSearch = debounce(this.search, DEBOUNCE_TIMEOUT);
 
-    // TODO: handle filters?
-    (this.moduleOptions.filters || []).forEach(filter => {
+    // FIXME: buggy filters
+    this.moduleOptions.filters.forEach(filter => {
       this.filterValues[filter.name] = filter.def;
       if (!filter.choices) {
         this.queryExtras.choices = this.queryExtras.choices || [];
@@ -312,7 +312,6 @@ export default {
       });
     },
     async getPieces () {
-      console.log('🚀 ~ getPieces ~ getPieces:');
       if (this.holdQueries) {
         return;
       }
@@ -323,38 +322,26 @@ export default {
       const isPage = apos.modules['@apostrophecms/page'].validPageTypes
         .includes(type);
 
+      const options = { page: this.currentPage };
+
+
+      console.log('this.moduleOptions.managerApiProjection', this.moduleOptions.managerApiProjection);
       if (isPage) {
-        const qs = {
-          type,
-          withPublished: 1
-        };
-
-        const { results } = await apos.http.get(this.moduleOptions.action, {
-          qs,
-          busy: true,
-          draft: true
-        });
-
-        this.items = results;
-        console.log('🚀 ~ getPieces ~ this.items :', this.items);
-
-        return;
+        options.type = type;
+      }
+      if (this.moduleOptions.managerApiProjection) {
+        options.project = this.moduleOptions.managerApiProjection;
       }
 
       const {
         currentPage, pages, results, choices
-      } = await this.request({
-        ...(
-          this.moduleOptions.managerApiProjection &&
-          { project: this.moduleOptions.managerApiProjection }
-        ),
-        page: this.currentPage
-      });
+      } = await this.request(options);
 
       console.log('results', {
         currentPage, pages, results, choices
       });
 
+      // FIXME: undefined pages
       this.currentPage = currentPage;
       this.totalPages = pages;
       this.items = results;

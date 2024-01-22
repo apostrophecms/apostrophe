@@ -1103,6 +1103,10 @@ module.exports = {
 
         });
       },
+      // TODO: find what's going on with this... does not work if we keep
+      // the `managerApiProjection` commented.
+      // When uncommented, we get draft and not-selectable results...
+      // Ask Harouna
       getManagerApiProjection(req) {
         if (!self.options.managerApiProjection) {
           return null;

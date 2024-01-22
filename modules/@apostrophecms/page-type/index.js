@@ -4,51 +4,29 @@ const pathToRegexp = require('path-to-regexp');
 
 module.exports = {
   extend: '@apostrophecms/doc-type',
+  cascades: [
+    'filters',
+    'columns'
+  ],
   options: {
     perPage: 10,
     // Pages should never be considered "related documents" when localizing another document etc.
     relatedDocument: false
+    // By default the manager modal will get all the pieces fields below + all manager columns
+    // you can enable a projection using
+    // managerApiProjection: {
+    //   _id: 1,
+    //   _url: 1,
+    //   aposDocId: 1,
+    //   aposLocale: 1,
+    //   aposMode: 1,
+    //   docPermissions: 1,
+    //   slug: 1,
+    //   title: 1,
+    //   type: 1,
+    //   visibility: 1
+    // }
   },
-  // TODO: add filters?
-  // filters: {
-  //   add: {
-  //     visibility: {
-  //       label: 'apostrophe:visibility',
-  //       inputType: 'radio',
-  //       choices: [
-  //         {
-  //           value: 'public',
-  //           label: 'apostrophe:public'
-  //         },
-  //         {
-  //           value: 'loginRequired',
-  //           label: 'apostrophe:loginRequired'
-  //         },
-  //         {
-  //           value: null,
-  //           label: 'apostrophe:any'
-  //         }
-  //       ],
-  //       def: null
-  //     },
-  //     archived: {
-  //       label: 'apostrophe:archived',
-  //       inputType: 'radio',
-  //       choices: [
-  //         {
-  //           value: false,
-  //           label: 'apostrophe:live'
-  //         },
-  //         {
-  //           value: true,
-  //           label: 'apostrophe:archived'
-  //         }
-  //       ],
-  //       def: false,
-  //       required: true
-  //     }
-  //   }
-  // },
   fields(self) {
     return {
       add: {
@@ -94,6 +72,67 @@ module.exports = {
       }
     };
   },
+  columns() {
+    return {
+      add: {
+        title: {
+          name: 'title',
+          label: 'apostrophe:title',
+          component: 'AposCellButton'
+        },
+        slug: {
+          name: 'slug',
+          label: 'apostrophe:slug',
+          component: 'AposCellButton'
+        },
+        updatedAt: {
+          name: 'updatedAt',
+          label: 'apostrophe:lastEdited',
+          component: 'AposCellLastEdited'
+        }
+      }
+    };
+  },
+  // TODO: add filters?
+  filters: {
+    add: {
+      visibility: {
+        label: 'apostrophe:visibility',
+        inputType: 'radio',
+        choices: [
+          {
+            value: 'public',
+            label: 'apostrophe:public'
+          },
+          {
+            value: 'loginRequired',
+            label: 'apostrophe:loginRequired'
+          },
+          {
+            value: null,
+            label: 'apostrophe:any'
+          }
+        ],
+        def: null
+      },
+      archived: {
+        label: 'apostrophe:archived',
+        inputType: 'radio',
+        choices: [
+          {
+            value: false,
+            label: 'apostrophe:live'
+          },
+          {
+            value: true,
+            label: 'apostrophe:archived'
+          }
+        ],
+        def: false,
+        required: true
+      }
+    }
+  },
   init(self) {
     self.removeDeduplicatePrefixFields([ 'slug' ]);
     self.addDeduplicateSuffixFields([
@@ -101,6 +140,8 @@ module.exports = {
     ]);
     self.rules = {};
     self.dispatchAll();
+    self.composeFilters();
+    self.composeColumns();
   },
   handlers(self) {
     return {
@@ -485,6 +526,59 @@ module.exports = {
           }
         }
         return query;
+      },
+      composeFilters() {
+        self.filters = Object.keys(self.filters).map((key) => ({
+          name: key,
+          ...self.filters[key],
+          inputType: self.filters[key].inputType || 'select'
+        }));
+        // Add a null choice if not already added or set to `required`
+        self.filters.forEach((filter) => {
+          if (filter.choices) {
+            if (
+              !filter.required &&
+              filter.choices &&
+              !filter.choices.find((choice) => choice.value === null)
+            ) {
+              filter.def = null;
+              filter.choices.push({
+                value: null,
+                label: 'apostrophe:none'
+              });
+            }
+          } else {
+            // Dynamic choices from the REST API, but
+            // we need a label for "no opinion"
+            filter.nullLabel = 'Choose One';
+          }
+        });
+      },
+      composeColumns() {
+        self.columns = Object.keys(self.columns).map((key) => ({
+          name: key,
+          ...self.columns[key]
+        }));
+      },
+      // TODO: find what's going on with this... does not work if we keep
+      // the `managerApiProjection` commented.
+      // When uncommented, we get draft and not-selectable results...
+      // Ask Harouna
+      getManagerApiProjection(req) {
+        if (!self.options.managerApiProjection) {
+          return null;
+        }
+
+        const projection = { ...self.options.managerApiProjection };
+        self.columns.forEach(({ name }) => {
+          const column = (name.startsWith('draft:') || name.startsWith('published:'))
+            ? name.replace(/^(draft|published):/, '')
+            : name;
+
+          projection[column] = 1;
+        });
+
+        return projection;
       }
     };
   },
@@ -561,6 +655,14 @@ module.exports = {
           }
           return label;
         }
+      },
+      getBrowserData(_super, req) {
+        const browserOptions = _super(req);
+        browserOptions.filters = self.filters;
+        browserOptions.columns = self.columns;
+        browserOptions.managerApiProjection = self.getManagerApiProjection(req);
+
+        return browserOptions;
       }
     };
   }
