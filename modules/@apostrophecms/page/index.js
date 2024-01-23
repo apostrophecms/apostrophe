@@ -167,7 +167,7 @@ module.exports = {
               throw self.apos.error('invalid');
             }
 
-            const query = manager.getRestQuery(req);
+            const query = self.getRestQuery(req);
             query
               .type(type)
               .ancestors(false)

@@ -490,29 +490,6 @@ module.exports = {
           }
         }
       },
-      getRestQuery(req, omitPermissionCheck = false) {
-        const query = self.find(req)
-          .ancestors(true)
-          .children(true)
-          .attachments(true)
-          .applyBuildersSafely(req.query);
-        // Minimum standard for a REST query without a public projection
-        // is being allowed to view drafts on the site
-        if (!omitPermissionCheck && !self.canAccessApi(req)) {
-          if (!self.options.publicApiProjection) {
-            // Shouldn't be needed thanks to publicApiCheck, but be sure
-            query.and({
-              _id: null
-            });
-          } else {
-            query.project({
-              ...self.options.publicApiProjection,
-              cacheInvalidatedAt: 1
-            });
-          }
-        }
-        return query;
-      },
       composeFilters() {
         self.filters = Object.keys(self.filters).map((key) => ({
           name: key,
