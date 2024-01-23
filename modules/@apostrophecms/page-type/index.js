@@ -12,20 +12,6 @@ module.exports = {
     perPage: 10,
     // Pages should never be considered "related documents" when localizing another document etc.
     relatedDocument: false
-    // By default the manager modal will get all the pieces fields below + all manager columns
-    // you can enable a projection using
-    // managerApiProjection: {
-    //   _id: 1,
-    //   _url: 1,
-    //   aposDocId: 1,
-    //   aposLocale: 1,
-    //   aposMode: 1,
-    //   docPermissions: 1,
-    //   slug: 1,
-    //   title: 1,
-    //   type: 1,
-    //   visibility: 1
-    // }
   },
   fields(self) {
     return {
@@ -559,26 +545,6 @@ module.exports = {
           name: key,
           ...self.columns[key]
         }));
-      },
-      // TODO: find what's going on with this... does not work if we keep
-      // the `managerApiProjection` commented.
-      // When uncommented, we get draft and not-selectable results...
-      // Ask Harouna
-      getManagerApiProjection(req) {
-        if (!self.options.managerApiProjection) {
-          return null;
-        }
-
-        const projection = { ...self.options.managerApiProjection };
-        self.columns.forEach(({ name }) => {
-          const column = (name.startsWith('draft:') || name.startsWith('published:'))
-            ? name.replace(/^(draft|published):/, '')
-            : name;
-
-          projection[column] = 1;
-        });
-
-        return projection;
       }
     };
   },
@@ -658,9 +624,9 @@ module.exports = {
       },
       getBrowserData(_super, req) {
         const browserOptions = _super(req);
+
         browserOptions.filters = self.filters;
         browserOptions.columns = self.columns;
-        browserOptions.managerApiProjection = self.getManagerApiProjection(req);
 
         return browserOptions;
       }

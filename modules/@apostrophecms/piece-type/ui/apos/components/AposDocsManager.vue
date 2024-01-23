@@ -324,8 +324,6 @@ export default {
 
       const options = { page: this.currentPage };
 
-
-      console.log('this.moduleOptions.managerApiProjection', this.moduleOptions.managerApiProjection);
       if (isPage) {
         options.type = type;
       }
