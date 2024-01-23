@@ -5,7 +5,6 @@ const pathToRegexp = require('path-to-regexp');
 module.exports = {
   extend: '@apostrophecms/doc-type',
   cascades: [
-    'filters',
     'columns'
   ],
   options: {
@@ -79,46 +78,6 @@ module.exports = {
       }
     };
   },
-  // TODO: add filters?
-  filters: {
-    add: {
-      visibility: {
-        label: 'apostrophe:visibility',
-        inputType: 'radio',
-        choices: [
-          {
-            value: 'public',
-            label: 'apostrophe:public'
-          },
-          {
-            value: 'loginRequired',
-            label: 'apostrophe:loginRequired'
-          },
-          {
-            value: null,
-            label: 'apostrophe:any'
-          }
-        ],
-        def: null
-      },
-      archived: {
-        label: 'apostrophe:archived',
-        inputType: 'radio',
-        choices: [
-          {
-            value: false,
-            label: 'apostrophe:live'
-          },
-          {
-            value: true,
-            label: 'apostrophe:archived'
-          }
-        ],
-        def: false,
-        required: true
-      }
-    }
-  },
   init(self) {
     self.removeDeduplicatePrefixFields([ 'slug' ]);
     self.addDeduplicateSuffixFields([
@@ -126,7 +85,6 @@ module.exports = {
     ]);
     self.rules = {};
     self.dispatchAll();
-    self.composeFilters();
     self.composeColumns();
   },
   handlers(self) {
@@ -490,33 +448,6 @@ module.exports = {
           }
         }
       },
-      composeFilters() {
-        self.filters = Object.keys(self.filters).map((key) => ({
-          name: key,
-          ...self.filters[key],
-          inputType: self.filters[key].inputType || 'select'
-        }));
-        // Add a null choice if not already added or set to `required`
-        self.filters.forEach((filter) => {
-          if (filter.choices) {
-            if (
-              !filter.required &&
-              filter.choices &&
-              !filter.choices.find((choice) => choice.value === null)
-            ) {
-              filter.def = null;
-              filter.choices.push({
-                value: null,
-                label: 'apostrophe:none'
-              });
-            }
-          } else {
-            // Dynamic choices from the REST API, but
-            // we need a label for "no opinion"
-            filter.nullLabel = 'Choose One';
-          }
-        });
-      },
       composeColumns() {
         self.columns = Object.keys(self.columns).map((key) => ({
           name: key,
@@ -602,7 +533,6 @@ module.exports = {
       getBrowserData(_super, req) {
         const browserOptions = _super(req);
 
-        browserOptions.filters = self.filters;
         browserOptions.columns = self.columns;
 
         return browserOptions;
