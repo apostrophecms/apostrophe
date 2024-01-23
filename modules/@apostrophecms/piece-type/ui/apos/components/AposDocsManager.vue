@@ -218,10 +218,7 @@ export default {
     const DEBOUNCE_TIMEOUT = 500;
     this.onSearch = debounce(this.search, DEBOUNCE_TIMEOUT);
 
-    // TODO: add filters in page-type modules to avoid
-    // adding the following default `[]` when browsing
-    // a specific page type in a relationship.
-    (this.moduleOptions.filters || []).forEach(filter => {
+    this.moduleOptions.filters.forEach(filter => {
       this.filterValues[filter.name] = filter.def;
       if (!filter.choices) {
         this.queryExtras.choices = this.queryExtras.choices || [];
@@ -300,6 +297,14 @@ export default {
         withPublished: 1
       };
 
+      const type = this.relationshipField?.withType;
+      const isPage = apos.modules['@apostrophecms/page'].validPageTypes
+        .includes(type);
+
+      if (isPage) {
+        options.type = type;
+      }
+
       // Avoid undefined properties.
       const qs = Object.entries(options)
         .reduce((acc, [ key, val ]) => ({
@@ -320,22 +325,15 @@ export default {
 
       this.holdQueries = true;
 
-      const type = this.relationshipField?.withType;
-      const isPage = apos.modules['@apostrophecms/page'].validPageTypes
-        .includes(type);
-
-      const options = { page: this.currentPage };
-
-      if (isPage) {
-        options.type = type;
-      }
-      if (this.moduleOptions.managerApiProjection) {
-        options.project = this.moduleOptions.managerApiProjection;
-      }
-
       const {
         currentPage, pages, results, choices
-      } = await this.request(options);
+      } = await this.request({
+        ...(
+          this.moduleOptions.managerApiProjection &&
+          { project: this.moduleOptions.managerApiProjection }
+        ),
+        page: this.currentPage
+      });
 
       this.currentPage = currentPage;
       this.totalPages = pages;
