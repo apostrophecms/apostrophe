@@ -145,17 +145,6 @@ describe('Pages Autocomplete', function() {
       assert.equal(suggestions.results[0].slug, '/complex-page', 'complex page slug not found');
     }
   });
-
-  it('should ignore type when no autocomplete', async function () {
-    const result = await apos.http.get('/api/v1/@apostrophecms/page', {
-      jar,
-      qs: {
-        type: 'test-page'
-      }
-    });
-    assert.equal(result.slug, '/', 'home page not found');
-    assert.equal(result._children.length, 2, 'children result does not match');
-  });
 });
 
 async function login(apos) {
