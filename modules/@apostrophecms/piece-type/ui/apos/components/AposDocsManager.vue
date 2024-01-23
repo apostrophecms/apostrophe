@@ -218,8 +218,10 @@ export default {
     const DEBOUNCE_TIMEOUT = 500;
     this.onSearch = debounce(this.search, DEBOUNCE_TIMEOUT);
 
-    // FIXME: buggy filters
-    this.moduleOptions.filters.forEach(filter => {
+    // TODO: add filters in page-type modules to avoid
+    // adding the following default `[]` when browsing
+    // a specific page type in a relationship.
+    (this.moduleOptions.filters || []).forEach(filter => {
       this.filterValues[filter.name] = filter.def;
       if (!filter.choices) {
         this.queryExtras.choices = this.queryExtras.choices || [];
