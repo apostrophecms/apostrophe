@@ -175,6 +175,9 @@ module.exports = {
               .attachments(false)
               .perPage(manager.options.perPage);
 
+            // populates totalPages when perPage is present
+            await query.toCount();
+
             const docs = await query.toArray();
 
             return {

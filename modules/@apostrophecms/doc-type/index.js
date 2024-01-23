@@ -2626,7 +2626,6 @@ module.exports = {
                 const perPage = query.get('perPage');
                 const totalPages = Math.ceil(count / perPage);
 
-                console.log(totalPages);
                 query.set('totalPages', totalPages);
               }
 

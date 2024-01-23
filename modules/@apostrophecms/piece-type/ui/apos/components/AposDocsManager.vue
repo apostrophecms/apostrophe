@@ -337,11 +337,6 @@ export default {
         currentPage, pages, results, choices
       } = await this.request(options);
 
-      console.log('results', {
-        currentPage, pages, results, choices
-      });
-
-      // FIXME: undefined pages
       this.currentPage = currentPage;
       this.totalPages = pages;
       this.items = results;
