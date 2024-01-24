@@ -48,6 +48,12 @@ export default {
         return true;
       }
     },
+    canDeleteDraft: {
+      type: Boolean,
+      default() {
+        return true;
+      }
+    },
     showCopy: {
       type: Boolean,
       default() {
@@ -245,7 +251,10 @@ export default {
       if (!this.context._id) {
         return false;
       }
-      if (!this.canEdit) {
+      if (!this.context.lastPublishedAt && !this.canDeleteDraft && !this.context._delete) {
+        return false;
+      }
+      if (this.context.lastPublishedAt && (!this.context.modified || !this.context._edit)) {
         return false;
       }
       return (
@@ -262,12 +271,12 @@ export default {
     },
     canArchive() {
       return (
-        this.canEdit &&
+        this.context._delete &&
         this.context._id &&
         !this.moduleOptions.singleton &&
         !this.context.archived &&
         !this.context.parked &&
-        ((this.moduleOptions.canPublish && this.context.lastPublishedAt) || !this.manuallyPublished)
+        (Boolean(this.canPublish && this.context.lastPublishedAt) || !this.manuallyPublished)
       );
     },
     canUnpublish() {

@@ -1,9 +1,12 @@
 <template>
   <AposModal
-    class="apos-array-editor" :modal="modal"
+    class="apos-array-editor"
+    :modal="modal"
     :modal-title="modalTitle"
-    @inactive="modal.active = false" @show-modal="modal.showModal = true"
-    @esc="confirmAndCancel" @no-modal="$emit('safe-close')"
+    @inactive="modal.active = false"
+    @show-modal="modal.showModal = true"
+    @esc="confirmAndCancel"
+    @no-modal="emitSafeClose"
   >
     <template #secondaryControls>
       <AposButton

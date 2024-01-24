@@ -32,7 +32,7 @@
         :button="moreMenuButton"
       />
       <AposButton
-        v-else type="primary"
+        v-else-if="canCreate" type="primary"
         label="apostrophe:newPage" @click="create()"
       />
       <AposButton
@@ -81,6 +81,7 @@
             :icons="icons"
             v-model="checked"
             :options="treeOptions"
+            :module-options="moduleOptions"
             @update="update"
           />
         </template>
@@ -98,6 +99,7 @@ export default {
   // Keep it for linting
   emits: [ 'archive', 'search', 'safe-close', 'modal-result' ]
 };
+// TODO: check when child page is created and with what perm
 </script>
 
 <style lang="scss" scoped>

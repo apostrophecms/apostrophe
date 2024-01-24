@@ -5,6 +5,9 @@
     :uid="uid"
     :items="next"
     :display-options="displayOptions"
+    :modifiers="[
+      ...field.style === 'table' ? ['full-width'] : []
+    ]"
   >
     <template #additional>
       <AposMinMaxCount
@@ -42,6 +45,7 @@
             <th
               v-for="subfield in visibleSchema()"
               :key="subfield._id"
+              :style="subfield.columnStyle || {}"
             >
               {{ $t(subfield.label) }}
             </th>
@@ -76,6 +80,7 @@
                 <component
                   :is="field.style === 'table' ? 'td' : 'div'"
                   class="apos-input-array-inline-item-controls"
+                  :style="(field.style === 'table' && field.columnStyle) || {}"
                 >
                   <AposIndicator
                     v-if="field.draggable"

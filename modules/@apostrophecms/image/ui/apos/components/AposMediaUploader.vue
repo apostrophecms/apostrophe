@@ -141,9 +141,11 @@ export default {
         for (const file of files) {
           try {
             const img = await this.insertImage(file, emptyDoc);
-            imageIds.push(img._id);
+            if (img?._id) {
+              imageIds.push(img._id);
+            }
           } catch (e) {
-            const msg = e.body && e.body.message ? e.body.message : this.$t('Upload error');
+            const msg = e.body && e.body.message ? e.body.message : this.$t('apostrophe:uploadError');
             await apos.notify(msg, {
               type: 'danger',
               icon: 'alert-circle-icon',

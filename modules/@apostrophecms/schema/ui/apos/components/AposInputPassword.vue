@@ -15,7 +15,8 @@
           :required="field.required"
           :id="uid"
           :tabindex="tabindex"
-          @keydown.enter="$emit('return')"
+          :autocomplete="field.autocomplete"
+          @keydown.enter="emitReturn"
         >
       </div>
     </template>

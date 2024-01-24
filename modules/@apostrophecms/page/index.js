@@ -122,6 +122,9 @@ module.exports = {
       // The user must have some page editing privileges to use it. The 10 best
       // matches are returned as an object with a `results` property containing the
       // array of pages.
+      // If ?type=x is present, only pages of that type are returned. This query
+      // parameter is only used in conjunction with ?autocomplete=x. It will be
+      // ignored otherwise.
       //
       // If querying for draft pages, you may add ?published=1 to attach a
       // `_publishedDoc` property to each draft that also exists in a published form.
@@ -139,11 +142,22 @@ module.exports = {
             if (!self.apos.permission.can(req, 'view', '@apostrophecms/any-page-type')) {
               throw self.apos.error('forbidden');
             }
+
+            const type = self.apos.launder.string(req.query.type);
+            if (type.length && !self.apos.permission.can(req, 'view', type)) {
+              throw self.apos.error('forbidden');
+            }
+
+            const query = self.getRestQuery(req).permission(false).limit(10).relationships(false)
+              .areas(false);
+            if (type.length) {
+              query.type(type);
+            }
+
             return {
               // For consistency with the pieces REST API we
               // use a results property when returning a flat list
-              results: await self.getRestQuery(req).permission(false).limit(10).relationships(false)
-                .areas(false).toArray()
+              results: await query.toArray()
             };
           }
 
@@ -275,7 +289,7 @@ module.exports = {
           // If we're looking for a fresh page instance and aren't saving yet,
           // simply get a new page doc and return it
           const parentPage = await self.findForEditing(req, self.getIdCriteria(targetId))
-            .permission('edit', '@apostrophecms/any-page-type').toObject();
+            .permission('create', '@apostrophecms/any-page-type').toObject();
           const newChild = self.newChild(parentPage);
           newChild._previewable = true;
           return newChild;
@@ -285,7 +299,7 @@ module.exports = {
           const targetPage = await self
             .findForEditing(req, self.getIdCriteria(targetId))
             .ancestors(true)
-            .permission('edit')
+            .permission('create')
             .toObject();
 
           if (!targetPage) {
@@ -311,7 +325,10 @@ module.exports = {
             copyingId
           });
           await self.insert(req, targetPage._id, position, page, { lock: false });
-          return self.findOneForEditing(req, { _id: page._id }, { attachments: true });
+          return self.findOneForEditing(req, { _id: page._id }, {
+            attachments: true,
+            permission: false
+          });
         });
       },
       // Consider using `PATCH` instead unless you're sure you have 100% up to date
@@ -391,6 +408,10 @@ module.exports = {
         const page = await self.findOneForEditing(req, {
           _id
         });
+
+        if (!page) {
+          throw self.apos.error('notfound');
+        }
         return self.delete(req, page);
       },
       // Patch some properties of the page.
@@ -828,7 +849,8 @@ database.`);
         }
         browserOptions.name = self.__meta.name;
         browserOptions.canPublish = self.apos.permission.can(req, 'publish', '@apostrophecms/any-page-type');
-        browserOptions.quickCreate = self.options.quickCreate && self.apos.permission.can(req, 'edit', '@apostrophecms/any-page-type', 'draft');
+        browserOptions.canCreate = self.apos.permission.can(req, 'create', '@apostrophecms/any-page-type', 'draft');
+        browserOptions.quickCreate = self.options.quickCreate && self.apos.permission.can(req, 'create', '@apostrophecms/any-page-type', 'draft');
         browserOptions.localized = true;
         browserOptions.autopublish = false;
         // A list of all valid page types, including parked pages etc. This is
@@ -840,6 +862,8 @@ database.`);
           Object.keys(self.apos.i18n.locales).length > 1 &&
           Object.values(self.apos.i18n.locales).some(locale => locale._edit);
         browserOptions.utilityOperations = self.utilityOperations;
+        browserOptions.canDeleteDraft = self.apos.permission.can(req, 'delete', '@apostrophecms/any-page-type', 'draft');
+
         return browserOptions;
       },
       // Returns a query that finds pages the current user can edit
@@ -882,7 +906,7 @@ database.`);
           if ((position === 'before') || (position === 'after')) {
             parent = await self.findForEditing(req, {
               path: self.getParentPath(target)
-            }).children({
+            }, { permission: 'create' }).children({
               depth: 1,
               archived: null,
               orphan: null,
@@ -898,7 +922,7 @@ database.`);
             throw self.apos.error('notfound');
           }
           if (options.permissions !== false) {
-            if (!parent._edit) {
+            if (!parent._create) {
               throw self.apos.error('forbidden');
             }
           }
@@ -1095,7 +1119,7 @@ database.`);
             // Move outside tree
             throw self.apos.error('forbidden');
           }
-          if ((oldParent._id !== parent._id) && (parent.type !== '@apostrophecms/archive-page') && (!parent._edit)) {
+          if ((oldParent._id !== parent._id) && (parent.type !== '@apostrophecms/archive-page') && (!parent._create)) {
             throw self.apos.error('forbidden');
           }
           if (moved.lastPublishedAt && !parent.lastPublishedAt) {

@@ -19,6 +19,7 @@
         :current="docFields.data"
         :published="published"
         :show-edit="false"
+        :can-delete-draft="moduleOptions.canDeleteDraft"
         @close="close"
       />
       <AposButton
@@ -195,8 +196,13 @@ export default {
 
       return this.moduleOptions.canPublish;
     },
+    canCreate() {
+      return this.original &&
+        !this.original._id &&
+        this.moduleOptions.canCreate;
+    },
     saveDisabled() {
-      if (!this.canEdit) {
+      if (!this.canCreate && !this.canEdit) {
         return true;
       }
       if (this.restoreOnly) {
@@ -350,8 +356,8 @@ export default {
       type: this.$t(this.moduleOptions.label)
     };
     if (this.docId) {
-      this.evaluateConditions();
       await this.loadDoc();
+      this.evaluateConditions();
       try {
         if (this.manuallyPublished) {
           this.published = await apos.http.get(this.getOnePath, {

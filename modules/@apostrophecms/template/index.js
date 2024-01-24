@@ -890,20 +890,24 @@ module.exports = {
         self.insertions[key].push(componentName);
       },
 
-      async annotateDataForExternalFront(req, template, data) {
-        const docs = self.getDocsForExternalFront(req, template, data);
+      async annotateDataForExternalFront(req, template, data, moduleName) {
+        const docs = self.getDocsForExternalFront(req, template, data, moduleName);
         for (const doc of docs) {
           self.annotateDocForExternalFront(doc);
         }
         data.aposBodyData = await self.getBodyData(req);
+        // Already contains module name too
+        data.template = template;
+        // For simple cases (not piece pages and the like)
+        data.module = moduleName;
         return data;
       },
 
-      pruneDataForExternalFront(req, data, template) {
+      pruneDataForExternalFront(req, template, data, moduleName) {
         return data;
       },
 
-      getDocsForExternalFront(req, template, data) {
+      getDocsForExternalFront(req, template, data, moduleName) {
         return [ data.home, ...(data.page?._ancestors || []), ...(data.page?._children || []), data.page, data.piece, ...(data.pieces || []) ].filter(doc => !!doc);
       },
 
