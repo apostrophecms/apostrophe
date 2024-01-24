@@ -90,7 +90,6 @@ export default {
     uponSubmitRequirements: {
       deep: true,
       async handler(newVal) {
-        console.log(newVal);
         if (this.phase !== 'uponSubmit') {
           return;
         }
