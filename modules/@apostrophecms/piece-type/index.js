@@ -850,7 +850,10 @@ module.exports = {
         return self.findOneForEditing(
           req,
           { _id: piece._id },
-          { attachments: true }
+          {
+            attachments: true,
+            permission: 'create'
+          }
         );
       },
 

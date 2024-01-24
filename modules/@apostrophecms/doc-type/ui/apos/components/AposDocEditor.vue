@@ -19,6 +19,7 @@
         :current="docFields.data"
         :published="published"
         :show-edit="false"
+        :can-delete-draft="moduleOptions.canDeleteDraft"
         @close="close"
       />
       <AposButton

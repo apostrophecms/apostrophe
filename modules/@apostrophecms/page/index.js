@@ -1119,7 +1119,7 @@ database.`);
             // Move outside tree
             throw self.apos.error('forbidden');
           }
-          if ((oldParent._id !== parent._id) && (parent.type !== '@apostrophecms/archive-page') && (!parent._edit)) {
+          if ((oldParent._id !== parent._id) && (parent.type !== '@apostrophecms/archive-page') && (!parent._create)) {
             throw self.apos.error('forbidden');
           }
           if (moved.lastPublishedAt && !parent.lastPublishedAt) {

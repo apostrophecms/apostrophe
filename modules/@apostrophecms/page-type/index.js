@@ -352,6 +352,11 @@ module.exports = {
       // Called for you when a page is published for the first time.
       // You don't need to invoke this.
       async insertPublishedOf(req, doc, published, options = {}) {
+        // Check publish permission up front because we won't check it
+        // in insert
+        if (!self.apos.permission.can(req, 'publish', doc)) {
+          throw self.apos.error('forbidden');
+        }
         const _req = req.clone({
           mode: 'published'
         });
@@ -363,7 +368,14 @@ module.exports = {
             lastTargetId.replace(':draft', ':published'),
             lastPosition,
             published,
-            options);
+            {
+              ...options,
+              // We already confirmed we are allowed to
+              // publish the draft, bypass checks that
+              // can get hung up on "create" permission
+              permissions: false
+            }
+          );
         } else {
           // Insert the home page
           Object.assign(published, {

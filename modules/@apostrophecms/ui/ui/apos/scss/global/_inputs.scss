@@ -238,8 +238,8 @@
   }
 
   .apos-input--choice[disabled] + & {
-    border-color: $input-color-disabled;
-    background-color: $input-color-disabled;
+    border-color: var(--a-base-7);
+    background-color: var(--a-base-7);
   }
   .apos-input--choice:checked,
   .apos-input--choice[checked] {
