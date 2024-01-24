@@ -19,7 +19,9 @@ module.exports = {
     relationshipSuggestionIcon: 'text-box-icon',
     relationshipSuggestionFields: [ 'slug' ]
   },
-  cascades: [ 'fields' ],
+  // Adding permissions for advanced permissions to allow modules to use it without
+  // being forced to check if the module is used with advanced permissions or not.
+  cascades: [ 'fields', 'permissions' ],
   fields(self) {
     return {
       add: {
