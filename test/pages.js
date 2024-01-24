@@ -3,20 +3,14 @@ const assert = require('assert');
 const _ = require('lodash');
 
 let apos;
+let home;
 let homeId;
 const apiKey = 'this is a test api key';
 
 describe('Pages', function() {
-
   this.timeout(t.timeout);
 
-  after(function() {
-    return t.destroy(apos);
-  });
-
-  // EXISTENCE
-
-  it('should be a property of the apos object', async function() {
+  before(async function() {
     apos = await t.create({
       root: module,
       modules: {
@@ -54,54 +48,9 @@ describe('Pages', function() {
       }
     });
 
-    assert(apos.page.__meta.name === '@apostrophecms/page');
-  });
-
-  // SETUP
-
-  it('should make sure all of the expected indexes are configured', async function() {
-    const expectedIndexes = [ 'path' ];
-    const actualIndexes = [];
-
-    const info = await apos.doc.db.indexInformation();
-
-    // Extract the actual index info we care about
-    _.each(info, function(index) {
-      actualIndexes.push(index[0][0]);
-    });
-
-    // Now make sure everything in expectedIndexes is in actualIndexes
-    _.each(expectedIndexes, function(index) {
-      assert(_.includes(actualIndexes, index));
-    });
-  });
-
-  it('parked homepage exists', async function() {
-    const home = await apos.page.find(apos.task.getAnonReq(), { level: 0 }).toObject();
-
-    assert(home);
+    home = await apos.page.find(apos.task.getAnonReq(), { level: 0 }).toObject();
     homeId = home._id;
-    assert(home.slug === '/');
-    assert(`${home.path}:en:published` === home._id);
-    assert(home.type === '@apostrophecms/home-page');
-    assert(home.parked);
-    assert(home.visibility === 'public');
-  });
 
-  it('parked archive page exists', async function() {
-    const archive = await apos.page.find(apos.task.getReq(), { slug: '/archive' }).archived(null).toObject();
-    assert(archive);
-    assert(archive.slug === '/archive');
-    assert(archive.path === `${homeId.replace(':en:published', '')}/${archive._id.replace(':en:published', '')}`);
-    assert(archive.type === '@apostrophecms/archive-page');
-    assert(archive.parked);
-    // Verify that clonePermanent did its
-    // job and removed properties not meant
-    // to be stored in mongodb
-    assert(!archive._children);
-  });
-
-  it('should be able to use db to insert documents', async function() {
     const testItems = [
       {
         _id: 'parent:en:published',
@@ -184,6 +133,57 @@ describe('Pages', function() {
 
     assert(items.result.ok === 1);
     assert(items.insertedCount === 6);
+  });
+
+  after(function() {
+    return t.destroy(apos);
+  });
+
+  // EXISTENCE
+
+  it('should be a property of the apos object', async function() {
+    assert(apos.page.__meta.name === '@apostrophecms/page');
+  });
+
+  // SETUP
+
+  it('should make sure all of the expected indexes are configured', async function() {
+    const expectedIndexes = [ 'path' ];
+    const actualIndexes = [];
+
+    const info = await apos.doc.db.indexInformation();
+
+    // Extract the actual index info we care about
+    _.each(info, function(index) {
+      actualIndexes.push(index[0][0]);
+    });
+
+    // Now make sure everything in expectedIndexes is in actualIndexes
+    _.each(expectedIndexes, function(index) {
+      assert(_.includes(actualIndexes, index));
+    });
+  });
+
+  it('parked homepage exists', async function() {
+    assert(home);
+    assert(home.slug === '/');
+    assert(`${home.path}:en:published` === home._id);
+    assert(home.type === '@apostrophecms/home-page');
+    assert(home.parked);
+    assert(home.visibility === 'public');
+  });
+
+  it('parked archive page exists', async function() {
+    const archive = await apos.page.find(apos.task.getReq(), { slug: '/archive' }).archived(null).toObject();
+    assert(archive);
+    assert(archive.slug === '/archive');
+    assert(archive.path === `${homeId.replace(':en:published', '')}/${archive._id.replace(':en:published', '')}`);
+    assert(archive.type === '@apostrophecms/archive-page');
+    assert(archive.parked);
+    // Verify that clonePermanent did its
+    // job and removed properties not meant
+    // to be stored in mongodb
+    assert(!archive._children);
   });
 
   // FINDING
@@ -276,6 +276,55 @@ describe('Pages', function() {
     assert.strictEqual(page._ancestors[1]._children[0].path, `${homeId.replace(':en:published', '')}/parent/child`);
     // The second ancestor's child should have a path '/parent/sibling'
     assert.strictEqual(page._ancestors[1]._children[1].path, `${homeId.replace(':en:published', '')}/parent/sibling`);
+  });
+
+  it('should ignore type when no autocomplete', async function () {
+    const result = await apos.http.get('/api/v1/@apostrophecms/page', {
+      qs: {
+        type: 'test-page'
+      }
+    });
+
+    const expected = {
+      results: [
+        {
+          type: 'test-page',
+          slug: '/parent'
+        },
+        {
+          type: 'test-page',
+          slug: '/parent/child'
+        },
+        {
+          type: 'test-page',
+          slug: '/parent/child/grandchild'
+        },
+        {
+          type: 'test-page',
+          slug: '/parent/sibling'
+        },
+        {
+          type: 'test-page',
+          slug: '/parent/sibling/cousin'
+        },
+        {
+          type: 'test-page',
+          slug: '/another-parent'
+        }
+      ],
+      pages: 1,
+      currentPage: 1
+    };
+
+    const mappedResult = result.results.map(({ type, slug }) => ({
+      type,
+      slug
+    }));
+
+    assert.deepEqual({
+      ...result,
+      results: mappedResult
+    }, expected);
   });
 
   // INSERTING
