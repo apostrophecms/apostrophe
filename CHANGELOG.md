@@ -1,5 +1,11 @@
 # Changelog
 
+## UNRELEASED
+
+### Fixes
+
+* When deleting a draft document, we remove related reverse IDs of documents having a relation to the deleted one.
+
 ## 3.62.0 (2024-01-25)
 
 ### Adds
