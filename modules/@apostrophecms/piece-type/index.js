@@ -673,7 +673,10 @@ module.exports = {
         return self.insert(
           req.clone({ mode: 'published' }),
           published,
-          options
+          {
+            ...options,
+            permissions: false
+          }
         );
       },
       // Returns one editable piece matching the criteria, throws `notfound`
