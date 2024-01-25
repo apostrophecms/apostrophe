@@ -670,6 +670,11 @@ module.exports = {
       },
       // Similar to insertDraftOf, invoked on first publication.
       insertPublishedOf(req, doc, published, options) {
+        // Check publish permission up front because we won't check it
+        // in insert
+        if (!self.apos.permission.can(req, 'publish', doc)) {
+          throw self.apos.error('forbidden');
+        }
         return self.insert(
           req.clone({ mode: 'published' }),
           published,
