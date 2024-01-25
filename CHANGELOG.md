@@ -11,6 +11,7 @@
 * Adds support in `can` and `criteria` methods for `create` and `delete`.
 * Changes support for image upload from `canEdit` to `canCreate`.
 * The media manager is compatible with per-doc permissions granted via the `@apostrophecms-pro/advanced-permission` module.
+* In inline arrays, the trash icon has been replaced by a close icon.
 
 ### Fixes
 
