@@ -328,6 +328,15 @@ module.exports = {
           }
         }
       },
+      afterDelete: {
+        async deleteRelatedReverseId(req, doc) {
+          // When deleting a draft document, we remove related reverse IDs
+          // of documents having a relation to the deleted one
+          if (doc.aposMode === 'draft') {
+            await self.deleteRelatedReverseId(doc);
+          }
+        }
+      },
       afterRescue: {
         async revertDeduplication(req, doc) {
           const $set = await self.getRevertDeduplicationSet(req, doc);
@@ -371,18 +380,21 @@ module.exports = {
 
   methods(self) {
     return {
-      async updateCacheField(req, doc) {
-        const relatedDocsIds = self.getRelatedDocsIds(req, doc);
-
-        // - Remove current doc reference from docs that include it
-        // - Update these docs' cache field
-        await self.apos.doc.db.updateMany({
+      async deleteRelatedReverseId(doc) {
+        return self.apos.doc.db.updateMany({
           relatedReverseIds: { $in: [ doc.aposDocId ] },
           aposLocale: { $in: [ doc.aposLocale, null ] }
         }, {
           $pull: { relatedReverseIds: doc.aposDocId },
           $set: { cacheInvalidatedAt: doc.updatedAt }
         });
+      },
+      async updateCacheField(req, doc) {
+        const relatedDocsIds = self.getRelatedDocsIds(req, doc);
+
+        // - Remove current doc reference from docs that include it
+        // - Update these docs' cache field
+        await this.deleteRelatedReverseId(doc);
 
         if (relatedDocsIds.length) {
           // - Add current doc reference to related docs
