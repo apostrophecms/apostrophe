@@ -114,9 +114,9 @@
                 >
                   <AposButton
                     label="apostrophe:removeItem"
-                    icon="trash-can-outline-icon"
+                    icon="close-icon"
                     type="subtle"
-                    :modifiers="['inline', 'danger', 'no-motion']"
+                    :modifiers="['inline','no-motion']"
                     :icon-only="true"
                     @click="remove(item._id)"
                   />
