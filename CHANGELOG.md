@@ -19,6 +19,7 @@
 * A user who has permission to `publish` a particular page should always be allowed to insert it into the
 published version of the site even if they could not otherwise insert a child of the published
 parent.
+* Display the "Browse" button in a relationship inside an inline array.
 
 ## 3.61.1 (2023-01-08)
 
