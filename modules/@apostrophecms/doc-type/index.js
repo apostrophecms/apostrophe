@@ -380,8 +380,8 @@ module.exports = {
 
   methods(self) {
     return {
-      async deleteRelatedReverseId(doc, del = false) {
-        const locales = doc.aposLocale && del ? [
+      async deleteRelatedReverseId(doc, deleting = false) {
+        const locales = doc.aposLocale && deleting ? [
           doc.aposLocale.replace(':draft', ':published'),
           doc.aposLocale.replace(':published', ':draft')
         ] : [ doc.aposLocale ];
