@@ -1,9 +1,11 @@
 const t = require('../test-lib/test.js');
 const assert = require('assert');
-let apos;
-const articles = []; const categories = [];
 
 describe('change-doc-ids', function() {
+
+  let apos;
+  const articles = [];
+  const categories = [];
 
   this.timeout(t.timeout);
 
@@ -102,33 +104,33 @@ describe('change-doc-ids', function() {
     await sanityCheck(newPageId, newCategoryId);
   });
 
+  async function sanityCheck(newPageId, newCategoryId) {
+    const pages = await apos.page.find(apos.task.getReq(), {}).children(true).toArray();
+    const test = pages.find(page => page.slug === '/test');
+    assert(test);
+    assert(test._children[0]);
+    assert(!test._children[1]);
+    assert.strictEqual(test._children[0].slug, '/test/child');
+    if (newPageId) {
+      assert.strictEqual(test._id, newPageId);
+      const newPageDocId = newPageId.replace(/:.+$/, '');
+      assert.strictEqual(test.aposDocId, newPageDocId);
+      assert(test.path.includes(newPageDocId));
+      assert(test._children[0].path.includes(newPageDocId));
+    }
+    const articles = await apos.article.find(apos.task.getReq(), {}).sort({ slug: 1 }).toArray();
+    assert.strictEqual(articles[0].title, 'Article 0');
+    assert(articles[0]._categories);
+    assert.strictEqual(articles[0]._categories.length, 2);
+    assert(articles[0]._categories.find(category => category.slug === 'category-0'));
+    assert(articles[0]._categories.find(category => category.slug === 'category-1'));
+    if (newCategoryId) {
+      assert.strictEqual(articles[0]._categories[0]._id, newCategoryId);
+      const newCategory = articles[0]._categories.find(category => category._id === newCategoryId);
+      assert(newCategory);
+      assert.strictEqual(newCategory._id, newCategoryId);
+      assert.strictEqual(newCategory.aposDocId, newCategoryId.replace(/:.+$/, ''));
+    }
+  }
+  
 });
-
-async function sanityCheck(newPageId, newCategoryId) {
-  const pages = await apos.page.find(apos.task.getReq(), {}).children(true).toArray();
-  const test = pages.find(page => page.slug === '/test');
-  assert(test);
-  assert(test._children[0]);
-  assert(!test._children[1]);
-  assert.strictEqual(test._children[0].slug, '/test/child');
-  if (newPageId) {
-    assert.strictEqual(test._id, newPageId);
-    const newPageDocId = newPageId.replace(/:.+$/, '');
-    assert.strictEqual(test.aposDocId, newPageDocId);
-    assert(test.path.includes(newPageDocId));
-    assert(test._children[0].path.includes(newPageDocId));
-  }
-  const articles = await apos.article.find(apos.task.getReq(), {}).sort({ slug: 1 }).toArray();
-  assert.strictEqual(articles[0].title, 'Article 0');
-  assert(articles[0]._categories);
-  assert.strictEqual(articles[0]._categories.length, 2);
-  assert(articles[0]._categories.find(category => category.slug === 'category-0'));
-  assert(articles[0]._categories.find(category => category.slug === 'category-1'));
-  if (newCategoryId) {
-    assert.strictEqual(articles[0]._categories[0]._id, newCategoryId);
-    const newCategory = articles[0]._categories.find(category => category._id === newCategoryId);
-    assert(newCategory);
-    assert.strictEqual(newCategory._id, newCategoryId);
-    assert.strictEqual(newCategory.aposDocId, newCategoryId.replace(/:.+$/, ''));
-  }
-}

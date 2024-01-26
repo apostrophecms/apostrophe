@@ -2,9 +2,9 @@ const t = require('../test-lib/test.js');
 const assert = require('assert');
 const _ = require('lodash');
 
-let apos;
-
 describe('Docs', function() {
+
+  let apos;
 
   this.timeout(t.timeout);
 

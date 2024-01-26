@@ -1,8 +1,9 @@
 const t = require('../test-lib/test.js');
 const assert = require('assert');
-let apos;
 
 describe('Soft Redirects', function() {
+
+  let apos;
 
   this.timeout(t.timeout);
 

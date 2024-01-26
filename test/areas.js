@@ -1,8 +1,8 @@
 const t = require('../test-lib/test.js');
 const assert = require('assert');
-let apos;
 
 describe('Areas', function() {
+  let apos;
 
   this.timeout(t.timeout);
 

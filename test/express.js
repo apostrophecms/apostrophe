@@ -1,9 +1,10 @@
 const t = require('../test-lib/test.js');
 const assert = require('assert');
-let jar;
-let apos;
 
 describe('Express', function() {
+
+  let jar;
+  let apos;
 
   this.timeout(t.timeout);
 

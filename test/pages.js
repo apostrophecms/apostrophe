@@ -2,11 +2,11 @@ const t = require('../test-lib/test.js');
 const assert = require('assert');
 const _ = require('lodash');
 
-let apos;
-let homeId;
-const apiKey = 'this is a test api key';
-
 describe('Pages', function() {
+
+  let apos;
+  let homeId;
+  const apiKey = 'this is a test api key';
 
   this.timeout(t.timeout);
 

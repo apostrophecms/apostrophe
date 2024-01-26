@@ -3,9 +3,9 @@ const assert = require('assert');
 const fs = require('fs-extra');
 const path = require('path');
 
-let apos;
-
 describe('Attachment', function() {
+
+  let apos;
 
   after(async function() {
     await wipeIt();
