@@ -1057,17 +1057,17 @@ module.exports = {
           ]
         };
         doc.advisoryLock = {
-          username: req.user && req.user.username,
-          title: req.user && req.user.title,
+          username: (req.user && req.user.username) || '',
+          title: (req.user && req.user.title) || '',
           _id: tabId,
           updatedAt: new Date()
         };
-        const result = await self.db.updateOne(criteria, {
+        const { result } = await self.db.updateOne(criteria, {
           $set: {
             advisoryLock: doc.advisoryLock
           }
         });
-        if (!result.result.nModified) {
+        if (!result.nModified) {
           const info = await self.db.findOne({
             _id
           }, {
