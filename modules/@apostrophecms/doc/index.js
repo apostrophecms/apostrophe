@@ -1056,8 +1056,8 @@ module.exports = {
           ]
         };
         doc.advisoryLock = {
-          username: (req.user && req.user.username) || '',
-          title: (req.user && req.user.title) || '',
+          username: req.user && req.user.username,
+          title: req.user && req.user.title,
           _id: tabId,
           updatedAt: new Date()
         };
