@@ -717,7 +717,6 @@ module.exports = {
       // This operation ignores the locale and mode of `req`
       // in favor of the actual document's locale and mode.
       async delete(req, doc, options = {}) {
-        options = options || {};
         const m = self.getManager(doc.type);
         await m.emit('beforeDelete', req, doc, options);
         await self.deleteBody(req, doc, options);
