@@ -1,10 +1,6 @@
 const t = require('../test-lib/test.js');
 const assert = require('assert');
 
-let apos;
-let homeId;
-let jar;
-
 const areaConfig = {
   '@apostrophecms/image': {},
   '@apostrophecms/video': {},
@@ -37,6 +33,10 @@ const areaConfig = {
 };
 
 describe('Pages REST', function() {
+
+  let apos;
+  let homeId;
+  let jar;
 
   this.timeout(t.timeout);
 

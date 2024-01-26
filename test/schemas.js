@@ -2,242 +2,242 @@ const assert = require('assert').strict;
 const _ = require('lodash');
 const t = require('../test-lib/test.js');
 
-let apos;
+describe('Schemas', function() {
 
-const simpleFields = [
-  {
-    name: 'name',
-    label: 'Name',
-    type: 'string'
-  },
-  {
-    name: 'address',
-    label: 'Address',
-    type: 'string',
-    textarea: true
-  },
-  {
-    name: 'variety',
-    label: 'Variety',
-    type: 'select',
-    choices: [
-      {
-        value: 'candy',
-        label: 'Candy'
-      },
-      {
-        value: 'cheese',
-        label: 'Cheese'
-      }
-    ],
-    def: 'candy'
-  },
-  {
-    name: 'slug',
-    label: 'Slug',
-    type: 'slug'
-  }
-];
+  let apos;
 
-const realWorldCase = {
-  addFields: [
+  const simpleFields = [
     {
+      name: 'name',
+      label: 'Name',
+      type: 'string'
+    },
+    {
+      name: 'address',
+      label: 'Address',
       type: 'string',
-      name: 'title',
-      label: 'Title',
-      required: true,
-      sortify: true
+      textarea: true
     },
     {
-      type: 'slug',
-      name: 'slug',
-      label: 'Slug',
-      required: true
-    },
-    {
-      type: 'boolean',
-      name: 'archive',
-      label: 'apostrophe:archived',
-      contextual: true,
-      def: false
-    },
-    {
-      type: 'slug',
-      name: 'slug',
-      label: 'Old URL',
-      required: true,
-      page: true
-    },
-    {
-      name: 'title',
-      label: 'Description',
-      type: 'string',
-      required: true
-    },
-    {
-      name: 'urlType',
-      label: 'Link To',
+      name: 'variety',
+      label: 'Variety',
       type: 'select',
       choices: [
         {
-          label: 'Internal Page',
-          value: 'internal'
+          value: 'candy',
+          label: 'Candy'
         },
         {
-          label: 'External URL',
-          value: 'external'
+          value: 'cheese',
+          label: 'Cheese'
         }
-      ]
-    },
-    {
-      name: 'externalUrl',
-      label: 'URL',
-      type: 'url',
-      if: {
-        urlType: 'external'
-      }
-    },
-    {
-      name: '_newPage',
-      type: 'relationship',
-      limit: 1,
-      withType: '@apostrophecms/any-page-type',
-      label: 'Page Title',
-      idsStorage: 'pageId',
-      if: {
-        urlType: 'internal'
-      }
-    }
-  ],
-  arrangeFields: [
-    {
-      name: 'basics',
-      label: 'Basics',
-      fields: [
-        'title',
-        'slug'
-      ]
-    },
-    {
-      name: 'permissions',
-      label: 'Permissions',
-      fields: [
-        'visibility'
       ],
-      last: true
+      def: 'candy'
     },
     {
-      name: 'otherFields',
-      label: 'Other fields',
-      fields: [
-        'slug',
-        'urlType',
-        '_newPage',
-        'title',
-        'externalUrl'
-      ]
+      name: 'slug',
+      label: 'Slug',
+      type: 'slug'
     }
-  ]
-};
+  ];
 
-const pageSlug = [
-  {
-    type: 'slug',
-    name: 'slug',
-    page: true
-  }
-];
+  const realWorldCase = {
+    addFields: [
+      {
+        type: 'string',
+        name: 'title',
+        label: 'Title',
+        required: true,
+        sortify: true
+      },
+      {
+        type: 'slug',
+        name: 'slug',
+        label: 'Slug',
+        required: true
+      },
+      {
+        type: 'boolean',
+        name: 'archive',
+        label: 'apostrophe:archived',
+        contextual: true,
+        def: false
+      },
+      {
+        type: 'slug',
+        name: 'slug',
+        label: 'Old URL',
+        required: true,
+        page: true
+      },
+      {
+        name: 'title',
+        label: 'Description',
+        type: 'string',
+        required: true
+      },
+      {
+        name: 'urlType',
+        label: 'Link To',
+        type: 'select',
+        choices: [
+          {
+            label: 'Internal Page',
+            value: 'internal'
+          },
+          {
+            label: 'External URL',
+            value: 'external'
+          }
+        ]
+      },
+      {
+        name: 'externalUrl',
+        label: 'URL',
+        type: 'url',
+        if: {
+          urlType: 'external'
+        }
+      },
+      {
+        name: '_newPage',
+        type: 'relationship',
+        limit: 1,
+        withType: '@apostrophecms/any-page-type',
+        label: 'Page Title',
+        idsStorage: 'pageId',
+        if: {
+          urlType: 'internal'
+        }
+      }
+    ],
+    arrangeFields: [
+      {
+        name: 'basics',
+        label: 'Basics',
+        fields: [
+          'title',
+          'slug'
+        ]
+      },
+      {
+        name: 'permissions',
+        label: 'Permissions',
+        fields: [
+          'visibility'
+        ],
+        last: true
+      },
+      {
+        name: 'otherFields',
+        label: 'Other fields',
+        fields: [
+          'slug',
+          'urlType',
+          '_newPage',
+          'title',
+          'externalUrl'
+        ]
+      }
+    ]
+  };
 
-const regularSlug = [
-  {
-    type: 'slug',
-    name: 'slug'
-  }
-];
-
-const hasArea = {
-  addFields: [
+  const pageSlug = [
     {
-      type: 'area',
-      name: 'body',
-      label: 'Body',
-      options: {
-        widgets: {
-          '@apostrophecms/rich-text': {
-            toolbar: [ 'styles', 'bold' ],
-            styles: [
-              {
-                tag: 'p',
-                label: 'Paragraph'
-              },
-              {
-                tag: 'h4',
-                label: 'Header 4'
+      type: 'slug',
+      name: 'slug',
+      page: true
+    }
+  ];
+
+  const regularSlug = [
+    {
+      type: 'slug',
+      name: 'slug'
+    }
+  ];
+
+  const hasArea = {
+    addFields: [
+      {
+        type: 'area',
+        name: 'body',
+        label: 'Body',
+        options: {
+          widgets: {
+            '@apostrophecms/rich-text': {
+              toolbar: [ 'styles', 'bold' ],
+              styles: [
+                {
+                  tag: 'p',
+                  label: 'Paragraph'
+                },
+                {
+                  tag: 'h4',
+                  label: 'Header 4'
+                }
+              ]
+            }
+          }
+        }
+      }
+    ]
+  };
+
+  const hasGroupedArea = {
+    addFields: [
+      {
+        type: 'area',
+        name: 'body',
+        label: 'Body',
+        options: {
+          expanded: true,
+          groups: {
+            content: {
+              label: 'Content Widgets',
+              columns: 2,
+              widgets: {
+                '@apostrophecms/rich-text': {
+                  toolbar: [ 'bold' ]
+                },
+                '@apostrophecms/form': {}
               }
-            ]
-          }
-        }
-      }
-    }
-  ]
-};
-
-const hasGroupedArea = {
-  addFields: [
-    {
-      type: 'area',
-      name: 'body',
-      label: 'Body',
-      options: {
-        expanded: true,
-        groups: {
-          content: {
-            label: 'Content Widgets',
-            columns: 2,
-            widgets: {
-              '@apostrophecms/rich-text': {
-                toolbar: [ 'bold' ]
-              },
-              '@apostrophecms/form': {}
-            }
-          },
-          media: {
-            label: 'Media',
-            columns: 3,
-            widgets: {
-              '@apostrophecms/image': {},
-              '@apostrophecms/video': {}
-            }
-          },
-          layout: {
-            label: 'Layout Widgets',
-            columns: 4,
-            widgets: {
-              'two-column': {}
+            },
+            media: {
+              label: 'Media',
+              columns: 3,
+              widgets: {
+                '@apostrophecms/image': {},
+                '@apostrophecms/video': {}
+              }
+            },
+            layout: {
+              label: 'Layout Widgets',
+              columns: 4,
+              widgets: {
+                'two-column': {}
+              }
             }
           }
         }
       }
-    }
-  ]
-};
+    ]
+  };
 
-const hasAreaWithoutWidgets = {
-  addFields: [
-    {
-      type: 'area',
-      name: 'body',
-      label: 'Body',
-      options: {
-        widgets: {}
+  const hasAreaWithoutWidgets = {
+    addFields: [
+      {
+        type: 'area',
+        name: 'body',
+        label: 'Body',
+        options: {
+          widgets: {}
+        }
       }
-    }
-  ]
-};
+    ]
+  };
 
-const warnMessages = [];
-
-describe('Schemas', function() {
+  const warnMessages = [];
 
   this.timeout(t.timeout);
 
@@ -4292,22 +4292,21 @@ describe('Schemas', function() {
       await testSchemaError(schema, {}, 'age', 'required');
     });
   });
-});
-
-async function testSchemaError(schema, input, path, name) {
-  const req = apos.task.getReq();
-  const result = {};
-  let tooFar = false;
-  try {
-    await apos.schema.convert(req, schema, input, result);
-    tooFar = true;
-    assert(false);
-  } catch (e) {
-    if (tooFar) {
-      throw e;
+  async function testSchemaError(schema, input, path, name) {
+    const req = apos.task.getReq();
+    const result = {};
+    let tooFar = false;
+    try {
+      await apos.schema.convert(req, schema, input, result);
+      tooFar = true;
+      assert(false);
+    } catch (e) {
+      if (tooFar) {
+        throw e;
+      }
+      assert(e.length === 1);
+      assert(e[0].path === path);
+      assert(e[0].name === name);
     }
-    assert(e.length === 1);
-    assert(e[0].path === path);
-    assert(e[0].name === name);
   }
-}
+});

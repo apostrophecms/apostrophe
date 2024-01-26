@@ -3,9 +3,9 @@ const assert = require('assert');
 const cheerio = require('cheerio');
 const Promise = require('bluebird');
 
-let apos;
-
 describe('Templates', function() {
+
+  let apos;
 
   this.timeout(t.timeout);
 
