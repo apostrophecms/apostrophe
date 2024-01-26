@@ -880,10 +880,14 @@ describe('Docs', function() {
     const req = apos.task.getReq();
     await insertPeople(apos);
     const doc = await apos.doc.db.findOne({ _id: 'carl:en:published' });
+    const wait = (time) => new Promise((resolve) => setTimeout(() => {
+      resolve();
+    }, time));
 
     try {
       await apos.doc.lock(req, doc, 'abc');
       const locked = await apos.doc.db.findOne({ _id: 'carl:en:published' });
+      await wait(500);
       await apos.doc.lock(req, locked, 'abc');
     } catch (e) {
       assert(!e);
