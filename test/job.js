@@ -190,17 +190,17 @@ describe('Job module', function() {
     }
     return s;
   }
-  
+
   async function insert (req, pieceModule, title, data, i) {
     const docData = Object.assign(pieceModule.newInstance(), {
       title: `${title} #${padInteger(i, 5)}`,
       slug: `${title}-${padInteger(i, 5)}`,
       ...data
     });
-  
+
     return pieceModule.insert(req, docData);
   };
-  
+
   async function pollJob(job, { jar }) {
     const {
       processed,
@@ -208,10 +208,10 @@ describe('Job module', function() {
       good,
       bad
     } = await apos.http.get(job.route, { jar });
-  
+
     if (processed < total) {
       Promise.delay(100);
-  
+
       return await pollJob(job, { jar });
     } else {
       return {
@@ -220,5 +220,5 @@ describe('Job module', function() {
         bad
       };
     }
-  }  
+  }
 });

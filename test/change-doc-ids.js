@@ -132,5 +132,5 @@ describe('change-doc-ids', function() {
       assert.strictEqual(newCategory.aposDocId, newCategoryId.replace(/:.+$/, ''));
     }
   }
-  
+
 });

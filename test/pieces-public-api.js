@@ -265,6 +265,6 @@ describe('Pieces Public API', function() {
     });
     assert(result);
     return result;
-  }  
+  }
 
 });

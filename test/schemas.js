@@ -4308,5 +4308,5 @@ describe('Schemas', function() {
       assert(e[0].path === path);
       assert(e[0].name === name);
     }
-  }  
+  }
 });
