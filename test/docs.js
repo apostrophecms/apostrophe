@@ -30,6 +30,22 @@ describe('Docs', function() {
             }
           }
         },
+        unlocalized: {
+          extend: '@apostrophecms/piece-type',
+          options: {
+            localized: false
+          },
+          fields: {
+            add: {
+              _friends: {
+                type: 'relationship',
+                max: 1,
+                withType: 'test-people',
+                label: 'Friends'
+              }
+            }
+          }
+        },
         '@apostrophecms/page': {
           options: {
             park: [],
@@ -298,7 +314,7 @@ describe('Docs', function() {
   /// ///
 
   it('should be able to insert a new object into the docs collection in the database', async function() {
-    const { response, one } = await insertOne(apos);
+    const response = await insertOne(apos);
     assert(response);
     assert(response._id);
     assert(response._id.endsWith(':en:published'));
@@ -310,7 +326,7 @@ describe('Docs', function() {
     });
     assert(draft);
     // Unique index allows for duplicates across locales
-    assert(one.slug === draft.slug);
+    assert(draft.slug === 'one');
     // Content properties coming through
     assert(draft.firstName === response.firstName);
     const cursor = apos.doc.find(apos.task.getReq(), {
@@ -365,22 +381,99 @@ describe('Docs', function() {
     apos.doc.db.deleteMany({ slug: { $in: [ 'paul', 'carl', 'larry' ] } });
   });
 
-  it('should remove the related reverse IDs when you delete an unlocalized or draft document', async function () {
+  it('should remove the related reverse IDs when you delete a draft document', async function () {
     const req = apos.task.getReq();
     await insertPeople(apos);
-    await insertOneWithRelated(apos);
+    const personWithRelatedPublished = await insertOneWithRelated(apos);
+    const personWithRelatedDraft = await apos.doc.find(apos.task.getReq({ mode: 'draft' }), { slug: 'paul' }).toObject();
+
+    await apos.doc.delete(req, personWithRelatedPublished);
+
     const larryDoc = await apos.doc.db.findOne({
       slug: 'larry',
       aposLocale: 'en:published'
     });
-
     const carlDoc = await apos.doc.db.findOne({
       slug: 'carl',
       aposLocale: 'en:published'
     });
 
-    console.log('larryDoc', larryDoc);
-    console.log('carlDoc', carlDoc);
+    await apos.doc.delete(req, personWithRelatedDraft);
+
+    const larryDocUpdated = await apos.doc.db.findOne({
+      slug: 'larry',
+      aposLocale: 'en:published'
+    });
+    const carlDocUpdated = await apos.doc.db.findOne({
+      slug: 'carl',
+      aposLocale: 'en:published'
+    });
+
+    const actual = {
+      larryHasRelatedBeforeDelete: larryDoc.relatedReverseIds.includes('paul'),
+      carlHasRelatedBeforeDelete: carlDoc.relatedReverseIds.includes('paul'),
+      larryHasRelatedAfterDelete: larryDocUpdated.relatedReverseIds.includes('paul'),
+      carlHasRelatedAfterDelete: carlDocUpdated.relatedReverseIds.includes('paul')
+    };
+
+    const expected = {
+      larryHasRelatedBeforeDelete: true,
+      carlHasRelatedBeforeDelete: true,
+      larryHasRelatedAfterDelete: false,
+      carlHasRelatedAfterDelete: false
+    };
+
+    assert.deepEqual(actual, expected);
+  });
+
+  it('should remove the related reverse IDs when you delete an unlocalized document', async function () {
+    const req = apos.task.getReq();
+    await insertPeople(apos);
+    const unlocalizedDoc = await apos.doc.insert(req, {
+      aposDocId: 'paul',
+      aposLocale: 'en:published',
+      slug: 'paul',
+      visibility: 'public',
+      type: 'unlocalized',
+      friendsIds: [ 'carl', 'larry' ],
+      _friends: [ { _id: 'carl:en:published' }, { _id: 'larry:en:published' } ]
+    });
+
+    const larryDoc = await apos.doc.db.findOne({
+      slug: 'larry',
+      aposLocale: 'en:published'
+    });
+    const carlDoc = await apos.doc.db.findOne({
+      aposDocId: 'carl',
+      aposLocale: 'en:published'
+    });
+
+    await apos.doc.delete(req, unlocalizedDoc);
+
+    const larryDocUpdated = await apos.doc.db.findOne({
+      slug: 'larry',
+      aposLocale: 'en:published'
+    });
+    const carlDocUpdated = await apos.doc.db.findOne({
+      slug: 'carl',
+      aposLocale: 'en:published'
+    });
+
+    const actual = {
+      larryHasRelatedBeforeDelete: larryDoc.relatedReverseIds.includes('paul'),
+      carlHasRelatedBeforeDelete: carlDoc.relatedReverseIds.includes('paul'),
+      larryHasRelatedAfterDelete: larryDocUpdated.relatedReverseIds.includes('paul'),
+      carlHasRelatedAfterDelete: carlDocUpdated.relatedReverseIds.includes('paul')
+    };
+
+    const expected = {
+      larryHasRelatedBeforeDelete: true,
+      carlHasRelatedBeforeDelete: true,
+      larryHasRelatedAfterDelete: false,
+      carlHasRelatedAfterDelete: false
+    };
+
+    assert.deepEqual(actual, expected);
   });
 
   it('should not allow you to call the insert method if you are not an admin', async function() {
@@ -510,7 +603,6 @@ describe('Docs', function() {
       slug: 'larry',
       aposLocale: 'en:published'
     });
-    console.log('carlDoc', carlDoc);
 
     assert(carlDoc.relatedReverseIds.length === 0);
     assert(carlDoc.cacheInvalidatedAt.getTime() === response.updatedAt.getTime());
@@ -1006,7 +1098,7 @@ async function insertPeople(apos) {
 }
 
 async function insertOne(apos) {
-  const one = {
+  return apos.doc.insert(apos.task.getReq(), {
     slug: 'one',
     visibility: 'public',
     type: 'test-people',
@@ -1014,14 +1106,7 @@ async function insertOne(apos) {
     lastName: 'Ferber',
     age: 15,
     alive: true
-  };
-
-  const response = await apos.doc.insert(apos.task.getReq(), one);
-
-  return {
-    response,
-    one
-  };
+  });
 }
 
 async function insertOneWithRelated(apos) {
