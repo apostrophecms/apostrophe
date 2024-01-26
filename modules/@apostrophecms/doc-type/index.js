@@ -381,10 +381,12 @@ module.exports = {
   methods(self) {
     return {
       async deleteRelatedReverseId(doc, deleting = false) {
-        const locales = doc.aposLocale && deleting ? [
-          doc.aposLocale.replace(':draft', ':published'),
-          doc.aposLocale.replace(':published', ':draft')
-        ] : [ doc.aposLocale ];
+        const locales = doc.aposLocale && deleting
+          ? [
+            doc.aposLocale.replace(':draft', ':published'),
+            doc.aposLocale.replace(':published', ':draft')
+          ]
+          : [ doc.aposLocale ];
         return self.apos.doc.db.updateMany({
           relatedReverseIds: { $in: [ doc.aposDocId ] },
           aposLocale: { $in: [ ...locales, null ] }
