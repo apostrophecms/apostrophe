@@ -333,7 +333,7 @@ module.exports = {
           // When deleting an unlocalized or draft document,
           // we remove related reverse IDs of documents having a relation to the deleted one
           if (!doc.aposMode || doc.aposMode === 'draft') {
-            await self.deleteRelatedReverseId(doc);
+            await self.deleteRelatedReverseId(doc, true);
           }
         }
       },
@@ -380,10 +380,14 @@ module.exports = {
 
   methods(self) {
     return {
-      async deleteRelatedReverseId(doc) {
+      async deleteRelatedReverseId(doc, del = false) {
+        const locales = doc.aposLocale && del ? [
+          doc.aposLocale.replace(':draft', ':published'),
+          doc.aposLocale.replace(':published', ':draft')
+        ] : [ doc.aposLocale ];
         return self.apos.doc.db.updateMany({
           relatedReverseIds: { $in: [ doc.aposDocId ] },
-          aposLocale: { $in: [ doc.aposLocale, null ] }
+          aposLocale: { $in: [ ...locales, null ] }
         }, {
           $pull: { relatedReverseIds: doc.aposDocId },
           $set: { cacheInvalidatedAt: doc.updatedAt }
