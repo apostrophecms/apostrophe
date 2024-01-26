@@ -330,9 +330,9 @@ module.exports = {
       },
       afterDelete: {
         async deleteRelatedReverseId(req, doc) {
-          // When deleting a draft document, we remove related reverse IDs
-          // of documents having a relation to the deleted one
-          if (doc.aposMode === 'draft') {
+          // When deleting an unlocalized or draft document,
+          // we remove related reverse IDs of documents having a relation to the deleted one
+          if (!doc.aposMode || doc.aposMode === 'draft') {
             await self.deleteRelatedReverseId(doc);
           }
         }
