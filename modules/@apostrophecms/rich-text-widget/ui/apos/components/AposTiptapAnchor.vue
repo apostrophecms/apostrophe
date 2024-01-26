@@ -109,7 +109,7 @@ export default {
       return this.editor.isActive('anchor') || this.active;
     },
     lastSelectionTime() {
-      return this.editor.view.lastSelectionTime;
+      return this.editor.view.input.lastSelectionTime;
     },
     hasSelection() {
       const { state } = this.editor;
@@ -131,7 +131,7 @@ export default {
         window.removeEventListener('keydown', this.keyboardHandler);
       }
     },
-    'editor.view.lastSelectionTime': {
+    'editor.view.input.lastSelectionTime': {
       handler(newVal, oldVal) {
         this.populateFields();
       }

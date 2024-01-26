@@ -35,7 +35,7 @@
         @click="saveRelationship"
       />
       <AposButton
-        v-else-if="moduleOptions.canEdit && moduleOptions.showCreate"
+        v-else-if="moduleOptions.canCreate && moduleOptions.showCreate"
         :label="{
           key: 'apostrophe:newDocType',
           type: $t(moduleOptions.label)

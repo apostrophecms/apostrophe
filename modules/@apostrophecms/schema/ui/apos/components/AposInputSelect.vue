@@ -13,6 +13,7 @@
         :classes="classes"
         :disabled="field.readOnly"
         :selected="modelValue.data"
+        :autocomplete="field.autocomplete"
         @change="change"
       />
     </template>

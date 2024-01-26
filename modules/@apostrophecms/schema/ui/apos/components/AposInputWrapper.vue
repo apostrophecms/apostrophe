@@ -3,7 +3,7 @@
     class="apos-field__wrapper"
     :class="{
       [`apos-field__wrapper--${field.type}`]: true,
-      'apos-field__wrapper--full-width': field.type === 'array' && field.style === 'table'
+      'apos-field__wrapper--full-width': modifiers.includes('full-width')
     }"
   >
     <component :is="wrapEl" :class="classList">
@@ -17,6 +17,12 @@
           <span v-if="field.required" class="apos-field__required">
             *
           </span>
+          <AposLabel
+            class="apos-field__tag"
+            v-if="field.tag"
+            :label="field.tag.value || field.tag"
+            :modifiers="[ `apos-is-${field.tag.type || 'success'}`, 'apos-is-filled' ]"
+          />
           <span
             v-if="(field.help || field.htmlHelp) && displayOptions.helpTooltip"
             class="apos-field__help-tooltip"
@@ -68,6 +74,7 @@ export default {
 .apos-field__wrapper {
   position: relative;
 }
+
 .apos-field__wrapper.apos-field__wrapper--full-width {
   max-width: 100%;
 }
@@ -117,6 +124,10 @@ export default {
 
 .apos-field__required {
   color: var(--a-danger);
+}
+
+.apos-field__tag {
+  margin-left: 5px;
 }
 
 .apos-field__help-tooltip {

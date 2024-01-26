@@ -498,10 +498,10 @@ module.exports = {
             }
             continue;
           } else if (val.$ne) {
-            // eslint-disable-next-line eqeqeq
-            if (val.$ne == destinationKey) {
+            if (val.$ne === destinationKey) {
               return false;
             }
+            continue;
           }
 
           // Handle external conditions:
@@ -526,23 +526,22 @@ module.exports = {
             continue;
           }
 
-          if (val.min && destinationKey < val.min) {
-            return false;
-          }
-          if (val.max && destinationKey > val.max) {
-            return false;
+          // test with Object.prototype for the case val.min === 0
+          if (Object.hasOwn(val, 'min') || Object.hasOwn(val, 'max')) {
+            if (destinationKey < val.min) {
+              return false;
+            }
+            if (destinationKey > val.max) {
+              return false;
+            }
+            continue;
           }
 
           if (conditionalFields?.[key] === false) {
             return false;
           }
 
-          if (typeof val === 'boolean' && !destinationKey) {
-            return false;
-          }
-
-          // eslint-disable-next-line eqeqeq
-          if ((typeof val === 'string' || typeof val === 'number') && destinationKey != val) {
+          if (destinationKey !== val) {
             return false;
           }
         }
@@ -1000,9 +999,10 @@ module.exports = {
       //
       // Currently `req` does not impact this, but that may change.
 
-      prepareForStorage(req, doc) {
+      prepareForStorage(req, doc, options = {}) {
         const can = (field) => {
-          return (!field.withType && !field.editPermission && !field.viewPermission) ||
+          return options.permissions === false ||
+            (!field.withType && !field.editPermission && !field.viewPermission) ||
             (field.withType && self.apos.permission.can(req, 'view', field.withType)) ||
             (field.editPermission && self.apos.permission.can(req, field.editPermission.action, field.editPermission.type)) ||
             (field.viewPermission && self.apos.permission.can(req, field.viewPermission.action, field.viewPermission.type)) ||

@@ -239,13 +239,22 @@ module.exports = {
           })) {
             return;
           }
+          const lastPublishedAt = doc.createdAt || new Date();
           const draft = {
             ...doc,
             _id: draftId,
             aposLocale: draftLocale,
-            lastPublishedAt: doc.createdAt || new Date()
+            lastPublishedAt
           };
-          return manager.insertDraftOf(req, doc, draft, options);
+          await manager.insertDraftOf(req, doc, draft, options);
+          // Published doc must know it is published, otherwise various bugs ensue
+          return self.apos.doc.db.updateOne({
+            _id: doc._id
+          }, {
+            $set: {
+              lastPublishedAt
+            }
+          });
         }
       },
       fixUniqueError: {
@@ -848,8 +857,8 @@ module.exports = {
       // Called by an `@apostrophecms/doc-type:insert` event handler to confirm that the user
       // has the appropriate permissions for the doc's type and content.
       testInsertPermissions(req, doc, options) {
-        if (!(options.permissions === false)) {
-          if (!self.apos.permission.can(req, 'edit', doc)) {
+        if (options.permissions !== false) {
+          if (!self.apos.permission.can(req, 'create', doc)) {
             throw self.apos.error('forbidden');
           }
         }

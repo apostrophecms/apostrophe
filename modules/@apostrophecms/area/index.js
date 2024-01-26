@@ -69,8 +69,31 @@ module.exports = {
           }
           async function render() {
             if (req.aposExternalFront) {
+              // Simulate an area and annotate it so that the
+              // widget's sub-areas wind up with the right metadata
+              const area = {
+                metaType: 'area',
+                items: [ widget ],
+                _docId
+              };
+              self.apos.template.annotateAreaForExternalFront(field, area);
+              // Annotate sub-areas. It's like annotating a doc, but not quite,
+              // so this logic is reproduced partially
+              self.apos.doc.walk(area, (o, k, v) => {
+                if (v && v.metaType === 'area') {
+                  const manager = self.apos.util.getManagerOf(o);
+                  if (!manager) {
+                    self.apos.util.warnDevOnce('noManagerForDocInExternalFront', `No manager for: ${o.metaType} ${o.type || ''}`);
+                    return;
+                  }
+                  const field = manager.schema.find(f => f.name === k);
+                  v._docId = _docId;
+                  self.apos.template.annotateAreaForExternalFront(field, v);
+                }
+              });
               const result = {
                 ...req.data,
+                options,
                 widget
               };
               return result;

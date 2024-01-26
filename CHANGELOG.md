@@ -1,5 +1,100 @@
 # Changelog
 
+## 3.62.0 (2024-01-25)
+
+### Adds
+
+* Adds support for `type` query parameter for page autocomplete. This allows to filter the results by page type. Example: `/api/v1/@apostrophecms/page?autocomplete=something&type=my-page-type`.
+* Add testing for the `float` schema field query builder.
+* Add testing for the `integer` schema field query builder.
+* Add support for link HTML attributes in the rich text widget via configurable fields `linkFields`, extendable on a project level (same as it's done for `fields`). Add an `htmlAttribute` property to the standard fields that map directly to an HTML attribute, except `href` (see special case below), and set it accordingly, even if it is the same as the field name. Setting `htmlAttribute: 'href'` is not allowed and will throw a schema validation exception (on application boot).
+* Adds support in `can` and `criteria` methods for `create` and `delete`.
+* Changes support for image upload from `canEdit` to `canCreate`.
+* The media manager is compatible with per-doc permissions granted via the `@apostrophecms-pro/advanced-permission` module.
+* In inline arrays, the trash icon has been replaced by a close icon.
+
+### Fixes
+
+* Fix the `launder` and `finalize` methods of the `float` schema field query builder.
+* Fix the `launder` and `finalize` methods of the `integer` schema field query builder.
+* A user who has permission to `publish` a particular page should always be allowed to insert it into the
+published version of the site even if they could not otherwise insert a child of the published
+parent.
+* Display the "Browse" button in a relationship inside an inline array.
+
+## 3.61.1 (2023-01-08)
+
+### Fixes
+
+* Pinned Vue dependency to 2.7.15. Released on December 24th, Vue 2.7.16 broke the rich text toolbar in Apostrophe.
+
+## 3.61.0 (2023-12-21)
+
+### Adds
+
+* Add a `validate` method to the `url` field type to allow the use of the `pattern` property.
+* Add `autocomplete` attribute to schema fields that implement it (cf. [HTML attribute: autocomplete](https://developer.mozilla.org/en-US/docs/Web/HTML/Attributes/autocomplete)).
+* Add the `delete` method to the `@apostrophecms/cache` module so we don't have to rely on direct MongoDB manipulation to remove a cache item.
+* Adds tag property to fields in order to show a tag next to the field title (used in advanced permission for the admin field). Adds new sensitive label color.
+* Pass on the module name and the full, namespaced template name to external front ends, e.g. Astro.
+Also make this information available to other related methods for future and project-level use.
+* Fixes the AposCheckbox component to be used more easily standalone, accepts a single model value instead of an array.
+
+### Fixes
+
+* Fix `date` schema field query builder to work with arrays.
+* Fix `if` on pages. When you open the `AposDocEditor` modal on pages, you now see an up to date view of the visible fields.
+* Pass on complete annotation information for nested areas when adding or editing a nested widget using an external front, like Astro.
+* We can now close the image modal in rich-text widgets when we click outside of the modal.
+The click on the cancel button now works too.
+* Fixes the `clearLoginAttempts` method to work with the new `@apostrophecms/cache` module `delete` method.
+
+## 3.60.1 (2023-12-06)
+
+### Fixes
+
+* corrected an issue where the use of the doc template library can result in errors at startup when
+replicating certain content to new locales. This was not a bug in the doc template library.
+Apostrophe was not invoking `findForEditing` where it should have.
+
+## 3.60.0 (2023-11-29)
+
+### Adds
+
+* Add the possibility to add custom classes to notifications.
+Setting the `apos-notification--hidden` class will hide the notification, which can be useful when we only care about the event carried by it.
+* Give the possibility to add horizontal rules from the insert menu of the rich text editor with the following widget option: `insert: [ 'horizontalRule' ]`.
+Improve also the UX to focus back the editor after inserting a horizontal rule or a table.
+
+### Fixes
+
+* The `render-widget` route now provides an `options` property on the widget, so that
+schema-level options of the widget are available to the external front end when
+rendering a newly added or edited widget in the editor. Note that when rendering a full page,
+this information is already available on the parent area: `area.options.widgets[widget.type]`
+* Pages inserted directly in the published mode are now given a
+correct `lastPublishedAt` property, correcting several bugs relating
+to the page tree.
+* A migration has been added to introduce `lastPublishedAt` wherever
+it is missing for existing pages.
+* Fixed a bug that prevented page ranks from renumbering properly during "insert after" operations.
+* Added a one-time migration to make existing page ranks unique among peers.
+* Fixes conditional fields not being properly updated when switching items in array editor.
+* The `beforeSend` event for pages and the loading of deferred widgets are now
+handled in `renderPage` with the proper timing so that areas can be annotated
+successfully for "external front" use.
+* The external front now receives 100% of the serialization-friendly data that Nunjucks receives,
+including the `home` property etc. Note that the responsibility to avoid passing any nonserializable
+or excessively large data in `req.data` falls on the developer when choosing to use the
+`apos-external-front` feature.
+* Wraps the group label in the expanded preview menu component in `$t()` to allow translation
+
+## 3.59.1 (2023-11-14)
+
+### Fixes
+
+* Fix `if` and `requiredIf` fields inside arrays. With regard to `if`, this is a hotfix for a regression introduced in 3.59.0.
+
 ## 3.59.0 (2023-11-03)
 
 ### Changes
@@ -472,6 +567,7 @@ those writing mocha tests of Apostrophe modules.
 * Hide the suggestion help from the relationship input list when the user starts typing a search term.
 * Hide the suggestion hint from the relationship input list when the user starts typing a search term except when there are no matches to display.
 * Disable context menu for related items when their `relationship` field has no sub-[`fields`](https://v3.docs.apostrophecms.org/guide/relationships.html#providing-context-with-fields) configured.
+* Logic for checking whether we are running a unit test of an external module under mocha now uses `includes` for a simpler, safer test that should be more cross-platform.
 
 ## 3.42.0 (2023-03-16)
 

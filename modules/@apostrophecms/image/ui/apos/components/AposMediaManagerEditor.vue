@@ -171,7 +171,7 @@ export default {
           action: 'localize'
         });
       }
-      if (this.activeMedia._id && !this.restoreOnly) {
+      if (this.activeMedia._id && this.activeMedia._delete && !this.restoreOnly) {
         menu.push({
           label: 'apostrophe:archiveImage',
           action: 'archive',
@@ -209,7 +209,9 @@ export default {
       return dayjs(this.activeMedia.attachment.createdAt).format(this.$t('apostrophe:dayjsMediaCreatedDateFormat'));
     },
     isArchived() {
-      return this.media.archived;
+      // ?. necessary to avoid reference to null due to
+      // race condition when toggling selection off
+      return this.media?.archived;
     }
   },
   watch: {
@@ -248,6 +250,7 @@ export default {
       this[action]();
     },
     async updateActiveDoc(newMedia) {
+      newMedia = newMedia || {};
       this.showReplace = false;
       this.activeMedia = klona(newMedia);
       this.restoreOnly = !!this.activeMedia.archived;

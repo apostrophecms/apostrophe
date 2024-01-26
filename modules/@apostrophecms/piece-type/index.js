@@ -156,7 +156,7 @@ module.exports = {
           description: 'apostrophe:publishingBatchConfirmation',
           confirmationButton: 'apostrophe:publishingBatchConfirmationButton'
         },
-        permission: 'edit'
+        permission: 'publish'
       },
       archive: {
         label: 'apostrophe:archive',
@@ -173,7 +173,7 @@ module.exports = {
           description: 'apostrophe:archivingBatchConfirmation',
           confirmationButton: 'apostrophe:archivingBatchConfirmationButton'
         },
-        permission: 'edit'
+        permission: 'delete'
       },
       restore: {
         label: 'apostrophe:restore',
@@ -670,10 +670,18 @@ module.exports = {
       },
       // Similar to insertDraftOf, invoked on first publication.
       insertPublishedOf(req, doc, published, options) {
+        // Check publish permission up front because we won't check it
+        // in insert
+        if (!self.apos.permission.can(req, 'publish', doc)) {
+          throw self.apos.error('forbidden');
+        }
         return self.insert(
           req.clone({ mode: 'published' }),
           published,
-          options
+          {
+            ...options,
+            permissions: false
+          }
         );
       },
       // Returns one editable piece matching the criteria, throws `notfound`
@@ -850,7 +858,10 @@ module.exports = {
         return self.findOneForEditing(
           req,
           { _id: piece._id },
-          { attachments: true }
+          {
+            attachments: true,
+            permission: 'create'
+          }
         );
       },
 
@@ -1153,14 +1164,14 @@ module.exports = {
         browserOptions.batchOperations = self.checkBatchOperationsPermissions(req);
         browserOptions.utilityOperations = self.utilityOperations;
         browserOptions.insertViaUpload = self.options.insertViaUpload;
-        browserOptions.quickCreate = !self.options.singleton && self.options.quickCreate && self.apos.permission.can(req, 'edit', self.name, 'draft');
+        browserOptions.quickCreate = !self.options.singleton && self.options.quickCreate && browserOptions.canCreate;
         browserOptions.singleton = self.options.singleton;
         browserOptions.showCreate = !self.options.singleton && self.options.showCreate;
         browserOptions.showDismissSubmission = self.options.showDismissSubmission;
         browserOptions.showArchive = self.options.showArchive;
         browserOptions.showDiscardDraft = self.options.showDiscardDraft;
-        browserOptions.canEdit = self.apos.permission.can(req, 'edit', self.name, 'draft');
-        browserOptions.canPublish = self.apos.permission.can(req, 'edit', self.name, 'publish');
+        browserOptions.canDeleteDraft = self.apos.permission.can(req, 'delete', self.name, 'draft');
+
         _.defaults(browserOptions, {
           components: {}
         });

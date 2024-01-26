@@ -4,7 +4,7 @@
     :error="effectiveError"
     :uid="uid"
     :display-options="displayOptions"
-    :modifiers="modifiers"
+    :modifiers="[...modifiers, 'full-width']"
   >
     <template #body>
       <!-- data-apos-schema-area lets all the child areas know that this area is in a schema (which is in a modal)

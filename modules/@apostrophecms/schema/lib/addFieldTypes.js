@@ -461,6 +461,7 @@ module.exports = (self) => {
                 $gte: value[0],
                 $lte: value[1]
               };
+              query.and(criteria);
             } else {
               criteria = {};
               criteria[field.name] = self.apos.launder.integer(value);
@@ -471,8 +472,14 @@ module.exports = (self) => {
         choices: async function () {
           return self.sortedDistinct(field.name, query);
         },
-        launder: function (s) {
-          return self.apos.launder.integer(s, null);
+        launder: function (value) {
+          const launderInteger = (v) => self.apos.launder.integer(v, null);
+
+          if (Array.isArray(value)) {
+            return value.map(launderInteger);
+          } else {
+            return launderInteger(value);
+          }
         }
       });
     }
@@ -505,6 +512,7 @@ module.exports = (self) => {
                 $gte: value[0],
                 $lte: value[1]
               };
+              query.and(criteria);
             } else {
               criteria = {};
               criteria[field.name] = self.apos.launder.float(value);
@@ -514,6 +522,15 @@ module.exports = (self) => {
         },
         choices: async function () {
           return self.sortedDistinct(field.name, query);
+        },
+        launder: function(value) {
+          const launderFloat = (v) => self.apos.launder.float(v, null);
+
+          if (Array.isArray(value)) {
+            return value.map(launderFloat);
+          } else {
+            return launderFloat(value);
+          }
         }
       });
     }
@@ -544,6 +561,18 @@ module.exports = (self) => {
     vueComponent: 'AposInputString',
     async convert(req, field, data, destination) {
       destination[field.name] = self.apos.launder.url(data[field.name], field.def, true);
+
+      if (field.required && (data[field.name] == null || !data[field.name].toString().length)) {
+        throw self.apos.error('required');
+      }
+
+      if (field.pattern) {
+        const regex = new RegExp(field.pattern);
+
+        if (!regex.test(destination[field.name])) {
+          throw self.apos.error('invalid');
+        }
+      }
     },
     diffable: function (value) {
       // URLs are fine to diff and display
@@ -552,6 +581,18 @@ module.exports = (self) => {
       }
       // always return a valid string
       return '';
+    },
+    validate(field, options, warn, fail) {
+      if (!field.pattern) {
+        return;
+      }
+
+      const isRegexInstance = field.pattern instanceof RegExp;
+      if (!isRegexInstance && typeof field.pattern !== 'string') {
+        fail('The pattern property must be a RegExp or a String');
+      }
+
+      field.pattern = isRegexInstance ? field.pattern.source : field.pattern;
     },
     addQueryBuilder(field, query) {
       query.addBuilder(field.name, {
@@ -613,18 +654,16 @@ module.exports = (self) => {
         finalize: function () {
           if (self.queryBuilderInterested(query, field.name)) {
             const value = query.get(field.name);
-            let criteria;
+            const criteria = {};
             if (Array.isArray(value)) {
-              criteria = {};
               criteria[field.name] = {
                 $gte: value[0],
                 $lte: value[1]
               };
             } else {
-              criteria = {};
               criteria[field.name] = self.apos.launder.date(value);
-              query.and(criteria);
             }
+            query.and(criteria);
           }
         },
         launder: function (value) {

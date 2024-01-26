@@ -2,7 +2,7 @@
   <div class="apos-media-manager-display">
     <div class="apos-media-manager-display__grid">
       <AposMediaUploader
-        v-if="canEdit"
+        v-if="moduleOptions.canCreate"
         :disabled="maxReached"
         :action="moduleOptions.action"
         :accept="accept"
@@ -80,10 +80,6 @@ import cuid from 'cuid';
 export default {
   // Custom model to handle the v-model connection on the parent.
   props: {
-    canEdit: {
-      type: Boolean,
-      default: false
-    },
     maxReached: {
       type: Boolean,
       default: false

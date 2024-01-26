@@ -10,14 +10,15 @@
       <div class="apos-input-wrapper">
         <textarea
           v-if="field.textarea && field.type === 'string'"
-          :id="uid"
           v-model="next"
-          :class="classes"
           rows="5"
+          :id="uid"
+          :class="classes"
           :placeholder="$t(field.placeholder)"
           :disabled="field.readOnly"
           :required="field.required"
           :tabindex="tabindex"
+          :autocomplete="field.autocomplete"
           @keydown.enter="enterEmit"
         />
         <input
@@ -31,6 +32,7 @@
           :required="field.required"
           :tabindex="tabindex"
           :step="step"
+          :autocomplete="field.autocomplete"
           @keydown.enter="enterEmit"
         >
         <component

@@ -19,7 +19,9 @@ module.exports = {
     relationshipSuggestionIcon: 'text-box-icon',
     relationshipSuggestionFields: [ 'slug' ]
   },
-  cascades: [ 'fields' ],
+  // Adding permissions for advanced permissions to allow modules to use it without
+  // being forced to check if the module is used with advanced permissions or not.
+  cascades: [ 'fields', 'permissions' ],
   fields(self) {
     return {
       add: {
@@ -225,8 +227,8 @@ module.exports = {
   handlers(self) {
     return {
       beforeSave: {
-        prepareForStorage(req, doc) {
-          self.apos.schema.prepareForStorage(req, doc);
+        prepareForStorage(req, doc, options) {
+          self.apos.schema.prepareForStorage(req, doc, options);
         },
         async updateCacheField(req, doc) {
           await self.updateCacheField(req, doc);
@@ -1028,9 +1030,16 @@ module.exports = {
         });
         const toId = draft._id.replace(`:${draft.aposLocale}`, `:${toLocale}:draft`);
         const actionModule = self.apos.page.isPage(draft) ? self.apos.page : self;
+        // Use findForEditing so that we are successful even for edge cases
+        // like doc templates that don't appear in public renderings, but
+        // also use permission('view') so that we are not actually restricted
+        // to what we can edit, avoiding any confusion about whether there
+        // is really an existing localized doc or not and preventing the
+        // possibility of inserting an unwanted duplicate. The update() call will
+        // still stop us if edit permissions are an issue
         const existing = await actionModule.findForEditing(toReq, {
           _id: toId
-        }).toObject();
+        }).permission('view').toObject();
         // We only want to copy schema properties, leave non-schema
         // properties of the source document alone
         const data = Object.fromEntries(Object.entries(draft).filter(([ key, value ]) => self.schema.find(field => field.name === key)));
@@ -1056,8 +1065,15 @@ module.exports = {
               // A page that is not the home page, being replicated for the first time
               let { lastTargetId, lastPosition } = await self.apos.page.inferLastTargetIdAndPosition(draft);
               let localizedTargetId = lastTargetId.replace(`:${draft.aposLocale}`, `:${toLocale}:draft`);
+              // When fetching the target (parent or peer), always use findForEditing
+              // so we don't miss doc templates and other edge cases, but also use
+              // .permission('view') because we are not actually editing the target
+              // and should not be blocked over edit permissions. Later change this check
+              // to 'create' ("can create a child of this doc"), but not until we're ready
+              // to do it for all creation attempts
               const localizedTarget = await actionModule
-                .find(toReq, self.apos.page.getIdCriteria(localizedTargetId))
+                .findForEditing(toReq, self.apos.page.getIdCriteria(localizedTargetId))
+                .permission('view')
                 .archived(null)
                 .areas(false)
                 .relationships(false)
@@ -1070,7 +1086,13 @@ module.exports = {
                     parentNotLocalized: true
                   });
                 } else {
-                  const originalTarget = await actionModule.find(req, self.apos.page.getIdCriteria(lastTargetId)).archived(null).areas(false).relationships(false).toObject();
+                  const originalTarget = await actionModule
+                    .findForEditing(req, self.apos.page.getIdCriteria(lastTargetId))
+                    .permission('view')
+                    .archived(null)
+                    .areas(false)
+                    .relationships(false)
+                    .toObject();
                   if (!originalTarget) {
                     // Almost impossible (race conditions like someone removing it while we're in the modal)
                     throw self.apos.error('notfound');
@@ -1078,7 +1100,13 @@ module.exports = {
                   const criteria = {
                     path: self.apos.page.getParentPath(originalTarget)
                   };
-                  const localizedTarget = await actionModule.find(toReq, criteria).archived(null).areas(false).relationships(false).toObject();
+                  const localizedTarget = await actionModule
+                    .findForEditing(toReq, criteria)
+                    .permission('view')
+                    .archived(null)
+                    .areas(false)
+                    .relationships(false)
+                    .toObject();
                   if (!localizedTarget) {
                     throw self.apos.error('notfound', req.t('apostrophe:parentNotLocalized'), {
                       // Also provide as data for code that prefers to localize client side
@@ -1473,8 +1501,10 @@ module.exports = {
           label,
           pluralLabel,
           relatedDocument: self.options.relatedDocument,
+          canCreate: self.apos.permission.can(req, 'create', self.name, 'draft'),
           canEdit: self.apos.permission.can(req, 'edit', self.name, 'draft'),
-          canPublish: self.apos.permission.can(req, 'publish', self.name)
+          canPublish: self.apos.permission.can(req, 'publish', self.name),
+          canArchive: self.apos.permission.can(req, 'delete', self.name)
         };
         browserOptions.canLocalize = browserOptions.canEdit &&
           self.options.localized &&
@@ -1842,8 +1872,10 @@ module.exports = {
           after(results) {
             // In all cases we mark the docs with ._edit and ._publish if
             // the req is permitted to do those things
+            self.apos.permission.annotate(query.req, 'create', results);
             self.apos.permission.annotate(query.req, 'edit', results);
             self.apos.permission.annotate(query.req, 'publish', results);
+            self.apos.permission.annotate(query.req, 'delete', results);
           }
         },
 

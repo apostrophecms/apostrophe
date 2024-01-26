@@ -6,23 +6,24 @@
     :tabindex="{'-1' : field.hideLabel}"
   >
     <input
-      :id="id"
       v-model="checkProxy"
       type="checkbox"
       class="apos-sr-only apos-input--choice apos-input--checkbox"
+      :id="id"
       :value="choice.value"
       :name="field.name"
       :aria-label="choice.label || field.label"
       :tabindex="tabindex"
       :disabled="field.readOnly || choice.readOnly"
-      @change="updateThis"
+      :is-indeterminate="choice.indeterminate === true ? 'true' : 'false'"
+      @change="update"
     >
     <span class="apos-input-indicator" aria-hidden="true">
       <component
+        v-if="isChecked(modelValue)"
         :is="`${
           choice.indeterminate ? 'minus-icon' : 'check-bold-icon'
         }`"
-        v-if="modelValue && modelValue.includes(choice.value)"
         :size="10"
       />
     </span>
@@ -41,7 +42,7 @@
 export default {
   props: {
     modelValue: {
-      type: [ Array, Boolean, String ],
+      type: [ Array, Boolean ],
       default: false
     },
     choice: {
@@ -76,8 +77,7 @@ export default {
         return this.modelValue;
       },
       set(val) {
-        // TODO: Move indeterminate to `status`
-        if (!this.choice.indeterminate) {
+        if (!this.choice.indeterminate || this.choice.triggerIndeterminateEvent) {
           // Only update the model if the box was *not* indeterminate.
           this.$emit('change', val);
         }
@@ -85,10 +85,15 @@ export default {
     }
   },
   methods: {
+    isChecked(value) {
+      return Array.isArray(value)
+        ? value.includes(this.choice.value)
+        : value;
+    },
     // This event is only necessary if the parent needs to do *more* than simply
     // keep track of an array of checkbox values. For example, AposTagApply
     // does extra work with indeterminate values.
-    updateThis($event) {
+    update($event) {
       this.$emit('updated', $event);
     }
   }

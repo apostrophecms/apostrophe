@@ -77,7 +77,6 @@
             :accept="accept"
             :items="items"
             :module-options="moduleOptions"
-            :can-edit="moduleOptions.canEdit"
             :max-reached="maxReached()"
             :options="{
               disableUnchecked: maxReached(),
@@ -113,7 +112,6 @@
           <AposMediaManagerSelections
             v-show="!editing"
             :items="selected"
-            :can-edit="moduleOptions.canEdit"
             @clear="clearSelected"
             @edit="updateEditing"
           />
@@ -237,7 +235,6 @@ export default {
     }
   },
   async mounted() {
-    console.log('this.checked', this.checked);
     this.modal.active = true;
     await this.getMedia({ tags: true });
     apos.bus.$on('content-changed', this.onContentChanged);
@@ -256,7 +253,8 @@ export default {
     async getMedia (options) {
       const qs = {
         ...this.filterValues,
-        page: this.currentPage
+        page: this.currentPage,
+        viewContext: this.relationshipField ? 'relationship' : 'manage'
       };
       const filtered = !!Object.keys(this.filterValues).length;
       if (this.moduleOptions && Array.isArray(this.moduleOptions.filters)) {
@@ -362,9 +360,7 @@ export default {
       this.editing = undefined;
     },
     async updateEditing(id) {
-      if (!this.moduleOptions.canEdit) {
-        return;
-      }
+      const item = this.items.find(item => item._id === id);
       // We only care about the current doc for this prompt,
       // we are not in danger of discarding a selection when
       // we switch images
@@ -379,7 +375,11 @@ export default {
           return false;
         }
       }
-      this.editing = this.items.find(item => item._id === id);
+      if (!item?._edit) {
+        this.editing = null;
+        return true;
+      }
+      this.editing = item;
       return true;
     },
     // select setters

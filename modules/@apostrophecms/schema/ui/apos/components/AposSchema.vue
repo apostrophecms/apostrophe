@@ -29,10 +29,11 @@
   >
     <slot name="before" />
     <component
-      :is="fieldStyle === 'table' ? 'td' : 'div'"
       v-for="field in schema"
       v-show="displayComponent(field)"
+      :is="fieldStyle === 'table' ? 'td' : 'div'"
       :key="field.name.concat(field._id ?? '')"
+      :style="(fieldStyle === 'table' && field.columnStyle) || {}"
       :data-apos-field="field.name"
     >
       <component
@@ -69,12 +70,9 @@ export default {
   .apos-schema :deep(.apos-field__wrapper) {
     max-width: $input-max-width;
   }
+
   .apos-schema :deep(.apos-field__wrapper.apos-field__wrapper--full-width) {
     max-width: inherit;
-  }
-
-  .apos-schema :deep(.apos-field__wrapper--area) {
-    max-width: 100%;
   }
 
   .apos-schema :deep(img) {
@@ -91,5 +89,9 @@ export default {
     &.apos-field--margin-none {
       margin-bottom: 0;
     }
+  }
+
+  .apos-field .apos-schema :deep(.apos-toolbar) {
+      margin-bottom: 0;
   }
 </style>

@@ -14,15 +14,16 @@
     />
     <AposTreeRows
       v-model="checkedProxy"
+      list-id="root"
       :rows="myItems"
       :headers="headers"
       :icons="icons"
       :col-widths="colWidths"
       :level="1"
       :nested="nested"
-      list-id="root"
       :options="options"
       :tree-id="treeId"
+      :module-options="moduleOptions"
       @update="update"
     />
   </div>
@@ -66,6 +67,12 @@ export default {
     options: {
       type: Object,
       default () {
+        return {};
+      }
+    },
+    moduleOptions: {
+      type: Object,
+      default() {
         return {};
       }
     }

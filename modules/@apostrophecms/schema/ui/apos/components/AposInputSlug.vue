@@ -18,15 +18,16 @@
         </span>
         <input
           v-model="next"
+          ref="input"
           :id="uid"
           :class="classes"
           :type="type"
           :placeholder="$t(field.placeholder)"
-          ref="input"
           :disabled="field.readOnly"
           :required="field.required"
           :tabindex="tabindex"
-          @keydown.enter="$emit('return')"
+          :autocomplete="field.autocomplete"
+          @keydown.enter="emitReturn"
         >
         <component
           :is="icon"
@@ -43,7 +44,8 @@
 import AposInputSlugLogic from '../logic/AposInputSlug';
 export default {
   name: 'AposInputSlug',
-  mixins: [ AposInputSlugLogic ]
+  mixins: [ AposInputSlugLogic ],
+  emits: [ 'return' ]
 };
 </script>
 

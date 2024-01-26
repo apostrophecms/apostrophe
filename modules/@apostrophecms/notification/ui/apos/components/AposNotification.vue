@@ -79,6 +79,11 @@ export default {
   computed: {
     classList() {
       const classes = [ 'apos-notification' ];
+
+      if (Array.isArray(this.notification.classes) && this.notification.classes.length) {
+        classes.push(...this.notification.classes);
+      }
+
       if (this.notification.type && this.notification.type !== 'none') {
         classes.push(`apos-notification--${this.notification.type}`);
       }
@@ -221,6 +226,10 @@ export default {
     &:hover {
       transform: translateY(-1px);
     }
+  }
+
+  .apos-notification--hidden {
+    display: none;
   }
 
   .apos-notification--long {

@@ -130,6 +130,82 @@ describe('Permissions', function() {
         const home = await apos.page.find(guestReq, { slug: '/' }).toObject();
         assert(home);
       });
+      it('Allows the editor to create by type', function() {
+        assert(apos.permission.can(
+          apos.task.getEditorReq(), 'create', '@apostrophecms/home-page')
+        );
+      });
+      it('Forbids the contributor to create by type', function() {
+        assert(!apos.permission.can(
+          apos.task.getContributorReq(), 'create', '@apostrophecms/home-page')
+        );
+      });
+      it('Allows the contributor to delete a draft document', async function() {
+        const contributor = apos.task.getContributorReq({ mode: 'draft' });
+        const homeDraft = await apos.page.find(contributor, { slug: '/' }).toObject();
+
+        const actual = apos.permission.can(contributor, 'delete', homeDraft);
+        const expected = true;
+        assert.deepEqual(actual, expected);
+      });
+      it('Forbids the contributor to delete a published document', async function() {
+        const contributor = apos.task.getContributorReq();
+        const home = await apos.page.find(contributor, { slug: '/' }).toObject();
+
+        const actual = apos.permission.can(contributor, 'delete', home);
+        const expected = false;
+        assert.deepEqual(actual, expected);
+      });
+    });
+
+    describe('criteria', function () {
+      it('it should return the same criteria for edit, create and delete for editor', function () {
+        const editor = apos.task.getEditorReq();
+
+        const actual = {
+          edit: apos.permission.criteria(editor, 'edit'),
+          create: apos.permission.criteria(editor, 'create'),
+          delete: apos.permission.criteria(editor, 'delete')
+        };
+
+        const expectedCriteria = { type: { $nin: [ '@apostrophecms/user' ] } };
+        const expected = {
+          edit: expectedCriteria,
+          create: expectedCriteria,
+          delete: expectedCriteria
+        };
+
+        assert.deepEqual(actual, expected);
+      });
+      it('it should return the same criteria for edit, create and delete for contributor', function () {
+        const contributor = apos.task.getContributorReq();
+        const expectedCriteria = {
+          aposMode: { $in: [ null, 'draft' ] },
+          type: {
+            $nin: [
+              '@apostrophecms/user',
+              '@apostrophecms/image',
+              '@apostrophecms/image-tag',
+              '@apostrophecms/file',
+              '@apostrophecms/file-tag'
+            ]
+          }
+        };
+
+        const actual = {
+          edit: apos.permission.criteria(contributor, 'edit'),
+          create: apos.permission.criteria(contributor, 'create'),
+          delete: apos.permission.criteria(contributor, 'delete')
+        };
+
+        const expected = {
+          edit: expectedCriteria,
+          create: expectedCriteria,
+          delete: expectedCriteria
+        };
+
+        assert.deepEqual(actual, expected);
+      });
     });
   });
 

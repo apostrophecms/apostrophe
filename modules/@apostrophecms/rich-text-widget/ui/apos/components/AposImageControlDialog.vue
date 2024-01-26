@@ -1,12 +1,12 @@
 <template>
   <div
     v-if="active"
-    v-click-outside-element="cancel"
+    v-click-outside-element="close"
     class="apos-popover apos-image-control__dialog"
     x-placement="bottom"
     :class="{
       'apos-is-triggered': active,
-      'apos-has-selection': true
+      'apos-has-selection': hasSelection
     }"
   >
     <AposContextMenuDialog
@@ -28,7 +28,7 @@
           type="default"
           label="apostrophe:cancel"
           :modifiers="formModifiers"
-          @click="cancel"
+          @click="close"
         />
         <AposButton
           type="primary"
@@ -56,9 +56,14 @@ export default {
     active: {
       type: Boolean,
       required: true
+    },
+    hasSelection: {
+      type: Boolean,
+      required: true,
+      default: false
     }
   },
-  emits: [ 'before-commands', 'done', 'cancel' ],
+  emits: [ 'before-commands', 'close' ],
   data() {
     return {
       generation: 1,
@@ -93,27 +98,52 @@ export default {
         {
           name: 'caption',
           label: this.$t('apostrophe:caption'),
-          type: 'string'
+          type: 'string',
+          def: ''
         }
       ]
     };
   },
   computed: {
+    attributes() {
+      return this.editor.getAttributes('image');
+    },
     lastSelectionTime() {
-      return this.editor.view.lastSelectionTime;
+      return this.editor.view.input.lastSelectionTime;
     },
     schema() {
       return this.originalSchema;
     }
   },
   watch: {
-    active(newVal) {
+    'attributes.imageId': {
+      handler(newVal, oldVal) {
+        if (newVal === oldVal) {
+          return;
+        }
+
+        this.close();
+      }
+    },
+    active(newVal, oldVal) {
       if (newVal) {
         window.addEventListener('keydown', this.keyboardHandler);
-        this.populateFields();
       } else {
         window.removeEventListener('keydown', this.keyboardHandler);
       }
+
+      if (newVal !== oldVal && this.hasSelection) {
+        this.populateFields();
+        this.evaluateConditions();
+      }
+    },
+    lastSelectionTime(newVal, oldVal) {
+      if (newVal === oldVal) {
+        return;
+      }
+
+      this.populateFields();
+      this.evaluateConditions();
     }
   },
   async mounted() {
@@ -121,11 +151,8 @@ export default {
     this.evaluateConditions();
   },
   methods: {
-    cancel() {
-      this.$emit('cancel');
-    },
-    done() {
-      this.$emit('done');
+    close() {
+      this.$emit('close');
     },
     save() {
       this.triggerValidation = true;
@@ -143,24 +170,24 @@ export default {
           style: this.docFields.data.style,
           alt: this.docFields.data.alt
         });
-        this.done();
+        this.close();
       });
     },
     keyboardHandler(e) {
       if (e.keyCode === 27) {
-        this.cancel();
+        this.close();
       }
       if (e.keyCode === 13) {
         if (this.docFields.data.href || e.metaKey) {
           this.save();
-          this.done();
+          this.close();
         }
         e.preventDefault();
       }
     },
     async populateFields() {
       try {
-        const attrs = this.editor.getAttributes('image');
+        const attrs = this.attributes;
         this.docFields.data = {};
         this.schema.forEach((item) => {
           this.docFields.data[item.name] = attrs[item.name] || '';

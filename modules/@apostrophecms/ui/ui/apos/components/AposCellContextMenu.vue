@@ -12,6 +12,7 @@
         :show-archive="options.showArchive"
         :show-restore="options.showRestore"
         :show-dismiss-submission="options.showDismissSubmission"
+        :can-delete-draft="options.canDeleteDraft"
         @menu-open="menuOpen = true"
         @menu-close="menuOpen = false"
       />

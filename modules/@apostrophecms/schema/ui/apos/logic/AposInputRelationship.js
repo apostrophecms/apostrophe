@@ -147,6 +147,10 @@ export default {
       this.next = items;
     },
     async search(qs) {
+      const action = apos.modules[this.field.withType].action;
+      const isPage = apos.modules['@apostrophecms/page'].validPageTypes
+        .includes(this.field.withType);
+
       if (this.field.suggestionLimit) {
         qs.perPage = this.field.suggestionLimit;
       }
@@ -156,16 +160,16 @@ export default {
       if (this.field.withType === '@apostrophecms/image') {
         apos.bus.$emit('piece-relationship-query', qs);
       }
+      if (isPage) {
+        qs.type = this.field.withType;
+      }
 
       this.searching = true;
-      const list = await apos.http.get(
-        apos.modules[this.field.withType].action,
-        {
-          busy: false,
-          draft: true,
-          qs
-        }
-      );
+      const list = await apos.http.get(action, {
+        busy: false,
+        draft: true,
+        qs
+      });
 
       const removeSelectedItem = item => !this.next.map(i => i._id).includes(item._id);
       const formatItems = item => ({

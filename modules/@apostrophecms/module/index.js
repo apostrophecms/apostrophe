@@ -379,8 +379,8 @@ module.exports = {
         return self.apos.template.renderStringForModule(req, s, data, self);
       },
 
-      // TIP: you probably want `self.sendPage`, which loads
-      // `data.home` for you and also sends the response to the browser.
+      // TIP: more often you will want `self.sendPage`, which also sends the response
+      // to the browser.
       //
       // This method generates a complete HTML page for transmission to the
       // browser. Returns HTML markup ready to send (but `self.sendPage` is
@@ -419,13 +419,21 @@ module.exports = {
       //
       // This method is async in 3.x and must be awaited.
       //
+      // If the external front feature is in use for the request, then
+      // self.apos.template.annotateDataForExternalFront and
+      // self.apos.template.pruneDataForExternalFront are called
+      // and the data is returned, in place of normal Nunjucks rendering.
+      //
       // No longer deprecated because it is a useful override point
       // for this part of the behavior of sendPage.
 
       async renderPage(req, template, data) {
+        await self.apos.page.emit('beforeSend', req);
+        await self.apos.area.loadDeferredWidgets(req);
         if (req.aposExternalFront) {
-          await self.apos.template.annotateDataForExternalFront(req, template, data);
-          self.apos.template.pruneDataForExternalFront(req, template, data);
+          data = self.apos.template.getRenderDataArgs(req, data, self);
+          await self.apos.template.annotateDataForExternalFront(req, template, data, self.__meta.name);
+          self.apos.template.pruneDataForExternalFront(req, template, data, self.__meta.name);
           // Reply with JSON
           return data;
         }
@@ -484,8 +492,6 @@ module.exports = {
           span.setAttribute(telemetry.Attributes.TEMPLATE, template);
 
           try {
-            await self.apos.page.emit('beforeSend', req);
-            await self.apos.area.loadDeferredWidgets(req);
             const result = await self.renderPage(req, template, data);
             req.res.send(result);
             span.setStatus({ code: telemetry.api.SpanStatusCode.OK });
