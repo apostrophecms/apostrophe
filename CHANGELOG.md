@@ -1,5 +1,11 @@
 # Changelog
 
+## UNRELEASED
+
+### Fixes
+
+* Fix publishing or moving published page after a draft page on the same tree level to work as expected.
+
 ## 3.62.0 (2024-01-25)
 
 ### Adds
