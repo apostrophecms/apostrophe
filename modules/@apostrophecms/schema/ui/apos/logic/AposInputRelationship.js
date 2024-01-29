@@ -81,13 +81,6 @@ export default {
       };
     },
     chooserComponent () {
-      const isPage = apos.modules['@apostrophecms/page'].validPageTypes
-        .includes(this.field.withType);
-
-      if (isPage) {
-        return 'AposDocsManager';
-      }
-
       return apos.modules[this.field.withType].components.managerModal;
     },
     disableUnpublished() {
