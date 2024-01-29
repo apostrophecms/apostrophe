@@ -5,12 +5,12 @@
         :v-if="editMode"
         :can-undo="canUndo"
         :can-redo="canRedo"
-        @undo="undo"
-        @redo="redo"
         :retrying="retrying"
         :editing="editing"
         :saving="saving"
         :saved="saved"
+        @undo="undo"
+        @redo="redo"
       />
       <TheAposContextTitle
         v-if="!hasCustomUi"

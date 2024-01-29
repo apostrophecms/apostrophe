@@ -64,9 +64,9 @@
       />
       <AposInputString
         v-if="hasSearch"
+        ref="search"
         :field="searchField.field"
         :status="searchField.status"
-        ref="search"
         :model-value="searchField.value"
         :modifiers="['small']"
         @input="search"
@@ -187,7 +187,6 @@ export default {
     }
   },
   mounted () {
-    console.log('this.checked', this.checked);
     this.computeActiveOperations();
     apos.bus.$on('command-menu-manager-select-all', this.selectAll);
     apos.bus.$on('command-menu-manager-archive-selected', this.archiveSelected);
