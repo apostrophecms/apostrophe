@@ -61,11 +61,11 @@
             :list="items"
           >
             <AposSchema
-              v-model="item.schemaInput"
               v-for="(item, index) in items"
+              :key="item._id"
+              v-model="item.schemaInput"
               class="apos-input-array-inline-item"
               :class="item.open && !alwaysExpand ? 'apos-input-array-inline-item--active' : null"
-              :key="item._id"
               :schema="schema"
               :trigger-validation="triggerValidation"
               :generation="generation"
@@ -74,7 +74,7 @@
               :following-values="getFollowingValues(item)"
               :conditional-fields="itemsConditionalFields[item._id]"
               :field-style="field.style"
-              @input="setItemsConditionalFields(item._id)"
+              @update:model-value="setItemsConditionalFields(item._id)"
               @validate="emitValidate()"
             >
               <template #before>
@@ -101,8 +101,8 @@
                   />
                 </component>
                 <h3
-                  class="apos-input-array-inline-label"
                   v-if="field.style !== 'table' && !item.open && !alwaysExpand"
+                  class="apos-input-array-inline-label"
                   @click="openInlineItem(item._id)"
                 >
                   {{ getLabel(item._id, index) }}
@@ -151,8 +151,13 @@
 
 <script>
 import AposInputArrayLogic from '../logic/AposInputArray';
+import { Sortable } from 'sortablejs-vue3';
+
 export default {
   name: 'AposInputArray',
+  components: {
+    draggable: Sortable
+  },
   mixins: [ AposInputArrayLogic ]
 };
 </script>

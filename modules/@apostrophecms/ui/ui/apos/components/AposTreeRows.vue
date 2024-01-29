@@ -228,7 +228,6 @@ export default {
   },
   methods: {
     setHeights() {
-      console.log('this.treeBranches.length', this.treeBranches.length);
       this.treeBranches.forEach(branch => {
         // Add padding to the max-height to avoid needing a `resize`
         // event listener updating values.
