@@ -11,12 +11,14 @@
       further illustrate this concept.
     -->
     <div
-      v-if="!editMode" :key="'switchToEditMode'"
+      v-if="!editMode"
+      :key="'switchToEditMode'"
       class="apos-admin-bar__control-set__group"
     >
       <AposButton
         class="apos-admin-bar__context-button"
-        label="apostrophe:edit" type="subtle"
+        label="apostrophe:edit"
+        type="subtle"
         :modifiers="['small', 'no-motion']"
         :tooltip="{
           content: 'apostrophe:toggleEditMode',
@@ -38,20 +40,23 @@
       <AposButton
         v-if="canSwitchToPreviewMode && !isAutopublished"
         class="apos-admin-bar__context-button"
-        label="apostrophe:preview" :tooltip="{
+        label="apostrophe:preview"
+        :tooltip="{
           content: 'apostrophe:previewTooltip',
           placement: 'bottom'
         }"
-        type="subtle" :modifiers="['small', 'no-motion']"
+        type="subtle"
+        :modifiers="['small', 'no-motion']"
         @click="switchEditMode(false)"
       />
       <AposButton
         v-if="editMode && !isAutopublished"
-        type="primary" :label="publishLabel"
+        type="primary"
+        :label="publishLabel"
         :disabled="!readyToPublish"
         class="apos-admin-bar__btn apos-admin-bar__context-button"
-        @click="onPublish"
         :modifiers="['no-motion']"
+        @click="onPublish"
       />
     </div>
   </transition-group>
@@ -66,7 +71,10 @@ export default {
         return null;
       }
     },
-    hasCustomUi: Boolean,
+    hasCustomUi: {
+      type: Boolean,
+      required: true
+    },
     context: {
       type: Object,
       required: true
@@ -135,7 +143,7 @@ export default {
       return !this.editMode;
     },
     canSwitchToPreviewMode() {
-      return this.editMode && !this.hasCustomUI;
+      return this.editMode && !this.hasCustomUi;
     }
   },
   mounted() {
