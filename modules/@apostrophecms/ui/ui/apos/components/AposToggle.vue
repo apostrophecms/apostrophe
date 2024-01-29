@@ -2,7 +2,7 @@
   <div class="apos-toggle__container">
     <div
       class="apos-toggle__slider"
-      :class="{'apos-toggle__slider--activated': !value}"
+      :class="{'apos-toggle__slider--activated': !modelValue}"
       @click="$emit('toggle')"
     />
   </div>
