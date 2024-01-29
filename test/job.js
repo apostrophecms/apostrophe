@@ -1,9 +1,10 @@
 const t = require('../test-lib/test.js');
 const assert = require('assert');
 const Promise = require('bluebird');
-let apos;
 
 describe('Job module', function() {
+
+  let apos;
 
   this.timeout(t.timeout);
 
@@ -182,43 +183,42 @@ describe('Job module', function() {
     // Tests failure()
     assert(bad === (articleIds.length / 2));
   });
-});
-
-function padInteger (i, places) {
-  let s = i + '';
-  while (s.length < places) {
-    s = '0' + s;
+  function padInteger (i, places) {
+    let s = i + '';
+    while (s.length < places) {
+      s = '0' + s;
+    }
+    return s;
   }
-  return s;
-}
 
-async function insert (req, pieceModule, title, data, i) {
-  const docData = Object.assign(pieceModule.newInstance(), {
-    title: `${title} #${padInteger(i, 5)}`,
-    slug: `${title}-${padInteger(i, 5)}`,
-    ...data
-  });
+  async function insert (req, pieceModule, title, data, i) {
+    const docData = Object.assign(pieceModule.newInstance(), {
+      title: `${title} #${padInteger(i, 5)}`,
+      slug: `${title}-${padInteger(i, 5)}`,
+      ...data
+    });
 
-  return pieceModule.insert(req, docData);
-};
+    return pieceModule.insert(req, docData);
+  };
 
-async function pollJob(job, { jar }) {
-  const {
-    processed,
-    total,
-    good,
-    bad
-  } = await apos.http.get(job.route, { jar });
-
-  if (processed < total) {
-    Promise.delay(100);
-
-    return await pollJob(job, { jar });
-  } else {
-    return {
-      completed: processed,
+  async function pollJob(job, { jar }) {
+    const {
+      processed,
+      total,
       good,
       bad
-    };
+    } = await apos.http.get(job.route, { jar });
+
+    if (processed < total) {
+      Promise.delay(100);
+
+      return await pollJob(job, { jar });
+    } else {
+      return {
+        completed: processed,
+        good,
+        bad
+      };
+    }
   }
-}
+});

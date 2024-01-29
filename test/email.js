@@ -1,8 +1,9 @@
 const t = require('../test-lib/test.js');
 const assert = require('assert').strict;
-let apos;
 
 describe('Email', function() {
+
+  let apos;
 
   this.timeout(t.timeout);
 

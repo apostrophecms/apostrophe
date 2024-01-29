@@ -1,9 +1,11 @@
 const t = require('../test-lib/test.js');
 const assert = require('assert');
-let apos;
-let jar;
 
 describe('Http', function() {
+
+  let apos;
+  let jar;
+
   after(async function () {
     return t.destroy(apos);
   });

@@ -4,6 +4,7 @@ const _ = require('lodash');
 
 describe('Docs', function() {
   let apos;
+
   this.timeout(t.timeout);
 
   after(async function() {

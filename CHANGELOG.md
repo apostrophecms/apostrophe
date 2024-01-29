@@ -17,6 +17,7 @@
 * Adds support in `can` and `criteria` methods for `create` and `delete`.
 * Changes support for image upload from `canEdit` to `canCreate`.
 * The media manager is compatible with per-doc permissions granted via the `@apostrophecms-pro/advanced-permission` module.
+* In inline arrays, the trash icon has been replaced by a close icon.
 
 ### Fixes
 
@@ -25,6 +26,7 @@
 * A user who has permission to `publish` a particular page should always be allowed to insert it into the
 published version of the site even if they could not otherwise insert a child of the published
 parent.
+* Display the "Browse" button in a relationship inside an inline array.
 
 ## 3.61.1 (2023-01-08)
 

@@ -1,7 +1,5 @@
 const t = require('../test-lib/test.js');
 const assert = require('assert');
-let apos;
-let savedBaseUrl;
 
 const config = {
   root: module,
@@ -11,6 +9,8 @@ const config = {
 
 describe('Locales', function() {
   this.timeout(t.timeout);
+  let apos;
+  let savedBaseUrl;
 
   before(async function() {
     savedBaseUrl = process.env.APOS_BASE_URL;

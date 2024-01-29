@@ -12,8 +12,6 @@ const {
   fillExtraBundles
 } = require('../modules/@apostrophecms/asset/lib/webpack/utils');
 
-let apos;
-
 const badModules = {
   badModuleConfig: {
     options: {
@@ -85,6 +83,8 @@ const modules = {
 };
 
 describe('Assets', function() {
+  let apos;
+
   const {
     publicFolderPath,
     cacheFolderPath,
