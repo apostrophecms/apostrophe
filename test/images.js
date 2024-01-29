@@ -4,53 +4,53 @@ const fs = require('fs');
 const path = require('path');
 const FormData = require('form-data');
 
-let apos;
-let jar;
-let inserted;
-let image;
-
-const mockImages = [
-  {
-    type: '@apostrophecms/image',
-    slug: 'image-1',
-    visibility: 'public',
-    attachment: {
-      extension: 'jpg',
-      width: 500,
-      height: 400
-    }
-  },
-  {
-    type: '@apostrophecms/image',
-    slug: 'image-2',
-    visibility: 'public',
-    attachment: {
-      extension: 'jpg',
-      width: 500,
-      height: 400
-    }
-  },
-  {
-    type: '@apostrophecms/image',
-    slug: 'image-3',
-    visibility: 'public',
-    attachment: {
-      extension: 'jpg',
-      width: 150,
-      height: 150
-    }
-  },
-  {
-    type: '@apostrophecms/image',
-    slug: 'image-4',
-    visibility: 'public',
-    attachment: {
-      extension: 'svg'
-    }
-  }
-];
-
 describe('Images', function() {
+
+  let apos;
+  let jar;
+  let inserted;
+  let image;
+
+  const mockImages = [
+    {
+      type: '@apostrophecms/image',
+      slug: 'image-1',
+      visibility: 'public',
+      attachment: {
+        extension: 'jpg',
+        width: 500,
+        height: 400
+      }
+    },
+    {
+      type: '@apostrophecms/image',
+      slug: 'image-2',
+      visibility: 'public',
+      attachment: {
+        extension: 'jpg',
+        width: 500,
+        height: 400
+      }
+    },
+    {
+      type: '@apostrophecms/image',
+      slug: 'image-3',
+      visibility: 'public',
+      attachment: {
+        extension: 'jpg',
+        width: 150,
+        height: 150
+      }
+    },
+    {
+      type: '@apostrophecms/image',
+      slug: 'image-4',
+      visibility: 'public',
+      attachment: {
+        extension: 'svg'
+      }
+    }
+  ];
 
   this.timeout(t.timeout);
 
@@ -263,53 +263,52 @@ describe('Images', function() {
     assert.strictEqual(fields.height, 225);
   });
 
-});
-
-async function insertUser(info) {
-  const user = apos.user.newInstance();
-  assert(user);
-  Object.assign(user, info);
-  await apos.user.insert(apos.task.getReq(), user);
-}
-
-async function login(username, password) {
-  if (!password) {
-    password = username;
+  async function insertUser(info) {
+    const user = apos.user.newInstance();
+    assert(user);
+    Object.assign(user, info);
+    await apos.user.insert(apos.task.getReq(), user);
   }
-  jar = apos.http.jar();
 
-  // establish session
-  let page = await apos.http.get('/', {
-    jar
-  });
+  async function login(username, password) {
+    if (!password) {
+      password = username;
+    }
+    jar = apos.http.jar();
 
-  assert(page.match(/logged out/));
+    // establish session
+    let page = await apos.http.get('/', {
+      jar
+    });
 
-  // Log in
+    assert(page.match(/logged out/));
 
-  await apos.http.post('/api/v1/@apostrophecms/login/login', {
-    body: {
-      username,
-      password,
-      session: true
-    },
-    jar
-  });
+    // Log in
 
-  // Confirm login
-  page = await apos.http.get('/', {
-    jar
-  });
+    await apos.http.post('/api/v1/@apostrophecms/login/login', {
+      body: {
+        username,
+        password,
+        session: true
+      },
+      jar
+    });
 
-  assert(page.match(/logged in/));
-  return jar;
-}
+    // Confirm login
+    page = await apos.http.get('/', {
+      jar
+    });
 
-async function getEditableImages(jar) {
-  return (await apos.http.post('/api/v1/@apostrophecms/doc/editable?aposMode=draft', {
-    body: {
-      ids: inserted.map(doc => doc._id.replace(':published', ':draft'))
-    },
-    jar
-  })).editable;
-}
+    assert(page.match(/logged in/));
+    return jar;
+  }
+
+  async function getEditableImages(jar) {
+    return (await apos.http.post('/api/v1/@apostrophecms/doc/editable?aposMode=draft', {
+      body: {
+        ids: inserted.map(doc => doc._id.replace(':published', ':draft'))
+      },
+      jar
+    })).editable;
+  }
+});

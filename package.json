@@ -1,11 +1,11 @@
 {
   "name": "apostrophe",
-  "version": "3.61.1",
+  "version": "3.62.0",
   "description": "The Apostrophe Content Management System.",
   "main": "index.js",
   "scripts": {
     "pretest": "npm run lint",
-    "test": "nyc --reporter=html mocha -t 10000",
+    "test": "nyc --reporter=html mocha -t 10000 --ignore=test/assets.js && nyc --reporter=html mocha -t 10000 test/assets.js",
     "eslint": "eslint --ext .js,.vue .",
     "eslint-fix": "npm run eslint -- --fix",
     "i18n": "node scripts/lint-i18n",

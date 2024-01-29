@@ -1,8 +1,9 @@
 const t = require('../test-lib/test.js');
 const assert = require('assert');
-let apos;
 
 describe('Users', function() {
+
+  let apos;
 
   // Password hashing can be slow
   this.timeout(20000);

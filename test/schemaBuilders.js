@@ -2,11 +2,11 @@ const t = require('../test-lib/test.js');
 const assert = require('assert');
 const _ = require('lodash');
 
-let apos;
-const cats = [];
-const people = [];
-
 describe('Schema builders', function() {
+
+  let apos;
+  const cats = [];
+  const people = [];
 
   this.timeout(t.timeout);
 

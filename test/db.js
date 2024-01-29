@@ -1,9 +1,9 @@
 const t = require('../test-lib/test.js');
 const assert = require('assert');
 
-let apos, apos2;
-
 describe('Db', function() {
+
+  let apos, apos2;
 
   after(async function () {
     await t.destroy(apos);

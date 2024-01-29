@@ -2,9 +2,9 @@ const t = require('../test-lib/test.js');
 const assert = require('assert');
 const Promise = require('bluebird');
 
-let apos;
-
 describe('Locks', function() {
+
+  let apos;
 
   this.timeout(t.timeout);
 

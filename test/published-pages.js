@@ -1,9 +1,9 @@
 const t = require('../test-lib/test.js');
 const assert = require('assert');
 
-let apos;
-
 describe('Pages', function() {
+
+  let apos;
 
   this.timeout(t.timeout);
 
@@ -126,19 +126,19 @@ describe('Pages', function() {
     });
     assert(published.lastPublishedAt);
   });
-});
 
-async function checkRanks(aposLocale) {
-  const pages = await apos.doc.db.find({
-    level: 1,
-    aposLocale
-  }).project({
-    slug: 1,
-    rank: 1,
-    title: 1
-  }).toArray();
-  for (let i = 1; (i <= 10); i++) {
-    assert(pages.find(page => (page.rank === i - 1) && page.title === `test-child-${i}`));
+  async function checkRanks(aposLocale) {
+    const pages = await apos.doc.db.find({
+      level: 1,
+      aposLocale
+    }).project({
+      slug: 1,
+      rank: 1,
+      title: 1
+    }).toArray();
+    for (let i = 1; (i <= 10); i++) {
+      assert(pages.find(page => (page.rank === i - 1) && page.title === `test-child-${i}`));
+    }
+    assert(pages.find(page => (page.slug === '/archive') && (page.rank === 10)));
   }
-  assert(pages.find(page => (page.slug === '/archive') && (page.rank === 10)));
-}
+});

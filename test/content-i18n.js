@@ -1,56 +1,57 @@
 const t = require('../test-lib/test.js');
 const assert = require('assert');
-let apos;
 
-const config = {
-  root: module,
-  // Wrong port, but that is OK for this test
-  baseUrl: 'http://localhost:3000',
-  modules: {
-    '@apostrophecms/i18n': {
-      options: {
-        locales: {
-          en: {
-            label: 'English'
-          },
-          'en-CA': {
-            label: 'Canadian English',
-            prefix: '/ca-en'
-          },
-          'fr-CA': {
-            label: 'Canadian French',
-            prefix: '/ca-fr'
-          },
-          'es-MX': {
-            label: 'Mexico',
-            hostname: 'example.mx'
+describe('content-i18n', function() {
+
+  let apos;
+
+  const config = {
+    root: module,
+    // Wrong port, but that is OK for this test
+    baseUrl: 'http://localhost:3000',
+    modules: {
+      '@apostrophecms/i18n': {
+        options: {
+          locales: {
+            en: {
+              label: 'English'
+            },
+            'en-CA': {
+              label: 'Canadian English',
+              prefix: '/ca-en'
+            },
+            'fr-CA': {
+              label: 'Canadian French',
+              prefix: '/ca-fr'
+            },
+            'es-MX': {
+              label: 'Mexico',
+              hostname: 'example.mx'
+            }
           }
         }
-      }
-    },
-    '@apostrophecms/express': {
-      options: {
-        // Allows us to inject an X-Forwarded-Host header for test purposes
-        trustProxy: true
-      }
-    },
-    'default-page': {},
-    '@apostrophecms/page': {
-      options: {
-        park: [
-          {
-            parkedId: 'people',
-            type: 'default-page',
-            slug: '/people',
-            title: 'People'
-          }
-        ]
+      },
+      '@apostrophecms/express': {
+        options: {
+          // Allows us to inject an X-Forwarded-Host header for test purposes
+          trustProxy: true
+        }
+      },
+      'default-page': {},
+      '@apostrophecms/page': {
+        options: {
+          park: [
+            {
+              parkedId: 'people',
+              type: 'default-page',
+              slug: '/people',
+              title: 'People'
+            }
+          ]
+        }
       }
     }
-  }
-};
-
-describe('Locales', function() {
+  };
 
   this.timeout(t.timeout);
 

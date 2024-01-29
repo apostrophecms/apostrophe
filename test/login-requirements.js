@@ -1,9 +1,10 @@
 const t = require('../test-lib/test.js');
 const assert = require('assert');
 
-let apos;
-
 describe('Login', function() {
+
+  let apos;
+
   const extraSecretErr = 'extra secret incorrect';
   const captchaErr = 'captcha code incorrect';
 
