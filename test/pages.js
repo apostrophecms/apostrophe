@@ -278,7 +278,7 @@ describe('Pages', function() {
     assert.strictEqual(page._ancestors[1]._children[1].path, `${homeId.replace(':en:published', '')}/parent/sibling`);
   });
 
-  it('should ignore type when no autocomplete', async function () {
+  it('should return pages from a specific type when type is provided', async function () {
     const result = await apos.http.get('/api/v1/@apostrophecms/page', {
       qs: {
         type: 'test-page'
