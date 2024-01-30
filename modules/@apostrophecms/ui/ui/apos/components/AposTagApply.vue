@@ -9,7 +9,7 @@
         :field="searchField"
         :model-value="searchValue"
         :status="searchStatus"
-        @input="updateSearchInput"
+        @update:model-value="updateSearchInput"
         @return="create"
       />
       <div class="apos-apply-tag__create">

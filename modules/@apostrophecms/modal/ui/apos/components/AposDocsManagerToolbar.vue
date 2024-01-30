@@ -69,7 +69,7 @@
         :status="searchField.status"
         :model-value="searchField.value"
         :modifiers="['small']"
-        @input="search"
+        @update:model-value="search"
         @return="search($event, true)"
       />
     </template>
