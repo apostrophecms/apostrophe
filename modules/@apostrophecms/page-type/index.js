@@ -108,7 +108,6 @@ module.exports = {
     self.dispatchAll();
     self.composeFilters();
     self.composeColumns();
-    self.addManagerModal();
   },
   handlers(self) {
     return {
@@ -293,13 +292,6 @@ module.exports = {
   },
   methods(self) {
     return {
-      addManagerModal() {
-        self.apos.modal.add(
-          `${self.__meta.name}:manager`,
-          self.getComponentName('managerModal', 'AposDocsManager'),
-          { moduleName: self.__meta.name }
-        );
-      },
       dispatchAll() {
         self.dispatch('/', req => self.setTemplate(req, 'page'));
       },
