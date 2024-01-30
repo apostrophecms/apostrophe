@@ -210,7 +210,7 @@ module.exports = {
               title: 1,
               type: 1
             }).toArray();
-            throw self.apos.error('invalid', {
+            throw self.apos.error('invalid', 'Publish the parent page(s) first.', {
               unpublishedAncestors: draftAncestors.filter(draftAncestor => {
                 return !publishedAncestors.find(publishedAncestor => {
                   return draftAncestor.aposDocId === publishedAncestor.aposDocId;
@@ -413,7 +413,9 @@ module.exports = {
           // Replay the high level positioning used to place it in the draft locale
           return self.apos.page.insert(
             _req,
-            lastTargetId.replace(':draft', ':published'),
+            // do not force published doc as it might not exist, lastTargetId
+            // existance is granted (see `inferLastTargetIdAndPosition`).
+            lastTargetId,
             lastPosition,
             published,
             {

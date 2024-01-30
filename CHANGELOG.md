@@ -6,6 +6,10 @@
 
 * Adds support for browsing specific pages in a relationship field when `withType` is set to a page type, like `@apostrophecms/home-page`, `default-page`, `article-page`...
 
+### Fixes
+
+* Fix publishing or moving published page after a draft page on the same tree level to work as expected.
+
 ## 3.62.0 (2024-01-25)
 
 ### Adds
