@@ -40,10 +40,7 @@ export default {
         : this.defaultFormat;
     },
     pickerOptions() {
-      let fieldOptions = {};
-      if (this.field.options && this.field.options.pickerOptions) {
-        fieldOptions = this.field.options.pickerOptions;
-      }
+      const fieldOptions = this.field.options?.pickerOptions || {};
       return Object.assign(this.defaultPickerOptions, fieldOptions);
     },
 
@@ -63,7 +60,7 @@ export default {
   },
   mounted() {
     if (!this.next) {
-      this.next = null;
+      this.next = '';
     }
   },
   methods: {
@@ -92,7 +89,7 @@ export default {
       return color.isValid() ? false : 'Error';
     },
     clear() {
-      this.next = null;
+      this.next = '';
     }
   }
 };

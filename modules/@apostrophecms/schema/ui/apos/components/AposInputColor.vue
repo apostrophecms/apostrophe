@@ -1,7 +1,9 @@
 <template>
   <AposInputWrapper
-    :modifiers="modifiers" :field="field"
-    :error="effectiveError" :uid="uid"
+    :modifiers="modifiers"
+    :field="field"
+    :error="effectiveError"
+    :uid="uid"
     :display-options="displayOptions"
   >
     <template #body>
@@ -9,17 +11,17 @@
         <div class="apos-color__ui">
           <AposContextMenu
             :button="buttonOptions"
-            @open="open"
-            @close="close"
             menu-placement="bottom-start"
             menu-offset="5, 20"
             :disabled="field.readOnly"
             :tooltip="tooltip"
+            @open="open"
+            @close="close"
           >
             <Picker
               v-bind="pickerOptions"
               :model-value="next"
-              @input="update"
+              @update:model-value="update"
             />
           </AposContextMenu>
         </div>
@@ -27,7 +29,8 @@
           {{ valueLabel }}
           <AposButton
             v-if="next"
-            type="quiet" label="apostrophe:clear"
+            type="quiet"
+            label="apostrophe:clear"
             class="apos-color__clear"
             :modifiers="['no-motion']"
             @click="clear"
