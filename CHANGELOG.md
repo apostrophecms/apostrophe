@@ -5,6 +5,8 @@
 ### Fixes
 
 * Fix publishing or moving published page after a draft page on the same tree level to work as expected.
+* Check create permissions on create keyboard shortcut.
+* Copy requires create and edit permission.
 
 ## 3.62.0 (2024-01-25)
 
