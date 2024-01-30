@@ -119,13 +119,9 @@ const modifiers = computed(() => {
   return classes;
 });
 
-watch(props.menu, () => {
+watch(() => props.menu, () => {
   initialize();
-});
-
-onMounted(() => {
-  initialize();
-});
+}, { immediate: true });
 
 // sets the label and emitted action of the button
 function setButton(btnAction) {
