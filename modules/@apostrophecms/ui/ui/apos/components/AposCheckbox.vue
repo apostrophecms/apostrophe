@@ -6,10 +6,10 @@
     :tabindex="{'-1' : field.hideLabel}"
   >
     <input
+      :id="id"
       v-model="checkProxy"
       type="checkbox"
       class="apos-sr-only apos-input--choice apos-input--checkbox"
-      :id="id"
       :value="choice.value"
       :name="field.name"
       :aria-label="choice.label || field.label"
@@ -20,10 +20,10 @@
     >
     <span class="apos-input-indicator" aria-hidden="true">
       <component
-        v-if="isChecked(modelValue)"
         :is="`${
           choice.indeterminate ? 'minus-icon' : 'check-bold-icon'
         }`"
+        v-if="isChecked(modelValue)"
         :size="10"
       />
     </span>
@@ -64,7 +64,7 @@ export default {
       default: null
     }
   },
-  emits: [ 'change', 'updated' ],
+  emits: [ 'update:model-value', 'updated' ],
   data() {
     return {
       tabindex: this.field.disableFocus ? '-1' : '0'
@@ -79,7 +79,7 @@ export default {
       set(val) {
         if (!this.choice.indeterminate || this.choice.triggerIndeterminateEvent) {
           // Only update the model if the box was *not* indeterminate.
-          this.$emit('change', val);
+          this.$emit('update:model-value', val);
         }
       }
     }
