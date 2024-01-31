@@ -103,13 +103,6 @@ export default {
         canCreate
       } = this.moduleOptions;
 
-      const conditions = {
-        canPublish,
-        canEdit,
-        canArchive,
-        canCreate
-      };
-
       const operations = ((Array.isArray(utilityOperations) && utilityOperations) || []).filter(operation => {
         let ok = true;
         if (operation.relationship != null) {
@@ -119,7 +112,6 @@ export default {
             ok = !operation.relationship;
           }
         }
-        Object.entries(conditions)
         if (operation.canCreate) {
           ok = ok && canCreate;
         }
