@@ -36,7 +36,7 @@
       <AposSlatList
         :model-value="[fileOrAttachment]"
         :disabled="attachmentDisabled"
-        @input="update"
+        @update:model-value="update"
       />
     </div>
   </div>

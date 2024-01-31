@@ -59,7 +59,7 @@
           <AposSlatList
             class="apos-pages-manager__relationship__items"
             :model-value="checkedDocs"
-            @input="setCheckedDocs"
+            @update:model-value="setCheckedDocs"
           />
         </div>
       </AposModalRail>

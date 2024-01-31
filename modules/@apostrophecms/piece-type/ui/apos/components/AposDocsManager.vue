@@ -57,7 +57,7 @@
             class="apos-pieces-manager__relationship__items"
             :model-value="checkedDocs"
             :relationship-schema="relationshipField?.schema"
-            @input="setCheckedDocs"
+            @update:model-value="setCheckedDocs"
             @item-clicked="editRelationship"
           />
         </div>
