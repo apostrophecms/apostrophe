@@ -8,6 +8,11 @@
 * Check create permissions on create keyboard shortcut.
 * Copy requires create and edit permission.
 
+### Adds
+
+* Add support for `canCreate` in context operations conditions.
+* Add support for `canCreate`, `canEdit`, `canArchive` & `canPublish` in utility operations definitions.
+
 ## 3.62.0 (2024-01-25)
 
 ### Adds

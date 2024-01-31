@@ -128,7 +128,7 @@ module.exports = {
     return {
       add: {
         new: {
-          canEdit: true,
+          canCreate: true,
           relationship: true,
           label: {
             key: 'apostrophe:newDocType',

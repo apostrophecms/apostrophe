@@ -95,7 +95,20 @@ export default {
       }
     },
     setUtilityOperations () {
-      const { utilityOperations, canEdit } = this.moduleOptions;
+      const {
+        utilityOperations,
+        canPublish,
+        canEdit,
+        canArchive,
+        canCreate
+      } = this.moduleOptions;
+
+      const conditions = {
+        canPublish,
+        canEdit,
+        canArchive,
+        canCreate
+      };
 
       const operations = ((Array.isArray(utilityOperations) && utilityOperations) || []).filter(operation => {
         let ok = true;
@@ -106,8 +119,18 @@ export default {
             ok = !operation.relationship;
           }
         }
+        Object.entries(conditions)
+        if (operation.canCreate) {
+          ok = ok && canCreate;
+        }
         if (operation.canEdit) {
           ok = ok && canEdit;
+        }
+        if (operation.canArchive) {
+          ok = ok && canArchive;
+        }
+        if (operation.canPublish) {
+          ok = ok && canPublish;
         }
         return ok;
       });
