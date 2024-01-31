@@ -52,13 +52,14 @@
             <th />
           </thead>
           <draggable
-            v-bind="dragOptions"
             :id="listId"
             item-key="_id"
             class="apos-input-array-inline"
-            :tag="field.style === 'table' ? 'tbody' : 'div'"
             role="list"
+            :options="dragOptions"
+            :tag="field.style === 'table' ? 'tbody' : 'div'"
             :list="items"
+            @update="moveUpdate"
           >
             <template #item="{element: item, index}">
               <AposSchema

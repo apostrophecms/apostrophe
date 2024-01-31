@@ -52,7 +52,7 @@
             class="apos-modal-array-items__items"
             :selected="currentId"
             :model-value="withLabels(next)"
-            @input="update"
+            @update:model-value="update"
             @select="select"
           />
         </div>

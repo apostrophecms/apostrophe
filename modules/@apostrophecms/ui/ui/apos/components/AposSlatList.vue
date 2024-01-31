@@ -2,16 +2,14 @@
 <template>
   <div ref="root">
     <draggable
-      v-bind="dragOptions"
       :id="listId"
       item-key="_id"
       class="apos-slat-list"
       tag="ol"
       role="list"
+      :options="dragOptions"
       :list="next"
-      :move="onMove"
-      @start="isDragging=true"
-      @end="isDragging=false"
+      @update="update"
     >
       <template #item="{element: item}">
         <transition-group type="transition" name="apos-flip-list">
@@ -85,11 +83,10 @@ export default {
       default: null
     }
   },
-  emits: [ 'update', 'item-clicked', 'select', 'update:modelValue' ],
+  emits: [ 'item-clicked', 'select', 'update:modelValue' ],
   data() {
     return {
       isDragging: false,
-      delayedDragging: false,
       engaged: null,
       next: this.modelValue.slice()
     };
@@ -106,17 +103,9 @@ export default {
       };
     }
   },
+
   watch: {
-    isDragging(newValue) {
-      if (newValue) {
-        this.delayedDragging = true;
-        return;
-      }
-      this.$nextTick(() => {
-        this.delayedDragging = false;
-      });
-    },
-    value() {
+    modelValue() {
       this.next = this.modelValue.slice();
     },
     next(newValue, oldValue) {
@@ -137,6 +126,17 @@ export default {
     }
   },
   methods: {
+    update({
+      oldIndex, newIndex
+    }) {
+      if (oldIndex !== newIndex) {
+        this.next = this.next.map((elem, index) => {
+          return index === oldIndex
+            ? this.next[newIndex]
+            : (index === newIndex && this.next[oldIndex]) || elem;
+        });
+      }
+    },
     engage(id) {
       this.engaged = id;
     },
@@ -154,15 +154,14 @@ export default {
       } else if (focusNext && this.next[itemIndex - 1]) {
         this.focusElement(this.next[itemIndex - 1]._id);
       }
-      this.$emit('update', this.next);
     },
+
     move(id, dir) {
       const index = this.getIndex(id);
       const target = dir > 0 ? index + 1 : index - 1;
       if (this.next[target]) {
         this.next.splice(target, 0, this.next.splice(index, 1)[0]);
         this.focusElement(id);
-        return this.$emit('update', this.next);
       }
     },
     getIndex(id) {
@@ -180,13 +179,6 @@ export default {
           this.$refs.root.querySelector(`[data-id="${id}"]`).focus();
         });
       }
-    },
-    onMove({ relatedContext, draggedContext }) {
-      const relatedElement = relatedContext.element;
-      const draggedElement = draggedContext.element;
-      return (
-        (!relatedElement || !relatedElement.fixed) && !draggedElement.fixed
-      );
     }
   }
 };

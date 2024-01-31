@@ -121,6 +121,17 @@ export default {
     }
   },
   methods: {
+    moveUpdate({
+      oldIndex, newIndex
+    }) {
+      if (oldIndex !== newIndex) {
+        this.items = this.items.map((elem, index) => {
+          return index === oldIndex
+            ? this.items[newIndex]
+            : (index === newIndex && this.items[oldIndex]) || elem;
+        });
+      }
+    },
     getItemsSchema(_id) {
       return (this.items.find((item) => item._id === _id))?.schemaInput.data;
     },
