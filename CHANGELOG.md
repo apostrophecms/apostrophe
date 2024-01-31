@@ -2,6 +2,10 @@
 
 ## UNRELEASED
 
+### Adds
+
+* Adds a `launder` method to the `slug` schema field query builder to allow for use in API queries.
+
 ### Fixes
 
 * When deleting a draft document, we remove related reverse IDs of documents having a relation to the deleted one.
