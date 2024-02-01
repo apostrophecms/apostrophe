@@ -136,7 +136,7 @@ export default {
     schema() {
       this.populateDocData();
     },
-    'value.data._id'(_id) {
+    'modelValue.data._id'(_id) {
       // The doc might be swapped out completely in cases such as the media
       // library editor. Repopulate the fields if that happens.
       if (
