@@ -65,7 +65,7 @@ export default {
               // Retry now that ancestors are published
               return this.publish(doc);
             } catch (e) {
-              const errorMessage = e.message === 'forbidden' ? 'apostrophe:errorWhilePublishingParentPageForbidden' : e.message;
+              const errorMessage = e.name === 'forbidden' ? 'apostrophe:errorWhilePublishingParentPageForbidden' : e.message;
               await apos.alert({
                 heading: this.$t('apostrophe:errorWhilePublishing'),
                 description: errorMessage || this.$t('apostrophe:errorWhilePublishingParentPage'),

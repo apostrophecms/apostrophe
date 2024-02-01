@@ -165,7 +165,7 @@
   "errorWhilePublishing": "An Error Occurred While Publishing",
   "errorWhilePublishingDocument": "An error occurred while publishing the document.",
   "errorWhilePublishingParentPage": "An error occurred while publishing a parent page.",
-  "errorWhilePublishingParentPageForbidden": "Because you do not have permission to publish the parent page, we are saving and submitting your draft. Please let your manager know that the parent page needs to be published",
+  "errorWhilePublishingParentPageForbidden": "Because you do not have permission to publish the parent page, we are saving and submitting your draft. Please let your manager know that the parent page needs to be published.",
   "errorWhileRestoring": "An error occurred while restoring the previously published version.",
   "errorWhileRestoringArchive": "An error occurred while restoring the document from the archive.",
   "errorWhileRestoringPrevious": "An error occurred while restoring the previously published version.",
