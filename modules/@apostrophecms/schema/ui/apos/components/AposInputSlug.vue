@@ -17,9 +17,9 @@
           {{ localePrefix }}
         </span>
         <input
-          v-model="next"
-          ref="input"
           :id="uid"
+          ref="input"
+          v-model="next"
           :class="classes"
           :type="type"
           :placeholder="$t(field.placeholder)"
@@ -44,8 +44,7 @@
 import AposInputSlugLogic from '../logic/AposInputSlug';
 export default {
   name: 'AposInputSlug',
-  mixins: [ AposInputSlugLogic ],
-  emits: [ 'return' ]
+  mixins: [ AposInputSlugLogic ]
 };
 </script>
 
