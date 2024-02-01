@@ -713,6 +713,18 @@ module.exports = {
         };
       },
 
+      async verifyRequirements(req, requirements) {
+        for (const [ name, requirement ] of Object.entries(requirements)) {
+          try {
+            await requirement.verify(req, req.body.requirements && req.body.requirements[name]);
+          } catch (e) {
+            e.data = e.data || {};
+            e.data.requirement = name;
+            throw e;
+          }
+        }
+      },
+
       // Implementation detail of the login route. Log in the user, or if there are
       // `requirements` that require password verification occur first, return an incomplete token.
       async initialLogin(req) {
@@ -734,25 +746,14 @@ module.exports = {
 
         try {
           // Initial login step
-          const { earlyRequirements, onTimeRequirements, lateRequirements } = self.filterRequirements();
-          for (const [ name, requirement ] of Object.entries(earlyRequirements)) {
-            try {
-              await requirement.verify(req, req.body.requirements && req.body.requirements[name]);
-            } catch (e) {
-              e.data = e.data || {};
-              e.data.requirement = name;
-              throw e;
-            }
-          }
-          for (const [ name, requirement ] of Object.entries(onTimeRequirements)) {
-            try {
-              await requirement.verify(req, req.body.requirements && req.body.requirements[name]);
-            } catch (e) {
-              e.data = e.data || {};
-              e.data.requirement = name;
-              throw e;
-            }
-          }
+          const {
+            earlyRequirements,
+            onTimeRequirements,
+            lateRequirements
+          } = self.filterRequirements();
+          await self.verifyRequirements(req, earlyRequirements);
+          await self.verifyRequirements(req, onTimeRequirements);
+
           // send log information
           const user = await self.apos.login.verifyLogin(
             username,
@@ -767,7 +768,6 @@ module.exports = {
           }
 
           const requirementsToVerify = Object.keys(lateRequirements);
-
           if (requirementsToVerify.length) {
             const token = cuid();
 
