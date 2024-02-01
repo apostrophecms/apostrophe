@@ -5,24 +5,25 @@
       'apos-is-replacing': showReplace
     }"
   >
-    <div class="apos-media-editor__inner" v-if="activeMedia">
+    <div v-if="activeMedia" class="apos-media-editor__inner">
       <div class="apos-media-editor__thumb-wrapper">
         <img
           v-if="activeMedia.attachment && activeMedia.attachment._urls"
           class="apos-media-editor__thumb"
-          :src="activeMedia.attachment._urls[restoreOnly ? 'one-sixth' : 'one-third']" :alt="activeMedia.description"
+          :src="activeMedia.attachment._urls[restoreOnly ? 'one-sixth' : 'one-third']"
+          :alt="activeMedia.description"
         >
       </div>
       <ul class="apos-media-editor__details">
-        <li class="apos-media-editor__detail" v-if="createdDate">
+        <li v-if="createdDate" class="apos-media-editor__detail">
           {{ $t('apostrophe:mediaCreatedDate', { createdDate }) }}
         </li>
-        <li class="apos-media-editor__detail" v-if="fileSize">
+        <li v-if="fileSize" class="apos-media-editor__detail">
           {{ $t('apostrophe:mediaFileSize', { fileSize }) }}
         </li>
         <li
-          class="apos-media-editor__detail"
           v-if="activeMedia.attachment && activeMedia.attachment.width"
+          class="apos-media-editor__detail"
         >
           {{
             $t('apostrophe:mediaDimensions', {
@@ -35,21 +36,24 @@
       <ul class="apos-media-editor__links">
         <li class="apos-media-editor__link" aria-hidden="true">
           <AposButton
-            type="quiet" label="apostrophe:replace"
+            type="quiet"
+            label="apostrophe:replace"
+            :disabled="isArchived"
             @click="showReplace = true"
-            :disabled="isArchived"
           />
         </li>
-        <li class="apos-media-editor__link" v-if="activeMedia.attachment && activeMedia.attachment._urls">
+        <li v-if="activeMedia.attachment && activeMedia.attachment._urls" class="apos-media-editor__link">
           <AposButton
-            type="quiet" label="apostrophe:view"
+            type="quiet"
+            label="apostrophe:view"
+            :disabled="isArchived"
             @click="viewMedia"
-            :disabled="isArchived"
           />
         </li>
-        <li class="apos-media-editor__link" v-if="activeMedia.attachment && activeMedia.attachment._urls">
+        <li v-if="activeMedia.attachment && activeMedia.attachment._urls" class="apos-media-editor__link">
           <AposButton
-            type="quiet" label="apostrophe:download"
+            type="quiet"
+            label="apostrophe:download"
             :href="!isArchived ? activeMedia.attachment._urls.original : false"
             :disabled="isArchived"
             download
@@ -58,16 +62,16 @@
       </ul>
       <AposSchema
         v-if="docFields.data.title !== undefined"
-        :schema="schema"
+        ref="schema"
         v-model="docFields"
+        :schema="schema"
         :modifiers="['small', 'inverted']"
         :trigger-validation="triggerValidation"
         :doc-id="docFields.data._id"
         :following-values="followingValues()"
+        :server-errors="serverErrors"
         @validate="triggerValidate"
         @reset="$emit('modified', false)"
-        ref="schema"
-        :server-errors="serverErrors"
       />
     </div>
     <AposModalLip :refresh="lipKey">
@@ -84,13 +88,15 @@
             modifiers: [ 'small', 'no-motion' ]
           }"
           :menu="moreMenu"
-          @item-clicked="moreMenuHandler"
           menu-placement="top-end"
+          @item-clicked="moreMenuHandler"
         />
         <AposButton
-          @click="save" class="apos-media-editor__save"
+          class="apos-media-editor__save"
           :disabled="docFields.hasErrors"
-          :label="restoreOnly ? 'apostrophe:restore' : 'apostrophe:save'" type="primary"
+          :label="restoreOnly ? 'apostrophe:restore' : 'apostrophe:save'"
+          type="primary"
+          @click="save"
         />
       </div>
     </AposModalLip>
@@ -216,6 +222,7 @@ export default {
   },
   watch: {
     'docFields.data': {
+      deep: true,
       handler(newData, oldData) {
         this.$nextTick(() => {
           // If either old or new state are an empty object, it's not "modified."
