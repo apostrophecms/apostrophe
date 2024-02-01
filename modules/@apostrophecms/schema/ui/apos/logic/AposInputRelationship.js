@@ -231,17 +231,17 @@ export default {
         schema: this.field.schema,
         item,
         title: item.title,
-        value: item._fields
+        'model-value': item._fields
       });
 
       if (result) {
         const index = this.next.findIndex(_item => _item._id === item._id);
 
-        // TODO verify it's still reactive, should be based on the doc
-        // Or use a filter here
-        this.next.splice(index, 1, {
-          ...this.next[index],
-          _fields: result
+        this.next = this.next.map((item, i) => {
+          return i === index ? {
+            ...item,
+            _fields: result
+          } : item;
         });
       }
     },
