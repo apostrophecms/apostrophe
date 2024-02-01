@@ -65,9 +65,10 @@ export default {
               // Retry now that ancestors are published
               return this.publish(doc);
             } catch (e) {
+              const errorMessage = e.message === 'forbidden' ? 'apostrophe:errorWhilePublishingParentPageForbidden' : e.message;
               await apos.alert({
                 heading: this.$t('apostrophe:errorWhilePublishing'),
-                description: e.message || this.$t('apostrophe:errorWhilePublishingParentPage'),
+                description: errorMessage || this.$t('apostrophe:errorWhilePublishingParentPage'),
                 localize: false
               });
             }
