@@ -5,6 +5,7 @@
 ### Adds
 
 * Adds a `launder` method to the `slug` schema field query builder to allow for use in API queries.
+* Adds support for browsing specific pages in a relationship field when `withType` is set to a page type, like `@apostrophecms/home-page`, `default-page`, `article-page`...
 
 ### Fixes
 

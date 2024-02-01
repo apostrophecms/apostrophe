@@ -137,13 +137,13 @@ module.exports = {
           const archived = self.apos.launder.booleanOrNull(req.query.archived);
           const flat = self.apos.launder.boolean(req.query.flat);
           const autocomplete = self.apos.launder.string(req.query.autocomplete);
+          const type = self.apos.launder.string(req.query.type);
 
           if (autocomplete.length) {
             if (!self.apos.permission.can(req, 'view', '@apostrophecms/any-page-type')) {
               throw self.apos.error('forbidden');
             }
 
-            const type = self.apos.launder.string(req.query.type);
             if (type.length && !self.apos.permission.can(req, 'view', type)) {
               throw self.apos.error('forbidden');
             }
@@ -158,6 +158,35 @@ module.exports = {
               // For consistency with the pieces REST API we
               // use a results property when returning a flat list
               results: await query.toArray()
+            };
+          }
+
+          if (type.length) {
+            const manager = self.apos.doc.getManager(type);
+            if (!manager) {
+              throw self.apos.error('invalid');
+            }
+
+            const query = self.getRestQuery(req);
+            query
+              .type(type)
+              .ancestors(false)
+              .children(false)
+              .attachments(false)
+              .perPage(manager.options.perPage);
+
+            // populates totalPages when perPage is present
+            await query.toCount();
+
+            const docs = await query.toArray();
+
+            return {
+              results: docs.map(doc => manager.removeForbiddenFields(req, doc)),
+              pages: query.get('totalPages'),
+              currentPage: query.get('page') || 1,
+              ...(query.get('choicesResults') && {
+                choices: query.get('choicesResults')
+              })
             };
           }
 
