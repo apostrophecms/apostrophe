@@ -200,7 +200,6 @@
                     ],
                   }"
                 />
-
                 <AposInputCheckboxes
                   v-if="relatedDocTypes.length"
                   v-model="wizard.values.relatedDocTypesToLocalize"
@@ -545,16 +544,26 @@ export default {
       return !!this.localized[locale.name];
     },
     selectAll() {
-      this.wizard.values.toLocales.data = this.locales.filter(locale => !this.isCurrentLocale(locale) && this.canEditLocale(locale));
+      this.wizard.values.toLocales.data = this.locales
+        .filter(locale => !this.isCurrentLocale(locale) && this.canEditLocale(locale));
     },
     deselectAll() {
       this.wizard.values.toLocales.data = [];
     },
     toggleLocale(locale) {
-      if (!this.isSelected(locale) && !this.isCurrentLocale(locale) && this.canEditLocale(locale)) {
-        this.wizard.values.toLocales.data.push(locale);
+      if (
+        !this.isSelected(locale) &&
+        !this.isCurrentLocale(locale) &&
+          this.canEditLocale(locale)
+      ) {
+        this.wizard.values.toLocales.data = [
+          ...this.wizard.values.toLocales.data,
+          locale
+        ];
+
       } else if (this.isSelected(locale)) {
-        this.wizard.values.toLocales.data = this.wizard.values.toLocales.data.filter(l => l !== locale);
+        this.wizard.values.toLocales.data = this.wizard.values.toLocales.data
+          .filter(l => l !== locale);
       }
       // Reset search filter
       if (this.filteredLocales.length < 2) {
