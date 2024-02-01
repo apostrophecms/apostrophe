@@ -30,7 +30,7 @@
                 class="apos-share-draft__toggle"
                 @toggle="toggle"
               />
-              <p class="apos-share-draft__toggle-label">
+              <p @click="toggle" class="apos-share-draft__toggle-label">
                 {{ $t('apostrophe:shareDraftEnable') }}
               </p>
             </div>
@@ -266,6 +266,7 @@ export default {
 .apos-share-draft__toggle-wrapper {
   display: flex;
   align-items: center;
+  margin-bottom: $spacing-base;
 }
 
 .apos-share-draft__toggle {
@@ -273,14 +274,18 @@ export default {
 }
 
 .apos-share-draft__toggle-label {
-  @include type-base;
+  @include type-large;
+  flex-grow: 1;
   max-width: 370px;
   line-height: var(--a-line-tallest);
   margin: 0;
+  &:hover {
+    cursor: pointer;
+  }
 }
 
 .apos-share-draft__description {
-  @include type-small;
+  @include type-base;
   line-height: var(--a-line-tall);
   max-width: 355px;
   color: var(--a-base-2);
