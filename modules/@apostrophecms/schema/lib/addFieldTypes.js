@@ -192,6 +192,9 @@ module.exports = (self) => {
             query.and(criteria);
           }
         },
+        launder: function (s) {
+          return self.apos.launder.string(s);
+        },
         choices: async function () {
           return self.sortedDistinct(field.name, query);
         }

@@ -3,24 +3,39 @@ const assert = require('assert');
 const _ = require('lodash');
 
 describe('Docs', function() {
-
   let apos;
 
   this.timeout(t.timeout);
 
-  after(function() {
+  after(async function() {
+    await apos.doc.db.deleteMany({});
+    await apos.lock.db.deleteMany({});
     return t.destroy(apos);
   });
 
-  // EXISTENCE
-
-  it('should be a property of the apos object', async function() {
+  before(async function() {
     apos = await t.create({
       root: module,
 
       modules: {
         'test-people': {
           extend: '@apostrophecms/piece-type',
+          fields: {
+            add: {
+              _friends: {
+                type: 'relationship',
+                max: 1,
+                withType: 'test-people',
+                label: 'Friends'
+              }
+            }
+          }
+        },
+        unlocalized: {
+          extend: '@apostrophecms/piece-type',
+          options: {
+            localized: false
+          },
           fields: {
             add: {
               _friends: {
@@ -48,18 +63,16 @@ describe('Docs', function() {
         }
       }
     });
+  });
 
-    assert(apos.doc);
-
+  afterEach(async function () {
+    await apos.doc.db.deleteMany({ type: 'test-people' });
+    await apos.lock.db.deleteMany({});
   });
 
   it('should have a db property', function() {
     assert(apos.doc.db);
   });
-
-  /// ///
-  // SETUP
-  /// ///
 
   it('should make sure all of the expected indexes are configured', async function() {
     const expectedIndexes = [
@@ -84,64 +97,8 @@ describe('Docs', function() {
     assert(info.highSearchText_text_lowSearchText_text_title_text_searchBoost_text[0][1] === 'text');
   });
 
-  it('should make sure there is no test data hanging around from last time', async function() {
-    // Attempt to purge the entire aposDocs collection
-    await apos.doc.db.deleteMany({});
-
-    // Make sure it went away
-    const docs = await apos.doc.db.find({ slug: 'larry' }).toArray();
-
-    assert(docs.length === 0);
-  });
-
-  it('should be able to use db to insert documents', async function() {
-    const testItems = [
-      {
-        _id: 'lori:en:published',
-        aposDocId: 'lori',
-        aposLocale: 'en:published',
-        slug: 'lori',
-        visibility: 'public',
-        type: 'test-people',
-        firstName: 'Lori',
-        lastName: 'Pizzaroni',
-        age: 32,
-        alive: true
-      },
-      {
-        _id: 'larry:en:published',
-        aposDocId: 'larry',
-        aposLocale: 'en:published',
-        slug: 'larry',
-        visibility: 'public',
-        type: 'test-people',
-        firstName: 'Larry',
-        lastName: 'Cherber',
-        age: 28,
-        alive: true
-      },
-      {
-        _id: 'carl:en:published',
-        aposDocId: 'carl',
-        aposLocale: 'en:published',
-        slug: 'carl',
-        visibility: 'public',
-        type: 'test-people',
-        firstName: 'Carl',
-        lastName: 'Sagan',
-        age: 62,
-        alive: false,
-        friendsIds: [ 'larry' ]
-      }
-    ];
-
-    const response = await apos.doc.db.insertMany(testItems);
-
-    assert(response.result.ok === 1);
-    assert(response.insertedCount === 3);
-  });
-
   it('should be able to fetch schema relationships', async function() {
+    await insertPeople(apos);
     const manager = apos.doc.getManager('test-people');
     const req = apos.task.getAnonReq();
 
@@ -299,6 +256,7 @@ describe('Docs', function() {
   });
 
   it('should be able to find all test documents and output them as an array', async function () {
+    await insertPeople(apos);
     const cursor = apos.doc.find(apos.task.getAnonReq(), { type: 'test-people' });
 
     const docs = await cursor.toArray();
@@ -314,6 +272,7 @@ describe('Docs', function() {
   /// ///
 
   it('should be able to specify which fields to get by passing a projection object', async function() {
+    await insertPeople(apos);
     const cursor = apos.doc.find(apos.task.getAnonReq(), { type: 'test-people' }, {
       project: {
         age: 1
@@ -332,6 +291,7 @@ describe('Docs', function() {
   /// ///
 
   it('should be able to sort', async function () {
+    await insertPeople(apos);
     const cursor = apos.doc.find(apos.task.getAnonReq(), { type: 'test-people' }).sort({ age: 1 });
     const docs = await cursor.toArray();
 
@@ -339,6 +299,7 @@ describe('Docs', function() {
   });
 
   it('should be able to sort by multiple keys', async function () {
+    await insertPeople(apos);
     const cursor = apos.doc.find(apos.task.getAnonReq(), { type: 'test-people' }).sort({
       firstName: 1,
       age: 1
@@ -353,19 +314,8 @@ describe('Docs', function() {
   // INSERTING
   /// ///
 
-  it('should have an "insert" method that returns a new database object', async function() {
-    const object = {
-      slug: 'one',
-      visibility: 'public',
-      type: 'test-people',
-      firstName: 'Lori',
-      lastName: 'Ferber',
-      age: 15,
-      alive: true
-    };
-
-    const response = await apos.doc.insert(apos.task.getReq(), object);
-
+  it('should be able to insert a new object into the docs collection in the database', async function() {
+    const response = await insertOne(apos);
     assert(response);
     assert(response._id);
     assert(response._id.endsWith(':en:published'));
@@ -377,12 +327,9 @@ describe('Docs', function() {
     });
     assert(draft);
     // Unique index allows for duplicates across locales
-    assert(object.slug === draft.slug);
+    assert(draft.slug === 'one');
     // Content properties coming through
     assert(draft.firstName === response.firstName);
-  });
-
-  it('should be able to insert a new object into the docs collection in the database', async function() {
     const cursor = apos.doc.find(apos.task.getReq(), {
       type: 'test-people',
       slug: 'one'
@@ -393,6 +340,7 @@ describe('Docs', function() {
   });
 
   it('should append the slug property with a numeral if inserting an object whose slug already exists in the database', async function() {
+    await insertOne(apos);
     const object = {
       slug: 'one',
       visibility: 'public',
@@ -410,21 +358,8 @@ describe('Docs', function() {
   });
 
   it('should add the aposDocId to the related documents\' relatedReverseIds field and update their `cacheInvalidatedAt` field', async function() {
-    const object = {
-      aposDocId: 'paul',
-      aposLocale: 'en:published',
-      slug: 'paul',
-      visibility: 'public',
-      type: 'test-people',
-      firstName: 'Paul',
-      lastName: 'McCartney',
-      age: 24,
-      alive: false,
-      friendsIds: [ 'carl', 'larry' ],
-      _friends: [ { _id: 'carl:en:published' }, { _id: 'larry:en:published' } ]
-    };
-
-    const response = await apos.doc.insert(apos.task.getReq(), object);
+    await insertPeople(apos);
+    const response = await insertOneWithRelated(apos);
 
     const carlDoc = await apos.doc.db.findOne({
       slug: 'carl',
@@ -443,6 +378,103 @@ describe('Docs', function() {
     assert(larryDoc.relatedReverseIds.length === 1);
     assert(larryDoc.relatedReverseIds[0] === 'paul');
     assert(larryDoc.cacheInvalidatedAt.getTime() === response.updatedAt.getTime());
+
+    apos.doc.db.deleteMany({ slug: { $in: [ 'paul', 'carl', 'larry' ] } });
+  });
+
+  it('should remove the related reverse IDs when you delete a draft document', async function () {
+    const req = apos.task.getReq();
+    await insertPeople(apos);
+    const personWithRelatedPublished = await insertOneWithRelated(apos);
+    const personWithRelatedDraft = await apos.doc.find(apos.task.getReq({ mode: 'draft' }), { slug: 'paul' }).toObject();
+
+    await apos.doc.delete(req, personWithRelatedPublished);
+
+    const larryDoc = await apos.doc.db.findOne({
+      slug: 'larry',
+      aposLocale: 'en:published'
+    });
+    const carlDoc = await apos.doc.db.findOne({
+      slug: 'carl',
+      aposLocale: 'en:published'
+    });
+
+    await apos.doc.delete(req, personWithRelatedDraft);
+
+    const larryDocUpdated = await apos.doc.db.findOne({
+      slug: 'larry',
+      aposLocale: 'en:published'
+    });
+    const carlDocUpdated = await apos.doc.db.findOne({
+      slug: 'carl',
+      aposLocale: 'en:published'
+    });
+
+    const actual = {
+      larryHasRelatedBeforeDelete: larryDoc.relatedReverseIds.includes('paul'),
+      carlHasRelatedBeforeDelete: carlDoc.relatedReverseIds.includes('paul'),
+      larryHasRelatedAfterDelete: larryDocUpdated.relatedReverseIds.includes('paul'),
+      carlHasRelatedAfterDelete: carlDocUpdated.relatedReverseIds.includes('paul')
+    };
+
+    const expected = {
+      larryHasRelatedBeforeDelete: true,
+      carlHasRelatedBeforeDelete: true,
+      larryHasRelatedAfterDelete: false,
+      carlHasRelatedAfterDelete: false
+    };
+
+    assert.deepEqual(actual, expected);
+  });
+
+  it('should remove the related reverse IDs when you delete an unlocalized document', async function () {
+    const req = apos.task.getReq();
+    await insertPeople(apos);
+    const unlocalizedDoc = await apos.doc.insert(req, {
+      aposDocId: 'paul',
+      aposLocale: 'en:published',
+      slug: 'paul',
+      visibility: 'public',
+      type: 'unlocalized',
+      friendsIds: [ 'carl', 'larry' ],
+      _friends: [ { _id: 'carl:en:published' }, { _id: 'larry:en:published' } ]
+    });
+
+    const larryDoc = await apos.doc.db.findOne({
+      slug: 'larry',
+      aposLocale: 'en:published'
+    });
+    const carlDoc = await apos.doc.db.findOne({
+      aposDocId: 'carl',
+      aposLocale: 'en:published'
+    });
+
+    await apos.doc.delete(req, unlocalizedDoc);
+
+    const larryDocUpdated = await apos.doc.db.findOne({
+      slug: 'larry',
+      aposLocale: 'en:published'
+    });
+    const carlDocUpdated = await apos.doc.db.findOne({
+      slug: 'carl',
+      aposLocale: 'en:published'
+    });
+
+    const actual = {
+      larryHasRelatedBeforeDelete: larryDoc.relatedReverseIds.includes('paul'),
+      carlHasRelatedBeforeDelete: carlDoc.relatedReverseIds.includes('paul'),
+      larryHasRelatedAfterDelete: larryDocUpdated.relatedReverseIds.includes('paul'),
+      carlHasRelatedAfterDelete: carlDocUpdated.relatedReverseIds.includes('paul')
+    };
+
+    const expected = {
+      larryHasRelatedBeforeDelete: true,
+      carlHasRelatedBeforeDelete: true,
+      larryHasRelatedAfterDelete: false,
+      carlHasRelatedAfterDelete: false
+    };
+
+    assert.deepEqual(actual, expected);
   });
 
   it('should not allow you to call the insert method if you are not an admin', async function() {
@@ -469,6 +501,7 @@ describe('Docs', function() {
   /// ///
 
   it('should have an "update" method on docs that updates an existing database object', async function() {
+    await insertOne(apos);
     const req = apos.task.getReq();
     const docs = await apos.doc.find(req, { slug: 'one' }).toArray();
 
@@ -488,41 +521,55 @@ describe('Docs', function() {
   });
 
   it('should append an updated slug with a numeral if the updated slug already exists', async function() {
+    await insertPeople(apos);
+    await insertOne(apos);
     const req = apos.task.getReq();
     const cursor = apos.doc.find(req, {
       type: 'test-people',
       slug: 'one'
     });
     const doc = await cursor.toObject();
-
     assert(doc);
 
     doc.slug = 'peter';
-
     const updated = await apos.doc.update(req, doc);
     assert(updated);
     // Has the updated slug been appended?
     assert(updated.slug.match(/^peter\d+$/));
   });
+
   it('should be able to fetch all unique firstNames with toDistinct', async function() {
+    await insertPeople(apos);
     const firstNames = await apos.doc.find(apos.task.getReq(), {
       type: 'test-people'
     }).toDistinct('firstName');
 
     assert(Array.isArray(firstNames));
-    assert(firstNames.length === 5);
+    assert(firstNames.length === 4);
     assert(_.includes(firstNames, 'Larry'));
   });
 
   it('should be able to fetch all unique firstNames and their counts with toDistinct and distinctCounts', async function() {
+    await insertPeople(apos);
     const req = apos.task.getReq();
+    await apos.doc.db.insertOne({
+      _id: 'random:en:published',
+      slug: 'random',
+      aposDocId: 'lori2',
+      aposLocale: 'en:published',
+      type: 'test-people',
+      visibility: 'loginRequired',
+      firstName: 'Lori',
+      lastName: 'Lora',
+      age: 70
+    });
     const cursor = apos.doc.find(req, {
       type: 'test-people'
     }).distinctCounts(true);
     const firstNames = await cursor.toDistinct('firstName');
 
     assert(Array.isArray(firstNames));
-    assert(firstNames.length === 5);
+    assert(firstNames.length === 4);
     assert(_.includes(firstNames, 'Larry'));
 
     const counts = await cursor.get('distinctCounts');
@@ -532,6 +579,8 @@ describe('Docs', function() {
   });
 
   it('should remove the aposDocId from the related documents\' relatedReverseIds field and update their `cacheInvalidatedAt` field', async function() {
+    await insertPeople(apos);
+    await insertOneWithRelated(apos);
     const paulDoc = await apos.doc.db.findOne({
       slug: 'paul',
       aposLocale: 'en:published'
@@ -565,6 +614,7 @@ describe('Docs', function() {
   });
 
   it('should update the related reverse documents\' `cacheInvalidatedAt` field', async function() {
+    await insertPeople(apos);
     const object = {
       aposDocId: 'john',
       aposLocale: 'en:published',
@@ -656,21 +706,26 @@ describe('Docs', function() {
   /// ///
 
   it('should archive docs by updating them', async function() {
+    await insertPeople(apos);
     const req = apos.task.getReq();
     const doc = await apos.doc.find(req, {
       type: 'test-people',
       slug: 'carl'
     }).toObject();
-    const archived = await apos.doc.update(req, {
-      ...doc,
-      archived: true
-    });
+    const archived = await archiveDoc(apos, doc);
 
     assert(archived.archived === true);
   });
 
   it('should not be able to find the archived object', async function() {
     const req = apos.task.getReq();
+    await insertPeople(apos);
+    const carlDoc = await apos.doc.find(req, {
+      type: 'test-people',
+      slug: 'carl'
+    }).toObject();
+    await archiveDoc(apos, carlDoc);
+
     const doc = await apos.doc.find(req, {
       slug: 'carl'
     }).toObject();
@@ -690,11 +745,17 @@ describe('Docs', function() {
   });
 
   it('should be able to find the archived object when using the "archived" method on find()', async function() {
+    const req = apos.task.getReq();
+    await insertPeople(apos);
+    const carlDoc = await apos.doc.find(req, {
+      type: 'test-people',
+      slug: 'carl'
+    }).toObject();
+    await archiveDoc(apos, carlDoc);
     // Look for the archived doc with the `deduplicate-` + its `_id` + its `name` properties.
-    const doc = await apos.doc.find(apos.task.getReq(), {
+    const doc = await apos.doc.find(req, {
       slug: 'deduplicate-carl-carl'
     }).archived(true).toObject();
-
     assert(doc);
     assert(doc.archived);
   });
@@ -705,6 +766,12 @@ describe('Docs', function() {
 
   it('should rescue a doc by updating the "archived" property from an object', async function() {
     const req = apos.task.getReq();
+    await insertPeople(apos);
+    const carlDoc = await apos.doc.find(req, {
+      type: 'test-people',
+      slug: 'carl'
+    }).toObject();
+    await archiveDoc(apos, carlDoc);
 
     const doc = await apos.doc.find(req, {
       slug: 'deduplicate-carl-carl'
@@ -724,6 +791,12 @@ describe('Docs', function() {
 
   it('should not allow you to call the restore method if you are not an admin', async function() {
     try {
+      await insertPeople(apos);
+      const carlDoc = await apos.doc.find(apos.task.getReq(), {
+        type: 'test-people',
+        slug: 'carl'
+      }).toObject();
+      await archiveDoc(apos, carlDoc);
       await apos.doc.restore(apos.task.getAnonReq(), {
         slug: 'carl'
       });
@@ -769,21 +842,19 @@ describe('Docs', function() {
     assert(docs[2]._id === 'i27:en:published');
     assert(docs[3]._id === 'i9:en:published');
     assert(!docs[4]);
-  });
 
-  it('should respect _ids with skip and limit', async function() {
-    // Relies on test data of previous test
-    const docs = await apos.doc.find(apos.task.getAnonReq(), {})
+    const filteredDocs = await apos.doc.find(apos.task.getAnonReq(), {})
       ._ids([ 'i7:en:published', 'i3:en:published', 'i27:en:published', 'i9:en:published' ]).skip(2).limit(2).toArray();
 
-    assert(docs[0]._id === 'i27:en:published');
-    assert(docs[1]._id === 'i9:en:published');
-    assert(!docs[2]);
+    assert(filteredDocs[0]._id === 'i27:en:published');
+    assert(filteredDocs[1]._id === 'i9:en:published');
+    assert(!filteredDocs[2]);
   });
 
   it('should be able to lock a document', async function() {
     const req = apos.task.getReq();
-    const doc = await apos.doc.db.findOne({ _id: 'i27:en:published' });
+    await insertPeople(apos);
+    const doc = await apos.doc.db.findOne({ _id: 'carl:en:published' });
     try {
       await apos.doc.lock(req, doc, 'abc');
     } catch (e) {
@@ -793,10 +864,13 @@ describe('Docs', function() {
 
   it('should not be able to lock a document with a different tabId', async function() {
     const req = apos.task.getReq();
-    const doc = await apos.doc.db.findOne({ _id: 'i27:en:published' });
+    await insertPeople(apos);
+    const doc = await apos.doc.db.findOne({ _id: 'carl:en:published' });
 
     try {
-      await apos.doc.lock(req, doc, 'def');
+      await apos.doc.lock(req, doc, 'abc');
+      const locked = await apos.doc.db.findOne({ _id: 'carl:en:published' });
+      await apos.doc.lock(req, locked, 'def');
     } catch (e) {
       assert(e);
       assert(e.name === 'locked');
@@ -805,10 +879,17 @@ describe('Docs', function() {
 
   it('should be able to refresh the lock with the same tabId', async function() {
     const req = apos.task.getReq();
-    const doc = await apos.doc.db.findOne({ _id: 'i27:en:published' });
+    await insertPeople(apos);
+    const doc = await apos.doc.db.findOne({ _id: 'carl:en:published' });
+    const wait = (time) => new Promise((resolve) => setTimeout(() => {
+      resolve();
+    }, time));
 
     try {
       await apos.doc.lock(req, doc, 'abc');
+      const locked = await apos.doc.db.findOne({ _id: 'carl:en:published' });
+      await wait(500);
+      await apos.doc.lock(req, locked, 'abc');
     } catch (e) {
       assert(!e);
     }
@@ -816,9 +897,11 @@ describe('Docs', function() {
 
   it('should be able to unlock a document', async function() {
     const req = apos.task.getReq();
-    const doc = await apos.doc.db.findOne({ _id: 'i27:en:published' });
+    await insertPeople(apos);
+    const doc = await apos.doc.db.findOne({ _id: 'carl:en:published' });
 
     try {
+      await apos.doc.lock(req, doc, 'abc');
       await apos.doc.unlock(req, doc, 'abc');
     } catch (e) {
       assert(false);
@@ -827,9 +910,12 @@ describe('Docs', function() {
 
   it('should be able to re-lock an unlocked document', async function() {
     const req = apos.task.getReq();
-    const doc = await apos.doc.db.findOne({ _id: 'i27:en:published' });
+    await insertPeople(apos);
+    const doc = await apos.doc.db.findOne({ _id: 'carl:en:published' });
 
     try {
+      await apos.doc.lock(req, doc, 'abc');
+      await apos.doc.unlock(req, doc, 'abc');
       await apos.doc.lock(req, doc, 'def');
     } catch (e) {
       assert(false);
@@ -838,9 +924,11 @@ describe('Docs', function() {
 
   it('should be able to lock a locked document with force: true', async function() {
     const req = apos.task.getReq();
-    const doc = await apos.doc.db.findOne({ _id: 'i27:en:published' });
+    await insertPeople(apos);
+    const doc = await apos.doc.db.findOne({ _id: 'carl:en:published' });
 
     try {
+      await apos.doc.lock(req, doc, 'def');
       await apos.doc.lock(req, doc, 'abc', { force: true });
     } catch (e) {
       assert(false);
@@ -959,5 +1047,92 @@ describe('Docs', function() {
     assert(response.cacheInvalidatedAt.getTime() === response.updatedAt.getTime());
     assert(draft.cacheInvalidatedAt.getTime() === draft.updatedAt.getTime());
   });
-
 });
+
+async function insertPeople(apos) {
+  return apos.doc.db.insertMany([
+    {
+      _id: 'lori:en:published',
+      aposDocId: 'lori',
+      aposLocale: 'en:published',
+      slug: 'lori',
+      visibility: 'public',
+      type: 'test-people',
+      firstName: 'Lori',
+      lastName: 'Pizzaroni',
+      age: 32,
+      alive: true
+    },
+    {
+      _id: 'larry:en:published',
+      aposDocId: 'larry',
+      aposLocale: 'en:published',
+      slug: 'larry',
+      visibility: 'public',
+      type: 'test-people',
+      firstName: 'Larry',
+      lastName: 'Cherber',
+      age: 28,
+      alive: true
+    },
+    {
+      _id: 'carl:en:published',
+      aposDocId: 'carl',
+      aposLocale: 'en:published',
+      slug: 'carl',
+      visibility: 'public',
+      type: 'test-people',
+      firstName: 'Carl',
+      lastName: 'Sagan',
+      age: 62,
+      alive: false,
+      friendsIds: [ 'larry' ]
+    },
+    {
+      _id: 'peter:en:published',
+      aposDocId: 'peter',
+      aposLocale: 'en:published',
+      type: 'test-people',
+      visibility: 'loginRequired',
+      firstName: 'Peter',
+      lastName: 'Pan',
+      age: 70,
+      slug: 'peter'
+    }
+  ]);
+}
+
+async function insertOne(apos) {
+  return apos.doc.insert(apos.task.getReq(), {
+    slug: 'one',
+    visibility: 'public',
+    type: 'test-people',
+    firstName: 'Lori',
+    lastName: 'Ferber',
+    age: 15,
+    alive: true
+  });
+}
+
+async function insertOneWithRelated(apos) {
+  return apos.doc.insert(apos.task.getReq(), {
+    aposDocId: 'paul',
+    aposLocale: 'en:published',
+    slug: 'paul',
+    visibility: 'public',
+    type: 'test-people',
+    firstName: 'Paul',
+    lastName: 'McCartney',
+    age: 24,
+    alive: false,
+    friendsIds: [ 'carl', 'larry' ],
+    _friends: [ { _id: 'carl:en:published' }, { _id: 'larry:en:published' } ]
+  });
+}
+
+async function archiveDoc(apos, doc) {
+  return apos.doc.update(apos.task.getReq(), {
+    ...doc,
+    archived: true
+  });
+}
