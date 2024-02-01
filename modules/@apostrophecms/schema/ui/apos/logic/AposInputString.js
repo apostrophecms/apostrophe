@@ -78,11 +78,9 @@ export default {
         this.$emit('return');
       }
     },
-    validate(value) {
-      if (value == null) {
-        value = '';
-      }
-      if (typeof value === 'string' && !value.length) {
+    validate(value = '') {
+      const isString = typeof value === 'string';
+      if (isString && !value.length) {
         // Also correct for float and integer because Vue coerces
         // number fields to either a number or the empty string
         return this.field.required ? 'required' : false;
@@ -104,12 +102,12 @@ export default {
       }
 
       if (this.field.min && minMaxFields.includes(this.field.type)) {
-        if ((value != null) && value.length && (this.minMaxComparable(value) < this.field.min)) {
+        if ((!isString || value.length) && (this.minMaxComparable(value) < this.field.min)) {
           return 'min';
         }
       }
       if (this.field.max && minMaxFields.includes(this.field.type)) {
-        if ((value != null) && value.length && (this.minMaxComparable(value) > this.field.max)) {
+        if ((!isString || value.length) && (this.minMaxComparable(value) > this.field.max)) {
           return 'max';
         }
       }
