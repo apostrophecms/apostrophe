@@ -33,7 +33,7 @@
           />
         </div>
         <button
-          ref="btns"
+          :id="`btn-${item._id}`"
           :disabled="
             item._id === 'placeholder' ||
               (options.disableUnchecked && !checked.includes(item._id))
@@ -65,7 +65,6 @@
         aria-hidden="true"
       >
         <button
-          ref="btns"
           disabled="true"
           class="apos-media-manager-display__select"
         />
@@ -138,7 +137,11 @@ export default {
     getPlaceholderStyles(item) {
       // Account for whether the refs have been set by the v-for or if on the
       // placeholder.
-      const btn = Array.isArray(this.$refs.btns) ? this.$refs.btns[0] : this.$refs.btns;
+      /* const btn = Array.isArray(this.$refs.btns) ? this.$refs.btns[0] : this.$refs.btns; */
+      const btn = this.items.length && this.$el.querySelector(`#btn-${this.items[0]._id}`);
+      if (!btn) {
+        return {};
+      }
       const {
         width: parentWidth,
         height: parentHeight
