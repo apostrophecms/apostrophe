@@ -50,6 +50,7 @@ export default {
 
         el.addEventListener('mouseenter', el.aposShowTooltipListener);
         el.addEventListener('mouseleave', el.aposHideTooltipListener);
+        el.addEventListener('click', el.aposHideTooltipListener);
       },
       beforeUnmount(el, binding, vnodes) {
         if (el.aposHideTooltipListener) {
@@ -57,6 +58,7 @@ export default {
         }
         el.removeEventListener('mouseenter', el.aposShowTooltipListener);
         el.removeEventListener('mouseleave', el.aposHideTooltipListener);
+        el.removeEventListener('click', el.aposHideTooltipListener);
       }
     });
 
