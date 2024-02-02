@@ -64,7 +64,7 @@ export default {
       default: null
     }
   },
-  emits: [ 'update:model-value', 'updated' ],
+  emits: [ 'update:modelValue', 'updated' ],
   data() {
     return {
       tabindex: this.field.disableFocus ? '-1' : '0'
@@ -79,7 +79,7 @@ export default {
       set(val) {
         if (!this.choice.indeterminate || this.choice.triggerIndeterminateEvent) {
           // Only update the model if the box was *not* indeterminate.
-          this.$emit('update:model-value', val);
+          this.$emit('update:modelValue', val);
         }
       }
     }
