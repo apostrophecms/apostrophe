@@ -1,11 +1,12 @@
 <template>
   <AposButton
     icon="tray-full-icon"
-    type="subtle" :modifiers="['small', 'no-motion']"
-    @click="open"
+    type="subtle"
+    :modifiers="['small', 'no-motion']"
     :disabled="count <= 0"
     :tooltip="tooltip"
     :icon-only="true"
+    @click="open"
   >
     <template #label>
       <span v-if="canPublish && count > 0" class="apos-submitted-drafts__counter">
@@ -37,7 +38,7 @@ export default {
   mounted() {
     this.updateCount();
   },
-  destroyed() {
+  unmounted() {
     if (this.timeout) {
       clearTimeout(this.timeout);
     }

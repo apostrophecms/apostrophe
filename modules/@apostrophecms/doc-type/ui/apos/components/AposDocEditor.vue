@@ -426,7 +426,7 @@ export default {
     }
     apos.bus.$on('content-changed', this.onContentChanged);
   },
-  destroyed() {
+  unmounted() {
     apos.bus.$off('content-changed', this.onContentChanged);
   },
   methods: {

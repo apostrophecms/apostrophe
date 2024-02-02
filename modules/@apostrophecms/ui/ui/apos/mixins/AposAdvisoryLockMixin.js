@@ -12,7 +12,7 @@ export default {
       lockApiUrl: null
     };
   },
-  async destroyed () {
+  async unmounted () {
     await this.unlock();
   },
   methods: {

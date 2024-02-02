@@ -88,7 +88,7 @@ export default {
       this.$emit('safe-close');
     }
   },
-  beforeDestroy() {
+  beforeUnmount() {
     apos.bus.$off('modal-launched', this.autoCloseWhenHidden);
     apos.bus.$off('modal-resolved', this.close);
   },

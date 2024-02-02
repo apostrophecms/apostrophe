@@ -192,7 +192,7 @@ export default {
     apos.bus.$on('command-menu-manager-archive-selected', this.archiveSelected);
     apos.bus.$on('command-menu-manager-focus-search', this.focusSearch);
   },
-  destroyed () {
+  unmounted () {
     apos.bus.$off('command-menu-manager-select-all', this.selectAll);
     apos.bus.$off('command-menu-manager-archive-selected', this.archiveSelected);
     apos.bus.$off('command-menu-manager-focus-search', this.focusSearch);

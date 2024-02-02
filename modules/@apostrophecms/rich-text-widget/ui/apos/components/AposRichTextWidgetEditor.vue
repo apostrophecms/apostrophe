@@ -372,7 +372,7 @@ export default {
     apos.bus.$on('apos-refreshing', this.onAposRefreshing);
   },
 
-  beforeDestroy() {
+  beforeUnmount() {
     this.editor.destroy();
     apos.bus.$off('apos-refreshing', this.onAposRefreshing);
   },

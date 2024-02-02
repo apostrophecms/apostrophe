@@ -85,7 +85,7 @@ export default {
   mounted() {
     this.docsManagerAddEventHandlers();
   },
-  destroyed() {
+  unmounted() {
     this.docsManagerRemoveEventHandlers();
   },
   watch: {

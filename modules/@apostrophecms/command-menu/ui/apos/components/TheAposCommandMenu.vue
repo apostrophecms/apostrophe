@@ -85,7 +85,7 @@ export default {
     apos.bus.$on('modal-launched', this.updateModal);
     apos.bus.$on('modal-resolved', this.updateModal);
   },
-  beforeDestroy() {
+  beforeUnmount() {
     document.removeEventListener('keydown', this.keyboardShortcutListener);
 
     apos.bus.$off('modal-launched', this.updateModal);

@@ -77,7 +77,7 @@ export default {
       }
     }
   },
-  beforeDestroy() {
+  beforeUnmount() {
     clearTimeout(this.restoreRefTimeout);
     Object.values(this.subformUpdateTimeouts)
       .forEach(clearTimeout);

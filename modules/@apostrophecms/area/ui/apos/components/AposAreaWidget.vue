@@ -366,7 +366,7 @@ export default {
       apos.bus.$emit('widget-focus', this.widget._id);
     }
   },
-  destroyed() {
+  unmounted() {
     // Remove the focus parent listener when unmounted
     apos.bus.$off('widget-focus-parent', this.focusParent);
   },

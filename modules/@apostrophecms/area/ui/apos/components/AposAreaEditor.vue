@@ -220,7 +220,7 @@ export default {
   mounted() {
     this.bindEventListeners();
   },
-  beforeDestroy() {
+  beforeUnmount() {
     this.unbindEventListeners();
   },
   methods: {

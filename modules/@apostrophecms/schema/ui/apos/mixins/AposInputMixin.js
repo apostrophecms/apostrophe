@@ -64,7 +64,7 @@ export default {
     this.$el.addEventListener('focusin', this.focusInListener);
     this.$el.addEventListener('focusout', this.focusOutListener);
   },
-  destroyed () {
+  unmounted () {
     this.$el.removeEventListener('focusin', this.focusInListener);
     this.$el.removeEventListener('focusout', this.focusOutListener);
   },

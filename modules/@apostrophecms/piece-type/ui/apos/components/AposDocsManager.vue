@@ -245,7 +245,7 @@ export default {
     apos.bus.$on('command-menu-manager-create-new', this.create);
     apos.bus.$on('command-menu-manager-close', this.confirmAndCancel);
   },
-  destroyed() {
+  unmounted() {
     this.destroyShortcuts();
     apos.bus.$off('content-changed', this.getPieces);
     apos.bus.$off('command-menu-manager-create-new', this.create);

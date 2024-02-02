@@ -1,6 +1,7 @@
 <template>
   <div
-    class="apos-tree__row-data apos-tree__header" :class="headerClasses"
+    class="apos-tree__row-data apos-tree__header"
+    :class="headerClasses"
     :aria-hidden="spacerOnly"
   >
     <span
@@ -12,7 +13,8 @@
       :style="getCellStyles(col)"
     >
       <component
-        v-if="col.columnHeaderIcon" :is="icons[col.columnHeaderIcon]"
+        :is="icons[col.columnHeaderIcon]"
+        v-if="col.columnHeaderIcon"
         class="apos-tree__cell__icon"
       />
       {{ $t(col.columnHeader) }}
@@ -77,7 +79,7 @@ export default {
       window.addEventListener('resize', debounce(this.calculateWidths, 100));
     }
   },
-  destroyed() {
+  unmounted() {
     if (this.spacerOnly) {
       window.removeEventListener('resize', debounce(this.calculateWidths, 100));
     }

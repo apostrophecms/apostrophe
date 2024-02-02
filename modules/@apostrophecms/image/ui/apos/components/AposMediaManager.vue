@@ -240,7 +240,7 @@ export default {
     apos.bus.$on('content-changed', this.onContentChanged);
     apos.bus.$on('command-menu-manager-close', this.confirmAndCancel);
   },
-  destroyed() {
+  unmounted() {
     apos.bus.$off('content-changed', this.onContentChanged);
     apos.bus.$off('command-menu-manager-close', this.confirmAndCancel);
   },

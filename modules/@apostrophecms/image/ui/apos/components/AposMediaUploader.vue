@@ -83,7 +83,7 @@ export default {
   mounted() {
     apos.bus.$on('command-menu-manager-create-new', this.create);
   },
-  destroyed() {
+  unmounted() {
     apos.bus.$off('command-menu-manager-create-new', this.create);
   },
   methods: {

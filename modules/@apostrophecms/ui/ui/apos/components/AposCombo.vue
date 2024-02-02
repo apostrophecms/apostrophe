@@ -157,7 +157,7 @@ export default {
   mounted() {
     this.boxResizeObserver.observe(this.$refs.select);
   },
-  beforeDestroy() {
+  beforeUnmount() {
     this.boxResizeObserver.unobserve(this.$refs.select);
   },
   methods: {

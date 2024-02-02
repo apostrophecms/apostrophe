@@ -347,7 +347,7 @@ export default {
     apos.bus.$on('content-changed', this.onContentChanged);
     apos.bus.$on('command-menu-admin-bar-discard-draft', this.customDiscardDraft);
   },
-  destroyed() {
+  unmounted() {
     apos.bus.$off('content-changed', this.onContentChanged);
     apos.bus.$off('command-menu-admin-bar-discard-draft', this.customDiscardDraft);
   },

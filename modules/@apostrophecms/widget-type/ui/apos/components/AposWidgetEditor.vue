@@ -150,7 +150,7 @@ export default {
       ...apos.area.widgetOptions
     ];
   },
-  destroyed() {
+  unmounted() {
     apos.area.widgetOptions = apos.area.widgetOptions.slice(1);
   },
   created() {

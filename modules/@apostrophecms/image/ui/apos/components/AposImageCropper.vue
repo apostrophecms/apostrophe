@@ -127,7 +127,7 @@ export default {
       left: this.docFields.data.left
     };
   },
-  beforeDestroy() {
+  beforeUnmount() {
     this.$refs.focalPoint.removeEventListener('mousedown', this.onFocalPointMouseDown);
     window.removeEventListener('resize', this.onScreenResizeDebounced);
   },

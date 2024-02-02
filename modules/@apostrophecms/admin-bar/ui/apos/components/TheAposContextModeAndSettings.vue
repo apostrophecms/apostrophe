@@ -151,7 +151,7 @@ export default {
     apos.bus.$on('command-menu-admin-bar-toggle-edit-preview', this.toggleEditPreviewMode);
     apos.bus.$on('command-menu-admin-bar-publish-draft', this.onPublish);
   },
-  destroyed() {
+  unmounted() {
     apos.bus.$off('command-menu-admin-bar-toggle-edit-preview', this.toggleEditPreviewMode);
     apos.bus.$off('command-menu-admin-bar-publish-draft', this.onPublish);
   },
