@@ -166,10 +166,12 @@ const { themeClass } = useAposTheme();
 
 onMounted(() => {
   apos.bus.$on('context-menu-opened', hideWhenOtherOpen);
+  apos.bus.$on('widget-focus', hide);
 });
 
 onBeforeUnmount(() => {
   apos.bus.$off('context-menu-opened', hideWhenOtherOpen);
+  apos.bus.$off('widget-focus', hide);
 });
 
 function hideWhenOtherOpen(id) {
@@ -193,7 +195,6 @@ function setArrow(el) {
 }
 
 function menuItemClicked(name) {
-  console.log('=====> item clicked <=====');
   emit('item-clicked', name);
   hide();
 }
