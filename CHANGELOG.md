@@ -11,6 +11,7 @@
 
 * When deleting a draft document, we remove related reverse IDs of documents having a relation to the deleted one.
 * Fix publishing or moving published page after a draft page on the same tree level to work as expected.
+* Display a more informative error message when publishing a page because the parent page is not published and the current user has no permission to publish the parent page (while having permission to publish the current one).
 
 ### Changes
 
@@ -37,7 +38,6 @@
 published version of the site even if they could not otherwise insert a child of the published
 parent.
 * Display the "Browse" button in a relationship inside an inline array.
-* Display a more informative error message when publishing a page because the parent page is not published and the current user has no permission to publish the parent page (while having permission to publish the current one).
 
 ## 3.61.1 (2023-01-08)
 
