@@ -297,6 +297,14 @@ export default {
         withPublished: 1
       };
 
+      const type = this.relationshipField?.withType;
+      const isPage = apos.modules['@apostrophecms/page'].validPageTypes
+        .includes(type);
+
+      if (isPage) {
+        options.type = type;
+      }
+
       // Avoid undefined properties.
       const qs = Object.entries(options)
         .reduce((acc, [ key, val ]) => ({

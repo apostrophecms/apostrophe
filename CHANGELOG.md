@@ -2,10 +2,19 @@
 
 ## UNRELEASED
 
+### Adds
+
+* Adds a `launder` method to the `slug` schema field query builder to allow for use in API queries.
+* Adds support for browsing specific pages in a relationship field when `withType` is set to a page type, like `@apostrophecms/home-page`, `default-page`, `article-page`...
+
 ### Fixes
 
 * When deleting a draft document, we remove related reverse IDs of documents having a relation to the deleted one.
 * Fix publishing or moving published page after a draft page on the same tree level to work as expected.
+
+### Changes
+
+* Share Drafts modal styles made larger and it's toggle input has a larger hitbox.
 
 ## 3.62.0 (2024-01-25)
 

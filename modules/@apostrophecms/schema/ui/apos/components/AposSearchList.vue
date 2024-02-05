@@ -50,7 +50,7 @@ export default {
 
 <style lang="scss" scoped>
 .apos-search {
-  z-index: $z-index-default;
+  z-index: calc(#{$z-index-widget-focused-controls} + 1);
   position: absolute;
   overflow: auto;
   width: 100%;
