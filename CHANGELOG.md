@@ -6,11 +6,17 @@
 
 * Adds a `launder` method to the `slug` schema field query builder to allow for use in API queries.
 * Adds support for browsing specific pages in a relationship field when `withType` is set to a page type, like `@apostrophecms/home-page`, `default-page`, `article-page`...
+* Add support for `canCreate` in context operations conditions.
+* Add support for `canCreate`, `canEdit`, `canArchive` & `canPublish` in utility operations definitions.
+* Add `uponSubmit` requirement in the `@apostrophecms/login` module. `uponSubmit` requirements are checked each time the user submit the login form. See the documentation for more information.
 
 ### Fixes
 
 * When deleting a draft document, we remove related reverse IDs of documents having a relation to the deleted one.
 * Fix publishing or moving published page after a draft page on the same tree level to work as expected.
+* Check create permissions on create keyboard shortcut.
+* Copy requires create and edit permission.
+* Display a more informative error message when publishing a page because the parent page is not published and the current user has no permission to publish the parent page (while having permission to publish the current one).
 * Block typing slash key (`/`) in slugs to prevent infinite loop (slashes are still automatically added for pages).
 
 ### Changes

@@ -119,7 +119,7 @@ module.exports = {
             type: 'command-menu-manager-create-new'
           },
           permission: {
-            action: 'edit',
+            action: 'create',
             type: self.__meta.name
           },
           shortcut: 'C'
@@ -147,7 +147,7 @@ module.exports = {
             type: 'command-menu-manager-archive-selected'
           },
           permission: {
-            action: 'edit',
+            action: 'delete',
             type: self.__meta.name
           },
           shortcut: 'E'
@@ -441,7 +441,8 @@ module.exports = {
           label: 'apostrophe:shareDraft',
           modal: 'AposModalShareDraft',
           manuallyPublished: true,
-          hasUrl: true
+          hasUrl: true,
+          conditions: [ 'canEdit' ]
         });
       },
       getRelatedDocsIds(req, doc) {
