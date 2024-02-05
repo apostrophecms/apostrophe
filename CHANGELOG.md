@@ -72,6 +72,10 @@ Also make this information available to other related methods for future and pro
 The click on the cancel button now works too.
 * Fixes the `clearLoginAttempts` method to work with the new `@apostrophecms/cache` module `delete` method.
 
+### Adds
+
+* Add `uponSubmit` requirement in the `@apostrophecms/login` module. `uponSubmit` requirements are checked each time the user submit the login form. See the documentation for more information.
+
 ## 3.60.1 (2023-12-06)
 
 ### Fixes
