@@ -18,6 +18,7 @@
           :class="classes"
           v-model="next" :type="type"
           :placeholder="$t(field.placeholder)"
+          @keydown="blockSlash"
           @keydown.enter="emitReturn"
           :disabled="field.readOnly" :required="field.required"
           :id="uid" :tabindex="tabindex"
