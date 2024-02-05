@@ -16,6 +16,7 @@
 * Fix publishing or moving published page after a draft page on the same tree level to work as expected.
 * Check create permissions on create keyboard shortcut.
 * Copy requires create and edit permission.
+* Display a more informative error message when publishing a page because the parent page is not published and the current user has no permission to publish the parent page (while having permission to publish the current one).
 
 ### Changes
 
