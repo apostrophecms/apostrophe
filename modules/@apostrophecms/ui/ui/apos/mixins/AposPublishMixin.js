@@ -119,13 +119,18 @@ export default {
           body: {},
           draft: true
         });
+        const newDoc = {
+          ...doc,
+          submitted
+        };
         apos.notify('apostrophe:submittedForReview', {
           type: 'success',
           icon: 'list-status-icon',
           dismiss: true
         });
+
         apos.bus.$emit('content-changed', {
-          doc: submitted,
+          doc: newDoc,
           action: 'submit'
         });
         return submitted;
@@ -152,12 +157,12 @@ export default {
           dismiss: true,
           icon: 'close-circle-icon'
         });
-        doc = {
+        const newDoc = {
           ...doc,
           submitted: null
         };
         apos.bus.$emit('content-changed', {
-          doc,
+          doc: newDoc,
           action: 'dismiss-submission'
         });
       } catch (e) {
