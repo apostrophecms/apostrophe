@@ -133,7 +133,7 @@ export default {
           doc: newDoc,
           action: 'submit'
         });
-        return newDoc;
+        return submitted;
       } catch (e) {
         await apos.alert({
           heading: this.$t('apostrophe:errorWhileSubmitting'),
