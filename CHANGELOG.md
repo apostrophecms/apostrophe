@@ -17,6 +17,7 @@
 * Check create permissions on create keyboard shortcut.
 * Copy requires create and edit permission.
 * Display a more informative error message when publishing a page because the parent page is not published and the current user has no permission to publish the parent page (while having permission to publish the current one).
+* Block typing slash key (`/`) in slugs to prevent infinite loop (slashes are still automatically added for pages).
 
 ### Changes
 
