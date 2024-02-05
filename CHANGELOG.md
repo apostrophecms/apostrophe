@@ -11,7 +11,6 @@
 
 * When deleting a draft document, we remove related reverse IDs of documents having a relation to the deleted one.
 * Fix publishing or moving published page after a draft page on the same tree level to work as expected.
-* Block typing slash key (`/`) in slugs to prevent infinite loop (slashes are still automatically added for pages).
 
 ### Changes
 
