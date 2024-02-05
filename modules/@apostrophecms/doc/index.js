@@ -1199,7 +1199,8 @@ module.exports = {
       // `conditions` may be an array containing one or multiple of these values:
       //
       // 'canPublish', 'canEdit', 'canDismissSubmission', 'canDiscardDraft',
-      // 'canLocalize', 'canArchive', 'canUnpublish', 'canCopy', 'canRestore'.
+      // 'canLocalize', 'canArchive', 'canUnpublish', 'canCopy', 'canRestore',
+      // 'canCreate'
 
       addContextOperation(operation) {
         if (arguments.length === 2) {
@@ -1229,7 +1230,8 @@ module.exports = {
             'canArchive',
             'canUnpublish',
             'canCopy',
-            'canRestore'
+            'canRestore',
+            'canCreate'
           ];
 
           if (!action || !context || !label || !modal) {

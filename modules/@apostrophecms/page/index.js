@@ -60,7 +60,7 @@ module.exports = {
             type: 'command-menu-manager-create-new'
           },
           permission: {
-            action: 'edit',
+            action: 'create',
             type: self.__meta.name
           },
           shortcut: 'C'
