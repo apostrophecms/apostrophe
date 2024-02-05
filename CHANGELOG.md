@@ -11,6 +11,13 @@
 
 * When deleting a draft document, we remove related reverse IDs of documents having a relation to the deleted one.
 * Fix publishing or moving published page after a draft page on the same tree level to work as expected.
+* Check create permissions on create keyboard shortcut.
+* Copy requires create and edit permission.
+
+### Adds
+
+* Add support for `canCreate` in context operations conditions.
+* Add support for `canCreate`, `canEdit`, `canArchive` & `canPublish` in utility operations definitions.
 
 ### Changes
 

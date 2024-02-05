@@ -289,7 +289,8 @@ export default {
       );
     },
     canCopy() {
-      return this.canEdit &&
+      return this.moduleOptions.canCreate &&
+        this.canEdit &&
         this.moduleOptions.canEdit &&
         !this.moduleOptions.singleton &&
         this.context._id;
