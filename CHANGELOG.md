@@ -6,6 +6,9 @@
 
 * Adds a `launder` method to the `slug` schema field query builder to allow for use in API queries.
 * Adds support for browsing specific pages in a relationship field when `withType` is set to a page type, like `@apostrophecms/home-page`, `default-page`, `article-page`...
+* Add support for `canCreate` in context operations conditions.
+* Add support for `canCreate`, `canEdit`, `canArchive` & `canPublish` in utility operations definitions.
+* Add `uponSubmit` requirement in the `@apostrophecms/login` module. `uponSubmit` requirements are checked each time the user submit the login form. See the documentation for more information.
 
 ### Fixes
 
@@ -13,11 +16,6 @@
 * Fix publishing or moving published page after a draft page on the same tree level to work as expected.
 * Check create permissions on create keyboard shortcut.
 * Copy requires create and edit permission.
-
-### Adds
-
-* Add support for `canCreate` in context operations conditions.
-* Add support for `canCreate`, `canEdit`, `canArchive` & `canPublish` in utility operations definitions.
 
 ### Changes
 
@@ -71,10 +69,6 @@ Also make this information available to other related methods for future and pro
 * We can now close the image modal in rich-text widgets when we click outside of the modal.
 The click on the cancel button now works too.
 * Fixes the `clearLoginAttempts` method to work with the new `@apostrophecms/cache` module `delete` method.
-
-### Adds
-
-* Add `uponSubmit` requirement in the `@apostrophecms/login` module. `uponSubmit` requirements are checked each time the user submit the login form. See the documentation for more information.
 
 ## 3.60.1 (2023-12-06)
 
