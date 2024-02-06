@@ -6,7 +6,7 @@
 
 * Adds a `launder` method to the `slug` schema field query builder to allow for use in API queries.
 * Adds support for browsing specific pages in a relationship field when `withType` is set to a page type, like `@apostrophecms/home-page`, `default-page`, `article-page`...
-* Add support for `canCreate` in context operations conditions.
+* Add support for `canCreate`, `canPreview` & `canShareDraft` in context operations conditions.
 * Add support for `canCreate`, `canEdit`, `canArchive` & `canPublish` in utility operations definitions.
 * Add `uponSubmit` requirement in the `@apostrophecms/login` module. `uponSubmit` requirements are checked each time the user submit the login form. See the documentation for more information.
 
