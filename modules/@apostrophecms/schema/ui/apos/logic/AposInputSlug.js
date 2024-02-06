@@ -276,6 +276,6 @@ export default {
     },
     emitReturn() {
       this.$emit('return');
-    },
+    }
   }
 };
