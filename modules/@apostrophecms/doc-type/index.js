@@ -442,7 +442,7 @@ module.exports = {
           modal: 'AposModalShareDraft',
           manuallyPublished: true,
           hasUrl: true,
-          conditions: [ 'canEdit' ]
+          conditions: [ 'canShareDraft' ]
         });
       },
       getRelatedDocsIds(req, doc) {

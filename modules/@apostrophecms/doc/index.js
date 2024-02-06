@@ -1200,7 +1200,7 @@ module.exports = {
       //
       // 'canPublish', 'canEdit', 'canDismissSubmission', 'canDiscardDraft',
       // 'canLocalize', 'canArchive', 'canUnpublish', 'canCopy', 'canRestore',
-      // 'canCreate'
+      // 'canCreate', 'canPreview', 'canShareDraft'
 
       addContextOperation(operation) {
         if (arguments.length === 2) {
@@ -1231,7 +1231,9 @@ module.exports = {
             'canUnpublish',
             'canCopy',
             'canRestore',
-            'canCreate'
+            'canCreate',
+            'canPreview',
+            'canShareDraft'
           ];
 
           if (!action || !context || !label || !modal) {
