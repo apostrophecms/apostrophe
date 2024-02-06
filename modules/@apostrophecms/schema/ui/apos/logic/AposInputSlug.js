@@ -277,10 +277,5 @@ export default {
     emitReturn() {
       this.$emit('return');
     },
-    blockSlash(evt) {
-      if (evt.key === '/') {
-        evt.preventDefault();
-      }
-    }
   }
 };
