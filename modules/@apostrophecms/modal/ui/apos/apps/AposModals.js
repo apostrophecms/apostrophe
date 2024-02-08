@@ -2,10 +2,15 @@ import createApp from 'Modules/@apostrophecms/ui/lib/vue';
 import TheAposModals from '../components/TheAposModals.vue';
 
 export default function() {
+  const el = document.querySelector('#apos-modals');
+  if (!el) {
+    return;
+  }
+
   const app = createApp(TheAposModals, {
     modals: apos.modal.modals
   });
-  const theAposModals = app.mount('#apos-modals');
+  const theAposModals = app.mount(el);
 
   apos.modal.execute = theAposModals.execute;
   apos.modal.getAt = theAposModals.getAt;
