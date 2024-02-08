@@ -5,7 +5,14 @@ module.exports = (options, apos) => {
         {
           test: /\.css$/,
           use: [
-            'vue-style-loader',
+            {
+              loader: 'vue-style-loader',
+              options: {
+                attributes: {
+                  'data-apos-ui': '1'
+                }
+              }
+            },
             // https://github.com/vuejs/vue-style-loader/issues/46#issuecomment-670624576
             {
               loader: 'css-loader',
@@ -20,7 +27,14 @@ module.exports = (options, apos) => {
         {
           test: /\.s[ac]ss$/,
           use: [
-            'vue-style-loader',
+            {
+              loader: 'vue-style-loader',
+              options: {
+                attributes: {
+                  'data-apos-ui': '1'
+                }
+              }
+            },
             {
               loader: 'css-loader',
               options: {

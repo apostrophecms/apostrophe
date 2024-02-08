@@ -532,6 +532,7 @@ module.exports = {
               function invoke() {
                 ${app.invokeCode}
               }
+              window.apos.invoke = invoke;
               ` : '') +
               // No delay on these, they expect to run early like ui/public code
               // and the first ones invoked set up expected stuff like apos.http
