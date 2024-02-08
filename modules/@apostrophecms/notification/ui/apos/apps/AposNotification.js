@@ -2,7 +2,8 @@ import createApp from 'Modules/@apostrophecms/ui/lib/vue';
 import TheAposNotifications from '../components/TheAposNotifications.vue';
 
 export default function() {
-  if (!apos.login.user) {
+  const el = document.querySelector('#apos-notification');
+  if (!apos.login.user || !el) {
     // The user scene is being used but no one is logged in
     // (example: the login page)
     return;
@@ -10,5 +11,5 @@ export default function() {
 
   const app = createApp(TheAposNotifications);
 
-  app.mount('#apos-notification');
+  app.mount(el);
 };
