@@ -29,9 +29,8 @@
   >
     <slot name="before" />
     <component
-      v-for="field in schema"
-      v-show="displayComponent(field)"
       :is="fieldStyle === 'table' ? 'td' : 'div'"
+      v-for="field in schema"
       :key="field.name.concat(field._id ?? '')"
       :style="(fieldStyle === 'table' && field.columnStyle) || {}"
       :data-apos-field="field.name"
