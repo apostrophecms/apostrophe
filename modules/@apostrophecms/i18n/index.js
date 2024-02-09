@@ -363,6 +363,19 @@ module.exports = {
         };
         req.res.__ = req.__;
         return next();
+      },
+      apiFallback(req, res, next) {
+        if (!self.options.apiFallback) {
+          return next();
+        }
+
+        const locales = self.filterPrivateLocales(req, self.locales);
+        const [ locale ] = Object.entries(locales || {}).find(
+          ([ , options ]) => options?.hostname?.split(':')[0] === req.hostname
+        );
+        req.locale = locale || req.locale;
+
+        return next();
       }
     };
   },

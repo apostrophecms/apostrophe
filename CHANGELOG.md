@@ -9,6 +9,7 @@
 * Add support for `canCreate`, `canPreview` & `canShareDraft` in context operations conditions.
 * Add support for `canCreate`, `canEdit`, `canArchive` & `canPublish` in utility operations definitions.
 * Add `uponSubmit` requirement in the `@apostrophecms/login` module. `uponSubmit` requirements are checked each time the user submit the login form. See the documentation for more information.
+* Add option `apiFallback` in i18n, forcing `req.locale` when no prefix in request but existing hostname matching the request.
 
 ### Fixes
 
