@@ -164,5 +164,5 @@ export default {
 };
 </script>
 
-<style lang="scss" src="../scss//AposInputArray.scss" scoped>
+<style lang="scss" src="../scss/AposInputArray.scss" scoped>
 </style>
