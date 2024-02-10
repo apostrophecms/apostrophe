@@ -1,3 +1,8 @@
+.apos-schema {
+  padding-top: $spacing-base;
+  padding-bottom: $spacing-base;
+}
+
 :deep(.apos-field--array.apos-field--error-duplicate) {
   .apos-input {
     border-color: var(--a-base-8);
@@ -158,11 +163,8 @@
     .apos-field.apos-field--margin-micro {
       margin-bottom: 0;
     }
-
     & > div {
       grid-column: 2;
-      padding-top: $spacing-base;
-      padding-bottom: $spacing-base;
     }
     &.apos-input-array-inline-item--active {
       background-color: var(--a-base-10);
