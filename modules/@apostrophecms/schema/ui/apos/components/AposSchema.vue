@@ -33,11 +33,11 @@
       v-for="field in schema"
       :key="field.name.concat(field._id ?? '')"
       :style="(fieldStyle === 'table' && field.columnStyle) || {}"
+      :class="{'apos-field--hidden': !displayComponent(field)}"
       :data-apos-field="field.name"
     >
       <component
         :is="fieldComponentMap[field.type]"
-        v-show="displayComponent(field)"
         :ref="field.name"
         v-model="fieldState[field.name]"
         :following-values="followingValues[field.name]"
@@ -76,6 +76,10 @@ export default {
 
   .apos-schema :deep(img) {
     max-width: 100%;
+  }
+
+  .apos-schema .apos-field--hidden {
+    display: none;
   }
 
   .apos-schema :deep(.apos-field) {
