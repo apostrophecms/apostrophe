@@ -119,7 +119,7 @@ module.exports = {
             type: 'command-menu-manager-create-new'
           },
           permission: {
-            action: 'edit',
+            action: 'create',
             type: self.__meta.name
           },
           shortcut: 'C'
@@ -147,7 +147,7 @@ module.exports = {
             type: 'command-menu-manager-archive-selected'
           },
           permission: {
-            action: 'edit',
+            action: 'delete',
             type: self.__meta.name
           },
           shortcut: 'E'
@@ -328,6 +328,15 @@ module.exports = {
           }
         }
       },
+      afterDelete: {
+        async deleteRelatedReverseId(req, doc) {
+          // When deleting an unlocalized or draft document,
+          // we remove related reverse IDs of documents having a relation to the deleted one
+          if (!doc.aposMode || doc.aposMode === 'draft') {
+            await self.deleteRelatedReverseId(doc, true);
+          }
+        }
+      },
       afterRescue: {
         async revertDeduplication(req, doc) {
           const $set = await self.getRevertDeduplicationSet(req, doc);
@@ -371,18 +380,27 @@ module.exports = {
 
   methods(self) {
     return {
+      async deleteRelatedReverseId(doc, deleting = false) {
+        const locales = doc.aposLocale && deleting
+          ? [
+            doc.aposLocale.replace(':draft', ':published'),
+            doc.aposLocale.replace(':published', ':draft')
+          ]
+          : [ doc.aposLocale ];
+        return self.apos.doc.db.updateMany({
+          relatedReverseIds: { $in: [ doc.aposDocId ] },
+          aposLocale: { $in: [ ...locales, null ] }
+        }, {
+          $pull: { relatedReverseIds: doc.aposDocId },
+          $set: { cacheInvalidatedAt: doc.updatedAt }
+        });
+      },
       async updateCacheField(req, doc) {
         const relatedDocsIds = self.getRelatedDocsIds(req, doc);
 
         // - Remove current doc reference from docs that include it
         // - Update these docs' cache field
-        await self.apos.doc.db.updateMany({
-          relatedReverseIds: { $in: [ doc.aposDocId ] },
-          aposLocale: { $in: [ doc.aposLocale, null ] }
-        }, {
-          $pull: { relatedReverseIds: doc.aposDocId },
-          $set: { cacheInvalidatedAt: doc.updatedAt }
-        });
+        await this.deleteRelatedReverseId(doc);
 
         if (relatedDocsIds.length) {
           // - Add current doc reference to related docs
@@ -423,7 +441,8 @@ module.exports = {
           label: 'apostrophe:shareDraft',
           modal: 'AposModalShareDraft',
           manuallyPublished: true,
-          hasUrl: true
+          hasUrl: true,
+          conditions: [ 'canShareDraft' ]
         });
       },
       getRelatedDocsIds(req, doc) {
@@ -1483,6 +1502,41 @@ module.exports = {
         });
 
         return doc;
+      },
+
+      composeFilters() {
+        self.filters = Object.keys(self.filters).map((key) => ({
+          name: key,
+          ...self.filters[key],
+          inputType: self.filters[key].inputType || 'select'
+        }));
+        // Add a null choice if not already added or set to `required`
+        self.filters.forEach((filter) => {
+          if (filter.choices) {
+            if (
+              !filter.required &&
+              filter.choices &&
+              !filter.choices.find((choice) => choice.value === null)
+            ) {
+              filter.def = null;
+              filter.choices.push({
+                value: null,
+                label: 'apostrophe:none'
+              });
+            }
+          } else {
+            // Dynamic choices from the REST API, but
+            // we need a label for "no opinion"
+            filter.nullLabel = 'Choose One';
+          }
+        });
+      },
+
+      composeColumns() {
+        self.columns = Object.keys(self.columns).map((key) => ({
+          name: key,
+          ...self.columns[key]
+        }));
       }
     };
   },

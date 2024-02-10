@@ -684,7 +684,7 @@ describe('Command-Menu', function() {
       action: {},
       shortcut: 'c',
       permission: {
-        action: 'edit',
+        action: 'create',
         type: '@apostrophecms/page',
         mode: 'draft'
       }
@@ -704,7 +704,7 @@ describe('Command-Menu', function() {
       action: {},
       shortcut: 'c',
       permission: {
-        action: 'edit',
+        action: 'create',
         type: '@apostrophecms/page',
         mode: 'published'
       }

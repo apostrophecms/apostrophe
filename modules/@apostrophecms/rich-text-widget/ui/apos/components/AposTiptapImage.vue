@@ -42,13 +42,6 @@ export default {
       active: false
     };
   },
-  watch: {
-    hasSelection(newVal, oldVal) {
-      if (!newVal) {
-        this.close();
-      }
-    }
-  },
   computed: {
     attributes() {
       return this.editor.getAttributes('image');
@@ -69,6 +62,13 @@ export default {
       const [ { type } = {} ] = content;
 
       return text !== '' || type?.name === 'image';
+    }
+  },
+  watch: {
+    hasSelection(newVal, oldVal) {
+      if (!newVal) {
+        this.close();
+      }
     }
   },
   methods: {

@@ -6,11 +6,11 @@ const cuid = require('cuid');
 const FormData = require('form-data');
 const t = require('../test-lib/test.js');
 
-let apos;
-let jar;
-const apiKey = 'this is a test api key';
-
 describe('Pieces', function() {
+
+  let apos;
+  let jar;
+  const apiKey = 'this is a test api key';
 
   this.timeout(t.timeout);
 

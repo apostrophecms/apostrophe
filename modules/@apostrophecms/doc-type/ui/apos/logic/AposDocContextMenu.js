@@ -111,7 +111,7 @@ export default {
             action: 'edit'
           }
         ] : []),
-        ...((this.showPreview && this.hasUrl) ? [
+        ...((this.showPreview && this.canPreview) ? [
           {
             label: 'apostrophe:preview',
             action: 'preview'
@@ -289,7 +289,8 @@ export default {
       );
     },
     canCopy() {
-      return this.canEdit &&
+      return this.moduleOptions.canCreate &&
+        this.canEdit &&
         this.moduleOptions.canEdit &&
         !this.moduleOptions.singleton &&
         this.context._id;
@@ -299,8 +300,16 @@ export default {
         this.canEdit &&
         this.context._id &&
         this.context.archived &&
-        ((this.moduleOptions.canPublish && this.context.lastPublishedAt) || !this.manuallyPublished)
+        ((!this.manuallyPublished && this.canPublish) || this.manuallyPublished)
       );
+    },
+    canPreview() {
+      return this.hasUrl &&
+        !this.context.archived;
+    },
+    canShareDraft() {
+      return this.canEdit &&
+        !this.context.archived;
     },
     manuallyPublished() {
       return this.moduleOptions.localized && !this.autopublish;

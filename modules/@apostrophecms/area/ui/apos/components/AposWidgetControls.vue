@@ -35,12 +35,15 @@
         }"
         :modifiers="[ 'inline' ]"
       />
-      <!-- <AposButton
+      <AposButton
         v-bind="copyButton"
         v-if="!foreign"
         @click="$emit('copy')"
-        tooltip="Copy"
-      /> -->
+        :tooltip="{
+          content: 'apostrophe:copy',
+          placement: 'left'
+        }"
+      />
       <AposButton
         v-if="!foreign"
         v-bind="cloneButton"

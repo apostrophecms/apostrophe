@@ -1,8 +1,6 @@
 const t = require('../test-lib/test.js');
 const assert = require('assert');
 
-let apos, apos2, apos3, apos4, apos5, apos6;
-
 const park2 = [
   {
     slug: '/',
@@ -33,6 +31,8 @@ const park2 = [
 ];
 
 describe('Parked Pages', function() {
+
+  let apos, apos2, apos3, apos4, apos5, apos6;
 
   this.timeout(t.timeout);
 
@@ -221,56 +221,56 @@ describe('Parked Pages', function() {
     });
     await validate(apos5, [ '/', '/archive', '/default1', '/default2', '/default3', '/default3/child1' ]);
   });
-});
 
-it('nested parked children work across locales if locales are present from the start', async function() {
-  this.timeout(20000);
-  apos6 = await t.create({
-    root: module,
-    modules: {
-      '@apostrophecms/i18n': {
-        options: {
-          locales: {
-            en: {
-              label: 'English',
-              hostname: 'en'
-            },
-            fr: {
-              label: 'French',
-              hostname: 'fr'
+  it('nested parked children work across locales if locales are present from the start', async function() {
+    this.timeout(20000);
+    apos6 = await t.create({
+      root: module,
+      modules: {
+        '@apostrophecms/i18n': {
+          options: {
+            locales: {
+              en: {
+                label: 'English',
+                hostname: 'en'
+              },
+              fr: {
+                label: 'French',
+                hostname: 'fr'
+              }
             }
           }
-        }
-      },
-      '@apostrophecms/page': {
-        options: {
-          park: [
-            ...park2,
-            {
-              slug: '/default3',
-              parkedId: 'default3',
-              _defaults: {
-                type: 'default-page',
-                title: 'Default 3'
-              },
-              _children: [
-                {
-                  slug: '/default3/child1',
-                  parkedId: 'default3child1',
-                  _defaults: {
-                    type: 'default-page',
-                    title: 'Default 3 Child 1'
+        },
+        '@apostrophecms/page': {
+          options: {
+            park: [
+              ...park2,
+              {
+                slug: '/default3',
+                parkedId: 'default3',
+                _defaults: {
+                  type: 'default-page',
+                  title: 'Default 3'
+                },
+                _children: [
+                  {
+                    slug: '/default3/child1',
+                    parkedId: 'default3child1',
+                    _defaults: {
+                      type: 'default-page',
+                      title: 'Default 3 Child 1'
+                    }
                   }
-                }
-              ]
-            }
-          ]
-        }
-      },
-      'default-page': {}
-    }
+                ]
+              }
+            ]
+          }
+        },
+        'default-page': {}
+      }
+    });
+    await validate(apos6, [ '/', '/archive', '/default1', '/default2', '/default3', '/default3/child1' ]);
   });
-  await validate(apos6, [ '/', '/archive', '/default1', '/default2', '/default3', '/default3/child1' ]);
 });
 
 async function validate(apos, expected) {

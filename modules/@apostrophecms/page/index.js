@@ -60,7 +60,7 @@ module.exports = {
             type: 'command-menu-manager-create-new'
           },
           permission: {
-            action: 'edit',
+            action: 'create',
             type: self.__meta.name
           },
           shortcut: 'C'
@@ -137,13 +137,13 @@ module.exports = {
           const archived = self.apos.launder.booleanOrNull(req.query.archived);
           const flat = self.apos.launder.boolean(req.query.flat);
           const autocomplete = self.apos.launder.string(req.query.autocomplete);
+          const type = self.apos.launder.string(req.query.type);
 
           if (autocomplete.length) {
             if (!self.apos.permission.can(req, 'view', '@apostrophecms/any-page-type')) {
               throw self.apos.error('forbidden');
             }
 
-            const type = self.apos.launder.string(req.query.type);
             if (type.length && !self.apos.permission.can(req, 'view', type)) {
               throw self.apos.error('forbidden');
             }
@@ -158,6 +158,35 @@ module.exports = {
               // For consistency with the pieces REST API we
               // use a results property when returning a flat list
               results: await query.toArray()
+            };
+          }
+
+          if (type.length) {
+            const manager = self.apos.doc.getManager(type);
+            if (!manager) {
+              throw self.apos.error('invalid');
+            }
+
+            const query = self.getRestQuery(req);
+            query
+              .type(type)
+              .ancestors(false)
+              .children(false)
+              .attachments(false)
+              .perPage(manager.options.perPage);
+
+            // populates totalPages when perPage is present
+            await query.toCount();
+
+            const docs = await query.toArray();
+
+            return {
+              results: docs.map(doc => manager.removeForbiddenFields(req, doc)),
+              pages: query.get('totalPages'),
+              currentPage: query.get('page') || 1,
+              ...(query.get('choicesResults') && {
+                choices: query.get('choicesResults')
+              })
             };
           }
 
@@ -988,6 +1017,15 @@ database.`);
           page.path = self.apos.util.addSlashIfNeeded(parent.path) + page.aposDocId;
           page.level = parent.level + 1;
           await self.apos.doc.insert(req, page, options);
+          // Prevent a published page from being inserted as a child of a draft page.
+          // In effect when this method is called again from the `afterInsert` event
+          // of the `doc` module. This can happen when we are inserting a page
+          // in req.mode == 'published', which results in insertDrafOf being called
+          // (`page-type` module).
+          if (page.lastPublishedAt && !parent.lastPublishedAt) {
+            await self.unpublish(req, page);
+            throw self.apos.error('forbidden', 'Publish the parent page first.');
+          }
           return page;
         });
       },
@@ -1077,8 +1115,8 @@ database.`);
       },
       // Move a page already in the page tree to another location.
       //
-      // `movedId` is the id of the page being moved. ``targetId` must be an existing page
-      // id, and `position` may be `before`, `inside` or `after`. Alternatively
+      // `movedId` is the id of the page being moved. `targetId` must be an existing page
+      // id, and `position` may be `before`, `firstChild`, `lastChild` or `after`. Alternatively
       // `position` may be a zero-based offset for the new child
       // of `targetId` (note that the `rank` property of sibling pages
       // is not strictly ascending, so use an array index into `_children` to
@@ -1108,7 +1146,22 @@ database.`);
           let originalSlug;
           const moved = await getMoved();
           const oldParent = moved._ancestors[0];
-          const target = await self.getTarget(req, targetId, position);
+          let target;
+          try {
+            target = await self.getTarget(req, targetId, position);
+          } catch (e) {
+            // Try again with the draft version of the target, only when
+            // moving before/after and the target is published page.
+            if (e.name === 'notfound' && targetId.endsWith(':published') && [ 'before', 'after' ].includes(position)) {
+              target = await self.getTarget(
+                req.clone({ mode: 'draft' }),
+                targetId.replace(':published', ':draft'),
+                position
+              );
+            } else {
+              throw e;
+            }
+          }
           const manager = self.apos.doc.getManager(moved.type);
           await manager.emit('beforeMove', req, moved, target, position);
           determineRankAndNewParent();
@@ -1119,7 +1172,12 @@ database.`);
             // Move outside tree
             throw self.apos.error('forbidden');
           }
-          if ((oldParent._id !== parent._id) && (parent.type !== '@apostrophecms/archive-page') && (!parent._create)) {
+          if (
+            (oldParent._id !== parent._id) &&
+            (parent.type !== '@apostrophecms/archive-page') &&
+            (!parent._create) &&
+            (oldParent.type === '@apostrophecms/archive-page' && !parent._edit)
+          ) {
             throw self.apos.error('forbidden');
           }
           if (moved.lastPublishedAt && !parent.lastPublishedAt) {
@@ -1252,23 +1310,32 @@ database.`);
       // value. `position` is used to prevent attempts to move after the archive
       // "page."
       async getTarget(req, targetId, position) {
-        const criteria = self.getIdCriteria(self.inferIdLocaleAndMode(req, targetId));
+        // self.inferIdLocaleAndMode (see i18n module)
+        // is mutating the req object. This leads to various issues. This
+        // handler is shared among different routines (publish, insert, etc)
+        // and should NOT alter the request state.
+        const _req = req.clone({});
+        const criteria = self.getIdCriteria(self.inferIdLocaleAndMode(_req, targetId));
         // Use findForEditing to ensure we get improvements to that method from
         // npm modules that make the query more inclusive. Then explicitly shut off
         // things we know we don't want to be blocked by
-        const target = await self.findForEditing(req, criteria).permission(false).archived(null).areas(false).ancestors({
-          depth: 1,
-          archived: null,
-          orphan: null,
-          areas: false,
-          permission: false
-        }).children({
-          depth: 1,
-          archived: null,
-          orphan: null,
-          areas: false,
-          permission: false
-        }).toObject();
+        const target = await self.findForEditing(_req, criteria)
+          .permission(false)
+          .archived(null)
+          .areas(false)
+          .ancestors({
+            depth: 1,
+            archived: null,
+            orphan: null,
+            areas: false,
+            permission: false
+          }).children({
+            depth: 1,
+            archived: null,
+            orphan: null,
+            areas: false,
+            permission: false
+          }).toObject();
         if (!target) {
           throw self.apos.error('notfound');
         }

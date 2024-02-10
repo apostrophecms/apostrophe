@@ -1,6 +1,6 @@
 <template>
   <div
-    v-if="phase === 'beforeSubmit'"
+    v-if="phase === 'beforeSubmit' || phase === 'uponSubmit'"
     key="1"
     class="apos-login-form"
   >
@@ -30,6 +30,16 @@
           @done="requirementDone(requirement, $event)"
           @block="requirementBlock(requirement)"
         />
+        <template v-if="phase === 'uponSubmit'">
+          <Component
+            :is="requirement.component"
+            v-for="requirement in uponSubmitRequirements"
+            :key="requirement.name"
+            v-bind="getRequirementProps(requirement.name)"
+            @done="requirementDone(requirement, $event)"
+            @block="requirementBlock(requirement)"
+          />
+        </template>
         <AposButton
           data-apos-test="loginSubmit"
           :busy="busy"

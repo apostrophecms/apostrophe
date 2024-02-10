@@ -717,7 +717,6 @@ module.exports = {
       // This operation ignores the locale and mode of `req`
       // in favor of the actual document's locale and mode.
       async delete(req, doc, options = {}) {
-        options = options || {};
         const m = self.getManager(doc.type);
         await m.emit('beforeDelete', req, doc, options);
         await self.deleteBody(req, doc, options);
@@ -1062,12 +1061,12 @@ module.exports = {
           _id: tabId,
           updatedAt: new Date()
         };
-        const result = await self.db.updateOne(criteria, {
+        const { result } = await self.db.updateOne(criteria, {
           $set: {
             advisoryLock: doc.advisoryLock
           }
         });
-        if (!result.result.nModified) {
+        if (!result.nModified) {
           const info = await self.db.findOne({
             _id
           }, {
@@ -1200,7 +1199,8 @@ module.exports = {
       // `conditions` may be an array containing one or multiple of these values:
       //
       // 'canPublish', 'canEdit', 'canDismissSubmission', 'canDiscardDraft',
-      // 'canLocalize', 'canArchive', 'canUnpublish', 'canCopy', 'canRestore'.
+      // 'canLocalize', 'canArchive', 'canUnpublish', 'canCopy', 'canRestore',
+      // 'canCreate', 'canPreview', 'canShareDraft'
 
       addContextOperation(operation) {
         if (arguments.length === 2) {
@@ -1230,7 +1230,10 @@ module.exports = {
             'canArchive',
             'canUnpublish',
             'canCopy',
-            'canRestore'
+            'canRestore',
+            'canCreate',
+            'canPreview',
+            'canShareDraft'
           ];
 
           if (!action || !context || !label || !modal) {

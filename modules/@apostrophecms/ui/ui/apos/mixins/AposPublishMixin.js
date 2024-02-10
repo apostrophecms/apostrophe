@@ -65,9 +65,10 @@ export default {
               // Retry now that ancestors are published
               return this.publish(doc);
             } catch (e) {
+              const errorMessage = e.name === 'forbidden' ? 'apostrophe:errorWhilePublishingParentPageForbidden' : e.message;
               await apos.alert({
                 heading: this.$t('apostrophe:errorWhilePublishing'),
-                description: e.message || this.$t('apostrophe:errorWhilePublishingParentPage'),
+                description: errorMessage || this.$t('apostrophe:errorWhilePublishingParentPage'),
                 localize: false
               });
             }
@@ -118,13 +119,18 @@ export default {
           body: {},
           draft: true
         });
+        const newDoc = {
+          ...doc,
+          submitted
+        };
         apos.notify('apostrophe:submittedForReview', {
           type: 'success',
           icon: 'list-status-icon',
           dismiss: true
         });
+
         apos.bus.$emit('content-changed', {
-          doc: submitted,
+          doc: newDoc,
           action: 'submit'
         });
         return submitted;
@@ -151,12 +157,12 @@ export default {
           dismiss: true,
           icon: 'close-circle-icon'
         });
-        doc = {
+        const newDoc = {
           ...doc,
           submitted: null
         };
         apos.bus.$emit('content-changed', {
-          doc,
+          doc: newDoc,
           action: 'dismiss-submission'
         });
       } catch (e) {

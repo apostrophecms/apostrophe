@@ -2,21 +2,15 @@ const t = require('../test-lib/test.js');
 const assert = require('assert');
 const _ = require('lodash');
 
-let apos;
-let homeId;
-const apiKey = 'this is a test api key';
-
 describe('Pages', function() {
+  let apos;
+  let home;
+  let homeId;
+  const apiKey = 'this is a test api key';
 
   this.timeout(t.timeout);
 
-  after(function() {
-    return t.destroy(apos);
-  });
-
-  // EXISTENCE
-
-  it('should be a property of the apos object', async function() {
+  before(async function() {
     apos = await t.create({
       root: module,
       modules: {
@@ -54,54 +48,9 @@ describe('Pages', function() {
       }
     });
 
-    assert(apos.page.__meta.name === '@apostrophecms/page');
-  });
-
-  // SETUP
-
-  it('should make sure all of the expected indexes are configured', async function() {
-    const expectedIndexes = [ 'path' ];
-    const actualIndexes = [];
-
-    const info = await apos.doc.db.indexInformation();
-
-    // Extract the actual index info we care about
-    _.each(info, function(index) {
-      actualIndexes.push(index[0][0]);
-    });
-
-    // Now make sure everything in expectedIndexes is in actualIndexes
-    _.each(expectedIndexes, function(index) {
-      assert(_.includes(actualIndexes, index));
-    });
-  });
-
-  it('parked homepage exists', async function() {
-    const home = await apos.page.find(apos.task.getAnonReq(), { level: 0 }).toObject();
-
-    assert(home);
+    home = await apos.page.find(apos.task.getAnonReq(), { level: 0 }).toObject();
     homeId = home._id;
-    assert(home.slug === '/');
-    assert(`${home.path}:en:published` === home._id);
-    assert(home.type === '@apostrophecms/home-page');
-    assert(home.parked);
-    assert(home.visibility === 'public');
-  });
 
-  it('parked archive page exists', async function() {
-    const archive = await apos.page.find(apos.task.getReq(), { slug: '/archive' }).archived(null).toObject();
-    assert(archive);
-    assert(archive.slug === '/archive');
-    assert(archive.path === `${homeId.replace(':en:published', '')}/${archive._id.replace(':en:published', '')}`);
-    assert(archive.type === '@apostrophecms/archive-page');
-    assert(archive.parked);
-    // Verify that clonePermanent did its
-    // job and removed properties not meant
-    // to be stored in mongodb
-    assert(!archive._children);
-  });
-
-  it('should be able to use db to insert documents', async function() {
     const testItems = [
       {
         _id: 'parent:en:published',
@@ -172,9 +121,11 @@ describe('Pages', function() {
       }
     ];
     // Insert draft versions too to match the A3 data model
+    const lastPublishedAt = new Date();
     const draftItems = await apos.doc.db.insertMany(testItems.map(item => ({
       ...item,
       aposLocale: item.aposLocale.replace(':published', ':draft'),
+      lastPublishedAt,
       _id: item._id.replace(':published', ':draft')
     })));
     assert(draftItems.result.ok === 1);
@@ -184,6 +135,57 @@ describe('Pages', function() {
 
     assert(items.result.ok === 1);
     assert(items.insertedCount === 6);
+  });
+
+  after(function() {
+    return t.destroy(apos);
+  });
+
+  // EXISTENCE
+
+  it('should be a property of the apos object', async function() {
+    assert(apos.page.__meta.name === '@apostrophecms/page');
+  });
+
+  // SETUP
+
+  it('should make sure all of the expected indexes are configured', async function() {
+    const expectedIndexes = [ 'path' ];
+    const actualIndexes = [];
+
+    const info = await apos.doc.db.indexInformation();
+
+    // Extract the actual index info we care about
+    _.each(info, function(index) {
+      actualIndexes.push(index[0][0]);
+    });
+
+    // Now make sure everything in expectedIndexes is in actualIndexes
+    _.each(expectedIndexes, function(index) {
+      assert(_.includes(actualIndexes, index));
+    });
+  });
+
+  it('parked homepage exists', async function() {
+    assert(home);
+    assert(home.slug === '/');
+    assert(`${home.path}:en:published` === home._id);
+    assert(home.type === '@apostrophecms/home-page');
+    assert(home.parked);
+    assert(home.visibility === 'public');
+  });
+
+  it('parked archive page exists', async function() {
+    const archive = await apos.page.find(apos.task.getReq(), { slug: '/archive' }).archived(null).toObject();
+    assert(archive);
+    assert(archive.slug === '/archive');
+    assert(archive.path === `${homeId.replace(':en:published', '')}/${archive._id.replace(':en:published', '')}`);
+    assert(archive.type === '@apostrophecms/archive-page');
+    assert(archive.parked);
+    // Verify that clonePermanent did its
+    // job and removed properties not meant
+    // to be stored in mongodb
+    assert(!archive._children);
   });
 
   // FINDING
@@ -276,6 +278,55 @@ describe('Pages', function() {
     assert.strictEqual(page._ancestors[1]._children[0].path, `${homeId.replace(':en:published', '')}/parent/child`);
     // The second ancestor's child should have a path '/parent/sibling'
     assert.strictEqual(page._ancestors[1]._children[1].path, `${homeId.replace(':en:published', '')}/parent/sibling`);
+  });
+
+  it('should return pages from a specific type when type is provided', async function () {
+    const result = await apos.http.get('/api/v1/@apostrophecms/page', {
+      qs: {
+        type: 'test-page'
+      }
+    });
+
+    const expected = {
+      results: [
+        {
+          type: 'test-page',
+          slug: '/parent'
+        },
+        {
+          type: 'test-page',
+          slug: '/parent/child'
+        },
+        {
+          type: 'test-page',
+          slug: '/parent/child/grandchild'
+        },
+        {
+          type: 'test-page',
+          slug: '/parent/sibling'
+        },
+        {
+          type: 'test-page',
+          slug: '/parent/sibling/cousin'
+        },
+        {
+          type: 'test-page',
+          slug: '/another-parent'
+        }
+      ],
+      pages: 1,
+      currentPage: 1
+    };
+
+    const mappedResult = result.results.map(({ type, slug }) => ({
+      type,
+      slug
+    }));
+
+    assert.deepEqual({
+      ...result,
+      results: mappedResult
+    }, expected);
   });
 
   // INSERTING
@@ -1307,6 +1358,287 @@ describe('Pages', function() {
         }
         throw new Error('should have thrown 404 error');
       });
+    });
+  });
+
+  describe('publish, move and draft', function () {
+    beforeEach(async function() {
+      await t.destroy(apos);
+      apos = await t.create({
+        root: module,
+        modules: {
+          '@apostrophecms/page': {
+            options: {
+              park: [],
+              types: [
+                {
+                  name: '@apostrophecms/home-page',
+                  label: 'Home'
+                },
+                {
+                  name: 'test-page',
+                  label: 'Test Page'
+                }
+              ]
+            }
+          },
+          'test-page': {
+            extend: '@apostrophecms/page-type'
+          }
+        }
+      });
+    });
+
+    it('should publish and move published after draft doc', async function () {
+      const req = apos.task.getReq({ mode: 'draft' });
+
+      const page1 = await apos.page.insert(req, '_home', 'lastChild', {
+        title: 'Root First Page',
+        type: 'test-page',
+        slug: 'root-first-page'
+      });
+      const page2 = await apos.page.insert(req, '_home', 'lastChild', {
+        title: 'Root Second Page',
+        type: 'test-page',
+        slug: 'root-second-page'
+      });
+      const page3 = await apos.page.insert(req, '_home', 'lastChild', {
+        title: 'Root Third Page',
+        type: 'test-page',
+        slug: 'root-third-page'
+      });
+
+      // Publish and assert.
+      // Obviously, should not throw an error.
+      await apos.page.publish(req, page3);
+      {
+        const pages = await apos.doc.db.find({
+          type: 'test-page'
+        }).sort({ rank: 1 }).toArray();
+
+        const p1Idx = pages.findIndex(p => p._id === page1._id);
+        assert(p1Idx !== -1);
+        const p2Idx = pages.findIndex(p => p._id === page2._id);
+        assert(p2Idx !== -1);
+        const p3Idx = pages.findIndex(p => p._id === page3._id);
+        assert(p3Idx !== -1);
+        const p3IdxPublished = pages.findIndex(p => p._id === page3._id.replace(':draft', ':published'));
+        assert(p3IdxPublished !== -1);
+
+        // first, second, third/third-published
+        assert(p1Idx < p2Idx);
+        assert(p2Idx < p3Idx);
+        assert(p2Idx < p3IdxPublished);
+      }
+
+      // Move and assert.
+      await apos.page.move(req, page3._id, page1._id, 'after');
+      {
+        const pages = await apos.doc.db.find({
+          type: 'test-page'
+        }).sort({ rank: 1 }).toArray();
+
+        const p1Idx = pages.findIndex(p => p._id === page1._id);
+        assert(p1Idx !== -1);
+        const p2Idx = pages.findIndex(p => p._id === page2._id);
+        assert(p2Idx !== -1);
+        const p3Idx = pages.findIndex(p => p._id === page3._id);
+        assert(p3Idx !== -1);
+        const p3IdxPublished = pages.findIndex(p => p._id === page3._id.replace(':draft', ':published'));
+        assert(p3IdxPublished !== -1);
+
+        // first, third/third-published, second
+        assert(p1Idx < p3Idx);
+        assert(p1Idx < p3IdxPublished);
+        assert(p3Idx < p2Idx);
+        assert(p3IdxPublished < p2Idx);
+      }
+    });
+
+    it('should publish and move published after draft doc (nested)', async function () {
+      const req = apos.task.getReq({ mode: 'draft' });
+
+      const root = await apos.page.insert(req, '_home', 'lastChild', {
+        title: 'Root Page',
+        type: 'test-page'
+      });
+      await apos.page.publish(req, root);
+
+      const page1 = await apos.page.insert(req, root._id, 'lastChild', {
+        title: 'First Page',
+        type: 'test-page'
+      });
+      const page2 = await apos.page.insert(req, root._id, 'lastChild', {
+        title: 'Second Page',
+        type: 'test-page'
+      });
+      const page3 = await apos.page.insert(req, root._id, 'lastChild', {
+        title: 'Third Page',
+        type: 'test-page'
+      });
+
+      // Publish and assert.
+      // Obviously, should not throw an error.
+      await apos.page.publish(req, page3);
+      {
+        const pages = await apos.doc.db.find({
+          type: 'test-page',
+          level: 2
+        }).sort({
+          level: 1,
+          rank: 1
+        }).toArray();
+
+        const p1Idx = pages.findIndex(p => p._id === page1._id);
+        assert(p1Idx !== -1);
+        assert.equal(pages[p1Idx].path, `${root.path}/${page1.aposDocId}`);
+        const p2Idx = pages.findIndex(p => p._id === page2._id);
+        assert(p2Idx !== -1);
+        assert.equal(pages[p2Idx].path, `${root.path}/${page2.aposDocId}`);
+        const p3Idx = pages.findIndex(p => p._id === page3._id);
+        assert(p3Idx !== -1);
+        assert.equal(pages[p3Idx].path, `${root.path}/${page3.aposDocId}`);
+        const p3IdxPublished = pages.findIndex(p => p._id === page3._id.replace(':draft', ':published'));
+        assert(p3IdxPublished !== -1);
+        assert.equal(pages[p3IdxPublished].path, `${root.path}/${page3.aposDocId}`);
+
+        // first, second, third/third-published
+        assert(p1Idx < p2Idx);
+        assert(p2Idx < p3Idx);
+        assert(p2Idx < p3IdxPublished);
+      }
+
+      // Move and assert.
+      await apos.page.move(req, page3._id, page1._id, 'after');
+      {
+        const pages = await apos.doc.db.find({
+          type: 'test-page',
+          level: 2
+        }).sort({
+          level: 1,
+          rank: 1
+        }).toArray();
+
+        const p1Idx = pages.findIndex(p => p._id === page1._id);
+        assert(p1Idx !== -1);
+        const p2Idx = pages.findIndex(p => p._id === page2._id);
+        assert(p2Idx !== -1);
+        const p3Idx = pages.findIndex(p => p._id === page3._id);
+        assert(p3Idx !== -1);
+        const p3IdxPublished = pages.findIndex(p => p._id === page3._id.replace(':draft', ':published'));
+        assert(p3IdxPublished !== -1);
+
+        // first, third/third-published, second
+        assert(p1Idx < p3Idx);
+        assert(p1Idx < p3IdxPublished);
+        assert(p3Idx < p2Idx);
+        assert(p3IdxPublished < p2Idx);
+      }
+
+      // Publish the last draft and assert it's sorted right.
+      await apos.page.publish(req, page2);
+      {
+        const pages = await apos.doc.db.find({
+          type: 'test-page',
+          level: 2
+        }).sort({
+          level: 1,
+          rank: 1
+        }).toArray();
+
+        const p1Idx = pages.findIndex(p => p._id === page1._id);
+        assert(p1Idx !== -1);
+        const p2Idx = pages.findIndex(p => p._id === page2._id);
+        assert(p2Idx !== -1);
+        const p2IdxPublished = pages.findIndex(p => p._id === page2._id.replace(':draft', ':published'));
+        assert(p2IdxPublished !== -1);
+        const p3Idx = pages.findIndex(p => p._id === page3._id);
+        assert(p3Idx !== -1);
+        const p3IdxPublished = pages.findIndex(p => p._id === page3._id.replace(':draft', ':published'));
+        assert(p3IdxPublished !== -1);
+
+        // first, third/third-published, second
+        assert(p1Idx < p3Idx);
+        assert(p1Idx < p3IdxPublished);
+        assert(p3Idx < p2Idx);
+        assert(p3IdxPublished < p2IdxPublished);
+      }
+    });
+
+    it('should not be able to move published inside draft doc', async function () {
+      const req = apos.task.getReq({ mode: 'draft' });
+
+      const root = await apos.page.insert(req, '_home', 'lastChild', {
+        title: 'Root Page',
+        type: 'test-page'
+      });
+
+      const page1 = await apos.page.insert(req, '_home', 'lastChild', {
+        title: 'First Page',
+        type: 'test-page'
+      });
+      await apos.page.publish(req, page1);
+
+      await assert.rejects(apos.page.move(req, page1._id, root._id, 'firstChild'), {
+        name: 'forbidden',
+        message: 'Publish the parent page first.'
+      });
+    });
+
+    it('should not be able to publish inside draft doc', async function () {
+      const req = apos.task.getReq({ mode: 'draft' });
+
+      const root = await apos.page.insert(req, '_home', 'lastChild', {
+        title: 'Root Page',
+        type: 'test-page'
+      });
+
+      const page1 = await apos.page.insert(req, root._id, 'lastChild', {
+        title: 'First Page',
+        type: 'test-page'
+      });
+
+      await assert.rejects(
+        apos.page.publish(req, page1),
+        (error) => {
+          assert.equal(error.name, 'invalid');
+          assert.equal(error.data?.unpublishedAncestors?.length, 1);
+          assert.equal(error.data.unpublishedAncestors[0].title, 'Root Page');
+          return true;
+        }
+      );
+    });
+
+    it('should not be able to insert publish inside draft doc', async function () {
+      const req = apos.task.getReq({ mode: 'draft' });
+
+      const root = await apos.page.insert(req, '_home', 'lastChild', {
+        title: 'Root Page',
+        type: 'test-page'
+      });
+
+      // Publish directly via insert and req.mode = 'published'.
+      // This can really be done only programmatically, but it's a valid use case.
+      await assert.rejects(
+        apos.page.insert(req.clone({ mode: 'published' }), root._id, 'lastChild', {
+          title: 'First Page',
+          type: 'test-page'
+        }),
+        {
+          name: 'forbidden',
+          message: 'Publish the parent page first.'
+        }
+      );
+
+      // IMPORTANT - assert the published page is gone, the draft is still there.
+      const pages = await apos.doc.db.find({
+        type: 'test-page'
+      }).sort({ rank: 1 }).toArray();
+      const draftPage = pages.find(p => p.title === 'First Page' && p.aposMode === 'draft');
+      const publishedPage = pages.find(p => p.title === 'First Page' && p.aposMode === 'published');
+      assert(draftPage);
+      assert(draftPage.level === 2);
+      assert.equal(typeof publishedPage, 'undefined');
     });
   });
 });

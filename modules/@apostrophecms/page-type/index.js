@@ -4,7 +4,12 @@ const pathToRegexp = require('path-to-regexp');
 
 module.exports = {
   extend: '@apostrophecms/doc-type',
+  cascades: [
+    'filters',
+    'columns'
+  ],
   options: {
+    perPage: 10,
     // Pages should never be considered "related documents" when localizing another document etc.
     relatedDocument: false
   },
@@ -53,6 +58,47 @@ module.exports = {
       }
     };
   },
+  columns() {
+    return {
+      add: {
+        title: {
+          name: 'title',
+          label: 'apostrophe:title',
+          component: 'AposCellButton'
+        },
+        slug: {
+          name: 'slug',
+          label: 'apostrophe:slug',
+          component: 'AposCellButton'
+        },
+        updatedAt: {
+          name: 'updatedAt',
+          label: 'apostrophe:lastEdited',
+          component: 'AposCellLastEdited'
+        }
+      }
+    };
+  },
+  filters: {
+    add: {
+      archived: {
+        label: 'apostrophe:archived',
+        inputType: 'radio',
+        choices: [
+          {
+            value: false,
+            label: 'apostrophe:live'
+          },
+          {
+            value: true,
+            label: 'apostrophe:archived'
+          }
+        ],
+        def: false,
+        required: true
+      }
+    }
+  },
   init(self) {
     self.removeDeduplicatePrefixFields([ 'slug' ]);
     self.addDeduplicateSuffixFields([
@@ -60,6 +106,8 @@ module.exports = {
     ]);
     self.rules = {};
     self.dispatchAll();
+    self.composeFilters();
+    self.composeColumns();
   },
   handlers(self) {
     return {
@@ -162,7 +210,7 @@ module.exports = {
               title: 1,
               type: 1
             }).toArray();
-            throw self.apos.error('invalid', {
+            throw self.apos.error('invalid', 'Publish the parent page(s) first.', {
               unpublishedAncestors: draftAncestors.filter(draftAncestor => {
                 return !publishedAncestors.find(publishedAncestor => {
                   return draftAncestor.aposDocId === publishedAncestor.aposDocId;
@@ -365,7 +413,9 @@ module.exports = {
           // Replay the high level positioning used to place it in the draft locale
           return self.apos.page.insert(
             _req,
-            lastTargetId.replace(':draft', ':published'),
+            // do not force published doc as it might not exist, lastTargetId
+            // existance is granted (see `inferLastTargetIdAndPosition`).
+            lastTargetId,
             lastPosition,
             published,
             {
@@ -497,6 +547,21 @@ module.exports = {
           }
           return label;
         }
+      },
+      getBrowserData(_super, req) {
+        const browserOptions = _super(req);
+
+        browserOptions.filters = self.filters;
+        browserOptions.columns = self.columns;
+
+        // Sets manager modal to AposDocsManager
+        // for browsing specific page types:
+        browserOptions.components = {
+          ...browserOptions.components,
+          managerModal: 'AposDocsManager'
+        };
+
+        return browserOptions;
       }
     };
   }
