@@ -95,6 +95,6 @@ export default {
   }
 
   .apos-field .apos-schema :deep(.apos-toolbar) {
-      margin-bottom: 0;
+    margin-bottom: 0;
   }
 </style>

@@ -57,7 +57,7 @@
 
 <script setup>
 import {
-  ref, onMounted, computed, watch, nextTick
+  ref, computed, watch, nextTick
 } from 'vue';
 import { useAposFocus } from 'Modules/@apostrophecms/modal/composables/AposFocus';
 
