@@ -291,6 +291,10 @@ module.exports = {
         // also contains the mode, which is likely to occur
         // since we have the `aposLocale` property in docs
         // structured that way
+        // console.log('req.path', require('util').inspect(req.path, {
+        //   colors: true,
+        //   depth: 1
+        // }));
         if (req.query.aposLocale && req.query.aposLocale.includes(':')) {
           const parts = req.query.aposLocale.split(':');
           req.query.aposLocale = parts[0];
@@ -362,19 +366,6 @@ module.exports = {
           return key;
         };
         req.res.__ = req.__;
-        return next();
-      },
-      apiFallback(req, res, next) {
-        if (!self.options.apiFallback) {
-          return next();
-        }
-
-        const locales = self.filterPrivateLocales(req, self.locales);
-        const [ locale ] = Object.entries(locales || {}).find(
-          ([ , options ]) => options?.hostname?.split(':')[0] === req.hostname
-        );
-        req.locale = locale || req.locale;
-
         return next();
       }
     };
@@ -586,6 +577,12 @@ module.exports = {
             if (matchedHostname && matchedPrefix) {
               // Best possible match
               return name;
+            } else if (self.options.apiFallback) {
+              if (matchedHostname) {
+                if (!best) {
+                  best = name;
+                }
+              }
             }
           } else if (options.hostname) {
             if (matchedHostname) {

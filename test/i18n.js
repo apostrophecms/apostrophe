@@ -476,3 +476,110 @@ describe('no redirection to first locale', function() {
     assert.strictEqual(response.headers.location, undefined);
   });
 });
+
+describe('apiFallback option', function() {
+  this.timeout(t.timeout);
+
+  let apos;
+
+  before(async function() {
+    apos = await t.create({
+      root: module,
+      baseUrl: 'http://localhost:3000',
+      modules: {
+        '@apostrophecms/express': {
+          apiRoutes() {
+            return {
+              get: {
+                '/get-current-locale': async function (req) {
+                  return req.locale;
+                }
+              }
+            };
+          }
+        },
+        '@apostrophecms/i18n': {
+          options: {
+            apiFallback: true,
+            locales: {
+              en: {
+                label: 'English',
+                hostname: 'en.localhost:3000',
+                prefix: '/en'
+              },
+              'en-CA': {
+                label: 'Canada',
+                hostname: 'ca.localhost:3000',
+                prefix: '/en-ca'
+              },
+              'fr-CA': {
+                label: 'French Canada',
+                hostname: 'ca.localhost:3000',
+                prefix: '/fr-ca'
+              },
+              es: {
+                label: 'Spain',
+                prefix: '/es'
+              }
+            }
+          }
+        }
+      }
+    });
+  });
+
+  after(async function() {
+    this.timeout(t.timeout);
+    return t.destroy(apos);
+  });
+
+  this.timeout(t.timeout);
+
+  it('should find default locale by hostname', async function () {
+    const server = apos.modules['@apostrophecms/express'].server;
+    const response = await apos.http.get(`http://ca.localhost:${server.address().port}/get-current-locale`, {
+      followRedirect: false,
+      fullResponse: true,
+      redirect: 'manual'
+    });
+
+    assert.strictEqual(response.status, 200);
+    assert.strictEqual(response.body, 'en-CA');
+  });
+
+  it('should find locale by hostname and prefix', async function () {
+    const server = apos.modules['@apostrophecms/express'].server;
+    const response = await apos.http.get(`http://ca.localhost:${server.address().port}/fr-ca/get-current-locale`, {
+      followRedirect: false,
+      fullResponse: true,
+      redirect: 'manual'
+    });
+
+    assert.strictEqual(response.status, 200);
+    assert.strictEqual(response.body, 'fr-CA');
+  });
+
+  it('should stick to default locale if no hostname', async function() {
+    const response = await apos.http.get('/get-current-locale', {
+      followRedirect: false,
+      fullResponse: true,
+      redirect: 'manual'
+    });
+
+    assert.strictEqual(response.status, 200);
+    assert.strictEqual(response.body, 'en');
+  });
+
+  it('still find locale by prefix', async function () {
+    const server = apos.modules['@apostrophecms/express'].server;
+    const response = await apos.http.get(`http://localhost:${server.address().port}/es/get-current-locale`, {
+      followRedirect: false,
+      fullResponse: true,
+      redirect: 'manual'
+    });
+
+    assert.strictEqual(response.status, 200);
+    assert.strictEqual(response.body, 'es');
+  });
+
+});
