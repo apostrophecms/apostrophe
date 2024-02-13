@@ -291,10 +291,6 @@ module.exports = {
         // also contains the mode, which is likely to occur
         // since we have the `aposLocale` property in docs
         // structured that way
-        // console.log('req.path', require('util').inspect(req.path, {
-        //   colors: true,
-        //   depth: 1
-        // }));
         if (req.query.aposLocale && req.query.aposLocale.includes(':')) {
           const parts = req.query.aposLocale.split(':');
           req.query.aposLocale = parts[0];

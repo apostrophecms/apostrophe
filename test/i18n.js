@@ -581,5 +581,4 @@ describe('apiFallback option', function() {
     assert.strictEqual(response.status, 200);
     assert.strictEqual(response.body, 'es');
   });
-
 });
