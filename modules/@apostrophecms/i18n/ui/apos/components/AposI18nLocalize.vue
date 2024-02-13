@@ -215,6 +215,12 @@
                   />
                   {{ $t('apostrophe:noNewRelatedDocuments') }}
                 </p>
+                <div class="apos-wizard__translation">
+                  <AposTranslationChip />
+                  <p class="apos-wizard__translation-title">
+                    {{ $t('apostrophe:automaticTranslationSettings') }}
+                  </p>
+                </div>
               </div>
             </fieldset>
           </form>
@@ -1055,5 +1061,12 @@ export default {
 
 .apos-locale-name {
   text-transform: uppercase;
+}
+
+.apos-wizard__translation-title {
+  @include type-label;
+
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--a-base-8);
 }
 </style>

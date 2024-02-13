@@ -45,6 +45,7 @@
   "assetWebpackCacheCleared": "Build cache cleared.",
   "assetWebpackConfigWarning": "⚠️ In the module {{ module }}, your webpack config is incorrect. It must be an object and should contain only the properties: {{ properties }}.",
   "at": "at",
+  "automaticTranslationSettings": "Automatic translation settings",
   "back": "Back",
   "backToHome": "Back to Home",
   "basics": "Basics",
