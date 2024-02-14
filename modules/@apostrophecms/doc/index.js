@@ -1051,6 +1051,7 @@ module.exports = {
       },
       // Remove meta data key for a given field. It has exactly the same signature as
       // `setMeta` method, except the last `value` argument.
+      // A cleanup is performed to remove empty meta properties on each call.
       removeMeta(doc, namespace, ...pathArgsWithKey) {
         if (!doc || !namespace) {
           throw new Error('Document and namespace are required.', {
@@ -1083,15 +1084,33 @@ module.exports = {
         delete existingValue[nsKey];
         _.set(doc, metaPathFull, existingValue);
 
-        return metaPath;
-      },
-      // Remove the entire meta for a given field.
-      removeMetaField(doc, ...pathArgs) {
-        const metaPath = self.getMetaPath(...pathArgs);
-        const metaPathFull = `aposMeta.${metaPath}`;
-        _.unset(doc, metaPathFull);
+        cleanup(doc.aposMeta, 'aposMeta');
 
         return metaPath;
+
+        function cleanup(object, path) {
+          if (_.isEmpty(object)) {
+            _.unset(object, path);
+            return true;
+          }
+
+          for (const key of Object.keys(object)) {
+            if (key.includes(':')) {
+              return false;
+            }
+            if (!_.isPlainObject(object[key])) {
+              delete object[key];
+              continue;
+            }
+            if (!cleanup(object[key], `${path}.${key}`)) {
+              return false;
+            }
+
+            delete object[key];
+          }
+
+          return true;
+        }
       },
       // Get all meta keys for a given field. It has exactly the same signature as
       // `setMeta` method, except no key/value should be provided.

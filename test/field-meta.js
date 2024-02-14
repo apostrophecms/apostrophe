@@ -171,8 +171,12 @@ describe('Field Meta', function () {
     assert.equal(apos.doc.getMeta(doc, ns, { _id: 'aWidgetOrArrayItemId' }, 'testKey'), 'World');
   });
 
-  it('should remove meta key for a field or entire field meta', function () {
-    const doc = {};
+  it('should remove meta key for a field and cleanup', function () {
+    const doc = {
+      _id: 'doNotDeleteMe',
+      title: 'Do not delete me',
+      slug: 'do-not-delete-me'
+    };
     const ns = 'my-module';
 
     apos.doc.setMeta(doc, ns, 'title', 'testKey', 'Hello');
@@ -204,20 +208,9 @@ describe('Field Meta', function () {
     assert.equal(apos.doc.getMeta(doc, ns, { _id: 'aWidgetOrArrayItemId' }, 'testKey'), undefined);
 
     assert.deepEqual(doc, {
-      aposMeta: {
-        title: {},
-        address: {
-          country: {},
-          aposMeta: { city: { aposMeta: { name: {} } } }
-        },
-        '@aWidgetOrArrayItemId': { aposMeta: { title: {} } }
-      }
-    });
-
-    apos.doc.removeMetaField(doc, 'title');
-    apos.doc.removeMetaField(doc, 'address');
-    apos.doc.removeMetaField(doc, { _id: 'aWidgetOrArrayItemId' });
-    assert.deepEqual(doc, {
+      _id: 'doNotDeleteMe',
+      title: 'Do not delete me',
+      slug: 'do-not-delete-me',
       aposMeta: {}
     });
   });
@@ -282,14 +275,7 @@ describe('Field Meta', function () {
     apos.doc.removeMeta(doc, ns, widgetTestKeyMetaPath, 'testKey');
 
     assert.deepEqual(doc, {
-      aposMeta: {
-        title: {},
-        address: {
-          country: {},
-          aposMeta: { city: { aposMeta: { name: {} } } }
-        },
-        '@aWidgetOrArrayItemId': { aposMeta: { title: {} } }
-      }
+      aposMeta: {}
     });
   });
 
