@@ -14,6 +14,12 @@ export default {
       type: Object,
       required: true
     },
+    meta: {
+      type: Object,
+      default() {
+        return {};
+      }
+    },
     error: {
       type: [ String, Boolean, Object ],
       default: null
@@ -107,6 +113,35 @@ export default {
       } else {
         return false;
       }
+    },
+    // Meta components receive the original data (key `_original`) and
+    // the "pure" keys (no namespace prefix) and values from their namespace.
+    // The `_original` key is useful for analyzing e.g. `area`, `array`, etc fields
+    // inside the metadata components.
+    // All registered metadata components will be rendered. It's the external
+    // component responsibility to not render itself when no matching conditions
+    // from its namespace are met.
+    metaComponents() {
+      const meta = {};
+      for (const metaKey of Object.keys(this.meta)) {
+        const [ ns, key ] = metaKey.split(':', 2);
+        if (!key) {
+          continue;
+        }
+        if (!meta[ns]) {
+          meta[ns] = {};
+        }
+        meta[ns][key] = this.meta[metaKey];
+      }
+
+      return apos.schema.fieldMetadataComponents
+        .map(component => {
+          return {
+            name: component.name,
+            namespace: component.namespace,
+            data: meta[component.namespace] || {}
+          };
+        });
     }
   },
   mounted: function () {

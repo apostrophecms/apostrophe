@@ -28,6 +28,7 @@ module.exports = {
     self.fieldsById = {};
     self.arrayManagers = {};
     self.objectManagers = {};
+    self.fieldMetadataComponents = [];
 
     self.enableBrowserData();
 
@@ -1127,6 +1128,13 @@ module.exports = {
         return self.fieldTypes[typeName];
       },
 
+      addFieldMetadataComponent(namespace, component) {
+        self.fieldMetadataComponents.push({
+          name: component,
+          namespace
+        });
+      },
+
       // Given a schema and a query, add query builders to the query
       // for each of the fields in the schema, based on their field type,
       // if supported by the field type. If the field already has a
@@ -1762,6 +1770,7 @@ module.exports = {
         }
         browserOptions.action = self.action;
         browserOptions.components = { fields: fields };
+        browserOptions.fieldMetadataComponents = self.fieldMetadataComponents;
         return browserOptions;
       }
     };

@@ -13,33 +13,47 @@
           class="apos-field__label"
           :is="labelEl" :for="uid"
         >
-          {{ $t(label) }}
-          <span v-if="field.required" class="apos-field__required">
-            *
-          </span>
-          <AposLabel
-            class="apos-field__tag"
-            v-if="field.tag"
-            :label="field.tag.value || field.tag"
-            :modifiers="[ `apos-is-${field.tag.type || 'success'}`, 'apos-is-filled' ]"
-          />
-          <span
-            v-if="(field.help || field.htmlHelp) && displayOptions.helpTooltip"
-            class="apos-field__help-tooltip"
-          >
-            <AposIndicator
-              icon="help-circle-icon"
-              class="apos-field__help-tooltip__icon"
-              :tooltip="field.help || field.htmlHelp"
-              :icon-size="11"
-              icon-color="var(--a-base-4)"
-            />
-          </span>
-          <span v-if="displayOptions.changed" class="apos-field__changed">
+          <span class="apos-field_label-info">
+            {{ $t(label) }}
+            <span v-if="field.required" class="apos-field__required">
+              *
+            </span>
             <AposLabel
-              label="apostrophe:changed" class="apos-field__changed__label"
-              :modifiers="[ 'apos-is-warning', 'apos-is-filled' ]"
-              tooltip="apostrophe:fieldHasUnpublishedChanges"
+              class="apos-field__tag"
+              v-if="field.tag"
+              :label="field.tag.value || field.tag"
+              :modifiers="[ `apos-is-${field.tag.type || 'success'}`, 'apos-is-filled' ]"
+            />
+            <span
+              v-if="(field.help || field.htmlHelp) && displayOptions.helpTooltip"
+              class="apos-field__help-tooltip"
+            >
+              <AposIndicator
+                icon="help-circle-icon"
+                class="apos-field__help-tooltip__icon"
+                :tooltip="field.help || field.htmlHelp"
+                :icon-size="11"
+                icon-color="var(--a-base-4)"
+              />
+            </span>
+            <span v-if="displayOptions.changed" class="apos-field__changed">
+              <AposLabel
+                label="apostrophe:changed" class="apos-field__changed__label"
+                :modifiers="[ 'apos-is-warning', 'apos-is-filled' ]"
+                tooltip="apostrophe:fieldHasUnpublishedChanges"
+              />
+            </span>
+          </span>
+          <span class="apos-field__label-meta">
+            <component
+              v-for="component in metaComponents"
+              :key="component.name"
+              :is="component.name"
+              :field="field"
+              :items="items"
+              :namespace="component.namespace"
+              :meta="component.data"
+              :meta-raw="meta"
             />
           </span>
         </component>
@@ -93,10 +107,25 @@ export default {
 
 .apos-field__label {
   @include type-label;
-  display: block;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: nowrap;
+  gap: $spacing-double;
   margin: 0 0 $spacing-base;
   padding: 0;
   color: var(--a-text-primary);
+
+  &-info {
+    display: block;
+  }
+
+  &-meta {
+    display: inline-flex;
+    align-items: center;
+    gap: $spacing-half;
+    justify-content: flex-end;
+  }
 }
 
 .apos-field__help {
