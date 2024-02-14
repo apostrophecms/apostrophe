@@ -215,11 +215,29 @@
                   />
                   {{ $t('apostrophe:noNewRelatedDocuments') }}
                 </p>
-                <div class="apos-wizard__translation">
-                  <AposTranslationChip />
+                <div v-if="translationEnabled" class="apos-wizard__translation">
                   <p class="apos-wizard__translation-title">
-                    {{ $t('apostrophe:automaticTranslationSettings') }}
+                    <AposTranslationChip />
+                    <span class="apos-wizard__translation-title-text">
+                      {{ $t('apostrophe:automaticTranslationSettings') }}
+                    </span>
                   </p>
+                  <AposCheckbox
+                    :field="{ name: 'translate' }"
+                    :choice="{
+                      value: wizard.values.translateContent.data,
+                      label: $t('apostrophe:automaticTranslationCheckbox')
+                    }"
+                    v-model="wizard.values.translateContent.data"
+                  />
+
+                  <!-- eslint-disable vue/no-v-html -->
+                  <p
+                    v-if="translationErrMsg"
+                    class="apos-wizard__translation-error"
+                    v-html="translationErrMsg"
+                  />
+                  <!-- eslint-disable vue/no-v-html -->
                 </div>
               </div>
             </fieldset>
@@ -345,7 +363,8 @@ export default {
           toLocalize: { data: 'thisDocAndRelated' },
           toLocales: { data: this.locale ? [ this.locale ] : [] },
           relatedDocSettings: { data: 'localizeNewRelated' },
-          relatedDocTypesToLocalize: { data: [] }
+          relatedDocTypesToLocalize: { data: [] },
+          translateContent: { data: false }
         }
       },
       fullDoc: this.doc,
@@ -376,7 +395,9 @@ export default {
           value: 'relatedDocsOnly',
           label: 'apostrophe:relatedDocsOnly'
         }
-      ]
+      ],
+      translationEnabled: apos.modules['@apostrophecms/translation']?.enabled || true,
+      translationErrMsg: null
     };
   },
   computed: {
@@ -469,6 +490,9 @@ export default {
     },
     'wizard.values.toLocalize.data'() {
       this.updateRelatedDocs();
+    },
+    'wizard.values.translateContent.data'(value) {
+      this.checkAvailableTranslations(value);
     },
     selectedLocales() {
       this.updateRelatedDocs();
@@ -828,6 +852,40 @@ export default {
       }
       this.relatedDocs = relatedDocs;
       this.wizard.busy = status;
+    },
+    checkAvailableTranslations(value) {
+      if (!value) {
+        this.translationErrMsg = null;
+        return;
+      }
+      const [ sourceLocale ] = this.doc.aposLocale.split(':');
+      const source = {
+        name: sourceLocale,
+        label: this.moduleOptions.locales[sourceLocale]?.label
+      };
+      const targets = this.wizard.values.toLocales.data.map(({ name, label }) => ({
+        name,
+        label
+      }));
+
+      // TODO: Send a request to the provider to see if those locales are available
+
+      // These variables should be returned by the provider service
+      const unavailableSource = true;
+      const unavailableTargetsLabels = [];
+
+      if (unavailableSource) {
+        this.translationErrMsg = this.$t('apostrophe:automaticTranslationSourceErrMsg', { source: source.label });
+        return;
+      }
+
+      if (unavailableTargetsLabels.length) {
+        const isPlural = unavailableTargetsLabels.length > 1;
+        this.translationErrMsg = this.$t(
+          `apostrophe:automaticTranslationTargetErrMsg${isPlural ? '_plural' : ''}`,
+          { targets: unavailableTargetsLabels.join(', ') }
+        );
+      }
     }
   }
 };
@@ -1017,10 +1075,8 @@ export default {
   }
 }
 
-.apos-wizard__step {
-  .apos-field--relatedDocSettings {
-
-  }
+.apos-wizard__step  :deep(.apos-field--relatedDocTypesToLocalize) {
+  margin-top: $spacing-triple;
 }
 .apos-wizard__step {
   .apos-field__wrapper {
@@ -1069,16 +1125,24 @@ export default {
 }
 
 .apos-wizard__translation {
-  display: flex;
-  align-items: center;
-  padding-bottom: 10px;
-  border-bottom: 1px solid var(--a-base-8);
   margin-top: 30px;
 }
 
 .apos-wizard__translation-title {
-  @include type-large;
+  @include type-label;
 
-  margin: 0 0 0 10px;
+  display: flex;
+  align-items: center;
+  border-bottom: 1px solid var(--a-base-8);
+  padding-bottom: 8px;
+}
+
+.apos-wizard__translation-title-text {
+  margin-left: 7px;
+}
+
+.apos-wizard__translation-error {
+  @include type-label;
+  color: var(--a-danger);
 }
 </style>
