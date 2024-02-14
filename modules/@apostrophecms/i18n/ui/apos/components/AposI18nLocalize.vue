@@ -1018,8 +1018,13 @@ export default {
 }
 
 .apos-wizard__step {
-  .apos-field__wrapper:not(:last-of-type) {
-    margin-bottom: $spacing-triple;
+  .apos-field--relatedDocSettings {
+
+  }
+}
+.apos-wizard__step {
+  .apos-field__wrapper {
+    margin-bottom: $spacing-double;
   }
 }
 
@@ -1063,10 +1068,17 @@ export default {
   text-transform: uppercase;
 }
 
-.apos-wizard__translation-title {
-  @include type-label;
-
+.apos-wizard__translation {
+  display: flex;
+  align-items: center;
   padding-bottom: 10px;
   border-bottom: 1px solid var(--a-base-8);
+  margin-top: 30px;
+}
+
+.apos-wizard__translation-title {
+  @include type-large;
+
+  margin: 0 0 0 10px;
 }
 </style>
