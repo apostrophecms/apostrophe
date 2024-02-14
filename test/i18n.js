@@ -581,4 +581,16 @@ describe('apiFallback option', function() {
     assert.strictEqual(response.status, 200);
     assert.strictEqual(response.body, 'es');
   });
+
+  it('should 404 if no route found', async function () {
+    try {
+      await apos.http.get('/not-existing-route', {
+        followRedirect: false,
+        fullResponse: true,
+        redirect: 'manual'
+      });
+    } catch (error) {
+      assert.strictEqual(error.status, 404);
+    }
+  });
 });
