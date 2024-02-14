@@ -1,7 +1,7 @@
 module.exports = {
   extend: '@apostrophecms/module',
   options: {
-    disabled: false
+    enabled: true
   },
   init(self) {
     self.providers = [];
@@ -21,7 +21,7 @@ module.exports = {
       },
       getBrowserData(req) {
         return {
-          enabled: !options.disabled && self.providers.length,
+          enabled: options.enabled && Boolean(self.providers.length),
           providers: self.providers.map(({ name, label }) => ({
             name,
             label
