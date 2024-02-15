@@ -4,7 +4,8 @@ module.exports = {
     enabled: true
   },
   init(self) {
-    self.providers = [];
+    self.providers = [ { name: 'fakeProvider' } ];
+
     self.enableBrowserData();
   },
   methods(self, options) {
