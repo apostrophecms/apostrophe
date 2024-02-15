@@ -491,6 +491,9 @@ describe('apiFallback option', function() {
           apiRoutes() {
             return {
               get: {
+                '/': async function (req) {
+                  return req.locale;
+                },
                 '/get-current-locale': async function (req) {
                   return req.locale;
                 }
@@ -559,18 +562,7 @@ describe('apiFallback option', function() {
     assert.strictEqual(response.body, 'fr-CA');
   });
 
-  it('should stick to default locale if no hostname', async function() {
-    const response = await apos.http.get('/get-current-locale', {
-      followRedirect: false,
-      fullResponse: true,
-      redirect: 'manual'
-    });
-
-    assert.strictEqual(response.status, 200);
-    assert.strictEqual(response.body, 'en');
-  });
-
-  it('still find locale by prefix', async function () {
+  it('should still find locale by prefix', async function () {
     const server = apos.modules['@apostrophecms/express'].server;
     const response = await apos.http.get(`http://localhost:${server.address().port}/es/get-current-locale`, {
       followRedirect: false,
@@ -582,15 +574,26 @@ describe('apiFallback option', function() {
     assert.strictEqual(response.body, 'es');
   });
 
-  it('should 404 if no route found', async function () {
-    try {
-      await apos.http.get('/not-existing-route', {
-        followRedirect: false,
-        fullResponse: true,
-        redirect: 'manual'
-      });
-    } catch (error) {
-      assert.strictEqual(error.status, 404);
-    }
+  it('should stick to default locale if no hostname', async function() {
+    const response = await apos.http.get('/get-current-locale', {
+      followRedirect: false,
+      fullResponse: true,
+      redirect: 'manual'
+    });
+
+    assert.strictEqual(response.status, 200);
+    assert.strictEqual(response.body, 'en');
+  });
+
+  it('should stick to default locale if no prefix on root', async function () {
+    const server = apos.modules['@apostrophecms/express'].server;
+    const response = await apos.http.get(`http://ca.localhost:${server.address().port}`, {
+      followRedirect: false,
+      fullResponse: true,
+      redirect: 'manual'
+    });
+
+    assert.strictEqual(response.status, 200);
+    assert.strictEqual(response.body, 'en');
   });
 });

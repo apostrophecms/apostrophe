@@ -575,7 +575,7 @@ module.exports = {
               return name;
             } else if (self.options.apiFallback) {
               if (matchedHostname) {
-                if (!best) {
+                if (!best && req.url !== '/') {
                   best = name;
                 }
               }
