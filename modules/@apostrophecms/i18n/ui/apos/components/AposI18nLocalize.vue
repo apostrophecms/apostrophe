@@ -396,7 +396,7 @@ export default {
           label: 'apostrophe:relatedDocsOnly'
         }
       ],
-      translationEnabled: apos.modules['@apostrophecms/translation']?.enabled || true,
+      translationEnabled: apos.modules['@apostrophecms/translation']?.enabled,
       translationErrMsg: null
     };
   },
@@ -456,7 +456,7 @@ export default {
     },
     visibleSections() {
       const self = this;
-      const result = Object.entries(this.wizard.sections).filter(([ name, section ]) => {
+      const result = Object.entries(this.wizard.sections).filter(([ _, section ]) => {
         return section.if ? section.if.bind(self)() : true;
       }).map(([ name, section ]) => {
         return {
