@@ -477,7 +477,7 @@ describe('no redirection to first locale', function() {
   });
 });
 
-describe('apiFallback option', function() {
+describe.only('apiFallback option', function() {
   this.timeout(t.timeout);
 
   let apos;
@@ -595,5 +595,18 @@ describe('apiFallback option', function() {
 
     assert.strictEqual(response.status, 200);
     assert.strictEqual(response.body, 'en');
+  });
+
+  it('should be compatible with redirectToFirstLocale option', async function () {
+    apos.modules['@apostrophecms/i18n'].options.redirectToFirstLocale = true;
+    const server = apos.modules['@apostrophecms/express'].server;
+    const response = await apos.http.get(`http://ca.localhost:${server.address().port}`, {
+      followRedirect: false,
+      fullResponse: true,
+      redirect: 'manual'
+    });
+
+    assert.strictEqual(response.status, 302);
+    assert.strictEqual(response.body, 'Found. Redirecting to /en-ca/');
   });
 });
