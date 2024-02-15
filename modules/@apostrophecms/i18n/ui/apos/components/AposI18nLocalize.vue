@@ -396,7 +396,7 @@ export default {
           label: 'apostrophe:relatedDocsOnly'
         }
       ],
-      translationEnabled: apos.modules['@apostrophecms/translation']?.enabled,
+      translationEnabled: apos.modules['@apostrophecms/translation'].enabled,
       translationErrMsg: null
     };
   },
