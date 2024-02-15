@@ -218,7 +218,7 @@
               </div>
               <div v-if="translationEnabled" class="apos-wizard__translation">
                 <p class="apos-wizard__translation-title">
-                  <AposTranslationChip />
+                  <AposTranslationIndicator :size="18" />
                   <span class="apos-wizard__translation-title-text">
                     {{ $t('apostrophe:automaticTranslationSettings') }}
                   </span>

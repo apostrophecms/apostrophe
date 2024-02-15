@@ -23,7 +23,7 @@
       />
     </svg>
     <p v-if="label" class="apos-translation-chip__text">
-      {{ label }}
+      {{ $t(label) }}
     </p>
   </span>
 </template>
@@ -38,7 +38,7 @@ export default {
     },
     size: {
       type: Number,
-      default: 18
+      default: 16
     }
   }
 };
@@ -65,6 +65,7 @@ $background: #F7FEF4;
 
   margin: 0 0 0 4px;
   color: $color;
+  font-size: var(--a-type-tiny);
 }
 
 #svg-path {
