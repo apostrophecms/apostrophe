@@ -30,6 +30,16 @@
         :modifiers="[ 'apos-is-filled', 'apos-is-danger' ]"
       />
     </span>
+    <span
+      v-for="({component, props}, index) in customCellIndicators"
+      :key="index"
+    >
+      <component
+        :is="component"
+        class="apos-table__cell-field__label"
+        v-bind="props"
+      />
+    </span>
   </div>
 </template>
 
@@ -38,7 +48,12 @@ import AposCellMixin from 'Modules/@apostrophecms/ui/mixins/AposCellMixin';
 
 export default {
   name: 'AposCellLabels',
-  mixins: [ AposCellMixin ]
+  mixins: [ AposCellMixin ],
+  data() {
+    return {
+      customCellIndicators: apos.schema.customCellIndicators
+    };
+  }
 };
 </script>
 
