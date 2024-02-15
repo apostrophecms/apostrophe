@@ -215,30 +215,30 @@
                   />
                   {{ $t('apostrophe:noNewRelatedDocuments') }}
                 </p>
-                <div v-if="translationEnabled" class="apos-wizard__translation">
-                  <p class="apos-wizard__translation-title">
-                    <AposTranslationChip />
-                    <span class="apos-wizard__translation-title-text">
-                      {{ $t('apostrophe:automaticTranslationSettings') }}
-                    </span>
-                  </p>
-                  <AposCheckbox
-                    :field="{ name: 'translate' }"
-                    :choice="{
-                      value: wizard.values.translateContent.data,
-                      label: $t('apostrophe:automaticTranslationCheckbox')
-                    }"
-                    v-model="wizard.values.translateContent.data"
-                  />
+              </div>
+              <div v-if="translationEnabled" class="apos-wizard__translation">
+                <p class="apos-wizard__translation-title">
+                  <AposTranslationChip />
+                  <span class="apos-wizard__translation-title-text">
+                    {{ $t('apostrophe:automaticTranslationSettings') }}
+                  </span>
+                </p>
+                <AposCheckbox
+                  :field="{ name: 'translate' }"
+                  :choice="{
+                    value: wizard.values.translateContent.data,
+                    label: $t('apostrophe:automaticTranslationCheckbox')
+                  }"
+                  v-model="wizard.values.translateContent.data"
+                />
 
-                  <!-- eslint-disable vue/no-v-html -->
-                  <p
-                    v-if="translationErrMsg"
-                    class="apos-wizard__translation-error"
-                    v-html="translationErrMsg"
-                  />
-                  <!-- eslint-disable vue/no-v-html -->
-                </div>
+                <!-- eslint-disable vue/no-v-html -->
+                <p
+                  v-if="translationErrMsg"
+                  class="apos-wizard__translation-error"
+                  v-html="translationErrMsg"
+                />
+                <!-- eslint-disable vue/no-v-html -->
               </div>
             </fieldset>
           </form>
