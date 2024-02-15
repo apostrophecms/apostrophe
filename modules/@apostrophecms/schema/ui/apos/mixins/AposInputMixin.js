@@ -98,7 +98,7 @@ export default {
       return this.error || this.serverError;
     },
     fieldMeta() {
-      return this.meta[this.field.name] || {};
+      return this.meta?.[this.field.name] || {};
     }
   },
   watch: {
@@ -170,19 +170,20 @@ export default {
     // This util is meant to be used in array and widget wrappers or
     // custom fields that manage array of object values having unique `_id`.
     convertMetaToItems(valueItems = []) {
-      const meta = klona(this.fieldMeta);
+      const fieldMeta = klona(this.fieldMeta);
+      const meta = this.meta || {};
 
       const shared = {};
-      for (const fieldName of Object.keys(this.meta)) {
-        if (fieldName.startsWith('@') && !valueItems.some(item => this.meta[`@${item._id}`])) {
-          shared[fieldName] = this.meta[fieldName];
+      for (const fieldName of Object.keys(meta)) {
+        if (fieldName.startsWith('@') && !valueItems.some(item => meta[`@${item._id}`])) {
+          shared[fieldName] = meta[fieldName];
           continue;
         }
       }
       for (const item of valueItems) {
-        const itemMeta = this.meta[`@${item._id}`] || {};
+        const itemMeta = meta[`@${item._id}`] || {};
         const subMeta = itemMeta.aposMeta;
-        meta[item._id] = {
+        fieldMeta[item._id] = {
           ...itemMeta,
           aposMeta: {
             ...(subMeta || {}),
@@ -191,7 +192,7 @@ export default {
         };
       }
 
-      return meta;
+      return fieldMeta;
     }
   }
 };

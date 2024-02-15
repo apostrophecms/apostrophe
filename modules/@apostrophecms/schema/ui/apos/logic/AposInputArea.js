@@ -51,10 +51,10 @@ export default {
     areaMeta() {
       const meta = this.convertMetaToItems(this.next.items);
       // Get meta for the area itself
-      if (this.meta[`@${this.value.data._id}`]) {
+      if (this.meta?.[`@${this.next._id}`]) {
         return {
           ...meta,
-          ...this.meta[`@${this.value.data._id}`]
+          ...this.meta[`@${this.next._id}`]
         };
       }
       return meta;
