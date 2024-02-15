@@ -8,6 +8,7 @@ module.exports = {
     self.providers = [];
 
     self.enableBrowserData();
+    self.addTranslationIndicator();
   },
   handlers(self) {
     return {
@@ -187,6 +188,14 @@ module.exports = {
             label
           }))
         };
+      },
+      addTranslationIndicator() {
+        self.apos.schema.addManagerIndicator({
+          component: 'AposTranslationIndicator',
+          props: {
+            label: 'apostrophe:automaticTranslationPending'
+          }
+        });
       }
     };
   }

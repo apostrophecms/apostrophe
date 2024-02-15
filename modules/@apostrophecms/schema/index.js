@@ -29,6 +29,7 @@ module.exports = {
     self.arrayManagers = {};
     self.objectManagers = {};
     self.fieldMetadataComponents = [];
+    self.uiManagerIndicators = [];
 
     self.enableBrowserData();
 
@@ -1706,6 +1707,10 @@ module.exports = {
           options.allow = '/';
         }
         return options;
+      },
+
+      addManagerIndicator(componentInfo) {
+        self.uiManagerIndicators.push(componentInfo);
       }
     };
   },
@@ -1771,6 +1776,7 @@ module.exports = {
         browserOptions.action = self.action;
         browserOptions.components = { fields: fields };
         browserOptions.fieldMetadataComponents = self.fieldMetadataComponents;
+        browserOptions.customCellIndicators = self.uiManagerIndicators;
         return browserOptions;
       }
     };
