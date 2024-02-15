@@ -51,7 +51,8 @@ $color: #035204;
 $background: #F7FEF4;
 
 .apos-translation-chip {
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
   padding: 2px;
   border: 1px solid $border;
   border-radius: 6px;
@@ -61,6 +62,9 @@ $background: #F7FEF4;
 
 .apos-translation-chip__text {
   @include type-label;
+
+  margin: 0 0 0 4px;
+  color: $color;
 }
 
 #svg-path {
