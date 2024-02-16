@@ -18,6 +18,7 @@
               :trigger-validation="triggerValidation"
               :schema="schema"
               :value="docFields"
+              :meta="meta"
               @input="updateDocFields"
               @validate="triggerValidate"
               :following-values="followingValues()"
@@ -69,6 +70,12 @@ export default {
     },
     value: {
       required: false,
+      type: Object,
+      default() {
+        return {};
+      }
+    },
+    meta: {
       type: Object,
       default() {
         return {};

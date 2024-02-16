@@ -1,3 +1,5 @@
+import { klona } from 'klona';
+
 export default {
   // Implements v-model pattern
   emits: [ 'input' ],
@@ -11,6 +13,12 @@ export default {
     field: {
       type: Object,
       required: true
+    },
+    meta: {
+      type: Object,
+      default() {
+        return {};
+      }
     },
     modifiers: {
       default: function () {
@@ -88,6 +96,9 @@ export default {
     },
     effectiveError () {
       return this.error || this.serverError;
+    },
+    fieldMeta() {
+      return this.meta?.[this.field.name] || {};
     }
   },
   watch: {
@@ -152,6 +163,36 @@ export default {
     // experience.
     convert() {
       return this.next;
+    },
+    // Accepts an array of object values and convertts the current meta to items
+    // so that it contains only the item _id's as keys (without leading `@`) and
+    // meta keys for the current field if any.
+    // This util is meant to be used in array and widget wrappers or
+    // custom fields that manage array of object values having unique `_id`.
+    convertMetaToItems(valueItems = []) {
+      const fieldMeta = klona(this.fieldMeta);
+      const meta = this.meta || {};
+
+      const shared = {};
+      for (const fieldName of Object.keys(meta)) {
+        if (fieldName.startsWith('@') && !valueItems.some(item => meta[`@${item._id}`])) {
+          shared[fieldName] = meta[fieldName];
+          continue;
+        }
+      }
+      for (const item of valueItems) {
+        const itemMeta = meta[`@${item._id}`] || {};
+        const subMeta = itemMeta.aposMeta;
+        fieldMeta[item._id] = {
+          ...itemMeta,
+          aposMeta: {
+            ...(subMeta || {}),
+            ...shared
+          }
+        };
+      }
+
+      return fieldMeta;
     }
   }
 };

@@ -47,6 +47,17 @@ export default {
         });
       }
       return result;
+    },
+    areaMeta() {
+      const meta = this.convertMetaToItems(this.next.items);
+      // Get meta for the area itself
+      if (this.meta?.[`@${this.next._id}`]) {
+        return {
+          ...meta,
+          ...this.meta[`@${this.next._id}`]
+        };
+      }
+      return meta;
     }
   },
   methods: {

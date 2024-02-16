@@ -9,6 +9,8 @@
 * Add support for `canCreate`, `canPreview` & `canShareDraft` in context operations conditions.
 * Add support for `canCreate`, `canEdit`, `canArchive` & `canPublish` in utility operations definitions.
 * Add `uponSubmit` requirement in the `@apostrophecms/login` module. `uponSubmit` requirements are checked each time the user submit the login form. See the documentation for more information.
+* Add field metadata feature, where every module can add metadata to fields via public API offered by `apos.doc.setMeta()`, `apos.doc.getMeta()`, `apos.doc.getMetaPath()` and `apos.doc.removeMeta()`. The metadata is stored in the database and can be used to store additional information about a field.
+* Add new `apos.schema.addFieldMetadataComponent(namespace, component)` method to allow adding custom components. They have access to the server-side added field metadata and can decide to show indicators on the admin UI fields. Currently supported fields are "string", "slug", "array", "object" and "area".
 
 ### Fixes
 
