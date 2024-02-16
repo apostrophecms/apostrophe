@@ -19,13 +19,22 @@ describe('Field Meta', function () {
 
   it('should validate arguments when getting meta path for a field', function () {
     assert.throws(() => apos.doc.getMetaPath(), {
-      cause: 'invalidArguments'
+      name: 'invalid',
+      data: {
+        cause: 'invalidArguments'
+      }
     });
     assert.throws(() => apos.doc.getMetaPath({}), {
-      cause: 'subObjectNoId'
+      name: 'invalid',
+      data: {
+        cause: 'subObjectNoId'
+      }
     });
     assert.throws(() => apos.doc.getMetaPath('string', 10), {
-      cause: 'invalidArguments'
+      name: 'invalid',
+      data: {
+        cause: 'invalidArguments'
+      }
     });
   });
 
@@ -61,28 +70,49 @@ describe('Field Meta', function () {
     const doc = {};
     const ns = 'a-module';
     assert.throws(() => apos.doc.setMeta(), {
-      cause: 'invalidArguments'
+      name: 'invalid',
+      data: {
+        cause: 'invalidArguments'
+      }
     });
     assert.throws(() => apos.doc.setMeta(doc, ns), {
-      cause: 'invalidArguments'
+      name: 'invalid',
+      data: {
+        cause: 'invalidArguments'
+      }
     });
     assert.throws(() => apos.doc.setMeta(doc, ns, 'title'), {
-      cause: 'invalidArguments'
+      name: 'invalid',
+      data: {
+        cause: 'invalidArguments'
+      }
     });
     assert.throws(() => apos.doc.setMeta(doc, ns, 'title', 'value'), {
-      cause: 'invalidArguments'
+      name: 'invalid',
+      data: {
+        cause: 'invalidArguments'
+      }
     });
     assert.throws(() => apos.doc.setMeta(doc, ns, 10, 'key', 'value'), {
-      cause: 'invalidArguments'
+      name: 'invalid',
+      data: {
+        cause: 'invalidArguments'
+      }
     });
     assert.throws(() => apos.doc.setMeta(doc, ns, 'title', 10, 'value'), {
-      cause: 'invalidArguments'
+      name: 'invalid',
+      data: {
+        cause: 'invalidArguments'
+      }
     });
     assert.throws(() => apos.doc.setMeta(doc, ns, {}), {
-      cause: 'invalidArguments'
+      name: 'invalid'
     });
     assert.throws(() => apos.doc.setMeta(doc, ns, {}, 'key', 'value'), {
-      cause: 'subObjectNoId'
+      name: 'invalid',
+      data: {
+        cause: 'subObjectNoId'
+      }
     });
   });
 
@@ -126,25 +156,46 @@ describe('Field Meta', function () {
     const ns = 'a-module';
 
     assert.throws(() => apos.doc.getMeta(), {
-      cause: 'invalidArguments'
+      name: 'invalid',
+      data: {
+        cause: 'invalidArguments'
+      }
     });
     assert.throws(() => apos.doc.getMeta(doc, ns), {
-      cause: 'invalidArguments'
+      name: 'invalid',
+      data: {
+        cause: 'invalidArguments'
+      }
     });
     assert.throws(() => apos.doc.getMeta(doc, ns, 'title'), {
-      cause: 'invalidArguments'
+      name: 'invalid',
+      data: {
+        cause: 'invalidArguments'
+      }
     });
     assert.throws(() => apos.doc.getMeta(doc, ns, 10, 'key'), {
-      cause: 'invalidArguments'
+      name: 'invalid',
+      data: {
+        cause: 'invalidArguments'
+      }
     });
     assert.throws(() => apos.doc.getMeta(doc, ns, 'title', 10), {
-      cause: 'invalidArguments'
+      name: 'invalid',
+      data: {
+        cause: 'invalidArguments'
+      }
     });
     assert.throws(() => apos.doc.getMeta(doc, ns, {}), {
-      cause: 'invalidArguments'
+      name: 'invalid',
+      data: {
+        cause: 'invalidArguments'
+      }
     });
     assert.throws(() => apos.doc.getMeta(doc, ns, {}, 'key'), {
-      cause: 'subObjectNoId'
+      name: 'invalid',
+      data: {
+        cause: 'subObjectNoId'
+      }
     });
   });
 

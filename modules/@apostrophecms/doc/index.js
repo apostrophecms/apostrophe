@@ -951,7 +951,7 @@ module.exports = {
       //   item, widget, or any other field type object that have `_id` property).
       //   This argument dictates how `pathComponents` are interpreted. If
       //   `subobject` is not provided, `pathComponents` are interpreted as
-      //   top-level meta properties. If `subobject` is provided, `pathComponents`
+      //   a path starting from `doc`. If `subobject` is provided, `pathComponents`
       //   are interpreted as a relative path from the `subobject` field.
       // - `pathComponents`: the dot path to the field value. It can be any number
       //   of strings with or without dot-separated components. If `subobject` is
@@ -959,11 +959,11 @@ module.exports = {
       //   `subobject` field. If `subobject` is not provided, `pathComponents` are
       //   interpreted as a top-level path. `pathComponents` is optional when
       //   `subobject` field is provided. This way you can set a meta property
-      //   directly for e.g. array or widget field. Every string in `pathComponents`
-      //   is treated as "sub schema". See examples below.
+      //   directly for e.g. array or widget field. See examples below.
       // - `key`: the key of the meta property. Should be a string. Dot-path is
       //   not supported, dots will be treated as part of the key. It's prefixed
-      //   with the `namespace` (`namespace:key`) to avoid conflicts with other modules.
+      //   automatically with the `namespace` (`namespace:key`) to avoid
+      //   conflicts with other modules.
       // - `value`: the value of the meta property. Can be any JSON-serializable value.
       //
       // The document field metadata can be consumed by admin UI components. See
@@ -990,7 +990,7 @@ module.exports = {
       //  will set `doc.aposMeta.address.aposMeta.city.name['my-module:myMetaKey.with.dots']: 'myMetaValue'`.
       setMeta(doc, namespace, ...pathArgsWithKeyAndValue) {
         if (!_.isPlainObject(doc) || !namespace) {
-          throw new Error('Valid document and namespace are required.', {
+          throw self.apos.error('invalid', 'Valid document and namespace are required.', {
             cause: 'invalidArguments'
           });
         }
@@ -1000,12 +1000,12 @@ module.exports = {
         const key = pathArgs.pop();
 
         if (!key) {
-          throw new Error('Key and value are required.', {
+          throw self.apos.error('invalid', 'Key and value are required.', {
             cause: 'invalidArguments'
           });
         }
         if (typeof key !== 'string') {
-          throw new Error('Key must be a string.', {
+          throw self.apos.error('invalid', 'Key must be a string.', {
             cause: 'invalidArguments'
           });
         }
@@ -1024,7 +1024,7 @@ module.exports = {
       // `setMeta` method, except the last `value` argument.
       getMeta(doc, namespace, ...pathArgsWithKey) {
         if (!doc || !namespace) {
-          throw new Error('Document and namespace are required.', {
+          throw self.apos.error('invalid', 'Document and namespace are required.', {
             cause: 'invalidArguments'
           });
         }
@@ -1033,12 +1033,12 @@ module.exports = {
         const key = pathArgs.pop();
 
         if (!key) {
-          throw new Error('Key and value are required.', {
+          throw self.apos.error('invalid', 'Key and value are required.', {
             cause: 'invalidArguments'
           });
         }
         if (typeof key !== 'string') {
-          throw new Error('Key must be a string.', {
+          throw self.apos.error('invalid', 'Key must be a string.', {
             cause: 'invalidArguments'
           });
         }
@@ -1054,7 +1054,7 @@ module.exports = {
       // A cleanup is performed to remove empty meta properties on each call.
       removeMeta(doc, namespace, ...pathArgsWithKey) {
         if (!doc || !namespace) {
-          throw new Error('Document and namespace are required.', {
+          throw self.apos.error('invalid', 'Document and namespace are required.', {
             cause: 'invalidArguments'
           });
         }
@@ -1069,12 +1069,12 @@ module.exports = {
         }
 
         if (!key) {
-          throw new Error('Key and value are required.', {
+          throw self.apos.error('invalid', 'Key and value are required.', {
             cause: 'invalidArguments'
           });
         }
         if (typeof key !== 'string') {
-          throw new Error('Key must be a string.', {
+          throw self.apos.error('invalid', 'Key must be a string.', {
             cause: 'invalidArguments'
           });
         }
@@ -1149,22 +1149,26 @@ module.exports = {
         }
 
         if (args.some(arg => typeof arg !== 'string')) {
-          throw new Error('All path components must be strings.', {
+          throw self.apos.error('invalid', 'All path components must be strings.', {
             cause: 'invalidArguments'
           });
         }
         const pathComponents = args.join('.aposMeta.');
 
         if (!subObject && !pathComponents) {
-          throw new Error('Not providing both subobject and pathComponents is not allowed.', {
-            cause: 'invalidArguments'
-          });
+          throw self.apos.error(
+            'invalid',
+            'You must provide at least a "subobject" or at least one "pathComponent" string.',
+            { cause: 'invalidArguments' }
+          );
         }
 
         if (subObject && !subObject._id) {
-          throw new Error('Provided subobject must have an _id property.', {
-            cause: 'subObjectNoId'
-          });
+          throw self.apos.error(
+            'invalid',
+            'Provided subobject must have an _id property.',
+            { cause: 'subObjectNoId' }
+          );
         }
 
         if (!subObject) {
