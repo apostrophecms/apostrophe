@@ -4,7 +4,7 @@ module.exports = {
     enabled: true
   },
   init(self) {
-    self.providers = [ { name: 'fakeProvider' } ];
+    self.providers = [];
 
     self.enableBrowserData();
   },
@@ -18,8 +18,9 @@ module.exports = {
           }
           // We don't support multiple providers yet, so just use the first one
           // when no provider is specified.
-          const module = self.getProviderModule(req.query.aposTranslateProvider);
-          if (!module) {
+          const name = self.getProvider(req.query.aposTranslateProvider)?.name;
+          const module = self.getProviderModule(name);
+          if (!name || !module) {
             const name = req.query.aposTranslateProvider ||
               'apostrophe:notAvailable';
 
@@ -44,7 +45,7 @@ module.exports = {
             );
           }
 
-          return module.translate(doc, source, target, options);
+          return module.translate(req, name, doc, source, target, options);
         }
       }
     };
@@ -77,15 +78,18 @@ module.exports = {
           throw self.apos.error('notfound');
         }
 
-        const module = self.getProviderModule(req.query.provider);
-        if (!module) {
+        const name = self.getProvider(req.query.provider)?.name;
+        const module = self.getProviderModule(name);
+        if (!name || !module) {
           throw self.apos.error(
-            'notfound',
+            'invalid',
             req.t('apostrophe:automaticTranslationLngCheckNoProvider')
           );
         }
 
         return module.getSupportedLanguages(
+          req,
+          name,
           req.query.source ?? [],
           req.query.target ?? []
         );
@@ -101,6 +105,8 @@ module.exports = {
       //
       // The provider module must implement a `translate` method that takes
       // the following arguments:
+      // - `req` (Object): The request object
+      // - `provider` (String): The provider name
       // - `draft` (Object): The document to translate
       // - `source` (String): The language code of the original document
       // - `target` (String): The language code to translate the document to
@@ -110,6 +116,8 @@ module.exports = {
       //
       // The provider module must also implement a `getSupportedLanguages` method
       // that takes the following arguments:
+      // - `req` (Object): The request object
+      // - `provider` (String): The provider name
       // - `source` (Array): An array of language codes to translate from
       // - `target` (Array): An array of language codes to translate to
       // The method should return an object with `source` and `target` properties,
@@ -127,15 +135,30 @@ module.exports = {
       //   label: 'Google Translate'
       // });
       // ```
-      addProvider(aposModule, { name, label }) {
+      addProvider(aposModule, { name, label } = {}) {
+        if (!aposModule?.__meta?.name) {
+          throw new Error(
+            'Apostrophe module not provided.',
+            { cause: 'invalidArguments' }
+          );
+        }
         if (typeof aposModule.translate !== 'function') {
           throw new Error(
-            `The translation provider module "${aposModule.__meta.name}" has to implement "translate" method.`
+            `The translation provider module "${aposModule.__meta.name}" has to implement "translate" method.`,
+            { cause: 'interfaceNotImplemented' }
           );
         }
         if (typeof aposModule.getSupportedLanguages !== 'function') {
           throw new Error(
-            `The translation provider module "${aposModule.__meta.name}" has to implement "getSupportedLanguages" method.`
+            `The translation provider module "${aposModule.__meta.name}" has to implement "getSupportedLanguages" method.`,
+            { cause: 'interfaceNotImplemented' }
+          );
+        }
+
+        if (self.providers.some((provider) => provider.name === name)) {
+          throw new Error(
+            `The translation provider "${name}" is already registered.`,
+            { cause: 'duplicate' }
           );
         }
 
@@ -153,7 +176,7 @@ module.exports = {
         return self.providers.find((provider) => provider.name === name);
       },
       getProviderModule(name) {
-        return self.apos.modules[self.getProvider(name)];
+        return self.apos.modules[self.getProvider(name)?.module];
       },
       getBrowserData(req) {
         return {

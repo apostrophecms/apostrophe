@@ -863,10 +863,12 @@ export default {
         name: sourceLocale,
         label: this.moduleOptions.locales[sourceLocale]?.label
       };
-      const targets = this.wizard.values.toLocales.data.map(({ name, label }) => ({
-        name,
-        label
-      }));
+      // FIXME uncome when we have the backend service, commented due to
+      // eslint error.
+      // const targets = this.wizard.values.toLocales.data.map(({ name, label }) => ({
+      //   name,
+      //   label
+      // }));
 
       // TODO: Send a request to the provider to see if those locales are available
 
