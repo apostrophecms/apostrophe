@@ -70,6 +70,7 @@
                     :following-values="followingValues()"
                     :conditional-fields="conditionalFields"
                     :value="currentDoc"
+                    :meta="currentDocMeta"
                     :server-errors="currentDocServerErrors"
                     ref="schema"
                     :doc-id="docId"

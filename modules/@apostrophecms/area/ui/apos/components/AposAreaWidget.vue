@@ -109,6 +109,7 @@
         :options="widgetOptions"
         :type="widget.type"
         :value="widget"
+        :meta="meta"
         @update="$emit('update', $event)"
         :doc-id="docId"
         :focused="isFocused"
@@ -124,6 +125,7 @@
         :area-field="field"
         :following-values="followingValuesWithParent"
         :value="widget"
+        :meta="meta"
         :foreign="foreign"
         @edit="$emit('edit', i);"
         :doc-id="docId"
@@ -188,6 +190,12 @@ export default {
       }
     },
     widget: {
+      type: Object,
+      default() {
+        return {};
+      }
+    },
+    meta: {
       type: Object,
       default() {
         return {};

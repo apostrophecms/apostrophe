@@ -42,6 +42,7 @@
         :following-values="followingValues[field.name]"
         :condition-met="conditionalFields?.if[field.name]"
         :field="fields[field.name].field"
+        :meta="meta"
         :modifiers="fields[field.name].modifiers"
         :display-options="getDisplayOptions(field.name)"
         :trigger-validation="triggerValidation"

@@ -78,6 +78,9 @@ export default {
         return false;
       }
       return error;
+    },
+    arrayMeta() {
+      return this.convertMetaToItems(this.items);
     }
   },
   watch: {
@@ -187,7 +190,8 @@ export default {
         items: this.next,
         serverError: this.serverError,
         docId: this.docId,
-        parentFollowingValues: this.followingValues
+        parentFollowingValues: this.followingValues,
+        meta: this.arrayMeta
       });
       if (result) {
         this.next = result;
