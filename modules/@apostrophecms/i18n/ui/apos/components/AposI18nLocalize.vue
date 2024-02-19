@@ -364,7 +364,9 @@ export default {
           toLocales: { data: this.locale ? [ this.locale ] : [] },
           relatedDocSettings: { data: 'localizeNewRelated' },
           relatedDocTypesToLocalize: { data: [] },
-          translateContent: { data: false }
+          translateContent: { data: false },
+          translateTargets: { data: [] },
+          translateProvider: { data: apos.translation.providers[0]?.name || null }
         }
       },
       fullDoc: this.doc,
@@ -491,8 +493,9 @@ export default {
     'wizard.values.toLocalize.data'() {
       this.updateRelatedDocs();
     },
-    'wizard.values.translateContent.data'(value) {
-      this.checkAvailableTranslations(value);
+    async 'wizard.values.translateContent.data'(value) {
+      await this.checkAvailableTranslations(value);
+      console.log('this.wizard.values.translateTargets', this.wizard.values.translateTargets.data);
     },
     selectedLocales() {
       this.updateRelatedDocs();
@@ -680,7 +683,9 @@ export default {
             await apos.http.post(`${apos.modules[doc.type].action}/${doc._id}/localize`, {
               body: {
                 toLocale: locale.name,
-                update: (doc._id === this.fullDoc._id) || !(this.wizard.values.relatedDocSettings.data === 'localizeNewRelated')
+                update: (doc._id === this.fullDoc._id) || !(this.wizard.values.relatedDocSettings.data === 'localizeNewRelated'),
+                aposTranslateTargets: this.wizard.values.translateTargets.data,
+                aposTranslateProvider: this.wizard.values.translateProvider.data
               },
               busy: true
             });
@@ -856,6 +861,7 @@ export default {
     async checkAvailableTranslations(value) {
       if (!value) {
         this.translationErrMsg = null;
+        this.wizard.values.translateTargets.data = [];
         return;
       }
       const [ sourceLocale ] = this.doc.aposLocale.split(':');
@@ -865,13 +871,14 @@ export default {
       try {
         response = await apos.http.get(`${apos.translation.action}/languages`, {
           qs: {
-            provider: apos.translation.providers[0].name,
+            provider: this.wizard.values.translateProvider.data,
             source: [ sourceLocale ],
             target: targets.map(({ name }) => name)
           }
         });
       } catch (err) {
         console.error(err);
+        this.wizard.values.translateTargets.data = [];
         return;
       }
 
@@ -883,6 +890,7 @@ export default {
       if (unavailableSource) {
         const sourceLabel = this.moduleOptions.locales[sourceLocale]?.label;
         this.translationErrMsg = this.$t('apostrophe:automaticTranslationSourceErrMsg', { source: sourceLabel });
+        this.wizard.values.translateTargets.data = [];
         return;
       }
 
@@ -893,6 +901,16 @@ export default {
           { targets: unavailableTargetsLabels.join(', ') }
         );
       }
+
+      if (unavailableTargetsLabels.length >= targets.length) {
+        this.wizard.values.translateTargets.data = [];
+        return;
+      }
+
+      this.wizard.values.translateTargets.data = response.target
+        .filter(({ supported }) => supported)
+        .map(({ code }) => code);
+
     }
   }
 };
