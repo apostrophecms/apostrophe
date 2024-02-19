@@ -19,7 +19,9 @@ describe('Translation', function () {
               doc.title = `${provider}-${source}-${target}-${doc.title}-translated`;
               return doc;
             },
-            async getSupportedLanguages(req, provider, source, target) {
+            async getSupportedLanguages(req, {
+              provider, source, target
+            } = {}) {
               const supported = [ 'en', 'es', 'fr' ];
               const sourceRespone = source?.length
                 ? source.map((code) => ({
