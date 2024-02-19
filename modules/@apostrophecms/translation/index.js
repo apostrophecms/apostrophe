@@ -181,6 +181,7 @@ module.exports = {
       },
       getBrowserData(req) {
         return {
+          action: self.action,
           enabled: options.enabled && Boolean(self.providers.length),
           providers: self.providers.map(({ name, label }) => ({
             name,
