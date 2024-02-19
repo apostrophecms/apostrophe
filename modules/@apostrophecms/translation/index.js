@@ -1,7 +1,8 @@
 module.exports = {
   extend: '@apostrophecms/module',
   options: {
-    enabled: true
+    enabled: true,
+    alias: 'translation'
   },
   init(self) {
     self.providers = [];
