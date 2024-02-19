@@ -92,12 +92,8 @@ module.exports = {
           req,
           {
             provider: name,
-            source: Array.isArray(req.query.source)
-              ? self.apos.launder.tags(req.query.source)
-              : [],
-            target: Array.isArray(req.query.target)
-              ? self.apos.launder.tags(req.query.target)
-              : []
+            source: self.apos.launder.tags(req.query.source),
+            target: self.apos.launder.tags(req.query.target)
           }
         );
       }
