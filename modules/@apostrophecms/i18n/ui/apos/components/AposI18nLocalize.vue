@@ -853,31 +853,36 @@ export default {
       this.relatedDocs = relatedDocs;
       this.wizard.busy = status;
     },
-    checkAvailableTranslations(value) {
+    async checkAvailableTranslations(value) {
       if (!value) {
         this.translationErrMsg = null;
         return;
       }
       const [ sourceLocale ] = this.doc.aposLocale.split(':');
-      const source = {
-        name: sourceLocale,
-        label: this.moduleOptions.locales[sourceLocale]?.label
-      };
-      // FIXME uncome when we have the backend service, commented due to
-      // eslint error.
-      // const targets = this.wizard.values.toLocales.data.map(({ name, label }) => ({
-      //   name,
-      //   label
-      // }));
+      const targets = this.wizard.values.toLocales.data;
 
-      // TODO: Send a request to the provider to see if those locales are available
+      let response;
+      try {
+        response = await apos.http.get(`${apos.translation.action}/languages`, {
+          qs: {
+            provider: apos.translation.providers[0].name,
+            source: [ sourceLocale ],
+            target: targets.map(({ name }) => name)
+          }
+        });
+      } catch (err) {
+        console.error(err);
+        return;
+      }
 
-      // These variables should be returned by the provider service
-      const unavailableSource = true;
-      const unavailableTargetsLabels = [];
+      const unavailableSource = !response.source[0].supported;
+      const unavailableTargetsLabels = response.target
+        .filter(({ supported }) => !supported)
+        .map(({ code }) => targets.find((locale) => locale.name === code)?.label || code);
 
       if (unavailableSource) {
-        this.translationErrMsg = this.$t('apostrophe:automaticTranslationSourceErrMsg', { source: source.label });
+        const sourceLabel = this.moduleOptions.locales[sourceLocale]?.label;
+        this.translationErrMsg = this.$t('apostrophe:automaticTranslationSourceErrMsg', { source: sourceLabel });
         return;
       }
 
