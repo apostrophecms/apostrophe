@@ -8,6 +8,12 @@ export default {
       type: Object,
       required: true
     },
+    meta: {
+      type: Object,
+      default() {
+        return {};
+      }
+    },
     generation: {
       type: Number,
       required: false,

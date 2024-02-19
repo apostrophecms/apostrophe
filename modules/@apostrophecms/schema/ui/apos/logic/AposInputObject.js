@@ -1,4 +1,5 @@
 
+import { klona } from 'klona';
 import AposInputMixin from 'Modules/@apostrophecms/schema/mixins/AposInputMixin.js';
 import AposInputFollowingMixin from 'Modules/@apostrophecms/schema/mixins/AposInputFollowingMixin.js';
 import AposInputConditionalFieldsMixin from 'Modules/@apostrophecms/schema/mixins/AposInputConditionalFieldsMixin.js';
@@ -46,6 +47,26 @@ export default {
     },
     values() {
       return this.schemaInput.data || {};
+    },
+    objectMeta() {
+      const meta = klona(this.fieldMeta);
+      const shared = {};
+
+      for (const fieldName of Object.keys(this.meta)) {
+        if (fieldName.startsWith('@')) {
+          shared[fieldName] = this.meta[fieldName];
+        }
+      }
+
+      meta.aposMeta = {
+        ...(this.fieldMeta.aposMeta || {}),
+        ...shared
+      };
+
+      return meta;
+    },
+    currentDocMeta() {
+      return this.objectMeta.aposMeta || {};
     }
   },
   watch: {

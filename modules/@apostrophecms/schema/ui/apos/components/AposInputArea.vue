@@ -4,6 +4,8 @@
     :error="effectiveError" :uid="uid"
     :display-options="displayOptions"
     :modifiers="[...modifiers, 'full-width']"
+    :items="next.items"
+    :meta="areaMeta"
   >
     <template #body>
       <!-- data-apos-schema-area lets all the child areas know that this area is in a schema (which is in a modal)
@@ -18,6 +20,7 @@
           :is="editorComponent"
           :options="field.options"
           :items="next.items"
+          :meta="areaMeta"
           :choices="choices"
           :id="next._id"
           :field-id="field._id"

@@ -1518,6 +1518,12 @@ module.exports = {
             return field.viewPermission && !self.apos.permission.can(req, field.viewPermission.action, field.viewPermission.type);
           });
 
+        if (doc.aposMeta && !self.apos.permission.can(req, 'edit', doc)) {
+          forbiddenSchemaFields.push({
+            name: 'aposMeta'
+          });
+        }
+
         forbiddenSchemaFields.forEach(field => {
           delete doc[field.name];
         });
