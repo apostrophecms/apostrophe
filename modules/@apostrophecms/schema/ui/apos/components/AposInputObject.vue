@@ -6,6 +6,7 @@
     :error="null"
     :uid="uid"
     :display-options="displayOptions"
+    :meta="objectMeta"
   >
     <template #body>
       <div class="apos-input-object">
@@ -13,6 +14,7 @@
           <AposSchema
             ref="schema"
             v-model="schemaInput"
+            :meta="currentDocMeta"
             :schema="schema"
             :trigger-validation="triggerValidation"
             :generation="generation"

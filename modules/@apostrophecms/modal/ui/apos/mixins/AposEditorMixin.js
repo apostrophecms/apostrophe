@@ -52,6 +52,9 @@ export default {
       // Archive UI is handled via action buttons
       schema = schema.filter(field => field.name !== 'archived');
       return schema;
+    },
+    docMeta() {
+      return this.docFields.data?.aposMeta || {};
     }
   },
 

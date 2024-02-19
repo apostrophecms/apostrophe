@@ -73,6 +73,7 @@
                     :following-values="followingValues()"
                     :conditional-fields="conditionalFields"
                     :model-value="currentDoc"
+                    :meta="currentDocMeta"
                     :server-errors="currentDocServerErrors"
                     :doc-id="docId"
                     @update:model-value="currentDocUpdate"

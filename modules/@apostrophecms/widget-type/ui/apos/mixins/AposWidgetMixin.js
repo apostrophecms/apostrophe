@@ -7,6 +7,12 @@ export default {
     type: String,
     areaFieldId: String,
     modelValue: Object,
+    meta: {
+      type: Object,
+      default() {
+        return {};
+      }
+    },
     // Ignored for server side rendering
     areaField: Object,
     followingValues: Object,

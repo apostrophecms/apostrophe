@@ -937,6 +937,252 @@ module.exports = {
           return self.db.insertOne(self.apos.util.clonePermanent(doc));
         });
       },
+      // Set meta data for a given field, that will be live under `aposMeta`
+      // doc property. It returns the path to the meta property withouth the
+      // key. See `getMetaPath` method for more information.
+      //
+      // Signature:
+      // `apos.doc.setMeta(doc, namespace, [subobject], ...pathComponents, key, value);`
+      // where arguments are as follows:
+      // - `doc`: the document to attach the meta property to.
+      // - `namespace`: the namespace of the meta property, by convention the
+      //   module name that is setting the meta property.
+      // - `subobject`: (optional) the name of the field subobject (e.g. array
+      //   item, widget, or any other field type object that have `_id` property).
+      //   This argument dictates how `pathComponents` are interpreted. If
+      //   `subobject` is not provided, `pathComponents` are interpreted as
+      //   a path starting from `doc`. If `subobject` is provided, `pathComponents`
+      //   are interpreted as a relative path from the `subobject` field.
+      // - `pathComponents`: the dot path to the field value. It can be any number
+      //   of strings with or without dot-separated components. If `subobject` is
+      //   provided, `pathComponents` are interpreted as a relative path from the
+      //   `subobject` field. If `subobject` is not provided, `pathComponents` are
+      //   interpreted as a top-level path. `pathComponents` is optional when
+      //   `subobject` field is provided. This way you can set a meta property
+      //   directly for e.g. array or widget field. See examples below.
+      // - `key`: the key of the meta property. Should be a string. Dot-path is
+      //   not supported, dots will be treated as part of the key. It's prefixed
+      //   automatically with the `namespace` (`namespace:key`) to avoid
+      //   conflicts with other modules.
+      // - `value`: the value of the meta property. Can be any JSON-serializable value.
+      //
+      // The document field metadata can be consumed by admin UI components. See
+      // `schema.addFieldMetadataComponent()` method for more information.
+      //
+      // Examples:
+      // - Set value of a top-level meta property of a generic field (e.g. string,
+      //   number, boolean, etc.):
+      // `apos.doc.setMeta(doc, 'my-module', 'title', 'myMetaKey', 'myMetaValue');`
+      //
+      // - Set value of a top-level meta property of an object field (can be
+      //   further nested):
+      // `apos.doc.setMeta(doc, 'my-module', 'address', 'city', 'myMetaKey', 'myMetaValue');`
+      //
+      // - Set value of a meta property of a field inside of an array field type:
+      // `apos.doc.setMeta(doc, 'my-module', arrayItemObject, 'city', 'myMetaKey', 'myMetaValue');`
+      //
+      // - Set value of a meta property of a rich text widget
+      // `apos.doc.setMeta(doc, 'my-module', widgetObject, 'myMetaKey', 'myMetaValue');`
+      //
+      // - Dots in the `key` are treated as part of the key, dots in `pathComponents`
+      //   are treated as dot-path and are not altered:
+      // `apos.doc.setMeta(doc, 'my-module', 'address', 'city.name', 'myMetaKey.with.dots', 'myMetaValue');`
+      //  will set `doc.aposMeta.address.aposMeta.city.name['my-module:myMetaKey.with.dots']: 'myMetaValue'`.
+      setMeta(doc, namespace, ...pathArgsWithKeyAndValue) {
+        if (!_.isPlainObject(doc) || !namespace) {
+          throw self.apos.error('invalid', 'Valid document and namespace are required.', {
+            cause: 'invalidArguments'
+          });
+        }
+
+        const pathArgs = [ ...pathArgsWithKeyAndValue ];
+        const value = pathArgs.pop();
+        const key = pathArgs.pop();
+
+        if (!key) {
+          throw self.apos.error('invalid', 'Key and value are required.', {
+            cause: 'invalidArguments'
+          });
+        }
+        if (typeof key !== 'string') {
+          throw self.apos.error('invalid', 'Key must be a string.', {
+            cause: 'invalidArguments'
+          });
+        }
+
+        const metaPath = self.getMetaPath(...pathArgs);
+        const metaPathFull = `aposMeta.${metaPath}`;
+        const nsKey = `${namespace}:${key}`;
+
+        const existingValue = _.get(doc, metaPathFull) || {};
+        existingValue[nsKey] = value;
+        _.set(doc, metaPathFull, existingValue);
+
+        return metaPath;
+      },
+      // Get meta data for a given field. It has exactly the same signature as
+      // `setMeta` method, except the last `value` argument.
+      getMeta(doc, namespace, ...pathArgsWithKey) {
+        if (!doc || !namespace) {
+          throw self.apos.error('invalid', 'Document and namespace are required.', {
+            cause: 'invalidArguments'
+          });
+        }
+
+        const pathArgs = [ ...pathArgsWithKey ];
+        const key = pathArgs.pop();
+
+        if (!key) {
+          throw self.apos.error('invalid', 'Key and value are required.', {
+            cause: 'invalidArguments'
+          });
+        }
+        if (typeof key !== 'string') {
+          throw self.apos.error('invalid', 'Key must be a string.', {
+            cause: 'invalidArguments'
+          });
+        }
+        const nsKey = `${namespace}:${key}`;
+
+        return _.get(
+          doc,
+          `aposMeta.${self.getMetaPath(...pathArgs)}`
+        )?.[nsKey];
+      },
+      // Remove meta data key for a given field. It has exactly the same signature as
+      // `setMeta` method, except the last `value` argument.
+      // A cleanup is performed to remove empty meta properties on each call.
+      removeMeta(doc, namespace, ...pathArgsWithKey) {
+        if (!doc || !namespace) {
+          throw self.apos.error('invalid', 'Document and namespace are required.', {
+            cause: 'invalidArguments'
+          });
+        }
+
+        const pathArgs = [ ...pathArgsWithKey ];
+        const key = pathArgs.pop();
+        const metaPath = self.getMetaPath(...pathArgs);
+        const metaPathFull = `aposMeta.${metaPath}`;
+
+        if (!_.has(doc, metaPathFull)) {
+          return;
+        }
+
+        if (!key) {
+          throw self.apos.error('invalid', 'Key and value are required.', {
+            cause: 'invalidArguments'
+          });
+        }
+        if (typeof key !== 'string') {
+          throw self.apos.error('invalid', 'Key must be a string.', {
+            cause: 'invalidArguments'
+          });
+        }
+        const nsKey = `${namespace}:${key}`;
+
+        const existingValue = _.get(doc, metaPathFull) || {};
+        delete existingValue[nsKey];
+        _.set(doc, metaPathFull, existingValue);
+
+        cleanup(doc.aposMeta, 'aposMeta');
+
+        return metaPath;
+
+        function cleanup(object, path) {
+          if (_.isEmpty(object)) {
+            _.unset(object, path);
+            return true;
+          }
+
+          for (const key of Object.keys(object)) {
+            if (key.includes(':')) {
+              return false;
+            }
+            if (!_.isPlainObject(object[key])) {
+              delete object[key];
+              continue;
+            }
+            if (!cleanup(object[key], `${path}.${key}`)) {
+              return false;
+            }
+
+            delete object[key];
+          }
+
+          return true;
+        }
+      },
+      // Get all meta keys for a given field. It has exactly the same signature as
+      // `setMeta` method, except no key/value should be provided.
+      getMetaKeys(doc, namespace, ...pathArgs) {
+        return Object.keys(
+          _.get(
+            doc,
+            `aposMeta.${self.getMetaPath(...pathArgs)}`
+          ) || {}
+        )
+          .filter(key => key.startsWith(`${namespace}:`))
+          .map(key => key.replace(`${namespace}:`, ''));
+      },
+      // Get the meta path for a given field.
+      // Signature:
+      // `apos.doc.getMetaPath([subobject,] ...pathComponents);`
+      // See `setMeta` for more information about `subobject` and `pathComponents` arguments.
+      //
+      // Returns the path to the meta property withouth the namespace and key.
+      // The returned path can be directly used to access or modify the meta property.
+      // It's supported by all meta API methods.
+      //
+      // Example:
+      // ```js
+      // const path = apos.doc.getMetaPath(subobject, 'address', 'city', 'name');
+      // apos.doc.setMeta(doc, ns, path, 'myMetaKey', 'myMetaValue');
+      // apos.doc.getMeta(doc, ns, path, 'myMetaKey');
+      // apos.doc.removeMeta(doc, ns, path, 'myMetaKey');
+      getMetaPath(...pathArgs) {
+        const args = pathArgs
+          .filter(arg => typeof arg !== 'undefined' && arg !== null);
+
+        let subObject;
+        if (_.isPlainObject(args[0])) {
+          subObject = args.shift();
+        }
+
+        if (args.some(arg => typeof arg !== 'string')) {
+          throw self.apos.error('invalid', 'All path components must be strings.', {
+            cause: 'invalidArguments'
+          });
+        }
+        const pathComponents = args.join('.aposMeta.');
+
+        if (!subObject && !pathComponents) {
+          throw self.apos.error(
+            'invalid',
+            'You must provide at least a "subobject" or at least one "pathComponent" string.',
+            { cause: 'invalidArguments' }
+          );
+        }
+
+        if (subObject && !subObject._id) {
+          throw self.apos.error(
+            'invalid',
+            'Provided subobject must have an _id property.',
+            { cause: 'subObjectNoId' }
+          );
+        }
+
+        if (!subObject) {
+          return pathComponents;
+        }
+
+        const metaPath = [];
+        metaPath.push(`@${subObject._id}`);
+        if (pathComponents) {
+          metaPath.push(`aposMeta.${pathComponents}`);
+        }
+
+        return metaPath.join('.');
+      },
 
       // Given either an id (as a string) or a criteria
       // object, return a criteria object.

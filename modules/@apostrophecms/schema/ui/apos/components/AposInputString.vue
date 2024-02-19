@@ -5,6 +5,7 @@
     :error="effectiveError"
     :uid="uid"
     :display-options="displayOptions"
+    :meta="fieldMeta"
   >
     <template #body>
       <div class="apos-input-wrapper">

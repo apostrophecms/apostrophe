@@ -39,6 +39,7 @@
         :key="widget._id"
         :area-id="areaId"
         :widget="widget"
+        :meta="meta[widget._id]"
         :generation="generation"
         :i="i"
         :options="options"
@@ -109,6 +110,12 @@ export default {
       type: Array,
       default() {
         return [];
+      }
+    },
+    meta: {
+      type: Object,
+      default() {
+        return {};
       }
     },
     followingValues: {
@@ -377,7 +384,8 @@ export default {
           options: this.widgetOptionsByType(widget.type),
           type: widget.type,
           docId: this.docId,
-          parentFollowingValues: this.followingValues
+          parentFollowingValues: this.followingValues,
+          meta: this.meta[widget._id]?.aposMeta
         });
         apos.area.activeEditor = null;
         apos.bus.$off('apos-refreshing', cancelRefresh);

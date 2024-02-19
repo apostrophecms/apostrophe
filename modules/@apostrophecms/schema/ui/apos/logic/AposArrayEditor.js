@@ -16,6 +16,10 @@ export default {
       required: true,
       type: Array
     },
+    meta: {
+      type: Object,
+      default: () => ({})
+    },
     field: {
       required: true,
       type: Object
@@ -129,6 +133,9 @@ export default {
         }
       });
       return serverErrors;
+    },
+    currentDocMeta() {
+      return this.meta[this.currentId]?.aposMeta || {};
     }
   },
   async mounted() {

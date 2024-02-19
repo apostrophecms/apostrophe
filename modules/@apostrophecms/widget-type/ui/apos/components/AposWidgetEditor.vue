@@ -23,6 +23,7 @@
               :trigger-validation="triggerValidation"
               :schema="schema"
               :model-value="docFields"
+              :meta="meta"
               :following-values="followingValues()"
               :conditional-fields="conditionalFields"
               @update:model-value="updateDocFields"
@@ -75,6 +76,12 @@ export default {
     },
     modelValue: {
       required: false,
+      type: Object,
+      default() {
+        return {};
+      }
+    },
+    meta: {
       type: Object,
       default() {
         return {};

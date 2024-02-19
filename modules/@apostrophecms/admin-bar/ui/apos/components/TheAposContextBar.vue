@@ -42,7 +42,7 @@ import AposAdvisoryLockMixin from 'Modules/@apostrophecms/ui/mixins/AposAdvisory
 export default {
   name: 'TheAposContextBar',
   mixins: [ AposPublishMixin, AposAdvisoryLockMixin ],
-  emits: [ 'mounted' ],
+  emits: [ 'visibility-changed' ],
   data() {
     const query = apos.http.parseQuery(location.search);
     // If the URL references a draft, go into draft mode but then clean up the URL
@@ -137,6 +137,11 @@ export default {
   watch: {
     editMode(newVal) {
       window.apos.adminBar.editMode = newVal;
+    },
+    contextBarActive() {
+      this.$nextTick(() => {
+        this.$emit('visibility-changed');
+      });
     }
   },
   async mounted() {
@@ -173,9 +178,6 @@ export default {
     await this.updateDraftIsEditable();
     this.rememberLastBaseContext();
     this.published = await this.getPublished();
-    this.$nextTick(() => {
-      this.$emit('mounted');
-    });
 
     apos.util.onReadyAndRefresh(() => {
       if (window.apos.adminBar.scrollPosition) {

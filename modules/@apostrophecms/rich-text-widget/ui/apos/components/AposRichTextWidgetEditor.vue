@@ -162,6 +162,14 @@ export default {
         return {};
       }
     },
+    // not used, but we need to keep it here to avoid
+    // an attribute [object Object]
+    meta: {
+      type: Object,
+      default() {
+        return {};
+      }
+    },
     docId: {
       type: String,
       required: false,

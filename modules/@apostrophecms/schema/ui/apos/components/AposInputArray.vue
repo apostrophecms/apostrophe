@@ -8,6 +8,7 @@
     :modifiers="[
       ...field.style === 'table' ? ['full-width'] : []
     ]"
+    :meta="arrayMeta"
   >
     <template #additional>
       <AposMinMaxCount
@@ -66,6 +67,7 @@
                 :key="item._id"
                 v-model="item.schemaInput"
                 class="apos-input-array-inline-item"
+                :meta="arrayMeta[item._id]?.aposMeta"
                 :class="item.open && !alwaysExpand ? 'apos-input-array-inline-item--active' : null"
                 :schema="schema"
                 :trigger-validation="triggerValidation"
