@@ -90,9 +90,11 @@ module.exports = {
 
         return module.getSupportedLanguages(
           req,
-          name,
-          req.query.source ?? [],
-          req.query.target ?? []
+          {
+            provider: name,
+            source: self.apos.launder.tags(req.query.source),
+            target: self.apos.launder.tags(req.query.target)
+          }
         );
       }
     }
@@ -118,9 +120,10 @@ module.exports = {
       // The provider module must also implement a `getSupportedLanguages` method
       // that takes the following arguments:
       // - `req` (Object): The request object
-      // - `provider` (String): The provider name
-      // - `source` (Array): An array of language codes to translate from
-      // - `target` (Array): An array of language codes to translate to
+      // - `query` (Object): An object with the following properties:
+      //    - `provider` (String): Requried, the provider name
+      //    - `source` (Array): Optional, an array of language codes to translate from
+      //    - `target` (Array): Optional, an array of language codes to translate to
       // The method should return an object with `source` and `target` properties,
       // each containing an array of objects with `code` and `supported` properties.
       // The `code` property should be the language code and the `supported` property
