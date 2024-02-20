@@ -495,7 +495,6 @@ export default {
     },
     async 'wizard.values.translateContent.data'(value) {
       await this.checkAvailableTranslations(value);
-      console.log('this.wizard.values.translateTargets', this.wizard.values.translateTargets.data);
     },
     selectedLocales() {
       this.updateRelatedDocs();
