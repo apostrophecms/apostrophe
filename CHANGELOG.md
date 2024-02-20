@@ -21,6 +21,7 @@
 * Display a more informative error message when publishing a page because the parent page is not published and the current user has no permission to publish the parent page (while having permission to publish the current one).
 * The `content-changed` event for the submit draft action now uses a complete document.
 * Fix the context bar overlap on palette for non-admin users that have the permission to modify it.
+* Show widget icons in the editor area context menu.
 
 ### Changes
 
