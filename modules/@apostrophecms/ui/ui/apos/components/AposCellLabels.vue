@@ -30,6 +30,17 @@
         :modifiers="[ 'apos-is-filled', 'apos-is-danger' ]"
       />
     </span>
+    <span
+      v-for="({component, props, if: conditions}, index) in customCellIndicators"
+      :key="index"
+    >
+      <component
+        :is="component"
+        v-if="evaluateConditions(conditions)"
+        class="apos-table__cell-field__label"
+        v-bind="props"
+      />
+    </span>
   </div>
 </template>
 
@@ -38,7 +49,33 @@ import AposCellMixin from 'Modules/@apostrophecms/ui/mixins/AposCellMixin';
 
 export default {
   name: 'AposCellLabels',
-  mixins: [ AposCellMixin ]
+  mixins: [ AposCellMixin ],
+  data() {
+    return {
+      customCellIndicators: apos.schema.customCellIndicators
+    };
+  },
+  methods: {
+    evaluateConditions(conditions = {}) {
+      try {
+        return Object.entries(conditions).every(([ property, expected ]) => {
+          const properties = property.split('.');
+
+          const draftProp = properties.reduce((acc, cur) => {
+            if (Object.hasOwn(acc, cur)) {
+              return acc[cur];
+            }
+
+            throw new Error(`Property not found in draft document: ${property}`);
+          }, this.draft);
+
+          return draftProp === expected;
+        });
+      } catch (err) {
+        return false;
+      }
+    }
+  }
 };
 </script>
 

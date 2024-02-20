@@ -14,16 +14,24 @@ module.exports = {
       '@apostrophecms/doc-type:beforeLocalize': {
         // Translate the document using the first available provider.
         async translate(req, doc, source, target, options) {
-          if (!req.query.aposTranslateTargets?.includes(target)) {
+          const targets = req.body.aposTranslateTargets || [];
+          const translationProvider = self.apos.launder.string(req.body.aposTranslateProvider);
+
+          if (!Array.isArray(targets)) {
+            throw self.apos.error('invalid', 'Badly formatted translation targets');
+          }
+
+          if (!targets.includes(target)) {
             return;
           }
+
           // We don't support multiple providers yet, so just use the first one
           // when no provider is specified.
-          const name = self.getProvider(req.query.aposTranslateProvider)?.name;
+          const providerName = self.getProvider(translationProvider)?.name;
           const module = self.getProviderModule(name);
-          if (!name || !module) {
-            const name = req.query.aposTranslateProvider ||
-              'apostrophe:notAvailable';
+
+          if (!providerName || !module) {
+            const name = translationProvider || 'apostrophe:notAvailable';
 
             self.logError('before-localize-translate', 'Provider not found.', {
               _id: doc._id,
@@ -46,7 +54,7 @@ module.exports = {
             );
           }
 
-          return module.translate(req, name, doc, source, target, options);
+          return module.translate(req, providerName, doc, source, target, options);
         }
       }
     };
@@ -184,6 +192,7 @@ module.exports = {
       },
       getBrowserData(req) {
         return {
+          action: self.action,
           enabled: options.enabled && Boolean(self.providers.length),
           providers: self.providers.map(({ name, label }) => ({
             name,
