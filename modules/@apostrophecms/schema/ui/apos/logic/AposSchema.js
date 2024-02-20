@@ -130,6 +130,17 @@ export default {
           }
         };
       }, {});
+    },
+    hasCompareMeta() {
+      return this.schema.some(field => this.meta[field.name]?.['@apostrophecms/schema:compare']);
+    },
+    classes() {
+      const classes = [];
+      if (this.hasCompareMeta) {
+        classes.push('apos-schema--compare');
+      }
+
+      return classes;
     }
   },
   watch: {
@@ -178,6 +189,10 @@ export default {
           }
         }
       }
+    },
+
+    'meta.%field%.@apostrophecms/schema:compare': {
+      // TODO something!?
     }
   },
   created() {
