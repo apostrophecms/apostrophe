@@ -13,9 +13,11 @@ module.exports = {
     return {
       '@apostrophecms/doc-type:beforeLocalize': {
         // Translate the document using the first available provider.
-        async translate(req, doc, source, target, options) {
-          const targets = req.body.aposTranslateTargets || [];
-          const translationProvider = self.apos.launder.string(req.body.aposTranslateProvider);
+        async translate(req, doc, {
+          source, target, docType, existing
+        }) {
+          const targets = req.query.aposTranslateTargets || [];
+          const providerName = self.apos.launder.string(req.query.aposTranslateProvider);
 
           if (!Array.isArray(targets)) {
             throw self.apos.error('invalid', 'Badly formatted translation targets');
@@ -27,11 +29,12 @@ module.exports = {
 
           // We don't support multiple providers yet, so just use the first one
           // when no provider is specified.
-          const providerName = self.getProvider(translationProvider)?.name;
-          const module = self.getProviderModule(name);
+          const manager = self.getProviderModule(providerName);
 
-          if (!providerName || !module) {
-            const name = translationProvider || 'apostrophe:notAvailable';
+          // Might be the responsability of automatic-translation module
+          // since it needs to get the provider and its module anyway
+          if (!manager) {
+            const name = providerName || 'apostrophe:notAvailable';
 
             self.logError('before-localize-translate', 'Provider not found.', {
               _id: doc._id,
@@ -54,7 +57,10 @@ module.exports = {
             );
           }
 
-          return module.translate(req, providerName, doc, source, target, options);
+          return manager.translate(req, providerName, doc, source, target, {
+            docType,
+            existing
+          });
         }
       }
     };
@@ -88,15 +94,16 @@ module.exports = {
         }
 
         const name = self.getProvider(req.query.provider)?.name;
-        const module = self.getProviderModule(name);
-        if (!name || !module) {
+        const manager = self.getProviderModule(name);
+
+        if (!name || !manager) {
           throw self.apos.error(
             'invalid',
             req.t('apostrophe:automaticTranslationLngCheckNoProvider')
           );
         }
 
-        return module.getSupportedLanguages(
+        return manager.getSupportedLanguages(
           req,
           {
             provider: name,

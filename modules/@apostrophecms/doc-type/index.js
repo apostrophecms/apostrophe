@@ -1048,13 +1048,6 @@ module.exports = {
           mode: 'draft'
         });
 
-        const fromLocale = draft.aposLocale.split(':')[0];
-        const eventOptions = {
-          ...options,
-          soruce: fromLocale,
-          target: toLocale
-        };
-
         const toId = draft._id.replace(`:${draft.aposLocale}`, `:${toLocale}:draft`);
         const actionModule = self.apos.page.isPage(draft) ? self.apos.page : self;
         // Use findForEditing so that we are successful even for edge cases
@@ -1067,11 +1060,18 @@ module.exports = {
         const existing = await actionModule.findForEditing(toReq, {
           _id: toId
         }).permission('view').toObject();
+
+        const eventOptions = {
+          source: draft.aposLocale.split(':')[0],
+          target: toLocale,
+          existing: Boolean(existing)
+        };
+
         // We only want to copy schema properties, leave non-schema
         // properties of the source document alone
         const data = Object.fromEntries(Object.entries(draft)
           .filter(
-            ([ key, value ]) => self.schema.find(field => field.name === key)
+            ([ key, value ]) => key === 'type' || self.schema.find(field => field.name === key)
           ));
         // We need a slug even if removed from the schema for editing purposes
         data.slug = draft.slug;
