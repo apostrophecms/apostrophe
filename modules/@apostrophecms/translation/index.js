@@ -14,7 +14,7 @@ module.exports = {
       '@apostrophecms/doc-type:beforeLocalize': {
         // Translate the document using the first available provider.
         async translate(req, doc, {
-          source, target, existing
+          source, target, docType, existing
         }) {
           const targets = req.body.aposTranslateTargets || [];
           const translationProvider = self.apos.launder.string(req.body.aposTranslateProvider);
@@ -32,7 +32,8 @@ module.exports = {
           const { name: providerName, module } = self.getProvider(translationProvider);
           const manager = self.apos.modules[module];
 
-          // Might be responsability of automatic-translation module?
+          // Might be the responsability of automatic-translation module
+          // since it needs to get the provider and its module anyway
           if (!providerName || !manager) {
             const name = translationProvider || 'apostrophe:notAvailable';
 
@@ -61,6 +62,7 @@ module.exports = {
             .translate(req, {
               providerName,
               doc,
+              docType,
               source,
               target,
               existing

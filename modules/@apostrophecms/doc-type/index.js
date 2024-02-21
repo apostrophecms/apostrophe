@@ -1064,6 +1064,7 @@ module.exports = {
         const eventOptions = {
           source: draft.aposLocale.split(':')[0],
           target: toLocale,
+          docType: draft.type,
           existing: Boolean(existing)
         };
 
