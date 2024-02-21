@@ -57,12 +57,8 @@ module.exports = {
             );
           }
 
-          return manager.translate(req, {
-            providerName,
-            doc,
+          return manager.translate(req, providerName, doc, source, target, {
             docType,
-            source,
-            target,
             existing
           });
         }
