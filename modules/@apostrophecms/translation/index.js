@@ -99,9 +99,8 @@ module.exports = {
           throw self.apos.error('notfound');
         }
 
-        const { name, module } = self.getProvider(req.query.provider);
-        console.log('name', name, module);
-        const manager = self.apos.modules[module];
+        const name = self.getProvider(req.query.provider)?.name;
+        const manager = self.getProviderModule(name);
 
         if (!name || !manager) {
           throw self.apos.error(
