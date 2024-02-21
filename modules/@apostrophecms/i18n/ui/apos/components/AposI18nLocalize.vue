@@ -549,6 +549,12 @@ export default {
     },
     goToPrevious() {
       this.wizard.step = this.previousStepName;
+      this.uncheckTranslate();
+    },
+    uncheckTranslate() {
+      this.wizard.values.translateContent.data = false;
+      this.wizard.values.translateTargets.data = [];
+      this.translationErrMsg = null;
     },
     goToNext() {
       this.goTo(this.nextStepName);
