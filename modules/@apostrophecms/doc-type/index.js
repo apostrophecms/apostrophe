@@ -1064,7 +1064,6 @@ module.exports = {
         const eventOptions = {
           source: draft.aposLocale.split(':')[0],
           target: toLocale,
-          docType: draft.type,
           existing: Boolean(existing)
         };
 
@@ -1072,7 +1071,7 @@ module.exports = {
         // properties of the source document alone
         const data = Object.fromEntries(Object.entries(draft)
           .filter(
-            ([ key, value ]) => self.schema.find(field => field.name === key)
+            ([ key, value ]) => key === 'type' || self.schema.find(field => field.name === key)
           ));
         // We need a slug even if removed from the schema for editing purposes
         data.slug = draft.slug;
