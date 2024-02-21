@@ -682,7 +682,9 @@ export default {
             await apos.http.post(`${apos.modules[doc.type].action}/${doc._id}/localize`, {
               body: {
                 toLocale: locale.name,
-                update: (doc._id === this.fullDoc._id) || !(this.wizard.values.relatedDocSettings.data === 'localizeNewRelated'),
+                update: (doc._id === this.fullDoc._id) || !(this.wizard.values.relatedDocSettings.data === 'localizeNewRelated')
+              },
+              qs: {
                 aposTranslateTargets: this.wizard.values.translateTargets.data,
                 aposTranslateProvider: this.wizard.values.translateProvider.data
               },

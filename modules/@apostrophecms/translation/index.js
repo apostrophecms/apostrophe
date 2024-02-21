@@ -16,8 +16,8 @@ module.exports = {
         async translate(req, doc, {
           source, target, docType, existing
         }) {
-          const targets = req.body.aposTranslateTargets || [];
-          const providerName = self.apos.launder.string(req.body.aposTranslateProvider);
+          const targets = req.query.aposTranslateTargets || [];
+          const providerName = self.apos.launder.string(req.query.aposTranslateProvider);
 
           if (!Array.isArray(targets)) {
             throw self.apos.error('invalid', 'Badly formatted translation targets');
