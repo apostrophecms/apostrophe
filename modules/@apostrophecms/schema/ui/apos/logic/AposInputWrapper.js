@@ -137,8 +137,8 @@ export default {
       return apos.schema.fieldMetadataComponents
         .map(component => {
           return {
-            name: component.name,
-            namespace: component.namespace,
+            ...component,
+            namespace: component.props?.label || '',
             data: meta[component.namespace] || {}
           };
         });

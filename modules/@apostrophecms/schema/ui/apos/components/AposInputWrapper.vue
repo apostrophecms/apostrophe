@@ -57,11 +57,11 @@
           <span data-apos-test="field-meta-wrapper" class="apos-field__label-meta">
             <component
               v-for="component in metaComponents"
+              v-bind="component.props || {}"
               :key="component.name"
               :is="component.name"
               :field="field"
               :items="items"
-              :namespace="component.namespace"
               :meta="component.data"
               :meta-raw="meta"
               :data-apos-test-component="component.name"

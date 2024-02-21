@@ -39,7 +39,18 @@ export default {
     size: {
       type: Number,
       default: 16
+    },
+    meta: {
+      type: Object,
+      default: null
+    },
+    metaRaw: {
+      type: Object,
+      default: null
     }
+  },
+  mounted() {
+    console.log('this.meta', this.meta);
   }
 };
 
