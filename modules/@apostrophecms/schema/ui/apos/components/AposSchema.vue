@@ -37,18 +37,28 @@
       :style="(fieldStyle === 'table' && field.columnStyle) || {}"
       v-show="displayComponent(field)"
     >
-      <!--
-      <component
-        v-if="hasCompareSchema"
-        v-for="field in schema"
-        :key="field.name.concat(field._id ?? '')"
-        :data-apos-field="field.name"
-        :is="fieldStyle === 'table' ? 'td' : 'div'"
-      />
-      -->
       <component
         v-show="displayComponent(field)"
         v-model="fieldState[field.name]"
+        :is="fieldComponentMap[field.type]"
+        :following-values="followingValues[field.name]"
+        :condition-met="conditionalFields?.if[field.name]"
+        :field="fields[field.name].field"
+        :meta="meta"
+        :modifiers="fields[field.name].modifiers"
+        :display-options="getDisplayOptions(field.name)"
+        :trigger-validation="triggerValidation"
+        :server-error="fields[field.name].serverError"
+        :doc-id="docId"
+        :ref="field.name"
+        :generation="generation"
+        @update-doc-data="onUpdateDocData"
+        @validate="emitValidate()"
+      />
+      <component
+        v-if="hasCompareMeta"
+        v-show="displayComponent(field)"
+        v-model="compareMetaState[field.name]"
         :is="fieldComponentMap[field.type]"
         :following-values="followingValues[field.name]"
         :condition-met="conditionalFields?.if[field.name]"

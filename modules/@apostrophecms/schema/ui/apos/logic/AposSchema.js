@@ -141,6 +141,25 @@ export default {
       }
 
       return classes;
+    },
+    compareMetaState() {
+      if (!this.hasCompareMeta) {
+        return {};
+      }
+
+      const compareMetaState = {
+        // TODO remove if not needed
+        // _id: { data: this.value.data._id },
+        // archived: { data: this.value.data.archived }
+      };
+      this.schema.forEach(field => {
+        compareMetaState[field.name] = {
+          error: false,
+          data: this.meta[field.name]['@apostrophecms/schema:compare']
+        };
+      });
+
+      return compareMetaState;
     }
   },
   watch: {
@@ -190,10 +209,6 @@ export default {
         }
       }
     },
-
-    'meta.%field%.@apostrophecms/schema:compare': {
-      // TODO something!?
-    }
   },
   created() {
     this.populateDocData();
@@ -317,6 +332,12 @@ export default {
     },
     onUpdateDocData(data) {
       this.$emit('update-doc-data', data);
+    },
+    getCompareModel(fieldName) {
+      return {
+        error: false,
+        data: this.meta[fieldName]['@apostrophecms/schema:compare']
+      };
     }
   }
 };
