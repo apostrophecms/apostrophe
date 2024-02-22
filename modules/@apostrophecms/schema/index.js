@@ -1129,8 +1129,11 @@ module.exports = {
         return self.fieldTypes[typeName];
       },
 
-      addFieldMetadataComponent(componentInfo) {
-        self.fieldMetadataComponents.push(componentInfo);
+      addFieldMetadataComponent(namespace, component) {
+        self.fieldMetadataComponents.push({
+          name: component,
+          namespace
+        });
       },
 
       // Given a schema and a query, add query builders to the query
