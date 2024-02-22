@@ -135,11 +135,11 @@ export default {
       }
 
       return apos.schema.fieldMetadataComponents
-        .map(component => {
+        .map(({ name, namespace }) => {
           return {
-            ...component,
-            namespace: component.props?.label || '',
-            data: meta[component.namespace] || {}
+            name,
+            namespace: namespace,
+            data: meta[namespace] || {}
           };
         });
     }

@@ -56,16 +56,16 @@
           </span>
           <span data-apos-test="field-meta-wrapper" class="apos-field__label-meta">
             <component
-              v-for="component in metaComponents"
-              v-bind="component.props || {}"
-              :key="component.name"
-              :is="component.name"
+              v-for="{name, namespace, data} in metaComponents"
+              :key="name"
+              :is="name"
               :field="field"
               :items="items"
-              :meta="component.data"
+              :namespace="namespace"
+              :meta="data"
               :meta-raw="meta"
-              :data-apos-test-component="component.name"
-              :data-apos-test-namespace="component.namespace"
+              :data-apos-test-component="name"
+              :data-apos-test-namespace="namespace"
               data-apos-test="field-meta"
             />
           </span>
