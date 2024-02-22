@@ -1,5 +1,11 @@
 # Changelog
 
+## 3.63.1 (2024-02-22)
+
+### Security
+
+* Bump dependency on `sanitize-html` to `^2.12.1` at a minimum, to ensure that `npm update apostrophe` is sufficient to guarantee a security update is installed. This security update prevents specially crafted HTML documents from revealing the existence or non-existence of files on the server. The vulnerability did not expose any other information about those files. Thanks to the [Snyk Security team](https://snyk.io/) for the disclosure and to [Dylan Armstrong](https://dylan.is/) for the fix.
+
 ## 3.63.0 (2024-02-21)
 
 ### Adds
