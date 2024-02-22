@@ -47,7 +47,6 @@
   "at": "at",
   "automaticTranslationCheckbox": "Translate text content",
   "automaticTranslationErrorNoProvider": "Translation provider not found. Page \"{{ title }}\" was not translated.",
-  "automaticTranslationFieldMeta": "Translated with AI",
   "automaticTranslationLngCheckNoProvider": "Translation provider not found.",
   "automaticTranslationPending": "Pending Translations",
   "automaticTranslationSettings": "Automatic translation settings",
