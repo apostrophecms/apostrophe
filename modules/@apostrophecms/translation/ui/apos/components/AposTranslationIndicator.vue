@@ -30,7 +30,7 @@
 <script>
 
 export default {
-  name: 'AposTranslationChip',
+  name: 'AposTranslationIndicator',
   props: {
     label: {
       type: String,
