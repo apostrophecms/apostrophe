@@ -103,12 +103,20 @@ module.exports = {
           );
         }
 
+        const source = Array.isArray(req.query.source)
+          ? req.query.source.map(self.apos.launder.string)
+          : undefined;
+
+        const target = Array.isArray(req.query.target)
+          ? req.query.target.map(self.apos.launder.string)
+          : undefined;
+
         return manager.getSupportedLanguages(
           req,
           {
             provider: name,
-            source: self.apos.launder.tags(req.query.source),
-            target: self.apos.launder.tags(req.query.target)
+            source,
+            target
           }
         );
       }
