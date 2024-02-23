@@ -1,5 +1,11 @@
 # Changelog
 
+## UNRELEASED
+
+### Adds
+
+* Add translation keys used by the multisite pro module.
+
 ## 3.63.1 (2024-02-22)
 
 ### Security
