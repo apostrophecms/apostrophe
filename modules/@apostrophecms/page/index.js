@@ -2451,7 +2451,8 @@ database.`);
           aposLocale: 1,
           updatedAt: 1,
           submitted: 1,
-          modified: 1
+          modified: 1,
+          aposTranslationMeta: 1
         };
       },
       // Infer `req.locale` and `req.mode` from `_id` if they were
