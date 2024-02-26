@@ -67,6 +67,26 @@ export default {
 
       return label;
     },
+    // Build interpolation object when a translation key contains interpolations
+    // following this pattern: "aTranslationKey|foo=bar|fizz=buzz".
+    // i18n will be given the "aTranslationKey" key with following object:
+    // { foo: "bar", fizz: "buzz" }
+    //
+    // Usage example:
+    //
+    // ```
+    // help: `aposMultisite:shortNameHelp|baseDomain=${self.baseDomain}`
+    // ```
+    help () {
+      const help = this.field.help || this.field.htmlHelp;
+
+      const [ key, ...interpolations ] = help.split('|');
+      const interpolationObject = Object.fromEntries(
+        interpolations.map(interpolation => interpolation.split('='))
+      );
+
+      return this.$t(key, interpolationObject);
+    },
     classList: function () {
       const classes = [
         'apos-field',
