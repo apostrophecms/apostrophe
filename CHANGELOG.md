@@ -8,7 +8,7 @@
 
 ### Fixes
 
-* `field.help` and `field.htmlHelp` are now correctly translated when displayed as a tooltip.
+* `field.help` and `field.htmlHelp` are now correctly translated when displayed in a tooltip.
 
 ## 3.63.1 (2024-02-22)
 
