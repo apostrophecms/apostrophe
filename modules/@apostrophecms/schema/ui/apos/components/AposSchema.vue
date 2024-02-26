@@ -118,19 +118,18 @@ export default {
     }
   }
 
-  .apos-schema.apos-schema__compare ::v-deep .apos-field__wrapper {
+  .apos-schema.apos-schema--compare ::v-deep [data-apos-field] {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
     gap: 10px;
-    border: 2px solid yellow !important;
-    background-color: yellow !important;
   }
-  .apos-schema__compare .apos-field {
-    .apos-schema ::v-deep & {
-      grid-column: 1 / 2;
-      grid-row: 1;
-      border: 2px solid red !important;
-      background-color: red !important;
+
+  .apos-schema.apos-schema--compare ::v-deep .apos-field__wrapper {
+    grid-column: 1 / 1;
+    grid-row: 1;
+
+    & + .apos-field__wrapper {
+      grid-column: 2 / 2;
     }
   }
 </style>
