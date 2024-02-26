@@ -43,7 +43,8 @@ export default {
       for (const [ name, options ] of Object.entries(widgets)) {
         result.push({
           name,
-          label: options.addLabel || apos.modules[`${name}-widget`].label
+          label: options.addLabel || apos.modules[`${name}-widget`].label,
+          icon: apos.modules[`${name}-widget`].icon
         });
       }
       return result;
