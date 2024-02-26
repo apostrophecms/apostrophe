@@ -5,8 +5,6 @@
 ### Adds
 
 * Add translation keys used by the multisite pro module.
-* Add the possibility to set dynamic values in the fields' `help` and `htmlHelp` attributes following this pattern: `translationKey|foo=bar|fizz=buzz`,
-which will build the following interpolation object: `{ foo: "bar", fizz: "buzz" }`.
 
 ## 3.63.1 (2024-02-22)
 
