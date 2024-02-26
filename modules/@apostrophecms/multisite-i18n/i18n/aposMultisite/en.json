@@ -40,7 +40,7 @@
   "redirectStatus": "Redirect Status Code",
   "redirectStatusHelp": "\"Moved Permanently\" is best for SEO, but you should test thoroughly first with \"Moved Temporarily\" to avoid caching of bad redirects.",
   "emptyAdminPasswordError": "You must fill out the admin password field.",
-  "shortnameError": "The short name of the site must not contain dots, a protocol or spaces. It is a short name like \"nifty\" (without quotes) <F2>and will be used as a \"working name\" for a temporary subdomain for your site until it is launched.",
+  "shortnameError": "The short name of the site must not contain dots, a protocol or spaces. It is a short name like \"nifty\" (without quotes) and will be used as a \"working name\" for a temporary subdomain for your site until it is launched.",
   "shortnameInUseError": "That short name is already in use by another site.",
   "productionHostnameInUseError": "That Production Hostname is already in use by another site.",
   "renamingLocale": "Renaming locale {{ oldName }} to {{ newName }} in site {{ siteName }}, access to the site is paused, this may take time",
