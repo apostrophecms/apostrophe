@@ -4,7 +4,11 @@
 
 ### Adds
 
-* Add translation keys used by the multisite pro module.
+* Add translation keys used by the multisite assembly module.
+
+### Fixes
+
+* `field.help` and `field.htmlHelp` are now correctly translated when displayed as a tooltip.
 
 ## 3.63.1 (2024-02-22)
 
