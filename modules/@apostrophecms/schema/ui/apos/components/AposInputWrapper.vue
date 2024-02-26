@@ -38,7 +38,7 @@
               <AposIndicator
                 icon="help-circle-icon"
                 class="apos-field__help-tooltip__icon"
-                :tooltip="help"
+                :tooltip="$t(field.help || field.htmlHelp)"
                 :icon-size="11"
                 icon-color="var(--a-base-4)"
               />
@@ -74,7 +74,7 @@
         <p
           v-if="(field.help || field.htmlHelp) && !displayOptions.helpTooltip"
           class="apos-field__help"
-          v-html="help"
+          v-html="$t(field.help || field.htmlHelp)"
         />
         <!-- eslint-enable vue/no-v-html -->
         <slot name="additional" />
