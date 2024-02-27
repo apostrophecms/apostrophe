@@ -884,16 +884,17 @@ export default {
       this.relatedDocs = relatedDocs;
       this.wizard.busy = status;
     },
-    async retryTranslationCheck() {
-      const wait = (time) => new Promise((resolve) => {
+    wait(time) {
+      return new Promise((resolve) => {
         setTimeout(() => {
           resolve();
         }, time);
       });
-
+    },
+    async retryTranslationCheck() {
       await this.checkAvailableTranslations(false);
       this.translationShowLoader = true;
-      await wait(500);
+      await this.wait(500);
       await this.checkAvailableTranslations(true);
       this.translationShowLoader = false;
     },
