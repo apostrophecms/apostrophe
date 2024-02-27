@@ -328,12 +328,6 @@ export default {
     },
     onUpdateDocData(data) {
       this.$emit('update-doc-data', data);
-    },
-    getCompareModel(fieldName) {
-      return {
-        error: false,
-        data: this.meta[fieldName]['@apostrophecms/schema:compare']
-      };
     }
   }
 };
