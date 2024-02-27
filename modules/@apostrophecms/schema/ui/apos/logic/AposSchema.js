@@ -147,11 +147,7 @@ export default {
         return {};
       }
 
-      const compareMetaState = {
-        // TODO remove if not needed
-        // _id: { data: this.value.data._id },
-        // archived: { data: this.value.data.archived }
-      };
+      const compareMetaState = {};
       this.schema.forEach(field => {
         compareMetaState[field.name] = {
           error: false,
@@ -208,7 +204,7 @@ export default {
           }
         }
       }
-    },
+    }
   },
   created() {
     this.populateDocData();
