@@ -118,18 +118,25 @@ export default {
     }
   }
 
-  .apos-schema.apos-schema--compare ::v-deep [data-apos-field] {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 10px;
-  }
+  .apos-schema.apos-schema--compare {
+    & > ::v-deep [data-apos-field] {
+      display: flex;
 
-  .apos-schema.apos-schema--compare ::v-deep .apos-field__wrapper {
-    grid-column: 1 / 1;
-    grid-row: 1;
+      & > .apos-field__wrapper {
+        flex-grow: 1;
+        flex-basis: 50%;
+        border-right: 1px solid var(--a-base-8);
+        padding-right: 10px;
+      }
+      & > .apos-field__wrapper + .apos-field__wrapper {
+        border-right: none;
+        padding-right: 0;
+        padding-left: 10px;
+      }
 
-    & + .apos-field__wrapper {
-      grid-column: 2 / 2;
+      & .apos-field__label {
+        word-break: break-all;
+      }
     }
   }
 </style>
