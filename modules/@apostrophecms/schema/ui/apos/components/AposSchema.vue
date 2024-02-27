@@ -125,13 +125,13 @@ export default {
       & > .apos-field__wrapper {
         flex-grow: 1;
         flex-basis: 50%;
-        border-right: 1px solid var(--a-base-8);
-        padding-right: 10px;
+        border-right: 1px solid var(--a-base-9);
+        padding-right: 20px;
       }
       & > .apos-field__wrapper + .apos-field__wrapper {
         border-right: none;
         padding-right: 0;
-        padding-left: 10px;
+        padding-left: 20px;
       }
 
       & .apos-field__label {
