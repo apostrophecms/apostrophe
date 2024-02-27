@@ -233,14 +233,28 @@
                   data-apos-test="localizationTranslationCheck"
                 />
 
-                <!-- eslint-disable vue/no-v-html -->
-                <p
-                  v-if="translationErrMsg"
-                  class="apos-wizard__translation-error"
-                  v-html="translationErrMsg"
-                  data-apos-test="localizationTranslationErr"
-                />
-                <!-- eslint-disable vue/no-v-html -->
+                <div v-if="translationErrMsg">
+                  <!-- eslint-disable vue/no-v-html -->
+                  <p
+                    class="apos-wizard__translation-error"
+                    v-html="translationErrMsg"
+                    data-apos-test="localizationTranslationErr"
+                  />
+                  <!-- eslint-disable vue/no-v-html -->
+                  <AposButton
+                    v-if="translationShowRetry"
+                    label="apostrophe:retry"
+                    :modifiers="['quiet', 'no-motion']"
+                    data-apos-test="localizationTranslationRetry"
+                    @click="retryTranslationCheck()"
+                  />
+                </div>
+                <div
+                  v-else-if="translationShowLoader"
+                  class="apos-wizard__translation-spinner"
+                >
+                  <AposSpinner />
+                </div>
               </div>
             </fieldset>
           </form>
@@ -401,7 +415,9 @@ export default {
         }
       ],
       translationEnabled: apos.modules['@apostrophecms/translation'].enabled,
-      translationErrMsg: null
+      translationErrMsg: null,
+      translationShowRetry: false,
+      translationShowLoader: false
     };
   },
   computed: {
@@ -557,6 +573,7 @@ export default {
       this.wizard.values.translateContent.data = false;
       this.wizard.values.translateTargets.data = [];
       this.translationErrMsg = null;
+      this.translationShowRetry = false;
     },
     goToNext() {
       this.goTo(this.nextStepName);
@@ -867,9 +884,24 @@ export default {
       this.relatedDocs = relatedDocs;
       this.wizard.busy = status;
     },
+    wait(time) {
+      return new Promise((resolve) => {
+        setTimeout(() => {
+          resolve();
+        }, time);
+      });
+    },
+    async retryTranslationCheck() {
+      await this.checkAvailableTranslations(false);
+      this.translationShowLoader = true;
+      await this.wait(500);
+      await this.checkAvailableTranslations(true);
+      this.translationShowLoader = false;
+    },
     async checkAvailableTranslations(value) {
       if (!value) {
         this.translationErrMsg = null;
+        this.translationShowRetry = false;
         this.wizard.values.translateTargets.data = [];
         return;
       }
@@ -886,8 +918,10 @@ export default {
           }
         });
       } catch (err) {
-        console.error(err);
+        console.error('An error happened while getting available languages: ', err);
         this.wizard.values.translateTargets.data = [];
+        this.translationErrMsg = this.$t('apostrophe:automaticTranslationErrMsg');
+        this.translationShowRetry = true;
         return;
       }
 
@@ -1178,5 +1212,11 @@ export default {
 .apos-wizard__translation-error {
   @include type-label;
   color: var(--a-danger);
+}
+
+.apos-wizard__translation-spinner {
+  margin-top: 20px;
+  display: flex;
+  justify-content: center;
 }
 </style>
