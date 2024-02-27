@@ -230,6 +230,7 @@
                     label: $t('apostrophe:automaticTranslationCheckbox')
                   }"
                   v-model="wizard.values.translateContent.data"
+                  data-apos-test="localizationTranslationCheck"
                 />
 
                 <!-- eslint-disable vue/no-v-html -->
@@ -237,6 +238,7 @@
                   v-if="translationErrMsg"
                   class="apos-wizard__translation-error"
                   v-html="translationErrMsg"
+                  data-apos-test="localizationTranslationErr"
                 />
                 <!-- eslint-disable vue/no-v-html -->
               </div>
