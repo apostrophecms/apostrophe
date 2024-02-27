@@ -245,6 +245,7 @@
                     v-if="translationShowRetry"
                     label="apostrophe:retry"
                     :modifiers="['quiet', 'no-motion']"
+                    data-apos-test="localizationTranslationRetry"
                     @click="retryTranslationCheck()"
                   />
                 </div>
