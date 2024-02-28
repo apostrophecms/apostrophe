@@ -5,6 +5,7 @@
 ### Adds
 
 * Add translation keys used by the multisite assembly module.
+* Add side by side comparison support in AposSchema component.
 
 ### Fixes
 
