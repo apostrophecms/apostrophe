@@ -91,7 +91,7 @@
     "form-data": "^4.0.0",
     "fs-extra": "^7.0.1",
     "glob": "^5.0.15",
-    "he": "^0.5.0",
+    "he": "^1.2.0",
     "html-to-text": "^9.0.5",
     "i18next": "^20.3.2",
     "i18next-http-middleware": "^3.1.5",
