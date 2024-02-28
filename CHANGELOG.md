@@ -20,6 +20,7 @@
 * Copy requires create and edit permission.
 * Display a more informative error message when publishing a page because the parent page is not published and the current user has no permission to publish the parent page (while having permission to publish the current one).
 * The `content-changed` event for the submit draft action now uses a complete document.
+* Bump the `he` package to most recent version.
 
 ### Changes
 
