@@ -38,7 +38,7 @@
               <AposIndicator
                 icon="help-circle-icon"
                 class="apos-field__help-tooltip__icon"
-                :tooltip="field.help || field.htmlHelp"
+                :tooltip="$t(field.help || field.htmlHelp)"
                 :icon-size="11"
                 icon-color="var(--a-base-4)"
               />

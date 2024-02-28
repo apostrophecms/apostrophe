@@ -4,6 +4,24 @@
 
 ### Adds
 
+* Add translation keys used by the multisite assembly module.
+* Add side by side comparison support in AposSchema component.
+
+### Fixes
+
+* `field.help` and `field.htmlHelp` are now correctly translated when displayed in a tooltip.
+* Bump the `he` package to most recent version.
+
+## 3.63.1 (2024-02-22)
+
+### Security
+
+* Bump dependency on `sanitize-html` to `^2.12.1` at a minimum, to ensure that `npm update apostrophe` is sufficient to guarantee a security update is installed. This security update prevents specially crafted HTML documents from revealing the existence or non-existence of files on the server. The vulnerability did not expose any other information about those files. Thanks to the [Snyk Security team](https://snyk.io/) for the disclosure and to [Dylan Armstrong](https://dylan.is/) for the fix.
+
+## 3.63.0 (2024-02-21)
+
+### Adds
+
 * Adds a `launder` method to the `slug` schema field query builder to allow for use in API queries.
 * Adds support for browsing specific pages in a relationship field when `withType` is set to a page type, like `@apostrophecms/home-page`, `default-page`, `article-page`...
 * Add support for `canCreate`, `canPreview` & `canShareDraft` in context operations conditions.
@@ -20,7 +38,8 @@
 * Copy requires create and edit permission.
 * Display a more informative error message when publishing a page because the parent page is not published and the current user has no permission to publish the parent page (while having permission to publish the current one).
 * The `content-changed` event for the submit draft action now uses a complete document.
-* Bump the `he` package to most recent version.
+* Fix the context bar overlap on palette for non-admin users that have the permission to modify it.
+* Show widget icons in the editor area context menu.
 
 ### Changes
 

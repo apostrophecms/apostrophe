@@ -16,7 +16,7 @@
           :items="userItems"
         />
       </div>
-      <TheAposContextBar @mounted="setSpacer" />
+      <TheAposContextBar @visibility-changed="setSpacer" />
       <component
         v-for="bar in bars"
         v-bind="bar.props || {}"
