@@ -10,6 +10,7 @@
 ### Fixes
 
 * `field.help` and `field.htmlHelp` are now correctly translated when displayed in a tooltip.
+* Notification REST APIs should not directly return the result of MongoDB operations.
 
 ## 3.63.1 (2024-02-22)
 
