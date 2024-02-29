@@ -1,32 +1,31 @@
 <template>
   <div class="apos-tiptap-select">
-    <format-text-icon
-      :size="16"
-      class="apos-tiptap-select__type-icon"
-      fill-color="currentColor"
-    />
+    <format-text-icon :size="16" class="apos-tiptap-select__type-icon" fill-color="currentColor" />
     <select
       v-apos-tooltip="{
         content: 'apostrophe:richTextStyles',
         placement: 'top',
         delay: 650
-      }"
-      :value="active"
-      @change="setStyle"
-      class="apos-tiptap-control apos-tiptap-control--select"
+      }" :value="active"
+      @change="setStyle" class="apos-tiptap-control apos-tiptap-control--select"
       :style="`width:${options.styles[active].label.length * 6.5}px`"
     >
-      <option
-        v-for="(style, i) in options.styles"
-        :value="i"
-        :key="style.label"
-      >
-        {{ style.label }}
-      </option>
+      <optgroup label="Tag Styles">
+        <option v-for="(style, index) in tagStyles" :value="index" :key="`tag-${style.label}`">
+          {{ style.label }}
+        </option>
+      </optgroup>
+      <!-- User-Defined Styles Group -->
+      <optgroup label="User Styles">
+        <option
+          v-for="(style, index) in userStyles" :value="index + tagStyles.length"
+          :key="`user-${style.label}`"
+        >
+          {{ style.label }}
+        </option>
+      </optgroup>
     </select>
-    <chevron-down-icon
-      :size="11"
-      class="apos-tiptap-select__icon"
+    <chevron-down-icon :size="11" class="apos-tiptap-select__icon"
       fill-color="currentColor"
     />
   </div>
@@ -76,7 +75,11 @@ export default {
   },
   methods: {
     setStyle($event) {
-      const style = this.options.styles[$event.target.value];
+      // Adjust this method to handle the offset in value due to the introduction of groups
+      const index = $event.target.value;
+      const isTagStyle = index < this.tagStyles.length;
+      const style = isTagStyle ? this.tagStyles[index] : this.userStyles[index - this.tagStyles.length];
+
       this.editor.commands.focus();
       this.editor.commands[style.command](style.type, style.options || {});
     }
@@ -85,35 +88,36 @@ export default {
 </script>
 
 <style lang="scss" scoped>
-  // If another select el is needed for the rich-text toolbar these styles should be made global
-  .apos-tiptap-control--select {
-    @include apos-button-reset();
-    @include apos-transition();
-    height: 100%;
-    padding: 0 10px;
-    font-size: var(--a-type-smaller);
+// If another select el is needed for the rich-text toolbar these styles should be made global
+.apos-tiptap-control--select {
+  @include apos-button-reset();
+  @include apos-transition();
+  height: 100%;
+  padding: 0 10px;
+  font-size: var(--a-type-smaller);
 
-    &:focus, &:active {
-      outline: none;
-    }
+  &:focus,
+  &:active {
+    outline: none;
   }
+}
 
-  .apos-tiptap-select {
-    position: relative;
-    display: flex;
-    align-items: center;
-    padding: 0 4px;
-    color: var(--a-base-1);
-    border-radius: var(--a-border-radius);
-    transition: all 0.5s ease;
-    &:hover {
-      color: var(--a-text-primary);
-      background-color: var(--a-base-9);
-    }
+.apos-tiptap-select {
+  position: relative;
+  display: flex;
+  align-items: center;
+  padding: 0 4px;
+  color: var(--a-base-1);
+  border-radius: var(--a-border-radius);
+  transition: all 0.5s ease;
+
+  &:hover {
+    color: var(--a-text-primary);
+    background-color: var(--a-base-9);
   }
+}
 
-  .apos-tiptap-select__type-icon {
-    padding-top: 2px;
-  }
-
+.apos-tiptap-select__type-icon {
+  padding-top: 2px;
+}
 </style>
