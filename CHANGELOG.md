@@ -9,6 +9,7 @@
 
 ### Fixes
 
+* Adds `textStyle` to Tiptap types so that spans are rendered on RT initialization
 * `field.help` and `field.htmlHelp` are now correctly translated when displayed in a tooltip.
 
 ## 3.63.1 (2024-02-22)
