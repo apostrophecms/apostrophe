@@ -6,6 +6,7 @@
 
 * Add translation keys used by the multisite assembly module.
 * Add side by side comparison support in AposSchema component.
+* Add the possibility to make widget modals wider, which can be useful for widgets that contain areas taking significant space. See the [documentation](TODO:).
 
 ### Fixes
 
