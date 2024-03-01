@@ -9,6 +9,7 @@
 
 ### Fixes
 
+* Adds `textStyle` to Tiptap types so that spans are rendered on RT initialization
 * `field.help` and `field.htmlHelp` are now correctly translated when displayed in a tooltip.
 * Notification REST APIs should not directly return the result of MongoDB operations.
 
