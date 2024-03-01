@@ -25,11 +25,13 @@
 <template>
   <component
     class="apos-schema"
+    :class="classes"
     :is="fieldStyle === 'table' ? 'tr' : 'div'"
   >
     <slot name="before" />
     <component
-      v-for="field in schema" :key="field.name.concat(field._id ?? '')"
+      v-for="field in schema"
+      :key="field.name.concat(field._id ?? '')"
       :data-apos-field="field.name"
       :is="fieldStyle === 'table' ? 'td' : 'div'"
       :style="(fieldStyle === 'table' && field.columnStyle) || {}"
@@ -38,6 +40,25 @@
       <component
         v-show="displayComponent(field)"
         v-model="fieldState[field.name]"
+        :is="fieldComponentMap[field.type]"
+        :following-values="followingValues[field.name]"
+        :condition-met="conditionalFields?.if[field.name]"
+        :field="fields[field.name].field"
+        :meta="meta"
+        :modifiers="fields[field.name].modifiers"
+        :display-options="getDisplayOptions(field.name)"
+        :trigger-validation="triggerValidation"
+        :server-error="fields[field.name].serverError"
+        :doc-id="docId"
+        :ref="field.name"
+        :generation="generation"
+        @update-doc-data="onUpdateDocData"
+        @validate="emitValidate()"
+      />
+      <component
+        v-if="hasCompareMeta"
+        v-show="displayComponent(field)"
+        v-model="compareMetaState[field.name]"
         :is="fieldComponentMap[field.type]"
         :following-values="followingValues[field.name]"
         :condition-met="conditionalFields?.if[field.name]"
@@ -94,6 +115,28 @@ export default {
 
     .apos-schema ::v-deep .apos-toolbar & {
       margin-bottom: 0;
+    }
+  }
+
+  .apos-schema.apos-schema--compare {
+    & > ::v-deep [data-apos-field] {
+      display: flex;
+
+      & > .apos-field__wrapper {
+        flex-grow: 1;
+        flex-basis: 50%;
+        border-right: 1px solid var(--a-base-9);
+        padding-right: 20px;
+      }
+      & > .apos-field__wrapper + .apos-field__wrapper {
+        border-right: none;
+        padding-right: 0;
+        padding-left: 20px;
+      }
+
+      & .apos-field__label {
+        word-break: break-all;
+      }
     }
   }
 </style>
