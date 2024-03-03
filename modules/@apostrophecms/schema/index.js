@@ -710,6 +710,7 @@ module.exports = {
         }
         if (hasParenthesis && !methodKey.endsWith('()')) {
           self.apos.util.warn(`The method "${methodDefinition}" defined in the "${fieldName}" field should be written without argument: "${methodDefinition}()".`);
+          methodKey = methodDefinition + '()';
         }
 
         const [ methodName, moduleName = fieldModuleName ] = methodDefinition
@@ -1748,7 +1749,11 @@ module.exports = {
           const conditionKey = self.apos.launder.string(req.query.conditionKey);
 
           const field = self.getFieldById(fieldId);
-
+          const allowedKeys = getFieldExternalConditionKeys(field);
+          // We must tolerate arguments at this stage as we only warn about them later
+          if (!allowedKeys.includes(conditionKey.replace(/\(.*\)/, '()'))) {
+            throw self.apos.error('forbidden', `${conditionKey} is not registered as an external condition.`);
+          }
           try {
             const result = await self.evaluateMethod(req, conditionKey, field.name, field.moduleName, docId);
             return { result };
@@ -1782,3 +1787,27 @@ module.exports = {
     };
   }
 };
+
+function getFieldExternalConditionKeys(field) {
+  const conditionTypes = [ 'if', 'requiredIf' ];
+  return [
+    ...new Set(conditionTypes.map(conditionType => getConditionTypeExternalConditionKeys(field[conditionType] || {})).flat())
+  ];
+}
+
+function getConditionTypeExternalConditionKeys(conditions) {
+  let results = [];
+  if (conditions.$or) {
+    results = conditions.$or.map(getConditionTypeExternalConditionKeys).flat();
+  }
+  for (const key of Object.keys(conditions)) {
+    if (key === '$or') {
+      results = [ ...results, conditions.$or.map(getConditionTypeExternalConditionKeys).flat() ];
+    } else {
+      if (key.endsWith('()')) {
+        results.push(key);
+      }
+    }
+  }
+  return results;
+}
