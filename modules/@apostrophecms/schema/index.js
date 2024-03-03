@@ -1710,8 +1710,38 @@ module.exports = {
         return options;
       },
 
-      addManagerIndicator(componentInfo) {
-        self.uiManagerIndicators.push(componentInfo);
+      // Register a Vue component as custom indicator in the UI manager.
+      // The component should be already exist in the admin UI
+      // (created in `ui/apos/components`).
+      // Properties:
+      // - `component`: the name of the Vue component
+      // - `props`: (optional, object) additional the props to pass to the component.
+      // - `if`: (optional, object) a standard Apostrophe condition to show/hide
+      //    the indicator. Keep in mind the component can also decide internally
+      //    to show/hide itself. The condition is evaluated against the draft doc.
+      //    The keys represent field names and support dot notation.
+      //
+      // Example:
+      // ```javascript
+      // self.apos.schema.addManagerIndicator({
+      //   component: 'MyCustomIndicator',
+      //   props: {
+      //     label: 'My indicator'
+      //   },
+      //   if: {
+      //     type: 'my-type',
+      //     'myField': 'my-value',
+      //     'myObject.field': 'my-nested-value'
+      //   }
+      // });
+      addManagerIndicator({
+        component, props, if: condition
+      }) {
+        self.uiManagerIndicators.push({
+          component,
+          props,
+          if: condition
+        });
       }
     };
   },

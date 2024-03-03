@@ -6,7 +6,6 @@ module.exports = {
   },
   init(self) {
     self.providers = [];
-
     self.enableBrowserData();
   },
   handlers(self) {
@@ -14,13 +13,16 @@ module.exports = {
       '@apostrophecms/doc-type:beforeLocalize': {
         // Translate the document using the first available provider.
         async translate(req, doc, {
-          source, target, docType, existing
+          source, target, existing
         }) {
+          if (!self.isEnabled()) {
+            return;
+          }
           const targets = req.query.aposTranslateTargets || [];
-          const providerName = self.apos.launder.string(req.query.aposTranslateProvider);
+          const aposProvider = self.apos.launder.string(req.query.aposTranslateProvider);
 
           if (!Array.isArray(targets)) {
-            throw self.apos.error('invalid', 'Badly formatted translation targets');
+            throw self.apos.error('invalid', 'apostrophe:automaticTranslationErrorTargets');
           }
 
           if (!targets.includes(target)) {
@@ -29,12 +31,9 @@ module.exports = {
 
           // We don't support multiple providers yet, so just use the first one
           // when no provider is specified.
-          const manager = self.getProviderModule(providerName);
-
-          // Might be the responsability of automatic-translation module
-          // since it needs to get the provider and its module anyway
+          const manager = self.getProviderModule(aposProvider);
           if (!manager) {
-            const name = providerName || 'apostrophe:notAvailable';
+            const name = aposProvider || 'apostrophe:notAvailable';
 
             self.logError('before-localize-translate', 'Provider not found.', {
               _id: doc._id,
@@ -57,8 +56,11 @@ module.exports = {
             );
           }
 
+          // Explicitly resolve the provider name to avoid errors as consequence of
+          // internal logic (empty argument vs non-existent provider).
+          const providerName = self.getProvider(aposProvider)?.name ?? '';
+
           return manager.translate(req, providerName, doc, source, target, {
-            docType,
             existing
           });
         }
@@ -71,8 +73,8 @@ module.exports = {
       // If no provider is specified, the first available provider is used.
       // query parameters:
       // - provider: The name of the provider
-      // - source: Array of language codes to translate from
-      // - target: Array of language codes to translate to
+      // - source: (optional) Array of language codes to translate from
+      // - target: (optional) Array of language codes to translate to
       // Example response:
       // ```json
       // {
@@ -86,10 +88,10 @@ module.exports = {
       //   ]
       // }
       // ```
-      // If no `source` or `target` parameters are provided, the response will
-      // contain all supported languages for any source or target language.
+      // If no `source` or `target` parameters are provided, the response should
+      // contain all supported languages for the source/target.
       async languages(req) {
-        if (!self.canAccessApi(req)) {
+        if (!self.isEnabled() || !self.canAccessApi(req)) {
           throw self.apos.error('notfound');
         }
 
@@ -124,6 +126,9 @@ module.exports = {
   }),
   methods(self, options) {
     return {
+      isEnabled() {
+        return options.enabled && self.providers.length > 0;
+      },
       // Add a translation provider to the list of available providers.
       // `aposModule` should be the module object (self), not its name.
       // `name` should be a unique name for the provider.
@@ -195,6 +200,10 @@ module.exports = {
           module: aposModule.__meta.name
         });
       },
+      // Get the first available provider or the provider with the given name.
+      // If no name is provided, the first available provider is returned.
+      // If name is provided and no provider with the given name is found,
+      // `undefined` is returned.
       getProvider(name) {
         if (!name) {
           return self.providers[0];
@@ -208,7 +217,7 @@ module.exports = {
       getBrowserData(req) {
         return {
           action: self.action,
-          enabled: options.enabled && Boolean(self.providers.length),
+          enabled: self.isEnabled(),
           providers: self.providers.map(({ name, label }) => ({
             name,
             label

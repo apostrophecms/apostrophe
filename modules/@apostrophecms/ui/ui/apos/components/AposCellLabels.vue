@@ -39,6 +39,9 @@
         v-if="evaluateConditions(conditions)"
         class="apos-table__cell-field__label"
         v-bind="props"
+        :header="header"
+        :draft="draft"
+        :published="published"
       />
     </span>
   </div>

@@ -67,6 +67,11 @@ describe('Translation', function () {
     return t.destroy(apos);
   });
 
+  it('should be disabled if no providers', async function () {
+    const translation = apos.modules['@apostrophecms/translation'];
+    assert.equal(translation.isEnabled(), false);
+  });
+
   it('should add a translation provider', async function () {
     const translation = apos.modules['@apostrophecms/translation'];
     const provider = apos.fakeProvider;
@@ -77,6 +82,7 @@ describe('Translation', function () {
     });
     assert.equal(translation.providers.length, 1);
     assert.equal(translation.providers[0].name, 'fake');
+    assert.equal(translation.isEnabled(), true);
   });
 
   it('should validate the provider interface', async function () {
@@ -167,6 +173,7 @@ describe('Translation', function () {
     const req = apos.task.getReq();
 
     assert.deepEqual(translation.getBrowserData(req), {
+      action: '/api/v1/@apostrophecms/translation',
       enabled: true,
       providers: [
         {
@@ -195,16 +202,100 @@ describe('Translation', function () {
     };
     const source = 'en';
     const target = 'es';
-    const options = {};
+    const existing = false;
 
-    await handler(req, doc, source, target, options);
+    await handler(req, doc, {
+      source,
+      target,
+      existing
+    });
     assert.equal(doc.title, 'fake-en-es-Hello World-translated');
+  });
+
+  it('should skip translation on beforeLocalize if no providers', async function () {
+    const translation = apos.modules['@apostrophecms/translation'];
+    const providers = translation.providers;
+    translation.providers = [];
+    const handler = translation.handlers['@apostrophecms/doc-type:beforeLocalize']
+      .translate;
+
+    const savedNotify = apos.notify;
+    let notifyCallArgs = null;
+    apos.notify = function (...args) {
+      notifyCallArgs = args;
+    };
+
+    assert(handler);
+
+    const req = apos.task.getReq({
+      query: {
+        aposTranslateTargets: [ 'es', 'fr' ]
+      }
+    });
+    const doc = {
+      _id: '123',
+      title: 'Hello World'
+    };
+    const source = 'en';
+    const target = 'es';
+    const existing = false;
+
+    await handler(req, doc, {
+      source,
+      target,
+      existing
+    });
+    translation.providers = providers;
+    apos.notify = savedNotify;
+
+    assert.equal(doc.title, 'Hello World');
+    assert.equal(notifyCallArgs, null);
+  });
+
+  it('should skip translation on beforeLocalize if disabled', async function () {
+    const translation = apos.modules['@apostrophecms/translation'];
+    translation.options.enabled = false;
+    const handler = translation.handlers['@apostrophecms/doc-type:beforeLocalize']
+      .translate;
+
+    const savedNotify = apos.notify;
+    let notifyCallArgs = null;
+    apos.notify = function (...args) {
+      notifyCallArgs = args;
+    };
+
+    assert(handler);
+
+    const req = apos.task.getReq({
+      query: {
+        aposTranslateTargets: [ 'es', 'fr' ]
+      }
+    });
+    const doc = {
+      _id: '123',
+      title: 'Hello World'
+    };
+    const source = 'en';
+    const target = 'es';
+    const existing = false;
+
+    await handler(req, doc, {
+      source,
+      target,
+      existing
+    });
+    translation.options.enabled = true;
+    apos.notify = savedNotify;
+
+    assert.equal(doc.title, 'Hello World');
+    assert.equal(notifyCallArgs, null);
   });
 
   it('should skip translation on beforeLocalize if bad provider', async function () {
     const translation = apos.modules['@apostrophecms/translation'];
     const handler = translation.handlers['@apostrophecms/doc-type:beforeLocalize']
       .translate;
+
     const savedNotify = apos.notify;
     let notifyCallArgs = null;
     apos.notify = function (...args) {
@@ -225,9 +316,13 @@ describe('Translation', function () {
     };
     const source = 'en';
     const target = 'es';
-    const options = {};
+    const existing = false;
 
-    await handler(req, doc, source, target, options);
+    await handler(req, doc, {
+      source,
+      target,
+      existing
+    });
     apos.notify = savedNotify;
 
     assert.equal(doc.title, 'Hello World');
