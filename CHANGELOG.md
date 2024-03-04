@@ -6,6 +6,9 @@
 
 * Add translation keys used by the multisite assembly module.
 * Add side by side comparison support in AposSchema component.
+* Add `beforeLocalize` and `afterLocalize` events.
+* Add `translation` module to support document translations via external modules.
+* Add custom manager indicators support via `apos.schema.addManagerIndicator({ component, props, if })`. The registered this way components will be automatically rendered in the manager modal.
 
 ### Fixes
 
