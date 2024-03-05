@@ -6,6 +6,7 @@
 
 * Add translation keys used by the multisite assembly module.
 * Add side by side comparison support in AposSchema component.
+* Add new `getChanges` method to the schema module to get an array of document changed field names instead of just a boolean like does the `isEqual` method. 
 
 ### Fixes
 
