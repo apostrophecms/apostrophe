@@ -100,7 +100,11 @@ module.exports = {
     neverLoadSelf: true,
     initialModal: true,
     placeholder: false,
-    placeholderClass: 'apos-placeholder'
+    placeholderClass: 'apos-placeholder',
+    // two-thirds, half or full:
+    width: '',
+    // left or right:
+    origin: 'right'
   },
   init(self) {
     const badFieldName = Object.keys(self.fields).indexOf('type') !== -1;
@@ -400,7 +404,9 @@ module.exports = {
           contextual: self.options.contextual,
           placeholderClass: self.options.placeholderClass,
           className: self.options.className,
-          components: self.options.components
+          components: self.options.components,
+          width: self.options.width,
+          origin: self.options.origin
         });
         return result;
       }
