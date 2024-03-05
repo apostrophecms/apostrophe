@@ -1715,7 +1715,7 @@ module.exports = {
       // (created in `ui/apos/components`).
       // Properties:
       // - `component`: the name of the Vue component
-      // - `props`: (optional, object) additional the props to pass to the component.
+      // - `props`: (optional, object) additional props to pass to the component.
       // - `if`: (optional, object) a standard Apostrophe condition to show/hide
       //    the indicator. Keep in mind the component can also decide internally
       //    to show/hide itself. The condition is evaluated against the draft doc.
