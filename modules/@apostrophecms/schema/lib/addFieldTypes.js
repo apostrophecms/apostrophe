@@ -863,7 +863,7 @@ module.exports = (self) => {
       if (one[field.name].length !== two[field.name].length) {
         return false;
       }
-      for (let i = 0; (i < one.length); i++) {
+      for (let i = 0; (i < one[field.name].length); i++) {
         if (!self.isEqual(req, field.schema, one[field.name][i], two[field.name][i])) {
           return false;
         }
