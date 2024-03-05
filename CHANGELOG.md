@@ -9,6 +9,7 @@
 * Add `beforeLocalize` and `afterLocalize` events.
 * Add `translation` module to support document translations via external modules.
 * Add custom manager indicators support via `apos.schema.addManagerIndicator({ component, props, if })`. The component registered this way will be automatically rendered in the manager modal.
+* Add the possibility to make widget modals wider, which can be useful for widgets that contain areas taking significant space. See [documentation](https://v3.docs.apostrophecms.org/reference/modules/widget-type.html#options).
 
 ### Fixes
 
