@@ -6,11 +6,28 @@
 
 * Add translation keys used by the multisite assembly module.
 * Add side by side comparison support in AposSchema component.
+* Add the possibility to make widget modals wider, which can be useful for widgets that contain areas taking significant space. See [documentation](https://v3.docs.apostrophecms.org/reference/modules/widget-type.html#options).
 * Add new `getChanges` method to the schema module to get an array of document changed field names instead of just a boolean like does the `isEqual` method. 
 
 ### Fixes
 
+* Adds `textStyle` to Tiptap types so that spans are rendered on RT initialization
 * `field.help` and `field.htmlHelp` are now correctly translated when displayed in a tooltip.
+* Notification REST APIs should not directly return the result of MongoDB operations.
+
+## 3.63.2 (2024-03-01)
+
+### Security
+
+* Always validate that method names passed to the `external-condition` API actually appear in `if` or `requiredIf`
+clauses for the field in question. This fix addresses a serious security risk in which arbitrary methods of
+Apostrophe modules could be called over the network, without arguments, and the results returned to the caller.
+While the lack of arguments mitigates the data exfiltration risk, it is possible to cause data loss by
+invoking the right method. Therefore this is an urgent upgrade for all Apostrophe 3.x users. Our thanks to the Michelin
+penetration test red team for disclosing this vulnerability. All are welcome to disclose security vulnerabilities
+in ApostropheCMS code via [security@apostrophecms.com](mailto:security@apostrophecms.com).
+* Disable the `alwaysIframe` query parameter of the oembed proxy. This feature was never used in Apostrophe core, and could be misused to carry out arbitrary GET requests in the context of an iframe, although it could not be used to exfiltrate any information other than the success or failure of the request, and the request was still performed by the user's browser only. Thanks to the Michelin team.
+* Remove vestigial A2 code relating to polymorphic relationship fields. The code in question had no relevance to the way such a feature would be implemented in A3, and could be used to cause a denial of service by crashing and restarting the process. Thanks to the Michelin team.
 
 ## 3.63.1 (2024-02-22)
 

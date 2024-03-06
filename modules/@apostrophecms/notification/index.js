@@ -154,7 +154,7 @@ module.exports = {
           dismissed
         });
 
-        return self.db.updateOne({ _id }, {
+        await self.db.updateOne({ _id }, {
           $set: {
             dismissed
           },
@@ -164,8 +164,8 @@ module.exports = {
         });
       }
     },
-    delete(req, _id) {
-      return self.db.deleteMany({ _id });
+    async delete(req, _id) {
+      await self.db.deleteMany({ _id });
     }
   }),
   apiRoutes(self) {
@@ -414,7 +414,7 @@ module.exports = {
 
       async ensureCollection() {
         self.db = self.apos.db.collection('aposNotifications');
-        return self.db.createIndex({
+        await self.db.createIndex({
           userId: 1,
           createdAt: 1
         });

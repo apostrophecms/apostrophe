@@ -2090,7 +2090,10 @@ describe('Schemas', function() {
   it('should call the evaluate-external-condition API successfully', async function() {
     apos.schema.fieldsById['some-field-id'] = {
       name: 'someField',
-      moduleName: 'external-condition'
+      moduleName: 'external-condition',
+      if: {
+        'externalCondition()': 'yes'
+      }
     };
 
     const res = await apos.http.get('/api/v1/@apostrophecms/schema/evaluate-external-condition?fieldId=some-field-id&docId=some-doc-id&conditionKey=externalCondition()', {});
@@ -2100,7 +2103,10 @@ describe('Schemas', function() {
   it('should warn when an argument is passed in the external condition key via the evaluate-external-condition API', async function() {
     apos.schema.fieldsById['some-field-id'] = {
       name: 'someField',
-      moduleName: 'external-condition'
+      moduleName: 'external-condition',
+      if: {
+        'externalCondition()': 'yes'
+      }
     };
 
     const res = await apos.http.get('/api/v1/@apostrophecms/schema/evaluate-external-condition?fieldId=some-field-id&docId=some-doc-id&conditionKey=externalCondition(letsNotArgue)', {});
@@ -2119,7 +2125,7 @@ describe('Schemas', function() {
       await apos.http.get('/api/v1/@apostrophecms/schema/evaluate-external-condition?fieldId=some-field-id&docId=some-doc-id&conditionKey=externalCondition()', {});
     } catch (error) {
       assert(error.status = 400);
-      assert(error.body.message === 'The "unknown-module" module defined in the "someField" field does not exist.');
+      assert.strictEqual(error.body.message, 'externalCondition() is not registered as an external condition.');
       return;
     }
     throw new Error('should have thrown');
@@ -2135,7 +2141,7 @@ describe('Schemas', function() {
       await apos.http.get('/api/v1/@apostrophecms/schema/evaluate-external-condition?fieldId=some-field-id&docId=some-doc-id&conditionKey=unknownMethod()', {});
     } catch (error) {
       assert(error.status = 400);
-      assert(error.body.message === 'The "unknownMethod" method from "external-condition" module defined in the "someField" field does not exist.');
+      assert.strictEqual(error.body.message, 'unknownMethod() is not registered as an external condition.');
       return;
     }
     throw new Error('should have thrown');
