@@ -700,7 +700,7 @@ export default {
           return true;
         }
       }
-      return false
+      return false;
     },
     lockNotAvailable() {
       if (this.contextStack.length) {
