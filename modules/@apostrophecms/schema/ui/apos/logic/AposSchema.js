@@ -151,7 +151,7 @@ export default {
       this.schema.forEach(field => {
         compareMetaState[field.name] = {
           error: false,
-          data: this.meta[field.name]['@apostrophecms/schema:compare']
+          data: this.meta[field.name]?.['@apostrophecms/schema:compare']
         };
       });
 
