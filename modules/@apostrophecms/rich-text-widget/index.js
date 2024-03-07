@@ -347,7 +347,8 @@ module.exports = {
   icons: {
     'format-text-icon': 'FormatText',
     'format-color-highlight-icon': 'FormatColorHighlight',
-    'table-icon': 'Table'
+    'table-icon': 'Table',
+    'palette-swatch-icon': 'PaletteSwatch'
   },
   handlers(self) {
     return {
@@ -609,15 +610,30 @@ module.exports = {
           for (const style of options.styles || []) {
             const tag = style.tag;
             const classes = self.getStyleClasses(style);
-            allowedClasses[tag] = allowedClasses[tag] || {};
-            for (const c of classes) {
-              allowedClasses[tag][c] = true;
+
+            // Add classes to THIS tag
+            if (tag) {
+              allowedClasses[tag] = allowedClasses[tag] || {};
+              for (const c of classes) {
+                allowedClasses[tag][c] = true;
+              }
+            }
+
+            // Add classes to other allowedTags
+            if (style.allowedTags) {
+              style.allowedTags.forEach(tag => {
+                allowedClasses[tag] = allowedClasses[tag] || {};
+                for (const c of classes) {
+                  allowedClasses[tag][c] = true;
+                }
+              });
             }
           }
         }
         for (const tag of Object.keys(allowedClasses)) {
           allowedClasses[tag] = Object.keys(allowedClasses[tag]);
         }
+        console.log('final allowed classes', allowedClasses);
         return allowedClasses;
       },
 

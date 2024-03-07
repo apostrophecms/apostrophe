@@ -1,34 +1,40 @@
 <template>
-  <div class="apos-tiptap-select">
-    <format-text-icon
-      :size="16"
-      class="apos-tiptap-select__type-icon"
-      fill-color="currentColor"
-    />
-    <select
-      v-apos-tooltip="{
-        content: 'apostrophe:richTextStyles',
-        placement: 'top',
-        delay: 650
-      }"
-      :value="active"
-      @change="setStyle"
-      class="apos-tiptap-control apos-tiptap-control--select"
-      :style="`width:${options.styles[active].label.length * 6.5}px`"
+  <div class="apos-tiptap-style-groups">
+    <div
+      v-for="(styleGroup, key) in styles" :key="key"
+      class="apos-tiptap-select"
     >
-      <option
-        v-for="(style, i) in options.styles"
-        :value="i"
-        :key="style.label"
+      <component
+        :is="getGroupIcon(key)"
+        :size="16"
+        class="apos-tiptap-select__type-icon"
+        fill-color="currentColor"
+      />
+      <select
+        v-apos-tooltip="{
+          content: 'apostrophe:richTextStyles',
+          placement: 'top',
+          delay: 650
+        }"
+        :value="active"
+        @change="setStyle($event, key)"
+        class="apos-tiptap-control apos-tiptap-control--select"
+        :style="`width:${styleGroup[active].label.length * 6.5}px`"
       >
-        {{ style.label }}
-      </option>
-    </select>
-    <chevron-down-icon
-      :size="11"
-      class="apos-tiptap-select__icon"
-      fill-color="currentColor"
-    />
+        <option
+          v-for="(style, i) in styleGroup"
+          :value="i"
+          :key="style.label"
+        >
+          {{ style.label }}
+        </option>
+      </select>
+      <chevron-down-icon
+        :size="11"
+        class="apos-tiptap-select__icon"
+        fill-color="currentColor"
+      />
+    </div>
   </div>
 </template>
 
@@ -58,7 +64,7 @@ export default {
   },
   computed: {
     active() {
-      const styles = this.options.styles || [];
+      const styles = [ ...this.options.styles.nodes, ...this.options.styles.marks ];
       for (let i = 0; (i < styles.length); i++) {
         const style = styles[i];
         if (this.editor.isActive(style.type, (style.options || {}))) {
@@ -72,11 +78,24 @@ export default {
     },
     moduleOptions() {
       return window.apos.modules['@apostrophecms/rich-text-widget'];
+    },
+    styles() {
+      const styles = {};
+      if (this.options.styles.nodes.length) {
+        styles.nodes = this.options.styles.nodes;
+      }
+      if (this.options.styles.marks.length) {
+        styles.marks = this.options.styles.marks;
+      }
+      return styles;
     }
   },
   methods: {
-    setStyle($event) {
-      const style = this.options.styles[$event.target.value];
+    getGroupIcon(key) {
+      return key === 'nodes' ? 'format-text-icon' : 'palette-swatch-icon';
+    },
+    setStyle($event, group) {
+      const style = this.options.styles[group][$event.target.value];
       this.editor.commands.focus();
       this.editor.commands[style.command](style.type, style.options || {});
     }
@@ -85,6 +104,9 @@ export default {
 </script>
 
 <style lang="scss" scoped>
+  .apos-tiptap-style-groups {
+    display: flex;
+  }
   // If another select el is needed for the rich-text toolbar these styles should be made global
   .apos-tiptap-control--select {
     @include apos-button-reset();

@@ -2,7 +2,7 @@
 import Heading from '@tiptap/extension-heading';
 
 export default (options) => {
-  const headings = options.styles.filter(style => style.type === 'heading');
+  const headings = options.styles.nodes.filter(style => style.type === 'heading');
   const levels = headings.map(heading => heading.options.level);
   const defaultLevel = headings.filter(heading => heading.def).length
     ? headings.filter(heading => heading.def)[0].options.level

@@ -227,6 +227,7 @@ export default {
       activeOptions.className = (activeOptions.className !== undefined)
         ? activeOptions.className : this.moduleOptions.className;
 
+      console.log(activeOptions);
       return activeOptions;
     },
     autofocus() {
@@ -242,13 +243,20 @@ export default {
       // If we don't supply a valid instance of the first style, then
       // the text align control will not work until the user manually
       // applies a style or refreshes the page
-      const defaultStyle = this.editorOptions.styles.find(style => style.def);
+      const defaultStyle =
+        this.editorOptions.styles.nodes.length
+          ? this.editorOptions.styles.nodes.find(style => style.def)
+          : this.editorOptions.styles.marks.length
+            ? this.editorOptions.styles.marks.find(style => style.def)
+            : null;
 
       const _class = defaultStyle.class ? ` class="${defaultStyle.class}"` : '';
       return `<${defaultStyle.tag}${_class}></${defaultStyle.tag}>`;
     },
     // Names of active toolbar items for this particular widget, as an array
     toolbar() {
+      const toolbar = this.editorOptions.toolbar;
+      console.log('toolbar', toolbar);
       return this.editorOptions.toolbar;
     },
     // Information about all available toolbar items, as an object
@@ -505,6 +513,34 @@ export default {
           }
         }
 
+        // Handle styles that can be applied to multiple tags
+        if (style.allowedTags) {
+
+          // Copy the command to insert/remove the tag as a fallback
+          // style.options.applyCommand = style.command;
+
+          style.command = 'toggleClass';
+          style.options.allowedTags = style.allowedTags;
+
+          // Create an array of tests to see if this class can
+          // be toggled to the active element
+          style.options.typeChecks = [];
+          style.allowedTags.forEach(tag => {
+            const result = {};
+            for (const key in self.tiptapTypes) {
+              if (self.tiptapTypes[key].includes(tag)) {
+                result.type = key;
+              }
+            }
+            if (result.type === 'heading') {
+              const level = parseInt(tag.split('h')[1]);
+              result.attributes = { level };
+            }
+            style.options.typeChecks.push(result);
+          });
+
+        }
+
         // Set heading level
         if (style.type === 'heading') {
           const level = parseInt(style.tag.split('h')[1]);
@@ -516,7 +552,7 @@ export default {
           style.options.class = style.class;
         }
 
-        if (!style.type) {
+        if (!style.command) {
           apos.notify('apostrophe:richTextStyleConfigWarning', {
             type: 'warning',
             dismiss: true,
@@ -540,7 +576,20 @@ export default {
           styles[0].def = true;
         }
       }
-      return styles;
+
+      // Split styles into node and mark toolbars
+      const split = {
+        nodes: [],
+        marks: []
+      };
+      styles.forEach(style => {
+        if (style.command === 'setNode') {
+          split.nodes.push(style);
+        } else {
+          split.marks.push(style);
+        }
+      });
+      return split;
     },
     localizeStyle(style) {
       style.label = this.$t(style.label);
@@ -554,7 +603,10 @@ export default {
       return (apos.tiptapExtensions || [])
         .map(extension => extension({
           ...this.editorOptions,
-          styles: this.editorOptions.styles.map(this.localizeStyle),
+          styles: {
+            nodes: this.editorOptions.styles.nodes.map(this.localizeStyle),
+            marks: this.editorOptions.styles.marks.map(this.localizeStyle)
+          },
           types: this.tiptapTypes
         }));
     },
