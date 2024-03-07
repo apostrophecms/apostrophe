@@ -308,7 +308,7 @@ export default {
       top: 0;
       bottom: 0;
       transform: translateX(0);
-      width: 90%;
+      width: 100%;
       border-radius: 0;
       height: 100vh;
 
@@ -336,6 +336,12 @@ export default {
     &.apos-modal__inner--half {
       @media screen and (min-width: 800px) {
         max-width: 50%;
+      }
+    }
+
+    &.apos-modal__inner--full {
+      @media screen and (min-width: 800px) {
+        max-width: 100%;
       }
     }
 

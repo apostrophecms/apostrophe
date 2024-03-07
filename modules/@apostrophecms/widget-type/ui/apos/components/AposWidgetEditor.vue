@@ -98,6 +98,8 @@ export default {
   },
   emits: [ 'safe-close', 'modal-result' ],
   data() {
+    const moduleOptions = window.apos.modules[apos.area.widgetManagers[this.type]];
+
     return {
       id: this.modelValue && this.modelValue._id,
       original: null,
@@ -109,6 +111,8 @@ export default {
         title: this.editLabel,
         active: false,
         type: 'slide',
+        width: moduleOptions.width,
+        origin: moduleOptions.origin,
         showModal: false
       },
       triggerValidation: false
@@ -224,9 +228,3 @@ export default {
   }
 };
 </script>
-
-<style lang="scss" scoped>
-  .apos-widget-editor :deep(.apos-modal__inner) {
-    max-width: 458px;
-  }
-</style>
