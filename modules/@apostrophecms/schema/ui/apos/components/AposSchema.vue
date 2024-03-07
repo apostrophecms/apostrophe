@@ -40,6 +40,7 @@
       <component
         v-show="displayComponent(field)"
         v-model="fieldState[field.name]"
+        :class="{ 'apos-field__wrapper--highlight': highlight(field.name) }"
         :is="fieldComponentMap[field.type]"
         :following-values="followingValues[field.name]"
         :condition-met="conditionalFields?.if[field.name]"
@@ -59,6 +60,7 @@
         v-if="hasCompareMeta"
         v-show="displayComponent(field)"
         v-model="compareMetaState[field.name]"
+        :class="{ 'apos-field__wrapper--highlight': highlight(field.name) }"
         :is="fieldComponentMap[field.type]"
         :following-values="followingValues[field.name]"
         :condition-met="conditionalFields?.if[field.name]"
@@ -138,5 +140,10 @@ export default {
         word-break: break-all;
       }
     }
+  }
+
+  :deep(.apos-field__wrapper--highlight > .apos-field) {
+    padding: 10px;
+    background: var(--a-highlight);
   }
 </style>
