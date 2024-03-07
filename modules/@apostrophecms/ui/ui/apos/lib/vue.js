@@ -13,8 +13,11 @@ export default (appConfig, props = {}) => {
   app.use(Tooltip);
   app.use(ClickOutsideElement);
 
-  window.apos.registerVueComponents(app);
-  window.apos.registerIconComponents(app);
-
+  const sources = [ window.apos.vueComponents, window.apos.iconComponents ];
+  for (const source of sources) {
+    for (const [ name, component ] of Object.entries(source)) {
+      app.component(name, component);
+    }
+  }
   return app;
 };

@@ -1,9 +1,10 @@
 /* eslint-disable vue/one-component-per-file */
 import createApp from 'Modules/@apostrophecms/ui/lib/vue';
 import { klona } from 'klona';
-import AposAreaEditor from '../components/AposAreaEditor.vue';
 
 export default function() {
+
+  const component = apos.vueComponents.AposAreaEditor;
 
   let widgetsRendering = 0;
 
@@ -101,7 +102,8 @@ export default function() {
 
       el.parentNode.replaceChild(apos.area.activeEditor.$el, el);
     } else {
-      const app = createApp(AposAreaEditor, {
+      console.log('areas');
+      const app = createApp(component, {
         options,
         id: data._id,
         items: data.items,
