@@ -691,16 +691,14 @@ export default {
       }
     },
     urlDiffers(url) {
-      // URL might or might not include hostname part
-      if (url) {
-        url = url.replace(/^https?:\/\/.*?\//, '/');
-        if (url === (window.location.pathname + (window.location.search || ''))) {
-          return false;
-        } else {
-          return true;
-        }
+      if (!url) {
+        return false;
       }
-      return false;
+
+      const normalizedUrl = url.replace(/^https?:\/\/[^/]+\//, '/');
+      const currentPageUrl = window.location.pathname + window.location.search;
+
+      return normalizedUrl !== currentPageUrl;
     },
     lockNotAvailable() {
       if (this.contextStack.length) {
