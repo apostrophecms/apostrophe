@@ -30,7 +30,7 @@
                 class="apos-share-draft__toggle"
                 @toggle="toggle"
               />
-              <p @click="toggle" class="apos-share-draft__toggle-label">
+              <p class="apos-share-draft__toggle-label" @click="toggle">
                 {{ $t('apostrophe:shareDraftEnable') }}
               </p>
             </div>
@@ -42,8 +42,8 @@
               :duration="200"
             >
               <div
-                class="apos-share-draft__url-block"
                 v-show="!disabled"
+                class="apos-share-draft__url-block"
               >
                 <input
                   v-model="shareUrl"
@@ -74,8 +74,8 @@
 </template>
 
 <script>
-import Close from 'vue-material-design-icons/Close.vue';
-import LinkVariant from 'vue-material-design-icons/LinkVariant.vue';
+import Close from '@apostrophecms/vue-material-design-icons/Close.vue';
+import LinkVariant from '@apostrophecms/vue-material-design-icons/LinkVariant.vue';
 
 export default {
   components: {
