@@ -8,6 +8,7 @@
 * Add side by side comparison support in AposSchema component.
 * Add the possibility to make widget modals wider, which can be useful for widgets that contain areas taking significant space. See [documentation](https://v3.docs.apostrophecms.org/reference/modules/widget-type.html#options).
 * Add new `getChanges` method to the schema module to get an array of document changed field names instead of just a boolean like does the `isEqual` method. 
+* Add highlight class in UI when comparing documents.
 
 ### Fixes
 

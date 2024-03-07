@@ -328,6 +328,9 @@ export default {
     },
     onUpdateDocData(data) {
       this.$emit('update-doc-data', data);
+    },
+    highlight(fieldName) {
+      return this.meta[fieldName]?.['@apostrophecms/schema:highlight'];
     }
   }
 };
