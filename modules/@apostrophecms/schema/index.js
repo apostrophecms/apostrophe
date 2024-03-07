@@ -441,6 +441,13 @@ module.exports = {
         });
       },
 
+      // Wrapper around isEqual method to get modified fields between two documents
+      // instead of just getting a boolean, it will return an array of the modified fields
+
+      getChanges(req, schema, one, two) {
+        return self.isEqual(req, schema, one, two, { getChanges: true });
+      },
+
       // Compare two objects and return true only if their schema fields are equal.
       //
       // Note that for relationship fields this comparison is based on the idsStorage
@@ -451,22 +458,40 @@ module.exports = {
       // This method is invoked by the doc module to compare draft and published
       // documents and set the modified property of the draft, just before updating the
       // published version.
+      //
+      // When passing the option `getChange: true` it'll return an array of changed fields
+      // in this case the method won't short circuit by directly returning false
+      // when finding a changed field
 
-      isEqual(req, schema, one, two) {
+      isEqual(req, schema, one, two, options = {}) {
+        const changedFields = [];
         for (const field of schema) {
           const fieldType = self.fieldTypes[field.type];
-          if (!fieldType.isEqual) {
-            if ((!_.isEqual(one[field.name], two[field.name])) &&
-              !((one[field.name] == null) && (two[field.name] == null))) {
-              return false;
-            }
-          } else {
+
+          if (fieldType.isEqual) {
             if (!fieldType.isEqual(req, field, one, two)) {
+              if (options.getChanges) {
+                changedFields.push(field.name);
+              } else {
+                return false;
+              }
+            }
+            continue;
+          }
+
+          if (
+            !_.isEqual(one[field.name], two[field.name]) &&
+            !((one[field.name] == null) && (two[field.name] == null))
+          ) {
+            if (options.getChanges) {
+              changedFields.push(field.name);
+            } else {
               return false;
             }
           }
         }
-        return true;
+
+        return options.getChanges ? changedFields : true;
       },
 
       // Index the object's fields for participation in Apostrophe search unless

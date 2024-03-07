@@ -288,6 +288,44 @@ describe('Schemas', function() {
               }
             };
           }
+        },
+        article: {
+          extend: '@apostrophecms/piece-type',
+          options: {
+            alias: 'article'
+          },
+          fields(self) {
+            return {
+              add: {
+                title: {
+                  label: '',
+                  type: 'string',
+                  required: true
+                },
+                area: {
+                  label: 'Area',
+                  type: 'area',
+                  options: {
+                    widgets: {
+                      '@apostrophecms/rich-text': {}
+                    }
+                  }
+                },
+                array: {
+                  label: 'Array',
+                  type: 'array',
+                  fields: {
+                    add: {
+                      arrayTitle: {
+                        label: 'Array Title',
+                        type: 'string'
+                      }
+                    }
+                  }
+                }
+              }
+            };
+          }
         }
       }
     });
@@ -2261,6 +2299,106 @@ describe('Schemas', function() {
 
     assert(output.emptyValue === null);
     assert(output.goodValue === '2022-05-09T22:36:00.000Z');
+  });
+
+  it('should compare two document properly with the method getChanges', async function() {
+    const req = apos.task.getReq();
+    const instance = apos.article.newInstance();
+    const article1 = {
+      ...instance,
+      title: 'article 1',
+      area: {
+        _id: 'clrth36680007mnmd3jj7cta0',
+        items: [
+          {
+            _id: 'clt79l48g001h2061j5ihxjkv',
+            metaType: 'widget',
+            type: '@apostrophecms/rich-text',
+            aposPlaceholder: false,
+            content: '<p>Some text here.</p>',
+            permalinkIds: [],
+            imageIds: []
+          }
+        ],
+        metaType: 'area'
+      },
+      array: [
+        {
+          _id: 'clt79llm800242061v4dx9kv5',
+          metaType: 'arrayItem',
+          scopedArrayName: 'doc.article.array',
+          arrayTitle: 'array title 1'
+        },
+        {
+          _id: 'clt79llm800242061v4d47364',
+          metaType: 'arrayItem',
+          scopedArrayName: 'doc.article.array',
+          arrayTitle: 'array title 2'
+        }
+      ]
+    };
+    const article2 = {
+      ...article1,
+      title: 'article 2'
+    };
+    const article3 = {
+      ...instance,
+      title: 'article 3',
+
+      area: {
+        _id: 'clrth36680007mnmd3jj7cta0',
+        items: [
+          {
+            _id: 'clt79l48g001h2061j5ihxjkv',
+            metaType: 'widget',
+            type: '@apostrophecms/rich-text',
+            aposPlaceholder: false,
+            content: '<p>Some text here changed.</p>',
+            permalinkIds: [],
+            imageIds: []
+          }
+        ],
+        metaType: 'area'
+      },
+      array: [
+        {
+          _id: 'clt79llm800242061v4dx9kv5',
+          metaType: 'arrayItem',
+          scopedArrayName: 'doc.article.array',
+          arrayTitle: 'array title 1 changed'
+        },
+        {
+          _id: 'clt79llm800242061v4d47364',
+          metaType: 'arrayItem',
+          scopedArrayName: 'doc.article.array',
+          arrayTitle: 'array title 2'
+        }
+      ]
+    };
+
+    await apos.article.insert(req, article1);
+    await apos.article.insert(req, article2);
+    await apos.article.insert(req, article3);
+
+    const art1 = await apos.doc.db.findOne({ title: 'article 1' });
+    const art2 = await apos.doc.db.findOne({ title: 'article 2' });
+    const art3 = await apos.doc.db.findOne({ title: 'article 3' });
+
+    const changes11 = apos.schema.getChanges(req, apos.article.schema, art1, art1);
+    const changes12 = apos.schema.getChanges(req, apos.article.schema, art1, art2);
+    const changes23 = apos.schema.getChanges(req, apos.article.schema, art2, art3);
+    const actual = {
+      changes11,
+      changes12,
+      changes23
+    };
+    const expected = {
+      changes11: [],
+      changes12: [ 'title', 'slug' ],
+      changes23: [ 'title', 'slug', 'area', 'array' ]
+    };
+
+    assert.deepEqual(actual, expected);
   });
 
   describe('field editPermission|viewPermission', function() {
