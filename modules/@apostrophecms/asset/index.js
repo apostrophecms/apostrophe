@@ -1291,8 +1291,8 @@ module.exports = {
       // `es5: true` option (es5 builds are disabled by default).
       configureBuilds() {
         self.srcPrologue = stripIndent`
-          window.apos = window.apos || {};
           (function() {
+            window.apos = window.apos || {};
             var data = document.body && document.body.getAttribute('data-apos');
             Object.assign(window.apos, JSON.parse(data || '{}'));
             if (data) {
