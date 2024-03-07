@@ -144,6 +144,6 @@ export default {
 
   :deep(.apos-field__wrapper--highlight > .apos-field) {
     padding: 10px;
-    background: var(--a--highlight);
+    background: var(--a-highlight);
   }
 </style>
