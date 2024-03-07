@@ -8,7 +8,6 @@ export default function() {
     // (example: the login page)
     return;
   }
-  console.log('notification');
   const app = createApp(component);
   app.mount(el);
 };

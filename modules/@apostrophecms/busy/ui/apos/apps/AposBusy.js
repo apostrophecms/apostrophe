@@ -6,7 +6,6 @@ export default function() {
   if (!el) {
     return;
   }
-  console.log('busy');
   const app = createApp(component);
   app.mount(el);
 };

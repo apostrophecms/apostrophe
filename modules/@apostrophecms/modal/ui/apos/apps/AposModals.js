@@ -6,7 +6,6 @@ export default function() {
   if (!el) {
     return;
   }
-  console.log('modals');
   const app = createApp(component, {
     modals: apos.modal.modals
   });

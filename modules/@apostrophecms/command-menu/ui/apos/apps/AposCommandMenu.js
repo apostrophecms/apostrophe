@@ -7,7 +7,6 @@ export default function() {
   if (!apos.commandMenu || !el) {
     return;
   }
-  console.log('command menu');
   const app = createApp(component, {
     modals: apos.commandMenu.modals
   });

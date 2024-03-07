@@ -4,7 +4,6 @@ export default function() {
   const component = apos.vueComponents.TheAposLogin;
   const el = document.querySelector('#apos-login');
   if (el) {
-    console.log('login');
     const app = createApp(component);
 
     app.mount(el);

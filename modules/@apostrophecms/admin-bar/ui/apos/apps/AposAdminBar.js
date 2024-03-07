@@ -7,7 +7,6 @@ export default function() {
   if (!apos.adminBar || !el) {
     return;
   }
-  console.log('admin bar');
   const app = createApp(component, { items: apos.adminBar.items || [] });
   app.mount(el);
 };
