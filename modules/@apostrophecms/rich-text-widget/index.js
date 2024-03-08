@@ -144,7 +144,7 @@ module.exports = {
     editorTools: {
       styles: {
         component: 'AposTiptapStyles',
-        label: 'apostrophe:richTextStyles'
+        label: 'apostrophe:richTextNodeStyles'
       },
       table: {
         component: 'AposTiptapTable',
@@ -611,7 +611,7 @@ module.exports = {
             const tag = style.tag;
             const classes = self.getStyleClasses(style);
 
-            // Add classes to THIS tag
+            // Add classes to THIS tag's allowList
             if (tag) {
               allowedClasses[tag] = allowedClasses[tag] || {};
               for (const c of classes) {
@@ -619,7 +619,7 @@ module.exports = {
               }
             }
 
-            // Add classes to other allowedTags
+            // Add classes to other tag's allowList
             if (style.allowedTags) {
               style.allowedTags.forEach(tag => {
                 allowedClasses[tag] = allowedClasses[tag] || {};
@@ -633,7 +633,6 @@ module.exports = {
         for (const tag of Object.keys(allowedClasses)) {
           allowedClasses[tag] = Object.keys(allowedClasses[tag]);
         }
-        console.log('final allowed classes', allowedClasses);
         return allowedClasses;
       },
 
@@ -883,6 +882,7 @@ module.exports = {
       // Add on the core default options to use, if needed.
       getBrowserData(_super, req) {
         const initialData = _super(req);
+        console.log('INITIAL', initialData);
 
         const finalData = {
           ...initialData,

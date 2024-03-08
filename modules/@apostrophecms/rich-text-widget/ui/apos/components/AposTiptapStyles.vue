@@ -12,7 +12,7 @@
       />
       <select
         v-apos-tooltip="{
-          content: 'apostrophe:richTextStyles',
+          content: `apostrophe:${getGroupTooltip(key)}`,
           placement: 'top',
           delay: 650
         }"
@@ -94,6 +94,9 @@ export default {
     getGroupIcon(key) {
       return key === 'nodes' ? 'format-text-icon' : 'palette-swatch-icon';
     },
+    getGroupTooltip(key) {
+      return key === 'nodes' ? 'richTextNodeStyles' : 'richTextMarkStyles';
+    },
     setStyle($event, group) {
       const style = this.options.styles[group][$event.target.value];
       this.editor.commands.focus();
@@ -106,13 +109,14 @@ export default {
 <style lang="scss" scoped>
   .apos-tiptap-style-groups {
     display: flex;
+    gap: 5px;
   }
   // If another select el is needed for the rich-text toolbar these styles should be made global
   .apos-tiptap-control--select {
     @include apos-button-reset();
     @include apos-transition();
     height: 100%;
-    padding: 0 10px;
+    padding: 0 5px;
     font-size: var(--a-type-smaller);
 
     &:focus, &:active {

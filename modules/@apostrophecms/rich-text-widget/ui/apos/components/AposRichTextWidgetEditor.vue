@@ -227,7 +227,6 @@ export default {
       activeOptions.className = (activeOptions.className !== undefined)
         ? activeOptions.className : this.moduleOptions.className;
 
-      console.log(activeOptions);
       return activeOptions;
     },
     autofocus() {
@@ -255,8 +254,6 @@ export default {
     },
     // Names of active toolbar items for this particular widget, as an array
     toolbar() {
-      const toolbar = this.editorOptions.toolbar;
-      console.log('toolbar', toolbar);
       return this.editorOptions.toolbar;
     },
     // Information about all available toolbar items, as an object
@@ -516,14 +513,11 @@ export default {
         // Handle styles that can be applied to multiple tags
         if (style.allowedTags) {
 
-          // Copy the command to insert/remove the tag as a fallback
-          // style.options.applyCommand = style.command;
-
           style.command = 'toggleClass';
           style.options.allowedTags = style.allowedTags;
 
           // Create an array of tests to see if this class can
-          // be toggled to the active element
+          // be toggled on the active element
           style.options.typeChecks = [];
           style.allowedTags.forEach(tag => {
             const result = {};
@@ -577,7 +571,7 @@ export default {
         }
       }
 
-      // Split styles into node and mark toolbars
+      // Split styles into node and mark selects
       const split = {
         nodes: [],
         marks: []

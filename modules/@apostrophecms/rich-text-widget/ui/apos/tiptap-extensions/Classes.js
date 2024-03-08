@@ -5,27 +5,22 @@ import { Extension } from '@tiptap/core';
 export default (options) => {
   // Create a class allowlist map for each element
   const allow = {};
-  const styleLists = [
-    options.styles.nodes || [],
-    options.styles.marks || []
-  ];
-  styleLists.forEach((styleList) => {
-    styleList.forEach((style) => {
-      const tag = style.tag?.toLowerCase();
-      if (tag) {
-        allow[tag] = (allow[tag] || []).concat(
+  const styles = [ ...options.styles.nodes || [], ...options.styles.marks || [] ];
+  styles.forEach((style) => {
+    const tag = style.tag?.toLowerCase();
+    if (tag) {
+      allow[tag] = (allow[tag] || []).concat(
+        ...(style.class ? style.class.split(' ') : [])
+      );
+    }
+    // If a class is allowed on other tags, add it to their allowlist
+    if (style.allowedTags) {
+      style.allowedTags.forEach((allowedTag) => {
+        allow[allowedTag] = (allow[allowedTag] || []).concat(
           ...(style.class ? style.class.split(' ') : [])
         );
-      }
-      // If a class is allowed on other tags, add it to their allowlist
-      if (style.allowedTags) {
-        style.allowedTags.forEach((allowedTag) => {
-          allow[allowedTag] = (allow[allowedTag] || []).concat(
-            ...(style.class ? style.class.split(' ') : [])
-          );
-        });
-      }
-    });
+      });
+    }
   });
 
   return Extension.create({
@@ -34,22 +29,16 @@ export default (options) => {
         toggleClass:
           (type, options) =>
             ({ editor, commands }) => {
-              // let applied = false;
 
               for (let i = 0; i < options.typeChecks.length; i++) {
                 const check = options.typeChecks[i];
 
-                console.log('checking', editor.isActive(check.type, check.attributes));
-                console.log('double checking', editor.isActive(check.type));
-
-                // Are we in one of our allowed els?
+                // Check if we are in one of our allowed types
                 if (editor.isActive(check.type, check.attributes)) {
                   let finalClasses;
-
-                  // does the el already have the class?
                   let currentClasses = editor.getAttributes(check.type).class;
 
-                  // classes can come back as null, string, or array
+                  // Classes can come back as null, string, or array
                   // normalize them to an array
 
                   if (typeof currentClasses === 'string') {
@@ -64,12 +53,12 @@ export default (options) => {
                     currentClasses = [];
                   }
 
-                  // it already has it, remove it
+                  // If this el already has this class, remove it
                   if (currentClasses.includes(options.class)) {
                     finalClasses = currentClasses.filter(
                       (c) => c !== options.class
                     );
-                    // it doesn't have it, append it
+                    // If not, add it
                   } else {
                     finalClasses = currentClasses.concat(options.class);
                   }
@@ -80,19 +69,9 @@ export default (options) => {
                       ? finalClasses.join(' ')
                       : null
                   });
-                  // applied = true;
                   break;
                 }
               }
-
-              // If we have not touched whats active we need to
-              // insert or remove the default el
-              // if (!applied) {
-              //   console.log('applying default');
-              //   commands[options.applyCommand](type, {
-              //     class: options.class
-              //   });
-              // }
             }
       };
     },
