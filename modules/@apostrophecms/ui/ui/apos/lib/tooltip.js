@@ -19,48 +19,68 @@ export default {
   install(app) {
     app.directive('apos-tooltip', {
       mounted(el, binding, vnodes) {
-        let tooltipTimeout;
-        let delayTimeout;
-        if (!binding.value) {
-          return;
-        }
-
-        const delay = binding.value?.delay;
-        const localized = localize(binding.value, app);
-        if (!localized) {
-          return;
-        }
-        const tooltipId = `tooltip__${cuid()}`;
-
-        // Attach event listeners to elements to retrieve them in beforeUnmount
-        el.aposShowTooltipListener = setupShowTooltip({
-          el,
-          value: binding.value,
-          tooltipTimeout,
-          delayTimeout,
-          tooltipId,
-          localized
-        });
-        el.aposHideTooltipListener = setupHideTooltip({
-          tooltipId,
-          tooltipTimeout,
-          delayTimeout,
-          delay
-        });
-
-        el.addEventListener('mouseenter', el.aposShowTooltipListener);
-        el.addEventListener('mouseleave', el.aposHideTooltipListener);
-        el.addEventListener('click', el.aposHideTooltipListener);
+        addEventListeners(el, binding);
       },
-      beforeUnmount(el, binding, vnodes) {
-        if (el.aposHideTooltipListener) {
-          el.aposHideTooltipListener(true);
+      updated(el, binding) {
+        if (binding.value === binding.oldValue) {
+          return;
         }
-        el.removeEventListener('mouseenter', el.aposShowTooltipListener);
-        el.removeEventListener('mouseleave', el.aposHideTooltipListener);
-        el.removeEventListener('click', el.aposHideTooltipListener);
+
+        if (el.aposShowTooltipListener) {
+          removeEventListeners(el);
+        }
+
+        addEventListeners(el, binding);
+      },
+      beforeUnmount(el, binding) {
+        removeEventListeners(el);
       }
     });
+
+    function addEventListeners(el, binding) {
+      let tooltipTimeout;
+      let delayTimeout;
+      if (!binding.value && !binding.value?.content) {
+        return;
+      }
+
+      const delay = binding.value?.delay;
+      const localized = localize(binding.value, app);
+      if (!localized) {
+        return;
+      }
+      const tooltipId = `tooltip__${cuid()}`;
+
+      // Attach event listeners to elements to retrieve them in beforeUnmount
+      el.aposShowTooltipListener = setupShowTooltip({
+        el,
+        value: binding.value,
+        tooltipTimeout,
+        delayTimeout,
+        tooltipId,
+        localized
+      });
+      el.aposHideTooltipListener = setupHideTooltip({
+        tooltipId,
+        tooltipTimeout,
+        delayTimeout,
+        delay
+      });
+
+      el.addEventListener('mouseenter', el.aposShowTooltipListener);
+      el.addEventListener('mouseleave', el.aposHideTooltipListener);
+      el.addEventListener('click', el.aposHideTooltipListener);
+
+    }
+
+    function removeEventListeners(el) {
+      if (el.aposHideTooltipListener) {
+        el.aposHideTooltipListener(true);
+      }
+      el.removeEventListener('mouseenter', el.aposShowTooltipListener);
+      el.removeEventListener('mouseleave', el.aposHideTooltipListener);
+      el.removeEventListener('click', el.aposHideTooltipListener);
+    }
 
     function setupShowTooltip({
       el, value, tooltipTimeout, delayTimeout, tooltipId, localized
