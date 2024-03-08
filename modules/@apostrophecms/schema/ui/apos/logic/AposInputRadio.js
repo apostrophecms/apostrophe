@@ -1,6 +1,6 @@
 import AposInputMixin from 'Modules/@apostrophecms/schema/mixins/AposInputMixin';
 import AposInputChoicesMixin from 'Modules/@apostrophecms/schema/mixins/AposInputChoicesMixin';
-import InformationIcon from 'vue-material-design-icons/Information.vue';
+import InformationIcon from '@apostrophecms/vue-material-design-icons/Information.vue';
 
 export default {
   name: 'AposInputRadio',
