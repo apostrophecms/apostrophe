@@ -572,18 +572,11 @@ export default {
       }
 
       // Split styles into node and mark selects
-      const split = {
-        nodes: [],
-        marks: []
+      const result = {
+        nodes: styles.filter(style => style.command === 'setNode'),
+        marks: styles.filter(style => style.command !== 'setNode')
       };
-      styles.forEach(style => {
-        if (style.command === 'setNode') {
-          split.nodes.push(style);
-        } else {
-          split.marks.push(style);
-        }
-      });
-      return split;
+      return result;
     },
     localizeStyle(style) {
       style.label = this.$t(style.label);

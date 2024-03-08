@@ -882,8 +882,6 @@ module.exports = {
       // Add on the core default options to use, if needed.
       getBrowserData(_super, req) {
         const initialData = _super(req);
-        console.log('INITIAL', initialData);
-
         const finalData = {
           ...initialData,
           tools: self.options.editorTools,
