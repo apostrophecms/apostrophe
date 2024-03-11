@@ -10,11 +10,6 @@ module.exports = (options, apos) => {
           loader: 'vue-loader',
           options: {
             sourceMap: true
-            /* compilerOptions: { */
-            /*   compatConfig: { */
-            /*     MODE: 2 */
-            /*   } */
-            /* } */
           }
         }
       ]
