@@ -13,7 +13,7 @@
       :hidden="options.hideHeader"
     />
     <AposTreeRows
-      v-model="checkedProxy"
+      v-model:checked="checkedProxy"
       list-id="root"
       :rows="myItems"
       :headers="headers"

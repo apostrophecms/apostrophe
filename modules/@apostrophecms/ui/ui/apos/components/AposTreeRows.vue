@@ -98,7 +98,7 @@
         </div>
         <AposTreeRows
           :ref="(el) => treeBranches.push(el)"
-          v-model="checkedProxy"
+          v-model:checked="checkedProxy"
           data-apos-branch-height
           :data-list-row="row._id"
           :rows="row._children"
@@ -190,7 +190,7 @@ export default {
       }
     }
   },
-  emits: [ 'update', 'change' ],
+  emits: [ 'update', 'update:checked' ],
   data() {
     return {
       treeBranches: []
@@ -203,7 +203,7 @@ export default {
         return this.checked;
       },
       set(val) {
-        this.$emit('change', val);
+        this.$emit('update:checked', val);
       }
     },
     dragOptions() {
