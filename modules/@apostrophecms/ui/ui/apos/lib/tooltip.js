@@ -4,6 +4,7 @@ import {
   computePosition, arrow, offset, shift
 } from '@floating-ui/dom';
 import cuid from 'cuid';
+import { isEqual } from 'lodash';
 
 const getTooltipHtml = (id, tooltip) =>
   `<div id="${id}" class="apos-tooltip" role="tooltip">
@@ -22,7 +23,14 @@ export default {
         addEventListeners(el, binding);
       },
       updated(el, binding) {
-        if (binding.value === binding.oldValue) {
+        const contentValue = Object.hasOwn(binding.value || {}, 'content')
+          ? binding.value.content
+          : binding.value;
+        const oldValue = Object.hasOwn(binding.oldValue || {}, 'content')
+          ? binding.oldValue.content
+          : binding.oldValue;
+
+        if (isEqual(contentValue, oldValue)) {
           return;
         }
 
