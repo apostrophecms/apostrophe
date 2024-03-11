@@ -564,7 +564,7 @@ module.exports = {
             // Load global vue icon components.
             const output = {
               importCode: '',
-              registerCode: 'window.apos.registerIconComponents = (app) => {'
+              registerCode: 'window.apos.iconComponents = window.apos.iconComponents || {};\n'
             };
 
             for (const [ registerAs, importFrom ] of Object.entries(self.iconMap)) {
@@ -573,10 +573,8 @@ module.exports = {
               } else {
                 output.importCode += `import ${importFrom}Icon from '@apostrophecms/vue-material-design-icons/${importFrom}.vue';\n`;
               }
-              output.registerCode += `app.component('${registerAs}', ${importFrom}Icon);\n`;
+              output.registerCode += `window.apos.iconComponents['${registerAs}'] = ${importFrom}Icon;\n`;
             }
-
-            output.registerCode += '}';
 
             return output;
           }
@@ -730,11 +728,17 @@ module.exports = {
           }
 
           function getImportFileOutput (components, options = {}) {
+            let registerCode;
+            if (options.registerComponents) {
+              registerCode = 'window.apos.vueComponents = window.apos.vueComponents || {};\n';
+            } else if (options.registerTiptapExtensions) {
+              registerCode = 'window.apos.tiptapExtensions = window.apos.tiptapExtensions || [];\n';
+            } else {
+              registerCode = '';
+            }
             const output = {
               importCode: '',
-              registerCode: options.registerComponents
-                ? 'window.apos.registerVueComponents = (app) => {'
-                : '',
+              registerCode,
               invokeCode: '',
               paths: []
             };
@@ -753,31 +757,27 @@ module.exports = {
               const jsFilename = JSON.stringify(component);
               const name = getComponentName(component, options, i);
               const jsName = JSON.stringify(name);
+              const importName = `${name}${options.importSuffix || ''}`;
               const importCode = `
-              import ${name}${options.importSuffix || ''} from ${jsFilename};
+              import ${importName} from ${jsFilename};
               `;
 
               output.paths.push(component);
               output.importCode += `${importCode}\n`;
 
               if (options.registerComponents) {
-                output.registerCode += `app.component(${jsName}, ${name});\n`;
+                output.registerCode += `window.apos.vueComponents[${jsName}] = ${importName};\n`;
               }
 
               if (options.registerTiptapExtensions) {
                 output.registerCode += stripIndent`
-                  apos.tiptapExtensions = apos.tiptapExtensions || [];
-                  apos.tiptapExtensions.push(${name});
+                  apos.tiptapExtensions.push(${importName});
                 `;
               }
               if (options.invokeApps) {
                 output.invokeCode += `${name}${options.importSuffix || ''}();\n`;
               }
             });
-
-            if (options.registerComponents) {
-              output.registerCode += '}';
-            }
 
             return output;
           }

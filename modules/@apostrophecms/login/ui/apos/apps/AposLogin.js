@@ -1,10 +1,10 @@
 import createApp from 'Modules/@apostrophecms/ui/lib/vue';
-import TheAposLogin from '../components/TheAposLogin.vue';
 
 export default function() {
+  const component = apos.vueComponents.TheAposLogin;
   const el = document.querySelector('#apos-login');
   if (el) {
-    const app = createApp(TheAposLogin);
+    const app = createApp(component);
 
     app.mount(el);
   }

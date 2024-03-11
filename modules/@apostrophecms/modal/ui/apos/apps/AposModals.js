@@ -1,13 +1,12 @@
 import createApp from 'Modules/@apostrophecms/ui/lib/vue';
-import TheAposModals from '../components/TheAposModals.vue';
 
 export default function() {
+  const component = apos.vueComponents.TheAposModals;
   const el = document.querySelector('#apos-modals');
   if (!el) {
     return;
   }
-
-  const app = createApp(TheAposModals, {
+  const app = createApp(component, {
     modals: apos.modal.modals
   });
   const theAposModals = app.mount(el);
