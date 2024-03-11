@@ -41,7 +41,7 @@
 </template>
 
 <script>
-import MenuSwap from 'vue-material-design-icons/MenuSwap.vue';
+import MenuSwap from '@apostrophecms/vue-material-design-icons/MenuSwap.vue';
 
 export default {
   name: 'AposPager',

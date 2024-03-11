@@ -2,13 +2,14 @@
   <div role="alert" :class="classList">
     <span class="apos-notification__indicator">
       <AposIndicator
-        :icon="iconComponent" class="apos-notification__indicator__icon"
+        :icon="iconComponent"
+        class="apos-notification__indicator__icon"
         :icon-size="notification.icon ? 16 : 12"
       />
     </span>
     <span
-      class="apos-notification__label"
       ref="label"
+      class="apos-notification__label"
     >
       {{ localize(notification.message) }}
       <!-- OK to use index as key because buttons are constant for the lifetime of the notification -->
@@ -24,15 +25,17 @@
       </button>
     </span>
     <div
-      class="apos-notification__progress"
       v-if="job && job.total"
+      class="apos-notification__progress"
     >
       <div class="apos-notification__progress-bar">
         <div
-          class="apos-notification__progress-now" role="progressbar"
+          class="apos-notification__progress-now"
+          role="progressbar"
           :aria-valuenow="job.processed || 0"
           :style="`width: ${job.percentage + '%'}`"
-          aria-valuemin="0" :aria-valuemax="job.total"
+          aria-valuemin="0"
+          :aria-valuemax="job.total"
         />
       </div>
       <span class="apos-notification__progress-value">
@@ -41,7 +44,8 @@
     </div>
     <button
       v-if="!job"
-      @click="close" class="apos-notification__button"
+      class="apos-notification__button"
+      @click="close"
     >
       <Close
         class="apos-notification__close-icon"
@@ -53,7 +57,7 @@
 </template>
 
 <script>
-import Close from 'vue-material-design-icons/Close.vue';
+import Close from '@apostrophecms/vue-material-design-icons/Close.vue';
 
 export default {
   name: 'AposNotification',

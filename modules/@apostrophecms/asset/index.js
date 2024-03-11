@@ -571,7 +571,7 @@ module.exports = {
               if (importFrom.substring(0, 1) === '~') {
                 output.importCode += `import ${importFrom}Icon from '${importFrom.substring(1)}';\n`;
               } else {
-                output.importCode += `import ${importFrom}Icon from 'vue-material-design-icons/${importFrom}.vue';\n`;
+                output.importCode += `import ${importFrom}Icon from '@apostrophecms/vue-material-design-icons/${importFrom}.vue';\n`;
               }
               output.registerCode += `window.apos.iconComponents['${registerAs}'] = ${importFrom}Icon;\n`;
             }
