@@ -10,7 +10,10 @@
 
 ### Changes
 
-* Migrate to Vue 3.
+* Migrate to Vue 3. This entails changes to some admin UI code, as detailed in our public announcement.
+There are no other backwards incompatible changes in apostrophe version 4.0.0.
+Certain other modules containing custom admin UI have also been updated in a new major version to be compatible,
+as noted in our announcement and on the migration page of our website.
 
 ### Fixes
 
