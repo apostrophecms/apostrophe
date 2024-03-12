@@ -1,14 +1,13 @@
 <template>
   <AposButton
     v-if="options.expanded"
-    :disabled="disabled"
     v-bind="buttonOptions"
-    @click="openExpandedMenu(index)"
+    :disabled="disabled"
     role="button"
+    @click="openExpandedMenu(index)"
   />
   <AposAreaContextualMenu
     v-else
-    @add="$emit('add', $event);"
     :button-options="buttonOptions"
     :context-menu-options="contextMenuOptions"
     :empty="true"
@@ -17,6 +16,7 @@
     :options="options"
     :max-reached="maxReached"
     :disabled="disabled"
+    @add="$emit('add', $event);"
   />
 </template>
 
@@ -86,11 +86,11 @@ export default {
 
 <style lang="scss" scoped>
 
-.apos-area-menu.apos-is-focused ::v-deep .apos-context-menu__inner {
+.apos-area-menu.apos-is-focused :deep(.apos-context-menu__inner) {
   border: 1px solid var(--a-base-4);
 }
 
-.apos-area-menu.apos-is-focused ::v-deep .apos-context-menu__tip-outline {
+.apos-area-menu.apos-is-focused :deep(.apos-context-menu__tip-outline) {
   stroke: var(--a-base-4);
 }
 
@@ -114,7 +114,7 @@ export default {
 
   &:hover,
   &:focus {
-    & ::v-deep .apos-area-menu__item-icon {
+    &:deep(.apos-area-menu__item-icon) {
       color: var(--a-primary);
     }
   }

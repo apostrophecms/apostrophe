@@ -1,7 +1,9 @@
 <template>
   <AposInputWrapper
-    :field="field" :error="effectiveError"
-    :uid="uid" :items="next"
+    :field="field"
+    :error="effectiveError"
+    :uid="uid"
+    :items="next"
     :display-options="displayOptions"
     :modifiers="modifiers"
   >
@@ -20,7 +22,7 @@
       <AposMinMaxCount
         v-if="field.max > 1"
         :field="field"
-        :value="next"
+        :model-value="next"
       />
     </template>
     <template #body>
@@ -28,20 +30,21 @@
         <div class="apos-input-relationship__input-wrapper">
           <input
             v-if="!modifiers.includes('no-search')"
+            :id="uid"
+            v-model="searchTerm"
             class="apos-input apos-input--text apos-input--relationship"
-            v-model="searchTerm" type="text"
+            type="text"
             :placeholder="$t(placeholder)"
             :disabled="field.readOnly || limitReached"
             :required="field.required"
-            :id="uid"
+            tabindex="0"
             @input="input"
             @focus="input"
             @focusout="handleFocusOut"
-            tabindex="0"
           >
           <AposButton
-            class="apos-input-relationship__button"
             v-if="field.browse !== false"
+            class="apos-input-relationship__button"
             :disabled="field.readOnly || limitReached"
             :label="browseLabel"
             :modifiers="buttonModifiers"
@@ -50,25 +53,25 @@
           />
         </div>
         <AposSlatList
-          class="apos-input-relationship__items"
           v-if="next.length"
-          @input="updateSelected"
-          @item-clicked="editRelationship"
-          :value="next"
+          class="apos-input-relationship__items"
+          :model-value="next"
           :duplicate="duplicate"
           :disabled="field.readOnly"
           :relationship-schema="field.schema"
           :editor-label="field.editorLabel"
           :editor-icon="field.editorIcon"
+          @update:model-value="updateSelected"
+          @item-clicked="editRelationship"
         />
         <AposSearchList
           :list="searchList"
-          @select="updateSelected"
           :selected-items="next"
           :icon="field.suggestionIcon"
           :icon-size="field.suggestionIconSize"
           :fields="field.suggestionFields"
           disabled-tooltip="apostrophe:publishBeforeUsingTooltip"
+          @select="updateSelected"
         />
       </div>
     </template>

@@ -1,7 +1,9 @@
 <template>
   <AposInputWrapper
-    :field="field" :error="effectiveError"
-    :uid="uid" :modifiers="modifiers"
+    :field="field"
+    :error="effectiveError"
+    :uid="uid"
+    :modifiers="modifiers"
     :display-options="displayOptions"
   >
     <template #body>

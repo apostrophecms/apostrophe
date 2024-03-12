@@ -1,20 +1,24 @@
 <template>
   <ul class="apos-admin-bar__items">
-    <li class="apos-admin-bar__item" v-if="pageTree">
+    <li v-if="pageTree" class="apos-admin-bar__item">
       <AposButton
-        type="subtle" label="apostrophe:pages"
+        type="subtle"
+        label="apostrophe:pages"
         class="apos-admin-bar__btn"
         :modifiers="['no-motion']"
         @click="emitEvent('@apostrophecms/page:manager')"
       />
     </li>
     <li
-      v-for="item in menuItems" :key="item.name"
+      v-for="item in menuItems"
+      :key="item.name"
       class="apos-admin-bar__item"
     >
       <AposContextMenu
-        v-if="item.items" class="apos-admin-bar__sub"
-        :menu="item.items" :button="{
+        v-if="item.items"
+        class="apos-admin-bar__sub"
+        :menu="item.items"
+        :button="{
           label: item.label,
           modifiers: ['no-motion'],
           class: 'apos-admin-bar__btn',
@@ -23,16 +27,16 @@
         @item-clicked="emitEvent"
       />
       <Component
-        v-else
         :is="item.options && item.options.component || 'AposButton'"
+        v-else
         type="subtle"
-        @click="emitEvent(item.action)"
         :label="item.label"
         :modifiers="['no-motion']"
         class="apos-admin-bar__btn"
+        @click="emitEvent(item.action)"
       />
     </li>
-    <li class="apos-admin-bar__item" v-if="createMenu.length > 0">
+    <li v-if="createMenu.length > 0" class="apos-admin-bar__item">
       <AposContextMenu
         class="apos-admin-bar__create"
         :menu="createMenu"
@@ -52,16 +56,19 @@
     >
       <template v-for="item in trayItems">
         <Component
-          v-if="item.options.component"
           :is="item.options.component"
+          v-if="item.options.component"
           :key="`${item.name}.component`"
         />
         <AposButton
           v-else
           :key="`${item.name}.fallback`"
-          type="subtle" :modifiers="['small', 'no-motion']"
-          :tooltip="trayItemTooltip(item)" class="apos-admin-bar__context-button"
-          :icon="item.options.icon" :icon-only="true"
+          type="subtle"
+          :modifiers="['small', 'no-motion']"
+          :tooltip="trayItemTooltip(item)"
+          class="apos-admin-bar__context-button"
+          :icon="item.options.icon"
+          :icon-only="true"
           :label="item.label"
           :state="trayItemState[item.name] ? [ 'active' ] : []"
           @click="emitEvent(item.action)"
@@ -177,15 +184,15 @@ export default {
   align-items: center;
 }
 
-.apos-admin-bar__sub ::v-deep .apos-context-menu__btn {
+.apos-admin-bar__sub :deep(.apos-context-menu__btn) {
   border-radius: 0;
 }
 
-.apos-admin-bar__sub ::v-deep .apos-context-menu__popup {
+.apos-admin-bar__sub :deep(.apos-context-menu__popup) {
   top: calc(100% + 5px);
 }
 
-::v-deep .apos-admin-bar__create {
+:deep(.apos-admin-bar__create) {
   margin-left: 10px;
 
   .apos-context-menu__btn {

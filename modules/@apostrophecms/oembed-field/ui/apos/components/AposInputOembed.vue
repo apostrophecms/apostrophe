@@ -46,8 +46,8 @@ export default {
   emits: [ 'return' ],
   data () {
     return {
-      next: (this.value && this.value.data)
-        ? { ...this.value.data } : {},
+      next: (this.modelValue && this.modelValue.data)
+        ? { ...this.modelValue.data } : {},
       oembedResult: {},
       dynamicRatio: '',
       oembedError: null,
@@ -149,7 +149,7 @@ export default {
 
 <style lang="scss" scoped>
   .apos-input__embed {
-    ::v-deep iframe {
+    :deep(iframe) {
       max-width: 100%;
     }
 
@@ -158,7 +158,7 @@ export default {
       width: 100%;
       height: 0;
 
-      ::v-deep iframe {
+      :deep(iframe) {
         position: absolute;
         top: 0;
         left: 0;

@@ -152,7 +152,7 @@ export default {
     apos.bus.$on('command-menu-manager-create-new', this.create);
     apos.bus.$on('command-menu-manager-close', this.confirmAndCancel);
   },
-  destroyed() {
+  unmounted() {
     apos.bus.$off('content-changed', this.getPages);
     apos.bus.$off('command-menu-manager-create-new', this.create);
     apos.bus.$off('command-menu-manager-close', this.confirmAndCancel);

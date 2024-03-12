@@ -1,19 +1,24 @@
 <template>
   <AposModal
-    :modal="modal" :modal-title="modalTitle"
     ref="modal"
-    @esc="confirmAndCancel" @no-modal="$emit('safe-close')"
-    @inactive="modal.active = false" @show-modal="modal.showModal = true"
+    :modal="modal"
+    :modal-title="modalTitle"
+    @esc="confirmAndCancel"
+    @no-modal="$emit('safe-close')"
+    @inactive="modal.active = false"
+    @show-modal="modal.showModal = true"
   >
     <template #secondaryControls>
       <AposButton
         v-if="relationshipField"
-        type="default" label="apostrophe:cancel"
+        type="default"
+        label="apostrophe:cancel"
         @click="confirmAndCancel"
       />
       <AposButton
         v-else
-        type="default" label="apostrophe:exit"
+        type="default"
+        label="apostrophe:exit"
         @click="confirmAndCancel"
       />
     </template>
@@ -34,7 +39,8 @@
         :label="{
           key: 'apostrophe:newDocType',
           type: $t(moduleOptions.label)
-        }" type="primary"
+        }"
+        type="primary"
         @click="create"
       />
     </template>
@@ -44,15 +50,15 @@
           <div class="apos-pieces-manager__relationship__counts">
             <AposMinMaxCount
               :field="relationshipField"
-              :value="checkedDocs"
+              :model-value="checkedDocs"
             />
           </div>
           <AposSlatList
             class="apos-pieces-manager__relationship__items"
-            @input="setCheckedDocs"
-            @item-clicked="editRelationship"
-            :value="checkedDocs"
+            :model-value="checkedDocs"
             :relationship-schema="relationshipField?.schema"
+            @update:model-value="setCheckedDocs"
+            @item-clicked="editRelationship"
           />
         </div>
       </AposModalRail>
@@ -74,14 +80,14 @@
             :checked-count="checked.length"
             :batch-operations="moduleOptions.batchOperations"
             :module-name="moduleName"
+            :options="{
+              disableUnchecked: maxReached()
+            }"
             @select-click="selectAll"
             @search="onSearch"
             @page-change="updatePage"
             @filter="filter"
             @batch="handleBatchAction"
-            :options="{
-              disableUnchecked: maxReached()
-            }"
           />
           <AposDocsManagerSelectBox
             :selected-state="selectAllState"
@@ -97,16 +103,16 @@
         <template #bodyMain>
           <AposDocsManagerDisplay
             v-if="items.length > 0"
+            v-model:checked="checked"
             :items="items"
             :headers="headers"
-            v-model="checked"
-            @open="edit"
             :options="{
               ...moduleOptions,
               disableUnchecked: maxReached(),
               disableUnpublished: disableUnpublished,
               manuallyPublished: manuallyPublished
             }"
+            @open="edit"
           />
           <div v-else class="apos-pieces-manager__empty">
             <AposEmptyState :empty-state="emptyDisplay" />
@@ -239,7 +245,7 @@ export default {
     apos.bus.$on('command-menu-manager-create-new', this.create);
     apos.bus.$on('command-menu-manager-close', this.confirmAndCancel);
   },
-  destroyed() {
+  unmounted() {
     this.destroyShortcuts();
     apos.bus.$off('content-changed', this.getPieces);
     apos.bus.$off('command-menu-manager-create-new', this.create);
@@ -429,7 +435,9 @@ export default {
       });
       if (result) {
         const index = this.checkedDocs.findIndex(_item => _item._id === item._id);
-        this.$set(this.checkedDocs, index, {
+        // TODO verify it's still reactive, should be based on the doc
+        // Or use a filter here
+        this.checkedDocs.splice(index, 1, {
           ...this.checkedDocs[index],
           _fields: result
         });

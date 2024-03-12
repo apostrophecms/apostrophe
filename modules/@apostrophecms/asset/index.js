@@ -53,6 +53,7 @@ module.exports = {
     };
     self.configureBuilds();
     self.initUploadfs();
+    self.enableBrowserData();
 
     const {
       extensions = {},
@@ -325,6 +326,7 @@ module.exports = {
                 registerComponents: true,
                 importLastVersion: true
               });
+              /* componentImports = getGlobalVueComponents(self); */
               tiptapExtensionImports = getImports(`${source}/tiptap-extensions`, '*.js', { registerTiptapExtensions: true });
               appImports = getImports(`${source}/apps`, '*.js', {
                 invokeApps: true,
@@ -513,7 +515,6 @@ module.exports = {
           }) {
             fs.writeFileSync(importFile, (prologue || '') + stripIndent`
               ${(icon && icon.importCode) || ''}
-              ${(icon && icon.registerCode) || ''}
               ${(components && components.importCode) || ''}
               ${(tiptap && tiptap.importCode) || ''}
               ${(app && app.importCode) || ''}
@@ -563,16 +564,16 @@ module.exports = {
             // Load global vue icon components.
             const output = {
               importCode: '',
-              registerCode: ''
+              registerCode: 'window.apos.iconComponents = window.apos.iconComponents || {};\n'
             };
 
             for (const [ registerAs, importFrom ] of Object.entries(self.iconMap)) {
               if (importFrom.substring(0, 1) === '~') {
                 output.importCode += `import ${importFrom}Icon from '${importFrom.substring(1)}';\n`;
               } else {
-                output.importCode += `import ${importFrom}Icon from 'vue-material-design-icons/${importFrom}.vue';\n`;
+                output.importCode += `import ${importFrom}Icon from '@apostrophecms/vue-material-design-icons/${importFrom}.vue';\n`;
               }
-              output.registerCode += `Vue.component('${registerAs}', ${importFrom}Icon);\n`;
+              output.registerCode += `window.apos.iconComponents['${registerAs}'] = ${importFrom}Icon;\n`;
             }
 
             return output;
@@ -727,9 +728,17 @@ module.exports = {
           }
 
           function getImportFileOutput (components, options = {}) {
+            let registerCode;
+            if (options.registerComponents) {
+              registerCode = 'window.apos.vueComponents = window.apos.vueComponents || {};\n';
+            } else if (options.registerTiptapExtensions) {
+              registerCode = 'window.apos.tiptapExtensions = window.apos.tiptapExtensions || [];\n';
+            } else {
+              registerCode = '';
+            }
             const output = {
               importCode: '',
-              registerCode: '',
+              registerCode,
               invokeCode: '',
               paths: []
             };
@@ -748,21 +757,21 @@ module.exports = {
               const jsFilename = JSON.stringify(component);
               const name = getComponentName(component, options, i);
               const jsName = JSON.stringify(name);
+              const importName = `${name}${options.importSuffix || ''}`;
               const importCode = `
-              import ${name}${options.importSuffix || ''} from ${jsFilename};
+              import ${importName} from ${jsFilename};
               `;
 
               output.paths.push(component);
               output.importCode += `${importCode}\n`;
 
               if (options.registerComponents) {
-                output.registerCode += `Vue.component(${jsName}, ${name});\n`;
+                output.registerCode += `window.apos.vueComponents[${jsName}] = ${importName};\n`;
               }
 
               if (options.registerTiptapExtensions) {
                 output.registerCode += stripIndent`
-                  apos.tiptapExtensions = apos.tiptapExtensions || [];
-                  apos.tiptapExtensions.push(${name});
+                  apos.tiptapExtensions.push(${importName});
                 `;
               }
               if (options.invokeApps) {
@@ -1328,9 +1337,13 @@ module.exports = {
             apos: true,
             prologue: stripIndent`
               import 'Modules/@apostrophecms/ui/scss/global/import-all.scss';
-              import Vue from 'Modules/@apostrophecms/ui/lib/vue';
-              window.apos.bus = new Vue();
-            `,
+              import emitter from 'tiny-emitter/instance';
+              window.apos.bus = {
+                $on: (...args) => emitter.on(...args),
+                $once: (...args) => emitter.once(...args),
+                $off: (...args) => emitter.off(...args),
+                $emit: (...args) => emitter.emit(...args)
+              };`,
             // Load only in browsers that support ES6 modules
             condition: 'module'
           }

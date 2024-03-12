@@ -24,12 +24,7 @@ export default {
     return {
       previousKey: '',
       modal: 'default',
-      keyboardShortcutListener() {},
-      delay(resolve, ms) {
-        return new Promise(() => {
-          setTimeout(resolve, ms);
-        });
-      }
+      keyboardShortcutListener() {}
     };
   },
   computed: {
@@ -90,13 +85,21 @@ export default {
     apos.bus.$on('modal-launched', this.updateModal);
     apos.bus.$on('modal-resolved', this.updateModal);
   },
-  beforeDestroy() {
+  beforeUnmount() {
     document.removeEventListener('keydown', this.keyboardShortcutListener);
 
     apos.bus.$off('modal-launched', this.updateModal);
     apos.bus.$off('modal-resolved', this.updateModal);
   },
   methods: {
+    delay(resolve, ms) {
+      return new Promise(() => {
+        setTimeout(resolve, ms);
+      });
+    },
+    getModal() {
+      return this.modal;
+    },
     getFirstNonShortcutModal(index = -1) {
       const modal = apos.modal.getAt(index);
       const properties = apos.modal.getProperties(modal.id);

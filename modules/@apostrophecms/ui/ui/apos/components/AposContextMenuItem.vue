@@ -3,8 +3,8 @@
     <button
       class="apos-context-menu__button"
       :class="modifiers"
-      @click="click"
       :tabindex="tabindex"
+      @click="click"
     >
       {{ $t(label) }}
     </button>

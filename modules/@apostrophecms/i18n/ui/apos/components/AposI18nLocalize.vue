@@ -27,8 +27,8 @@
             <AposButton
               type="default"
               label="apostrophe:cancel"
-              @click="close"
               :modifiers="[ 'block' ]"
+              @click="close"
             />
           </div>
         </template>
@@ -49,12 +49,12 @@
               class="apos-wizard__step apos-wizard__step-select-content"
             >
               <AposInputRadio
+                v-model="wizard.values.toLocalize"
                 :field="{
                   name: 'toLocalize',
                   label: 'apostrophe:selectContentToLocalize',
                   choices: toLocalizeChoices
                 }"
-                v-model="wizard.values.toLocalize"
               />
               <p class="apos-wizard__help-text">
                 <AposIndicator
@@ -71,20 +71,20 @@
               class="apos-wizard__step apos-wizard__step-select-locales"
             >
               <AposButton
-                v-on="{ click: allSelected ? deselectAll : selectAll }"
                 class="apos-locale-select-all"
                 :label="allSelected
                   ? $t('apostrophe:deselectAll')
                   : $t('apostrophe:selectAll')"
                 type="quiet"
                 :modifiers="[ 'inline' ]"
+                v-on="{ click: allSelected ? deselectAll : selectAll }"
               />
               <AposInputString
+                ref="searchInput"
                 v-model="searchValue"
                 :field="searchField"
-                @input="updateFilter"
                 class="apos-locales-filter"
-                ref="searchInput"
+                @update:model-value="updateFilter"
               />
               <transition-group
                 tag="ul"
@@ -98,12 +98,12 @@
                 >
                   <AposButton
                     type="primary"
-                    @click.prevent="removeLocale(loc)"
                     class="apos-locale-button"
                     :modifiers="[ 'small' ]"
                     icon="close-icon"
                     :icon-size="12"
                     :label="loc.label"
+                    @click.prevent="removeLocale(loc)"
                   />
                 </li>
               </transition-group>
@@ -136,13 +136,13 @@
                       ({{ loc.name }})
                     </span>
                     <span
+                      v-apos-tooltip="isLocalized(loc)
+                        ? 'Localized'
+                        : 'Not Yet Localized'"
                       class="apos-locale-localized"
                       :class="{
                         'apos-state-is-localized': isLocalized(loc),
                       }"
-                      v-apos-tooltip="isLocalized(loc)
-                        ? 'Localized'
-                        : 'Not Yet Localized'"
                     />
                   </span>
                 </li>
@@ -155,9 +155,9 @@
             >
               <ul class="apos-selected-locales">
                 <li
-                  class="apos-locale-item--selected"
                   v-for="loc in selectedLocales"
                   :key="loc.name"
+                  class="apos-locale-item--selected"
                 >
                   <AposButton
                     type="primary"
@@ -184,6 +184,7 @@
                 </p>
 
                 <AposInputRadio
+                  v-model="wizard.values.relatedDocSettings"
                   :field="{
                     name: 'relatedDocSettings',
                     choices: [
@@ -198,13 +199,11 @@
                       },
                     ],
                   }"
-                  v-model="wizard.values.relatedDocSettings"
                 />
-
                 <AposInputCheckboxes
                   v-if="relatedDocTypes.length"
-                  :field="relatedDocTypesField"
                   v-model="wizard.values.relatedDocTypesToLocalize"
+                  :field="relatedDocTypesField"
                 />
                 <p v-else class="apos-wizard__help-text">
                   <AposIndicator
@@ -270,19 +269,19 @@
           <AposButton
             v-else
             type="primary"
-            @click="goToNext()"
             icon="arrow-right-icon"
             :modifiers="['icon-right']"
             :disabled="!complete() || wizard.busy"
             :icon-size="12"
             label="apostrophe:next"
+            @click="goToNext()"
           />
           <AposButton
             v-if="!isFirstStep()"
             type="default"
             :disabled="wizard.busy"
-            @click="goToPrevious()"
             label="apostrophe:back"
+            @click="goToPrevious()"
           />
         </template>
       </AposModalBody>
@@ -602,16 +601,26 @@ export default {
       return !!this.localized[locale.name];
     },
     selectAll() {
-      this.wizard.values.toLocales.data = this.locales.filter(locale => !this.isCurrentLocale(locale) && this.canEditLocale(locale));
+      this.wizard.values.toLocales.data = this.locales
+        .filter(locale => !this.isCurrentLocale(locale) && this.canEditLocale(locale));
     },
     deselectAll() {
       this.wizard.values.toLocales.data = [];
     },
     toggleLocale(locale) {
-      if (!this.isSelected(locale) && !this.isCurrentLocale(locale) && this.canEditLocale(locale)) {
-        this.wizard.values.toLocales.data.push(locale);
+      if (
+        !this.isSelected(locale) &&
+        !this.isCurrentLocale(locale) &&
+          this.canEditLocale(locale)
+      ) {
+        this.wizard.values.toLocales.data = [
+          ...this.wizard.values.toLocales.data,
+          locale
+        ];
+
       } else if (this.isSelected(locale)) {
-        this.wizard.values.toLocales.data = this.wizard.values.toLocales.data.filter(l => l !== locale);
+        this.wizard.values.toLocales.data = this.wizard.values.toLocales.data
+          .filter(l => l !== locale);
       }
       // Reset search filter
       if (this.filteredLocales.length < 2) {
@@ -963,7 +972,7 @@ export default {
 .apos-i18n-localize {
   @include type-base;
 
-  ::v-deep .apos-modal__inner {
+  :deep(.apos-modal__inner) {
     $width: 565px;
     $vertical-spacing: 95px;
     $horizontal-spacing: calc(calc(100vw - #{$width}) / 2);
@@ -975,20 +984,20 @@ export default {
     height: calc(100vh - #{$vertical-spacing * 2});
   }
 
-  ::v-deep .apos-modal__main--with-left-rail {
+  :deep(.apos-modal__main--with-left-rail) {
     grid-template-columns: 30% 70%;
   }
 
-  ::v-deep .apos-modal__body-inner {
+  :deep(.apos-modal__body-inner) {
     padding: $spacing-triple $spacing-triple $spacing-double;
   }
 
-  ::v-deep .apos-wizard__content .apos-modal__body-footer {
+  :deep(.apos-wizard__content .apos-modal__body-footer) {
     flex-direction: row-reverse;
     border-top: 1px solid var(--a-base-9);
   }
 
-  ::v-deep .apos-busy__spinner {
+  :deep(.apos-busy__spinner) {
     display: inline-block;
   }
 }
@@ -1022,7 +1031,7 @@ export default {
   border: none;
 }
 
-::v-deep .apos-field--toLocalize {
+:deep(.apos-field--toLocalize) {
   margin-bottom: $spacing-triple;
 }
 
@@ -1033,7 +1042,7 @@ export default {
   font-weight: 400;
   color: var(--a-base-3);
 
-  ::v-deep .material-design-icon {
+  :deep(.material-design-icon) {
     position: relative;
     top: 3px;
     color: var(--a-base-5);
@@ -1076,7 +1085,7 @@ export default {
   }
 }
 
-.apos-locale-button ::v-deep .apos-button {
+.apos-locale-button :deep(.apos-button) {
   font-size: var(--a-type-small);
 }
 

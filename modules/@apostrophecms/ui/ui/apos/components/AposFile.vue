@@ -18,7 +18,7 @@
         <template v-else>
           <paperclip-icon :size="14" class="apos-file-icon" />
           {{ messages.primary }}&nbsp;
-          <span class="apos-file-highlight" v-if="messages.highlighted">
+          <span v-if="messages.highlighted" class="apos-file-highlight">
             {{ messages.highlighted }}
           </span>
         </template>
@@ -28,15 +28,15 @@
         type="file"
         class="apos-sr-only"
         :disabled="disabled || fileOrAttachment"
-        @input="uploadFile"
         :accept="allowedExtensions"
+        @input="uploadFile"
       >
     </label>
     <div v-if="fileOrAttachment" class="apos-file-files">
       <AposSlatList
-        :value="[fileOrAttachment]"
-        @input="update"
+        :model-value="[fileOrAttachment]"
         :disabled="attachmentDisabled"
+        @update:model-value="update"
       />
     </div>
   </div>
@@ -200,7 +200,7 @@ export default {
     justify-content: center;
     pointer-events: none;
     // v-html goofiness
-    & ::v-deep .apos-file-highlight {
+    &:deep(.apos-file-highlight) {
       color: var(--a-primary);
       font-weight: var(--a-weight-bold);
     }

@@ -1,7 +1,8 @@
 <template>
   <AposInputWrapper
     :field="field"
-    :error="effectiveError" :uid="uid"
+    :error="effectiveError"
+    :uid="uid"
     :display-options="displayOptions"
     :modifiers="[...modifiers, 'full-width']"
     :items="next.items"
@@ -11,18 +12,19 @@
       <!-- data-apos-schema-area lets all the child areas know that this area is in a schema (which is in a modal)
        and that we should position the z-index of context menus appropriately high -->
       <div
-        class="apos-input-wrapper" :class="!next.items.length ? 'apos-is-empty' : null"
+        class="apos-input-wrapper"
+        :class="!next.items.length ? 'apos-is-empty' : null"
         data-apos-schema-area
       >
         <!-- We do not pass docId here because it is solely for
           contextual editing as far as the area editor is concerned. -Tom -->
         <Component
           :is="editorComponent"
+          :id="next._id"
           :options="field.options"
           :items="next.items"
           :meta="areaMeta"
           :choices="choices"
-          :id="next._id"
           :field-id="field._id"
           :field="field"
           :following-values="followingValues"

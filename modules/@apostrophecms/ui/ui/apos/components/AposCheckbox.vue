@@ -1,30 +1,35 @@
 <template>
   <label
-    class="apos-choice-label" :for="id"
+    class="apos-choice-label"
+    :for="id"
     :class="{'apos-choice-label--disabled': field.readOnly}"
     :tabindex="{'-1' : field.hideLabel}"
   >
     <input
+      :id="id"
       v-model="checkProxy"
-      type="checkbox" class="apos-sr-only apos-input--choice apos-input--checkbox"
+      type="checkbox"
+      class="apos-sr-only apos-input--choice apos-input--checkbox"
       :value="choice.value"
       :name="field.name"
-      :id="id" :aria-label="choice.label || field.label"
-      :tabindex="tabindex" :disabled="field.readOnly || choice.readOnly"
+      :aria-label="choice.label || field.label"
+      :tabindex="tabindex"
+      :disabled="field.readOnly || choice.readOnly"
       :is-indeterminate="choice.indeterminate === true ? 'true' : 'false'"
       @change="update"
     >
     <span class="apos-input-indicator" aria-hidden="true">
       <component
-        v-if="isChecked(checked)"
         :is="`${
           choice.indeterminate ? 'minus-icon' : 'check-bold-icon'
         }`"
+        v-if="isChecked(modelValue)"
         :size="10"
       />
     </span>
     <span
-      :class="{'apos-sr-only': field.hideLabel }" v-if="choice.label"
+      v-if="choice.label"
+      :class="{'apos-sr-only': field.hideLabel }"
       class="apos-choice-label-text"
     >
       {{ $t(choice.label) }}
@@ -35,13 +40,8 @@
 <script>
 
 export default {
-  // Custom model to handle the v-model connection on the parent.
-  model: {
-    prop: 'checked',
-    event: 'change'
-  },
   props: {
-    checked: {
+    modelValue: {
       type: [ Array, Boolean ],
       default: false
     },
@@ -64,7 +64,7 @@ export default {
       default: null
     }
   },
-  emits: [ 'change', 'updated' ],
+  emits: [ 'update:modelValue', 'updated' ],
   data() {
     return {
       tabindex: this.field.disableFocus ? '-1' : '0'
@@ -74,21 +74,21 @@ export default {
     // Handle the local check state within this component.
     checkProxy: {
       get() {
-        return this.checked;
+        return this.modelValue;
       },
       set(val) {
         if (!this.choice.indeterminate || this.choice.triggerIndeterminateEvent) {
           // Only update the model if the box was *not* indeterminate.
-          this.$emit('change', val);
+          this.$emit('update:modelValue', val);
         }
       }
     }
   },
   methods: {
-    isChecked(checked) {
-      return Array.isArray(checked)
-        ? checked.includes(this.choice.value)
-        : checked;
+    isChecked(value) {
+      return Array.isArray(value)
+        ? value.includes(this.choice.value)
+        : value;
     },
     // This event is only necessary if the parent needs to do *more* than simply
     // keep track of an array of checkbox values. For example, AposTagApply
