@@ -223,12 +223,12 @@
                   </span>
                 </p>
                 <AposCheckbox
+                  v-model="wizard.values.translateContent.data"
                   :field="{ name: 'translate' }"
                   :choice="{
                     value: wizard.values.translateContent.data,
                     label: $t('apostrophe:automaticTranslationCheckbox')
                   }"
-                  v-model="wizard.values.translateContent.data"
                   data-apos-test="localizationTranslationCheck"
                 />
 
@@ -236,8 +236,8 @@
                   <!-- eslint-disable vue/no-v-html -->
                   <p
                     class="apos-wizard__translation-error"
-                    v-html="translationErrMsg"
                     data-apos-test="localizationTranslationErr"
+                    v-html="translationErrMsg"
                   />
                   <!-- eslint-disable vue/no-v-html -->
                   <AposButton
@@ -858,7 +858,11 @@ export default {
         // never be considered "related" to other pages simply because
         // of navigation links, the feature is meant for pieces that feel more like
         // part of the document being localized)
-        return related.filter(doc => apos.modules[doc.type].relatedDocument !== false);
+        // We also remove non localized content like users
+        return related.filter(doc => {
+          return apos.modules[doc.type].relatedDocument !== false &&
+            apos.modules[doc.type].localized !== false;
+        });
       }
     },
     async updateRelatedDocs() {
