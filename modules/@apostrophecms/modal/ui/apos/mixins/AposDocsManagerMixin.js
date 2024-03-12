@@ -12,8 +12,7 @@ export default {
       icons: {},
       // If passing in chosen items from the relationship input, use those
       // as initially checked.
-      checked: Array.isArray(this.chosen) ? this.chosen.map(item => item._id)
-        : [],
+      checked: Array.isArray(this.chosen) ? this.chosen.map(item => item._id) : [],
       checkedDocs: Array.isArray(this.chosen) ? klona(this.chosen) : [],
       // Remember relationship subfield values even if a document
       // is temporarily deselected, easing the user's pain if they
@@ -86,7 +85,7 @@ export default {
   mounted() {
     this.docsManagerAddEventHandlers();
   },
-  destroyed() {
+  unmounted() {
     this.docsManagerRemoveEventHandlers();
   },
   watch: {

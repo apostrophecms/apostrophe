@@ -20,6 +20,12 @@ import {
 } from 'Modules/@apostrophecms/schema/lib/conditionalFields.js';
 
 export default {
+  props: {
+    parentFollowingValues: {
+      type: Object,
+      default: null
+    }
+  },
   data() {
     return {
       docFields: {

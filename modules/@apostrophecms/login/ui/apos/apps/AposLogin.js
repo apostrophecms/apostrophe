@@ -1,15 +1,14 @@
-import Vue from 'Modules/@apostrophecms/ui/lib/vue';
+import createApp from 'Modules/@apostrophecms/ui/lib/vue';
 
 export default function() {
+  const component = apos.vueComponents.TheAposLogin;
   const el = document.querySelector('#apos-login');
   if (el) {
-    return new Vue({
-      el,
-      render: function (h) {
-        return h('TheAposLogin');
-      }
-    });
+    const app = createApp(component);
+
+    app.mount(el);
   }
+
   apos.bus.$on('admin-menu-click', async (item) => {
     if (item !== '@apostrophecms/login-logout') {
       return;

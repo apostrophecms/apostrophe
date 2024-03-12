@@ -6,8 +6,8 @@
   >
     <span
       v-show="true"
-      class="apos-admin-bar__title"
       :key="'title'"
+      class="apos-admin-bar__title"
     >
       <AposIndicator
         icon="information-outline-icon"
@@ -31,9 +31,9 @@
           :button="draftButton"
           :menu="draftMenu"
           :disabled="hasCustomUi || isUnpublished"
-          @item-clicked="switchDraftMode"
           menu-offset="13, 10"
           menu-placement="bottom-end"
+          @item-clicked="switchDraftMode"
         />
         <AposLabel
           v-else
@@ -43,9 +43,9 @@
         />
       </div>
       <AposLabel
-        class="apos-admin-bar__title-context-label"
         v-for="{id, label, tooltip = '', modifiers = []} in moduleOptions.contextLabels"
         :key="id"
+        class="apos-admin-bar__title-context-label"
         :label="label"
         :tooltip="tooltip"
         :modifiers="modifiers"
@@ -130,7 +130,7 @@ export default {
   mounted() {
     apos.bus.$on('command-menu-admin-bar-toggle-publish-draft', this.togglePublishDraftMode);
   },
-  destroyed() {
+  unmounted() {
     apos.bus.$off('command-menu-admin-bar-toggle-publish-draft', this.togglePublishDraftMode);
   },
   methods: {

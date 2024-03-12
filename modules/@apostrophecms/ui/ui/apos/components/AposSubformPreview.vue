@@ -5,13 +5,13 @@
     </div>
     <div class="apos-subform-preview__value" :class="{ 'is-help': !!subform.help }">
       <component
+        :is="subform.previewComponent"
         v-if="subform.previewComponent"
         class="apos-subform-preview__value-block"
-        :is="subform.previewComponent"
         :subform="subform"
         :values="values"
       />
-      <span class="apos-subform-preview__value-block" v-else>
+      <span v-else class="apos-subform-preview__value-block">
         {{ previewValue }}
       </span>
     </div>

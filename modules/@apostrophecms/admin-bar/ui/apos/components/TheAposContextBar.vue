@@ -5,12 +5,12 @@
         :v-if="editMode"
         :can-undo="canUndo"
         :can-redo="canRedo"
-        @undo="undo"
-        @redo="redo"
         :retrying="retrying"
         :editing="editing"
         :saving="saving"
         :saved="saved"
+        @undo="undo"
+        @redo="redo"
       />
       <TheAposContextTitle
         v-if="!hasCustomUi"
@@ -531,12 +531,17 @@ export default {
       }
 
       const { action } = window.apos.modules[this.context.type];
-      const doc = await apos.http.get(`${action}/${this.context.aposDocId}`, {
-        qs: {
-          aposMode: this.draftMode,
-          project: { _url: 1 }
-        }
-      });
+      let doc;
+      try {
+        doc = await apos.http.get(`${action}/${this.context.aposDocId}`, {
+          qs: {
+            aposMode: this.draftMode,
+            project: { _url: 1 }
+          }
+        });
+      } catch (err) {
+        return;
+      }
 
       if (this.urlDiffers(doc._url)) {
         // Slug changed, change browser URL to reflect the actual url of the doc

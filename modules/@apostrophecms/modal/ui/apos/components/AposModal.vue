@@ -454,7 +454,7 @@ export default {
     justify-content: flex-end;
     flex-grow: 1;
   }
-  .apos-modal__controls--primary ::v-deep {
+  :deep(.apos-modal__controls--primary) {
     & > .apos-button__wrapper,
     & > .apos-context-menu {
       margin-left: 7.5px;

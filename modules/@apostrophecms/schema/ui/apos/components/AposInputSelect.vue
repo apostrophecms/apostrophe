@@ -12,7 +12,7 @@
         :choices="choices"
         :classes="classes"
         :disabled="field.readOnly"
-        :selected="value.data"
+        :selected="modelValue.data"
         :autocomplete="field.autocomplete"
         @change="change"
       />

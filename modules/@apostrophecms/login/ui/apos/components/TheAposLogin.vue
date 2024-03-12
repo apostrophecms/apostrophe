@@ -1,9 +1,9 @@
 <template>
   <transition name="fade-stage">
     <div
+      v-show="loaded"
       class="apos-login apos-theme-dark"
       data-apos-test="loginForm"
-      v-show="loaded"
       :class="themeClass"
     >
       <transition name="fade-outer">
@@ -46,7 +46,7 @@
         </transition>
       </div>
       <transition name="fade-outer">
-        <div class="apos-login__footer" v-show="loaded">
+        <div v-show="loaded" class="apos-login__footer">
           <AposLogo class="apos-login__logo" />
           <label class="apos-login__project-version">
             Version {{ context.version }}

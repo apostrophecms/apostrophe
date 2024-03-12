@@ -27,7 +27,7 @@
             {{ docType(item.doc) }}
           </span>
         </div>
-        <div class="apos-confirm__notification-detail" v-if="item.detail">
+        <div v-if="item.detail" class="apos-confirm__notification-detail">
           {{ $t(item.detail) }}
         </div>
       </div>
@@ -36,8 +36,8 @@
 </template>
 
 <script>
-import CheckIcon from 'vue-material-design-icons/Check.vue';
-import CancelIcon from 'vue-material-design-icons/Cancel.vue';
+import CheckIcon from '@apostrophecms/vue-material-design-icons/Check.vue';
+import CancelIcon from '@apostrophecms/vue-material-design-icons/Cancel.vue';
 
 export default {
   name: 'AposI18nLocalizeErrors',

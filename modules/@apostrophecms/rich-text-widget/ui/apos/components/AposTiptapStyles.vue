@@ -11,15 +11,15 @@
         placement: 'top',
         delay: 650
       }"
-      :value="active"
-      @change="setStyle"
+      :model-value="active"
       class="apos-tiptap-control apos-tiptap-control--select"
       :style="`width:${options.styles[active].label.length * 6.5}px`"
+      @change="setStyle"
     >
       <option
         v-for="(style, i) in options.styles"
-        :value="i"
         :key="style.label"
+        :value="i"
       >
         {{ style.label }}
       </option>

@@ -93,7 +93,7 @@ export default {
     this.evaluateConditions();
     this.docFields.data = klona(this.values);
   },
-  beforeDestroy() {
+  beforeUnmount() {
     clearTimeout(this.scrollTimeout);
   },
   methods: {

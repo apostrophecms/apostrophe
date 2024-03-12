@@ -49,7 +49,7 @@ module.exports = ({
     // we could extend this with aliases for other apostrophe modules
     // at a later date if needed
     resolveLoader: {
-      extensions: [ '*', '.js', '.vue', '.json' ],
+      extensions: [ '.*', '.js', '.vue', '.json' ],
       modules: [
         // 1. Allow webpack to find loaders from core dependencies (pnpm), empty if not pnpm
         ...pnpmModulePath,
@@ -62,9 +62,9 @@ module.exports = ({
       ]
     },
     resolve: {
-      extensions: [ '*', '.js', '.vue', '.json' ],
+      extensions: [ '.*', '.js', '.vue', '.json' ],
       alias: {
-        vue$: 'vue/dist/vue.runtime.esm.js',
+        vue$: '@vue/runtime-dom',
         // resolve apostrophe modules
         Modules: path.resolve(modulesDir)
       },
