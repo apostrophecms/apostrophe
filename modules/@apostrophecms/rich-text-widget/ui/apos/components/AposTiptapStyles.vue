@@ -1,40 +1,35 @@
 <template>
-  <div class="apos-tiptap-style-groups">
-    <div
-      v-for="(styleGroup, key) in styles" :key="key"
-      class="apos-tiptap-select"
+  <div class="apos-tiptap-select">
+    <component
+      :is="icon"
+      :size="16"
+      class="apos-tiptap-select__type-icon"
+      fill-color="currentColor"
+    />
+    <select
+      v-apos-tooltip="{
+        content: `apostrophe:${tooltip}`,
+        placement: 'top',
+        delay: 650
+      }"
+      :value="active"
+      @change="setStyle($event)"
+      class="apos-tiptap-control apos-tiptap-control--select"
+      :style="`width:${options[name][active].label.length * 6.5}px`"
     >
-      <component
-        :is="getGroupIcon(key)"
-        :size="16"
-        class="apos-tiptap-select__type-icon"
-        fill-color="currentColor"
-      />
-      <select
-        v-apos-tooltip="{
-          content: `apostrophe:${getGroupTooltip(key)}`,
-          placement: 'top',
-          delay: 650
-        }"
-        :value="active"
-        @change="setStyle($event, key)"
-        class="apos-tiptap-control apos-tiptap-control--select"
-        :style="`width:${styleGroup[active].label.length * 6.5}px`"
+      <option
+        v-for="(style, i) in options[name]"
+        :value="i"
+        :key="style.label"
       >
-        <option
-          v-for="(style, i) in styleGroup"
-          :value="i"
-          :key="style.label"
-        >
-          {{ style.label }}
-        </option>
-      </select>
-      <chevron-down-icon
-        :size="11"
-        class="apos-tiptap-select__icon"
-        fill-color="currentColor"
-      />
-    </div>
+        {{ style.label }}
+      </option>
+    </select>
+    <chevron-down-icon
+      :size="11"
+      class="apos-tiptap-select__icon"
+      fill-color="currentColor"
+    />
   </div>
 </template>
 
@@ -64,7 +59,7 @@ export default {
   },
   computed: {
     active() {
-      const styles = [ ...this.options.styles.nodes, ...this.options.styles.marks ];
+      const styles = this.options[this.name];
       for (let i = 0; (i < styles.length); i++) {
         const style = styles[i];
         if (this.editor.isActive(style.type, (style.options || {}))) {
@@ -79,26 +74,16 @@ export default {
     moduleOptions() {
       return window.apos.modules['@apostrophecms/rich-text-widget'];
     },
-    styles() {
-      const styles = {};
-      if (this.options.styles.nodes.length) {
-        styles.nodes = this.options.styles.nodes;
-      }
-      if (this.options.styles.marks.length) {
-        styles.marks = this.options.styles.marks;
-      }
-      return styles;
+    icon() {
+      return this.name === 'nodes' ? 'format-text-icon' : 'palette-swatch-icon';
+    },
+    tooltip() {
+      return this.name === 'nodes' ? 'richTextNodeStyles' : 'richTextMarkStyles';
     }
   },
   methods: {
-    getGroupIcon(key) {
-      return key === 'nodes' ? 'format-text-icon' : 'palette-swatch-icon';
-    },
-    getGroupTooltip(key) {
-      return key === 'nodes' ? 'richTextNodeStyles' : 'richTextMarkStyles';
-    },
-    setStyle($event, group) {
-      const style = this.options.styles[group][$event.target.value];
+    setStyle($event) {
+      const style = this.options[this.name][$event.target.value];
       this.editor.commands.focus();
       this.editor.commands[style.command](style.type, style.options || {});
     }
@@ -136,6 +121,11 @@ export default {
       color: var(--a-text-primary);
       background-color: var(--a-base-9);
     }
+  }
+
+  .apos-tiptap-select__icon {
+    position: absolute;
+    right: 0;
   }
 
   .apos-tiptap-select__type-icon {

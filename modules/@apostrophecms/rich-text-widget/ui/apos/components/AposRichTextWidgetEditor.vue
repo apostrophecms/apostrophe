@@ -7,7 +7,8 @@
         duration: 300,
         zIndex: 2000,
         animation: 'fade',
-        inertia: true
+        inertia: true,
+        placement: 'bottom'
       }"
       :editor="editor"
       v-if="editor"
@@ -208,13 +209,17 @@ export default {
       return this.moduleOptions.defaultOptions;
     },
     editorOptions() {
-      const activeOptions = Object.assign({}, this.options);
+      let activeOptions = Object.assign({}, this.options);
 
-      activeOptions.styles = this.enhanceStyles(
-        activeOptions.styles?.length
-          ? activeOptions.styles
-          : this.defaultOptions.styles
-      );
+      activeOptions = {
+        ...activeOptions,
+        ...this.enhanceStyles(
+          activeOptions.styles?.length
+            ? activeOptions.styles
+            : this.defaultOptions.styles
+        )
+      };
+      delete activeOptions.styles;
 
       // Allow default options to pass through if `false`
       Object.keys(this.defaultOptions).forEach((option) => {
@@ -227,6 +232,11 @@ export default {
       activeOptions.className = (activeOptions.className !== undefined)
         ? activeOptions.className : this.moduleOptions.className;
 
+      if (activeOptions.toolbar.includes('styles')) {
+        activeOptions.toolbar = activeOptions.toolbar.filter(t => t !== 'styles');
+        activeOptions.toolbar = [ 'nodes', 'marks', ...activeOptions.toolbar ];
+      }
+      console.log('activeOptions', activeOptions);
       return activeOptions;
     },
     autofocus() {
@@ -243,10 +253,10 @@ export default {
       // the text align control will not work until the user manually
       // applies a style or refreshes the page
       const defaultStyle =
-        this.editorOptions.styles.nodes.length
-          ? this.editorOptions.styles.nodes.find(style => style.def)
-          : this.editorOptions.styles.marks.length
-            ? this.editorOptions.styles.marks.find(style => style.def)
+        this.editorOptions.nodes.length
+          ? this.editorOptions.nodes.find(style => style.def)
+          : this.editorOptions.marks.length
+            ? this.editorOptions.marks.find(style => style.def)
             : null;
 
       const _class = defaultStyle.class ? ` class="${defaultStyle.class}"` : '';
@@ -254,10 +264,12 @@ export default {
     },
     // Names of active toolbar items for this particular widget, as an array
     toolbar() {
+      console.log('toolbar', this.editorOptions.toolbar);
       return this.editorOptions.toolbar;
     },
     // Information about all available toolbar items, as an object
     tools() {
+      console.log('tools', this.moduleOptions.tools);
       return this.moduleOptions.tools;
     },
     // Names of active insert menu items for this particular widget, as an array
@@ -510,31 +522,6 @@ export default {
           }
         }
 
-        // Handle styles that can be applied to multiple tags
-        if (style.allowedTags) {
-
-          style.command = 'toggleClass';
-          style.options.allowedTags = style.allowedTags;
-
-          // Create an array of tests to see if this class can
-          // be toggled on the active element
-          style.options.typeChecks = [];
-          style.allowedTags.forEach(tag => {
-            const result = {};
-            for (const key in self.tiptapTypes) {
-              if (self.tiptapTypes[key].includes(tag)) {
-                result.type = key;
-              }
-            }
-            if (result.type === 'heading') {
-              const level = parseInt(tag.split('h')[1]);
-              result.attributes = { level };
-            }
-            style.options.typeChecks.push(result);
-          });
-
-        }
-
         // Set heading level
         if (style.type === 'heading') {
           const level = parseInt(style.tag.split('h')[1]);
@@ -546,7 +533,7 @@ export default {
           style.options.class = style.class;
         }
 
-        if (!style.command) {
+        if (!style.tag) {
           apos.notify('apostrophe:richTextStyleConfigWarning', {
             type: 'warning',
             dismiss: true,
@@ -590,10 +577,8 @@ export default {
       return (apos.tiptapExtensions || [])
         .map(extension => extension({
           ...this.editorOptions,
-          styles: {
-            nodes: this.editorOptions.styles.nodes.map(this.localizeStyle),
-            marks: this.editorOptions.styles.marks.map(this.localizeStyle)
-          },
+          nodes: this.editorOptions.nodes.map(this.localizeStyle),
+          marks: this.editorOptions.marks.map(this.localizeStyle),
           types: this.tiptapTypes
         }));
     },
@@ -751,13 +736,16 @@ function traverseNextNode(node) {
 
     .apos-button--rich-text {
       position: relative;
-      width: 24px;
       height: 24px;
-      padding: 0;
       border: none;
+      padding: 0 8px;
       border-radius: var(--a-border-radius);
       background-color: transparent;
       color: var(--a-base-1);
+      &.apos-button--icon-only {
+        width: 24px;
+        padding: 0;
+      }
       &:hover {
         background-color: transparent;
       }
@@ -813,7 +801,7 @@ function traverseNextNode(node) {
     align-items: stretch;
     max-width: 100%;
     height: auto;
-    gap: 4px;
+    gap: 6px;
   }
 
   .apos-rich-text-editor__editor ::v-deep .ProseMirror {
