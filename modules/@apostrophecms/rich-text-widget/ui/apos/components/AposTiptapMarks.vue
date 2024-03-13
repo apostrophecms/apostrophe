@@ -101,7 +101,7 @@ export default {
       return activeClasses;
     },
     buttonLabel() {
-      let label = this.tool.label;
+      let label = this.$t('apostrophe:richTextMarkApplyStyles');
       if (this.activeClasses.length > 1) {
         label = this.$t('apostrophe:richTextMarkMultipleStyles');
       }
