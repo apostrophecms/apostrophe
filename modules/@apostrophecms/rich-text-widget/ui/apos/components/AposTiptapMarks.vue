@@ -151,7 +151,7 @@ export default {
 
   .apos-marks-control__button:deep(.apos-button--rich-text) {
     &:active:after, &:focus:after {
-      background-color: var(--a-base-8)
+      background-color: var(--a-base-8);
     }
 
     .apos-button__label {
@@ -191,13 +191,15 @@ export default {
 
     // if marksPreview is enabled we will attempt to add a style preview to the marks dropdown
     // but we need to clamp the dimensions of the label to prevent broken UI
+    // stylelint-disable declaration-no-important
     .apos-marks-control__label {
       position: static !important;
       height: auto !important;
-      font-size: var(--a-type-large) !important;
-      padding: 0 !important;
       margin: 0 !important;
+      padding: 0 !important;
+      font-size: var(--a-type-large) !important;
     }
+    // stylelint-enable declaration-no-important
 
     &:hover {
       background-color: var(--a-base-10);

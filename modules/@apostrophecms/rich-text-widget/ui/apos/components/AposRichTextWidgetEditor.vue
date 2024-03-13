@@ -735,8 +735,8 @@ function traverseNextNode(node) {
     .apos-button--rich-text {
       position: relative;
       height: 24px;
-      border: none;
       padding: 0 8px;
+      border: none;
       border-radius: var(--a-border-radius);
       background-color: transparent;
       color: var(--a-base-1);
