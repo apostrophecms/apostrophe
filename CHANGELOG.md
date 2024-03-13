@@ -7,8 +7,7 @@
 * Rich text styles are now split into Nodes and Marks, with independent controls for a better UX when applying text styles.
 
 ### Adds
-
-* Add support where classes defined for rich text styles can be toggled on multiple RT elements.
+* Add Marks tool to the Rich Text widget for handling toggling marks.
 * Add translation keys used by the multisite assembly module.
 * Add side by side comparison support in AposSchema component.
 * Add the possibility to make widget modals wider, which can be useful for widgets that contain areas taking significant space. See [documentation](https://v3.docs.apostrophecms.org/reference/modules/widget-type.html#options).
