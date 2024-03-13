@@ -169,7 +169,7 @@ export default {
 
   .apos-marks-control__dialog {
     position: absolute;
-    top: calc(100% + 8px);
+    top: calc(100% + $spacing-base);
     left: 0;
   }
 
@@ -178,22 +178,23 @@ export default {
     flex-direction: column;
     gap: 3px;
     margin: 0;
-    padding: 8px;
+    padding: $spacing-base;
     list-style: none;
   }
 
   .apos-marks-control__item {
     white-space: nowrap;
-    font-size: 14px;
     max-width: 230px;
     text-overflow: ellipsis;
     overflow: hidden;
     border-radius: var(--a-border-radius);
 
+    // if marksPreview is enabled we will attempt to add a style preview to the marks dropdown
+    // but we need to clamp the dimensions of the label to prevent broken UI
     .apos-marks-control__label {
       position: static !important;
       height: auto !important;
-      font-size: 14px !important;
+      font-size: var(--a-type-large) !important;
       padding: 0 !important;
       margin: 0 !important;
     }
@@ -214,7 +215,7 @@ export default {
       @include apos-button-reset();
       display: block;
       width: 100%;
-      padding: 8px;
+      padding: $spacing-base;
     }
   }
 

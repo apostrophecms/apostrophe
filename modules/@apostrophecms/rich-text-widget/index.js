@@ -93,7 +93,6 @@ module.exports = {
     placeholderTextWithInsertMenu: 'apostrophe:richTextPlaceholderWithInsertMenu',
     defaultData: { content: '' },
     className: false,
-    marksPreview: true,
     linkWithType: [ '@apostrophecms/any-page-type' ],
     // For permalinks and images. For efficiency we make
     // one query
@@ -627,16 +626,6 @@ module.exports = {
                 allowedClasses[tag][c] = true;
               }
             }
-
-            // // Add classes to other tag's allowList
-            // if (style.allowedTags) {
-            //   style.allowedTags.forEach(tag => {
-            //     allowedClasses[tag] = allowedClasses[tag] || {};
-            //     for (const c of classes) {
-            //       allowedClasses[tag][c] = true;
-            //     }
-            //   });
-            // }
           }
         }
         for (const tag of Object.keys(allowedClasses)) {

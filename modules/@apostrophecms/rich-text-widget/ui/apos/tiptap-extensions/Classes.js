@@ -90,7 +90,7 @@ export default (options) => {
 
                 const classes = (element.getAttribute('class') || '')
                   .split(' ')
-                  .filter((c) => allow[tag].includes(c));
+                  .filter(c => allow[tag].includes(c));
 
                 // If we have valid classes, join and return them.
                 // If no valid classes for this parse, default to the

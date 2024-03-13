@@ -4,7 +4,7 @@
 
 ### Changes
 
-* Rich text styles are now split into Block and Inline controls for a better UX when applying text styles.
+* Rich text styles are now split into Nodes and Marks, with independent controls for a better UX when applying text styles.
 
 ### Adds
 

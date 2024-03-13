@@ -237,7 +237,6 @@ export default {
         activeOptions.toolbar = activeOptions.toolbar.filter(t => t !== 'styles');
         activeOptions.toolbar = [ 'nodes', 'marks', ...activeOptions.toolbar ];
       }
-      console.log('activeOptions', activeOptions);
       return activeOptions;
     },
     autofocus() {
@@ -265,12 +264,10 @@ export default {
     },
     // Names of active toolbar items for this particular widget, as an array
     toolbar() {
-      console.log('toolbar', this.editorOptions.toolbar);
       return this.editorOptions.toolbar;
     },
     // Information about all available toolbar items, as an object
     tools() {
-      console.log('tools', this.moduleOptions.tools);
       return this.moduleOptions.tools;
     },
     // Names of active insert menu items for this particular widget, as an array
@@ -534,7 +531,7 @@ export default {
           style.options.class = style.class;
         }
 
-        if (!style.tag) {
+        if (!style.type) {
           apos.notify('apostrophe:richTextStyleConfigWarning', {
             type: 'warning',
             dismiss: true,

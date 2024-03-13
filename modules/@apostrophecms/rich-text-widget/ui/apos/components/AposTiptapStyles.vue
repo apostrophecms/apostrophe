@@ -85,16 +85,12 @@ export default {
 </script>
 
 <style lang="scss" scoped>
-  .apos-tiptap-style-groups {
-    display: flex;
-    gap: 5px;
-  }
   // If another select el is needed for the rich-text toolbar these styles should be made global
   .apos-tiptap-control--select {
     @include apos-button-reset();
     @include apos-transition();
     height: 100%;
-    padding: 0 5px;
+    padding: 0 $spacing-half;
     font-size: var(--a-type-smaller);
 
     &:focus, &:active {
@@ -106,7 +102,7 @@ export default {
     position: relative;
     display: flex;
     align-items: center;
-    padding: 0 4px;
+    padding: 0 $spacing-half;
     color: var(--a-base-1);
     border-radius: var(--a-border-radius);
     transition: all 0.5s ease;
