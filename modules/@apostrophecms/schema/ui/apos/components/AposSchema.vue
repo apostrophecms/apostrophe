@@ -120,25 +120,23 @@ export default {
     }
   }
 
-  .apos-schema.apos-schema--compare {
-    & > ::v-deep [data-apos-field] {
-      display: flex;
+  .apos-schema.apos-schema--compare > :deep([data-apos-field]) {
+    display: flex;
 
-      & > .apos-field__wrapper {
-        flex-grow: 1;
-        flex-basis: 50%;
-        border-right: 1px solid var(--a-base-9);
-        padding-right: 20px;
-      }
-      & > .apos-field__wrapper + .apos-field__wrapper {
-        border-right: none;
-        padding-right: 0;
-        padding-left: 20px;
-      }
+    & > .apos-field__wrapper {
+      flex-grow: 1;
+      flex-basis: 50%;
+      border-right: 1px solid var(--a-base-9);
+      padding-right: 20px;
+    }
+    & > .apos-field__wrapper + .apos-field__wrapper {
+      border-right: none;
+      padding-right: 0;
+      padding-left: 20px;
+    }
 
-      & .apos-field__label {
-        word-break: break-all;
-      }
+    & .apos-field__label {
+      word-break: break-all;
     }
   }
 
