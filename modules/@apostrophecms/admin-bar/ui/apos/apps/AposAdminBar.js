@@ -1,22 +1,12 @@
-import Vue from 'Modules/@apostrophecms/ui/lib/vue';
+import createApp from 'Modules/@apostrophecms/ui/lib/vue';
 
 export default function() {
+  const component = apos.vueComponents.TheAposAdminBar;
   // Careful, login page is in user scene but has no admin bar
-  if (apos.adminBar) {
-    return new Vue({
-      el: '#apos-admin-bar',
-      computed: {
-        apos () {
-          return window.apos;
-        }
-      },
-      render: function (h) {
-        return h('TheAposAdminBar', {
-          props: {
-            items: apos.adminBar.items
-          }
-        });
-      }
-    });
+  const el = document.querySelector('#apos-admin-bar');
+  if (!apos.adminBar || !el) {
+    return;
   }
+  const app = createApp(component, { items: apos.adminBar.items || [] });
+  app.mount(el);
 };

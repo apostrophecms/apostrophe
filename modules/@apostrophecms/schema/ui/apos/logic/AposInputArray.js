@@ -6,11 +6,11 @@ import { getConditionTypesObject } from 'Modules/@apostrophecms/schema/lib/condi
 import cuid from 'cuid';
 import { klona } from 'klona';
 import { get } from 'lodash';
-import draggable from 'vuedraggable';
+import { Sortable } from 'sortablejs-vue3';
 
 export default {
   name: 'AposInputArray',
-  components: { draggable },
+  components: { draggable: Sortable },
   mixins: [
     AposInputMixin,
     AposInputFollowingMixin,
@@ -124,6 +124,17 @@ export default {
     }
   },
   methods: {
+    moveUpdate({
+      oldIndex, newIndex
+    }) {
+      if (oldIndex !== newIndex) {
+        this.items = this.items.map((elem, index) => {
+          return index === oldIndex
+            ? this.items[newIndex]
+            : (index === newIndex && this.items[oldIndex]) || elem;
+        });
+      }
+    },
     getItemsSchema(_id) {
       return (this.items.find((item) => item._id === _id))?.schemaInput.data;
     },
@@ -199,8 +210,8 @@ export default {
     },
     getNext() {
       // Next should consistently be an array.
-      return (this.value && Array.isArray(this.value.data))
-        ? this.value.data
+      return (this.modelValue && Array.isArray(this.modelValue.data))
+        ? this.modelValue.data
         : (this.field.def || []);
     },
     disableAdd() {

@@ -2,55 +2,55 @@
 <template>
   <div ref="root">
     <draggable
+      :id="listId"
+      item-key="_id"
       class="apos-slat-list"
       tag="ol"
       role="list"
+      :options="dragOptions"
       :list="next"
-      :move="onMove"
-      v-bind="dragOptions"
-      @start="isDragging=true"
-      @end="isDragging=false"
-      :id="listId"
+      @update="update"
     >
-      <transition-group type="transition" name="apos-flip-list">
-        <AposSlat
-          v-for="item in next"
-          class="apos-slat-list__item"
-          @remove="remove"
-          @engage="engage"
-          @disengage="disengage"
-          @select="select"
-          @move="move"
-          @item-clicked="$emit('item-clicked', item)"
-          :key="item._id"
-          :item="item"
-          :selected="selected === item._id"
-          :class="{'apos-slat-list__item--disabled' : disabled, 'apos-input--error': duplicate}"
-          :disabled="disabled"
-          :engaged="engaged === item._id"
-          :parent="listId"
-          :slat-count="next.length"
-          :removable="removable"
-          :relationship-schema="relationshipSchema"
-          :editor-label="editorLabel"
-          :editor-icon="editorIcon"
-        />
-      </transition-group>
+      <template #item="{element: item}">
+        <transition-group type="transition" name="apos-flip-list">
+          <AposSlat
+            :key="item._id"
+            class="apos-slat-list__item"
+            :item="item"
+            :selected="selected === item._id"
+            :class="{'apos-slat-list__item--disabled' : disabled, 'apos-input--error': duplicate}"
+            :disabled="disabled"
+            :engaged="engaged === item._id"
+            :parent="listId"
+            :slat-count="next.length"
+            :removable="removable"
+            :relationship-schema="relationshipSchema"
+            :editor-label="editorLabel"
+            :editor-icon="editorIcon"
+            @remove="remove"
+            @engage="engage"
+            @disengage="disengage"
+            @select="select"
+            @move="move"
+            @item-clicked="$emit('item-clicked', item)"
+          />
+        </transition-group>
+      </template>
     </draggable>
   </div>
 </template>
 
 <script>
-import draggable from 'vuedraggable';
+import { Sortable } from 'sortablejs-vue3';
 import cuid from 'cuid';
 
 export default {
   name: 'AposSlatList',
   components: {
-    draggable
+    draggable: Sortable
   },
   props: {
-    value: {
+    modelValue: {
       type: Array,
       required: true
     },
@@ -83,13 +83,12 @@ export default {
       default: null
     }
   },
-  emits: [ 'update', 'item-clicked', 'select', 'input' ],
+  emits: [ 'item-clicked', 'select', 'update:modelValue' ],
   data() {
     return {
       isDragging: false,
-      delayedDragging: false,
       engaged: null,
-      next: this.value.slice()
+      next: this.modelValue.slice()
     };
   },
   computed: {
@@ -104,24 +103,16 @@ export default {
       };
     }
   },
+
   watch: {
-    isDragging(newValue) {
-      if (newValue) {
-        this.delayedDragging = true;
-        return;
-      }
-      this.$nextTick(() => {
-        this.delayedDragging = false;
-      });
-    },
-    value() {
-      this.next = this.value.slice();
+    modelValue() {
+      this.next = this.modelValue.slice();
     },
     next(newValue, oldValue) {
       let equal = true;
-      if (newValue.length === this.value.length) {
+      if (newValue.length === this.modelValue.length) {
         for (let i = 0; (i < newValue.length); i++) {
-          if ((newValue[i]._id !== this.value[i]._id) || (newValue[i].title !== this.value[i].title)) {
+          if ((newValue[i]._id !== this.modelValue[i]._id) || (newValue[i].title !== this.modelValue[i].title)) {
             equal = false;
             break;
           }
@@ -130,11 +121,22 @@ export default {
         equal = false;
       }
       if (!equal) {
-        this.$emit('input', this.next);
+        this.$emit('update:modelValue', this.next);
       }
     }
   },
   methods: {
+    update({
+      oldIndex, newIndex
+    }) {
+      if (oldIndex !== newIndex) {
+        this.next = this.next.map((elem, index) => {
+          return index === oldIndex
+            ? this.next[newIndex]
+            : (index === newIndex && this.next[oldIndex]) || elem;
+        });
+      }
+    },
     engage(id) {
       this.engaged = id;
     },
@@ -152,15 +154,14 @@ export default {
       } else if (focusNext && this.next[itemIndex - 1]) {
         this.focusElement(this.next[itemIndex - 1]._id);
       }
-      this.$emit('update', this.next);
     },
+
     move(id, dir) {
       const index = this.getIndex(id);
       const target = dir > 0 ? index + 1 : index - 1;
       if (this.next[target]) {
         this.next.splice(target, 0, this.next.splice(index, 1)[0]);
         this.focusElement(id);
-        return this.$emit('update', this.next);
       }
     },
     getIndex(id) {
@@ -178,20 +179,13 @@ export default {
           this.$refs.root.querySelector(`[data-id="${id}"]`).focus();
         });
       }
-    },
-    onMove({ relatedContext, draggedContext }) {
-      const relatedElement = relatedContext.element;
-      const draggedElement = draggedContext.element;
-      return (
-        (!relatedElement || !relatedElement.fixed) && !draggedElement.fixed
-      );
     }
   }
 };
 </script>
 
 <style lang="scss" scoped>
-  .apos-slat-list ::v-deep .apos-slat {
+  .apos-slat-list :deep(.apos-slat) {
     margin-bottom: 5px;
     transition: all 0.4s;
     max-width: $input-max-width * 0.65;

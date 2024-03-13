@@ -1,6 +1,7 @@
 <template>
-  <div :aria-controls="`insert-menu-${value._id}`" @keydown="handleUIKeydown">
+  <div :aria-controls="`insert-menu-${modelValue._id}`" @keydown="handleUIKeydown">
     <bubble-menu
+      v-if="editor"
       class="bubble-menu"
       :tippy-options="{
         maxWidth: 'none',
@@ -11,7 +12,6 @@
         placement: 'bottom'
       }"
       :editor="editor"
-      v-if="editor"
     >
       <AposContextMenuDialog
         menu-placement="top"
@@ -20,9 +20,9 @@
       >
         <div class="apos-rich-text-toolbar__inner">
           <component
+            :is="(tools[item] && tools[item].component) || 'AposTiptapUndefined'"
             v-for="(item, index) in toolbar"
             :key="item + '-' + index"
-            :is="(tools[item] && tools[item].component) || 'AposTiptapUndefined'"
             :name="item"
             :tool="tools[item]"
             :options="editorOptions"
@@ -33,15 +33,15 @@
     </bubble-menu>
     <floating-menu
       v-if="editor"
+      :id="`insert-menu-${modelValue._id}`"
+      ref="insertMenu"
+      :key="insertMenuKey"
       class="apos-rich-text-insert-menu"
       :tippy-options="{ duration: 100, zIndex: 2000, placement: 'bottom-start' }"
       :should-show="showFloatingMenu"
       :editor="editor"
       role="listbox"
       tabindex="0"
-      ref="insertMenu"
-      :id="`insert-menu-${value._id}`"
-      :key="insertMenuKey"
     >
       <div class="apos-rich-text-insert-menu-heading">
         {{ $t('apostrophe:richTextInsertMenuHeading') }}
@@ -79,8 +79,8 @@
             :key="`${item}-${index}-component`"
           >
             <component
-              v-if="item === activeInsertMenuComponent?.name"
               :is="activeInsertMenuComponent.component"
+              v-if="item === activeInsertMenuComponent?.name"
               :active="true"
               :editor="editor"
               :options="editorOptions"
@@ -98,7 +98,8 @@
     </div>
     <div
       v-if="showPlaceholder !== null && (!placeholderText || !isFocused)"
-      class="apos-rich-text-editor__editor_after" :class="editorModifiers"
+      class="apos-rich-text-editor__editor_after"
+      :class="editorModifiers"
     >
       {{ $t('apostrophe:emptyRichTextWidget') }}
     </div>
@@ -111,7 +112,7 @@ import {
   EditorContent,
   BubbleMenu,
   FloatingMenu
-} from '@tiptap/vue-2';
+} from '@tiptap/vue-3';
 // Starter Kit extensions
 import BlockQuote from '@tiptap/extension-blockquote';
 import Bold from '@tiptap/extension-bold';
@@ -156,7 +157,7 @@ export default {
       type: Object,
       required: true
     },
-    value: {
+    modelValue: {
       type: Object,
       default() {
         return {};
@@ -188,7 +189,7 @@ export default {
       editor: null,
       docFields: {
         data: {
-          ...this.value
+          ...this.modelValue
         },
         hasErrors: false
       },
@@ -241,10 +242,10 @@ export default {
     },
     autofocus() {
       // Only true for a new rich text widget
-      return !this.value.content.length;
+      return !this.modelValue.content.length;
     },
     initialContent() {
-      const content = this.transformNamedAnchors(this.value.content);
+      const content = this.transformNamedAnchors(this.modelValue.content);
       if (content.length) {
         return content;
       }
@@ -282,7 +283,7 @@ export default {
     },
     isVisuallyEmpty () {
       const div = document.createElement('div');
-      div.innerHTML = this.value.content;
+      div.innerHTML = this.modelValue.content;
       return !div.textContent;
     },
     editorModifiers () {
@@ -396,7 +397,7 @@ export default {
     apos.bus.$on('apos-refreshing', this.onAposRefreshing);
   },
 
-  beforeDestroy() {
+  beforeUnmount() {
     this.editor.destroy();
     apos.bus.$off('apos-refreshing', this.onAposRefreshing);
   },
@@ -705,7 +706,7 @@ function traverseNextNode(node) {
     transform: translate3d(-50%, -50%, 0);
   }
 
-  .apos-rich-text-toolbar ::v-deep {
+  :deep(.apos-rich-text-toolbar) {
 
     & > .apos-context-menu__pane {
       padding: 8px;
@@ -804,19 +805,19 @@ function traverseNextNode(node) {
     gap: 6px;
   }
 
-  .apos-rich-text-editor__editor ::v-deep .ProseMirror {
+  .apos-rich-text-editor__editor :deep(.ProseMirror) {
     @include apos-transition();
   }
 
-  .apos-rich-text-editor__editor ::v-deep .ProseMirror:focus {
+  .apos-rich-text-editor__editor :deep(.ProseMirror:focus) {
     outline: none;
   }
 
-  .apos-rich-text-editor__editor ::v-deep .ProseMirror {
+  .apos-rich-text-editor__editor :deep(.ProseMirror) {
     padding: 10px 0;
   }
 
-  .apos-rich-text-editor__editor ::v-deep .ProseMirror:focus p.apos-is-empty::after {
+  .apos-rich-text-editor__editor :deep(.ProseMirror:focus p.apos-is-empty::after) {
     display: block;
     margin: 5px 0 10px;
     color: var(--a-primary-transparent-50);
@@ -837,13 +838,13 @@ function traverseNextNode(node) {
     background-color: transparent;
   }
 
-  .apos-rich-text-editor__editor ::v-deep [data-tippy-root] {
+  .apos-rich-text-editor__editor :deep([data-tippy-root]) {
     transition: all 0.4s var(--a-transition-timing-bounce);
     /* stylelint-disable-next-line time-min-milliseconds */
     transition-delay: 0.1s;
   }
 
-  .apos-rich-text-editor__editor ::v-deep .tippy-box[data-animation='fade'][data-state='hidden'] {
+  .apos-rich-text-editor__editor :deep(.tippy-box[data-animation='fade'][data-state='hidden']) {
     opacity: 0;
     transform: scale(0.9);
   }
@@ -876,36 +877,36 @@ function traverseNextNode(node) {
       visibility: visible;
     }
   }
-  .apos-rich-text-toolbar__inner ::v-deep > .apos-rich-text-editor__control {
+  :deep(.apos-rich-text-toolbar__inner > .apos-rich-text-editor__control) {
     /* Addresses a Safari-only situation where it inherits the
       `::-webkit-scrollbar-button` 2px margin. */
     margin: 0;
   }
 
   // So editors can find anchors again
-  .apos-rich-text-editor__editor ::v-deep span[id] {
+  .apos-rich-text-editor__editor :deep(span[id]) {
     text-decoration: underline dotted;
   }
 
   // So editors can find table cells while editing tables
 
-  .apos-rich-text-editor__editor ::v-deep table {
+  .apos-rich-text-editor__editor :deep(table) {
     min-width: 100%;
     min-height: 200px;
   }
 
-  .apos-rich-text-editor__editor ::v-deep th, .apos-rich-text-editor__editor ::v-deep td {
+  .apos-rich-text-editor__editor :deep(th), .apos-rich-text-editor__editor :deep(td) {
     outline: dotted;
   }
 
   // So editors can identify the cells that would take part
   // in a merge operation
-  .apos-rich-text-editor__editor ::v-deep .selectedCell {
+  .apos-rich-text-editor__editor :deep(.selectedCell) {
     // Should be visible on any background, light mode or dark mode
     backdrop-filter: invert(0.1);
   }
 
-  .apos-rich-text-editor__editor ::v-deep figure.ProseMirror-selectednode {
+  .apos-rich-text-editor__editor :deep(figure.ProseMirror-selectednode) {
     opacity: 0.5;
   }
 
@@ -991,13 +992,13 @@ function traverseNextNode(node) {
     letter-spacing: 0.25px;
   }
 
-  ::v-deep .ProseMirror {
+  :deep(.ProseMirror) {
     > * + * {
       margin-top: 0.75em;
     }
   }
 
-  ::v-deep .ProseMirror-gapcursor {
+  :deep(.ProseMirror-gapcursor) {
     position: relative;
     display: block;
     height: 20px;

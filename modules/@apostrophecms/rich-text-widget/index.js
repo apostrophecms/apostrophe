@@ -93,6 +93,7 @@ module.exports = {
     placeholderTextWithInsertMenu: 'apostrophe:richTextPlaceholderWithInsertMenu',
     defaultData: { content: '' },
     className: false,
+    marksPreview: true,
     linkWithType: [ '@apostrophecms/any-page-type' ],
     // For permalinks and images. For efficiency we make
     // one query
@@ -106,6 +107,7 @@ module.exports = {
       creditUrl: 1
     },
     minimumDefaultOptions: {
+      marksPreview: true,
       toolbar: [
         'styles',
         'bold',
@@ -142,13 +144,10 @@ module.exports = {
       widgetEditor: 'AposRichTextWidgetEditor'
     },
     editorTools: {
-      // styles: {
-      //   component: 'AposTiptapStyles',
-      //   label: 'apostrophe:richTextNodeStyles'
-      // },
       nodes: {
         component: 'AposTiptapStyles',
-        label: 'apostrophe:richTextNodeStyles'
+        label: 'apostrophe:richTextNodeStyles',
+        icon: 'format-text-icon'
       },
       marks: {
         component: 'AposTiptapMarks',

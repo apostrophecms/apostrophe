@@ -1,6 +1,6 @@
 
 import AposInputMixin from 'Modules/@apostrophecms/schema/mixins/AposInputMixin';
-import Picker from '@apostrophecms/vue-color/src/components/Sketch';
+import { Sketch as Picker } from '@ckpack/vue-color';
 import tinycolor from 'tinycolor2';
 
 export default {
@@ -31,7 +31,7 @@ export default {
       return {
         label: this.field.label,
         type: 'color',
-        color: this.value.data || ''
+        color: this.modelValue.data || ''
       };
     },
     format() {
@@ -40,10 +40,7 @@ export default {
         : this.defaultFormat;
     },
     pickerOptions() {
-      let fieldOptions = {};
-      if (this.field.options && this.field.options.pickerOptions) {
-        fieldOptions = this.field.options.pickerOptions;
-      }
+      const fieldOptions = this.field.options?.pickerOptions || {};
       return Object.assign(this.defaultPickerOptions, fieldOptions);
     },
 
@@ -63,7 +60,7 @@ export default {
   },
   mounted() {
     if (!this.next) {
-      this.next = null;
+      this.next = '';
     }
   },
   methods: {
@@ -92,7 +89,7 @@ export default {
       return color.isValid() ? false : 'Error';
     },
     clear() {
-      this.next = null;
+      this.next = '';
     }
   }
 };

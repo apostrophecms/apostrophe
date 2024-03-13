@@ -12,16 +12,16 @@
       <div class="apos-input-object">
         <div class="apos-input-wrapper">
           <AposSchema
+            ref="schema"
             v-model="schemaInput"
             :meta="currentDocMeta"
-            ref="schema"
             :schema="schema"
             :trigger-validation="triggerValidation"
             :generation="generation"
             :doc-id="docId"
             :conditional-fields="conditionalFields"
             :following-values="followingValuesWithParent"
-            @input="evaluateConditions(values)"
+            @update:model-value="evaluateConditions(values)"
             @validate="emitValidate()"
           />
         </div>
@@ -45,7 +45,7 @@ export default {
   .apos-input-wrapper {
     margin: 20px 0 0 19px;
   }
-  .apos-input-object ::v-deep .apos-schema .apos-field {
+  .apos-input-object :deep(.apos-schema .apos-field) {
     margin-bottom: 30px;
   }
 </style>

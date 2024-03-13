@@ -3,16 +3,16 @@
     <AposButton
       type="rich-text"
       class="apos-marks-control__button"
-      @click="click"
       :label="buttonLabel"
-      :icon="tool.icon || false"
-      :icon-size="tool.iconSize || 16"
+      :icon="tool.icon"
+      :icon-size="16"
       :modifiers="['no-border', 'no-motion']"
       :tooltip="{
         content: tool.label,
         placement: 'top',
         delay: 650
       }"
+      @click="click"
     />
     <div
       v-if="open"
@@ -27,12 +27,13 @@
         <div class="apos-marks-control__content-wrapper">
           <ul class="apos-marks-control__items">
             <li
-              v-for="mark in options.marks" :key="mark.class"
+              v-for="mark in options.marks"
+              :key="mark.class"
               class="apos-marks-control__item"
               :class="{ 'apos-marks-control__item--is-active': activeClasses.includes(mark.class) }"
             >
-              <button @click="toggleStyle(mark)" class="apos-marks-control__button">
-                <span :class="mark.class">
+              <button class="apos-marks-control__button" @click="toggleStyle(mark)">
+                <span class="apos-marks-control__label" :class="options.marksPreview ? mark.class : null">
                   {{ mark.label }}
                 </span>
               </button>
@@ -100,7 +101,7 @@ export default {
       return activeClasses;
     },
     buttonLabel() {
-      let label = this.$t('apostrophe:richTextMarkApplyStyles');
+      let label = this.tool.label;
       if (this.activeClasses.length > 1) {
         label = this.$t('apostrophe:richTextMarkMultipleStyles');
       }
@@ -148,9 +149,16 @@ export default {
     position: relative;
   }
 
-  .apos-marks-control__button::v-deep .apos-button--rich-text {
+  .apos-marks-control__button:deep(.apos-button--rich-text) {
     &:active:after, &:focus:after {
       background-color: var(--a-base-8)
+    }
+
+    .apos-button__label {
+      max-width: 200px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
     }
   }
 
@@ -181,6 +189,14 @@ export default {
     text-overflow: ellipsis;
     overflow: hidden;
     border-radius: var(--a-border-radius);
+
+    .apos-marks-control__label {
+      position: static !important;
+      height: auto !important;
+      font-size: 14px !important;
+      padding: 0 !important;
+      margin: 0 !important;
+    }
 
     &:hover {
       background-color: var(--a-base-10);

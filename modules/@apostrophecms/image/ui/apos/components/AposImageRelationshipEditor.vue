@@ -65,12 +65,12 @@
               </label>
               <input
                 :value="docFields.data.width"
-                @input="inputWidth"
-                @blur="blurInput"
                 class="apos-input apos-input--text"
                 type="number"
                 :min="minWidth"
                 :max="maxWidth"
+                @input="inputWidth"
+                @blur="blurInput"
               >
             </div>
             <div class="apos-field">
@@ -79,12 +79,12 @@
               </label>
               <input
                 :value="docFields.data.height"
-                @input="inputHeight"
-                @blur="blurInput"
                 class="apos-input apos-input--text"
                 type="number"
                 :min="minHeight"
                 :max="maxHeight"
+                @input="inputHeight"
+                @blur="blurInput"
               >
             </div>
           </div>
@@ -122,7 +122,7 @@ export default {
       type: Array,
       default: () => ([])
     },
-    value: {
+    modelValue: {
       type: Object,
       default: null
     },
@@ -141,7 +141,7 @@ export default {
     const minSize = this.getMinSize();
 
     return {
-      original: this.value,
+      original: this.modelValue,
       docFields: {
         data: this.setDataValues()
       },

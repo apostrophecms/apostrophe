@@ -1,38 +1,46 @@
 <template>
   <AposInputWrapper
-    :modifiers="modifiers" :field="field"
-    :error="effectiveError" :uid="uid"
+    :modifiers="modifiers"
+    :field="field"
+    :error="effectiveError"
+    :uid="uid"
     :display-options="displayOptions"
     :meta="fieldMeta"
   >
     <template #body>
       <div class="apos-input-wrapper">
         <textarea
+          v-if="field.textarea && field.type === 'string'"
+          v-model="next"
+          rows="5"
+          :id="uid"
           :class="classes"
-          v-if="field.textarea && field.type === 'string'" rows="5"
-          v-model="next" :placeholder="$t(field.placeholder)"
-          @keydown.enter="enterEmit"
+          :placeholder="$t(field.placeholder)"
           :disabled="field.readOnly"
           :required="field.required"
-          :id="uid" :tabindex="tabindex"
+          :tabindex="tabindex"
           :autocomplete="field.autocomplete"
+          @keydown.enter="enterEmit"
         />
         <input
-          v-else :class="classes"
-          v-model="next" :type="type"
+          v-else
+          :id="uid"
+          v-model="next"
+          :class="classes"
+          :type="type"
           :placeholder="$t(field.placeholder)"
-          @keydown.enter="enterEmit"
           :disabled="field.readOnly || field.disabled"
           :required="field.required"
-          :id="uid" :tabindex="tabindex"
+          :tabindex="tabindex"
           :step="step"
           :autocomplete="field.autocomplete"
+          @keydown.enter="enterEmit"
         >
         <component
+          :is="icon"
           v-if="icon"
           :size="iconSize"
           class="apos-input-icon"
-          :is="icon"
         />
       </div>
     </template>

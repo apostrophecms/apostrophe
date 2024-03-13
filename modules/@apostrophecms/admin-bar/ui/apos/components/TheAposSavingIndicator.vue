@@ -6,10 +6,11 @@
     <span class="apos-admin-bar__status__inner">
       <component
         :is="savingIndicator.componentName"
+        v-if="savingIndicator?.componentName"
         v-bind="savingIndicator.options"
         class="apos-admin-bar__status__icon"
       />
-      <div class="apos-admin-bar__status__label" ref="statusLabel">
+      <div ref="statusLabel" class="apos-admin-bar__status__label">
         {{ $t(savingLabel) }}
       </div>
     </span>

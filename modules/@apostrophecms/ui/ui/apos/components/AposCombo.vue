@@ -6,21 +6,21 @@
   >
     <ul
       ref="select"
+      v-click-outside-element="closeList"
       role="button"
       :aria-expanded="showedList.toString()"
       :aria-controls="`${field._id}-combo`"
-      v-click-outside-element="closeList"
       class="apos-input-wrapper apos-combo__select"
-      @click="toggleList"
       :tabindex="field.readOnly ? null : 0"
+      @click="toggleList"
       @keydown.prevent.space="toggleList"
       @keydown.prevent.up="toggleList"
       @keydown.prevent.down="toggleList"
     >
       <li
-        class="apos-combo__selected"
         v-for="checked in selectedItems"
         :key="objectValues ? checked.value : checked"
+        class="apos-combo__selected"
         @click.stop="selectOption(getSelectedOption(checked))"
       >
         {{ getSelectedOption(checked)?.label }}
@@ -49,16 +49,16 @@
     >
       <li
         v-if="typehead"
-        class="apos-combo__list-typehead"
         key="__typehead"
+        class="apos-combo__list-typehead"
         @click.stop="$refs.input.focus()"
       >
         <input
+          ref="input"
           class="apos-combo__typehead"
           type="text"
           :placeholder="$t('apostrophe:search')"
           :value="thInput"
-          ref="input"
           @input="onTypeheadInput"
           @keydown="onTypeheadKey"
         >
@@ -69,11 +69,11 @@
         />
       </li>
       <li
+        v-for="(choice, i) in options"
         :key="choice.value"
         class="apos-combo__list-item"
         role="menuitemcheckbox"
         :class="{focused: focusedItemIndex === i}"
-        v-for="(choice, i) in options"
         @click.stop="selectOption(choice)"
         @mouseover="focusedItemIndex = i"
       >
@@ -101,7 +101,7 @@ export default {
       type: Object,
       required: true
     },
-    value: {
+    modelValue: {
       type: Object,
       required: true
     },
@@ -121,7 +121,7 @@ export default {
     }
   },
 
-  emits: [ 'select-items', 'toggle', 'input' ],
+  emits: [ 'select-items', 'toggle', 'update:modelValue' ],
   data () {
 
     return {
@@ -142,7 +142,7 @@ export default {
     },
     selectedItems() {
       if (!this.showSelectAll || !this.allItemsSelected()) {
-        return this.value.data;
+        return this.modelValue.data;
       }
       if (this.objectValues) {
         const { listLabel } = this.getSelectAllLabel();
@@ -157,13 +157,13 @@ export default {
   mounted() {
     this.boxResizeObserver.observe(this.$refs.select);
   },
-  beforeDestroy() {
+  beforeUnmount() {
     this.boxResizeObserver.unobserve(this.$refs.select);
   },
   methods: {
     onTypeheadInput(e) {
       this.thInput = e.target.value;
-      this.$emit('input', this.thInput);
+      this.$emit('update:modelValue', this.thInput);
     },
     onTypeheadKey(e) {
       const stop = () => {
@@ -276,7 +276,7 @@ export default {
       this.focusedItemIndex = null;
       this.$refs.list.scrollTo({ top: 0 });
       this.thInput = '';
-      this.$emit('input', this.thInput);
+      this.$emit('update:modelValue', this.thInput);
     },
     getBoxResizeObserver() {
       return new ResizeObserver(([ { target } ]) => {
@@ -307,10 +307,10 @@ export default {
           : entry === choice.value
       );
 
-      return this.value.data.some(condition);
+      return this.modelValue.data.some(condition);
     },
     allItemsSelected () {
-      return this.choices.length && this.value.data.length === this.choices.length;
+      return this.choices.length && this.modelValue.data.length === this.choices.length;
     },
     getSelectedOption(checked) {
       if (this.objectValues) {
@@ -475,7 +475,7 @@ export default {
     cursor: not-allowed;
   }
 
-  ::v-deep .apos-indicator {
+  :deep(.apos-indicator) {
     width: 10px;
     height: 10px;
   }

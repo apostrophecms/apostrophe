@@ -6,20 +6,25 @@
 
 <template>
   <AposModal
-    :modal="modal" :modal-title="modalTitle"
+    :modal="modal"
+    :modal-title="modalTitle"
     class="apos-media-manager"
-    @inactive="modal.active = false" @show-modal="modal.showModal = true"
-    @esc="confirmAndCancel" @no-modal="$emit('safe-close')"
+    @inactive="modal.active = false"
+    @show-modal="modal.showModal = true"
+    @esc="confirmAndCancel"
+    @no-modal="$emit('safe-close')"
   >
     <template v-if="relationshipField" #secondaryControls>
       <AposButton
-        type="default" label="apostrophe:cancel"
+        type="default"
+        label="apostrophe:cancel"
         @click="confirmAndCancel"
       />
     </template>
     <template v-else #secondaryControls>
       <AposButton
-        type="default" label="apostrophe:exit"
+        type="default"
+        label="apostrophe:exit"
         @click="confirmAndCancel"
       />
     </template>
@@ -68,22 +73,22 @@
         <template #bodyMain>
           <AposMediaManagerDisplay
             ref="display"
+            v-model:checked="checked"
             :accept="accept"
             :items="items"
             :module-options="moduleOptions"
+            :max-reached="maxReached()"
+            :options="{
+              disableUnchecked: maxReached(),
+              hideCheckboxes: !relationshipField
+            }"
             @edit="updateEditing"
-            v-model="checked"
             @select="select"
             @select-series="selectSeries"
             @select-another="selectAnother"
             @upload-started="uploading = true"
             @upload-complete="completeUploading"
             @create-placeholder="createPlaceholder"
-            :max-reached="maxReached()"
-            :options="{
-              disableUnchecked: maxReached(),
-              hideCheckboxes: !relationshipField
-            }"
           />
         </template>
       </AposModalBody>
@@ -100,13 +105,15 @@
             :selected="selected"
             :is-modified="isModified"
             :module-labels="moduleLabels"
-            @back="updateEditing(null)" @saved="updateMedia"
+            @back="updateEditing(null)"
+            @saved="updateMedia"
             @modified="editorModified"
           />
           <AposMediaManagerSelections
-            :items="selected"
-            @clear="clearSelected" @edit="updateEditing"
             v-show="!editing"
+            :items="selected"
+            @clear="clearSelected"
+            @edit="updateEditing"
           />
         </div>
       </AposModalRail>
@@ -233,7 +240,7 @@ export default {
     apos.bus.$on('content-changed', this.onContentChanged);
     apos.bus.$on('command-menu-manager-close', this.confirmAndCancel);
   },
-  destroyed() {
+  unmounted() {
     apos.bus.$off('content-changed', this.onContentChanged);
     apos.bus.$off('command-menu-manager-close', this.confirmAndCancel);
   },
@@ -451,7 +458,7 @@ export default {
 </script>
 
 <style lang="scss" scoped>
-.apos-media-manager ::v-deep .apos-media-manager-toolbar {
+.apos-media-manager :deep(.apos-media-manager-toolbar) {
   z-index: $z-index-manager-toolbar;
   position: relative;
 }

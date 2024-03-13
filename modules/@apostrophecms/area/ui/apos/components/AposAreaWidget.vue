@@ -1,13 +1,13 @@
 
 <template>
   <div
+    ref="widget"
     class="apos-area-widget-wrapper"
     :class="{'apos-area-widget-wrapper--foreign': foreign}"
     :data-area-widget="widget._id"
     :data-area-label="widgetLabel"
     :data-apos-widget-foreign="foreign ? 1 : 0"
     :data-apos-widget-id="widget._id"
-    ref="widget"
   >
     <div
       class="apos-area-widget-inner"
@@ -17,8 +17,8 @@
       @click="getFocus($event, widget._id)"
     >
       <div
-        class="apos-area-widget-controls apos-area-widget__label"
         ref="label"
+        class="apos-area-widget-controls apos-area-widget__label"
         :class="labelsClasses"
       >
         <ol class="apos-area-widget__breadcrumbs">
@@ -33,18 +33,16 @@
           >
             <AposButton
               type="quiet"
-              @click="getFocus($event, item.id)"
               :label="item.label"
               icon="chevron-right-icon"
               :icon-size="9"
               :modifiers="['icon-right', 'no-motion']"
+              @click="getFocus($event, item.id)"
             />
           </li>
           <li class="apos-area-widget__breadcrumb" data-apos-widget-breadcrumb="0">
             <AposButton
               type="quiet"
-              @click="foreign ? $emit('edit', i) : null"
-              @dblclick.native="(!foreign && !isContextual) ? $emit('edit', i) : null"
               :label="foreign ? {
                 key: 'apostrophe:editWidgetType',
                 label: $t(widgetLabel)
@@ -52,6 +50,8 @@
               :tooltip="!isContextual && 'apostrophe:editWidgetForeignTooltip'"
               :icon-size="11"
               :modifiers="['no-motion']"
+              @click="foreign ? $emit('edit', i) : null"
+              @dblclick="(!foreign && !isContextual) ? $emit('edit', i) : null"
             />
           </li>
         </ol>
@@ -63,14 +63,12 @@
         <AposAreaMenu
           v-if="!foreign"
           :max-reached="maxReached"
-          @add="$emit('add', $event);"
-          @menu-open="toggleMenuFocus($event, 'top', true)"
-          @menu-close="toggleMenuFocus($event, 'top', false)"
           :context-menu-options="contextMenuOptions"
           :index="i"
           :widget-options="widgets"
           :options="options"
           :disabled="disabled"
+          @add="$emit('add', $event);"
         />
       </div>
       <div
@@ -104,33 +102,34 @@
       />
       <!-- Still used for contextual editing components -->
       <component
-        v-if="isContextual && !foreign"
         :is="widgetEditorComponent(widget.type)"
+        v-if="isContextual && !foreign"
+        :key="generation"
         :options="widgetOptions"
         :type="widget.type"
-        :value="widget"
+        :model-value="widget"
         :meta="meta"
-        @update="$emit('update', $event)"
         :doc-id="docId"
         :focused="isFocused"
-        :key="generation"
+        @update="$emit('update', $event)"
       />
       <component
-        v-else
         :is="widgetComponent(widget.type)"
+        v-else
+        :id="widget._id"
+        :key="`${generation}-preview`"
         :options="widgetOptions"
         :type="widget.type"
-        :id="widget._id"
         :area-field-id="fieldId"
         :area-field="field"
         :following-values="followingValuesWithParent"
+        :model-value="widget"
         :value="widget"
         :meta="meta"
         :foreign="foreign"
-        @edit="$emit('edit', i);"
         :doc-id="docId"
         :rendering="rendering"
-        :key="`${generation}-preview`"
+        @edit="$emit('edit', i);"
       />
       <div
         class="apos-area-widget-controls apos-area-widget-controls--add apos-area-widget-controls--add--bottom"
@@ -139,14 +138,12 @@
         <AposAreaMenu
           v-if="!foreign"
           :max-reached="maxReached"
-          @add="$emit('add', $event)"
           :context-menu-options="bottomContextMenuOptions"
           :index="i + 1"
           :widget-options="widgets"
           :options="options"
           :disabled="disabled"
-          @menu-open="toggleMenuFocus($event, 'bottom', true)"
-          @menu-close="toggleMenuFocus($event, 'bottom', false)"
+          @add="$emit('add', $event)"
         />
       </div>
     </div>
@@ -279,7 +276,8 @@ export default {
       };
     },
     widgetIcon() {
-      const natural = this.contextMenuOptions.menu.filter(item => item.name === this.widget.type)[0]?.icon || 'shape-icon';
+      const natural = this.contextMenuOptions.menu
+        .filter(item => item.name === this.widget.type)[0]?.icon || 'shape-icon';
       return this.foreign ? 'earth-icon' : natural;
     },
     widgetLabel() {
@@ -377,7 +375,7 @@ export default {
       apos.bus.$emit('widget-focus', this.widget._id);
     }
   },
-  destroyed() {
+  unmounted() {
     // Remove the focus parent listener when unmounted
     apos.bus.$off('widget-focus-parent', this.focusParent);
   },
@@ -438,17 +436,6 @@ export default {
         this.isSuppressed = true;
         document.removeEventListener('click', this.unfocus);
         apos.bus.$emit('widget-focus', null);
-      }
-    },
-
-    toggleMenuFocus(event, name, value) {
-      if (event) {
-        event.cancelBubble = true;
-      }
-      this.state.add[name].focus = value;
-
-      if (value) {
-        this.focus();
       }
     },
 
@@ -517,7 +504,7 @@ export default {
     }
     &.apos-is-focused {
       outline: 1px dashed var(--a-primary);
-      &::v-deep .apos-rich-text-editor__editor.apos-is-visually-empty {
+      &:deep(.apos-rich-text-editor__editor.apos-is-visually-empty) {
         box-shadow: none;
       }
     }
@@ -577,11 +564,11 @@ export default {
   .apos-area-widget-controls--modify {
     right: 0;
     transform: translate3d(-10px, 30px, 0);
-    ::v-deep .apos-button-group__inner {
+    :deep(.apos-button-group__inner) {
       border: 1px solid var(--a-primary-transparent-25);
       box-shadow: var(--a-box-shadow);
     }
-    ::v-deep .apos-button-group .apos-button {
+    :deep(.apos-button-group) .apos-button {
       width: 32px;
       height: 32px;
       padding: 0;
@@ -608,9 +595,9 @@ export default {
     transform: translate(-50%, -50%);
   }
 
-  .apos-area-widget-controls--add ::v-deep {
+  .apos-area-widget-controls--add {
 
-    .apos-button__wrapper {
+    :deep(.apos-button__wrapper) {
       padding: 8px;
 
       &:hover .apos-button:not([disabled]) {
@@ -634,11 +621,11 @@ export default {
       }
     }
 
-    .apos-button__icon {
+    :deep(.apos-button__icon) {
       margin-right: 0;
     }
 
-    .apos-button__label {
+    :deep(.apos-button__label) {
       display: inline-block;
       overflow: hidden;
       max-width: 0;
@@ -648,7 +635,7 @@ export default {
       font-size: var(--a-type-small);
     }
 
-    .apos-button {
+    :deep(.apos-button) {
       display: flex;
       align-items: center;
       justify-content: center;
@@ -666,7 +653,7 @@ export default {
     transform: translate(-50%, 50%);
   }
 
-  .apos-area-widget-inner ::v-deep .apos-context-menu__popup.apos-is-visible {
+  .apos-area-widget-inner :deep(.apos-context-menu__popup.apos-is-visible) {
     top: calc(100% + 20px);
     left: 50%;
     transform: translate(-50%, 0);
@@ -698,7 +685,7 @@ export default {
   }
 
   .apos-area-widget__breadcrumb,
-  .apos-area-widget__breadcrumb ::v-deep .apos-button__content {
+  .apos-area-widget__breadcrumb :deep(.apos-button__content) {
     @include type-help;
     padding: 2px;
     white-space: nowrap;
@@ -707,7 +694,7 @@ export default {
   }
 
   .apos-area-widget__breadcrumbs:hover .apos-area-widget__breadcrumb,
-  .apos-area-widget__breadcrumbs:hover .apos-area-widget__breadcrumb ::v-deep .apos-button__content {
+  .apos-area-widget__breadcrumbs:hover .apos-area-widget__breadcrumb :deep(.apos-button__content) {
     color: var(--a-text-primary);
   }
 
@@ -729,7 +716,7 @@ export default {
     color: var(--a-text-primary);
   }
 
-  .apos-area-widget__breadcrumb ::v-deep .apos-button {
+  .apos-area-widget__breadcrumb :deep(.apos-button) {
     color: var(--a-primary-dark-10);
     &:hover, &:active, &:focus {
       text-decoration: none;

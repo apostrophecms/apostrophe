@@ -12,13 +12,13 @@ export default {
   },
   data() {
     return {
-      next: (this.value.data == null) ? null : this.value.data,
+      next: (this.modelValue.data == null) ? null : this.modelValue.data,
       choices: []
     };
   },
   computed: {
     classes () {
-      return [ this.value.duplicate && 'apos-input--error' ];
+      return [ this.modelValue.duplicate && 'apos-input--error' ];
     }
   },
   methods: {

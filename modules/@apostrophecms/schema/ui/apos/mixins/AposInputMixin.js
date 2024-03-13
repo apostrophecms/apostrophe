@@ -2,11 +2,11 @@ import { klona } from 'klona';
 
 export default {
   // Implements v-model pattern
-  emits: [ 'input' ],
+  emits: [ 'update:modelValue' ],
   props: {
     // The value passed in from the parent component through the v-model
     // directive.
-    value: {
+    modelValue: {
       type: Object,
       required: true
     },
@@ -59,7 +59,7 @@ export default {
   },
   data () {
     return {
-      next: (this.value && this.value.data !== undefined) ? this.value.data : '',
+      next: (this.modelValue && this.modelValue.data !== undefined) ? this.modelValue.data : '',
       error: false,
       // This is just meant to be sufficient to prevent unintended collisions
       // in the UI between id attributes
@@ -72,7 +72,7 @@ export default {
     this.$el.addEventListener('focusin', this.focusInListener);
     this.$el.addEventListener('focusout', this.focusOutListener);
   },
-  destroyed () {
+  unmounted () {
     this.$el.removeEventListener('focusin', this.focusInListener);
     this.$el.removeEventListener('focusout', this.focusOutListener);
   },
@@ -102,7 +102,7 @@ export default {
     }
   },
   watch: {
-    value: {
+    modelValue: {
       deep: true,
       handler (value) {
         this.watchValue();
@@ -134,15 +134,15 @@ export default {
       // If the field is conditional and isn't shown, disregard any errors.
       const error = this.conditionMet === false ? false : this.validate(this.next);
 
-      this.$emit('input', {
+      this.$emit('update:modelValue', {
         data: error ? this.next : this.convert(this.next),
         error,
-        ranValidation: this.conditionMet === false ? this.value.ranValidation : true
+        ranValidation: this.conditionMet === false ? this.modelValue.ranValidation : true
       });
     },
     watchValue () {
-      this.error = this.value.error;
-      this.next = this.value.data;
+      this.error = this.modelValue.error;
+      this.next = this.modelValue.data;
     },
     watchNext () {
       this.validateAndEmit();

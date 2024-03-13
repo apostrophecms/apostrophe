@@ -1,13 +1,17 @@
 <template>
   <AposModal
-    class="apos-doc-editor" :modal="modal"
+    class="apos-doc-editor"
+    :modal="modal"
     :modal-title="modalTitle"
-    @inactive="modal.active = false" @show-modal="modal.showModal = true"
-    @esc="confirmAndCancel" @no-modal="$emit('safe-close')"
+    @inactive="modal.active = false"
+    @show-modal="modal.showModal = true"
+    @esc="confirmAndCancel"
+    @no-modal="$emit('safe-close')"
   >
     <template #secondaryControls>
       <AposButton
-        type="default" label="apostrophe:cancel"
+        type="default"
+        label="apostrophe:cancel"
         @click="confirmAndCancel"
       />
     </template>
@@ -23,8 +27,8 @@
     <template #leftRail>
       <AposModalRail>
         <AposModalTabs
-          :key="tabKey"
           v-if="tabs.length"
+          :key="tabKey"
           :current="currentTab"
           :tabs="tabs"
           :errors="fieldErrors"
@@ -41,12 +45,12 @@
                 v-for="tab in tabs"
                 v-show="tab.name === currentTab"
                 :key="tab.name"
+                :ref="tab.name"
                 :schema="groups[tab.name].schema"
                 :current-fields="groups[tab.name].fields"
-                :value="docFields"
+                :model-value="docFields"
                 :trigger-validation="triggerValidation"
-                :ref="tab.name"
-                @input="updateDocFields"
+                @update:model-value="updateDocFields"
               />
             </div>
           </AposModalTabsBody>
@@ -78,7 +82,7 @@ export default {
         return [];
       }
     },
-    value: {
+    modelValue: {
       type: Object,
       default() {
         return null;
@@ -93,10 +97,10 @@ export default {
   data() {
     return {
       docReady: false,
-      original: this.value,
+      original: this.modelValue,
       docFields: {
         data: {
-          ...((this.value != null) ? this.value
+          ...((this.modelValue != null) ? this.modelValue
             : Object.fromEntries(
               this.schema.map(field =>
                 [ field.name, (field.def !== undefined) ? klona(field.def) : null ]

@@ -1,26 +1,26 @@
 <template>
   <div class="apos-tiptap-select">
     <component
-      :is="icon"
+      :is="tool.icon"
       :size="16"
       class="apos-tiptap-select__type-icon"
       fill-color="currentColor"
     />
     <select
       v-apos-tooltip="{
-        content: `apostrophe:${tooltip}`,
+        content: tool.label,
         placement: 'top',
         delay: 650
       }"
-      :value="active"
-      @change="setStyle($event)"
+      :model-value="active"
       class="apos-tiptap-control apos-tiptap-control--select"
-      :style="`width:${options[name][active].label.length * 6.5}px`"
+      :style="`width:${options.nodes[active].label.length * 6.5}px`"
+      @change="setStyle"
     >
       <option
-        v-for="(style, i) in options[name]"
-        :value="i"
+        v-for="(style, i) in options.nodes"
         :key="style.label"
+        :value="i"
       >
         {{ style.label }}
       </option>
@@ -59,9 +59,8 @@ export default {
   },
   computed: {
     active() {
-      const styles = this.options[this.name];
-      for (let i = 0; (i < styles.length); i++) {
-        const style = styles[i];
+      for (let i = 0; (i < this.options.nodes.length); i++) {
+        const style = this.options.nodes[i];
         if (this.editor.isActive(style.type, (style.options || {}))) {
           return i;
         } else if (this.editor.state.selection.$head.parent.type.name === 'defaultNode' && style.def) {
@@ -73,17 +72,11 @@ export default {
     },
     moduleOptions() {
       return window.apos.modules['@apostrophecms/rich-text-widget'];
-    },
-    icon() {
-      return this.name === 'nodes' ? 'format-text-icon' : 'palette-swatch-icon';
-    },
-    tooltip() {
-      return this.name === 'nodes' ? 'richTextNodeStyles' : 'richTextMarkStyles';
     }
   },
   methods: {
     setStyle($event) {
-      const style = this.options[this.name][$event.target.value];
+      const style = this.options.nodes[$event.target.value];
       this.editor.commands.focus();
       this.editor.commands[style.command](style.type, style.options || {});
     }
