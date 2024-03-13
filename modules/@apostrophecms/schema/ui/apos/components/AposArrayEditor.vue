@@ -10,13 +10,15 @@
   >
     <template #secondaryControls>
       <AposButton
-        type="default" label="apostrophe:cancel"
+        type="default"
+        label="apostrophe:cancel"
         @click="confirmAndCancel"
       />
     </template>
     <template #primaryControls>
       <AposButton
-        type="primary" label="apostrophe:save"
+        type="primary"
+        label="apostrophe:save"
         :disabled="!valid"
         @click="submit"
       />
@@ -48,10 +50,10 @@
           </div>
           <AposSlatList
             class="apos-modal-array-items__items"
-            @input="update"
-            @select="select"
             :selected="currentId"
-            :value="withLabels(next)"
+            :model-value="withLabels(next)"
+            @update:model-value="update"
+            @select="select"
           />
         </div>
       </AposModalRail>
@@ -65,16 +67,16 @@
                 <div class="apos-array-item__body">
                   <AposSchema
                     v-if="currentId"
+                    ref="schema"
                     :schema="schema"
                     :trigger-validation="triggerValidation"
                     :following-values="followingValues()"
                     :conditional-fields="conditionalFields"
-                    :value="currentDoc"
+                    :model-value="currentDoc"
                     :meta="currentDocMeta"
                     :server-errors="currentDocServerErrors"
-                    ref="schema"
                     :doc-id="docId"
-                    @input="currentDocUpdate"
+                    @update:model-value="currentDocUpdate"
                     @validate="triggerValidate"
                   />
                 </div>

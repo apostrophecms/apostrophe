@@ -24,24 +24,24 @@
 -->
 <template>
   <component
+    :is="fieldStyle === 'table' ? 'tr' : 'div'"
     class="apos-schema"
     :class="classes"
-    :is="fieldStyle === 'table' ? 'tr' : 'div'"
   >
     <slot name="before" />
     <component
+      :is="fieldStyle === 'table' ? 'td' : 'div'"
       v-for="field in schema"
       :key="field.name.concat(field._id ?? '')"
       :data-apos-field="field.name"
-      :is="fieldStyle === 'table' ? 'td' : 'div'"
       :style="(fieldStyle === 'table' && field.columnStyle) || {}"
-      v-show="displayComponent(field)"
+      :class="{'apos-field--hidden': !displayComponent(field)}"
     >
       <component
-        v-show="displayComponent(field)"
+        :is="fieldComponentMap[field.type]"
+        :ref="field.name"
         v-model="fieldState[field.name]"
         :class="{ 'apos-field__wrapper--highlight': highlight(field.name) }"
-        :is="fieldComponentMap[field.type]"
         :following-values="followingValues[field.name]"
         :condition-met="conditionalFields?.if[field.name]"
         :field="fields[field.name].field"
@@ -51,17 +51,17 @@
         :trigger-validation="triggerValidation"
         :server-error="fields[field.name].serverError"
         :doc-id="docId"
-        :ref="field.name"
         :generation="generation"
         @update-doc-data="onUpdateDocData"
         @validate="emitValidate()"
       />
       <component
+        :is="fieldComponentMap[field.type]"
         v-if="hasCompareMeta"
         v-show="displayComponent(field)"
+        :ref="field.name"
         v-model="compareMetaState[field.name]"
         :class="{ 'apos-field__wrapper--highlight': highlight(field.name) }"
-        :is="fieldComponentMap[field.type]"
         :following-values="followingValues[field.name]"
         :condition-met="conditionalFields?.if[field.name]"
         :field="fields[field.name].field"
@@ -71,7 +71,6 @@
         :trigger-validation="triggerValidation"
         :server-error="fields[field.name].serverError"
         :doc-id="docId"
-        :ref="field.name"
         :generation="generation"
         @update-doc-data="onUpdateDocData"
         @validate="emitValidate()"
@@ -90,34 +89,36 @@ export default {
 </script>
 
 <style lang="scss" scoped>
-  .apos-schema ::v-deep .apos-field__wrapper {
+  .apos-schema :deep(.apos-field__wrapper) {
     max-width: $input-max-width;
   }
 
-  .apos-schema ::v-deep .apos-field__wrapper.apos-field__wrapper--full-width {
+  .apos-schema :deep(.apos-field__wrapper.apos-field__wrapper--full-width) {
     max-width: inherit;
   }
 
-  .apos-schema ::v-deep img {
+  .apos-schema :deep(img) {
     max-width: 100%;
   }
 
-  .apos-field {
-    .apos-schema ::v-deep & {
-      margin-bottom: $spacing-quadruple;
-      &.apos-field--small,
-      &.apos-field--micro,
-      &.apos-field--margin-micro {
-        margin-bottom: $spacing-double;
-      }
-      &.apos-field--margin-none {
-        margin-bottom: 0;
-      }
-    }
+  .apos-schema .apos-field--hidden {
+    display: none;
+  }
 
-    .apos-schema ::v-deep .apos-toolbar & {
+  .apos-schema :deep(.apos-field) {
+    margin-bottom: $spacing-quadruple;
+    &.apos-field--small,
+    &.apos-field--micro,
+    &.apos-field--margin-micro {
+      margin-bottom: $spacing-double;
+    }
+    &.apos-field--margin-none {
       margin-bottom: 0;
     }
+  }
+
+  .apos-field .apos-schema :deep(.apos-toolbar) {
+    margin-bottom: 0;
   }
 
   .apos-schema.apos-schema--compare > :deep([data-apos-field]) {

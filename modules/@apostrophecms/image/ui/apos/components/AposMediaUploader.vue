@@ -28,13 +28,14 @@
       </div>
     </div>
     <input
-      type="file" class="apos-sr-only"
       ref="upload"
-      @input="uploadMedia"
+      type="file"
+      class="apos-sr-only"
       :accept="accept"
       multiple="true"
       :disabled="disabled"
       tabindex="-1"
+      @input="uploadMedia"
     >
   </label>
 </template>
@@ -49,7 +50,7 @@ export default {
     },
     disabled: {
       type: Boolean,
-      required: false
+      default: false
     },
     accept: {
       type: String,
@@ -82,7 +83,7 @@ export default {
   mounted() {
     apos.bus.$on('command-menu-manager-create-new', this.create);
   },
-  destroyed() {
+  unmounted() {
     apos.bus.$off('command-menu-manager-create-new', this.create);
   },
   methods: {

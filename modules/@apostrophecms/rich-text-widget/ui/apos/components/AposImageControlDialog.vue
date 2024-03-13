@@ -13,21 +13,22 @@
       menu-placement="bottom-start"
     >
       <AposSchema
+        :key="lastSelectionTime"
+        v-model="docFields"
         :schema="schema"
         :trigger-validation="triggerValidation"
-        v-model="docFields"
         :modifiers="formModifiers"
-        :key="lastSelectionTime"
         :generation="generation"
         :following-values="followingValues()"
         :conditional-fields="conditionalFields"
-        @input="evaluateConditions()"
+        @update:model-value="evaluateConditions()"
       />
       <footer class="apos-image-control__footer">
         <AposButton
-          type="default" label="apostrophe:cancel"
-          @click="close"
+          type="default"
+          label="apostrophe:cancel"
           :modifiers="formModifiers"
+          @click="close"
         />
         <AposButton
           type="primary"
@@ -266,7 +267,7 @@ function getOptions() {
   }
 
   // special schema style for this use
-  .apos-image-control ::v-deep .apos-field--target {
+  .apos-image-control :deep(.apos-field--target) {
     .apos-field__label {
       display: none;
     }

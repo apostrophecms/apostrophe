@@ -1,35 +1,40 @@
 <template>
   <AposInputWrapper
-    :modifiers="modifiers" :field="field"
-    :error="effectiveError" :uid="uid"
+    :modifiers="modifiers"
+    :field="field"
+    :error="effectiveError"
+    :uid="uid"
     :display-options="displayOptions"
     :meta="fieldMeta"
   >
     <template #body>
       <div :class="wrapperClasses">
         <span
-          class="apos-input__slug-locale-prefix"
           v-if="localePrefix"
-          @click="passFocus"
           v-apos-tooltip="'apostrophe:cannotChangeSlugPrefix'"
+          class="apos-input__slug-locale-prefix"
+          @click="passFocus"
         >
           {{ localePrefix }}
         </span>
         <input
-          :class="classes"
-          v-model="next" :type="type"
-          :placeholder="$t(field.placeholder)"
-          @keydown.enter="emitReturn"
-          :disabled="field.readOnly" :required="field.required"
-          :id="uid" :tabindex="tabindex"
+          :id="uid"
           ref="input"
+          v-model="next"
+          :class="classes"
+          :type="type"
+          :placeholder="$t(field.placeholder)"
+          :disabled="field.readOnly"
+          :required="field.required"
+          :tabindex="tabindex"
           :autocomplete="field.autocomplete"
+          @keydown.enter="emitReturn"
         >
         <component
+          :is="icon"
           v-if="icon"
           :size="iconSize"
           class="apos-input-icon"
-          :is="icon"
         />
       </div>
     </template>
@@ -40,8 +45,7 @@
 import AposInputSlugLogic from '../logic/AposInputSlug';
 export default {
   name: 'AposInputSlug',
-  mixins: [ AposInputSlugLogic ],
-  emits: [ 'return' ]
+  mixins: [ AposInputSlugLogic ]
 };
 </script>
 

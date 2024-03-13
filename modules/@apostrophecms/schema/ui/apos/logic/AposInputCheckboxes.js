@@ -6,15 +6,15 @@ export default {
   name: 'AposInputCheckboxes',
   mixins: [ AposInputMixin, AposInputChoicesMixin ],
   beforeMount () {
-    this.value.data = Array.isArray(this.value.data) ? this.value.data : [];
+    this.modelValue.data = Array.isArray(this.modelValue.data) ? this.modelValue.data : [];
   },
   methods: {
     getChoiceId(uid, value) {
       return uid + value.replace(/\s/g, '');
     },
     watchValue () {
-      this.error = this.value.error;
-      this.next = this.value.data || [];
+      this.error = this.modelValue.error;
+      this.next = this.modelValue.data || [];
     },
     validate(values) {
       // The choices and values should always be arrays.
@@ -51,17 +51,17 @@ export default {
     },
     selectItems(choice) {
       if (choice.value === '__all') {
-        this.value.data = this.choices.length === this.value.data.length
+        this.modelValue.data = this.choices.length === this.modelValue.data.length
           ? []
           : this.choices.map(({ value }) => value);
 
         return;
       }
 
-      if (this.value.data.includes(choice.value)) {
-        this.value.data = this.value.data.filter((val) => val !== choice.value);
+      if (this.modelValue.data.includes(choice.value)) {
+        this.modelValue.data = this.modelValue.data.filter((val) => val !== choice.value);
       } else {
-        this.value.data.push(choice.value);
+        this.modelValue.data.push(choice.value);
       }
     }
   }

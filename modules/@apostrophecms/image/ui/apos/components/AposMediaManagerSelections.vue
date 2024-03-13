@@ -91,7 +91,7 @@ export default {
   margin-bottom: $spacing-double;
 }
 
-.apos-media-manager-selections__heading ::v-deep .apos-button {
+.apos-media-manager-selections__heading :deep(.apos-button) {
   margin-left: $spacing-base;
 }
 

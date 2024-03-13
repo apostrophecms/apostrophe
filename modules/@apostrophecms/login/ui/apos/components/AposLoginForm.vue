@@ -1,8 +1,8 @@
 <template>
   <div
+    v-if="phase === 'beforeSubmit' || phase === 'uponSubmit'"
     key="1"
     class="apos-login-form"
-    v-if="phase === 'beforeSubmit' || phase === 'uponSubmit'"
   >
     <TheAposLoginHeader
       :env="context.env"
@@ -11,30 +11,30 @@
     />
 
     <div class="apos-login-form__body">
-      <form @submit.prevent="submit" data-apos-test="loginForm">
+      <form data-apos-test="loginForm" @submit.prevent="submit">
         <AposSchema
-          :schema="schema"
           v-model="doc"
+          :schema="schema"
         />
         <a
-          href="#"
           v-if="passwordResetEnabled"
+          href="#"
           class="apos-login-form__link"
           @click.prevent="$emit('set-stage', 'forgotPassword')"
         >{{ $t('apostrophe:loginResetPassword') }}</a>
         <Component
+          v-bind="getRequirementProps(requirement.name)"
+          :is="requirement.component"
           v-for="requirement in beforeSubmitRequirements"
           :key="requirement.name"
-          :is="requirement.component"
-          v-bind="getRequirementProps(requirement.name)"
           @done="requirementDone(requirement, $event)"
           @block="requirementBlock(requirement)"
         />
         <template v-if="phase === 'uponSubmit'">
           <Component
+            :is="requirement.component"
             v-for="requirement in uponSubmitRequirements"
             :key="requirement.name"
-            :is="requirement.component"
             v-bind="getRequirementProps(requirement.name)"
             @done="requirementDone(requirement, $event)"
             @block="requirementBlock(requirement)"
@@ -55,9 +55,9 @@
     </div>
   </div>
   <div
+    v-else-if="activeSoloRequirement"
     key="2"
     class="apos-login-form"
-    v-else-if="activeSoloRequirement"
   >
     <TheAposLoginHeader
       :env="context.env"
@@ -67,9 +67,9 @@
     />
     <div class="apos-login-form__body">
       <Component
-        v-if="!fetchingRequirementProps"
         v-bind="getRequirementProps(activeSoloRequirement.name)"
         :is="activeSoloRequirement.component"
+        v-if="!fetchingRequirementProps"
         :success="activeSoloRequirement.success"
         :error="activeSoloRequirement.error"
         @done="requirementDone(activeSoloRequirement, $event)"
@@ -115,7 +115,7 @@ export default {
     }
   }
 
-  .apos-login-form__submit ::v-deep .apos-button {
+  .apos-login-form__submit :deep(.apos-button) {
     height: 47px;
   }
 </style>

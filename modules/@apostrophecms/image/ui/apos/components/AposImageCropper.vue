@@ -1,15 +1,15 @@
 <template>
   <div
     class="apos-image-cropper"
-    @click="onImageClick"
     :style="{
       height: cropperHeight
     }"
+    @click="onImageClick"
   >
     <span
-      class="apos-image-focal-point"
       ref="focalPoint"
       v-apos-tooltip="'apostrophe:focalPoint'"
+      class="apos-image-focal-point"
       @mousedown="onFocalPointMouseDown"
     />
     <cropper
@@ -18,13 +18,13 @@
         ? attachment._urls.uncropped.original
         : attachment._urls.original"
       :debounce="0"
-      @ready="onCropperReady"
-      @change="onCropperChange"
       :default-size="defaultSize"
       :default-position="defaultPosition"
       :stencil-props="stencilProps"
       :min-width="minSize[0]"
       :min-height="minSize[1]"
+      @ready="onCropperReady"
+      @change="onCropperChange"
     />
   </div>
 </template>
@@ -127,7 +127,7 @@ export default {
       left: this.docFields.data.left
     };
   },
-  beforeDestroy() {
+  beforeUnmount() {
     this.$refs.focalPoint.removeEventListener('mousedown', this.onFocalPointMouseDown);
     window.removeEventListener('resize', this.onScreenResizeDebounced);
   },

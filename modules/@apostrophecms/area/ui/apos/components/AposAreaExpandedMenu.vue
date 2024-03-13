@@ -16,7 +16,7 @@
             :key="groupIndex"
             class="apos-widget-group"
           >
-            <h2 class="apos-widget-group__label" v-if="group.label">{{ $t(group.label) }}</h2>
+            <h2 v-if="group.label" class="apos-widget-group__label">{{ $t(group.label) }}</h2>
             <div
               :class="[
                 `apos-widget-group--${group.columns}-column${
@@ -42,10 +42,11 @@
                     class="apos-widget__preview-image"
                   >
                   <component
+                    :is="getIcon(item)"
                     v-else-if="hasIcon(item)"
+                    :title="getTitle(item)"
                     :size="25"
                     class="apos-widget__preview--icon"
-                    :is="item.previewIcon || item.icon"
                   />
                 </div>
                 <p class="apos-widget__label">
@@ -173,8 +174,15 @@ export default {
 
       return group;
     },
-    hasIcon(widget) {
+    getIcon(widget) {
       return widget.previewIcon || widget.icon;
+    },
+    hasIcon(widget) {
+      return Boolean(widget.previewIcon || widget.icon);
+    },
+    getTitle(widget) {
+      const icon = this.getIcon(widget);
+      return icon.replaceAll('-', ' ');
     },
     close() {
       this.modal.showModal = false;

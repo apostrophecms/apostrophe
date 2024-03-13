@@ -54,12 +54,12 @@ export default {
   display: inline-flex;
   align-items: center;
 
-  ::v-deep .apos-button {
+  :deep(.apos-button) {
     @include type-base;
     color: var(--a-text-primary);
   }
 
-  ::v-deep .apos-context-menu__popup {
+  :deep(.apos-context-menu__popup) {
     right: 0;
     transform: translatex(10px);
   }

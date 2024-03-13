@@ -1,7 +1,7 @@
 <template>
   <div
-    class="apos-login-form"
     v-if="passwordResetEnabled"
+    class="apos-login-form"
   >
     <TheAposLoginHeader
       :env="context.env"
@@ -23,8 +23,8 @@
       />
       <form v-else @submit.prevent="submit">
         <AposSchema
-          :schema="schema"
           v-model="doc"
+          :schema="schema"
         />
         <AposButton
           data-apos-test="pwdResetRequestSubmit"
@@ -61,7 +61,7 @@ export default {
     }
   }
 
-  .apos-login-form__submit ::v-deep .apos-button {
+  .apos-login-form__submit :deep(.apos-button) {
     height: 47px;
   }
 </style>

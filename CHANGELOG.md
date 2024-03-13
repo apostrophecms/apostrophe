@@ -1,6 +1,6 @@
 # Changelog
 
-## UNRELEASED
+## 4.0.0 (2024-03-12)
 
 ### Adds
 
@@ -9,6 +9,13 @@
 * Add the possibility to make widget modals wider, which can be useful for widgets that contain areas taking significant space. See [documentation](https://v3.docs.apostrophecms.org/reference/modules/widget-type.html#options).
 * Add new `getChanges` method to the schema module to get an array of document changed field names instead of just a boolean like does the `isEqual` method. 
 * Add highlight class in UI when comparing documents.
+
+### Changes
+
+* Migrate to Vue 3. This entails changes to some admin UI code, as detailed in our public announcement.
+There are no other backwards incompatible changes in apostrophe version 4.0.0.
+Certain other modules containing custom admin UI have also been updated in a new major version to be compatible,
+as noted in our announcement and on the migration page of our website.
 
 ### Fixes
 

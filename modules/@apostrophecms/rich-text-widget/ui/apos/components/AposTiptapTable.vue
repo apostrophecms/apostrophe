@@ -3,13 +3,13 @@
     <!-- "current" is just a hack to make it easy to reset to no selection after an action -->
     <select
       v-model="current"
-      @change="takeAction"
       class="apos-tiptap-control apos-tiptap-control--select"
+      @change="takeAction"
     >
       <option
         v-for="action in actions"
-        :value="action.name"
         :key="action.name"
+        :value="action.name"
       >
         {{ $t(action.label) }}
       </option>
@@ -162,7 +162,7 @@ export default {
     position: relative;
   }
 
-  .apos-tiptap-select ::v-deep .apos-tiptap-select__icon {
+  .apos-tiptap-select :deep(.apos-tiptap-select__icon) {
     position: absolute;
     top: 50%;
     right: 5px;

@@ -1,13 +1,17 @@
 <template>
   <AposModal
     class="apos-widget-editor"
-    :modal="modal" :modal-title="editLabel"
-    @inactive="modal.active = false" @show-modal="modal.showModal = true"
-    @esc="confirmAndCancel" @no-modal="$emit('safe-close')"
+    :modal="modal"
+    :modal-title="editLabel"
+    @inactive="modal.active = false"
+    @show-modal="modal.showModal = true"
+    @esc="confirmAndCancel"
+    @no-modal="$emit('safe-close')"
   >
     <template #breadcrumbs>
       <AposModalBreadcrumbs
-        v-if="breadcrumbs && breadcrumbs.length" :items="breadcrumbs"
+        v-if="breadcrumbs && breadcrumbs.length"
+        :items="breadcrumbs"
       />
     </template>
     <template #main>
@@ -15,15 +19,15 @@
         <template #bodyMain>
           <div class="apos-widget-editor__body">
             <AposSchema
+              ref="schema"
               :trigger-validation="triggerValidation"
               :schema="schema"
-              :value="docFields"
+              :model-value="docFields"
               :meta="meta"
-              @input="updateDocFields"
-              @validate="triggerValidate"
               :following-values="followingValues()"
               :conditional-fields="conditionalFields"
-              ref="schema"
+              @update:model-value="updateDocFields"
+              @validate="triggerValidate"
             />
           </div>
         </template>
@@ -31,13 +35,15 @@
     </template>
     <template #footer>
       <AposButton
-        type="default" label="apostrophe:cancel"
+        type="default"
+        label="apostrophe:cancel"
         @click="confirmAndCancel"
       />
       <AposButton
-        type="primary" @click="save"
+        type="primary"
         :label="saveLabel"
         :disabled="docFields.hasErrors"
+        @click="save"
       />
     </template>
   </AposModal>
@@ -68,7 +74,7 @@ export default {
       required: true,
       type: Object
     },
-    value: {
+    modelValue: {
       required: false,
       type: Object,
       default() {
@@ -95,7 +101,7 @@ export default {
     const moduleOptions = window.apos.modules[apos.area.widgetManagers[this.type]];
 
     return {
-      id: this.value && this.value._id,
+      id: this.modelValue && this.modelValue._id,
       original: null,
       docFields: {
         data: {},
@@ -155,17 +161,17 @@ export default {
       ...apos.area.widgetOptions
     ];
   },
-  destroyed() {
+  unmounted() {
     apos.area.widgetOptions = apos.area.widgetOptions.slice(1);
   },
   created() {
     const defaults = this.getDefault();
 
-    if (this.value) {
-      this.original = klona(this.value);
+    if (this.modelValue) {
+      this.original = klona(this.modelValue);
       this.docFields.data = {
         ...defaults,
-        ...this.value
+        ...this.modelValue
       };
       return;
     }

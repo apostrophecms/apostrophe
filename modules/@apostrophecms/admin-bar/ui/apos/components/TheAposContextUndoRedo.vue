@@ -11,9 +11,12 @@
     >
       <AposButton
         :disabled="!canUndo"
-        type="subtle" :modifiers="['small', 'no-motion']"
-        label="apostrophe:undo" class="apos-admin-bar__context-button"
-        icon="undo-icon" :icon-only="true"
+        type="subtle"
+        :modifiers="['small', 'no-motion']"
+        label="apostrophe:undo"
+        class="apos-admin-bar__context-button"
+        icon="undo-icon"
+        :icon-only="true"
         @click="undo"
       />
     </div>
@@ -23,9 +26,12 @@
     >
       <AposButton
         :disabled="!canRedo"
-        type="subtle" :modifiers="['small', 'no-motion']"
-        label="apostrophe:redo" class="apos-admin-bar__context-button"
-        icon="redo-icon" :icon-only="true"
+        type="subtle"
+        :modifiers="['small', 'no-motion']"
+        label="apostrophe:redo"
+        class="apos-admin-bar__context-button"
+        icon="redo-icon"
+        :icon-only="true"
         @click="redo"
       />
     </div>
@@ -74,7 +80,7 @@ export default {
     apos.bus.$on('command-menu-admin-bar-undo', this.undo);
     apos.bus.$on('command-menu-admin-bar-redo', this.redo);
   },
-  destroyed() {
+  unmounted() {
     apos.bus.$off('command-menu-admin-bar-undo', this.undo);
     apos.bus.$off('command-menu-admin-bar-redo', this.redo);
   },
@@ -93,7 +99,7 @@ export default {
 };
 </script>
 <style lang="scss" scoped>
-  ::v-deep .apos-admin-bar__context-button.apos-button__wrapper {
+  :deep(.apos-admin-bar__context-button.apos-button__wrapper) {
     display: flex;
   }
 </style>

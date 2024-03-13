@@ -4,8 +4,8 @@
     class="apos-admin-bar-wrapper"
     :class="themeClass"
   >
-    <div class="apos-admin-bar-spacer" ref="spacer" />
-    <nav class="apos-admin-bar" ref="adminBar">
+    <div ref="spacer" class="apos-admin-bar-spacer" />
+    <nav ref="adminBar" class="apos-admin-bar">
       <div class="apos-admin-bar__row">
         <AposLogoPadless class="apos-admin-bar__logo" />
         <TheAposAdminBarMenu :items="menuItems" />
@@ -18,10 +18,10 @@
       </div>
       <TheAposContextBar @visibility-changed="setSpacer" />
       <component
-        v-for="bar in bars"
         v-bind="bar.props || {}"
-        :key="bar.id"
         :is="bar.componentName"
+        v-for="bar in bars"
+        :key="bar.id"
       />
     </nav>
   </div>
@@ -36,9 +36,7 @@ export default {
   props: {
     items: {
       type: Array,
-      default: function () {
-        return [];
-      }
+      required: true
     }
   },
   computed: {
@@ -55,7 +53,7 @@ export default {
       return this.moduleOptions.bars;
     }
   },
-  async mounted() {
+  mounted() {
     this.setSpacer();
   },
   methods: {
@@ -86,7 +84,7 @@ export default {
   background: var(--a-background-primary);
 }
 
-::v-deep .apos-admin-bar__row {
+:deep(.apos-admin-bar__row) {
   display: flex;
   align-items: center;
   height: 35px;
@@ -100,7 +98,7 @@ export default {
   margin-right: 10px;
 }
 
-::v-deep .apos-admin-bar__control-set {
+:deep(.apos-admin-bar__control-set) {
   @include type-base;
   display: flex;
   width: 100%;
@@ -111,27 +109,27 @@ export default {
   margin-left: auto;
 }
 
-::v-deep .apos-context-menu__pane {
+:deep(.apos-context-menu__pane) {
   min-width: 150px;
 }
-::v-deep .flip-enter { // to the ground
+:deep(.flip-enter) { // to the ground
   transform: translateY(-20%);
   opacity: 0;
 }
-::v-deep .flip-leave { // in the frame
+:deep(.flip-leave) { // in the frame
   transform: translateY(0);
   opacity: 1;
 }
-::v-deep .flip-enter-to { // from the ground
+:deep(.flip-enter-to) { // from the ground
   transform: translateY(0);
   opacity: 1;
 }
-::v-deep .flip-leave-to { // to the sky
+:deep(.flip-leave-to) { // to the sky
   transform: translateY(20%);
   opacity: 0;
 }
 
-::v-deep .flip-enter-active, ::v-deep .flip-leave-active {
+:deep(.flip-enter-active), :deep(.flip-leave-active) {
   transition: all 150ms;
   &.apos-admin-bar__control-set__group {
     position: absolute;

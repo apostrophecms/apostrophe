@@ -35,10 +35,6 @@ export default {
     docId: {
       type: String,
       default: null
-    },
-    parentFollowingValues: {
-      type: Object,
-      default: null
     }
   },
   emits: [ 'modal-result', 'safe-close' ],

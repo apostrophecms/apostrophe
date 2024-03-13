@@ -8,10 +8,10 @@
   >
     <template #body>
       <AposSelect
+        :id="uid"
         :choices="choices"
         :disabled="field.readOnly"
-        :selected="value.data"
-        :id="uid"
+        :selected="modelValue.data"
         :classes="[ 'apos-input__role' ]"
         :wrapper-classes="[ 'apos-input__role' ]"
         @change="change"
@@ -29,7 +29,7 @@ export default {
   mixins: [ AposInputMixin ],
   data() {
     return {
-      next: (this.value.data == null) ? null : this.value.data,
+      next: (this.modelValue.data == null) ? null : this.modelValue.data,
       choices: []
     };
   },

@@ -1,11 +1,13 @@
 <template>
   <div
-    id="apos-modals" :class="themeClass"
+    id="apos-modals"
+    :class="themeClass"
   >
     <component
-      v-for="modal in stack" :key="modal.id"
-      :is="modal.componentName"
       v-bind="modal.props"
+      :is="modal.componentName"
+      v-for="modal in stack"
+      :key="modal.id"
       @modal-result="modal.result = $event"
       @safe-close="resolve(modal)"
     />
@@ -64,7 +66,7 @@ export default {
   },
   methods: {
     async execute(componentName, props) {
-      return new Promise((resolve, reject) => {
+      return new Promise((resolve) => {
         const item = {
           id: cuid(),
           componentName,
@@ -112,6 +114,22 @@ export default {
       };
 
       return properties;
+    },
+
+    async confirm(content, options = {}) {
+      return this.execute(apos.modal.components.confirm, {
+        content,
+        mode: 'confirm',
+        options
+      });
+    },
+
+    async alert(alertContent, options = {}) {
+      return this.execute(apos.modal.components.confirm, {
+        content: alertContent,
+        mode: 'alert',
+        options
+      });
     }
   }
 };

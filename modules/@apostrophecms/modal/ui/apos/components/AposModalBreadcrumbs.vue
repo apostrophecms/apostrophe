@@ -2,11 +2,13 @@
   <nav :class="['apos-breadcrumb', classObj]" aria-label="breadcrumb">
     <ol class="apos-breadcrumb__items">
       <li
-        v-for="(item, index) in items" :key="index"
+        v-for="(item, index) in items"
+        :key="index"
         :class="`apos-breadcrumb__item ${modifier}`"
       >
         <component
-          :is="item.target ? 'button' : 'span'" :data-apos-target="item.target"
+          :is="item.target ? 'button' : 'span'"
+          :data-apos-target="item.target"
           :type="item.target ? 'button' : null"
           :aria-label="item.target ? {
             key: 'apostrophe:returnToPage',
@@ -17,8 +19,9 @@
           {{ item.label }}
         </component>
         <ChevronRightIcon
-          class="apos-breadcrumb__chevron" :size="13"
           v-if="index !== last"
+          class="apos-breadcrumb__chevron"
+          :size="13"
         />
       </li>
     </ol>
@@ -26,7 +29,7 @@
 </template>
 
 <script>
-import ChevronRightIcon from 'vue-material-design-icons/ChevronRight.vue';
+import ChevronRightIcon from '@apostrophecms/vue-material-design-icons/ChevronRight.vue';
 
 export default {
   name: 'AposModalBreadcrumbs',

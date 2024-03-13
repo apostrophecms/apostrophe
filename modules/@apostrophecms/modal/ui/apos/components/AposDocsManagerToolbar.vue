@@ -3,15 +3,15 @@
     <template #leftControls>
       <AposButton
         v-if="canSelectAll"
+        ref="selectAll"
         label="apostrophe:select"
         type="outline"
         :modifiers="['small']"
         text-color="var(--a-base-1)"
         :icon-only="true"
         :icon="checkboxIcon"
-        @click="selectAll"
-        ref="selectAll"
         data-apos-test="selectAll"
+        @click="selectAll"
       />
       <div
         v-for="{
@@ -50,8 +50,10 @@
     <template #rightControls>
       <AposPager
         v-if="!options.noPager && totalPages !== 0"
-        @click="registerPageChange" @change="registerPageChange"
-        :total-pages="totalPages" :current-page="currentPage"
+        :total-pages="totalPages"
+        :current-page="currentPage"
+        @click="registerPageChange"
+        @change="registerPageChange"
       />
       <AposFilterMenu
         v-if="filters.length"
@@ -62,11 +64,13 @@
       />
       <AposInputString
         v-if="hasSearch"
-        @input="search" @return="search($event, true)"
-        :field="searchField.field"
-        :status="searchField.status" :value="searchField.value"
-        :modifiers="['small']"
         ref="search"
+        :field="searchField.field"
+        :status="searchField.status"
+        :model-value="searchField.value"
+        :modifiers="['small']"
+        @update:model-value="search"
+        @return="search($event, true)"
       />
     </template>
   </AposModalToolbar>
@@ -188,7 +192,7 @@ export default {
     apos.bus.$on('command-menu-manager-archive-selected', this.archiveSelected);
     apos.bus.$on('command-menu-manager-focus-search', this.focusSearch);
   },
-  destroyed () {
+  unmounted () {
     apos.bus.$off('command-menu-manager-select-all', this.selectAll);
     apos.bus.$off('command-menu-manager-archive-selected', this.archiveSelected);
     apos.bus.$off('command-menu-manager-focus-search', this.focusSearch);
@@ -322,11 +326,11 @@ export default {
 </script>
 
 <style lang="scss" scoped>
-  .apos-manager-toolbar ::v-deep {
-    .apos-field--search {
+  .apos-manager-toolbar {
+    :deep(.apos-field--search) {
       width: 250px;
     }
-    .apos-input {
+    :deep(.apos-input) {
       height: 32px;
     }
   }
