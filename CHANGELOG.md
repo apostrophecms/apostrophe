@@ -1,5 +1,12 @@
 # Changelog
 
+## UNRELEASED
+
+### Fixes
+
+* Don't crash if a document of a type no longer corresponding to any module is present
+together with the advanced permission module.
+
 ## 4.0.0 (2024-03-12)
 
 ### Adds
