@@ -346,7 +346,6 @@ export default () => {
   // URL remain unchanged.
 
   apos.http.addQueryToUrl = function(url, data) {
-    // url = url ? url : '/';
     let hash = '';
     const hashAt = url.indexOf('#');
     if (hashAt !== -1) {
