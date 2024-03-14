@@ -1,5 +1,18 @@
 # Changelog
 
+## 3.63.3 (2024-03-14)
+
+### Adds
+
+* Add translation keys used by the multisite assembly module. This was released ahead of
+our regular schedule because the multisite module was released early with the expectation
+that these keys would be present.
+
+### Fixes
+
+* `field.help` and `field.htmlHelp` are now correctly translated when displayed in a tooltip.
+This was also an expectation for the multisite module.
+
 ## 3.63.2 (2024-03-01)
 
 ### Security
