@@ -13,6 +13,18 @@ that these keys would be present.
 * `field.help` and `field.htmlHelp` are now correctly translated when displayed in a tooltip.
 This was also an expectation for the multisite module.
 
+## UNRELEASED
+
+### Adds
+
+* Add side by side comparison support in AposSchema component.
+* Add the possibility to make widget modals wider, which can be useful for widgets that contain areas taking significant space. See [documentation](https://v3.docs.apostrophecms.org/reference/modules/widget-type.html#options).
+
+### Fixes
+
+* Adds `textStyle` to Tiptap types so that spans are rendered on RT initialization
+* Notification REST APIs should not directly return the result of MongoDB operations.
+
 ## 3.63.2 (2024-03-01)
 
 ### Security

@@ -331,6 +331,7 @@ module.exports = {
       blockquote: [ 'blockquote' ],
       superscript: [ 'sup' ],
       subscript: [ 'sub' ],
+      textStyle: [ 'span' ],
       // Generic div type, usually used with classes,
       // and for A2 content migration. Intentionally not
       // given a nicer-sounding name

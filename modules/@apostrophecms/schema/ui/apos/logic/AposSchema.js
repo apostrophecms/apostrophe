@@ -130,6 +130,32 @@ export default {
           }
         };
       }, {});
+    },
+    hasCompareMeta() {
+      return this.schema.some(field => this.meta[field.name]?.['@apostrophecms/schema:compare']);
+    },
+    classes() {
+      const classes = [];
+      if (this.hasCompareMeta) {
+        classes.push('apos-schema--compare');
+      }
+
+      return classes;
+    },
+    compareMetaState() {
+      if (!this.hasCompareMeta) {
+        return {};
+      }
+
+      const compareMetaState = {};
+      this.schema.forEach(field => {
+        compareMetaState[field.name] = {
+          error: false,
+          data: this.meta[field.name]['@apostrophecms/schema:compare']
+        };
+      });
+
+      return compareMetaState;
     }
   },
   watch: {
