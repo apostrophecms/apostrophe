@@ -1,5 +1,14 @@
 # Changelog
 
+## UNRELEASED
+
+### Fixes
+
+### Fixes
+
+* Fix the missing attachment icon. The responsibility for checking whether an attachment
+actually exists before calling `attachment.url` still lies with the developer.
+
 ## 4.0.0 (2024-03-12)
 
 ### Adds
