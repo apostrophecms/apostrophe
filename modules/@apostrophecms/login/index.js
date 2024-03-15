@@ -70,7 +70,6 @@ module.exports = {
     }
   },
   async init(self) {
-    console.log({ opt: self.options });
     self.passport = new Passport();
     self.enableSerializeUsers();
     self.enableDeserializeUsers();
