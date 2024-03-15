@@ -149,6 +149,8 @@
   "email": "Email",
   "emptyRichTextWidget": "Empty Rich Text Widget",
   "enabled": "Enabled",
+  "enterPassword": "Enter password",
+  "enterUsername": "Enter username",
   "error": "An error occurred",
   "errorBatchOperationNoti": "Batch operation {{ operation }} failed.",
   "errorCount": "{{ count }} error remaining",

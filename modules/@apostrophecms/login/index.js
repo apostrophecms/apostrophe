@@ -51,6 +51,10 @@ module.exports = {
   cascades: [ 'requirements' ],
   options: {
     alias: 'login',
+    placeholder: {
+      username: 'apostrophe:enterUsername',
+      password: 'apostrophe:enterPassword'
+    },
     localLogin: true,
     passwordReset: false,
     passwordResetHours: 48,
@@ -66,6 +70,7 @@ module.exports = {
     }
   },
   async init(self) {
+    console.log({ opt: self.options });
     self.passport = new Passport();
     self.enableSerializeUsers();
     self.enableDeserializeUsers();
@@ -918,7 +923,7 @@ module.exports = {
           .map(field => ({
             name: field.name,
             label: field.label,
-            placeholder: `Enter ${field.label.replace('apostrophe:', '').toLowerCase()}`,
+            placeholder: field.placeholder ?? self.options.placeholder[field.name],
             type: field.type,
             required: true
           })
