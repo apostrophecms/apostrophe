@@ -1,5 +1,12 @@
 # Changelog
 
+## UNRELEASED
+
+### Fixes
+
+* Simulated Express requests returned by `apos.task.getReq` now include a `req.headers` property, for
+greater accuracy and to prevent unexpected bugs in other code.
+
 ## 4.0.0 (2024-03-12)
 
 ### Adds
