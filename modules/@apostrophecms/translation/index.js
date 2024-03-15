@@ -1,3 +1,7 @@
+// ⚠️ The presence of this module in core may be temporary.
+// Its presence should not be relied upon in project development.
+// It is an implementation detail supporting @apostrophecms-pro/automatic-translation
+
 module.exports = {
   extend: '@apostrophecms/module',
   options: {
