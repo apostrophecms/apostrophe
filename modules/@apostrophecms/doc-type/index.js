@@ -1047,6 +1047,7 @@ module.exports = {
           locale: toLocale,
           mode: 'draft'
         });
+
         const toId = draft._id.replace(`:${draft.aposLocale}`, `:${toLocale}:draft`);
         const actionModule = self.apos.page.isPage(draft) ? self.apos.page : self;
         // Use findForEditing so that we are successful even for edge cases
@@ -1059,17 +1060,26 @@ module.exports = {
         const existing = await actionModule.findForEditing(toReq, {
           _id: toId
         }).permission('view').toObject();
+
+        const eventOptions = {
+          source: draft.aposLocale.split(':')[0],
+          target: toLocale,
+          existing: Boolean(existing)
+        };
+
         // We only want to copy schema properties, leave non-schema
         // properties of the source document alone
-        const data = Object.fromEntries(Object.entries(draft).filter(([ key, value ]) => self.schema.find(field => field.name === key)));
+        const data = Object.fromEntries(Object.entries(draft)
+          .filter(
+            ([ key, value ]) => key === 'type' || self.schema.find(field => field.name === key)
+          ));
         // We need a slug even if removed from the schema for editing purposes
         data.slug = draft.slug;
         let result;
         if (!existing) {
           if (self.apos.page.isPage(draft)) {
             if (!draft.level) {
-              // Replicating the home page for the first time
-              result = await self.apos.doc.insert(toReq, {
+              const insert = {
                 ...data,
                 aposDocId: draft.aposDocId,
                 aposLocale: `${toLocale}:draft`,
@@ -1079,7 +1089,10 @@ module.exports = {
                 rank: draft.rank,
                 parked: draft.parked,
                 parkedId: draft.parkedId
-              });
+              };
+              await self.emit('beforeLocalize', req, insert, eventOptions);
+              // Replicating the home page for the first time
+              result = await self.apos.doc.insert(toReq, insert);
             } else {
               // A page that is not the home page, being replicated for the first time
               let { lastTargetId, lastPosition } = await self.apos.page.inferLastTargetIdAndPosition(draft);
@@ -1137,25 +1150,29 @@ module.exports = {
                   lastPosition = 'lastChild';
                 }
               }
+              const insert = {
+                ...data,
+                aposLocale: `${toLocale}:draft`,
+                _id: toId,
+                parked: draft.parked,
+                parkedId: draft.parkedId
+              };
+              await self.emit('beforeLocalize', req, insert, eventOptions);
               result = await actionModule.insert(toReq,
                 localizedTargetId,
                 lastPosition,
-                {
-                  ...data,
-                  aposLocale: `${toLocale}:draft`,
-                  _id: toId,
-                  parked: draft.parked,
-                  parkedId: draft.parkedId
-                }
+                insert
               );
             }
           } else {
-            result = await actionModule.insert(toReq, {
+            const insert = {
               ...data,
               aposDocId: draft.aposDocId,
               aposLocale: `${toLocale}:draft`,
               _id: toId
-            });
+            };
+            await self.emit('beforeLocalize', req, insert, eventOptions);
+            result = await actionModule.insert(toReq, insert);
           }
         } else {
           if (!options.update) {
@@ -1169,8 +1186,12 @@ module.exports = {
             aposLocale: `${toLocale}:draft`,
             metaType: 'doc'
           };
+          await self.emit('beforeLocalize', req, update, eventOptions);
           result = await actionModule.update(toReq, update);
         }
+
+        await self.emit('afterLocalize', req, draft, result, eventOptions);
+
         return result;
       },
       // Reverts the given draft to the most recent publication.
