@@ -442,5 +442,10 @@ describe('Attachment', function() {
 
       assert(height === 400);
     });
+
+    it('should generate an appropriate missing attachment url', function() {
+      const url = apos.attachment.url(null);
+      assert.strictEqual(url, '/apos-frontend/default/modules/@apostrophecms/attachment/img/missing-icon.svg');
+    });
   });
 });

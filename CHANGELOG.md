@@ -6,6 +6,8 @@
 
 * Simulated Express requests returned by `apos.task.getReq` now include a `req.headers` property, for
 greater accuracy and to prevent unexpected bugs in other code.
+* Fix the missing attachment icon. The responsibility for checking whether an attachment
+actually exists before calling `attachment.url` still lies with the developer.
 
 ## 4.0.0 (2024-03-12)
 
@@ -14,9 +16,11 @@ greater accuracy and to prevent unexpected bugs in other code.
 * Add translation keys used by the multisite assembly module.
 * Add side by side comparison support in AposSchema component.
 * Add `beforeLocalize` and `afterLocalize` events.
-* Add `translation` module to support document translations via external modules.
 * Add custom manager indicators support via `apos.schema.addManagerIndicator({ component, props, if })`. The component registered this way will be automatically rendered in the manager modal.
 * Add the possibility to make widget modals wider, which can be useful for widgets that contain areas taking significant space. See [documentation](https://v3.docs.apostrophecms.org/reference/modules/widget-type.html#options).
+* Temporarily add `translation` module to support document translations via the `@apostrophecms-pro/automatic-translation` module.
+**The `translation` core module may be removed or refactored to reduce overhead in the core,** so its presence should
+not be relied upon.
 
 ### Changes
 
