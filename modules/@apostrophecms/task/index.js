@@ -265,6 +265,7 @@ module.exports = {
               lng: req.locale
             });
           },
+          body: {},
           data: {},
           protocol: 'http',
           get: function (propName) {

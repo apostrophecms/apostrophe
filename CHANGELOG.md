@@ -6,6 +6,9 @@
 
 * Add translation keys used by the multisite assembly module.
 * Add side by side comparison support in AposSchema component.
+* Add `beforeLocalize` and `afterLocalize` events.
+* Add `translation` module to support document translations via external modules.
+* Add custom manager indicators support via `apos.schema.addManagerIndicator({ component, props, if })`. The component registered this way will be automatically rendered in the manager modal.
 * Add the possibility to make widget modals wider, which can be useful for widgets that contain areas taking significant space. See [documentation](https://v3.docs.apostrophecms.org/reference/modules/widget-type.html#options).
 
 ### Changes
@@ -19,6 +22,7 @@ as noted in our announcement and on the migration page of our website.
 
 * Adds `textStyle` to Tiptap types so that spans are rendered on RT initialization
 * `field.help` and `field.htmlHelp` are now correctly translated when displayed in a tooltip.
+* Bump the `he` package to most recent version.
 * Notification REST APIs should not directly return the result of MongoDB operations.
 
 ## 3.63.2 (2024-03-01)
