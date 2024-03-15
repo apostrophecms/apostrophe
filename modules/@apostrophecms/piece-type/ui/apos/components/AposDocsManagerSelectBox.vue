@@ -12,15 +12,19 @@
           {{ selectBoxMessage }}
           <AposButton
             v-if="!allPiecesSelection.isSelected"
-            type="subtle" :modifiers="['inline', 'small', 'no-motion']"
-            :label="selectBoxMessageButton" class="apos-select-box__select-all"
-            @click="$emit('select-all')"
+            type="subtle"
+            :modifiers="['inline', 'small', 'no-motion']"
+            :label="selectBoxMessageButton"
+            class="apos-select-box__select-all"
             text-color="var(--a-primary)"
+            @click="$emit('select-all')"
           />
           <AposButton
             v-else
-            type="subtle" :modifiers="['inline', 'small', 'no-motion']"
-            label="apostrophe:clearSelection" class="apos-select-box__select-all"
+            type="subtle"
+            :modifiers="['inline', 'small', 'no-motion']"
+            label="apostrophe:clearSelection"
+            class="apos-select-box__select-all"
             text-color="var(--a-primary)"
             @click="clearSelection"
           />

@@ -11,9 +11,9 @@
       <div class="apos-input-wrapper">
         <textarea
           v-if="field.textarea && field.type === 'string'"
+          :id="uid"
           v-model="next"
           rows="5"
-          :id="uid"
           :class="classes"
           :placeholder="$t(field.placeholder)"
           :disabled="field.readOnly"

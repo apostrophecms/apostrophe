@@ -2,7 +2,8 @@
 <template>
   <div
     class="apos-avatar"
-    :style="style" :alt="alt"
+    :style="style"
+    :alt="alt"
   >
     <span>{{ initials }}</span>
   </div>

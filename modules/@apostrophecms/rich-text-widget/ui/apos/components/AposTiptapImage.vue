@@ -2,7 +2,6 @@
   <div class="apos-image-control">
     <AposButton
       type="rich-text"
-      @click="click"
       :class="{ 'apos-is-active': buttonActive }"
       :label="tool.label"
       :icon-only="!!tool.icon"
@@ -14,6 +13,7 @@
         placement: 'top',
         delay: 650
       }"
+      @click="click"
     />
     <AposImageControlDialog
       :active="active"

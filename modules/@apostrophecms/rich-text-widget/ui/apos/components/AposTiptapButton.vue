@@ -1,7 +1,6 @@
 <template>
   <AposButton
     type="rich-text"
-    @click="click"
     class="apos-rich-text-editor__control"
     :class="{ 'apos-is-active': active }"
     :label="tool.label"
@@ -14,6 +13,7 @@
       placement: 'top',
       delay: 650
     }"
+    @click="click"
   />
 </template>
 

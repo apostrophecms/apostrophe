@@ -2,13 +2,14 @@
   <div class="apos-modal-tabs">
     <ul class="apos-modal-tabs__tabs">
       <li
-        class="apos-modal-tabs__tab"
         v-for="tab in tabs"
-        :key="tab.name"
         v-show="tab.isVisible !== false"
+        :key="tab.name"
+        class="apos-modal-tabs__tab"
       >
         <button
-          :id="tab.name" class="apos-modal-tabs__btn"
+          :id="tab.name"
+          class="apos-modal-tabs__btn"
           :aria-selected="tab.name === current ? true : false"
           @click="selectTab"
         >

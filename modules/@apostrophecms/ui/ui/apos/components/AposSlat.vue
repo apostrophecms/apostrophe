@@ -11,6 +11,9 @@
         'apos-is-selected': selected,
         'apos-is-disabled': disabled,
       }"
+      :aria-pressed="engaged"
+      role="listitem"
+      :aria-labelledby="parent"
       @keydown.prevent.space="toggleEngage"
       @keydown.prevent.enter="toggleEngage"
       @keydown.prevent.escape="disengage"
@@ -18,27 +21,25 @@
       @keydown.prevent.arrow-up="move(-1)"
       @keydown.prevent.backspace="remove(true)"
       @click="click"
-      :aria-pressed="engaged"
-      role="listitem"
-      :aria-labelledby="parent"
     >
       <div class="apos-slat__main">
         <drag-icon
-          v-if="slatCount > 1" class="apos-slat__control apos-slat__control--drag"
+          v-if="slatCount > 1"
+          class="apos-slat__control apos-slat__control--drag"
           :size="13"
         />
         <AposContextMenu
           v-if="hasRelationshipFields && more.menu.length"
           :button="more.button"
           :menu="more.menu"
-          @item-clicked="$emit('item-clicked', item)"
           menu-placement="bottom-start"
           menu-offset="40, 10"
           :disabled="disabled"
+          @item-clicked="$emit('item-clicked', item)"
         />
         <AposButton
-          class="apos-slat__editor-btn"
           v-if="editorIcon && hasRelationshipEditor"
+          class="apos-slat__editor-btn"
           role="button"
           :tooltip="{
             content: editorLabel,
@@ -47,12 +48,12 @@
           :icon="editorIcon"
           :icon-only="true"
           :modifiers="['inline']"
-          @click="$emit('item-clicked', item)"
           :disabled="disabled"
+          @click="$emit('item-clicked', item)"
         />
         <a
-          class="apos-slat__control apos-slat__control--view"
           v-if="item._url || item._urls"
+          class="apos-slat__control apos-slat__control--view"
           :href="item._url || item._urls.original"
           target="_blank"
         >
@@ -82,18 +83,18 @@
         </div>
       </div>
       <div class="apos-slat__secondary">
-        <div class="apos-slat__size" v-if="item.length && item.length.size">
+        <div v-if="item.length && item.length.size" class="apos-slat__size">
           {{ itemSize }}
         </div>
         <AposButton
           v-if="removable"
-          @click="remove"
           class="apos-slat__control apos-slat__control--remove"
           icon="close-icon"
           :icon-only="true"
           :modifiers="['inline']"
           label="apostrophe:removeItem"
           :disabled="disabled"
+          @click="remove"
         />
       </div>
     </li>
