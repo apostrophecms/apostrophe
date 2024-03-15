@@ -922,7 +922,7 @@ module.exports = {
           .map(field => ({
             name: field.name,
             label: field.label,
-            placeholder: field.placeholder ?? self.options.placeholder[field.name],
+            placeholder: self.options.placeholder[field.name],
             type: field.type,
             required: true
           })
