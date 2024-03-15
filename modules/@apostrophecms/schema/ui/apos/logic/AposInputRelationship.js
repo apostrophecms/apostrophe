@@ -99,7 +99,7 @@ export default {
       return widgetOptions.minSize || [];
     },
     duplicate () {
-      return this.modelValue.duplicate ? 'apos-input--error' : null;
+      return this.modelValue?.duplicate ? 'apos-input--error' : null;
     }
   },
   watch: {

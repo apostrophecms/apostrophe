@@ -124,6 +124,10 @@ export default {
   .apos-schema.apos-schema--compare > :deep([data-apos-field]) {
     display: flex;
 
+    &.apos-field--hidden {
+      display: none;
+    }
+
     & > .apos-field__wrapper {
       flex-grow: 1;
       flex-basis: 50%;
