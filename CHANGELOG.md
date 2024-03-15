@@ -4,6 +4,8 @@
 
 ### Fixes
 
+* Simulated Express requests returned by `apos.task.getReq` now include a `req.headers` property, for
+greater accuracy and to prevent unexpected bugs in other code.
 * Fix the missing attachment icon. The responsibility for checking whether an attachment
 actually exists before calling `attachment.url` still lies with the developer.
 

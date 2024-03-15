@@ -267,6 +267,7 @@ module.exports = {
           },
           body: {},
           data: {},
+          headers: {},
           protocol: 'http',
           get: function (propName) {
             return { Host: 'you-need-to-set-baseUrl-in-app-js.com' }[propName];
