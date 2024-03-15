@@ -12,22 +12,7 @@ export default {
     return {
       phase: 'beforeSubmit',
       busy: false,
-      schema: [
-        {
-          name: 'username',
-          label: 'Username',
-          placeholder: 'Enter username',
-          type: 'string',
-          required: true
-        },
-        {
-          name: 'password',
-          label: 'Password',
-          placeholder: 'Enter password',
-          type: 'password',
-          required: true
-        }
-      ],
+      schema: apos.login.schema,
       requirements: getRequirements(),
       requirementProps: {},
       fetchingRequirementProps: false

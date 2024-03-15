@@ -539,6 +539,7 @@ module.exports = {
 
       getBrowserData(req) {
         return {
+          schema: self.getSchema(),
           action: self.action,
           passwordResetEnabled: self.isPasswordResetEnabled(),
           ...(req.user ? {
@@ -909,6 +910,18 @@ module.exports = {
             last: true
           }
         );
+      },
+
+      getSchema() {
+        return self.apos.user.schema
+          .filter(({ name }) => [ 'username', 'password' ].includes(name))
+          .map(field => ({
+            name: field.name,
+            label: field.label,
+            placeholder: `Enter ${field.label.split(':')[1].toLowerCase()}`,
+            type: field.type,
+            required: true
+          }));
       }
 
     };
