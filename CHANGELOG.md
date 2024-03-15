@@ -4,8 +4,6 @@
 
 ### Fixes
 
-### Fixes
-
 * Fix the missing attachment icon. The responsibility for checking whether an attachment
 actually exists before calling `attachment.url` still lies with the developer.
 
