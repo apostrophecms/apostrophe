@@ -918,12 +918,12 @@ module.exports = {
           .map(field => ({
             name: field.name,
             label: field.label,
-            placeholder: `Enter ${field.label.split(':')[1].toLowerCase()}`,
+            placeholder: `Enter ${field.label.replace('apostrophe:', '').toLowerCase()}`,
             type: field.type,
             required: true
-          }));
+          })
+          );
       }
-
     };
   },
 
