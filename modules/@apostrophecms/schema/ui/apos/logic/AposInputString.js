@@ -27,8 +27,8 @@ export default {
         return 'text';
       }
     },
-    classes () {
-      return [ 'apos-input', `apos-input--${this.type}`, this.modelValue.duplicate && 'apos-input--error' ];
+    classes() {
+      return [ 'apos-input', `apos-input--${this.type}`, this.modelValue?.duplicate && 'apos-input--error' ];
     },
     icon () {
       if (this.error) {

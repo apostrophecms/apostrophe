@@ -29,6 +29,7 @@ module.exports = {
     self.arrayManagers = {};
     self.objectManagers = {};
     self.fieldMetadataComponents = [];
+    self.uiManagerIndicators = [];
 
     self.enableBrowserData();
 
@@ -441,6 +442,13 @@ module.exports = {
         });
       },
 
+      // Wrapper around isEqual method to get modified fields between two documents
+      // instead of just getting a boolean, it will return an array of the modified fields
+
+      getChanges(req, schema, one, two) {
+        return self.isEqual(req, schema, one, two, { getChanges: true });
+      },
+
       // Compare two objects and return true only if their schema fields are equal.
       //
       // Note that for relationship fields this comparison is based on the idsStorage
@@ -451,22 +459,40 @@ module.exports = {
       // This method is invoked by the doc module to compare draft and published
       // documents and set the modified property of the draft, just before updating the
       // published version.
+      //
+      // When passing the option `getChange: true` it'll return an array of changed fields
+      // in this case the method won't short circuit by directly returning false
+      // when finding a changed field
 
-      isEqual(req, schema, one, two) {
+      isEqual(req, schema, one, two, options = {}) {
+        const changedFields = [];
         for (const field of schema) {
           const fieldType = self.fieldTypes[field.type];
-          if (!fieldType.isEqual) {
-            if ((!_.isEqual(one[field.name], two[field.name])) &&
-              !((one[field.name] == null) && (two[field.name] == null))) {
-              return false;
-            }
-          } else {
+
+          if (fieldType.isEqual) {
             if (!fieldType.isEqual(req, field, one, two)) {
+              if (options.getChanges) {
+                changedFields.push(field.name);
+              } else {
+                return false;
+              }
+            }
+            continue;
+          }
+
+          if (
+            !_.isEqual(one[field.name], two[field.name]) &&
+            !((one[field.name] == null) && (two[field.name] == null))
+          ) {
+            if (options.getChanges) {
+              changedFields.push(field.name);
+            } else {
               return false;
             }
           }
         }
-        return true;
+
+        return options.getChanges ? changedFields : true;
       },
 
       // Index the object's fields for participation in Apostrophe search unless
@@ -1707,6 +1733,40 @@ module.exports = {
           options.allow = '/';
         }
         return options;
+      },
+
+      // Register a Vue component as custom indicator in the UI manager.
+      // The component should be already exist in the admin UI
+      // (created in `ui/apos/components`).
+      // Properties:
+      // - `component`: the name of the Vue component
+      // - `props`: (optional, object) additional props to pass to the component.
+      // - `if`: (optional, object) a standard Apostrophe condition to show/hide
+      //    the indicator. Keep in mind the component can also decide internally
+      //    to show/hide itself. The condition is evaluated against the draft doc.
+      //    The keys represent field names and support dot notation.
+      //
+      // Example:
+      // ```javascript
+      // self.apos.schema.addManagerIndicator({
+      //   component: 'MyCustomIndicator',
+      //   props: {
+      //     label: 'My indicator'
+      //   },
+      //   if: {
+      //     type: 'my-type',
+      //     'myField': 'my-value',
+      //     'myObject.field': 'my-nested-value'
+      //   }
+      // });
+      addManagerIndicator({
+        component, props, if: condition
+      }) {
+        self.uiManagerIndicators.push({
+          component,
+          props,
+          if: condition
+        });
       }
     };
   },
@@ -1776,6 +1836,7 @@ module.exports = {
         browserOptions.action = self.action;
         browserOptions.components = { fields: fields };
         browserOptions.fieldMetadataComponents = self.fieldMetadataComponents;
+        browserOptions.customCellIndicators = self.uiManagerIndicators;
         return browserOptions;
       }
     };
