@@ -41,6 +41,7 @@
         :is="fieldComponentMap[field.type]"
         :ref="field.name"
         v-model="fieldState[field.name]"
+        :class="{ 'apos-field__wrapper--highlight': highlight(field.name) }"
         :following-values="followingValues[field.name]"
         :condition-met="conditionalFields?.if[field.name]"
         :field="fields[field.name].field"
@@ -60,6 +61,7 @@
         v-show="displayComponent(field)"
         :ref="field.name"
         v-model="compareMetaState[field.name]"
+        :class="{ 'apos-field__wrapper--highlight': highlight(field.name) }"
         :following-values="followingValues[field.name]"
         :condition-met="conditionalFields?.if[field.name]"
         :field="fields[field.name].field"
@@ -119,25 +121,32 @@ export default {
     margin-bottom: 0;
   }
 
-  .apos-schema.apos-schema--compare {
-    & > ::v-deep [data-apos-field] {
-      display: flex;
+  .apos-schema.apos-schema--compare > :deep([data-apos-field]) {
+    display: flex;
 
-      & > .apos-field__wrapper {
-        flex-grow: 1;
-        flex-basis: 50%;
-        border-right: 1px solid var(--a-base-9);
-        padding-right: 20px;
-      }
-      & > .apos-field__wrapper + .apos-field__wrapper {
-        border-right: none;
-        padding-right: 0;
-        padding-left: 20px;
-      }
-
-      & .apos-field__label {
-        word-break: break-all;
-      }
+    &.apos-field--hidden {
+      display: none;
     }
+
+    & > .apos-field__wrapper {
+      flex-grow: 1;
+      flex-basis: 50%;
+      border-right: 1px solid var(--a-base-9);
+      padding-right: 20px;
+    }
+    & > .apos-field__wrapper + .apos-field__wrapper {
+      border-right: none;
+      padding-right: 0;
+      padding-left: 20px;
+    }
+
+    & .apos-field__label {
+      word-break: break-all;
+    }
+  }
+
+  :deep(.apos-field__wrapper--highlight > .apos-field) {
+    padding: 10px;
+    background: var(--a-highlight);
   }
 </style>

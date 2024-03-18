@@ -17,8 +17,8 @@ export default {
     };
   },
   computed: {
-    classes () {
-      return [ this.modelValue.duplicate && 'apos-input--error' ];
+    classes() {
+      return [ this.modelValue?.duplicate && 'apos-input--error' ];
     }
   },
   methods: {
