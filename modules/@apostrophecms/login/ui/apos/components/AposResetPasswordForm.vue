@@ -1,7 +1,7 @@
 <template>
   <div
-    class="apos-login-form"
     v-if="passwordResetEnabled && ready"
+    class="apos-login-form"
   >
     <TheAposLoginHeader
       :env="context.env"
@@ -27,8 +27,8 @@
         @submit.prevent="submit"
       >
         <AposSchema
-          :schema="schema"
           v-model="doc"
+          :schema="schema"
         />
         <AposButton
           data-apos-test="pwdResetSubmit"

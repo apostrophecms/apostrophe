@@ -3,8 +3,8 @@
     <li
       v-for="item in list"
       :key="item._id"
-      :class="getClasses(item)"
       v-apos-tooltip="getTooltip(item)"
+      :class="getClasses(item)"
       @click="select(item, $event)"
     >
       <img

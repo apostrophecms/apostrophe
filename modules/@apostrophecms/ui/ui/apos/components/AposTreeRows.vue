@@ -190,7 +190,7 @@ export default {
       }
     }
   },
-  emits: [ 'update', 'update:checked' ],
+  emits: [ 'update', 'update:checked', 'change' ],
   data() {
     return {
       treeBranches: []

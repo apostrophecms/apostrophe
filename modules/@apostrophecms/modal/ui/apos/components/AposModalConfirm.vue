@@ -28,8 +28,8 @@
             {{ localize(content.description) }}
           </p>
           <Component
-            v-if="content.body"
             :is="content.body.component"
+            v-if="content.body"
             v-bind="content.body.props"
           />
           <div v-if="content.form" class="apos-confirm__schema">
@@ -48,15 +48,15 @@
               @click="cancel"
             />
             <AposButton
+              ref="confirm"
               class="apos-confirm__btn"
               :label="affirmativeLabel"
-              @click="confirm"
               :type="content.theme || 'primary'"
               :disabled="isDisabled"
-              ref="confirm"
+              @click="confirm"
             />
           </div>
-          <p class="apos-confirm__note" v-if="content.note">
+          <p v-if="content.note" class="apos-confirm__note">
             {{ localize(content.note) }}
           </p>
         </template>

@@ -6,14 +6,15 @@
         <AposButton
           label="apostrophe:clear"
           type="quiet"
-          @click="clear"
           :modifiers="['no-motion']"
+          @click="clear"
         />
       </div>
       <ol class="apos-media-manager-selections__items">
         <li
           v-for="item in items"
-          :key="item._id" class="apos-media-manager-selections__item"
+          :key="item._id"
+          class="apos-media-manager-selections__item"
         >
           <div
             v-if="item.attachment && item.attachment._urls"
