@@ -33,7 +33,7 @@
               :class="{ 'apos-marks-control__item--is-active': activeClasses.includes(mark.class) }"
             >
               <button class="apos-marks-control__button" @click="toggleStyle(mark)">
-                <span class="apos-marks-control__label" :class="options.marksPreview ? mark.class : null">
+                <span class="apos-marks-control__label" :class="mark.class">
                   {{ mark.label }}
                 </span>
               </button>
@@ -189,8 +189,8 @@ export default {
     overflow: hidden;
     border-radius: var(--a-border-radius);
 
-    // if marksPreview is enabled we will attempt to add a style preview to the marks dropdown
-    // but we need to clamp the dimensions of the label to prevent broken UI
+    // We are adding dev-defined styles into the Apostrophe admin UI,
+    // attempt clamp down the dimensions of the label to prevent broken UI
     // stylelint-disable declaration-no-important
     .apos-marks-control__label {
       position: static !important;

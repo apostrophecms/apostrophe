@@ -106,7 +106,6 @@ module.exports = {
       creditUrl: 1
     },
     minimumDefaultOptions: {
-      marksPreview: true,
       toolbar: [
         'styles',
         'bold',
