@@ -51,6 +51,10 @@ module.exports = {
   cascades: [ 'requirements' ],
   options: {
     alias: 'login',
+    placeholder: {
+      username: 'apostrophe:enterUsername',
+      password: 'apostrophe:enterPassword'
+    },
     localLogin: true,
     passwordReset: false,
     passwordResetHours: 48,
@@ -539,6 +543,7 @@ module.exports = {
 
       getBrowserData(req) {
         return {
+          schema: self.getSchema(),
           action: self.action,
           passwordResetEnabled: self.isPasswordResetEnabled(),
           ...(req.user ? {
@@ -909,8 +914,20 @@ module.exports = {
             last: true
           }
         );
-      }
+      },
 
+      getSchema() {
+        return self.apos.user.schema
+          .filter(({ name }) => [ 'username', 'password' ].includes(name))
+          .map(field => ({
+            name: field.name,
+            label: field.label,
+            placeholder: self.options.placeholder[field.name],
+            type: field.type,
+            required: true
+          })
+          );
+      }
     };
   },
 

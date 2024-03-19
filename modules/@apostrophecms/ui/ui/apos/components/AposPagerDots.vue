@@ -1,8 +1,9 @@
 <template>
   <ul class="apos-pager-dots">
     <li
-      class="apos-pager-dots__item" v-for="i in dots"
+      v-for="i in dots"
       :key="i"
+      class="apos-pager-dots__item"
     >
       <button
         role="button"

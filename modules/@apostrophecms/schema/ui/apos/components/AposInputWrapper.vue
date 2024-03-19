@@ -9,10 +9,10 @@
     <component :is="wrapEl" :class="classList">
       <div class="apos-field__info">
         <component
+          :is="labelEl"
           v-if="field.label"
           class="apos-field__label"
           :class="{'apos-sr-only': field.hideLabel }"
-          :is="labelEl"
           :for="uid"
           :data-apos-test-name="field.name"
           :data-apos-test-label="field.label"
@@ -24,8 +24,8 @@
               *
             </span>
             <AposLabel
-              class="apos-field__tag"
               v-if="field.tag"
+              class="apos-field__tag"
               :label="field.tag.value || field.tag"
               :modifiers="[ `apos-is-${field.tag.type || 'success'}`, 'apos-is-filled' ]"
               data-apos-test="field-tag"
@@ -44,11 +44,13 @@
               />
             </span>
             <span
-              v-if="displayOptions.changed" class="apos-field__changed"
+              v-if="displayOptions.changed"
+              class="apos-field__changed"
               data-apos-test="field-changed"
             >
               <AposLabel
-                label="apostrophe:changed" class="apos-field__changed__label"
+                label="apostrophe:changed"
+                class="apos-field__changed__label"
                 :modifiers="[ 'apos-is-warning', 'apos-is-filled' ]"
                 tooltip="apostrophe:fieldHasUnpublishedChanges"
               />
@@ -56,16 +58,16 @@
           </span>
           <span data-apos-test="field-meta-wrapper" class="apos-field__label-meta">
             <component
-              v-for="component in metaComponents"
-              :key="component.name"
-              :is="component.name"
+              v-for="{name, namespace, data} in metaComponents"
+              :key="name"
+              :is="name"
               :field="field"
               :items="items"
-              :namespace="component.namespace"
-              :meta="component.data"
+              :namespace="namespace"
+              :meta="data"
               :meta-raw="meta"
-              :data-apos-test-component="component.name"
-              :data-apos-test-namespace="component.namespace"
+              :data-apos-test-component="name"
+              :data-apos-test-namespace="namespace"
               data-apos-test="field-meta"
             />
           </span>
@@ -81,7 +83,8 @@
       </div>
       <slot name="body" />
       <div
-        v-if="errorMessage" class="apos-field__error"
+        v-if="errorMessage"
+        class="apos-field__error"
         data-apos-test="field-error"
       >
         {{ $t(errorMessage) }}

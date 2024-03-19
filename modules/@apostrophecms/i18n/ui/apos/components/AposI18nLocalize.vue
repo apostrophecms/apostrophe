@@ -215,6 +215,46 @@
                   {{ $t('apostrophe:noNewRelatedDocuments') }}
                 </p>
               </div>
+              <div v-if="translationEnabled" class="apos-wizard__translation">
+                <p class="apos-wizard__translation-title">
+                  <AposTranslationIndicator :size="18" />
+                  <span class="apos-wizard__translation-title-text">
+                    {{ $t('apostrophe:automaticTranslationSettings') }}
+                  </span>
+                </p>
+                <AposCheckbox
+                  v-model="wizard.values.translateContent.data"
+                  :field="{ name: 'translate' }"
+                  :choice="{
+                    value: wizard.values.translateContent.data,
+                    label: $t('apostrophe:automaticTranslationCheckbox')
+                  }"
+                  data-apos-test="localizationTranslationCheck"
+                />
+
+                <div v-if="translationErrMsg">
+                  <!-- eslint-disable vue/no-v-html -->
+                  <p
+                    class="apos-wizard__translation-error"
+                    data-apos-test="localizationTranslationErr"
+                    v-html="translationErrMsg"
+                  />
+                  <!-- eslint-disable vue/no-v-html -->
+                  <AposButton
+                    v-if="translationShowRetry"
+                    label="apostrophe:retry"
+                    :modifiers="['quiet', 'no-motion']"
+                    data-apos-test="localizationTranslationRetry"
+                    @click="retryTranslationCheck()"
+                  />
+                </div>
+                <div
+                  v-else-if="translationShowLoader"
+                  class="apos-wizard__translation-spinner"
+                >
+                  <AposSpinner />
+                </div>
+              </div>
             </fieldset>
           </form>
         </template>
@@ -338,7 +378,10 @@ export default {
           toLocalize: { data: 'thisDocAndRelated' },
           toLocales: { data: this.locale ? [ this.locale ] : [] },
           relatedDocSettings: { data: 'localizeNewRelated' },
-          relatedDocTypesToLocalize: { data: [] }
+          relatedDocTypesToLocalize: { data: [] },
+          translateContent: { data: false },
+          translateTargets: { data: [] },
+          translateProvider: { data: apos.translation.providers[0]?.name || null }
         }
       },
       fullDoc: this.doc,
@@ -369,7 +412,11 @@ export default {
           value: 'relatedDocsOnly',
           label: 'apostrophe:relatedDocsOnly'
         }
-      ]
+      ],
+      translationEnabled: apos.modules['@apostrophecms/translation'].enabled,
+      translationErrMsg: null,
+      translationShowRetry: false,
+      translationShowLoader: false
     };
   },
   computed: {
@@ -428,7 +475,7 @@ export default {
     },
     visibleSections() {
       const self = this;
-      const result = Object.entries(this.wizard.sections).filter(([ name, section ]) => {
+      const result = Object.entries(this.wizard.sections).filter(([ _, section ]) => {
         return section.if ? section.if.bind(self)() : true;
       }).map(([ name, section ]) => {
         return {
@@ -462,6 +509,9 @@ export default {
     },
     'wizard.values.toLocalize.data'() {
       this.updateRelatedDocs();
+    },
+    async 'wizard.values.translateContent.data'(value) {
+      await this.checkAvailableTranslations(value);
     },
     selectedLocales() {
       this.updateRelatedDocs();
@@ -516,6 +566,13 @@ export default {
     },
     goToPrevious() {
       this.wizard.step = this.previousStepName;
+      this.uncheckTranslate();
+    },
+    uncheckTranslate() {
+      this.wizard.values.translateContent.data = false;
+      this.wizard.values.translateTargets.data = [];
+      this.translationErrMsg = null;
+      this.translationShowRetry = false;
     },
     goToNext() {
       this.goTo(this.nextStepName);
@@ -661,6 +718,10 @@ export default {
                 toLocale: locale.name,
                 update: (doc._id === this.fullDoc._id) || !(this.wizard.values.relatedDocSettings.data === 'localizeNewRelated')
               },
+              qs: {
+                aposTranslateTargets: this.wizard.values.translateTargets.data,
+                aposTranslateProvider: this.wizard.values.translateProvider.data
+              },
               busy: true
             });
 
@@ -797,7 +858,11 @@ export default {
         // never be considered "related" to other pages simply because
         // of navigation links, the feature is meant for pieces that feel more like
         // part of the document being localized)
-        return related.filter(doc => apos.modules[doc.type].relatedDocument !== false);
+        // We also remove non localized content like users
+        return related.filter(doc => {
+          return apos.modules[doc.type].relatedDocument !== false &&
+            apos.modules[doc.type].localized !== false;
+        });
       }
     },
     async updateRelatedDocs() {
@@ -831,6 +896,77 @@ export default {
       }
       this.relatedDocs = relatedDocs;
       this.wizard.busy = status;
+    },
+    wait(time) {
+      return new Promise((resolve) => {
+        setTimeout(() => {
+          resolve();
+        }, time);
+      });
+    },
+    async retryTranslationCheck() {
+      await this.checkAvailableTranslations(false);
+      this.translationShowLoader = true;
+      await this.wait(500);
+      await this.checkAvailableTranslations(true);
+      this.translationShowLoader = false;
+    },
+    async checkAvailableTranslations(value) {
+      if (!value) {
+        this.translationErrMsg = null;
+        this.translationShowRetry = false;
+        this.wizard.values.translateTargets.data = [];
+        return;
+      }
+      const [ sourceLocale ] = this.doc.aposLocale.split(':');
+      const targets = this.wizard.values.toLocales.data;
+
+      let response;
+      try {
+        response = await apos.http.get(`${apos.translation.action}/languages`, {
+          qs: {
+            provider: this.wizard.values.translateProvider.data,
+            source: [ sourceLocale ],
+            target: targets.map(({ name }) => name)
+          }
+        });
+      } catch (err) {
+        console.error('An error happened while getting available languages: ', err);
+        this.wizard.values.translateTargets.data = [];
+        this.translationErrMsg = this.$t('apostrophe:automaticTranslationErrMsg');
+        this.translationShowRetry = true;
+        return;
+      }
+
+      const unavailableSource = !response.source[0].supported;
+      const unavailableTargetsLabels = response.target
+        .filter(({ supported }) => !supported)
+        .map(({ code }) => targets.find((locale) => locale.name === code)?.label || code);
+
+      if (unavailableSource) {
+        const sourceLabel = this.moduleOptions.locales[sourceLocale]?.label;
+        this.translationErrMsg = this.$t('apostrophe:automaticTranslationSourceErrMsg', { source: sourceLabel });
+        this.wizard.values.translateTargets.data = [];
+        return;
+      }
+
+      if (unavailableTargetsLabels.length) {
+        const isPlural = unavailableTargetsLabels.length > 1;
+        this.translationErrMsg = this.$t(
+          `apostrophe:automaticTranslationTargetErrMsg${isPlural ? '_plural' : ''}`,
+          { targets: unavailableTargetsLabels.join(', ') }
+        );
+      }
+
+      if (unavailableTargetsLabels.length >= targets.length) {
+        this.wizard.values.translateTargets.data = [];
+        return;
+      }
+
+      this.wizard.values.translateTargets.data = response.target
+        .filter(({ supported }) => supported)
+        .map(({ code }) => code);
+
     }
   }
 };
@@ -1020,9 +1156,12 @@ export default {
   }
 }
 
+.apos-wizard__step  :deep(.apos-field--relatedDocTypesToLocalize) {
+  margin-top: $spacing-triple;
+}
 .apos-wizard__step {
-  .apos-field__wrapper:not(:last-of-type) {
-    margin-bottom: $spacing-triple;
+  .apos-field__wrapper {
+    margin-bottom: $spacing-double;
   }
 }
 
@@ -1064,5 +1203,33 @@ export default {
 
 .apos-locale-name {
   text-transform: uppercase;
+}
+
+.apos-wizard__translation {
+  margin-top: 30px;
+}
+
+.apos-wizard__translation-title {
+  @include type-label;
+
+  display: flex;
+  align-items: center;
+  border-bottom: 1px solid var(--a-base-8);
+  padding-bottom: 8px;
+}
+
+.apos-wizard__translation-title-text {
+  margin-left: 7px;
+}
+
+.apos-wizard__translation-error {
+  @include type-label;
+  color: var(--a-danger);
+}
+
+.apos-wizard__translation-spinner {
+  margin-top: 20px;
+  display: flex;
+  justify-content: center;
 }
 </style>

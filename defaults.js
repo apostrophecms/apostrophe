@@ -55,6 +55,7 @@ module.exports = {
     '@apostrophecms/file-tag': {},
     '@apostrophecms/soft-redirect': {},
     '@apostrophecms/submitted-draft': {},
-    '@apostrophecms/command-menu': {}
+    '@apostrophecms/command-menu': {},
+    '@apostrophecms/translation': {}
   }
 };

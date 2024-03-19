@@ -1,19 +1,21 @@
 <template>
   <AposInputWrapper
-    :modifiers="modifiers" :field="field"
-    :error="effectiveError" :uid="uid"
+    :modifiers="modifiers"
+    :field="field"
+    :error="effectiveError"
+    :uid="uid"
     :display-options="displayOptions"
   >
     <template #body>
       <div class="apos-input-wrapper">
         <input
+          :id="uid"
+          v-model="next"
           type="password"
           class="apos-input apos-input--password"
-          v-model="next"
           :placeholder="$t(field.placeholder)"
           :disabled="field.readOnly"
           :required="field.required"
-          :id="uid"
           :tabindex="tabindex"
           :autocomplete="field.autocomplete"
           @keydown.enter="emitReturn"

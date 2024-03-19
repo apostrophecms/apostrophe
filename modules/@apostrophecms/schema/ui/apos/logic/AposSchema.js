@@ -151,7 +151,7 @@ export default {
       this.schema.forEach(field => {
         compareMetaState[field.name] = {
           error: false,
-          data: this.meta[field.name]['@apostrophecms/schema:compare']
+          data: this.meta[field.name]?.['@apostrophecms/schema:compare']
         };
       });
 
@@ -328,6 +328,9 @@ export default {
     },
     onUpdateDocData(data) {
       this.$emit('update-doc-data', data);
+    },
+    highlight(fieldName) {
+      return this.meta[fieldName]?.['@apostrophecms/schema:highlight'];
     }
   }
 };

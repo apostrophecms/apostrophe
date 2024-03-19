@@ -1,13 +1,18 @@
 <template>
   <svg
-    width="64px" height="42.6px"
-    viewBox="0 4.008 64 42.613" xmlns="http://www.w3.org/2000/svg"
+    width="64px"
+    height="42.6px"
+    viewBox="0 4.008 64 42.613"
+    xmlns="http://www.w3.org/2000/svg"
   >
     <defs>
       <linearGradient
-        gradientUnits="userSpaceOnUse" x1="12"
-        y1="4" x2="12"
-        y2="20" id="apos-upload-gradient"
+        id="apos-upload-gradient"
+        gradientUnits="userSpaceOnUse"
+        x1="12"
+        y1="4"
+        x2="12"
+        y2="20"
         gradientTransform="matrix(1.848483, 1.922034, -2.33985, 2.250314, 31.445274, -24.099256)"
       >
         <stop offset="0" style="stop-color: rgb(50, 197, 255);" />

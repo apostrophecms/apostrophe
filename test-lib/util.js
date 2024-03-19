@@ -118,6 +118,26 @@ async function loginAs(apos, username, password) {
   return jar;
 };
 
+async function logout(apos, username, password, jar) {
+  await apos.http.post(
+    '/api/v1/@apostrophecms/login/logout',
+    {
+      body: {
+        username,
+        password,
+        session: true
+      },
+      jar
+    }
+  );
+  await apos.http.get(
+    '/',
+    {
+      jar
+    }
+  );
+};
+
 // Deprecated legacy wrapper for loginAs.
 function getUserJar(apos, { username = 'admin', password } = {}) {
   return loginAs(apos, username, password);
@@ -129,6 +149,7 @@ module.exports = {
   createAdmin,
   createUser,
   loginAs,
+  logout,
   getUserJar,
   timeout: (process.env.TEST_TIMEOUT && parseInt(process.env.TEST_TIMEOUT)) || 20000
 };
