@@ -25,8 +25,7 @@ actually exists before calling `attachment.url` still lies with the developer.
 * Rich text styles are now split into Nodes and Marks, with independent controls for a better UX when applying text styles.
 
 ### Adds
-
-* Add support where classes defined for rich text styles can be toggled on multiple RT elements.
+* Add Marks tool to the Rich Text widget for handling toggling marks.
 * Add translation keys used by the multisite assembly module.
 * Add side by side comparison support in AposSchema component.
 * Add `beforeLocalize` and `afterLocalize` events.
