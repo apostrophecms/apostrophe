@@ -4,6 +4,8 @@
 
 ### Fixes
 
+* Don't crash if a document of a type no longer corresponding to any module is present
+together with the advanced permission module.
 * AposLoginForm.js now pulls its schema from the user module rather than hardcoding it. Includes the 
 addition of `enterUsername` and `enterPassword` i18n fields for front end customization and localization.
 * Simulated Express requests returned by `apos.task.getReq` now include a `req.headers` property, for

@@ -702,6 +702,7 @@ database.`);
                   editRole: 'admin',
                   publishRole: 'admin'
                 },
+                permissions: {},
                 find(req) {
                   return [];
                 },
