@@ -7,7 +7,7 @@
       class="apos-button__icon"
       fill-color="color"
     />
-    <slot name="label" v-if="label">
+    <slot v-if="label" name="label">
       {{ $t(label ) }}
     </slot>
   </span>

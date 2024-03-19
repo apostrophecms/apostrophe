@@ -1,20 +1,22 @@
 <template>
   <AposInputWrapper
-    :modifiers="modifiers" :field="field"
-    :error="effectiveError" :uid="uid"
+    :modifiers="modifiers"
+    :field="field"
+    :error="effectiveError"
+    :uid="uid"
     :display-options="displayOptions"
   >
     <template #body>
       <div class="apos-input-wrapper">
-        <div class="apos-range" v-apos-tooltip="tooltip">
+        <div v-apos-tooltip="tooltip" class="apos-range">
           <input
+            :id="uid"
+            v-model="next"
             type="range"
             :min="field.min"
             :max="field.max"
             :step="field.step"
             class="apos-range__input"
-            v-model="next"
-            :id="uid"
             :disabled="field.readOnly"
           >
           <div class="apos-range__scale">
@@ -39,7 +41,8 @@
         >
           {{ valueLabel }}
           <AposButton
-            type="quiet" label="apostrophe:clear"
+            type="quiet"
+            label="apostrophe:clear"
             class="apos-range__clear"
             :modifiers="['no-motion']"
             @click="unset"

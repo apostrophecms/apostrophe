@@ -4,9 +4,6 @@
     :menu="menu"
     :disabled="disabled || (menu.length === 0)"
     menu-placement="bottom-end"
-    @item-clicked="menuHandler"
-    @open="$emit('menu-open')"
-    @close="$emit('menu-close')"
     :button="{
       tooltip: { content: 'apostrophe:moreOptions', placement: 'bottom' },
       label: 'apostrophe:moreOptions',
@@ -15,6 +12,9 @@
       type: 'subtle',
       modifiers: ['small', 'no-motion']
     }"
+    @item-clicked="menuHandler"
+    @open="$emit('menu-open')"
+    @close="$emit('menu-close')"
   />
 </template>
 

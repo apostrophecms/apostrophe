@@ -1,6 +1,7 @@
 <template>
   <button
-    class="apos-table__cell-field" type="button"
+    class="apos-table__cell-field"
+    type="button"
     :class="`apos-table__cell-field--${header.name}`"
   >
     {{ get(header.name) }}

@@ -45,8 +45,8 @@
           <div
             v-for="(group, name) in groups"
             v-show="name === activeGroup"
-            class="apos-settings__subform-group"
             :key="name"
+            class="apos-settings__subform-group"
             data-apos-test="subformGroup"
             :data-apos-test-name="name"
             :data-apos-test-label="$t(group.label)"

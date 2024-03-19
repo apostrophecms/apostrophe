@@ -1,7 +1,8 @@
 <template>
   <li class="apos-tag-list__item">
     <button
-      :class="{'apos-is-active' : active}" class="apos-tag-list__button"
+      :class="{'apos-is-active' : active}"
+      class="apos-tag-list__button"
       @click="click(tag)"
     >
       <AposIndicator

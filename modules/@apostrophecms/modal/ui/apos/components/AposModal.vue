@@ -1,26 +1,26 @@
 <template>
   <transition
     :name="transitionType"
+    :duration="250"
     @enter="onEnter"
     @leave="onLeave"
-    :duration="250"
   >
     <section
       v-if="modal.active"
+      ref="modalEl"
       :class="classes"
       role="dialog"
       aria-modal="true"
       :aria-labelledby="id"
-      ref="modalEl"
+      data-apos-modal
       @keydown="cycleElementsToFocus"
       @focus.capture="storeFocusedElement"
-      data-apos-modal
     >
       <transition :name="transitionType">
         <div
-          @click="close"
           v-if="modal.showModal"
           class="apos-modal__overlay"
+          @click="close"
         />
       </transition>
       <transition :name="transitionType" @after-leave="$emit('inactive')">
@@ -39,7 +39,7 @@
             </div>
           </template>
           <template v-else>
-            <header class="apos-modal__header" v-if="!modal.disableHeader">
+            <header v-if="!modal.disableHeader" class="apos-modal__header">
               <div class="apos-modal__header__main">
                 <div v-if="hasSecondaryControls" class="apos-modal__controls--secondary">
                   <slot name="secondaryControls" />
@@ -50,20 +50,20 @@
                   </span>
                   {{ $t(modalTitle) }}
                 </h2>
-                <div class="apos-modal__controls--header" v-if="hasBeenLocalized || hasPrimaryControls">
-                  <div class="apos-modal__locale" v-if="hasBeenLocalized">
+                <div v-if="hasBeenLocalized || hasPrimaryControls" class="apos-modal__controls--header">
+                  <div v-if="hasBeenLocalized" class="apos-modal__locale">
                     <span class="apos-modal__locale-label">
                       {{ $t('apostrophe:locale') }}:
                     </span> <span class="apos-modal__locale-name">
                       {{ currentLocale }}
                     </span>
                   </div>
-                  <div class="apos-modal__controls--primary" v-if="hasPrimaryControls">
+                  <div v-if="hasPrimaryControls" class="apos-modal__controls--primary">
                     <slot name="primaryControls" />
                   </div>
                 </div>
               </div>
-              <div class="apos-modal__breadcrumbs" v-if="hasBreadcrumbs">
+              <div v-if="hasBreadcrumbs" class="apos-modal__breadcrumbs">
                 <slot class="apos-modal__breadcrumbs" name="breadcrumbs" />
               </div>
             </header>

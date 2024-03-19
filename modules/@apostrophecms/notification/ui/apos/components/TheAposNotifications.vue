@@ -1,7 +1,9 @@
 <template>
   <transition-group
-    name="list" tag="div"
-    class="apos-notifications" :class="themeClass"
+    name="list"
+    tag="div"
+    class="apos-notifications"
+    :class="themeClass"
   >
     <AposNotification
       v-for="notification in notifications"

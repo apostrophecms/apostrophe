@@ -1,35 +1,37 @@
 <template>
   <AposInputWrapper
-    :modifiers="modifiers" :field="field"
-    :error="effectiveError" :uid="uid"
+    :modifiers="modifiers"
+    :field="field"
+    :error="effectiveError"
+    :uid="uid"
     :display-options="displayOptions"
   >
     <template #body>
       <div class="apos-input-wrapper">
         <input
-          :class="classes"
+          :id="uid"
           v-model="next.url"
+          :class="classes"
           type="url"
           :placeholder="$t(field.placeholder)"
           :disabled="field.readOnly"
           :readonly="tempReadOnly"
           :required="field.required"
-          :id="uid"
           :tabindex="tabindex"
         >
         <component
+          :is="icon"
           v-if="icon"
           :size="iconSize"
           class="apos-input-icon"
-          :is="icon"
         />
         <!-- eslint-disable vue/no-v-html -->
         <div
           v-if="!error && oembedResult.html"
-          v-html="oembedResult.html"
           class="apos-input__embed"
           :class="{ 'apos-is-dynamic': !!dynamicRatio }"
           :style="{ paddingTop: dynamicRatio && `${(dynamicRatio * 100)}%` }"
+          v-html="oembedResult.html"
         />
       </div>
       <!-- eslint-enable vue/no-v-html -->

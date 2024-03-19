@@ -1,14 +1,14 @@
 <template>
   <!-- Disabling since the SVG is mostly not active vue template code. -->
   <!-- eslint-disable vue/max-attributes-per-line -->
-  <div class="apos-modal-lip" ref="lip">
+  <div ref="lip" class="apos-modal-lip">
     <div class="apos-modal-lip__shadow">
       <svg width="406px" height="56px" viewBox="0 0 406 56" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
         <title>Shadow</title>
         <defs>
           <rect id="shadow-path-1" x="0" y="0" width="406" height="56" />
           <rect id="shadow-path-3" x="-13" y="20" width="432" height="83" />
-          <filter x="-6.2%" y="-28.9%" width="112.5%" height="165.1%" filterUnits="objectBoundingBox" id="shadow-filter-4">
+          <filter id="shadow-filter-4" x="-6.2%" y="-28.9%" width="112.5%" height="165.1%" filterUnits="objectBoundingBox">
             <feMorphology radius="3" operator="dilate" in="SourceAlpha" result="shadowSpreadOuter1" />
             <feOffset dx="0" dy="0" in="shadowSpreadOuter1" result="shadowOffsetOuter1" />
             <feGaussianBlur stdDeviation="6.5" in="shadowOffsetOuter1" result="shadowBlurOuter1" />

@@ -7,75 +7,75 @@
         v-if="!foreign"
         v-bind="upButton"
         :disabled="first || disabled"
-        @click="$emit('up')"
         :tooltip="{
           content: (!disabled && !first) ? 'apostrophe:nudgeUp' : null,
           placement: 'left'
         }"
         :modifiers="[ 'inline' ]"
+        @click="$emit('up')"
       />
       <AposButton
+        v-if="!foreign && !options.contextual"
         v-bind="editButton"
         :disabled="disabled"
-        v-if="!foreign && !options.contextual"
-        @click="$emit('edit')"
         :tooltip="{
           content: 'apostrophe:editWidget',
           placement: 'left'
         }"
         :modifiers="[ 'inline' ]"
+        @click="$emit('edit')"
       />
       <AposButton
-        v-bind="cutButton"
         v-if="!foreign"
-        @click="$emit('cut')"
+        v-bind="cutButton"
         :tooltip="{
           content: 'apostrophe:cut',
           placement: 'left'
         }"
         :modifiers="[ 'inline' ]"
+        @click="$emit('cut')"
       />
       <AposButton
-        v-bind="copyButton"
         v-if="!foreign"
-        @click="$emit('copy')"
+        v-bind="copyButton"
         :tooltip="{
           content: 'apostrophe:copy',
           placement: 'left'
         }"
+        @click="$emit('copy')"
       />
       <AposButton
         v-if="!foreign"
         v-bind="cloneButton"
         :disabled="disabled || maxReached"
-        @click="$emit('clone')"
         :tooltip="{
           content: 'apostrophe:duplicate',
           placement: 'left'
         }"
         :modifiers="[ 'inline' ]"
+        @click="$emit('clone')"
       />
       <AposButton
         v-if="!foreign"
         v-bind="removeButton"
         :disabled="disabled"
-        @click="$emit('remove')"
         :tooltip="{
           content: 'apostrophe:delete',
           placement: 'left'
         }"
         :modifiers="[ 'inline' ]"
+        @click="$emit('remove')"
       />
       <AposButton
         v-if="!foreign"
         v-bind="downButton"
         :disabled="last || disabled"
-        @click="$emit('down')"
         :tooltip="{
           content: (!disabled && !last) ? 'apostrophe:nudgeDown' : null,
           placement: 'left'
         }"
         :modifiers="[ 'inline' ]"
+        @click="$emit('down')"
       />
     </AposButtonGroup>
   </div>

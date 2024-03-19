@@ -48,7 +48,7 @@
 
 <script setup>
 import {
-  ref, computed, watch, nextTick, onMounted, onBeforeUnmount
+  ref, computed, watch, onMounted, onBeforeUnmount
 } from 'vue';
 import {
   computePosition, offset, shift, flip, arrow
@@ -153,14 +153,12 @@ watch(isOpen, (newVal) => {
   if (newVal) {
     window.addEventListener('resize', setDropdownPosition);
     window.addEventListener('scroll', setDropdownPosition);
-    nextTick(() => {
-      setDropdownPosition();
-    });
+    setDropdownPosition();
   } else {
     window.removeEventListener('resize', setDropdownPosition);
     window.removeEventListener('scroll', setDropdownPosition);
   }
-});
+}, { flush: 'post' });
 
 const { themeClass } = useAposTheme();
 
