@@ -235,7 +235,12 @@ export default {
 
       if (activeOptions.toolbar.includes('styles')) {
         activeOptions.toolbar = activeOptions.toolbar.filter(t => t !== 'styles');
-        activeOptions.toolbar = [ 'nodes', 'marks', ...activeOptions.toolbar ];
+        if (activeOptions.marks.length) {
+          activeOptions.toolbar = [ 'marks', ...activeOptions.toolbar ];
+        }
+        if (activeOptions.nodes.length) {
+          activeOptions.toolbar = [ 'nodes', ...activeOptions.toolbar ];
+        }
       }
       return activeOptions;
     },
