@@ -20,8 +20,12 @@ actually exists before calling `attachment.url` still lies with the developer.
 
 ## 4.0.0 (2024-03-12)
 
-### Adds
+### Changes
 
+* Rich text styles are now split into Nodes and Marks, with independent controls for a better UX when applying text styles.
+
+### Adds
+* Add Marks tool to the Rich Text widget for handling toggling marks.
 * Add translation keys used by the multisite assembly module.
 * Add side by side comparison support in AposSchema component.
 * Add `beforeLocalize` and `afterLocalize` events.
