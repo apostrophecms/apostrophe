@@ -8,8 +8,7 @@
         duration: 300,
         zIndex: 2000,
         animation: 'fade',
-        inertia: true,
-        placement: 'bottom'
+        inertia: true
       }"
       :editor="editor"
     >
@@ -210,17 +209,13 @@ export default {
       return this.moduleOptions.defaultOptions;
     },
     editorOptions() {
-      let activeOptions = Object.assign({}, this.options);
+      const activeOptions = Object.assign({}, this.options);
 
-      activeOptions = {
-        ...activeOptions,
-        ...this.enhanceStyles(
-          activeOptions.styles?.length
-            ? activeOptions.styles
-            : this.defaultOptions.styles
-        )
-      };
-      delete activeOptions.styles;
+      activeOptions.styles = this.enhanceStyles(
+        activeOptions.styles?.length
+          ? activeOptions.styles
+          : this.defaultOptions.styles
+      );
 
       // Allow default options to pass through if `false`
       Object.keys(this.defaultOptions).forEach((option) => {
@@ -233,10 +228,6 @@ export default {
       activeOptions.className = (activeOptions.className !== undefined)
         ? activeOptions.className : this.moduleOptions.className;
 
-      if (activeOptions.toolbar.includes('styles')) {
-        activeOptions.toolbar = activeOptions.toolbar.filter(t => t !== 'styles');
-        activeOptions.toolbar = [ 'nodes', 'marks', ...activeOptions.toolbar ];
-      }
       return activeOptions;
     },
     autofocus() {
@@ -252,12 +243,7 @@ export default {
       // If we don't supply a valid instance of the first style, then
       // the text align control will not work until the user manually
       // applies a style or refreshes the page
-      const defaultStyle =
-        this.editorOptions.nodes.length
-          ? this.editorOptions.nodes.find(style => style.def)
-          : this.editorOptions.marks.length
-            ? this.editorOptions.marks.find(style => style.def)
-            : null;
+      const defaultStyle = this.editorOptions.styles.find(style => style.def);
 
       const _class = defaultStyle.class ? ` class="${defaultStyle.class}"` : '';
       return `<${defaultStyle.tag}${_class}></${defaultStyle.tag}>`;
@@ -555,13 +541,7 @@ export default {
           styles[0].def = true;
         }
       }
-
-      // Split styles into node and mark selects
-      const result = {
-        nodes: styles.filter(style => style.command === 'setNode'),
-        marks: styles.filter(style => style.command !== 'setNode')
-      };
-      return result;
+      return styles;
     },
     localizeStyle(style) {
       style.label = this.$t(style.label);
@@ -575,8 +555,7 @@ export default {
       return (apos.tiptapExtensions || [])
         .map(extension => extension({
           ...this.editorOptions,
-          nodes: this.editorOptions.nodes.map(this.localizeStyle),
-          marks: this.editorOptions.marks.map(this.localizeStyle),
+          styles: this.editorOptions.styles.map(this.localizeStyle),
           types: this.tiptapTypes
         }));
     },
@@ -734,16 +713,13 @@ function traverseNextNode(node) {
 
     .apos-button--rich-text {
       position: relative;
+      width: 24px;
       height: 24px;
-      padding: 0 8px;
+      padding: 0;
       border: none;
       border-radius: var(--a-border-radius);
       background-color: transparent;
       color: var(--a-base-1);
-      &.apos-button--icon-only {
-        width: 24px;
-        padding: 0;
-      }
       &:hover {
         background-color: transparent;
       }
@@ -799,7 +775,7 @@ function traverseNextNode(node) {
     align-items: stretch;
     max-width: 100%;
     height: auto;
-    gap: 6px;
+    gap: 4px;
   }
 
   .apos-rich-text-editor__editor :deep(.ProseMirror) {
