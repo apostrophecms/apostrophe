@@ -120,10 +120,23 @@ module.exports = {
       '@apostrophecms/doc-type:beforeInsert': {
         setLocaleAndMode(req, doc, options) {
           const manager = self.getManager(doc.type);
-          if (manager.isLocalized()) {
-            doc.aposLocale = doc.aposLocale || `${req.locale}:${req.mode}`;
-            doc.aposMode = req.mode;
+          if (!manager.isLocalized()) {
+            return;
           }
+
+          if (doc._id) {
+            const [ _id, locale, mode ] = doc._id.split(':');
+            doc.aposLocale = `${locale}:${mode}`;
+            doc.aposMode = mode;
+            return;
+          }
+
+          const [ locale, mode ] = doc.aposLocale
+            ? doc.aposLocale.split(':')
+            : [ req.locale, req.mode ];
+
+          doc.aposLocale = `${locale}:${mode}`;
+          doc.aposMode = mode;
         },
         testPermissionsAndAddIdAndCreatedAt(req, doc, options) {
           self.testInsertPermissions(req, doc, options);
