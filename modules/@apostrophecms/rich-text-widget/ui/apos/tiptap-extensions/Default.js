@@ -22,8 +22,7 @@ const nodeMap = {
 };
 
 export default (options) => {
-  const styles = [ ...options.nodes, ...options.marks ];
-  const [ def ] = styles.filter(style => style.def);
+  const [ def ] = options.styles.filter(style => style.def);
 
   if (!def) {
     return;

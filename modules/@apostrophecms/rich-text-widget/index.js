@@ -142,15 +142,9 @@ module.exports = {
       widgetEditor: 'AposRichTextWidgetEditor'
     },
     editorTools: {
-      nodes: {
+      styles: {
         component: 'AposTiptapStyles',
-        label: 'apostrophe:richTextNodeStyles',
-        icon: 'format-text-icon'
-      },
-      marks: {
-        component: 'AposTiptapMarks',
-        label: 'apostrophe:richTextMarkStyles',
-        icon: 'palette-swatch-icon'
+        label: 'apostrophe:richTextStyles'
       },
       table: {
         component: 'AposTiptapTable',
@@ -317,10 +311,9 @@ module.exports = {
       setNode: [ 'p', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'pre', 'div' ],
       toggleMark: [
         'b', 'strong', 'code', 'mark', 'em', 'i',
-        'a', 's', 'del', 'strike', 'u', 'anchor',
+        'a', 's', 'del', 'strike', 'span', 'u', 'anchor',
         'superscript', 'subscript'
       ],
-      toggleClassOrToggleMark: [ 'span' ],
       wrapIn: [ 'blockquote' ]
     },
     tiptapTypes: {
@@ -354,8 +347,7 @@ module.exports = {
   icons: {
     'format-text-icon': 'FormatText',
     'format-color-highlight-icon': 'FormatColorHighlight',
-    'table-icon': 'Table',
-    'palette-swatch-icon': 'PaletteSwatch'
+    'table-icon': 'Table'
   },
   handlers(self) {
     return {
@@ -617,13 +609,9 @@ module.exports = {
           for (const style of options.styles || []) {
             const tag = style.tag;
             const classes = self.getStyleClasses(style);
-
-            // Add classes to THIS tag's allowList
-            if (tag) {
-              allowedClasses[tag] = allowedClasses[tag] || {};
-              for (const c of classes) {
-                allowedClasses[tag][c] = true;
-              }
+            allowedClasses[tag] = allowedClasses[tag] || {};
+            for (const c of classes) {
+              allowedClasses[tag][c] = true;
             }
           }
         }
@@ -879,6 +867,7 @@ module.exports = {
       // Add on the core default options to use, if needed.
       getBrowserData(_super, req) {
         const initialData = _super(req);
+
         const finalData = {
           ...initialData,
           tools: self.options.editorTools,

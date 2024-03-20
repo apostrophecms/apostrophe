@@ -1,24 +1,23 @@
 <template>
   <div class="apos-tiptap-select">
-    <component
-      :is="tool.icon"
+    <format-text-icon
       :size="16"
       class="apos-tiptap-select__type-icon"
       fill-color="currentColor"
     />
     <select
       v-apos-tooltip="{
-        content: tool.label,
+        content: 'apostrophe:richTextStyles',
         placement: 'top',
         delay: 650
       }"
       :model-value="active"
       class="apos-tiptap-control apos-tiptap-control--select"
-      :style="`width:${options.nodes[active].label.length * 6.5}px`"
+      :style="`width:${options.styles[active].label.length * 6.5}px`"
       @change="setStyle"
     >
       <option
-        v-for="(style, i) in options.nodes"
+        v-for="(style, i) in options.styles"
         :key="style.label"
         :value="i"
       >
@@ -59,8 +58,9 @@ export default {
   },
   computed: {
     active() {
-      for (let i = 0; (i < this.options.nodes.length); i++) {
-        const style = this.options.nodes[i];
+      const styles = this.options.styles || [];
+      for (let i = 0; (i < styles.length); i++) {
+        const style = styles[i];
         if (this.editor.isActive(style.type, (style.options || {}))) {
           return i;
         } else if (this.editor.state.selection.$head.parent.type.name === 'defaultNode' && style.def) {
@@ -76,7 +76,7 @@ export default {
   },
   methods: {
     setStyle($event) {
-      const style = this.options.nodes[$event.target.value];
+      const style = this.options.styles[$event.target.value];
       this.editor.commands.focus();
       this.editor.commands[style.command](style.type, style.options || {});
     }
@@ -90,7 +90,7 @@ export default {
     @include apos-button-reset();
     @include apos-transition();
     height: 100%;
-    padding: 0 $spacing-half;
+    padding: 0 10px;
     font-size: var(--a-type-smaller);
 
     &:focus, &:active {
@@ -102,7 +102,7 @@ export default {
     position: relative;
     display: flex;
     align-items: center;
-    padding: 0 $spacing-half;
+    padding: 0 4px;
     color: var(--a-base-1);
     border-radius: var(--a-border-radius);
     transition: all 0.5s ease;
@@ -110,11 +110,6 @@ export default {
       color: var(--a-text-primary);
       background-color: var(--a-base-9);
     }
-  }
-
-  .apos-tiptap-select__icon {
-    position: absolute;
-    right: 0;
   }
 
   .apos-tiptap-select__type-icon {
