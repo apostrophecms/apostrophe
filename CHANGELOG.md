@@ -1,5 +1,19 @@
 # Changelog
 
+## Unreleased
+
+### Fixes
+
+* Fixed an issue in `@apostrophecms/notification` that made server crash when the `req` object had no `body` attribute.
+
+## 4.1.1 (2024-03-21)
+
+### Fixes
+
+* Hotfix for a bug that broke the rich text editor when the rich text widget has
+a `styles` property. The bug was introduced in 4.0.0 as an indirect side effect of deeper
+watching behavior by Vue 3.
+
 ## 4.1.0 (2024-03-20)
 
 ### Fixes
