@@ -149,7 +149,7 @@ export default () => {
     let i;
 
     if (options.qs) {
-      url = url ? apos.http.addQueryToUrl(url, options.qs) : '/';
+      url = apos.http.addQueryToUrl(url, options.qs);
     }
     if (options.busy) {
       if (!busyActive[busyName]) {
