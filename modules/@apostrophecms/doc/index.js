@@ -37,8 +37,7 @@ module.exports = {
     self.apos.isNew = await self.detectNew();
     await self.createIndexes();
     self.addLegacyMigrations();
-    self.addCacheFieldMigration();
-    self.addSetPreviousDocsAposModeMigration();
+    self.addMigrations();
   },
   restApiRoutes(self) {
     return {
@@ -120,10 +119,23 @@ module.exports = {
       '@apostrophecms/doc-type:beforeInsert': {
         setLocaleAndMode(req, doc, options) {
           const manager = self.getManager(doc.type);
-          if (manager.isLocalized()) {
-            doc.aposLocale = doc.aposLocale || `${req.locale}:${req.mode}`;
-            doc.aposMode = req.mode;
+          if (!manager.isLocalized()) {
+            return;
           }
+
+          if (doc._id) {
+            const [ _id, locale, mode ] = doc._id.split(':');
+            doc.aposLocale = `${locale}:${mode}`;
+            doc.aposMode = mode;
+            return;
+          }
+
+          const [ locale, mode ] = doc.aposLocale
+            ? doc.aposLocale.split(':')
+            : [ req.locale, req.mode ];
+
+          doc.aposLocale = `${locale}:${mode}`;
+          doc.aposMode = mode;
         },
         testPermissionsAndAddIdAndCreatedAt(req, doc, options) {
           self.testInsertPermissions(req, doc, options);
@@ -1751,38 +1763,14 @@ module.exports = {
           }
         }
       },
-      // Add the "cacheInvalidatedAt" field to the documents that do not have it yet,
-      // and set it to equal doc.updatedAt.
-      setCacheField() {
-        return self.apos.migration.eachDoc({ cacheInvalidatedAt: { $exists: 0 } }, 5, async doc => {
-          await self.apos.doc.db.updateOne({ _id: doc._id }, {
-            $set: { cacheInvalidatedAt: doc.updatedAt }
-          });
-        });
-      },
-      addCacheFieldMigration() {
-        self.apos.migration.add('add-cache-invalidated-at-field', self.setCacheField);
-      },
-
-      async addSetPreviousDocsAposModeMigration () {
-        self.apos.migration.add('set-previous-docs-apos-mode', async () => {
-          await self.apos.doc.db.updateMany({
-            _id: { $regex: ':previous$' },
-            aposMode: { $ne: 'previous' }
-          }, {
-            $set: {
-              aposMode: 'previous'
-            }
-          });
-        });
-      },
 
       async bestAposDocId(criteria) {
         const existing = await self.apos.doc.db.findOne(criteria, { projection: { aposDocId: 1 } });
         return existing?.aposDocId || self.apos.util.generateId();
       },
 
-      ...require('./lib/legacy-migrations')(self)
+      ...require('./lib/legacy-migrations')(self),
+      ...require('./lib/migrations')(self)
     };
   }
 };
