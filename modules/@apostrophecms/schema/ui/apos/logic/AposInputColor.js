@@ -27,6 +27,9 @@ export default {
     };
   },
   computed: {
+    pickerValue() {
+      return this.next || '';
+    },
     buttonOptions() {
       return {
         label: this.field.label,
