@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+### Fixes
+
+* Fixed an issue in `@apostrophecms/notification` that made server crash when the `req` object had no `body` attribute.
+
 ## 4.1.1 (2024-03-21)
 
 ### Fixes
