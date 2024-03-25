@@ -35,16 +35,12 @@ module.exports = (self) => {
           const aposMode = doc.aposMode;
 
           if (idMode !== localeMode || idMode !== aposMode) {
-            try {
-              await self.apos.doc.db.updateOne({ _id: doc._id }, {
-                $set: {
-                  aposLocale: `${locale}:${idMode}`,
-                  aposMode: idMode
-                }
-              });
-            } catch (err) {
-              console.error('Error while running the set-document-modes migration: ', err);
-            }
+            await self.apos.doc.db.updateOne({ _id: doc._id }, {
+              $set: {
+                aposLocale: `${locale}:${idMode}`,
+                aposMode: idMode
+              }
+            });
           }
         });
       });
