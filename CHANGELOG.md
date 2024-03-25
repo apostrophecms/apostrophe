@@ -5,7 +5,7 @@
 ### Fixes
 
 * Updates the docs `beforeInsert` handler to avoid ending with different modes being set between `_id`, `aposLocale` and `aposMode`.
-* Adds a migration to fix potential corrupted data with different modes set between `_id`, `aposLocale` and `aposMode`.
+* Adds a migration to fix potential corrupted data having different modes set between `_id`, `aposLocale` and `aposMode`.
 
 ## 4.1.1 (2024-03-21)
 
