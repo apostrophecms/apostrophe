@@ -137,8 +137,7 @@ export default () => {
           query = {};
         }
         query.aposMode = options.draft ? 'draft' : 'published';
-
-        url = apos.http.addQueryToUrl(url, options.qs);
+        url = apos.http.addQueryToUrl(url, query);
       }
     }
 
