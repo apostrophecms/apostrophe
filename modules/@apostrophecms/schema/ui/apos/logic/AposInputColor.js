@@ -27,6 +27,7 @@ export default {
     };
   },
   computed: {
+    // Color picker doesn't allow null or undefined values
     pickerValue() {
       return this.next || '';
     },
