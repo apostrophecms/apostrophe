@@ -94,6 +94,7 @@ export default () => {
   // on all lean requests, etc.
 
   apos.http.remote = function(method, url, options, callback) {
+    url = url || '/';
     if (!callback) {
       if (!window.Promise) {
         throw new Error('If you wish to receive a promise from apos.http methods in older browsers you must have a Promise polyfill. If you do not want to provide one, pass a callback instead.');
@@ -137,7 +138,7 @@ export default () => {
         }
         query.aposMode = options.draft ? 'draft' : 'published';
 
-        url = url ? apos.http.addQueryToUrl(url, query) : '/';
+        url = apos.http.addQueryToUrl(url, options.qs);
       }
     }
 
@@ -148,7 +149,7 @@ export default () => {
     let i;
 
     if (options.qs) {
-      url = url ? apos.http.addQueryToUrl(url, options.qs) : '/';
+      url = apos.http.addQueryToUrl(url, options.qs);
     }
     if (options.busy) {
       if (!busyActive[busyName]) {

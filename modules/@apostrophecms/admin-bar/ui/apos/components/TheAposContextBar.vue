@@ -383,10 +383,14 @@ export default {
       mode = mode || this.draftMode;
       locale = locale || apos.i18n.locale;
       doc = doc || this.context;
+      if (!doc) {
+        return;
+      }
+
       if ((mode === this.draftMode) && (locale === apos.i18n.locale)) {
-        if ((this.context._id === doc._id) && (doc && !this.urlDiffers(doc._url))) {
+        if ((this.context._id === doc._id) && (!this.urlDiffers(doc._url))) {
           return;
-        } else if (navigate && doc && this.urlDiffers(doc._url)) {
+        } else if (navigate && this.urlDiffers(doc._url)) {
           await this.unlock();
           return window.location.assign(doc._url);
         } else {
@@ -543,7 +547,7 @@ export default {
         return;
       }
 
-      if (doc && this.urlDiffers(doc._url)) {
+      if (this.urlDiffers(doc._url)) {
         // Slug changed, change browser URL to reflect the actual url of the doc
         history.replaceState(null, '', doc._url);
       }
