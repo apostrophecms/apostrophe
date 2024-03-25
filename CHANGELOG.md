@@ -5,7 +5,15 @@
 ### Fixes
 
 * Updates the docs `beforeInsert` handler to avoid ending with different modes being set between `_id`, `aposLocale` and `aposMode`.
-* Adds a migration to fix potential corrupted data have different modes set between `_id`, `aposLocale` and `aposMode`.
+* Adds a migration to fix potential corrupted data with different modes set between `_id`, `aposLocale` and `aposMode`.
+
+## 4.1.1 (2024-03-21)
+
+### Fixes
+
+* Hotfix for a bug that broke the rich text editor when the rich text widget has
+a `styles` property. The bug was introduced in 4.0.0 as an indirect side effect of deeper
+watching behavior by Vue 3.
 
 ## 4.1.0 (2024-03-20)
 

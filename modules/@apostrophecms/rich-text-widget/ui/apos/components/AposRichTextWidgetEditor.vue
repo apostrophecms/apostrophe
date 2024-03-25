@@ -140,6 +140,8 @@ import TableHeader from '@tiptap/extension-table-header';
 import TableRow from '@tiptap/extension-table-row';
 import Placeholder from '@tiptap/extension-placeholder';
 
+import { klona } from 'klona';
+
 export default {
   name: 'AposRichTextWidgetEditor',
   components: {
@@ -209,7 +211,10 @@ export default {
       return this.moduleOptions.defaultOptions;
     },
     editorOptions() {
-      const activeOptions = Object.assign({}, this.options);
+      // Deep clone to prevent runaway recursive rendering
+      // as the subproperties are mutated in several places
+      // by this code and its dependencies (TODO: find them all)
+      const activeOptions = klona(this.options);
 
       activeOptions.styles = this.enhanceStyles(
         activeOptions.styles?.length
@@ -491,6 +496,7 @@ export default {
     },
     // Enhances the dev-defined styles list with tiptap
     // commands and parameters used internally.
+    // WARNING: mutates its argument
     enhanceStyles(styles) {
       const self = this;
       (styles || []).forEach(style => {
@@ -544,8 +550,6 @@ export default {
       return styles;
     },
     localizeStyle(style) {
-      style.label = this.$t(style.label);
-
       return {
         ...style,
         label: this.$t(style.label)
