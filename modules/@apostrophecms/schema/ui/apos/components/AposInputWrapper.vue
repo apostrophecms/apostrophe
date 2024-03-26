@@ -58,9 +58,9 @@
           </span>
           <span data-apos-test="field-meta-wrapper" class="apos-field__label-meta">
             <component
+              :is="name"
               v-for="{name, namespace, data} in metaComponents"
               :key="name"
-              :is="name"
               :field="field"
               :items="items"
               :namespace="namespace"
