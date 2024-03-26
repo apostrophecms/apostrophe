@@ -2,6 +2,11 @@
 
 ## UNRELEASED
 
+### Changes
+
+* Rich text styles are now split into Nodes and Marks, with independent toolbar controls for a better UX when applying text styles.
+There is no change in how the `styles` option is configured.
+
 ### Fixes
 
 * Updates the docs `beforeInsert` handler to avoid ending with different modes being set between `_id`, `aposLocale` and `aposMode`.
@@ -36,7 +41,7 @@ actually exists before calling `attachment.url` still lies with the developer.
 ## 4.0.0 (2024-03-12)
 
 ### Adds
-
+* Add Marks tool to the Rich Text widget for handling toggling marks.
 * Add translation keys used by the multisite assembly module.
 * Add side by side comparison support in AposSchema component.
 * Add `beforeLocalize` and `afterLocalize` events.
