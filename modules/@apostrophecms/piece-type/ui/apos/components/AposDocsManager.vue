@@ -405,11 +405,11 @@ export default {
     },
     shortcutNew(event) {
       const interesting = event.keyCode === 78; // N(ew)
-      const topModal = apos.modal.stack[apos.modal.stack.length - 1] ? apos.modal.stack[apos.modal.stack.length - 1].id : null;
+      const topModalId = apos.modal.stack.at(-1)?.id;
       if (
         interesting &&
         document.activeElement.tagName !== 'INPUT' &&
-        this.$refs.modal.id === topModal
+        this.$refs.modal.id === topModalId
       ) {
         this.create();
       }

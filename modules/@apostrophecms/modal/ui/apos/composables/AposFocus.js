@@ -8,7 +8,7 @@ export function useAposFocus() {
     elementsToFocus,
     focusedElement,
     cycleElementsToFocus,
-    focuslastmodalfocusedelement,
+    focusLastModalFocusedElement,
     storeFocusedElement,
     focusElement,
     isElementVisible
@@ -56,7 +56,7 @@ export function useAposFocus() {
   // Focus the last focused element from the last modal.
   // If it is not focusable (not visible/not in the DOM),
   // fallbacks to the first focusable element from the last modal.
-  function focuslastmodalfocusedelement() {
+  function focusLastModalFocusedElement() {
     const lastModal = apos.modal.stack.at(-1);
 
     if (!lastModal) {

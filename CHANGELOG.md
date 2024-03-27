@@ -6,6 +6,7 @@
 
 * Rich text styles are now split into Nodes and Marks, with independent toolbar controls for a better UX when applying text styles.
 There is no change in how the `styles` option is configured.
+* Refactors `AposModal` component with composition api to get rid of duplicated code in `AposFocusMixin` and `AposFocus`.
 
 ### Fixes
 
