@@ -11,7 +11,7 @@
       :class="classes"
       role="dialog"
       aria-modal="true"
-      :aria-labelledby="id"
+      :aria-labelledby="state.id"
       data-apos-modal
       @keydown="cycleElementsToFocus"
       @focus.capture="storeFocusedElement"
@@ -44,7 +44,7 @@
                 <div v-if="hasSlot('secondaryControls')" class="apos-modal__controls--secondary">
                   <slot name="secondaryControls" />
                 </div>
-                <h2 :id="id" class="apos-modal__heading">
+                <h2 :id="state.id" class="apos-modal__heading">
                   <span v-if="modal.a11yTitle" class="apos-sr-only">
                     {{ $t(modal.a11yTitle) }}
                   </span>
@@ -96,7 +96,7 @@
 // transition.
 
 import {
-  ref, onMounted, computed, watch, nextTick, useSlots, getCurrentInstance, toRaw
+  ref, reactive, onMounted, computed, watch, nextTick, useSlots
 } from 'vue';
 import { useAposFocus } from 'Modules/@apostrophecms/modal/composables/AposFocus';
 import cuid from 'cuid';
@@ -124,9 +124,13 @@ const props = defineProps({
 
 const slots = useSlots();
 const emit = defineEmits([ 'inactive', 'esc', 'show-modal', 'no-modal', 'ready' ]);
-const id = ref(`modal:${cuid()}`);
 const modalEl = ref(null);
-const currentInstance = getCurrentInstance();
+const state = reactive({
+  id: `modal:${cuid()}`,
+  elementsToFocus,
+  focusedElement,
+  modalEl
+});
 
 const transitionType = computed(() => {
   if (props.modal.type !== 'slide') {
@@ -209,7 +213,6 @@ watch(triggerFocusRefresh, (newVal) => {
 });
 
 onMounted(() => {
-  console.log('shouldTrapFocus', shouldTrapFocus);
   if (shouldTrapFocus.value) {
     nextTick(trapFocus);
   }
@@ -227,13 +230,7 @@ function onEnter() {
   bindEventListeners();
   apos.modal.stack = apos.modal.stack || [];
 
-  console.log('focusedElement.value', focusedElement.value);
-  apos.modal.stack.push({
-    id: id.value,
-    focusedElement: focusedElement.value,
-    elementsToFocus: elementsToFocus.value,
-    $el: modalEl.value
-  });
+  apos.modal.stack.push(state);
   nextTick(() => {
     emit('ready');
   });
@@ -242,13 +239,10 @@ function onEnter() {
 function onLeave() {
   removeEventListeners();
   emit('no-modal');
-  // pop doesn't quite suffice because
 
-  apos.modal.stack = apos.modal.stack.filter(modal => {
-    console.log('modal.id', modal.id);
-    console.log('id.value', id.value);
-    return modal.id !== id.value;
-  });
+  apos.modal.stack = apos.modal.stack
+    .filter(modal => modal.id !== state.id);
+
   focusLastModalFocusedElement();
 }
 
@@ -285,7 +279,7 @@ function trapFocus() {
 }
 
 function close() {
-  if (apos.modal.stack[apos.modal.stack.length - 1] !== currentInstance) {
+  if (apos.modal.stack.at(-1)?.id !== state.id) {
     return;
   }
   emit('esc');
