@@ -13,8 +13,8 @@
       aria-modal="true"
       :aria-labelledby="state.id"
       data-apos-modal
-      @keydown="cycleElementsToFocus"
       @focus.capture="storeFocusedElement"
+      @keydown="onKeydown"
     >
       <transition :name="transitionType">
         <div
@@ -223,11 +223,11 @@ function onKeydown(e) {
   if (hasPressedEsc) {
     close(e);
   }
+  cycleElementsToFocus(e);
 }
 
 function onEnter() {
   emit('show-modal');
-  bindEventListeners();
   apos.modal.stack = apos.modal.stack || [];
 
   apos.modal.stack.push(state);
@@ -237,21 +237,12 @@ function onEnter() {
 }
 
 function onLeave() {
-  removeEventListeners();
   emit('no-modal');
 
   apos.modal.stack = apos.modal.stack
     .filter(modal => modal.id !== state.id);
 
   focusLastModalFocusedElement();
-}
-
-function bindEventListeners() {
-  window.addEventListener('keydown', onKeydown);
-}
-
-function removeEventListeners() {
-  window.removeEventListener('keydown', onKeydown);
 }
 
 function trapFocus() {
