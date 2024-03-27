@@ -561,17 +561,17 @@ export default {
         } : {})
       };
 
-      const content = await apos.http.get(doc._url, {
-        qs,
-        headers: {
-          'Cache-Control': 'no-cache'
-        },
-        draft: true,
-        busy: true,
-        prefix: false
-      });
-
-      refreshable.innerHTML = content;
+      if (doc._url) {
+        refreshable.innerHTML = await apos.http.get(doc._url, {
+          qs,
+          headers: {
+            'Cache-Control': 'no-cache'
+          },
+          draft: true,
+          busy: true,
+          prefix: false
+        });
+      }
 
       if (this.editMode && (!this.original)) {
         // the first time we enter edit mode on the page, we need to
