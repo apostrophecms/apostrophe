@@ -94,12 +94,14 @@ export default () => {
   // on all lean requests, etc.
 
   apos.http.remote = function(method, url, options, callback) {
-    url = url || '/';
     if (!callback) {
       if (!window.Promise) {
         throw new Error('If you wish to receive a promise from apos.http methods in older browsers you must have a Promise polyfill. If you do not want to provide one, pass a callback instead.');
       }
       return new window.Promise(function(resolve, reject) {
+        if (!url) {
+          return reject(new Error('url is not defined'));
+        }
         return apos.http.remote(method, url, options, function(err, result) {
           if (err) {
             return reject(err);
@@ -107,6 +109,10 @@ export default () => {
           return resolve(result);
         });
       });
+    }
+
+    if (!url) {
+      return callback(new Error('url is not defined'));
     }
 
     if (apos.prefix && options.prefix !== false) {
