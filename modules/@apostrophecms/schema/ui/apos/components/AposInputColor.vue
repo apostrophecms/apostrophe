@@ -20,7 +20,7 @@
           >
             <Picker
               v-bind="pickerOptions"
-              :model-value="next"
+              :model-value="pickerValue"
               @update:model-value="update"
             />
           </AposContextMenu>

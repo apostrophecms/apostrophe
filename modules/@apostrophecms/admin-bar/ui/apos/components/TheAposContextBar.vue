@@ -383,6 +383,10 @@ export default {
       mode = mode || this.draftMode;
       locale = locale || apos.i18n.locale;
       doc = doc || this.context;
+      if (!doc) {
+        return;
+      }
+
       if ((mode === this.draftMode) && (locale === apos.i18n.locale)) {
         if ((this.context._id === doc._id) && (!this.urlDiffers(doc._url))) {
           return;
@@ -557,17 +561,17 @@ export default {
         } : {})
       };
 
-      const content = await apos.http.get(doc._url, {
-        qs,
-        headers: {
-          'Cache-Control': 'no-cache'
-        },
-        draft: true,
-        busy: true,
-        prefix: false
-      });
-
-      refreshable.innerHTML = content;
+      if (doc._url) {
+        refreshable.innerHTML = await apos.http.get(doc._url, {
+          qs,
+          headers: {
+            'Cache-Control': 'no-cache'
+          },
+          draft: true,
+          busy: true,
+          prefix: false
+        });
+      }
 
       if (this.editMode && (!this.original)) {
         // the first time we enter edit mode on the page, we need to
@@ -691,13 +695,14 @@ export default {
       }
     },
     urlDiffers(url) {
-      // URL might or might not include hostname part
-      url = url.replace(/^https?:\/\/.*?\//, '/');
-      if (url === (window.location.pathname + (window.location.search || ''))) {
+      if (!url) {
         return false;
-      } else {
-        return true;
       }
+
+      const normalizedUrl = url.replace(/^https?:\/\/[^/]+\//, '/');
+      const currentPageUrl = window.location.pathname + window.location.search;
+
+      return normalizedUrl !== currentPageUrl;
     },
     lockNotAvailable() {
       if (this.contextStack.length) {
