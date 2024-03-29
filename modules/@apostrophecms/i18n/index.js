@@ -309,7 +309,7 @@ module.exports = {
           // Remove locale prefix so URL parsing can proceed normally from here
           if (req.path === localeOptions.prefix) {
             // Add / for home page
-            return res.redirect(`${req.url}/`);
+            req.redirect = `${req.url}/`;
           }
           if (req.path.substring(0, localeOptions.prefix.length + 1) === localeOptions.prefix + '/') {
             req.path = req.path.replace(localeOptions.prefix, '');
