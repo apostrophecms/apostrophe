@@ -12,7 +12,7 @@ There is no change in how the `styles` option is configured.
 
 * Updates the docs `beforeInsert` handler to avoid ending with different modes being set between `_id`, `aposLocale` and `aposMode`.
 * Adds a migration to fix potential corrupted data having different modes set between `_id`, `aposLocale` and `aposMode`.
-* Fix a crash in `notification` when `req.body` was not present
+* Fix a crash in `notification` when `req.body` was not present. Thanks to Michelin for contributing this fix.
 
 ## 4.1.1 (2024-03-21)
 
