@@ -8,7 +8,8 @@
         duration: 300,
         zIndex: 2000,
         animation: 'fade',
-        inertia: true
+        inertia: true,
+        placement: 'bottom'
       }"
       :editor="editor"
     >
@@ -213,14 +214,18 @@ export default {
     editorOptions() {
       // Deep clone to prevent runaway recursive rendering
       // as the subproperties are mutated in several places
-      // by this code and its dependencies (TODO: find them all)
-      const activeOptions = klona(this.options);
+      // by this code and its dependencies
+      let activeOptions = klona(this.options);
 
-      activeOptions.styles = this.enhanceStyles(
-        activeOptions.styles?.length
-          ? activeOptions.styles
-          : this.defaultOptions.styles
-      );
+      activeOptions = {
+        ...activeOptions,
+        ...this.enhanceStyles(
+          activeOptions.styles?.length
+            ? activeOptions.styles
+            : this.defaultOptions.styles
+        )
+      };
+      delete activeOptions.styles;
 
       // Allow default options to pass through if `false`
       Object.keys(this.defaultOptions).forEach((option) => {
@@ -233,6 +238,15 @@ export default {
       activeOptions.className = (activeOptions.className !== undefined)
         ? activeOptions.className : this.moduleOptions.className;
 
+      if (activeOptions.toolbar.includes('styles')) {
+        activeOptions.toolbar = activeOptions.toolbar.filter(t => t !== 'styles');
+        if (activeOptions.marks.length) {
+          activeOptions.toolbar = [ 'marks', ...activeOptions.toolbar ];
+        }
+        if (activeOptions.nodes.length) {
+          activeOptions.toolbar = [ 'nodes', ...activeOptions.toolbar ];
+        }
+      }
       return activeOptions;
     },
     autofocus() {
@@ -248,7 +262,12 @@ export default {
       // If we don't supply a valid instance of the first style, then
       // the text align control will not work until the user manually
       // applies a style or refreshes the page
-      const defaultStyle = this.editorOptions.styles.find(style => style.def);
+      const defaultStyle =
+        this.editorOptions.nodes.length
+          ? this.editorOptions.nodes.find(style => style.def)
+          : this.editorOptions.marks.length
+            ? this.editorOptions.marks.find(style => style.def)
+            : null;
 
       const _class = defaultStyle.class ? ` class="${defaultStyle.class}"` : '';
       return `<${defaultStyle.tag}${_class}></${defaultStyle.tag}>`;
@@ -547,7 +566,13 @@ export default {
           styles[0].def = true;
         }
       }
-      return styles;
+
+      // Split styles into node and mark selects
+      const result = {
+        nodes: styles.filter(style => style.command === 'setNode'),
+        marks: styles.filter(style => style.command !== 'setNode')
+      };
+      return result;
     },
     localizeStyle(style) {
       return {
@@ -559,7 +584,8 @@ export default {
       return (apos.tiptapExtensions || [])
         .map(extension => extension({
           ...this.editorOptions,
-          styles: this.editorOptions.styles.map(this.localizeStyle),
+          nodes: this.editorOptions.nodes.map(this.localizeStyle),
+          marks: this.editorOptions.marks.map(this.localizeStyle),
           types: this.tiptapTypes
         }));
     },
@@ -717,13 +743,16 @@ function traverseNextNode(node) {
 
     .apos-button--rich-text {
       position: relative;
-      width: 24px;
       height: 24px;
-      padding: 0;
+      padding: 0 8px;
       border: none;
       border-radius: var(--a-border-radius);
       background-color: transparent;
       color: var(--a-base-1);
+      &.apos-button--icon-only {
+        width: 24px;
+        padding: 0;
+      }
       &:hover {
         background-color: transparent;
       }
@@ -779,7 +808,7 @@ function traverseNextNode(node) {
     align-items: stretch;
     max-width: 100%;
     height: auto;
-    gap: 4px;
+    gap: 6px;
   }
 
   .apos-rich-text-editor__editor :deep(.ProseMirror) {
