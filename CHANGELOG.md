@@ -7,11 +7,13 @@
 * Rich text styles are now split into Nodes and Marks, with independent toolbar controls for a better UX when applying text styles.
 There is no change in how the `styles` option is configured.
 * `i18n` module now uses the regular `req.redirect` instead of a direct `res.redirect` to ensure redirection, enabling more possibilities for `@apostrophecms/redirect` module
+* Refactors `AposModal` component with composition api to get rid of duplicated code in `AposFocusMixin` and `AposFocus`.
 
 ### Fixes
 
 * Updates the docs `beforeInsert` handler to avoid ending with different modes being set between `_id`, `aposLocale` and `aposMode`.
 * Adds a migration to fix potential corrupted data having different modes set between `_id`, `aposLocale` and `aposMode`.
+* Fix a crash in `notification` when `req.body` was not present. Thanks to Michelin for contributing this fix.
 * Addresses a console error observed when opening and closing the `@apostrophecms-pro/palette` module across various projects.
 * Fixes the color picker field in `@apostrophecms-pro/palette` module.
 
