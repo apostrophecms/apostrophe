@@ -7,6 +7,7 @@
 * Rich text styles are now split into Nodes and Marks, with independent toolbar controls for a better UX when applying text styles.
 There is no change in how the `styles` option is configured.
 * `i18n` module now uses the regular `req.redirect` instead of a direct `res.redirect` to ensure redirection, enabling more possibilities for `@apostrophecms/redirect` module
+* Refactors `AposModal` component with composition api to get rid of duplicated code in `AposFocusMixin` and `AposFocus`.
 
 ### Fixes
 
