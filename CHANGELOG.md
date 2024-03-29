@@ -14,6 +14,8 @@ There is no change in how the `styles` option is configured.
 * Updates the docs `beforeInsert` handler to avoid ending with different modes being set between `_id`, `aposLocale` and `aposMode`.
 * Adds a migration to fix potential corrupted data having different modes set between `_id`, `aposLocale` and `aposMode`.
 * Fix a crash in `notification` when `req.body` was not present. Thanks to Michelin for contributing this fix.
+* Addresses a console error observed when opening and closing the `@apostrophecms-pro/palette` module across various projects.
+* Fixes the color picker field in `@apostrophecms-pro/palette` module.
 
 ## 4.1.1 (2024-03-21)
 
