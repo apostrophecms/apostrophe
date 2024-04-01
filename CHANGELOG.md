@@ -16,6 +16,7 @@ There is no change in how the `styles` option is configured.
 * Fix a crash in `notification` when `req.body` was not present. Thanks to Michelin for contributing this fix.
 * Addresses a console error observed when opening and closing the `@apostrophecms-pro/palette` module across various projects.
 * Fixes the color picker field in `@apostrophecms-pro/palette` module.
+* Ensures that the `data-apos-test` attribute in the admin bar's tray item buttons is set by passing the `action` prop to `AposButton`.
 
 ## 4.1.1 (2024-03-21)
 
