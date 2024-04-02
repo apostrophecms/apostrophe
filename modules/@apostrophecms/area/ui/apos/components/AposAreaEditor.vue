@@ -429,7 +429,7 @@ export default {
     },
     async update(widget) {
       widget.aposPlaceholder = false;
-      if (widget.metaType) {
+      if (!widget.metaType) {
         widget.metaType = 'widget';
       }
       if (this.docId === window.apos.adminBar.contextId) {
