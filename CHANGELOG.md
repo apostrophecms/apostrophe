@@ -18,6 +18,10 @@ There is no change in how the `styles` option is configured.
 * Fixes the color picker field in `@apostrophecms-pro/palette` module.
 * Ensures that the `data-apos-test` attribute in the admin bar's tray item buttons is set by passing the `action` prop to `AposButton`.
 
+### Adds
+
+* Add `metaType` property to newly inserted widgets.
+
 ## 4.1.1 (2024-03-21)
 
 ### Fixes
@@ -43,7 +47,6 @@ actually exists before calling `attachment.url` still lies with the developer.
 
 * Add new `getChanges` method to the schema module to get an array of document changed field names instead of just a boolean like does the `isEqual` method. 
 * Add highlight class in UI when comparing documents.
-* Add `metaType` property to newly inserted widgets.
 
 ## 4.0.0 (2024-03-12)
 
