@@ -2,77 +2,33 @@
 
 ## UNRELEASED
 
-### Changes
-
-* Rich text styles are now split into Nodes and Marks, with independent toolbar controls for a better UX when applying text styles.
-There is no change in how the `styles` option is configured.
-* `i18n` module now uses the regular `req.redirect` instead of a direct `res.redirect` to ensure redirection, enabling more possibilities for `@apostrophecms/redirect` module
-* Refactors `AposModal` component with composition api to get rid of duplicated code in `AposFocusMixin` and `AposFocus`.
-
-### Fixes
-
-* Updates the docs `beforeInsert` handler to avoid ending with different modes being set between `_id`, `aposLocale` and `aposMode`.
-* Adds a migration to fix potential corrupted data having different modes set between `_id`, `aposLocale` and `aposMode`.
-* Fix a crash in `notification` when `req.body` was not present. Thanks to Michelin for contributing this fix.
-* Addresses a console error observed when opening and closing the `@apostrophecms-pro/palette` module across various projects.
-* Fixes the color picker field in `@apostrophecms-pro/palette` module.
-* Ensures that the `data-apos-test` attribute in the admin bar's tray item buttons is set by passing the `action` prop to `AposButton`.
-
 ### Adds
 
 * Add `metaType` property to newly inserted widgets.
 
-## 4.1.1 (2024-03-21)
-
-### Fixes
-
-* Hotfix for a bug that broke the rich text editor when the rich text widget has
-a `styles` property. The bug was introduced in 4.0.0 as an indirect side effect of deeper
-watching behavior by Vue 3.
-
-## 4.1.0 (2024-03-20)
-
-### Fixes
-
-* Don't crash if a document of a type no longer corresponding to any module is present
-together with the advanced permission module.
-* AposLoginForm.js now pulls its schema from the user module rather than hardcoding it. Includes the 
-addition of `enterUsername` and `enterPassword` i18n fields for front end customization and localization.
-* Simulated Express requests returned by `apos.task.getReq` now include a `req.headers` property, for
-greater accuracy and to prevent unexpected bugs in other code.
-* Fix the missing attachment icon. The responsibility for checking whether an attachment
-actually exists before calling `attachment.url` still lies with the developer.
+## 3.63.3 (2024-03-14)
 
 ### Adds
 
-* Add new `getChanges` method to the schema module to get an array of document changed field names instead of just a boolean like does the `isEqual` method. 
-* Add highlight class in UI when comparing documents.
+* Add translation keys used by the multisite assembly module. This was released ahead of
+our regular schedule because the multisite module was released early with the expectation
+that these keys would be present.
 
-## 4.0.0 (2024-03-12)
+### Fixes
+
+* `field.help` and `field.htmlHelp` are now correctly translated when displayed in a tooltip.
+This was also an expectation for the multisite module.
+
+## UNRELEASED
 
 ### Adds
-* Add Marks tool to the Rich Text widget for handling toggling marks.
-* Add translation keys used by the multisite assembly module.
+
 * Add side by side comparison support in AposSchema component.
-* Add `beforeLocalize` and `afterLocalize` events.
-* Add custom manager indicators support via `apos.schema.addManagerIndicator({ component, props, if })`. The component registered this way will be automatically rendered in the manager modal.
 * Add the possibility to make widget modals wider, which can be useful for widgets that contain areas taking significant space. See [documentation](https://v3.docs.apostrophecms.org/reference/modules/widget-type.html#options).
-* Temporarily add `translation` module to support document translations via the `@apostrophecms-pro/automatic-translation` module.
-**The `translation` core module may be removed or refactored to reduce overhead in the core,** so its presence should
-not be relied upon.
-
-### Changes
-
-* Migrate to Vue 3. This entails changes to some admin UI code, as detailed in our public announcement.
-There are no other backwards incompatible changes in apostrophe version 4.0.0.
-Certain other modules containing custom admin UI have also been updated in a new major version to be compatible,
-as noted in our announcement and on the migration page of our website.
 
 ### Fixes
 
 * Adds `textStyle` to Tiptap types so that spans are rendered on RT initialization
-* `field.help` and `field.htmlHelp` are now correctly translated when displayed in a tooltip.
-* Bump the `he` package to most recent version.
 * Notification REST APIs should not directly return the result of MongoDB operations.
 
 ## 3.63.2 (2024-03-01)
