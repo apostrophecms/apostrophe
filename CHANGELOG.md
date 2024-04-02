@@ -17,6 +17,7 @@ actually exists before calling `attachment.url` still lies with the developer.
 
 * Add new `getChanges` method to the schema module to get an array of document changed field names instead of just a boolean like does the `isEqual` method. 
 * Add highlight class in UI when comparing documents.
+* Add `metaType` property to newly inserted widgets.
 
 ## 4.0.0 (2024-03-12)
 
