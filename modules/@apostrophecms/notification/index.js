@@ -271,6 +271,8 @@ module.exports = {
           throw self.apos.error('required');
         }
 
+        req.body = req.body || {};
+
         const notification = {
           _id: self.apos.util.generateId(),
           createdAt: new Date(),

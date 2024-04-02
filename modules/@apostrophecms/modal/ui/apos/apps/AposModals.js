@@ -58,8 +58,8 @@ function onTopOf(el1, el2) {
   if (el2 === document) {
     return true;
   }
-  const index1 = apos.modal.stack.findIndex(modal => modal.$el === el1);
-  const index2 = apos.modal.stack.findIndex(modal => modal.$el === el2);
+  const index1 = apos.modal.stack.findIndex(modal => modal.modalEl === el1);
+  const index2 = apos.modal.stack.findIndex(modal => modal.modalEl === el2);
   if (index1 === -1) {
     throw new Error('apos.modal.onTopOf: el1 is not in the modal stack');
   }

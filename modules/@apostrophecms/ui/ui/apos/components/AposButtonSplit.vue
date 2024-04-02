@@ -65,7 +65,7 @@ const {
   elementsToFocus,
   cycleElementsToFocus,
   focusElement,
-  focuslastmodalfocusedelement
+  focusLastModalFocusedElement
 } = useAposFocus();
 
 const props = defineProps({
@@ -164,7 +164,7 @@ function menuOpen() {
 }
 
 function menuClose() {
-  focuslastmodalfocusedelement();
+  focusLastModalFocusedElement();
 }
 </script>
 <style lang="scss" scoped>

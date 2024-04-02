@@ -70,6 +70,7 @@
           :icon="item.options.icon"
           :icon-only="true"
           :label="item.label"
+          :action="item.action"
           :state="trayItemState[item.name] ? [ 'active' ] : []"
           @click="emitEvent(item.action)"
         />
