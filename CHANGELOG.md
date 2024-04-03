@@ -1,5 +1,11 @@
 # Changelog
 
+## UNRELEASED
+
+### Adds
+
+* Add `metaType` property to newly inserted widgets.
+
 ## 3.63.3 (2024-03-14)
 
 ### Adds
