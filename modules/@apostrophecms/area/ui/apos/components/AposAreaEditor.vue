@@ -429,7 +429,9 @@ export default {
     },
     async update(widget) {
       widget.aposPlaceholder = false;
-
+      if (!widget.metaType) {
+        widget.metaType = 'widget';
+      }
       if (this.docId === window.apos.adminBar.contextId) {
         apos.bus.$emit('context-edited', {
           [`@${widget._id}`]: widget
@@ -512,6 +514,9 @@ export default {
     async insert({ index, widget }) {
       if (!widget._id) {
         widget._id = cuid();
+      }
+      if (!widget.metaType) {
+        widget.metaType = 'widget';
       }
       const push = {
         $each: [ widget ]
