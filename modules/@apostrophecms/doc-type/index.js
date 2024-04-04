@@ -2703,8 +2703,9 @@ module.exports = {
               subquery.limit(undefined);
               subquery.page(undefined);
               subquery.perPage(undefined);
-              const mongo = await subquery.toMongo();
-              const count = await mongo.count();
+              // TODO is toMongo needed here?
+              // const mongo = await subquery.toMongo();
+              const count = await self.apos.doc.db.countDocuments(subquery.get('criteria'));
               if (query.get('perPage')) {
                 const perPage = query.get('perPage');
                 const totalPages = Math.ceil(count / perPage);

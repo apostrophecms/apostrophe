@@ -8,6 +8,7 @@
 There is no change in how the `styles` option is configured.
 * `i18n` module now uses the regular `req.redirect` instead of a direct `res.redirect` to ensure redirection, enabling more possibilities for `@apostrophecms/redirect` module
 * Refactors `AposModal` component with composition api to get rid of duplicated code in `AposFocusMixin` and `AposFocus`.
+* `APOS_MONGODB_LOG_LEVEL` has been removed. According to [mongodb documentation](https://github.com/mongodb/node-mongodb-native/blob/main/etc/notes/CHANGES_5.0.0.md#mongoclientoptionslogger-and-mongoclientoptionsloglevel-removed) "Both the logger and the logLevel options had no effect and have been removed."
 
 ### Fixes
 
