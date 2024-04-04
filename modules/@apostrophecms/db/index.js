@@ -97,6 +97,7 @@ module.exports = {
           self.connectionReused = true;
           return;
         }
+        // TODO should be removed since it does nothing according to mongodb documentation
         let Logger;
         if (process.env.APOS_MONGODB_LOG_LEVEL) {
           Logger = mongo.Logger;
