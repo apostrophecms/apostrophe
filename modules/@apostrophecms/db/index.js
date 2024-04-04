@@ -49,6 +49,7 @@
 // in your project. However you may find it easier to just use the
 // `client` option.
 
+const mongo = require('@apostrophecms/emulate-mongo-3-driver');
 const mongodbConnect = require('../../../lib/mongodb-connect');
 const escapeHost = require('../../../lib/escape-host');
 
@@ -96,9 +97,10 @@ module.exports = {
           self.connectionReused = true;
           return;
         }
+        // TODO should be removed since it does nothing according to mongodb documentation
         let Logger;
         if (process.env.APOS_MONGODB_LOG_LEVEL) {
-          Logger = require('mongodb').Logger;
+          Logger = mongo.Logger;
           // Set debug level
           Logger.setLevel(process.env.APOS_MONGODB_LOG_LEVEL);
         }
