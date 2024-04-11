@@ -2682,10 +2682,10 @@ module.exports = {
               subquery.limit(undefined);
               subquery.page(undefined);
               subquery.perPage(undefined);
-              await subquery.finalize();
               const cursor = await subquery.toMongo();
               const count = await cursor.count();
               // TODO: replace count with the code below
+              // await subquery.finalize();
               // const count = await self.apos.doc.db.countDocuments({
               //   ...subquery.get('criteria'),
               //   ...(subquery.get('lateCriteria') || {})
