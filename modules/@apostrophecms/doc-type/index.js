@@ -2683,10 +2683,13 @@ module.exports = {
               subquery.page(undefined);
               subquery.perPage(undefined);
               await subquery.finalize();
-              const count = await self.apos.doc.db.countDocuments({
-                ...subquery.get('criteria'),
-                ...(subquery.get('lateCriteria') || {})
-              });
+              const cursor = await subquery.toMongo();
+              const count = await cursor.count();
+              // TODO: replace count with the code below
+              // const count = await self.apos.doc.db.countDocuments({
+              //   ...subquery.get('criteria'),
+              //   ...(subquery.get('lateCriteria') || {})
+              // });
               if (query.get('perPage')) {
                 const perPage = query.get('perPage');
                 const totalPages = Math.ceil(count / perPage);
