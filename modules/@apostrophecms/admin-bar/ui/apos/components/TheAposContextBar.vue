@@ -549,6 +549,7 @@ export default {
 
       if (this.urlDiffers(doc._url)) {
         // Slug changed, change browser URL to reflect the actual url of the doc
+        doc._url = doc._url + (window.location.search || '');
         history.replaceState(null, '', doc._url);
       }
 
