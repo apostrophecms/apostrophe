@@ -17,6 +17,7 @@ There is no change in how the `styles` option is configured.
 * Addresses a console error observed when opening and closing the `@apostrophecms-pro/palette` module across various projects.
 * Fixes the color picker field in `@apostrophecms-pro/palette` module.
 * Ensures that the `data-apos-test` attribute in the admin bar's tray item buttons is set by passing the `action` prop to `AposButton`.
+* Prevents stripping of query parameters from the URL when the page is either switched to edit mode or reloaded while in edit mode.
 
 ### Adds
 
