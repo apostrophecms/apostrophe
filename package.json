@@ -78,7 +78,6 @@
     "connect-multiparty": "^2.1.1",
     "cookie-parser": "^1.4.5",
     "cors": "^2.8.5",
-    "credentials": "^3.0.2",
     "css-loader": "^5.2.4",
     "cuid": "^2.1.8",
     "dayjs": "^1.9.8",
