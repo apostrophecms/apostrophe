@@ -8,7 +8,7 @@
       :icon-size="16"
       :modifiers="['no-border', 'no-motion']"
       :tooltip="{
-        content: tool.label,
+        content: $t(tool.label),
         placement: 'top',
         delay: 650
       }"
@@ -34,7 +34,7 @@
             >
               <button class="apos-marks-control__button" @click="toggleStyle(mark)">
                 <span class="apos-marks-control__label" :class="mark.class">
-                  {{ mark.label }}
+                  {{ $t(mark.label) }}
                 </span>
               </button>
             </li>
