@@ -99,7 +99,7 @@ describe('Users', function() {
     }
   });
 
-  it('should verify a user password created with former credential package', async function() {
+  it('should verify a user password created with former credential package and also upgrade the hash', async function() {
     const req = apos.task.getReq();
     const user = apos.user.newInstance();
 
@@ -117,6 +117,22 @@ describe('Users', function() {
 
     await apos.user.safe.update({ username: 'olduser' }, { $set: { passwordHash: oldPasswordHashSimulated } });
     await apos.user.verifyPassword(user, 'passwordThatWentThroughOldCredentialPackageHashing');
+
+    // verifyPassword now upgrades legacy hashes on next use, e.g.
+    // the next time it is possible because the password is known
+    const newHash = JSON.parse((await apos.user.safe.findOne({
+      username: 'olduser'
+    })).passwordHash);
+    assert.strictEqual(newHash.hashMethod, 'scrypt');
+    // Confirm the modernized end result is still verifiable with the old password
+    await apos.user.verifyPassword(user, 'passwordThatWentThroughOldCredentialPackageHashing');
+    try {
+      // ... And not with a bogus one
+      await apos.user.verifyPassword(user, 'bogus');
+      assert(false);
+    } catch (e) {
+      // Good
+    }
     await apos.user.safe.remove({ username: 'olduser' });
   });
 

@@ -68,7 +68,7 @@ async function verify(stored, input, opts) {
   const parsed = parse(stored);
 
   const {
-    hashMethod, keyLength, salt, hash
+    hashMethod, keyLength, salt, hash: hashA
   } = parse(stored);
 
   if (typeof input !== 'string' || input.length === 0) {
@@ -99,7 +99,13 @@ async function verify(stored, input, opts) {
     }
     hashB = await pbkdf2(input, salt, iterations, keyLength, hfn);
   }
-  return timingSafeEqual(hash, hashB);
+  const equal = timingSafeEqual(hashA, hashB);
+  if (equal && (hashMethod !== 'scrypt')) {
+    // Modernize legacy hashes on next login
+    return hash(input, opts);
+  } else {
+    return equal;
+  }
 }
 
 function parse(stored) {

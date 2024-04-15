@@ -449,14 +449,26 @@ module.exports = {
       // Otherwise the method returns normally.
 
       async verifySecret(user, secret, attempt) {
+        console.log('***', user, secret, attempt);
         const safeUser = await self.safe.findOne({ _id: user._id });
         if (!safeUser) {
           throw new Error('No such user in the safe.');
         }
-
-        const isVerified = await self.pw.verify(migrate(safeUser[secret + 'Hash']), attempt);
+        const key = secret + 'Hash';
+        const isVerified = await self.pw.verify(migrate(safeUser[key]), attempt);
 
         if (isVerified) {
+          if ((typeof isVerified) === 'string') {
+            // "verify" updated the hash, store the new one
+            console.log('Storing updated hash:', isVerified);
+            const $set = {};
+            $set[key] = isVerified;
+            await self.safe.updateOne({
+              _id: user._id
+            }, {
+              $set
+            });
+          }
           return null;
         } else {
           throw self.apos.error('invalid', `Incorrect ${secret}`);
