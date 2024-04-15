@@ -1147,7 +1147,7 @@ describe('Docs', function() {
       assert.deepEqual(actual, expected);
     });
 
-    it.only('should rely on aposMode when present for _id and aposLocale even if req.mode does not match', async function() {
+    it('should rely on aposMode when present for _id and aposLocale even if req.mode does not match', async function() {
       const req = apos.task.getReq();
       const draftReq = apos.task.getReq({ mode: 'draft' });
       const people = apos.modules['test-people'];
