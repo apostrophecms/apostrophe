@@ -37,8 +37,8 @@ describe('password-hash', function() {
     assert.strictEqual(typeof hash, 'string');
     const data = JSON.parse(hash);
     assert.strictEqual(data.hashMethod, 'scrypt');
-    const verified = await instance.verify(hash, 'test-password');
-    assert.strictEqual(verified, true);
+    assert.strictEqual(await instance.verify(hash, 'test-password'), true);
+    assert.strictEqual(await instance.verify(hash, 'bogus-password'), false);
   });
   it('can reject a bad password for a legacy pbkdf2 hash', async function() {
     this.timeout(10000);

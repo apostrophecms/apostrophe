@@ -18,10 +18,15 @@ There is no change in how the `styles` option is configured.
 * Fixes the color picker field in `@apostrophecms-pro/palette` module.
 * Ensures that the `data-apos-test` attribute in the admin bar's tray item buttons is set by passing the `action` prop to `AposButton`.
 * Prevents stripping of query parameters from the URL when the page is either switched to edit mode or reloaded while in edit mode.
+* Add the missing `metaType` property to newly inserted widgets.
 
-### Adds
+### Security
 
-* Add `metaType` property to newly inserted widgets.
+* New passwords are now hashed with `scrypt`, the best password hash available in the Node.js core `crypto` module, following guidance from [OWASP](https://cheatsheetseries.owasp.org/cheatsheets/Password_Storage_Cheat_Sheet.html).
+This reduces login time while improving overall security.
+* Old passwords are automatically re-hashed with `scrypt` on the next successful login attempt, which
+adds some delay to that next attempt, but speeds them up forever after compared to the old implementation.
+* Custom `scrypt` parameters for password hashing can be passed to the `@apostrophecms/user` module via the `scrypt` option. See the [Node.js documentation for `scrypt`]. Note that the `maxmem` parameter is computed automatically based on the other parameters.
 
 ## 4.1.1 (2024-03-21)
 

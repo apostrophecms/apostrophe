@@ -115,7 +115,7 @@ describe('Users', function() {
     const oldPasswordHashSimulated =
       '{"hash":"/1GntJjtkMY1iPmQY1gn9f3bOZ5tb2qFL+x4qsDerZq2JL8+12TERR4/xqh246wBb+QJwwIRsF/6E+eccshsLxT/","salt":"GJHukLNaG6xDgdIpxVOpqV7xQLQM7e5xnhDW7oaUOe7mTicr7Ca76M4uUJalN/cQ68CE9O7yXZ5WJOz4RN/udcX0","keyLength":66,"hashMethod":"pbkdf2","iterations":2853053}';
 
-    await apos.user.safe.update({ username: 'olduser' }, { $set: { passwordHash: oldPasswordHashSimulated } });
+    await apos.user.safe.updateOne({ username: 'olduser' }, { $set: { passwordHash: oldPasswordHashSimulated } });
     await apos.user.verifyPassword(user, 'passwordThatWentThroughOldCredentialPackageHashing');
 
     // verifyPassword now upgrades legacy hashes on next use, e.g.
@@ -133,7 +133,7 @@ describe('Users', function() {
     } catch (e) {
       // Good
     }
-    await apos.user.safe.remove({ username: 'olduser' });
+    await apos.user.safe.removeOne({ username: 'olduser' });
   });
 
   it('should not be able to insert a new user if their email already exists', async function() {
