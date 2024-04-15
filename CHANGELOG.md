@@ -4,7 +4,17 @@
 
 ### Adds
 
-* Add `metaType` property to newly inserted widgets.
+### Fixes
+
+* Add the missing `metaType` property to newly inserted widgets.
+
+### Security
+
+* New passwords are now hashed with `scrypt`, the best password hash available in the Node.js core `crypto` module, following guidance from [OWASP](https://cheatsheetseries.owasp.org/cheatsheets/Password_Storage_Cheat_Sheet.html).
+This reduces login time while improving overall security.
+* Old passwords are automatically re-hashed with `scrypt` on the next successful login attempt, which
+adds some delay to that next attempt, but speeds them up forever after compared to the old implementation.
+* Custom `scrypt` parameters for password hashing can be passed to the `@apostrophecms/user` module via the `scrypt` option. See the [Node.js documentation for `scrypt`]. Note that the `maxmem` parameter is computed automatically based on the other parameters.
 
 ## 3.63.3 (2024-03-14)
 
