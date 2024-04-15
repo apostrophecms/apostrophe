@@ -8,13 +8,13 @@
     />
     <select
       v-apos-tooltip="{
-        content: tool.label,
+        content: $t(tool.label),
         placement: 'top',
         delay: 650
       }"
       :model-value="active"
       class="apos-tiptap-control apos-tiptap-control--select"
-      :style="`width:${options.nodes[active].label.length * 6.5}px`"
+      :style="`width:${$t(options.nodes[active].label).length * 6.5}px`"
       @change="setStyle"
     >
       <option
@@ -22,7 +22,7 @@
         :key="style.label"
         :value="i"
       >
-        {{ style.label }}
+        {{ $t(style.label) }}
       </option>
     </select>
     <chevron-down-icon
