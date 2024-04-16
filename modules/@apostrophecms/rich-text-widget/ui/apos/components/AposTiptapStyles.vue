@@ -66,7 +66,7 @@ export default {
   computed: {
     nodeOptions() {
       return [ {
-        label: this.$t('apostrophe:richTextNodeMultipleStyles'),
+        label: 'apostrophe:richTextNodeMultipleStyles',
         attr: this.multipleSelected ? '' : 'hidden'
       },
       ...this.options.nodes ];
@@ -83,7 +83,7 @@ export default {
         };
       });
 
-      if (content?.content?.content.length) {
+      if (content?.content?.content?.length) {
         activeEls = content.content.content.map(n => {
           return {
             name: n.type.name,
@@ -92,6 +92,18 @@ export default {
           };
         });
       }
+
+      // Remove duplicates
+      activeEls = activeEls.filter((item, index, self) => {
+        // Find the index of the first occurrence of the current item
+        const firstIndex = self.findIndex(t =>
+          t.name === item.name &&
+          t.class === item.class &&
+          t.level === item.level
+        );
+        // If the index of the current item is the same as the first index, keep it
+        return index === firstIndex;
+      });
 
       if (activeEls.length) {
         if (activeEls.length > 1) {
