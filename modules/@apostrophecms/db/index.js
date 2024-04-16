@@ -49,7 +49,6 @@
 // in your project. However you may find it easier to just use the
 // `client` option.
 
-const mongo = require('@apostrophecms/emulate-mongo-3-driver');
 const mongodbConnect = require('../../../lib/mongodb-connect');
 const escapeHost = require('../../../lib/escape-host');
 
