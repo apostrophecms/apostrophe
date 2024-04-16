@@ -16,6 +16,11 @@ This reduces login time while improving overall security.
 adds some delay to that next attempt, but speeds them up forever after compared to the old implementation.
 * Custom `scrypt` parameters for password hashing can be passed to the `@apostrophecms/user` module via the `scrypt` option. See the [Node.js documentation for `scrypt`]. Note that the `maxmem` parameter is computed automatically based on the other parameters.
 
+### Changes
+
+* `APOS_MONGODB_LOG_LEVEL` has been removed. According to [mongodb documentation](https://github.com/mongodb/node-mongodb-native/blob/main/etc/notes/CHANGES_5.0.0.md#mongoclientoptionslogger-and-mongoclientoptionsloglevel-removed) "Both the logger and the logLevel options had no effect and have been removed."
+* Update `connect-mongo` to `5.x`. Add `@apostrophecms/emulate-mongo-3-driver` dependency to keep supporting `mongodb@3.x` queries while using `mongodb@6.x`.
+
 ## 3.63.3 (2024-03-14)
 
 ### Adds
