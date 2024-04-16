@@ -2,7 +2,7 @@
 
 ## UNRELEASED
 
-* fixed slug creation issue if we get some value in title like 'new page /'
+* Typing a `/` in the title field of a page no longer confuses the slug field. Thanks to [Gauav Kumar](https://github.com/gkumar9891).
 
 ### Changes
 
