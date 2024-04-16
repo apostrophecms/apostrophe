@@ -97,13 +97,6 @@ module.exports = {
           self.connectionReused = true;
           return;
         }
-        // TODO should be removed since it does nothing according to mongodb documentation
-        let Logger;
-        if (process.env.APOS_MONGODB_LOG_LEVEL) {
-          Logger = mongo.Logger;
-          // Set debug level
-          Logger.setLevel(process.env.APOS_MONGODB_LOG_LEVEL);
-        }
         let uri = 'mongodb://';
         if (process.env.APOS_MONGODB_URI) {
           uri = process.env.APOS_MONGODB_URI;
