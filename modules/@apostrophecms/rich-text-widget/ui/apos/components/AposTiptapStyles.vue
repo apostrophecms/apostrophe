@@ -12,15 +12,16 @@
         placement: 'top',
         delay: 650
       }"
-      :model-value="active"
+      :value="active"
       class="apos-tiptap-control apos-tiptap-control--select"
-      :style="`width:${$t(options.nodes[active].label).length * 6.5}px`"
+      :style="`width:${$t(nodeOptions[active].label).length * 6.5}px`"
       @change="setStyle"
     >
       <option
-        v-for="(style, i) in options.nodes"
+        v-for="(style, i) in nodeOptions"
         :key="style.label"
         :value="i"
+        :hidden="style.attr === 'hidden'"
       >
         {{ $t(style.label) }}
       </option>
@@ -57,26 +58,92 @@ export default {
       }
     }
   },
+  data() {
+    return {
+      multipleSelected: false
+    };
+  },
   computed: {
+    nodeOptions() {
+      return [ {
+        label: 'apostrophe:richTextNodeMultipleStyles',
+        attr: this.multipleSelected ? '' : 'hidden'
+      },
+      ...this.options.nodes ];
+    },
     active() {
-      for (let i = 0; (i < this.options.nodes.length); i++) {
-        const style = this.options.nodes[i];
-        if (this.editor.isActive(style.type, (style.options || {}))) {
-          return i;
-        } else if (this.editor.state.selection.$head.parent.type.name === 'defaultNode' && style.def) {
-          // Look deeper to see if custom defaultNode is active
-          return i;
-        }
+      const { selection } = this.editor.state;
+      const content = selection.content();
+      let activeEls = [];
+      const nodes = this.options.nodes.map(n => {
+        return {
+          type: n.type,
+          class: n.options.class || null,
+          level: n.options.level || null
+        };
+      });
+
+      if (content?.content?.content?.length) {
+        activeEls = content.content.content.map(n => {
+          return {
+            name: n.type.name,
+            class: n.attrs.class || null,
+            level: n.attrs.level || null
+          };
+        });
       }
-      return 0;
+
+      // Remove duplicates
+      activeEls = activeEls.filter((item, index, self) => {
+        // Find the index of the first occurrence of the current item
+        const firstIndex = self.findIndex(t =>
+          t.name === item.name &&
+          t.class === item.class &&
+          t.level === item.level
+        );
+        // If the index of the current item is the same as the first index, keep it
+        return index === firstIndex;
+      });
+
+      if (activeEls.length) {
+        if (activeEls.length > 1) {
+          // More than one node, show 'multiple styles' label
+          return 0;
+        } else {
+          // Only one node, show the style label
+          // the default style will look different, detect it specifically
+          if (activeEls[0].name === 'defaultNode') {
+            return 1;
+          } else {
+            const match = nodes.findIndex(node =>
+              node.class === activeEls[0].class &&
+              node.type === activeEls[0].name &&
+              node.level === activeEls[0].level
+            );
+            return match + 1;
+          }
+        }
+      } else {
+        // No nodes, show the default label
+        return 1;
+      }
     },
     moduleOptions() {
       return window.apos.modules['@apostrophecms/rich-text-widget'];
     }
   },
+  watch: {
+    active(newValue) {
+      if (newValue === 0) {
+        this.multipleSelected = true;
+      } else {
+        this.multipleSelected = false;
+      }
+    }
+  },
   methods: {
     setStyle($event) {
-      const style = this.options.nodes[$event.target.value];
+      const style = this.nodeOptions[$event.target.value];
       this.editor.commands.focus();
       this.editor.commands[style.command](style.type, style.options || {});
     }

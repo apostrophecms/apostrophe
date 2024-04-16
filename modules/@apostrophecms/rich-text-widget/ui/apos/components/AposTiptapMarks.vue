@@ -74,7 +74,8 @@ export default {
   data() {
     return {
       active: false,
-      open: false
+      open: false,
+      classes: this.options.marks.map(m => m.class)
     };
   },
   computed: {
@@ -98,17 +99,18 @@ export default {
           }
         });
       }
-      return activeClasses;
+      // Filter out classes that are not in the list of available classes
+      return activeClasses.filter(value => this.classes.includes(value));
     },
     buttonLabel() {
-      let label = this.$t('apostrophe:richTextMarkApplyStyles');
+      let label;
       if (this.activeClasses.length > 1) {
         label = this.$t('apostrophe:richTextMarkMultipleStyles');
       }
       if (this.activeClasses.length === 1) {
         label = this.options.marks.find(m => m.class === this.activeClasses[0])?.label;
       }
-      return label;
+      return label || this.$t('apostrophe:richTextMarkApplyStyles');
     },
     hasSelection() {
       const { state } = this.editor;
