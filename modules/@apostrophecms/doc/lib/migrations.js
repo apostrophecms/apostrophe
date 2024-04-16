@@ -25,7 +25,7 @@ module.exports = (self) => {
 
     addSetDocumentModesMigration() {
       self.apos.migration.add('set-document-modes', async () => {
-        return self.apos.migration.eachDoc(5, async (doc) => {
+        return self.apos.migration.eachDoc({}, 5, async (doc) => {
           const manager = self.getManager(doc.type);
           if (!manager.isLocalized()) {
             return;

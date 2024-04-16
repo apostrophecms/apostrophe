@@ -96,12 +96,6 @@ module.exports = {
           self.connectionReused = true;
           return;
         }
-        let Logger;
-        if (process.env.APOS_MONGODB_LOG_LEVEL) {
-          Logger = require('mongodb').Logger;
-          // Set debug level
-          Logger.setLevel(process.env.APOS_MONGODB_LOG_LEVEL);
-        }
         let uri = 'mongodb://';
         if (process.env.APOS_MONGODB_URI) {
           uri = process.env.APOS_MONGODB_URI;

@@ -554,12 +554,13 @@ module.exports = {
           }
           if (!sessionOptions.store.name) {
             // require from this module's dependencies
-            Store = require('connect-mongo')(expressSession);
+            const MongoStore = require('connect-mongo');
+            sessionOptions.store = MongoStore.create(sessionOptions.store.options);
           } else {
             // require from project's dependencies
             Store = self.apos.root.require(sessionOptions.store.name)(expressSession);
+            sessionOptions.store = new Store(sessionOptions.store.options);
           }
-          sessionOptions.store = new Store(sessionOptions.store.options);
         }
         // Exported for the benefit of code that needs to
         // interoperate in a compatible way with express-sessions

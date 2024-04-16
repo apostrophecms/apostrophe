@@ -115,6 +115,11 @@ module.exports = {
         // https://groups.google.com/forum/#!topic/mongodb-user/AFC1ia7MHzk
         const cursor = collection.find(criteria);
         cursor.sort({ _id: 1 });
+        // TODO use a variant of the code below instead
+        // cursor.batchSize(limit);
+        // for await (const docs of cursor) {
+        //   // await iterator(docs);
+        // }
         return require('util').promisify(broadband)(cursor, limit, async function (doc, cb) {
           try {
             await iterator(doc);
