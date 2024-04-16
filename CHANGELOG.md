@@ -2,6 +2,8 @@
 
 ## UNRELEASED
 
+* fixed slug creation issue if we get some value in title like 'new page /'
+
 ### Changes
 
 * Rich text styles are now split into Nodes and Marks, with independent toolbar controls for a better user experience when applying text styles.
