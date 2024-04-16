@@ -12,7 +12,6 @@
         placement: 'top',
         delay: 650
       }"
-      :model-value="active"
       :value="active"
       class="apos-tiptap-control apos-tiptap-control--select"
       :style="`width:${$t(nodeOptions[active].label).length * 6.5}px`"
