@@ -67,7 +67,10 @@ export default {
         delete oldClone.archived;
 
         oldValue = Object.values(oldClone).join(' ');
+        oldValue = oldValue.replace(/\//g, ' ');
+
         newValue = Object.values(newClone).join(' ');
+        newValue = newValue.replace(/\//g, ' ');
 
         if (this.compatible(oldValue, this.next) && !newValue.archived) {
           // If this is a page slug, we only replace the last section of the slug.

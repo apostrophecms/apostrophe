@@ -62,15 +62,11 @@ export default {
       }
     }
 
-    // Like standard i18next $t, but also with support
-    // for just one object argument with at least a `key`
-    // property, which makes it easier to pass both
-    // a label and its interpolation values through
-    // multiple layers of code, as a single `label`
-    // property for instance. You may also specify
-    // `localize: false` to pass a string through without
-    // invoking i18next.
+    // Makes available the $t function in all components through `this`.
     app.config.globalProperties.$t = $t;
+
+    // This is for the composition API, allowing to inject $t in any component.
+    app.provide('i18n', $t);
   }
 };
 
