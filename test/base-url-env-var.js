@@ -13,6 +13,12 @@ describe('APOS_BASE_URL environment variable', function() {
     apos = require('../index.js')({
       root: module,
       shortName: 'test',
+      modules: {
+        'apostrophe-express': {
+          secret: 'xxx',
+          port: 7900
+        }
+      },
       afterInit: function(callback) {
         // In tests this will be the name of the test file,
         // so override that in order to get apostrophe to
