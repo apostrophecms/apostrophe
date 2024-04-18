@@ -31,7 +31,7 @@
   "author": "Apostrophe Technologies, Inc.",
   "license": "MIT",
   "dependencies": {
-    "@apostrophecms/emulate-mongo-3-driver": "^1.0.1",
+    "@apostrophecms/emulate-mongo-3-driver": "^1.0.2",
     "@apostrophecms/vue-color": "^2.8.2",
     "@opentelemetry/api": "^1.0.4",
     "@opentelemetry/semantic-conventions": "^1.0.1",
