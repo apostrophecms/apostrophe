@@ -1,6 +1,6 @@
 # Changelog
 
-## UNRELEASED
+## 4.2.0 (2024-04-18)
 
 * Typing a `/` in the title field of a page no longer confuses the slug field. Thanks to [Gauav Kumar](https://github.com/gkumar9891).
 
