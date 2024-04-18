@@ -1,5 +1,11 @@
 # Changelog
 
+## UNRELEASED
+
+### Changes
+
+* Update `emulate-mongo-2-driver`dependency to keep supporting `mongodb@2.x` queries while using `mongodb@6.x`.
+
 ## 2.227.4 2023-09-27
 
 ### Fixes
