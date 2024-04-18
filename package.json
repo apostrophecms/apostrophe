@@ -39,7 +39,7 @@
     "credentials": "^3.0.2",
     "cuid": "^1.3.8",
     "diff": "^4.0.1",
-    "emulate-mongo-2-driver": "^1.3.2",
+    "emulate-mongo-2-driver": "^1.3.3",
     "express": "^4.17.1",
     "express-session": "^1.17.0",
     "glob": "^5.0.15",
