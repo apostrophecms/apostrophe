@@ -474,7 +474,7 @@ module.exports = {
       }
     };
   },
-  extendMethods(self) {
+  extendMethods(self, options) {
     return {
       enableAction() {
         self.action = self.apos.modules['@apostrophecms/page'].action;
@@ -553,6 +553,7 @@ module.exports = {
 
         browserOptions.filters = self.filters;
         browserOptions.columns = self.columns;
+        browserOptions.contentChangedRefresh = options.contentChangedRefresh !== false;
 
         // Sets manager modal to AposDocsManager
         // for browsing specific page types:

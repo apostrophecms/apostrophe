@@ -493,11 +493,10 @@ export default {
           });
         }
       }
-      const refreshOptions = {
-        refresh: true
-      };
-      apos.bus.$emit('apos-refreshing', refreshOptions);
-      if (refreshOptions.refresh) {
+
+      // Check that refresh hasn't been disbled for this page type
+      const contextOptions = apos.modules[this.context.type];
+      if (contextOptions.contentChangedRefresh) {
         await this.refresh({
           scrollcheck: e.action === 'history'
         });
