@@ -36,6 +36,7 @@
           :size="iconSize"
           class="apos-input-icon"
         />
+        <button @click="summarizeLiveDoc">Summarize Live Doc</button>
       </div>
     </template>
   </AposInputWrapper>

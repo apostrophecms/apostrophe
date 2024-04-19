@@ -17,6 +17,7 @@ export default {
       originalSlugPartsLength: null
     };
   },
+  inject: [ 'liveOriginalDoc' ],
   computed: {
     tabindex () {
       return this.field.disableFocus ? '-1' : '0';
@@ -98,6 +99,9 @@ export default {
     this.originalSlugPartsLength = this.next.split('/').length;
   },
   methods: {
+    summarizeLiveDoc() {
+      console.log(`The title is: ${this.liveOriginalDoc.data.title}`);
+    },
     async watchNext() {
       this.next = this.slugify(this.next);
       this.validateAndEmit();

@@ -26,6 +26,7 @@ export default {
       default: null
     }
   },
+
   data() {
     return {
       docFields: {
