@@ -495,7 +495,9 @@ export default {
       }
 
       // Check that refresh hasn't been disbled for this page type
-      const contextOptions = apos.modules[this.context.type];
+      const contextOptions = this.context
+        ? apos.modules[this.context.type]
+        : { contentChangedRefresh: true };
       if (contextOptions.contentChangedRefresh) {
         await this.refresh({
           scrollcheck: e.action === 'history'
