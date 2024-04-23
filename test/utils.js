@@ -373,10 +373,12 @@ describe('Utils', function() {
     it('can debounce functions and should be be awaitable with promises', async function () {
       const calledNormal = [];
       const calledAsync = [];
+      const calledAsyncSlow = [];
       let asyncErrCatched = false;
 
       const debouncedNormal = debounce(normalFn, 50);
       const debouncedAsync = debounce(asyncFn, 50);
+      const debouncedAsyncSlow = debounce(asyncSlowFn, 50);
       const debouncedAsyncErr = debounce(AsyncErrFn, 50);
 
       debouncedNormal(1);
@@ -388,6 +390,13 @@ describe('Utils', function() {
       debouncedAsync(2);
       await debouncedAsync(3);
 
+      debouncedAsyncSlow(1);
+      await wait(100);
+      debouncedAsyncSlow(2);
+      debouncedAsyncSlow(3);
+      await wait(60);
+      await debouncedAsyncSlow(4);
+
       try {
         await debouncedAsyncErr(1);
       } catch (err) {
@@ -397,12 +406,14 @@ describe('Utils', function() {
       const actual = {
         calledNormal,
         calledAsync,
+        calledAsyncSlow,
         asyncErrCatched
       };
 
       const expected = {
-        calledNormal: [ 3 ],
-        calledAsync: [ 1, 3 ],
+        calledNormal: [ 3, 3 ],
+        calledAsync: [ 1, 1, 3, 3 ],
+        calledAsyncSlow: [ 1, 1, 3, 3, 4, 4 ],
         asyncErrCatched: true
       };
 
@@ -410,13 +421,22 @@ describe('Utils', function() {
 
       function normalFn(num) {
         calledNormal.push(num);
+        calledNormal.push(num);
         return 'test';
       };
 
-      async function asyncFn(num, time = 50) {
-        await wait(time);
+      async function asyncFn(num) {
+        calledAsync.push(num);
+        await wait(50);
         calledAsync.push(num);
         return 'async';
+      }
+
+      async function asyncSlowFn(num) {
+        calledAsyncSlow.push(num);
+        await wait(75);
+        calledAsyncSlow.push(num);
+        return 'asyncSlow';
       }
 
     });
