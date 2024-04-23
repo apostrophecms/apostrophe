@@ -1,5 +1,5 @@
 <template>
-  <div class="apos-modal-tabs">
+  <div class="apos-modal-tabs" :class="{ 'apos-modal-tabs--horizontal': orientation === 'horizontal' }">
     <ul class="apos-modal-tabs__tabs">
       <li
         v-for="tab in tabs"
@@ -14,7 +14,10 @@
           @click="selectTab"
         >
           {{ $t(tab.label) }}
-          <span v-if="tabErrors[tab.name] && tabErrors[tab.name].length" class="apos-modal-tabs__label apos-modal-tabs__label--error">
+          <span
+            v-if="tabErrors[tab.name] && tabErrors[tab.name].length"
+            class="apos-modal-tabs__label apos-modal-tabs__label--error"
+          >
             {{ tabErrors[tab.name].length }} {{ generateErrorLabel(tabErrors[tab.name].length) }}
           </span>
         </button>
@@ -40,6 +43,10 @@ export default {
       default() {
         return {};
       }
+    },
+    orientation: {
+      type: String,
+      default: 'vertical'
     }
   },
   emits: [ 'select-tab' ],
@@ -78,6 +85,40 @@ export default {
 .apos-modal-tabs {
   display: flex;
   height: 100%;
+}
+
+.apos-modal-tabs--horizontal {
+  .apos-modal-tabs__tabs {
+    flex-direction: row;
+    border-top: 1px solid var(--a-base-7);
+    border-bottom: 1px solid var(--a-base-7);
+  }
+
+  .apos-modal-tabs__tab {
+    display: flex;
+    width: 100%;
+  }
+
+  .apos-modal-tabs__btn {
+    justify-content: center;
+    color: var(--a-base-1);
+    background-color: var(--a-base-10);
+
+    &:hover, &:focus {
+      color: var(--a-primary-light-40);
+      background-color: var(--a-base-10);
+    }
+
+    &[aria-selected="true"], &[aria-selected="true"]:hover, &[aria-selected="true"]:focus {
+      color: var(--a-primary);
+      background-color: var(--a-base-10);
+      border-bottom: 3px solid var(--a-primary);
+    }
+  }
+
+  .apos-modal-tabs__btn::before {
+    content: none;
+  }
 }
 
 .apos-modal-tabs__tabs {

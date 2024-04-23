@@ -9,9 +9,15 @@
     @no-modal="$emit('safe-close')"
   >
     <template #breadcrumbs>
-      <AposModalBreadcrumbs
-        v-if="breadcrumbs && breadcrumbs.length"
-        :items="breadcrumbs"
+      <AposModalBreadcrumbs v-if="breadcrumbs && breadcrumbs.length" :items="breadcrumbs" />
+      <AposModalTabs
+        v-if="tabs.length"
+        :key="tabKey"
+        :current="currentTab"
+        :tabs="tabs"
+        orientation="horizontal"
+        :errors="fieldErrors"
+        @select-tab="switchPane"
       />
     </template>
     <template #main>
@@ -52,13 +58,14 @@
 <script>
 import AposModifiedMixin from 'Modules/@apostrophecms/ui/mixins/AposModifiedMixin';
 import AposEditorMixin from 'Modules/@apostrophecms/modal/mixins/AposEditorMixin';
+import AposModalTabsMixin from 'Modules/@apostrophecms/modal/mixins/AposModalTabsMixin';
 import { detectDocChange } from 'Modules/@apostrophecms/schema/lib/detectChange';
 import cuid from 'cuid';
 import { klona } from 'klona';
 
 export default {
   name: 'AposWidgetEditor',
-  mixins: [ AposModifiedMixin, AposEditorMixin ],
+  mixins: [ AposModifiedMixin, AposEditorMixin, AposModalTabsMixin ],
   props: {
     type: {
       required: true,
