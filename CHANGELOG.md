@@ -5,6 +5,12 @@
 ### Adds
 
 * Allows to disable page refresh on content changed for page types.
+* Adds prop to `AposInputMixin` to disable blur emit.
+* Adds `throttle` function in ui module utils.
+
+### Changes
+
+* Improves `debounce` function to handle async properly (waiting for previous async call to finish before to trigger new one).
 
 ## 4.2.0 (2024-04-18)
 
