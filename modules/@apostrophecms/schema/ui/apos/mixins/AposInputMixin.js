@@ -55,6 +55,11 @@ export default {
     serverError: {
       type: Object,
       required: false
+    },
+
+    noBlurEmit: {
+      type: Boolean,
+      default: false
     }
   },
   data () {
@@ -122,7 +127,7 @@ export default {
       }
     },
     focus(value) {
-      if (!value) {
+      if (!this.noBlurEmit && !value) {
         this.validateAndEmit();
       }
     }
