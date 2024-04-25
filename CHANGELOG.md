@@ -1,9 +1,10 @@
 # Changelog
 
-## New release
+## UNRELEASED
 
 ### Adds
 
+* Allows to disable page refresh on content changed for page types.
 * Widget editor can now have tabs.
 
 ## 4.2.0 (2024-04-18)

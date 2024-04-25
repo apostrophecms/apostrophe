@@ -1,6 +1,7 @@
 const t = require('../test-lib/test.js');
 const assert = require('assert');
 const _ = require('lodash');
+const { debounce, throttle } = require('../modules/@apostrophecms/ui/ui/apos/utils/index');
 
 describe('Utils', function() {
 
@@ -369,5 +370,143 @@ describe('Utils', function() {
       assert(data.shoes[0].size === 8);
     });
 
+    it('can debounce functions and should be be awaitable with promises', async function () {
+      const calledNormal = [];
+      const calledAsync = [];
+      const calledAsyncSlow = [];
+      let asyncErrCatched = false;
+
+      const debouncedNormal = debounce(normalFn, 50);
+      const debouncedAsync = debounce(asyncFn, 50);
+      const debouncedAsyncSlow = debounce(asyncSlowFn, 50);
+      const debouncedAsyncErr = debounce(AsyncErrFn, 50);
+
+      debouncedNormal(1);
+      debouncedNormal(2);
+      await debouncedNormal(3);
+
+      debouncedAsync(1);
+      await wait(100);
+      debouncedAsync(2);
+      await debouncedAsync(3);
+
+      debouncedAsyncSlow(1);
+      await wait(100);
+      debouncedAsyncSlow(2);
+      debouncedAsyncSlow(3);
+      await wait(60);
+      await debouncedAsyncSlow(4);
+
+      try {
+        await debouncedAsyncErr(1);
+      } catch (err) {
+        asyncErrCatched = true;
+      }
+
+      const actual = {
+        calledNormal,
+        calledAsync,
+        calledAsyncSlow,
+        asyncErrCatched
+      };
+
+      const expected = {
+        calledNormal: [ 3, 3 ],
+        calledAsync: [ 1, 1, 3, 3 ],
+        calledAsyncSlow: [ 1, 1, 3, 3, 4, 4 ],
+        asyncErrCatched: true
+      };
+
+      assert.deepEqual(actual, expected);
+
+      function normalFn(num) {
+        calledNormal.push(num);
+        calledNormal.push(num);
+        return 'test';
+      };
+
+      async function asyncFn(num) {
+        calledAsync.push(num);
+        await wait(50);
+        calledAsync.push(num);
+        return 'async';
+      }
+
+      async function asyncSlowFn(num) {
+        calledAsyncSlow.push(num);
+        await wait(75);
+        calledAsyncSlow.push(num);
+        return 'asyncSlow';
+      }
+
+    });
+
+    it('can throttle functions', async function () {
+      const calledNormal = [];
+      const calledAsync = [];
+      let asyncErrCatched = false;
+
+      const throttledNormal = throttle(normalFn, 50);
+      const throttledAsync = throttle(asyncFn, 50);
+      const throttledAsyncErr = throttle(AsyncErrFn, 100);
+
+      throttledNormal(1);
+      await wait(100);
+      throttledNormal(2);
+      throttledNormal(3);
+      throttledNormal(4);
+
+      await wait(100);
+      await throttledNormal(5);
+
+      throttledAsync(1);
+      throttledAsync(2);
+      await wait(100);
+      await throttledAsync(3);
+
+      try {
+        await throttledAsyncErr(1);
+      } catch (err) {
+        asyncErrCatched = true;
+      }
+
+      const actual = {
+        calledNormal,
+        calledAsync,
+        asyncErrCatched
+      };
+
+      const expected = {
+        calledNormal: [ 1, 2, 5 ],
+        calledAsync: [ 1, 3 ],
+        asyncErrCatched: true
+      };
+
+      assert.deepEqual(actual, expected);
+
+      function normalFn(num) {
+        calledNormal.push(num);
+        return 'test';
+      };
+
+      async function asyncFn(num, time = 50) {
+        await wait(time);
+        calledAsync.push(num);
+        return 'async';
+      }
+    });
   });
 });
+
+function wait(delay) {
+  return new Promise((resolve) => {
+    setTimeout(() => {
+      resolve('done');
+    }, delay);
+  });
+};
+
+async function AsyncErrFn(num, time = 50) {
+  await wait();
+  throw new Error('async error');
+}
