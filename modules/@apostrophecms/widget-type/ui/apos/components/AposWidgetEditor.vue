@@ -25,9 +25,13 @@
         <template #bodyMain>
           <div class="apos-widget-editor__body">
             <AposSchema
-              ref="schema"
+              v-for="tab in tabs"
+              v-show="tab.name === currentTab"
+              :key="tab.name"
+              :ref="tab.name"
               :trigger-validation="triggerValidation"
-              :schema="schema"
+              :current-fields="groups[tab.name].fields"
+              :schema="groups[tab.name].schema"
               :model-value="docFields"
               :meta="meta"
               :following-values="followingValues()"
@@ -114,6 +118,7 @@ export default {
         data: {},
         hasErrors: false
       },
+      fieldErrors: {},
       modal: {
         title: this.editLabel,
         active: false,
@@ -188,10 +193,14 @@ export default {
   },
   methods: {
     updateDocFields(value) {
-      this.docFields = value;
+      this.docFields.data = {
+        ...this.docFields.data,
+        ...value.data
+      };
       this.evaluateConditions();
     },
     async save() {
+      const widget = klona(this.docFields.data);
       this.triggerValidation = true;
       this.$nextTick(async () => {
         if (this.docFields.hasErrors) {
@@ -206,7 +215,6 @@ export default {
           });
           return;
         }
-        const widget = this.docFields.data;
         if (!widget.type) {
           widget.type = this.type;
         }

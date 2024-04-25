@@ -1,5 +1,11 @@
 # Changelog
 
+## New release
+
+### Adds
+
+* Widget editor can now have tabs.
+
 ## 4.2.0 (2024-04-18)
 
 * Typing a `/` in the title field of a page no longer confuses the slug field. Thanks to [Gauav Kumar](https://github.com/gkumar9891).
@@ -47,7 +53,7 @@ watching behavior by Vue 3.
 
 * Don't crash if a document of a type no longer corresponding to any module is present
 together with the advanced permission module.
-* AposLoginForm.js now pulls its schema from the user module rather than hardcoding it. Includes the 
+* AposLoginForm.js now pulls its schema from the user module rather than hardcoding it. Includes the
 addition of `enterUsername` and `enterPassword` i18n fields for front end customization and localization.
 * Simulated Express requests returned by `apos.task.getReq` now include a `req.headers` property, for
 greater accuracy and to prevent unexpected bugs in other code.
@@ -56,7 +62,7 @@ actually exists before calling `attachment.url` still lies with the developer.
 
 ### Adds
 
-* Add new `getChanges` method to the schema module to get an array of document changed field names instead of just a boolean like does the `isEqual` method. 
+* Add new `getChanges` method to the schema module to get an array of document changed field names instead of just a boolean like does the `isEqual` method.
 * Add highlight class in UI when comparing documents.
 
 ## 4.0.0 (2024-03-12)
