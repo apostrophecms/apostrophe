@@ -2,7 +2,7 @@
   <div class="apos-modal-tabs" :class="{ 'apos-modal-tabs--horizontal': orientation === 'horizontal' }">
     <ul class="apos-modal-tabs__tabs">
       <li
-        v-for="tab in tabs"
+        v-for="tab in visibleTabs"
         v-show="tab.isVisible !== false"
         :key="tab.name"
         class="apos-modal-tabs__tab"
@@ -22,7 +22,19 @@
           </span>
         </button>
       </li>
+      <li
+        v-if="hiddenTabs.length"
+        key="placeholder-for-hidden-tabs"
+        class="apos-modal-tabs__tab apos-modal-tabs__tab--small"
+      />
     </ul>
+    <AposContextMenu
+      v-if="hiddenTabs.length"
+      :menu="hiddenTabs"
+      menu-placement="bottom-end"
+      :button="moreMenuButton"
+      @item-clicked="moreMenuHandler($event)"
+    />
   </div>
 </template>
 
@@ -50,6 +62,29 @@ export default {
     }
   },
   emits: [ 'select-tab' ],
+  data() {
+    const visibleTabs = [];
+    const hiddenTabs = [];
+
+    for (let i = 0; i < this.tabs.length; i++) {
+      this.tabs[i].action = this.tabs[i].name;
+      if (i < 5) {
+        visibleTabs.push(this.tabs[i]);
+      } else {
+        hiddenTabs.push(this.tabs[i]);
+      }
+    }
+
+    return {
+      visibleTabs,
+      hiddenTabs,
+      moreMenuButton: {
+        icon: 'dots-vertical-icon',
+        iconOnly: true,
+        type: 'subtle'
+      }
+    };
+  },
   computed: {
     tabErrors() {
       const errors = {};
@@ -76,6 +111,15 @@ export default {
       const tab = e.target;
       const id = tab.id;
       this.$emit('select-tab', id);
+    },
+    moreMenuHandler(item) {
+      const lastVisibleTab = this.visibleTabs[this.visibleTabs.length - 1];
+      const selectedItem = this.hiddenTabs.find((tab) => tab.name === item);
+
+      this.hiddenTabs.splice(this.hiddenTabs.indexOf(selectedItem), 1, lastVisibleTab);
+      this.visibleTabs.splice(this.visibleTabs.length - 1, 1, selectedItem);
+
+      this.$emit('select-tab', item);
     }
   }
 };
@@ -87,7 +131,25 @@ export default {
   height: 100%;
 }
 
+:deep(.apos-context-menu) {
+  position: absolute;
+  right: 0;
+  top: 10px;
+
+  svg {
+    height: 20px;
+    width: 20px;
+    color: var(--a-base-1);
+  }
+
+  .apos-button--subtle:hover {
+    background-color: initial;
+  }
+}
+
 .apos-modal-tabs--horizontal {
+  position: relative;
+
   .apos-modal-tabs__tabs {
     flex-direction: row;
     border-top: 1px solid var(--a-base-7);
@@ -97,6 +159,13 @@ export default {
   .apos-modal-tabs__tab {
     display: flex;
     width: 100%;
+  }
+
+  .apos-modal-tabs__tab--small {
+    width: 50%;
+    color: var(--a-base-1);
+    background-color: var(--a-base-10);
+    border-bottom: 1px solid var(--a-base-7);
   }
 
   .apos-modal-tabs__btn {
