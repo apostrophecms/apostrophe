@@ -68,11 +68,11 @@ export default {
 
     for (let i = 0; i < this.tabs.length; i++) {
       const tab = this.tabs[i];
-      tab.action = this.tabs[i].name;
+      tab.action = tab.name;
       if (i < 5) {
-        visibleTabs.push(this.tabs[i]);
+        visibleTabs.push(tab);
       } else {
-        hiddenTabs.push(this.tabs[i]);
+        hiddenTabs.push(tab);
       }
     }
 
