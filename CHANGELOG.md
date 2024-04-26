@@ -6,6 +6,10 @@
 
 * Allows to disable page refresh on content changed for page types.
 
+### Fixes
+
+* Fixes drag and drop regression in the page tree where pages were not able to be moved between parent and child.
+
 ## 4.2.0 (2024-04-18)
 
 * Typing a `/` in the title field of a page no longer confuses the slug field. Thanks to [Gauav Kumar](https://github.com/gkumar9891).
