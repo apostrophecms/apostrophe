@@ -67,7 +67,8 @@ export default {
     const hiddenTabs = [];
 
     for (let i = 0; i < this.tabs.length; i++) {
-      this.tabs[i].action = this.tabs[i].name;
+      const tab = this.tabs[i];
+      tab.action = this.tabs[i].name;
       if (i < 5) {
         visibleTabs.push(this.tabs[i]);
       } else {
