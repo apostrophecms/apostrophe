@@ -6,6 +6,10 @@
 
 * Allows to disable page refresh on content changed for page types.
 
+### Fixes
+
+* Autocrop image attachments for referenced documents when replacing an image in the Media Manager.
+
 ## 4.2.0 (2024-04-18)
 
 * Typing a `/` in the title field of a page no longer confuses the slug field. Thanks to [Gauav Kumar](https://github.com/gkumar9891).
