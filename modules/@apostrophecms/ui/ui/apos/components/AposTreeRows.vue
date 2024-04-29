@@ -1,10 +1,10 @@
 <template>
   <draggable
-    v-bind="dragOptions"
     item-key="_id"
     class="apos-tree__list"
     tag="ol"
     :list="rows"
+    :options="dragOptions"
     @start="startDrag"
     @end="endDrag"
   >
@@ -208,7 +208,9 @@ export default {
     },
     dragOptions() {
       return {
-        group: { name: this.treeId },
+        group: this.treeId,
+        fallbackOnBody: true,
+        swapThreshold: 0.65,
         dataListId: this.listId,
         disabled: !this.options.draggable,
         handle: '.apos-tree__row__icon--handle',
