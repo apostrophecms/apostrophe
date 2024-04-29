@@ -1,5 +1,11 @@
 # Changelog
 
+## UNRELEASED
+
+### Adds
+
+* Backports some A4 features to make the new `document-versions` comparison feature compatible with A3.
+
 ## 3.64.0 (2024-04-18)
 
 ### Adds
