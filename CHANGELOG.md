@@ -1,5 +1,14 @@
 # Changelog
 
+## 2.227.6 (2024-04-29)
+
+### Changes
+
+* Replace `autocomplete="off"`, which modern browsers ignore, with `autocomplete="new-password"`
+so that (1) admin user's password is not stuffed into password fields when editing an entirely
+different user and (2) the admin user's username is not stuffed into the text field preceding
+it. Browser autocomplete is quite aggressive in 2024.
+
 ## 2.227.5 (2024-04-18)
 
 ### Changes
