@@ -29,10 +29,17 @@ export default () => {
     if (!modal) {
       throw new Error(`${type} is not a valid piece or page type, or cannot be edited`);
     }
+
+    const copyOfId = typeof copyOf === 'string' ? copyOf : copyOf?._id;
+
+    if (copyOf && !copyOfId) {
+      throw new Error('copyOf must be either a string or an object with a _id property');
+    }
+
     return apos.modal.execute(modal, {
       moduleName: type,
       docId: _id,
-      copyOf
+      copyOfId
     });
   };
   // If you don't care about the returned value, you can emit an
