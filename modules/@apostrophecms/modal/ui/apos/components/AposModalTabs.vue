@@ -140,8 +140,8 @@ export default {
   right: 0;
 
   svg {
-    height: 20px;
     width: 20px;
+    height: 20px;
     color: var(--a-base-1);
   }
 
