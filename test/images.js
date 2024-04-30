@@ -1,8 +1,11 @@
 const t = require('../test-lib/test.js');
-const assert = require('assert');
+const assert = require('assert/strict');
 const fs = require('fs');
+const fsp = require('fs/promises');
 const path = require('path');
 const FormData = require('form-data');
+
+const publicFolderPath = path.join(process.cwd(), 'test/public');
 
 describe('Images', function() {
 
@@ -73,7 +76,8 @@ describe('Images', function() {
   // Test pieces.list()
   it('should clean up any existing images for testing', async function() {
     try {
-      const response = await apos.doc.db.deleteMany({ type: '@apostrophecms/image' }
+      const response = await apos.doc.db.deleteMany(
+        { type: '@apostrophecms/image' }
       );
       assert(response.result.ok === 1);
     } catch (e) {
@@ -261,6 +265,140 @@ describe('Images', function() {
     assert.strictEqual(fields.left, 0);
     assert.strictEqual(fields.width, 450);
     assert.strictEqual(fields.height, 225);
+  });
+
+  it('should update crop fields when replacing an image attachment', async function () {
+    await t.destroy(apos);
+    await fsp.rm(path.join(publicFolderPath, 'uploads'), {
+      recursive: true,
+      force: true
+    });
+    apos = await t.create({
+      root: module,
+      modules: {
+        'test-piece': {
+          extend: '@apostrophecms/piece-type',
+          fields: {
+            add: {
+              main: {
+                type: 'area',
+                options: {
+                  widgets: {
+                    '@apostrophecms/image': {
+                      aspectRatio: [ 3, 2 ]
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    });
+    await insertUser({
+      title: 'admin',
+      username: 'admin',
+      password: 'admin',
+      email: 'ad@min.com',
+      role: 'admin'
+    });
+
+    // Upload an image (landscape), crop it, insert a piece with the cropped image
+    jar = await login('admin');
+    const formData = new FormData();
+    const stream = fs.createReadStream(
+      path.join(apos.rootDir, '/public/test-image-landscape.jpg')
+    );
+    formData.append('file', stream);
+    const attachment = await apos.http.post('/api/v1/@apostrophecms/attachment/upload', {
+      body: formData,
+      jar
+    });
+    stream.close();
+    image = await apos.http.post('/api/v1/@apostrophecms/image', {
+      body: {
+        title: 'Test Image Landscape',
+        attachment
+      },
+      jar
+    });
+    assert.equal(image._prevAttachmentId, attachment._id);
+    const crop = await apos.http.post('/api/v1/@apostrophecms/image/autocrop', {
+      body: {
+        relationship: [ image ],
+        widgetOptions: {
+          aspectRatio: [ 3, 2 ]
+        }
+      },
+      jar
+    });
+    let piece = await apos.http.post('/api/v1/test-piece', {
+      jar,
+      body: {
+        title: 'Test Piece',
+        slug: 'test-piece',
+        type: 'test-piece',
+        main: {
+          metaType: 'area',
+          items: [
+            {
+              type: '@apostrophecms/image',
+              metaType: 'widget',
+              imageIds: [ image.aposDocId ],
+              imageFields: {
+                [image.aposDocId]: crop.relationship[0]._fields
+              },
+              _image: [ crop.relationship[0] ]
+            }
+          ]
+        }
+      }
+    });
+
+    let imageFields = piece.main.items[0].imageFields[image.aposDocId];
+    assert(imageFields, 'imageFields should be present when creating the piece');
+    assert.equal(imageFields.width / imageFields.height, 3 / 2, 'aspect ratio should be 3:2');
+    await fsp.access(
+      path.join(
+        publicFolderPath,
+        attachment._urls.original.replace(
+          '.jpg',
+        `.${imageFields.left}.${imageFields.top}.${imageFields.width}.${imageFields.height}.jpg`
+        )
+      )
+    );
+
+    // Replace the image with portrait orientation, verify that the aspect ratio is preserved
+    const formDataPortrait = new FormData();
+    const streamPortrait = fs.createReadStream(path.join(apos.rootDir, '/public/test-image.jpg'));
+    formDataPortrait.append('file', streamPortrait);
+    const attachmentPortrait = await apos.http.post('/api/v1/@apostrophecms/attachment/upload', {
+      body: formDataPortrait,
+      jar
+    });
+    image = await apos.http.put(`/api/v1/@apostrophecms/image/${image._id}`, {
+      body: {
+        title: 'Test Image Portrait',
+        attachment: attachmentPortrait
+      },
+      jar
+    });
+    streamPortrait.close();
+    piece = await apos.http.get(`/api/v1/test-piece/${piece._id}`, {
+      jar
+    });
+    imageFields = piece.main.items[0].imageFields[image.aposDocId];
+    assert(imageFields, 'imageFields should be present after replacing the image attachment');
+    assert.equal(imageFields.width / imageFields.height, 3 / 2, 'aspect ratio should be 3:2');
+    await fsp.access(
+      path.join(
+        publicFolderPath,
+        attachmentPortrait._urls.original.replace(
+          '.jpg',
+        `.${imageFields.left}.${imageFields.top}.${imageFields.width}.${imageFields.height}.jpg`
+        )
+      )
+    );
   });
 
   async function insertUser(info) {

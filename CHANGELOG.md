@@ -1,5 +1,10 @@
 # Changelog
 
+## UNRELEASED
+
+### Fixes
+* Autocrop image attachments for referenced documents when replacing an image in the Media Manager.
+
 ## 3.64.0 (2024-04-18)
 
 ### Adds
@@ -33,8 +38,6 @@ that these keys would be present.
 
 * `field.help` and `field.htmlHelp` are now correctly translated when displayed in a tooltip.
 This was also an expectation for the multisite module.
-
-## UNRELEASED
 
 ### Adds
 
