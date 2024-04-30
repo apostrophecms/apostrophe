@@ -1,6 +1,7 @@
 const t = require('../test-lib/test.js');
 const assert = require('assert/strict');
-const fs = require('fs-extra');
+const fs = require('fs');
+const fsp = require('fs/promises');
 const path = require('path');
 const FormData = require('form-data');
 
@@ -268,7 +269,10 @@ describe('Images', function() {
 
   it('should update crop fields when replacing an image attachment', async function () {
     await t.destroy(apos);
-    await fs.remove(publicFolderPath + '/uploads');
+    await fsp.rm(path.join(publicFolderPath, 'uploads'), {
+      recursive: true,
+      force: true
+    });
     apos = await t.create({
       root: module,
       modules: {
@@ -354,13 +358,15 @@ describe('Images', function() {
     let imageFields = piece.main.items[0].imageFields[image.aposDocId];
     assert(imageFields, 'imageFields should be present when creating the piece');
     assert.equal(imageFields.width / imageFields.height, 3 / 2, 'aspect ratio should be 3:2');
-    await fs.access(path.join(
-      publicFolderPath,
-      attachment._urls.original.replace(
-        '.jpg',
+    await fsp.access(
+      path.join(
+        publicFolderPath,
+        attachment._urls.original.replace(
+          '.jpg',
         `.${imageFields.left}.${imageFields.top}.${imageFields.width}.${imageFields.height}.jpg`
+        )
       )
-    ));
+    );
 
     // Replace the image with portrait orientation, verify that the aspect ratio is preserved
     const formDataPortrait = new FormData();
@@ -384,13 +390,15 @@ describe('Images', function() {
     imageFields = piece.main.items[0].imageFields[image.aposDocId];
     assert(imageFields, 'imageFields should be present after replacing the image attachment');
     assert.equal(imageFields.width / imageFields.height, 3 / 2, 'aspect ratio should be 3:2');
-    await fs.access(path.join(
-      publicFolderPath,
-      attachmentPortrait._urls.original.replace(
-        '.jpg',
+    await fsp.access(
+      path.join(
+        publicFolderPath,
+        attachmentPortrait._urls.original.replace(
+          '.jpg',
         `.${imageFields.left}.${imageFields.top}.${imageFields.width}.${imageFields.height}.jpg`
+        )
       )
-    ));
+    );
   });
 
   async function insertUser(info) {

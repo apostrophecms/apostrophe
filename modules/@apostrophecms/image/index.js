@@ -475,12 +475,12 @@ module.exports = {
         if (!piece.relatedReverseIds?.length) {
           return;
         }
-        if (piece.__prevAttachmentId === piece.attachment?._id) {
+        if (!piece._prevAttachmentId || piece._prevAttachmentId === piece.attachment?._id) {
           return;
         }
-        const corppedIndex = {};
+        const croppedIndex = {};
         for (const docId of piece.relatedReverseIds) {
-          await self.updateImageCropsForRelationship(req, docId, piece, corppedIndex);
+          await self.updateImageCropsForRelationship(req, docId, piece, croppedIndex);
         }
       },
       // This handler operates on all documents of a given aposDocId. The `piece`
@@ -489,16 +489,16 @@ module.exports = {
       // image has been cropped.
       // - Remove any existing focal point data.
       //
-      // `corppedIndex` is used to avoid re-cropping the same image when updating multiple
+      // `croppedIndex` is used to avoid re-cropping the same image when updating multiple
       // documents. It's internally mutated by the handler.
-      async updateImageCropsForRelationship(req, aposDocId, piece, corppedIndex = {}) {
+      async updateImageCropsForRelationship(req, aposDocId, piece, croppedIndex = {}) {
         const dbDocs = await self.apos.doc.db.find({
           aposDocId
         }).toArray();
         const changeSets = dbDocs.flatMap(doc => getDocRelations(doc, piece));
         for (const changeSet of changeSets) {
           try {
-            const cropFields = await autocrop(changeSet.image, changeSet.cropFields, corppedIndex);
+            const cropFields = await autocrop(changeSet.image, changeSet.cropFields, croppedIndex);
             const $set = {
               [changeSet.docDotPath]: cropFields
             };
@@ -578,7 +578,7 @@ module.exports = {
           return results;
         }
 
-        async function autocrop(image, oldFields, corppedIndex) {
+        async function autocrop(image, oldFields, croppedIndex) {
           let crop = {
             ...oldFields,
             x: null,
@@ -608,9 +608,9 @@ module.exports = {
           }
 
           const hash = cropHash(image, crop);
-          if (crop.width && !corppedIndex[hash]) {
+          if (crop.width && !croppedIndex[hash]) {
             await self.apos.attachment.crop(req, image.attachment._id, crop);
-            corppedIndex[hash] = true;
+            croppedIndex[hash] = true;
           }
           return crop;
         }
