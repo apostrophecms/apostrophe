@@ -122,6 +122,19 @@ module.exports = {
       }
     }
   },
+  handlers(self) {
+    return {
+      beforeUpdate: {
+        // Ensure the crop fields are updated on publishing an image
+        async autoCropRelations(req, piece, options) {
+          if (piece.aposMode !== 'published') {
+            return;
+          }
+          await self.updateImageCropRelationships(req, piece);
+        }
+      }
+    };
+  },
   commands(self) {
     return {
       remove: [
@@ -254,26 +267,7 @@ module.exports = {
           return withinOnePercent(testRatio, configuredRatio);
         }
         async function autocrop(image, widgetOptions) {
-          const nativeRatio = image.attachment.width / image.attachment.height;
-          const configuredRatio = widgetOptions.aspectRatio[0] / widgetOptions.aspectRatio[1];
-          let crop;
-          if (configuredRatio >= nativeRatio) {
-            const height = image.attachment.width / configuredRatio;
-            crop = {
-              top: Math.floor((image.attachment.height - height) / 2),
-              left: 0,
-              width: image.attachment.width,
-              height: Math.floor(height)
-            };
-          } else {
-            const width = image.attachment.height * configuredRatio;
-            crop = {
-              top: 0,
-              left: Math.floor((image.attachment.width - width) / 2),
-              width: Math.floor(width),
-              height: image.attachment.height
-            };
-          }
+          const crop = self.calculateAutocrop(image, widgetOptions.aspectRatio);
           await self.apos.attachment.crop(req, image.attachment._id, crop);
           image._fields = crop;
           // For ease of testing send back the cropped image URLs now
@@ -457,7 +451,169 @@ module.exports = {
           name: 'dummy',
           width: 0
         }).name;
+      },
+      // Given an image piece and a aspect ratio array, calculate the crop
+      // that would be applied to the image when autocropping it to the
+      // given aspect ratio.
+      calculateAutocrop(image, aspecRatio) {
+        let crop;
+        const configuredRatio = aspecRatio[0] / aspecRatio[1];
+        const nativeRatio = image.attachment.width / image.attachment.height;
+
+        if (configuredRatio >= nativeRatio) {
+          const height = image.attachment.width / configuredRatio;
+          crop = {
+            top: Math.floor((image.attachment.height - height) / 2),
+            left: 0,
+            width: image.attachment.width,
+            height: Math.floor(height)
+          };
+        } else {
+          const width = image.attachment.height * configuredRatio;
+          crop = {
+            top: 0,
+            left: Math.floor((image.attachment.width - width) / 2),
+            width: Math.floor(width),
+            height: image.attachment.height
+          };
+        }
+
+        return crop;
+      },
+      async updateImageCropRelationships(req, piece) {
+        if (!piece.relatedReverseIds?.length) {
+          return;
+        }
+        if (
+          !piece._prevAttachmentId ||
+          !piece.attachment ||
+          piece._prevAttachmentId === piece.attachment._id
+        ) {
+          return;
+        }
+        const croppedIndex = {};
+        for (const docId of piece.relatedReverseIds) {
+          await self.updateImageCropsForRelationship(req, docId, piece, croppedIndex);
+        }
+      },
+      // This handler operates on all documents of a given aposDocId. The `piece`
+      // argument is the image piece that has been updated.
+      // - Auto re-crop the image, using the same width/height ratio if the
+      // image has been cropped.
+      // - Remove any existing focal point data.
+      //
+      // `croppedIndex` is used to avoid re-cropping the same image when updating multiple
+      // documents. It's internally mutated by the handler.
+      async updateImageCropsForRelationship(req, aposDocId, piece, croppedIndex = {}) {
+        const dbDocs = await self.apos.doc.db.find({
+          aposDocId
+        }).toArray();
+        const changeSets = dbDocs.flatMap(doc => getDocRelations(doc, piece));
+        for (const changeSet of changeSets) {
+          try {
+            const cropFields = await autocrop(changeSet.image, changeSet.cropFields, croppedIndex);
+            const $set = {
+              [changeSet.docDotPath]: cropFields
+            };
+            self.logDebug(req, 'replace-autocrop', {
+              docId: changeSet.docId,
+              docTitle: changeSet.doc.title,
+              imageId: piece._id,
+              imageTitle: piece.title,
+              $set
+            });
+            await self.apos.doc.db.updateOne({
+              _id: changeSet.docId
+            }, {
+              $set
+            });
+          } catch (e) {
+            self.apos.util.error(e);
+            await self.apos.notify(
+              req,
+              req.t(
+                'apostrophe:imageOnReplaceAutocropError',
+                {
+                  title: changeSet.doc.title
+                }
+              ),
+              {
+                type: 'danger',
+                dismiss: true
+              }
+            );
+          }
+        }
+
+        if (changeSets.length) {
+          return self.apos.notify(
+            req,
+            req.t(
+              'apostrophe:imageOnReplaceAutocropMessage',
+              {
+                title: changeSets[0].doc.title
+              }
+            ),
+            {
+              type: 'success',
+              dismiss: true
+            }
+          );
+        }
+
+        function getDocRelations(doc, imagePiece) {
+          const results = [];
+          self.apos.doc.walk(doc, function (o, key, value, dotPath, ancestors) {
+            if (!value || typeof value !== 'object' || !Array.isArray(value.imageIds)) {
+              return;
+            }
+            if (!value.imageIds.includes(imagePiece.aposDocId)) {
+              return;
+            }
+            if (!value.imageFields?.[imagePiece.aposDocId]) {
+              return;
+            }
+            const cropFields = value.imageFields[imagePiece.aposDocId];
+            // We check for crop OR focal point data (because
+            // focal point has to be reset when the image is replaced).
+            if (!cropFields.width && typeof cropFields.x !== 'number') {
+              return;
+            }
+            results.push({
+              docId: doc._id,
+              docDotPath: `${dotPath}.imageFields.${imagePiece.aposDocId}`,
+              doc,
+              cropFields,
+              image: imagePiece,
+              value
+            });
+          });
+          return results;
+        }
+
+        async function autocrop(image, oldFields, croppedIndex) {
+          let crop = { ...oldFields };
+          if (crop.width) {
+            crop = self.calculateAutocrop(image, [ crop.width, crop.height ]);
+          }
+
+          const hash = cropHash(image, crop);
+          if (crop.width && !croppedIndex[hash]) {
+            await self.apos.attachment.crop(req, image.attachment._id, crop);
+            croppedIndex[hash] = true;
+          }
+          return {
+            ...crop,
+            x: null,
+            y: null
+          };
+        }
+
+        function cropHash(image, crop) {
+          return `${image.attachment._id}-${crop.top}-${crop.left}-${crop.width}-${crop.height}`;
+        }
       }
+
     };
   },
   extendMethods(self) {
@@ -514,6 +670,15 @@ module.exports = {
               return undefined;
             }
             return [ self.apos.launder.integer(a[0]), self.apos.launder.integer(a[1]) ];
+          }
+        },
+        prevAttachment: {
+          after(results) {
+            for (const result of results) {
+              if (result.attachment) {
+                result._prevAttachmentId = result.attachment._id;
+              }
+            }
           }
         }
       }

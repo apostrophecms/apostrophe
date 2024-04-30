@@ -205,6 +205,8 @@
   "hideInNavigation": "Hide in Navigation",
   "home": "Home",
   "image": "Image",
+  "imageOnReplaceAutocropMessage": "The replaced image has been autocropped for \"{{ title }}\".",
+  "imageOnReplaceAutocropError": "An error occurred while autocropping the replaced image for {{ title }}",
   "imageDescription": "Add an inline image",
   "imageFile": "Image File",
   "imagePlaceholder": "Image placeholder",
