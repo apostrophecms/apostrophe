@@ -5,6 +5,7 @@
 ### Adds
 
 * Allows to disable page refresh on content changed for page types.
+* Widget editor can now have tabs.
 * Adds prop to `AposInputMixin` to disable blur emit.
 * Adds `throttle` function in ui module utils.
 
@@ -14,11 +15,13 @@
 
 ### Fixes
 
-* Fixes drag and drop regression in the page tree where pages were not able to be moved between parent and child.
+* Autocrop image attachments for referenced documents when replacing an image in the Media Manager.
+
+## 4.2.1 (2024-04-29)
 
 ### Fixes
 
-* Autocrop image attachments for referenced documents when replacing an image in the Media Manager.
+* Fixes drag and drop regression in the page tree where pages were not able to be moved between parent and child.
 
 ## 4.2.0 (2024-04-18)
 
@@ -67,7 +70,7 @@ watching behavior by Vue 3.
 
 * Don't crash if a document of a type no longer corresponding to any module is present
 together with the advanced permission module.
-* AposLoginForm.js now pulls its schema from the user module rather than hardcoding it. Includes the 
+* AposLoginForm.js now pulls its schema from the user module rather than hardcoding it. Includes the
 addition of `enterUsername` and `enterPassword` i18n fields for front end customization and localization.
 * Simulated Express requests returned by `apos.task.getReq` now include a `req.headers` property, for
 greater accuracy and to prevent unexpected bugs in other code.
@@ -76,7 +79,7 @@ actually exists before calling `attachment.url` still lies with the developer.
 
 ### Adds
 
-* Add new `getChanges` method to the schema module to get an array of document changed field names instead of just a boolean like does the `isEqual` method. 
+* Add new `getChanges` method to the schema module to get an array of document changed field names instead of just a boolean like does the `isEqual` method.
 * Add highlight class in UI when comparing documents.
 
 ## 4.0.0 (2024-03-12)

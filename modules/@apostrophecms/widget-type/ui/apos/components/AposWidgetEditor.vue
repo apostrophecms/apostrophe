@@ -9,9 +9,15 @@
     @no-modal="$emit('safe-close')"
   >
     <template #breadcrumbs>
-      <AposModalBreadcrumbs
-        v-if="breadcrumbs && breadcrumbs.length"
-        :items="breadcrumbs"
+      <AposModalBreadcrumbs v-if="breadcrumbs && breadcrumbs.length" :items="breadcrumbs" />
+      <AposModalTabs
+        v-if="tabs.length"
+        :key="tabKey"
+        :current="currentTab"
+        :tabs="tabs"
+        orientation="horizontal"
+        :errors="fieldErrors"
+        @select-tab="switchPane"
       />
     </template>
     <template #main>
@@ -19,9 +25,13 @@
         <template #bodyMain>
           <div class="apos-widget-editor__body">
             <AposSchema
-              ref="schema"
+              v-for="tab in tabs"
+              v-show="tab.name === currentTab"
+              :key="tab.name"
+              :ref="tab.name"
               :trigger-validation="triggerValidation"
-              :schema="schema"
+              :current-fields="groups[tab.name].fields"
+              :schema="groups[tab.name].schema"
               :model-value="docFields"
               :meta="meta"
               :following-values="followingValues()"
@@ -52,13 +62,14 @@
 <script>
 import AposModifiedMixin from 'Modules/@apostrophecms/ui/mixins/AposModifiedMixin';
 import AposEditorMixin from 'Modules/@apostrophecms/modal/mixins/AposEditorMixin';
+import AposModalTabsMixin from 'Modules/@apostrophecms/modal/mixins/AposModalTabsMixin';
 import { detectDocChange } from 'Modules/@apostrophecms/schema/lib/detectChange';
 import cuid from 'cuid';
 import { klona } from 'klona';
 
 export default {
   name: 'AposWidgetEditor',
-  mixins: [ AposModifiedMixin, AposEditorMixin ],
+  mixins: [ AposModifiedMixin, AposEditorMixin, AposModalTabsMixin ],
   props: {
     type: {
       required: true,
@@ -107,6 +118,7 @@ export default {
         data: {},
         hasErrors: false
       },
+      fieldErrors: {},
       modal: {
         title: this.editLabel,
         active: false,
@@ -181,10 +193,14 @@ export default {
   },
   methods: {
     updateDocFields(value) {
-      this.docFields = value;
+      this.docFields.data = {
+        ...this.docFields.data,
+        ...value.data
+      };
       this.evaluateConditions();
     },
     async save() {
+      const widget = klona(this.docFields.data);
       this.triggerValidation = true;
       this.$nextTick(async () => {
         if (this.docFields.hasErrors) {
@@ -199,7 +215,6 @@ export default {
           });
           return;
         }
-        const widget = this.docFields.data;
         if (!widget.type) {
           widget.type = this.type;
         }

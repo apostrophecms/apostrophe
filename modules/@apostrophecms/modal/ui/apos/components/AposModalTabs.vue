@@ -1,8 +1,8 @@
 <template>
-  <div class="apos-modal-tabs">
+  <div class="apos-modal-tabs" :class="{ 'apos-modal-tabs--horizontal': orientation === 'horizontal' }">
     <ul class="apos-modal-tabs__tabs">
       <li
-        v-for="tab in tabs"
+        v-for="tab in visibleTabs"
         v-show="tab.isVisible !== false"
         :key="tab.name"
         class="apos-modal-tabs__tab"
@@ -14,12 +14,27 @@
           @click="selectTab"
         >
           {{ $t(tab.label) }}
-          <span v-if="tabErrors[tab.name] && tabErrors[tab.name].length" class="apos-modal-tabs__label apos-modal-tabs__label--error">
+          <span
+            v-if="tabErrors[tab.name] && tabErrors[tab.name].length"
+            class="apos-modal-tabs__label apos-modal-tabs__label--error"
+          >
             {{ tabErrors[tab.name].length }} {{ generateErrorLabel(tabErrors[tab.name].length) }}
           </span>
         </button>
       </li>
+      <li
+        v-if="hiddenTabs.length"
+        key="placeholder-for-hidden-tabs"
+        class="apos-modal-tabs__tab apos-modal-tabs__tab--small"
+      />
     </ul>
+    <AposContextMenu
+      v-if="hiddenTabs.length"
+      :menu="hiddenTabs"
+      menu-placement="bottom-end"
+      :button="moreMenuButton"
+      @item-clicked="moreMenuHandler($event)"
+    />
   </div>
 </template>
 
@@ -40,9 +55,39 @@ export default {
       default() {
         return {};
       }
+    },
+    orientation: {
+      type: String,
+      default: 'vertical'
     }
   },
   emits: [ 'select-tab' ],
+  data() {
+    const visibleTabs = [];
+    const hiddenTabs = [];
+
+    for (let i = 0; i < this.tabs.length; i++) {
+      // Shallow clone is sufficient to make mutating
+      // a top-level property safe
+      const tab = { ...this.tabs[i] };
+      tab.action = tab.name;
+      if (i < 5) {
+        visibleTabs.push(tab);
+      } else {
+        hiddenTabs.push(tab);
+      }
+    }
+
+    return {
+      visibleTabs,
+      hiddenTabs,
+      moreMenuButton: {
+        icon: 'dots-vertical-icon',
+        iconOnly: true,
+        type: 'subtle'
+      }
+    };
+  },
   computed: {
     tabErrors() {
       const errors = {};
@@ -69,6 +114,15 @@ export default {
       const tab = e.target;
       const id = tab.id;
       this.$emit('select-tab', id);
+    },
+    moreMenuHandler(item) {
+      const lastVisibleTab = this.visibleTabs[this.visibleTabs.length - 1];
+      const selectedItem = this.hiddenTabs.find((tab) => tab.name === item);
+
+      this.hiddenTabs.splice(this.hiddenTabs.indexOf(selectedItem), 1, lastVisibleTab);
+      this.visibleTabs.splice(this.visibleTabs.length - 1, 1, selectedItem);
+
+      this.$emit('select-tab', item);
     }
   }
 };
@@ -78,6 +132,65 @@ export default {
 .apos-modal-tabs {
   display: flex;
   height: 100%;
+}
+
+:deep(.apos-context-menu) {
+  position: absolute;
+  top: 10px;
+  right: 0;
+
+  svg {
+    width: 20px;
+    height: 20px;
+    color: var(--a-base-1);
+  }
+
+  .apos-button--subtle:hover {
+    background-color: initial;
+  }
+}
+
+.apos-modal-tabs--horizontal {
+  position: relative;
+
+  .apos-modal-tabs__tabs {
+    flex-direction: row;
+    border-top: 1px solid var(--a-base-7);
+    border-bottom: 1px solid var(--a-base-7);
+  }
+
+  .apos-modal-tabs__tab {
+    display: flex;
+    width: 100%;
+  }
+
+  .apos-modal-tabs__tab--small {
+    width: 50%;
+    color: var(--a-base-1);
+    background-color: var(--a-base-10);
+    border-bottom: 1px solid var(--a-base-7);
+  }
+
+  .apos-modal-tabs__btn {
+    justify-content: center;
+    color: var(--a-base-1);
+    background-color: var(--a-base-10);
+
+    &:hover, &:focus {
+      color: var(--a-primary-light-40);
+      background-color: var(--a-base-10);
+    }
+
+    &[aria-selected='true'], &[aria-selected='true']:hover, &[aria-selected='true']:focus {
+      color: var(--a-primary);
+      background-color: var(--a-base-10);
+      border-bottom: 3px solid var(--a-primary);
+    }
+  }
+
+  .apos-modal-tabs__btn::before {
+    content: none;
+  }
 }
 
 .apos-modal-tabs__tabs {
