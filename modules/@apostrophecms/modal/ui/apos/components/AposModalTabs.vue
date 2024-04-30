@@ -136,8 +136,8 @@ export default {
 
 :deep(.apos-context-menu) {
   position: absolute;
-  right: 0;
   top: 10px;
+  right: 0;
 
   svg {
     height: 20px;
@@ -181,7 +181,7 @@ export default {
       background-color: var(--a-base-10);
     }
 
-    &[aria-selected="true"], &[aria-selected="true"]:hover, &[aria-selected="true"]:focus {
+    &[aria-selected='true'], &[aria-selected='true']:hover, &[aria-selected='true']:focus {
       color: var(--a-primary);
       background-color: var(--a-base-10);
       border-bottom: 3px solid var(--a-primary);
