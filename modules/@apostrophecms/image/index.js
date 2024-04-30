@@ -267,26 +267,7 @@ module.exports = {
           return withinOnePercent(testRatio, configuredRatio);
         }
         async function autocrop(image, widgetOptions) {
-          const nativeRatio = image.attachment.width / image.attachment.height;
-          const configuredRatio = widgetOptions.aspectRatio[0] / widgetOptions.aspectRatio[1];
-          let crop;
-          if (configuredRatio >= nativeRatio) {
-            const height = image.attachment.width / configuredRatio;
-            crop = {
-              top: Math.floor((image.attachment.height - height) / 2),
-              left: 0,
-              width: image.attachment.width,
-              height: Math.floor(height)
-            };
-          } else {
-            const width = image.attachment.height * configuredRatio;
-            crop = {
-              top: 0,
-              left: Math.floor((image.attachment.width - width) / 2),
-              width: Math.floor(width),
-              height: image.attachment.height
-            };
-          }
+          const crop = self.calculateAutocrop(image, widgetOptions.aspectRatio);
           await self.apos.attachment.crop(req, image.attachment._id, crop);
           image._fields = crop;
           // For ease of testing send back the cropped image URLs now
@@ -471,6 +452,34 @@ module.exports = {
           width: 0
         }).name;
       },
+      // Given an image piece and a aspect ratio array, calculate the crop
+      // that would be applied to the image when autocropping it to the
+      // given aspect ratio.
+      calculateAutocrop(image, aspecRatio) {
+        let crop;
+        const configuredRatio = aspecRatio[0] / aspecRatio[1];
+        const nativeRatio = image.attachment.width / image.attachment.height;
+
+        if (configuredRatio >= nativeRatio) {
+          const height = image.attachment.width / configuredRatio;
+          crop = {
+            top: Math.floor((image.attachment.height - height) / 2),
+            left: 0,
+            width: image.attachment.width,
+            height: Math.floor(height)
+          };
+        } else {
+          const width = image.attachment.height * configuredRatio;
+          crop = {
+            top: 0,
+            left: Math.floor((image.attachment.width - width) / 2),
+            width: Math.floor(width),
+            height: image.attachment.height
+          };
+        }
+
+        return crop;
+      },
       async updateImageCropRelationships(req, piece) {
         if (!piece.relatedReverseIds?.length) {
           return;
@@ -583,32 +592,9 @@ module.exports = {
         }
 
         async function autocrop(image, oldFields, croppedIndex) {
-          let crop = {
-            ...oldFields,
-            x: null,
-            y: null
-          };
-          if (oldFields.width) {
-            const configuredRatio = oldFields.width / oldFields.height;
-            const nativeRatio = image.attachment.width / image.attachment.height;
-
-            if (configuredRatio >= nativeRatio) {
-              const height = image.attachment.width / configuredRatio;
-              crop = {
-                top: Math.floor((image.attachment.height - height) / 2),
-                left: 0,
-                width: image.attachment.width,
-                height: Math.floor(height)
-              };
-            } else {
-              const width = image.attachment.height * configuredRatio;
-              crop = {
-                top: 0,
-                left: Math.floor((image.attachment.width - width) / 2),
-                width: Math.floor(width),
-                height: image.attachment.height
-              };
-            }
+          let crop = { ...oldFields };
+          if (crop.width) {
+            crop = self.calculateAutocrop(image, [ crop.width, crop.height ]);
           }
 
           const hash = cropHash(image, crop);
@@ -616,7 +602,11 @@ module.exports = {
             await self.apos.attachment.crop(req, image.attachment._id, crop);
             croppedIndex[hash] = true;
           }
-          return crop;
+          return {
+            ...crop,
+            x: null,
+            y: null
+          };
         }
 
         function cropHash(image, crop) {
