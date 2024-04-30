@@ -67,7 +67,9 @@ export default {
     const hiddenTabs = [];
 
     for (let i = 0; i < this.tabs.length; i++) {
-      const tab = this.tabs[i];
+      // Shallow clone is sufficient to make mutating
+      // a top-level property safe
+      const tab = { ...this.tabs[i] };
       tab.action = tab.name;
       if (i < 5) {
         visibleTabs.push(tab);
