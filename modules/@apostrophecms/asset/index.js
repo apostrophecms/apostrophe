@@ -42,7 +42,10 @@ module.exports = {
     watchDebounceMs: 1000,
     // Object containing instructions for remapping existing bundles.
     // See the modulre reference documentation for more information.
-    rebundleModules: undefined
+    rebundleModules: undefined,
+    // In case of external front end like Astro, this option allows to
+    // disable the build of the public UI assets.
+    publicBundle: true
   },
 
   async init(self) {
@@ -169,7 +172,9 @@ module.exports = {
           // to the same relative path `/public/apos-frontend/namespace/modules/modulename`.
           // Inherited files are also copied, with the deepest subclass overriding in the
           // event of a conflict
-          await moduleOverrides(`${bundleDir}/modules`, 'public');
+          if (self.options.publicBundle) {
+            await moduleOverrides(`${bundleDir}/modules`, 'public');
+          }
 
           for (const [ name, options ] of Object.entries(self.builds)) {
             // If the option is not present always rebuild everything...
@@ -180,11 +185,12 @@ module.exports = {
             } else if (!rebuild) {
               let checkTimestamp = false;
 
-              // Only builds contributing to the apos admin UI (currently just "apos")
+              // If options.publicBundle, only builds contributing to the apos admin UI (currently just "apos")
               // are candidates to skip the build simply because package-lock.json is
               // older than the bundle. All other builds frequently contain
               // project level code
-              if (options.apos) {
+              // Else we can skip also for the src bundle
+              if (options.apos || !self.options.publicBundle) {
                 const bundleExists = await fs.pathExists(bundleDir);
 
                 if (!bundleExists) {
@@ -437,7 +443,7 @@ module.exports = {
                   modulesPrefix: `${self.getAssetBaseUrl()}/modules`
                 }));
               }
-              if (options.apos) {
+              if (options.apos || !self.options.publicBundle) {
                 const now = Date.now().toString();
                 fs.writeFileSync(`${bundleDir}/${name}-build-timestamp.txt`, now);
               }
@@ -1300,7 +1306,7 @@ module.exports = {
         `;
         self.builds = {
           src: {
-            scenes: [ 'public', 'apos' ],
+            scenes: [ 'apos' ],
             webpack: true,
             outputs: [ 'css', 'js' ],
             label: 'apostrophe:modernBuild',
@@ -1309,13 +1315,6 @@ module.exports = {
             // Load only in browsers that support ES6 modules
             condition: 'module',
             prologue: self.srcPrologue
-          },
-          public: {
-            scenes: [ 'public', 'apos' ],
-            outputs: [ 'css', 'js' ],
-            label: 'apostrophe:rawCssAndJs',
-            // Just concatenates
-            webpack: false
           },
           apos: {
             scenes: [ 'apos' ],
@@ -1337,6 +1336,16 @@ module.exports = {
           // We could add an apos-ie11 bundle that just pushes a "sorry charlie" prologue,
           // if we chose
         };
+        if (self.options.publicBundle) {
+          self.builds.public = {
+            scenes: [ 'public', 'apos' ],
+            outputs: [ 'css', 'js' ],
+            label: 'apostrophe:rawCssAndJs',
+            // Just concatenates
+            webpack: false
+          };
+          self.builds.src.scenes.push('public');
+        }
       },
       // Filter the given css performing any necessary transformations,
       // such as support for the /modules path regardless of where
