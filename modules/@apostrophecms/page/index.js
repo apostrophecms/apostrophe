@@ -2300,7 +2300,7 @@ database.`);
       // Apostrophe queries used to fetch Apostrophe pages
       // consult this method.
       getBaseUrl(req) {
-        const hostname = self.apos.i18n.locales[req.locale].hostname;
+        const hostname = self.apos.i18n.locales[req.locale]?.hostname;
 
         return hostname
           ? `${req.protocol}://${hostname}`
