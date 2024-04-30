@@ -125,8 +125,9 @@ module.exports = {
   handlers(self) {
     return {
       beforeUpdate: {
+        // Ensure the crop fields are updated on publishing an image
         async autoCropRelations(req, piece, options) {
-          if (piece.aposMode !== 'draft') {
+          if (piece.aposMode !== 'published') {
             return;
           }
           await self.updateImageCropRelationships(req, piece);
@@ -477,9 +478,9 @@ module.exports = {
         if (piece.__prevAttachmentId === piece.attachment?._id) {
           return;
         }
-        console.log('update relationships', piece.attachment, piece.relatedReverseIds, piece._prevAttachmentId);
+        const corppedIndex = {};
         for (const docId of piece.relatedReverseIds) {
-          await self.updateImageCropsForRelationship(req, docId, piece);
+          await self.updateImageCropsForRelationship(req, docId, piece, corppedIndex);
         }
       },
       // This handler operates on all documents of a given aposDocId. The `piece`
@@ -487,18 +488,27 @@ module.exports = {
       // - Auto re-crop the image, using the same width/height ratio if the
       // image has been cropped.
       // - Remove any existing focal point data.
-      async updateImageCropsForRelationship(req, aposDocId, piece) {
+      //
+      // `corppedIndex` is used to avoid re-cropping the same image when updating multiple
+      // documents. It's internally mutated by the handler.
+      async updateImageCropsForRelationship(req, aposDocId, piece, corppedIndex = {}) {
         const dbDocs = await self.apos.doc.db.find({
           aposDocId
         }).toArray();
         const changeSets = dbDocs.flatMap(doc => getDocRelations(doc, piece));
-        const corppedIndex = {};
         for (const changeSet of changeSets) {
           try {
             const cropFields = await autocrop(changeSet.image, changeSet.cropFields, corppedIndex);
             const $set = {
               [changeSet.docDotPath]: cropFields
             };
+            self.logDebug(req, 'replace-autocrop', {
+              docId: changeSet.docId,
+              docTitle: changeSet.doc.title,
+              imageId: piece._id,
+              imageTitle: piece.title,
+              $set
+            });
             await self.apos.doc.db.updateOne({
               _id: changeSet.docId
             }, {
