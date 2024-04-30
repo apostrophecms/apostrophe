@@ -475,7 +475,11 @@ module.exports = {
         if (!piece.relatedReverseIds?.length) {
           return;
         }
-        if (!piece._prevAttachmentId || piece._prevAttachmentId === piece.attachment?._id) {
+        if (
+          !piece._prevAttachmentId ||
+          !piece.attachment ||
+          piece._prevAttachmentId === piece.attachment._id
+        ) {
           return;
         }
         const croppedIndex = {};
