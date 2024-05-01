@@ -550,6 +550,11 @@ module.exports = {
             if (!sessionOptions.store.options.client) {
               sessionOptions.store.options.client = self.apos.dbClient;
               sessionOptions.store.options.dbName = sessionOptions.store.options.dbName || self.apos.db.databaseName;
+              sessionOptions.store.options.collectionName ||= 'sessions';
+              // Handle expiration ourselves
+              sessionOptions.store.options.autoRemove = 'disabled';
+              const sessions = self.apos.db.collection(sessionOptions.store.options.collectionName);
+              self.apos.aposDb.expires(sessions);
             }
           }
           if (!sessionOptions.store.name) {

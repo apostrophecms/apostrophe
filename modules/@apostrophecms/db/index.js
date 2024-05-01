@@ -52,11 +52,30 @@
 const mongodbConnect = require('../../../lib/mongodb-connect');
 const escapeHost = require('../../../lib/escape-host');
 
+const featureSets = {
+  mongodb: {
+    expireAfterSeconds: true,
+    textSearch: true
+  },
+  ferretdb: {
+    expireAfterSeconds: false,
+    textSearch: false
+  }
+};
+
 module.exports = {
   options: {
-    versionCheck: true
+    versionCheck: true,
+    // A reference to this module. The actual MongoDB database object
+    // is self.apos.db because it is needed more often
+    alias: 'aposDb',
+    // Can also be set to 'ferretdb' to emulate certain features not
+    // present in mongodb
+    compatibility: 'mongodb'
   },
   async init(self) {
+    self.expirationIntervals ||= [];
+    self.setFeatures();
     await self.connectToMongo();
     await self.versionCheck();
   },
@@ -75,12 +94,20 @@ module.exports = {
             return;
           }
           await self.apos.dbClient.close(false);
+        },
+        clearExpirationIntervals() {
+          for (const interval of self.expirationIntervals) {
+            clearInterval(interval);
+          }
         }
       }
     };
   },
   methods(self) {
     return {
+      setFeatures() {
+        self.features = featureSets[self.options.compatibility];
+      },
       // Open the database connection. Always uses MongoClient with its
       // sensible defaults. Builds a URI if necessary, so we can call it
       // in a consistent way.
@@ -116,12 +143,46 @@ module.exports = {
           }
           uri += escapeHost(self.options.host) + ':' + self.options.port + '/' + self.options.name;
         }
-
         self.apos.dbClient = await mongodbConnect(uri, self.options.connect);
         self.uri = uri;
         const parsed = new URL(uri);
         self.apos.db = self.apos.dbClient.db(parsed.pathname.substring(1));
-
+      },
+      // Given a collection, set up a mechanism to delete entries
+      // from it whose `expires` property is a Date object older
+      // than the current time. Automatically falls back to an
+      // interval timer if the database does not have the `expireAfterSeconds`
+      // feature built in. Cleanup is not instantaneous, so `find` queries
+      // should still verify that the `expires` property is not too old
+      // with:
+      //
+      // `expires: { $gte: new Date() }`
+      async expires(collection) {
+        if (self.features.expireAfterSeconds) {
+          await collection.createIndex({
+            expires: 1
+          }, {
+            expireAfterSeconds: 0
+          });
+        } else {
+          await collection.createIndex({
+            expires: 1
+          });
+          self.expirationIntervals.push(setInterval(async () => {
+            await collection.deleteMany({
+              expires: {
+                $lte: new Date()
+              }
+            });
+          }, 60000 * 5));
+        }
+      },
+      // Returns a value suitable for the `expires` property of
+      // a mongodb document that should expire after `seconds`.
+      // Only valid when the `expires` method was used to add the feature
+      // to the collection
+      expireAfter(seconds) {
+        return new Date(new Date().getTime() + seconds * 1000);
       },
       async versionCheck() {
         if (!self.options.versionCheck) {

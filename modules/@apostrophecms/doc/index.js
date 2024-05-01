@@ -514,6 +514,12 @@ module.exports = {
         await self.createPathLevelIndex();
       },
       async createTextIndex() {
+        if (!self.apos.aposDb.features.textSearch) {
+          // Do not attempt to use a MongoDB full text index.
+          // Improves compatibility with FerretDB and other
+          // alternatives, at the expense of search performance
+          return;
+        }
         try {
           return await attempt();
         } catch (e) {

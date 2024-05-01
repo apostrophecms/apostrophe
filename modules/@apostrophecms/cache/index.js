@@ -24,14 +24,10 @@ module.exports = {
       async get(namespace, key) {
         const item = await self.cacheCollection.findOne({
           namespace,
-          key
+          key,
+          expires: { $gte: new Date() }
         });
         if (!item) {
-          return undefined;
-        }
-        // MongoDB's expireAfterSeconds mechanism isn't instantaneous, so we
-        // should still enforce this at get() time
-        if (item.expires && item.expires < new Date()) {
           return undefined;
         }
         return item.value;
@@ -61,7 +57,7 @@ module.exports = {
         action.$set = set;
         const unset = {};
         if (lifetime) {
-          set.expires = new Date(new Date().getTime() + lifetime * 1000);
+          set.expires = self.apos.aposDb.expireAfter(lifetime);
         } else {
           unset.expires = 1;
           action.$unset = unset;
@@ -97,7 +93,7 @@ module.exports = {
           namespace: 1,
           key: 1
         }, { unique: true });
-        await self.cacheCollection.createIndex({ expires: 1 }, { expireAfterSeconds: 0 });
+        await self.apos.aposDb.expires(self.cacheCollection);
       }
 
     };

@@ -2001,11 +2001,12 @@ module.exports = {
             // projection and sort
             const search = query.get('search');
             if (search) {
-              if (query.get('regexSearch')) {
-                // TODO: is this necessary in MongoDB 3.4+?
-                // A query builder like the `geo` query builder of @apostrophecms/places
-                // has warned us that `$near` or another operator incompatible
-                // with `$text` is present. We must dumb down to regex search
+              if ((!self.apos.aposDb.features.textSearch) || query.get('regexSearch')) {
+                // Dumb down to regex search. This can be enabled globally or per query.
+                // Per-query support may or may not still be important depending on
+                // whether recent Mongo versions still don't support combining
+                // $text with certain operations. Global support is needed for
+                // MongoDB alternatives like FerretDB
                 query.and({
                   highSearchText: self.apos.util.searchify(search)
                 });

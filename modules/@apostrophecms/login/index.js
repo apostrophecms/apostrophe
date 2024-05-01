@@ -67,7 +67,8 @@ module.exports = {
       allowedAttempts: 3,
       perMinutes: 1,
       lockoutMinutes: 1
-    }
+    },
+    incompleteLifetimeSeconds: 60 * 60
   },
   async init(self) {
     self.passport = new Passport();
@@ -626,7 +627,7 @@ module.exports = {
 
       async enableBearerTokens() {
         self.bearerTokens = self.apos.db.collection('aposBearerTokens');
-        await self.bearerTokens.createIndex({ expires: 1 }, { expireAfterSeconds: 0 });
+        await self.apos.aposDb.expires(self.bearerTokens);
       },
 
       // Finalize an incomplete login based on the provided incompleteToken
@@ -776,13 +777,14 @@ module.exports = {
           if (requirementsToVerify.length) {
             const token = cuid();
 
+            const lifetime = self.options.incompleteLifetimeSeconds || (self.options.incompleteLifetime && self.options.incompleteLifetime / 1000);
             await self.bearerTokens.insertOne({
               _id: token,
               userId: user._id,
               requirementsToVerify,
               // Default lifetime of 1 hour is generous to permit situations like
               // installing a TOTP app for the first time
-              expires: new Date(new Date().getTime() + (self.options.incompleteLifetime || 60 * 60 * 1000))
+              expires: self.apos.aposDb.expiresAfter(lifetime)
             });
 
             await self.clearLoginAttempts(user.username);
