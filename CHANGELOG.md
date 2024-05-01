@@ -12,7 +12,7 @@
 ### Changes
 
 * Improves `debounce` function to handle async properly (waiting for previous async call to finish before to trigger new one).
-* Allows passing of the `_id` to the `edit()` method `copyOf` argument while still allowing the entire `copyOf` object for BC
+* Adds the `copyOfId` property to the `edit()` method while still allowing the entire `copyOf` object for BC
 
 ### Fixes
 
