@@ -15,6 +15,7 @@ Thanks to Michelin for contributing this feature.
 ### Changes
 
 * Improves `debounce` function to handle async properly (waiting for previous async call to finish before to trigger new one).
+* Adds the `copyOfId` property to the `edit()` method while still allowing the entire `copyOf` object for BC
 
 ### Fixes
 
