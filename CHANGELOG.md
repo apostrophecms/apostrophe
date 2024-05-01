@@ -6,7 +6,9 @@
 * Autocrop image attachments for referenced documents when replacing an image in the Media Manager.
 
 ### Adds
-* Adds a `publicBundle` option to `@apostrophecms/asset` - when set to `false`, it will prevent from rebuilding asset bundles unless `APOS_DEV` env variable is set or when there is no bundle already built - to be used when using Apostrophe with an External Front End
+* Adds a `publicBundle` option to `@apostrophecms/asset`. When set to `false`, the `ui/src` public asset bundle is not built at all in most cases
+except as part of the admin UI bundle which depends on it. For use with external front ends such as [apostrophe-astro](https://github.com/apostrophecms/apostrophe-astro).
+Thanks to Michelin for contributing this feature.
 
 ## 3.64.0 (2024-04-18)
 
