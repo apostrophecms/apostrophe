@@ -8,6 +8,7 @@
 * Widget editor can now have tabs.
 * Adds prop to `AposInputMixin` to disable blur emit.
 * Adds `throttle` function in ui module utils.
+* Adds a `publicBundle` option to `@apostrophecms/asset` - when set to `false`, it will prevent from rebuilding asset bundles unless `APOS_DEV` env variable is set or when there is no bundle already built - to be used when using Apostrophe with an External Front End
 
 ### Changes
 
