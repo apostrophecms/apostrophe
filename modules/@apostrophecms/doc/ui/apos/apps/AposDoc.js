@@ -36,7 +36,7 @@ export default () => {
     }
     copyOfId = copyOfId ?? copyOf?._id;
     if (copyOf && !copyOfId) {
-      throw new Error('copyOf (deprecated) must be either an object with a `_id` property, if possible pass `copyOfId` instead');
+      throw new Error('copyOf (deprecated) must be an object with a `_id` property, if possible pass `copyOfId` instead');
     }
     return apos.modal.execute(modal, {
       moduleName: type,
