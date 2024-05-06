@@ -1,5 +1,11 @@
 # Changelog
 
+## 4.2.2 (2024-05-06)
+
+### Adds
+
+* Adds a `publicBundle` option to `@apostrophecms/asset`. When set to false, the `ui/src` public asset bundle is not built at all in most cases except as part of the admin UI bundle which depends on it. For use with external front ends such as [apostrophe-astro](https://apostrophecms.com/extensions/astro-integration). Thanks to Michelin for contributing this feature.
+
 ## 4.2.1 (2024-04-29)
 
 ### Fixes
