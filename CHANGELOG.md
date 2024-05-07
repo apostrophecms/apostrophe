@@ -20,6 +20,7 @@ Thanks to Michelin for contributing this feature.
 ### Fixes
 
 * Autocrop image attachments for referenced documents when replacing an image in the Media Manager.
+* Reset image cropper to avoid a weird behavior where changing the aspect ratios makes the stencil smaller and smaller.
 
 ## 4.2.1 (2024-04-29)
 
