@@ -105,6 +105,7 @@ export default {
     },
     aspectRatio: {
       handler(newVal) {
+        this.$refs.cropper.reset();
         this.stencilProps.aspectRatio = newVal;
         this.$refs.cropper.refresh();
       }
