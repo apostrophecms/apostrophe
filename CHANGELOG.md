@@ -1,5 +1,9 @@
 # Changelog
 
+## 4.2.3 (2024-05-07)
+
+No changes. Released to reset the `latest` tag.
+
 ## 4.2.2 (2024-05-06)
 
 ### Adds
