@@ -20,6 +20,7 @@ Thanks to Michelin for contributing this feature.
 ### Fixes
 
 * Autocrop image attachments for referenced documents when replacing an image in the Media Manager.
+* Fixes modals in transition, as well as slider transition on overlay opacity.
 
 ## 4.2.1 (2024-04-29)
 

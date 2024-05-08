@@ -139,9 +139,9 @@ const transitionType = computed(() => {
 
   if (props.modal.origin === 'left') {
     return 'slide-right';
-  } else {
-    return 'slide-left';
   }
+
+  return 'slide-left';
 });
 
 const shouldTrapFocus = computed(() => {
@@ -226,14 +226,13 @@ function onKeydown(e) {
   cycleElementsToFocus(e);
 }
 
-function onEnter() {
+async function onEnter() {
   emit('show-modal');
   apos.modal.stack = apos.modal.stack || [];
 
   apos.modal.stack.push(state);
-  nextTick(() => {
-    emit('ready');
-  });
+  await nextTick();
+  emit('ready');
 }
 
 function onLeave() {
@@ -346,12 +345,12 @@ function close() {
       }
     }
 
-    &.slide-left-enter,
+    &.slide-left-enter-from,
     &.slide-left-leave-to {
       transform: translateX(100%);
     }
 
-    &.slide-right-enter,
+    &.slide-right-enter-from,
     &.slide-right-leave-to {
       transform: translateX(-100%);
     }
@@ -361,7 +360,7 @@ function close() {
       transition: opacity 0.15s ease, transform 0.15s ease;
     }
 
-    &.fade-enter,
+    &.fade-enter-from,
     &.fade-leave-to {
       opacity: 0;
       transform: scale(0.95);
@@ -396,9 +395,11 @@ function close() {
       transition: opacity 0.15s ease;
     }
 
-    &.slide-enter,
-    &.slide-leave-to,
-    &.fade-enter,
+    &.slide-left-enter-from,
+    &.slide-left-leave-to,
+    &.slide-right-enter-from,
+    &.slide-right-leave-to,
+    &.fade-enter-from,
     &.fade-leave-to {
       opacity: 0;
     }
