@@ -17,6 +17,10 @@
 <script>
 import cuid from 'cuid';
 import AposThemeMixin from 'Modules/@apostrophecms/ui/mixins/AposThemeMixin';
+import { useModalStore } from 'Modules/@apostrophecms/ui/stores/modal';
+import { mapStores } from 'pinia';
+
+console.log('useModalStore', useModalStore);
 export default {
   name: 'TheAposModals',
   mixins: [ AposThemeMixin ],
@@ -31,7 +35,11 @@ export default {
       stack: []
     };
   },
+  computed: {
+    ...mapStores(useModalStore)
+  },
   mounted() {
+    console.log('this.modalStore', this.modalStore);
     // Open one of the server-side configured top level admin bar menus by name.
     // To allow for injecting additional props dynamically, if itemName is an
     // object, it must have an itemName property and a props property. The props
@@ -74,11 +82,13 @@ export default {
           props: props || {}
         };
 
+        console.log('item', item);
         this.stack.push(item);
         apos.bus.$emit('modal-launched', item);
       });
     },
     resolve(modal) {
+      console.log('modal', modal);
       this.stack = this.stack.filter(_modal => modal.id !== _modal.id);
       modal.resolve(modal.result);
       apos.bus.$emit('modal-resolved', modal);
