@@ -9,6 +9,7 @@
 * Adds a `publicBundle` option to `@apostrophecms/asset`. When set to `false`, the `ui/src` public asset bundle is not built at all in most cases
 except as part of the admin UI bundle which depends on it. For use with external front ends such as [apostrophe-astro](https://github.com/apostrophecms/apostrophe-astro).
 Thanks to Michelin for contributing this feature.
+* Backports some A4 features to make the new `document-versions` comparison feature compatible with A3.
 
 ## 3.64.0 (2024-04-18)
 
