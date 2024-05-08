@@ -457,6 +457,53 @@ describe('Pages', function() {
     assert.strictEqual(page.path, `${homeId.replace(':en:published', '')}/another-parent/parent/sibling`);
   });
 
+  it.only('moving peer /parent/peer-page into /parent should ends with /parent/peer-page', async function() {
+    const peerPage = await apos.page.insert(
+      apos.task.getReq(),
+      '_home',
+      'lastChild',
+      {
+        slug: '/peer',
+        visibility: 'public',
+        type: 'test-page',
+        title: 'Peer Page'
+      }
+    );
+    const aboutPage = await apos.page.insert(
+      apos.task.getReq(),
+      '_home',
+      'lastChild',
+      {
+        slug: '/peer/about',
+        visibility: 'public',
+        type: 'test-page',
+        title: 'About Page'
+      }
+    );
+
+    await apos.page.move(
+      apos.task.getReq(),
+      aboutPage._id,
+      peerPage._id,
+      'lastChild'
+    );
+
+    const movedPage = await apos.page.find(apos.task.getAnonReq(), { _id: aboutPage._id }).toObject();
+
+    const actual = {
+      path: movedPage.path,
+      rank: movedPage.rank,
+      slug: movedPage.slug
+    };
+    const expected = {
+      path: '/peer/about',
+      rank: 1,
+      slug: '/peer/about'
+    };
+
+    assert.strictEqual(actual, expected);
+  });
+
   it('inferred page relationships are correct', async function() {
     const req = apos.task.getReq();
     const pages = await apos.page.find(req, {}).toArray();
