@@ -17,6 +17,7 @@
         :tabs="tabs"
         orientation="horizontal"
         :errors="fieldErrors"
+        limit="5"
         @select-tab="switchPane"
       />
     </template>

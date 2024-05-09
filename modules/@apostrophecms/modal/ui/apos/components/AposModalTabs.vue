@@ -59,6 +59,10 @@ export default {
     orientation: {
       type: String,
       default: 'vertical'
+    },
+    limit: {
+      type: Number,
+      default: 0
     }
   },
   emits: [ 'select-tab' ],
@@ -71,6 +75,12 @@ export default {
       // a top-level property safe
       const tab = { ...this.tabs[i] };
       tab.action = tab.name;
+
+      if (!this.limit) {
+        visibleTabs.push(this.tabs[i]);
+        continue;
+      }
+
       if (i < 5) {
         visibleTabs.push(tab);
       } else {
