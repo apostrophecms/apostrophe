@@ -16,6 +16,13 @@ Thanks to Michelin for contributing this feature.
 
 * Improves `debounce` function to handle async properly (waiting for previous async call to finish before to trigger new one).
 * Adds the `copyOfId` property to the `edit()` method while still allowing the entire `copyOf` object for BC
+* When moving a page, recognize when the slug of a new child
+already contains the new parent's slug and not double it.
+For example, given we have two pages as children of the home page, page A and page B.
+Page A and page B are siblings.
+Page A has the slug `/peer` and page B has the slug `/peer/page`.
+Now we want page B to be the child of page A.
+We will now end up with page B slug as `/peer/page` and not `/peer/peer/page` as before.
 
 ### Fixes
 
