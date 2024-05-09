@@ -10,14 +10,13 @@
   >
     <template #breadcrumbs>
       <AposModalBreadcrumbs v-if="breadcrumbs && breadcrumbs.length" :items="breadcrumbs" />
-      <AposModalTabs
+      <AposWidgetModalTabs
         v-if="tabs.length"
         :key="tabKey"
         :current="currentTab"
         :tabs="tabs"
         orientation="horizontal"
         :errors="fieldErrors"
-        limit="5"
         @select-tab="switchPane"
       />
     </template>
