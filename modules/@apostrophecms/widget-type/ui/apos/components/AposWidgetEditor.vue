@@ -200,9 +200,9 @@ export default {
       this.evaluateConditions();
     },
     async save() {
-      const widget = klona(this.docFields.data);
       this.triggerValidation = true;
       this.$nextTick(async () => {
+        const widget = klona(this.docFields.data);
         if (this.docFields.hasErrors) {
           this.triggerValidation = false;
           return;
