@@ -175,6 +175,7 @@ export default {
     justify-content: center;
     color: var(--a-base-1);
     background-color: var(--a-base-10);
+    text-align: center;
 
     &:hover, &:focus {
       color: var(--a-primary-light-40);
