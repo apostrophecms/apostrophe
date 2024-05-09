@@ -1280,7 +1280,7 @@ database.`);
                 const sourceSlug = relativeSlug.startsWith('.')
                   ? moved.slug
                   : `/${relativeSlug}`;
-                moved.slug = sourceSlug.replace(matchOldParentSlugPrefix, self.apos.util.addSlashIfNeeded(parent.slug))
+                moved.slug = sourceSlug.replace(matchOldParentSlugPrefix, self.apos.util.addSlashIfNeeded(parent.slug));
                 changed.push({
                   _id: moved._id,
                   slug: moved.slug
