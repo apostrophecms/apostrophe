@@ -457,7 +457,7 @@ describe('Pages', function() {
     assert.strictEqual(page.path, `${homeId.replace(':en:published', '')}/another-parent/parent/sibling`);
   });
 
-  it.only('moving peer /parent/peer-page into /parent should ends with /parent/peer-page', async function() {
+  it('moving peer /parent/peer-page into /parent should ends with /parent/peer-page', async function() {
     const peerPage = await apos.page.insert(
       apos.task.getReq(),
       '_home',
@@ -480,6 +480,17 @@ describe('Pages', function() {
         title: 'About Page'
       }
     );
+    const usPage = await apos.page.insert(
+      apos.task.getReq(),
+      aboutPage._id,
+      'lastChild',
+      {
+        slug: '/peer/about/us',
+        visibility: 'public',
+        type: 'test-page',
+        title: 'About Us Page'
+      }
+    );
 
     await apos.page.move(
       apos.task.getReq(),
@@ -489,19 +500,34 @@ describe('Pages', function() {
     );
 
     const movedPage = await apos.page.find(apos.task.getAnonReq(), { _id: aboutPage._id }).toObject();
+    const movedChildPage = await apos.page.find(apos.task.getAnonReq(), { _id: usPage._id }).toObject();
 
     const actual = {
-      path: movedPage.path,
-      rank: movedPage.rank,
-      slug: movedPage.slug
+      about: {
+        path: movedPage.path,
+        rank: movedPage.rank,
+        slug: movedPage.slug
+      },
+      us: {
+        path: movedChildPage.path,
+        rank: movedChildPage.rank,
+        slug: movedChildPage.slug
+      }
     };
     const expected = {
-      path: '/peer/about',
-      rank: 1,
-      slug: '/peer/about'
+      about: {
+        path: peerPage.path.concat('/', aboutPage.aposDocId),
+        rank: 0,
+        slug: '/peer/about'
+      },
+      us: {
+        path: movedPage.path.concat('/', usPage.aposDocId),
+        rank: 0,
+        slug: '/peer/about/us'
+      }
     };
 
-    assert.strictEqual(actual, expected);
+    assert.deepEqual(actual, expected);
   });
 
   it('inferred page relationships are correct', async function() {
