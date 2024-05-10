@@ -13,7 +13,7 @@ except as part of the admin UI bundle which depends on it. For use with external
 Thanks to Michelin for contributing this feature.
 
 ### Fixes
-* Do not show widget editor tabs when there is only one tab.
+* Do not show widget editor tabs when the developer hasn't created any groups.
 
 ### Changes
 

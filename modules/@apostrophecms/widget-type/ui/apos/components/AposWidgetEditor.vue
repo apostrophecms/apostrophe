@@ -11,7 +11,7 @@
     <template #breadcrumbs>
       <AposModalBreadcrumbs v-if="breadcrumbs && breadcrumbs.length" :items="breadcrumbs" />
       <AposWidgetModalTabs
-        v-if="tabs.length > 1"
+        v-if="tabs.length && tabs[0].name !== 'ungrouped'"
         :key="tabKey"
         :current="currentTab"
         :tabs="tabs"
