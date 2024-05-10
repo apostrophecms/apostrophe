@@ -12,6 +12,9 @@
 except as part of the admin UI bundle which depends on it. For use with external front ends such as [apostrophe-astro](https://github.com/apostrophecms/apostrophe-astro).
 Thanks to Michelin for contributing this feature.
 
+### Fixes
+* Do not show widget editor tabs when there is only one tab.
+
 ### Changes
 
 * Improves `debounce` function to handle async properly (waiting for previous async call to finish before to trigger new one).
