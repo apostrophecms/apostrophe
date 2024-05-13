@@ -1,3 +1,4 @@
+const fs = require('fs');
 const path = require('path');
 const merge = require('webpack-merge').merge;
 const scss = require('./webpack.scss');
@@ -64,7 +65,7 @@ module.exports = ({
     resolve: {
       extensions: [ '.*', '.js', '.vue', '.json' ],
       alias: {
-        vue$: '@vue/runtime-dom',
+        vue$: getVueAlias(),
         // resolve apostrophe modules
         Modules: path.resolve(modulesDir)
       },
@@ -86,3 +87,16 @@ module.exports = ({
 
   return merge(config, ...tasks);
 };
+
+function getVueAlias() {
+  if (!process.env.APOS_DEV) {
+    return '@vue/runtime-dom';
+  }
+
+  const vueLocalPath = path.resolve(__dirname, '../../../../../../node_modules/@vue/runtime-dom');
+  const vueLocallyInstalled = fs.existsSync(vueLocalPath);
+
+  return vueLocallyInstalled
+    ? vueLocalPath
+    : path.join(process.cwd(), 'node_modules/@vue/runtime-dom');
+}
