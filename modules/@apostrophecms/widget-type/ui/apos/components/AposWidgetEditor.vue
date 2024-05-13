@@ -10,8 +10,8 @@
   >
     <template #breadcrumbs>
       <AposModalBreadcrumbs v-if="breadcrumbs && breadcrumbs.length" :items="breadcrumbs" />
-      <AposModalTabs
-        v-if="tabs.length"
+      <AposWidgetModalTabs
+        v-if="tabs.length && tabs[0].name !== 'ungrouped'"
         :key="tabKey"
         :current="currentTab"
         :tabs="tabs"
@@ -200,9 +200,9 @@ export default {
       this.evaluateConditions();
     },
     async save() {
-      const widget = klona(this.docFields.data);
       this.triggerValidation = true;
       this.$nextTick(async () => {
+        const widget = klona(this.docFields.data);
         if (this.docFields.hasErrors) {
           this.triggerValidation = false;
           return;

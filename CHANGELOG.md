@@ -12,6 +12,9 @@
 except as part of the admin UI bundle which depends on it. For use with external front ends such as [apostrophe-astro](https://github.com/apostrophecms/apostrophe-astro).
 Thanks to Michelin for contributing this feature.
 
+### Fixes
+* Do not show widget editor tabs when the developer hasn't created any groups.
+
 ### Changes
 
 * Improves `debounce` function to handle async properly (waiting for previous async call to finish before to trigger new one).
@@ -21,6 +24,7 @@ Thanks to Michelin for contributing this feature.
 
 * Autocrop image attachments for referenced documents when replacing an image in the Media Manager.
 * Fixes modals in transition, as well as slider transition on overlay opacity.
+* Changing the aspect ratio multiple times in the image cropper modal no longer makes the stencil smaller and smaller.
 
 ## 4.2.1 (2024-04-29)
 
