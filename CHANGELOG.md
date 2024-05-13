@@ -14,6 +14,7 @@ Thanks to Michelin for contributing this feature.
 
 ### Fixes
 * Do not show widget editor tabs when the developer hasn't created any groups.
+* Adds function to set vue alias targetting a unique instance based on where it's installed, for development purpose.
 
 ### Changes
 
