@@ -93,7 +93,7 @@ function getVueAlias() {
     return '@vue/runtime-dom';
   }
 
-  const vueProjectLevelPath = path.join(process.cwd(), 'node_modules/@vue/runtime-dom');
+  const vueProjectLevelPath = path.resolve('./node_modules/@vue/runtime-dom');
   const vueProjectLevelInstalled = fs.existsSync(vueProjectLevelPath);
 
   return vueProjectLevelInstalled
