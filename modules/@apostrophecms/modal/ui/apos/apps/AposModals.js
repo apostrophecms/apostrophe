@@ -1,4 +1,5 @@
 import createApp from 'Modules/@apostrophecms/ui/lib/vue';
+import { useModalStore } from 'Modules/@apostrophecms/ui/stores/modal';
 
 export default function() {
   const component = apos.vueComponents.TheAposModals;
@@ -11,9 +12,11 @@ export default function() {
   });
   const theAposModals = app.mount(el);
 
-  apos.modal.execute = theAposModals.execute;
-  apos.modal.getAt = theAposModals.getAt;
-  apos.modal.getProperties = theAposModals.getProperties;
+  const modalStore = useModalStore();
+
+  apos.modal.execute = modalStore.execute;
+  apos.modal.getAt = modalStore.getAt;
+  apos.modal.getProperties = modalStore.getProperties;
   apos.modal.onTopOf = onTopOf;
   apos.modal.stack = [];
   apos.confirm = theAposModals.confirm;
