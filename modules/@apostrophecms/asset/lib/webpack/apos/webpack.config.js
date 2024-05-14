@@ -93,10 +93,10 @@ function getVueAlias() {
     return '@vue/runtime-dom';
   }
 
-  const vueLocalPath = path.resolve(__dirname, '../../../../../../node_modules/@vue/runtime-dom');
-  const vueLocallyInstalled = fs.existsSync(vueLocalPath);
+  const vueProjectLevelPath = path.join(process.cwd(), 'node_modules/@vue/runtime-dom');
+  const vueProjectLevelInstalled = fs.existsSync(vueProjectLevelPath);
 
-  return vueLocallyInstalled
-    ? vueLocalPath
-    : path.join(process.cwd(), 'node_modules/@vue/runtime-dom');
+  return vueProjectLevelInstalled
+    ? vueProjectLevelPath
+    : path.resolve(__dirname, '../../../../../../node_modules/@vue/runtime-dom');
 }
