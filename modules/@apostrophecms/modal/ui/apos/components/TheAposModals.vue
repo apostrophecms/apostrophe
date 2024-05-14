@@ -6,141 +6,88 @@
     <component
       v-bind="modal.props"
       :is="modal.componentName"
-      v-for="modal in stack"
+      v-for="modal in store.stack"
       :key="modal.id"
-      @modal-result="modal.result = $event"
-      @safe-close="resolve(modal)"
+      :modal-id="modal.id"
+      @modal-result="store.setModalResult(modal.id, $event)"
+      @safe-close="store.resolve(modal)"
     />
   </div>
 </template>
 
-<script>
-import cuid from 'cuid';
-import AposThemeMixin from 'Modules/@apostrophecms/ui/mixins/AposThemeMixin';
+<script setup>
+import { onMounted } from 'vue';
+import { useAposTheme } from 'Modules/@apostrophecms/ui/composables/AposTheme';
 import { useModalStore } from 'Modules/@apostrophecms/ui/stores/modal';
 import { mapStores } from 'pinia';
 
-console.log('useModalStore', useModalStore);
-export default {
-  name: 'TheAposModals',
-  mixins: [ AposThemeMixin ],
-  props: {
-    modals: {
-      type: Array,
-      required: true
-    }
-  },
-  data() {
-    return {
-      stack: []
-    };
-  },
-  computed: {
-    ...mapStores(useModalStore)
-  },
-  mounted() {
-    console.log('this.modalStore', this.modalStore);
-    // Open one of the server-side configured top level admin bar menus by name.
-    // To allow for injecting additional props dynamically, if itemName is an
-    // object, it must have an itemName property and a props property. The props
-    // property is merged with the props supplied by the server-side configuration.
-
-    apos.bus.$on('admin-menu-click', async (itemName) => {
-      let item;
-      if (itemName === '@apostrophecms/global:singleton-editor') {
-        // Special case: the global doc is a singleton, and we know its
-        // _id in browserland
-        item = {
-          ...apos.modal.modals.find(modal => modal.itemName === '@apostrophecms/global:editor'),
-          props: {
-            docId: apos.modules['@apostrophecms/global']._id
-          }
-        };
-      } else if ((typeof itemName) === 'object') {
-        item = {
-          ...apos.modal.modals.find(modal => modal.itemName === itemName.itemName),
-          ...itemName
-        };
-      } else {
-        item = apos.modal.modals.find(modal => modal.itemName === itemName);
-      }
-      if (item) {
-        await this.execute(item.componentName, {
-          ...item.props,
-          moduleName: item.moduleName || this.getModuleName(item.itemName)
-        });
-      }
-    });
-  },
-  methods: {
-    async execute(componentName, props) {
-      return new Promise((resolve) => {
-        const item = {
-          id: cuid(),
-          componentName,
-          resolve,
-          props: props || {}
-        };
-
-        console.log('item', item);
-        this.stack.push(item);
-        apos.bus.$emit('modal-launched', item);
-      });
-    },
-    resolve(modal) {
-      console.log('modal', modal);
-      this.stack = this.stack.filter(_modal => modal.id !== _modal.id);
-      modal.resolve(modal.result);
-      apos.bus.$emit('modal-resolved', modal);
-    },
-    getModuleName(itemName) {
-      if (!itemName) {
-        return null;
-      }
-      return (itemName.indexOf(':') > -1) ? itemName.split(':')[0] : itemName;
-    },
-    getAt(index) {
-      const last = this.stack.length - 1;
-      const target = index < 0
-        ? last + 1 + index
-        : index > this.stack.length
-          ? last
-          : index;
-
-      const modal = this.stack[target] || {};
-
-      return modal;
-    },
-    getProperties(id) {
-      const [ stackModal = null ] = this.stack.filter(modal => id === modal.id);
-      if (!stackModal || !this.modals) {
-        return {};
-      }
-
-      const properties = {
-        ...this.modals
-          .find(modal => modal.componentName === stackModal.componentName &&
-            modal.props.moduleName === stackModal.props.moduleName)
-      };
-
-      return properties;
-    },
-
-    async confirm(content, options = {}) {
-      return this.execute(apos.modal.components.confirm, {
-        content,
-        mode: 'confirm',
-        options
-      });
-    },
-
-    async alert(alertContent, options = {}) {
-      return this.execute(apos.modal.components.confirm, {
-        content: alertContent,
-        mode: 'alert',
-        options
-      });
-    }
+const props = {
+  modals: {
+    type: Array,
+    required: true
   }
 };
+
+const { themeClass } = useAposTheme();
+
+const store = useModalStore();
+
+const currentModal = store;
+
+onMounted(() => {
+  // Open one of the server-side configured top level admin bar menus by name.
+  // To allow for injecting additional props dynamically, if itemName is an
+  // object, it must have an itemName property and a props property. The props
+  // property is merged with the props supplied by the server-side configuration.
+
+  apos.bus.$on('admin-menu-click', async (itemName) => {
+    let item;
+    if (itemName === '@apostrophecms/global:singleton-editor') {
+      // Special case: the global doc is a singleton, and we know its
+      // _id in browserland
+      item = {
+        ...apos.modal.modals.find(modal => modal.itemName === '@apostrophecms/global:editor'),
+        props: {
+          docId: apos.modules['@apostrophecms/global']._id
+        }
+      };
+    } else if ((typeof itemName) === 'object') {
+      item = {
+        ...apos.modal.modals.find(modal => modal.itemName === itemName.itemName),
+        ...itemName
+      };
+    } else {
+      item = apos.modal.modals.find(modal => modal.itemName === itemName);
+    }
+    if (item) {
+      await store.execute(item.componentName, {
+        ...item.props,
+        moduleName: item.moduleName || getModuleName(item.itemName)
+      });
+    }
+  });
+});
+
+function getModuleName(itemName) {
+  if (!itemName) {
+    return null;
+  }
+  return (itemName.indexOf(':') > -1) ? itemName.split(':')[0] : itemName;
+}
+
+async function confirm(content, options = {}) {
+  return store.execute(apos.modal.components.confirm, {
+    content,
+    mode: 'confirm',
+    options
+  });
+}
+
+async function alert(alertContent, options = {}) {
+  return store.execute(apos.modal.components.confirm, {
+    content: alertContent,
+    mode: 'alert',
+    options
+  });
+}
 </script>
