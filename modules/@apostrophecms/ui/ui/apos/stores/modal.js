@@ -1,9 +1,14 @@
 import { defineStore } from 'pinia';
-import { ref } from 'vue';
+import { ref, computed } from 'vue';
 import cuid from 'cuid';
 
 export const useModalStore = defineStore('modal', () => {
   const stack = ref([]);
+  const activeId = ref(null);
+
+  const activeModal = computed(() => {
+    return stack.value.find(modal => activeId.value === modal.id);
+  });
 
   function add(modal) {
     stack.value.push(modal);
@@ -21,9 +26,8 @@ export const useModalStore = defineStore('modal', () => {
         ? last
         : index;
 
-    const modal = stack.value[target] || {};
-
-    return modal;
+    console.log('target', target);
+    return stack.value[target] || {};
   }
 
   function getProperties(id) {
@@ -47,11 +51,12 @@ export const useModalStore = defineStore('modal', () => {
         id: `modal:${cuid()}`,
         componentName,
         resolve,
-        props: props || {}
-        /* elementsToFocus: [], */
-        /* focusedElement: null */
+        props: props || {},
+        elementsToFocus: [],
+        focusedElement: null
       };
 
+      activeId.value = item.id;
       stack.value.push(item);
       apos.bus.$emit('modal-launched', item);
     });
@@ -67,8 +72,6 @@ export const useModalStore = defineStore('modal', () => {
   }
 
   function setModalResult(modalId, result) {
-    console.log('modalId', modalId);
-    console.log('result', result);
     stack.value = stack.value.map((modal) => {
       return modal.id === modalId
         ? {
@@ -81,14 +84,81 @@ export const useModalStore = defineStore('modal', () => {
 
   function resolve(modal) {
     stack.value = stack.value.filter(_modal => modal.id !== _modal.id);
-
-    console.log('modal.result', modal.result);
+    const current = getAt(-1);
+    activeId.value = current.id || null;
     modal.resolve(modal.result);
     apos.bus.$emit('modal-resolved', modal);
   }
 
+  async function confirm(content, options = {}) {
+    return execute(apos.modal.components.confirm, {
+      content,
+      mode: 'confirm',
+      options
+    });
+  }
+
+  async function alert(alertContent, options = {}) {
+    return execute(apos.modal.components.confirm, {
+      content: alertContent,
+      mode: 'alert',
+      options
+    });
+  }
+
+  // Returns true if el1 is "on top of" el2 in the
+  // modal stack, as viewed by the user. If el1 is a
+  // modal that appears later in the stack than el2
+  // (visually stacked on top), this method returns true.
+  // If el2 is `document` and el1 is a modal, this
+  // method returns true. For convenenience, if el1
+  // or el2 is not a modal, it is treated as its DOM
+  // parent modal, or as `document`. If el1 has no
+  // parent modal this method always returns false.
+  //
+  // If el1 is no longer connected to the DOM then it
+  // is also considered to be "on top" e.g. not something
+  // that should concern `v-click-outside-element` and
+  // similar functionality. This is necessary because
+  // sometimes Vue removes elements from the DOM before
+  // we can examine their relationships.
+  function onTopOf(el1, el2) {
+    if (el2.matches('[data-apos-menu]')) {
+      return false;
+    }
+    if (!el1.isConnected) {
+    // If el1 is no longer in the DOM we can't make a proper determination,
+    // returning true prevents unwanted things like click-outside-element
+    // events from firing
+      return true;
+    }
+    if (!el1.matches('[data-apos-modal]')) {
+      el1 = el1.closest('[data-apos-modal]') || document;
+    }
+    if (!el2.matches('[data-apos-modal]')) {
+      el2 = el2.closest('[data-apos-modal]') || document;
+    }
+    if (el1 === document) {
+      return false;
+    }
+    if (el2 === document) {
+      return true;
+    }
+    const index1 = stack.value.findIndex(modal => modal.modalEl === el1);
+    const index2 = stack.value.findIndex(modal => modal.modalEl === el2);
+    if (index1 === -1) {
+      throw new Error('apos.modal.onTopOf: el1 is not in the modal stack');
+    }
+    if (index2 === -1) {
+      throw new Error('apos.modal.onTopOf: el2 is not in the modal stack');
+    }
+    return index1 > index2;
+  }
+
   return {
     stack,
+    activeId,
+    activeModal,
     add,
     get,
     getAt,
@@ -96,6 +166,9 @@ export const useModalStore = defineStore('modal', () => {
     execute,
     updateModalData,
     setModalResult,
-    resolve
+    resolve,
+    confirm,
+    alert,
+    onTopOf
   };
 });

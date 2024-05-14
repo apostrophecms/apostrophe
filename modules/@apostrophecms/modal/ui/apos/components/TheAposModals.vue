@@ -74,20 +74,4 @@ function getModuleName(itemName) {
   }
   return (itemName.indexOf(':') > -1) ? itemName.split(':')[0] : itemName;
 }
-
-async function confirm(content, options = {}) {
-  return store.execute(apos.modal.components.confirm, {
-    content,
-    mode: 'confirm',
-    options
-  });
-}
-
-async function alert(alertContent, options = {}) {
-  return store.execute(apos.modal.components.confirm, {
-    content: alertContent,
-    mode: 'alert',
-    options
-  });
-}
 </script>
