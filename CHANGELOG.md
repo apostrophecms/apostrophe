@@ -14,6 +14,7 @@ Thanks to Michelin for contributing this feature.
 
 ### Fixes
 * Do not show widget editor tabs when the developer hasn't created any groups.
+* Fix a bug in the Rich Text Editor widget when a pasted text took the style of the first configured text style element
 
 ### Changes
 
