@@ -23,6 +23,7 @@ module.exports = ({
     )
   );
 
+  const mode = process.env.NODE_ENV || 'development';
   const pnpmModulePath = apos.isPnpm ? [ path.join(apos.selfDir, '../') ] : [];
   const config = {
     performance: {
@@ -31,7 +32,7 @@ module.exports = ({
     entry: importFile,
     // Ensure that the correct version of vue-loader is found
     context: __dirname,
-    mode: process.env.NODE_ENV || 'development',
+    mode,
     optimization: {
       minimize: process.env.NODE_ENV === 'production'
     },
@@ -65,7 +66,7 @@ module.exports = ({
     resolve: {
       extensions: [ '.*', '.js', '.vue', '.json' ],
       alias: {
-        vue$: getVueAlias(),
+        vue$: getVueAlias(mode),
         // resolve apostrophe modules
         Modules: path.resolve(modulesDir)
       },
@@ -88,8 +89,8 @@ module.exports = ({
   return merge(config, ...tasks);
 };
 
-function getVueAlias() {
-  if (!process.env.APOS_DEV) {
+function getVueAlias(mode) {
+  if (mode !== 'development') {
     return '@vue/runtime-dom';
   }
 
