@@ -27,7 +27,7 @@
         <div class="apos-marks-control__content-wrapper">
           <ul class="apos-marks-control__items">
             <li
-              v-for="mark in options.marks"
+              v-for="mark in marks"
               :key="mark.class"
               class="apos-marks-control__item"
               :class="{ 'apos-marks-control__item--is-active': activeClasses.includes(mark.class) }"
@@ -75,10 +75,16 @@ export default {
     return {
       active: false,
       open: false,
-      classes: this.options.marks.map(m => m.class)
+      classes: this.options.marks
+        .map(m => m.class)
+        .filter(Boolean)
     };
   },
   computed: {
+    marks() {
+      // Filter out the default_hidden_span_style mark - PRO-5922
+      return this.options.marks.filter(mark => mark.label !== 'default_hidden_span_style');
+    },
     activeClasses() {
       let activeClasses = [];
       const { selection } = this.editor.state;

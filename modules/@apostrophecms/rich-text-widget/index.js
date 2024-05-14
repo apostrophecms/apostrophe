@@ -874,6 +874,23 @@ module.exports = {
           ...widget,
           content
         };
+
+        // If a RT configuration has spans,
+        // ensure an unclassed span is added to the configuration. - PRO-5922
+        const hasSpanStyle = options.styles
+          ?.some(style => style.tag === 'span' && style.label !== 'default_hidden_span_style');
+        const hasEmptySpanStyle = options.styles
+          ?.some(style => style.tag === 'span' && style.label === 'default_hidden_span_style');
+
+        if (hasSpanStyle && !hasEmptySpanStyle) {
+          const firstSpanStyleIndex = options.styles.findIndex(style => style.tag === 'span');
+          const emptySpanStyle = {
+            tag: 'span',
+            label: 'default_hidden_span_style'
+          };
+          options.styles.splice(firstSpanStyleIndex, 0, emptySpanStyle);
+        }
+
         return _super(req, _widget, options, _with);
       },
       // Add on the core default options to use, if needed.
