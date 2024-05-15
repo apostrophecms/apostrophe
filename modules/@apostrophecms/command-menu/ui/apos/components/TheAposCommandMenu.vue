@@ -105,11 +105,8 @@ export default {
       return this.modal;
     },
     getFirstNonShortcutModal(index = -1) {
-      console.log('index', index);
       const modal = this.getAt(index);
-      console.log('modal', modal);
       const properties = this.getProperties(modal.id);
-      console.log('properties', properties);
 
       return properties.itemName === '@apostrophecms/command-menu:shortcut'
         ? this.getFirstNonShortcutModal(index + -1)
@@ -121,6 +118,3 @@ export default {
   }
 };
 </script>
-
-<style lang="scss" scoped>
-</style>

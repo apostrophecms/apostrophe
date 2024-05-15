@@ -26,7 +26,6 @@ export const useModalStore = defineStore('modal', () => {
         ? last
         : index;
 
-    console.log('target', target);
     return stack.value[target] || {};
   }
 
