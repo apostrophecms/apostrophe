@@ -1,19 +1,21 @@
 # Changelog
 
-## UNRELEASED
+## 3.66.0 (2024-05-15)
 
 ### Fixes
-* Autocrop image attachments for referenced documents when replacing an image in the Media Manager.
 
-### Adds
+* Autocrop image attachments for referenced documents when replacing an image in the Media Manager.
+* Backports some internal A4 UI logic for metadata to make the new `document-versions` comparison feature compatible with A3.
+
+# Changelog
+
+## 3.65.0 (2024-05-06)
+
 * Adds a `publicBundle` option to `@apostrophecms/asset`. When set to `false`, the `ui/src` public asset bundle is not built at all in most cases
 except as part of the admin UI bundle which depends on it. For use with external front ends such as [apostrophe-astro](https://github.com/apostrophecms/apostrophe-astro).
 Thanks to Michelin for contributing this feature.
-* Backports some A4 features to make the new `document-versions` comparison feature compatible with A3.
 
 ## 3.64.0 (2024-04-18)
-
-### Adds
 
 ### Fixes
 
