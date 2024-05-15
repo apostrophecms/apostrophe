@@ -1,6 +1,6 @@
 # Changelog
 
-## UNRELEASED
+## 4.3.0 (2024-05-15)
 
 ### Adds
 
@@ -13,6 +13,7 @@ except as part of the admin UI bundle which depends on it. For use with external
 Thanks to Michelin for contributing this feature.
 
 ### Fixes
+
 * Do not show widget editor tabs when the developer hasn't created any groups.
 * `npm link` now works again for Apostrophe modules that are dependencies of a project.
 * Re-crop image attachments found in image widgets, etc. when replacing an image in the Media Manager.
