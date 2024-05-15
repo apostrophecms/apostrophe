@@ -1,5 +1,4 @@
 // Lock Heading levels down to just those provided via configuration
-// import { mergeAttributes } from '@tiptap/core';
 import Heading from '@tiptap/extension-heading';
 
 export default (options) => {
