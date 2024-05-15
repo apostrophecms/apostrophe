@@ -1,4 +1,5 @@
 // Lock Heading levels down to just those provided via configuration
+// import { mergeAttributes } from '@tiptap/core';
 import Heading from '@tiptap/extension-heading';
 
 export default (options) => {
@@ -22,6 +23,16 @@ export default (options) => {
           rendered: false
         }
       };
+    },
+    addKeyboardShortcuts() {
+      const marks = Object.keys(this.editor.schema.marks);
+      return this.options.levels.reduce((items, level) => ({
+        ...items,
+        ...{
+          [`Mod-Alt-${level}`]: () => this.editor.commands.toggleHeading({ level }),
+          Enter: () => marks.forEach(mark => this.editor.commands.unsetMark(mark))
+        }
+      }), {});
     }
   });
 };
