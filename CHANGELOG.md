@@ -2,6 +2,12 @@
 
 ## UNRELEASED
 
+### Fixes
+
+* Fix a bug in the Rich Text Editor widget when a pasted text took the style of the first configured text style element
+
+## 4.3.0 (2024-05-15)
+
 ### Adds
 
 * Allows to disable page refresh on content changed for page types.
@@ -15,18 +21,18 @@ Thanks to Michelin for contributing this feature.
 ### Fixes
 
 * Do not show widget editor tabs when the developer hasn't created any groups.
-* Fix a bug in the Rich Text Editor widget when a pasted text took the style of the first configured text style element
+* `npm link` now works again for Apostrophe modules that are dependencies of a project.
+* Re-crop image attachments found in image widgets, etc. when replacing an image in the Media Manager.
+* Fixes visual transitions between modals, as well as slider transition on overlay opacity.
+* Changing the aspect ratio multiple times in the image cropper modal no longer makes the stencil smaller and smaller.
 
 ### Changes
 
-* Improves `debounce` function to handle async properly (waiting for previous async call to finish before to trigger new one).
-* Adds the `copyOfId` property to the `edit()` method while still allowing the entire `copyOf` object for BC
+* Improves `debounce` function to handle async properly (waiting for previous async call to finish before triggering a new one).
+* Adds the `copyOfId` property to be passed to the `apos.doc.edit()` method, while still allowing the entire `copyOf` object for backwards compatibility.
 
 ### Fixes
 
-* Autocrop image attachments for referenced documents when replacing an image in the Media Manager.
-* Fixes modals in transition, as well as slider transition on overlay opacity.
-* Changing the aspect ratio multiple times in the image cropper modal no longer makes the stencil smaller and smaller.
 
 ## 4.2.1 (2024-04-29)
 
