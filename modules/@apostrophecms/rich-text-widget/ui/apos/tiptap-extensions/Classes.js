@@ -64,6 +64,7 @@ export default (options) => {
                   });
                 }
               } else {
+                console.log('toggleMark');
                 commands.toggleMark('textStyle', { class: options.class });
               }
             }
@@ -93,16 +94,10 @@ export default (options) => {
                   .filter(c => allow[tag].includes(c));
 
                 // If we have valid classes, join and return them.
-                // If no valid classes for this parse, default to the
-                // the first setting for this tag (including null for tags defined without classes).
                 // else, remove classes.
-                const defaultOrNull =
-                  options.nodes.find(s => s.tag === tag)?.class ||
-                  options.marks.find(s => s.tag === tag)?.class ||
-                  null;
                 return classes.length
                   ? classes.join(' ')
-                  : defaultOrNull;
+                  : null;
               }
             }
           }
