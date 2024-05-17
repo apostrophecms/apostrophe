@@ -80,6 +80,66 @@ export default {
   height: 100%;
 }
 
+:deep(.apos-context-menu) {
+  position: absolute;
+  top: 10px;
+  right: 0;
+
+  svg {
+    width: 20px;
+    height: 20px;
+    color: var(--a-base-1);
+  }
+
+  .apos-button--subtle:hover {
+    background-color: initial;
+  }
+}
+
+.apos-modal-tabs--horizontal {
+  position: relative;
+
+  .apos-modal-tabs__tabs {
+    flex-direction: row;
+    border-top: 1px solid var(--a-base-7);
+    border-bottom: 1px solid var(--a-base-7);
+  }
+
+  .apos-modal-tabs__tab {
+    display: flex;
+    width: 100%;
+  }
+
+  .apos-modal-tabs__tab--small {
+    width: 50%;
+    color: var(--a-base-1);
+    background-color: var(--a-base-10);
+    border-bottom: 1px solid var(--a-base-7);
+  }
+
+  .apos-modal-tabs__btn {
+    justify-content: center;
+    color: var(--a-base-1);
+    background-color: var(--a-base-10);
+    text-align: center;
+
+    &:hover, &:focus {
+      color: var(--a-primary-light-40);
+      background-color: var(--a-base-10);
+    }
+
+    &[aria-selected='true'], &[aria-selected='true']:hover, &[aria-selected='true']:focus {
+      color: var(--a-primary);
+      background-color: var(--a-base-10);
+      border-bottom: 3px solid var(--a-primary);
+    }
+  }
+
+  .apos-modal-tabs__btn::before {
+    content: none;
+  }
+}
+
 .apos-modal-tabs__tabs {
   display: flex;
   flex-direction: column;
