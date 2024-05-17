@@ -1,10 +1,17 @@
 # Changelog
 
-## UNREALEASED
+## UNRELEASED
 
 ### Fixes
 
 * Rich Text editor properly unsets marks on heading close 
+
+## 4.3.1 (2024-05-17)
+
+### Fixes
+
+* Databases containing documents that no longer correspond to any module no longer cause the migration that adds missing mode properties
+to fail (an issue introduced in version 4.2.0). Databases with no such "orphaned" documents were not affected.
 
 ## 4.3.0 (2024-05-15)
 
