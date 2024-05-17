@@ -2,6 +2,22 @@
 
 ## UNRELEASED
 
+### Fixes
+
+* Rich Text editor properly unsets marks on heading close
+
+### Changes
+
+* When moving a page, recognize when the slug of a new child
+already contains the new parent's slug and not double it.
+For example, given we have two pages as children of the home page, page A and page B.
+Page A and page B are siblings.
+Page A has the slug `/peer` and page B has the slug `/peer/page`.
+Now we want page B to be the child of page A.
+We will now end up with page B slug as `/peer/page` and not `/peer/peer/page` as before.
+
+## 4.3.0 (2024-05-15)
+
 ### Adds
 
 * Allows to disable page refresh on content changed for page types.
@@ -12,22 +28,21 @@
 except as part of the admin UI bundle which depends on it. For use with external front ends such as [apostrophe-astro](https://github.com/apostrophecms/apostrophe-astro).
 Thanks to Michelin for contributing this feature.
 
+### Fixes
+
+* Do not show widget editor tabs when the developer hasn't created any groups.
+* `npm link` now works again for Apostrophe modules that are dependencies of a project.
+* Re-crop image attachments found in image widgets, etc. when replacing an image in the Media Manager.
+* Fixes visual transitions between modals, as well as slider transition on overlay opacity.
+* Changing the aspect ratio multiple times in the image cropper modal no longer makes the stencil smaller and smaller.
+
 ### Changes
 
-* Improves `debounce` function to handle async properly (waiting for previous async call to finish before to trigger new one).
-* Adds the `copyOfId` property to the `edit()` method while still allowing the entire `copyOf` object for BC
-* When moving a page, recognize when the slug of a new child
-already contains the new parent's slug and not double it.
-For example, given we have two pages as children of the home page, page A and page B.
-Page A and page B are siblings.
-Page A has the slug `/peer` and page B has the slug `/peer/page`.
-Now we want page B to be the child of page A.
-We will now end up with page B slug as `/peer/page` and not `/peer/peer/page` as before.
+* Improves `debounce` function to handle async properly (waiting for previous async call to finish before triggering a new one).
+* Adds the `copyOfId` property to be passed to the `apos.doc.edit()` method, while still allowing the entire `copyOf` object for backwards compatibility.
 
 ### Fixes
 
-* Autocrop image attachments for referenced documents when replacing an image in the Media Manager.
-* Fixes modals in transition, as well as slider transition on overlay opacity.
 
 ## 4.2.1 (2024-04-29)
 
