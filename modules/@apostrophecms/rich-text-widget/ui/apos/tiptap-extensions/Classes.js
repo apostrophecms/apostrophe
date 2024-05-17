@@ -64,7 +64,6 @@ export default (options) => {
                   });
                 }
               } else {
-                console.log('toggleMark');
                 commands.toggleMark('textStyle', { class: options.class });
               }
             }
