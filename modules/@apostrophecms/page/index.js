@@ -1276,11 +1276,14 @@ database.`);
             if (parent._id !== oldParent._id) {
               const matchOldParentSlugPrefix = new RegExp('^' + self.apos.util.regExpQuote(self.apos.util.addSlashIfNeeded(oldParent.slug)));
               if (moved.slug.match(matchOldParentSlugPrefix)) {
-                const relativeSlug = path.relative(parent.slug, moved.slug);
-                const sourceSlug = relativeSlug.startsWith('.')
-                  ? moved.slug
-                  : `/${relativeSlug}`;
-                moved.slug = sourceSlug.replace(matchOldParentSlugPrefix, self.apos.util.addSlashIfNeeded(parent.slug));
+                const movedSlugCandidate = moved.slug
+                  .split('/')
+                  .slice(0, -1)
+                  .join('/');
+
+                moved.slug = parent.slug.endsWith(movedSlugCandidate)
+                  ? parent.slug.replace(movedSlugCandidate, '').concat(moved.slug)
+                  : moved.slug.replace(matchOldParentSlugPrefix, self.apos.util.addSlashIfNeeded(parent.slug));
                 changed.push({
                   _id: moved._id,
                   slug: moved.slug
