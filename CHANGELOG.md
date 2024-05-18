@@ -1,5 +1,11 @@
 # Changelog
 
+## UNRELEASED
+
+### Fixes
+
+* Rich Text editor properly unsets marks on heading close 
+
 ## 4.3.2 (2024-05-18)
 
 ### Fixes
