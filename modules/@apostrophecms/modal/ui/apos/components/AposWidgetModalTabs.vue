@@ -18,21 +18,22 @@
             v-if="tabErrors[tab.name] && tabErrors[tab.name].length"
             class="apos-modal-tabs__label apos-modal-tabs__label--error"
           >
-            {{ tabErrors[tab.name].length }} {{ generateErrorLabel(tabErrors[tab.name].length) }}
+            {{ tabErrors[tab.name].length }}&nbsp;{{ generateErrorLabel(tabErrors[tab.name].length) }}
           </span>
         </button>
       </li>
       <li
-        v-if="hiddenTabs.length"
+        v-if="menuTabs.length"
         key="placeholder-for-hidden-tabs"
         class="apos-modal-tabs__tab apos-modal-tabs__tab--small"
       />
     </ul>
     <AposContextMenu
-      v-if="hiddenTabs.length"
-      :menu="hiddenTabs"
+      v-if="menuTabs.length"
+      :menu="menuTabs"
       menu-placement="bottom-end"
       :button="moreMenuButton"
+      data-apos-test="context-menu-tabs"
       @item-clicked="moreMenuHandler($event)"
     />
   </div>
@@ -64,7 +65,6 @@ export default {
   emits: [ 'select-tab' ],
   data() {
     const visibleTabs = [];
-    const hiddenTabs = [];
 
     for (let i = 0; i < this.tabs.length; i++) {
       // Shallow clone is sufficient to make mutating
@@ -73,14 +73,11 @@ export default {
       tab.action = tab.name;
       if (i < 5) {
         visibleTabs.push(tab);
-      } else {
-        hiddenTabs.push(tab);
       }
     }
 
     return {
       visibleTabs,
-      hiddenTabs,
       moreMenuButton: {
         icon: 'dots-vertical-icon',
         iconOnly: true,
@@ -100,6 +97,25 @@ export default {
         }
       }
       return errors;
+    },
+    menuTabs() {
+      return this.tabs.map((tab) => {
+        const modifiers = [];
+        if (tab.name === this.current) {
+          modifiers.push('selected');
+          if (!this.tabErrors[tab.name] || !this.tabErrors[tab.name].length) {
+            modifiers.push('primary');
+          }
+        }
+        if (this.tabErrors[tab.name] && this.tabErrors[tab.name].length) {
+          modifiers.push('danger');
+        }
+        return {
+          ...tab,
+          action: tab.name,
+          modifiers
+        };
+      });
     }
   },
   methods: {
@@ -116,12 +132,6 @@ export default {
       this.$emit('select-tab', id);
     },
     moreMenuHandler(item) {
-      const lastVisibleTab = this.visibleTabs[this.visibleTabs.length - 1];
-      const selectedItem = this.hiddenTabs.find((tab) => tab.name === item);
-
-      this.hiddenTabs.splice(this.hiddenTabs.indexOf(selectedItem), 1, lastVisibleTab);
-      this.visibleTabs.splice(this.visibleTabs.length - 1, 1, selectedItem);
-
       this.$emit('select-tab', item);
     }
   }
@@ -219,6 +229,7 @@ export default {
 
 .apos-modal-tabs__label--error {
   border: 1px solid var(--a-danger);
+  margin-left: 5px;
 }
 
 .apos-modal-tabs__btn {
