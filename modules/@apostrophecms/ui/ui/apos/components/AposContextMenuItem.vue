@@ -4,6 +4,7 @@
       class="apos-context-menu__button"
       :class="modifiers"
       :tabindex="tabindex"
+      data-apos-test="context-menu-item"
       @click="click"
     >
       {{ $t(label) }}
@@ -88,6 +89,15 @@ export default {
       }
       &:focus, &:active {
         color: var(--a-danger-button-active);
+      }
+    }
+
+    &--primary {
+      color: var(--a-primary);
+      &:hover,
+      &:focus,
+      &:active {
+        color: var(--a-primary);
       }
     }
 
