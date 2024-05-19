@@ -29,6 +29,7 @@
               v-show="tab.name === currentTab"
               :key="tab.name"
               :ref="tab.name"
+              :data-apos-test="`schema:${tab.name}`"
               :trigger-validation="triggerValidation"
               :current-fields="groups[tab.name].fields"
               :schema="groups[tab.name].schema"
