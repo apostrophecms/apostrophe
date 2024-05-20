@@ -737,7 +737,7 @@ function traverseNextNode(node) {
     }
 
     .apos-button--rich-text .apos-button__icon {
-      transition: all 0.3s var(--a-transition-timing-bounce);
+      transition: all 0.3 var(--a-transition-timing-bounce);
     }
 
     .apos-button--rich-text {
@@ -785,9 +785,9 @@ function traverseNextNode(node) {
         height: 100%;
         background-color: transparent;
         transition:
-          opacity 0.5s var(--a-transition-timing-bounce),
-          transform 0.5s var(--a-transition-timing-bounce),
-          background-color 0.5s ease;
+          opacity 0.5 var(--a-transition-timing-bounce),
+          transform 0.5 var(--a-transition-timing-bounce),
+          background-color 0.5 ease;
         opacity: 0;
         transform: scale(0.3) translateY(-4px);
       }
@@ -817,19 +817,19 @@ function traverseNextNode(node) {
     gap: 6px;
   }
 
-  .apos-rich-text-editor__editor :deep(.ProseMirror) {
+  .apos-rich-text-editor__editor :deep(.ProseMirror) { /* stylelint-disable-line selector-class-pattern */
     @include apos-transition();
   }
 
-  .apos-rich-text-editor__editor :deep(.ProseMirror:focus) {
+  .apos-rich-text-editor__editor :deep(.ProseMirror:focus) { /* stylelint-disable-line selector-class-pattern */
     outline: none;
   }
 
-  .apos-rich-text-editor__editor :deep(.ProseMirror) {
+  .apos-rich-text-editor__editor :deep(.ProseMirror) { /* stylelint-disable-line selector-class-pattern */
     padding: 10px 0;
   }
 
-  .apos-rich-text-editor__editor :deep(.ProseMirror:focus p.apos-is-empty::after) {
+  .apos-rich-text-editor__editor :deep(.ProseMirror:focus p.apos-is-empty::after) { /* stylelint-disable-line selector-class-pattern, selector-no-qualifying-type */
     display: block;
     margin: 5px 0 10px;
     padding-top: 5px;
@@ -852,9 +852,9 @@ function traverseNextNode(node) {
   }
 
   .apos-rich-text-editor__editor :deep([data-tippy-root]) {
-    transition: all 0.4s var(--a-transition-timing-bounce);
+    transition: all 0.4 var(--a-transition-timing-bounce);
     /* stylelint-disable-next-line time-min-milliseconds */
-    transition-delay: 0.1s;
+    transition-delay: 0.1;
   }
 
   .apos-rich-text-editor__editor :deep(.tippy-box[data-animation='fade'][data-state='hidden']) {
@@ -915,12 +915,12 @@ function traverseNextNode(node) {
 
   // So editors can identify the cells that would take part
   // in a merge operation
-  .apos-rich-text-editor__editor :deep(.selectedCell) {
+  .apos-rich-text-editor__editor :deep(.selectedCell) { /* stylelint-disable-line selector-class-pattern */
     // Should be visible on any background, light mode or dark mode
     backdrop-filter: invert(0.1);
   }
 
-  .apos-rich-text-editor__editor :deep(figure.ProseMirror-selectednode) {
+  .apos-rich-text-editor__editor :deep(figure.ProseMirror-selectednode) { /* stylelint-disable-line selector-no-qualifying-type, selector-class-pattern */
     opacity: 0.5;
   }
 
@@ -1014,13 +1014,13 @@ function traverseNextNode(node) {
     letter-spacing: 0.25px;
   }
 
-  :deep(.ProseMirror) {
+  :deep(.ProseMirror) { /* stylelint-disable-line selector-class-pattern */
     > * + * {
       margin-top: 0.75em;
     }
   }
 
-  :deep(.ProseMirror-gapcursor) {
+  :deep(.ProseMirror-gapcursor) { /* stylelint-disable-line selector-class-pattern */
     position: relative;
     display: block;
     height: 20px;

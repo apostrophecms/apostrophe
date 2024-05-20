@@ -53,7 +53,7 @@ export default {
 
 .apos-tag-list__button {
   @include apos-button-reset();
-  @include apos-transition(all, 0.1s, ease-in-out);
+  @include apos-transition($what: all, $duration: 0.1s, $ease: ease-in-out);
 
   display: flex;
   align-items: center;

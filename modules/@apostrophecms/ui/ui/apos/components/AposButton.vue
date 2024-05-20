@@ -230,7 +230,7 @@ export default {
     color: var(--a-text-primary);
     border-radius: var(--a-border-radius);
     background-color: var(--a-base-9);
-    transition: all 0.2s ease;
+    transition: all 0.2 ease;
     text-decoration: none;
 
     &:hover {
@@ -276,7 +276,7 @@ export default {
     }
 
     .apos-spinner.fade-enter-active, .fade-leave-active {
-      transition: all 0.2s ease;
+      transition: all 0.2 ease;
     }
 
     .apos-spinner.fade-enter, .fade-leave-to {
@@ -403,7 +403,7 @@ export default {
         var(--a-brand-green) 100%
       );
       opacity: 0;
-      transition: all 0.3s ease;
+      transition: all 0.3 ease;
     }
 
     &:hover::after {
@@ -420,7 +420,7 @@ export default {
     }
 
     &[disabled].apos-button--busy::after {
-      animation: animateGradient 10s ease-in-out infinite;
+      animation: animate-gradient 10 ease-in-out infinite;
     }
 
     .apos-button__label {
@@ -606,7 +606,7 @@ export default {
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: opacity 0.2s ease;
+    transition: opacity 0.2 ease;
   }
 
   .apos-button__icon {
@@ -670,7 +670,7 @@ export default {
     display: block;
   }
 
-  @keyframes animateGradient {
+  @keyframes animate-gradient {
     0% {
       background-position: 0% 50%;
     }

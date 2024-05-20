@@ -153,7 +153,7 @@ export default {
     }
 
     .apos-login__project-name {
-      // stylelint-disable-next-line scale-unlimited/declaration-strict-value
+      // stylelint-disable-next-line declaration-property-unit-allowed-list
       font-size: 21px;
     }
 

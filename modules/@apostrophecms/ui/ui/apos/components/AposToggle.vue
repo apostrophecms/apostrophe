@@ -31,16 +31,16 @@ export default {
 };
 </script>
 <style scoped lang='scss'>
-  $toggleHeight: 13px;
-  $toggleWidth: $toggleHeight * 1.7;
-  $btnSize: $toggleHeight;
+  $toggle-height: 13px;
+  $toggle-width: $toggle-height * 1.7;
+  $btn-size: $toggle-height;
 
   .apos-toggle {
     &__slider {
       position: relative;
       box-sizing: content-box;
-      width: $toggleWidth;
-      height: $toggleHeight;
+      width: $toggle-width;
+      height: $toggle-height;
       padding: 4px;
       border-radius: 34px;
       cursor: pointer;
@@ -49,11 +49,11 @@ export default {
       &::before {
         content: '';
         position: absolute;
-        width: $btnSize;
-        height: $btnSize;
+        width: $btn-size;
+        height: $btn-size;
         border-radius: 50%;
         background-color: var(--a-white);
-        transition: all 0.3s ease-out;
+        transition: all 0.3 ease-out;
       }
     }
 
@@ -61,7 +61,7 @@ export default {
       background-color: var(--a-primary);
 
       &::before {
-        transform: translateX(calc($toggleWidth - $btnSize));
+        transform: translateX(calc($toggle-width - $btn-size));
       }
     }
   }

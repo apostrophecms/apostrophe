@@ -113,7 +113,7 @@ function emitSetArrow(arrowEl) {
 .apos-context-menu__dialog {
   display: inline-block;
   color: var(--a-text-primary);
-  transition: scale 0.15s ease, translatey 0.15s ease;
+  transition: scale 0.2 ease, translatey 0.2 ease;
 }
 
 .apos-context-menu__inner {

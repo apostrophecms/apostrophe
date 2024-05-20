@@ -80,18 +80,18 @@
     border: 1px solid var(--a-base-9);
     vertical-align: middle;
     text-align: center;
-    transition: background-color 0.3s ease;
+    transition: background-color 0.3 ease;
     background-color: var(--a-background-primary);
   }
 
-  td.apos-input-array-inline-item-controls {
+  td.apos-input-array-inline-item-controls { /* stylelint-disable-line selector-no-qualifying-type */
     width: 15px;
     min-width: 15px;
     border: none;
     background-color: transparent;
   }
 
-  tr.apos-is-dragging, :deep(tr.apos-is-dragging) {
+  tr.apos-is-dragging, :deep(tr.apos-is-dragging) { /* stylelint-disable-line selector-no-qualifying-type */
     td, &:hover td {
       background: var(--a-base-4);
     }
@@ -102,7 +102,7 @@
       background-color: var(--a-base-10);
     }
 
-    td.apos-input-array-inline-item-controls {
+    td.apos-input-array-inline-item-controls { /* stylelint-disable-line selector-no-qualifying-type */
       background-color: transparent;
     }
   }
@@ -178,7 +178,7 @@
     width: 100%;
     padding-bottom: $spacing-base;
     border-bottom: 1px solid var(--a-base-9);
-    transition: background-color 0.3s ease;
+    transition: background-color 0.3 ease;
 
     &:hover {
       background-color: var(--a-base-10);
@@ -216,7 +216,7 @@
       padding-top: $spacing-base;
       padding-bottom: $spacing-base;
       text-align: left;
-      transition: background-color 0.3s ease;
+      transition: background-color 0.3 ease;
       grid-column: 2;
     }
 

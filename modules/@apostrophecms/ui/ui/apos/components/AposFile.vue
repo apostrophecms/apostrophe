@@ -169,7 +169,7 @@ export default {
     padding: 20px;
     border: 2px dashed var(--a-base-8);
     border-radius: var(--a-border-radius);
-    transition: all 0.2s ease;
+    transition: all 0.2 ease;
 
     &:hover {
       border-color: var(--a-primary);

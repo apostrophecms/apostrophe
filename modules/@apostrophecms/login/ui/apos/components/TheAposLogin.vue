@@ -81,8 +81,8 @@ export default {
   }
 
   .fade-stage-enter-active {
-    transition: opacity 0.2s linear;
-    transition-delay: 0.3s;
+    transition: opacity 0.2 linear;
+    transition-delay: 0.3;
   }
 
   .fade-stage-enter-to,
@@ -100,12 +100,12 @@ export default {
   }
 
   .fade-body-enter-active {
-    transition: all 0.25s linear;
-    transition-delay: 0.6s;
+    transition: all 0.25 linear;
+    transition-delay: 0.6;
   }
 
   .fade-body-leave-active {
-    transition: all 0.25s linear;
+    transition: all 0.25 linear;
   }
 
   .fade-body-enter-to, .fade-body-leave {
@@ -117,8 +117,8 @@ export default {
   }
 
   .fade-outer-enter-active {
-    transition: opacity 0.4s linear;
-    transition-delay: 1s;
+    transition: opacity 0.4 linear;
+    transition-delay: 1;
   }
 
   .apos-login {

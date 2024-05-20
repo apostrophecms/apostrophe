@@ -50,7 +50,7 @@
               <AposInputRadio
                 v-model="wizard.values.toLocalize"
                 :field="{
-                  name: 'toLocalize',
+                  name: 'to-localize',
                   label: 'apostrophe:selectContentToLocalize',
                   choices: toLocalizeChoices
                 }"
@@ -467,7 +467,7 @@ export default {
     },
     relatedDocTypesField() {
       return {
-        name: 'relatedDocTypesToLocalize',
+        name: 'related-doctype-to-localize',
         label: 'apostrophe:relatedDocTypesToLocalize',
         choices: this.relatedDocTypes
       };
@@ -1037,7 +1037,7 @@ export default {
   border: none;
 }
 
-:deep(.apos-field--toLocalize) {
+:deep(.apos-field--to-localize) {
   margin-bottom: $spacing-triple;
 }
 
@@ -1160,7 +1160,7 @@ export default {
   }
 }
 
-.apos-wizard__step  :deep(.apos-field--relatedDocTypesToLocalize) {
+.apos-wizard__step  :deep(.apos-field--related-doctype-to-localize) {
   margin-top: $spacing-triple;
 }
 

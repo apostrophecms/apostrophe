@@ -135,7 +135,7 @@ export default {
 }
 
 :deep(.flip-enter-active), :deep(.flip-leave-active) {
-  transition: all 150ms;
+  transition: all 200ms;
 
   &.apos-admin-bar__control-set__group {
     position: absolute;

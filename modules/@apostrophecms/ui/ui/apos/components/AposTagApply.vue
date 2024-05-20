@@ -351,7 +351,7 @@ export default {
   }
 
   .fade-enter-active, .fade-leave-active {
-    transition: all 0.5s;
+    transition: all 0.5;
   }
 
   .fade-enter, .fade-leave-to {

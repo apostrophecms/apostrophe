@@ -173,7 +173,7 @@ export default {
     padding: 0 $spacing-half;
     color: var(--a-base-1);
     border-radius: var(--a-border-radius);
-    transition: all 0.5s ease;
+    transition: all 0.5 ease;
 
     &:hover {
       color: var(--a-text-primary);

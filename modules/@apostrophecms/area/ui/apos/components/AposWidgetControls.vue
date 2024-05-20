@@ -191,7 +191,7 @@ $z-index-button-foreground: 2;
   }
 
   :deep(.apos-button__icon) {
-    transition: all 0.3s var(--a-transition-timing-bounce);
+    transition: all 0.3 var(--a-transition-timing-bounce);
   }
 
   :deep(.apos-button) {
@@ -232,9 +232,9 @@ $z-index-button-foreground: 2;
       height: 100%;
       background-color: transparent;
       transition:
-        opacity 0.5s var(--a-transition-timing-bounce),
-        transform 0.5s var(--a-transition-timing-bounce),
-        background-color 0.5s ease;
+        opacity 0.5 var(--a-transition-timing-bounce),
+        transform 0.5 var(--a-transition-timing-bounce),
+        background-color 0.5 ease;
       opacity: 0;
       transform: scale(0.3) translateY(-4px);
     }

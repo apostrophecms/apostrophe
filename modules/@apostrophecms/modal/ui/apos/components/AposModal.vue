@@ -310,11 +310,11 @@ function close() {
       bottom: 0;
       width: 100%;
       height: 100vh;
-      transition: transform 0.15s ease;
+      transition: transform 0.15 ease;
       transform: translateX(0);
       border-radius: 0;
 
-      @media screen and (width >= 800px) {
+      @include media-up(hands-wide) {
         max-width: 540px;
       }
     }
@@ -330,19 +330,19 @@ function close() {
     }
 
     &.apos-modal__inner--two-thirds {
-      @media screen and (width >= 800px) {
+      @include media-up(hands-wide) {
         max-width: 66%;
       }
     }
 
     &.apos-modal__inner--half {
-      @media screen and (width >= 800px) {
+      @include media-up(hands-wide) {
         max-width: 50%;
       }
     }
 
     &.apos-modal__inner--full {
-      @media screen and (width >= 800px) {
+      @include media-up(hands-wide) {
         max-width: 100%;
       }
     }
@@ -359,7 +359,7 @@ function close() {
 
     .apos-modal--overlay & {
       transform: scale(1);
-      transition: opacity 0.15s ease, transform 0.15s ease;
+      transition: opacity 0.20 ease, transform 0.20 ease;
     }
 
     &.fade-enter-from,
@@ -391,7 +391,7 @@ function close() {
 
     .apos-modal--slide &,
     .apos-modal--overlay & {
-      transition: opacity 0.15s ease;
+      transition: opacity 0.15 ease;
     }
 
     &.slide-left-enter-from,

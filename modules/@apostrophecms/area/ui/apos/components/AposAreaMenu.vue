@@ -189,7 +189,7 @@ export default {
 }
 
 .apos-area-menu__items--accordion.apos-is-active {
-  transition-delay: 0.25s;
+  transition-delay: 0.25;
   max-height: 20rem;
 }
 

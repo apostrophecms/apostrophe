@@ -126,7 +126,7 @@ export default {
   margin-left: 7.5px;
   opacity: 1;
   color: var(--a-base-2);
-  transition: opacity 150ms;
+  transition: opacity 200ms;
 
   &.apos-is-hidden {
     opacity: 0;

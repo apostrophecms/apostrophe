@@ -98,7 +98,7 @@ export default {
     @include type-small;
 
     color: var(--a-base-4);
-    transition: color 0.5s ease;
+    transition: color 0.5 ease;
   }
 
   // adapted from http://danielstern.ca/range.css/#/
@@ -108,7 +108,7 @@ export default {
     background-color: transparent;
     /* stylelint-disable-next-line property-no-vendor-prefix */
     -webkit-appearance: none;
-    transition: all 0.3s ease;
+    transition: all 0.3 ease;
 
     &:focus {
       outline: none;

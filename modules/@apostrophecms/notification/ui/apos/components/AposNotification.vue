@@ -326,7 +326,7 @@ export default {
     height: 100%;
     background-color: var(--a-brand-green);
     background-image: linear-gradient(46deg, var(--a-brand-gold) 0%, var(--a-brand-red) 26%, var(--a-brand-magenta) 47%, var(--a-brand-blue) 76%, var(--a-brand-green) 100%);
-    transition: width 0.5s ease-out;
+    transition: width 0.5 ease-out;
   }
 
   .apos-notification__progress-value {

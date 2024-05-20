@@ -183,7 +183,7 @@ export default {
   border-bottom: 1px solid var(--a-base-7);
   color: var(--a-text-primary);
   text-align: left;
-  transition: all 0.2s ease;
+  transition: all 0.2 ease;
   background-color: var(--a-base-9);
   cursor: pointer;
 
@@ -199,7 +199,7 @@ export default {
     left: 0;
     width: 0;
     background-color: var(--a-primary);
-    transition: width 0.25s cubic-bezier(0, 1.61, 1, 1.23);
+    transition: width 0.25 cubic-bezier(0, 1.61, 1, 1.23);
   }
 
   &[aria-selected='true'],
