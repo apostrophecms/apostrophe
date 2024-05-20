@@ -19,20 +19,10 @@
 import { onMounted } from 'vue';
 import { useAposTheme } from 'Modules/@apostrophecms/ui/composables/AposTheme';
 import { useModalStore } from 'Modules/@apostrophecms/ui/stores/modal';
-import { mapStores } from 'pinia';
-
-const props = {
-  modals: {
-    type: Array,
-    required: true
-  }
-};
 
 const { themeClass } = useAposTheme();
 
 const store = useModalStore();
-
-const currentModal = store;
 
 onMounted(() => {
   // Open one of the server-side configured top level admin bar menus by name.

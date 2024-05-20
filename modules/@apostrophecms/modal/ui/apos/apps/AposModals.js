@@ -10,7 +10,7 @@ export default function() {
   const app = createApp(component, {
     modals: apos.modal.modals
   });
-  const theAposModals = app.mount(el);
+  app.mount(el);
 
   const modalStore = useModalStore();
 

@@ -96,11 +96,10 @@
 // transition.
 
 import {
-  ref, reactive, onMounted, computed, watch, nextTick, useSlots
+  ref, onMounted, computed, watch, nextTick, useSlots
 } from 'vue';
 import { useAposFocus } from 'Modules/@apostrophecms/modal/composables/AposFocus';
 import { useModalStore } from 'Modules/@apostrophecms/ui/stores/modal';
-import cuid from 'cuid';
 
 const {
   cycleElementsToFocus,
