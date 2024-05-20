@@ -11,6 +11,17 @@
 * Rich Text editor properly unsets marks on heading close.
 * Widget client side schema validation.
 
+## 4.3.2 (2024-05-18)
+
+### Fixes
+
+* Corrects a regression introduced in version 4.3.0 that broke the validation of widget modals, resulting in a confusing
+error on the page. A "required" field in a widget, for instance, once again blocks the save operation properly.
+
+### Changes
+
+* Improves widget tab UI for the hidden entries, improves UX when validation errors are present in non-focused tabs.
+
 ## 4.3.1 (2024-05-17)
 
 ### Fixes
