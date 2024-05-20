@@ -124,9 +124,11 @@
 </template>
 
 <script>
+import { mapState } from 'pinia';
 import AposDocsManagerMixin from 'Modules/@apostrophecms/modal/mixins/AposDocsManagerMixin';
 import AposModifiedMixin from 'Modules/@apostrophecms/ui/mixins/AposModifiedMixin';
 import AposPublishMixin from 'Modules/@apostrophecms/ui/mixins/AposPublishMixin';
+import { useModalStore } from 'Modules/@apostrophecms/ui/stores/modal';
 import { debounce } from 'Modules/@apostrophecms/ui/utils';
 
 export default {
@@ -167,6 +169,7 @@ export default {
     };
   },
   computed: {
+    ...mapState(useModalStore, [ 'activeModal' ]),
     moduleOptions() {
       return window.apos.modules[this.moduleName];
     },
@@ -405,11 +408,11 @@ export default {
     },
     shortcutNew(event) {
       const interesting = event.keyCode === 78; // N(ew)
-      const topModalId = apos.modal.stack.at(-1)?.id;
+      console.log('this.activeModal', this.activeModal);
       if (
         interesting &&
         document.activeElement.tagName !== 'INPUT' &&
-        this.$refs.modal.id === topModalId
+        this.$refs.modal.id === this.activeModal?.id
       ) {
         this.create();
       }
