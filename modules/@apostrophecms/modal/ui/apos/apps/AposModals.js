@@ -15,6 +15,7 @@ export default function() {
   const modalStore = useModalStore();
 
   apos.modal.execute = modalStore.execute;
+  apos.modal.get = modalStore.get;
   apos.modal.getAt = modalStore.getAt;
   apos.modal.getProperties = modalStore.getProperties;
   apos.modal.onTopOf = modalStore.onTopOf;

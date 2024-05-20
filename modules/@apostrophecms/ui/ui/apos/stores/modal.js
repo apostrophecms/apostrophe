@@ -15,7 +15,9 @@ export const useModalStore = defineStore('modal', () => {
   }
 
   function get(id) {
-    return stack.value.find(modal => id === modal.id);
+    return id
+      ? stack.value.find(modal => id === modal.id)
+      : stack.value;
   }
 
   function getAt(index) {
