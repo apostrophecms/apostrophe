@@ -1,22 +1,25 @@
 <template>
   <div class="apos-modal-tabs" :class="{ 'apos-modal-tabs--horizontal': orientation === 'horizontal' }">
-    <ul class="apos-modal-tabs__tabs">
+    <ul class="apos-modal-tabs__tabs" data-apos-test="widget-tabs">
       <li
         v-for="tab in visibleTabs"
         v-show="tab.isVisible !== false"
         :key="tab.name"
         class="apos-modal-tabs__tab"
+        data-apos-test="widget-tabs-item"
       >
         <button
           :id="tab.name"
           class="apos-modal-tabs__btn"
           :aria-selected="tab.name === current ? true : false"
+          data-apos-test="widget-tabs-button"
           @click="selectTab"
         >
           {{ $t(tab.label) }}
           <span
             v-if="tabErrors[tab.name] && tabErrors[tab.name].length"
             class="apos-modal-tabs__label apos-modal-tabs__label--error"
+            data-apos-test="widget-tabs-error"
           >
             {{ tabErrors[tab.name].length }}&nbsp;{{ generateErrorLabel(tabErrors[tab.name].length) }}
           </span>

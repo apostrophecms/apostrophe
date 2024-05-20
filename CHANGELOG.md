@@ -2,9 +2,14 @@
 
 ## UNRELEASED
 
+### Changes
+
+* Improves widget tabs for the hidden entries, improves UX when validation errors are present in non-focused tabs.
+
 ### Fixes
 
-* Rich Text editor properly unsets marks on heading close 
+* Rich Text editor properly unsets marks on heading close.
+* Widget client side schema validation.
 
 ## 4.3.2 (2024-05-18)
 

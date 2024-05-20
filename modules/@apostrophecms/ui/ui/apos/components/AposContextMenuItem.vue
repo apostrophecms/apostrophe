@@ -5,6 +5,9 @@
       :class="modifiers"
       :tabindex="tabindex"
       data-apos-test="context-menu-item"
+      :data-apos-test-selected="selected"
+      :data-apos-test-danger="danger"
+      :data-apos-test-disabled="disabled"
       @click="click"
     >
       {{ $t(label) }}
@@ -27,6 +30,15 @@ export default {
     tabindex() {
       return this.open ? '0' : '-1';
     },
+    selected() {
+      return this.menuItem.modifiers?.includes('selected');
+    },
+    danger() {
+      return this.menuItem.modifiers?.includes('danger');
+    },
+    disabled() {
+      return this.menuItem.modifiers?.includes('disabled');
+    },
     modifiers() {
       const classes = [];
       if (this.menuItem.modifiers) {
@@ -38,7 +50,7 @@ export default {
     },
     label() {
       let label = this.menuItem.label;
-      if (this.menuItem.modifiers && this.menuItem.modifiers.includes('selected')) {
+      if (this.selected) {
         label = {
           key: 'apostrophe:selectedMenuItem',
           label: this.$t(this.menuItem.label)
