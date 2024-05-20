@@ -210,9 +210,10 @@ watch(triggerFocusRefresh, (newVal) => {
   }
 });
 
-onMounted(() => {
+onMounted(async () => {
+  await nextTick();
   if (shouldTrapFocus.value) {
-    nextTick(trapFocus);
+    trapFocus();
   }
   store.updateModalData(props.modalId, { modalEl: modalEl.value });
 });
