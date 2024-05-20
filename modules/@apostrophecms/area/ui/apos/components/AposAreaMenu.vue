@@ -107,6 +107,7 @@ export default {
 .apos-area-menu__button {
   @include apos-button-reset();
   @include type-base;
+
   box-sizing: border-box;
   width: 100%;
   padding: 5px 20px;
@@ -142,11 +143,13 @@ export default {
 
 .apos-area-menu__group-label {
   @include apos-button-reset();
-  box-sizing: border-box;
+
   display: flex;
-  width: 100%;
+  box-sizing: border-box;
   justify-content: space-between;
+  width: 100%;
   padding: 10px 20px;
+
   &:hover {
     cursor: pointer;
   }
@@ -159,6 +162,7 @@ export default {
 
 .apos-area-menu__group-chevron {
   @include apos-transition();
+
   transform: rotate(90deg);
 }
 
@@ -167,19 +171,21 @@ export default {
 }
 
 .apos-area-menu__group {
-  border-bottom: 1px solid var(--a-base-8);
-  padding-bottom: 10px;
   margin: 10px 0;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--a-base-8);
 }
+
 .apos-area-menu__item:last-child.apos-has-group .apos-area-menu__group {
-  border-bottom: none;
   margin-bottom: 0;
+  border-bottom: none;
 }
 
 .apos-area-menu__items--accordion {
+  @include apos-transition($duration:0.3s);
+
   overflow: hidden;
   max-height: 0;
-  @include apos-transition($duration:0.3s);
 }
 
 .apos-area-menu__items--accordion.apos-is-active {

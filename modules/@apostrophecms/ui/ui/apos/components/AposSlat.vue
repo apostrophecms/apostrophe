@@ -221,6 +221,8 @@ export default {
 
 <style lang="scss" scoped>
   .apos-slat {
+    @include apos-transition();
+
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -229,7 +231,6 @@ export default {
     border-radius: var(--a-border-radius);
     background-color: var(--a-base-9);
     color: var(--a-text-primary);
-    @include apos-transition();
 
     &.apos-is-disabled {
       .apos-slat__control--view {
@@ -241,9 +242,11 @@ export default {
       cursor: grab;
       background-color: var(--a-base-7);
     }
+
     &:active {
       cursor: grabbing;
     }
+
     &:active,
     &:focus {
       background-color: var(--a-base-7);
@@ -255,6 +258,7 @@ export default {
       &:active {
         cursor: default;
       }
+
       &:hover,
       &:active,
       &:focus {
@@ -270,13 +274,16 @@ export default {
   .apos-slat.apos-is-selected,
   .apos-slat.apos-is-selected:focus {
     background-color: var(--a-primary);
+
     &,
     :deep(.apos-button) {
       color: var(--a-white);
     }
+
     &:hover {
       background-color: var(--a-primary-dark-10);
     }
+
     .apos-slat__label {
       color: var(--a-white);
     }
@@ -284,6 +291,7 @@ export default {
 
   .apos-slat-list__item--disabled {
     opacity: 0.5;
+
     &:hover {
       cursor: not-allowed;
     }
@@ -293,6 +301,7 @@ export default {
     display: flex;
     align-items: center;
     max-width: 75%;
+
     &:deep(.trigger) {
       /* This gets inline positioned and has doesn't provide an extra class to beef up, sorry */
       /* stylelint-disable-next-line declaration-no-important */
@@ -302,6 +311,7 @@ export default {
 
   .apos-slat__label {
     @include type-small;
+
     overflow: hidden;
     margin-left: 5px;
     white-space: nowrap;
@@ -326,6 +336,7 @@ export default {
   .fade-enter-active, .fade-leave-active {
     transition: opacity 0.5s;
   }
+
   .fade-enter, .fade-leave-to {
     opacity: 0;
   }
@@ -337,6 +348,7 @@ export default {
 
   .apos-slat__size {
     @include type-small;
+
     margin-right: 5px;
   }
 
@@ -346,6 +358,7 @@ export default {
 
   .apos-slat__extension {
     @include type-help;
+
     display: inline-block;
     padding: 4px;
     background-color: var(--a-generic);

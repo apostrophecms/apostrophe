@@ -460,6 +460,7 @@ export default {
 
 .apos-combo__selected {
   @include type-base;
+
   display: flex;
   align-items: center;
   gap: 4px;
@@ -488,10 +489,10 @@ export default {
   left: 0;
   display: none;
   width: 100%;
+  margin: 0;
+  padding-left: 0;
   list-style: none;
   background-color: var(--a-white);
-  padding-left: 0;
-  margin: 0;
   max-height: 300px;
   overflow-y: auto;
   box-shadow: 0 0 3px var(--a-base-2);
@@ -503,8 +504,8 @@ export default {
   }
 
   &-typehead {
-    box-sizing: border-box;
     display: flex;
+    box-sizing: border-box;
     align-items: center;
   }
 }
@@ -521,14 +522,15 @@ export default {
 }
 
 .apos-combo__typehead {
+  @include type-base;
+
+  box-sizing: border-box;
   flex-grow: 1;
   margin: 0;
   padding: 10px 10px 10px 20px;
   border: none;
-  box-sizing: border-box;
   outline: none;
   background-color: transparent;
-  @include type-base;
 }
 
 .apos-combo__spinner {

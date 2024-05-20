@@ -71,8 +71,8 @@ export default {
     z-index: $z-index-manager-display;
     display: flex;
     flex-direction: column;
-    justify-content: center;
     align-items: flex-start;
+    justify-content: center;
   }
 
   &__project-header {
@@ -84,6 +84,7 @@ export default {
 
   &__project-subtitle {
     @include type-title;
+
     margin: 0;
     opacity: 0.6;
     line-height: 1;
@@ -93,6 +94,7 @@ export default {
 
   &__project-name {
     @include type-display;
+
     margin: 0;
     color: var(--a-text-primary);
     text-transform: capitalize;
@@ -100,6 +102,7 @@ export default {
 
   &__project-env {
     @include type-base;
+
     text-transform: capitalize;
     padding: 6px 12px;
     color: var(--a-white);
@@ -117,6 +120,7 @@ export default {
 
   &--help {
     @include type-label;
+
     margin-top: $spacing-double;
     text-align: center;
     white-space: pre-line;
@@ -124,10 +128,11 @@ export default {
 
   &--error {
     @include type-help;
-    color: var(--a-danger);
-    min-height: 13px;
+
     margin-top: 20px;
     margin-bottom: 15px;
+    color: var(--a-danger);
+    min-height: 13px;
   }
 
   &__header--center {

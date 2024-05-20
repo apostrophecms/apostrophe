@@ -448,8 +448,9 @@ export default {
       opacity: 0.5;
     }
   }
+
   .apos-tree__list {
-    transition: max-height 0.3s ease;
+    transition: max-height 0.3 ease;
 
     &.apos-is-collapsed {
       overflow-y: auto;
@@ -459,6 +460,7 @@ export default {
   .apos-tree__row--selectable {
     cursor: pointer;
   }
+
   .apos-tree__row-data {
     .apos-tree__row--selected > & {
       background-color: var(--a-base-9);
@@ -477,7 +479,7 @@ export default {
       content: '';
       background-color: var(--a-base-8);
       width: 1px;
-      transition: background-color 0.3s ease;
+      transition: background-color 0.3 ease;
     }
 
     &.apos-is-collapsed::before {
@@ -487,6 +489,7 @@ export default {
 
   .apos-tree__row__toggle {
     @include apos-button-reset();
+
     position: absolute;
     top: 50%;
     left: -(math.div($row-nested-h-padding, 2));
@@ -496,10 +499,10 @@ export default {
 
   .apos-tree__row__toggle-icon {
     display: block;
-    transition: transform 0.3s ease;
+    transition: transform 0.3 ease;
     transform: rotate(-90deg) translateY(0.25em);
 
-    [aria-expanded=true] > & {
+    [aria-expanded="true"] > & {
       transform: none;
     }
   }
@@ -508,16 +511,18 @@ export default {
     margin-right: 0.25em;
 
     :deep(.material-design-icon__svg) {
-      transition: fill 0.2s ease;
+      transition: fill 0.2 ease;
       fill: var(--a-base-5);
     }
   }
 
   .apos-tree__row__icon--handle {
     cursor: grab;
+
     &:active {
       cursor: grabbing;
     }
+
     .sortable-chosen &:deep(.material-design-icon__svg,)
     &:hover :deep(.material-design-icon__svg) {
       fill: var(--a-base-2);
@@ -565,8 +570,9 @@ export default {
     color: var(--a-success);
   }
 
-  button.apos-tree__cell {
+  button.apos-tree__cell { /* stylelint-disable-line selector-no-qualifying-type */
     @include apos-button-reset();
+
     padding: $cell-padding;
     border-bottom: 1px solid var(--a-base-8);
   }

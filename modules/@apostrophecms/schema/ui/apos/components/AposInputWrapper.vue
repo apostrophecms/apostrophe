@@ -115,6 +115,7 @@ export default {
 .apos-field {
   border-width: 0;
   padding: 0;
+
   [disable]:hover, [disabled] ~ .apos-choice-label-text:hover {
     cursor: not-allowed;
   }
@@ -126,14 +127,15 @@ export default {
 
 .apos-field__label {
   @include type-label;
+
   display: flex;
+  flex-wrap: nowrap;
   align-items: center;
   justify-content: space-between;
-  flex-wrap: nowrap;
-  gap: $spacing-double;
   margin: 0 0 $spacing-base;
   padding: 0;
   color: var(--a-text-primary);
+  gap: $spacing-double;
 
   &-info {
     display: block;
@@ -148,8 +150,9 @@ export default {
 }
 
 .apos-field__help {
-  margin: 0 0 $spacing-base;
   @include type-base;
+
+  margin: 0 0 $spacing-base;
   line-height: var(--a-line-tall);
   color: var(--a-base-3);
 }
@@ -160,12 +163,13 @@ export default {
 
 .apos-field__changed {
   position: relative;
-  margin-left: $spacing-half;
   top: -2px;
+  margin-left: $spacing-half;
 }
 
 .apos-field__error {
   @include type-help;
+
   margin: $spacing-base 0;
   color: var(--a-danger);
 }
@@ -186,30 +190,39 @@ export default {
 .apos-field--inline {
   display: flex;
   align-items: center;
+
   .apos-field__label {
     margin-bottom: 0;
   }
+
   .apos-field__info,
   .apos-input-wrapper {
     width: 48%;
   }
+
   .apos-field__info {
     margin-right: 4%;
   }
+
   &.apos-field--range {
     display: block;
+
     .apos-range__input {
       margin: 5px 0 0;
     }
+
     .apos-range__scale {
       margin-top: 0;
     }
+
     .apos-range__value {
       padding-top: 9px;
     }
+
     .apos-field__info {
       margin: 0 0 5px;
     }
+
     .apos-field__info,
     .apos-input-wrapper {
       width: 100%;

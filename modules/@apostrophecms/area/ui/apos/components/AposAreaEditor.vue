@@ -621,13 +621,13 @@ function cancelRefresh(refreshOptions) {
 <style lang="scss" scoped>
 .apos-empty-area {
   display: flex;
-  padding: 30px;
-  justify-content: center;
-  align-items: center;
   flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 30px;
+  border: 1px solid var(--a-base-8);
   min-height: 50px;
   background-color: var(--a-base-9);
-  border: 1px solid var(--a-base-8);
   border-radius: var(--a-border-radius);
 }
 

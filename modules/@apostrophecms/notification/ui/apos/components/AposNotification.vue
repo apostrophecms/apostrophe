@@ -212,21 +212,24 @@ export default {
 <style lang="scss" scoped>
   .apos-notification {
     @include apos-transition();
-    pointer-events: auto;
+
     position: relative;
     display: inline-flex;
     overflow: hidden;
-    min-width: 200px;
-    max-width: 500px;
+    align-items: center;
     padding: 8px 35px 8px 8px;
     color: var(--a-text-inverted);
     background: var(--a-background-inverted);
+    pointer-events: auto;
+    min-width: 200px;
+    max-width: 500px;
     border-radius: 200px;
     box-shadow: var(--a-box-shadow);
-    align-items: center;
+
     & + .apos-notification {
       margin-top: 8px;
     }
+
     &:hover {
       transform: translateY(-1px);
     }
@@ -266,17 +269,18 @@ export default {
   }
 
   .apos-notification__button {
+    @include apos-transition(all);
+
     position: absolute;
     right: 2px;
     display: flex;
-    align-items: center;
     box-sizing: border-box;
+    align-items: center;
     height: 100%;
     padding: 20px 10px;
     border: none;
-    background-color: transparent;
     color: var(--a-text-inverted);
-    @include apos-transition(all);
+    background-color: transparent;
 
     &:hover {
       cursor: pointer;
@@ -290,12 +294,14 @@ export default {
   .apos-notification__label,
   .apos-notification__progress-value {
     @include type-base;
+
     color: var(--a-text-inverted);
     line-height: var(--a-line-tallest);
   }
 
   .apos-notification__label :deep(button) {
     @include apos-button-reset();
+
     text-decoration: underline;
     text-decoration-color: var(--a-success);
     text-underline-offset: 3px;
@@ -304,8 +310,8 @@ export default {
 
   .apos-notification__progress {
     display: flex;
-    align-items: center;
     flex-shrink: 0;
+    align-items: center;
   }
 
   .apos-notification__progress-bar {

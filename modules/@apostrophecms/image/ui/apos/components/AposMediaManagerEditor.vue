@@ -397,12 +397,13 @@ export default {
 
   .apos-media-editor__thumb-wrapper {
     display: flex;
-    justify-content: center;
     align-items: center;
+    justify-content: center;
     height: 180px;
-    border: 1px solid var(--a-base-7);
     margin-bottom: 20px;
+    border: 1px solid var(--a-base-7);
   }
+
   .apos-media-editor__thumb {
     max-width: 100%;
     max-height: 100%;
@@ -414,17 +415,20 @@ export default {
 
   .apos-media-editor__details {
     @include apos-list-reset();
+
     margin-bottom: $spacing-double;
   }
 
   .apos-media-editor__detail {
     @include type-base;
+
     line-height: var(--a-line-tallest);
     color: var(--a-base-4);
   }
 
   .apos-media-editor__links {
     @include apos-list-reset();
+
     display: flex;
     margin-bottom: $spacing-triple;
 
@@ -435,6 +439,7 @@ export default {
 
   .apos-media-editor__link {
     display: inline-block;
+
     & + & {
       margin-left: 20px;
     }
@@ -455,6 +460,7 @@ export default {
   .apos-media-editor__lip {
     display: flex;
     justify-content: flex-end;
+
     & > .apos-context-menu, & > .apos-button__wrapper {
       margin-left: 7.5px;
     }

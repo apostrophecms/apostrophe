@@ -112,9 +112,9 @@ export default {
 
   .apos-modal-tabs__tab--small {
     width: 50%;
+    border-bottom: 1px solid var(--a-base-7);
     color: var(--a-base-1);
     background-color: var(--a-base-10);
-    border-bottom: 1px solid var(--a-base-7);
   }
 
   .apos-modal-tabs__btn {
@@ -129,9 +129,9 @@ export default {
     }
 
     &[aria-selected='true'], &[aria-selected='true']:hover, &[aria-selected='true']:focus {
+      border-bottom: 3px solid var(--a-primary);
       color: var(--a-primary);
       background-color: var(--a-base-10);
-      border-bottom: 3px solid var(--a-primary);
     }
   }
 
@@ -171,20 +171,21 @@ export default {
 .apos-modal-tabs__btn {
   @include apos-button-reset();
   @include type-base;
+
   position: relative;
   display: flex;
-  justify-content: space-between;
+  box-sizing: border-box;
   align-items: center;
+  justify-content: space-between;
   width: 100%;
   height: 60px;
   padding: 25px 10px;
   border-bottom: 1px solid var(--a-base-7);
   color: var(--a-text-primary);
-  background-color: var(--a-base-9);
   text-align: left;
-  cursor: pointer;
-  box-sizing: border-box;
   transition: all 0.2s ease;
+  background-color: var(--a-base-9);
+  cursor: pointer;
 
   @include media-up(lap) {
     padding: 25px 10px 25px 20px;
@@ -206,6 +207,7 @@ export default {
   &[aria-selected='true']:focus {
     padding-left: 15px;
     background-color: var(--a-background-primary);
+
     &::before {
       background-color: var(--a-primary);
     }
@@ -214,6 +216,7 @@ export default {
   &:hover,
   &:focus {
     background-color: var(--a-base-10);
+
     &::before {
       width: 3px;
       background-color: var(--a-base-5);

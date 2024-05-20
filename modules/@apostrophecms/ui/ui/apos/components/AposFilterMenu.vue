@@ -144,14 +144,15 @@ export default {
 .apos-filters-menu :deep(.apos-field__label) {
   display: block;
   width: 100%;
+  margin-bottom: 10px;
   padding-bottom: 10px;
   border-bottom: 1px solid var(--a-base-9);
   color: var(--a-base-3);
-  margin-bottom: 10px;
 }
 
 .apos-filters-menu__set {
   margin-bottom: 30px;
+
   &:last-child {
     margin-bottom: 0;
   }

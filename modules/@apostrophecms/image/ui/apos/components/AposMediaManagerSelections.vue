@@ -83,12 +83,14 @@ export default {
 <style lang="scss" scoped>
 .apos-media-manager-selections {
   @include type-base;
+
   height: 100%;
   padding: 20px;
 }
 
 .apos-media-manager-selections__heading {
   @include type-base;
+
   margin-bottom: $spacing-double;
 }
 
@@ -107,14 +109,14 @@ export default {
 
 .apos-media-manager-selections__item-thumb-container {
   display: flex;
-  justify-content: center;
-  align-items: center;
   flex-basis: 50px;
+  align-items: center;
+  justify-content: center;
   width: 50px;
   height: 50px;
+  border: 1px solid var(--a-base-7);
   min-width: 50px;
   background-color: var(--a-primary-background);
-  border: 1px solid var(--a-base-7);
 }
 
 .apos-media-manager-selections__item-thumb {
@@ -128,6 +130,7 @@ export default {
 
 .apos-media-manager-selections__item-title {
   @include type-base;
+
   max-width: 150px;
   white-space: nowrap;
   overflow: hidden;
@@ -137,8 +140,8 @@ export default {
 
 .apos-media-manager-selection__empty {
   display: flex;
-  height: 100%;
-  justify-content: center;
   align-items: center;
+  justify-content: center;
+  height: 100%;
 }
 </style>

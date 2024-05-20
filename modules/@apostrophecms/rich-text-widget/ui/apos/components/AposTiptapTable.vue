@@ -146,6 +146,7 @@ export default {
   .apos-tiptap-control--select {
     @include apos-button-reset();
     @include type-small;
+
     height: 100%;
     padding: 0 15px 0 10px;
 
@@ -153,6 +154,7 @@ export default {
       background-color: var(--a-base-9);
       outline: none;
     }
+
     &:hover {
       background-color: var(--a-base-8);
     }

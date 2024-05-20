@@ -125,6 +125,7 @@ function emitSetArrow(arrowEl) {
 
 .apos-context-menu__pane {
   @include type-base;
+
   padding: 20px;
   border: 1px solid var(--a-base-8);
   border-radius: var(--a-border-radius);
@@ -134,17 +135,18 @@ function emitSetArrow(arrowEl) {
 
 .apos-context-menu__items {
   @include apos-list-reset();
+
   display: inline-block;
   list-style-type: none;
   width: max-content;
   margin: none;
-  margin-block-start: 0;
-  margin-block-end: 0;
+  margin-block: 0 0;
   padding: 10px 0;
 }
 
 .apos-context-menu__dialog :deep(.apos-schema .apos-field) {
   margin-bottom: 20px;
+
   .apos-field__help {
     margin-top: 5px;
   }

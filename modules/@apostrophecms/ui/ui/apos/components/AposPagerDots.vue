@@ -52,8 +52,10 @@ export default {
     display: flex;
     list-style-type: none;
   }
+
   .apos-pager-dots__button {
     @include apos-button-reset();
+
     width: 12px;
     height: 12px;
     border-radius: 50%;

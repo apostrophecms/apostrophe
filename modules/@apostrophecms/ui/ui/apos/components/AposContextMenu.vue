@@ -271,11 +271,13 @@ async function setDropdownPosition() {
 
 .apos-context-menu__pane {
   @include type-base;
+
   padding: 20px;
   border: 1px solid var(--a-base-8);
   border-radius: var(--a-border-radius);
   box-shadow: var(--a-box-shadow);
   background-color: var(--a-background-primary);
+
   &:focus {
     outline: none;
   }
@@ -283,12 +285,12 @@ async function setDropdownPosition() {
 
 .apos-context-menu__items {
   @include apos-list-reset();
+
   display: inline-block;
   list-style-type: none;
   width: max-content;
   margin: none;
-  margin-block-start: 0;
-  margin-block-end: 0;
+  margin-block: 0 0;
   padding: 10px 0;
 }
 </style>

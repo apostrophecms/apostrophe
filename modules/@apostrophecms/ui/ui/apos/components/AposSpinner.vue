@@ -86,11 +86,13 @@ module.exports = {
   position: relative;
   width: 17px;
   height: 17px;
+
   &--heavy {
     width: 27px;
     height: 27px;
   }
 }
+
 .apos-spinner__svg {
   max-width: 100%;
   max-height: 100%;
@@ -112,6 +114,7 @@ module.exports = {
   from {
     transform: rotate(0deg);
   }
+
   to {
     transform: rotate(359deg);
   }
@@ -121,6 +124,7 @@ module.exports = {
   from {
     transform: rotate(0deg);
   }
+
   to {
     transform: rotate(-359deg);
   }

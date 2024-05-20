@@ -37,16 +37,16 @@ export default {
 
   .apos-toggle {
     &__slider {
-      box-sizing: content-box;
       position: relative;
-      border-radius: 34px;
+      box-sizing: content-box;
       width: $toggleWidth;
       height: $toggleHeight;
       padding: 4px;
+      border-radius: 34px;
       cursor: pointer;
       background-color: var(--a-base-3);
 
-      &:before {
+      &::before {
         content: '';
         position: absolute;
         width: $btnSize;
@@ -60,7 +60,7 @@ export default {
     &__slider--activated {
       background-color: var(--a-primary);
 
-      &:before {
+      &::before {
         transform: translateX(calc($toggleWidth - $btnSize));
       }
     }

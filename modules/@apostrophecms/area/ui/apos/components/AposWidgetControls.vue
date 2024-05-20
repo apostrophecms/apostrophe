@@ -189,32 +189,39 @@ $z-index-button-foreground: 2;
     z-index: $z-index-button-foreground;
     position: relative;
   }
+
   :deep(.apos-button__icon) {
     transition: all 0.3s var(--a-transition-timing-bounce);
   }
+
   :deep(.apos-button) {
     background-color: transparent;
 
-    &:not([disabled]):hover:after {
+    &:not([disabled]):hover::after {
       background-color: var(--a-base-9);
     }
+
     &:active {
       background-color: transparent;
     }
+
     &:active .apos-button__icon {
       transform: scale(0.8);
     }
-    &:active:after, &:focus:after {
+
+    &:active::after, &:focus::after {
       background-color: var(--a-primary-transparent-25);
     }
-    &:after,
-    &:not([disabled]):hover:after,
-    &:not([disabled]):active:after,
-    &:not([disabled]):focus:after {
+
+    &::after,
+    &:not([disabled]):hover::after,
+    &:not([disabled]):active::after,
+    &:not([disabled]):focus::after {
       opacity: 1;
       transform: scale(1.15) translateY(0);
     }
-    &:after {
+
+    &::after {
       content: '';
       z-index: $z-index-button-background;
       position: absolute;

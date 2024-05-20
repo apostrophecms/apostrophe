@@ -86,12 +86,9 @@ export default {
   &__preview-trigger {
     z-index: $z-index-default;
     position: absolute;
-    box-sizing: border-box;
-    top: 0;
-    right: 0;
-    bottom: 0;
-    left: 0;
+    inset: 0;
     display: block;
+    box-sizing: border-box;
     width: 100%;
     height: 100%;
     margin: 0;
@@ -115,9 +112,9 @@ export default {
     @include type-base;
 
     display: block;
+    padding-bottom: $spacing-double;
     color: var(--a-base-3);
     line-height: 1;
-    padding-bottom: $spacing-double;
   }
 
   &__controls {
@@ -154,9 +151,11 @@ export default {
 .slide-fade-enter-active {
   transition: all 0.3s ease-in;
 }
+
 .slide-fade-leave-active {
   // nothing on expand: false
 }
+
 .slide-fade-enter, .slide-fade-leave-to {
   transform: translateY(-5px);
   opacity: 0;

@@ -202,6 +202,7 @@ export default {
 
   .apos-slat-list {
     @include apos-list-reset();
+
     min-height: 20px;
     max-width: $input-max-width;
   }
@@ -212,6 +213,7 @@ export default {
 
   .apos-slat-limit {
     @include type-help;
+
     margin: 10px 0 0;
     text-align: center;
 

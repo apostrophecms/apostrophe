@@ -53,18 +53,18 @@ export default {
   z-index: calc(#{$z-index-widget-focused-controls} + 1);
   position: absolute;
   overflow: auto;
-  width: 100%;
-  list-style: none;
-  box-shadow: var(--a-box-shadow);
   box-sizing: border-box;
-  min-width: 320px;
-  max-height: 300px;
+  width: 100%;
   margin: 0;
   padding: 0;
-  border-bottom-left-radius: var(--a-border-radius);
-  border-bottom-right-radius: var(--a-border-radius);
   border: 1px solid var(--a-base-8);
   background: var(--a-background-primary);
+  list-style: none;
+  box-shadow: var(--a-box-shadow);
+  min-width: 320px;
+  max-height: 300px;
+  border-bottom-left-radius: var(--a-border-radius);
+  border-bottom-right-radius: var(--a-border-radius);
 
   &:empty {
     display: none;
@@ -76,9 +76,11 @@ export default {
   border: none;
   background-color: var(--a-background-primary);
   cursor: auto;
+
   .apos-search__item__title {
     color: $input-color-disabled;
   }
+
   .apos-search__item__field {
     color: $input-color-disabled;
   }
@@ -87,9 +89,11 @@ export default {
 @mixin suggestion {
   padding-top: 14px;
   background-color: var(--a-background-inverted);
+
   .apos-search__item__title {
     color: var(--a-text-inverted);
   }
+
   .apos-search__item__field {
     color: var(--a-base-8);
   }
@@ -99,9 +103,11 @@ export default {
   flex-direction: column;
   gap: 4px;
   border-top: 1px solid var(--a-base-5);
+
   .apos-search__item__title {
     color: var(--a-base-2);
   }
+
   .apos-search__item__field {
     color: var(--a-text-primary);
   }
@@ -109,14 +115,15 @@ export default {
 
 .apos-search__item {
   display: flex;
-  justify-content: flex-start;
+  box-sizing: border-box;
   align-items: center;
-  gap: 10px;
+  justify-content: flex-start;
   margin: 0;
   padding: 10px 20px;
   border-top: 1px solid var(--a-base-5);
-  box-sizing: border-box;
   transition: background-color 0.3s ease;
+  gap: 10px;
+
   & * {
     pointer-events: none;
   }
@@ -124,12 +131,15 @@ export default {
   &:hover.apos-search__item {
     background-color: var(--a-base-10);
     cursor: pointer;
+
     &.apos-search__item--disabled {
       @include disabled;
     }
+
     &.apos-search__item--suggestion {
       @include suggestion;
     }
+
     &.apos-search__item--hint {
       @include hint;
     }
@@ -137,11 +147,13 @@ export default {
 
   &__title {
     @include type-base;
+
     color: var(--a-text-primary);
   }
 
   &__field {
     @include type-base;
+
     color: var(--a-base-2);
   }
 

@@ -64,18 +64,20 @@ export default {
 <style lang="scss" scoped>
   .apos-input-wrapper {
     @include type-base;
+
     display: flex;
-    justify-content: space-between;
-    align-content: flex-start;
+    place-content: flex-start space-between;
   }
 
   .apos-range__value {
     padding-top: 7px;
     min-width: 100px;
+
     &.apos-is-unset {
       opacity: 0;
       pointer-events: none;
     }
+
     .apos-range__clear {
       margin-left: 5px;
     }
@@ -94,6 +96,7 @@ export default {
 
   .apos-range__scale {
     @include type-small;
+
     color: var(--a-base-4);
     transition: color 0.5s ease;
   }
@@ -106,8 +109,10 @@ export default {
     /* stylelint-disable-next-line property-no-vendor-prefix */
     -webkit-appearance: none;
     transition: all 0.3s ease;
+
     &:focus {
       outline: none;
+
       & + .apos-range__scale {
         color: var(--a-text-primary);
       }
@@ -136,16 +141,17 @@ export default {
   }
 
   .apos-range__input::-webkit-slider-thumb {
-    margin-top: -6px;
     width: 15px;
     height: 15px;
+    margin-top: -6px;
     border: 1px solid var(--a-primary-dark-15);
-    border-radius: 50%;
     background: var(--a-primary);
+    border-radius: 50%;
     cursor: pointer;
     /* stylelint-disable-next-line property-no-vendor-prefix */
     -webkit-appearance: none;
   }
+
   .apos-range__input[disabled]::-webkit-slider-thumb {
     background: var(--a-primary-light-40);
   }
@@ -203,11 +209,11 @@ export default {
   .apos-range__input::-ms-thumb {
     width: 15px;
     height: 15px;
-    border: 1px solid var(--a-primary-dark-15);
-    border-radius: 1px;
-    background: var(--a-primary);
-    cursor: pointer;
     margin-top: 0;
+    border: 1px solid var(--a-primary-dark-15);
+    background: var(--a-primary);
+    border-radius: 1px;
+    cursor: pointer;
   }
 
   .apos-range__input[disabled]::-ms-thumb {
