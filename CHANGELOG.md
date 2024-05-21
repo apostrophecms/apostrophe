@@ -2,6 +2,35 @@
 
 ## UNRELEASED
 
+### Changes
+
+* Improves widget tabs for the hidden entries, improves UX when validation errors are present in non-focused tabs.
+* When moving a page, recognize when the slug of a new child
+already contains the new parent's slug and not double it.
+For example, given we have two pages as children of the home page, page A and page B.
+Page A and page B are siblings.
+Page A has the slug `/peer` and page B has the slug `/peer/page`.
+Now we want page B to be the child of page A.
+We will now end up with page B slug as `/peer/page` and not `/peer/peer/page` as before.
+
+### Fixes
+
+* Rich Text editor properly unsets marks on heading close.
+* Widget client side schema validation.
+
+## 4.3.2 (2024-05-18)
+
+### Fixes
+
+* Corrects a regression introduced in version 4.3.0 that broke the validation of widget modals, resulting in a confusing
+error on the page. A "required" field in a widget, for instance, once again blocks the save operation properly.
+
+### Changes
+
+* Improves widget tab UI for the hidden entries, improves UX when validation errors are present in non-focused tabs.
+
+## 4.3.1 (2024-05-17)
+
 ### Fixes
 
 * Rich Text editor properly unsets marks on heading close
@@ -15,6 +44,35 @@ Page A and page B are siblings.
 Page A has the slug `/peer` and page B has the slug `/peer/page`.
 Now we want page B to be the child of page A.
 We will now end up with page B slug as `/peer/page` and not `/peer/peer/page` as before.
+=======
+
+### Changes
+
+* Improves widget tabs for the hidden entries, improves UX when validation errors are present in non-focused tabs.
+
+### Fixes
+
+* Rich Text editor properly unsets marks on heading close.
+* Widget client side schema validation.
+
+## 4.3.2 (2024-05-18)
+
+### Fixes
+
+* Corrects a regression introduced in version 4.3.0 that broke the validation of widget modals, resulting in a confusing
+error on the page. A "required" field in a widget, for instance, once again blocks the save operation properly.
+
+### Changes
+
+* Improves widget tab UI for the hidden entries, improves UX when validation errors are present in non-focused tabs.
+
+## 4.3.1 (2024-05-17)
+
+### Fixes
+
+* Databases containing documents that no longer correspond to any module no longer cause the migration that adds missing mode properties
+to fail (an issue introduced in version 4.2.0). Databases with no such "orphaned" documents were not affected.
+>>>>>>> main
 
 ## 4.3.0 (2024-05-15)
 

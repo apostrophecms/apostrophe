@@ -29,6 +29,7 @@
               v-show="tab.name === currentTab"
               :key="tab.name"
               :ref="tab.name"
+              :data-apos-test="`schema:${tab.name}`"
               :trigger-validation="triggerValidation"
               :current-fields="groups[tab.name].fields"
               :schema="groups[tab.name].schema"
@@ -52,7 +53,7 @@
       <AposButton
         type="primary"
         :label="saveLabel"
-        :disabled="docFields.hasErrors"
+        :disabled="errorCount > 0"
         @click="save"
       />
     </template>
@@ -62,6 +63,7 @@
 <script>
 import AposModifiedMixin from 'Modules/@apostrophecms/ui/mixins/AposModifiedMixin';
 import AposEditorMixin from 'Modules/@apostrophecms/modal/mixins/AposEditorMixin';
+import AposDocErrorsMixin from 'Modules/@apostrophecms/modal/mixins/AposDocErrorsMixin';
 import AposModalTabsMixin from 'Modules/@apostrophecms/modal/mixins/AposModalTabsMixin';
 import { detectDocChange } from 'Modules/@apostrophecms/schema/lib/detectChange';
 import cuid from 'cuid';
@@ -69,7 +71,7 @@ import { klona } from 'klona';
 
 export default {
   name: 'AposWidgetEditor',
-  mixins: [ AposModifiedMixin, AposEditorMixin, AposModalTabsMixin ],
+  mixins: [ AposModifiedMixin, AposEditorMixin, AposDocErrorsMixin, AposModalTabsMixin ],
   props: {
     type: {
       required: true,
@@ -193,6 +195,7 @@ export default {
   },
   methods: {
     updateDocFields(value) {
+      this.updateFieldErrors(value.fieldState);
       this.docFields.data = {
         ...this.docFields.data,
         ...value.data
@@ -203,8 +206,14 @@ export default {
       this.triggerValidation = true;
       this.$nextTick(async () => {
         const widget = klona(this.docFields.data);
-        if (this.docFields.hasErrors) {
+        if (this.errorCount > 0) {
           this.triggerValidation = false;
+          await apos.notify('apostrophe:resolveErrorsBeforeSaving', {
+            type: 'warning',
+            icon: 'alert-circle-icon',
+            dismiss: true
+          });
+          this.focusNextError();
           return;
         }
         try {
@@ -239,6 +248,9 @@ export default {
           : null;
       });
       return widget;
+    },
+    getAposSchema(field) {
+      return this.$refs[field.group.name][0];
     }
   }
 };
