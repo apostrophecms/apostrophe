@@ -141,6 +141,10 @@ export default {
   display: none;
 }
 
+:deep(.apos-modal__body-main) {
+  padding-bottom: 15px;
+}
+
 .apos-modal__header {
   display: flex;
   justify-content: space-between;
@@ -189,7 +193,9 @@ export default {
 }
 
 .apos-command-menu-shortcut-groups {
+  overflow: hidden auto;
   padding: $spacing-base $spacing-double $spacing-base + $spacing-half;
+  max-height: 70vh;
 }
 .apos-command-menu-shortcut-group + .apos-command-menu-shortcut-group {
   padding-top: $spacing-base + $spacing-half;
