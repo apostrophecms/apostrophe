@@ -457,78 +457,232 @@ describe('Pages', function() {
     assert.strictEqual(page.path, `${homeId.replace(':en:published', '')}/another-parent/parent/sibling`);
   });
 
-  it('moving peer /parent/peer-page into /parent should ends with /parent/peer-page', async function() {
-    const peerPage = await apos.page.insert(
-      apos.task.getReq(),
-      '_home',
-      'lastChild',
-      {
-        slug: '/peer',
-        visibility: 'public',
-        type: 'test-page',
-        title: 'Peer Page'
-      }
-    );
-    const aboutPage = await apos.page.insert(
-      apos.task.getReq(),
-      '_home',
-      'lastChild',
-      {
-        slug: '/peer/about',
-        visibility: 'public',
-        type: 'test-page',
-        title: 'About Page'
-      }
-    );
-    const usPage = await apos.page.insert(
-      apos.task.getReq(),
-      aboutPage._id,
-      'lastChild',
-      {
-        slug: '/peer/about/us',
-        visibility: 'public',
-        type: 'test-page',
-        title: 'About Us Page'
-      }
-    );
+  describe('move peer pages', function () {
+    this.afterEach(async function() {
+      await apos.doc.db.deleteMany({
+        type: 'test-page'
+      });
+    });
 
-    await apos.page.move(
-      apos.task.getReq(),
-      aboutPage._id,
-      peerPage._id,
-      'lastChild'
-    );
+    it('moving /bar under /foo should wind up with /foo/bar', async function() {
+      const fooPage = await apos.page.insert(
+        apos.task.getReq(),
+        '_home',
+        'lastChild',
+        {
+          slug: '/foo',
+          visibility: 'public',
+          type: 'test-page',
+          title: 'Foo Page'
+        }
+      );
+      const barPage = await apos.page.insert(
+        apos.task.getReq(),
+        '_home',
+        'lastChild',
+        {
+          slug: '/bar',
+          visibility: 'public',
+          type: 'test-page',
+          title: 'Bar Page'
+        }
+      );
+      const childPage = await apos.page.insert(
+        apos.task.getReq(),
+        barPage._id,
+        'lastChild',
+        {
+          slug: '/bar/child',
+          visibility: 'public',
+          type: 'test-page',
+          title: 'Child Page'
+        }
+      );
 
-    const movedPage = await apos.page.find(apos.task.getAnonReq(), { _id: aboutPage._id }).toObject();
-    const movedChildPage = await apos.page.find(apos.task.getAnonReq(), { _id: usPage._id }).toObject();
+      await apos.page.move(
+        apos.task.getReq(),
+        barPage._id,
+        fooPage._id,
+        'lastChild'
+      );
 
-    const actual = {
-      about: {
-        path: movedPage.path,
-        rank: movedPage.rank,
-        slug: movedPage.slug
-      },
-      us: {
-        path: movedChildPage.path,
-        rank: movedChildPage.rank,
-        slug: movedChildPage.slug
-      }
-    };
-    const expected = {
-      about: {
-        path: peerPage.path.concat('/', aboutPage.aposDocId),
-        rank: 0,
-        slug: '/peer/about'
-      },
-      us: {
-        path: movedPage.path.concat('/', usPage.aposDocId),
-        rank: 0,
-        slug: '/peer/about/us'
-      }
-    };
+      const movedPage = await apos.page.find(apos.task.getAnonReq(), { _id: barPage._id }).toObject();
+      const movedChildPage = await apos.page.find(apos.task.getAnonReq(), { _id: childPage._id }).toObject();
 
-    assert.deepEqual(actual, expected);
-  });
+      const actual = {
+        bar: {
+          path: movedPage.path,
+          rank: movedPage.rank,
+          slug: movedPage.slug
+        },
+        child: {
+          path: movedChildPage.path,
+          rank: movedChildPage.rank,
+          slug: movedChildPage.slug
+        }
+      };
+      const expected = {
+        bar: {
+          path: fooPage.path.concat('/', barPage.aposDocId),
+          rank: 0,
+          slug: '/foo/bar'
+        },
+        child: {
+          path: movedPage.path.concat('/', childPage.aposDocId),
+          rank: 0,
+          slug: '/foo/bar/child'
+        }
+      };
+
+      assert.deepEqual(actual, expected);
+    });
+
+    it('moving peer /foo/bar under /foo should wind up with /foo/bar', async function() {
+      const fooPage = await apos.page.insert(
+        apos.task.getReq(),
+        '_home',
+        'lastChild',
+        {
+          slug: '/foo',
+          visibility: 'public',
+          type: 'test-page',
+          title: 'Foo Page'
+        }
+      );
+      const barPage = await apos.page.insert(
+        apos.task.getReq(),
+        '_home',
+        'lastChild',
+        {
+          slug: '/foo/bar',
+          visibility: 'public',
+          type: 'test-page',
+          title: 'Bar Page'
+        }
+      );
+      const childPage = await apos.page.insert(
+        apos.task.getReq(),
+        barPage._id,
+        'lastChild',
+        {
+          slug: '/foo/bar/child',
+          visibility: 'public',
+          type: 'test-page',
+          title: 'Child Page'
+        }
+      );
+
+      await apos.page.move(
+        apos.task.getReq(),
+        barPage._id,
+        fooPage._id,
+        'lastChild'
+      );
+
+      const movedPage = await apos.page.find(apos.task.getAnonReq(), { _id: barPage._id }).toObject();
+      const movedChildPage = await apos.page.find(apos.task.getAnonReq(), { _id: childPage._id }).toObject();
+
+      const actual = {
+        bar: {
+          path: movedPage.path,
+          rank: movedPage.rank,
+          slug: movedPage.slug
+        },
+        child: {
+          path: movedChildPage.path,
+          rank: movedChildPage.rank,
+          slug: movedChildPage.slug
+        }
+      };
+      const expected = {
+        bar: {
+          path: fooPage.path.concat('/', barPage.aposDocId),
+          rank: 0,
+          slug: '/foo/bar'
+        },
+        child: {
+          path: movedPage.path.concat('/', childPage.aposDocId),
+          rank: 0,
+          slug: '/foo/bar/child'
+        }
+      };
+
+      assert.deepEqual(actual, expected);
+    });
+
+    it('moving /foobar under /foo should wind up with /foo/foobar', async function() {
+      const fooPage = await apos.page.insert(
+        apos.task.getReq(),
+        '_home',
+        'lastChild',
+        {
+          slug: '/foo',
+          visibility: 'public',
+          type: 'test-page',
+          title: 'Foo Page'
+        }
+      );
+      const foobarPage = await apos.page.insert(
+        apos.task.getReq(),
+        '_home',
+        'lastChild',
+        {
+          slug: '/foobar',
+          visibility: 'public',
+          type: 'test-page',
+          title: 'Foobar Page'
+        }
+      );
+      const childPage = await apos.page.insert(
+        apos.task.getReq(),
+        foobarPage._id,
+        'lastChild',
+        {
+          slug: '/foobar/child',
+          visibility: 'public',
+          type: 'test-page',
+          title: 'Child Page'
+        }
+      );
+
+      await apos.page.move(
+        apos.task.getReq(),
+        foobarPage._id,
+        fooPage._id,
+        'lastChild'
+      );
+
+      const movedPage = await apos.page.find(apos.task.getAnonReq(), { _id: foobarPage._id }).toObject();
+      const movedChildPage = await apos.page.find(apos.task.getAnonReq(), { _id: childPage._id }).toObject();
+
+      const actual = {
+        foobar: {
+          path: movedPage.path,
+          rank: movedPage.rank,
+          slug: movedPage.slug
+        },
+        child: {
+          path: movedChildPage.path,
+          rank: movedChildPage.rank,
+          slug: movedChildPage.slug
+        }
+      };
+      const expected = {
+        foobar: {
+          path: fooPage.path.concat('/', foobarPage.aposDocId),
+          rank: 0,
+          slug: '/foo/foobar'
+        },
+        child: {
+          path: movedPage.path.concat('/', childPage.aposDocId),
+          rank: 0,
+          slug: '/foo/foobar/child'
+        }
+      };
+
+      assert.deepEqual(actual, expected);
+    });
+  })
 
   it('inferred page relationships are correct', async function() {
     const req = apos.task.getReq();
