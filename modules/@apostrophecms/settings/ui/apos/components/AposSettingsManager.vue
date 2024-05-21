@@ -6,7 +6,6 @@
     @esc="close"
     @inactive="modal.active = false"
     @show-modal="modal.showModal = true"
-    @no-modal="$emit('safe-close')"
   >
     <template #secondaryControls>
       <AposButton
@@ -86,7 +85,7 @@ import AposSettingsManagerLogic from 'Modules/@apostrophecms/settings/logic/Apos
 export default {
   name: 'AposSettingsManager',
   mixins: [ AposSettingsManagerLogic ],
-  emits: [ 'safe-close', 'modal-result' ]
+  emits: [ 'modal-result' ]
 };
 </script>
 

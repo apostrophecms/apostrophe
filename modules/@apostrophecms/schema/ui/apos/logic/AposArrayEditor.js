@@ -37,7 +37,7 @@ export default {
       default: null
     }
   },
-  emits: [ 'modal-result', 'safe-close' ],
+  emits: [ 'modal-result' ],
   data() {
     // Automatically add `_id` to default items
     const items = this.items.map(item => ({
@@ -367,9 +367,6 @@ export default {
         }
       }
       return choices;
-    },
-    emitSafeClose() {
-      this.$emit('safe-close');
     }
   }
 };

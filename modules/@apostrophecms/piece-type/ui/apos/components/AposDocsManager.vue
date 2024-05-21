@@ -4,7 +4,6 @@
     :modal="modal"
     :modal-title="modalTitle"
     @esc="confirmAndCancel"
-    @no-modal="$emit('safe-close')"
     @inactive="modal.active = false"
     @show-modal="modal.showModal = true"
   >
@@ -142,7 +141,7 @@ export default {
       required: true
     }
   },
-  emits: [ 'archive', 'safe-close' ],
+  emits: [ 'archive' ],
   data() {
     return {
       modal: {

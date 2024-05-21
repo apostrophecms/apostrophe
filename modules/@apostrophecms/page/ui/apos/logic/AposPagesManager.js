@@ -9,7 +9,7 @@ import { klona } from 'klona';
 export default {
   name: 'AposPagesManager',
   mixins: [ AposModifiedMixin, AposDocsManagerMixin, AposArchiveMixin, AposPublishMixin ],
-  emits: [ 'archive', 'search', 'safe-close', 'modal-result' ],
+  emits: [ 'archive', 'search', 'modal-result' ],
   data() {
 
     return {
