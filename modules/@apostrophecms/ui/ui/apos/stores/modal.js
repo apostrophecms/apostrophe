@@ -14,6 +14,12 @@ export const useModalStore = defineStore('modal', () => {
     stack.value.push(modal);
   }
 
+  function remove(id) {
+    stack.value = stack.value.filter(modal => id !== modal.id);
+    const current = getAt(-1);
+    activeId.value = current.id || null;
+  }
+
   function get(id) {
     return id
       ? stack.value.find(modal => id === modal.id)
@@ -84,9 +90,6 @@ export const useModalStore = defineStore('modal', () => {
   }
 
   function resolve(modal) {
-    stack.value = stack.value.filter(_modal => modal.id !== _modal.id);
-    const current = getAt(-1);
-    activeId.value = current.id || null;
     modal.resolve(modal.result);
     apos.bus.$emit('modal-resolved', modal);
   }
@@ -161,6 +164,7 @@ export const useModalStore = defineStore('modal', () => {
     activeId,
     activeModal,
     add,
+    remove,
     get,
     getAt,
     getProperties,

@@ -127,7 +127,7 @@ const props = defineProps({
 const store = useModalStore();
 
 const slots = useSlots();
-const emit = defineEmits([ 'inactive', 'esc', 'show-modal', 'no-modal', 'ready' ]);
+const emit = defineEmits([ 'inactive', 'esc', 'show-modal', 'safe-close', 'ready' ]);
 const modalEl = ref(null);
 
 const transitionType = computed(() => {
@@ -236,7 +236,8 @@ async function onEnter() {
 }
 
 function onLeave() {
-  emit('no-modal');
+  emit('safe-close');
+  store.remove(props.modalId);
   focusLastModalFocusedElement();
 }
 
