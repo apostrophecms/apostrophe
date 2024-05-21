@@ -14,7 +14,8 @@
       :aria-labelledby="props.modalId"
       data-apos-modal
       @focus.capture="storeFocusedElement"
-      @keydown="onKeydown"
+      @keydown.esc="close"
+      @keydown.tab="onTab"
     >
       <transition :name="transitionType">
         <div
@@ -218,12 +219,7 @@ onMounted(async () => {
   store.updateModalData(props.modalId, { modalEl: modalEl.value });
 });
 
-function onKeydown(e) {
-  const hasPressedEsc = e.keyCode === 27;
-  if (hasPressedEsc) {
-    close(e);
-  }
-
+function onTab(e) {
   const currentModal = store.get(props.modalId);
   cycleElementsToFocus(e, currentModal.elementsToFocus);
 }
