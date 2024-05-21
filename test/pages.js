@@ -682,7 +682,7 @@ describe('Pages', function() {
 
       assert.deepEqual(actual, expected);
     });
-  })
+  });
 
   it('inferred page relationships are correct', async function() {
     const req = apos.task.getReq();
