@@ -65,6 +65,7 @@
   "commandMenuSelectAll": "Seleccionar Todo",
   "commandMenuShortcut": "Atajos de teclado",
   "commandMenuShowShortcutList": "Mostrar atajos de teclado",
+  "commandMenuTaskbar": "Barra de tareas",
   "commandMenuToggleEditPreviewMode": "Alternar Modo Editar / Vista Previa",
   "commandMenuTogglePublishedDraftDocument": "Alternar Publicado / Borrador",
   "commandMenuUndo": "Revertir",
