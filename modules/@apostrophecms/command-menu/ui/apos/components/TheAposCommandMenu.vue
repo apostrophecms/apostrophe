@@ -57,14 +57,20 @@ export default {
           [ 'CTRL', event.ctrlKey ],
           [ 'META', event.metaKey ],
           [ 'SHIFT', event.shiftKey ],
-          [ 'KEY', event.key.length === 1 ? [ this.previousKey, event.key.toUpperCase() ].filter(value =>
-            value).join(',') : event.key.toUpperCase() ]
+          [ 'KEY', event.key.toUpperCase() ]
         ]
           .filter(([ , value ]) => value)
           .map(([ key, value ]) => key === 'KEY' ? value : key)
           .join('+');
 
-        const action = this.shortcuts[key] || this.shortcuts[key.startsWith('SHIFT+') ? key.slice('SHIFT+'.length) : key];
+        const keys = this.previousKey
+          ? `${this.previousKey},${key}`
+          : key;
+
+        const action = this.shortcuts[keys] ||
+          this.shortcuts[keys.startsWith('SHIFT+')
+            ? keys.slice('SHIFT+'.length)
+            : keys];
         if (action) {
           event.preventDefault();
           apos.bus.$emit(action.type, action.payload);

@@ -131,6 +131,8 @@ export default {
 
 :deep(.apos-modal__inner) {
   top: auto;
+  right: $spacing-quadruple;
+  bottom: $spacing-quadruple;
   left: auto;
   max-width: 700px;
   height: auto;

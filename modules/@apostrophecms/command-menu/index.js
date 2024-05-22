@@ -18,7 +18,7 @@ module.exports = {
               props: { moduleName: '@apostrophecms/command-menu' }
             }
           },
-          shortcut: '?'
+          shortcut: '? Ctrl+K'
         }
       },
       modal: {

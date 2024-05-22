@@ -10,6 +10,11 @@
 
 * Rich Text editor properly unsets marks on heading close.
 * Widget client side schema validation.
+* Allow `G,Shift+I` shortcut style.
+
+### Adds
+
+* Add `Ctrl+K` shortcut to list all available shortcuts in addition to the existing `?`.
 
 ## 4.3.2 (2024-05-18)
 
