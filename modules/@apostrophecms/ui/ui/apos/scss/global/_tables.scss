@@ -1,8 +1,4 @@
-// toto
-
 .apos-table {
-  // toto
-
   width: 100%;
   border-collapse: collapse;
 }
@@ -56,7 +52,7 @@ span.apos-table__header-label:hover { /* stylelint-disable-line selector-no-qual
 
 .apos-table__cell,
 .apos-table__row {
-  @include apos-transition(all, 0.05);
+  @include apos-transition($what: all, $duration: 0.05);
 }
 
 .apos-table__cell {
@@ -82,7 +78,7 @@ span.apos-table__header-label:hover { /* stylelint-disable-line selector-no-qual
 }
 
 .apos-table__row:hover {
-  box-shadow: 0 8px 12px -12px rgb(0, 0, 0, 30%);
+  box-shadow: 0 8px 12px -12px rgb(0 0 0 / 30%);
 }
 
 .apos-table__row:hover .apos-table__cell,

@@ -13,7 +13,7 @@
 }
 
 // Let the title cell column grow.
-span.apos-tree__cell:first-of-type {
+span.apos-tree__cell:first-of-type { // stylelint-disable-line selector-no-qualifying-type
   flex-grow: 1;
   flex-shrink: 1;
 }

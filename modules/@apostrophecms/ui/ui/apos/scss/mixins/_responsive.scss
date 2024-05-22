@@ -11,8 +11,9 @@ $modal-rail-right-w: 22%;
 
 // We default to mobile first, but make a max-with option available as well.
 @mixin media-up($bp) {
-  $bpVal: map-get($breakpoints, $bp);
-  @media screen and (min-width: $bpVal) {
+  $bp-val: map-get($breakpoints, $bp);
+
+  @media screen and (min-width: $bp-val) {
     @content;
   }
 }
