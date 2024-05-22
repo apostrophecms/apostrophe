@@ -407,7 +407,6 @@ export default {
     },
     shortcutNew(event) {
       const interesting = event.keyCode === 78; // N(ew)
-      console.log('this.activeModal', this.activeModal);
       if (
         interesting &&
         document.activeElement.tagName !== 'INPUT' &&

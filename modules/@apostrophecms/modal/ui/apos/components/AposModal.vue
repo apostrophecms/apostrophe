@@ -14,7 +14,7 @@
       :aria-labelledby="props.modalId"
       data-apos-modal
       @focus.capture="storeFocusedElement"
-      @keydown.esc="close"
+      @esc="close"
       @keydown.tab="onTab"
     >
       <transition :name="transitionType">
@@ -97,7 +97,7 @@
 // transition.
 
 import {
-  ref, onMounted, computed, watch, nextTick, useSlots
+  ref, onMounted, onUnmounted, computed, watch, nextTick, useSlots
 } from 'vue';
 import { useAposFocus } from 'Modules/@apostrophecms/modal/composables/AposFocus';
 import { useModalStore } from 'Modules/@apostrophecms/ui/stores/modal';
@@ -217,7 +217,19 @@ onMounted(async () => {
     trapFocus();
   }
   store.updateModalData(props.modalId, { modalEl: modalEl.value });
+  window.addEventListener('keydown', onKeydown);
 });
+
+onUnmounted(() => {
+  window.removeEventListener('keydown', onKeydown);
+});
+
+function onKeydown(e) {
+  const hasPressedEsc = e.keyCode === 27;
+  if (hasPressedEsc) {
+    close(e);
+  }
+}
 
 function onTab(e) {
   const currentModal = store.get(props.modalId);
@@ -266,7 +278,10 @@ function trapFocus() {
 }
 
 function close() {
-  emit('esc');
+  const activeModalId = store.activeModal?.id;
+  if (activeModalId === props.modalId) {
+    emit('esc');
+  }
 }
 </script>
 
