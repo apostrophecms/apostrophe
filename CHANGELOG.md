@@ -5,6 +5,8 @@
 ### Changes
 
 * Improves widget tabs for the hidden entries, improves UX when validation errors are present in non-focused tabs.
+* Set `G,Shift+I` shortcut to open the Image Tags manager modal.
+* Set `G,Shift+F` shortcut to open the File Tags manager modal.
 
 ### Fixes
 
@@ -15,6 +17,9 @@
 ### Adds
 
 * Add `Ctrl+K` shortcut to list all available shortcuts in addition to the existing `?`.
+* Add `G,L` shortcut to open localize.
+* Add `T,S` shortcut to open the Personal Settings.
+* Add `T,D` shortcut to open the Submitted Drafts.
 
 ## 4.3.2 (2024-05-18)
 

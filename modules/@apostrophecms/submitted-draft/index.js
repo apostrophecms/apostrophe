@@ -64,6 +64,32 @@ module.exports = {
     remove: [ 'publish' ]
   },
 
+  commands(self) {
+    return {
+      add: {
+        [`${self.__meta.name}:manager`]: {
+          type: 'item',
+          label: self.options.label,
+          action: {
+            type: 'admin-menu-click',
+            payload: `${self.__meta.name}:manager`
+          },
+          shortcut: 'T,D'
+        }
+      },
+      modal: {
+        default: {
+          '@apostrophecms/command-menu:taskbar': {
+            label: 'apostrophe:commandMenuTaskbar',
+            commands: [
+              `${self.__meta.name}:manager`
+            ]
+          }
+        }
+      }
+    };
+  },
+
   handlers(self) {
     return {
       'apostrophe:modulesRegistered': {

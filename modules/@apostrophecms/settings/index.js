@@ -95,6 +95,39 @@ module.exports = {
     groups: {}
   },
 
+  commands(self) {
+    if (!self.hasSchema()) {
+      return {};
+    }
+
+    return {
+      add: {
+        [`${self.__meta.name}:manager`]: {
+          type: 'item',
+          label: 'apostrophe:settings',
+          action: {
+            type: 'open-modal',
+            payload: {
+              name: 'AposSettingsManager',
+              props: { moduleName: '@apostrophecms/settings' }
+            }
+          },
+          shortcut: 'T,S'
+        }
+      },
+      modal: {
+        default: {
+          '@apostrophecms/command-menu:taskbar': {
+            label: 'apostrophe:commandMenuTaskbar',
+            commands: [
+              `${self.__meta.name}:manager`
+            ]
+          }
+        }
+      }
+    };
+  },
+
   init(self) {
     // List of all allowed protection types and their aliases (`subform.protection: type`).
     // The key is the type or alias, the value is the actual type (always a string).

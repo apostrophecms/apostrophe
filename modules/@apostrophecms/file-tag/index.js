@@ -7,7 +7,7 @@ module.exports = {
     autopublish: true,
     editRole: 'editor',
     publishRole: 'editor',
-    shortcut: 'G,g',
+    shortcut: 'G,Shift+F',
     relationshipSuggestionIcon: 'tag-icon'
   },
   fields: {
