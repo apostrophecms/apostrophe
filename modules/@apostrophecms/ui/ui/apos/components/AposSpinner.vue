@@ -99,13 +99,13 @@ module.exports = {
 }
 
 .apos-spinner__svg-track {
-  animation: counter-clockwise 2 infinite linear;
+  animation: counter-clockwise 2000 infinite linear;
   transform-origin: 50% 50%;
   transform: scale(100, 100);
 }
 
 .apos-spinner__svg-spinner {
-  animation: clockwise 1 infinite linear;
+  animation: clockwise 1000ms infinite linear;
   transform-origin: 50% 50%;
   transform: scale(100, 100);
 }

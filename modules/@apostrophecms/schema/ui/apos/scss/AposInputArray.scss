@@ -80,7 +80,7 @@
     border: 1px solid var(--a-base-9);
     vertical-align: middle;
     text-align: center;
-    transition: background-color 0.3 ease;
+    transition: background-color 300ms ease;
     background-color: var(--a-background-primary);
   }
 
@@ -178,7 +178,7 @@
     width: 100%;
     padding-bottom: $spacing-base;
     border-bottom: 1px solid var(--a-base-9);
-    transition: background-color 0.3 ease;
+    transition: background-color 300ms ease;
 
     &:hover {
       background-color: var(--a-base-10);
@@ -216,7 +216,7 @@
       padding-top: $spacing-base;
       padding-bottom: $spacing-base;
       text-align: left;
-      transition: background-color 0.3 ease;
+      transition: background-color 300ms ease;
       grid-column: 2;
     }
 

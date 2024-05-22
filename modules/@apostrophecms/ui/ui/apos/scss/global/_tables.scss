@@ -52,7 +52,7 @@ span.apos-table__header-label:hover { /* stylelint-disable-line selector-no-qual
 
 .apos-table__cell,
 .apos-table__row {
-  @include apos-transition($what: all, $duration: 0.05);
+  @include apos-transition($what: all, $duration: 0.05s);
 }
 
 .apos-table__cell {

@@ -61,7 +61,7 @@ export default {
     border-radius: 50%;
     background-color: var(--a-primary-light-40);
     margin-right: 20px;
-    transition: all 0.3 ease;
+    transition: all 300ms ease;
   }
 
   .apos-pager-dots__button.apos-is-active {

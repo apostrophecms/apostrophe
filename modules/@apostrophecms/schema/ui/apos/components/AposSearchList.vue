@@ -121,7 +121,7 @@ export default {
   margin: 0;
   padding: 10px 20px;
   border-top: 1px solid var(--a-base-5);
-  transition: background-color 0.3 ease;
+  transition: background-color 300ms ease;
   gap: 10px;
 
   & * {

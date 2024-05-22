@@ -58,8 +58,8 @@ export default {
   width: 100%;
   height: 100%;
   background: var(--a-overlay);
-  transition: opacity 0.5 ease;
-  transition-delay: 0.3;
+  transition: opacity 500ms ease;
+  transition-delay: 300ms;
   opacity: 0;
   pointer-events: none;
 }

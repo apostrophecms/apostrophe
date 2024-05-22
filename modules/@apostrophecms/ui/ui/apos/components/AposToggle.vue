@@ -53,7 +53,7 @@ export default {
         height: $btn-size;
         border-radius: 50%;
         background-color: var(--a-white);
-        transition: all 0.3 ease-out;
+        transition: all 300ms ease-out;
       }
     }
 

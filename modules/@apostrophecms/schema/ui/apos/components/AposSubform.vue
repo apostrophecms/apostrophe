@@ -149,7 +149,7 @@ export default {
 }
 
 .slide-fade-enter-active {
-  transition: all 0.3 ease-in;
+  transition: all 300ms ease-in;
 }
 
 .slide-fade-enter, .slide-fade-leave-to {

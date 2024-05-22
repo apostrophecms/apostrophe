@@ -259,7 +259,7 @@ async function setDropdownPosition() {
 .apos-context-menu__popup {
   display: inline-block;
   color: var(--a-text-primary);
-  transition: scale 0.20 ease, translatey 0.20 ease;
+  transition: scale 200ms ease, translatey 200ms ease;
 }
 
 .apos-context-menu__inner {

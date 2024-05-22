@@ -435,7 +435,7 @@ export default {
     border: 1px solid var(--a-white);
     background-color: var(--a-primary);
     box-shadow: 0 0 4px var(--a-black);
-    transition: left 0.15 ease, top 0.15 ease;
+    transition: left 200ms ease, top 200ms ease;
     cursor: grab;
   }
 }

@@ -498,7 +498,7 @@ export default {
     min-height: 50px;
     border-radius: var(--a-border-radius);
     outline: 1px solid transparent;
-    transition: outline 0.2 ease;
+    transition: outline 200ms ease;
 
     &.apos-is-highlighted {
       outline: 1px dashed var(--a-primary-transparent-50);
@@ -559,7 +559,7 @@ export default {
     position: absolute;
     opacity: 0;
     pointer-events: none;
-    transition: all 0.3 ease;
+    transition: all 300ms ease;
 
     &.apos-area-widget__label {
       z-index: $z-index-widget-label;
@@ -617,13 +617,13 @@ export default {
         transform: scale(1.15);
         background-size: 150% 100%;
         border-radius: 10px;
-        transition-duration: 0.5;
+        transition-duration: 500ms;
 
         /* stylelint-disable-next-line max-nesting-depth */
         .apos-button__label {
           max-width: 100px;
           max-height: 100px;
-          transition-duration: 0.5;
+          transition-duration: 500ms;
           padding: 0 5px 0 0;
         }
 
@@ -642,7 +642,7 @@ export default {
       display: inline-block;
       overflow: hidden;
       font-size: var(--a-type-small);
-      transition: max-width 0.2 var(--a-transition-timing-bounce);
+      transition: max-width 200ms var(--a-transition-timing-bounce);
       max-width: 0;
       max-height: 0;
       white-space: nowrap;
@@ -653,7 +653,7 @@ export default {
       align-items: center;
       justify-content: center;
       padding: 5px;
-      transition: all 0.2 var(--a-transition-timing-bounce);
+      transition: all 200ms var(--a-transition-timing-bounce);
       background-image: linear-gradient( 45deg, var(--a-primary), var(--a-primary-dark-15), var(--a-primary-light-40), var(--a-primary) );
       background-size: 200% 100%;
       border-radius: 12px;
@@ -678,7 +678,7 @@ export default {
     right: 0;
     display: flex;
     transform: translateY(-100%);
-    transition: opacity 0.3 ease;
+    transition: opacity 300ms ease;
   }
 
   .apos-area-widget-inner .apos-area-widget-inner .apos-area-widget__label {
@@ -705,7 +705,7 @@ export default {
     padding: 2px;
     white-space: nowrap;
     color: var(--a-base-1);
-    transition: background-color 0.3 var(--a-transition-timing-bounce);
+    transition: background-color 300ms var(--a-transition-timing-bounce);
   }
 
   .apos-area-widget__breadcrumbs:hover .apos-area-widget__breadcrumb,
@@ -717,7 +717,7 @@ export default {
     margin-right: 2px;
     padding: 3px 2px 2px;
     color: var(--a-primary);
-    transition: background-color 0.3 var(--a-transition-timing-bounce);
+    transition: background-color 300ms var(--a-transition-timing-bounce);
     background-color: var(--a-primary-transparent-10);
     border-radius: 4px;
   }

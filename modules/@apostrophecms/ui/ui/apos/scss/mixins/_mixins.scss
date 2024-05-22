@@ -41,10 +41,10 @@
   text-align: inherit;
   -webkit-font-smoothing: inherit;
   -moz-osx-font-smoothing: inherit;
-  /* stylelint-disable property-no-vendor-prefix */
+  // stylelint-disable property-no-vendor-prefix
   -moz-appearance: none;
   -webkit-appearance: none;
-  /* stylelint-enable property-no-vendor-prefix */
+  // stylelint-enable property-no-vendor-prefix
   &:hover {
     cursor: pointer;
   }

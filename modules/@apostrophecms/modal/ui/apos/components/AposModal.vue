@@ -310,7 +310,7 @@ function close() {
       bottom: 0;
       width: 100%;
       height: 100vh;
-      transition: transform 0.15 ease;
+      transition: transform 200ms ease;
       transform: translateX(0);
       border-radius: 0;
 
@@ -359,7 +359,7 @@ function close() {
 
     .apos-modal--overlay & {
       transform: scale(1);
-      transition: opacity 0.20 ease, transform 0.20 ease;
+      transition: opacity 200ms ease, transform 200ms ease;
     }
 
     &.fade-enter-from,
@@ -391,7 +391,7 @@ function close() {
 
     .apos-modal--slide &,
     .apos-modal--overlay & {
-      transition: opacity 0.15 ease;
+      transition: opacity 200ms ease;
     }
 
     &.slide-left-enter-from,

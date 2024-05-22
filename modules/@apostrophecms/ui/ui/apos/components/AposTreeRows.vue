@@ -450,7 +450,7 @@ export default {
   }
 
   .apos-tree__list {
-    transition: max-height 0.3 ease;
+    transition: max-height 300ms ease;
 
     &.apos-is-collapsed {
       overflow-y: auto;
@@ -479,7 +479,7 @@ export default {
       content: '';
       background-color: var(--a-base-8);
       width: 1px;
-      transition: background-color 0.3 ease;
+      transition: background-color 300ms ease;
     }
 
     &.apos-is-collapsed::before {
@@ -499,7 +499,7 @@ export default {
 
   .apos-tree__row__toggle-icon {
     display: block;
-    transition: transform 0.3 ease;
+    transition: transform 300ms ease;
     transform: rotate(-90deg) translateY(0.25em);
 
     [aria-expanded="true"] > & {
@@ -511,7 +511,7 @@ export default {
     margin-right: 0.25em;
 
     :deep(.material-design-icon__svg) {
-      transition: fill 0.2 ease;
+      transition: fill 200ms ease;
       fill: var(--a-base-5);
     }
   }

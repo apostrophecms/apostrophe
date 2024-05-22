@@ -737,7 +737,7 @@ function traverseNextNode(node) {
     }
 
     .apos-button--rich-text .apos-button__icon {
-      transition: all 0.3 var(--a-transition-timing-bounce);
+      transition: all 300ms var(--a-transition-timing-bounce);
     }
 
     .apos-button--rich-text {
@@ -785,9 +785,9 @@ function traverseNextNode(node) {
         height: 100%;
         background-color: transparent;
         transition:
-          opacity 0.5 var(--a-transition-timing-bounce),
-          transform 0.5 var(--a-transition-timing-bounce),
-          background-color 0.5 ease;
+          opacity 500ms var(--a-transition-timing-bounce),
+          transform 500ms var(--a-transition-timing-bounce),
+          background-color 500ms ease;
         opacity: 0;
         transform: scale(0.3) translateY(-4px);
       }
@@ -852,9 +852,9 @@ function traverseNextNode(node) {
   }
 
   .apos-rich-text-editor__editor :deep([data-tippy-root]) {
-    transition: all 0.4 var(--a-transition-timing-bounce);
+    transition: all 400ms var(--a-transition-timing-bounce);
     /* stylelint-disable-next-line time-min-milliseconds */
-    transition-delay: 0.1;
+    transition-delay: 100ms;
   }
 
   .apos-rich-text-editor__editor :deep(.tippy-box[data-animation='fade'][data-state='hidden']) {
