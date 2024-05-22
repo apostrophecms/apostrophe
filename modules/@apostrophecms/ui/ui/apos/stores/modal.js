@@ -15,6 +15,13 @@ export const useModalStore = defineStore('modal', () => {
   }
 
   function remove(id) {
+    const modal = get(id);
+    if (!modal) {
+      return;
+    }
+
+    modal.resolve(modal.result);
+    apos.bus.$emit('modal-resolved', modal);
     stack.value = stack.value.filter(modal => id !== modal.id);
     const current = getAt(-1);
     activeId.value = current.id || null;
@@ -87,11 +94,6 @@ export const useModalStore = defineStore('modal', () => {
         }
         : modal;
     });
-  }
-
-  function resolve(modal) {
-    modal.resolve(modal.result);
-    apos.bus.$emit('modal-resolved', modal);
   }
 
   async function confirm(content, options = {}) {
@@ -171,7 +173,6 @@ export const useModalStore = defineStore('modal', () => {
     execute,
     updateModalData,
     setModalResult,
-    resolve,
     confirm,
     alert,
     onTopOf

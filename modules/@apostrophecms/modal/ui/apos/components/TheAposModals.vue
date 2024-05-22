@@ -7,7 +7,6 @@
       :key="modal.id"
       :modal-id="modal.id"
       @modal-result="store.setModalResult(modal.id, $event)"
-      @safe-close="store.resolve(modal)"
     />
   </div>
 </template>
