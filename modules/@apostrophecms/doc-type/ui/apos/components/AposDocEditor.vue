@@ -137,7 +137,8 @@ export default {
   ],
   provide () {
     return {
-      originalDoc: this.originalDoc
+      originalDoc: this.originalDoc,
+      liveOriginalDoc: this.docFields
     };
   },
   props: {

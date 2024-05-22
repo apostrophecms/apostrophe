@@ -6,6 +6,10 @@
 
 * Improves widget tabs for the hidden entries, improves UX when validation errors are present in non-focused tabs.
 
+### Adds
+
+* Adds field components access to the reactive document value.
+
 ### Fixes
 
 * Rich Text editor properly unsets marks on heading close.
