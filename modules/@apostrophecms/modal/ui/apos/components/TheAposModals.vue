@@ -1,8 +1,5 @@
 <template>
-  <div
-    id="apos-modals"
-    :class="themeClass"
-  >
+  <div :class="themeClass">
     <component
       v-bind="modal.props"
       :is="modal.componentName"
@@ -21,7 +18,6 @@ import { useAposTheme } from 'Modules/@apostrophecms/ui/composables/AposTheme';
 import { useModalStore } from 'Modules/@apostrophecms/ui/stores/modal';
 
 const { themeClass } = useAposTheme();
-
 const store = useModalStore();
 
 onMounted(() => {
