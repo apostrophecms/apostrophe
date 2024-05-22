@@ -20,6 +20,7 @@
 * Add `G,L` shortcut to open localize.
 * Add `T,S` shortcut to open the Personal Settings.
 * Add `T,D` shortcut to open the Submitted Drafts.
+* Add a scrollbar to the shortcut list.
 
 ## 4.3.2 (2024-05-18)
 
