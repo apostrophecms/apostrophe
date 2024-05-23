@@ -392,7 +392,7 @@ module.exports = {
                       modal: modal === 'default' ? 'admin-bar' : modal,
                       moduleName: name
                     });
-                  })
+                  });
               })
             )
           );
