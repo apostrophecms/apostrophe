@@ -82,7 +82,6 @@
   "commandMenuTaskbar": "Barra delle applicazioni",
   "commandMenuToggleEditPreviewMode": "Attiva/Disattiva modalità modifica/anteprima",
   "commandMenuTogglePublishedDraftDocument": "Attiva/Disattiva documento pubblicato/bozza",
-  "commandMenuTray": "Tray",
   "commandMenuUndo": "Annulla",
   "confirmArchive": "Stai per archiviare {{ type }} {{ title }}.",
   "confirmSettings": "Conferma le impostazioni",
