@@ -13,10 +13,10 @@
 * Rich Text editor properly unsets marks on heading close.
 * Widget client side schema validation.
 * Allow `G,Shift+I` shortcut style.
+* Detect shortcut conflicts when using multiple shortcuts.
 
 ### Adds
 
-* Add `Ctrl+K` shortcut to list all available shortcuts in addition to the existing `?`.
 * Add `G,L` shortcut to open localize.
 * Add `T,S` shortcut to open the Personal Settings.
 * Add `T,D` shortcut to open the Submitted Drafts.
