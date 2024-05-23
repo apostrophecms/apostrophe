@@ -13,6 +13,10 @@ Page A has the slug `/peer` and page B has the slug `/peer/page`.
 Now we want page B to be the child of page A.
 We will now end up with page B slug as `/peer/page` and not `/peer/peer/page` as before.
 
+### Adds
+
+* Adds field components access to the reactive document value.
+
 ### Fixes
 
 * Rich Text editor properly unsets marks on heading close.
