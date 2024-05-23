@@ -1,13 +1,23 @@
 # Changelog
 
+## UNRELEASED
+
+### Changes
+
+* When moving a page, recognize when the slug of a new child
+already contains the new parent's slug and not double it.
+For example, given we have two pages as children of the home page, page A and page B.
+Page A and page B are siblings.
+Page A has the slug `/peer` and page B has the slug `/peer/page`.
+Now we want page B to be the child of page A.
+We will now end up with page B slug as `/peer/page` and not `/peer/peer/page` as before.
+
 ## 3.66.0 (2024-05-15)
 
 ### Fixes
 
 * Autocrop image attachments for referenced documents when replacing an image in the Media Manager.
 * Backports some internal A4 UI logic for metadata to make the new `document-versions` comparison feature compatible with A3.
-
-# Changelog
 
 ## 3.65.0 (2024-05-06)
 
