@@ -102,7 +102,7 @@ module.exports = {
 
     return {
       add: {
-        [`${self.__meta.name}:manager`]: {
+        [`${self.__meta.name}:taskbar-manager`]: {
           type: 'item',
           label: 'apostrophe:settings',
           action: {
@@ -120,7 +120,7 @@ module.exports = {
           '@apostrophecms/command-menu:taskbar': {
             label: 'apostrophe:commandMenuTaskbar',
             commands: [
-              `${self.__meta.name}:manager`
+              `${self.__meta.name}:taskbar-manager`
             ]
           }
         }
