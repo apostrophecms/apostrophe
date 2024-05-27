@@ -6,6 +6,7 @@
     :uid="uid"
     :display-options="displayOptions"
     :meta="fieldMeta"
+    @replace-field-value="replaceFieldValue"
   >
     <template #body>
       <div :class="wrapperClasses">

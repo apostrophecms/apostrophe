@@ -9,6 +9,7 @@ export default {
       })
     }
   },
+  emits: [ 'replace-field-value' ],
   props: {
     field: {
       type: Object,
@@ -148,6 +149,12 @@ export default {
     if (this.field.type === 'radio' || this.field.type === 'checkbox') {
       this.wrapEl = 'fieldset';
       this.labelEl = 'legend';
+    }
+  },
+  methods: {
+    // Notify about a value, suggested by meta components or their children.
+    replaceFieldValue(value) {
+      this.$emit('replace-field-value', value);
     }
   }
 };

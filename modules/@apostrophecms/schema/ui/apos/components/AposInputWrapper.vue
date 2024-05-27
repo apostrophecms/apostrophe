@@ -69,6 +69,7 @@
               :data-apos-test-component="name"
               :data-apos-test-namespace="namespace"
               data-apos-test="field-meta"
+              @replace-field-value="replaceFieldValue"
             />
           </span>
         </component>

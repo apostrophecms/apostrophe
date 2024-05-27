@@ -118,7 +118,8 @@ const dropdownContentStyle = ref({});
 const arrowEl = ref();
 
 defineExpose({
-  hide
+  hide,
+  setDropdownPosition
 });
 
 const popoverClass = computed(() => {
@@ -206,7 +207,7 @@ async function setDropdownPosition() {
   } = await computePosition(dropdown.value, dropdownContent.value, {
     placement: props.menuPlacement,
     middleware: [
-      offset(15),
+      offset(props.menuOffset),
       shift({ padding: 5 }),
       flip(),
       arrow({
