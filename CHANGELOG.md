@@ -12,10 +12,14 @@ Page A and page B are siblings.
 Page A has the slug `/peer` and page B has the slug `/peer/page`.
 Now we want page B to be the child of page A.
 We will now end up with page B slug as `/peer/page` and not `/peer/peer/page` as before.
+* `AposSpinner` now respects the colors for `heavy` weight mode and also accepts second, "light" color in this mode. Props JSDoc blocks are added.
+* `AposContextMenu` now respects the `menuOffset` component property.
 
 ### Adds
 
 * Adds field components access to the reactive document value.
+* Expose `AposContextMenu` owned method for re-calculation of the content position.
+* Field Meta components of `slug` and `string` types can now fire `replace-field-value` events with text value payload, which will replace the respective field value.
 
 ### Fixes
 
