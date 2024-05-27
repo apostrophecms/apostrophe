@@ -21,7 +21,7 @@
         <div
           v-if="modal.showModal"
           class="apos-modal__overlay"
-          @click="close"
+          @click="emit('esc')"
         />
       </transition>
       <transition :name="transitionType" @after-leave="$emit('inactive')">
