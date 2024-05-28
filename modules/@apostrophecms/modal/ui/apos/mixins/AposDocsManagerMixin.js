@@ -80,6 +80,9 @@ export default {
     // of a piece (i.e. AposMediaManager)
     isModified() {
       return this.relationshipIsModified();
+    },
+    manuallyPublished() {
+      return this.moduleOptions.localized && !this.moduleOptions.autopublish;
     }
   },
   mounted() {
@@ -114,6 +117,22 @@ export default {
     }
   },
   methods: {
+    addCheckedDoc(docOdId) {
+      if (docOdId._id) {
+        this.checked.push(docOdId._id);
+        this.checkedDocs.push(docOdId);
+      } else if (typeof docOdId === 'string') {
+        const found = this.items.find(item => item._id === docOdId);
+        if (found) {
+          this.checked.push(found._id);
+          this.checkedDocs.push(found);
+        }
+      }
+    },
+    setCheckedDocs(docs) {
+      this.checked = docs.map(item => item._id);
+      this.checkedDocs = docs;
+    },
     findDocById(docs, id) {
       return docs.find(p => p._id === id);
     },
@@ -122,20 +141,23 @@ export default {
     // a computed prop rather than a method call in the template.
     maxReached() {
       // Reaching max and exceeding it are different things
-      const result = this.relationshipField.max && this.checked.length >= this.relationshipField.max;
-      return result;
+      return this.relationshipField.max &&
+        this.checked.length >= this.relationshipField.max;
     },
     selectAll() {
       if (!this.checked.length) {
-        this.items.forEach((item) => {
-          const relationshipsMaxedOrUnpublished = this.relationshipField &&
-          (this.maxReached() || !item.lastPublishedAt);
+        this.checked = this.items
+          .filter((item) => {
+            const relationshipsMaxedOrUnpublished = this.relationshipField &&
+            (this.maxReached() || !item.lastPublishedAt);
 
-          if (relationshipsMaxedOrUnpublished) {
+        this.items.forEach((item) => {
+          const notPublished = this.manuallyPublished && !item.lastPublishedAt;
+          if (this.relationshipField && (this.maxReached() || notPublished)) {
             return;
           }
 
-          this.checked.push(item._id);
+          this.addCheckedDoc(item);
         });
 
         return;
@@ -145,7 +167,7 @@ export default {
         this.allPiecesSelection.isSelected = false;
       }
 
-      this.checked = [];
+      this.setCheckedDocs([]);
     },
     iconSize(header) {
       if (header.icon) {

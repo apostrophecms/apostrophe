@@ -213,8 +213,11 @@ export default {
     },
     selectAllChoice() {
       const checkCount = this.checked.length;
+      console.log('checkCount', checkCount);
       const pageNotFullyChecked = this.items
         .some((item) => !this.checked.includes(item._id));
+
+      console.log('pageNotFullyChecked', pageNotFullyChecked);
 
       return {
         value: 'checked',
@@ -255,6 +258,7 @@ export default {
   },
   methods: {
     setCheckedDocs(checked) {
+      console.log('=====> set checked docs <=====');
       this.checkedDocs = checked;
       this.checked = this.checkedDocs.map(item => {
         return item._id;
