@@ -46,8 +46,8 @@ export default {
 <style scoped lang='scss'>
   .apos-input-wrapper {
     display: flex;
-    justify-content: space-around;
     align-items: center;
+    justify-content: space-around;
   }
 
   .apos-toggle {

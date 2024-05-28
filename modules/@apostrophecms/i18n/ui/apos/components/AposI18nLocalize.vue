@@ -50,7 +50,7 @@
               <AposInputRadio
                 v-model="wizard.values.toLocalize"
                 :field="{
-                  name: 'toLocalize',
+                  name: 'to-localize',
                   label: 'apostrophe:selectContentToLocalize',
                   choices: toLocalizeChoices
                 }"
@@ -467,7 +467,7 @@ export default {
     },
     relatedDocTypesField() {
       return {
-        name: 'relatedDocTypesToLocalize',
+        name: 'related-doctype-to-localize',
         label: 'apostrophe:relatedDocTypesToLocalize',
         choices: this.relatedDocTypes
       };
@@ -979,10 +979,8 @@ export default {
     $width: 565px;
     $vertical-spacing: 95px;
     $horizontal-spacing: calc(calc(100vw - #{$width}) / 2);
-    top: $vertical-spacing;
-    right: $horizontal-spacing;
-    bottom: $vertical-spacing;
-    left: $horizontal-spacing;
+
+    inset: $vertical-spacing $horizontal-spacing $vertical-spacing $horizontal-spacing;
     width: $width;
     height: calc(100vh - #{$vertical-spacing * 2});
   }
@@ -1012,11 +1010,15 @@ export default {
 
 .apos-wizard__navigation__items {
   @include apos-list-reset();
+
   padding: $spacing-base;
 }
+
 .apos-wizard__navigation__item {
   @include type-small;
+
   margin-bottom: $spacing-base + $spacing-half;
+
   &.apos-is-active {
     color: var(--a-primary);
   }
@@ -1024,7 +1026,8 @@ export default {
 
 .apos-modal__heading {
   @include type-title;
-  margin: 0 0 $spacing-double 0;
+
+  margin: 0 0 $spacing-double;
 }
 
 .apos-wizard__step {
@@ -1034,7 +1037,7 @@ export default {
   border: none;
 }
 
-:deep(.apos-field--toLocalize) {
+:deep(.apos-field--to-localize) {
   margin-bottom: $spacing-triple;
 }
 
@@ -1064,10 +1067,10 @@ export default {
 
 .apos-selected-locales,
 .apos-locales {
-  list-style-type: none;
-  padding-left: 0;
   margin-top: 0;
   margin-bottom: 0;
+  padding-left: 0;
+  list-style-type: none;
 }
 
 .apos-selected-locales {
@@ -1083,6 +1086,7 @@ export default {
 .apos-locale-item--selected {
   display: inline-block;
   margin-bottom: 5px;
+
   &:not(:last-of-type) {
     margin-right: 5px;
   }
@@ -1094,6 +1098,7 @@ export default {
 
 .apos-locale-item {
   @include apos-transition();
+
   position: relative;
   padding: 12px 35px;
   line-height: 1;
@@ -1155,9 +1160,10 @@ export default {
   }
 }
 
-.apos-wizard__step  :deep(.apos-field--relatedDocTypesToLocalize) {
+.apos-wizard__step  :deep(.apos-field--related-doctype-to-localize) {
   margin-top: $spacing-triple;
 }
+
 .apos-wizard__step {
   .apos-field__wrapper {
     margin-bottom: $spacing-double;
@@ -1166,10 +1172,11 @@ export default {
 
 .apos-wizard__field-group-heading {
   @include type-base;
-  padding-bottom: $spacing-base;
+
   margin-bottom: $spacing-base;
-  color: var(--a-base-3);
+  padding-bottom: $spacing-base;
   border-bottom: 1px solid var(--a-base-8);
+  color: var(--a-base-3);
 }
 
 .apos-wizard__field-group-heading__info {
@@ -1191,6 +1198,7 @@ export default {
 .selected-list-enter-active, .selected-list-leave-active {
   @include apos-transition($duration: 0.3s);
 }
+
 .selected-list-enter, .selected-list-leave-to {
   opacity: 0;
   transform: translateY(1px);
@@ -1213,8 +1221,8 @@ export default {
 
   display: flex;
   align-items: center;
-  border-bottom: 1px solid var(--a-base-8);
   padding-bottom: 8px;
+  border-bottom: 1px solid var(--a-base-8);
 }
 
 .apos-wizard__translation-title-text {
@@ -1223,12 +1231,13 @@ export default {
 
 .apos-wizard__translation-error {
   @include type-label;
+
   color: var(--a-danger);
 }
 
 .apos-wizard__translation-spinner {
-  margin-top: 20px;
   display: flex;
   justify-content: center;
+  margin-top: 20px;
 }
 </style>

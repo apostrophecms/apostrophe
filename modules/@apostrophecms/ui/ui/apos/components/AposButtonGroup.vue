@@ -55,9 +55,11 @@ export default {
   .apos-button-group :deep(.apos-button) {
     background-color: var(--a-background-primary);
     border: none;
+
     &:hover {
       background-color: var(--a-base-9);
     }
+
     &:focus {
       background-color: var(--a-base-8);
     }
@@ -97,13 +99,16 @@ export default {
       background-color: var(--a-background-inverted);
       color: var(--a-text-inverted);
     }
+
     &:deep(.apos-button) {
       border: none;
       background-color: var(--a-background-inverted);
       color: var(--a-text-inverted);
+
       &:hover {
         background-color: var(--a-base-2);
       }
+
       &:focus {
         background-color: var(--a-base-3);
       }
@@ -116,12 +121,15 @@ export default {
       border: 1px solid var(--a-primary-dark-10);
       color: var(--a-primary-dark-10);
     }
+
     &:deep(.apos-button) {
       background-color: var(--a-background-primary);
       color: var(--a-primary-dark-10);
+
       &:hover {
         background-color: var(--a-base-8);
       }
+
       &:focus {
         background-color: var(--a-base-9);
       }

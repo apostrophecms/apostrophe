@@ -100,10 +100,7 @@ export default {
     $vertical-spacing: 95px;
     $horizontal-spacing: calc(calc(100vw - #{$width}) / 2);
 
-    top: $vertical-spacing;
-    right: $horizontal-spacing;
-    bottom: $vertical-spacing;
-    left: $horizontal-spacing;
+    inset: $vertical-spacing $horizontal-spacing $vertical-spacing $horizontal-spacing;
     width: $width;
     height: calc(100vh - #{$vertical-spacing * 2});
   }
@@ -124,7 +121,8 @@ export default {
 
   &__heading {
     @include type-title;
-    margin: 0 0 $spacing-double 0;
+
+    margin: 0 0 $spacing-double;
   }
 
   &__content {
@@ -144,6 +142,7 @@ export default {
 
 .apos-settings__group-item {
   @include type-base;
+
   margin-bottom: $spacing-half;
 
   &.apos-is-active {
@@ -152,6 +151,7 @@ export default {
 
   > button {
     @include apos-button-reset();
+
     width: 100%;
     padding: $spacing-base 0;
     // TODO do a11y

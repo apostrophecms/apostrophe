@@ -114,6 +114,7 @@ export default {
       padding: $spacing-half;
     }
   }
+
   .apos-field--no-search {
     .apos-input-relationship__button {
       position: relative;
@@ -124,6 +125,7 @@ export default {
 
   .apos-field__min-size {
     @include type-help;
+
     display: flex;
     flex-grow: 1;
     margin-bottom: $spacing-base;

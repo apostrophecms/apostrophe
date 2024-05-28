@@ -114,10 +114,10 @@ export default {
   }
 
   .apos-array-item__body {
-    padding-top: 20px;
-    max-width: 90%;
     margin-right: auto;
     margin-left: auto;
+    padding-top: 20px;
+    max-width: 90%;
   }
 
   .apos-modal-array-min-error, .apos-modal-array-max-error {

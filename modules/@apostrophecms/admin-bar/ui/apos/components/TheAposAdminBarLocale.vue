@@ -192,8 +192,9 @@ export default {
 .apos-admin-locales {
   position: relative;
   margin-right: $spacing-base;
-  padding-left: $spacing-base;
   padding-right: $spacing-base;
+  padding-left: $spacing-base;
+
   &::before,
   &::after {
     content: '';
@@ -214,6 +215,7 @@ export default {
 
   &:deep(.apos-button__label) {
     @include type-small;
+
     color: var(--a-primary);
     font-weight: var(--a-weight-bold);
     letter-spacing: 1px;
@@ -226,6 +228,7 @@ export default {
 
 .apos-locales-filter {
   @include type-large;
+
   box-sizing: border-box;
   width: 100%;
   padding: 20px 45px 20px 20px;
@@ -248,11 +251,11 @@ export default {
 }
 
 .apos-locales {
+  margin: $spacing-base 0;
+  padding-left: 0;
   list-style-type: none;
   max-height: 350px;
   overflow-y: scroll;
-  padding-left: 0;
-  margin: $spacing-base 0;
   font-weight: var(--a-weight-base);
 }
 

@@ -116,13 +116,13 @@ export default {
 <style lang="scss" scoped>
   .apos-notifications {
     z-index: $z-index-notifications;
-    pointer-events: none;
     position: fixed;
     bottom: 20px;
     display: flex;
-    width: 100%;
     flex-direction: column;
     align-items: center;
+    width: 100%;
+    pointer-events: none;
   }
 
   .list-enter-active,

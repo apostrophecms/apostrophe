@@ -71,12 +71,12 @@ export default {
   }
 
   .apos-boolean__label {
-    min-width: 0;
     position: relative;
     display: flex;
-    justify-content: center;
     align-items: center;
+    justify-content: center;
     padding: math.div($boolean-padding, 2) $boolean-padding;
+    min-width: 0;
 
     &:first-of-type {
       border-top-right-radius: 0;
@@ -117,6 +117,7 @@ export default {
         border-color: var(--a-base-4);
       }
     }
+
     .apos-boolean__input + & {
       &:hover {
         cursor: pointer;
@@ -144,6 +145,7 @@ export default {
       top: 1px;
     }
   }
+
   .apos-boolean__input:focus + .apos-boolean__label {
     border-color: var(--a-base-2);
     box-shadow: 0 0 5px var(--a-base-6);
@@ -156,6 +158,7 @@ export default {
       color: var(--a-base-4);
       background: var(--a-base-7);
       border-color: var(--a-base-4);
+
       &:hover {
         cursor: not-allowed;
         border-color: var(--a-base-4);

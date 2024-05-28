@@ -152,7 +152,7 @@ export default {
   }
 
   .apos-marks-control__button:deep(.apos-button--rich-text) {
-    &:active:after, &:focus:after {
+    &:active::after, &:focus::after {
       background-color: var(--a-base-8);
     }
 
@@ -210,6 +210,7 @@ export default {
 
     &--is-active {
       background-color: var(--a-base-10);
+
       &:hover {
         background-color: var(--a-base-9);
       }
@@ -217,6 +218,7 @@ export default {
 
     .apos-marks-control__button {
       @include apos-button-reset();
+
       display: block;
       width: 100%;
       padding: $spacing-base;

@@ -98,6 +98,7 @@ export default {
 <style lang="scss" scoped>
   .apos-pager {
     @include type-base;
+
     display: inline-flex;
     align-items: center;
   }

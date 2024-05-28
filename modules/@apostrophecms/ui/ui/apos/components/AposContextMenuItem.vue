@@ -74,31 +74,37 @@ export default {
 
   .apos-context-menu__button {
     @include type-base;
-    flex-grow: 1;
+
     display: inline-block;
+    flex-grow: 1;
     width: 100%;
     padding: 10px 20px;
     border: none;
     color: var(--a-base-1);
     text-align: left;
     background-color: var(--a-background-primary);
+
     &:hover {
       cursor: pointer;
       color: var(--a-text-primary);
     }
+
     &:focus {
       outline: none;
       color: var(--a-text-primary);
     }
+
     &:active {
       color: var(--a-base-1);
     }
 
     &--danger {
       color: var(--a-danger);
+
       &:hover {
         color: var(--a-danger-button-hover);
       }
+
       &:focus, &:active {
         color: var(--a-danger-button-active);
       }
@@ -106,6 +112,7 @@ export default {
 
     &--primary {
       color: var(--a-primary);
+
       &:hover,
       &:focus,
       &:active {
@@ -115,6 +122,7 @@ export default {
 
     &--disabled {
       color: var(--a-base-5);
+
       &:hover,
       &:focus,
       &:active {
