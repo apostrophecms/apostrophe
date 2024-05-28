@@ -72,16 +72,16 @@ export default {
 <style lang="scss" scoped>
   :deep(.apos-submitted-drafts__counter) {
     display: inline-flex;
-    margin-left: $spacing-half;
-    padding: 3px;
-    background-color: var(--a-primary-transparent-10);
-    border-radius: var(--a-border-radius);
-    color: var(--a-primary);
-    min-width: 15px;
-    min-height: 15px;
     align-items: center;
     justify-content: center;
+    margin-left: $spacing-half;
+    padding: 3px;
+    color: var(--a-primary);
     font-size: var(--a-type-small);
+    background-color: var(--a-primary-transparent-10);
+    border-radius: var(--a-border-radius);
+    min-width: 15px;
+    min-height: 15px;
     line-height: 0.9;
   }
 </style>

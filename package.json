@@ -139,9 +139,8 @@
     "mocha": "^9.1.2",
     "nyc": "^15.1.0",
     "replace-in-file": "^6.1.0",
-    "stylelint": "^14.6.1",
-    "stylelint-declaration-strict-value": "^1.8.0",
-    "stylelint-order": "^5.0.0",
+    "stylelint": "^16.5.0",
+    "stylelint-config-apostrophe": "github:apostrophecms/stylelint-config-apostrophe",
     "vue-eslint-parser": "^7.1.1",
     "vue-template-compiler": "^2.7.14"
   },

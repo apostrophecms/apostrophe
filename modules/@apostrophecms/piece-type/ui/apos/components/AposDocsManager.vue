@@ -491,8 +491,8 @@ export default {
   // `apos-media-manager__empty`. We should combine somehow.
   .apos-pieces-manager__empty {
     display: flex;
-    justify-content: center;
     align-items: center;
+    justify-content: center;
     width: 100%;
     height: 100%;
     margin-top: 130px;

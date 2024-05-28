@@ -66,12 +66,15 @@ export default {
 
   .apos-area-menu__item-icon {
     @include apos-align-icon();
+
     margin-right: 10px;
   }
+
   .apos-area-menu__item-content {
     display: flex;
     align-items: center;
   }
+
   .apos-area-menu__item-sublabel {
     margin-bottom: 10px;
     color: var(--a-base-4);

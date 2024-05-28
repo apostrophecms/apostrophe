@@ -64,8 +64,10 @@ export default {
 <style lang="scss" scoped>
   .apos-table__cell-field--context-menu__content {
     @include apos-transition();
+
     display: inline-block;
     opacity: 0.3;
+
     &.apos-is-visible {
       opacity: 1;
     }

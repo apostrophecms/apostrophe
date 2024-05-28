@@ -35,19 +35,21 @@ export default {
 <style lang="scss" scoped>
 .apos-tag {
   @include type-base;
+
   display: inline-flex;
-  padding: 6px 12px;
-  border-radius: var(--a-border-radius);
-  background-color: var(--a-base-1);
-  color: var(--a-base-8);
   align-items: center;
   justify-content: center;
+  padding: 6px 12px;
+  color: var(--a-base-8);
+  border-radius: var(--a-border-radius);
+  background-color: var(--a-base-1);
 }
 
 .apos-tag__remove {
   position: relative;
   top: 1px;
   margin-right: 5px;
+
   &:hover {
     cursor: pointer;
   }

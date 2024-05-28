@@ -47,6 +47,7 @@ export default {
 <style lang="scss" scoped>
   .apos-field--area {
     max-width: $input-max-width;
+
     .apos-input-wrapper:not(.apos-is-empty) {
       padding: $spacing-base;
       border: 1px solid var(--a-base-8);

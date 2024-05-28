@@ -835,6 +835,7 @@ export default {
 
   .apos-doc-editor__utility {
     padding: $spacing-quadruple $spacing-base;
+
     @include media-up(lap) {
       padding: $spacing-quadruple $spacing-double;
     }

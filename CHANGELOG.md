@@ -4,7 +4,9 @@
 
 ### Adds
 
-* Adds pinia and a store to handle modals logic. Methods from the store are registered on `apos.modal` instead of component methods.
+* Adds a pinia store to handle modals logic. 
+* Methods from the store are registered on `apos.modal` instead of methods from `TheAposModals` component.
+* No more need to emit `safe-close` when defining an `AposModal`, modal is automatically resolved when closed.
 
 ### Changes
 
@@ -18,6 +20,7 @@ Now we want page B to be the child of page A.
 We will now end up with page B slug as `/peer/page` and not `/peer/peer/page` as before.
 * Set `G,Shift+I` shortcut to open the Image Tags manager modal.
 * Set `G,Shift+F` shortcut to open the File Tags manager modal.
+* Fixes stylelint config file, uses config from our shared configuration, fixes all lint errors. 
 
 ### Adds
 

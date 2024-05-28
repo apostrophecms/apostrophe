@@ -9,15 +9,16 @@
 
 @mixin apos-input() {
   @include type-base;
+  @include apos-transition(all);
+
+  box-sizing: border-box;
   width: 100%;
   border: 1px solid var(--a-base-8);
   border-radius: var(--a-border-radius);
   background-color: var(--a-base-9);
   color: var(--a-text-primary);
-  box-sizing: border-box;
   // Some  browser styles set `textarea` to monospace.
   resize: none;
-  @include apos-transition(all);
 
   &::placeholder {
     color: var(--a-base-4);
@@ -40,6 +41,7 @@
     color: $input-color-disabled;
     background: var(--a-base-7);
     border-color: $input-color-disabled;
+
     &:hover {
       cursor: not-allowed;
     }
@@ -101,25 +103,30 @@
     padding: 10px;
     font-size: var(--a-type-small);
   }
+
   .apos-input-icon {
     right: 5px;
   }
+
   .apos-field__label {
     font-size: var(--a-type-small);
     font-weight: 500;
   }
+
   &.apos-field--color {
     .apos-button.apos-button--color {
       width: 25px;
       height: 25px;
       padding: 0;
     }
+
     .apos-color__info {
-      font-size: var(--a-type-small);
       margin-left: 5px;
+      font-size: var(--a-type-small);
       white-space: nowrap;
     }
   }
+
   &.apos-field--range {
     .apos-range__input::-webkit-slider-thumb,
     .apos-range__input::-moz-range-thumb {
@@ -135,16 +142,20 @@
 
 .apos-choice-label {
   @include type-base;
+
   display: flex;
-  color: var(--a-base-2);
   align-items: center;
+  color: var(--a-base-2);
+
   &:hover:not(.apos-choice-label--disabled) {
     color: var(--a-text-primary);
     cursor: pointer;
   }
+
   &:hover.apos-choice-label--disabled {
     cursor: not-allowed;
   }
+
   & + &,
   .apos-legend + & {
     margin-top: $spacing-base;
@@ -160,17 +171,21 @@
   max-width: $box-width;
   margin: 0;
   padding: 0;
+
   &:hover {
     cursor: pointer;
   }
+
   &[disabled]:hover,
   &[disabled] ~ .apos-input-indicator:hover {
     cursor: not-allowed;
   }
+
   &:focus ~ .apos-input-indicator {
     outline: none;
     box-shadow: 0 0 5px var(--a-base-1);
   }
+
   &:checked:focus ~ .apos-input-indicator {
     box-shadow: 0 0 10px var(--a-primary);
   }
@@ -217,11 +232,13 @@
 
 .apos-choice-label-text {
   @include type-base;
+
   margin-left: $spacing-base;
 }
 
 .apos-input-indicator {
-  @include apos-transition(all, 0.1s, ease-in-out);
+  @include apos-transition($what: all, $duration: 0.1s, $ease: ease-in-out);
+
   display: inline-flex;
   flex-shrink: 0;
   align-items: center;
@@ -241,12 +258,14 @@
     border-color: var(--a-base-7);
     background-color: var(--a-base-7);
   }
+
   .apos-input--choice:checked,
   .apos-input--choice[checked] {
     // TODO: Does this really need to be important?
     // Disabling for now since I'm not totally sure of impact. ~gvb
     position: relative !important; // stylelint-disable-line
   }
+
   .apos-input--choice:checked + &,
   .apos-input--choice[checked] + & {
     background-color: var(--a-primary);

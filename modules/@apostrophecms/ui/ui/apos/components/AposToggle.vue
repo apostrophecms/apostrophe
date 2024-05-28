@@ -31,37 +31,37 @@ export default {
 };
 </script>
 <style scoped lang='scss'>
-  $toggleHeight: 13px;
-  $toggleWidth: $toggleHeight * 1.7;
-  $btnSize: $toggleHeight;
+  $toggle-height: 13px;
+  $toggle-width: $toggle-height * 1.7;
+  $btn-size: $toggle-height;
 
   .apos-toggle {
     &__slider {
-      box-sizing: content-box;
       position: relative;
-      border-radius: 34px;
-      width: $toggleWidth;
-      height: $toggleHeight;
+      box-sizing: content-box;
+      width: $toggle-width;
+      height: $toggle-height;
       padding: 4px;
+      border-radius: 34px;
       cursor: pointer;
       background-color: var(--a-base-3);
 
-      &:before {
+      &::before {
         content: '';
         position: absolute;
-        width: $btnSize;
-        height: $btnSize;
+        width: $btn-size;
+        height: $btn-size;
         border-radius: 50%;
         background-color: var(--a-white);
-        transition: all 0.3s ease-out;
+        transition: all 300ms ease-out;
       }
     }
 
     &__slider--activated {
       background-color: var(--a-primary);
 
-      &:before {
-        transform: translateX(calc($toggleWidth - $btnSize));
+      &::before {
+        transform: translateX(calc($toggle-width - $btn-size));
       }
     }
   }

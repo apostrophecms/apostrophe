@@ -157,20 +157,14 @@ export default {
 .apos-confirm {
   z-index: $z-index-modal;
   position: fixed;
-  top: 0;
-  right: 0;
-  bottom: 0;
-  left: 0;
+  inset: 0;
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
 :deep(.apos-modal__inner) {
-  top: auto;
-  right: auto;
-  bottom: auto;
-  left: auto;
+  inset: auto;
   max-width: 700px;
   height: auto;
   text-align: center;
@@ -200,18 +194,21 @@ export default {
 
 .apos-confirm__heading {
   @include type-title;
+
   line-height: var(--a-line-tall);
   margin: 0;
 }
 
 .apos-confirm__description {
   @include type-base;
+
   max-width: 370px;
   line-height: var(--a-line-tallest);
 }
 
 .apos-confirm__note {
   @include type-small;
+
   margin-top: $spacing-double;
   line-height: var(--a-line-tall);
   max-width: 355px;
