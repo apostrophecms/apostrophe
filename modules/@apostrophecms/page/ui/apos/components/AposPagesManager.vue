@@ -3,7 +3,6 @@
     :modal="modal"
     modal-title="apostrophe:managePages"
     @esc="confirmAndCancel"
-    @no-modal="$emit('safe-close')"
     @inactive="modal.active = false"
     @show-modal="modal.showModal = true"
   >
@@ -101,7 +100,7 @@ export default {
   name: 'AposPagesManager',
   mixins: [ AposPagesManagerLogic ],
   // Keep it for linting
-  emits: [ 'archive', 'search', 'safe-close', 'modal-result' ]
+  emits: [ 'archive', 'search', 'modal-result' ]
 };
 // TODO: check when child page is created and with what perm
 </script>

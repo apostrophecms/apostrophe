@@ -1,6 +1,5 @@
 export default {
   name: 'AposSettingsManager',
-  emits: [ 'safe-close' ],
   props: {
     restore: {
       type: String,

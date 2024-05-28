@@ -3,7 +3,6 @@
     :modal="modal"
     class="apos-confirm"
     v-on="mode !== 'alert' ? { esc: cancel } : null"
-    @no-modal="$emit('safe-close')"
     @inactive="modal.active = false"
     @show-modal="modal.showModal = true"
     @ready="ready"
@@ -87,7 +86,7 @@ export default {
       }
     }
   },
-  emits: [ 'safe-close', 'confirm-response', 'modal-result' ],
+  emits: [ 'confirm-response', 'modal-result' ],
   data() {
     return {
       modal: {

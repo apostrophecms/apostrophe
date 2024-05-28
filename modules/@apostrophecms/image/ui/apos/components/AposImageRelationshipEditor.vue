@@ -6,7 +6,6 @@
     @inactive="modal.active = false"
     @show-modal="modal.showModal = true"
     @esc="confirmAndCancel"
-    @no-modal="$emit('safe-close')"
   >
     <template #secondaryControls>
       <AposButton
@@ -135,7 +134,7 @@ export default {
       default: () => ({})
     }
   },
-  emits: [ 'modal-result', 'safe-close' ],
+  emits: [ 'modal-result' ],
   data() {
     const { aspectRatio, disableAspectRatio } = this.getAspectRatioFromConfig();
     const minSize = this.getMinSize();

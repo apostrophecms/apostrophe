@@ -1,8 +1,11 @@
 import { ref } from 'vue';
+import { useModalStore } from 'Modules/@apostrophecms/ui/stores/modal';
 
 export function useAposFocus() {
   const elementsToFocus = ref([]);
   const focusedElement = ref(null);
+
+  const modalStore = useModalStore();
 
   return {
     elementsToFocus,
@@ -22,8 +25,9 @@ export function useAposFocus() {
   // `cycleElementsToFocus` listeners relies on this dynamic list which has the advantage of
   // taking new or less elements to focus, after an update has happened inside a modal,
   // like an XHR call to get the pieces list in the AposDocsManager modal, for instance.
-  function cycleElementsToFocus(e) {
-    if (!elementsToFocus.value.length) {
+  function cycleElementsToFocus(e, elements) {
+    const elems = elements || elementsToFocus.value;
+    if (!elems.length) {
       return;
     }
 
@@ -32,8 +36,8 @@ export function useAposFocus() {
       return;
     }
 
-    const firstElementToFocus = elementsToFocus.value.at(0);
-    const lastElementToFocus = elementsToFocus.value.at(-1);
+    const firstElementToFocus = elems.at(0);
+    const lastElementToFocus = elems.at(-1);
 
     // If shift key pressed for shift + tab combination
     if (e.shiftKey) {
@@ -57,8 +61,7 @@ export function useAposFocus() {
   // If it is not focusable (not visible/not in the DOM),
   // fallbacks to the first focusable element from the last modal.
   function focusLastModalFocusedElement() {
-    const lastModal = apos.modal.stack.at(-1);
-
+    const lastModal = modalStore.activeModal;
     if (!lastModal) {
       return;
     }

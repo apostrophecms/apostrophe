@@ -6,7 +6,6 @@
     @inactive="modal.active = false"
     @show-modal="modal.showModal = true"
     @esc="confirmAndCancel"
-    @no-modal="$emit('safe-close')"
   >
     <template #breadcrumbs>
       <AposModalBreadcrumbs v-if="breadcrumbs && breadcrumbs.length" :items="breadcrumbs" />
@@ -109,7 +108,7 @@ export default {
       default: null
     }
   },
-  emits: [ 'safe-close', 'modal-result' ],
+  emits: [ 'modal-result' ],
   data() {
     const moduleOptions = window.apos.modules[apos.area.widgetManagers[this.type]];
 

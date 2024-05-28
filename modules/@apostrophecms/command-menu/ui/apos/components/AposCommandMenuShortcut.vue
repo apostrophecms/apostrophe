@@ -3,7 +3,6 @@
     :modal="modal"
     class="apos-command-menu-shortcut"
     @esc="close"
-    @no-modal="$emit('safe-close')"
     @inactive="modal.active = false"
     @show-modal="modal.showModal = true"
   >
