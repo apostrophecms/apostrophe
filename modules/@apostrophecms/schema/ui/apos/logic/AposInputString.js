@@ -4,6 +4,12 @@ export default {
   name: 'AposInputString',
   mixins: [ AposInputMixin ],
   emits: [ 'return' ],
+  props: {
+    rows: {
+      type: Number,
+      default: 5
+    }
+  },
   data () {
     return {
       step: undefined,

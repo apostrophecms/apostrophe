@@ -20,6 +20,7 @@ We will now end up with page B slug as `/peer/page` and not `/peer/peer/page` as
 * Adds field components access to the reactive document value.
 * Expose `AposContextMenu` owned method for re-calculation of the content position.
 * Field Meta components of `slug` and `string` types can now fire `replace-field-value` events with text value payload, which will replace the respective field value.
+* `AposInputString` now accepts a `rows` prop, in effect only when `field.textarea` is set to `true`.
 
 ### Fixes
 
