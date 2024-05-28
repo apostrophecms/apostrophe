@@ -24,7 +24,6 @@ We will now end up with page B slug as `/peer/page` and not `/peer/peer/page` as
 
 ### Adds
 
-* Add `G,L` shortcut to open localize.
 * Add `T,S` shortcut to open the Personal Settings.
 * Add `T,D` shortcut to open the Submitted Drafts.
 * Add a scrollbar to the shortcut list.

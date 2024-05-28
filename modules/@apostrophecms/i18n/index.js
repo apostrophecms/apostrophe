@@ -75,41 +75,6 @@ module.exports = {
       browser: true
     }
   },
-  commands(self) {
-    if (!Object.keys(self.apos.i18n.locales).length < 2) {
-      return {};
-    }
-
-    return {
-      add: {
-        [`${self.__meta.name}:localize`]: {
-          type: 'item',
-          label: 'apostrophe:localize',
-          action: {
-            type: 'open-modal',
-            payload: {
-              name: 'AposI18nLocalize',
-              props: { moduleName: '@apostrophecms/i18n' }
-            }
-          },
-          permission: {
-            action: 'edit',
-            type: self.__meta.name
-          },
-          shortcut: 'G,L'
-        }
-      },
-      modal: {
-        default: {
-          '@apostrophecms/command-menu:manager': {
-            commands: [
-              `${self.__meta.name}:localize`
-            ]
-          }
-        }
-      }
-    };
-  },
   async init(self) {
     self.defaultNamespace = 'default';
     self.namespaces = {};
