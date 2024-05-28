@@ -6,7 +6,6 @@
     @inactive="modal.active = false"
     @show-modal="modal.showModal = true"
     @esc="confirmAndCancel"
-    @no-modal="emitSafeClose"
   >
     <template #secondaryControls>
       <AposButton
@@ -94,8 +93,7 @@ import AposArrayEditorLogic from '../logic/AposArrayEditor';
 
 export default {
   name: 'AposArrayEditor',
-  mixins: [ AposArrayEditorLogic ],
-  emits: [ 'safe-close' ]
+  mixins: [ AposArrayEditorLogic ]
 };
 </script>
 

@@ -6,7 +6,6 @@
     @inactive="modal.active = false"
     @show-modal="modal.showModal = true"
     @esc="close"
-    @no-modal="$emit('safe-close')"
   >
     <template #main>
       <AposModalBody>
@@ -77,7 +76,7 @@ export default {
       default: 0
     }
   },
-  emits: [ 'expanded-menu-close', 'safe-close', 'modal-result' ],
+  emits: [ 'expanded-menu-close', 'modal-result' ],
   data() {
     return {
       modal: {

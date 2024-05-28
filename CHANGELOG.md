@@ -2,6 +2,10 @@
 
 ## UNRELEASED
 
+### Adds
+
+* Adds pinia and a store to handle modals logic. Methods from the store are registered on `apos.modal` instead of component methods.
+
 ### Changes
 
 * Improves widget tabs for the hidden entries, improves UX when validation errors are present in non-focused tabs.

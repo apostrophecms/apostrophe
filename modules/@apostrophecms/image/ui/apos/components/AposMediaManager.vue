@@ -12,7 +12,6 @@
     @inactive="modal.active = false"
     @show-modal="modal.showModal = true"
     @esc="confirmAndCancel"
-    @no-modal="$emit('safe-close')"
   >
     <template v-if="relationshipField" #secondaryControls>
       <AposButton
@@ -134,7 +133,7 @@ export default {
       required: true
     }
   },
-  emits: [ 'safe-close', 'archive', 'save', 'search', 'piece-relationship-query' ],
+  emits: [ 'archive', 'save', 'search', 'piece-relationship-query' ],
   data() {
     return {
       items: [],

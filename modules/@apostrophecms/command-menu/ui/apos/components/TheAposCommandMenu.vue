@@ -8,7 +8,10 @@
 </template>
 
 <script>
+import { mapActions } from 'pinia';
 import AposThemeMixin from 'Modules/@apostrophecms/ui/mixins/AposThemeMixin';
+import { useModalStore } from 'Modules/@apostrophecms/ui/stores/modal';
+
 export default {
   name: 'TheAposCommandMenu',
   mixins: [ AposThemeMixin ],
@@ -92,6 +95,7 @@ export default {
     apos.bus.$off('modal-resolved', this.updateModal);
   },
   methods: {
+    ...mapActions(useModalStore, [ 'getAt', 'getProperties' ]),
     delay(resolve, ms) {
       return new Promise(() => {
         setTimeout(resolve, ms);
@@ -101,8 +105,8 @@ export default {
       return this.modal;
     },
     getFirstNonShortcutModal(index = -1) {
-      const modal = apos.modal.getAt(index);
-      const properties = apos.modal.getProperties(modal.id);
+      const modal = this.getAt(index);
+      const properties = this.getProperties(modal.id);
 
       return properties.itemName === '@apostrophecms/command-menu:shortcut'
         ? this.getFirstNonShortcutModal(index + -1)
@@ -114,6 +118,3 @@ export default {
   }
 };
 </script>
-
-<style lang="scss" scoped>
-</style>

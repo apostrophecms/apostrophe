@@ -6,7 +6,6 @@
     @esc="close"
     @inactive="modal.active = false"
     @show-modal="modal.showModal = true"
-    @no-modal="$emit('safe-close')"
   >
     <template #leftRail>
       <AposModalBody class="apos-wizard__navigation">
@@ -303,7 +302,7 @@ export default {
       default: null
     }
   },
-  emits: [ 'safe-close', 'modal-result' ],
+  emits: [ 'modal-result' ],
   data() {
     return {
       modal: {

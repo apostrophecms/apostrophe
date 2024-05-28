@@ -1,7 +1,10 @@
 import { createApp } from 'vue';
+import { createPinia } from 'pinia';
 import ClickOutsideElement from './click-outside-element';
 import Tooltip from './tooltip';
 import VueAposI18Next from './i18next';
+
+const pinia = createPinia();
 
 export default (appConfig, props = {}) => {
   const app = createApp(appConfig, props);
@@ -12,6 +15,7 @@ export default (appConfig, props = {}) => {
   });
   app.use(Tooltip);
   app.use(ClickOutsideElement);
+  app.use(pinia);
 
   const sources = [ window.apos.vueComponents, window.apos.iconComponents ];
   for (const source of sources) {

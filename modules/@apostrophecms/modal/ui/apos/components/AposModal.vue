@@ -11,16 +11,17 @@
       :class="classes"
       role="dialog"
       aria-modal="true"
-      :aria-labelledby="state.id"
+      :aria-labelledby="props.modalId"
       data-apos-modal
       @focus.capture="storeFocusedElement"
-      @keydown="onKeydown"
+      @esc="close"
+      @keydown.tab="onTab"
     >
       <transition :name="transitionType">
         <div
           v-if="modal.showModal"
           class="apos-modal__overlay"
-          @click="close"
+          @click="emit('esc')"
         />
       </transition>
       <transition :name="transitionType" @after-leave="$emit('inactive')">
@@ -44,7 +45,7 @@
                 <div v-if="hasSlot('secondaryControls')" class="apos-modal__controls--secondary">
                   <slot name="secondaryControls" />
                 </div>
-                <h2 :id="state.id" class="apos-modal__heading">
+                <h2 :id="props.modalId" class="apos-modal__heading">
                   <span v-if="modal.a11yTitle" class="apos-sr-only">
                     {{ $t(modal.a11yTitle) }}
                   </span>
@@ -96,17 +97,15 @@
 // transition.
 
 import {
-  ref, reactive, onMounted, computed, watch, nextTick, useSlots
+  ref, onMounted, onUnmounted, computed, watch, nextTick, useSlots
 } from 'vue';
 import { useAposFocus } from 'Modules/@apostrophecms/modal/composables/AposFocus';
-import cuid from 'cuid';
+import { useModalStore } from 'Modules/@apostrophecms/ui/stores/modal';
 
 const {
   cycleElementsToFocus,
-  elementsToFocus,
   focusElement,
   focusLastModalFocusedElement,
-  focusedElement,
   isElementVisible,
   storeFocusedElement
 } = useAposFocus();
@@ -119,18 +118,18 @@ const props = defineProps({
   modalTitle: {
     type: [ String, Object ],
     default: ''
+  },
+  modalId: {
+    type: String,
+    required: true
   }
 });
+
+const store = useModalStore();
 
 const slots = useSlots();
 const emit = defineEmits([ 'inactive', 'esc', 'show-modal', 'no-modal', 'ready' ]);
 const modalEl = ref(null);
-const state = reactive({
-  id: `modal:${cuid()}`,
-  elementsToFocus,
-  focusedElement,
-  modalEl
-});
 
 const transitionType = computed(() => {
   if (props.modal.type !== 'slide') {
@@ -212,10 +211,17 @@ watch(triggerFocusRefresh, (newVal) => {
   }
 });
 
-onMounted(() => {
+onMounted(async () => {
+  await nextTick();
   if (shouldTrapFocus.value) {
-    nextTick(trapFocus);
+    trapFocus();
   }
+  store.updateModalData(props.modalId, { modalEl: modalEl.value });
+  window.addEventListener('keydown', onKeydown);
+});
+
+onUnmounted(() => {
+  window.removeEventListener('keydown', onKeydown);
 });
 
 function onKeydown(e) {
@@ -223,25 +229,24 @@ function onKeydown(e) {
   if (hasPressedEsc) {
     close(e);
   }
-  cycleElementsToFocus(e);
+}
+
+function onTab(e) {
+  const currentModal = store.get(props.modalId);
+  cycleElementsToFocus(e, currentModal.elementsToFocus);
 }
 
 async function onEnter() {
   emit('show-modal');
-  apos.modal.stack = apos.modal.stack || [];
 
-  apos.modal.stack.push(state);
   await nextTick();
   emit('ready');
 }
 
 function onLeave() {
-  emit('no-modal');
-
-  apos.modal.stack = apos.modal.stack
-    .filter(modal => modal.id !== state.id);
-
+  store.remove(props.modalId);
   focusLastModalFocusedElement();
+  emit('no-modal');
 }
 
 function trapFocus() {
@@ -258,10 +263,13 @@ function trapFocus() {
     .map(addExcludingAttributes)
     .join(', ');
 
-  elementsToFocus.value = [ ...modalEl.value.querySelectorAll(selector) ]
+  const elementsToFocus = [ ...modalEl.value.querySelectorAll(selector) ]
     .filter(isElementVisible);
 
-  focusElement(focusedElement.value, elementsToFocus.value[0]);
+  store.updateModalData(props.modalId, { elementsToFocus });
+  const currentModal = store.get(props.modalId);
+
+  focusElement(currentModal.focusedElement, currentModal.elementsToFocus[0]);
 
   function addExcludingAttributes(element) {
     return `${element}:not([tabindex="-1"]):not([disabled]):not([type="hidden"]):not([aria-hidden])`;
@@ -269,10 +277,10 @@ function trapFocus() {
 }
 
 function close() {
-  if (apos.modal.stack.at(-1)?.id !== state.id) {
-    return;
+  const activeModalId = store.activeModal?.id;
+  if (activeModalId === props.modalId) {
+    emit('esc');
   }
-  emit('esc');
 }
 </script>
 
