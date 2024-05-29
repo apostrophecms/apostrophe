@@ -7,6 +7,13 @@
 * Adds a pinia store to handle modals logic. 
 * Methods from the store are registered on `apos.modal` instead of methods from `TheAposModals` component.
 * No more need to emit `safe-close` when defining an `AposModal`, modal is automatically resolved when closed.
+* Adds field components access to the reactive document value.
+* Expose `AposContextMenu` owned method for re-calculation of the content position.
+* Field Meta components of `slug` and `string` types can now fire `replace-field-value` events with text value payload, which will replace the respective field value.
+* `AposInputString` now accepts a `rows` prop, in effect only when `field.textarea` is set to `true`.
+* Add `T,S` shortcut to open the Personal Settings.
+* Add `T,D` shortcut to open the Submitted Drafts.
+* Add a scrollbar to the shortcut list.
 
 ### Changes
 
@@ -18,13 +25,10 @@ Page A and page B are siblings.
 Page A has the slug `/peer` and page B has the slug `/peer/page`.
 Now we want page B to be the child of page A.
 We will now end up with page B slug as `/peer/page` and not `/peer/peer/page` as before.
+* `AposSpinner` now respects the colors for `heavy` weight mode and also accepts second, "light" color in this mode. Props JSDoc blocks are added.
+* `AposContextMenu` now respects the `menuOffset` component property.
 * Set `G,Shift+I` shortcut to open the Image Tags manager modal.
 * Set `G,Shift+F` shortcut to open the File Tags manager modal.
-* Fixes stylelint config file, uses config from our shared configuration, fixes all lint errors. 
-
-### Adds
-
-* Adds field components access to the reactive document value.
 
 ### Fixes
 
@@ -32,12 +36,8 @@ We will now end up with page B slug as `/peer/page` and not `/peer/peer/page` as
 * Widget client side schema validation.
 * Allow `G,Shift+I` shortcut style.
 * Detect shortcut conflicts when using multiple shortcuts.
+* Fixes stylelint config file, uses config from our shared configuration, fixes all lint errors. 
 
-### Adds
-
-* Add `T,S` shortcut to open the Personal Settings.
-* Add `T,D` shortcut to open the Submitted Drafts.
-* Add a scrollbar to the shortcut list.
 
 ## 4.3.2 (2024-05-18)
 

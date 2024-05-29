@@ -11,12 +11,12 @@
     >
       <defs>
         <linearGradient id="linear-gradient" x1="-280.32" y1="390.11" x2="-279.82" y2="390.9" gradientTransform="matrix(22.2, 0, 0, -22.2, 6233.2, 8673.92)" gradientUnits="userSpaceOnUse">
-          <stop offset="0" stop-color="#cca9ff" />
-          <stop offset="1" stop-color="#6516dd" />
+          <stop offset="0" :stop-color="stopColorLight" />
+          <stop offset="1" :stop-color="stopColorDark" />
         </linearGradient>
         <linearGradient id="linear-gradient-2" x1="-276.41" y1="379.82" x2="-276.72" y2="379.33" gradientTransform="matrix(17.69, 0, 0, -13.7, 4908.02, 5205.92)" gradientUnits="userSpaceOnUse">
-          <stop offset="0" stop-color="#c8a2ff" />
-          <stop offset="1" stop-color="#6516dd" />
+          <stop offset="0" :stop-color="stopColorLight" />
+          <stop offset="1" :stop-color="stopColorDark" />
         </linearGradient>
       </defs>
       <path class="apos-spinner__svg-track" d="M11.5.32a11.1,11.1,0,1,0,11.1,11.1A11.1,11.1,0,0,0,11.5.32Zm0,5.2a5.9,5.9,0,1,1-5.9,5.9A5.9,5.9,0,0,1,11.5,5.52Z" fill="url(#linear-gradient)" />
@@ -57,10 +57,25 @@
 module.exports = {
   name: 'AposSpinner',
   props: {
+    /**
+     * In the normal `weight` mode, it's the only supported value.
+     * In `heavy` mode, this would be the "darker" color.
+     */
     color: {
       type: String,
       default: '--a-primary'
     },
+    /**
+     * In `heavy` mode, this would be the "lighter" color.
+     * Ignored in the normal `weight` mode.
+     */
+    colorLight: {
+      type: String,
+      default: '--a-primary-transparent-50'
+    },
+    /**
+     * The weight of the spinner. Can be `normal` or `heavy`.
+     */
     weight: {
       type: String,
       default: 'normal'
@@ -73,6 +88,13 @@ module.exports = {
       }
 
       return 'color: var(--a-primary);';
+    },
+    stopColorLight() {
+      const color = this.colorLight || this.color;
+      return color?.startsWith('--') ? `var(${color})` : color;
+    },
+    stopColorDark() {
+      return this.color?.startsWith('--') ? `var(${this.color})` : this.color;
     },
     className() {
       return `apos-spinner--${this.weight}`;
