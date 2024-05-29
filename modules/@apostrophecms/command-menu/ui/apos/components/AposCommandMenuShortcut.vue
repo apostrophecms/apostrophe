@@ -129,8 +129,7 @@ export default {
 }
 
 :deep(.apos-modal__inner) {
-  top: auto;
-  left: auto;
+  inset: auto $spacing-quadruple $spacing-quadruple auto;
   max-width: 700px;
   height: auto;
   border-radius: $spacing-base + $spacing-half;
@@ -138,6 +137,10 @@ export default {
 
 :deep(.apos-modal__overlay) {
   display: none;
+}
+
+:deep(.apos-modal__body-main) {
+  padding-bottom: 15px;
 }
 
 .apos-modal__header {
@@ -190,7 +193,9 @@ export default {
 }
 
 .apos-command-menu-shortcut-groups {
+  overflow: hidden auto;
   padding: $spacing-base $spacing-double $spacing-base + $spacing-half;
+  max-height: 70vh;
 }
 
 .apos-command-menu-shortcut-group + .apos-command-menu-shortcut-group {

@@ -56,6 +56,35 @@ module.exports = {
       'visibility'
     ]
   },
+  commands(self) {
+    return {
+      add: {
+        [`${self.__meta.name}:singleton-editor`]: {
+          type: 'item',
+          label: self.options.label,
+          action: {
+            type: 'admin-menu-click',
+            payload: `${self.__meta.name}:singleton-editor`
+          },
+          permission: {
+            action: 'edit',
+            type: self.__meta.name
+          },
+          shortcut: 'T,G'
+        }
+      },
+      modal: {
+        default: {
+          '@apostrophecms/command-menu:taskbar': {
+            label: 'apostrophe:commandMenuTaskbar',
+            commands: [
+              `${self.__meta.name}:singleton-editor`
+            ]
+          }
+        }
+      }
+    };
+  },
   init(self) {
     self.slug = self.options.slug || 'global';
   },

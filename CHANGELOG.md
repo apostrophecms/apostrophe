@@ -18,6 +18,8 @@ Page A and page B are siblings.
 Page A has the slug `/peer` and page B has the slug `/peer/page`.
 Now we want page B to be the child of page A.
 We will now end up with page B slug as `/peer/page` and not `/peer/peer/page` as before.
+* Set `G,Shift+I` shortcut to open the Image Tags manager modal.
+* Set `G,Shift+F` shortcut to open the File Tags manager modal.
 * Fixes stylelint config file, uses config from our shared configuration, fixes all lint errors. 
 
 ### Adds
@@ -28,6 +30,14 @@ We will now end up with page B slug as `/peer/page` and not `/peer/peer/page` as
 
 * Rich Text editor properly unsets marks on heading close.
 * Widget client side schema validation.
+* Allow `G,Shift+I` shortcut style.
+* Detect shortcut conflicts when using multiple shortcuts.
+
+### Adds
+
+* Add `T,S` shortcut to open the Personal Settings.
+* Add `T,D` shortcut to open the Submitted Drafts.
+* Add a scrollbar to the shortcut list.
 
 ## 4.3.2 (2024-05-18)
 
