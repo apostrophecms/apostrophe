@@ -467,7 +467,7 @@ export default {
     },
     relatedDocTypesField() {
       return {
-        name: 'related-doctype-to-localize',
+        name: 'related-doctypes-to-localize',
         label: 'apostrophe:relatedDocTypesToLocalize',
         choices: this.relatedDocTypes
       };
@@ -1160,7 +1160,7 @@ export default {
   }
 }
 
-.apos-wizard__step  :deep(.apos-field--related-doctype-to-localize) {
+.apos-wizard__step  :deep(.apos-field--related-doctypes-to-localize) {
   margin-top: $spacing-triple;
 }
 
