@@ -198,13 +198,14 @@ export default {
   }
 
   .apos-media-manager-display__cell {
+    @include apos-transition();
+
     position: relative;
     display: flex;
-    justify-content: center;
     align-items: center;
+    justify-content: center;
     width: 100%;
     height: 100%;
-    @include apos-transition();
 
     &.apos-is-hidden { visibility: hidden; }
 
@@ -226,12 +227,13 @@ export default {
   }
 
   .apos-media-manager-display__checkbox {
+    @include apos-transition();
+
     z-index: $z-index-manager-display;
     position: absolute;
     top: -6px;
     left: -6px;
     opacity: 0;
-    @include apos-transition();
   }
 
   .apos-media-manager-display__cell:hover .apos-media-manager-display__checkbox,
@@ -241,10 +243,11 @@ export default {
 
   .apos-media-manager-display__media,
   .apos-media-manager-display__placeholder {
+    @include apos-transition();
+
     max-width: 100%;
     max-height: 100%;
     opacity: 0.85;
-    @include apos-transition();
   }
 
   .apos-media-manager-display__placeholder {
@@ -253,13 +256,14 @@ export default {
 
   .apos-media-manager-display__select {
     @include apos-button-reset();
+    @include apos-transition();
+
     display: flex;
-    justify-content: center;
     align-items: center;
+    justify-content: center;
     width: 100%;
     height: 100%;
     border: 1px solid var(--a-base-7);
-    @include apos-transition();
 
     &:active + .apos-media-manager-display__checkbox {
       opacity: 1;

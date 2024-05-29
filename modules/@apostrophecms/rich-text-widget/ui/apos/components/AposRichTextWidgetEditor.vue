@@ -713,7 +713,6 @@ function traverseNextNode(node) {
   }
 
   :deep(.apos-rich-text-toolbar) {
-
     & > .apos-context-menu__pane {
       padding: 8px;
       border: 1px solid var(--a-primary-transparent-25);
@@ -721,24 +720,24 @@ function traverseNextNode(node) {
       border-radius: var(--a-border-radius-large);
     }
 
-    .apos-is-active .apos-button--rich-text:after,
-    .apos-button--rich-text:hover:after,
-    .apos-button--rich-text:active:after,
-    .apos-button--rich-text:focus:after {
+    .apos-is-active .apos-button--rich-text::after,
+    .apos-button--rich-text:hover::after,
+    .apos-button--rich-text:active::after,
+    .apos-button--rich-text:focus::after {
       opacity: 1;
       transform: scale(1.15) translateY(0);
     }
 
-    .apos-is-active .apos-button--rich-text:after {
+    .apos-is-active .apos-button--rich-text::after {
       background-color: var(--a-primary-transparent-10);
     }
 
-    .apos-is-active .apos-button--rich-text:hover:after {
+    .apos-is-active .apos-button--rich-text:hover::after {
       background-color: var(--a-primary-transparent-15);
     }
 
     .apos-button--rich-text .apos-button__icon {
-      transition: all 0.3s var(--a-transition-timing-bounce);
+      transition: all 300ms var(--a-transition-timing-bounce);
     }
 
     .apos-button--rich-text {
@@ -749,26 +748,33 @@ function traverseNextNode(node) {
       border-radius: var(--a-border-radius);
       background-color: transparent;
       color: var(--a-base-1);
+
       &.apos-button--icon-only {
         width: 24px;
         padding: 0;
       }
+
       &:hover {
         background-color: transparent;
       }
-      &:hover:after {
+
+      &:hover::after {
         background-color: var(--a-base-9);
       }
+
       &:active {
         background-color: transparent;
       }
+
       &:active .apos-button__icon {
         transform: scale(0.8);
       }
-      &:active:after, &:focus:after {
+
+      &:active::after, &:focus::after {
         background-color: var(--a-primary-transparent-25);
       }
-      &:after {
+
+      &::after {
         content: '';
         z-index: $z-index-button-background;
         position: absolute;
@@ -779,9 +785,9 @@ function traverseNextNode(node) {
         height: 100%;
         background-color: transparent;
         transition:
-          opacity 0.5s var(--a-transition-timing-bounce),
-          transform 0.5s var(--a-transition-timing-bounce),
-          background-color 0.5s ease;
+          opacity 500ms var(--a-transition-timing-bounce),
+          transform 500ms var(--a-transition-timing-bounce),
+          background-color 500ms ease;
         opacity: 0;
         transform: scale(0.3) translateY(-4px);
       }
@@ -811,43 +817,44 @@ function traverseNextNode(node) {
     gap: 6px;
   }
 
-  .apos-rich-text-editor__editor :deep(.ProseMirror) {
+  .apos-rich-text-editor__editor :deep(.ProseMirror) { /* stylelint-disable-line selector-class-pattern */
     @include apos-transition();
   }
 
-  .apos-rich-text-editor__editor :deep(.ProseMirror:focus) {
+  .apos-rich-text-editor__editor :deep(.ProseMirror:focus) { /* stylelint-disable-line selector-class-pattern */
     outline: none;
   }
 
-  .apos-rich-text-editor__editor :deep(.ProseMirror) {
+  .apos-rich-text-editor__editor :deep(.ProseMirror) { /* stylelint-disable-line selector-class-pattern */
     padding: 10px 0;
   }
 
-  .apos-rich-text-editor__editor :deep(.ProseMirror:focus p.apos-is-empty::after) {
+  .apos-rich-text-editor__editor :deep(.ProseMirror:focus p.apos-is-empty::after) { /* stylelint-disable-line selector-class-pattern, selector-no-qualifying-type */
     display: block;
     margin: 5px 0 10px;
+    padding-top: 5px;
+    border-top: 1px solid var(--a-primary-transparent-50);
     color: var(--a-primary-transparent-50);
     font-size: var(--a-type-smaller);
     text-transform: uppercase;
     letter-spacing: 0.5px;
     font-weight: 600;
-    border-top: 1px solid var(--a-primary-transparent-50);
-    padding-top: 5px;
     content: attr(data-placeholder);
     pointer-events: none;
   }
 
   .apos-rich-text-editor__editor {
     @include apos-transition();
+
     position: relative;
     border-radius: var(--a-border-radius);
     background-color: transparent;
   }
 
   .apos-rich-text-editor__editor :deep([data-tippy-root]) {
-    transition: all 0.4s var(--a-transition-timing-bounce);
+    transition: all 400ms var(--a-transition-timing-bounce);
     /* stylelint-disable-next-line time-min-milliseconds */
-    transition-delay: 0.1s;
+    transition-delay: 100ms;
   }
 
   .apos-rich-text-editor__editor :deep(.tippy-box[data-animation='fade'][data-state='hidden']) {
@@ -859,13 +866,12 @@ function traverseNextNode(node) {
     background-color: var(--a-primary-transparent-10);
     min-height: 50px;
   }
+
   .apos-rich-text-editor__editor_after {
     @include type-small;
+
     position: absolute;
-    top: 0;
-    right: 0;
-    bottom: 0;
-    left: 0;
+    inset: 0;
     display: block;
     width: 200px;
     height: 10px;
@@ -878,11 +884,13 @@ function traverseNextNode(node) {
     text-transform: uppercase;
     letter-spacing: 1px;
     text-align: center;
+
     &.apos-is-visually-empty {
       opacity: 1;
       visibility: visible;
     }
   }
+
   :deep(.apos-rich-text-toolbar__inner > .apos-rich-text-editor__control) {
     /* Addresses a Safari-only situation where it inherits the
       `::-webkit-scrollbar-button` 2px margin. */
@@ -907,12 +915,12 @@ function traverseNextNode(node) {
 
   // So editors can identify the cells that would take part
   // in a merge operation
-  .apos-rich-text-editor__editor :deep(.selectedCell) {
+  .apos-rich-text-editor__editor :deep(.selectedCell) { /* stylelint-disable-line selector-class-pattern */
     // Should be visible on any background, light mode or dark mode
     backdrop-filter: invert(0.1);
   }
 
-  .apos-rich-text-editor__editor :deep(figure.ProseMirror-selectednode) {
+  .apos-rich-text-editor__editor :deep(figure.ProseMirror-selectednode) { /* stylelint-disable-line selector-no-qualifying-type, selector-class-pattern */
     opacity: 0.5;
   }
 
@@ -939,6 +947,8 @@ function traverseNextNode(node) {
   }
 
   .apos-rich-text-insert-menu-item {
+    @include apos-transition();
+
     all: unset;
     display: flex;
     flex-direction: row;
@@ -946,13 +956,15 @@ function traverseNextNode(node) {
     gap: 12px;
     padding: 14px 16px;
     border-bottom: 1px solid var(--a-base-9);
-    @include apos-transition();
+
     &:last-of-type {
       border-bottom: none;
     }
+
     &:hover {
       background-color: var(--a-primary-transparent-10);
     }
+
     &:active, &:focus {
       background-color: var(--a-primary);
       color: var(--a-white);
@@ -963,25 +975,29 @@ function traverseNextNode(node) {
     display: flex;
     flex-direction: column;
     gap: 5px;
+
     h4, p {
       margin: 0;
       font-family: var(--a-family-default);
     }
+
     h4 {
       font-weight: 500;
       font-size: var(--a-type-large);
     }
+
     p {
       font-size: var(--a-type-label);
     }
   }
+
   .apos-rich-text-insert-menu-icon {
     position: relative;
     display: flex;
-    width: 40px;
-    height: 40px;
     align-items: center;
     justify-content: center;
+    width: 40px;
+    height: 40px;
     border: 1px solid var(--a-base-8);
     color: var(--a-text-primary);
     background-color: var(--a-white);
@@ -990,30 +1006,30 @@ function traverseNextNode(node) {
 
   .apos-rich-text-insert-menu-heading {
     padding: 12px 16px;
-    background-color: var(--a-base-9);
-    color: var(--a-base-2);
-    font-weight: 500;
     border-bottom: 1px solid var(--a-base-7);
+    color: var(--a-base-2);
     font-size: var(--a-type-label);
+    background-color: var(--a-base-9);
+    font-weight: 500;
     letter-spacing: 0.25px;
   }
 
-  :deep(.ProseMirror) {
+  :deep(.ProseMirror) { /* stylelint-disable-line selector-class-pattern */
     > * + * {
       margin-top: 0.75em;
     }
   }
 
-  :deep(.ProseMirror-gapcursor) {
+  :deep(.ProseMirror-gapcursor) { /* stylelint-disable-line selector-class-pattern */
     position: relative;
     display: block;
     height: 20px;
 
-    &:after {
+    &::after {
       width: 1px;
       height: 20px;
-      border-left: 1px solid #000;
       border-top: 0 none;
+      border-left: 1px solid #000;
     }
   }
 </style>

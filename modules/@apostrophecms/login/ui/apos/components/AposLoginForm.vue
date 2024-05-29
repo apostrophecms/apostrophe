@@ -99,6 +99,7 @@ export default {
 
     &__link {
       @include type-large;
+
       position: relative;
       // AposSchema adds $spacing-quadruple margin bottom
       top: -$spacing-triple;

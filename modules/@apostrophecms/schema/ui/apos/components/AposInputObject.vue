@@ -42,9 +42,11 @@ export default {
   .apos-input-object {
     border-left: 1px solid var(--a-base-9);
   }
+
   .apos-input-wrapper {
     margin: 20px 0 0 19px;
   }
+
   .apos-input-object :deep(.apos-schema .apos-field) {
     margin-bottom: 30px;
   }

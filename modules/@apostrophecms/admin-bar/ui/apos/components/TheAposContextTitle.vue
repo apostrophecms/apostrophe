@@ -148,9 +148,10 @@ export default {
 </script>
 <style lang="scss" scoped>
 .apos-admin-bar__control-set--title {
-  justify-content: center;
   align-items: center;
+  justify-content: center;
 }
+
 .apos-admin-bar__title {
   display: inline-flex;
   align-items: center;
@@ -169,8 +170,8 @@ export default {
 
   &__separator {
     align-items: center;
-    padding: 0 7px;
     margin-top: 1px;
+    padding: 0 7px;
   }
 
   &__document {

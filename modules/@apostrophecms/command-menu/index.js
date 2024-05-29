@@ -382,12 +382,17 @@ module.exports = {
           .forEach(([ modal, groups ]) => Object.values(groups)
             .forEach(group => Object.entries(group.commands)
               .forEach(([ name, field ]) => {
-                self.detectShortcutConflict({
-                  shortcuts,
-                  shortcut: field.shortcut.toUpperCase(),
-                  modal: modal === 'default' ? 'admin-bar' : modal,
-                  moduleName: name
-                });
+                field.shortcut
+                  .toUpperCase()
+                  .split(' ')
+                  .forEach(shortcut => {
+                    self.detectShortcutConflict({
+                      shortcuts,
+                      shortcut,
+                      modal: modal === 'default' ? 'admin-bar' : modal,
+                      moduleName: name
+                    });
+                  });
               })
             )
           );

@@ -51,18 +51,15 @@ export default {
 .apos-busy {
   z-index: $z-index-busy;
   position: fixed;
-  top: 0;
-  right: 0;
-  bottom: 0;
-  left: 0;
+  inset: 0;
   display: flex;
+  align-items: center;
+  justify-content: center;
   width: 100%;
   height: 100%;
-  justify-content: center;
-  align-items: center;
   background: var(--a-overlay);
-  transition: opacity 0.5s ease;
-  transition-delay: 0.3s;
+  transition: opacity 500ms ease;
+  transition-delay: 300ms;
   opacity: 0;
   pointer-events: none;
 }
@@ -76,6 +73,7 @@ export default {
   z-index: $z-index-default;
   width: 60px;
   height: 60px;
+
   &:deep(svg) {
     width: 100%;
     height: 100%;

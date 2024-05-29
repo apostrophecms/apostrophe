@@ -11,16 +11,17 @@
       :class="classes"
       role="dialog"
       aria-modal="true"
-      :aria-labelledby="state.id"
+      :aria-labelledby="props.modalId"
       data-apos-modal
       @focus.capture="storeFocusedElement"
-      @keydown="onKeydown"
+      @esc="close"
+      @keydown.tab="onTab"
     >
       <transition :name="transitionType">
         <div
           v-if="modal.showModal"
           class="apos-modal__overlay"
-          @click="close"
+          @click="emit('esc')"
         />
       </transition>
       <transition :name="transitionType" @after-leave="$emit('inactive')">
@@ -44,7 +45,7 @@
                 <div v-if="hasSlot('secondaryControls')" class="apos-modal__controls--secondary">
                   <slot name="secondaryControls" />
                 </div>
-                <h2 :id="state.id" class="apos-modal__heading">
+                <h2 :id="props.modalId" class="apos-modal__heading">
                   <span v-if="modal.a11yTitle" class="apos-sr-only">
                     {{ $t(modal.a11yTitle) }}
                   </span>
@@ -96,17 +97,15 @@
 // transition.
 
 import {
-  ref, reactive, onMounted, computed, watch, nextTick, useSlots
+  ref, onMounted, onUnmounted, computed, watch, nextTick, useSlots
 } from 'vue';
 import { useAposFocus } from 'Modules/@apostrophecms/modal/composables/AposFocus';
-import cuid from 'cuid';
+import { useModalStore } from 'Modules/@apostrophecms/ui/stores/modal';
 
 const {
   cycleElementsToFocus,
-  elementsToFocus,
   focusElement,
   focusLastModalFocusedElement,
-  focusedElement,
   isElementVisible,
   storeFocusedElement
 } = useAposFocus();
@@ -119,18 +118,18 @@ const props = defineProps({
   modalTitle: {
     type: [ String, Object ],
     default: ''
+  },
+  modalId: {
+    type: String,
+    required: true
   }
 });
+
+const store = useModalStore();
 
 const slots = useSlots();
 const emit = defineEmits([ 'inactive', 'esc', 'show-modal', 'no-modal', 'ready' ]);
 const modalEl = ref(null);
-const state = reactive({
-  id: `modal:${cuid()}`,
-  elementsToFocus,
-  focusedElement,
-  modalEl
-});
 
 const transitionType = computed(() => {
   if (props.modal.type !== 'slide') {
@@ -212,10 +211,17 @@ watch(triggerFocusRefresh, (newVal) => {
   }
 });
 
-onMounted(() => {
+onMounted(async () => {
+  await nextTick();
   if (shouldTrapFocus.value) {
-    nextTick(trapFocus);
+    trapFocus();
   }
+  store.updateModalData(props.modalId, { modalEl: modalEl.value });
+  window.addEventListener('keydown', onKeydown);
+});
+
+onUnmounted(() => {
+  window.removeEventListener('keydown', onKeydown);
 });
 
 function onKeydown(e) {
@@ -223,25 +229,24 @@ function onKeydown(e) {
   if (hasPressedEsc) {
     close(e);
   }
-  cycleElementsToFocus(e);
+}
+
+function onTab(e) {
+  const currentModal = store.get(props.modalId);
+  cycleElementsToFocus(e, currentModal.elementsToFocus);
 }
 
 async function onEnter() {
   emit('show-modal');
-  apos.modal.stack = apos.modal.stack || [];
 
-  apos.modal.stack.push(state);
   await nextTick();
   emit('ready');
 }
 
 function onLeave() {
-  emit('no-modal');
-
-  apos.modal.stack = apos.modal.stack
-    .filter(modal => modal.id !== state.id);
-
+  store.remove(props.modalId);
   focusLastModalFocusedElement();
+  emit('no-modal');
 }
 
 function trapFocus() {
@@ -258,10 +263,13 @@ function trapFocus() {
     .map(addExcludingAttributes)
     .join(', ');
 
-  elementsToFocus.value = [ ...modalEl.value.querySelectorAll(selector) ]
+  const elementsToFocus = [ ...modalEl.value.querySelectorAll(selector) ]
     .filter(isElementVisible);
 
-  focusElement(focusedElement.value, elementsToFocus.value[0]);
+  store.updateModalData(props.modalId, { elementsToFocus });
+  const currentModal = store.get(props.modalId);
+
+  focusElement(currentModal.focusedElement, currentModal.elementsToFocus[0]);
 
   function addExcludingAttributes(element) {
     return `${element}:not([tabindex="-1"]):not([disabled]):not([type="hidden"]):not([aria-hidden])`;
@@ -269,10 +277,10 @@ function trapFocus() {
 }
 
 function close() {
-  if (apos.modal.stack.at(-1)?.id !== state.id) {
-    return;
+  const activeModalId = store.activeModal?.id;
+  if (activeModalId === props.modalId) {
+    emit('esc');
   }
-  emit('esc');
 }
 </script>
 
@@ -282,10 +290,7 @@ function close() {
   .apos-modal__inner {
     z-index: $z-index-modal;
     position: fixed;
-    top: $spacing-base;
-    right: $spacing-base;
-    bottom: $spacing-base;
-    left: $spacing-base;
+    inset: $spacing-base $spacing-base $spacing-base $spacing-base;
     display: grid;
     grid-template-rows: auto 1fr auto;
     height: calc(100vh - #{$spacing-base * 2});
@@ -295,24 +300,21 @@ function close() {
     color: var(--a-text-primary);
 
     @include media-up(lap) {
-      top: $spacing-double;
-      right: $spacing-double;
-      bottom: $spacing-double;
-      left: $spacing-double;
+      inset: $spacing-double $spacing-double $spacing-double $spacing-double;
       height: calc(100vh - #{$spacing-double * 2});
     }
 
     .apos-modal--slide & {
       position: fixed;
-      transition: transform 0.15s ease;
       top: 0;
       bottom: 0;
-      transform: translateX(0);
       width: 100%;
-      border-radius: 0;
       height: 100vh;
+      transition: transform 200ms ease;
+      transform: translateX(0);
+      border-radius: 0;
 
-      @media screen and (min-width: 800px) {
+      @include media-up(hands-wide) {
         max-width: 540px;
       }
     }
@@ -328,19 +330,19 @@ function close() {
     }
 
     &.apos-modal__inner--two-thirds {
-      @media screen and (min-width: 800px) {
+      @include media-up(hands-wide) {
         max-width: 66%;
       }
     }
 
     &.apos-modal__inner--half {
-      @media screen and (min-width: 800px) {
+      @include media-up(hands-wide) {
         max-width: 50%;
       }
     }
 
     &.apos-modal__inner--full {
-      @media screen and (min-width: 800px) {
+      @include media-up(hands-wide) {
         max-width: 100%;
       }
     }
@@ -357,7 +359,7 @@ function close() {
 
     .apos-modal--overlay & {
       transform: scale(1);
-      transition: opacity 0.15s ease, transform 0.15s ease;
+      transition: opacity 200ms ease, transform 200ms ease;
     }
 
     &.fade-enter-from,
@@ -384,15 +386,12 @@ function close() {
   .apos-modal__overlay {
     z-index: $z-index-modal;
     position: fixed;
-    top: 0;
-    right: 0;
-    bottom: 0;
-    left: 0;
+    inset: 0;
     background-color: var(--a-overlay-modal);
 
     .apos-modal--slide &,
     .apos-modal--overlay & {
-      transition: opacity 0.15s ease;
+      transition: opacity 200ms ease;
     }
 
     &.slide-left-enter-from,
@@ -425,8 +424,8 @@ function close() {
   .apos-modal__footer__inner,
   .apos-modal__header__main {
     display: flex;
-    padding: $spacing-double;
     align-items: center;
+    padding: $spacing-double;
   }
 
   .apos-modal__header__main {
@@ -453,9 +452,10 @@ function close() {
   }
 
   .apos-modal__controls--header {
-    justify-content: flex-end;
     flex-grow: 1;
+    justify-content: flex-end;
   }
+
   :deep(.apos-modal__controls--primary) {
     & > .apos-button__wrapper,
     & > .apos-context-menu {
@@ -465,6 +465,7 @@ function close() {
 
   .apos-modal__locale {
     @include type-base;
+
     margin-right: $spacing-double;
     font-weight: var(--a-weight-bold);
   }
@@ -475,6 +476,7 @@ function close() {
 
   .apos-modal__heading {
     @include type-title;
+
     margin: 0;
   }
 
@@ -484,6 +486,7 @@ function close() {
 
   .apos-modal__main--with-rails {
     grid-template-columns: 15% 1fr minmax(200px, 10%);
+
     @include media-up(lap) {
       grid-template-columns: 15% 1fr minmax(250px, $modal-rail-right-w);
     }
@@ -499,14 +502,15 @@ function close() {
 
   .apos-modal--busy .apos-modal__inner {
     $height: 190px;
+
     top: 50%;
     bottom: -50%;
     display: flex;
-    height: $height;
-    transform: translateY(math.div($height, 2) * -1);
-    justify-content: center;
     align-items: center;
+    justify-content: center;
+    height: $height;
     text-align: center;
+    transform: translateY(math.div($height, 2) * -1);
   }
 
   .apos-modal__busy-text {

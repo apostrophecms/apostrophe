@@ -64,6 +64,7 @@ export default {
     height: 46px;
     padding-right: 40px;
   }
+
   .apos-input--date {
     &::-webkit-clear-button {
       position: relative;

@@ -61,14 +61,18 @@ export default {
   width: 100%;
   height: 100%;
 }
+
 .apos-tag-list__inner {
   margin: 30px 0 0 30px;
 }
+
 .apos-tag-list__title {
   @include type-base;
+
   margin-bottom: 15px;
   color: var(--a-base-3);
 }
+
 .apos-tag-list__items {
   @include apos-list-reset();
 }
@@ -76,8 +80,8 @@ export default {
 .apos-tag-list__empty {
   display: flex;
   flex-direction: column;
-  justify-content: center;
   align-items: center;
+  justify-content: center;
   width: 100%;
   height: 100%;
   margin: 0 1rem;

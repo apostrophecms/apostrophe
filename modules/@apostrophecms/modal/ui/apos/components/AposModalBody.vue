@@ -29,6 +29,7 @@ export default {
 .apos-modal__body {
   overflow-y: auto;
   padding: $spacing-double;
+
   @include media-up(lap) {
     padding: $spacing-quadruple;
   }

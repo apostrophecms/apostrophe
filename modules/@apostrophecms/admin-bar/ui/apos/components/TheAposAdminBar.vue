@@ -100,6 +100,7 @@ export default {
 
 :deep(.apos-admin-bar__control-set) {
   @include type-base;
+
   display: flex;
   width: 100%;
   height: 100%;
@@ -112,25 +113,30 @@ export default {
 :deep(.apos-context-menu__pane) {
   min-width: 150px;
 }
+
 :deep(.flip-enter) { // to the ground
   transform: translateY(-20%);
   opacity: 0;
 }
+
 :deep(.flip-leave) { // in the frame
   transform: translateY(0);
   opacity: 1;
 }
+
 :deep(.flip-enter-to) { // from the ground
   transform: translateY(0);
   opacity: 1;
 }
+
 :deep(.flip-leave-to) { // to the sky
   transform: translateY(20%);
   opacity: 0;
 }
 
 :deep(.flip-enter-active), :deep(.flip-leave-active) {
-  transition: all 150ms;
+  transition: all 200ms;
+
   &.apos-admin-bar__control-set__group {
     position: absolute;
   }

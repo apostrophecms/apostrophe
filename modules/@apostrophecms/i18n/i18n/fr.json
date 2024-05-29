@@ -65,6 +65,7 @@
   "commandMenuSelectAll": "Tout sélectionner",
   "commandMenuShortcut": "Raccourcis clavier",
   "commandMenuShowShortcutList": "Afficher la liste des raccourcis",
+  "commandMenuTaskbar": "Barre des tâches",
   "commandMenuToggleEditPreviewMode": "Basculer édition / prévisualisation",
   "commandMenuTogglePublishedDraftDocument": "Basculer Publié / Brouillon",
   "commandMenuUndo": "Annuler",

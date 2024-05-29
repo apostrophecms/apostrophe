@@ -79,13 +79,16 @@ export default {
       color: var(--a-white);
     }
   }
+
   .apos-breadcrumb__items {
     display: inline-block;
     margin: $spacing-base $spacing-double;
     padding-left: 0;
   }
+
   .apos-breadcrumb__item {
     @include type-small;
+
     display: inline-flex;
     align-items: center;
     color: var(--a-text-primary);
@@ -93,6 +96,7 @@ export default {
     button {
       @include apos-button-reset();
       @include link-primary;
+
       text-decoration: none;
 
       .apos-breadcrumb--dark & {
@@ -104,6 +108,7 @@ export default {
       text-decoration: underline;
     }
   }
+
   .apos-breadcrumb__chevron {
     display: flex;
     margin: 0 4px;

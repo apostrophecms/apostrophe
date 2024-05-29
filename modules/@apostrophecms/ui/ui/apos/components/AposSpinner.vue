@@ -108,24 +108,26 @@ module.exports = {
   position: relative;
   width: 17px;
   height: 17px;
+
   &--heavy {
     width: 27px;
     height: 27px;
   }
 }
+
 .apos-spinner__svg {
   max-width: 100%;
   max-height: 100%;
 }
 
 .apos-spinner__svg-track {
-  animation: counterClockwise 2s infinite linear;
+  animation: counter-clockwise 2000 infinite linear;
   transform-origin: 50% 50%;
   transform: scale(100, 100);
 }
 
 .apos-spinner__svg-spinner {
-  animation: clockwise 1s infinite linear;
+  animation: clockwise 1000ms infinite linear;
   transform-origin: 50% 50%;
   transform: scale(100, 100);
 }
@@ -134,15 +136,17 @@ module.exports = {
   from {
     transform: rotate(0deg);
   }
+
   to {
     transform: rotate(359deg);
   }
 }
 
-@keyframes counterClockwise {
+@keyframes counter-clockwise {
   from {
     transform: rotate(0deg);
   }
+
   to {
     transform: rotate(-359deg);
   }
