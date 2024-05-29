@@ -71,7 +71,7 @@ module.exports = {
      */
     colorLight: {
       type: String,
-      default: '#cca9ff'
+      default: '--a-primary-transparent-50'
     },
     /**
      * The weight of the spinner. Can be `normal` or `heavy`.
@@ -94,8 +94,7 @@ module.exports = {
       return color?.startsWith('--') ? `var(${color})` : color;
     },
     stopColorDark() {
-      const color = this.color === '--a-primary' ? '#6516dd' : this.color;
-      return color?.startsWith('--') ? `var(${color})` : color;
+      return this.color?.startsWith('--') ? `var(${this.color})` : this.color;
     },
     className() {
       return `apos-spinner--${this.weight}`;
