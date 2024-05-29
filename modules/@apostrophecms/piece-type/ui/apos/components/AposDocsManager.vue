@@ -102,7 +102,7 @@
         <template #bodyMain>
           <AposDocsManagerDisplay
             v-if="items.length > 0"
-            v-model:checked="checked"
+            :checked="checked"
             :items="items"
             :headers="headers"
             :options="{
@@ -111,6 +111,7 @@
               disableUnpublished: disableUnpublished,
               manuallyPublished: manuallyPublished
             }"
+            @update:checked="setCheckedByIds"
             @open="edit"
           />
           <div v-else class="apos-pieces-manager__empty">
@@ -213,11 +214,8 @@ export default {
     },
     selectAllChoice() {
       const checkCount = this.checked.length;
-      console.log('checkCount', checkCount);
       const pageNotFullyChecked = this.items
         .some((item) => !this.checked.includes(item._id));
-
-      console.log('pageNotFullyChecked', pageNotFullyChecked);
 
       return {
         value: 'checked',
@@ -257,13 +255,6 @@ export default {
     apos.bus.$off('command-menu-manager-close', this.confirmAndCancel);
   },
   methods: {
-    setCheckedDocs(checked) {
-      console.log('=====> set checked docs <=====');
-      this.checkedDocs = checked;
-      this.checked = this.checkedDocs.map(item => {
-        return item._id;
-      });
-    },
     async create() {
       await this.edit(null);
     },
