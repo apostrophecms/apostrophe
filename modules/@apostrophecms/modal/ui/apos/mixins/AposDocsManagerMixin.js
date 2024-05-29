@@ -111,27 +111,32 @@ export default {
           doc._fields = this.subfields[doc._id];
         }
       }
-    },
-    checked() {
-      this.updateCheckedDocs();
     }
   },
   methods: {
-    addCheckedDoc(docOdId) {
-      if (docOdId._id) {
-        this.checked.push(docOdId._id);
-        this.checkedDocs.push(docOdId);
-      } else if (typeof docOdId === 'string') {
-        const found = this.items.find(item => item._id === docOdId);
-        if (found) {
-          this.checked.push(found._id);
-          this.checkedDocs.push(found);
-        }
+    addCheckedDoc(docOrId) {
+      const [ docId, doc ] = docOrId._id
+        ? [ docOrId._id, docOrId ]
+        : [ docOrId, this.items.find(item => item._id === docOrId) ];
+
+      if (!doc) {
+        return;
       }
+
+      this.checked = [ ...this.checked, docId ];
+      this.checkedDocs = [ ...this.checkedDocs, doc ];
     },
     setCheckedDocs(docs) {
       this.checked = docs.map(item => item._id);
       this.checkedDocs = docs;
+    },
+    setCheckedByIds(ids) {
+      this.checked = ids;
+      this.checkedDocs = this.items.filter(item => ids.includes(item._id));
+    },
+    removeCheckedDoc(id) {
+      this.checked = this.checked.filter((checkedId) => checkedId !== id);
+      this.checkedDocs = this.checkedDocs.filter((doc) => doc.id !== id);
     },
     findDocById(docs, id) {
       return docs.find(p => p._id === id);
@@ -146,10 +151,6 @@ export default {
     },
     selectAll() {
       if (!this.checked.length) {
-        this.checked = this.items
-          .filter((item) => {
-            const relationshipsMaxedOrUnpublished = this.relationshipField &&
-            (this.maxReached() || !item.lastPublishedAt);
 
         this.items.forEach((item) => {
           const notPublished = this.manuallyPublished && !item.lastPublishedAt;
@@ -237,26 +238,26 @@ export default {
     // update this.checkedDocs based on this.checked. The default
     // implementation is suitable for paginated lists. Can be overridden
     // for other cases.
-    updateCheckedDocs() {
-      // Keep `checkedDocs` in sync with `checked`, first removing from
-      // `checkedDocs` if no longer in `checked`
-      this.checkedDocs = this.checkedDocs.filter(doc => {
-        return this.checked.includes(doc._id);
-      });
-      // then adding to `checkedDocs` if not there yet. These should be in
-      // `items` which is assumed to contain a flat list of items currently
-      // visible.
-      //
-      // TODO: Once we have the option to select all docs of a type even if not
-      // currently visible in the manager this will need to make calls to the
-      // database.
-      this.checked.forEach(id => {
-        if (this.checkedDocs.findIndex(doc => doc._id === id) === -1) {
-          const found = this.items.find(item => item._id === id);
-          found && this.checkedDocs.push(found);
-        }
-      });
-    },
+    /* updateCheckedDocs() { */
+    /*   // Keep `checkedDocs` in sync with `checked`, first removing from */
+    /*   // `checkedDocs` if no longer in `checked` */
+    /*   this.checkedDocs = this.checkedDocs.filter(doc => { */
+    /*     return this.checked.includes(doc._id); */
+    /*   }); */
+    /*   // then adding to `checkedDocs` if not there yet. These should be in */
+    /*   // `items` which is assumed to contain a flat list of items currently */
+    /*   // visible. */
+    /*   // */
+    /*   // TODO: Once we have the option to select all docs of a type even if not */
+    /*   // currently visible in the manager this will need to make calls to the */
+    /*   // database. */
+    /*   this.checked.forEach(id => { */
+    /*     if (this.checkedDocs.findIndex(doc => doc._id === id) === -1) { */
+    /*       const found = this.items.find(item => item._id === id); */
+    /*       found && this.checkedDocs.push(found); */
+    /*     } */
+    /*   }); */
+    /* }, */
     docsManagerAddEventHandlers() {
       apos.bus.$on('content-changed', this.docsManagerOnContentChanged);
     },

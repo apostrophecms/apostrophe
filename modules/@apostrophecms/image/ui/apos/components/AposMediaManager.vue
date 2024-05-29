@@ -393,9 +393,9 @@ export default {
     },
     selectAnother(id) {
       if (this.checked.includes(id)) {
-        this.checked = this.checked.filter(checkedId => checkedId !== id);
+        this.removeCheckedDoc(id);
       } else {
-        this.checked.push(id);
+        this.addCheckedDoc(id);
       }
 
       this.lastSelected = id;
@@ -422,7 +422,7 @@ export default {
       // always want to check, never toggle
       sliced.forEach(item => {
         if (!this.checked.includes(item._id)) {
-          this.checked.push(item._id);
+          this.addCheckedDoc(item._id);
         }
       });
 
