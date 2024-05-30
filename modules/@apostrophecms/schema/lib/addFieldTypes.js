@@ -786,8 +786,12 @@ module.exports = (self) => {
       }
       const errors = [];
       for (const datum of data) {
-        const result = {};
-        result._id = self.apos.launder.id(datum._id) || self.apos.util.generateId();
+        const _id = self.apos.launder.id(datum._id) || self.apos.util.generateId();
+        const [ found ] = destination[field.name].filter(item => item._id === _id) || {};
+        const result = {
+          ...found,
+          _id
+        };
         result.metaType = 'arrayItem';
         result.scopedArrayName = field.scopedArrayName;
         try {
@@ -876,6 +880,7 @@ module.exports = (self) => {
       const schema = field.schema;
       const errors = [];
       const result = {
+        ...destination[field.name],
         _id: self.apos.launder.id(data && data._id) || self.apos.util.generateId()
       };
       if (data == null || typeof data !== 'object' || Array.isArray(data)) {
