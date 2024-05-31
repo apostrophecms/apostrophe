@@ -144,9 +144,11 @@ export default {
   &.apos-field__label--meta-left {
     justify-content: flex-start;
     gap: $spacing-base;
+
     .apos-field__label-meta {
       order: 1;
     }
+
     .apos-field_label-info {
       order: 2;
     }
