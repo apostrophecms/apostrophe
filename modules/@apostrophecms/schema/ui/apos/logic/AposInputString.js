@@ -25,6 +25,9 @@ export default {
         if (this.field.type === 'float' || this.field.type === 'integer') {
           return 'number';
         }
+        if (this.field.type === 'string' && this.field.textarea) {
+          return 'textarea';
+        }
         if (this.field.type === 'string' || this.field.type === 'slug') {
           return 'text';
         }
