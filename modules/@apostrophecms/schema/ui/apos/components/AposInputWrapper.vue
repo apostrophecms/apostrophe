@@ -12,7 +12,10 @@
           :is="labelEl"
           v-if="field.label"
           class="apos-field__label"
-          :class="{'apos-sr-only': field.hideLabel }"
+          :class="{
+            'apos-sr-only': field.hideLabel,
+            'apos-field__label--meta-left': field.meta && field.meta.position === 'left',
+          }"
           :for="uid"
           :data-apos-test-name="field.name"
           :data-apos-test-label="field.label"
@@ -137,6 +140,19 @@ export default {
   padding: 0;
   color: var(--a-text-primary);
   gap: $spacing-double;
+
+  &.apos-field__label--meta-left {
+    justify-content: flex-start;
+    gap: $spacing-base;
+
+    .apos-field__label-meta {
+      order: 1;
+    }
+
+    .apos-field_label-info {
+      order: 2;
+    }
+  }
 
   &-info {
     display: block;
