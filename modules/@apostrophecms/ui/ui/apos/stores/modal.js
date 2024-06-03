@@ -21,10 +21,10 @@ export const useModalStore = defineStore('modal', () => {
     }
 
     modal.resolve(modal.result);
-    apos.bus.$emit('modal-resolved', modal);
     stack.value = stack.value.filter(modal => id !== modal.id);
     const current = getAt(-1);
     activeId.value = current.id || null;
+    apos.bus.$emit('modal-resolved', modal);
   }
 
   function get(id) {
