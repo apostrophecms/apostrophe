@@ -2401,7 +2401,7 @@ describe('Schemas', function() {
     assert.deepEqual(actual, expected);
   });
 
-  describe.only('field.readOnly with default value', function() {
+  describe('field.readOnly with default value', function() {
     const givenSchema = [
       {
         name: 'title',
@@ -2471,11 +2471,11 @@ describe('Schemas', function() {
       const data = {
         _relationship: [
           {
+            ...home,
             _fields: {
               planet: 'Saturn',
               moon: 'Titan'
-            },
-            ...home
+            }
           }
         ],
         array: [
@@ -2495,8 +2495,7 @@ describe('Schemas', function() {
         pageId: [ home._id ],
         pageFields: {
           [home._id]: {
-            // planet: 'Saturn',
-            moon: 'Titan'
+            planet: 'Saturn'
           }
         },
         title: 'Sol'
@@ -2504,35 +2503,30 @@ describe('Schemas', function() {
       const destination = {
         _relationship: [
           {
+            ...home,
             _fields: {
-              // planet: 'Saturn',
-              moon: 'Titan'
-            },
-            ...home
+              planet: 'Saturn'
+            }
           }
         ],
         array: [
           {
             _id: 'Jupiter-Io',
             planet: 'Jupiter',
-            // moon: 'Io'
           },
           {
             _id: 'Mars-Phobos',
             planet: 'Mars',
-            // moon: 'Phobos'
           }
         ],
         object: {
           _id: 'Neptune-Triton',
           planet: 'Neptune',
-          // moon: 'Triton'
         },
         pageId: [ home._id ],
         pageFields: {
           [home._id]: {
-            // planet: 'Saturn',
-            moon: 'Titan'
+            planet: 'Saturn'
           }
         },
         title: 'Default'
@@ -2582,7 +2576,7 @@ describe('Schemas', function() {
         pageFields: {
           [home._id]: {
             planet: 'Saturn',
-            moon: 'Titan'
+            // moon: 'Titan'
           }
         },
         title: 'Sol'
