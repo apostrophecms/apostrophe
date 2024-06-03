@@ -32,7 +32,7 @@
     <component
       :is="fieldStyle === 'table' ? 'td' : 'div'"
       v-for="field in schema"
-      :key="field.name.concat(field._id ?? '')"
+      :key="generateItemUniqueKey(field)"
       :data-apos-field="field.name"
       :style="(fieldStyle === 'table' && field.columnStyle) || {}"
       :class="{'apos-field--hidden': !displayComponent(field)}"
