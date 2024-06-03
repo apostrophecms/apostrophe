@@ -54,7 +54,7 @@ export default {
     }
   },
   mounted() {
-    apos.bus.$on('open-modal', async state => {
+    apos.bus.$on('@apostrophecms/command-menu:open-modal', async state => {
       await apos.modal.execute(state.name, state.props);
     });
 
