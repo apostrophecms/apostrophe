@@ -115,9 +115,12 @@ export default {
   },
   methods: {
     addCheckedDoc(docOrId) {
+      const items = this.moduleOptions.name === '@apostrophecms/page'
+        ? this.pagesFlat
+        : this.items;
       const [ docId, doc ] = docOrId._id
         ? [ docOrId._id, docOrId ]
-        : [ docOrId, this.items.find(item => item._id === docOrId) ];
+        : [ docOrId, items.find(item => item._id === docOrId) ];
 
       if (!doc) {
         return;
@@ -131,8 +134,12 @@ export default {
       this.checkedDocs = docs;
     },
     setCheckedByIds(ids) {
+      const items = this.moduleOptions.name === '@apostrophecms/page'
+        ? this.pagesFlat
+        : this.items;
+
       this.checked = ids;
-      this.checkedDocs = this.items.filter(item => ids.includes(item._id));
+      this.checkedDocs = items.filter(item => ids.includes(item._id));
     },
     removeCheckedDoc(id) {
       this.checked = this.checked.filter((checkedId) => checkedId !== id);
