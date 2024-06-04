@@ -242,29 +242,6 @@ export default {
         }
       }
     },
-    // update this.checkedDocs based on this.checked. The default
-    // implementation is suitable for paginated lists. Can be overridden
-    // for other cases.
-    /* updateCheckedDocs() { */
-    /*   // Keep `checkedDocs` in sync with `checked`, first removing from */
-    /*   // `checkedDocs` if no longer in `checked` */
-    /*   this.checkedDocs = this.checkedDocs.filter(doc => { */
-    /*     return this.checked.includes(doc._id); */
-    /*   }); */
-    /*   // then adding to `checkedDocs` if not there yet. These should be in */
-    /*   // `items` which is assumed to contain a flat list of items currently */
-    /*   // visible. */
-    /*   // */
-    /*   // TODO: Once we have the option to select all docs of a type even if not */
-    /*   // currently visible in the manager this will need to make calls to the */
-    /*   // database. */
-    /*   this.checked.forEach(id => { */
-    /*     if (this.checkedDocs.findIndex(doc => doc._id === id) === -1) { */
-    /*       const found = this.items.find(item => item._id === id); */
-    /*       found && this.checkedDocs.push(found); */
-    /*     } */
-    /*   }); */
-    /* }, */
     docsManagerAddEventHandlers() {
       apos.bus.$on('content-changed', this.docsManagerOnContentChanged);
     },
