@@ -72,7 +72,7 @@
         <template #bodyMain>
           <AposMediaManagerDisplay
             ref="display"
-            v-model:checked="checked"
+            :checked="checked"
             :accept="accept"
             :items="items"
             :module-options="moduleOptions"
@@ -81,6 +81,7 @@
               disableUnchecked: maxReached(),
               hideCheckboxes: !relationshipField
             }"
+            @update:checked="setCheckedByIds"
             @edit="updateEditing"
             @select="select"
             @select-series="selectSeries"
@@ -384,9 +385,12 @@ export default {
     // select setters
     select(id) {
       if (this.checked.includes(id)) {
-        this.checked = [];
+        this.setCheckedDocs([]);
       } else {
-        this.checked = [ id ];
+        const item = this.items.find(item => item._id === id);
+        if (item) {
+          this.setCheckedDocs([ item ]);
+        }
       }
       this.updateEditing(id);
       this.lastSelected = id;
