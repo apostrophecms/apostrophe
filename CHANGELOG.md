@@ -12,6 +12,10 @@ Page A has the slug `/peer` and page B has the slug `/peer/page`.
 Now we want page B to be the child of page A.
 We will now end up with page B slug as `/peer/page` and not `/peer/peer/page` as before.
 
+### Fixes
+
+* Updating schema fields as read-only no longer reset the value when updating the document.
+
 ## 3.66.0 (2024-05-15)
 
 ### Fixes

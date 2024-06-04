@@ -2263,6 +2263,290 @@ describe('Schemas', function() {
     assert(output.goodValue === '2022-05-09T22:36:00.000Z');
   });
 
+  it('should compare two document properly with the method getChanges', async function() {
+    const req = apos.task.getReq();
+    const instance = apos.article.newInstance();
+    const article1 = {
+      ...instance,
+      title: 'article 1',
+      area: {
+        _id: 'clrth36680007mnmd3jj7cta0',
+        items: [
+          {
+            _id: 'clt79l48g001h2061j5ihxjkv',
+            metaType: 'widget',
+            type: '@apostrophecms/rich-text',
+            aposPlaceholder: false,
+            content: '<p>Some text here.</p>',
+            permalinkIds: [],
+            imageIds: []
+          }
+        ],
+        metaType: 'area'
+      },
+      array: [
+        {
+          _id: 'clt79llm800242061v4dx9kv5',
+          metaType: 'arrayItem',
+          scopedArrayName: 'doc.article.array',
+          arrayTitle: 'array title 1'
+        },
+        {
+          _id: 'clt79llm800242061v4d47364',
+          metaType: 'arrayItem',
+          scopedArrayName: 'doc.article.array',
+          arrayTitle: 'array title 2'
+        }
+      ]
+    };
+    const article2 = {
+      ...article1,
+      title: 'article 2'
+    };
+    const article3 = {
+      ...instance,
+      title: 'article 3',
+
+      area: {
+        _id: 'clrth36680007mnmd3jj7cta0',
+        items: [
+          {
+            _id: 'clt79l48g001h2061j5ihxjkv',
+            metaType: 'widget',
+            type: '@apostrophecms/rich-text',
+            aposPlaceholder: false,
+            content: '<p>Some text here changed.</p>',
+            permalinkIds: [],
+            imageIds: []
+          }
+        ],
+        metaType: 'area'
+      },
+      array: [
+        {
+          _id: 'clt79llm800242061v4dx9kv5',
+          metaType: 'arrayItem',
+          scopedArrayName: 'doc.article.array',
+          arrayTitle: 'array title 1 changed'
+        },
+        {
+          _id: 'clt79llm800242061v4d47364',
+          metaType: 'arrayItem',
+          scopedArrayName: 'doc.article.array',
+          arrayTitle: 'array title 2'
+        }
+      ]
+    };
+
+    await apos.article.insert(req, article1);
+    await apos.article.insert(req, article2);
+    await apos.article.insert(req, article3);
+
+    const art1 = await apos.doc.db.findOne({ title: 'article 1' });
+    const art2 = await apos.doc.db.findOne({ title: 'article 2' });
+    const art3 = await apos.doc.db.findOne({ title: 'article 3' });
+
+    const changes11 = apos.schema.getChanges(req, apos.article.schema, art1, art1);
+    const changes12 = apos.schema.getChanges(req, apos.article.schema, art1, art2);
+    const changes23 = apos.schema.getChanges(req, apos.article.schema, art2, art3);
+    const actual = {
+      changes11,
+      changes12,
+      changes23
+    };
+    const expected = {
+      changes11: [],
+      changes12: [ 'title', 'slug' ],
+      changes23: [ 'title', 'slug', 'area', 'array' ]
+    };
+
+    assert.deepEqual(actual, expected);
+  });
+
+  describe('field.readOnly with default value', function() {
+    const givenSchema = [
+      {
+        name: 'title',
+        type: 'string'
+      },
+      {
+        name: 'array',
+        type: 'array',
+        schema: [
+          {
+            name: 'planet',
+            type: 'string',
+            def: 'Earth',
+            readOnly: true
+          },
+          {
+            name: 'moon',
+            type: 'string'
+          }
+        ]
+      },
+      {
+        name: 'object',
+        type: 'object',
+        schema: [
+          {
+            name: 'planet',
+            type: 'string',
+            def: 'Earth',
+            readOnly: true
+          },
+          {
+            name: 'moon',
+            type: 'string'
+          }
+        ]
+      },
+      {
+        name: '_relationship',
+        type: 'relationship',
+        limit: 1,
+        withType: '@apostrophecms/any-page-type',
+        label: 'Page Title',
+        idsStorage: 'pageId',
+        schema: [
+          {
+            name: 'planet',
+            type: 'string',
+            def: 'Earth',
+            readOnly: true
+          },
+          {
+            name: 'moon',
+            type: 'string'
+          }
+        ]
+      }
+    ];
+
+    it('should keep read only values when editing a document', async function() {
+      const req = apos.task.getReq();
+      const schema = apos.schema.compose({
+        addFields: givenSchema
+      });
+      const home = await apos.page.find(req, { slug: '/' }).toObject();
+
+      const data = {
+        _relationship: [
+          {
+            ...home,
+            _fields: {
+              planet: 'Saturn',
+              moon: 'Titan'
+            }
+          }
+        ],
+        array: [
+          {
+            _id: 'Jupiter-Io',
+            moon: 'Io'
+          },
+          {
+            _id: 'Mars-Phobos',
+            moon: 'Phobos'
+          }
+        ],
+        object: {
+          _id: 'Neptune-Triton',
+          moon: 'Triton'
+        },
+        pageId: [ home._id ],
+        pageFields: {
+          [home._id]: {
+            planet: 'Saturn'
+          }
+        },
+        title: 'Sol'
+      };
+      const destination = {
+        _relationship: [
+          {
+            ...home,
+            _fields: {
+              planet: 'Saturn'
+            }
+          }
+        ],
+        array: [
+          {
+            _id: 'Jupiter-Io',
+            planet: 'Jupiter'
+          },
+          {
+            _id: 'Mars-Phobos',
+            planet: 'Mars'
+          }
+        ],
+        object: {
+          _id: 'Neptune-Triton',
+          planet: 'Neptune'
+        },
+        pageId: [ home._id ],
+        pageFields: {
+          [home._id]: {
+            planet: 'Saturn'
+          }
+        },
+        title: 'Default'
+      };
+      await apos.schema.convert(
+        req,
+        schema,
+        data,
+        destination
+      );
+
+      const actual = destination;
+      const expected = {
+        _relationship: [
+          {
+            _fields: {
+              planet: 'Saturn',
+              moon: 'Titan'
+            },
+            ...home
+          }
+        ],
+        array: [
+          {
+            _id: 'Jupiter-Io',
+            metaType: 'arrayItem',
+            moon: 'Io',
+            planet: 'Jupiter',
+            scopedArrayName: undefined
+          },
+          {
+            _id: 'Mars-Phobos',
+            metaType: 'arrayItem',
+            moon: 'Phobos',
+            planet: 'Mars',
+            scopedArrayName: undefined
+          }
+        ],
+        object: {
+          _id: 'Neptune-Triton',
+          metaType: 'objectItem',
+          moon: 'Triton',
+          planet: 'Neptune',
+          scopedObjectName: undefined
+        },
+        pageId: [ home._id ],
+        pageFields: {
+          [home._id]: {
+            planet: 'Saturn'
+          }
+        },
+        title: 'Sol'
+      };
+
+      assert.deepEqual(actual, expected);
+    });
+  });
+
   describe('field editPermission|viewPermission', function() {
     const schema = [
       {
