@@ -176,5 +176,18 @@ export default {
     max-height: 32px;
     object-fit: cover;
   }
+
+  &--attachment {
+    .apos-search-image {
+      max-width: 50px;
+      max-height: 50px;
+    }
+
+    .apos-search__item__title {
+      white-space: nowrap;
+      text-overflow: ellipsis;
+      overflow: hidden;
+    }
+  }
 }
 </style>

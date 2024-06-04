@@ -29,6 +29,9 @@ We will now end up with page B slug as `/peer/page` and not `/peer/peer/page` as
 * `AposContextMenu` now respects the `menuOffset` component property.
 * Set `G,Shift+I` shortcut to open the Image Tags manager modal.
 * Set `G,Shift+F` shortcut to open the File Tags manager modal.
+* Remove slug from suggestion for images.
+* Increase suggestion search image size to 50px.
+* For suggestions with image, keep title on a single line and truncate title field with `...` when it hits the right side.
 
 ### Fixes
 
