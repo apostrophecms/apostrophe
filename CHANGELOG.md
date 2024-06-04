@@ -1,6 +1,6 @@
 # Changelog
 
-## UNRELEASED
+## 4.3.3 (2024-06-04)
 
 * Removes `$nextTick` use to re render schema in `AposArrayEditor` because it was triggering weird vue error in production.
 Instead, makes the AposSchema for loop keys more unique using `modelValue.data._id`, 
