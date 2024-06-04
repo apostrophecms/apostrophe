@@ -149,7 +149,7 @@ export default {
       const [ _id, name ] = first.path.split('.');
       await this.select(_id);
       const aposSchema = this.$refs.schema;
-      await this.nextTick();
+      await this.$nextTick();
       aposSchema.scrollFieldIntoView(name);
     }
     this.titleFieldChoices = await this.getTitleFieldChoices();
@@ -160,11 +160,7 @@ export default {
         return;
       }
       if (await this.validate(true, false)) {
-        // Force the array editor to totally reset to avoid in-schema
-        // animations when switching (e.g., the relationship input).
         this.currentDocToCurrentItem();
-        this.currentId = null;
-        await this.nextTick();
         this.currentId = _id;
         this.currentDoc = {
           hasErrors: false,
@@ -261,7 +257,7 @@ export default {
       if (validateItem) {
         this.triggerValidation = true;
       }
-      await this.nextTick();
+      await this.$nextTick();
       if (validateLength) {
         this.updateMinMax();
       }
@@ -278,14 +274,6 @@ export default {
       } else {
         return true;
       }
-    },
-    // Awaitable nextTick
-    nextTick() {
-      return new Promise((resolve, reject) => {
-        this.$nextTick(() => {
-          return resolve();
-        });
-      });
     },
     newInstance() {
       const instance = {};
