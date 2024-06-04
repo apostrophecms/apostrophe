@@ -69,6 +69,9 @@ export default {
       item.classes && Array.isArray(item.classes) && item.classes.forEach(suffix => {
         classes[`apos-search__item--${suffix}`] = true;
       });
+      if (item.attachment) {
+        classes['apos-search__item--attachment'] = true;
+      }
 
       return classes;
     },
