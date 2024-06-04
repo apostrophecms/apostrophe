@@ -85,7 +85,7 @@
             :icons="icons"
             :options="treeOptions"
             :module-options="moduleOptions"
-            @update:checked="setCheckedByIds"
+            @update:checked="setCheckedDocs"
             @update="update"
           />
         </template>

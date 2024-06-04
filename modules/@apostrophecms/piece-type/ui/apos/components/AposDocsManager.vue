@@ -111,7 +111,7 @@
               disableUnpublished: disableUnpublished,
               manuallyPublished: manuallyPublished
             }"
-            @update:checked="setCheckedByIds"
+            @update:checked="setCheckedDocs"
             @open="edit"
           />
           <div v-else class="apos-pieces-manager__empty">

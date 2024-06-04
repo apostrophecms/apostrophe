@@ -115,38 +115,34 @@ export default {
   },
   methods: {
     addCheckedDoc(docOrId) {
-      const items = this.moduleOptions.name === '@apostrophecms/page'
-        ? this.pagesFlat
-        : this.items;
-      const [ docId, doc ] = docOrId._id
-        ? [ docOrId._id, docOrId ]
-        : [ docOrId, items.find(item => item._id === docOrId) ];
-
-      if (!doc) {
-        return;
-      }
-
-      this.checked = [ ...this.checked, docId ];
-      this.checkedDocs = [ ...this.checkedDocs, doc ];
+      this.concatCheckedDocs([ docOrId ]);
     },
-    setCheckedDocs(docs) {
+    setCheckedDocs(docsOrIds) {
+      const docs = this.getDocs(docsOrIds);
+
       this.checked = docs.map(item => item._id);
       this.checkedDocs = docs;
     },
-    setCheckedByIds(ids) {
-      const items = this.moduleOptions.name === '@apostrophecms/page'
-        ? this.pagesFlat
-        : this.items;
+    concatCheckedDocs(docsOrIds) {
+      const docs = this.getDocs(docsOrIds);
 
-      this.checked = ids;
-      this.checkedDocs = items.filter(item => ids.includes(item._id));
+      this.checked = [ ...this.checked, ...docs.map(({ _id }) => _id) ];
+      this.checkedDocs = [ ...this.checkedDocs, ...docs ];
     },
     removeCheckedDoc(id) {
       this.checked = this.checked.filter((checkedId) => checkedId !== id);
       this.checkedDocs = this.checkedDocs.filter((doc) => doc.id !== id);
     },
-    findDocById(docs, id) {
-      return docs.find(p => p._id === id);
+    getDocs(docsOrIds) {
+      const items = this.moduleOptions.name === '@apostrophecms/page'
+        ? this.pagesFlat
+        : this.items;
+
+      return docsOrIds.map(docOrId => {
+        return docOrId._id
+          ? docOrId
+          : items.find(item => item._id === docOrId);
+      });
     },
     // It would have been nice for this to be computed, however
     // AposMediaManagerDisplay does not re-render when it is
@@ -158,7 +154,6 @@ export default {
     },
     selectAll() {
       if (!this.checked.length) {
-
         this.items.forEach((item) => {
           const notPublished = this.manuallyPublished && !item.lastPublishedAt;
           if (this.relationshipField && (this.maxReached() || notPublished)) {

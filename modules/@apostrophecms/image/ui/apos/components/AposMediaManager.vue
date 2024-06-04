@@ -81,7 +81,7 @@
               disableUnchecked: maxReached(),
               hideCheckboxes: !relationshipField
             }"
-            @update:checked="setCheckedByIds"
+            @update:checked="setCheckedDocs"
             @edit="updateEditing"
             @select="select"
             @select-series="selectSeries"
@@ -347,7 +347,7 @@ export default {
         return;
       }
       if (Array.isArray(imgIds) && imgIds.length) {
-        this.checked = this.checked.concat(imgIds);
+        this.concatCheckedDocs(imgIds);
 
         // If we're currently editing one, don't interrupt that by replacing it.
         if (!this.editing && imgIds.length === 1) {
