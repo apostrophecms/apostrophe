@@ -2405,7 +2405,7 @@ describe('Schemas', function() {
     const givenSchema = [
       {
         name: 'title',
-        type: 'string',
+        type: 'string'
       },
       {
         name: 'array',
@@ -2512,16 +2512,16 @@ describe('Schemas', function() {
         array: [
           {
             _id: 'Jupiter-Io',
-            planet: 'Jupiter',
+            planet: 'Jupiter'
           },
           {
             _id: 'Mars-Phobos',
-            planet: 'Mars',
+            planet: 'Mars'
           }
         ],
         object: {
           _id: 'Neptune-Triton',
-          planet: 'Neptune',
+          planet: 'Neptune'
         },
         pageId: [ home._id ],
         pageFields: {
@@ -2575,8 +2575,7 @@ describe('Schemas', function() {
         pageId: [ home._id ],
         pageFields: {
           [home._id]: {
-            planet: 'Saturn',
-            // moon: 'Titan'
+            planet: 'Saturn'
           }
         },
         title: 'Sol'
