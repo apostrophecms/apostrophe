@@ -181,7 +181,7 @@ export default {
         this.populateDocData();
       }
     },
-    generation(generated) {
+    generation() {
       // repopulate the schema.
       this.populateDocData();
     },
