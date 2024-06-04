@@ -172,7 +172,7 @@ module.exports = {
         },
         [`${self.__meta.name}:manager`]: {
           '@apostrophecms/command-menu:manager': {
-            label: '',
+            label: 'apostrophe:commandMenuManager',
             commands: [
               `${self.__meta.name}:create-new`,
               `${self.__meta.name}:search`,

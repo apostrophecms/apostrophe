@@ -75,11 +75,12 @@ export default {
 <style lang="scss" scoped>
 .apos-confirm__notifications {
   @include type-base;
-  list-style-type: none;
+
+  margin-left: 0;
   padding-top: 0;
   padding-bottom: 0;
-  margin-left: 0;
   text-align: left;
+  list-style-type: none;
 }
 
 .apos-confirm__notification:not(:last-of-type)  {
@@ -92,8 +93,8 @@ export default {
 
 .apos-confirm__notification-meta {
   display: flex;
-  justify-content: center;
   align-items: center;
+  justify-content: center;
 }
 
 .apos-confirm__notification-detail {
@@ -125,8 +126,8 @@ export default {
 }
 
 .apos-confirm__notification-locale {
-  font-size: var(--a-type-large);
   margin-bottom: $spacing-base;
+  font-size: var(--a-type-large);
 }
 
 .apos-confirm__notification-title,

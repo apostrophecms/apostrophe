@@ -6,26 +6,30 @@
   display: block;
   width: max-content;
   max-width: 285px;
-  /* stylelint-disable-next-line time-min-milliseconds */
-  transition-delay: 0.1s;
+  transition-delay: 100ms;
 
   .apos-info {
     max-width: 330px;
+
     p {
       margin-top: 0;
       line-height: var(--a-line-tall);
     }
+
     ul, ol {
       padding-left: $spacing-base;
     }
+
     ul {
       list-style-type: none;
     }
+
     ul li,
     ol li {
       margin-bottom: $spacing-half;
     }
-    ul li:before {
+
+    ul li::before {
       content: '-';
       position: relative;
       left: -$spacing-half;
@@ -85,7 +89,8 @@
     display: none;
     visibility: hidden;
     opacity: 0;
-    transition: opacity 0.15s, visibilty 0.15s;
+    transition: opacity 200ms, visibilty 200ms;
+
     .apos-tooltip__wrapper {
       transform: scale(0.8);
     }
@@ -95,7 +100,8 @@
     display: initial;
     visibility: visible;
     opacity: 1;
-    transition: opacity 0.15s;
+    transition: opacity 200ms;
+
     .apos-tooltip__wrapper {
       transform: scale(1);
     }
@@ -103,8 +109,8 @@
 }
 
 .apos-tooltip__wrapper {
-  transition: all 0.2s var(--a-transition-timing-bounce);
+  transition: all 200ms var(--a-transition-timing-bounce);
   /* stylelint-disable-next-line time-min-milliseconds */
-  transition-delay: 0.1s;
+  transition-delay: 100ms;
   transform: scale(0.8);
 }

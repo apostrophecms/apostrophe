@@ -81,8 +81,8 @@ export default {
   }
 
   .fade-stage-enter-active {
-    transition: opacity 0.2s linear;
-    transition-delay: 0.3s;
+    transition: opacity 200ms linear;
+    transition-delay: 300ms;
   }
 
   .fade-stage-enter-to,
@@ -100,12 +100,12 @@ export default {
   }
 
   .fade-body-enter-active {
-    transition: all 0.25s linear;
-    transition-delay: 0.6s;
+    transition: all 250ms linear;
+    transition-delay: 600ms;
   }
 
   .fade-body-leave-active {
-    transition: all 0.25s linear;
+    transition: all 250ms linear;
   }
 
   .fade-body-enter-to, .fade-body-leave {
@@ -117,8 +117,8 @@ export default {
   }
 
   .fade-outer-enter-active {
-    transition: opacity 0.4s linear;
-    transition-delay: 1s;
+    transition: opacity 400ms linear;
+    transition-delay: 1000ms;
   }
 
   .apos-login {
@@ -134,13 +134,14 @@ export default {
       right: 0;
       left: 0;
       display: flex;
-      justify-content: space-between;
       align-items: center;
+      justify-content: space-between;
       padding: $spacing-triple;
     }
 
     &__link {
       @include type-large;
+
       display: inline-block;
       text-decoration: underline;
       text-underline-offset: 2px;
@@ -200,25 +201,26 @@ export default {
 
     &__footer {
       @include type-base;
+
       position: absolute;
       right: 0;
       bottom: 32px;
       left: 0;
       display: flex;
-      width: 100%;
-      max-width: $login-container;
-      margin: auto;
       align-items: center;
       justify-content: flex-start;
+      width: 100%;
+      margin: auto;
+      max-width: $login-container;
     }
 
     &__project-version {
       overflow: hidden;
-      text-overflow: clip;
-      white-space: nowrap;
-      color: var(--a-base-5);
       margin-right: 0;
       margin-left: auto;
+      color: var(--a-base-5);
+      text-overflow: clip;
+      white-space: nowrap;
     }
   }
 </style>

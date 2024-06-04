@@ -107,11 +107,13 @@ export default {
 
   .apos-schema :deep(.apos-field) {
     margin-bottom: $spacing-quadruple;
+
     &.apos-field--small,
     &.apos-field--micro,
     &.apos-field--margin-micro {
       margin-bottom: $spacing-double;
     }
+
     &.apos-field--margin-none {
       margin-bottom: 0;
     }
@@ -129,15 +131,16 @@ export default {
     }
 
     & > .apos-field__wrapper {
-      flex-grow: 1;
       flex-basis: 50%;
-      border-right: 1px solid var(--a-base-9);
+      flex-grow: 1;
       padding-right: 20px;
+      border-right: 1px solid var(--a-base-9);
     }
+
     & > .apos-field__wrapper + .apos-field__wrapper {
-      border-right: none;
       padding-right: 0;
       padding-left: 20px;
+      border-right: none;
     }
 
     & .apos-field__label {

@@ -310,6 +310,7 @@ export default {
 
   .apos-apply-tag-menu__tags {
     @include apos-list-reset();
+
     max-height: 160px;
     overflow-y: auto;
     margin-top: 15px;
@@ -324,13 +325,14 @@ export default {
 
   .apos-apply-tag-menu__empty {
     display: flex;
-    align-items: center;
     flex-direction: column;
+    align-items: center;
     padding: 40px 0 20px;
   }
 
   .apos-apply-tag-menu__empty-message {
     @include type-base;
+
     margin-bottom: 20px;
     max-width: 240px;
     text-align: center;
@@ -344,11 +346,12 @@ export default {
     // Variable sizes are less important for icons.
     /* stylelint-disable-next-line scale-unlimited/declaration-strict-value */
     @include type-title;
+
     margin: 0;
   }
 
   .fade-enter-active, .fade-leave-active {
-    transition: all 0.5s;
+    transition: all 500ms;
   }
 
   .fade-enter, .fade-leave-to {

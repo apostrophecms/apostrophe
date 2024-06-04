@@ -118,7 +118,8 @@ const dropdownContentStyle = ref({});
 const arrowEl = ref();
 
 defineExpose({
-  hide
+  hide,
+  setDropdownPosition
 });
 
 const popoverClass = computed(() => {
@@ -206,7 +207,7 @@ async function setDropdownPosition() {
   } = await computePosition(dropdown.value, dropdownContent.value, {
     placement: props.menuPlacement,
     middleware: [
-      offset(15),
+      offset(props.menuOffset),
       shift({ padding: 5 }),
       flip(),
       arrow({
@@ -259,7 +260,7 @@ async function setDropdownPosition() {
 .apos-context-menu__popup {
   display: inline-block;
   color: var(--a-text-primary);
-  transition: scale 0.15s ease, translatey 0.15s ease;
+  transition: scale 200ms ease, translatey 200ms ease;
 }
 
 .apos-context-menu__inner {
@@ -271,11 +272,13 @@ async function setDropdownPosition() {
 
 .apos-context-menu__pane {
   @include type-base;
+
   padding: 20px;
   border: 1px solid var(--a-base-8);
   border-radius: var(--a-border-radius);
   box-shadow: var(--a-box-shadow);
   background-color: var(--a-background-primary);
+
   &:focus {
     outline: none;
   }
@@ -283,12 +286,12 @@ async function setDropdownPosition() {
 
 .apos-context-menu__items {
   @include apos-list-reset();
+
   display: inline-block;
   list-style-type: none;
   width: max-content;
   margin: none;
-  margin-block-start: 0;
-  margin-block-end: 0;
+  margin-block: 0 0;
   padding: 10px 0;
 }
 </style>

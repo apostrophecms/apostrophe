@@ -90,6 +90,7 @@
   "commandMenuShowShortcutList": "Show shortcut list",
   "commandMenuToggleEditPreviewMode": "Toggle edit / preview",
   "commandMenuTogglePublishedDraftDocument": "Toggle published / draft document",
+  "commandMenuTaskbar": "Taskbar",
   "commandMenuUndo": "Undo",
   "confirmArchive": "You are going to archive the {{ type }} {{ title }}.",
   "confirmSettings": "Confirm Settings",

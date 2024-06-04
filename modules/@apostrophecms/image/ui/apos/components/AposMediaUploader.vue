@@ -248,18 +248,22 @@ export default {
 <style lang="scss" scoped>
   .apos-media-uploader {
     @include apos-button-reset();
-    box-sizing: border-box;
+    @include apos-transition();
+
     display: flex;
+    box-sizing: border-box;
     align-items: center;
     justify-content: center;
     border: 2px dashed var(--a-base-3);
+    color: inherit;
     grid-column: 1 / 3;
     grid-row: 1 / 3;
-    @include apos-transition();
-    color: inherit;
   }
+
   .apos-media-uploader--enabled {
     &::after {
+      @include apos-transition($duration: 0.3s);
+
       z-index: $z-index-under;
       position: absolute;
       content: '';
@@ -276,7 +280,6 @@ export default {
         5% 100%;
       background-repeat: no-repeat;
       filter: blur(10px);
-      @include apos-transition($duration: 0.3s);
     }
 
     &:hover,
@@ -289,8 +292,9 @@ export default {
         width: 102%;
         height: 102%;
       }
+
       .apos-media-uploader__icon {
-        fill: url(#apos-upload-gradient);
+        fill: url("#apos-upload-gradient");
         transform: translateY(-2px);
       }
     }
@@ -303,21 +307,22 @@ export default {
 
   .apos-media-uploader__inner {
     display: flex;
-    width: 100%;
-    height: 100%;
     flex-direction: column;
     align-items: center;
     justify-content: center;
+    width: 100%;
+    height: 100%;
     background-color: var(--a-background-primary);
   }
 
   .apos-media-uploader__icon {
+    @include apos-transition($duration: 0.2s);
+
     width: 57px;
     max-width: 50%;
     height: auto;
     margin-bottom: 5px;
     fill: var(--a-text-primary);
-    @include apos-transition($duration: 0.2s);
   }
 
   .apos-media-uploader__instructions {
@@ -327,13 +332,17 @@ export default {
   .apos-media-uploader__primary,
   .apos-media-uploader__secondary {
     @include apos-p-reset();
+
     text-align: center;
   }
+
   .apos-media-uploader__secondary {
     @include type-small;
   }
+
   .apos-media-uploader__primary {
     @include type-large;
+
     max-width: 100px;
     margin: 5px auto 10px;
   }

@@ -6,6 +6,7 @@
     :uid="uid"
     :display-options="displayOptions"
     :meta="fieldMeta"
+    @replace-field-value="replaceFieldValue"
   >
     <template #body>
       <div :class="wrapperClasses">
@@ -52,12 +53,15 @@ export default {
 <style lang="scss" scoped>
   .apos-input-wrapper--with-prefix {
     @include apos-input();
+
     display: flex;
     align-items: center;
     color: var(--a-base-4);
+
     .apos-input {
-      border: none;
       padding-left: 0;
+      border: none;
+
       &:hover,
       &:focus {
         border: none;
@@ -65,10 +69,12 @@ export default {
       }
     }
   }
+
   .apos-input__slug-locale-prefix {
     display: inline-block;
     padding-left: 20px;
   }
+
   .apos-field--inverted .apos-input-wrapper--with-prefix {
     background-color: var(--a-background-primary);
   }

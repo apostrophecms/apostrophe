@@ -20,6 +20,7 @@ export default {
 <style lang="scss" scoped>
   .apos-rich-text-editor__control--divider {
     @include type-help;
+
     padding: 10px;
     opacity: 0.3;
   }

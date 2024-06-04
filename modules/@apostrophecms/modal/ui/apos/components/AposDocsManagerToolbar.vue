@@ -330,6 +330,7 @@ export default {
     :deep(.apos-field--search) {
       width: 250px;
     }
+
     :deep(.apos-input) {
       height: 32px;
     }

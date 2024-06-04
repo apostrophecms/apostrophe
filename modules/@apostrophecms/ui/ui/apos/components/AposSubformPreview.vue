@@ -109,12 +109,13 @@ function inferFieldValues(schema, values, $t) {
 <style lang="scss" scoped>
 .apos-subform-preview {
   display: grid;
-  grid-template-columns: 1fr 2fr;
-  padding: $spacing-double 0;
   align-items: center;
+  padding: $spacing-double 0;
+  grid-template-columns: 1fr 2fr;
 
   &__value {
     @include type-base;
+
     line-height: 1;
     // color: var(--a-base-1);
     color: var(--a-text-primary);

@@ -6,7 +6,6 @@
     @inactive="modal.active = false"
     @show-modal="modal.showModal = true"
     @esc="confirmAndCancel"
-    @no-modal="$emit('safe-close')"
   >
     <template #breadcrumbs>
       <AposModalBreadcrumbs v-if="breadcrumbs && breadcrumbs.length" :items="breadcrumbs" />
@@ -29,6 +28,7 @@
               v-show="tab.name === currentTab"
               :key="tab.name"
               :ref="tab.name"
+              :data-apos-test="`schema:${tab.name}`"
               :trigger-validation="triggerValidation"
               :current-fields="groups[tab.name].fields"
               :schema="groups[tab.name].schema"
@@ -108,7 +108,7 @@ export default {
       default: null
     }
   },
-  emits: [ 'safe-close', 'modal-result' ],
+  emits: [ 'modal-result' ],
   data() {
     const moduleOptions = window.apos.modules[apos.area.widgetManagers[this.type]];
 

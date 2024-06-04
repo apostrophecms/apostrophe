@@ -4,6 +4,12 @@ export default {
   name: 'AposInputString',
   mixins: [ AposInputMixin ],
   emits: [ 'return' ],
+  props: {
+    rows: {
+      type: Number,
+      default: 5
+    }
+  },
   data () {
     return {
       step: undefined,
@@ -18,6 +24,9 @@ export default {
       if (this.field.type) {
         if (this.field.type === 'float' || this.field.type === 'integer') {
           return 'number';
+        }
+        if (this.field.type === 'string' && this.field.textarea) {
+          return 'textarea';
         }
         if (this.field.type === 'string' || this.field.type === 'slug') {
           return 'text';

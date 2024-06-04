@@ -115,10 +115,10 @@ export default {
 </script>
 <style lang='scss' scoped>
   .apos-select-box {
-    box-sizing: border-box;
     overflow: hidden;
-    max-height: 65px;
+    box-sizing: border-box;
     transition: max-height 200ms ease-in;
+    max-height: 65px;
 
     &.collapse-enter, &.collapse-leave-to {
       max-height: 0;

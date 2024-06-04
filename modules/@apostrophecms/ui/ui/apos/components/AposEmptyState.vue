@@ -33,11 +33,13 @@ export default {
 
   .apos-title {
     @include type-title;
+
     margin: 0 0 10px;
   }
 
   .apos-hint {
     @include type-base;
+
     font-style: italic;
     line-height: var(--a-line-tallest);
     color: var(--a-base-1);
@@ -46,7 +48,7 @@ export default {
 
   .apos-emoji {
     // Variable sizes are less important for icons.
-    /* stylelint-disable-next-line scale-unlimited/declaration-strict-value */
+    /* stylelint-disable-next-line declaration-property-unit-allowed-list */
     font-size: 34px;
   }
 </style>

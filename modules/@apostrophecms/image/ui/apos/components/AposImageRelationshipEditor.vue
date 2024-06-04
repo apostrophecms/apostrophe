@@ -6,7 +6,6 @@
     @inactive="modal.active = false"
     @show-modal="modal.showModal = true"
     @esc="confirmAndCancel"
-    @no-modal="$emit('safe-close')"
   >
     <template #secondaryControls>
       <AposButton
@@ -135,7 +134,7 @@ export default {
       default: () => ({})
     }
   },
-  emits: [ 'modal-result', 'safe-close' ],
+  emits: [ 'modal-result' ],
   data() {
     const { aspectRatio, disableAspectRatio } = this.getAspectRatioFromConfig();
     const minSize = this.getMinSize();
@@ -444,14 +443,14 @@ export default {
 
 .apos-schema__aligned-fields {
   display: flex;
-  justify-content: space-between;
   flex-direction: row;
+  justify-content: space-between;
 
   .apos-field {
     position: relative;
     display: flex;
-    align-items: center;
     flex-grow: 1;
+    align-items: center;
 
     &:first-child {
       margin-right: 10px;
@@ -462,8 +461,8 @@ export default {
     }
 
     .apos-input {
-      margin-top: 0;
       flex-grow: 1;
+      margin-top: 0;
     }
 
     .apos-input:focus {
@@ -478,8 +477,9 @@ export default {
 
 .apos-field__min-size {
   @include type-small;
-  color: var(--a-base-1);
+
   margin-bottom: 10px;
+  color: var(--a-base-1);
 
   &--correcting {
     color: var(--a-primary);
@@ -488,6 +488,7 @@ export default {
 
 .apos-field__label {
   @include type-label;
+
   display: block;
   margin: 0 0 $spacing-base;
   padding: 0;
@@ -500,11 +501,11 @@ export default {
 
 .apos-image-cropper__container {
   display: flex;
-  justify-content: center;
+  box-sizing: border-box;
   align-items: center;
+  justify-content: center;
   // We remove the modal's paddings - header height - container margin
   height: calc(100vh - 40px - 75px - 60px);
   margin: 30px 10%;
-  box-sizing: border-box;
 }
 </style>

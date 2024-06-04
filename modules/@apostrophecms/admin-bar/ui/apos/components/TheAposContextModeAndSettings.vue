@@ -187,6 +187,7 @@ export default {
 <style lang="scss" scoped>
 .apos-admin-bar__control-set--mode-and-settings {
   justify-content: flex-end;
+
   &:deep(.apos-button) {
     margin-left: 4px;
   }

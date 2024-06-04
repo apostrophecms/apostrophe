@@ -80,6 +80,66 @@ export default {
   height: 100%;
 }
 
+:deep(.apos-context-menu) {
+  position: absolute;
+  top: 10px;
+  right: 0;
+
+  svg {
+    width: 20px;
+    height: 20px;
+    color: var(--a-base-1);
+  }
+
+  .apos-button--subtle:hover {
+    background-color: initial;
+  }
+}
+
+.apos-modal-tabs--horizontal {
+  position: relative;
+
+  .apos-modal-tabs__tabs {
+    flex-direction: row;
+    border-top: 1px solid var(--a-base-7);
+    border-bottom: 1px solid var(--a-base-7);
+  }
+
+  .apos-modal-tabs__tab {
+    display: flex;
+    width: 100%;
+  }
+
+  .apos-modal-tabs__tab--small {
+    width: 50%;
+    border-bottom: 1px solid var(--a-base-7);
+    color: var(--a-base-1);
+    background-color: var(--a-base-10);
+  }
+
+  .apos-modal-tabs__btn {
+    justify-content: center;
+    color: var(--a-base-1);
+    background-color: var(--a-base-10);
+    text-align: center;
+
+    &:hover, &:focus {
+      color: var(--a-primary-light-40);
+      background-color: var(--a-base-10);
+    }
+
+    &[aria-selected='true'], &[aria-selected='true']:hover, &[aria-selected='true']:focus {
+      border-bottom: 3px solid var(--a-primary);
+      color: var(--a-primary);
+      background-color: var(--a-base-10);
+    }
+  }
+
+  .apos-modal-tabs__btn::before {
+    content: none;
+  }
+}
+
 .apos-modal-tabs__tabs {
   display: flex;
   flex-direction: column;
@@ -111,20 +171,21 @@ export default {
 .apos-modal-tabs__btn {
   @include apos-button-reset();
   @include type-base;
+
   position: relative;
   display: flex;
-  justify-content: space-between;
+  box-sizing: border-box;
   align-items: center;
+  justify-content: space-between;
   width: 100%;
   height: 60px;
   padding: 25px 10px;
   border-bottom: 1px solid var(--a-base-7);
   color: var(--a-text-primary);
-  background-color: var(--a-base-9);
   text-align: left;
+  transition: all 200ms ease;
+  background-color: var(--a-base-9);
   cursor: pointer;
-  box-sizing: border-box;
-  transition: all 0.2s ease;
 
   @include media-up(lap) {
     padding: 25px 10px 25px 20px;
@@ -138,7 +199,7 @@ export default {
     left: 0;
     width: 0;
     background-color: var(--a-primary);
-    transition: width 0.25s cubic-bezier(0, 1.61, 1, 1.23);
+    transition: width 250ms cubic-bezier(0, 1.61, 1, 1.23);
   }
 
   &[aria-selected='true'],
@@ -146,6 +207,7 @@ export default {
   &[aria-selected='true']:focus {
     padding-left: 15px;
     background-color: var(--a-background-primary);
+
     &::before {
       background-color: var(--a-primary);
     }
@@ -154,6 +216,7 @@ export default {
   &:hover,
   &:focus {
     background-color: var(--a-base-10);
+
     &::before {
       width: 3px;
       background-color: var(--a-base-5);

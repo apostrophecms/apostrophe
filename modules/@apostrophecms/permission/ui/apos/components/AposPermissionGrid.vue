@@ -132,6 +132,7 @@ export default {
 <style lang="scss" scoped>
   .apos-input__role__permission-grid {
     @include type-base;
+
     display: grid;
     margin-top: $spacing-triple;
     grid-template-columns: repeat(auto-fit, minmax(50%, 1fr));
@@ -140,20 +141,23 @@ export default {
   .apos-input__role__permission-grid__row {
     display: flex;
     align-items: center;
-    padding-bottom: $spacing-three-quarters;
     margin-bottom: $spacing-three-quarters;
+    padding-bottom: $spacing-three-quarters;
     border-bottom: 1px solid var(--a-base-9);
   }
+
   .apos-input__role__permission-grid__list {
     margin-top: 0;
   }
+
   .apos-input__role__permission-grid__set {
-    padding: 0 $spacing-base;
     margin-bottom: $spacing-double;
+    padding: 0 $spacing-base;
   }
 
   .apos-input__role__permission-grid__set-name {
     @include type-title;
+
     display: inline-flex;
     margin: 0 0 $spacing-double;
   }
