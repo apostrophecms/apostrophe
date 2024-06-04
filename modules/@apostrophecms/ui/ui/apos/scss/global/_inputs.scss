@@ -69,6 +69,10 @@
     padding: $input-padding;
     padding-right: $input-padding * 2;
   }
+
+  &--textarea {
+    line-height: 1.3;
+  }
 }
 
 .apos-input {
