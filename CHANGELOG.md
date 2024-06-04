@@ -36,11 +36,11 @@ We will now end up with page B slug as `/peer/page` and not `/peer/peer/page` as
 * Widget client side schema validation.
 * Allow `G,Shift+I` shortcut style.
 * Detect shortcut conflicts when using multiple shortcuts.
+* Updating schema fields as read-only no longer reset the value when updating the document.
 * Fixes stylelint config file, uses config from our shared configuration, fixes all lint errors. 
 * Removes `$nextTick` use to re render schema in `AposArrayEditor` because it was triggering weird vue error in production.
 Instead, makes the AposSchema for loop keys more unique using `modelValue.data._id`, 
 if document changes it re-renders schema fields.
-
 
 ## 4.3.2 (2024-05-18)
 
