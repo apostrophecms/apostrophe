@@ -69,7 +69,7 @@
           :selected-items="next"
           :icon="field.suggestionIcon"
           :icon-size="field.suggestionIconSize"
-          :fields="field.suggestionFields"
+          :fields="suggestionFields"
           disabled-tooltip="apostrophe:publishBeforeUsingTooltip"
           @select="updateSelected"
         />
