@@ -17,9 +17,12 @@ export default {
         .map(doc => [ doc._id, doc._fields ])
     );
 
+    const suggestionFields = this.field.suggestionFields || apos.modules[this.field.withType]?.relationshipSuggestionFields;
+
     return {
       searchTerm: '',
       searchList: [],
+      suggestionFields,
       next,
       subfields,
       disabled: false,

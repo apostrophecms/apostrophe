@@ -1598,6 +1598,7 @@ module.exports = {
         browserOptions.previewDraft = self.isLocalized() &&
           !browserOptions.autopublish &&
           self.options.previewDraft;
+        browserOptions.relationshipSuggestionFields = self.options.relationshipSuggestionFields;
 
         return browserOptions;
       }
