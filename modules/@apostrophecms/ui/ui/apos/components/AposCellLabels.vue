@@ -92,6 +92,7 @@ export default {
     justify-content: flex-end;
     padding-right: 10px;
   }
+
   .apos-table__cell-field__label {
     margin-left: 5px;
   }

@@ -4,7 +4,6 @@
     :modal="modal"
     :modal-title="modalTitle"
     @esc="confirmAndCancel"
-    @no-modal="$emit('safe-close')"
     @inactive="modal.active = false"
     @show-modal="modal.showModal = true"
   >
@@ -103,7 +102,7 @@
         <template #bodyMain>
           <AposDocsManagerDisplay
             v-if="items.length > 0"
-            v-model:checked="checked"
+            :checked="checked"
             :items="items"
             :headers="headers"
             :options="{
@@ -112,6 +111,7 @@
               disableUnpublished: disableUnpublished,
               manuallyPublished: manuallyPublished
             }"
+            @update:checked="setCheckedDocs"
             @open="edit"
           />
           <div v-else class="apos-pieces-manager__empty">
@@ -124,9 +124,11 @@
 </template>
 
 <script>
+import { mapState } from 'pinia';
 import AposDocsManagerMixin from 'Modules/@apostrophecms/modal/mixins/AposDocsManagerMixin';
 import AposModifiedMixin from 'Modules/@apostrophecms/ui/mixins/AposModifiedMixin';
 import AposPublishMixin from 'Modules/@apostrophecms/ui/mixins/AposPublishMixin';
+import { useModalStore } from 'Modules/@apostrophecms/ui/stores/modal';
 import { debounce } from 'Modules/@apostrophecms/ui/utils';
 
 export default {
@@ -140,7 +142,7 @@ export default {
       required: true
     }
   },
-  emits: [ 'archive', 'safe-close' ],
+  emits: [ 'archive' ],
   data() {
     return {
       modal: {
@@ -167,6 +169,7 @@ export default {
     };
   },
   computed: {
+    ...mapState(useModalStore, [ 'activeModal' ]),
     moduleOptions() {
       return window.apos.modules[this.moduleName];
     },
@@ -252,12 +255,6 @@ export default {
     apos.bus.$off('command-menu-manager-close', this.confirmAndCancel);
   },
   methods: {
-    setCheckedDocs(checked) {
-      this.checkedDocs = checked;
-      this.checked = this.checkedDocs.map(item => {
-        return item._id;
-      });
-    },
     async create() {
       await this.edit(null);
     },
@@ -405,11 +402,10 @@ export default {
     },
     shortcutNew(event) {
       const interesting = event.keyCode === 78; // N(ew)
-      const topModalId = apos.modal.stack.at(-1)?.id;
       if (
         interesting &&
         document.activeElement.tagName !== 'INPUT' &&
-        this.$refs.modal.id === topModalId
+        this.$refs.modal.id === this.activeModal?.id
       ) {
         this.create();
       }
@@ -490,8 +486,8 @@ export default {
   // `apos-media-manager__empty`. We should combine somehow.
   .apos-pieces-manager__empty {
     display: flex;
-    justify-content: center;
     align-items: center;
+    justify-content: center;
     width: 100%;
     height: 100%;
     margin-top: 130px;

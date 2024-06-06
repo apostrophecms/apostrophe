@@ -6,7 +6,6 @@
     @inactive="modal.active = false"
     @show-modal="modal.showModal = true"
     @esc="confirmAndCancel"
-    @no-modal="$emit('safe-close')"
   >
     <template #secondaryControls>
       <AposButton
@@ -137,7 +136,8 @@ export default {
   ],
   provide () {
     return {
-      originalDoc: this.originalDoc
+      originalDoc: this.originalDoc,
+      liveOriginalDoc: this.docFields
     };
   },
   props: {
@@ -158,7 +158,7 @@ export default {
       default: null
     }
   },
-  emits: [ 'modal-result', 'safe-close' ],
+  emits: [ 'modal-result' ],
   data() {
     return {
       docType: this.moduleName,
@@ -835,6 +835,7 @@ export default {
 
   .apos-doc-editor__utility {
     padding: $spacing-quadruple $spacing-base;
+
     @include media-up(lap) {
       padding: $spacing-quadruple $spacing-double;
     }

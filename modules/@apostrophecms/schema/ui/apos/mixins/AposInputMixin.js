@@ -145,6 +145,11 @@ export default {
         ranValidation: this.conditionMet === false ? this.modelValue.ranValidation : true
       });
     },
+    // Allows replacing the current component value externally, e.g. via
+    // local component or global bus events.
+    replaceFieldValue(value) {
+      this.next = value;
+    },
     watchValue () {
       this.error = this.modelValue.error;
       this.next = this.modelValue.data;

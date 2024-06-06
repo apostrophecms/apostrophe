@@ -3,13 +3,14 @@ $box-width: 12px;
 
 @mixin apos-input() {
   @include type-base;
+  @include apos-transition(all);
+
+  box-sizing: border-box;
   width: 100%;
   border: 1px solid var(--a-base-8);
+  color: var(--a-text-primary);
   border-radius: var(--a-border-radius);
   background-color: var(--a-base-9);
-  color: var(--a-text-primary);
-  box-sizing: border-box;
-  @include apos-transition(all);
 
   &::placeholder {
     color: var(--a-base-4);
@@ -32,6 +33,7 @@ $box-width: 12px;
     color: var(--a-base-4);
     background: var(--a-base-7);
     border-color: var(--a-base-4);
+
     &:hover {
       cursor: not-allowed;
     }

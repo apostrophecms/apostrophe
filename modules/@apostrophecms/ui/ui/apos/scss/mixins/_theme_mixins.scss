@@ -43,35 +43,41 @@ $input-color-disabled: var(--a-base-4);
 
 @mixin type-help {
   @include type-base;
+
   font-size: var(--a-type-small);
   text-transform: uppercase;
 }
 
 @mixin type-small {
   @include type-base;
+
   font-size: var(--a-type-small);
   line-height: var(--a-line-tall);
 }
 
 @mixin type-label {
   @include type-base;
+
   font-size: var(--a-type-label);
   line-height: var(--a-line-tall);
 }
 
 @mixin type-large {
   @include type-base;
+
   font-size: var(--a-type-large);
   line-height: var(--a-line-tall);
 }
 
 @mixin type-title {
   @include type-base;
+
   font-size: var(--a-type-heading);
   line-height: var(--a-line-tall);
 }
 
 @mixin type-display {
   @include type-base;
+
   font-size: var(--a-type-display);
 }

@@ -61,6 +61,7 @@ export default {
       border-radius: 50%;
     }
   }
+
   .apos-choice-label-info {
     position: relative;
     top: 3px;

@@ -56,7 +56,8 @@ module.exports = {
       }
     },
     relationshipPostprocessor: 'autocrop',
-    relationshipSuggestionIcon: 'image-icon'
+    relationshipSuggestionIcon: 'image-icon',
+    relationshipSuggestionFields: []
   },
   utilityOperations: {
     remove: [ 'new' ]

@@ -187,7 +187,7 @@ export default {
 <style lang="scss" scoped>
   .apos-slat-list :deep(.apos-slat) {
     margin-bottom: 5px;
-    transition: all 0.4s;
+    transition: all 400ms;
     max-width: $input-max-width * 0.65;
   }
 
@@ -202,6 +202,7 @@ export default {
 
   .apos-slat-list {
     @include apos-list-reset();
+
     min-height: 20px;
     max-width: $input-max-width;
   }
@@ -212,6 +213,7 @@ export default {
 
   .apos-slat-limit {
     @include type-help;
+
     margin: 10px 0 0;
     text-align: center;
 

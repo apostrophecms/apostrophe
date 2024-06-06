@@ -331,6 +331,10 @@ export default {
     },
     highlight(fieldName) {
       return this.meta[fieldName]?.['@apostrophecms/schema:highlight'];
+    },
+    generateItemUniqueKey(field) {
+      return `${field.name}:${field._id ?? ''}:${this.modelValue?.data?._id ?? ''}`;
+
     }
   }
 };

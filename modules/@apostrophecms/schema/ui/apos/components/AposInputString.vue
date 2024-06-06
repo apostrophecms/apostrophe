@@ -6,6 +6,7 @@
     :uid="uid"
     :display-options="displayOptions"
     :meta="fieldMeta"
+    @replace-field-value="replaceFieldValue"
   >
     <template #body>
       <div class="apos-input-wrapper">
@@ -13,7 +14,7 @@
           v-if="field.textarea && field.type === 'string'"
           :id="uid"
           v-model="next"
-          rows="5"
+          :rows="rows"
           :class="classes"
           :placeholder="$t(field.placeholder)"
           :disabled="field.readOnly"
@@ -63,6 +64,7 @@ export default {
     height: 46px;
     padding-right: 40px;
   }
+
   .apos-input--date {
     &::-webkit-clear-button {
       position: relative;

@@ -4,16 +4,49 @@
 
 ### Adds
 
+* Adds a pinia store to handle modals logic. 
+* Methods from the store are registered on `apos.modal` instead of methods from `TheAposModals` component.
+* No more need to emit `safe-close` when defining an `AposModal`, modal is automatically resolved when closed.
+* Adds field components access to the reactive document value.
+* Expose `AposContextMenu` owned method for re-calculation of the content position.
+* Field Meta components of `slug` and `string` types can now fire `replace-field-value` events with text value payload, which will replace the respective field value.
+* `AposInputString` now accepts a `rows` prop, in effect only when `field.textarea` is set to `true`.
+* Add `T,S` shortcut to open the Personal Settings.
+* Add `T,D` shortcut to open the Submitted Drafts.
+* Add a scrollbar to the shortcut list.
 * Add breadcrumbs to search results page.
 
 ### Changes
 
 * Improves widget tabs for the hidden entries, improves UX when validation errors are present in non-focused tabs.
+* When moving a page, recognize when the slug of a new child
+already contains the new parent's slug and not double it.
+For example, given we have two pages as children of the home page, page A and page B.
+Page A and page B are siblings.
+Page A has the slug `/peer` and page B has the slug `/peer/page`.
+Now we want page B to be the child of page A.
+We will now end up with page B slug as `/peer/page` and not `/peer/peer/page` as before.
+* `AposSpinner` now respects the colors for `heavy` weight mode and also accepts second, "light" color in this mode. Props JSDoc blocks are added.
+* `AposContextMenu` now respects the `menuOffset` component property.
+* Set `G,Shift+I` shortcut to open the Image Tags manager modal.
+* Set `G,Shift+F` shortcut to open the File Tags manager modal.
+* Remove slug from suggestion for images.
+* Increase suggestion search image size to 50px.
+* For suggestions with image, keep title on a single line and truncate title field with `...` when it hits the right side.
 
 ### Fixes
 
 * Rich Text editor properly unsets marks on heading close.
 * Widget client side schema validation.
+* Allow `G,Shift+I` shortcut style.
+* Detect shortcut conflicts when using multiple shortcuts.
+* Updating schema fields as read-only no longer reset the value when updating the document.
+* Fixes stylelint config file, uses config from our shared configuration, fixes all lint errors. 
+* Removes `$nextTick` use to re render schema in `AposArrayEditor` because it was triggering weird vue error in production.
+Instead, makes the AposSchema for loop keys more unique using `modelValue.data._id`, 
+if document changes it re-renders schema fields.
+* Fixes `TheAposCommandMenu` modals not computing shortcuts from the current opened modal.
+* Fixes select boxes of relationships, we can now check manually published relationships, and `AposSlatList` renders properly checked relationships.
 
 ## 4.3.2 (2024-05-18)
 

@@ -182,18 +182,22 @@ function menuClose() {
   .apos-button-split__menu__dialog-item {
     @include apos-button-reset();
     @include apos-transition();
+
     padding: $spacing-base + $spacing-half $spacing-double $spacing-base + $spacing-half $spacing-quadruple;
     border-bottom: 1px solid var(--a-base-9);
+
     &:hover,
     &:focus,
     &:active,
     &.apos-is-selected {
       background-color: var(--a-base-9);
     }
+
     &:focus,
     &:active {
       outline: 1px solid var(--a-primary);
     }
+
     &:last-child {
       margin-bottom: 0;
       border-bottom: 0;
@@ -207,6 +211,7 @@ function menuClose() {
 
   .apos-button-split__menu__dialog-label {
     @include type-large;
+
     margin-bottom: $spacing-half;
   }
 
@@ -217,9 +222,9 @@ function menuClose() {
   }
 
   .apos-button-split__button :deep(.apos-button) {
-    padding-right: $spacing-quadruple + $spacing-base;
     margin-top: 0;
     margin-bottom: 0;
+    padding-right: $spacing-quadruple + $spacing-base;
   }
 
   .apos-button-split__menu {
@@ -233,12 +238,13 @@ function menuClose() {
     :deep(.apos-button__wrapper) {
       height: 100%;
     }
+
     :deep(.apos-button) {
       display: flex;
       box-sizing: border-box;
-      height: 100%;
-      justify-content: center;
       align-items: center;
+      justify-content: center;
+      height: 100%;
       margin: 0;
       padding-top: 0;
       padding-bottom: 0;

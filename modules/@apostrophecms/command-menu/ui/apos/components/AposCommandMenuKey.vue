@@ -57,20 +57,21 @@ export default {
 
 .apos-command-menu-key {
   @include type-small;
+
   display: inline-flex;
+  box-sizing: border-box;
   align-items: center;
   justify-content: center;
-  box-sizing: border-box;
   width: $spacing-double;
   height: $spacing-double;
-  padding: 3px $spacing-half;
   margin-left: $spacing-half;
+  padding: 3px $spacing-half;
   border: 1px solid var(--a-base-7);
-  border-radius: 3px;
-  border-color: var(--a-base-7);
   border-bottom: 2px solid var(--a-base-7);
   color: var(--a-base-1);
   background: linear-gradient(180deg, var(--a-base-10) 0%, var(--a-base-9) 100%);
+  border-radius: 3px;
+  border-color: var(--a-base-7);
   font-weight: 600;
 
   &.apos-command-menu-key-auto {
@@ -79,15 +80,16 @@ export default {
 }
 
 .apos-command-menu-text {
+  @include type-small;
+
   display: inline-flex;
+  box-sizing: border-box;
   align-items: center;
   justify-content: center;
-  box-sizing: border-box;
   width: auto;
   height: $spacing-double;
-  padding: 3px 2px;
   margin-left: $spacing-half;
-  @include type-small;
+  padding: 3px 2px;
   color: var(--a-base-1);
 }
 

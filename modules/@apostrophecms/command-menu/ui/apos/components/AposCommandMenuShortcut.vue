@@ -3,7 +3,6 @@
     :modal="modal"
     class="apos-command-menu-shortcut"
     @esc="close"
-    @no-modal="$emit('safe-close')"
     @inactive="modal.active = false"
     @show-modal="modal.showModal = true"
   >
@@ -130,8 +129,7 @@ export default {
 }
 
 :deep(.apos-modal__inner) {
-  top: auto;
-  left: auto;
+  inset: auto $spacing-quadruple $spacing-quadruple auto;
   max-width: 700px;
   height: auto;
   border-radius: $spacing-base + $spacing-half;
@@ -141,12 +139,16 @@ export default {
   display: none;
 }
 
+:deep(.apos-modal__body-main) {
+  padding-bottom: 15px;
+}
+
 .apos-modal__header {
   display: flex;
   justify-content: space-between;
   width: 100%;
-  border-bottom: 1px solid var(--a-base-8);
   padding: $spacing-base + $spacing-half 0;
+  border-bottom: 1px solid var(--a-base-8);
 
   .apos-modal__header__main {
     display: flex;
@@ -155,67 +157,78 @@ export default {
 
   :deep(.apos-button) {
     display: inline-flex;
-    align-items: center;
     box-sizing: border-box;
+    align-items: center;
     width: auto;
     height: $spacing-double;
-    padding: 3px $spacing-half;
     margin-right: $spacing-base;
+    padding: 3px $spacing-half;
+    border-bottom: 2px solid var(--a-base-7);
     vertical-align: bottom;
     border-radius: 3px;
     border-color: var(--a-base-7);
-    border-bottom: 2px solid var(--a-base-7);
   }
 }
+
 .apos-modal__heading {
+  @include type-base;
+
   display: inline-block;
   margin: 0;
-  @include type-base;
   font-size: var(--a-type-large);
   line-height: $spacing-double;
 }
 
 .apos-command-menu-key {
   :deep(button) {
+    box-sizing: border-box;
     width: $spacing-double;
     height: $spacing-double;
-    padding: 3px $spacing-half;
     margin-left: $spacing-half;
-    box-sizing: border-box;
+    padding: 3px $spacing-half;
+    border-bottom: 2px solid var(--a-base-7);
     border-radius: 3px;
     border-color: var(--a-base-7);
-    border-bottom: 2px solid var(--a-base-7);
   }
 }
 
 .apos-command-menu-shortcut-groups {
+  overflow: hidden auto;
   padding: $spacing-base $spacing-double $spacing-base + $spacing-half;
+  max-height: 70vh;
 }
+
 .apos-command-menu-shortcut-group + .apos-command-menu-shortcut-group {
   padding-top: $spacing-base + $spacing-half;
 }
+
 .apos-command-menu-shortcut-group {
   @include type-base;
+
   font-weight: 400;
 }
+
 .apos-command-menu-shortcut-group-title {
+  @include type-base;
+
+  box-sizing: border-box;
   height: 24px;
   margin: 0;
   padding: $spacing-half 0;
-  box-sizing: border-box;
-  @include type-base;
   color: var(--a-base-3);
   text-align: left;
 }
+
 .apos-command-menu-shortcut-command {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
   box-sizing: border-box;
+  align-items: center;
+  justify-content: space-between;
   width: 100%;
   height: 28px;
   padding: $spacing-half 0;
 }
+
 .apos-command-menu-shortcut-command-title {
   flex: 1 1 auto;
   margin-right: $spacing-base;

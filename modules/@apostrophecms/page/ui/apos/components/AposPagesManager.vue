@@ -3,7 +3,6 @@
     :modal="modal"
     modal-title="apostrophe:managePages"
     @esc="confirmAndCancel"
-    @no-modal="$emit('safe-close')"
     @inactive="modal.active = false"
     @show-modal="modal.showModal = true"
   >
@@ -80,12 +79,13 @@
         </template>
         <template #bodyMain>
           <AposTree
-            v-model:checked="checked"
+            :checked="checked"
             :items="items"
             :headers="headers"
             :icons="icons"
             :options="treeOptions"
             :module-options="moduleOptions"
+            @update:checked="setCheckedDocs"
             @update="update"
           />
         </template>
@@ -101,9 +101,8 @@ export default {
   name: 'AposPagesManager',
   mixins: [ AposPagesManagerLogic ],
   // Keep it for linting
-  emits: [ 'archive', 'search', 'safe-close', 'modal-result' ]
+  emits: [ 'archive', 'search', 'modal-result' ]
 };
-// TODO: check when child page is created and with what perm
 </script>
 
 <style lang="scss" scoped>

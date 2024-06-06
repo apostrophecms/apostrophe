@@ -2,7 +2,7 @@
 $breakpoints: (
   palm: 320px,
   hands: 600px,
-  // hands-wide: 850px,
+  hands-wide: 800px,
   lap: 1200px,
   desk: 1600px
 );
@@ -11,8 +11,9 @@ $modal-rail-right-w: 22%;
 
 // We default to mobile first, but make a max-with option available as well.
 @mixin media-up($bp) {
-  $bpVal: map-get($breakpoints, $bp);
-  @media screen and (min-width: $bpVal) {
+  $bp-val: map-get($breakpoints, $bp);
+
+  @media screen and (min-width: $bp-val) {
     @content;
   }
 }

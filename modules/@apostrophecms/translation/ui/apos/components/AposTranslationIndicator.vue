@@ -72,12 +72,13 @@ $background: #F7FEF4;
 }
 
 #svg-path {
-  fill: url(#apos-translation-gradient);
+  fill: url("#apos-translation-gradient");
 }
 
 .stop1 {
   stop-color: $border;
 }
+
 .stop2 {
   stop-color: $color;
 }

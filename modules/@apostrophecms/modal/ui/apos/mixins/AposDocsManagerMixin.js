@@ -80,6 +80,9 @@ export default {
     // of a piece (i.e. AposMediaManager)
     isModified() {
       return this.relationshipIsModified();
+    },
+    manuallyPublished() {
+      return this.moduleOptions.localized && !this.moduleOptions.autopublish;
     }
   },
   mounted() {
@@ -108,34 +111,56 @@ export default {
           doc._fields = this.subfields[doc._id];
         }
       }
-    },
-    checked() {
-      this.updateCheckedDocs();
     }
   },
   methods: {
-    findDocById(docs, id) {
-      return docs.find(p => p._id === id);
+    addCheckedDoc(docOrId) {
+      this.concatCheckedDocs([ docOrId ]);
+    },
+    setCheckedDocs(docsOrIds) {
+      const docs = this.getDocs(docsOrIds);
+
+      this.checked = docs.map(item => item._id);
+      this.checkedDocs = docs;
+    },
+    concatCheckedDocs(docsOrIds) {
+      const docs = this.getDocs(docsOrIds);
+
+      this.checked = [ ...this.checked, ...docs.map(({ _id }) => _id) ];
+      this.checkedDocs = [ ...this.checkedDocs, ...docs ];
+    },
+    removeCheckedDoc(id) {
+      this.checked = this.checked.filter((checkedId) => checkedId !== id);
+      this.checkedDocs = this.checkedDocs.filter((doc) => doc.id !== id);
+    },
+    getDocs(docsOrIds) {
+      const items = this.moduleOptions.name === '@apostrophecms/page'
+        ? this.pagesFlat
+        : this.items;
+
+      return docsOrIds.map(docOrId => {
+        return docOrId._id
+          ? docOrId
+          : items.find(item => item._id === docOrId);
+      });
     },
     // It would have been nice for this to be computed, however
     // AposMediaManagerDisplay does not re-render when it is
     // a computed prop rather than a method call in the template.
     maxReached() {
       // Reaching max and exceeding it are different things
-      const result = this.relationshipField.max && this.checked.length >= this.relationshipField.max;
-      return result;
+      return this.relationshipField.max &&
+        this.checked.length >= this.relationshipField.max;
     },
     selectAll() {
       if (!this.checked.length) {
         this.items.forEach((item) => {
-          const relationshipsMaxedOrUnpublished = this.relationshipField &&
-          (this.maxReached() || !item.lastPublishedAt);
-
-          if (relationshipsMaxedOrUnpublished) {
+          const notPublished = this.manuallyPublished && !item.lastPublishedAt;
+          if (this.relationshipField && (this.maxReached() || notPublished)) {
             return;
           }
 
-          this.checked.push(item._id);
+          this.addCheckedDoc(item);
         });
 
         return;
@@ -145,7 +170,7 @@ export default {
         this.allPiecesSelection.isSelected = false;
       }
 
-      this.checked = [];
+      this.setCheckedDocs([]);
     },
     iconSize(header) {
       if (header.icon) {
@@ -211,29 +236,6 @@ export default {
           }
         }
       }
-    },
-    // update this.checkedDocs based on this.checked. The default
-    // implementation is suitable for paginated lists. Can be overridden
-    // for other cases.
-    updateCheckedDocs() {
-      // Keep `checkedDocs` in sync with `checked`, first removing from
-      // `checkedDocs` if no longer in `checked`
-      this.checkedDocs = this.checkedDocs.filter(doc => {
-        return this.checked.includes(doc._id);
-      });
-      // then adding to `checkedDocs` if not there yet. These should be in
-      // `items` which is assumed to contain a flat list of items currently
-      // visible.
-      //
-      // TODO: Once we have the option to select all docs of a type even if not
-      // currently visible in the manager this will need to make calls to the
-      // database.
-      this.checked.forEach(id => {
-        if (this.checkedDocs.findIndex(doc => doc._id === id) === -1) {
-          const found = this.items.find(item => item._id === id);
-          found && this.checkedDocs.push(found);
-        }
-      });
     },
     docsManagerAddEventHandlers() {
       apos.bus.$on('content-changed', this.docsManagerOnContentChanged);

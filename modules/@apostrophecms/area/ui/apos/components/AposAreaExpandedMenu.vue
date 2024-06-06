@@ -6,7 +6,6 @@
     @inactive="modal.active = false"
     @show-modal="modal.showModal = true"
     @esc="close"
-    @no-modal="$emit('safe-close')"
   >
     <template #main>
       <AposModalBody>
@@ -77,7 +76,7 @@ export default {
       default: 0
     }
   },
-  emits: [ 'expanded-menu-close', 'safe-close', 'modal-result' ],
+  emits: [ 'expanded-menu-close', 'modal-result' ],
   data() {
     return {
       modal: {
@@ -212,9 +211,9 @@ export default {
   .apos-widget__preview {
     position: relative;
     display: flex;
-    justify-content: center;
-    align-items: center;
     overflow: hidden;
+    align-items: center;
+    justify-content: center;
     height: 135px;
     outline: 1px solid var(--a-base-7);
     border-radius: var(--a-border-radius);
@@ -231,6 +230,7 @@ export default {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
     gap: 15px 10px;
+
     .apos-widget__preview {
       height: 89px;
     }
@@ -240,6 +240,7 @@ export default {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
     gap: 15px 5px;
+
     .apos-widget__preview {
       height: 66px;
     }
@@ -248,6 +249,7 @@ export default {
 
 .apos-widget {
   @include type-base;
+
   padding: 0;
   border: none;
   background: none;
@@ -255,33 +257,35 @@ export default {
 
   .apos-widget__preview {
     transition: opacity 250ms ease-in-out;
+
     .apos-icon--add {
       z-index: $z-index-default;
       position: absolute;
-      // Center in the parent element
-      align-self: center;
-      justify-self: center;
       // Center the child content
       display: flex;
-      justify-content: center;
       align-items: center;
+      // Center in the parent element
+      place-self: center center;
+      justify-content: center;
       width: 27px;
       height: 27px;
+      color: var(--a-white);
       border-radius: 50%;
       background-color: var(--a-primary);
       opacity: 0;
-      color: var(--a-white);
     }
+
     &::after {
-      transition: all 250ms ease-in-out;
       position: absolute;
-      content: '';
       width: 100%;
       height: 100%;
+      transition: all 250ms ease-in-out;
+      content: '';
       background-color: var(--a-primary);
       opacity: 0;
     }
   }
+
   &:hover {
     cursor: pointer;
     // stylelint-disable max-nesting-depth
@@ -289,6 +293,7 @@ export default {
       .apos-icon--add {
         opacity: 1;
       }
+
       &::after {
         opacity: 0.4;
       }
@@ -304,6 +309,7 @@ export default {
 .apos-widget-group__label,
 .apos-widget__help {
   @include type-base;
+
   margin-top: 0;
   line-height: var(--a-line-tall);
   text-align: left;

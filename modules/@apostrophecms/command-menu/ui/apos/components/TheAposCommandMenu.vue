@@ -8,7 +8,10 @@
 </template>
 
 <script>
+import { mapActions, mapState } from 'pinia';
 import AposThemeMixin from 'Modules/@apostrophecms/ui/mixins/AposThemeMixin';
+import { useModalStore } from 'Modules/@apostrophecms/ui/stores/modal';
+
 export default {
   name: 'TheAposCommandMenu',
   mixins: [ AposThemeMixin ],
@@ -23,11 +26,11 @@ export default {
   data() {
     return {
       previousKey: '',
-      modal: 'default',
-      keyboardShortcutListener() {}
+      modal: 'default'
     };
   },
   computed: {
+    ...mapState(useModalStore, [ 'stack' ]),
     shortcuts() {
       const modals = Object.values(this.modals[this.modal] || {});
 
@@ -45,26 +48,60 @@ export default {
       );
     }
   },
+  watch: {
+    stack(newStack) {
+      this.modal = this.getFirstNonShortcutModal();
+    }
+  },
   mounted() {
-    apos.bus.$on('open-modal', async state => {
+    apos.bus.$on('@apostrophecms/command-menu:open-modal', async state => {
       await apos.modal.execute(state.name, state.props);
     });
 
-    this.keyboardShortcutListener = (event) => {
+    document.addEventListener('keydown', this.keyboardShortcutListener.bind(this));
+  },
+  beforeUnmount() {
+    document.removeEventListener('keydown', this.keyboardShortcutListener);
+  },
+  methods: {
+    ...mapActions(useModalStore, [ 'getAt', 'getProperties' ]),
+    delay(resolve, ms) {
+      return new Promise(() => {
+        setTimeout(resolve, ms);
+      });
+    },
+    getModal() {
+      return this.modal;
+    },
+    getFirstNonShortcutModal(index = -1) {
+      const modal = this.getAt(index);
+      const properties = this.getProperties(modal.id);
+
+      return properties.itemName === '@apostrophecms/command-menu:shortcut'
+        ? this.getFirstNonShortcutModal(index + -1)
+        : properties.itemName || 'default';
+    },
+    keyboardShortcutListener(event) {
       if (event.target.nodeName !== 'INPUT' && event.target.nodeName !== 'TEXTAREA' && document.activeElement.contentEditable !== 'true') {
         const key = [
           [ 'ALT', event.altKey ],
           [ 'CTRL', event.ctrlKey ],
           [ 'META', event.metaKey ],
           [ 'SHIFT', event.shiftKey ],
-          [ 'KEY', event.key.length === 1 ? [ this.previousKey, event.key.toUpperCase() ].filter(value =>
-            value).join(',') : event.key.toUpperCase() ]
+          [ 'KEY', event.key.toUpperCase() ]
         ]
           .filter(([ , value ]) => value)
           .map(([ key, value ]) => key === 'KEY' ? value : key)
           .join('+');
 
-        const action = this.shortcuts[key] || this.shortcuts[key.startsWith('SHIFT+') ? key.slice('SHIFT+'.length) : key];
+        const keys = this.previousKey
+          ? `${this.previousKey},${key}`
+          : key;
+
+        const action = this.shortcuts[keys] ||
+          this.shortcuts[keys.startsWith('SHIFT+')
+            ? keys.slice('SHIFT+'.length)
+            : keys];
         if (action) {
           event.preventDefault();
           apos.bus.$emit(action.type, action.payload);
@@ -78,42 +115,7 @@ export default {
           }, 1000);
         }
       }
-    };
-
-    document.addEventListener('keydown', this.keyboardShortcutListener.bind(this));
-
-    apos.bus.$on('modal-launched', this.updateModal);
-    apos.bus.$on('modal-resolved', this.updateModal);
-  },
-  beforeUnmount() {
-    document.removeEventListener('keydown', this.keyboardShortcutListener);
-
-    apos.bus.$off('modal-launched', this.updateModal);
-    apos.bus.$off('modal-resolved', this.updateModal);
-  },
-  methods: {
-    delay(resolve, ms) {
-      return new Promise(() => {
-        setTimeout(resolve, ms);
-      });
-    },
-    getModal() {
-      return this.modal;
-    },
-    getFirstNonShortcutModal(index = -1) {
-      const modal = apos.modal.getAt(index);
-      const properties = apos.modal.getProperties(modal.id);
-
-      return properties.itemName === '@apostrophecms/command-menu:shortcut'
-        ? this.getFirstNonShortcutModal(index + -1)
-        : properties.itemName || 'default';
-    },
-    updateModal() {
-      this.modal = this.getFirstNonShortcutModal();
     }
   }
 };
 </script>
-
-<style lang="scss" scoped>
-</style>
