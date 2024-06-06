@@ -54,7 +54,10 @@ export default {
         return [];
       }
     },
-    triggerValidation: Boolean,
+    triggerValidation: {
+      type: Boolean,
+      default: false
+    },
     utilityRail: {
       type: Boolean,
       default() {
@@ -120,7 +123,7 @@ export default {
               required
             },
             value: {
-              data: this.modelValue[item.name]
+              data: this.modelValue && this.modelValue[item.name]
             },
             serverError: this.serverErrors && this.serverErrors[item.name],
             modifiers: [
@@ -224,6 +227,9 @@ export default {
       return options;
     },
     populateDocData() {
+      if (!this.modelValue) {
+        return;
+      }
       this.schemaReady = false;
       const next = {
         hasErrors: false,
