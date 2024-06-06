@@ -46,6 +46,7 @@ Instead, makes the AposSchema for loop keys more unique using `modelValue.data._
 if document changes it re-renders schema fields.
 * Fixes `TheAposCommandMenu` modals not computing shortcuts from the current opened modal.
 * Fixes Vue 3 race condition in a simple but temporary way, waiting to create a reproducible test case for vue team.
+* Fixes select boxes of relationships, we can now check manually published relationships, and `AposSlatList` renders properly checked relationships.
 
 ## 4.3.2 (2024-05-18)
 

@@ -72,7 +72,7 @@
         <template #bodyMain>
           <AposMediaManagerDisplay
             ref="display"
-            v-model:checked="checked"
+            :checked="checked"
             :accept="accept"
             :items="items"
             :module-options="moduleOptions"
@@ -81,6 +81,7 @@
               disableUnchecked: maxReached(),
               hideCheckboxes: !relationshipField
             }"
+            @update:checked="setCheckedDocs"
             @edit="updateEditing"
             @select="select"
             @select-series="selectSeries"
@@ -346,7 +347,7 @@ export default {
         return;
       }
       if (Array.isArray(imgIds) && imgIds.length) {
-        this.checked = this.checked.concat(imgIds);
+        this.concatCheckedDocs(imgIds);
 
         // If we're currently editing one, don't interrupt that by replacing it.
         if (!this.editing && imgIds.length === 1) {
@@ -384,18 +385,21 @@ export default {
     // select setters
     select(id) {
       if (this.checked.includes(id)) {
-        this.checked = [];
+        this.setCheckedDocs([]);
       } else {
-        this.checked = [ id ];
+        const item = this.items.find(item => item._id === id);
+        if (item) {
+          this.setCheckedDocs([ item ]);
+        }
       }
       this.updateEditing(id);
       this.lastSelected = id;
     },
     selectAnother(id) {
       if (this.checked.includes(id)) {
-        this.checked = this.checked.filter(checkedId => checkedId !== id);
+        this.removeCheckedDoc(id);
       } else {
-        this.checked.push(id);
+        this.addCheckedDoc(id);
       }
 
       this.lastSelected = id;
@@ -422,7 +426,7 @@ export default {
       // always want to check, never toggle
       sliced.forEach(item => {
         if (!this.checked.includes(item._id)) {
-          this.checked.push(item._id);
+          this.addCheckedDoc(item._id);
         }
       });
 
