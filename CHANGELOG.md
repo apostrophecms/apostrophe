@@ -45,6 +45,7 @@ We will now end up with page B slug as `/peer/page` and not `/peer/peer/page` as
 Instead, makes the AposSchema for loop keys more unique using `modelValue.data._id`, 
 if document changes it re-renders schema fields.
 * Fixes `TheAposCommandMenu` modals not computing shortcuts from the current opened modal.
+* Fixes select boxes of relationships, we can now check manually published relationships, and `AposSlatList` renders properly checked relationships.
 
 ## 4.3.2 (2024-05-18)
 

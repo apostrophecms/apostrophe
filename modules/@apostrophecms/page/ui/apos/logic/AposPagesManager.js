@@ -252,9 +252,9 @@ export default {
     },
     toggleRowCheck(id) {
       if (this.checked.includes(id)) {
-        this.checked = this.checked.filter(item => item !== id);
+        this.removeCheckedDoc(id);
       } else {
-        this.checked.push(id);
+        this.addCheckedDoc(id);
       }
     },
     selectAll(event) {
@@ -287,12 +287,6 @@ export default {
         this.checkedDocs.push(doc);
         this.checked.push(doc._id);
       }
-    },
-    setCheckedDocs(checkedDocs) {
-      this.checked = checkedDocs.map(doc => doc._id);
-    },
-    updateCheckedDocs() {
-      this.checkedDocs = this.checked.map(_id => this.pagesFlat.find(page => page._id === _id));
     }
   }
 };
