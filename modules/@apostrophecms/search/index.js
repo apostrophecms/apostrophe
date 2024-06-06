@@ -207,6 +207,7 @@ module.exports = {
         return self.emit('beforeIndex', req);
 
         async function findDocs() {
+          req.aposAncestors = true;
 
           // Polymorphic find: fetch just the ids at first, then go back
           // and fetch them via their own type managers so that we get the

@@ -109,8 +109,9 @@ module.exports = {
         ancestors: {
           def: false,
           async after(results) {
+            const req = query.req;
             const options = query.get('ancestors');
-            if (!options) {
+            if (!options && req.aposAncestors !== true) {
               return;
             }
             for (const page of results) {
@@ -118,7 +119,6 @@ module.exports = {
                 // Projection is too limited, don't crash trying to get ancestors
                 continue;
               }
-              const req = query.req;
               const subquery = self.apos.page.find(req);
               subquery.ancestorPerformanceRestrictions();
               const parameters = applySubqueryOptions(subquery, options, [ 'depth' ]);
