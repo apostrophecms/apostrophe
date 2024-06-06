@@ -2,6 +2,10 @@
 
 ## UNRELEASED
 
+### Adds
+
+* Add breadcrumbs to search results page.
+
 ### Changes
 
 * Improves widget tabs for the hidden entries, improves UX when validation errors are present in non-focused tabs.
