@@ -288,44 +288,6 @@ describe('Schemas', function() {
               }
             };
           }
-        },
-        article: {
-          extend: '@apostrophecms/piece-type',
-          options: {
-            alias: 'article'
-          },
-          fields(self) {
-            return {
-              add: {
-                title: {
-                  label: '',
-                  type: 'string',
-                  required: true
-                },
-                area: {
-                  label: 'Area',
-                  type: 'area',
-                  options: {
-                    widgets: {
-                      '@apostrophecms/rich-text': {}
-                    }
-                  }
-                },
-                array: {
-                  label: 'Array',
-                  type: 'array',
-                  fields: {
-                    add: {
-                      arrayTitle: {
-                        label: 'Array Title',
-                        type: 'string'
-                      }
-                    }
-                  }
-                }
-              }
-            };
-          }
         }
       }
     });
@@ -2301,6 +2263,8 @@ describe('Schemas', function() {
     assert(output.goodValue === '2022-05-09T22:36:00.000Z');
   });
 
+<<<<<<< HEAD
+=======
   it('should compare two document properly with the method getChanges', async function() {
     const req = apos.task.getReq();
     const instance = apos.article.newInstance();
@@ -2585,6 +2549,7 @@ describe('Schemas', function() {
     });
   });
 
+>>>>>>> 3858a9c1f (Pro 5938 read only default value (#4559))
   describe('field editPermission|viewPermission', function() {
     const schema = [
       {
