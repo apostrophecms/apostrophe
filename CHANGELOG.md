@@ -14,6 +14,7 @@
 * Add `T,S` shortcut to open the Personal Settings.
 * Add `T,D` shortcut to open the Submitted Drafts.
 * Add a scrollbar to the shortcut list.
+* Add breadcrumbs to search results page.
 
 ### Changes
 

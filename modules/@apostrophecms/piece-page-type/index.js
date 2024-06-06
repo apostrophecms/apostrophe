@@ -250,6 +250,7 @@ module.exports = {
           const parentPage = self.chooseParentPage(req.aposParentPageCache[pieceName], piece);
           if (parentPage) {
             piece._url = self.buildUrl(req, parentPage, piece);
+            piece._parent = parentPage;
             piece._parentUrl = parentPage._url;
             piece._parentSlug = parentPage.slug;
           }
