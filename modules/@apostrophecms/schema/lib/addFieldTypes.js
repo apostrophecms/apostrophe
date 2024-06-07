@@ -96,7 +96,7 @@ module.exports = (self) => {
   self.addFieldType({
     name: 'string',
     convert(req, field, data, destination) {
-      destination[field.name] = self.apos.launder.string(data[field.name], field.def);
+      destination[field.name] = self.apos.launder.string(data[field.name]);
       destination[field.name] = checkStringLength(destination[field.name], field.min, field.max);
       // If field is required but empty (and client side didn't catch that)
       // This is new and until now if JS client side failed, then it would
@@ -165,7 +165,7 @@ module.exports = (self) => {
     convert (req, field, data, destination) {
       const options = self.getSlugFieldOptions(field, data);
 
-      destination[field.name] = self.apos.util.slugify(self.apos.launder.string(data[field.name], field.def), options);
+      destination[field.name] = self.apos.util.slugify(self.apos.launder.string(data[field.name]), options);
 
       if (field.page) {
         if (!(destination[field.name].charAt(0) === '/')) {
@@ -205,7 +205,7 @@ module.exports = (self) => {
   self.addFieldType({
     name: 'boolean',
     convert: function (req, field, data, destination) {
-      destination[field.name] = self.apos.launder.boolean(data[field.name], field.def);
+      destination[field.name] = self.apos.launder.boolean(data[field.name]);
     },
     isEmpty: function (field, value) {
       return !value && value !== false;
@@ -256,7 +256,7 @@ module.exports = (self) => {
   self.addFieldType({
     name: 'color',
     async convert(req, field, data, destination) {
-      destination[field.name] = self.apos.launder.string(data[field.name], field.def);
+      destination[field.name] = self.apos.launder.string(data[field.name]);
 
       if (field.required && (_.isUndefined(destination[field.name]) || !destination[field.name].toString().length)) {
         throw self.apos.error('required');
@@ -438,7 +438,7 @@ module.exports = (self) => {
     name: 'integer',
     vueComponent: 'AposInputString',
     async convert(req, field, data, destination) {
-      destination[field.name] = self.apos.launder.integer(data[field.name], field.def, field.min, field.max);
+      destination[field.name] = self.apos.launder.integer(data[field.name], undefined, field.min, field.max);
       if (field.required && ((data[field.name] == null) || !data[field.name].toString().length)) {
         throw self.apos.error('required');
       }
@@ -492,7 +492,7 @@ module.exports = (self) => {
     name: 'float',
     vueComponent: 'AposInputString',
     async convert(req, field, data, destination) {
-      destination[field.name] = self.apos.launder.float(data[field.name], field.def, field.min, field.max);
+      destination[field.name] = self.apos.launder.float(data[field.name], undefined, field.min, field.max);
       if (field.required && (_.isUndefined(data[field.name]) || !data[field.name].toString().length)) {
         throw self.apos.error('required');
       }
@@ -563,7 +563,7 @@ module.exports = (self) => {
     name: 'url',
     vueComponent: 'AposInputString',
     async convert(req, field, data, destination) {
-      destination[field.name] = self.apos.launder.url(data[field.name], field.def, true);
+      destination[field.name] = self.apos.launder.url(data[field.name], undefined, true);
 
       if (field.required && (data[field.name] == null || !data[field.name].toString().length)) {
         throw self.apos.error('required');
@@ -642,7 +642,7 @@ module.exports = (self) => {
         return;
       }
 
-      destination[field.name] = self.apos.launder.date(newDateVal, field.def);
+      destination[field.name] = self.apos.launder.date(newDateVal);
     },
     validate: function (field, options, warn, fail) {
       if (field.max && !field.max.match(dateRegex)) {
@@ -698,7 +698,7 @@ module.exports = (self) => {
     name: 'time',
     vueComponent: 'AposInputString',
     async convert(req, field, data, destination) {
-      destination[field.name] = self.apos.launder.time(data[field.name], field.def);
+      destination[field.name] = self.apos.launder.time(data[field.name]);
     }
   });
 
@@ -718,7 +718,7 @@ module.exports = (self) => {
       // This is the only field type that we never update unless
       // there is actually a new value — a blank password is not cool. -Tom
       if (data[field.name]) {
-        destination[field.name] = self.apos.launder.string(data[field.name], field.def);
+        destination[field.name] = self.apos.launder.string(data[field.name]);
 
         destination[field.name] = checkStringLength(destination[field.name], field.min, field.max);
       }
@@ -733,7 +733,7 @@ module.exports = (self) => {
     name: 'range',
     vueComponent: 'AposInputRange',
     async convert(req, field, data, destination) {
-      destination[field.name] = self.apos.launder.float(data[field.name], field.def, field.min, field.max);
+      destination[field.name] = self.apos.launder.float(data[field.name], undefined, field.min, field.max);
       if (field.required && (_.isUndefined(data[field.name]) || !data[field.name].toString().length)) {
         throw self.apos.error('required');
       }
