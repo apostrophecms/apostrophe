@@ -6,7 +6,12 @@ export default {
   props: {
     modelValue: {
       type: Object,
-      required: true
+      required: true,
+      default() {
+        return {
+          data: {}
+        };
+      }
     },
     meta: {
       type: Object,
@@ -120,7 +125,7 @@ export default {
               required
             },
             value: {
-              data: this.modelValue[item.name]
+              data: this.modelValue[item.name] || {}
             },
             serverError: this.serverErrors && this.serverErrors[item.name],
             modifiers: [
