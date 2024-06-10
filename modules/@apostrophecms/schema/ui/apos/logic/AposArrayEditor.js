@@ -148,8 +148,6 @@ export default {
         data: this.next.find(item => item._id === this.currentId)
       };
       this.evaluateConditions();
-      this.triggerValidation = false;
-      // await this.select(this.currentId);
     }
     if (this.serverError && this.serverError.data && this.serverError.data.errors) {
       const first = this.serverError.data.errors[0];
