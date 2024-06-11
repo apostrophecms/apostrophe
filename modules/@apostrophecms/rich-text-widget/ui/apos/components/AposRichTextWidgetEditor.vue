@@ -852,9 +852,7 @@ function traverseNextNode(node) {
   }
 
   .apos-rich-text-editor__editor :deep([data-tippy-root]) {
-    transition: all 400ms var(--a-transition-timing-bounce);
-    /* stylelint-disable-next-line time-min-milliseconds */
-    transition-delay: 100ms;
+    transition: transform 400ms var(--a-transition-timing-bounce) 100ms;
   }
 
   .apos-rich-text-editor__editor :deep(.tippy-box[data-animation='fade'][data-state='hidden']) {
