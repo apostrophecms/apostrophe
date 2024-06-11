@@ -48,6 +48,7 @@ Instead, makes the AposSchema for loop keys more unique using `modelValue.data._
 if document changes it re-renders schema fields.
 * Fixes `TheAposCommandMenu` modals not computing shortcuts from the current opened modal.
 * Fixes select boxes of relationships, we can now check manually published relationships, and `AposSlatList` renders properly checked relationships.
+* Fixes issues in `AposInputArray` on production build to be able to add, remove and edit array items after `required` error.
 * Relationships browse button isn't disabled when max is reached.
 * In media manaer images checkboxes are disabled when max is reached.
 

@@ -47,7 +47,7 @@ export default {
 
     return {
       currentId: null,
-      currentDoc: null,
+      currentDoc: { data: {} },
       modal: {
         active: false,
         type: 'overlay',
@@ -142,7 +142,7 @@ export default {
     this.modal.active = true;
     await this.evaluateExternalConditions();
     if (this.next.length) {
-      await this.select(this.next[0]._id);
+      this.setCurrentDoc(this.next.at(0)._id);
     }
     if (this.serverError && this.serverError.data && this.serverError.data.errors) {
       const first = this.serverError.data.errors[0];
@@ -155,19 +155,22 @@ export default {
     this.titleFieldChoices = await this.getTitleFieldChoices();
   },
   methods: {
+    setCurrentDoc(_id) {
+      this.currentId = _id;
+      this.currentDoc = {
+        hasErrors: false,
+        data: this.next.find(item => item._id === _id)
+      };
+      this.evaluateConditions();
+      this.triggerValidation = false;
+    },
     async select(_id) {
       if (this.currentId === _id) {
         return;
       }
       if (await this.validate(true, false)) {
         this.currentDocToCurrentItem();
-        this.currentId = _id;
-        this.currentDoc = {
-          hasErrors: false,
-          data: this.next.find(item => item._id === _id)
-        };
-        this.evaluateConditions();
-        this.triggerValidation = false;
+        this.setCurrentDoc(_id);
       }
     },
     update(items) {
@@ -176,9 +179,9 @@ export default {
       // drags fail
       this.next = items.map(item => this.next.find(_item => item._id === _item._id));
       if (this.currentId) {
-        if (!this.next.find(item => item._id === this.currentId)) {
-          this.currentId = null;
-          this.currentDoc = null;
+        if (!this.next.some(item => item._id === this.currentId)) {
+          this.currentId = this.next.at(0)?._id || null;
+          this.currentDoc = { data: this.next.at(0) || {} };
         }
       }
       this.updateMinMax();
@@ -254,7 +257,7 @@ export default {
       return false;
     },
     async validate(validateItem, validateLength) {
-      if (validateItem) {
+      if (validateItem && this.next.length > 0 && this.currentId) {
         this.triggerValidation = true;
       }
       await this.$nextTick();

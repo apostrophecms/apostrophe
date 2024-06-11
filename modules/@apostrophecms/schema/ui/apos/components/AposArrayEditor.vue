@@ -65,7 +65,7 @@
               <div class="apos-modal-array-item__pane">
                 <div class="apos-array-item__body">
                   <AposSchema
-                    v-if="currentId"
+                    v-show="currentId"
                     ref="schema"
                     :schema="schema"
                     :trigger-validation="triggerValidation"
