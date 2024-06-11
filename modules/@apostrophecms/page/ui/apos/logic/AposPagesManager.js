@@ -49,7 +49,8 @@ export default {
       treeOptions: {
         bulkSelect: !!this.relationshipField,
         draggable: true,
-        ghostUnpublished: true
+        ghostUnpublished: true,
+        max: this.relationshipField.max || null
       },
       moreMenu: [
         {
