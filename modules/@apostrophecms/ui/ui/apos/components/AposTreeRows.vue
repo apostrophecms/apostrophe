@@ -79,7 +79,8 @@
                   key: 'apostrophe:toggleSelectionOf',
                   title: row.title
                 },
-                disableFocus: true
+                disableFocus: true,
+                readOnly: maxReached && !checked.includes(row._id)
               }"
               :choice="{ value: row._id }"
             />
@@ -217,6 +218,9 @@ export default {
         ghostClass: 'apos-is-dragging',
         filter: '.apos-is-parked'
       };
+    },
+    maxReached() {
+      return this.options.max != null && this.checked.length >= this.options.max;
     }
   },
   mounted() {

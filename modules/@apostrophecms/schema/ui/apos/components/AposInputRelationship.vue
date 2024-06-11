@@ -45,7 +45,7 @@
           <AposButton
             v-if="field.browse !== false"
             class="apos-input-relationship__button"
-            :disabled="field.readOnly || limitReached"
+            :disabled="field.readOnly"
             :label="browseLabel"
             :modifiers="buttonModifiers"
             type="input"
