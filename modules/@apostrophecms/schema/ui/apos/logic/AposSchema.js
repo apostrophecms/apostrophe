@@ -125,7 +125,7 @@ export default {
               required
             },
             value: {
-              data: this.modelValue[item.name] || {}
+              data: this.modelValue.data[item.name]
             },
             serverError: this.serverErrors && this.serverErrors[item.name],
             modifiers: [
