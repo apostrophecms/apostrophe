@@ -1,5 +1,8 @@
 <template>
-  <div :aria-controls="`insert-menu-${modelValue._id}`" @keydown="handleUIKeydown">
+  <div
+    :aria-controls="`insert-menu-${modelValue._id}`"
+    @keydown="handleUIKeydown"
+  >
     <bubble-menu
       v-if="editor"
       class="bubble-menu"
@@ -9,7 +12,8 @@
         zIndex: 2000,
         animation: 'fade',
         inertia: true,
-        placement: 'bottom'
+        placement: 'bottom',
+        hideOnClick: true
       }"
       :editor="editor"
     >
