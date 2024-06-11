@@ -15,6 +15,7 @@
 * Add `T,D` shortcut to open the Submitted Drafts.
 * Add a scrollbar to the shortcut list.
 * Add breadcrumbs to search results page.
+* Pages relationships have now their checkboxes disabled when max is reached.
 
 ### Changes
 
@@ -48,6 +49,8 @@ if document changes it re-renders schema fields.
 * Fixes `TheAposCommandMenu` modals not computing shortcuts from the current opened modal.
 * Fixes select boxes of relationships, we can now check manually published relationships, and `AposSlatList` renders properly checked relationships.
 * Fixes issues in `AposInputArray` on production build to be able to add, remove and edit array items after `required` error.
+* Relationships browse button isn't disabled when max is reached.
+* In media manaer images checkboxes are disabled when max is reached.
 
 ## 4.3.2 (2024-05-18)
 
