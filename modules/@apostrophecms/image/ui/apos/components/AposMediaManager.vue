@@ -124,7 +124,7 @@
 <script>
 import AposModifiedMixin from 'Modules/@apostrophecms/ui/mixins/AposModifiedMixin';
 import AposDocsManagerMixin from 'Modules/@apostrophecms/modal/mixins/AposDocsManagerMixin';
-import cuid from 'cuid';
+import { createId } from '@paralleldrive/cuid2';
 
 export default {
   mixins: [ AposModifiedMixin, AposDocsManagerMixin ],
@@ -322,7 +322,7 @@ export default {
     },
     createPlaceholder(dimensions) {
       this.items.unshift({
-        _id: cuid(),
+        _id: createId(),
         title: 'placeholder image',
         dimensions
       });

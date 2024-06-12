@@ -62,7 +62,7 @@
 </template>
 
 <script>
-import cuid from 'cuid';
+import { createId } from '@paralleldrive/cuid2';
 
 export default {
   props: {
@@ -102,7 +102,7 @@ export default {
       myTags: [ ...this.tags ],
       checked: [],
       searchInputValue: '',
-      keyPrefix: `key-${cuid()}`, // used to keep checkboxes in sync w state
+      keyPrefix: `key-${createId()}`, // used to keep checkboxes in sync w state
       origin: 'below',
       open: false,
       button: {
@@ -228,7 +228,7 @@ export default {
         }
       }
       // Force refresh the checkboxes.
-      this.keyPrefix = `key-${cuid()}`;
+      this.keyPrefix = `key-${createId()}`;
 
       // TODO: This should probably have an "Apply" or "Save" button to confirm
       // before running emitting the updates.

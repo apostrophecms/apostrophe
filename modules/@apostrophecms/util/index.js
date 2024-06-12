@@ -27,7 +27,7 @@ const he = require('he');
 _.str = require('underscore.string');
 const XRegExp = require('xregexp').XRegExp;
 const crypto = require('crypto');
-const cuid = require('cuid');
+const { createId } = require('@paralleldrive/cuid2');
 const fs = require('fs');
 const now = require('performance-now');
 const Promise = require('bluebird');
@@ -65,10 +65,10 @@ module.exports = {
   methods(self) {
     return {
       // generate a unique identifier for a new page or other object.
-      // IDs are generated with the cuid module which prevents
+      // IDs are generated with the cuid2 module which prevents
       // collisions and easy guessing of another's ID.
       generateId() {
-        return cuid();
+        return createId();
       },
       // Globally replace a string with another string.
       // Regular `String.replace` does NOT offer global replace, except

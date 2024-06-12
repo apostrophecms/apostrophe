@@ -322,6 +322,6 @@ export default {
   margin-top: $spacing-double;
   color: var(--a-primary);
   text-decoration: none;
-  font-weight: var(--a-weight-bold);;
+  font-weight: var(--a-weight-bold);
 }
 </style>

@@ -5,7 +5,7 @@
 // takes advantage of this module.
 
 const _ = require('lodash');
-const cuid = require('cuid');
+const { createId } = require('@paralleldrive/cuid2');
 
 module.exports = {
   options: {
@@ -353,7 +353,7 @@ module.exports = {
           contextBar: context && self.apos.doc.getManager(context.type).options.contextBar,
           // Simplifies frontend logic
           contextId: context && context._id,
-          tabId: cuid(),
+          tabId: createId(),
           contextEditorName,
           pageTree: self.options.pageTree && self.apos.permission.can(req, 'edit', '@apostrophecms/any-page-type', 'draft'),
           bars: self.bars,

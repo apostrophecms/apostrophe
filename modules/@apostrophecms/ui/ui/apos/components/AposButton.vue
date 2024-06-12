@@ -48,7 +48,7 @@
 </template>
 
 <script>
-import cuid from 'cuid';
+import { createId } from '@paralleldrive/cuid2';
 
 export default {
   name: 'AposButton',
@@ -132,7 +132,7 @@ export default {
   emits: [ 'click' ],
   data() {
     return {
-      id: cuid()
+      id: createId()
     };
   },
   computed: {

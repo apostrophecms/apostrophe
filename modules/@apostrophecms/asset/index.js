@@ -1,4 +1,4 @@
-const glob = require('glob');
+const { globSync } = require('glob');
 const fs = require('fs-extra');
 const Promise = require('bluebird');
 const webpackModule = require('webpack');
@@ -8,7 +8,7 @@ const util = require('util');
 const express = require('express');
 const { stripIndent } = require('common-tags');
 const { mergeWithCustomize: webpackMerge } = require('webpack-merge');
-const cuid = require('cuid');
+const { createId } = require('@paralleldrive/cuid2');
 const chokidar = require('chokidar');
 const _ = require('lodash');
 const {
@@ -110,7 +110,7 @@ module.exports = {
   components(self) {
     return {
       scripts(req, data) {
-        const placeholder = `[scripts-placeholder:${cuid()}]`;
+        const placeholder = `[scripts-placeholder:${createId()}]`;
 
         req.scriptsPlaceholder = placeholder;
 
@@ -119,7 +119,7 @@ module.exports = {
         };
       },
       stylesheets(req, data) {
-        const placeholder = `[stylesheets-placeholder:${cuid()}]`;
+        const placeholder = `[stylesheets-placeholder:${createId()}]`;
 
         req.stylesheetsPlaceholder = placeholder;
 
@@ -247,7 +247,7 @@ module.exports = {
           const scenes = [ ...new Set(Object.values(self.builds).map(options => options.scenes).flat()) ];
 
           // enumerate public assets and include them in deployment if appropriate
-          const publicAssets = glob.sync('modules/**/*', {
+          const publicAssets = globSync('modules/**/*', {
             cwd: bundleDir,
             mark: true
           }).filter(match => !match.endsWith('/'));
@@ -702,7 +702,7 @@ module.exports = {
                 if (seen[entry.dirname]) {
                   continue;
                 }
-                components = components.concat(glob.sync(`${entry.dirname}/ui/${folder}/${pattern}`));
+                components = components.concat(globSync(`${entry.dirname}/ui/${folder}/${pattern}`));
                 seen[entry.dirname] = true;
               }
             }
