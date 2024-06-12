@@ -53,6 +53,8 @@ if document changes it re-renders schema fields.
 * In media manager image checkboxes are disabled when max is reached.
 * Fixes tiptap bubble menu jumping on Firefox when clicking on buttons. Also fixes the fact that 
 double clicking on bubble menu out of buttons would prevent it from closing when unfocusing the rich text area.
+* In media manager images checkboxes are disabled when max is reached.
+* Makes the final fields accessible in the media manager right rail.
 
 ## 4.3.2 (2024-05-18)
 
