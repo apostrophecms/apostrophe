@@ -50,7 +50,8 @@ if document changes it re-renders schema fields.
 * Fixes select boxes of relationships, we can now check manually published relationships, and `AposSlatList` renders properly checked relationships.
 * Fixes issues in `AposInputArray` on production build to be able to add, remove and edit array items after `required` error.
 * Relationships browse button isn't disabled when max is reached.
-* In media manaer images checkboxes are disabled when max is reached.
+* In media manager images checkboxes are disabled when max is reached.
+* Makes the final fields accessible in the media manager right rail.
 
 ## 4.3.2 (2024-05-18)
 
