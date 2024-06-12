@@ -50,7 +50,7 @@ if document changes it re-renders schema fields.
 * Fixes select boxes of relationships, we can now check manually published relationships, and `AposSlatList` renders properly checked relationships.
 * Fixes issues in `AposInputArray` on production build to be able to add, remove and edit array items after `required` error.
 * Relationships browse button isn't disabled when max is reached.
-* In media manaer images checkboxes are disabled when max is reached.
+* In media manager image checkboxes are disabled when max is reached.
 * Fixes tiptap bubble menu jumping on Firefox when clicking on buttons. Also fixes the fact that 
 double clicking on bubble menu out of buttons would prevent it from closing when unfocusing the rich text area.
 
