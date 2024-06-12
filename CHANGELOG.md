@@ -1,6 +1,6 @@
 # Changelog
 
-## UNRELEASED
+## 4.4.0 (2024-06-12)
 
 ### Adds
 
