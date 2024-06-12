@@ -119,7 +119,7 @@
     "tinycolor2": "^1.4.2",
     "tough-cookie": "^4.0.0",
     "underscore.string": "^3.3.4",
-    "uploadfs": "apostrophecms/uploadfs",
+    "uploadfs": "^1.22.4",
     "vue": "^3.3.8",
     "vue-advanced-cropper": "^2.8.8",
     "vue-loader": "^17.1.0",
