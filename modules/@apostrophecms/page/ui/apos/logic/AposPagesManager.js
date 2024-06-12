@@ -95,9 +95,9 @@ export default {
     },
     saveRelationshipLabel() {
       if (this.relationshipField && (this.relationshipField.max === 1)) {
-        return 'Select Page';
+        return 'apostrophe:pagesManagerSelectPage';
       } else {
-        return 'Select Pages';
+        return 'apostrophe:pagesManagerSelectPages';
       }
     },
     headers() {

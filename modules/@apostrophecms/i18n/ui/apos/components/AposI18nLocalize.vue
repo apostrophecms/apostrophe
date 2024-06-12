@@ -120,15 +120,15 @@
                       icon="map-marker-icon"
                       class="apos-current-locale-icon"
                       :icon-size="14"
-                      title="Default locale"
-                      tooltip="Current Locale"
+                      title="apostrophe:i18nDefaultLocale"
+                      tooltip="apostrophe:i18nCurrentLocale"
                     />
                     <AposIndicator
                       v-if="isSelected(loc)"
                       icon="check-bold-icon"
                       class="apos-check-icon"
                       :icon-size="10"
-                      title="Currently selected locale"
+                      title="apostrophe:i18nCurrentlySelectedLocale"
                     />
                     {{ loc.label }}
                     <span class="apos-locale-name">
@@ -136,8 +136,8 @@
                     </span>
                     <span
                       v-apos-tooltip="isLocalized(loc)
-                        ? 'Localized'
-                        : 'Not Yet Localized'"
+                        ? 'apostrophe:localizeLocalized'
+                        : 'apostrophe:localizeNotYetLocalized'"
                       class="apos-locale-localized"
                       :class="{
                         'apos-state-is-localized': isLocalized(loc),

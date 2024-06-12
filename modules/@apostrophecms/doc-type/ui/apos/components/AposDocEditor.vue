@@ -396,7 +396,7 @@ export default {
         busy: true
       });
       delete newInstance.parked;
-      newInstance.title = `Copy of ${newInstance.title}`;
+      newInstance.title = `${this.$t('apostrophe:docCopyOf')} ${newInstance.title}`;
       if (newInstance.slug.startsWith('/')) {
         const matches = newInstance.slug.match(/\/([^/]+)$/);
         if (matches) {
