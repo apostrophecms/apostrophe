@@ -188,12 +188,12 @@ export default {
   .apos-media-manager-display__grid {
     display: grid;
     grid-auto-rows: 140px;
-    grid-template-columns: repeat(5, 17.1%);
-    gap: 2.4% 2.4%;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 15px;
 
     @include media-up(lap) {
-      grid-template-columns: repeat(7, 12.22%);
-      gap: 2.4% 2.4%;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 20px;
     }
   }
 
