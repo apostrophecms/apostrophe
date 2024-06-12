@@ -1,5 +1,11 @@
 # Changelog
 
+## 4.4.1 (2024-06-12)
+
+### Fixes
+
+* Depend on `stylelint-config-apostrophe` properly via npm, not github.
+
 ## 4.4.0 (2024-06-12)
 
 ### Adds
