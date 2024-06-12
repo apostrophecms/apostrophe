@@ -63,6 +63,7 @@
             :checked="checked"
             :checked-count="checked.length"
             :module-name="moduleName"
+            :options="{noPager: true}"
             @page-change="updatePage"
             @select-click="selectClick"
             @search="search"
