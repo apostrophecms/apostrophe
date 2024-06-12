@@ -106,7 +106,7 @@ module.exports = {
           type: 'item',
           label: 'apostrophe:settings',
           action: {
-            type: 'open-modal',
+            type: '@apostrophecms/command-menu:open-modal',
             payload: {
               name: 'AposSettingsManager',
               props: { moduleName: '@apostrophecms/settings' }

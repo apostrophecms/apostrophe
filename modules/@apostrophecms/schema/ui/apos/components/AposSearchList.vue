@@ -7,11 +7,12 @@
       :class="getClasses(item)"
       @click="select(item, $event)"
     >
-      <img
+      <div
         v-if="item?.attachment?._urls?.['one-sixth']"
-        :src="item.attachment._urls['one-sixth']"
         class="apos-search-image"
       >
+        <img :src="item.attachment._urls['one-sixth']">
+      </div>
       <AposIndicator
         v-else-if="getIcon(item).icon"
         :icon="getIcon(item).icon"
@@ -170,11 +171,33 @@ export default {
   }
 
   .apos-search-image {
-    flex-basis: 0;
+    display: flex;
+    flex-basis: 32px;
     flex-grow: 0;
-    max-width: 32px;
-    max-height: 32px;
-    object-fit: cover;
+
+    & img {
+      max-width: 32px;
+      max-height: 32px;
+      object-fit: cover;
+      margin: 0 auto;
+    }
+  }
+
+  &--attachment {
+    .apos-search-image {
+      flex-basis: 50px;
+    }
+
+    .apos-search-image img {
+      max-width: 50px;
+      max-height: 50px;
+    }
+
+    .apos-search__item__title {
+      white-space: nowrap;
+      text-overflow: ellipsis;
+      overflow: hidden;
+    }
   }
 }
 </style>

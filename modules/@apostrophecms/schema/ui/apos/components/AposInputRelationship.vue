@@ -45,7 +45,7 @@
           <AposButton
             v-if="field.browse !== false"
             class="apos-input-relationship__button"
-            :disabled="field.readOnly || limitReached"
+            :disabled="field.readOnly"
             :label="browseLabel"
             :modifiers="buttonModifiers"
             type="input"
@@ -69,7 +69,7 @@
           :selected-items="next"
           :icon="field.suggestionIcon"
           :icon-size="field.suggestionIconSize"
-          :fields="field.suggestionFields"
+          :fields="suggestionFields"
           disabled-tooltip="apostrophe:publishBeforeUsingTooltip"
           @select="updateSelected"
         />

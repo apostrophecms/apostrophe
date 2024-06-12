@@ -8,7 +8,7 @@
 </template>
 
 <script>
-import { mapActions } from 'pinia';
+import { mapActions, mapState } from 'pinia';
 import AposThemeMixin from 'Modules/@apostrophecms/ui/mixins/AposThemeMixin';
 import { useModalStore } from 'Modules/@apostrophecms/ui/stores/modal';
 
@@ -26,11 +26,11 @@ export default {
   data() {
     return {
       previousKey: '',
-      modal: 'default',
-      keyboardShortcutListener() {}
+      modal: 'default'
     };
   },
   computed: {
+    ...mapState(useModalStore, [ 'stack' ]),
     shortcuts() {
       const modals = Object.values(this.modals[this.modal] || {});
 
@@ -48,12 +48,40 @@ export default {
       );
     }
   },
+  watch: {
+    stack(newStack) {
+      this.modal = this.getFirstNonShortcutModal();
+    }
+  },
   mounted() {
-    apos.bus.$on('open-modal', async state => {
+    apos.bus.$on('@apostrophecms/command-menu:open-modal', async state => {
       await apos.modal.execute(state.name, state.props);
     });
 
-    this.keyboardShortcutListener = (event) => {
+    document.addEventListener('keydown', this.keyboardShortcutListener.bind(this));
+  },
+  beforeUnmount() {
+    document.removeEventListener('keydown', this.keyboardShortcutListener);
+  },
+  methods: {
+    ...mapActions(useModalStore, [ 'getAt', 'getProperties' ]),
+    delay(resolve, ms) {
+      return new Promise(() => {
+        setTimeout(resolve, ms);
+      });
+    },
+    getModal() {
+      return this.modal;
+    },
+    getFirstNonShortcutModal(index = -1) {
+      const modal = this.getAt(index);
+      const properties = this.getProperties(modal.id);
+
+      return properties.itemName === '@apostrophecms/command-menu:shortcut'
+        ? this.getFirstNonShortcutModal(index + -1)
+        : properties.itemName || 'default';
+    },
+    keyboardShortcutListener(event) {
       if (event.target.nodeName !== 'INPUT' && event.target.nodeName !== 'TEXTAREA' && document.activeElement.contentEditable !== 'true') {
         const key = [
           [ 'ALT', event.altKey ],
@@ -87,39 +115,6 @@ export default {
           }, 1000);
         }
       }
-    };
-
-    document.addEventListener('keydown', this.keyboardShortcutListener.bind(this));
-
-    apos.bus.$on('modal-launched', this.updateModal);
-    apos.bus.$on('modal-resolved', this.updateModal);
-  },
-  beforeUnmount() {
-    document.removeEventListener('keydown', this.keyboardShortcutListener);
-
-    apos.bus.$off('modal-launched', this.updateModal);
-    apos.bus.$off('modal-resolved', this.updateModal);
-  },
-  methods: {
-    ...mapActions(useModalStore, [ 'getAt', 'getProperties' ]),
-    delay(resolve, ms) {
-      return new Promise(() => {
-        setTimeout(resolve, ms);
-      });
-    },
-    getModal() {
-      return this.modal;
-    },
-    getFirstNonShortcutModal(index = -1) {
-      const modal = this.getAt(index);
-      const properties = this.getProperties(modal.id);
-
-      return properties.itemName === '@apostrophecms/command-menu:shortcut'
-        ? this.getFirstNonShortcutModal(index + -1)
-        : properties.itemName || 'default';
-    },
-    updateModal() {
-      this.modal = this.getFirstNonShortcutModal();
     }
   }
 };

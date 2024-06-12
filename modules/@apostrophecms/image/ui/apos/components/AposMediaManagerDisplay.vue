@@ -27,7 +27,7 @@
               hideLabel: true,
               label: `Toggle selection of ${item.title}`,
               disableFocus: true,
-              disabled: options.disableUnchecked && !checked.includes(item._id)
+              readOnly: options.disableUnchecked && !checked.includes(item._id)
             }"
             :choice="{ value: item._id }"
           />

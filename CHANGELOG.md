@@ -14,6 +14,8 @@
 * Add `T,S` shortcut to open the Personal Settings.
 * Add `T,D` shortcut to open the Submitted Drafts.
 * Add a scrollbar to the shortcut list.
+* Add breadcrumbs to search results page.
+* Pages relationships have now their checkboxes disabled when max is reached.
 
 ### Changes
 
@@ -29,6 +31,9 @@ We will now end up with page B slug as `/peer/page` and not `/peer/peer/page` as
 * `AposContextMenu` now respects the `menuOffset` component property.
 * Set `G,Shift+I` shortcut to open the Image Tags manager modal.
 * Set `G,Shift+F` shortcut to open the File Tags manager modal.
+* Remove slug from suggestion for images.
+* Increase suggestion search image size to 50px.
+* For suggestions with image, keep title on a single line and truncate title field with `...` when it hits the right side.
 
 ### Fixes
 
@@ -36,7 +41,13 @@ We will now end up with page B slug as `/peer/page` and not `/peer/peer/page` as
 * Widget client side schema validation.
 * Allow `G,Shift+I` shortcut style.
 * Detect shortcut conflicts when using multiple shortcuts.
+* Updating schema fields as read-only no longer reset the value when updating the document.
 * Fixes stylelint config file, uses config from our shared configuration, fixes all lint errors. 
+* Fixes `TheAposCommandMenu` modals not computing shortcuts from the current opened modal.
+* Fixes select boxes of relationships, we can now check manually published relationships, and `AposSlatList` renders properly checked relationships.
+* Fixes issues in `AposInputArray` on production build to be able to add, remove and edit array items after `required` error.
+* Relationships browse button isn't disabled when max is reached.
+* In media manager images checkboxes are disabled when max is reached.
 
 ## 4.3.3 (2024-06-04)
 

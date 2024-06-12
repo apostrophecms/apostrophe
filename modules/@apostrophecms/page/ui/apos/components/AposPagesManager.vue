@@ -79,12 +79,13 @@
         </template>
         <template #bodyMain>
           <AposTree
-            v-model:checked="checked"
+            :checked="checked"
             :items="items"
             :headers="headers"
             :icons="icons"
             :options="treeOptions"
             :module-options="moduleOptions"
+            @update:checked="setCheckedDocs"
             @update="update"
           />
         </template>
@@ -102,7 +103,6 @@ export default {
   // Keep it for linting
   emits: [ 'archive', 'search', 'modal-result' ]
 };
-// TODO: check when child page is created and with what perm
 </script>
 
 <style lang="scss" scoped>
