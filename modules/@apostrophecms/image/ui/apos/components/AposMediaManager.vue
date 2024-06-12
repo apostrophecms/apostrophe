@@ -82,6 +82,7 @@
               disableUnchecked: maxReached(),
               hideCheckboxes: !relationshipField
             }"
+            :is-scroll-loading="isScrollLoading"
             @update:checked="setCheckedDocs"
             @edit="updateEditing"
             @select="select"
@@ -90,6 +91,7 @@
             @upload-started="uploading = true"
             @upload-complete="completeUploading"
             @create-placeholder="createPlaceholder"
+            @set-load-ref="setLoadRef"
           />
         </template>
       </AposModalBody>
@@ -139,6 +141,9 @@ export default {
   data() {
     return {
       items: [],
+      isFirstLoading: true,
+      isScrollLoading: false,
+      loadRef: null,
       totalPages: 1,
       currentPage: 1,
       tagList: [],
@@ -237,6 +242,7 @@ export default {
   },
   async mounted() {
     this.modal.active = true;
+    // TODO: should first load before rendering images
     await this.getMedia({ tags: true });
     apos.bus.$on('content-changed', this.onContentChanged);
     apos.bus.$on('command-menu-manager-close', this.confirmAndCancel);
@@ -252,6 +258,7 @@ export default {
       this.modified = val;
     },
     async getMedia (options) {
+      // TODO: Make sure that changing filters will refetch images and not appending them
       const qs = {
         ...this.filterValues,
         page: this.currentPage,
@@ -308,7 +315,9 @@ export default {
 
       this.currentPage = apiResponse.currentPage;
       this.totalPages = apiResponse.pages;
-      this.items = apiResponse.results;
+      for (const image of apiResponse.results) {
+        this.items.push(image);
+      }
     },
     async updateMedia () {
       this.updateEditing(null);
@@ -456,6 +465,43 @@ export default {
 
     async onContentChanged() {
       await this.getMedia({ tags: true });
+    },
+
+    async handleIntersect(entries) {
+      // TODO: first scroll loader to avoid triggering this function before first rendering
+      for (const entry of entries) {
+        if (
+          entry.isIntersecting &&
+          this.currentPage < this.totalPages &&
+          this.items.length
+        ) {
+          this.currentPage++;
+          this.isScrollLoading = true;
+          await this.getMedia();
+          this.isScrollLoading = false;
+        }
+      }
+    },
+
+    observeLoadRef() {
+      if (this.loadObserver) {
+        this.loadObserver.disconnect();
+      }
+      this.loadObserver = new IntersectionObserver(
+        this.handleIntersect,
+        {
+          root: null,
+          rootMargin: '30px',
+          threshold: 0
+        }
+      );
+
+      this.loadObserver.observe(this.loadRef);
+    },
+
+    setLoadRef(ref) {
+      this.loadRef = ref;
+      this.observeLoadRef();
     }
   }
 };

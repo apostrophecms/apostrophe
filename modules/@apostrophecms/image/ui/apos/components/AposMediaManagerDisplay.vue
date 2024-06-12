@@ -70,6 +70,16 @@
         />
       </div>
     </div>
+    <div
+      ref="scrollLoad"
+      class="apos-media-manager-display__scroll-load"
+      :class="{ 'apos-media-manager-display__scroll-load--loading': isScrollLoading }"
+    >
+      <AposLoading
+        v-if="isScrollLoading"
+        class="apos-loading"
+      />
+    </div>
   </div>
 </template>
 
@@ -111,6 +121,10 @@ export default {
     largePreview: {
       type: Boolean,
       default: false
+    },
+    isScrollLoading: {
+      type: Boolean,
+      default: false
     }
   },
   emits: [
@@ -120,7 +134,8 @@ export default {
     'select-another',
     'upload-started',
     'upload-complete',
-    'create-placeholder'
+    'create-placeholder',
+    'set-load-ref'
   ],
   computed: {
     // Handle the local check state within this component.
@@ -132,6 +147,9 @@ export default {
         this.$emit('update:checked', val);
       }
     }
+  },
+  mounted() {
+    this.$emit('set-load-ref', this.$refs.scrollLoad);
   },
   methods: {
     getPlaceholderStyles(item) {
@@ -289,6 +307,25 @@ export default {
       border-color: var(--a-base-7);
       outline-width: 0;
       box-shadow: none;
+    }
+  }
+
+  .apos-media-manager-display__scroll-load {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    &--loading {
+      height: 80px;
+      margin-top: 15px;
+      background-color: var(--a-base-10);
+      margin-bottom: 10px;
+      border: 1px solid var(--a-base-8);
+      border-radius: 8px;
+    }
+
+    .apos-loading {
+      flex-grow: 1;
     }
   }
 </style>
