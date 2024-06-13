@@ -124,8 +124,8 @@ export default {
   methods: {
     generateErrorLabel(errorCount) {
       return errorCount > 1
-        ? 'apostrophe:modalTabsErrors'
-        : 'apostrophe:modalTabsError';
+        ? this.$t('apostrophe:modalTabsErrors')
+        : this.$t('apostrophe:modalTabsError');
     },
     selectTab: function (e) {
       const tab = e.target;
