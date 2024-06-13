@@ -120,7 +120,7 @@
                       icon="map-marker-icon"
                       class="apos-current-locale-icon"
                       :icon-size="14"
-                      title="apostrophe:i18nDefaultLocale"
+                      :title="$t('apostrophe:i18nDefaultLocale')"
                       tooltip="apostrophe:i18nCurrentLocale"
                     />
                     <AposIndicator
@@ -128,7 +128,7 @@
                       icon="check-bold-icon"
                       class="apos-check-icon"
                       :icon-size="10"
-                      title="apostrophe:i18nCurrentlySelectedLocale"
+                      :title="$t('apostrophe:i18nCurrentlySelectedLocale')"
                     />
                     {{ loc.label }}
                     <span class="apos-locale-name">
