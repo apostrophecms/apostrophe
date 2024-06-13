@@ -319,7 +319,11 @@ module.exports = {
           // simply get a new page doc and return it
           const parentPage = await self.findForEditing(req, self.getIdCriteria(targetId))
             .permission('create', '@apostrophecms/any-page-type').toObject();
-          const newChild = self.newChild(parentPage);
+          const { _newInstance, ...body } = req.body;
+          const newChild = {
+            ...self.newChild(parentPage),
+            ...body
+          };
           newChild._previewable = true;
           return newChild;
         }

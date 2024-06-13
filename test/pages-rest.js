@@ -1,5 +1,6 @@
 const t = require('../test-lib/test.js');
 const assert = require('assert');
+const cuid = require('cuid');
 
 const areaConfig = {
   '@apostrophecms/image': {},
@@ -1616,6 +1617,108 @@ describe('Pages REST', function() {
       assert(!e.body.data.me);
       assert(e.body.data.username === 'admin');
     }
+  });
+
+  it('can insert a test-page with _newInstance and additional properties', async function() {
+    const newInstance = await apos.http.post('/api/v1/@apostrophecms/page', {
+      body: {
+        _newInstance: true,
+        slug: '/page-01',
+        type: 'test-page',
+        title: 'Page 01'
+      },
+      jar
+    });
+    const inserted = await apos.http.post('/api/v1/@apostrophecms/page', {
+      body: {
+        ...newInstance,
+        body: {
+          metaType: 'area',
+          items: [
+            {
+              metaType: 'widget',
+              type: '@apostrophecms/rich-text',
+              id: cuid(),
+              content: '<p>This is the product key product with relationship</p>'
+            }
+          ]
+        }
+      },
+      jar
+    });
+
+    const actual = {
+      newInstance,
+      inserted
+    };
+    const expected = {
+      newInstance: {
+        _previewable: true,
+        orphan: false,
+        slug: '/page-01',
+        title: 'Page 01',
+        type: 'test-page',
+        visibility: 'public'
+      },
+      inserted: {
+        _ancestors: inserted._ancestors,
+        _create: true,
+        _delete: true,
+        _edit: true,
+        _id: inserted._id,
+        _publish: true,
+        _url: '/page-01',
+        aposDocId: inserted.aposDocId,
+        aposLocale: 'en:published',
+        aposMode: 'published',
+        archived: false,
+        body: {
+          _docId: inserted.body._docId,
+          _edit: true,
+          _id: inserted.body._id,
+          items: [
+            {
+              _docId: inserted.body.items.at(0)._docId,
+              _edit: true,
+              _id: inserted.body.items.at(0)._id,
+              aposPlaceholder: false,
+              content: '<p>This is the product key product with relationship</p>',
+              imageIds: [],
+              metaType: 'widget',
+              permalinkIds: [],
+              type: '@apostrophecms/rich-text'
+            }
+          ],
+          metaType: 'area'
+        },
+        cacheInvalidatedAt: inserted.cacheInvalidatedAt,
+        color: '',
+        createdAt: inserted.createdAt,
+        highSearchText: inserted.highSearchText,
+        highSearchWords: inserted.highSearchWords,
+        lastPublishedAt: inserted.lastPublishedAt,
+        level: 1,
+        lowSearchText: inserted.lowSearchText,
+        metaType: 'doc',
+        orphan: false,
+        path: inserted.path,
+        rank: inserted.rank,
+        searchSummary: inserted.searchSummary,
+        slug: '/page-01',
+        title: 'Page 01',
+        titleSortified: inserted.titleSortified,
+        type: 'test-page',
+        updatedAt: inserted.updatedAt,
+        updatedBy: {
+          _id: inserted.updatedBy._id,
+          title: 'admin',
+          username: 'admin'
+        },
+        visibility: 'public'
+      }
+    };
+
+    assert.deepEqual(actual, expected);
   });
 
 });

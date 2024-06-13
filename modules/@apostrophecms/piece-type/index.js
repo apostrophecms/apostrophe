@@ -301,7 +301,11 @@ module.exports = {
       async post(req) {
         await self.publicApiCheckAsync(req);
         if (req.body._newInstance) {
-          const newInstance = self.newInstance();
+          const { _newInstance, ...body } = req.body;
+          const newInstance = {
+            ...self.newInstance(),
+            ...body
+          };
           newInstance._previewable = self.addUrlsViaModule && (await self.addUrlsViaModule.readyToAddUrlsToPieces(req, self.name));
           delete newInstance._url;
           return newInstance;
