@@ -123,11 +123,9 @@ export default {
   },
   methods: {
     generateErrorLabel(errorCount) {
-      let label = 'Error';
-      if (errorCount > 1) {
-        label += 's';
-      }
-      return label;
+      return errorCount > 1
+        ? 'apostrophe:modalTabsErrors'
+        : 'apostrophe:modalTabsError';
     },
     selectTab: function (e) {
       const tab = e.target;
