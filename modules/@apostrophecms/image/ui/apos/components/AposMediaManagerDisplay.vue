@@ -25,10 +25,10 @@
             :field="{
               name: item._id,
               hideLabel: true,
-              label: {
+              label: $t({
                 key: 'apostrophe:toggleSelectionOf',
                 title: item.title
-              },
+              }),
               disableFocus: true,
               readOnly: options.disableUnchecked && !checked.includes(item._id)
             }"
