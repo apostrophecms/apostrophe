@@ -1,5 +1,11 @@
 # Changelog
 
+## UNRELEASED
+
+### Fixes
+
+* Do not use schema `field.def` when calling `convert`.
+
 ## 4.4.1 (2024-06-12)
 
 ### Fixes

@@ -1720,5 +1720,4 @@ describe('Pages REST', function() {
 
     assert.deepEqual(actual, expected);
   });
-
 });
