@@ -273,9 +273,10 @@ module.exports = {
           type: parent.type,
           title: parent.title,
           slug: parent.slug,
-          // Already a well-pruned projection,
-          // necessary for breadcrumb trails
-          _ancestors: parent._ancestors
+          // These are already pruned projections and
+          // necessary for various types of navigation
+          _ancestors: parent._ancestors,
+          _children: parent._children
         };
       },
 
