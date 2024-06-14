@@ -10,6 +10,7 @@ const { cpus } = require('os');
 const process = require('process');
 const npmResolve = require('resolve');
 const glob = require('glob');
+const moogRequire = require('./lib/moog-require');
 
 let defaults = require('./defaults.js');
 
@@ -293,7 +294,7 @@ async function apostrophe(options, telemetry, rootSpan) {
     self.aliasEvent('modulesReady', 'modulesRegistered');
     self.aliasEvent('afterInit', 'ready');
 
-    defineModules();
+    await defineModules();
 
     await instantiateModules();
     lintModules();
@@ -541,11 +542,11 @@ async function apostrophe(options, telemetry, rootSpan) {
     }
   }
 
-  function defineModules() {
+  async function defineModules() {
     // Set moog-require up to create our module manager objects
 
     self.localModules = self.options.modulesSubdir || self.options.__testLocalModules || (self.rootDir + '/modules');
-    const synth = require('./lib/moog-require')({
+    const synth = await moogRequire({
       root: self.root,
       bundles: [ 'apostrophe' ].concat(self.options.bundles || []),
       localModules: self.localModules,
@@ -572,9 +573,9 @@ async function apostrophe(options, telemetry, rootSpan) {
 
     nestedModuleSubdirs();
 
-    _.each(self.options.modules, function(options, name) {
-      synth.define(name, options);
-    });
+    for (const [ name, options ] of Object.entries(self.options.modules)) {
+      await synth.define(name, options);
+    }
 
     // Apostrophe prefers that any improvements to @apostrophecms/global
     // be applied before any project level version of @apostrophecms/global

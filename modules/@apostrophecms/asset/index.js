@@ -270,7 +270,7 @@ module.exports = {
             // we can access their metadata, which is sufficient
             for (const name of modulesToInstantiate) {
               const ancestorDirectories = [];
-              const metadata = self.apos.synth.getMetadata(name);
+              const metadata = await self.apos.synth.getMetadata(name);
               for (const entry of metadata.__meta.chain) {
                 const effectiveName = entry.name.replace(/^my-/, '');
                 names[effectiveName] = true;
@@ -327,14 +327,14 @@ module.exports = {
 
             let iconImports, componentImports, tiptapExtensionImports, appImports, indexJsImports, indexSassImports;
             if (options.apos) {
-              iconImports = getIcons();
-              componentImports = getImports(`${source}/components`, '*.vue', {
+              iconImports = await getIcons();
+              componentImports = await getImports(`${source}/components`, '*.vue', {
                 registerComponents: true,
                 importLastVersion: true
               });
               /* componentImports = getGlobalVueComponents(self); */
-              tiptapExtensionImports = getImports(`${source}/tiptap-extensions`, '*.js', { registerTiptapExtensions: true });
-              appImports = getImports(`${source}/apps`, '*.js', {
+              tiptapExtensionImports = await getImports(`${source}/tiptap-extensions`, '*.js', { registerTiptapExtensions: true });
+              appImports = await getImports(`${source}/apps`, '*.js', {
                 invokeApps: true,
                 enumerateImports: true,
                 importSuffix: 'App'
@@ -350,7 +350,7 @@ module.exports = {
                   [entry.name]: true
                 }), {});
 
-              indexJsImports = getImports(source, 'index.js', {
+              indexJsImports = await getImports(source, 'index.js', {
                 invokeApps: true,
                 enumerateImports: true,
                 importSuffix: 'App',
@@ -358,7 +358,7 @@ module.exports = {
                 mainModuleBundles: getMainModuleBundleFiles('js'),
                 ignoreModules
               });
-              indexSassImports = getImports(source, 'index.scss', {
+              indexSassImports = await getImports(source, 'index.scss', {
                 importSuffix: 'Stylesheet',
                 enumerateImports: true,
                 mainModuleBundles: getMainModuleBundleFiles('scss'),
@@ -459,7 +459,7 @@ module.exports = {
                 //
                 // Of course, developers can push an "public" asset that is
                 // the output of an ES6 pipeline.
-                const publicImports = getImports(name, '*.js');
+                const publicImports = await getImports(name, '*.js');
                 fs.writeFileSync(`${bundleDir}/${name}-build.js`,
                   (((options.prologue || '') + '\n') || '') +
                   publicImports.paths.map(path => {
@@ -468,7 +468,7 @@ module.exports = {
                 );
               }
               if (options.outputs.includes('css')) {
-                const publicImports = getImports(name, '*.css');
+                const publicImports = await getImports(name, '*.css');
                 fs.writeFileSync(`${bundleDir}/${name}-build.css`,
                   publicImports.paths.map(path => {
                     return self.filterCss(fs.readFileSync(path, 'utf8'), {
@@ -548,9 +548,9 @@ module.exports = {
             );
           }
 
-          function getIcons() {
+          async function getIcons() {
             for (const name of modulesToInstantiate) {
-              const metadata = self.apos.synth.getMetadata(name);
+              const metadata = await self.apos.synth.getMetadata(name);
               // icons is an unparsed section, so getMetadata gives it back
               // to us as an object with a property for each class in the
               // inheritance tree, root first. Just keep merging in
@@ -690,11 +690,11 @@ module.exports = {
             return fs.copyFile(from, to);
           }
 
-          function getImports(folder, pattern, options = {}) {
+          async function getImports(folder, pattern, options = {}) {
             let components = [];
             const seen = {};
             for (const name of modulesToInstantiate) {
-              const metadata = self.apos.synth.getMetadata(name);
+              const metadata = await self.apos.synth.getMetadata(name);
               for (const entry of metadata.__meta.chain) {
                 if (options.ignoreModules?.[entry.name]) {
                   seen[entry.dirname] = true;
