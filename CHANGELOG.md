@@ -1,5 +1,11 @@
 # Changelog
 
+## UNRELEASED
+
+### Adds
+
+* Allow to disable shortcut by setting the option `shortcut: null`
+
 ## 4.4.1 (2024-06-12)
 
 ### Fixes
