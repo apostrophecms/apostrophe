@@ -4,7 +4,7 @@
 
 ### Adds
 
-* Allow to disable shortcut by setting the option `shortcut: null`
+* Allow to disable shortcut by setting the option `shortcut: false`
 
 ## 4.4.1 (2024-06-12)
 

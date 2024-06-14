@@ -97,7 +97,7 @@ const moduleE = {
   commands: {
     add: {
       '@apostrophecms/command-menu:toggle-shortcuts': {
-        shortcut: null
+        shortcut: false
       }
     },
     group: {
