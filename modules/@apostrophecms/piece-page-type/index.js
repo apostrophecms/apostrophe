@@ -250,11 +250,33 @@ module.exports = {
           const parentPage = self.chooseParentPage(req.aposParentPageCache[pieceName], piece);
           if (parentPage) {
             piece._url = self.buildUrl(req, parentPage, piece);
-            piece._parent = parentPage;
+            piece._parent = self.pruneParent(parentPage);
             piece._parentUrl = parentPage._url;
             piece._parentSlug = parentPage.slug;
           }
         });
+      },
+
+      // The _parent property of a piece is useful for
+      // breadcrumb navigation but we don't want it to lead
+      // to runaway recursion etc., so make a shallow clone
+      // of relevant properties only. Use extendMethods
+      // if you want to return more (or less)
+      pruneParent(parent) {
+        return {
+          _id: parent._id,
+          aposDocId: parent.aposDocId,
+          aposLocale: parent.aposLocale,
+          aposMode: parent.aposMode,
+          path: parent.path,
+          level: parent.level,
+          type: parent.type,
+          title: parent.title,
+          slug: parent.slug,
+          // Already a well-pruned projection,
+          // necessary for breadcrumb trails
+          _ancestors: parent._ancestors
+        };
       },
 
       // Returns a query suitable for finding pieces-page-type for the

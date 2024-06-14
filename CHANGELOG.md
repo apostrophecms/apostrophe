@@ -1,5 +1,14 @@
 # Changelog
 
+## 4.4.2 (2024-06-14)
+
+### Fixes
+
+* Hotfix: the new `_parent` property of pieces, which refers to the same piece page as `_parentUrl`, is now a carefully pruned
+subset to avoid the risk of infinite recursion when the piece page has a relationship to a piece. Those who want `_parent`
+to be more complete can extend the new `pruneParent` method of the relevant piece page module. This regression was
+introduced in version 4.4.0.
+
 ## 4.4.1 (2024-06-12)
 
 ### Fixes
