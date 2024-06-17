@@ -393,6 +393,10 @@ export default {
     position: relative;
     height: 100%;
     padding: 20px;
+
+    &__inner {
+      padding-bottom: 44px;
+    }
   }
 
   .apos-media-editor__thumb-wrapper {

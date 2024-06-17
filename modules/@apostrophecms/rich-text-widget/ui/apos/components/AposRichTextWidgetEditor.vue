@@ -1,5 +1,8 @@
 <template>
-  <div :aria-controls="`insert-menu-${modelValue._id}`" @keydown="handleUIKeydown">
+  <div
+    :aria-controls="`insert-menu-${modelValue._id}`"
+    @keydown="handleUIKeydown"
+  >
     <bubble-menu
       v-if="editor"
       class="bubble-menu"
@@ -9,7 +12,8 @@
         zIndex: 2000,
         animation: 'fade',
         inertia: true,
-        placement: 'bottom'
+        placement: 'bottom',
+        hideOnClick: true
       }"
       :editor="editor"
     >
@@ -852,9 +856,7 @@ function traverseNextNode(node) {
   }
 
   .apos-rich-text-editor__editor :deep([data-tippy-root]) {
-    transition: all 400ms var(--a-transition-timing-bounce);
-    /* stylelint-disable-next-line time-min-milliseconds */
-    transition-delay: 100ms;
+    transition: transform 400ms var(--a-transition-timing-bounce) 100ms;
   }
 
   .apos-rich-text-editor__editor :deep(.tippy-box[data-animation='fade'][data-state='hidden']) {

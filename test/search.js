@@ -75,6 +75,8 @@ describe('Search', function() {
   it('should carry the _ancestors property', async function() {
     const response1 = await apos.http.get('/search?q=event');
     const [ piece ] = JSON.parse(response1);
+    assert(piece._parent.title === 'Events');
+    assert(piece._parent.type === 'event-page');
     assert(piece._parent.slug === '/events');
     assert(piece._parent._ancestors[0].slug === '/');
     assert(piece._parent._ancestors[0]._ancestors.length === 0);
