@@ -1053,8 +1053,6 @@ describe('Pieces', function() {
     assert(response.choices._articles);
     assert(response.choices._articles[0].label === 'First Article');
     // an _id
-    console.log(response.choices._articles);
-    console.log(response.choices._articles[0].value);
     assert(response.choices._articles[0].value.match(/^.+:.+:.+$/));
     assert(response.choices.articles[0].label === 'First Article');
     // a slug
