@@ -301,7 +301,11 @@ module.exports = {
       async post(req) {
         await self.publicApiCheckAsync(req);
         if (req.body._newInstance) {
-          const newInstance = self.newInstance();
+          const { _newInstance, ...body } = req.body;
+          const newInstance = {
+            ...self.newInstance(),
+            ...body
+          };
           newInstance._previewable = self.addUrlsViaModule && (await self.addUrlsViaModule.readyToAddUrlsToPieces(req, self.name));
           delete newInstance._url;
           return newInstance;
@@ -817,7 +821,6 @@ module.exports = {
         const piece = self.newInstance();
         const copyingId = self.apos.launder.id(input._copyingId);
         await self.convert(req, input, piece, {
-          onlyPresentFields: true,
           copyingId
         });
         await self.emit('afterConvert', req, input, piece);

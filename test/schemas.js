@@ -1326,7 +1326,7 @@ describe('Schemas', function() {
     assert(result.name === input.name);
     assert(result.address === input.address);
     // default
-    assert(result.variety === simpleFields[2].choices[0].value);
+    assert(result.variety === undefined);
     assert(result.slug === 'this-is-cool');
   });
 

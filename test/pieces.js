@@ -964,6 +964,129 @@ describe('Pieces', function() {
     relatedProductId = response._id;
   });
 
+  it('can insert a product with _newInstance and additional properties', async function() {
+    const newInstance = await apos.http.post('/api/v1/product', {
+      body: {
+        _newInstance: true,
+        title: 'Product 01'
+      },
+      jar
+    });
+    const inserted = await apos.http.post('/api/v1/product', {
+      body: {
+        ...newInstance,
+        body: {
+          metaType: 'area',
+          items: [
+            {
+              metaType: 'widget',
+              type: '@apostrophecms/rich-text',
+              id: cuid(),
+              content: '<p>This is the product key product with relationship</p>'
+            }
+          ]
+        }
+      },
+      jar
+    });
+
+    const actual = {
+      newInstance,
+      inserted
+    };
+    const expected = {
+      newInstance: {
+        _articles: null,
+        _previewable: true,
+        archived: false,
+        body: {
+          _id: newInstance.body._id,
+          items: [],
+          metaType: 'area'
+        },
+        color: null,
+        photo: null,
+        relationshipsInArray: [],
+        relationshipsInObject: {
+          _articles: null
+        },
+        slug: '',
+        title: 'Product 01',
+        type: 'product',
+        visibility: 'public'
+      },
+      inserted: {
+        _articles: [],
+        _create: true,
+        _delete: true,
+        _edit: true,
+        _id: inserted._id,
+        _parent: inserted._parent,
+        _parentSlug: '/products',
+        _parentUrl: '/products',
+        _publish: true,
+        _url: '/products/product-01',
+        aposDocId: inserted.aposDocId,
+        aposLocale: 'en:published',
+        aposMode: 'published',
+        archived: false,
+        articlesFields: {},
+        articlesIds: [],
+        body: {
+          _docId: inserted.body._docId,
+          _edit: true,
+          _id: inserted.body._id,
+          items: [
+            {
+              _docId: inserted.body.items.at(0)._docId,
+              _edit: true,
+              _id: inserted.body.items.at(0)._id,
+              aposPlaceholder: false,
+              content: '<p>This is the product key product with relationship</p>',
+              imageIds: [],
+              metaType: 'widget',
+              permalinkIds: [],
+              type: '@apostrophecms/rich-text'
+            }
+          ],
+          metaType: 'area'
+        },
+        cacheInvalidatedAt: inserted.cacheInvalidatedAt,
+        color: null,
+        createdAt: inserted.createdAt,
+        highSearchText: inserted.highSearchText,
+        highSearchWords: inserted.highSearchWords,
+        lastPublishedAt: inserted.lastPublishedAt,
+        lowSearchText: inserted.lowSearchText,
+        metaType: 'doc',
+        photo: null,
+        relationshipsInArray: [],
+        relationshipsInObject: {
+          _articles: [],
+          _id: inserted.relationshipsInObject._id,
+          articlesFields: {},
+          articlesIds: [],
+          metaType: 'object',
+          scopedObjectName: 'doc.product.relationshipsInObject'
+        },
+        searchSummary: inserted.searchSummary,
+        slug: 'product-01',
+        title: 'Product 01',
+        titleSortified: inserted.titleSortified,
+        type: 'product',
+        updatedAt: inserted.updatedAt,
+        updatedBy: {
+          _id: inserted.updatedBy._id,
+          title: 'admin',
+          username: 'admin'
+        },
+        visibility: 'public'
+      }
+    };
+
+    assert.deepEqual(actual, expected);
+  });
+
   it('can GET a product with relationships', async function() {
     const response = await apos.http.get('/api/v1/product');
     assert(response);

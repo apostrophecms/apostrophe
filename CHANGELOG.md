@@ -1,5 +1,12 @@
 # Changelog
 
+## UNRELEASED
+
+### Fixes
+
+* Do not use schema `field.def` when calling `convert`.
+* Using `POST` for piece and page with `_newInstance: true` keeps the additional `req.body` properties in the API response.
+
 ## 4.4.2 (2024-06-14)
 
 ### Fixes
