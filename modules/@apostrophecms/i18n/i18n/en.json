@@ -438,6 +438,7 @@
   "richTextStyleConfigWarning": "Misconfigured rich text style: label: {{ label }}, {{ tag }}",
   "richTextUnderline": "Underline",
   "richTextUndo": "Undo",
+  "role": "Role",
   "safeModeActive": "Running in safe mode, not showing raw HTML.",
   "save": "Save",
   "saveDraft": "Save Draft",
