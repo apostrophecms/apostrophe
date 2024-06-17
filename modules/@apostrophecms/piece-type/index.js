@@ -821,7 +821,6 @@ module.exports = {
         const piece = self.newInstance();
         const copyingId = self.apos.launder.id(input._copyingId);
         await self.convert(req, input, piece, {
-          onlyPresentFields: true,
           copyingId
         });
         await self.emit('afterConvert', req, input, piece);

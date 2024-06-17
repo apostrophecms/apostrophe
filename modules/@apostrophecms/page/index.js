@@ -354,7 +354,6 @@ module.exports = {
             page = self.newChild(parentPage);
           }
           await manager.convert(req, input, page, {
-            onlyPresentFields: true,
             copyingId
           });
           await self.insert(req, targetPage._id, position, page, { lock: false });
