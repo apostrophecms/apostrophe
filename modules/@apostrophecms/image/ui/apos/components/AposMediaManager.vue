@@ -50,7 +50,8 @@
       </AposModalRail>
     </template>
     <template #main>
-      <AposModalBody>
+      <AposLoadingBlock v-if="isFirstLoading" />
+      <AposModalBody v-else>
         <template #bodyHeader>
           <AposDocsManagerToolbar
             :selected-state="selectAllState"
@@ -242,10 +243,12 @@ export default {
   },
   async mounted() {
     this.modal.active = true;
-    // TODO: should first load before rendering images
     await this.getMedia({ tags: true });
+    this.isFirstLoading = false;
+
     apos.bus.$on('content-changed', this.onContentChanged);
     apos.bus.$on('command-menu-manager-close', this.confirmAndCancel);
+
   },
   unmounted() {
     apos.bus.$off('content-changed', this.onContentChanged);
@@ -468,11 +471,11 @@ export default {
     },
 
     async handleIntersect(entries) {
-      // TODO: first scroll loader to avoid triggering this function before first rendering
       for (const entry of entries) {
         if (
           entry.isIntersecting &&
           this.currentPage < this.totalPages &&
+          !this.isFirstLoading &&
           this.items.length
         ) {
           this.currentPage++;
