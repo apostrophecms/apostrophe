@@ -1,11 +1,13 @@
 # Changelog
 
-## UNRELEASED
+## 4.4.3 (2024-06-17)
 
 ### Fixes
 
-* Do not use schema `field.def` when calling `convert`.
-* Using `POST` for piece and page with `_newInstance: true` keeps the additional `req.body` properties in the API response.
+* Do not use schema `field.def` when calling `convert`. Applying defaults to new documents is the job of `newInstance()` and similar code.
+If you wish a field to be mandatory use `required: true`.
+* As a convenience, using `POST` for pieces and pages with `_newInstance: true` keeps any additional `req.body` properties in the API response.
+This feature unofficially existed before, it is now supported.
 
 ## 4.4.2 (2024-06-14)
 
