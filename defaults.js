@@ -4,7 +4,6 @@ module.exports = {
     '@apostrophecms/error': {},
     '@apostrophecms/util': {},
     '@apostrophecms/i18n': {},
-    '@apostrophecms/multisite-i18n': {},
     '@apostrophecms/task': {},
     '@apostrophecms/schema': {},
     '@apostrophecms/uploadfs': {},

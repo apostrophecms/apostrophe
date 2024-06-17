@@ -6,6 +6,10 @@
 
 * Add missing UI translations.
 
+### Removes
+
+* Remove `@apostrophecms/multisite-18n` since it was previously used for multisite translations before [`@apostrophecms/multisite-dashboard`](https://github.com/apostrophecms/multisite-dashboard) existed.
+
 ## 4.4.1 (2024-06-12)
 
 ### Fixes
