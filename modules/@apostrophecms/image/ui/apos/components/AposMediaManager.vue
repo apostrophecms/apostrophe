@@ -58,6 +58,7 @@
             :total-pages="totalPages"
             :current-page="currentPage"
             :filters="toolbarFilters"
+            :filter-values="filterValues"
             :labels="moduleLabels"
             :disable="relationshipErrors === 'min'"
             :displayed-items="items.length"
@@ -241,6 +242,9 @@ export default {
       }
     }
   },
+  created() {
+    this.setDefaultFilters();
+  },
   async mounted() {
     this.modal.active = true;
     await this.getMedia({ tags: true });
@@ -255,6 +259,11 @@ export default {
     apos.bus.$off('command-menu-manager-close', this.confirmAndCancel);
   },
   methods: {
+    setDefaultFilters() {
+      this.moduleOptions.filters.forEach(filter => {
+        this.filterValues[filter.name] = filter.def;
+      });
+    },
     // Update our current idea of whether the doc in the right hand rail
     // has been modified (via event from the editor)
     editorModified (val) {
