@@ -381,6 +381,7 @@ function close() {
     display: grid;
     grid-row: 2 / 3;
     overflow-y: auto;
+    box-sizing: border-box;
   }
 
   .apos-modal__overlay {

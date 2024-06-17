@@ -48,6 +48,11 @@ export default {
   }
 }
 
+.apos-modal__body-inner,
+.apos-modal__body-main {
+  min-height: 100%;
+}
+
 .apos-modal__main--no-rails .apos-modal__body {
   padding: 20px;
 }
