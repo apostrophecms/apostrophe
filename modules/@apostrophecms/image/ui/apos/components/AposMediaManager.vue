@@ -73,7 +73,9 @@
           />
         </template>
         <template #bodyMain>
+          <AposLoadingBlock v-if="isLoading" />
           <AposMediaManagerDisplay
+            v-else
             ref="display"
             :checked="checked"
             :accept="accept"
@@ -127,9 +129,12 @@
 </template>
 
 <script>
+import { debounce } from 'Modules/@apostrophecms/ui/utils';
 import AposModifiedMixin from 'Modules/@apostrophecms/ui/mixins/AposModifiedMixin';
 import AposDocsManagerMixin from 'Modules/@apostrophecms/modal/mixins/AposDocsManagerMixin';
 import cuid from 'cuid';
+
+const DEBOUNCE_TIMEOUT = 500;
 
 export default {
   mixins: [ AposModifiedMixin, AposDocsManagerMixin ],
@@ -144,6 +149,7 @@ export default {
     return {
       items: [],
       isFirstLoading: true,
+      isLoading: false,
       isScrollLoading: false,
       loadRef: null,
       totalPages: 1,
@@ -164,7 +170,8 @@ export default {
         message: 'apostrophe:uploadedMediaPlaceholder',
         emoji: '🖼'
       },
-      cancelDescription: 'apostrophe:discardImageChangesPrompt'
+      cancelDescription: 'apostrophe:discardImageChangesPrompt',
+      debouncedGetMedia: debounce(this.getMedia, DEBOUNCE_TIMEOUT)
     };
   },
   computed: {
@@ -299,7 +306,6 @@ export default {
       }
       const apiResponse = (await apos.http.get(
         this.moduleOptions.action, {
-          busy: true,
           qs,
           draft: true
         }
@@ -338,9 +344,12 @@ export default {
     async filter(name, value) {
       this.filterValues[name] = value;
       this.currentPage = 1;
+      this.items = [];
 
       this.updateEditing(null);
+      this.isLoading = true;
       await this.getMedia();
+      this.isLoading = false;
     },
     createPlaceholder(dimensions) {
       this.items.unshift({
@@ -471,8 +480,14 @@ export default {
       this.$emit('archive', this.checked);
     },
 
-    async search(query) {
-      this.filter('autocomplete', query);
+    async search(value) {
+      this.filterValues.autocomplete = value;
+      this.currentPage = 1;
+      this.items = [];
+
+      this.isLoading = true;
+      await this.debouncedGetMedia();
+      this.isLoading = false;
     },
 
     async onContentChanged() {
