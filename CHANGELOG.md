@@ -1,6 +1,21 @@
 # Changelog
 
-## UNRELEASED
+## 4.4.2 (2024-06-14)
+
+### Fixes
+
+* Hotfix: the new `_parent` property of pieces, which refers to the same piece page as `_parentUrl`, is now a carefully pruned
+subset to avoid the risk of infinite recursion when the piece page has a relationship to a piece. Those who want `_parent`
+to be more complete can extend the new `pruneParent` method of the relevant piece page module. This regression was
+introduced in version 4.4.0.
+
+## 4.4.1 (2024-06-12)
+
+### Fixes
+
+* Depend on `stylelint-config-apostrophe` properly via npm, not github.
+
+## 4.4.0 (2024-06-12)
 
 ### Adds
 
@@ -56,6 +71,11 @@ We will now end up with page B slug as `/peer/page` and not `/peer/peer/page` as
 * Removes `$nextTick` use to re render schema in `AposArrayEditor` because it was triggering weird vue error in production.
 Instead, makes the AposSchema for loop keys more unique using `modelValue.data._id`, 
 if document changes it re-renders schema fields.
+* In media manager image checkboxes are disabled when max is reached.
+* Fixes tiptap bubble menu jumping on Firefox when clicking on buttons. Also fixes the fact that 
+double clicking on bubble menu out of buttons would prevent it from closing when unfocusing the rich text area.
+* In media manager images checkboxes are disabled when max is reached.
+* Makes the final fields accessible in the media manager right rail.
 
 ## 4.3.2 (2024-05-18)
 
