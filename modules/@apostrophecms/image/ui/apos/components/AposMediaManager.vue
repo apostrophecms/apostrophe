@@ -81,6 +81,7 @@
               disableUnchecked: maxReached(),
               hideCheckboxes: !relationshipField
             }"
+            :relationship-field="relationshipField"
             @update:checked="setCheckedDocs"
             @edit="updateEditing"
             @select="select"
@@ -382,8 +383,10 @@ export default {
       this.editing = item;
       return true;
     },
+    updateChecked() {},
     // select setters
     select(id) {
+      console.log('select', id);
       if (this.checked.includes(id)) {
         this.setCheckedDocs([]);
       } else {
@@ -396,6 +399,11 @@ export default {
       this.lastSelected = id;
     },
     selectAnother(id) {
+      console.log('select another', id);
+      if (this.relationshipField?.max === 1) {
+        this.select(id);
+        return;
+      }
       if (this.checked.includes(id)) {
         this.removeCheckedDoc(id);
       } else {
@@ -407,7 +415,8 @@ export default {
     },
 
     selectSeries(id) {
-      if (!this.lastSelected) {
+      console.log('select series', id);
+      if (!this.lastSelected || this.relationshipField?.max === 1) {
         this.select(id);
         return;
       }
@@ -437,7 +446,9 @@ export default {
     // Toolbar handlers
     selectClick() {
       this.selectAll();
-      this.editing = undefined;
+      this.editing = this.checkedDocs.length === 1
+        ? this.checkedDocs.at(0)
+        : undefined;
     },
     async updatePage(num) {
       if (num) {

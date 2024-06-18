@@ -27,7 +27,7 @@
               hideLabel: true,
               label: `Toggle selection of ${item.title}`,
               disableFocus: true,
-              readOnly: options.disableUnchecked && !checked.includes(item._id)
+              readOnly: canSelect() === false
             }"
             :choice="{ value: item._id }"
           />
@@ -35,8 +35,7 @@
         <button
           :id="`btn-${item._id}`"
           :disabled="
-            item._id === 'placeholder' ||
-              (options.disableUnchecked && !checked.includes(item._id))
+            item._id === 'placeholder' || canSelect() === false
           "
           class="apos-media-manager-display__select"
           @click.exact="$emit('select', item._id)"
@@ -111,6 +110,10 @@ export default {
     largePreview: {
       type: Boolean,
       default: false
+    },
+    relationshipField: {
+      type: [ Object, Boolean ],
+      default: false
     }
   },
   emits: [
@@ -129,6 +132,7 @@ export default {
         return this.checked;
       },
       set(val) {
+        console.log({ val });
         this.$emit('update:checked', val);
       }
     }
@@ -179,6 +183,10 @@ export default {
     },
     idFor(item) {
       return `${item._id}-${cuid()}`;
+    },
+    canSelect() {
+      return this.relationshipField?.max === 1
+        || (options.disableUnchecked && !checked.includes(item._id));
     }
   }
 };
