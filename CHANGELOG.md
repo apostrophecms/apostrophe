@@ -1,5 +1,11 @@
 # Changelog
 
+## UNRELEASED
+
+### Adds
+
+* Add missing UI translation keys.
+
 ## 4.4.3 (2024-06-17)
 
 ### Fixes

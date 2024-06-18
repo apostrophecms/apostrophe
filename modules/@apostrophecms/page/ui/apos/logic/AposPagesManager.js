@@ -54,16 +54,16 @@ export default {
       },
       moreMenu: [
         {
-          label: 'New Page',
+          label: 'apostrophe:newPage',
           action: 'new'
         }
       ],
       moreMenuButton: {
         tooltip: {
-          content: 'More Options',
+          content: 'apostrophe:moreOptions',
           placement: 'bottom'
         },
-        label: 'More Options',
+        label: 'apostrophe:moreOptions',
         icon: 'dots-vertical-icon',
         iconOnly: true,
         type: 'subtle',
@@ -95,9 +95,9 @@ export default {
     },
     saveRelationshipLabel() {
       if (this.relationshipField && (this.relationshipField.max === 1)) {
-        return 'Select Page';
+        return 'apostrophe:selectPage';
       } else {
-        return 'Select Pages';
+        return 'apostrophe:selectPages';
       }
     },
     headers() {
