@@ -71,6 +71,7 @@
       </div>
     </div>
     <div
+      v-if="!isLastPage"
       ref="scrollLoad"
       class="apos-media-manager-display__scroll-load"
       :class="{ 'apos-media-manager-display__scroll-load--loading': isScrollLoading }"
@@ -79,6 +80,9 @@
         v-if="isScrollLoading"
         class="apos-loading"
       />
+    </div>
+    <div v-else class="apos-media-manager-display__end-reached">
+      <p>{{ $t('apostrophe:mediaLibraryEndReached') }}</p>
     </div>
   </div>
 </template>
@@ -119,6 +123,10 @@ export default {
       default: null
     },
     largePreview: {
+      type: Boolean,
+      default: false
+    },
+    isLastPage: {
       type: Boolean,
       default: false
     },
@@ -208,6 +216,7 @@ export default {
     grid-auto-rows: 140px;
     grid-template-columns: repeat(5, 1fr);
     gap: 15px;
+    padding-bottom: 20px;
 
     @include media-up(lap) {
       grid-template-columns: repeat(7, 1fr);
@@ -327,5 +336,14 @@ export default {
     .apos-loading {
       flex-grow: 1;
     }
+  }
+
+  .apos-media-manager-display__end-reached {
+    @include type-label;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 40px;
   }
 </style>

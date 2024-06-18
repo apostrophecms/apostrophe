@@ -81,6 +81,7 @@
             :items="items"
             :module-options="moduleOptions"
             :max-reached="maxReached()"
+            :is-last-page="currentPage === totalPages"
             :options="{
               disableUnchecked: maxReached(),
               hideCheckboxes: !relationshipField
@@ -91,7 +92,6 @@
             @select="select"
             @select-series="selectSeries"
             @select-another="selectAnother"
-            @upload-started="uploading = true"
             @upload-complete="completeUploading"
             @create-placeholder="createPlaceholder"
             @set-load-ref="setLoadRef"
@@ -161,7 +161,6 @@ export default {
       },
       editing: undefined,
       modified: false,
-      uploading: false,
       lastSelected: null,
       emptyDisplay: {
         title: 'apostrophe:noMediaFound',
@@ -344,7 +343,7 @@ export default {
     },
     async filter(name, value) {
       this.filterValues[name] = value;
-      this.refecthMedia();
+      this.refetchMedia();
     },
     createPlaceholder(dimensions) {
       this.items.unshift({
@@ -354,7 +353,8 @@ export default {
       });
     },
     async completeUploading (imgIds) {
-      this.uploading = false;
+      this.currentPage = 1;
+      this.items = [];
       await this.getMedia();
 
       if (Array.isArray(imgIds) && imgIds.length && this.items.length === 0) {
