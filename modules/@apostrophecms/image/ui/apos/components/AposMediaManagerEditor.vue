@@ -145,7 +145,7 @@ export default {
       }
     }
   },
-  emits: [ 'saved', 'back', 'modified' ],
+  emits: [ 'back', 'modified' ],
   data() {
     return {
       // Primarily use `activeMedia` to support hot-swapping image docs.
@@ -294,57 +294,55 @@ export default {
       });
       await this.cancel();
     },
-    save() {
+    async save() {
       this.triggerValidation = true;
       const route = `${this.moduleOptions.action}/${this.activeMedia._id}`;
       // Repopulate `attachment` since it was removed from the schema.
       this.docFields.data.attachment = this.activeMedia.attachment;
 
-      this.$nextTick(async () => {
-        if (this.docFields.hasErrors) {
-          this.triggerValidation = false;
-          await apos.notify('apostrophe:resolveErrorsBeforeSaving', {
-            type: 'warning',
-            icon: 'alert-circle-icon',
-            dismiss: true
-          });
-          return;
-        }
+      await this.$nextTick();
 
-        let body = this.docFields.data;
-        this.addLockToRequest(body);
-        try {
-          const requestMethod = this.restoreOnly ? apos.http.patch : apos.http.put;
-          if (this.restoreOnly) {
-            body = {
-              archived: false
-            };
-          }
-          const doc = await requestMethod(route, {
-            busy: true,
-            body,
-            draft: true
-          });
-          apos.bus.$emit('content-changed', {
-            doc,
-            action: 'update'
-          });
-          this.original = klona(this.docFields.data);
-          this.$emit('modified', false);
-          this.$emit('saved');
-        } catch (e) {
-          if (this.isLockedError(e)) {
-            await this.showLockedError(e);
-            this.lockNotAvailable();
-          } else {
-            await this.handleSaveError(e, {
-              fallback: `Error ${this.restoreOnly ? 'Restoring' : 'Saving'} ${this.moduleLabels.label}`
-            });
-          }
-        } finally {
-          this.showReplace = false;
+      if (this.docFields.hasErrors) {
+        this.triggerValidation = false;
+        await apos.notify('apostrophe:resolveErrorsBeforeSaving', {
+          type: 'warning',
+          icon: 'alert-circle-icon',
+          dismiss: true
+        });
+        return;
+      }
+
+      let body = this.docFields.data;
+      this.addLockToRequest(body);
+      try {
+        const requestMethod = this.restoreOnly ? apos.http.patch : apos.http.put;
+        if (this.restoreOnly) {
+          body = {
+            archived: false
+          };
         }
-      });
+        const doc = await requestMethod(route, {
+          busy: true,
+          body,
+          draft: true
+        });
+        apos.bus.$emit('content-changed', {
+          doc,
+          action: 'update'
+        });
+        this.original = klona(this.docFields.data);
+      } catch (e) {
+        if (this.isLockedError(e)) {
+          await this.showLockedError(e);
+          this.lockNotAvailable();
+        } else {
+          await this.handleSaveError(e, {
+            fallback: `Error ${this.restoreOnly ? 'Restoring' : 'Saving'} ${this.moduleLabels.label}`
+          });
+        }
+      } finally {
+        this.showReplace = false;
+      }
     },
     generateLipKey() {
       this.lipKey = cuid();

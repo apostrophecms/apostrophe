@@ -66,7 +66,6 @@
             :checked-count="checked.length"
             :module-name="moduleName"
             :options="{noPager: true}"
-            @page-change="updatePage"
             @select-click="selectClick"
             @search="search"
             @filter="filter"
@@ -113,7 +112,6 @@
             :is-modified="isModified"
             :module-labels="moduleLabels"
             @back="updateEditing(null)"
-            @saved="updateMedia"
             @modified="editorModified"
           />
           <AposMediaManagerSelections
@@ -259,7 +257,6 @@ export default {
 
     apos.bus.$on('content-changed', this.onContentChanged);
     apos.bus.$on('command-menu-manager-close', this.confirmAndCancel);
-
   },
   unmounted() {
     apos.bus.$off('content-changed', this.onContentChanged);
@@ -276,8 +273,7 @@ export default {
     editorModified (val) {
       this.modified = val;
     },
-    async getMedia (options) {
-      // TODO: Make sure that changing filters will refetch images and not appending them
+    async getMedia (options = {}) {
       const qs = {
         ...this.filterValues,
         page: this.currentPage,
@@ -311,7 +307,7 @@ export default {
         }
       ));
 
-      if (options && options.tags) {
+      if (options.tags) {
         if (filtered) {
           // We never filter the tag list because they are presented like folders,
           // and folders don't disappear when empty. So we need to make a
@@ -337,19 +333,18 @@ export default {
         this.items.push(image);
       }
     },
-    async updateMedia () {
+    async refetchMedia(opts) {
+      this.isLoading = true;
+      this.currentPage = 1;
+      this.items = [];
+      await this.getMedia(opts);
+      this.isLoading = false;
+      this.modified = false;
       this.updateEditing(null);
-      await this.getMedia();
     },
     async filter(name, value) {
       this.filterValues[name] = value;
-      this.currentPage = 1;
-      this.items = [];
-
-      this.updateEditing(null);
-      this.isLoading = true;
-      await this.getMedia();
-      this.isLoading = false;
+      this.refecthMedia();
     },
     createPlaceholder(dimensions) {
       this.items.unshift({
@@ -470,12 +465,6 @@ export default {
       this.selectAll();
       this.editing = undefined;
     },
-    async updatePage(num) {
-      if (num) {
-        this.currentPage = num;
-        await this.getMedia();
-      }
-    },
     archiveClick() {
       this.$emit('archive', this.checked);
     },
@@ -484,14 +473,18 @@ export default {
       this.filterValues.autocomplete = value;
       this.currentPage = 1;
       this.items = [];
-
       this.isLoading = true;
       await this.debouncedGetMedia();
       this.isLoading = false;
     },
 
-    async onContentChanged() {
-      await this.getMedia({ tags: true });
+    async onContentChanged({ action }) {
+      if (this.modified || action === 'archive') {
+        await this.refetchMedia({ tags: true });
+        return;
+      }
+
+      await this.updateEditing(null);
     },
 
     async handleIntersect(entries) {
