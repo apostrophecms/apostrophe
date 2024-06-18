@@ -497,6 +497,10 @@ export default {
         ) {
           this.currentPage++;
           this.isScrollLoading = true;
+          await this.$nextTick();
+          this.loadRef.scrollIntoView({
+            behavior: 'smooth'
+          });
           await this.getMedia();
           this.isScrollLoading = false;
         }
