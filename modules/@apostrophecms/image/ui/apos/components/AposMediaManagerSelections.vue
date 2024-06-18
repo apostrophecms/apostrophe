@@ -84,6 +84,7 @@ export default {
 .apos-media-manager-selections {
   @include type-base;
 
+  box-sizing: border-box;
   height: 100%;
   padding: 20px;
 }
