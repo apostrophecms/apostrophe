@@ -4,7 +4,7 @@
 
 ### Adds
 
-* Add missing UI translations.
+* Add missing UI translation keys.
 
 ### Removes
 
