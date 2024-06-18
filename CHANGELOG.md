@@ -1,10 +1,12 @@
 # Changelog
 
-## 4.4.3 (2024-06-17)
+## UNRELEASED
 
 ### Adds
 
 * Allow to disable shortcut by setting the option `shortcut: false`
+
+## 4.4.3 (2024-06-17)
 
 ### Fixes
 
