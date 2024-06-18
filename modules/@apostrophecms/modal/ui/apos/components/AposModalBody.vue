@@ -29,10 +29,10 @@ export default {
       headerHeight: 0
     };
   },
-  mounted() {
+  async mounted() {
     if (this.$refs.bodyHeader) {
-      this.headerHeight = this.$refs.bodyHeader.clientHeight;
-      console.log('this.headerHeight', this.headerHeight);
+      await this.$nextTick();
+      this.headerHeight = this.$refs.bodyHeader.offsetHeight;
     }
   },
   methods: {
@@ -66,16 +66,8 @@ export default {
   }
 }
 
-.apos-modal__body-inner {
-  height: 100%;
-}
-
 .apos-modal__main--no-rails .apos-modal__body {
   padding: 20px;
-}
-
-.apos-modal__body-header {
-  padding-bottom: 20px;
 }
 
 .apos-modal__body-footer {

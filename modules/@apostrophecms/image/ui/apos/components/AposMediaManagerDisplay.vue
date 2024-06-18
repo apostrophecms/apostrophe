@@ -236,14 +236,6 @@ export default {
 
     &.apos-is-hidden { visibility: hidden; }
 
-    &::before {
-      content: '';
-      display: inline-block;
-      width: 1px;
-      height: 0;
-      padding-bottom: calc(100% / (1/1));
-    }
-
     &:hover,
     &.apos-is-selected,
     &:focus {
@@ -286,6 +278,7 @@ export default {
     @include apos-transition();
 
     display: flex;
+    box-sizing: border-box;
     align-items: center;
     justify-content: center;
     width: 100%;

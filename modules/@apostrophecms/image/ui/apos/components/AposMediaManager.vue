@@ -81,7 +81,7 @@
             :items="items"
             :module-options="moduleOptions"
             :max-reached="maxReached()"
-            :is-last-page="currentPage === totalPages"
+            :is-last-page="totalPages > 1 && currentPage === totalPages"
             :options="{
               disableUnchecked: maxReached(),
               hideCheckboxes: !relationshipField
@@ -532,9 +532,33 @@ export default {
 </script>
 
 <style lang="scss" scoped>
-.apos-media-manager :deep(.apos-media-manager-toolbar) {
-  z-index: $z-index-manager-toolbar;
-  position: relative;
+.apos-media-manager {
+  :deep(.apos-modal__body) {
+    padding: 0;
+  }
+
+  :deep(.apos-modal__body-inner) {
+    overflow: hidden;
+    height: 100%;
+  }
+
+  :deep(.apos-modal__body-header) {
+    padding: $spacing-double $spacing-double 20px;
+
+    @include media-up(lap) {
+      padding: $spacing-quadruple $spacing-quadruple 20px;
+    }
+  }
+
+  :deep(.apos-modal__body-main) {
+    overflow-y: auto;
+    box-sizing: border-box;
+    padding: 0 $spacing-double 20px;
+
+    @include media-up(lap) {
+      padding: 0 $spacing-quadruple 20px;
+    }
+  }
 }
 
 .apos-media-manager__empty {

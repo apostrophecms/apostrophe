@@ -41,7 +41,7 @@
           </template>
           <template v-else>
             <header v-if="!modal.disableHeader" class="apos-modal__header">
-              <div class="apos-modal__header__main">
+              <div class="apos-modal__header-main">
                 <div v-if="hasSlot('secondaryControls')" class="apos-modal__controls--secondary">
                   <slot name="secondaryControls" />
                 </div>
@@ -74,7 +74,7 @@
               <slot name="rightRail" />
             </div>
             <footer v-if="hasSlot('footer')" class="apos-modal__footer">
-              <div class="apos-modal__footer__inner">
+              <div class="apos-modal__footer-inner">
                 <slot name="footer" />
               </div>
             </footer>
@@ -291,9 +291,9 @@ function close() {
     z-index: $z-index-modal;
     position: fixed;
     inset: $spacing-base $spacing-base $spacing-base $spacing-base;
-    display: grid;
-    grid-template-rows: auto 1fr auto;
-    height: calc(100vh - #{$spacing-base * 2});
+    display: flex;
+    flex-direction: column;
+    height: calc(100vh - $spacing-base * 2);
     border-radius: var(--a-border-radius);
     background-color: var(--a-background-primary);
     border: 1px solid var(--a-base-9);
@@ -373,15 +373,10 @@ function close() {
     height: 100%;
   }
 
-  .apos-modal__header {
-    grid-row: 1 / 2;
-  }
-
   .apos-modal__main {
     display: grid;
-    grid-row: 2 / 3;
+    flex-grow: 1;
     overflow-y: auto;
-    box-sizing: border-box;
   }
 
   .apos-modal__overlay {
@@ -422,22 +417,18 @@ function close() {
     }
   }
 
-  .apos-modal__footer__inner,
-  .apos-modal__header__main {
+  .apos-modal__footer-inner,
+  .apos-modal__header-main {
     display: flex;
     align-items: center;
     padding: $spacing-double;
   }
 
-  .apos-modal__header__main {
+  .apos-modal__header-main {
     border-bottom: 1px solid var(--a-base-9);
   }
 
-  .apos-modal__footer {
-    grid-row: 3 / 4;
-  }
-
-  .apos-modal__footer__inner {
+  .apos-modal__footer-inner {
     z-index: $z-index-default;
     position: relative;
     justify-content: space-between;
