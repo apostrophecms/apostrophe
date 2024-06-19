@@ -16,6 +16,8 @@
 * Add a scrollbar to the shortcut list.
 * Add breadcrumbs to search results page.
 * Pages relationships have now their checkboxes disabled when max is reached.
+* Infite scroll in media manager instead of pagination. Makes the header containing the search fix.
+* Improves loaders by using new `AposLoadingBlock` that uses `AposLoading` instead of the purple screen in media manager.
 
 ### Changes
 
@@ -51,6 +53,10 @@ if document changes it re-renders schema fields.
 * Fixes issues in `AposInputArray` on production build to be able to add, remove and edit array items after `required` error.
 * Relationships browse button isn't disabled when max is reached.
 * In media manaer images checkboxes are disabled when max is reached.
+* Remove double get request when saving image update.
+* Fix filter menu forgetting selecting filters and not instantiating them.
+* Remove blur emit for filter buttons and search bar to avoid re requesting when clicking outside…
+* `this.modified` was not working properly (set to false when saving). We can now avoid to reload images when saving no changes.
 
 ## 4.3.2 (2024-05-18)
 
