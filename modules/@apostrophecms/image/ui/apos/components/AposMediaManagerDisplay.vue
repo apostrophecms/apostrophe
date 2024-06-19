@@ -132,8 +132,12 @@ export default {
         return this.checked;
       },
       set(val) {
-        console.log({ val });
-        this.$emit('update:checked', val);
+        this.$emit(
+          'update:checked',
+          this.relationshipField?.max === 1
+            ? [val.at(-1)]
+            : val
+        );
       }
     }
   },

@@ -82,7 +82,7 @@
               hideCheckboxes: !relationshipField
             }"
             :relationship-field="relationshipField"
-            @update:checked="setCheckedDocs"
+            @update:checked="updateCheckedDocs"
             @edit="updateEditing"
             @select="select"
             @select-series="selectSeries"
@@ -383,7 +383,14 @@ export default {
       this.editing = item;
       return true;
     },
-    updateChecked() {},
+    updateCheckedDocs(ids) {
+      this.setCheckedDocs(ids);
+      if (ids.length === 1) {
+        const id = ids.at(0);
+        this.updateEditing(id);
+        this.lastSelected = id;
+      }
+    },
     // select setters
     select(id) {
       console.log('select', id);
