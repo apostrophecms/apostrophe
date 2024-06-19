@@ -1,5 +1,9 @@
 # Changelog
 
+## UNRELEASED
+
+- Identify and mark server validation errors in the admin UI. This helps editors identify already existing data fields, having validation errors when schema changes (e.g. optional field becomes required).
+
 ## 4.4.2 (2024-06-14)
 
 ### Fixes
