@@ -21,7 +21,7 @@
             :doc-id="docId"
             :conditional-fields="conditionalFields"
             :following-values="followingValuesWithParent"
-            :server-errors="serverError"
+            :server-errors="currentDocServerErrors"
             @update:model-value="evaluateConditions(values)"
             @validate="emitValidate()"
           />

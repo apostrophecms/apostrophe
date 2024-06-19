@@ -67,6 +67,17 @@ export default {
     },
     currentDocMeta() {
       return this.objectMeta.aposMeta || {};
+    },
+    currentDocServerErrors() {
+      let serverErrors = null;
+      (this.serverError?.data?.errors || [])
+        .forEach(error => {
+          if (error.path) {
+            serverErrors = serverErrors || {};
+            serverErrors[error.path] = error;
+          }
+        });
+      return serverErrors;
     }
   },
   watch: {

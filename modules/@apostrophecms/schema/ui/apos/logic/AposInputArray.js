@@ -72,16 +72,10 @@ export default {
       const error = this.error || this.serverError;
       // Server-side errors behave differently
       const name = error?.name || error;
-      if (name === 'invalid') {
+      if (name === 'invalid' && !this.serverError) {
         // Not always due to a subproperty which will display its own error,
-        // don't confuse the user if so, but attempt to find a nested error
-        // from server validation.
-        const ids = this.items.map(item => item._id);
-        // We desperately need a performance improvement here, so let's
-        // squeeze some for empty arrays.
-        return ids.length > 0
-          ? this.findNestedError(this.serverError, ids)
-          : false;
+        // don't confuse the user if so
+        return false;
       }
       return error;
     },
@@ -278,27 +272,6 @@ export default {
       return this.schema.filter(
         field => this.itemsConditionalFields[currentItem._id]?.if[field.name] !== false
       );
-    },
-    // Recursively find the first error that matches any of the array items ids.
-    // We call this only with server error object.
-    findNestedError(error, itemIds = []) {
-      const id = error?.path?.split('.')[0];
-      if (id && itemIds.includes(id)) {
-        return error;
-      }
-
-      if (!error?.data || !error.data.errors || !error.data.errors.length) {
-        return false;
-      }
-
-      for (const err of error.data.errors) {
-        const result = this.findNestedError(err, itemIds);
-        if (result) {
-          return result;
-        }
-      }
-
-      return false;
     }
   }
 };
