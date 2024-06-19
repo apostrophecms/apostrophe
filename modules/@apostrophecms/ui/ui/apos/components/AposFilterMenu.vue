@@ -111,7 +111,7 @@ export default {
         // Still pending
         return [
           {
-            label: 'Loading Choices...',
+            label: 'apostrophe:filterMenuLoadingChoices',
             value: filter.def
           }
         ];

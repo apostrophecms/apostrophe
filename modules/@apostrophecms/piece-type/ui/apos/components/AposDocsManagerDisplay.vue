@@ -52,7 +52,10 @@
             :field="{
               name: item._id,
               hideLabel: true,
-              label: `Toggle selection of ${item.title}`,
+              label: $t({
+                key: 'apostrophe:toggleSelectionOf',
+                title: item.title
+              }),
               readOnly:
                 (options.disableUnchecked && !checkProxy.includes(item._id)) ||
                 (options.disableUnpublished && !item.lastPublishedAt)

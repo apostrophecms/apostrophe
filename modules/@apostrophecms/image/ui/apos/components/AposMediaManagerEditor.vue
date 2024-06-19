@@ -331,17 +331,23 @@ export default {
           action: 'update'
         });
         this.original = klona(this.docFields.data);
+        this.$emit('modified', false);
       } catch (e) {
         if (this.isLockedError(e)) {
           await this.showLockedError(e);
           this.lockNotAvailable();
         } else {
+          const errorMessage = this.restoreOnly
+            ? this.$t('apostrophe:mediaManagerErrorRestoring')
+            : this.$t('apostrophe:mediaManagerErrorSaving');
+
           await this.handleSaveError(e, {
-            fallback: `Error ${this.restoreOnly ? 'Restoring' : 'Saving'} ${this.moduleLabels.label}`
+            fallback: `${errorMessage} ${this.moduleLabels.label}`
           });
         }
       } finally {
         this.showReplace = false;
+
       }
     },
     generateLipKey() {
@@ -391,6 +397,10 @@ export default {
     position: relative;
     height: 100%;
     padding: 20px;
+
+    &__inner {
+      padding-bottom: 44px;
+    }
   }
 
   .apos-media-editor__thumb-wrapper {
