@@ -131,7 +131,7 @@ export default {
     },
     removeCheckedDoc(id) {
       this.checked = this.checked.filter((checkedId) => checkedId !== id);
-      this.checkedDocs = this.checkedDocs.filter((doc) => doc.id !== id);
+      this.checkedDocs = this.checkedDocs.filter((doc) => doc._id !== id);
     },
     getDocs(docsOrIds) {
       const items = this.moduleOptions.name === '@apostrophecms/page'

@@ -393,7 +393,16 @@ export default {
     },
     // select setters
     select(id) {
-      console.log('select', id);
+      // console.log({
+      //   id,
+      //   checked: this.checked,
+      //   checkedIncludes: this.checked.includes(id),
+      // });
+      console.log('select', { id, checkedDocs: this.checkedDocs });
+      if (this.relationshipField?.max !== 1) {
+        this.selectAnother(id);
+        return;
+      }
       if (this.checked.includes(id)) {
         this.setCheckedDocs([]);
       } else {
@@ -406,23 +415,26 @@ export default {
       this.lastSelected = id;
     },
     selectAnother(id) {
-      console.log('select another', id);
       if (this.relationshipField?.max === 1) {
         this.select(id);
         return;
       }
+      console.log('selectAnother', { id, checkedDocs: this.checkedDocs });
       if (this.checked.includes(id)) {
+        console.log('remove')
         this.removeCheckedDoc(id);
       } else {
+        console.log('add')
         this.addCheckedDoc(id);
       }
 
       this.lastSelected = id;
-      this.editing = undefined;
+      this.editing = this.checkedDocs.length === 1
+        ? this.checkedDocs.at(0)
+        : undefined;
     },
 
     selectSeries(id) {
-      console.log('select series', id);
       if (!this.lastSelected || this.relationshipField?.max === 1) {
         this.select(id);
         return;
@@ -447,7 +459,9 @@ export default {
       });
 
       this.lastSelected = sliced[sliced.length - 1]._id;
-      this.editing = undefined;
+      this.editing = this.checkedDocs.length === 1
+        ? this.checkedDocs.at(0)
+        : undefined;
     },
 
     // Toolbar handlers
