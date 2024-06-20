@@ -478,7 +478,10 @@ export default {
       this.isLoading = false;
     },
 
-    async onContentChanged({ action }) {
+    async onContentChanged({ action, doc }) {
+      if (doc.type !== '@apostrophecms/image' || ![ 'archive', 'update' ].includes(action)) {
+        return;
+      }
       if (this.modified || action === 'archive') {
         await this.refetchMedia({ tags: true });
         return;
