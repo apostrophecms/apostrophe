@@ -1,15 +1,26 @@
 <template>
   <div class="apos-color-control">
-    <button
-      :class="['apos-color-button', { 'apos-is-active': buttonActive }]"
+    <AposButton
+      type="rich-text"
+      class="apos-rich-text-editor__control"
+      :class="['apos-color-button', { 'apos-is-active': active }]"
+      :icon-only="false"
+      icon="circle-icon"
+      :icon-fill="indicatorColor"
+      :label="tool.label"
+      :modifiers="['no-border', 'no-motion']"
+      :tooltip="{
+        content: tool.label,
+        placement: 'top',
+        delay: 650
+      }"
+      :style="{ color: indicatorColor }"
       @click="click"
     >
-      <span
-        class="color-indicator"
-        :style="{ backgroundColor: indicatorColor }"
-      />
-      <i class="chevron-down" />
-    </button>
+      <template #label>
+        <AposIndicator icon="chevron-down-icon" />
+      </template>
+    </AposButton>
     <div
       v-if="active"
       v-click-outside-element="close"
@@ -20,7 +31,7 @@
         'apos-has-selection': hasSelection
       }"
     >
-      <AposContextMenuDialog menu-placement="bottom-start">
+      <AposContextMenuDialog menu-placement="bottom-center">
         <div
           v-if="editor"
           class="text-color-component"
@@ -48,8 +59,6 @@
 import { ref, watch, computed, defineComponent } from 'vue';
 import { Sketch as Picker } from '@ckpack/vue-color';
 import tinycolor from 'tinycolor2';
-
-import { klona } from 'klona';
 
 export default defineComponent({
   name: 'AposTiptapColor',
@@ -157,29 +166,30 @@ export default defineComponent({
     };
 
     const close = () => {
+      console.log('clowse');
       active.value = false;
     };
 
-    const command = () => {
-      return props.tool.command || props.name;
-    };
-
     const update = (value) => {
+      console.log(value);
       tinyColorObj.value = tinycolor(value.hsl);
       next.value = tinyColorObj.value.toString(format.value);
-      props.editor.chain().focus()[command()](next.value).run();
+
+      // original
+      props.editor.chain().focus().setColor(next.value).run();
+
+      // variations that don't work
+      // props.editor.chain().focus().setColor(next.value).focus().run();
+      // props.editor.chain().blur().setColor(next.value).focus().run();
+      // props.editor.chain().focus().setColor(next.value).blur().run();
+      // props.editor.chain().setColor(next.value).run();
+      // props.editor.chain().blur().setMark('textStyle', { color: next.value }).focus().run();
+
       indicatorColor.value = next.value;
     };
 
     const click = () => {
       active.value = !active.value;
-    };
-
-    const buttonActive = () => {
-      const { state } = props.editor;
-      const { from, to } = state.selection;
-      const marks = state.doc.marksAt(from, to);
-      return marks.some((mark) => mark.type.name === 'textStyle' && mark.attrs.color);
     };
 
     return {
@@ -192,8 +202,7 @@ export default defineComponent({
       open,
       close,
       update,
-      click,
-      buttonActive
+      click
     };
   }
 });
@@ -210,12 +219,7 @@ export default defineComponent({
     align-items: center;
     border: none;
     background-color: transparent;
-    padding: 5px 10px;
     cursor: pointer;
-
-    &:hover {
-      background-color: var(--a-base-3);
-    }
   }
 
   .color-indicator {
@@ -242,8 +246,8 @@ export default defineComponent({
   .apos-color-control__dialog {
     z-index: $z-index-modal;
     position: absolute;
-    top: calc(100% + 5px);
-    left: -15px;
+    top: calc(100% + 15px);
+    left: 5px;
     opacity: 0;
     pointer-events: none;
     width: auto;
