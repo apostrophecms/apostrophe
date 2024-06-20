@@ -219,7 +219,7 @@ export default {
     grid-auto-rows: 140px;
     grid-template-columns: repeat(5, 1fr);
     gap: 15px;
-    padding-bottom: 20px;
+    padding: 20px 0;
 
     @include media-up(lap) {
       grid-template-columns: repeat(7, 1fr);
