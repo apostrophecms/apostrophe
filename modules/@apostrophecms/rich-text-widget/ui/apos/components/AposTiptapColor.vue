@@ -166,7 +166,6 @@ export default defineComponent({
     };
 
     const close = () => {
-      console.log('clowse');
       active.value = false;
     };
 
