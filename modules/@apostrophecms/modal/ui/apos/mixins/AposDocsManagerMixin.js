@@ -128,16 +128,14 @@ export default {
     },
     selectAll() {
       if (!this.checked.length) {
-        const ids = [];
         this.items.forEach((item) => {
           const notPublished = this.manuallyPublished && !item.lastPublishedAt;
           if (this.relationshipField && (this.maxReached() || notPublished)) {
             return;
           }
-          ids.push(item._id);
+          this.checked = [ ...this.checked, item._id ];
         });
 
-        this.checked = ids;
         return;
       }
 
