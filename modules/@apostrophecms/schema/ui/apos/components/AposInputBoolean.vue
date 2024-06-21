@@ -25,7 +25,7 @@
             class="apos-boolean__icon"
             title=""
           />
-          {{ trueLabel || 'Yes' }}
+          {{ trueLabel || $t('apostrophe:yes') }}
         </label>
         <input
           :id="`${uid}-false`"
@@ -44,7 +44,7 @@
             class="apos-boolean__icon"
             title=""
           />
-          {{ falseLabel || 'No' }}
+          {{ falseLabel || $t('apostrophe:no') }}
         </label>
       </div>
     </template>

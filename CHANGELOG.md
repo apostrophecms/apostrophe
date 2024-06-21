@@ -4,6 +4,16 @@
 
 ### Adds
 * Adds a new color picker tool for the rich-text-widget toolbar that matches the existing `color` schema field. This also adds the same `colorPicker` and `format` options to the rich-text-widget confirmation that exist in the `color` schema field.
+* Add missing UI translation keys.
+
+## 4.4.3 (2024-06-17)
+
+### Fixes
+
+* Do not use schema `field.def` when calling `convert`. Applying defaults to new documents is the job of `newInstance()` and similar code.
+If you wish a field to be mandatory use `required: true`.
+* As a convenience, using `POST` for pieces and pages with `_newInstance: true` keeps any additional `req.body` properties in the API response.
+This feature unofficially existed before, it is now supported.
 
 ## 4.4.2 (2024-06-14)
 
@@ -63,13 +73,19 @@ We will now end up with page B slug as `/peer/page` and not `/peer/peer/page` as
 * Detect shortcut conflicts when using multiple shortcuts.
 * Updating schema fields as read-only no longer reset the value when updating the document.
 * Fixes stylelint config file, uses config from our shared configuration, fixes all lint errors. 
-* Removes `$nextTick` use to re render schema in `AposArrayEditor` because it was triggering weird vue error in production.
-Instead, makes the AposSchema for loop keys more unique using `modelValue.data._id`, 
-if document changes it re-renders schema fields.
 * Fixes `TheAposCommandMenu` modals not computing shortcuts from the current opened modal.
 * Fixes select boxes of relationships, we can now check manually published relationships, and `AposSlatList` renders properly checked relationships.
 * Fixes issues in `AposInputArray` on production build to be able to add, remove and edit array items after `required` error.
 * Relationships browse button isn't disabled when max is reached.
+* In media manager images checkboxes are disabled when max is reached.
+
+## 4.3.3 (2024-06-04)
+
+### Fixes
+
+* Removes `$nextTick` use to re render schema in `AposArrayEditor` because it was triggering weird vue error in production.
+Instead, makes the AposSchema for loop keys more unique using `modelValue.data._id`, 
+if document changes it re-renders schema fields.
 * In media manager image checkboxes are disabled when max is reached.
 * Fixes tiptap bubble menu jumping on Firefox when clicking on buttons. Also fixes the fact that 
 double clicking on bubble menu out of buttons would prevent it from closing when unfocusing the rich text area.

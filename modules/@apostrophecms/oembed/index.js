@@ -97,7 +97,7 @@ module.exports = {
         // Tolerant URL handling
         url = self.apos.launder.url(url, null, true);
         if (!url) {
-          throw self.apos.error('invalid', 'Video URL invalid');
+          throw self.apos.error('invalid', req.t('apostrophe:oembedVideoUrlInvalid'));
         }
         const key = url + ':' + JSON.stringify(options);
         let response = await self.apos.cache.get('@apostrophecms/oembed', key);
@@ -110,7 +110,7 @@ module.exports = {
           try {
             response = await require('util').promisify(self.oembetter.fetch)(url, options);
           } catch (err) {
-            throw self.apos.error('invalid', 'Video URL invalid');
+            throw self.apos.error('invalid', req.t('apostrophe:oembedVideoUrlInvalid'));
           }
         }
         // Make non-secure URLs protocol relative and

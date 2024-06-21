@@ -38,7 +38,7 @@ export default {
   },
   props: {
     label: {
-      default: 'Set a label',
+      default: 'apostrophe:modalBreadcrumbsDefaultLabel',
       type: String
     },
     modifier: {
