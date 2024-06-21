@@ -468,6 +468,10 @@ export default {
                 : this.moduleLabels.plural
             }
           });
+          if ([ 'archive', 'delete' ].includes(action)) {
+            this.setCheckedDocs([]);
+          }
+          this.getPieces();
         } catch (error) {
           apos.notify('apostrophe:errorBatchOperationNoti', {
             interpolate: { operation: label },

@@ -96,6 +96,7 @@ export default {
       if (newValue.length) {
         this.generateUi();
       }
+
       if (this.selectPending.size > 0) {
         const newChecked = [ ...this.checked, ...this.selectPending ];
         this.checked = [ ...new Set(newChecked) ];
@@ -131,7 +132,7 @@ export default {
     },
     removeCheckedDoc(id) {
       this.checked = this.checked.filter((checkedId) => checkedId !== id);
-      this.checkedDocs = this.checkedDocs.filter((doc) => doc.id !== id);
+      this.checkedDocs = this.checkedDocs.filter((doc) => doc._id !== id);
     },
     getDocs(docsOrIds) {
       const items = this.moduleOptions.name === '@apostrophecms/page'
@@ -243,7 +244,14 @@ export default {
     docsManagerRemoveEventHandlers() {
       apos.bus.$off('content-changed', this.docsManagerOnContentChanged);
     },
-    docsManagerOnContentChanged({ doc, select }) {
+    docsManagerOnContentChanged({
+      doc, select, action
+    }) {
+      if ([ 'archive', 'delete' ].includes(action)) {
+        this.removeCheckedDoc(doc._id);
+        return;
+      }
+
       if (!select) {
         return;
       }
