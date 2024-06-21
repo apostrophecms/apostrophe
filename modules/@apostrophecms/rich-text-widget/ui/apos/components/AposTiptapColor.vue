@@ -7,10 +7,10 @@
       :icon-only="false"
       icon="circle-icon"
       :icon-fill="indicatorColor"
-      :label="'apostrophe:color'"
+      :label="'apostrophe:richTextColor'"
       :modifiers="['no-border', 'no-motion']"
       :tooltip="{
-        content: 'apostrophe:color',
+        content: 'apostrophe:richTextColor',
         placement: 'top',
         delay: 650
       }"
@@ -60,7 +60,9 @@
 </template>
 
 <script>
-import { ref, watch, computed, defineComponent } from 'vue';
+import {
+  ref, watch, computed, defineComponent
+} from 'vue';
 import { Sketch as Picker } from '@ckpack/vue-color';
 import tinycolor from 'tinycolor2';
 
@@ -134,8 +136,15 @@ export default defineComponent({
     });
 
     const pickerOptions = computed(() => {
-      const { presetColors, disableAlpha, disableFields } = mergedOptions.value;
-      return { presetColors, disableAlpha, disableFields };
+      const {
+        presetColors, disableAlpha, disableFields
+      } = mergedOptions.value;
+
+      return {
+        presetColors,
+        disableAlpha,
+        disableFields
+      };
     });
 
     const format = computed(() => {
@@ -158,7 +167,10 @@ export default defineComponent({
           indicatorColor.value = next.value;
         }
       },
-      { deep: true, immediate: true }
+      {
+        deep: true,
+        immediate: true
+      }
     );
 
     watch(pickerValue, (newColor) => {
@@ -221,11 +233,11 @@ export default defineComponent({
   }
 
   .color-indicator {
+    flex-shrink: 0;
     width: 12px;
     height: 12px;
-    border-radius: 50%;
     margin-right: 5px;
-    flex-shrink: 0;
+    border-radius: 50%;
   }
 
   .button-label {
@@ -233,12 +245,11 @@ export default defineComponent({
   }
 
   .chevron-down {
-    border: solid var(--a-base-8);
-    border-width: 0 2px 2px 0;
     display: inline-block;
     padding: 3px;
+    border: solid var(--a-base-8);
+    border-width: 0 2px 2px 0;
     transform: rotate(45deg);
-    -webkit-transform: rotate(45deg);
   }
 
   .apos-color-control__dialog {
