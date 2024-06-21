@@ -7,14 +7,13 @@
       :icon-only="false"
       icon="circle-icon"
       :icon-fill="indicatorColor"
-      :label="tool.label"
+      :label="'apostrophe:color'"
       :modifiers="['no-border', 'no-motion']"
       :tooltip="{
-        content: tool.label,
+        content: 'apostrophe:color',
         placement: 'top',
         delay: 650
       }"
-      :style="{ color: indicatorColor }"
       @click="click"
       @mousedown.stop.prevent
     >
@@ -31,7 +30,6 @@
         'apos-is-triggered': active,
         'apos-has-selection': hasSelection
       }"
-      @mousedown.stop.prevent
     >
       <AposContextMenuDialog menu-placement="bottom-center">
         <div
@@ -176,20 +174,9 @@ export default defineComponent({
     };
 
     const update = (value) => {
-      console.log(value);
       tinyColorObj.value = tinycolor(value.hsl);
       next.value = tinyColorObj.value.toString(format.value);
-
-      // original
       props.editor.chain().focus().setColor(next.value).run();
-
-      // variations that don't work
-      // props.editor.chain().focus().setColor(next.value).focus().run();
-      // props.editor.chain().blur().setColor(next.value).focus().run();
-      // props.editor.chain().focus().setColor(next.value).blur().run();
-      // props.editor.chain().setColor(next.value).run();
-      // props.editor.chain().blur().setMark('textStyle', { color: next.value }).focus().run();
-
       indicatorColor.value = next.value;
     };
 
