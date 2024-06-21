@@ -112,39 +112,12 @@ export default {
           doc._fields = this.subfields[doc._id];
         }
       }
+    },
+    checked() {
+      this.updateCheckedDocs();
     }
   },
   methods: {
-    addCheckedDoc(docOrId) {
-      this.concatCheckedDocs([ docOrId ]);
-    },
-    setCheckedDocs(docsOrIds) {
-      const docs = this.getDocs(docsOrIds);
-
-      this.checked = docs.map(item => item._id);
-      this.checkedDocs = docs;
-    },
-    concatCheckedDocs(docsOrIds) {
-      const docs = this.getDocs(docsOrIds);
-
-      this.checked = [ ...this.checked, ...docs.map(({ _id }) => _id) ];
-      this.checkedDocs = [ ...this.checkedDocs, ...docs ];
-    },
-    removeCheckedDoc(id) {
-      this.checked = this.checked.filter((checkedId) => checkedId !== id);
-      this.checkedDocs = this.checkedDocs.filter((doc) => doc._id !== id);
-    },
-    getDocs(docsOrIds) {
-      const items = this.moduleOptions.name === '@apostrophecms/page'
-        ? this.pagesFlat
-        : this.items;
-
-      return docsOrIds.map(docOrId => {
-        return docOrId._id
-          ? docOrId
-          : items.find(item => item._id === docOrId);
-      });
-    },
     // It would have been nice for this to be computed, however
     // AposMediaManagerDisplay does not re-render when it is
     // a computed prop rather than a method call in the template.
@@ -161,7 +134,7 @@ export default {
             return;
           }
 
-          this.addCheckedDoc(item);
+          this.checked.push(item._id);
         });
 
         return;
@@ -171,7 +144,7 @@ export default {
         this.allPiecesSelection.isSelected = false;
       }
 
-      this.setCheckedDocs([]);
+      this.checked = [];
     },
     iconSize(header) {
       if (header.icon) {
@@ -244,14 +217,7 @@ export default {
     docsManagerRemoveEventHandlers() {
       apos.bus.$off('content-changed', this.docsManagerOnContentChanged);
     },
-    docsManagerOnContentChanged({
-      doc, select, action
-    }) {
-      if ([ 'archive', 'delete' ].includes(action)) {
-        this.removeCheckedDoc(doc._id);
-        return;
-      }
-
+    docsManagerOnContentChanged({ doc, select }) {
       if (!select) {
         return;
       }
@@ -266,6 +232,29 @@ export default {
         // a published doc _id without a fuss
         this.selectPending.add(doc._id.replace(':published', ':draft'));
       }
+    },
+    // update this.checkedDocs based on this.checked. The default
+    // implementation is suitable for paginated lists. Can be overridden
+    // for other cases.
+    updateCheckedDocs() {
+      // Keep `checkedDocs` in sync with `checked`, first removing from
+      // `checkedDocs` if no longer in `checked`
+      this.checkedDocs = this.checkedDocs.filter(doc => {
+        return this.checked.includes(doc._id);
+      });
+      // then adding to `checkedDocs` if not there yet. These should be in
+      // `items` which is assumed to contain a flat list of items currently
+      // visible.
+      //
+      // TODO: Once we have the option to select all docs of a type even if not
+      // currently visible in the manager this will need to make calls to the
+      // database.
+      this.checked.forEach(id => {
+        if (this.checkedDocs.findIndex(doc => doc._id === id) === -1) {
+          const found = this.items.find(item => item._id === id);
+          found && this.checkedDocs.push(found);
+        }
+      });
     }
   }
 };

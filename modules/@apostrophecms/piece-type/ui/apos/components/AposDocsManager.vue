@@ -102,7 +102,7 @@
         <template #bodyMain>
           <AposDocsManagerDisplay
             v-if="items.length > 0"
-            :checked="checked"
+            v-model:checked="checked"
             :items="items"
             :headers="headers"
             :options="{
@@ -111,7 +111,6 @@
               disableUnpublished: disableUnpublished,
               manuallyPublished: manuallyPublished
             }"
-            @update:checked="setCheckedDocs"
             @open="edit"
           />
           <div v-else class="apos-pieces-manager__empty">
@@ -468,9 +467,6 @@ export default {
                 : this.moduleLabels.plural
             }
           });
-          if ([ 'archive', 'delete' ].includes(action)) {
-            this.setCheckedDocs([]);
-          }
           this.getPieces();
         } catch (error) {
           apos.notify('apostrophe:errorBatchOperationNoti', {
@@ -480,6 +476,12 @@ export default {
           console.error(error);
         }
       }
+    },
+    setCheckedDocs(checked) {
+      this.checkedDocs = checked;
+      this.checked = this.checkedDocs.map(item => {
+        return item._id;
+      });
     }
   }
 };

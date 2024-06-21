@@ -79,13 +79,12 @@
         </template>
         <template #bodyMain>
           <AposTree
-            :checked="checked"
+            v-model:checked="checked"
             :items="items"
             :headers="headers"
             :icons="icons"
             :options="treeOptions"
             :module-options="moduleOptions"
-            @update:checked="setCheckedDocs"
             @update="update"
           />
         </template>
