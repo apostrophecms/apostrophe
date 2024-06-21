@@ -16,6 +16,7 @@
       }"
       :style="{ color: indicatorColor }"
       @click="click"
+      @mousedown.stop.prevent
     >
       <template #label>
         <AposIndicator icon="chevron-down-icon" />
@@ -30,16 +31,20 @@
         'apos-is-triggered': active,
         'apos-has-selection': hasSelection
       }"
+      @mousedown.stop.prevent
     >
       <AposContextMenuDialog menu-placement="bottom-center">
         <div
           v-if="editor"
           class="text-color-component"
+          @mousedown.stop.prevent
         >
           <Picker
             v-bind="pickerOptions"
             :model-value="pickerValue"
             @update:model-value="update"
+            @mousedown.stop.prevent
+            @focus="focus"
           />
         </div>
         <footer class="apos-color-control__footer">
@@ -48,6 +53,7 @@
             label="apostrophe:close"
             :modifiers="['small', 'margin-micro']"
             @click="close"
+            @mousedown.stop.prevent
           />
         </footer>
       </AposContextMenuDialog>
@@ -191,6 +197,11 @@ export default defineComponent({
       active.value = !active.value;
     };
 
+    const focus = () => {
+      // Keep focus on the toolbar to prevent it from closing
+      props.editor.view.dom.focus();
+    };
+
     return {
       active,
       indicatorColor,
@@ -201,7 +212,8 @@ export default defineComponent({
       open,
       close,
       update,
-      click
+      click,
+      focus
     };
   }
 });
