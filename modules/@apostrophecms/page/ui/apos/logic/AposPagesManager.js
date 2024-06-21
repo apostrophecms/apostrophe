@@ -255,9 +255,10 @@ export default {
       if (this.checked.includes(id)) {
         this.checked = this.checked.filter(item => item !== id);
       } else {
-        this.checked.push(id);
+        this.checked = [ ...this.checked, id ];
       }
     },
+    // This is not used for now
     selectAll(event) {
       if (!this.checked.length) {
         this.pagesFlat.forEach((row) => {

@@ -243,13 +243,13 @@ export default {
     await this.getAllPiecesTotal();
     this.modal.triggerFocusRefresh++;
 
-    apos.bus.$on('content-changed', this.getPieces);
+    apos.bus.$on('content-changed', this.onContentChanged);
     apos.bus.$on('command-menu-manager-create-new', this.create);
     apos.bus.$on('command-menu-manager-close', this.confirmAndCancel);
   },
   unmounted() {
     this.destroyShortcuts();
-    apos.bus.$off('content-changed', this.getPieces);
+    apos.bus.$off('content-changed', this.onContentChanged);
     apos.bus.$off('command-menu-manager-create-new', this.create);
     apos.bus.$off('command-menu-manager-close', this.confirmAndCancel);
   },
@@ -467,7 +467,10 @@ export default {
                 : this.moduleLabels.plural
             }
           });
-          this.getPieces();
+          await this.getPieces();
+          if ([ 'archive', 'delete', 'restore' ].includes(action)) {
+            this.checked = [];
+          }
         } catch (error) {
           apos.notify('apostrophe:errorBatchOperationNoti', {
             interpolate: { operation: label },
@@ -482,6 +485,11 @@ export default {
       this.checked = this.checkedDocs.map(item => {
         return item._id;
       });
+    },
+
+    async onContentChanged({ doc, action }) {
+      await this.getPieces();
+      this.getAllPiecesTotal();
     }
   }
 };

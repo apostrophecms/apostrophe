@@ -128,15 +128,16 @@ export default {
     },
     selectAll() {
       if (!this.checked.length) {
+        const ids = [];
         this.items.forEach((item) => {
           const notPublished = this.manuallyPublished && !item.lastPublishedAt;
           if (this.relationshipField && (this.maxReached() || notPublished)) {
             return;
           }
-
-          this.checked.push(item._id);
+          ids.push(item._id);
         });
 
+        this.checked = ids;
         return;
       }
 
@@ -217,7 +218,14 @@ export default {
     docsManagerRemoveEventHandlers() {
       apos.bus.$off('content-changed', this.docsManagerOnContentChanged);
     },
-    docsManagerOnContentChanged({ doc, select }) {
+    docsManagerOnContentChanged({
+      doc, select, action
+    }) {
+      if ((doc.type === this.moduleName) && [ 'archive', 'delete', 'restore' ].includes(action)) {
+        this.checked = this.checked.filter(id => id !== doc._id);
+        return;
+      }
+
       if (!select) {
         return;
       }

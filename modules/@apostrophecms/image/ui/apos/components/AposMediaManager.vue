@@ -395,8 +395,7 @@ export default {
       if (this.checked.includes(id)) {
         this.checked = this.checked.filter(checkedId => checkedId !== id);
       } else {
-        /* Check it's properly watched */
-        this.checked.push(id);
+        this.checked = [ ...this.checked, id ];
       }
 
       this.lastSelected = id;
@@ -420,13 +419,18 @@ export default {
       }
 
       const sliced = this.items.slice(beginIndex, endIndex);
+      const sliceIds = [];
       // always want to check, never toggle
       sliced.forEach(item => {
         if (!this.checked.includes(item._id)) {
-          this.checked.push(item._id);
+          sliceIds.push(item._id);
         }
       });
 
+      this.checked = [
+        ...this.checked,
+        ...sliceIds
+      ];
       this.lastSelected = sliced[sliced.length - 1]._id;
       this.editing = undefined;
     },
