@@ -121,21 +121,22 @@ export default {
     // It would have been nice for this to be computed, however
     // AposMediaManagerDisplay does not re-render when it is
     // a computed prop rather than a method call in the template.
-    maxReached() {
+    maxReached(checkedCount = this.checked.length) {
       // Reaching max and exceeding it are different things
-      return this.relationshipField.max &&
-        this.checked.length >= this.relationshipField.max;
+      return this.relationshipField.max && checkedCount >= this.relationshipField.max;
     },
     selectAll() {
       if (!this.checked.length) {
+        const ids = [];
         this.items.forEach((item) => {
           const notPublished = this.manuallyPublished && !item.lastPublishedAt;
-          if (this.relationshipField && (this.maxReached() || notPublished)) {
+          if (this.relationshipField && (this.maxReached(ids.length) || notPublished)) {
             return;
           }
-          this.checked = [ ...this.checked, item._id ];
+          ids.push(item._id);
         });
 
+        this.checked = ids;
         return;
       }
 
