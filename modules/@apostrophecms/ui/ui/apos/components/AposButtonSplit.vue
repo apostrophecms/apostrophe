@@ -14,7 +14,6 @@
       :menu="menu"
       :button="contextMenuButton"
       :disabled="disabled"
-      menu-offset="1, 10"
       menu-placement="bottom-end"
       @open="menuOpen"
       @close="menuClose"
