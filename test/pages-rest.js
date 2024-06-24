@@ -1,6 +1,6 @@
+import { createId } from '@paralleldrive/cuid2';
 const t = require('../test-lib/test.js');
 const assert = require('assert');
-import { createId } from '@paralleldrive/cuid2';
 
 const areaConfig = {
   '@apostrophecms/image': {},

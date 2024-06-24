@@ -1,8 +1,8 @@
+import { createId } from '@paralleldrive/cuid2';
 const assert = require('assert').strict;
 const fs = require('fs');
 const path = require('path');
 const _ = require('lodash');
-import { createId } from '@paralleldrive/cuid2';
 const FormData = require('form-data');
 const t = require('../test-lib/test.js');
 
