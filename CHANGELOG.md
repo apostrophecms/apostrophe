@@ -14,6 +14,7 @@
 If you wish a field to be mandatory use `required: true`.
 * As a convenience, using `POST` for pieces and pages with `_newInstance: true` keeps any additional `req.body` properties in the API response.
 This feature unofficially existed before, it is now supported.
+* Rollbacks watcher on `checked` array. Fixes, checked docs not being properly updated.
 
 ## 4.4.2 (2024-06-14)
 
