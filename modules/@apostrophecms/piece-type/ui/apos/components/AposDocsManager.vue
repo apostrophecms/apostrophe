@@ -467,10 +467,6 @@ export default {
                 : this.moduleLabels.plural
             }
           });
-          await this.getPieces();
-          if ([ 'archive', 'delete', 'restore' ].includes(action)) {
-            this.checked = [];
-          }
         } catch (error) {
           apos.notify('apostrophe:errorBatchOperationNoti', {
             interpolate: { operation: label },

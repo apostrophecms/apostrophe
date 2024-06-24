@@ -220,11 +220,6 @@ export default {
     docsManagerOnContentChanged({
       doc, select, action
     }) {
-      if ((doc.type === this.moduleName) && [ 'archive', 'delete', 'restore' ].includes(action)) {
-        this.checked = this.checked.filter(id => id !== doc._id);
-        return;
-      }
-
       if (!select) {
         return;
       }
