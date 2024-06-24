@@ -433,23 +433,20 @@ export default {
   },
   methods: {
     async saveHandler(action) {
-      this.triggerValidation = true;
-      this.$nextTick(async () => {
-        if (this.savePreference !== action) {
-          this.setSavePreference(action);
-        }
-        if (!this.errorCount) {
-          this[action]();
-        } else {
-          this.triggerValidation = false;
-          await apos.notify('apostrophe:resolveErrorsBeforeSaving', {
-            type: 'warning',
-            icon: 'alert-circle-icon',
-            dismiss: true
-          });
-          this.focusNextError();
-        }
+      await this.triggerValidate();
+      if (this.savePreference !== action) {
+        this.setSavePreference(action);
+      }
+      if (!this.errorCount) {
+        this[action]();
+        return;
+      }
+      await apos.notify('apostrophe:resolveErrorsBeforeSaving', {
+        type: 'warning',
+        icon: 'alert-circle-icon',
+        dismiss: true
       });
+      this.focusNextError();
     },
     async loadDoc() {
       let docData;

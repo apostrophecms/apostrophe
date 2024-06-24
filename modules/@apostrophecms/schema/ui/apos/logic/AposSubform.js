@@ -111,16 +111,15 @@ export default {
       this.evaluateConditions();
     },
     async submit() {
-      this.triggerValidation = true;
-      this.$nextTick(async () => {
-        if (this.docFields.hasErrors) {
-          this.triggerValidation = false;
-          return;
-        }
-        this.$emit('submit', {
-          name: this.subform.name,
-          values: this.docFields.data
-        });
+      await this.triggerValidate();
+      if (this.docFields.hasErrors) {
+        return;
+      }
+      // Formerly triggerValidation remained true in this case,
+      // I think that was a bug
+      this.$emit('submit', {
+        name: this.subform.name,
+        values: this.docFields.data
       });
     },
     async cancel() {

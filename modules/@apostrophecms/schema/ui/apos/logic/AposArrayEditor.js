@@ -258,9 +258,13 @@ export default {
     },
     async validate(validateItem, validateLength) {
       if (validateItem && this.next.length > 0 && this.currentId) {
-        this.triggerValidation = true;
+        await this.triggerValidate();
+      } else {
+        // Not doing sub-validation, but still want to make sure the UI
+        // has settled according to the original logic which waited on
+        // nextTick regardless of whether it triggered validation
+        await this.settle();
       }
-      await this.$nextTick();
       if (validateLength) {
         this.updateMinMax();
       }

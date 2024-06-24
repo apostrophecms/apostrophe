@@ -6,6 +6,12 @@
 * Adds a new color picker tool for the rich-text-widget toolbar that matches the existing `color` schema field. This also adds the same `colorPicker` and `format` options to the rich-text-widget confirmation that exist in the `color` schema field.
 * Add missing UI translation keys.
 
+### Fixes
+
+* Schema validation now waits for dynamic `select`, `radio` and `checkboxes` choices and
+other API calls still "in flight" to settle before proceeding.
+* Rollbacks watcher on `checked` array. Fixes, checked docs not being properly updated.
+
 ## 4.4.3 (2024-06-17)
 
 ### Fixes
@@ -14,7 +20,6 @@
 If you wish a field to be mandatory use `required: true`.
 * As a convenience, using `POST` for pieces and pages with `_newInstance: true` keeps any additional `req.body` properties in the API response.
 This feature unofficially existed before, it is now supported.
-* Rollbacks watcher on `checked` array. Fixes, checked docs not being properly updated.
 
 ## 4.4.2 (2024-06-14)
 

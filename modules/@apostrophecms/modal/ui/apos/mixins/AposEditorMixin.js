@@ -195,11 +195,31 @@ export default {
         });
       }
     },
-    triggerValidate() {
+    // Triggers validation, after first waiting for the UI to settle,
+    // including any active API requests e.g. loading of choices etc.
+    // as well as nextTick
+    async triggerValidate() {
+      console.log('settle 1');
+      await this.settle();
+      console.log('triggered');
       this.triggerValidation = true;
-      this.$nextTick(async () => {
-        this.triggerValidation = false;
-      });
+      console.log('settle 2');
+      await this.settle();
+      console.log('settled');
+      this.triggerValidation = false;
+      console.log('cleared');
+    },
+    async settle() {
+      console.log('before nextTick');
+      await this.$nextTick();
+      console.log('after nextTick');
+      while (apos.busy.busy) {
+        console.log('delaying due to busy');
+        await delay(100);
+        // Allows for another HTTP request to possibly set busy again
+        await this.$nextTick();
+      }
+      console.log('end of settle');
     },
     // Perform any postprocessing required by direct or nested schema fields
     // before the object can be saved
@@ -247,3 +267,7 @@ export default {
     }
   }
 };
+
+function delay(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}

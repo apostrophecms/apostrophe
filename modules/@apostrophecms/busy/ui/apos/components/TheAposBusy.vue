@@ -8,15 +8,24 @@
 </template>
 
 <script>
+// Implements the global busy spinner, and sets/clears the `busy` reactive
+// property of the `modalStore` when appropriate
+
 import AposThemeMixin from 'Modules/@apostrophecms/ui/mixins/AposThemeMixin';
+
 export default {
   name: 'TheAposBusy',
   mixins: [ AposThemeMixin ],
   data() {
     return {
-      busy: false,
-      busyCount: 0
+      busyCount: 0,
+      busy: false
     };
+  },
+  watch: {
+    busy(newValue) {
+      apos.busy.busy = newValue;
+    }
   },
   computed: {
     classes() {
