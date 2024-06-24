@@ -76,7 +76,7 @@
           <AposMediaManagerDisplay
             v-else
             ref="display"
-            :checked="checked"
+            v-model:checked="checked"
             :accept="accept"
             :items="items"
             :module-options="moduleOptions"
@@ -87,7 +87,6 @@
               hideCheckboxes: !relationshipField
             }"
             :is-scroll-loading="isScrollLoading"
-            @update:checked="setCheckedDocs"
             @edit="updateEditing"
             @select="select"
             @select-series="selectSeries"
@@ -369,7 +368,7 @@ export default {
         return;
       }
       if (Array.isArray(imgIds) && imgIds.length) {
-        this.concatCheckedDocs(imgIds);
+        this.checked = this.checked.concat(imgIds);
 
         // If we're currently editing one, don't interrupt that by replacing it.
         if (!this.editing && imgIds.length === 1) {
@@ -407,21 +406,18 @@ export default {
     // select setters
     select(id) {
       if (this.checked.includes(id)) {
-        this.setCheckedDocs([]);
+        this.checked = [];
       } else {
-        const item = this.items.find(item => item._id === id);
-        if (item) {
-          this.setCheckedDocs([ item ]);
-        }
+        this.checked = [ id ];
       }
       this.updateEditing(id);
       this.lastSelected = id;
     },
     selectAnother(id) {
       if (this.checked.includes(id)) {
-        this.removeCheckedDoc(id);
+        this.checked = this.checked.filter(checkedId => checkedId !== id);
       } else {
-        this.addCheckedDoc(id);
+        this.checked = [ ...this.checked, id ];
       }
 
       this.lastSelected = id;
@@ -445,13 +441,18 @@ export default {
       }
 
       const sliced = this.items.slice(beginIndex, endIndex);
+      const sliceIds = [];
       // always want to check, never toggle
       sliced.forEach(item => {
         if (!this.checked.includes(item._id)) {
-          this.addCheckedDoc(item._id);
+          sliceIds.push(item._id);
         }
       });
 
+      this.checked = [
+        ...this.checked,
+        ...sliceIds
+      ];
       this.lastSelected = sliced[sliced.length - 1]._id;
       this.editing = undefined;
     },

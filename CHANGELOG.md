@@ -3,7 +3,7 @@
 ## UNRELEASED
 
 ### Adds
-
+* Adds a new color picker tool for the rich-text-widget toolbar that matches the existing `color` schema field. This also adds the same `colorPicker` and `format` options to the rich-text-widget confirmation that exist in the `color` schema field.
 * Add missing UI translation keys.
 * Infite scroll in media manager instead of pagination. Makes the header containing the search fix.
 * Improves loaders by using new `AposLoadingBlock` that uses `AposLoading` instead of the purple screen in media manager.
@@ -16,6 +16,10 @@
 * `this.modified` was not working properly (set to false when saving). We can now avoid to reload images when saving no changes.
 * In media manager images checkboxes are disabled when max is reached.
 
+### Fixes
+* Identify and mark server validation errors in the admin UI. This helps editors identify already existing data fields, having validation errors when schema changes (e.g. optional field becomes required).
+
+
 ## 4.4.3 (2024-06-17)
 
 ### Fixes
@@ -24,6 +28,8 @@
 If you wish a field to be mandatory use `required: true`.
 * As a convenience, using `POST` for pieces and pages with `_newInstance: true` keeps any additional `req.body` properties in the API response.
 This feature unofficially existed before, it is now supported.
+* Rollbacks watcher on `checked` array. Fixes, checked docs not being properly updated.
+
 
 ## 4.4.2 (2024-06-14)
 
