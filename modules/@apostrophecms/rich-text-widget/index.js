@@ -290,6 +290,11 @@ module.exports = {
         component: 'AposTiptapImage',
         label: 'apostrophe:image',
         icon: 'image-icon'
+      },
+      color: {
+        component: 'AposTiptapColor',
+        label: 'apostrophe:richTextColor',
+        command: 'setColor'
       }
     },
     editorInsertMenu: {
@@ -547,7 +552,11 @@ module.exports = {
               tag: 'img',
               attributes: [ 'src', 'alt' ]
             }
-          ]
+          ],
+          color: {
+            tag: '*',
+            attributes: [ 'style' ]
+          }
         };
         for (const item of self.combinedItems(options)) {
           if (simple[item]) {
@@ -589,6 +598,23 @@ module.exports = {
             selector: '*',
             properties: {
               'text-align': [ /^justify$/ ]
+            }
+          },
+          color: {
+            selector: '*',
+            properties: {
+              color: [
+                // Hexadecimal colors (3 or 6 digits, optionally with alpha)
+                /^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8}|[0-9a-fA-F]{4})$/i,
+                // RGB colors
+                /^rgb\(\s*(?:\d{1,3}\s*,\s*){2}\d{1,3}\s*\)$/,
+                // RGBA colors
+                /^rgba\(\s*(?:\d{1,3}\s*,\s*){3}(?:0?\.\d+|1(?:\.0)?)\s*\)$/,
+                // HSL colors
+                /^hsl\(\s*\d{1,3}(?:deg)?\s*,\s*\d{1,3}%\s*,\s*\d{1,3}%\s*\)$/,
+                // HSLA colors
+                /^hsla\(\s*\d{1,3}(?:deg)?\s*,\s*\d{1,3}%\s*,\s*\d{1,3}%\s*,\s*(?:0?\.\d+|1(?:\.0)?)\s*\)$/
+              ]
             }
           }
         };
@@ -891,7 +917,9 @@ module.exports = {
           placeholderTextWithInsertMenu: self.options.placeholderTextWithInsertMenu,
           linkWithType: Array.isArray(self.options.linkWithType) ? self.options.linkWithType : [ self.options.linkWithType ],
           linkSchema: self.linkSchema,
-          imageStyles: self.options.imageStyles
+          imageStyles: self.options.imageStyles,
+          colorPicker: self.options.colorPicker,
+          format: self.options.format
         };
         return finalData;
       }

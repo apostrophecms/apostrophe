@@ -140,7 +140,7 @@ export default {
       }
 
       const group = {
-        label: 'Clipboard',
+        label: this.$t('apostrophe:areaExpandedMenuClipboard'),
         widgets: [
           {
             type: 'clipboard',

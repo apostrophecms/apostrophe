@@ -91,7 +91,7 @@
         class="apos-field__error"
         data-apos-test="field-error"
       >
-        {{ $t(errorMessage) }}
+        {{ getTranslatedErrorMessage(errorMessage) }}
       </div>
     </component>
     <!-- CSS Escape hatch for additional interfaces like relatipnship managers -->
@@ -103,7 +103,18 @@
 import AposInputWrapperLogic from '../logic/AposInputWrapper';
 export default {
   name: 'AposInputWrapper',
-  mixins: [ AposInputWrapperLogic ]
+  mixins: [ AposInputWrapperLogic ],
+  methods: {
+    getTranslatedErrorMessage(message) {
+      if (message === 'required') {
+        return this.$t('apostrophe:required');
+      }
+      if (message === 'invalid') {
+        return this.$t('apostrophe:invalid');
+      }
+      return this.$t(message);
+    }
+  }
 };
 </script>
 

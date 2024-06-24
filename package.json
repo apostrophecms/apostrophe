@@ -37,6 +37,7 @@
     "@floating-ui/dom": "^1.5.3",
     "@opentelemetry/api": "^1.0.4",
     "@opentelemetry/semantic-conventions": "^1.0.1",
+    "@tiptap/extension-color": "^2.4.0",
     "@tiptap/extension-floating-menu": "^2.0.3",
     "@tiptap/extension-highlight": "^2.0.3",
     "@tiptap/extension-link": "^2.0.3",
