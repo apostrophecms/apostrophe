@@ -86,15 +86,15 @@ export default {
     },
     messages() {
       const msgs = {
-        primary: 'Drop a file here or',
-        highlighted: 'click to open the file explorer'
+        primary: this.$t('apostrophe:fileUploaderDropFile'),
+        highlighted: this.$t('apostrophe:fileUploaderOpenExplorer')
       };
       if (this.disabled) {
-        msgs.primary = 'Field is disabled';
+        msgs.primary = this.$t('apostrophe:fileUploaderFieldIsDisabled');
         msgs.highlighted = '';
       }
       if (this.fileOrAttachment) {
-        msgs.primary = 'Attachment limit reached';
+        msgs.primary = this.$t('apostrophe:fileUploaderAttachmentLimitReached');
         msgs.highlighted = '';
       }
       return msgs;

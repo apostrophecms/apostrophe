@@ -102,7 +102,7 @@
         <template #bodyMain>
           <AposDocsManagerDisplay
             v-if="items.length > 0"
-            :checked="checked"
+            v-model:checked="checked"
             :items="items"
             :headers="headers"
             :options="{
@@ -111,7 +111,6 @@
               disableUnpublished: disableUnpublished,
               manuallyPublished: manuallyPublished
             }"
-            @update:checked="setCheckedDocs"
             @open="edit"
           />
           <div v-else class="apos-pieces-manager__empty">
@@ -244,13 +243,13 @@ export default {
     await this.getAllPiecesTotal();
     this.modal.triggerFocusRefresh++;
 
-    apos.bus.$on('content-changed', this.getPieces);
+    apos.bus.$on('content-changed', this.onContentChanged);
     apos.bus.$on('command-menu-manager-create-new', this.create);
     apos.bus.$on('command-menu-manager-close', this.confirmAndCancel);
   },
   unmounted() {
     this.destroyShortcuts();
-    apos.bus.$off('content-changed', this.getPieces);
+    apos.bus.$off('content-changed', this.onContentChanged);
     apos.bus.$off('command-menu-manager-create-new', this.create);
     apos.bus.$off('command-menu-manager-close', this.confirmAndCancel);
   },
@@ -476,6 +475,17 @@ export default {
           console.error(error);
         }
       }
+    },
+    setCheckedDocs(checked) {
+      this.checkedDocs = checked;
+      this.checked = this.checkedDocs.map(item => {
+        return item._id;
+      });
+    },
+
+    async onContentChanged({ doc, action }) {
+      await this.getPieces();
+      this.getAllPiecesTotal();
     }
   }
 };

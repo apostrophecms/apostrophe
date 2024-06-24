@@ -1554,7 +1554,7 @@ module.exports = {
           } else {
             // Dynamic choices from the REST API, but
             // we need a label for "no opinion"
-            filter.nullLabel = 'Choose One';
+            filter.nullLabel = 'apostrophe:filterMenuChooseOne';
           }
         });
       },
