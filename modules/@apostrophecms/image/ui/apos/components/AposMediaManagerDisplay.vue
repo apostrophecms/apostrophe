@@ -44,6 +44,7 @@
           @click.exact="$emit('select', item._id)"
           @click.shift="$emit('select-series', item._id)"
           @click.meta="$emit('select-another', item._id)"
+          @click.ctrl="$emit('select-another', item._id)"
         >
           <div
             v-if="item.dimensions"
@@ -192,15 +193,6 @@ export default {
       return `${item._id}-${cuid()}`;
     },
     canSelect(id) {
-      // console.log({
-      //   max: this.relationshipField?.max,
-      //   disableUnchecked: this.options.disableUnchecked,
-      //   checked: this.checked,
-      //   id,
-      //   includes: this.checked.includes(id),
-      //   value: this.relationshipField?.max === 1
-      //     || (this.options.disableUnchecked && !this.checked.includes(id))
-      // })
       return this.relationshipField?.max === 1
         || (!this.options.disableUnchecked);
     }

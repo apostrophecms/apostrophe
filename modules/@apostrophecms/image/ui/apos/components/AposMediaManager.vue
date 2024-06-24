@@ -228,11 +228,16 @@ export default {
   },
   watch: {
     async checked (newVal, oldVal) {
+      this.lastSelected = newVal.at(-1);
       if (newVal.length > 1 || newVal.length === 0) {
         if (!await this.updateEditing(null)) {
           this.checked = oldVal;
         }
+
+        return;
       }
+
+      await this.updateEditing(newVal.at(0));
     }
   },
   async mounted() {
@@ -348,8 +353,10 @@ export default {
         return;
       }
       if (Array.isArray(imgIds) && imgIds.length) {
+        // TODO: set up to max
         this.concatCheckedDocs(imgIds);
 
+        // TODO: check if this is still true
         // If we're currently editing one, don't interrupt that by replacing it.
         if (!this.editing && imgIds.length === 1) {
           this.updateEditing(imgIds[0]);
@@ -358,7 +365,6 @@ export default {
     },
     clearSelected() {
       this.checked = [];
-      this.editing = undefined;
     },
     async updateEditing(id) {
       const item = this.items.find(item => item._id === id);
@@ -384,22 +390,12 @@ export default {
       return true;
     },
     updateCheckedDocs(ids) {
+      // TODO: set up to max
       this.setCheckedDocs(ids);
-      if (ids.length === 1) {
-        const id = ids.at(0);
-        this.updateEditing(id);
-        this.lastSelected = id;
-      }
     },
     // select setters
     select(id) {
-      // console.log({
-      //   id,
-      //   checked: this.checked,
-      //   checkedIncludes: this.checked.includes(id),
-      // });
-      console.log('select', { id, checkedDocs: this.checkedDocs });
-      if (this.relationshipField?.max !== 1) {
+      if (this.relationshipField?.max > 1) {
         this.selectAnother(id);
         return;
       }
@@ -411,29 +407,18 @@ export default {
           this.setCheckedDocs([ item ]);
         }
       }
-      this.updateEditing(id);
-      this.lastSelected = id;
     },
     selectAnother(id) {
       if (this.relationshipField?.max === 1) {
         this.select(id);
         return;
       }
-      console.log('selectAnother', { id, checkedDocs: this.checkedDocs });
       if (this.checked.includes(id)) {
-        console.log('remove')
         this.removeCheckedDoc(id);
       } else {
-        console.log('add')
         this.addCheckedDoc(id);
       }
-
-      this.lastSelected = id;
-      this.editing = this.checkedDocs.length === 1
-        ? this.checkedDocs.at(0)
-        : undefined;
     },
-
     selectSeries(id) {
       if (!this.lastSelected || this.relationshipField?.max === 1) {
         this.select(id);
@@ -453,23 +438,15 @@ export default {
       const sliced = this.items.slice(beginIndex, endIndex);
       // always want to check, never toggle
       sliced.forEach(item => {
-        if (!this.checked.includes(item._id)) {
+        if (!this.checked.includes(item._id) && !this.maxReached()) {
           this.addCheckedDoc(item._id);
         }
       });
-
-      this.lastSelected = sliced[sliced.length - 1]._id;
-      this.editing = this.checkedDocs.length === 1
-        ? this.checkedDocs.at(0)
-        : undefined;
     },
 
     // Toolbar handlers
     selectClick() {
       this.selectAll();
-      this.editing = this.checkedDocs.length === 1
-        ? this.checkedDocs.at(0)
-        : undefined;
     },
     async updatePage(num) {
       if (num) {
