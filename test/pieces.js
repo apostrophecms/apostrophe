@@ -2,7 +2,7 @@ const assert = require('assert').strict;
 const fs = require('fs');
 const path = require('path');
 const _ = require('lodash');
-const { createId } = require('@paralleldrive/cuid2');
+import { createId } from '@paralleldrive/cuid2';
 const FormData = require('form-data');
 const t = require('../test-lib/test.js');
 
@@ -981,7 +981,7 @@ describe('Pieces', function() {
             {
               metaType: 'widget',
               type: '@apostrophecms/rich-text',
-              id: cuid(),
+              id: createId(),
               content: '<p>This is the product key product with relationship</p>'
             }
           ]
