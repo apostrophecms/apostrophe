@@ -337,8 +337,12 @@ export default {
             await this.showLockedError(e);
             this.lockNotAvailable();
           } else {
+            const errorMessage = this.restoreOnly
+              ? this.$t('apostrophe:mediaManagerErrorRestoring')
+              : this.$t('apostrophe:mediaManagerErrorSaving');
+
             await this.handleSaveError(e, {
-              fallback: `Error ${this.restoreOnly ? 'Restoring' : 'Saving'} ${this.moduleLabels.label}`
+              fallback: `${errorMessage} ${this.moduleLabels.label}`
             });
           }
         } finally {

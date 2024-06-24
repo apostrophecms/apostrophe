@@ -95,7 +95,7 @@ export default {
     tooltip () {
       let msg = false;
       if (this.field.readOnly) {
-        msg = 'This field is disabled';
+        msg = 'apostrophe:inputFieldIsDisabled';
       }
       return msg;
     },

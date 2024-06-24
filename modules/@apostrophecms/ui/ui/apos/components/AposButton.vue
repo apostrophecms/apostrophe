@@ -35,7 +35,7 @@
           :icon="icon"
           :icon-size="iconSize"
           class="apos-button__icon"
-          fill-color="currentColor"
+          :icon-color="iconFill"
         />
         <slot name="label">
           <span class="apos-button__label" :class="{ 'apos-sr-only' : (iconOnly || type === 'color') }">
@@ -88,6 +88,10 @@ export default {
     iconSize: {
       type: Number,
       default: 15
+    },
+    iconFill: {
+      type: String,
+      default: 'currentColor'
     },
     disabled: Boolean,
     busy: Boolean,

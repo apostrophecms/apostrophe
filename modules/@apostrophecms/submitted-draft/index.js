@@ -8,7 +8,7 @@ module.exports = {
   options: {
     quickCreate: false,
     label: 'apostrophe:submittedDraft',
-    pluralLabel: 'Submitted Drafts',
+    pluralLabel: 'apostrophe:submittedDrafts',
     showCreate: false,
     showDismissSubmission: true,
     showArchive: false,
@@ -141,7 +141,7 @@ module.exports = {
           {
             component: 'AposSubmittedDraftIcon',
             contextUtility: true,
-            tooltip: 'Submitted Drafts'
+            tooltip: 'apostrophe:submittedDrafts'
           }
         );
       }

@@ -54,16 +54,16 @@ export default {
       },
       moreMenu: [
         {
-          label: 'New Page',
+          label: 'apostrophe:newPage',
           action: 'new'
         }
       ],
       moreMenuButton: {
         tooltip: {
-          content: 'More Options',
+          content: 'apostrophe:moreOptions',
           placement: 'bottom'
         },
-        label: 'More Options',
+        label: 'apostrophe:moreOptions',
         icon: 'dots-vertical-icon',
         iconOnly: true,
         type: 'subtle',
@@ -95,9 +95,9 @@ export default {
     },
     saveRelationshipLabel() {
       if (this.relationshipField && (this.relationshipField.max === 1)) {
-        return 'Select Page';
+        return 'apostrophe:selectPage';
       } else {
-        return 'Select Pages';
+        return 'apostrophe:selectPages';
       }
     },
     headers() {
@@ -253,11 +253,12 @@ export default {
     },
     toggleRowCheck(id) {
       if (this.checked.includes(id)) {
-        this.removeCheckedDoc(id);
+        this.checked = this.checked.filter(item => item !== id);
       } else {
-        this.addCheckedDoc(id);
+        this.checked = [ ...this.checked, id ];
       }
     },
+    // This is not used for now
     selectAll(event) {
       if (!this.checked.length) {
         this.pagesFlat.forEach((row) => {
@@ -288,6 +289,12 @@ export default {
         this.checkedDocs.push(doc);
         this.checked.push(doc._id);
       }
+    },
+    setCheckedDocs(checkedDocs) {
+      this.checked = checkedDocs.map(doc => doc._id);
+    },
+    updateCheckedDocs() {
+      this.checkedDocs = this.checked.map(_id => this.pagesFlat.find(page => page._id === _id));
     }
   }
 };
