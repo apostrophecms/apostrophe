@@ -87,7 +87,7 @@ const props = defineProps({
     default: 'bottom'
   },
   menuOffset: {
-    type: [ Number, String ],
+    type: [ Number, Array ],
     default: 15
   },
   disabled: {
@@ -116,6 +116,9 @@ const dropdown = ref();
 const dropdownContent = ref();
 const dropdownContentStyle = ref({});
 const arrowEl = ref();
+const menuOffset = ref(
+  Array.isArray(props.menuOffset) ? props.menuOffset : [ props.menuOffset, 0 ]
+);
 
 defineExpose({
   hide,
@@ -207,7 +210,10 @@ async function setDropdownPosition() {
   } = await computePosition(dropdown.value, dropdownContent.value, {
     placement: props.menuPlacement,
     middleware: [
-      offset(props.menuOffset),
+      offset({
+        mainAxis: menuOffset.value[0],
+        crossAxis: menuOffset.value[1]
+      }),
       shift({ padding: 5 }),
       flip(),
       arrow({
