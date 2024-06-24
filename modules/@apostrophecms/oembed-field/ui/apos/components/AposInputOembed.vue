@@ -94,7 +94,7 @@ export default {
         this.field.oembedType && this.oembedResult.type &&
         this.oembedResult.type !== this.field.oembedType
       ) {
-        return { message: 'Embed type not supported' };
+        return { message: this.$t('apostrophe:oembedTypeNotSupported') };
       } else if (this.oembedError) {
         return this.oembedError.message ? {
           message: this.oembedError.message
@@ -137,7 +137,7 @@ export default {
         if (error.body && error.body.message) {
           this.oembedError = error.body;
         } else {
-          this.oembedError = { message: 'Invalid embed URL' };
+          this.oembedError = { message: this.$t('apostrophe:oembedInvalidEmbedUrl') };
         }
         this.next.title = '';
         this.next.thumbnail = '';
