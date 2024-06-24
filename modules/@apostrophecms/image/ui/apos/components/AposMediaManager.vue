@@ -108,7 +108,6 @@
           <AposMediaManagerEditor
             v-show="editing"
             :media="editing"
-            :selected="selected"
             :is-modified="isModified"
             :module-labels="moduleLabels"
             @back="updateEditing(null)"
@@ -116,7 +115,7 @@
           />
           <AposMediaManagerSelections
             v-show="!editing"
-            :items="selected"
+            :items="checkedDocs"
             @clear="clearSelected"
             @edit="updateEditing"
           />
@@ -208,9 +207,6 @@ export default {
         label: this.moduleOptions.label,
         pluralLabel: this.moduleOptions.pluralLabel
       };
-    },
-    selected() {
-      return this.items.filter(item => this.checked.includes(item._id));
     },
     accept() {
       return this.moduleOptions.schema.find(field => field.name === 'attachment').accept;
