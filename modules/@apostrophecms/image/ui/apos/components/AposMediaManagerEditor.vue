@@ -125,12 +125,6 @@ export default {
         return {};
       }
     },
-    selected: {
-      type: Array,
-      default() {
-        return [];
-      }
-    },
     isModified: {
       type: Boolean,
       default: false
