@@ -11,6 +11,7 @@
 * Schema validation now waits for dynamic `select`, `radio` and `checkboxes` choices and
 other API calls still "in flight" to settle before proceeding.
 * Rollbacks watcher on `checked` array. Fixes, checked docs not being properly updated.
+* Identify and mark server validation errors in the admin UI. This helps editors identify already existing data fields, having validation errors when schema changes (e.g. optional field becomes required).
 
 ## 4.4.3 (2024-06-17)
 

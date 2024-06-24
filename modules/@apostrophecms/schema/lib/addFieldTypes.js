@@ -889,11 +889,12 @@ module.exports = (self) => {
       try {
         await self.convert(req, schema, data, result);
       } catch (e) {
-        for (const error of e) {
-          errors.push({
-            path: error.path,
-            error: error.error
-          });
+        if (Array.isArray(e)) {
+          for (const error of e) {
+            errors.push(error);
+          }
+        } else {
+          throw e;
         }
       }
       result.metaType = 'objectItem';
