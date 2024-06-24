@@ -1,4 +1,4 @@
-import { createId } from '@paralleldrive/cuid2';
+const { createId } = require('@paralleldrive/cuid2');
 const assert = require('assert').strict;
 const fs = require('fs');
 const path = require('path');
