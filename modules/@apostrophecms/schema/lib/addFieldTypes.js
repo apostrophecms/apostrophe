@@ -913,7 +913,7 @@ module.exports = (self) => {
       self.register(metaType, type, field.schema);
     },
     validate: function (field, options, warn, fail) {
-      for (const subField of field.schema || field.fields.add) {
+      for (const subField of field.schema) {
         self.validateField(subField, options, field);
       }
     },
