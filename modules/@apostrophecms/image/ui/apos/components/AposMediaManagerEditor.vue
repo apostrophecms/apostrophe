@@ -325,7 +325,6 @@ export default {
           action: 'update'
         });
         this.original = klona(this.docFields.data);
-        this.$emit('modified', false);
       } catch (e) {
         if (this.isLockedError(e)) {
           await this.showLockedError(e);

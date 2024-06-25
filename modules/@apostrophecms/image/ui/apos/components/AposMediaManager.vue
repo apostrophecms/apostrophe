@@ -484,9 +484,22 @@ export default {
       if (doc.type !== '@apostrophecms/image' || ![ 'archive', 'update' ].includes(action)) {
         return;
       }
-      if (this.modified || action === 'archive') {
-        await this.refetchMedia({ tags: true });
-        return;
+
+      if (action === 'archive') {
+        this.items = this.items.filter(item => item._id !== doc._id);
+        this.checked = this.checked.filter(id => id !== doc._id);
+      }
+      if (action === 'update') {
+        this.modified = false;
+        const index = this.items.findIndex(item => item._id === doc._id);
+        const checkedIndex = this.checkedDocs
+          .findIndex(checkedDoc => checkedDoc._id === doc._id);
+        if (index !== -1) {
+          this.items[index] = doc;
+        }
+        if (checkedIndex !== -1) {
+          this.checkedDocs[checkedIndex] = doc;
+        }
       }
 
       await this.updateEditing(null);
