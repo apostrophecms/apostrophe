@@ -8,7 +8,8 @@
 
 ### Fixes
 * Identify and mark server validation errors in the admin UI. This helps editors identify already existing data fields, having validation errors when schema changes (e.g. optional field becomes required).
-
+* Fixed bug introduced in version `4.4.3` that could cause save operations to fail on
+string fields that are initially `null`.
 
 ## 4.4.3 (2024-06-17)
 
