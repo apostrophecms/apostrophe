@@ -138,7 +138,7 @@ export default {
         this.$emit(
           'update:checked',
           this.relationshipField?.max === 1
-            ? [val.at(-1)]
+            ? [].concat(val.at(-1) || [])
             : val
         );
       }
@@ -192,8 +192,9 @@ export default {
       return `${item._id}-${cuid()}`;
     },
     canSelect(id) {
-      return this.relationshipField?.max === 1
-        || (!this.options.disableUnchecked);
+      return this.checked.includes(id)
+        || this.relationshipField?.max === 1
+        || (this.relationshipField?.max && !this.maxReached);
     }
   }
 };

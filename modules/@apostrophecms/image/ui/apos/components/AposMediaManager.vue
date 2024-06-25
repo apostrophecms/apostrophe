@@ -78,7 +78,6 @@
             :module-options="moduleOptions"
             :max-reached="maxReached()"
             :options="{
-              disableUnchecked: maxReached(),
               hideCheckboxes: !relationshipField
             }"
             :relationship-field="relationshipField"
@@ -390,8 +389,10 @@ export default {
     },
     // select setters
     select(id) {
-      if (this.relationshipField?.max > 1) {
-        this.selectAnother(id);
+      if (this.relationshipField && (this.relationshipField.max > 1 || !this.relationshipField.max)) {
+        this.checked.includes(id)
+          ? this.updateEditing(id)
+          : this.selectAnother(id);
         return;
       }
       if (this.checked.includes(id)) {
