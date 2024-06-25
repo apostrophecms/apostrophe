@@ -419,14 +419,10 @@ export default {
     },
     // select setters
     select(id) {
-      if (this.relationshipField && (this.relationshipField.max > 1 || !this.relationshipField.max)) {
-        this.checked.includes(id)
-          ? this.updateEditing(id)
-          : this.selectAnother(id);
-        return;
-      }
       if (this.checked.includes(id)) {
         this.updateEditing(id);
+      } else if (this.relationshipField && (this.relationshipField.max > 1 || !this.relationshipField.max)) {
+        this.selectAnother(id);
       } else {
         this.checked = [ id ];
       }
