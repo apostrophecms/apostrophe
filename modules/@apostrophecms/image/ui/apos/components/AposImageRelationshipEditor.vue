@@ -37,6 +37,7 @@
               />
             </label>
             <AposSelect
+              :selected="aspectRatio"
               :choices="aspectRatios"
               :disabled="disableAspectRatio"
               @change="updateAspectRatio"
