@@ -81,7 +81,7 @@
             :items="items"
             :module-options="moduleOptions"
             :max-reached="maxReached()"
-            :is-last-page="totalPages > 1 && currentPage === totalPages"
+            :is-last-page="isLastPage"
             :options="{
               disableUnchecked: maxReached(),
               hideCheckboxes: !relationshipField
@@ -230,6 +230,9 @@ export default {
           typeLabel: this.$t(this.moduleLabels.pluralLabel)
         };
       }
+    },
+    isLastPage() {
+      return this.totalPages > 1 && this.currentPage === this.totalPages;
     }
   },
   watch: {
@@ -238,6 +241,11 @@ export default {
         if (!await this.updateEditing(null)) {
           this.checked = oldVal;
         }
+      }
+    },
+    isLastPage(newVal) {
+      if (newVal) {
+        this.disconnectObserver();
       }
     }
   },
@@ -449,10 +457,7 @@ export default {
         }
       });
 
-      this.checked = [
-        ...this.checked,
-        ...sliceIds
-      ];
+      this.checked = this.checked.concat(sliceIds);
       this.lastSelected = sliced[sliced.length - 1]._id;
       this.editing = undefined;
     },
@@ -506,10 +511,10 @@ export default {
         }
       }
     },
-
     observeLoadRef() {
-      if (this.loadObserver) {
-        this.loadObserver.disconnect();
+      this.disconnectObserver();
+      if (this.totalPages < 2) {
+        return;
       }
       this.loadObserver = new IntersectionObserver(
         this.handleIntersect,
@@ -523,9 +528,17 @@ export default {
       this.loadObserver.observe(this.loadRef);
     },
 
+    disconnectObserver() {
+      if (this.loadObserver) {
+        this.loadObserver.disconnect();
+      }
+    },
+
     setLoadRef(ref) {
-      this.loadRef = ref;
-      this.observeLoadRef();
+      if (ref) {
+        this.loadRef = ref;
+        this.observeLoadRef();
+      }
     }
   }
 };
