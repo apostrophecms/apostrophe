@@ -41,7 +41,7 @@
           </template>
           <template v-else>
             <header v-if="!modal.disableHeader" class="apos-modal__header">
-              <div class="apos-modal__header-main">
+              <div class="apos-modal__header__main">
                 <div v-if="hasSlot('secondaryControls')" class="apos-modal__controls--secondary">
                   <slot name="secondaryControls" />
                 </div>
@@ -74,7 +74,7 @@
               <slot name="rightRail" />
             </div>
             <footer v-if="hasSlot('footer')" class="apos-modal__footer">
-              <div class="apos-modal__footer-inner">
+              <div class="apos-modal__footer__inner">
                 <slot name="footer" />
               </div>
             </footer>
@@ -417,18 +417,18 @@ function close() {
     }
   }
 
-  .apos-modal__footer-inner,
-  .apos-modal__header-main {
+  .apos-modal__footer__inner,
+  .apos-modal__header__main {
     display: flex;
     align-items: center;
     padding: $spacing-double;
   }
 
-  .apos-modal__header-main {
+  .apos-modal__header__main {
     border-bottom: 1px solid var(--a-base-9);
   }
 
-  .apos-modal__footer-inner {
+  .apos-modal__footer__inner {
     z-index: $z-index-default;
     position: relative;
     justify-content: space-between;
