@@ -3,12 +3,20 @@
 ## UNRELEASED
 
 ### Adds
+
 * Adds a new color picker tool for the rich-text-widget toolbar that matches the existing `color` schema field. This also adds the same `colorPicker` and `format` options to the rich-text-widget confirmation that exist in the `color` schema field.
 * Add missing UI translation keys.
 
 ### Fixes
+
 * Identify and mark server validation errors in the admin UI. This helps editors identify already existing data fields, having validation errors when schema changes (e.g. optional field becomes required).
 
+### Changes
+
+* Update `Choose Images` selection behavior. When choosing images as part of a relationship, you click click on the image or checkbox to add the image to the selection.
+If a max is set to allow only one image, clicking on the selected image will remove it from the selection. Clicking on another image will update the selection with the newly clicked image. 
+If a max is set to allow multiple images, you can remove images from the selection by using the checkbox. Clicking on the image will bring the image schema in the right panel.
+You can upload images even if the max has been reached. We will append the uploaded images to the existing selection up to the max if any.
 
 ## 4.4.3 (2024-06-17)
 
