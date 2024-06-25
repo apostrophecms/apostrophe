@@ -396,7 +396,7 @@ export default {
         return;
       }
       if (this.checked.includes(id)) {
-        this.updateEditing(id)
+        this.updateEditing(id);
       } else {
         this.checked = [ id ];
       }
