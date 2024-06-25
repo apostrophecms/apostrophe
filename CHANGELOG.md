@@ -6,6 +6,10 @@
 * Adds a new color picker tool for the rich-text-widget toolbar that matches the existing `color` schema field. This also adds the same `colorPicker` and `format` options to the rich-text-widget confirmation that exist in the `color` schema field.
 * Add missing UI translation keys.
 
+### Fixes
+* Fixed bug introduced in version `4.4.3` that could cause save operations to fail on
+string fields that are initially `null`.
+
 ## 4.4.3 (2024-06-17)
 
 ### Fixes

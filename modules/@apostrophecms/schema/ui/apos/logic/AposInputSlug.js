@@ -122,17 +122,17 @@ export default {
         };
       }
       if (this.field.required) {
-        if (!value.length) {
+        if (!value?.length) {
           return 'required';
         }
       }
       if (this.field.min) {
-        if (value.length && (value.length < this.field.min)) {
+        if (value?.length && (value.length < this.field.min)) {
           return 'min';
         }
       }
       if (this.field.max) {
-        if (value.length && (value.length > this.field.max)) {
+        if (value?.length && (value.length > this.field.max)) {
           return 'max';
         }
       }

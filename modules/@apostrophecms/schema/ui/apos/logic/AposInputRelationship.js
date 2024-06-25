@@ -127,11 +127,11 @@ export default {
     validate(value) {
       this.checkLimit();
 
-      if (this.field.required && !value.length) {
+      if (this.field.required && !value?.length) {
         return { message: 'required' };
       }
 
-      if (this.field.min && this.field.min > value.length) {
+      if (this.field.min && this.field.min > value?.length) {
         return { message: `minimum of ${this.field.min} required` };
       }
 

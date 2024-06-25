@@ -155,16 +155,16 @@ export default {
       if (this.items.find(item => item.schemaInput.hasErrors)) {
         return 'invalid';
       }
-      if (this.field.required && !value.length) {
+      if (this.field.required && !value?.length) {
         return 'required';
       }
-      if (this.field.min && value.length < this.field.min) {
+      if (this.field.min && value?.length < this.field.min) {
         return 'min';
       }
-      if (this.field.max && value.length > this.field.max) {
+      if (this.field.max && value?.length > this.field.max) {
         return 'max';
       }
-      if (value.length && this.field.fields && this.field.fields.add) {
+      if (value?.length && this.field.fields && this.field.fields.add) {
         const [ uniqueFieldName, uniqueFieldSchema ] = Object.entries(this.field.fields.add).find(([ , subfield ]) => subfield.unique) || [];
         if (uniqueFieldName) {
           const duplicates = this.next
