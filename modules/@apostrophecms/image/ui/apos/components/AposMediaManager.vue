@@ -72,7 +72,7 @@
         <template #bodyMain>
           <AposMediaManagerDisplay
             ref="display"
-            :checked="checked"
+            v-model:checked="checked"
             :accept="accept"
             :items="items"
             :module-options="moduleOptions"
@@ -82,7 +82,6 @@
               hideCheckboxes: !relationshipField
             }"
             :relationship-field="relationshipField"
-            @update:checked="updateCheckedDocs"
             @edit="updateEditing"
             @select="select"
             @select-series="selectSeries"
@@ -353,8 +352,7 @@ export default {
         return;
       }
       if (Array.isArray(imgIds) && imgIds.length) {
-        // TODO: set up to max
-        this.concatCheckedDocs(imgIds);
+        this.checked = this.checked.concat(imgIds);
 
         // TODO: check if this is still true
         // If we're currently editing one, don't interrupt that by replacing it.
@@ -389,10 +387,6 @@ export default {
       this.editing = item;
       return true;
     },
-    updateCheckedDocs(ids) {
-      // TODO: set up to max
-      this.setCheckedDocs(ids);
-    },
     // select setters
     select(id) {
       if (this.relationshipField?.max > 1) {
@@ -400,12 +394,9 @@ export default {
         return;
       }
       if (this.checked.includes(id)) {
-        this.setCheckedDocs([]);
+        this.checked = [];
       } else {
-        const item = this.items.find(item => item._id === id);
-        if (item) {
-          this.setCheckedDocs([ item ]);
-        }
+        this.checked = [ id ];
       }
     },
     selectAnother(id) {
@@ -414,9 +405,9 @@ export default {
         return;
       }
       if (this.checked.includes(id)) {
-        this.removeCheckedDoc(id);
+        this.checked = this.checked.filter(checkedId => checkedId !== id);
       } else {
-        this.addCheckedDoc(id);
+        this.checked = [ ...this.checked, id ];
       }
     },
     selectSeries(id) {
@@ -436,12 +427,20 @@ export default {
       }
 
       const sliced = this.items.slice(beginIndex, endIndex);
+      const sliceIds = [];
       // always want to check, never toggle
       sliced.forEach(item => {
         if (!this.checked.includes(item._id) && !this.maxReached()) {
-          this.addCheckedDoc(item._id);
+          sliceIds.push(item._id);
         }
       });
+
+      this.checked = [
+        ...this.checked,
+        ...sliceIds
+      ];
+      this.lastSelected = sliced[sliced.length - 1]._id;
+      this.editing = undefined;
     },
 
     // Toolbar handlers
