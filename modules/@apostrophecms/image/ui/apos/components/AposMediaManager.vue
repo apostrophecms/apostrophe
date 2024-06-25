@@ -485,24 +485,43 @@ export default {
         return;
       }
 
+      this.modified = false;
       if (action === 'archive') {
-        this.items = this.items.filter(item => item._id !== doc._id);
-        this.checked = this.checked.filter(id => id !== doc._id);
+        this.archiveDoc(doc);
       }
       if (action === 'update') {
-        this.modified = false;
-        const index = this.items.findIndex(item => item._id === doc._id);
-        const checkedIndex = this.checkedDocs
-          .findIndex(checkedDoc => checkedDoc._id === doc._id);
-        if (index !== -1) {
-          this.items[index] = doc;
-        }
-        if (checkedIndex !== -1) {
-          this.checkedDocs[checkedIndex] = doc;
-        }
+        this.updateDoc(doc);
       }
 
       await this.updateEditing(null);
+    },
+
+    updateDoc(doc) {
+      const index = this.items.findIndex(item => item._id === doc._id);
+      const checkedIndex = this.checkedDocs
+        .findIndex(checkedDoc => checkedDoc._id === doc._id);
+      if (index !== -1) {
+        this.items[index] = doc;
+      }
+      if (checkedIndex !== -1) {
+        this.checkedDocs[checkedIndex] = doc;
+      }
+    },
+
+    archiveDoc(doc) {
+      const index = this.items.findIndex(item => item._id === doc._id);
+      const checkedIndex = this.checked.findIndex(checkedId => checkedId === doc._id);
+      const checkedDocsIndex = this.checkedDocs.findIndex(({ _id }) => _id === doc._id);
+
+      if (index !== -1) {
+        this.items.splice(index, 1);
+      }
+      if (checkedIndex !== -1) {
+        this.checked.splice(checkedIndex, 1);
+      }
+      if (checkedDocsIndex !== -1) {
+        this.checkedDocs.splice(checkedDocsIndex, 1);
+      }
     },
 
     async handleIntersect(entries) {
