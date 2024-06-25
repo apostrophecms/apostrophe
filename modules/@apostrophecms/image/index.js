@@ -17,7 +17,7 @@ module.exports = {
     label: 'apostrophe:image',
     pluralLabel: 'apostrophe:images',
     alias: 'image',
-    perPage: 31,
+    perPage: 50,
     sort: { createdAt: -1 },
     quickCreate: false,
     insertViaUpload: true,

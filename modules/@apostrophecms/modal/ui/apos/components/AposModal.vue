@@ -291,9 +291,9 @@ function close() {
     z-index: $z-index-modal;
     position: fixed;
     inset: $spacing-base $spacing-base $spacing-base $spacing-base;
-    display: grid;
-    grid-template-rows: auto 1fr auto;
-    height: calc(100vh - #{$spacing-base * 2});
+    display: flex;
+    flex-direction: column;
+    height: calc(100vh - $spacing-base * 2);
     border-radius: var(--a-border-radius);
     background-color: var(--a-background-primary);
     border: 1px solid var(--a-base-9);
@@ -373,13 +373,9 @@ function close() {
     height: 100%;
   }
 
-  .apos-modal__header {
-    grid-row: 1 / 2;
-  }
-
   .apos-modal__main {
     display: grid;
-    grid-row: 2 / 3;
+    flex-grow: 1;
     overflow-y: auto;
   }
 
@@ -430,10 +426,6 @@ function close() {
 
   .apos-modal__header__main {
     border-bottom: 1px solid var(--a-base-9);
-  }
-
-  .apos-modal__footer {
-    grid-row: 3 / 4;
   }
 
   .apos-modal__footer__inner {

@@ -50,44 +50,50 @@
       </AposModalRail>
     </template>
     <template #main>
-      <AposModalBody>
+      <AposLoadingBlock v-if="isFirstLoading" />
+      <AposModalBody v-else>
         <template #bodyHeader>
           <AposDocsManagerToolbar
             :selected-state="selectAllState"
             :total-pages="totalPages"
             :current-page="currentPage"
             :filters="toolbarFilters"
+            :filter-values="filterValues"
             :labels="moduleLabels"
             :disable="relationshipErrors === 'min'"
             :displayed-items="items.length"
             :checked="checked"
             :checked-count="checked.length"
             :module-name="moduleName"
-            @page-change="updatePage"
+            :options="{noPager: true}"
             @select-click="selectClick"
             @search="search"
             @filter="filter"
           />
         </template>
         <template #bodyMain>
+          <AposLoadingBlock v-if="isLoading" />
           <AposMediaManagerDisplay
+            v-else
             ref="display"
             v-model:checked="checked"
             :accept="accept"
             :items="items"
             :module-options="moduleOptions"
             :max-reached="maxReached()"
+            :is-last-page="isLastPage"
             :options="{
               hideCheckboxes: !relationshipField
             }"
             :relationship-field="relationshipField"
+            :is-scroll-loading="isScrollLoading"
             @edit="updateEditing"
             @select="select"
             @select-series="selectSeries"
             @select-another="selectAnother"
-            @upload-started="uploading = true"
             @upload-complete="completeUploading"
             @create-placeholder="createPlaceholder"
+            @set-load-ref="setLoadRef"
           />
         </template>
       </AposModalBody>
@@ -101,16 +107,14 @@
           <AposMediaManagerEditor
             v-show="editing"
             :media="editing"
-            :selected="selected"
             :is-modified="isModified"
             :module-labels="moduleLabels"
             @back="updateEditing(null)"
-            @saved="updateMedia"
             @modified="editorModified"
           />
           <AposMediaManagerSelections
             v-show="!editing"
-            :items="selected"
+            :items="checkedDocs"
             @clear="clearSelected"
             @edit="updateEditing"
           />
@@ -121,9 +125,12 @@
 </template>
 
 <script>
+import { debounce } from 'Modules/@apostrophecms/ui/utils';
 import AposModifiedMixin from 'Modules/@apostrophecms/ui/mixins/AposModifiedMixin';
 import AposDocsManagerMixin from 'Modules/@apostrophecms/modal/mixins/AposDocsManagerMixin';
 import cuid from 'cuid';
+
+const DEBOUNCE_TIMEOUT = 500;
 
 export default {
   mixins: [ AposModifiedMixin, AposDocsManagerMixin ],
@@ -137,6 +144,10 @@ export default {
   data() {
     return {
       items: [],
+      isFirstLoading: true,
+      isLoading: false,
+      isScrollLoading: false,
+      loadRef: null,
       totalPages: 1,
       currentPage: 1,
       tagList: [],
@@ -148,14 +159,14 @@ export default {
       },
       editing: undefined,
       modified: false,
-      uploading: false,
       lastSelected: null,
       emptyDisplay: {
         title: 'apostrophe:noMediaFound',
         message: 'apostrophe:uploadedMediaPlaceholder',
         emoji: '🖼'
       },
-      cancelDescription: 'apostrophe:discardImageChangesPrompt'
+      cancelDescription: 'apostrophe:discardImageChangesPrompt',
+      debouncedGetMedia: debounce(this.getMedia, DEBOUNCE_TIMEOUT)
     };
   },
   computed: {
@@ -196,9 +207,6 @@ export default {
         pluralLabel: this.moduleOptions.pluralLabel
       };
     },
-    selected() {
-      return this.items.filter(item => this.checked.includes(item._id));
-    },
     accept() {
       return this.moduleOptions.schema.find(field => field.name === 'attachment').accept;
     },
@@ -222,6 +230,9 @@ export default {
           typeLabel: this.$t(this.moduleLabels.pluralLabel)
         };
       }
+    },
+    isLastPage() {
+      return this.totalPages > 1 && this.currentPage === this.totalPages;
     }
   },
   watch: {
@@ -236,11 +247,21 @@ export default {
       }
 
       await this.updateEditing(newVal.at(0));
+    },
+    isLastPage(newVal) {
+      if (newVal) {
+        this.disconnectObserver();
+      }
     }
+  },
+  created() {
+    this.setDefaultFilters();
   },
   async mounted() {
     this.modal.active = true;
     await this.getMedia({ tags: true });
+    this.isFirstLoading = false;
+
     apos.bus.$on('content-changed', this.onContentChanged);
     apos.bus.$on('command-menu-manager-close', this.confirmAndCancel);
   },
@@ -249,12 +270,17 @@ export default {
     apos.bus.$off('command-menu-manager-close', this.confirmAndCancel);
   },
   methods: {
+    setDefaultFilters() {
+      this.moduleOptions.filters.forEach(filter => {
+        this.filterValues[filter.name] = filter.def;
+      });
+    },
     // Update our current idea of whether the doc in the right hand rail
     // has been modified (via event from the editor)
     editorModified (val) {
       this.modified = val;
     },
-    async getMedia (options) {
+    async getMedia (options = {}) {
       const qs = {
         ...this.filterValues,
         page: this.currentPage,
@@ -283,13 +309,12 @@ export default {
       }
       const apiResponse = (await apos.http.get(
         this.moduleOptions.action, {
-          busy: true,
           qs,
           draft: true
         }
       ));
 
-      if (options && options.tags) {
+      if (options.tags) {
         if (filtered) {
           // We never filter the tag list because they are presented like folders,
           // and folders don't disappear when empty. So we need to make a
@@ -311,18 +336,22 @@ export default {
 
       this.currentPage = apiResponse.currentPage;
       this.totalPages = apiResponse.pages;
-      this.items = apiResponse.results;
+      for (const image of apiResponse.results) {
+        this.items.push(image);
+      }
     },
-    async updateMedia () {
+    async refetchMedia(opts) {
+      this.isLoading = true;
+      this.currentPage = 1;
+      this.items = [];
+      await this.getMedia(opts);
+      this.isLoading = false;
+      this.modified = false;
       this.updateEditing(null);
-      await this.getMedia();
     },
     async filter(name, value) {
       this.filterValues[name] = value;
-      this.currentPage = 1;
-
-      this.updateEditing(null);
-      await this.getMedia();
+      this.refetchMedia();
     },
     createPlaceholder(dimensions) {
       this.items.unshift({
@@ -332,7 +361,8 @@ export default {
       });
     },
     async completeUploading (imgIds) {
-      this.uploading = false;
+      this.currentPage = 1;
+      this.items = [];
       await this.getMedia();
 
       if (Array.isArray(imgIds) && imgIds.length && this.items.length === 0) {
@@ -437,10 +467,7 @@ export default {
         }
       });
 
-      this.checked = [
-        ...this.checked,
-        ...sliceIds
-      ];
+      this.checked = this.checked.concat(sliceIds);
       this.lastSelected = sliced[sliced.length - 1]._id;
       this.editing = undefined;
     },
@@ -449,31 +476,111 @@ export default {
     selectClick() {
       this.selectAll();
     },
-    async updatePage(num) {
-      if (num) {
-        this.currentPage = num;
-        await this.getMedia();
-      }
-    },
     archiveClick() {
       this.$emit('archive', this.checked);
     },
 
-    async search(query) {
-      this.filter('autocomplete', query);
+    async search(value) {
+      this.filterValues.autocomplete = value;
+      this.currentPage = 1;
+      this.items = [];
+      this.isLoading = true;
+      await this.debouncedGetMedia();
+      this.isLoading = false;
     },
 
-    async onContentChanged() {
-      await this.getMedia({ tags: true });
+    async onContentChanged({ action, doc }) {
+      if (doc.type !== '@apostrophecms/image' || ![ 'archive', 'update' ].includes(action)) {
+        return;
+      }
+      if (this.modified || action === 'archive') {
+        await this.refetchMedia({ tags: true });
+        return;
+      }
+
+      await this.updateEditing(null);
+    },
+
+    async handleIntersect(entries) {
+      for (const entry of entries) {
+        if (
+          entry.isIntersecting &&
+          this.currentPage < this.totalPages &&
+          !this.isFirstLoading &&
+          this.items.length
+        ) {
+          this.currentPage++;
+          this.isScrollLoading = true;
+          await this.$nextTick();
+          this.loadRef.scrollIntoView({
+            behavior: 'smooth'
+          });
+          await this.getMedia();
+          this.isScrollLoading = false;
+        }
+      }
+    },
+    observeLoadRef() {
+      this.disconnectObserver();
+      if (this.totalPages < 2) {
+        return;
+      }
+      this.loadObserver = new IntersectionObserver(
+        this.handleIntersect,
+        {
+          root: null,
+          rootMargin: '30px',
+          threshold: 0
+        }
+      );
+
+      this.loadObserver.observe(this.loadRef);
+    },
+
+    disconnectObserver() {
+      if (this.loadObserver) {
+        this.loadObserver.disconnect();
+      }
+    },
+
+    setLoadRef(ref) {
+      if (ref) {
+        this.loadRef = ref;
+        this.observeLoadRef();
+      }
     }
   }
 };
 </script>
 
 <style lang="scss" scoped>
-.apos-media-manager :deep(.apos-media-manager-toolbar) {
-  z-index: $z-index-manager-toolbar;
-  position: relative;
+.apos-media-manager {
+  :deep(.apos-modal__body) {
+    padding: 0;
+  }
+
+  :deep(.apos-modal__body-inner) {
+    overflow: hidden;
+    height: 100%;
+  }
+
+  :deep(.apos-modal__body-header) {
+    padding: $spacing-double $spacing-double 20px;
+
+    @include media-up(lap) {
+      padding: $spacing-quadruple $spacing-quadruple 20px;
+    }
+  }
+
+  :deep(.apos-modal__body-main) {
+    overflow-y: auto;
+    box-sizing: border-box;
+    padding: 0 $spacing-double 20px;
+
+    @include media-up(lap) {
+      padding: 0 $spacing-quadruple 20px;
+    }
+  }
 }
 
 .apos-media-manager__empty {
