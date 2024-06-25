@@ -3,7 +3,6 @@
     <div class="apos-media-manager-display__grid">
       <AposMediaUploader
         v-if="moduleOptions.canCreate"
-        :disabled="maxReached"
         :action="moduleOptions.action"
         :accept="accept"
         @upload-started="$emit('upload-started')"

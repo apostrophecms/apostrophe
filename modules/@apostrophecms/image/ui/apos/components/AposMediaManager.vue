@@ -352,7 +352,8 @@ export default {
         return;
       }
       if (Array.isArray(imgIds) && imgIds.length) {
-        this.checked = this.checked.concat(imgIds);
+        const checked = this.checked.concat(imgIds);
+        this.checked = checked.slice(0, this.relationshipField?.max || checked.length);
 
         // TODO: check if this is still true
         // If we're currently editing one, don't interrupt that by replacing it.
