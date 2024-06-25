@@ -192,9 +192,9 @@ export default {
       return `${item._id}-${cuid()}`;
     },
     canSelect(id) {
-      return this.checked.includes(id)
-        || this.relationshipField?.max === 1
-        || (this.relationshipField?.max && !this.maxReached);
+      return this.checked.includes(id) ||
+        this.relationshipField?.max === 1 ||
+        (this.relationshipField?.max && !this.maxReached);
     }
   }
 };
