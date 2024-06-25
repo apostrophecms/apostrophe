@@ -5,6 +5,16 @@
 ### Adds
 * Adds a new color picker tool for the rich-text-widget toolbar that matches the existing `color` schema field. This also adds the same `colorPicker` and `format` options to the rich-text-widget confirmation that exist in the `color` schema field.
 * Add missing UI translation keys.
+* Infite scroll in media manager instead of pagination. Makes the header containing the search fix.
+* Improves loaders by using new `AposLoadingBlock` that uses `AposLoading` instead of the purple screen in media manager.
+
+### Fixes
+
+* Remove double get request when saving image update.
+* Fix filter menu forgetting selecting filters and not instantiating them.
+* Remove blur emit for filter buttons and search bar to avoid re requesting when clicking outside…
+* `this.modified` was not working properly (set to false when saving). We can now avoid to reload images when saving no changes.
+* In media manager images checkboxes are disabled when max is reached.
 
 ### Fixes
 * Identify and mark server validation errors in the admin UI. This helps editors identify already existing data fields, having validation errors when schema changes (e.g. optional field becomes required).

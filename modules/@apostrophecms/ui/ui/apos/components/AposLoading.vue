@@ -2,7 +2,7 @@
   <div class="apos-loading">
     <!-- Disabling since the SVG is mostly not active vue template code. -->
     <!-- eslint-disable vue/max-attributes-per-line -->
-    <svg viewBox="0 0 70 20">
+    <svg viewBox="0 0 60 20">
       <defs>
         <linearGradient
           id="gradOne"

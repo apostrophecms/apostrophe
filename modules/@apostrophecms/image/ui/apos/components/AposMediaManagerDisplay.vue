@@ -73,6 +73,20 @@
         />
       </div>
     </div>
+    <div
+      v-if="!isLastPage"
+      ref="scrollLoad"
+      class="apos-media-manager-display__scroll-load"
+      :class="{ 'apos-media-manager-display__scroll-load--loading': isScrollLoading }"
+    >
+      <AposLoading
+        v-if="isScrollLoading"
+        class="apos-loading"
+      />
+    </div>
+    <div v-else class="apos-media-manager-display__end-reached">
+      <p>{{ $t('apostrophe:mediaLibraryEndReached') }}</p>
+    </div>
   </div>
 </template>
 
@@ -114,6 +128,14 @@ export default {
     largePreview: {
       type: Boolean,
       default: false
+    },
+    isLastPage: {
+      type: Boolean,
+      default: false
+    },
+    isScrollLoading: {
+      type: Boolean,
+      default: false
     }
   },
   emits: [
@@ -123,7 +145,8 @@ export default {
     'select-another',
     'upload-started',
     'upload-complete',
-    'create-placeholder'
+    'create-placeholder',
+    'set-load-ref'
   ],
   computed: {
     // Handle the local check state within this component.
@@ -135,6 +158,9 @@ export default {
         this.$emit('update:checked', val);
       }
     }
+  },
+  mounted() {
+    this.$emit('set-load-ref', this.$refs.scrollLoad);
   },
   methods: {
     getPlaceholderStyles(item) {
@@ -191,12 +217,13 @@ export default {
   .apos-media-manager-display__grid {
     display: grid;
     grid-auto-rows: 140px;
-    grid-template-columns: repeat(5, 17.1%);
-    gap: 2.4% 2.4%;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 15px;
+    padding: 20px 0;
 
     @include media-up(lap) {
-      grid-template-columns: repeat(7, 12.22%);
-      gap: 2.4% 2.4%;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 20px;
     }
   }
 
@@ -211,14 +238,6 @@ export default {
     height: 100%;
 
     &.apos-is-hidden { visibility: hidden; }
-
-    &::before {
-      content: '';
-      display: inline-block;
-      width: 1px;
-      height: 0;
-      padding-bottom: calc(100% / (1/1));
-    }
 
     &:hover,
     &.apos-is-selected,
@@ -262,6 +281,7 @@ export default {
     @include apos-transition();
 
     display: flex;
+    box-sizing: border-box;
     align-items: center;
     justify-content: center;
     width: 100%;
@@ -293,5 +313,33 @@ export default {
       outline-width: 0;
       box-shadow: none;
     }
+  }
+
+  .apos-media-manager-display__scroll-load {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    &--loading {
+      height: 80px;
+      margin-top: 15px;
+      background-color: var(--a-base-10);
+      margin-bottom: 10px;
+      border: 1px solid var(--a-base-8);
+      border-radius: 8px;
+    }
+
+    .apos-loading {
+      flex-grow: 1;
+    }
+  }
+
+  .apos-media-manager-display__end-reached {
+    @include type-label;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 40px;
   }
 </style>
