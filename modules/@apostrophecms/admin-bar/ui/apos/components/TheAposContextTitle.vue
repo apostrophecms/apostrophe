@@ -31,7 +31,6 @@
           :button="draftButton"
           :menu="draftMenu"
           :disabled="hasCustomUi || isUnpublished"
-          menu-offset="13, 10"
           menu-placement="bottom-end"
           @item-clicked="switchDraftMode"
         />
