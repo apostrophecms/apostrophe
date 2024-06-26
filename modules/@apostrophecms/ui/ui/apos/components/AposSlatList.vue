@@ -103,7 +103,6 @@ export default {
       };
     }
   },
-
   watch: {
     modelValue() {
       this.next = this.modelValue.slice();
@@ -128,7 +127,6 @@ export default {
       }
     }
   },
-
   methods: {
     update({
       oldIndex, newIndex
