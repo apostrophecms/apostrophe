@@ -72,9 +72,9 @@ export default {
       const error = this.error || this.serverError;
       // Server-side errors behave differently
       const name = error?.name || error;
-      if (name === 'invalid') {
-        // Always due to a subproperty which will display its own error,
-        // don't confuse the user
+      if (name === 'invalid' && !this.serverError) {
+        // Not always due to a subproperty which will display its own error,
+        // don't confuse the user if so
         return false;
       }
       return error;

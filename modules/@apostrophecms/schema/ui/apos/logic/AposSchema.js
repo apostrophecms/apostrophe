@@ -329,7 +329,9 @@ export default {
       // The refs for a name are an array if that ref was assigned
       // in a v-for. We know there is only one in this case
       // https://forum.vuejs.org/t/this-refs-theid-returns-an-array/31995/9
-      this.$refs[fieldName][0].$el.scrollIntoView();
+      if (this.$refs[fieldName]?.[0]?.$el?.scrollIntoView) {
+        this.$refs[fieldName][0].$el.scrollIntoView();
+      }
     },
     onUpdateDocData(data) {
       this.$emit('update-doc-data', data);
