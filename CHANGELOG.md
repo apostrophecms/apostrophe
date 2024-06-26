@@ -9,6 +9,7 @@
 * Add missing UI translation keys.
 * Infite scroll in media manager instead of pagination. Makes the header containing the search fix.
 * Improves loaders by using new `AposLoadingBlock` that uses `AposLoading` instead of the purple screen in media manager.
+* Select the configured aspect ratio and add `data-apos-field` attributes to the fields inside `AposImageRelationshipEditor.vue`.
 
 ### Fixes
 
@@ -18,8 +19,6 @@
 * `this.modified` was not working properly (set to false when saving). We can now avoid to reload images when saving no changes.
 * In media manager images checkboxes are disabled when max is reached.
 * In media manager when updating an image or archiving, update the list instead of fetching and update checked documents to see changes in the right panel selected list.
-
-### Fixes
 * Identify and mark server validation errors in the admin UI. This helps editors identify already existing data fields, having validation errors when schema changes (e.g. optional field becomes required).
 * Removes `menu-offset` props that were causing `AposContextMenu` to not display properly. 
 Allows to pass a number or an array to `ApodContextMenu` to set the offset of the context menu (main and cross axis see `floating-ui` documentation).
