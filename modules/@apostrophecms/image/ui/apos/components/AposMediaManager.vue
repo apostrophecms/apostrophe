@@ -484,12 +484,44 @@ export default {
       if (doc.type !== '@apostrophecms/image' || ![ 'archive', 'update' ].includes(action)) {
         return;
       }
-      if (this.modified || action === 'archive') {
-        await this.refetchMedia({ tags: true });
-        return;
+
+      this.modified = false;
+      if (action === 'archive') {
+        this.removeStateDoc(doc);
+      }
+      if (action === 'update') {
+        this.updateStateDoc(doc);
       }
 
       await this.updateEditing(null);
+    },
+
+    updateStateDoc(doc) {
+      const index = this.items.findIndex(item => item._id === doc._id);
+      const checkedIndex = this.checkedDocs
+        .findIndex(checkedDoc => checkedDoc._id === doc._id);
+      if (index !== -1) {
+        this.items[index] = doc;
+      }
+      if (checkedIndex !== -1) {
+        this.checkedDocs[checkedIndex] = doc;
+      }
+    },
+
+    removeStateDoc(doc) {
+      const index = this.items.findIndex(item => item._id === doc._id);
+      const checkedIndex = this.checked.findIndex(checkedId => checkedId === doc._id);
+      const checkedDocsIndex = this.checkedDocs.findIndex(({ _id }) => _id === doc._id);
+
+      if (index !== -1) {
+        this.items.splice(index, 1);
+      }
+      if (checkedIndex !== -1) {
+        this.checked.splice(checkedIndex, 1);
+      }
+      if (checkedDocsIndex !== -1) {
+        this.checkedDocs.splice(checkedDocsIndex, 1);
+      }
     },
 
     async handleIntersect(entries) {

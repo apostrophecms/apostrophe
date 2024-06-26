@@ -12,7 +12,6 @@
           <AposContextMenu
             :button="buttonOptions"
             menu-placement="bottom-start"
-            menu-offset="5, 20"
             :disabled="field.readOnly"
             :tooltip="tooltip"
             @open="open"
