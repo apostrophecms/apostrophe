@@ -112,7 +112,10 @@ export default {
       let equal = true;
       if (newValue.length === this.modelValue.length) {
         for (let i = 0; (i < newValue.length); i++) {
-          if ((newValue[i]._id !== this.modelValue[i]._id) || (newValue[i].title !== this.modelValue[i].title)) {
+          if (
+            (newValue[i]._id !== this.modelValue[i]._id) ||
+            (newValue[i].title !== this.modelValue[i].title)
+          ) {
             equal = false;
             break;
           }
@@ -125,6 +128,7 @@ export default {
       }
     }
   },
+
   methods: {
     update({
       oldIndex, newIndex
