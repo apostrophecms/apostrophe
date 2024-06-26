@@ -25,7 +25,7 @@
     <template #leftRail>
       <AposModalRail>
         <div class="apos-schema">
-          <div class="apos-field">
+          <div class="apos-field" data-apos-field="aspectRatio">
             <label class="apos-field__label">
               {{ $t('apostrophe:aspectRatio') }}
               <AposIndicator
@@ -37,6 +37,7 @@
               />
             </label>
             <AposSelect
+              :selected="aspectRatio"
               :choices="aspectRatios"
               :disabled="disableAspectRatio"
               @change="updateAspectRatio"
@@ -58,7 +59,7 @@
             }}
           </div>
           <div class="apos-schema__aligned-fields">
-            <div class="apos-field">
+            <div class="apos-field" data-apos-field="width">
               <label class="apos-field__label apos-field__label--aligned">
                 W
               </label>
@@ -72,7 +73,7 @@
                 @blur="blurInput"
               >
             </div>
-            <div class="apos-field">
+            <div class="apos-field" data-apos-field="height">
               <label class="apos-field__label apos-field__label--aligned">
                 H
               </label>

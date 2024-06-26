@@ -205,7 +205,8 @@ module.exports = {
           );
           command.modal &&
             assert.equal(typeof command.modal, 'string', `Invalid command modal for ${name}`);
-          assert.equal(typeof command.shortcut, 'string', `Invalid command shortcut, must be a string, for ${name}`);
+          command.shortcut !== false &&
+            assert.equal(typeof command.shortcut, 'string', `Invalid command shortcut, must be a string, for ${name}`);
 
           return [ true, null ];
         } catch (error) {
@@ -246,9 +247,13 @@ module.exports = {
         }
       },
       buildCommands(initialState) {
+        const additionalRemoves = Object.entries(initialState.composed.commands)
+          .filter(([ , field ]) => field.shortcut === false)
+          .map(([ name ]) => name);
+
         const concatenate = self.apos.util.omit(
           initialState.composed.commands,
-          initialState.composed.removes
+          initialState.composed.removes.concat(additionalRemoves)
         );
 
         return {
