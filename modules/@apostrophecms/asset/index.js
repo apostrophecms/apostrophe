@@ -250,7 +250,7 @@ module.exports = {
           const publicAssets = globSync('modules/**/*', {
             cwd: bundleDir,
             mark: true
-          }).filter(match => !match.endsWith('/'));
+          }).filter(match => !match.endsWith('/')).sort();
 
           const deployFiles = [
             ...publicAssets,
@@ -702,7 +702,7 @@ module.exports = {
                 if (seen[entry.dirname]) {
                   continue;
                 }
-                components = components.concat(globSync(`${entry.dirname}/ui/${folder}/${pattern}`));
+                components = components.concat(globSync(`${entry.dirname}/ui/${folder}/${pattern}`)).sort();
                 seen[entry.dirname] = true;
               }
             }
