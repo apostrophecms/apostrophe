@@ -15,6 +15,8 @@
 * Remove blur emit for filter buttons and search bar to avoid re requesting when clicking outside…
 * `this.modified` was not working properly (set to false when saving). We can now avoid to reload images when saving no changes.
 * In media manager images checkboxes are disabled when max is reached.
+* Fixes the relationship fields not having the data when coming from the relationship modal.
+* Fixes watch on `checkedDocs` passed to `AposSlatList` not being reactive and not seeing updated relationship fields.
 
 ### Fixes
 * Identify and mark server validation errors in the admin UI. This helps editors identify already existing data fields, having validation errors when schema changes (e.g. optional field becomes required).
