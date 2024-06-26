@@ -16,10 +16,10 @@
 * Remove blur emit for filter buttons and search bar to avoid re requesting when clicking outside…
 * `this.modified` was not working properly (set to false when saving). We can now avoid to reload images when saving no changes.
 * In media manager images checkboxes are disabled when max is reached.
-
-### Fixes
-
+* In media manager when updating an image or archiving, update the list instead of fetching and update checked documents to see changes in the right panel selected list.
 * Identify and mark server validation errors in the admin UI. This helps editors identify already existing data fields, having validation errors when schema changes (e.g. optional field becomes required).
+* Removes `menu-offset` props that were causing `AposContextMenu` to not display properly. 
+Allows to pass a number or an array to `ApodContextMenu` to set the offset of the context menu (main and cross axis see `floating-ui` documentation).
 
 ### Changes
 
