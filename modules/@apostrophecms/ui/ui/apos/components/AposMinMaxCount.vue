@@ -39,12 +39,12 @@ export default {
   },
   computed: {
     maxed() {
-      return (this.field.max !== undefined) && (this.modelValue?.length >= this.field.max);
+      return (this.field.max !== undefined) && (this.modelValue.length >= this.field.max);
     },
     minError() {
       let minError = false;
       if (this.effectiveMin) {
-        if (this.modelValue?.length < this.effectiveMin) {
+        if (this.modelValue.length < this.effectiveMin) {
           minError = true;
         }
       }
@@ -54,7 +54,7 @@ export default {
     maxError() {
       let maxError = false;
       if (this.field.max !== undefined) {
-        if (this.modelValue?.length > this.field.max) {
+        if (this.modelValue.length > this.field.max) {
           maxError = true;
         }
       }
@@ -62,7 +62,7 @@ export default {
     },
     countLabel() {
       return this.$t('apostrophe:numberAdded', {
-        count: this.modelValue?.length || 0
+        count: this.modelValue.length
       });
     },
     // Here in the array editor we use effectiveMin to factor in the
