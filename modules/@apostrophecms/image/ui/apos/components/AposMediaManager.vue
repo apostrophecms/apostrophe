@@ -487,16 +487,16 @@ export default {
 
       this.modified = false;
       if (action === 'archive') {
-        this.archiveDoc(doc);
+        this.removeStateDoc(doc);
       }
       if (action === 'update') {
-        this.updateDoc(doc);
+        this.updateStateDoc(doc);
       }
 
       await this.updateEditing(null);
     },
 
-    updateDoc(doc) {
+    updateStateDoc(doc) {
       const index = this.items.findIndex(item => item._id === doc._id);
       const checkedIndex = this.checkedDocs
         .findIndex(checkedDoc => checkedDoc._id === doc._id);
@@ -508,7 +508,7 @@ export default {
       }
     },
 
-    archiveDoc(doc) {
+    removeStateDoc(doc) {
       const index = this.items.findIndex(item => item._id === doc._id);
       const checkedIndex = this.checked.findIndex(checkedId => checkedId === doc._id);
       const checkedDocsIndex = this.checkedDocs.findIndex(({ _id }) => _id === doc._id);
