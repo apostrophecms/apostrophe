@@ -239,7 +239,11 @@ export default {
     async checked (newVal, oldVal) {
       this.lastSelected = newVal.at(-1);
       if (newVal.length > 1 || newVal.length === 0) {
-        if (!await this.updateEditing(null)) {
+        if (
+          !await this.updateEditing(null) &&
+          !this.checked.includes(this.editing._id) &&
+          oldVal.includes(this.editing._id)
+        ) {
           this.checked = oldVal;
         }
 
@@ -384,7 +388,6 @@ export default {
         const checked = this.checked.concat(imgIds);
         this.checked = checked.slice(0, this.relationshipField?.max || checked.length);
 
-        // TODO: check if this is still true
         // If we're currently editing one, don't interrupt that by replacing it.
         if (!this.editing && imgIds.length === 1) {
           this.updateEditing(imgIds[0]);
