@@ -1,9 +1,9 @@
-const { globSync } = require('glob');
+const glob = require('../lib/glob.js');
 const fs = require('fs');
 let keys = Object.keys(require('../modules/@apostrophecms/i18n/i18n/en.json'));
 // Core apostrophe events look like keys
 keys = [ ...keys, 'destroy', 'ready', 'modulesRegistered', 'afterInit', 'modulesReady', 'run', 'boot', 'beforeExit' ];
-const files = globSync('**/*.@(js|vue|html)', { ignore: [ './index.js', '**/node_modules/**/*', 'coverage/**/*' ] }).sort();
+const files = glob('**/*.@(js|vue|html)', { ignore: [ './index.js', '**/node_modules/**/*', 'coverage/**/*' ] });
 
 const undeclared = new Set();
 const used = new Set([ 'afterInit', 'modulesReady' ]);

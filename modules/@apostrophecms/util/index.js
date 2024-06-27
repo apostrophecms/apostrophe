@@ -33,6 +33,7 @@ const now = require('performance-now');
 const Promise = require('bluebird');
 const util = require('util');
 const { stripIndent } = require('common-tags');
+const glob = require('../../../lib/glob.js');
 
 module.exports = {
   options: {
@@ -842,7 +843,14 @@ module.exports = {
       omit(source, keys) {
         return _.omit(source, keys);
       },
-
+      // A wrapper for glob 10.x with the sorting semantics of glob
+      // 8.x, as a drop-in replacement to avoid introducing bc issues
+      // in existing Apostrophe logic. Not guaranteed to cover
+      // every difference between glob 8.x and 10.x, just those
+      // that break Apostrophe startup
+      glob(pattern, options = {}) {
+        return glob(pattern, options);
+      },
       // Internal method. Attempt to convert the log payload to an object
       // for legacy calls and when `@apostrophecms/log` has been configured
       // with `messageAs: 'someKey'`.

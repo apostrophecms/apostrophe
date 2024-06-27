@@ -1,4 +1,3 @@
-const { globSync } = require('glob');
 const fs = require('fs-extra');
 const Promise = require('bluebird');
 const webpackModule = require('webpack');
@@ -247,10 +246,10 @@ module.exports = {
           const scenes = [ ...new Set(Object.values(self.builds).map(options => options.scenes).flat()) ];
 
           // enumerate public assets and include them in deployment if appropriate
-          const publicAssets = globSync('modules/**/*', {
+          const publicAssets = self.apos.util.glob('modules/**/*', {
             cwd: bundleDir,
             mark: true
-          }).filter(match => !match.endsWith('/')).sort();
+          }).filter(match => !match.endsWith('/'));
 
           const deployFiles = [
             ...publicAssets,
@@ -702,7 +701,7 @@ module.exports = {
                 if (seen[entry.dirname]) {
                   continue;
                 }
-                components = components.concat(globSync(`${entry.dirname}/ui/${folder}/${pattern}`)).sort();
+                components = components.concat(self.apos.util.glob(`${entry.dirname}/ui/${folder}/${pattern}`));
                 seen[entry.dirname] = true;
               }
             }
