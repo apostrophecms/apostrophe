@@ -240,11 +240,15 @@ export default {
       this.lastSelected = newVal.at(-1);
       if (newVal.length > 1 || newVal.length === 0) {
         if (
-          !this.checked.includes(this.editing._id) &&
-          oldVal.includes(this.editing._id) &&
+          !this.checked.includes(this.editing?._id) &&
+          oldVal.includes(this.editing?._id) &&
           !await this.updateEditing(null)
         ) {
           this.checked = oldVal;
+        }
+
+        if (this.modified === false) {
+          await this.updateEditing(null);
         }
 
         return;
