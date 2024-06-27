@@ -65,6 +65,7 @@ export default {
         delete newClone.archived;
         delete oldClone.archived;
 
+        // TODO: Do we really need to rely on all following values?
         const oldVal = Object
           .values(oldClone)
           .join(' ')
@@ -74,6 +75,10 @@ export default {
           .values(newClone)
           .join(' ')
           .replace(/\//g, ' ');
+
+        if (oldVal === value) {
+          return;
+        }
 
         const isCompat = this.compatible(oldVal, this.next);
         if (!isCompat || newValue.archived) {
@@ -92,12 +97,17 @@ export default {
 
         if (
           (!this.originalSlugPartsLength && parts.length) ||
-          (this.originalSlugPartsLength &&
-          parts.length === (this.originalSlugPartsLength - 1))
+          (this.originalSlugPartsLength && parts.length === (this.originalSlugPartsLength - 1))
         ) {
-          // Remove last path component so we can replace it
-          parts.pop();
+          // If we pop in this if, it adds a new section to the slug when we type in title
+          // when the slug has a different length..
+          // It makes sense to pop last section whenever we push a new one???
+          // Maybe if the size is different it means the user already updated
+          // the slug and we do nothing if the size isn't the same
+
         }
+        // Remove last path component so we can replace it
+        parts.pop();
         parts.push(this.slugify(value, { componentOnly: true }));
         // TODO: handle page archives.
         this.next = `/${parts.join('/')}`;
@@ -109,6 +119,7 @@ export default {
     if (this.next.length) {
       await this.debouncedCheckConflict();
     }
+
     this.originalSlugPartsLength = this.next.split('/').length;
   },
   methods: {
