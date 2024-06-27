@@ -144,13 +144,15 @@ export default {
     if (this.next.length) {
       this.setCurrentDoc(this.next.at(0)._id);
     }
-    if (this.serverError && this.serverError.data && this.serverError.data.errors) {
+    if (this.serverError?.data?.errors?.length) {
       const first = this.serverError.data.errors[0];
-      const [ _id, name ] = first.path.split('.');
-      await this.select(_id);
-      const aposSchema = this.$refs.schema;
-      await this.$nextTick();
-      aposSchema.scrollFieldIntoView(name);
+      const [ _id, name ] = first.path?.split('.') || [];
+      if (_id) {
+        await this.select(_id);
+        const aposSchema = this.$refs.schema;
+        await this.$nextTick();
+        name && aposSchema.scrollFieldIntoView(name);
+      }
     }
     this.titleFieldChoices = await this.getTitleFieldChoices();
   },

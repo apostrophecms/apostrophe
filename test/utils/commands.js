@@ -1,4 +1,5 @@
 const moduleA = {
+  extend: '@apostrophecms/piece-type',
   commands: {
     add: {
       '@apostrophecms/command-menu:toggle-shortcuts': {
@@ -26,6 +27,7 @@ const moduleA = {
   }
 };
 const moduleB = {
+  extend: '@apostrophecms/piece-type',
   commands: {
     add: {
       '@apostrophecms/command-menu:test': {
@@ -53,6 +55,7 @@ const moduleB = {
   }
 };
 const moduleC = {
+  extend: '@apostrophecms/piece-type',
   commands: {
     remove: [
       '@apostrophecms/command-menu:test'
@@ -71,6 +74,7 @@ const moduleC = {
   }
 };
 const moduleD = {
+  extend: '@apostrophecms/piece-type',
   commands: {
     add: {
       '@apostrophecms/command-menu:toggle-shortcuts': {
@@ -88,7 +92,27 @@ const moduleD = {
     }
   }
 };
+const moduleE = {
+  extend: '@apostrophecms/piece-type',
+  commands: {
+    add: {
+      '@apostrophecms/command-menu:toggle-shortcuts': {
+        shortcut: false
+      }
+    },
+    group: {
+      '@apostrophecms/command-menu:general': {
+        label: 'commandMenuGeneral',
+        commands: [
+          '@apostrophecms/command-menu:toggle-shortcuts',
+          'command-menu'
+        ]
+      }
+    }
+  }
+};
 const article = {
+  extend: '@apostrophecms/piece-type',
   commands: {
     add: {
       'article:create-new': {
@@ -144,6 +168,7 @@ const article = {
   }
 };
 const topic = {
+  extend: '@apostrophecms/piece-type',
   commands: {
     add: {
       'topic:create-new': {
@@ -199,6 +224,7 @@ module.exports = {
   moduleB,
   moduleC,
   moduleD,
+  moduleE,
   article,
   topic
 };

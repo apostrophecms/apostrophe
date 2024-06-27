@@ -33,7 +33,6 @@
           :button="more.button"
           :menu="more.menu"
           menu-placement="bottom-start"
-          menu-offset="40, 10"
           :disabled="disabled"
           @item-clicked="$emit('item-clicked', item)"
         />
