@@ -10,6 +10,7 @@
 * Infite scroll in media manager instead of pagination. Makes the header containing the search fix.
 * Improves loaders by using new `AposLoadingBlock` that uses `AposLoading` instead of the purple screen in media manager.
 * Select the configured aspect ratio and add `data-apos-field` attributes to the fields inside `AposImageRelationshipEditor.vue`.
+* Add `getShowAdminBar` method. This method can be overriden in projects to drive the admin bar visibility for logged-in users.
 
 ### Fixes
 
