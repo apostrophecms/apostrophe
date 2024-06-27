@@ -55,7 +55,6 @@ export default {
       // We are usually interested in followingValue.title, but a
       // secondary slug field could be configured to watch
       // one or more other fields
-      deep: true,
       handler(newValue, oldValue) {
         const newClone = klona(newValue);
         const oldClone = klona(oldValue);
@@ -66,30 +65,42 @@ export default {
         delete newClone.archived;
         delete oldClone.archived;
 
-        oldValue = Object.values(oldClone).join(' ');
-        oldValue = oldValue.replace(/\//g, ' ');
+        const oldVal = Object
+          .values(oldClone)
+          .join(' ')
+          .replace(/\//g, ' ');
 
-        newValue = Object.values(newClone).join(' ');
-        newValue = newValue.replace(/\//g, ' ');
+        const value = Object
+          .values(newClone)
+          .join(' ')
+          .replace(/\//g, ' ');
 
-        if (this.compatible(oldValue, this.next) && !newValue.archived) {
-          // If this is a page slug, we only replace the last section of the slug.
-          if (this.field.page) {
-            let parts = this.next.split('/');
-            parts = parts.filter(part => part.length > 0);
-            if ((!this.originalSlugPartsLength && parts.length) || (this.originalSlugPartsLength && parts.length === (this.originalSlugPartsLength - 1))) {
-              // Remove last path component so we can replace it
-              parts.pop();
-            }
-            parts.push(this.slugify(newValue, { componentOnly: true }));
-            if (parts[0].length) {
-              // TODO: handle page archives.
-              this.next = `/${parts.join('/')}`;
-            }
-          } else {
-            this.next = this.slugify(newValue);
-          }
+        const isCompat = this.compatible(oldVal, this.next);
+        if (!isCompat || newValue.archived) {
+          return;
         }
+
+        if (!this.field.page) {
+          this.next = this.slugify(newValue);
+          return;
+        }
+
+        // If this is a page slug, we only replace the last section of the slug.
+        const parts = this.next
+          .split('/')
+          .filter(part => part.length > 0);
+
+        if (
+          (!this.originalSlugPartsLength && parts.length) ||
+          (this.originalSlugPartsLength &&
+          parts.length === (this.originalSlugPartsLength - 1))
+        ) {
+          // Remove last path component so we can replace it
+          parts.pop();
+        }
+        parts.push(this.slugify(value, { componentOnly: true }));
+        // TODO: handle page archives.
+        this.next = `/${parts.join('/')}`;
       }
     }
   },
@@ -138,10 +149,7 @@ export default {
       }
       return false;
     },
-    compatible(title, slug) {
-      if ((typeof title) !== 'string') {
-        title = '';
-      }
+    compatible(title = '', slug) {
       if (this.field.page) {
         const matches = slug.match(/[^/]+$/);
         slug = (matches && matches[0]) || '';
