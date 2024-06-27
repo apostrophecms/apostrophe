@@ -444,28 +444,19 @@ export default {
         return;
       }
 
-      let beginIndex = this.items.findIndex(item => item._id === this.lastSelected);
-      let endIndex = this.items.findIndex(item => item._id === id);
+      const beginIndex = this.items.findIndex(item => item._id === this.lastSelected);
+      const endIndex = this.items.findIndex(item => item._id === id);
       const direction = beginIndex > endIndex ? -1 : 1;
 
-      if (direction < 0) {
-        [ beginIndex, endIndex ] = [ endIndex, beginIndex ];
-      } else {
-        endIndex++;
-      }
+      const start = direction < 0 ? endIndex : beginIndex;
+      const end = direction < 0 ? beginIndex : endIndex + 1;
+      const imgIds = this.items
+        .slice(start, end)
+        .map(item => item._id)
+        .filter(_id => !this.checked.includes(_id));
 
-      const sliced = this.items.slice(beginIndex, endIndex);
-      const sliceIds = [];
-      // always want to check, never toggle
-      sliced.forEach(item => {
-        if (!this.checked.includes(item._id) && !this.maxReached()) {
-          sliceIds.push(item._id);
-        }
-      });
-
-      this.checked = this.checked.concat(sliceIds);
-      this.lastSelected = sliced[sliced.length - 1]._id;
-      this.editing = undefined;
+      const checked = this.checked.concat(imgIds);
+      this.checked = checked.slice(0, this.relationshipField?.max || checked.length);
     },
 
     // Toolbar handlers
