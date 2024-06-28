@@ -30,15 +30,15 @@ describe('Pieces - tasks', function() {
   });
 
   it.only('should generate pieces', async function () {
-    const before = await apos.doc.db.find({ type: 'article' }).count();
+    const countBefore = await apos.doc.db.find({ type: 'article' }).count();
     const articles = await apos.doc.db.find({ type: 'article' }).toArray();
     console.log(JSON.stringify(articles, null, 2));
-    assert.equal(before, 0);
+    assert.equal(countBefore, 0);
     await apos.task.invoke('article:generate', {
       total: 10
     });
-    const after = await apos.doc.db.find({ type: 'article' }).count();
-    assert.equal(after, 20);
+    const countAfter = await apos.doc.db.find({ type: 'article' }).count();
+    assert.equal(countAfter, 20);
   });
 
   it('should touch pieces', async function () {
