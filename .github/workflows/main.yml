@@ -38,6 +38,9 @@ jobs:
 
       - run: npm install
 
+      - name: List dependencies
+        run: npm list --package-lock-only
+
       - run: npm test
         env:
           CI: true
