@@ -29,14 +29,21 @@ describe('Pieces - tasks', function() {
     return t.destroy(apos);
   });
 
-  it('should generate pieces', async function () {
-    const before = await apos.doc.db.find({ type: 'article' }).count();
-    assert.equal(before, 0);
+  it.only('should generate pieces', async function () {
+    const countBefore = await apos.doc.db.find({ type: 'article' }).count();
+    const countProduct = await apos.doc.db.find({ type: 'product' }).count();
+    const count = await apos.doc.db.find().count();
+    // const articles = await apos.doc.db.find({ type: 'article' }).toArray();
+    const all = await apos.doc.db.find().toArray();
+    console.log(JSON.stringify(all, null, 2), countBefore, countProduct, count);
+    assert.equal(countBefore, 0);
     await apos.task.invoke('article:generate', {
       total: 10
     });
-    const after = await apos.doc.db.find({ type: 'article' }).count();
-    assert.equal(after, 20);
+    const countAfter = await apos.doc.db.find({ type: 'article' }).count();
+    // const articlesAfter = await apos.doc.db.find({ type: 'article' }).toArray();
+    // console.log(JSON.stringify(articlesAfter, null, 2));
+    assert.equal(countAfter, 20);
   });
 
   it('should touch pieces', async function () {
