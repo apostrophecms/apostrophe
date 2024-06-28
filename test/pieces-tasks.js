@@ -33,7 +33,7 @@ describe('Pieces - tasks', function() {
     const countBefore = await apos.doc.db.find({ type: 'article' }).count();
     const countProduct = await apos.doc.db.find({ type: 'product' }).count();
     const count = await apos.doc.db.find().count();
-    const articles = await apos.doc.db.find({ type: 'article' }).toArray();
+    // const articles = await apos.doc.db.find({ type: 'article' }).toArray();
     const all = await apos.doc.db.find().toArray();
     console.log(JSON.stringify(all, null, 2), countBefore, countProduct, count);
     assert.equal(countBefore, 0);
@@ -41,7 +41,7 @@ describe('Pieces - tasks', function() {
       total: 10
     });
     const countAfter = await apos.doc.db.find({ type: 'article' }).count();
-    const articlesAfter = await apos.doc.db.find({ type: 'article' }).toArray();
+    // const articlesAfter = await apos.doc.db.find({ type: 'article' }).toArray();
     // console.log(JSON.stringify(articlesAfter, null, 2));
     assert.equal(countAfter, 20);
   });
