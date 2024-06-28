@@ -29,8 +29,10 @@ describe('Pieces - tasks', function() {
     return t.destroy(apos);
   });
 
-  it('should generate pieces', async function () {
+  it.only('should generate pieces', async function () {
     const before = await apos.doc.db.find({ type: 'article' }).count();
+    const articles = await apos.doc.db.find({ type: 'article' }).toArray();
+    console.log(JSON.stringify(articles, null, 2));
     assert.equal(before, 0);
     await apos.task.invoke('article:generate', {
       total: 10
