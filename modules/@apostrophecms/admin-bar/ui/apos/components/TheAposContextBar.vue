@@ -35,7 +35,7 @@
 
 <script>
 import { klona } from 'klona';
-import cuid from 'cuid';
+import { createId } from '@paralleldrive/cuid2';
 import AposPublishMixin from 'Modules/@apostrophecms/ui/mixins/AposPublishMixin';
 import AposAdvisoryLockMixin from 'Modules/@apostrophecms/ui/mixins/AposAdvisoryLockMixin';
 
@@ -159,7 +159,7 @@ export default {
     // sessionStorage because it is deliberately browser-tab specific
     let tabId = sessionStorage.getItem('aposTabId');
     if (!tabId) {
-      tabId = cuid();
+      tabId = createId();
       sessionStorage.setItem('aposTabId', tabId);
     }
     window.apos.adminBar.tabId = tabId;

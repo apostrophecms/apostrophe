@@ -54,7 +54,7 @@ import {
   computePosition, offset, shift, flip, arrow
 } from '@floating-ui/dom';
 import { useAposTheme } from 'Modules/@apostrophecms/ui/composables/AposTheme';
-import cuid from 'cuid';
+import { createId } from '@paralleldrive/cuid2';
 
 const props = defineProps({
   menu: {
@@ -108,7 +108,7 @@ const props = defineProps({
 
 const emit = defineEmits([ 'open', 'close', 'item-clicked' ]);
 
-const menuId = ref(cuid());
+const menuId = ref(createId());
 const isOpen = ref(false);
 const placement = ref(props.menuPlacement);
 const event = ref(null);

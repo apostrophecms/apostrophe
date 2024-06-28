@@ -128,7 +128,7 @@
 import { debounce } from 'Modules/@apostrophecms/ui/utils';
 import AposModifiedMixin from 'Modules/@apostrophecms/ui/mixins/AposModifiedMixin';
 import AposDocsManagerMixin from 'Modules/@apostrophecms/modal/mixins/AposDocsManagerMixin';
-import cuid from 'cuid';
+import { createId } from '@paralleldrive/cuid2';
 
 const DEBOUNCE_TIMEOUT = 500;
 
@@ -350,7 +350,7 @@ export default {
     },
     createPlaceholder(dimensions) {
       this.items.unshift({
-        _id: cuid(),
+        _id: createId(),
         title: 'placeholder image',
         dimensions
       });

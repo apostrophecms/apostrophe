@@ -595,7 +595,7 @@ module.exports = {
       // if the appropriate query parameters were set, rewrite
       // `_id` accordingly. Returns `_id`, after rewriting if appropriate.
       inferIdLocaleAndMode(req, _id) {
-        let [ cuid, locale, mode ] = _id.split(':');
+        let [ id, locale, mode ] = _id.split(':');
         if (locale && mode) {
           if (!req.query.aposLocale) {
             req.locale = locale;
@@ -621,7 +621,7 @@ module.exports = {
           // will be interpreted later
           return _id;
         } else {
-          return `${cuid}:${locale}:${mode}`;
+          return `${id}:${locale}:${mode}`;
         }
       },
       getBrowserData(req) {
