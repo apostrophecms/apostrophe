@@ -39,6 +39,8 @@ describe('Pieces - tasks', function() {
       total: 10
     });
     const countAfter = await apos.doc.db.find({ type: 'article' }).count();
+    const articlesAfter = await apos.doc.db.find({ type: 'article' }).toArray();
+    console.log(JSON.stringify(articlesAfter, null, 2));
     assert.equal(countAfter, 20);
   });
 
