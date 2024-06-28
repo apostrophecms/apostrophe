@@ -31,7 +31,7 @@
   "author": "Apostrophe Technologies, Inc.",
   "license": "MIT",
   "dependencies": {
-    "@apostrophecms/emulate-mongo-3-driver": "github:apostrophecms/emulate-mongo-3-driver#feature/mocha-tests",
+    "@apostrophecms/emulate-mongo-3-driver": "github:apostrophecms/emulate-mongo-3-driver#feature/moch-tests",
     "@apostrophecms/vue-material-design-icons": "^1.0.0",
     "@ckpack/vue-color": "^1.4.1",
     "@floating-ui/dom": "^1.5.3",
