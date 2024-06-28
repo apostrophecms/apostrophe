@@ -32,15 +32,17 @@ describe('Pieces - tasks', function() {
   it.only('should generate pieces', async function () {
     const countBefore = await apos.doc.db.find({ type: 'article' }).count();
     const countProduct = await apos.doc.db.find({ type: 'product' }).count();
+    const count = await apos.doc.db.find().count();
     const articles = await apos.doc.db.find({ type: 'article' }).toArray();
-    console.log(JSON.stringify(articles, null, 2), countBefore, countProduct);
-    // assert.equal(countBefore, 0);
+    const all = await apos.doc.db.find().toArray();
+    console.log(JSON.stringify(all, null, 2), countBefore, countProduct, count);
+    assert.equal(countBefore, 0);
     await apos.task.invoke('article:generate', {
       total: 10
     });
     const countAfter = await apos.doc.db.find({ type: 'article' }).count();
     const articlesAfter = await apos.doc.db.find({ type: 'article' }).toArray();
-    console.log(JSON.stringify(articlesAfter, null, 2));
+    // console.log(JSON.stringify(articlesAfter, null, 2));
     assert.equal(countAfter, 20);
   });
 
