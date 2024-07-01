@@ -5,6 +5,7 @@ const {
   moduleB,
   moduleC,
   moduleD,
+  moduleE,
   article,
   topic
 } = require('./utils/commands.js');
@@ -88,19 +89,21 @@ describe('Command-Menu', function() {
             ]
           }
         ],
-        [ {
-          add: {
-            '@apostrophecms/command-menu:test': {
-              type: 'item',
-              label: 'commandMenuShortcutTest',
-              action: {
-                type: 'test',
-                payload: {}
-              },
-              shortcut: 'Shift+G'
+        [
+          {
+            add: {
+              '@apostrophecms/command-menu:test': {
+                type: 'item',
+                label: 'commandMenuShortcutTest',
+                action: {
+                  type: 'test',
+                  payload: {}
+                },
+                shortcut: 'Shift+G'
+              }
             }
           }
-        } ]
+        ]
       ]
     };
 
@@ -304,7 +307,8 @@ describe('Command-Menu', function() {
         [ moduleA.commands ],
         [ moduleB.commands ],
         [ moduleC.commands ],
-        [ moduleD.commands ]
+        [ moduleD.commands ],
+        [ moduleE.commands ]
       ]
     });
 
@@ -938,6 +942,66 @@ describe('Command-Menu', function() {
       conflict: {
         '@apostrophecms/file:manager': {
           C: [ '@apostrophecms/file:create-new', '@apostrophecms/file:search', '@apostrophecms/file:select-all' ]
+        }
+      }
+    };
+
+    assert.deepEqual(actual, expected);
+  });
+
+  it('should build commands and remove null shortcut', function() {
+    const initialState = {
+      composed: apos.util.pipe(
+        apos.commandMenu.composeRemoves,
+        apos.commandMenu.composeCommands,
+        apos.commandMenu.composeGroups,
+        apos.commandMenu.composeModals
+      )({
+        definitions: [
+          [ moduleA.commands ],
+          [ moduleD.commands ],
+          [ moduleE.commands ]
+        ]
+      })
+    };
+
+    const actual = apos.commandMenu.buildCommands(initialState);
+    const expected = {
+      ...initialState,
+      commands: {}
+    };
+
+    assert.deepEqual(actual, expected);
+  });
+
+  it('should build commands and keep last non null shortcut', function() {
+    const initialState = {
+      composed: apos.util.pipe(
+        apos.commandMenu.composeRemoves,
+        apos.commandMenu.composeCommands,
+        apos.commandMenu.composeGroups,
+        apos.commandMenu.composeModals
+      )({
+        definitions: [
+          [ moduleA.commands ],
+          [ moduleE.commands ],
+          [ moduleD.commands ]
+        ]
+      })
+    };
+
+    const actual = apos.commandMenu.buildCommands(initialState);
+    const expected = {
+      ...initialState,
+      commands: {
+        '@apostrophecms/command-menu:toggle-shortcuts': {
+          action: {
+            payload: {},
+            type: 'toggle-shortcuts'
+          },
+          label: 'commandMenuShortcutToggleShortcuts',
+          shortcut: '?',
+          type: 'item'
         }
       }
     };

@@ -3,25 +3,30 @@
 ## UNRELEASED
 
 ### Adds
+
+* Allow to disable shortcut by setting the option `shortcut: false`
 * Adds a new color picker tool for the rich-text-widget toolbar that matches the existing `color` schema field. This also adds the same `colorPicker` and `format` options to the rich-text-widget confirmation that exist in the `color` schema field.
 * Add missing UI translation keys.
 * Infite scroll in media manager instead of pagination. Makes the header containing the search fix.
 * Improves loaders by using new `AposLoadingBlock` that uses `AposLoading` instead of the purple screen in media manager.
+* Select the configured aspect ratio and add `data-apos-field` attributes to the fields inside `AposImageRelationshipEditor.vue`.
 
 ### Fixes
 
-* Remove double get request when saving image update.
+* Remove double GET request when saving image update.
 * Fix filter menu forgetting selecting filters and not instantiating them.
 * Remove blur emit for filter buttons and search bar to avoid re requesting when clicking outside…
 * `this.modified` was not working properly (set to false when saving). We can now avoid to reload images when saving no changes.
 * In media manager images checkboxes are disabled when max is reached.
+* In media manager when updating an image or archiving, update the list instead of fetching and update checked documents to see changes in the right panel selected list.
+* The `password` field type now has a proper fallback default, the empty string, just like the string field type
+and its derivatives. This resolves bugs in which the unexpected `null` caused problems during validation. This bug
+was old, but was masked in some situations until the release of version `4.4.3`.
 * Fixes the relationship fields not having the data when coming from the relationship modal.
 * Fixes watch on `checkedDocs` passed to `AposSlatList` not being reactive and not seeing updated relationship fields.
-
-### Fixes
 * Identify and mark server validation errors in the admin UI. This helps editors identify already existing data fields, having validation errors when schema changes (e.g. optional field becomes required).
 * Removes `menu-offset` props that were causing `AposContextMenu` to not display properly. 
-Allows to pass a number or an array to `ApodContextMenu` to set the offset of the context menu (main and cross axis see `floating-ui` documentation).
+* Allows to pass a number or an array to `AposContextMenu` to set the offset of the context menu (main and cross axis see `floating-ui` documentation).
 
 ## 4.4.3 (2024-06-17)
 

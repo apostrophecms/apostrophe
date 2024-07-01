@@ -91,7 +91,7 @@
 </template>
 
 <script>
-import cuid from 'cuid';
+import { createId } from '@paralleldrive/cuid2';
 
 export default {
   // Custom model to handle the v-model connection on the parent.
@@ -207,7 +207,7 @@ export default {
       event.target.classList.remove('apos-is-hovering');
     },
     idFor(item) {
-      return `${item._id}-${cuid()}`;
+      return `${item._id}-${createId()}`;
     }
   }
 };

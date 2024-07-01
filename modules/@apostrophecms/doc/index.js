@@ -1,5 +1,5 @@
 const _ = require('lodash');
-const cuid = require('cuid');
+const { createId } = require('@paralleldrive/cuid2');
 const { SemanticAttributes } = require('@opentelemetry/semantic-conventions');
 const { klona } = require('klona');
 
@@ -1696,7 +1696,7 @@ module.exports = {
           }
           for (const widget of area.items || []) {
             if ((!widget._id) || seen.has(widget._id)) {
-              widget._id = cuid();
+              widget._id = createId();
             } else {
               seen.add(widget._id);
             }

@@ -112,7 +112,7 @@ import { klona } from 'klona';
 import dayjs from 'dayjs';
 import { isEqual } from 'lodash';
 import advancedFormat from 'dayjs/plugin/advancedFormat';
-import cuid from 'cuid';
+import { createId } from '@paralleldrive/cuid2';
 
 dayjs.extend(advancedFormat);
 
@@ -325,7 +325,6 @@ export default {
           action: 'update'
         });
         this.original = klona(this.docFields.data);
-        this.$emit('modified', false);
       } catch (e) {
         if (this.isLockedError(e)) {
           await this.showLockedError(e);
@@ -345,7 +344,7 @@ export default {
       }
     },
     generateLipKey() {
-      this.lipKey = cuid();
+      this.lipKey = createId();
     },
     cancel() {
       this.showReplace = false;

@@ -82,7 +82,7 @@
 </template>
 
 <script>
-import cuid from 'cuid';
+import { createId } from '@paralleldrive/cuid2';
 
 export default {
   name: 'AposAreaContextualMenu',
@@ -184,7 +184,7 @@ export default {
       }
     },
     menuId() {
-      return `areaMenu-${cuid()}`;
+      return `areaMenu-${createId()}`;
     }
   },
   mounted() {

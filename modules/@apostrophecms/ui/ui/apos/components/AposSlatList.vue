@@ -42,7 +42,7 @@
 
 <script>
 import { Sortable } from 'sortablejs-vue3';
-import cuid from 'cuid';
+import { createId } from '@paralleldrive/cuid2';
 
 export default {
   name: 'AposSlatList',
@@ -93,7 +93,7 @@ export default {
   },
   computed: {
     listId() {
-      return `sortableList-${cuid()}`;
+      return `sortableList-${createId()}`;
     },
     dragOptions() {
       return {

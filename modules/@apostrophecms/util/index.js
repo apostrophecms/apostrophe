@@ -27,12 +27,13 @@ const he = require('he');
 _.str = require('underscore.string');
 const XRegExp = require('xregexp').XRegExp;
 const crypto = require('crypto');
-const cuid = require('cuid');
+const { createId } = require('@paralleldrive/cuid2');
 const fs = require('fs');
 const now = require('performance-now');
 const Promise = require('bluebird');
 const util = require('util');
 const { stripIndent } = require('common-tags');
+const glob = require('../../../lib/glob.js');
 
 module.exports = {
   options: {
@@ -65,10 +66,10 @@ module.exports = {
   methods(self) {
     return {
       // generate a unique identifier for a new page or other object.
-      // IDs are generated with the cuid module which prevents
+      // IDs are generated with the cuid2 module which prevents
       // collisions and easy guessing of another's ID.
       generateId() {
-        return cuid();
+        return createId();
       },
       // Globally replace a string with another string.
       // Regular `String.replace` does NOT offer global replace, except
@@ -842,7 +843,14 @@ module.exports = {
       omit(source, keys) {
         return _.omit(source, keys);
       },
-
+      // A wrapper for glob 10.x with the sorting semantics of glob
+      // 8.x, as a drop-in replacement to avoid introducing bc issues
+      // in existing Apostrophe logic. Not guaranteed to cover
+      // every difference between glob 8.x and 10.x, just those
+      // that break Apostrophe startup
+      glob(pattern, options = {}) {
+        return glob(pattern, options);
+      },
       // Internal method. Attempt to convert the log payload to an object
       // for legacy calls and when `@apostrophecms/log` has been configured
       // with `messageAs: 'someKey'`.

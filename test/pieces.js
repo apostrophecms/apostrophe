@@ -1,8 +1,8 @@
+const { createId } = require('@paralleldrive/cuid2');
 const assert = require('assert').strict;
 const fs = require('fs');
 const path = require('path');
 const _ = require('lodash');
-const cuid = require('cuid');
 const FormData = require('form-data');
 const t = require('../test-lib/test.js');
 
@@ -712,7 +712,7 @@ describe('Pieces', function() {
               {
                 metaType: 'widget',
                 type: '@apostrophecms/rich-text',
-                id: cuid(),
+                id: createId(),
                 content: '<p>This is fake</p>'
               }
             ]
@@ -733,7 +733,7 @@ describe('Pieces', function() {
     let widgetId;
     for (let i = 1; (i <= 10); i++) {
       if (i === 1) {
-        widgetId = cuid();
+        widgetId = createId();
       }
       const response = await apos.http.post('/api/v1/product', {
         body: {
@@ -939,7 +939,7 @@ describe('Pieces', function() {
             {
               metaType: 'widget',
               type: '@apostrophecms/rich-text',
-              id: cuid(),
+              id: createId(),
               content: '<p>This is the product key product with relationship</p>'
             }
           ]
@@ -981,7 +981,7 @@ describe('Pieces', function() {
             {
               metaType: 'widget',
               type: '@apostrophecms/rich-text',
-              id: cuid(),
+              id: createId(),
               content: '<p>This is the product key product with relationship</p>'
             }
           ]
@@ -1176,7 +1176,7 @@ describe('Pieces', function() {
     assert(response.choices._articles);
     assert(response.choices._articles[0].label === 'First Article');
     // an _id
-    assert(response.choices._articles[0].value.match(/^c/));
+    assert(response.choices._articles[0].value.match(/^.+:.+:.+$/));
     assert(response.choices.articles[0].label === 'First Article');
     // a slug
     assert(response.choices.articles[0].value === 'first-article');
@@ -1200,7 +1200,7 @@ describe('Pieces', function() {
     assert(response.counts._articles);
     assert(response.counts._articles[0].label === 'First Article');
     // an _id
-    assert(response.counts._articles[0].value.match(/^c/));
+    assert(response.counts._articles[0].value.match(/^.+:.+:.+$/));
     assert(response.counts.articles[0].label === 'First Article');
     // a slug
     assert(response.counts.articles[0].value === 'first-article');
@@ -1228,7 +1228,7 @@ describe('Pieces', function() {
             {
               metaType: 'widget',
               type: '@apostrophecms/rich-text',
-              id: cuid(),
+              id: createId(),
               content: '<p>This is the product key product without initial relationship</p>'
             }
           ]
@@ -1460,7 +1460,7 @@ describe('Pieces', function() {
               {
                 metaType: 'widget',
                 type: '@apostrophecms/rich-text',
-                id: cuid(),
+                id: createId(),
                 content: '<p>This is fake</p>'
               }
             ]
@@ -1501,7 +1501,7 @@ describe('Pieces', function() {
             {
               metaType: 'widget',
               type: '@apostrophecms/rich-text',
-              id: cuid(),
+              id: createId(),
               content: '<p>This is a bearer token thing</p>'
             }
           ]
@@ -1565,7 +1565,7 @@ describe('Pieces', function() {
             {
               metaType: 'widget',
               type: '@apostrophecms/rich-text',
-              id: cuid(),
+              id: createId(),
               content: '<p>This is an api key thing</p>'
             }
           ]

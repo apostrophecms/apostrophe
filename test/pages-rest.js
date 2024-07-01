@@ -1,6 +1,6 @@
+const { createId } = require('@paralleldrive/cuid2');
 const t = require('../test-lib/test.js');
 const assert = require('assert');
-const cuid = require('cuid');
 
 const areaConfig = {
   '@apostrophecms/image': {},
@@ -1638,7 +1638,7 @@ describe('Pages REST', function() {
             {
               metaType: 'widget',
               type: '@apostrophecms/rich-text',
-              id: cuid(),
+              id: createId(),
               content: '<p>This is the product key product with relationship</p>'
             }
           ]

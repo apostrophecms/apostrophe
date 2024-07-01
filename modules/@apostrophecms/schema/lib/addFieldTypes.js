@@ -722,7 +722,8 @@ module.exports = (self) => {
 
         destination[field.name] = checkStringLength(destination[field.name], field.min, field.max);
       }
-    }
+    },
+    def: ''
   });
 
   self.addFieldType({

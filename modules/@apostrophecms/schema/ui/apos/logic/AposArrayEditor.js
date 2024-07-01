@@ -1,6 +1,6 @@
 import AposModifiedMixin from 'Modules/@apostrophecms/ui/mixins/AposModifiedMixin';
 import AposEditorMixin from 'Modules/@apostrophecms/modal/mixins/AposEditorMixin';
-import cuid from 'cuid';
+import { createId } from '@paralleldrive/cuid2';
 import { klona } from 'klona';
 import { get } from 'lodash';
 import { detectDocChange } from 'Modules/@apostrophecms/schema/lib/detectChange';
@@ -42,7 +42,7 @@ export default {
     // Automatically add `_id` to default items
     const items = this.items.map(item => ({
       ...item,
-      _id: item._id || cuid()
+      _id: item._id || createId()
     }));
 
     return {
@@ -195,7 +195,7 @@ export default {
     async add() {
       if (await this.validate(true, false)) {
         const item = this.newInstance();
-        item._id = cuid();
+        item._id = createId();
         this.next.push(item);
         await this.select(item._id);
         this.updateMinMax();

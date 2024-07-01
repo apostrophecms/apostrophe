@@ -1,4 +1,4 @@
-import cuid from 'cuid';
+import { createId } from '@paralleldrive/cuid2';
 
 // Provide basic bridging functionality between tabs
 // and the modal body.
@@ -6,7 +6,7 @@ import cuid from 'cuid';
 export default {
   data() {
     return {
-      tabKey: cuid(),
+      tabKey: createId(),
       currentTab: null
     };
   },
