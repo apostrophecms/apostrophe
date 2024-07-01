@@ -41,7 +41,7 @@
 const Passport = require('passport').Passport;
 const LocalStrategy = require('passport-local');
 const Promise = require('bluebird');
-const cuid = require('cuid');
+const { createId } = require('@paralleldrive/cuid2');
 const expressSession = require('express-session');
 
 const loginAttemptsNamespace = '@apostrophecms/loginAttempt';
@@ -774,7 +774,7 @@ module.exports = {
 
           const requirementsToVerify = Object.keys(lateRequirements);
           if (requirementsToVerify.length) {
-            const token = cuid();
+            const token = createId();
 
             await self.bearerTokens.insertOne({
               _id: token,
@@ -802,7 +802,7 @@ module.exports = {
             });
             return {};
           } else {
-            const token = cuid();
+            const token = createId();
             await self.bearerTokens.insertOne({
               _id: token,
               userId: user._id,

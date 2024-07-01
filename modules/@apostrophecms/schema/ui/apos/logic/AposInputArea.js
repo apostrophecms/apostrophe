@@ -1,6 +1,6 @@
 
 import AposInputMixin from 'Modules/@apostrophecms/schema/mixins/AposInputMixin';
-import cuid from 'cuid';
+import { createId } from '@paralleldrive/cuid2';
 
 export default {
   name: 'AposInputArea',
@@ -65,7 +65,7 @@ export default {
     getEmptyValue() {
       return {
         metaType: 'area',
-        _id: cuid(),
+        _id: createId(),
         items: []
       };
     },

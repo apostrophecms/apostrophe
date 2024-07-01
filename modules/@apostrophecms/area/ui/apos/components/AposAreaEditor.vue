@@ -70,7 +70,7 @@
 </template>
 
 <script>
-import cuid from 'cuid';
+import { createId } from '@paralleldrive/cuid2';
 import { klona } from 'klona';
 import AposThemeMixin from 'Modules/@apostrophecms/ui/mixins/AposThemeMixin';
 
@@ -148,7 +148,7 @@ export default {
       addWidgetEditor: null,
       addWidgetOptions: null,
       addWidgetType: null,
-      areaId: cuid(),
+      areaId: createId(),
       next: this.getValidItems(),
       hoveredWidget: null,
       hoveredNonForeignWidget: null,
@@ -406,7 +406,7 @@ export default {
     // Regenerate all array item, area, object and widget ids so they are considered
     // new. Useful when copying a widget with nested content.
     regenerateIds(schema, object) {
-      object._id = cuid();
+      object._id = createId();
       for (const field of schema) {
         if (field.type === 'array') {
           for (const item of (object[field.name] || [])) {
@@ -416,7 +416,7 @@ export default {
           this.regenerateIds(field.schema, object[field.name] || {});
         } else if (field.type === 'area') {
           if (object[field.name]) {
-            object[field.name]._id = cuid();
+            object[field.name]._id = createId();
             for (const item of (object[field.name].items || [])) {
               const schema = apos.modules[apos.area.widgetManagers[item.type]].schema;
               this.regenerateIds(schema, item);
@@ -513,7 +513,7 @@ export default {
     },
     async insert({ index, widget }) {
       if (!widget._id) {
-        widget._id = cuid();
+        widget._id = createId();
       }
       if (!widget.metaType) {
         widget.metaType = 'widget';
@@ -600,7 +600,7 @@ export default {
       schema.forEach(field => {
         if (field.type === 'area') {
           widget[field.name] = {
-            _id: cuid(),
+            _id: createId(),
             metaType: 'area',
             items: []
           };
