@@ -22,11 +22,11 @@
 * The `password` field type now has a proper fallback default, the empty string, just like the string field type
 and its derivatives. This resolves bugs in which the unexpected `null` caused problems during validation. This bug
 was old, but was masked in some situations until the release of version `4.4.3`.
-* Fixes the relationship fields not having the data when coming from the relationship modal.
-* Fixes watch on `checkedDocs` passed to `AposSlatList` not being reactive and not seeing updated relationship fields.
 * Identify and mark server validation errors in the admin UI. This helps editors identify already existing data fields, having validation errors when schema changes (e.g. optional field becomes required).
 * Removes `menu-offset` props that were causing `AposContextMenu` to not display properly. 
 * Allows to pass a number or an array to `AposContextMenu` to set the offset of the context menu (main and cross axis see `floating-ui` documentation).
+* Fixes the relationship fields not having the data when coming from the relationship modal.
+* Fixes watch on `checkedDocs` passed to `AposSlatList` not being reactive and not seeing updated relationship fields.
 
 ## 4.4.3 (2024-06-17)
 
