@@ -14,7 +14,7 @@ export default {
     return {
       conflict: false,
       isArchived: null,
-      originalSlugPartsLength: null
+      originalParentSlug: ''
     };
   },
   computed: {
@@ -86,31 +86,23 @@ export default {
         }
 
         if (!this.field.page) {
-          this.next = this.slugify(newValue);
+          this.next = this.slugify(value);
           return;
         }
 
-        // If this is a page slug, we only replace the last section of the slug.
+        // If this is a page slug, the parent slug hasn't been changed
+        // and the title matches the slug we only replace its last section.
         const parts = this.next
           .split('/')
           .filter(part => part.length > 0);
 
-        if (
-          (!this.originalSlugPartsLength && parts.length) ||
-          (this.originalSlugPartsLength && parts.length === (this.originalSlugPartsLength - 1))
-        ) {
-          // If we pop in this if, it adds a new section to the slug when we type in title
-          // when the slug has a different length..
-          // It makes sense to pop last section whenever we push a new one???
-          // Maybe if the size is different it means the user already updated
-          // the slug and we do nothing if the size isn't the same
-
-        }
-        // Remove last path component so we can replace it
         parts.pop();
-        parts.push(this.slugify(value, { componentOnly: true }));
-        // TODO: handle page archives.
-        this.next = `/${parts.join('/')}`;
+        const parentSlug = `/${parts.join('/')}`;
+        if (this.originalParentSlug === parentSlug) {
+          // TODO: handle page archives.
+          const slug = this.slugify(value, { componentOnly: true });
+          this.next = `${parentSlug}/${slug}`;
+        }
       }
     }
   },
@@ -119,8 +111,7 @@ export default {
     if (this.next.length) {
       await this.debouncedCheckConflict();
     }
-
-    this.originalSlugPartsLength = this.next.split('/').length;
+    this.originalParentSlug = this.next.split('/').slice(0, -1).join('/') || '/';
   },
   methods: {
     async watchNext() {
