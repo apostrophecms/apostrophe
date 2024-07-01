@@ -179,39 +179,23 @@ export default {
         preserveDash = true;
       }
 
-      s = sluggo(s, options);
+      let slug = sluggo(s, options);
       if (preserveDash) {
-        s += '-';
+        slug += '-';
       }
 
       if (this.field.page && !componentOnly) {
-        if (!this.followingValues?.title) {
-          const nextParts = this.next.split('/');
-          if (s === nextParts[nextParts.length - 1]) {
-            s = '';
-            if (this.originalSlugPartsLength === nextParts.length) {
-              nextParts.pop();
-            }
-            this.next = nextParts.join('/');
-          }
-        }
         if (!s.charAt(0) !== '/') {
-          s = `/${s}`;
+          slug = `/${slug}`;
         }
-        s = s.replace(/\/+/g, '/');
-        if (s !== '/') {
-          s = s.replace(/\/$/, '');
-        }
-        if (!this.followingValues?.title && s.length) {
-          s += '/';
-        }
+        slug = s.replace(/\/+/g, '/');
       }
 
       if (!componentOnly) {
-        s = this.setPrefix(s);
+        slug = this.setPrefix(slug);
       }
 
-      return s;
+      return slug;
     },
     setPrefix (slug) {
       // Get a fresh clone of the slug.
