@@ -14,6 +14,9 @@
         @click="confirmAndCancel"
       />
     </template>
+    <template #localeDisplay>
+      <p>coucou les potes</p>
+    </template>
     <template #primaryControls>
       <AposDocContextMenu
         v-if="original"
@@ -168,7 +171,8 @@ export default {
         active: false,
         triggerFocusRefresh: 0,
         type: 'overlay',
-        showModal: false
+        showModal: false,
+        componentType: 'editorModal'
       },
       triggerValidation: false,
       original: null,
