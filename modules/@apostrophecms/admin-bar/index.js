@@ -310,6 +310,12 @@ module.exports = {
         return self.apos.permission.can(req, item.permission.action, item.permission.type, 'draft');
       },
 
+      // Show admin bar for logged-in user only
+
+      getShowAdminBar(req) {
+        return !!req.user;
+      },
+
       getBrowserData(req) {
         if (!req.user) {
           return false;
@@ -351,6 +357,7 @@ module.exports = {
           },
           // Base API URL appropriate to the context document
           contextBar: context && self.apos.doc.getManager(context.type).options.contextBar,
+          showAdminBar: self.getShowAdminBar(req),
           // Simplifies frontend logic
           contextId: context && context._id,
           tabId: createId(),
