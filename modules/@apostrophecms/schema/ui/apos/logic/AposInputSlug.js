@@ -185,10 +185,10 @@ export default {
       }
 
       if (this.field.page && !componentOnly) {
-        if (!s.charAt(0) !== '/') {
+        if (!slug.charAt(0) !== '/') {
           slug = `/${slug}`;
         }
-        slug = s.replace(/\/+/g, '/');
+        slug = slug.replace(/\/+/g, '/');
       }
 
       if (!componentOnly) {
