@@ -8,6 +8,7 @@
     @open="open"
   >
     <AposLocalePicker
+      :current-locale="locale"
       :localized="localized"
       @switch-locale="switchLocale"
     />
@@ -32,6 +33,9 @@ export default {
     };
   },
   computed: {
+    locale() {
+      return window.apos.i18n.locale;
+    },
     button() {
       return {
         label: {
