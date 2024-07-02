@@ -29,6 +29,13 @@ was old, but was masked in some situations until the release of version `4.4.3`.
 * Fixes the relationship fields not having the data when coming from the relationship modal.
 * Fixes watch on `checkedDocs` passed to `AposSlatList` not being reactive and not seeing updated relationship fields.
 
+### Changes
+
+* Update `Choose Images` selection behavior. When choosing images as part of a relationship, you click on the image or checkbox to add the image to the selection.
+If a max is set to allow only one image, clicking on the selected image will remove it from the selection. Clicking on another image will update the selection with the newly clicked image. 
+If a max is set to allow multiple images, you can remove images from the selection by using the checkbox. Clicking on the image will bring the image schema in the right panel.
+You can upload images even if the max has been reached. We will append the uploaded images to the existing selection up to the max if any.
+
 ## 4.4.3 (2024-06-17)
 
 ### Fixes
