@@ -914,7 +914,7 @@ module.exports = (self) => {
       self.register(metaType, type, field.schema);
     },
     validate: function (field, options, warn, fail) {
-      for (const subField of field.schema || field.fields.add) {
+      for (const subField of field.schema) {
         self.validateField(subField, options, field);
       }
     },
@@ -1141,12 +1141,7 @@ module.exports = (self) => {
           field.schema = self.fieldsToArray(`Relationship field ${field.name}`, field.fields);
         }
       }
-      if (field.schema && !field.fieldsStorage) {
-        field.fieldsStorage = field.name.replace(/^_/, '') + 'Fields';
-      }
-      if (field.schema && !Array.isArray(field.schema)) {
-        fail('schema property should be an array if present at this stage');
-      }
+      validateSchema(field);
       if (field.filters) {
         fail('"filters" property should be changed to "builders" for 3.x');
       }
@@ -1157,6 +1152,22 @@ module.exports = (self) => {
         type = self.apos.doc.normalizeType(type);
         if (!_.find(self.apos.doc.managers, { name: type })) {
           fail('withType property, ' + type + ', does not match the name of any piece or page type module.');
+        }
+      }
+
+      function validateSchema(_field) {
+        if (!_field.schema) {
+          return;
+        }
+        if (!Array.isArray(_field.schema)) {
+          fail('schema property should be an array if present at this stage');
+        }
+        self.validate(_field.schema, {
+          type: 'relationship',
+          subtype: _field.withType
+        });
+        if (!_field.fieldsStorage) {
+          _field.fieldsStorage = _field.name.replace(/^_/, '') + 'Fields';
         }
       }
     },
