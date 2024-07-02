@@ -4,46 +4,45 @@
       <input
         v-model="search"
         type="text"
-        class="apos-locales-filter"
+        class="apos-locales-picker__filter"
         :placeholder="$t('apostrophe:searchLocalesPlaceholder')"
       >
     </div>
-    <ul class="apos-locales">
+    <ul class="apos-locales-picker__list">
       <li
         v-for="locale in filteredLocales"
         :key="locale.name"
-        class="apos-locale-item"
-        :class="getLocaleClasses(locale)"
+        class="apos-locale-picker__item"
         @click="switchLocale(locale)"
       >
-        <span class="apos-locale">
+        <span class="apos-locale-picker__locale-display">
           <AposIndicator
             v-if="isActive(locale)"
             icon="check-bold-icon"
             fill-color="var(--a-primary)"
-            class="apos-check"
+            class="apos-locale-picker__check"
             :icon-size="12"
             :title="$t('apostrophe:currentLocale')"
           />
           {{ locale.label }}
-          <span class="apos-locale-name">
+          <span class="apos-locale-picker__name">
             ({{ locale.name }})
           </span>
           <span
-            class="apos-locale-localized"
+            class="apos-locale-picker__localized"
             :class="{ 'apos-state-is-localized': isLocalized(locale) }"
           />
         </span>
       </li>
     </ul>
-    <div class="apos-available-locales">
-      <p class="apos-available-description">
+    <div class="apos-locales-picker__available">
+      <p class="apos-locales-picker__available-desc">
         {{ $t('apostrophe:documentExistsInLocales') }}
       </p>
       <AposButton
         v-for="locale in availableLocales"
         :key="locale.name"
-        class="apos-available-locale"
+        class="apos-locales-picker__available-locale"
         :label="locale.label"
         type="quiet"
         :modifiers="['no-motion']"
@@ -58,6 +57,10 @@ import { ref, computed } from 'vue';
 
 const emit = defineEmits([ 'switch-locale' ]);
 const props = defineProps({
+  currentLocale: {
+    type: String,
+    required: true
+  },
   localized: {
     type: Object,
     required: true
@@ -91,20 +94,12 @@ function isLocalized(locale) {
 }
 
 function isActive(locale) {
-  return window.apos.i18n.locale === locale.name;
-}
-
-function getLocaleClasses(locale) {
-  return {
-    'apos-active': isActive(locale),
-    'apos-exists': props.localized[locale.name]
-  };
+  return props.currentLocale === locale.name;
 }
 
 function switchLocale(locale) {
   emit('switch-locale', locale);
 }
-
 </script>
 
 <style lang="scss" scoped>
@@ -112,7 +107,7 @@ function switchLocale(locale) {
   width: 315px;
 }
 
-.apos-locales-filter {
+.apos-locales-picker__filter {
   @include type-large;
 
   box-sizing: border-box;
@@ -136,7 +131,7 @@ function switchLocale(locale) {
   }
 }
 
-.apos-locales {
+.apos-locales-picker__list {
   margin: $spacing-base 0;
   padding-left: 0;
   list-style-type: none;
@@ -145,7 +140,7 @@ function switchLocale(locale) {
   font-weight: var(--a-weight-base);
 }
 
-.apos-locale-item {
+.apos-locale-picker__item {
   position: relative;
   padding: 12px 35px;
   line-height: 1;
@@ -159,7 +154,7 @@ function switchLocale(locale) {
     background-color: var(--a-base-10);
   }
 
-  .apos-check {
+  .apos-locale-picker__check {
     position: absolute;
     top: 50%;
     left: 18px;
@@ -168,13 +163,7 @@ function switchLocale(locale) {
     stroke: var(--a-primary);
   }
 
-  &.apos-active {
-    .active {
-      opacity: 1;
-    }
-  }
-
-  .apos-locale-localized {
+  .apos-locale-picker__localized {
     position: relative;
     top: -1px;
     left: 5px;
@@ -191,27 +180,27 @@ function switchLocale(locale) {
   }
 }
 
-.apos-available-locales {
+.apos-locales-picker__name {
+  text-transform: uppercase;
+}
+
+.apos-locales-picker__available {
   padding: $spacing-double;
   border-top: 1px solid var(--a-base-9);
 }
 
-.apos-available-locale {
+.apos-locales-picker__available-locale {
   display: inline-block;
   color: var(--a-primary);
   font-size: var(--a-type-small);
+
+  &:not(:last-of-type) {
+    margin-right: 10px;
+    margin-bottom: 5px;
+  }
 }
 
-.apos-available-locale:not(:last-of-type) {
-  margin-right: 10px;
-  margin-bottom: 5px;
-}
-
-.apos-available-description {
+.apos-locales-picker__available-desc {
   margin-top: 0;
-}
-
-.apos-locale-name {
-  text-transform: uppercase;
 }
 </style>
