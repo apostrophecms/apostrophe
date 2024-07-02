@@ -26,6 +26,7 @@ was old, but was masked in some situations until the release of version `4.4.3`.
 * Identify and mark server validation errors in the admin UI. This helps editors identify already existing data fields, having validation errors when schema changes (e.g. optional field becomes required).
 * Removes `menu-offset` props that were causing `AposContextMenu` to not display properly. 
 Allows to pass a number or an array to `ApodContextMenu` to set the offset of the context menu (main and cross axis see `floating-ui` documentation).
+* Fixes weird slug computations based on followed values like title. Simplifies based on the new tech design.
 
 ## 4.4.3 (2024-06-17)
 
