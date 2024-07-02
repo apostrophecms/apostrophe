@@ -83,9 +83,9 @@
             :max-reached="maxReached()"
             :is-last-page="isLastPage"
             :options="{
-              disableUnchecked: maxReached(),
               hideCheckboxes: !relationshipField
             }"
+            :relationship-field="relationshipField"
             :is-scroll-loading="isScrollLoading"
             @edit="updateEditing"
             @select="select"
@@ -237,11 +237,24 @@ export default {
   },
   watch: {
     async checked (newVal, oldVal) {
+      this.lastSelected = newVal.at(-1);
       if (newVal.length > 1 || newVal.length === 0) {
-        if (!await this.updateEditing(null)) {
+        if (
+          !this.checked.includes(this.editing?._id) &&
+          oldVal.includes(this.editing?._id) &&
+          !await this.updateEditing(null)
+        ) {
           this.checked = oldVal;
         }
+
+        if (this.modified === false) {
+          await this.updateEditing(null);
+        }
+
+        return;
       }
+
+      await this.updateEditing(newVal.at(0));
     },
     isLastPage(newVal) {
       if (newVal) {
@@ -376,7 +389,8 @@ export default {
         return;
       }
       if (Array.isArray(imgIds) && imgIds.length) {
-        this.checked = this.checked.concat(imgIds);
+        const checked = this.checked.concat(imgIds);
+        this.checked = checked.slice(0, this.relationshipField?.max || checked.length);
 
         // If we're currently editing one, don't interrupt that by replacing it.
         if (!this.editing && imgIds.length === 1) {
@@ -386,7 +400,6 @@ export default {
     },
     clearSelected() {
       this.checked = [];
-      this.editing = undefined;
     },
     async updateEditing(id) {
       const item = this.items.find(item => item._id === id);
@@ -414,58 +427,50 @@ export default {
     // select setters
     select(id) {
       if (this.checked.includes(id)) {
-        this.checked = [];
+        this.updateEditing(id);
+      } else if (this.relationshipField && (this.relationshipField.max > 1 || !this.relationshipField.max)) {
+        this.selectAnother(id);
       } else {
         this.checked = [ id ];
       }
-      this.updateEditing(id);
-      this.lastSelected = id;
     },
     selectAnother(id) {
+      if (this.relationshipField?.max === 1) {
+        this.select(id);
+        return;
+      }
       if (this.checked.includes(id)) {
         this.checked = this.checked.filter(checkedId => checkedId !== id);
       } else {
         this.checked = [ ...this.checked, id ];
       }
-
-      this.lastSelected = id;
-      this.editing = undefined;
     },
-
     selectSeries(id) {
-      if (!this.lastSelected) {
+      if (!this.lastSelected || this.relationshipField?.max === 1) {
         this.select(id);
         return;
       }
 
-      let beginIndex = this.items.findIndex(item => item._id === this.lastSelected);
-      let endIndex = this.items.findIndex(item => item._id === id);
+      const beginIndex = this.items.findIndex(item => item._id === this.lastSelected);
+      const endIndex = this.items.findIndex(item => item._id === id);
       const direction = beginIndex > endIndex ? -1 : 1;
 
-      if (direction < 0) {
-        [ beginIndex, endIndex ] = [ endIndex, beginIndex ];
-      } else {
-        endIndex++;
-      }
+      const start = direction < 0 ? endIndex : beginIndex;
+      const end = direction < 0 ? beginIndex : endIndex + 1;
+      const imgIds = this.items
+        .slice(start, end)
+        .map(item => item._id)
+        .filter(_id => !this.checked.includes(_id));
 
-      const sliced = this.items.slice(beginIndex, endIndex);
-      const sliceIds = [];
-      // always want to check, never toggle
-      sliced.forEach(item => {
-        if (!this.checked.includes(item._id)) {
-          sliceIds.push(item._id);
-        }
-      });
-
-      this.checked = this.checked.concat(sliceIds);
-      this.lastSelected = sliced[sliced.length - 1]._id;
-      this.editing = undefined;
+      const checked = this.checked.concat(imgIds);
+      this.checked = checked.slice(0, this.relationshipField?.max || checked.length);
     },
 
     // Toolbar handlers
-    selectClick() {
-      this.selectAll();
-      this.editing = undefined;
+    async selectClick() {
+      if (await this.updateEditing(null)) {
+        this.selectAll();
+      }
     },
     archiveClick() {
       this.$emit('archive', this.checked);

@@ -3,7 +3,6 @@
     <div class="apos-media-manager-display__grid">
       <AposMediaUploader
         v-if="moduleOptions.canCreate"
-        :disabled="maxReached"
         :action="moduleOptions.action"
         :accept="accept"
         @upload-started="$emit('upload-started')"
@@ -30,7 +29,7 @@
                 title: item.title
               }),
               disableFocus: true,
-              readOnly: options.disableUnchecked && !checked.includes(item._id)
+              readOnly: canSelect(item._id) === false
             }"
             :choice="{ value: item._id }"
           />
@@ -38,13 +37,13 @@
         <button
           :id="`btn-${item._id}`"
           :disabled="
-            item._id === 'placeholder' ||
-              (options.disableUnchecked && !checked.includes(item._id))
+            item._id === 'placeholder' || canSelect(item._id) === false
           "
           class="apos-media-manager-display__select"
           @click.exact="$emit('select', item._id)"
           @click.shift="$emit('select-series', item._id)"
           @click.meta="$emit('select-another', item._id)"
+          @click.ctrl="$emit('select-another', item._id)"
         >
           <div
             v-if="item.dimensions"
@@ -129,6 +128,10 @@ export default {
       type: Boolean,
       default: false
     },
+    relationshipField: {
+      type: [ Object, Boolean ],
+      default: false
+    },
     isLastPage: {
       type: Boolean,
       default: false
@@ -155,7 +158,12 @@ export default {
         return this.checked;
       },
       set(val) {
-        this.$emit('update:checked', val);
+        this.$emit(
+          'update:checked',
+          this.relationshipField?.max === 1
+            ? [].concat(val.at(-1) || [])
+            : val
+        );
       }
     }
   },
@@ -208,6 +216,11 @@ export default {
     },
     idFor(item) {
       return `${item._id}-${createId()}`;
+    },
+    canSelect(id) {
+      return this.checked.includes(id) ||
+        this.relationshipField?.max === 1 ||
+        (this.relationshipField?.max && !this.maxReached);
     }
   }
 };
