@@ -426,13 +426,17 @@ export default {
       const result = await apos.modal.execute('AposRelationshipEditor', {
         schema: this.relationshipField.schema,
         title: item.title,
-        value: item._fields
+        modelValue: item._fields
       });
       if (result) {
-        const index = this.checkedDocs.findIndex(_item => _item._id === item._id);
-        this.checkedDocs.splice(index, 1, {
-          ...this.checkedDocs[index],
-          _fields: result
+        this.checkedDocs = this.checkedDocs.map((doc) => {
+          if (doc._id !== item._id) {
+            return doc;
+          }
+          return {
+            ...doc,
+            _fields: result
+          };
         });
       }
     },

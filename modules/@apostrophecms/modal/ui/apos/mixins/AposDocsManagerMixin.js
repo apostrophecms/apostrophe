@@ -205,7 +205,13 @@ export default {
           return true;
         }
         if (this.relationshipField.schema) {
-          if (detectDocChange(this.relationshipField.schema, this.chosen[i]._fields, this.checkedDocs[i]._fields)) {
+          if (
+            detectDocChange(
+              this.relationshipField.schema,
+              this.chosen[i]._fields,
+              this.checkedDocs[i]._fields
+            )
+          ) {
             return true;
           }
         }
