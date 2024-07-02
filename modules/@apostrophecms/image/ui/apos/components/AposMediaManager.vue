@@ -467,8 +467,10 @@ export default {
     },
 
     // Toolbar handlers
-    selectClick() {
-      this.selectAll();
+    async selectClick() {
+      if (await this.updateEditing(null)) {
+        this.selectAll();
+      }
     },
     archiveClick() {
       this.$emit('archive', this.checked);
