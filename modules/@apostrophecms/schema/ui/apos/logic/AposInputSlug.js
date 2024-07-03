@@ -92,12 +92,8 @@ export default {
 
         // If this is a page slug, the parent slug hasn't been changed
         // and the title matches the slug we only replace its last section.
-        const parts = this.next
-          .split('/')
-          .filter(part => part.length > 0);
 
-        parts.pop();
-        const parentSlug = `/${parts.join('/')}`;
+        const parentSlug = this.getParentSlug(this.next);
         if (this.originalParentSlug === parentSlug) {
           // TODO: handle page archives.
           const slug = this.slugify(value, { componentOnly: true });
@@ -111,9 +107,14 @@ export default {
     if (this.next.length) {
       await this.debouncedCheckConflict();
     }
-    this.originalParentSlug = this.next.split('/').slice(0, -1).join('/') || '/';
+    this.originalParentSlug = this.getParentSlug(this.next);
   },
   methods: {
+    getParentSlug(slug = '') {
+      return slug.slice(-1) === '/'
+        ? slug.substring(0, slug.length - 1)
+        : slug.split('/').slice(0, -1).join('/');
+    },
     async watchNext() {
       this.next = this.slugify(this.next);
       this.validateAndEmit();
