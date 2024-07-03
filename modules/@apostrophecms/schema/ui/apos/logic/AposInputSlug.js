@@ -92,7 +92,6 @@ export default {
 
         // If this is a page slug, the parent slug hasn't been changed
         // and the title matches the slug we only replace its last section.
-
         const parentSlug = this.getParentSlug(this.next);
         if (this.originalParentSlug === parentSlug) {
           // TODO: handle page archives.
