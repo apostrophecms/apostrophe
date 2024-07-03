@@ -14,7 +14,7 @@ export default {
     return {
       conflict: false,
       isArchived: null,
-      originalSlugPartsLength: null
+      originalParentSlug: ''
     };
   },
   computed: {
@@ -55,7 +55,6 @@ export default {
       // We are usually interested in followingValue.title, but a
       // secondary slug field could be configured to watch
       // one or more other fields
-      deep: true,
       handler(newValue, oldValue) {
         const newClone = klona(newValue);
         const oldClone = klona(oldValue);
@@ -66,29 +65,38 @@ export default {
         delete newClone.archived;
         delete oldClone.archived;
 
-        oldValue = Object.values(oldClone).join(' ');
-        oldValue = oldValue.replace(/\//g, ' ');
+        // TODO: Do we really need to rely on all following values?
+        const oldVal = Object
+          .values(oldClone)
+          .join(' ')
+          .replace(/\//g, ' ');
 
-        newValue = Object.values(newClone).join(' ');
-        newValue = newValue.replace(/\//g, ' ');
+        const value = Object
+          .values(newClone)
+          .join(' ')
+          .replace(/\//g, ' ');
 
-        if (this.compatible(oldValue, this.next) && !newValue.archived) {
-          // If this is a page slug, we only replace the last section of the slug.
-          if (this.field.page) {
-            let parts = this.next.split('/');
-            parts = parts.filter(part => part.length > 0);
-            if ((!this.originalSlugPartsLength && parts.length) || (this.originalSlugPartsLength && parts.length === (this.originalSlugPartsLength - 1))) {
-              // Remove last path component so we can replace it
-              parts.pop();
-            }
-            parts.push(this.slugify(newValue, { componentOnly: true }));
-            if (parts[0].length) {
-              // TODO: handle page archives.
-              this.next = `/${parts.join('/')}`;
-            }
-          } else {
-            this.next = this.slugify(newValue);
-          }
+        if (oldVal === value) {
+          return;
+        }
+
+        const isCompat = this.compatible(oldVal, this.next);
+        if (!isCompat || newValue.archived) {
+          return;
+        }
+
+        if (!this.field.page) {
+          this.next = this.slugify(value);
+          return;
+        }
+
+        // If this is a page slug, the parent slug hasn't been changed
+        // and the title matches the slug we only replace its last section.
+        const parentSlug = this.getParentSlug(this.next);
+        if (this.originalParentSlug === parentSlug) {
+          // TODO: handle page archives.
+          const slug = this.slugify(value, { componentOnly: true });
+          this.next = `${parentSlug}/${slug}`;
         }
       }
     }
@@ -98,9 +106,14 @@ export default {
     if (this.next.length) {
       await this.debouncedCheckConflict();
     }
-    this.originalSlugPartsLength = this.next.split('/').length;
+    this.originalParentSlug = this.getParentSlug(this.next);
   },
   methods: {
+    getParentSlug(slug = '') {
+      return slug.slice(-1) === '/'
+        ? slug.substring(0, slug.length - 1)
+        : slug.split('/').slice(0, -1).join('/');
+    },
     async watchNext() {
       this.next = this.slugify(this.next);
       this.validateAndEmit();
@@ -138,10 +151,7 @@ export default {
       }
       return false;
     },
-    compatible(title, slug) {
-      if ((typeof title) !== 'string') {
-        title = '';
-      }
+    compatible(title = '', slug) {
       if (this.field.page) {
         const matches = slug.match(/[^/]+$/);
         slug = (matches && matches[0]) || '';
@@ -169,39 +179,23 @@ export default {
         preserveDash = true;
       }
 
-      s = sluggo(s, options);
+      let slug = sluggo(s, options);
       if (preserveDash) {
-        s += '-';
+        slug += '-';
       }
 
       if (this.field.page && !componentOnly) {
-        if (!this.followingValues?.title) {
-          const nextParts = this.next.split('/');
-          if (s === nextParts[nextParts.length - 1]) {
-            s = '';
-            if (this.originalSlugPartsLength === nextParts.length) {
-              nextParts.pop();
-            }
-            this.next = nextParts.join('/');
-          }
+        if (!slug.charAt(0) !== '/') {
+          slug = `/${slug}`;
         }
-        if (!s.charAt(0) !== '/') {
-          s = `/${s}`;
-        }
-        s = s.replace(/\/+/g, '/');
-        if (s !== '/') {
-          s = s.replace(/\/$/, '');
-        }
-        if (!this.followingValues?.title && s.length) {
-          s += '/';
-        }
+        slug = slug.replace(/\/+/g, '/');
       }
 
       if (!componentOnly) {
-        s = this.setPrefix(s);
+        slug = this.setPrefix(slug);
       }
 
-      return s;
+      return slug;
     },
     setPrefix (slug) {
       // Get a fresh clone of the slug.
