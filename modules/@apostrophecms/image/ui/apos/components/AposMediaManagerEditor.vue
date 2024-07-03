@@ -461,6 +461,7 @@ export default {
   .apos-media-editor__lip {
     display: flex;
     justify-content: flex-end;
+    line-height: var(--a-line-base);
 
     & > .apos-context-menu, & > .apos-button__wrapper {
       margin-left: 7.5px;

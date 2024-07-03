@@ -176,6 +176,7 @@ export default {
 .apos-admin-bar__items {
   display: flex;
   flex-grow: 1;
+  line-height: var(--a-line-base);
   margin: 0;
   padding: 0;
 }

@@ -422,6 +422,7 @@ function close() {
     display: flex;
     align-items: center;
     padding: $spacing-double;
+    line-height: var(--a-line-base);
   }
 
   .apos-modal__header__main {

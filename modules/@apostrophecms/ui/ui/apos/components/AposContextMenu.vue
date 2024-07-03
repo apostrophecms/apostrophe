@@ -243,6 +243,7 @@ async function setDropdownPosition() {
 .apos-context-menu__dropdown-content {
   z-index: $z-index-notifications;
   position: absolute;
+  line-height: var(--a-line-base);
   width: max-content;
 
   &[aria-hidden='true'] {

@@ -89,6 +89,7 @@ export default {
   align-items: center;
   height: 35px;
   padding: 10px 20px;
+  line-height: var(--a-line-base);
   border-bottom: 1px solid var(--a-base-9);
 }
 
