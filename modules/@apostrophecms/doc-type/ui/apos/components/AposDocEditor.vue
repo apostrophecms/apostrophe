@@ -15,7 +15,7 @@
       />
     </template>
     <template #localeDisplay>
-      <p>coucou les potes</p>
+      <AposDocLocalePicker :locale="docFields.data.aposLocale" />
     </template>
     <template #primaryControls>
       <AposDocContextMenu
