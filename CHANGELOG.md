@@ -29,6 +29,7 @@ was old, but was masked in some situations until the release of version `4.4.3`.
 * Fixes the relationship fields not having the data when coming from the relationship modal.
 * Fixes watch on `checkedDocs` passed to `AposSlatList` not being reactive and not seeing updated relationship fields.
 * Adds styles for 1 column expanded area ([#4608](https://github.com/apostrophecms/apostrophe/issues/4608))
+* Fixes weird slug computations based on followed values like title. Simplifies based on the new tech design.
 
 ### Changes
 
