@@ -222,7 +222,7 @@ export default {
 
   &--1-column {
     display: grid;
-    grid-template-columns: repeat(1, 1fr);
+    grid-template-columns: 1fr;
     gap: 15px;
   }
 
