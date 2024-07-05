@@ -220,6 +220,12 @@ export default {
     background-color: var(--a-base-10);
   }
 
+  &--1-column {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 15px;
+  }
+
   &--2-columns {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
