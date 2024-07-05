@@ -91,7 +91,7 @@
     "mini-css-extract-plugin": "^1.6.0",
     "minimatch": "^3.0.4",
     "mkdirp": "^0.5.5",
-    "mongodb": "^6.7.0",
+    "mongodb": "6.7.0",
     "node-fetch": "^2.6.1",
     "nodemailer": "^6.6.1",
     "nunjucks": "^3.2.1",
