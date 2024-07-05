@@ -1,5 +1,11 @@
 # Changelog
 
+## UNRELEASED
+
+### Fixes
+
+* Prevent broken admin UI when there is a missing widget. 
+
 ## 3.67.0 (2024-06-12)
 
 ### Changes
