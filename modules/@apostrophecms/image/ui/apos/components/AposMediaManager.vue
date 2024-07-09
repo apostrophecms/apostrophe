@@ -166,7 +166,15 @@ export default {
         emoji: '🖼'
       },
       cancelDescription: 'apostrophe:discardImageChangesPrompt',
-      debouncedGetMedia: debounce(this.getMedia, DEBOUNCE_TIMEOUT)
+      debouncedGetMedia: debounce(this.getMedia, DEBOUNCE_TIMEOUT),
+      loadObserver: new IntersectionObserver(
+        this.handleIntersect,
+        {
+          root: null,
+          rootMargin: '30px',
+          threshold: 0
+        }
+      )
     };
   },
   computed: {
@@ -549,18 +557,9 @@ export default {
       }
     },
     observeLoadRef() {
-      this.disconnectObserver();
       if (this.totalPages < 2) {
         return;
       }
-      this.loadObserver = new IntersectionObserver(
-        this.handleIntersect,
-        {
-          root: null,
-          rootMargin: '30px',
-          threshold: 0
-        }
-      );
 
       this.loadObserver.observe(this.loadRef);
     },
@@ -572,8 +571,9 @@ export default {
     },
 
     setLoadRef(ref) {
+      this.loadRef = ref;
+      this.disconnectObserver();
       if (ref) {
-        this.loadRef = ref;
         this.observeLoadRef();
       }
     }
