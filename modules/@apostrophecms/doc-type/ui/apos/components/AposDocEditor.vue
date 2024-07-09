@@ -15,7 +15,11 @@
       />
     </template>
     <template #localeDisplay>
-      <AposDocLocalePicker :locale="docFields.data.aposLocale" />
+      <AposDocLocalePicker
+        :locale="docFields.data.aposLocale"
+        :doc-id="docId"
+        :module-action="moduleAction"
+      />
     </template>
     <template #primaryControls>
       <AposDocContextMenu
