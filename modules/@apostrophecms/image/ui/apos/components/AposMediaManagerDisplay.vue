@@ -50,7 +50,6 @@
             class="apos-media-manager-display__placeholder"
             :style="getPlaceholderStyles(item)"
           />
-          <!-- TODO: make sure using TITLE is the correct alt tag application here. -->
           <img
             v-else
             class="apos-media-manager-display__media"
@@ -59,8 +58,6 @@
           >
         </button>
       </div>
-      <!-- We need a placeholder display cell to generate the first image
-      placeholder. -->
       <div
         v-if="items.length === 0"
         class="apos-media-manager-display__cell apos-is-hidden"
@@ -165,6 +162,12 @@ export default {
             : val
         );
       }
+    }
+  },
+  watch: {
+    async isLastPage(val) {
+      await this.$nextTick();
+      this.$emit('set-load-ref', this.$refs.scrollLoad);
     }
   },
   mounted() {
