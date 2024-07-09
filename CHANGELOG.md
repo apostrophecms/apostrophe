@@ -2,6 +2,10 @@
 
 ## UNRELEASED
 
+### Changes
+
+* Update `@apostrophecms/emulate-mongo-3-driver` dependency to keep supporting `mongodb@3.x` queries while using `mongodb@6.x`.
+
 ### Fixes
 
 * Prevent broken admin UI when there is a missing widget. 
