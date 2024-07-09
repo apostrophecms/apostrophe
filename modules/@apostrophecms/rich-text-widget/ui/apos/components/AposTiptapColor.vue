@@ -18,7 +18,7 @@
       }">
       <AposContextMenuDialog menu-placement="bottom-center">
         <div v-if="editor" class="text-color-component" @mousedown.stop.prevent>
-          <Picker v-bind="colorOptions" :model-value="pickerValue" @update:model-value="update" @mousedown.stop.prevent
+          <Picker v-bind="pickerOptions" :model-value="pickerValue" @update:model-value="update" @mousedown.stop.prevent
             @focus="focus" />
         </div>
         <footer class="apos-color-control__footer">
@@ -104,19 +104,21 @@ export default defineComponent({
       };
     });
 
-    const colorOptions = computed(() => {
+    const pickerOptions = computed(() => {
       const {
-        presetColors, disableAlpha, disableFields, format
+        presetColors, disableAlpha, disableFields
       } = mergedOptions.value;
 
       return {
-        format,
-        pickerOptions: {
-          presetColors,
-          disableAlpha,
-          disableFields
-        }
+        presetColors,
+        disableAlpha,
+        disableFields
       };
+    });
+
+    const format = computed(() => {
+      console.log('the format', mergedOptions.value.format);
+      return mergedOptions.value.format;
     });
 
     const pickerValue = ref(next.value || '');
@@ -156,6 +158,7 @@ export default defineComponent({
     const update = (value) => {
       tinyColorObj.value = tinycolor(value.hsl);
       next.value = tinyColorObj.value.toString(format.value);
+      console.log('the next value', next.value);
       props.editor.chain().focus().setColor(next.value).run();
       indicatorColor.value = next.value;
     };
@@ -172,7 +175,7 @@ export default defineComponent({
     return {
       active,
       indicatorColor,
-      colorOptions,
+      pickerOptions,
       pickerValue,
       hasSelection,
       startsNull,
