@@ -38,6 +38,7 @@ was old, but was masked in some situations until the release of version `4.4.3`.
 If a max is set to allow only one image, clicking on the selected image will remove it from the selection. Clicking on another image will update the selection with the newly clicked image. 
 If a max is set to allow multiple images, you can remove images from the selection by using the checkbox. Clicking on the image will bring the image schema in the right panel.
 You can upload images even if the max has been reached. We will append the uploaded images to the existing selection up to the max if any.
+* Update `@apostrophecms/emulate-mongo-3-driver` dependency to keep supporting `mongodb@3.x` queries while using `mongodb@6.x`.
 
 ## 4.4.3 (2024-06-17)
 
