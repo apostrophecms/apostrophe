@@ -35,6 +35,10 @@ const props = defineProps({
   moduleAction: {
     type: String,
     required: true
+  },
+  isModified: {
+    type: Boolean,
+    required: true
   }
 });
 

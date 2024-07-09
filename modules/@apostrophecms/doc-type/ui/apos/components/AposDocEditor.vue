@@ -15,10 +15,12 @@
       />
     </template>
     <template #localeDisplay>
+      <!-- later we will use the modal locale here -->
       <AposDocLocalePicker
         :locale="docFields.data.aposLocale"
         :doc-id="docId"
         :module-action="moduleAction"
+        :is-modified="isModified"
       />
     </template>
     <template #primaryControls>
