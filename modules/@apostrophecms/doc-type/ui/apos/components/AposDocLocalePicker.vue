@@ -21,8 +21,9 @@
 </template>
 
 <script setup>
-import { ref } from 'vue';
+import { ref, inject } from 'vue';
 
+const emit = defineEmits([ 'save-doc' ]);
 const props = defineProps({
   locale: {
     type: String,
@@ -32,9 +33,12 @@ const props = defineProps({
     type: String,
     required: true
   },
-  moduleAction: {
-    type: String,
-    required: true
+  moduleOptions: {
+    type: Object,
+    default: () => ({
+      action: '',
+      label: ''
+    })
   },
   isModified: {
     type: Boolean,
@@ -42,6 +46,8 @@ const props = defineProps({
   }
 });
 
+const $t = inject('i18n');
+const menu = ref(null);
 const localized = ref({});
 const button = {
   label: {
@@ -55,7 +61,7 @@ const button = {
 
 async function open() {
   const docs = await apos.http.get(
-    `${props.moduleAction}/${props.docId}/locales`, { busy: true }
+    `${props.moduleOptions.action}/${props.docId}/locales`, { busy: true }
   );
   localized.value = Object.fromEntries(
     docs.results
@@ -64,8 +70,26 @@ async function open() {
   );
 };
 
-function switchLocale() {
-  // TODO: Implement
+async function switchLocale() {
+  menu.value.hide();
+  if (props.isModified) {
+    const saveAndSwitch = await apos.confirm({
+      heading: 'apostrophe:unsavedChanges',
+      description: $t(
+        'apostrophe:localeSwitcherDiscardChangesPrompt',
+        { docType: props.moduleOptions.label.toLowerCase() }
+      ),
+      negativeLabel: 'apostrophe:localeSwitcherDiscardChangesNegative',
+      affirmativeLabel: 'apostrophe:localeSwitcherDiscardChangesAffirmative'
+    });
+
+    if (saveAndSwitch) {
+      emit('save-doc');
+      // TODO: If error during save we do not want to switch locale
+    }
+
+    // TODO: switch locale
+  }
 }
 </script>
 

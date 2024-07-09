@@ -19,8 +19,9 @@
       <AposDocLocalePicker
         :locale="docFields.data.aposLocale"
         :doc-id="docId"
-        :module-action="moduleAction"
+        :module-options="moduleOptions"
         :is-modified="isModified"
+        @save-doc="onSave"
       />
     </template>
     <template #primaryControls>
