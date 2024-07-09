@@ -117,7 +117,6 @@ export default defineComponent({
     });
 
     const format = computed(() => {
-      console.log('the format', mergedOptions.value.format);
       return mergedOptions.value.format;
     });
 
@@ -158,7 +157,6 @@ export default defineComponent({
     const update = (value) => {
       tinyColorObj.value = tinycolor(value.hsl);
       next.value = tinyColorObj.value.toString(format.value);
-      console.log('the next value', next.value);
       props.editor.chain().focus().setColor(next.value).run();
       indicatorColor.value = next.value;
     };
