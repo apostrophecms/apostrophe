@@ -482,7 +482,8 @@ module.exports = {
           subscript: [ 'sub' ],
           table: [ 'table', 'tr', 'td', 'th' ],
           image: [ 'figure', 'img', 'figcaption' ],
-          div: [ 'div' ]
+          div: [ 'div' ],
+          color: [ 'span' ]
         };
         for (const item of self.combinedItems(options)) {
           if (simple[item]) {
