@@ -1,29 +1,58 @@
 <template>
   <div class="apos-color-control">
-    <AposButton type="rich-text" class="apos-rich-text-editor__control"
-      :class="['apos-color-button', { 'apos-is-active': active }]" :icon-only="false" icon="circle-icon"
-      :icon-fill="indicatorColor" :label="'apostrophe:richTextColor'" :modifiers="['no-border', 'no-motion']" :tooltip="{
+    <AposButton
+      type="rich-text"
+      class="apos-rich-text-editor__control"
+      :class="['apos-color-button', { 'apos-is-active': active }]"
+      :icon-only="false"
+      icon="circle-icon"
+      :icon-fill="indicatorColor"
+      :label="'apostrophe:richTextColor'"
+      :modifiers="['no-border', 'no-motion']"
+      :tooltip="{
         content: 'apostrophe:richTextColor',
         placement: 'top',
         delay: 650
-      }" @click="click" @mousedown.stop.prevent>
+      }"
+      @click="click"
+      @mousedown.stop.prevent
+    >
       <template #label>
         <AposIndicator icon="chevron-down-icon" />
       </template>
     </AposButton>
-    <div v-if="active" v-click-outside-element="close" class="apos-popover apos-color-control__dialog"
-      x-placement="bottom" :class="{
+    <div
+      v-if="active"
+      v-click-outside-element="close"
+      class="apos-popover apos-color-control__dialog"
+      x-placement="bottom"
+      :class="{
         'apos-is-triggered': active,
         'apos-has-selection': hasSelection
-      }">
+      }"
+    >
       <AposContextMenuDialog menu-placement="bottom-center">
-        <div v-if="editor" class="text-color-component" @mousedown.stop.prevent>
-          <Picker v-bind="pickerOptions" :model-value="pickerValue" @update:model-value="update" @mousedown.stop.prevent
-            @focus="focus" />
+        <div
+          v-if="editor"
+          class="text-color-component"
+          @mousedown.stop.prevent
+        >
+          <Picker
+            v-bind="pickerOptions"
+            :model-value="pickerValue"
+            @update:model-value="update"
+            @mousedown.stop.prevent
+            @focus="focus"
+          />
         </div>
         <footer class="apos-color-control__footer">
-          <AposButton type="primary" label="apostrophe:close" :modifiers="['small', 'margin-micro']" @click="close"
-            @mousedown.stop.prevent />
+          <AposButton
+            type="primary"
+            label="apostrophe:close"
+            :modifiers="['small', 'margin-micro']"
+            @click="close"
+            @mousedown.stop.prevent
+          />
         </footer>
       </AposContextMenuDialog>
     </div>
