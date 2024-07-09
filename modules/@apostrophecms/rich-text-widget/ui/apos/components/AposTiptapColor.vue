@@ -1,58 +1,29 @@
 <template>
   <div class="apos-color-control">
-    <AposButton
-      type="rich-text"
-      class="apos-rich-text-editor__control"
-      :class="['apos-color-button', { 'apos-is-active': active }]"
-      :icon-only="false"
-      icon="circle-icon"
-      :icon-fill="indicatorColor"
-      :label="'apostrophe:richTextColor'"
-      :modifiers="['no-border', 'no-motion']"
-      :tooltip="{
+    <AposButton type="rich-text" class="apos-rich-text-editor__control"
+      :class="['apos-color-button', { 'apos-is-active': active }]" :icon-only="false" icon="circle-icon"
+      :icon-fill="indicatorColor" :label="'apostrophe:richTextColor'" :modifiers="['no-border', 'no-motion']" :tooltip="{
         content: 'apostrophe:richTextColor',
         placement: 'top',
         delay: 650
-      }"
-      @click="click"
-      @mousedown.stop.prevent
-    >
+      }" @click="click" @mousedown.stop.prevent>
       <template #label>
         <AposIndicator icon="chevron-down-icon" />
       </template>
     </AposButton>
-    <div
-      v-if="active"
-      v-click-outside-element="close"
-      class="apos-popover apos-color-control__dialog"
-      x-placement="bottom"
-      :class="{
+    <div v-if="active" v-click-outside-element="close" class="apos-popover apos-color-control__dialog"
+      x-placement="bottom" :class="{
         'apos-is-triggered': active,
         'apos-has-selection': hasSelection
-      }"
-    >
+      }">
       <AposContextMenuDialog menu-placement="bottom-center">
-        <div
-          v-if="editor"
-          class="text-color-component"
-          @mousedown.stop.prevent
-        >
-          <Picker
-            v-bind="pickerOptions"
-            :model-value="pickerValue"
-            @update:model-value="update"
-            @mousedown.stop.prevent
-            @focus="focus"
-          />
+        <div v-if="editor" class="text-color-component" @mousedown.stop.prevent>
+          <Picker v-bind="colorOptions" :model-value="pickerValue" @update:model-value="update" @mousedown.stop.prevent
+            @focus="focus" />
         </div>
         <footer class="apos-color-control__footer">
-          <AposButton
-            type="primary"
-            label="apostrophe:close"
-            :modifiers="['small', 'margin-micro']"
-            @click="close"
-            @mousedown.stop.prevent
-          />
+          <AposButton type="primary" label="apostrophe:close" :modifiers="['small', 'margin-micro']" @click="close"
+            @mousedown.stop.prevent />
         </footer>
       </AposContextMenuDialog>
     </div>
@@ -129,26 +100,23 @@ export default defineComponent({
     const mergedOptions = computed(() => {
       return {
         ...defaultOptions,
-        ...userOptions.value.pickerOptions,
-        presetColors: userOptions.value.pickerOptions?.presetColors || defaultOptions.presetColors,
-        format: userOptions.value.format || defaultOptions.format
+        ...userOptions.value.colorOptions
       };
     });
 
-    const pickerOptions = computed(() => {
+    const colorOptions = computed(() => {
       const {
-        presetColors, disableAlpha, disableFields
+        presetColors, disableAlpha, disableFields, format
       } = mergedOptions.value;
 
       return {
-        presetColors,
-        disableAlpha,
-        disableFields
+        format,
+        pickerOptions: {
+          presetColors,
+          disableAlpha,
+          disableFields
+        }
       };
-    });
-
-    const format = computed(() => {
-      return mergedOptions.value.format;
     });
 
     const pickerValue = ref(next.value || '');
@@ -204,7 +172,7 @@ export default defineComponent({
     return {
       active,
       indicatorColor,
-      pickerOptions,
+      colorOptions,
       pickerValue,
       hasSelection,
       startsNull,
@@ -219,62 +187,62 @@ export default defineComponent({
 </script>
 
 <style lang="scss" scoped>
-  .apos-color-control {
-    position: relative;
-    display: inline-block;
-  }
+.apos-color-control {
+  position: relative;
+  display: inline-block;
+}
 
-  .apos-color-button {
-    display: flex;
-    align-items: center;
-    border: none;
-    background-color: transparent;
-    cursor: pointer;
-  }
+.apos-color-button {
+  display: flex;
+  align-items: center;
+  border: none;
+  background-color: transparent;
+  cursor: pointer;
+}
 
-  .color-indicator {
-    flex-shrink: 0;
-    width: 12px;
-    height: 12px;
-    margin-right: 5px;
-    border-radius: 50%;
-  }
+.color-indicator {
+  flex-shrink: 0;
+  width: 12px;
+  height: 12px;
+  margin-right: 5px;
+  border-radius: 50%;
+}
 
-  .button-label {
-    margin-right: 5px;
-  }
+.button-label {
+  margin-right: 5px;
+}
 
-  .chevron-down {
-    display: inline-block;
-    padding: 3px;
-    border: solid var(--a-base-8);
-    border-width: 0 2px 2px 0;
-    transform: rotate(45deg);
-  }
+.chevron-down {
+  display: inline-block;
+  padding: 3px;
+  border: solid var(--a-base-8);
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+}
 
-  .apos-color-control__dialog {
-    z-index: $z-index-modal;
-    position: absolute;
-    top: calc(100% + 15px);
-    left: 5px;
-    opacity: 0;
-    pointer-events: none;
-    width: auto;
-    max-width: 90%;
+.apos-color-control__dialog {
+  z-index: $z-index-modal;
+  position: absolute;
+  top: calc(100% + 15px);
+  left: 5px;
+  opacity: 0;
+  pointer-events: none;
+  width: auto;
+  max-width: 90%;
 
-    &.apos-is-triggered.apos-has-selection {
-      opacity: 1;
-      pointer-events: auto;
-    }
+  &.apos-is-triggered.apos-has-selection {
+    opacity: 1;
+    pointer-events: auto;
   }
+}
 
-  .apos-is-active {
-    background-color: var(--a-base-7);
-  }
+.apos-is-active {
+  background-color: var(--a-base-7);
+}
 
-  .apos-color-control__footer {
-    display: flex;
-    justify-content: flex-end;
-    margin-top: 10px;
-  }
+.apos-color-control__footer {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 10px;
+}
 </style>

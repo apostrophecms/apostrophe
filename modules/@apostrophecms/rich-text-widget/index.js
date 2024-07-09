@@ -918,8 +918,7 @@ module.exports = {
           linkWithType: Array.isArray(self.options.linkWithType) ? self.options.linkWithType : [ self.options.linkWithType ],
           linkSchema: self.linkSchema,
           imageStyles: self.options.imageStyles,
-          pickerOptions: self.options.pickerOptions,
-          format: self.options.format
+          colorOptions: self.options.colorOptions
         };
         return finalData;
       }
