@@ -32,6 +32,7 @@ was old, but was masked in some situations until the release of version `4.4.3`.
 * Fixes weird slug computations based on followed values like title. Simplifies based on the new tech design.
 * Prevent broken admin UI when there is a missing widget.
 * Fixes media manager not loading images when last infinite scroll page have been reached (when uploading image for example).
+* Upgrade oembetter versions to allow all vimeo urls.
 
 ### Changes
 
