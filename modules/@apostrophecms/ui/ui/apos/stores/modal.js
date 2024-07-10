@@ -67,7 +67,11 @@ export const useModalStore = defineStore('modal', () => {
         resolve,
         props: props || {},
         elementsToFocus: [],
-        focusedElement: null
+        focusedElement: null,
+        locale: activeModal.value?.locale || apos.i18n.locale,
+        hasContextLocale: activeModal.value
+          ? (activeModal.value.hasContextLocale || activeModal.value.locale !== apos.i18n.locale)
+          : false
       };
 
       activeId.value = item.id;
