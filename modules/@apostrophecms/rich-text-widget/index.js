@@ -919,7 +919,7 @@ module.exports = {
           linkWithType: Array.isArray(self.options.linkWithType) ? self.options.linkWithType : [ self.options.linkWithType ],
           linkSchema: self.linkSchema,
           imageStyles: self.options.imageStyles,
-          colorOptions: self.options.colorOptions
+          color: self.options.color
         };
         return finalData;
       }

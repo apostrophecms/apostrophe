@@ -129,7 +129,7 @@ export default defineComponent({
     const mergedOptions = computed(() => {
       return {
         ...defaultOptions,
-        ...userOptions.value.colorOptions
+        ...userOptions.value.color
       };
     });
 
