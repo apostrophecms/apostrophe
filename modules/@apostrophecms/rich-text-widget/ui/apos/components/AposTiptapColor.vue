@@ -129,9 +129,7 @@ export default defineComponent({
     const mergedOptions = computed(() => {
       return {
         ...defaultOptions,
-        ...userOptions.value.pickerOptions,
-        presetColors: userOptions.value.pickerOptions?.presetColors || defaultOptions.presetColors,
-        format: userOptions.value.format || defaultOptions.format
+        ...userOptions.value.color
       };
     });
 
@@ -219,62 +217,62 @@ export default defineComponent({
 </script>
 
 <style lang="scss" scoped>
-  .apos-color-control {
-    position: relative;
-    display: inline-block;
-  }
+.apos-color-control {
+  position: relative;
+  display: inline-block;
+}
 
-  .apos-color-button {
-    display: flex;
-    align-items: center;
-    border: none;
-    background-color: transparent;
-    cursor: pointer;
-  }
+.apos-color-button {
+  display: flex;
+  align-items: center;
+  border: none;
+  background-color: transparent;
+  cursor: pointer;
+}
 
-  .color-indicator {
-    flex-shrink: 0;
-    width: 12px;
-    height: 12px;
-    margin-right: 5px;
-    border-radius: 50%;
-  }
+.color-indicator {
+  flex-shrink: 0;
+  width: 12px;
+  height: 12px;
+  margin-right: 5px;
+  border-radius: 50%;
+}
 
-  .button-label {
-    margin-right: 5px;
-  }
+.button-label {
+  margin-right: 5px;
+}
 
-  .chevron-down {
-    display: inline-block;
-    padding: 3px;
-    border: solid var(--a-base-8);
-    border-width: 0 2px 2px 0;
-    transform: rotate(45deg);
-  }
+.chevron-down {
+  display: inline-block;
+  padding: 3px;
+  border: solid var(--a-base-8);
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+}
 
-  .apos-color-control__dialog {
-    z-index: $z-index-modal;
-    position: absolute;
-    top: calc(100% + 15px);
-    left: 5px;
-    opacity: 0;
-    pointer-events: none;
-    width: auto;
-    max-width: 90%;
+.apos-color-control__dialog {
+  z-index: $z-index-modal;
+  position: absolute;
+  top: calc(100% + 15px);
+  left: 5px;
+  opacity: 0;
+  pointer-events: none;
+  width: auto;
+  max-width: 90%;
 
-    &.apos-is-triggered.apos-has-selection {
-      opacity: 1;
-      pointer-events: auto;
-    }
+  &.apos-is-triggered.apos-has-selection {
+    opacity: 1;
+    pointer-events: auto;
   }
+}
 
-  .apos-is-active {
-    background-color: var(--a-base-7);
-  }
+.apos-is-active {
+  background-color: var(--a-base-7);
+}
 
-  .apos-color-control__footer {
-    display: flex;
-    justify-content: flex-end;
-    margin-top: 10px;
-  }
+.apos-color-control__footer {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 10px;
+}
 </style>
