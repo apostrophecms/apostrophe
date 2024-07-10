@@ -1,13 +1,13 @@
 # Changelog
 
-## UNRELEASED
+## 4.5.0 (2024-07-10)
 
 ### Adds
 
 * Allow to disable shortcut by setting the option `shortcut: false`
 * Adds a new color picker tool for the rich-text-widget toolbar that matches the existing `color` schema field. This also adds the same `pickerOptions` and `format` options to the rich-text-widget configuration that exist in the `color` schema field.
 * Add missing UI translation keys.
-* Infite scroll in media manager instead of pagination. Makes the header containing the search fix.
+* Infite scroll in media manager instead of pagination and related search fixes.
 * Improves loaders by using new `AposLoadingBlock` that uses `AposLoading` instead of the purple screen in media manager.
 * Select the configured aspect ratio and add `data-apos-field` attributes to the fields inside `AposImageRelationshipEditor.vue`.
 * Add `getShowAdminBar` method. This method can be overriden in projects to drive the admin bar visibility for logged-in users.
