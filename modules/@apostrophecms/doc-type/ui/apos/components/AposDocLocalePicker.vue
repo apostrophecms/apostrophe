@@ -8,7 +8,7 @@
       class="apos-doc-locales__switcher"
       :button="button"
       :unpadded="true"
-      :disabled="hasErrors"
+      :disabled="hasErrors || hasContextLocale"
       menu-placement="bottom-end"
       @open="open"
     >
@@ -23,7 +23,7 @@
 
 <script setup>
 import {
-  ref, inject, nextTick
+  ref, inject, nextTick, computed
 } from 'vue';
 
 const emit = defineEmits([ 'save-doc', 'switch-locale' ]);
@@ -50,21 +50,26 @@ const props = defineProps({
   hasErrors: {
     type: Boolean,
     required: true
+  },
+  hasContextLocale: {
+    type: Boolean,
+    required: true
   }
 });
 
 const $t = inject('i18n');
 const menu = ref(null);
 const localized = ref({});
-const button = {
+const button = computed(() => ({
   label: {
-    key: apos.i18n.locale,
+    key: props.locale,
     localize: false
   },
   icon: 'chevron-down-icon',
   modifiers: [ 'icon-right', 'no-motion', 'uppercase' ],
   type: 'quiet'
-};
+
+}));
 
 async function open() {
   const docs = await apos.http.get(
@@ -108,7 +113,7 @@ async function switchLocale(locale) {
     }
   }
 
-  emit('switch-locale', locale);
+  emit('switch-locale', locale.name);
 }
 </script>
 

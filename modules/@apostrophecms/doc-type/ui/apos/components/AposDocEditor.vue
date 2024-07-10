@@ -16,14 +16,15 @@
       />
     </template>
     <template #localeDisplay>
-      <!-- later we will use the modal locale here -->
       <AposDocLocalePicker
         :locale="modalData.locale"
         :doc-id="docId"
         :module-options="moduleOptions"
         :is-modified="isModified"
         :has-errors="errorCount > 0"
+        :has-context-locale="modalData.hasContextLocale"
         @save-doc="saveHandler('onSave')"
+        @switch-locale="switchLocale"
       />
     </template>
     <template #primaryControls>
@@ -126,6 +127,7 @@
 
 <script>
 import { klona } from 'klona';
+import { mapActions } from 'pinia';
 import AposModifiedMixin from 'Modules/@apostrophecms/ui/mixins/AposModifiedMixin';
 import AposModalTabsMixin from 'Modules/@apostrophecms/modal/mixins/AposModalTabsMixin';
 import AposEditorMixin from 'Modules/@apostrophecms/modal/mixins/AposEditorMixin';
@@ -134,6 +136,7 @@ import AposArchiveMixin from 'Modules/@apostrophecms/ui/mixins/AposArchiveMixin'
 import AposAdvisoryLockMixin from 'Modules/@apostrophecms/ui/mixins/AposAdvisoryLockMixin';
 import AposDocErrorsMixin from 'Modules/@apostrophecms/modal/mixins/AposDocErrorsMixin';
 import { detectDocChange } from 'Modules/@apostrophecms/schema/lib/detectChange';
+import { useModalStore } from 'Modules/@apostrophecms/ui/stores/modal';
 
 export default {
   name: 'AposDocEditor',
@@ -449,6 +452,7 @@ export default {
     apos.bus.$off('content-changed', this.onContentChanged);
   },
   methods: {
+    ...mapActions(useModalStore, [ 'updateModalData' ]),
     async saveHandler(action) {
       this.triggerValidation = true;
       this.$nextTick(async () => {
@@ -840,6 +844,9 @@ export default {
     },
     close() {
       this.modal.showModal = false;
+    },
+    switchLocale(locale) {
+      this.updateModalData(this.modalData.id, { locale });
     }
   }
 };
