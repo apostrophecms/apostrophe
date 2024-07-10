@@ -8,7 +8,7 @@
       class="apos-doc-locales__switcher"
       :button="button"
       :unpadded="true"
-      :disabled="disabled"
+      :disabled="hasErrors"
       menu-placement="bottom-end"
       @open="open"
     >
@@ -22,7 +22,9 @@
 </template>
 
 <script setup>
-import { ref, inject } from 'vue';
+import {
+  ref, inject, nextTick
+} from 'vue';
 
 const emit = defineEmits([ 'save-doc' ]);
 const props = defineProps({
@@ -45,7 +47,7 @@ const props = defineProps({
     type: Boolean,
     required: true
   },
-  disabled: {
+  hasErrors: {
     type: Boolean,
     required: true
   }
@@ -94,11 +96,15 @@ async function switchLocale() {
 
     if (saveAndSwitch) {
       emit('save-doc');
-      // TODO: If error during save we do not want to switch locale
+      await nextTick();
+      if (props.hasErrors) {
+        return;
+      }
     }
-
-    // TODO: switch locale
   }
+
+  console.log('=====> switch locale <=====');
+  // TODO: switch locale
 }
 </script>
 

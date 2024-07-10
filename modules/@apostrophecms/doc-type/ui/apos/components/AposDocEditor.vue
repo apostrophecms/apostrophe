@@ -21,8 +21,8 @@
         :doc-id="docId"
         :module-options="moduleOptions"
         :is-modified="isModified"
-        :disabled="errorCount > 0"
-        @save-doc="onSave"
+        :has-errors="errorCount > 0"
+        @save-doc="saveHandler('onSave')"
       />
     </template>
     <template #primaryControls>
