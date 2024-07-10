@@ -21,6 +21,7 @@
         :doc-id="docId"
         :module-options="moduleOptions"
         :is-modified="isModified"
+        :disabled="errorCount > 0"
         @save-doc="onSave"
       />
     </template>

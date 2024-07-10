@@ -8,6 +8,7 @@
       class="apos-doc-locales__switcher"
       :button="button"
       :unpadded="true"
+      :disabled="disabled"
       menu-placement="bottom-end"
       @open="open"
     >
@@ -41,6 +42,10 @@ const props = defineProps({
     })
   },
   isModified: {
+    type: Boolean,
+    required: true
+  },
+  disabled: {
     type: Boolean,
     required: true
   }
