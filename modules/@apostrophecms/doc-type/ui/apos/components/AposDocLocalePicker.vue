@@ -113,7 +113,7 @@ async function switchLocale(locale) {
     }
   }
 
-  emit('switch-locale', locale.name);
+  emit('switch-locale', locale.name, localized.value[locale.name]);
 }
 </script>
 

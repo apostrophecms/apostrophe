@@ -204,7 +204,7 @@ export default {
   },
   computed: {
     getOnePath() {
-      return `${this.moduleAction}/${this.docId}`;
+      return this.getRequestPath(this.docId);
     },
     followingUtils() {
       return this.followingValues('utility');
@@ -472,10 +472,11 @@ export default {
         }
       });
     },
-    async loadDoc() {
+    async loadDoc(docId = this.docId) {
       let docData;
+      const requestPath = this.getRequestPath(docId);
       try {
-        docData = await apos.http.get(this.getOnePath, {
+        docData = await apos.http.get(requestPath, {
           busy: true,
           qs: {
             archived: 'any'
@@ -490,7 +491,7 @@ export default {
         }
         const canEdit = docData._edit || this.moduleOptions.canEdit;
         this.readOnly = canEdit === false;
-        if (canEdit && !await this.lock(this.getOnePath, this.docId)) {
+        if (canEdit && !await this.lock(requestPath, docId)) {
           this.lockNotAvailable();
           return;
         }
@@ -845,8 +846,14 @@ export default {
     close() {
       this.modal.showModal = false;
     },
-    switchLocale(locale) {
+    switchLocale(locale, localized) {
       this.updateModalData(this.modalData.id, { locale });
+      if (localized) {
+        this.loadDoc(localized._id);
+      }
+    },
+    getRequestPath(docId) {
+      return `${this.moduleAction}/${docId}`;
     }
   }
 };
