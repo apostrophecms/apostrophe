@@ -80,7 +80,11 @@ async function switchLocale() {
         { docType: props.moduleOptions.label.toLowerCase() }
       ),
       negativeLabel: 'apostrophe:localeSwitcherDiscardChangesNegative',
-      affirmativeLabel: 'apostrophe:localeSwitcherDiscardChangesAffirmative'
+      affirmativeLabel: 'apostrophe:localeSwitcherDiscardChangesAffirmative',
+      icon: false
+    }, {
+      hasCloseButton: true,
+      tiny: true
     });
 
     if (saveAndSwitch) {
