@@ -5,7 +5,7 @@
       :is="modal.componentName"
       v-for="modal in store.stack"
       :key="modal.id"
-      :modal-id="modal.id"
+      :modal-data="modal"
       @modal-result="store.setModalResult(modal.id, $event)"
     />
   </div>
