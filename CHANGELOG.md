@@ -1,6 +1,6 @@
 # Changelog
 
-## UNRELEASED
+## 2.227.2 (2024-07-10)
 
 ### Changes
 
