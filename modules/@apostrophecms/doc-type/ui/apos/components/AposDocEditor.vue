@@ -3,6 +3,7 @@
     class="apos-doc-editor"
     :modal="modal"
     :modal-title="modalTitle"
+    :modal-data="modalData"
     @inactive="modal.active = false"
     @show-modal="modal.showModal = true"
     @esc="confirmAndCancel"
@@ -17,7 +18,7 @@
     <template #localeDisplay>
       <!-- later we will use the modal locale here -->
       <AposDocLocalePicker
-        :locale="docFields.data.aposLocale"
+        :locale="modalData.locale"
         :doc-id="docId"
         :module-options="moduleOptions"
         :is-modified="isModified"
@@ -167,6 +168,10 @@ export default {
     copyOfId: {
       type: String,
       default: null
+    },
+    modalData: {
+      type: Object,
+      required: true
     }
   },
   emits: [ 'modal-result' ],

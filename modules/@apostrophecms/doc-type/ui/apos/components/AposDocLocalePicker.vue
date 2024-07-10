@@ -26,7 +26,7 @@ import {
   ref, inject, nextTick
 } from 'vue';
 
-const emit = defineEmits([ 'save-doc' ]);
+const emit = defineEmits([ 'save-doc', 'switch-locale' ]);
 const props = defineProps({
   locale: {
     type: String,
@@ -77,8 +77,13 @@ async function open() {
   );
 };
 
-async function switchLocale() {
+async function switchLocale(locale) {
   menu.value.hide();
+
+  if (locale.name === props.locale) {
+    return;
+  }
+
   if (props.isModified) {
     const saveAndSwitch = await apos.confirm({
       heading: 'apostrophe:unsavedChanges',
@@ -95,7 +100,7 @@ async function switchLocale() {
     });
 
     if (saveAndSwitch) {
-      emit('save-doc');
+      emit('save-doc', locale);
       await nextTick();
       if (props.hasErrors) {
         return;
@@ -103,8 +108,7 @@ async function switchLocale() {
     }
   }
 
-  console.log('=====> switch locale <=====');
-  // TODO: switch locale
+  emit('switch-locale', locale);
 }
 </script>
 
