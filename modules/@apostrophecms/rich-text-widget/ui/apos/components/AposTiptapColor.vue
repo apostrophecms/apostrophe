@@ -15,7 +15,6 @@
         delay: 650
       }"
       @click="click"
-      @mousedown.stop.prevent
     >
       <template #label>
         <AposIndicator icon="chevron-down-icon" />
@@ -35,13 +34,12 @@
         <div
           v-if="editor"
           class="text-color-component"
-          @mousedown.stop.prevent
+          @mousedown="handleMouseDown"
         >
           <Picker
             v-bind="pickerOptions"
             :model-value="pickerValue"
             @update:model-value="update"
-            @mousedown.stop.prevent
             @focus="focus"
           />
         </div>
@@ -51,7 +49,6 @@
             label="apostrophe:close"
             :modifiers="['small', 'margin-micro']"
             @click="close"
-            @mousedown.stop.prevent
           />
         </footer>
       </AposContextMenuDialog>
@@ -199,6 +196,15 @@ export default defineComponent({
       props.editor.view.dom.focus();
     };
 
+    const handleMouseDown = (event) => {
+      const target = event.target;
+      if (target.closest('.vc-sketch-saturation-wrap') || target.closest('.vc-sketch-presets')) {
+        event.preventDefault();
+      } else {
+        props.editor.view.dom.focus();
+      }
+    };
+
     return {
       active,
       indicatorColor,
@@ -210,7 +216,8 @@ export default defineComponent({
       close,
       update,
       click,
-      focus
+      focus,
+      handleMouseDown
     };
   }
 });
