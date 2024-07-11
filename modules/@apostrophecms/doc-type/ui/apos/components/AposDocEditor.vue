@@ -14,6 +14,17 @@
         @click="confirmAndCancel"
       />
     </template>
+    <template #localeDisplay>
+      <!-- later we will use the modal locale here -->
+      <AposDocLocalePicker
+        :locale="docFields.data.aposLocale"
+        :doc-id="docId"
+        :module-options="moduleOptions"
+        :is-modified="isModified"
+        :disabled="errorCount > 0"
+        @save-doc="onSave"
+      />
+    </template>
     <template #primaryControls>
       <AposDocContextMenu
         v-if="original"
@@ -168,7 +179,8 @@ export default {
         active: false,
         triggerFocusRefresh: 0,
         type: 'overlay',
-        showModal: false
+        showModal: false,
+        componentType: 'editorModal'
       },
       triggerValidation: false,
       original: null,
