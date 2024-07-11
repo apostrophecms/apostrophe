@@ -1,5 +1,14 @@
 # Changelog
 
+## 4.5.2 (2024-07-11)
+
+### Fixes
+
+* Ensure that `apos.doc.walk` never gets caught in an infinite loop even
+if circular references are present in the data. This is a hotfix for
+an issue that can arise when the new support for breadcrumbs in search
+results is combined with a more inclusive projection for page ancestors.
+
 ## 4.5.1 (2024-07-11)
 
 ### Changes

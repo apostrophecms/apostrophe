@@ -790,6 +790,11 @@ module.exports = {
       // You do not need to pass the `_dotPath` and `_ancestors` arguments.
       // They are used for recursive invocation.
       walk(doc, iterator, _dotPath, _ancestors) {
+        _ancestors = _ancestors || [];
+        if (_ancestors.includes(doc)) {
+          // No infinite loops on circular references
+          return;
+        }
         // We do not use lodash here because of
         // performance issues.
         //
@@ -800,7 +805,7 @@ module.exports = {
         } else {
           _dotPath = '';
         }
-        _ancestors = (_ancestors || []).concat(doc);
+        _ancestors = _ancestors.concat(doc);
         const remove = [];
         for (const key in doc) {
           const __dotPath = _dotPath + key.toString();
