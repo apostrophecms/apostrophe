@@ -13,7 +13,7 @@
         animation: 'fade',
         inertia: true,
         placement: 'bottom',
-        hideOnClick: true
+        hideOnClick: false
       }"
       :editor="editor"
     >
