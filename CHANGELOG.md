@@ -20,6 +20,7 @@
 
 ### Fixes
 
+* Removes unnecessary, broadly applied line-height setting that may cause logged-in vs logged-out visual discrepencies.
 * Remove double GET request when saving image update.
 * Fix filter menu forgetting selecting filters and not instantiating them.
 * Remove blur emit for filter buttons and search bar to avoid re requesting when clicking outside…
