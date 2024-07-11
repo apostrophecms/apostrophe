@@ -1,5 +1,11 @@
 # Changelog
 
+## UNRELEASED
+
+### Changes
+
+* Allow tiptap rich-text widget to open modals for images and links without closing the toolbar.
+
 ## 4.5.0 (2024-07-10)
 
 ### Adds
