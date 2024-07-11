@@ -382,11 +382,26 @@ export default {
       type: this.$t(this.moduleOptions.label)
     };
     if (this.docId) {
-      await this.loadDoc();
+      await this.instantiateExistingDoc();
+    } else if (this.copyOfId) {
+      this.instantiateCopiedDoc();
+    } else {
+      await this.$nextTick();
+      await this.instantiateNewInstance();
+    }
+    apos.bus.$on('content-changed', this.onContentChanged);
+  },
+  unmounted() {
+    apos.bus.$off('content-changed', this.onContentChanged);
+  },
+  methods: {
+    ...mapActions(useModalStore, [ 'updateModalData' ]),
+    async instantiateExistingDoc(docId = this.docId) {
+      await this.loadDoc(docId);
       this.evaluateConditions();
       try {
         if (this.manuallyPublished) {
-          this.published = await apos.http.get(this.getOnePath, {
+          this.published = await apos.http.get(this.getRequestPath(docId), {
             busy: true,
             qs: {
               archived: 'any',
@@ -405,7 +420,8 @@ export default {
         }
       }
       this.modal.triggerFocusRefresh++;
-    } else if (this.copyOfId) {
+    },
+    async instantiateCopiedDoc() {
       this.evaluateConditions();
 
       // Because the page or piece manager might give us just a projected,
@@ -438,20 +454,27 @@ export default {
       this.prepErrors();
       this.docReady = true;
       this.modal.triggerFocusRefresh++;
-    } else {
-      this.$nextTick(async () => {
-        await this.loadNewInstance();
-        this.evaluateConditions();
-        this.modal.triggerFocusRefresh++;
-      });
-    }
-    apos.bus.$on('content-changed', this.onContentChanged);
-  },
-  unmounted() {
-    apos.bus.$off('content-changed', this.onContentChanged);
-  },
-  methods: {
-    ...mapActions(useModalStore, [ 'updateModalData' ]),
+    },
+    async instantiateNewInstance () {
+      this.docReady = false;
+      const newInstance = await this.getNewInstance();
+      this.original = newInstance;
+      if (newInstance && newInstance.type !== this.docType) {
+        this.docType = newInstance.type;
+      }
+      this.docFields.data = newInstance;
+      const slugField = this.schema.find(field => field.name === 'slug');
+      if (slugField) {
+        // As a matter of UI implementation, we know our slug input field will
+        // automatically change the empty string to the prefix, so to
+        // prevent a false positive for this being considered a change,
+        // do it earlier when creating a new doc.
+        this.original.slug = this.original.slug || slugField.def || slugField.prefix || '';
+      }
+      this.prepErrors();
+      this.docReady = true;
+      this.evaluateConditions();
+    },
     async saveHandler(action) {
       this.triggerValidation = true;
       this.$nextTick(async () => {
@@ -683,25 +706,6 @@ export default {
         this.modal.showModal = false;
       }
     },
-    async loadNewInstance () {
-      this.docReady = false;
-      const newInstance = await this.getNewInstance();
-      this.original = newInstance;
-      if (newInstance && newInstance.type !== this.docType) {
-        this.docType = newInstance.type;
-      }
-      this.docFields.data = newInstance;
-      const slugField = this.schema.find(field => field.name === 'slug');
-      if (slugField) {
-        // As a matter of UI implementation, we know our slug input field will
-        // automatically change the empty string to the prefix, so to
-        // prevent a false positive for this being considered a change,
-        // do it earlier when creating a new doc.
-        this.original.slug = this.original.slug || slugField.def || slugField.prefix || '';
-      }
-      this.prepErrors();
-      this.docReady = true;
-    },
     startNew() {
       this.modal.showModal = false;
       apos.bus.$emit('admin-menu-click', {
@@ -845,10 +849,12 @@ export default {
     close() {
       this.modal.showModal = false;
     },
-    switchLocale(locale, localized) {
+    async switchLocale(locale, localized) {
       this.updateModalData(this.modalData.id, { locale });
       if (localized) {
-        this.loadDoc(localized._id);
+        await this.instantiateExistingDoc(localized._id);
+      } else {
+        await this.instantiateNewInstance();
       }
     },
     getRequestPath(docId) {
