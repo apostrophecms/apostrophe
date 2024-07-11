@@ -153,13 +153,17 @@ export default () => {
     let keys;
     let i;
 
+    qat = url.indexOf('?');
     const qs = {
+      ...qat !== -1 && apos.http.parseQuery(url.substring(qat)),
       ...options.qs || {},
       ...options.qs?.aposLocale
         ? { aposLocale: options.qs.aposLocale }
         : { aposLocale: apos.getActiveLocale() }
     };
+
     url = apos.http.addQueryToUrl(url, qs);
+
     if (options.busy) {
       if (!busyActive[busyName]) {
         busyActive[busyName] = 0;
