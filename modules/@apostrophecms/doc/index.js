@@ -805,7 +805,6 @@ module.exports = {
         } else {
           _dotPath = '';
         }
-        _ancestors = _ancestors.concat(doc);
         const remove = [];
         for (const key in doc) {
           const __dotPath = _dotPath + key.toString();
