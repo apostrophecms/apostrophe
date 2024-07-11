@@ -86,7 +86,7 @@ const filteredLocales = computed(() => {
 });
 
 const availableLocales = computed(() => {
-  return locales.value.filter(locale => !!props.localized[locale.name]);
+  return locales.value.filter(locale => isLocalized(locale));
 });
 
 function isLocalized(locale) {
