@@ -198,13 +198,12 @@ export default {
       readOnly: false,
       restoreOnly: false,
       saveMenu: null,
-      generation: 0
+      generation: 0,
+      isLocalizing: false,
+      localized: null
     };
   },
   computed: {
-    getOnePath() {
-      return this.getRequestPath(this.docId);
-    },
     followingUtils() {
       return this.followingValues('utility');
     },
@@ -619,7 +618,15 @@ export default {
       const body = this.docFields.data;
       let route;
       let requestMethod;
-      if (this.docId) {
+      if (this.isLocalizing) {
+        if (this.localized) {
+          route = `${this.moduleAction}/${this.docId}`;
+          requestMethod = apos.http.put;
+        } else {
+          route = `${this.moduleAction}/${this.docId}`;
+          requestMethod = apos.http.post;
+        }
+      } else if (this.docId) {
         route = `${this.moduleAction}/${this.docId}`;
         requestMethod = apos.http.put;
         this.addLockToRequest(body);
@@ -856,6 +863,9 @@ export default {
       } else {
         await this.instantiateNewInstance();
       }
+
+      this.isLocalizing = locale !== apos.i18n.locale;
+      this.localized = localized || null;
     },
     getRequestPath(docId) {
       return `${this.moduleAction}/${docId}`;
