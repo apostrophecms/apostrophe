@@ -2,6 +2,7 @@
   <AposModal
     :modal="modal"
     class="apos-confirm"
+    :class="{ 'apos-confirm--tiny': options.tiny }"
     v-on="mode !== 'alert' ? { esc: cancel } : null"
     @inactive="modal.active = false"
     @show-modal="modal.showModal = true"
@@ -10,6 +11,13 @@
     <template #main>
       <AposModalBody>
         <template #bodyMain>
+          <AposIndicator
+            v-if="options.hasCloseButton"
+            icon="close-icon"
+            class="apos-confirm__close-btn"
+            :icon-size="20"
+            @click="cancel"
+          />
           <img
             v-if="content.icon"
             class="apos-confirm__custom-logo"
@@ -180,6 +188,10 @@ export default {
   padding: 60px;
 }
 
+.apos-confirm--tiny :deep(.apos-modal__body) {
+  padding: 40px;
+}
+
 :deep(.apos-modal__body-main) {
   display: flex;
   flex-direction: column;
@@ -233,5 +245,12 @@ export default {
   & + & {
     margin-left: $spacing-double;
   }
+}
+
+.apos-confirm__close-btn {
+  position: absolute;
+  top: 15px;
+  right: 15px;
+  cursor: pointer;
 }
 </style>

@@ -51,8 +51,14 @@
                   </span>
                   {{ $t(modalTitle) }}
                 </h2>
-                <div v-if="hasBeenLocalized || hasSlot('primaryControls')" class="apos-modal__controls--header">
-                  <div v-if="hasBeenLocalized" class="apos-modal__locale">
+                <div
+                  v-if="hasBeenLocalized || hasSlot('primaryControls') || hasSlot('localeDisplay')"
+                  class="apos-modal__controls--header"
+                >
+                  <div v-if="hasSlot('localeDisplay')" class="apos-modal__locale">
+                    <slot name="localeDisplay" />
+                  </div>
+                  <div v-else-if="hasBeenLocalized" class="apos-modal__locale">
                     <span class="apos-modal__locale-label">
                       {{ $t('apostrophe:locale') }}:
                     </span> <span class="apos-modal__locale-name">
