@@ -187,7 +187,8 @@ export default {
         active: false,
         triggerFocusRefresh: 0,
         type: 'overlay',
-        showModal: false
+        showModal: false,
+        componentType: 'editorModal'
       },
       triggerValidation: false,
       original: null,

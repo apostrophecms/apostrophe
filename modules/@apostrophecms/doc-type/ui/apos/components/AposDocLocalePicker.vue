@@ -68,7 +68,6 @@ const button = computed(() => ({
   icon: 'chevron-down-icon',
   modifiers: [ 'icon-right', 'no-motion', 'uppercase' ],
   type: 'quiet'
-
 }));
 
 async function open() {
