@@ -786,43 +786,40 @@ module.exports = {
       // will be `b`, the value will be `5`, the dotPath
       // will be the string `a.b`, and ancestors will be
       // [ { a: { b: 5 } } ].
-      //
-      // You do not need to pass the `_dotPath` and `_ancestors` arguments.
-      // They are used for recursive invocation.
-      walk(doc, iterator, _dotPath, _ancestors) {
-        _ancestors = _ancestors || [];
-        if (_ancestors.includes(doc)) {
-          // No infinite loops on circular references
-          return;
-        }
-        // We do not use lodash here because of
-        // performance issues.
-        //
-        // Pruning big nested objects is not something we
-        // can afford to do slowly. -Tom
-        if (_dotPath !== undefined) {
-          _dotPath += '.';
-        } else {
-          _dotPath = '';
-        }
-        const remove = [];
-        for (const key in doc) {
-          const __dotPath = _dotPath + key.toString();
-          const ow = '_originalWidgets';
-          if (__dotPath === ow || __dotPath.substring(0, ow.length) === ow + '.') {
-            continue;
+      walk(doc, iterator) {
+        return walkBody(doc, iterator, undefined, []);
+        function walkBody(doc, iterator, _dotPath, _ancestors) {
+          if (_ancestors.includes(doc)) {
+            // No infinite loops on circular references
+            return;
           }
-          if (iterator(doc, key, doc[key], __dotPath, _ancestors) === false) {
-            remove.push(key);
+          // Don't use concat, doc can be an array in which case
+          // it is important to preserve the nesting
+          _ancestors = [ ..._ancestors, doc ];
+          if (_dotPath !== undefined) {
+            _dotPath += '.';
           } else {
-            const val = doc[key];
-            if (typeof val === 'object') {
-              self.walk(val, iterator, __dotPath, _ancestors.concat([ doc ]));
+            _dotPath = '';
+          }
+          const remove = [];
+          for (const key in doc) {
+            const __dotPath = _dotPath + key.toString();
+            const ow = '_originalWidgets';
+            if (__dotPath === ow || __dotPath.substring(0, ow.length) === ow + '.') {
+              continue;
+            }
+            if (iterator(doc, key, doc[key], __dotPath, _ancestors) === false) {
+              remove.push(key);
+            } else {
+              const val = doc[key];
+              if (typeof val === 'object') {
+                walkBody(val, iterator, __dotPath, _ancestors);
+              }
             }
           }
-        }
-        for (const key of remove) {
-          delete doc[key];
+          for (const key of remove) {
+            delete doc[key];
+          }
         }
       },
       // Retry the given "actor" async function until it
