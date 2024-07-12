@@ -201,7 +201,6 @@ export default {
       saveMenu: null,
       generation: 0,
       isLocalizing: false,
-      localized: null,
       currentId: this.docId
     };
   },
@@ -537,6 +536,7 @@ export default {
             ...this.getDefault(),
             ...docData
           };
+          // TODO: Is this block even useful since published is fetched after loadDoc?
           if (this.published) {
             this.changed = detectDocChange(
               this.schema,
@@ -627,16 +627,8 @@ export default {
       const body = this.docFields.data;
       let route;
       let requestMethod;
-      if (this.isLocalizing) {
-        if (this.localized) {
-          route = `${this.moduleAction}/${this.docId}`;
-          requestMethod = apos.http.put;
-        } else {
-          route = `${this.moduleAction}/${this.docId}`;
-          requestMethod = apos.http.post;
-        }
-      } else if (this.docId) {
-        route = `${this.moduleAction}/${this.docId}`;
+      if (this.currentId) {
+        route = `${this.moduleAction}/${this.currentId}`;
         requestMethod = apos.http.put;
         this.addLockToRequest(body);
       } else {
@@ -650,6 +642,10 @@ export default {
         }
         if (this.copyOfId) {
           body._copyingId = this.copyOfId;
+        } else if (this.isLocalizing) {
+          // TODO: allow to post new piece with given ID
+          console.log('this.docId', this.docId);
+          body.existingId = this.docId;
         }
       }
       let doc;
@@ -867,16 +863,16 @@ export default {
     },
     async switchLocale(locale, localized) {
       this.updateModalData(this.modalData.id, { locale });
+      this.published = null;
       if (localized) {
         this.currentId = localized._id;
         await this.instantiateExistingDoc();
       } else {
-        this.currentId = null;
+        this.currentId = '';
         await this.instantiateNewInstance();
       }
 
       this.isLocalizing = locale !== apos.i18n.locale;
-      this.localized = localized || null;
     }
   }
 };
