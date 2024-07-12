@@ -354,7 +354,9 @@ export default {
     async selectAllPieces () {
       const { results: docs } = await this.request({
         project: {
-          _id: 1
+          _id: 1,
+          _url: 1,
+          title: 1
         },
         attachments: false,
         perPage: this.allPiecesSelection.total

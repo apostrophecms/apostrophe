@@ -1,5 +1,11 @@
 # Changelog
 
+## UNRELEASED
+
+### Changes
+
+* Add `title` and `_url` to select all projection.
+
 ## 4.5.2 (2024-07-11)
 
 ### Fixes
