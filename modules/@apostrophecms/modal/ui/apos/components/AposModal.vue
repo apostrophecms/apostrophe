@@ -136,6 +136,7 @@ const store = useModalStore();
 const slots = useSlots();
 const emit = defineEmits([ 'inactive', 'esc', 'show-modal', 'no-modal', 'ready' ]);
 const modalEl = ref(null);
+const currentLocale = ref(store.activeModal?.locale || apos.i18n.locale);
 
 const transitionType = computed(() => {
   if (props.modal.type !== 'slide') {
@@ -159,10 +160,6 @@ const triggerFocusRefresh = computed(() => {
 
 const hasBeenLocalized = computed(() => {
   return Object.keys(apos.i18n.locales).length > 1;
-});
-
-const currentLocale = computed(() => {
-  return apos.i18n.locale;
 });
 
 function hasSlot(slotName) {
