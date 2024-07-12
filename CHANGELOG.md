@@ -1,5 +1,11 @@
 # Changelog
 
+## UNRELEASED
+
+### Fixes
+
+* Overriding standard Vue.js components with `editorModal` and `managerModal` are now applied all the time.
+
 ## 4.5.2 (2024-07-11)
 
 ### Fixes
