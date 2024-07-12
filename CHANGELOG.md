@@ -7,6 +7,7 @@
 * Ensure that `apos.doc.walk` never gets caught in an infinite loop even if circular references are present in the data. This is a hotfix for an issue that can arise when the new support for breadcrumbs in search results is combined with a more inclusive projection for page ancestors.
 * Correct a longstanding bug in `apos.doc.walk` that led items to be listed twice in the `ancestors` array passed to the iterator.
 * Correct a longstanding bug in `apos.doc.walk` that led ancestors that are themselves arrays to be misrepresented as a series of objects in the `ancestors` array passed to the iterator.
+* For additional guarantees of reliability the `_dotPath` and `_ancestors` arguments to `apos.doc.walk`, which were always clearly documented as for internal use only, can no longer be passed in externally.
 
 ## 4.5.1 (2024-07-11)
 
