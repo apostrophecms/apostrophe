@@ -3,6 +3,7 @@
     ref="modal"
     :modal="modal"
     :modal-title="modalTitle"
+    :modal-data="modalData"
     @esc="confirmAndCancel"
     @inactive="modal.active = false"
     @show-modal="modal.showModal = true"
@@ -138,6 +139,10 @@ export default {
   props: {
     moduleName: {
       type: String,
+      required: true
+    },
+    modalData: {
+      type: Object,
       required: true
     }
   },
@@ -486,8 +491,11 @@ export default {
     },
 
     async onContentChanged({ doc, action }) {
-      await this.getPieces();
-      this.getAllPiecesTotal();
+      const [ docLocale ] = doc.aposLocale.split(':');
+      if (docLocale === this.modalData.locale) {
+        await this.getPieces();
+        this.getAllPiecesTotal();
+      }
     }
   }
 };
