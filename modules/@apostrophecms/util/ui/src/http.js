@@ -115,10 +115,10 @@ export default () => {
       return callback(new Error('url is not defined'));
     }
 
-    if (apos.prefix && options.prefix !== false) {
+    if (apos.sitePrefix && options.prefix !== false) {
       // Prepend the prefix if the URL is absolute:
       if (url.substring(0, 1) === '/') {
-        url = apos.prefix + url;
+        url = apos.sitePrefix + url;
       }
     }
 
@@ -161,7 +161,6 @@ export default () => {
         ? { aposLocale: options.qs.aposLocale }
         : { aposLocale: apos.getActiveLocale() }
     };
-
     url = apos.http.addQueryToUrl(url, qs);
 
     if (options.busy) {
