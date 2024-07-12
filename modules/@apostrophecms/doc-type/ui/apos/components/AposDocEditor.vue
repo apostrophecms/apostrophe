@@ -18,7 +18,7 @@
     <template #localeDisplay>
       <AposDocLocalePicker
         :locale="modalData.locale"
-        :doc-id="docId"
+        :doc-id="currentId"
         :module-options="moduleOptions"
         :is-modified="isModified"
         :has-errors="errorCount > 0"
@@ -84,7 +84,7 @@
               :utility-rail="false"
               :following-values="followingValues('other')"
               :conditional-fields="conditionalFields"
-              :doc-id="docId"
+              :doc-id="currentId"
               :model-value="docFields"
               :meta="docMeta"
               :server-errors="serverErrors"
@@ -110,7 +110,7 @@
             :utility-rail="true"
             :following-values="followingUtils"
             :conditional-fields="conditionalFields"
-            :doc-id="docId"
+            :doc-id="currentId"
             :model-value="docFields"
             :meta="docMeta"
             :modifiers="['small', 'inverted']"
@@ -201,10 +201,14 @@ export default {
       saveMenu: null,
       generation: 0,
       isLocalizing: false,
-      localized: null
+      localized: null,
+      currentId: this.docId
     };
   },
   computed: {
+    getOnePath() {
+      return `${this.moduleAction}/${this.currentId}`;
+    },
     followingUtils() {
       return this.followingValues('utility');
     },
@@ -239,7 +243,7 @@ export default {
         // Always block save if there are errors in the modal
         return true;
       }
-      if (!this.docId) {
+      if (!this.currentId) {
         // If it is new you can always save it, even just to insert it with
         // defaults is sometimes useful
         return false;
@@ -396,12 +400,12 @@ export default {
   },
   methods: {
     ...mapActions(useModalStore, [ 'updateModalData' ]),
-    async instantiateExistingDoc(docId = this.docId) {
-      await this.loadDoc(docId);
+    async instantiateExistingDoc() {
+      await this.loadDoc();
       this.evaluateConditions();
       try {
         if (this.manuallyPublished) {
-          this.published = await apos.http.get(this.getRequestPath(docId), {
+          this.published = await apos.http.get(this.getOnePath, {
             busy: true,
             qs: {
               archived: 'any',
@@ -494,11 +498,10 @@ export default {
         }
       });
     },
-    async loadDoc(docId = this.docId) {
+    async loadDoc() {
       let docData;
-      const requestPath = this.getRequestPath(docId);
       try {
-        docData = await apos.http.get(requestPath, {
+        docData = await apos.http.get(this.getOnePath, {
           busy: true,
           qs: {
             archived: 'any'
@@ -513,7 +516,7 @@ export default {
         }
         const canEdit = docData._edit || this.moduleOptions.canEdit;
         this.readOnly = canEdit === false;
-        if (canEdit && !await this.lock(requestPath, docId)) {
+        if (canEdit && !await this.lock(this.getOnePath, this.currentId)) {
           this.lockNotAvailable();
           return;
         }
@@ -535,7 +538,12 @@ export default {
             ...docData
           };
           if (this.published) {
-            this.changed = detectDocChange(this.schema, this.original, this.published, { differences: true });
+            this.changed = detectDocChange(
+              this.schema,
+              this.original,
+              this.published,
+              { differences: true }
+            );
           }
           this.docReady = true;
           this.prepErrors();
@@ -860,16 +868,15 @@ export default {
     async switchLocale(locale, localized) {
       this.updateModalData(this.modalData.id, { locale });
       if (localized) {
-        await this.instantiateExistingDoc(localized._id);
+        this.currentId = localized._id;
+        await this.instantiateExistingDoc();
       } else {
+        this.currentId = null;
         await this.instantiateNewInstance();
       }
 
       this.isLocalizing = locale !== apos.i18n.locale;
       this.localized = localized || null;
-    },
-    getRequestPath(docId) {
-      return `${this.moduleAction}/${docId}`;
     }
   }
 };
