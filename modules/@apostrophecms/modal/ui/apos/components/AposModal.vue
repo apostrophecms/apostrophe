@@ -58,13 +58,11 @@
                   <div v-if="hasSlot('localeDisplay')" class="apos-modal__locale">
                     <slot name="localeDisplay" />
                   </div>
-                  <div v-else-if="hasBeenLocalized" class="apos-modal__locale">
-                    <span class="apos-modal__locale-label">
-                      {{ $t('apostrophe:locale') }}:
-                    </span> <span class="apos-modal__locale-name">
-                      {{ currentLocale }}
-                    </span>
-                  </div>
+                  <AposLocale
+                    v-else-if="hasBeenLocalized"
+                    class="apos-modal__locale"
+                    :locale="currentLocale"
+                  />
                   <div v-if="hasSlot('primaryControls')" class="apos-modal__controls--primary">
                     <slot name="primaryControls" />
                   </div>
@@ -457,14 +455,7 @@ function close() {
   }
 
   .apos-modal__locale {
-    @include type-base;
-
     margin-right: $spacing-double;
-    font-weight: var(--a-weight-bold);
-  }
-
-  .apos-modal__locale-name {
-    color: var(--a-primary);
   }
 
   .apos-modal__heading {
