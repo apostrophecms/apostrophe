@@ -8,7 +8,7 @@
       class="apos-doc-locales__switcher"
       :button="button"
       :unpadded="true"
-      :disabled="hasErrors || hasContextLocale"
+      :disabled="hasErrors"
       menu-placement="bottom-end"
       @open="open"
     >
@@ -48,10 +48,6 @@ const props = defineProps({
     required: true
   },
   hasErrors: {
-    type: Boolean,
-    required: true
-  },
-  hasContextLocale: {
     type: Boolean,
     required: true
   }

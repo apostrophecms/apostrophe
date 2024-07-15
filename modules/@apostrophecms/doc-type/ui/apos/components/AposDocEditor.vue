@@ -15,14 +15,13 @@
         @click="confirmAndCancel"
       />
     </template>
-    <template #localeDisplay>
+    <template v-if="showLocalePicker" #localeDisplay>
       <AposDocLocalePicker
         :locale="modalData.locale"
         :doc-id="currentId"
         :module-options="moduleOptions"
         :is-modified="isModified"
         :has-errors="errorCount > 0"
-        :has-context-locale="modalData.hasContextLocale"
         @save-doc="saveHandler('onSave')"
         @switch-locale="switchLocale"
       />
@@ -352,6 +351,9 @@ export default {
         pref = null;
       }
       return pref;
+    },
+    showLocalePicker() {
+      return this.moduleOptions.localized !== false && !this.modalData.hasContextLocale;
     }
   },
   watch: {
