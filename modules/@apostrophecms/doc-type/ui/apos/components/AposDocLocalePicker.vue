@@ -23,7 +23,7 @@
 
 <script setup>
 import {
-  ref, inject, nextTick, computed
+  ref, inject, computed
 } from 'vue';
 
 const emit = defineEmits([ 'save-doc', 'switch-locale' ]);
@@ -71,6 +71,9 @@ const button = computed(() => {
 });
 
 async function open() {
+  if (!props.docId) {
+    return;
+  }
   const docs = await apos.http.get(
     `${props.moduleOptions.action}/${props.docId}/locales`, { busy: true }
   );
@@ -88,8 +91,8 @@ async function switchLocale(locale) {
     return;
   }
 
-  if (props.isModified) {
-    const saveAndSwitch = await apos.confirm({
+  const save = props.isModified
+    ? await apos.confirm({
       heading: 'apostrophe:unsavedChanges',
       description: $t(
         'apostrophe:localeSwitcherDiscardChangesPrompt',
@@ -101,18 +104,13 @@ async function switchLocale(locale) {
     }, {
       hasCloseButton: true,
       tiny: true
-    });
+    }) : false;
 
-    if (saveAndSwitch) {
-      emit('save-doc', locale);
-      await nextTick();
-      if (props.hasErrors) {
-        return;
-      }
-    }
-  }
-
-  emit('switch-locale', locale.name, localized.value[locale.name]);
+  emit('switch-locale', {
+    locale: locale.name,
+    localized: localized.value[locale.name],
+    save
+  });
 }
 </script>
 

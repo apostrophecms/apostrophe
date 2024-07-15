@@ -18,7 +18,7 @@
     <template v-if="showLocalePicker" #localeDisplay>
       <AposDocLocalePicker
         :locale="modalData.locale"
-        :doc-id="currentId"
+        :doc-id="docId"
         :module-options="moduleOptions"
         :is-modified="isModified"
         :has-errors="errorCount > 0"
