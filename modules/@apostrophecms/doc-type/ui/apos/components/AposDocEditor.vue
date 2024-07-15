@@ -642,10 +642,8 @@ export default {
         }
         if (this.copyOfId) {
           body._copyingId = this.copyOfId;
-        } else if (this.isLocalizing) {
-          // TODO: allow to post new piece with given ID
-          console.log('this.docId', this.docId);
-          body.existingId = this.docId;
+        } else if (this.isLocalizing && this.docId) {
+          body._createId = this.docId.split(':')[0];
         }
       }
       let doc;
