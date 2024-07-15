@@ -60,15 +60,19 @@ const props = defineProps({
 const $t = inject('i18n');
 const menu = ref(null);
 const localized = ref({});
-const button = computed(() => ({
-  label: {
-    key: props.locale,
-    localize: false
-  },
-  icon: 'chevron-down-icon',
-  modifiers: [ 'icon-right', 'no-motion', 'uppercase' ],
-  type: 'quiet'
-}));
+const button = computed(() => {
+  const label = apos.i18n.locales[props.locale]?.label;
+  const key = label ? `${label} (${props.locale})` : props.locale;
+  return {
+    label: {
+      key,
+      localize: false
+    },
+    icon: 'chevron-down-icon',
+    modifiers: [ 'icon-right', 'no-motion' ],
+    type: 'quiet'
+  };
+});
 
 async function open() {
   const docs = await apos.http.get(
@@ -122,14 +126,18 @@ async function switchLocale(locale) {
   flex-direction: row;
   align-items: center;
   justify-content: center;
+
 }
 
 .apos-doc-locales__label {
+  @include type-base;
+
   margin-right: 0.3rem;
+  font-weight: var(--a-weight-bold);
 }
 
 .apos-doc-locales__switcher :deep(.apos-button__label) {
-  @include type-small;
+  @include type-base;
 
   color: var(--a-primary);
   font-weight: var(--a-weight-bold);
