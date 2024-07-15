@@ -471,6 +471,11 @@ export default {
                 : this.moduleLabels.plural
             }
           });
+          if (action === 'archive') {
+            await this.getPieces();
+            this.getAllPiecesTotal();
+            this.checked = [];
+          }
         } catch (error) {
           apos.notify('apostrophe:errorBatchOperationNoti', {
             interpolate: { operation: label },
@@ -490,6 +495,9 @@ export default {
     async onContentChanged({ doc, action }) {
       await this.getPieces();
       this.getAllPiecesTotal();
+      if (action === 'archive') {
+        this.checked = this.checked.filter(checkedId => doc._id !== checkedId);
+      }
     }
   }
 };

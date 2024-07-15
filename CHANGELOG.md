@@ -6,6 +6,7 @@
 
 * Add `title` and `_url` to select all projection.
 * Display `Select all` message on all pages in the manager modal.
+* Refresh `checked` in manager modal after archive action.
 
 ## 4.5.2 (2024-07-11)
 
