@@ -22,7 +22,6 @@
         :module-options="moduleOptions"
         :is-modified="isModified"
         :has-errors="errorCount > 0"
-        @save-doc="saveHandler('onSave')"
         @switch-locale="switchLocale"
       />
     </template>
@@ -35,6 +34,7 @@
         :published="published"
         :show-edit="false"
         :can-delete-draft="moduleOptions.canDeleteDraft"
+        :is-localizing="isLocalizing"
         @close="close"
       />
       <AposButton
@@ -480,24 +480,23 @@ export default {
       this.docReady = true;
       this.evaluateConditions();
     },
-    async saveHandler(action) {
+    async saveHandler(action, saveOpts = {}) {
       this.triggerValidation = true;
-      this.$nextTick(async () => {
-        if (this.savePreference !== action) {
-          this.setSavePreference(action);
-        }
-        if (!this.errorCount) {
-          this[action]();
-        } else {
-          this.triggerValidation = false;
-          await apos.notify('apostrophe:resolveErrorsBeforeSaving', {
-            type: 'warning',
-            icon: 'alert-circle-icon',
-            dismiss: true
-          });
-          this.focusNextError();
-        }
-      });
+      await this.$nextTick();
+      if (this.savePreference !== action) {
+        this.setSavePreference(action);
+      }
+      if (!this.errorCount) {
+        await this[action](saveOpts);
+      } else {
+        this.triggerValidation = false;
+        await apos.notify('apostrophe:resolveErrorsBeforeSaving', {
+          type: 'warning',
+          icon: 'alert-circle-icon',
+          dismiss: true
+        });
+        this.focusNextError();
+      }
     },
     async loadDoc() {
       let docData;
@@ -581,17 +580,21 @@ export default {
       await this.restore(this.original);
       await this.loadDoc();
     },
-    async onSave({ navigate = false } = {}) {
+    async onSave({
+      navigate = false, keepOpen = false, andPublish = null
+    } = {}) {
       if (this.canPublish || !this.manuallyPublished) {
         await this.save({
-          andPublish: this.manuallyPublished,
-          navigate
+          andPublish: andPublish ?? this.manuallyPublished,
+          navigate,
+          keepOpen
         });
       } else {
         await this.save({
           andPublish: false,
           andSubmit: true,
-          navigate
+          navigate,
+          keepOpen
         });
       }
     },
@@ -624,7 +627,8 @@ export default {
     async save({
       andPublish = false,
       navigate = false,
-      andSubmit = false
+      andSubmit = false,
+      keepOpen = false
     }) {
       const body = this.docFields.data;
       let route;
@@ -663,7 +667,8 @@ export default {
         }
         apos.bus.$emit('content-changed', {
           doc,
-          action: (requestMethod === apos.http.put) ? 'update' : 'insert'
+          action: (requestMethod === apos.http.put) ? 'update' : 'insert',
+          isLocalizing: this.isLocalizing
         });
       } catch (e) {
         if (this.isLockedError(e)) {
@@ -677,8 +682,10 @@ export default {
           return;
         }
       }
-      this.$emit('modal-result', doc);
-      this.modal.showModal = false;
+      if (!keepOpen) {
+        this.$emit('modal-result', doc);
+        this.modal.showModal = false;
+      }
       if (navigate) {
         if (doc._url) {
           window.location = doc._url;
@@ -861,7 +868,18 @@ export default {
     close() {
       this.modal.showModal = false;
     },
-    async switchLocale(locale, localized) {
+    async switchLocale({
+      locale, localized, save
+    }) {
+      if (save) {
+        await this.saveHandler('onSave', {
+          keepOpen: true,
+          andPublish: false
+        });
+        if (this.errorCount > 0) {
+          return;
+        }
+      }
       this.updateModalData(this.modalData.id, { locale });
       this.published = null;
       if (localized) {
