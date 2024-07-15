@@ -15,7 +15,6 @@ const props = defineProps({
     required: true
   }
 });
-console.log('props.locale', props.locale);
 </script>
 
 <style lang="scss" scoped>

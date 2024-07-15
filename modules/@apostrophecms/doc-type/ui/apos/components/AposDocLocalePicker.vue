@@ -34,7 +34,7 @@ const props = defineProps({
   },
   docId: {
     type: String,
-    required: true
+    default: null
   },
   moduleOptions: {
     type: Object,
