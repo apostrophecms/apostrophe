@@ -83,6 +83,10 @@ export default {
     disabled: {
       type: Boolean,
       default: false
+    },
+    isLocalizing: {
+      type: Boolean,
+      default: false
     }
   },
   emits: [ 'menu-open', 'menu-close', 'close' ],

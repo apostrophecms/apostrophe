@@ -42,7 +42,8 @@ export default {
         });
         apos.bus.$emit('content-changed', {
           doc,
-          action: 'publish'
+          action: 'publish',
+          isLocalizing: this.isLocalizing || false
         });
         return doc;
       } catch (e) {
@@ -97,7 +98,8 @@ export default {
         });
         apos.bus.$emit('content-changed', {
           doc,
-          action: 'unpublish'
+          action: 'unpublish',
+          isLocalizing: this.isLocalizing || false
         });
         return doc;
       } catch (e) {
@@ -131,7 +133,8 @@ export default {
 
         apos.bus.$emit('content-changed', {
           doc: newDoc,
-          action: 'submit'
+          action: 'submit',
+          isLocalizing: this.isLocalizing || false
         });
         return submitted;
       } catch (e) {
@@ -163,7 +166,8 @@ export default {
         };
         apos.bus.$emit('content-changed', {
           doc: newDoc,
-          action: 'dismiss-submission'
+          action: 'dismiss-submission',
+          isLocalizing: this.isLocalizing || false
         });
       } catch (e) {
         await apos.alert({
@@ -211,7 +215,8 @@ export default {
             });
             apos.bus.$emit('content-changed', {
               doc: newDoc,
-              action: 'revert-draft-to-published'
+              action: 'revert-draft-to-published',
+              isLocalizing: this.isLocalizing || false
             });
             return {
               doc: newDoc
@@ -227,7 +232,8 @@ export default {
             });
             apos.bus.$emit('content-changed', {
               doc,
-              action: 'delete'
+              action: 'delete',
+              isLocalizing: this.isLocalizing || false
             });
             return {};
           }
