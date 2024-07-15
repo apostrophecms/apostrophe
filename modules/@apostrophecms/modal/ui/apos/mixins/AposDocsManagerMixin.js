@@ -263,6 +263,10 @@ export default {
           found && this.checkedDocs.push(found);
         }
       });
+      if (this.allPiecesSelection) {
+        this.allPiecesSelection.isSelected = this.checked.length === this.allPiecesSelection.total
+          || (this.checked.length && this.maxReached());
+      }
     }
   }
 };

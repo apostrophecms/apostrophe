@@ -481,7 +481,7 @@ export default {
       }
     },
     setCheckedDocs(checked) {
-      this.checkedDocs = checked;
+      this.checkedDocs = checked.slice(0, this.relationshipField?.max || checked.length);
       this.checked = this.checkedDocs.map(item => {
         return item._id;
       });
