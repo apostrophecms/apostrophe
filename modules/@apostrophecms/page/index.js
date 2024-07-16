@@ -873,8 +873,8 @@ database.`);
           components: {}
         });
         _.defaults(browserOptions.components, {
-          editorModal: 'AposDocEditor',
-          managerModal: 'AposPagesManager'
+          editorModal: self.getComponentName('editorModal', 'AposDocEditor'),
+          managerModal: self.getComponentName('managerModal', 'AposPagesManager')
         });
 
         if (req.data.bestPage) {
