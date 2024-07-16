@@ -21,7 +21,6 @@
         :doc-id="docId"
         :module-options="moduleOptions"
         :is-modified="isModified"
-        :has-errors="errorCount > 0"
         @switch-locale="switchLocale"
       />
     </template>
