@@ -630,28 +630,16 @@ export default {
       andSubmit = false,
       keepOpen = false
     }) {
-      const body = this.docFields.data;
-      let route;
-      let requestMethod;
-      if (this.currentId) {
-        route = `${this.moduleAction}/${this.currentId}`;
-        requestMethod = apos.http.put;
-        this.addLockToRequest(body);
-      } else {
-        route = this.moduleAction;
-        requestMethod = apos.http.post;
+      const body = this.getRequestBody({ update: Boolean(this.currentId) });
+      const route = this.currentId
+        ? `${this.moduleAction}/${this.currentId}`
+        : this.moduleAction;
+      const requestMethod = this.currentId ? apos.http.put : apos.http.post;
 
-        if (this.moduleName === '@apostrophecms/page') {
-          // New pages are always born as drafts
-          body._targetId = apos.page.page._id.replace(':published', ':draft');
-          body._position = 'lastChild';
-        }
-        if (this.copyOfId) {
-          body._copyingId = this.copyOfId;
-        } else if (this.isLocalizing && this.docId) {
-          body._createId = this.docId.split(':')[0];
-        }
+      if (this.currentId) {
+        this.addLockToRequest(body);
       }
+
       let doc;
       try {
         await this.postprocess();
@@ -699,15 +687,7 @@ export default {
     },
     async getNewInstance() {
       try {
-        const body = {
-          _newInstance: true
-        };
-
-        if (this.moduleName === '@apostrophecms/page') {
-          // New pages are always born as drafts
-          body._targetId = apos.page.page._id.replace(':published', ':draft');
-          body._position = 'lastChild';
-        }
+        const body = this.getRequestBody({ newInstance: true });
         const newDoc = await apos.http.post(this.moduleAction, {
           body,
           draft: true
@@ -881,16 +861,44 @@ export default {
         }
       }
       this.updateModalData(this.modalData.id, { locale });
+      this.isLocalizing = locale !== apos.i18n.locale;
       this.published = null;
       if (localized) {
         this.currentId = localized._id;
         await this.instantiateExistingDoc();
       } else {
         this.currentId = '';
+        this.docType = this.moduleName;
         await this.instantiateNewInstance();
       }
+    },
+    getRequestBody({ newInstance = false, update = false }) {
+      const body = newInstance
+        ? { _newInstance: true }
+        : this.docFields.data;
 
-      this.isLocalizing = locale !== apos.i18n.locale;
+      if (update) {
+        return body;
+      }
+
+      if (this.moduleName === '@apostrophecms/page') {
+        // New pages are always born as drafts
+        // When in another locale we don't know if the current page exist
+        body._targetId = this.isLocalizing
+          ? '_home'
+          : apos.page.page._id.replace(':published', ':draft');
+        body._position = 'lastChild';
+      }
+
+      if (!newInstance) {
+        if (this.copyOfId) {
+          body._copyingId = this.copyOfId;
+        } else if (this.isLocalizing && this.docId) {
+          body._createId = this.docId.split(':')[0];
+        }
+      }
+
+      return body;
     }
   }
 };
