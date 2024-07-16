@@ -379,7 +379,7 @@ export default {
       key: 'apostrophe:discardChangesToDocTypePrompt',
       type: this.$t(this.moduleOptions.label)
     };
-    if (this.referenceId) {
+    if (this.docId) {
       await this.instantiateExistingDoc();
     } else if (this.copyOfId) {
       this.instantiateCopiedDoc();
