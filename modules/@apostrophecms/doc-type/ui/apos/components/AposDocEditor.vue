@@ -18,7 +18,7 @@
     <template v-if="showLocalePicker" #localeDisplay>
       <AposDocLocalePicker
         :locale="modalData.locale"
-        :doc-id="docId"
+        :doc-id="referenceDocId"
         :module-options="moduleOptions"
         :is-modified="isModified"
         @switch-locale="switchLocale"
@@ -199,6 +199,7 @@ export default {
       saveMenu: null,
       generation: 0,
       isLocalizing: false,
+      referenceDocId: this.docId,
       currentId: this.docId
     };
   },
@@ -292,17 +293,10 @@ export default {
       return this.filterOutParkedFields(fields);
     },
     modalTitle() {
-      if (this.docId) {
-        return {
-          key: 'apostrophe:editType',
-          type: this.$t(this.moduleOptions.label)
-        };
-      } else {
-        return {
-          key: 'apostrophe:newDocType',
-          type: this.$t(this.moduleOptions.label)
-        };
-      }
+      return {
+        key: this.currentId ? 'apostrophe:editType' : 'apostrophe:newDocType',
+        type: this.$t(this.moduleOptions.label)
+      };
     },
     saveLabel() {
       if (this.restoreOnly) {
@@ -385,7 +379,7 @@ export default {
       key: 'apostrophe:discardChangesToDocTypePrompt',
       type: this.$t(this.moduleOptions.label)
     };
-    if (this.docId) {
+    if (this.referenceId) {
       await this.instantiateExistingDoc();
     } else if (this.copyOfId) {
       this.instantiateCopiedDoc();
@@ -486,7 +480,7 @@ export default {
         this.setSavePreference(action);
       }
       if (!this.errorCount) {
-        await this[action](saveOpts);
+        return this[action](saveOpts);
       } else {
         this.triggerValidation = false;
         await apos.notify('apostrophe:resolveErrorsBeforeSaving', {
@@ -583,13 +577,13 @@ export default {
       navigate = false, keepOpen = false, andPublish = null
     } = {}) {
       if (this.canPublish || !this.manuallyPublished) {
-        await this.save({
+        return this.save({
           andPublish: andPublish ?? this.manuallyPublished,
           navigate,
           keepOpen
         });
       } else {
-        await this.save({
+        return this.save({
           andPublish: false,
           andSubmit: true,
           navigate,
@@ -622,7 +616,6 @@ export default {
         icon: 'file-document-icon'
       });
     },
-    // If andPublish is true, publish after saving.
     async save({
       andPublish = false,
       navigate = false,
@@ -683,6 +676,7 @@ export default {
           });
         }
       }
+      return doc;
     },
     async getNewInstance() {
       try {
@@ -742,7 +736,7 @@ export default {
       const typeLabel = this.$t(this.moduleOptions
         ? this.moduleOptions.label
         : 'document');
-      const isNew = !this.docId;
+      const isNew = !this.currentId;
       // this.original takes a moment to populate, don't crash
       const canPreview = this.original && (this.original._id ? this.original._url : this.original._previewable);
       const canNew = this.moduleOptions.showCreate;
@@ -851,12 +845,15 @@ export default {
       locale, localized, save
     }) {
       if (save) {
-        await this.saveHandler('onSave', {
+        const saved = await this.saveHandler('onSave', {
           keepOpen: true,
           andPublish: false
         });
         if (this.errorCount > 0) {
           return;
+        }
+        if (!this.referenceDocId && saved) {
+          this.referenceDocId = saved._id;
         }
       }
       this.updateModalData(this.modalData.id, { locale });
@@ -892,8 +889,8 @@ export default {
       if (!newInstance) {
         if (this.copyOfId) {
           body._copyingId = this.copyOfId;
-        } else if (this.isLocalizing && this.docId) {
-          body._createId = this.docId.split(':')[0];
+        } else if (this.isLocalizing && this.referenceDocId) {
+          body._createId = this.referenceDocId.split(':')[0];
         }
       }
 
