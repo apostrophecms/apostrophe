@@ -459,8 +459,10 @@ function close() {
   .apos-modal__locale {
     @include type-base;
 
-    margin-right: $spacing-double;
-    font-weight: var(--a-weight-bold);
+    & {
+      margin-right: $spacing-double;
+      font-weight: var(--a-weight-bold);
+    }
   }
 
   .apos-modal__locale-name {
@@ -470,7 +472,9 @@ function close() {
   .apos-modal__heading {
     @include type-title;
 
-    margin: 0;
+    & {
+      margin: 0;
+    }
   }
 
   .apos-modal__controls--secondary {

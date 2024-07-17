@@ -11,15 +11,16 @@
   @include type-base;
   @include apos-transition(all);
 
-  box-sizing: border-box;
-  width: 100%;
-  border: 1px solid var(--a-base-8);
-  border-radius: var(--a-border-radius);
-  background-color: var(--a-base-9);
-  color: var(--a-text-primary);
-  // Some  browser styles set `textarea` to monospace.
-  resize: none;
-
+  & {
+    box-sizing: border-box;
+    width: 100%;
+    border: 1px solid var(--a-base-8);
+    border-radius: var(--a-border-radius);
+    background-color: var(--a-base-9);
+    color: var(--a-text-primary);
+    // Some  browser styles set `textarea` to monospace.
+    resize: none;
+  }
   &::placeholder {
     color: var(--a-base-4);
     font-style: italic;
@@ -147,9 +148,11 @@
 .apos-choice-label {
   @include type-base;
 
-  display: flex;
-  align-items: center;
-  color: var(--a-base-2);
+  & {
+    display: flex;
+    align-items: center;
+    color: var(--a-base-2);
+  }
 
   &:hover:not(.apos-choice-label--disabled) {
     color: var(--a-text-primary);
@@ -237,21 +240,25 @@
 .apos-choice-label-text {
   @include type-base;
 
-  margin-left: $spacing-base;
+  & {
+    margin-left: $spacing-base;
+  }
 }
 
 .apos-input-indicator {
   @include apos-transition($what: all, $duration: 0.1s, $ease: ease-in-out);
 
-  display: inline-flex;
-  flex-shrink: 0;
-  align-items: center;
-  align-self: flex-start;
-  justify-content: center;
-  width: $box-width;
-  height: $box-width;
-  border: 1px solid var(--a-base-4);
-  background-color: var(--a-base-10);
+  & {
+    display: inline-flex;
+    flex-shrink: 0;
+    align-items: center;
+    align-self: flex-start;
+    justify-content: center;
+    width: $box-width;
+    height: $box-width;
+    border: 1px solid var(--a-base-4);
+    background-color: var(--a-base-10);
+  }
 
   .apos-choice-label:hover > &,
   .apos-choice-label:focus > & {

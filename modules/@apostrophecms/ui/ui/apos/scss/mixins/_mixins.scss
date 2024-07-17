@@ -2,7 +2,9 @@
 // until used
 
 @mixin apos-transition($what: all, $duration: 0.1s, $ease: ease-in-out) {
-  transition: $what $duration $ease;
+  & {
+    transition: $what $duration $ease;
+  }
 }
 
 @mixin apos-p-reset() {
@@ -27,23 +29,23 @@
 }
 
 @mixin apos-button-reset() {
-  overflow: visible;
-  width: auto;
-  margin: 0;
-  padding: 0;
-  border: none;
-  color: inherit;
-  background: transparent;
-  font-family: inherit;
-  font-weight: inherit;
-  line-height: inherit;
-  letter-spacing: inherit;
-  text-align: inherit;
-  -webkit-font-smoothing: inherit;
-  -moz-osx-font-smoothing: inherit;
-  // stylelint-disable property-no-vendor-prefix
-  -moz-appearance: none;
-  -webkit-appearance: none;
+    overflow: visible;
+    width: auto;
+    margin: 0;
+    padding: 0;
+    border: none;
+    color: inherit;
+    background: transparent;
+    font-family: inherit;
+    font-weight: inherit;
+    line-height: inherit;
+    letter-spacing: inherit;
+    text-align: inherit;
+    -webkit-font-smoothing: inherit;
+    -moz-osx-font-smoothing: inherit;
+    // stylelint-disable property-no-vendor-prefix
+    -moz-appearance: none;
+    -webkit-appearance: none;
   // stylelint-enable property-no-vendor-prefix
   &:hover {
     cursor: pointer;

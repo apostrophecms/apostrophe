@@ -461,14 +461,16 @@ export default {
 .apos-combo__selected {
   @include type-base;
 
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  background-color: var(--a-white);
-  margin: 2px;
-  padding: 5px 8px;
-  border: 1px solid var(--a-base-8);
-  border-radius: var(--a-border-radius);
+  & {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    background-color: var(--a-white);
+    margin: 2px;
+    padding: 5px 8px;
+    border: 1px solid var(--a-base-8);
+    border-radius: var(--a-border-radius);
+  }
 
   &:hover {
     background-color: var(--a-base-8);
@@ -513,8 +515,10 @@ export default {
 .apos-combo__list-item {
   @include type-base;
 
-  padding: 10px 10px 10px 20px;
-  cursor: pointer;
+  & {
+    padding: 10px 10px 10px 20px;
+    cursor: pointer;
+  }
 
   &.focused {
     background-color: var(--a-base-9);
@@ -524,13 +528,15 @@ export default {
 .apos-combo__typehead {
   @include type-base;
 
-  box-sizing: border-box;
-  flex-grow: 1;
-  margin: 0;
-  padding: 10px 10px 10px 20px;
-  border: none;
-  outline: none;
-  background-color: transparent;
+  & {
+    box-sizing: border-box;
+    flex-grow: 1;
+    margin: 0;
+    padding: 10px 10px 10px 20px;
+    border: none;
+    outline: none;
+    background-color: transparent;
+  }
 }
 
 .apos-combo__spinner {

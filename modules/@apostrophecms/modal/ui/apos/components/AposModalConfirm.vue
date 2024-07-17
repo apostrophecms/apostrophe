@@ -195,24 +195,30 @@ export default {
 .apos-confirm__heading {
   @include type-title;
 
-  line-height: var(--a-line-tall);
-  margin: 0;
+  & {
+    line-height: var(--a-line-tall);
+    margin: 0;
+  }
 }
 
 .apos-confirm__description {
   @include type-base;
 
-  max-width: 370px;
-  line-height: var(--a-line-tallest);
+  & {
+    max-width: 370px;
+    line-height: var(--a-line-tallest);
+  }
 }
 
 .apos-confirm__note {
   @include type-small;
 
-  margin-top: $spacing-double;
-  line-height: var(--a-line-tall);
-  max-width: 355px;
-  color: var(--a-base-2);
+  & {
+    margin-top: $spacing-double;
+    line-height: var(--a-line-tall);
+    max-width: 355px;
+    color: var(--a-base-2);
+  }
 }
 
 .apos-confirm__schema {

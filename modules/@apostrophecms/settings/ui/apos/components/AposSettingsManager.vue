@@ -122,7 +122,9 @@ export default {
   &__heading {
     @include type-title;
 
-    margin: 0 0 $spacing-double;
+    & {
+      margin: 0 0 $spacing-double;
+    }
   }
 
   &__content {
@@ -143,7 +145,9 @@ export default {
 .apos-settings__group-item {
   @include type-base;
 
-  margin-bottom: $spacing-half;
+  & {
+    margin-bottom: $spacing-half;
+  }
 
   &.apos-is-active {
     color: var(--a-primary);
@@ -152,10 +156,12 @@ export default {
   > button {
     @include apos-button-reset();
 
-    width: 100%;
-    padding: $spacing-base 0;
-    // TODO do a11y
-    outline: none;
+    & {
+      width: 100%;
+      padding: $spacing-base 0;
+      // TODO do a11y
+      outline: none;
+    }
   }
 }
 </style>

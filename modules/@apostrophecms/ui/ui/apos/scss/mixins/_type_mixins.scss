@@ -1,5 +1,5 @@
 @mixin link-primary {
-  color: var(--a-primary);
+  & { color: var(--a-primary); }
 
   &:hover,
   &:focus {

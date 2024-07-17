@@ -46,18 +46,22 @@
 .apos-input-array-inline-empty-label {
   @include type-label;
 
-  color: var(--a-base-3);
+  & {
+    color: var(--a-base-3);
+  }
 }
 
 .apos-input-array-inline-table {
   @include type-label;
 
-  position: relative;
-  left: -35px;
-  min-width: calc(100% + 35px);
-  width: max-content;
-  margin: 0 0 $spacing-base;
-  border-collapse: collapse;
+  & {
+    position: relative;
+    left: -35px;
+    min-width: calc(100% + 35px);
+    width: max-content;
+    margin: 0 0 $spacing-base;
+    border-collapse: collapse;
+  }
 
   th {
     height: 40px;
@@ -212,12 +216,14 @@
     .apos-input-array-inline-label {
       @include type-label;
 
-      margin: 0;
-      padding-top: $spacing-base;
-      padding-bottom: $spacing-base;
-      text-align: left;
-      transition: background-color 300ms ease;
-      grid-column: 2;
+      & {
+        margin: 0;
+        padding-top: $spacing-base;
+        padding-bottom: $spacing-base;
+        text-align: left;
+        transition: background-color 300ms ease;
+        grid-column: 2;
+      }
     }
 
     .apos-input-array-inline-label:hover {
