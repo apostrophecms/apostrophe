@@ -1,5 +1,11 @@
 # Changelog
 
+## 4.5.3 (2024-07-17)
+
+### Fixes
+
+* Enhanced media selection with touchpad on Windows by extending focus timeout.
+
 ## 4.5.2 (2024-07-11)
 
 ### Fixes

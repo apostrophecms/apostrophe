@@ -209,7 +209,7 @@ export default {
       // timeout to execute "@select" method before
       setTimeout(() => {
         this.searchList = [];
-      }, 200);
+      }, 300);
     },
     watchValue () {
       this.error = this.modelValue.error;
