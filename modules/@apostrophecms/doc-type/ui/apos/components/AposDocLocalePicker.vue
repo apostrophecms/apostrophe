@@ -101,6 +101,10 @@ async function switchLocale(locale) {
       tiny: true
     }) : false;
 
+  if (save === null) {
+    return;
+  }
+
   emit('switch-locale', {
     locale: locale.name,
     localized: localized.value[locale.name],
