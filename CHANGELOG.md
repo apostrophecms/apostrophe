@@ -1,5 +1,11 @@
 # Changelog
 
+## UNRELEASED
+
+### Changes
+
+* Refactors Admin UI SASS to eliminate deprecation warnings from declarations coming after nested rules.
+
 ## 4.5.2 (2024-07-11)
 
 ### Fixes
