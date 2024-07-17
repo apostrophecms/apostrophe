@@ -5,6 +5,7 @@
 ### Fixes
 
 * Overriding standard Vue.js components with `editorModal` and `managerModal` are now applied all the time.
+* Enhanced media selection with touchpad on Windows by extending focus timeout.
 
 ## 4.5.2 (2024-07-11)
 
