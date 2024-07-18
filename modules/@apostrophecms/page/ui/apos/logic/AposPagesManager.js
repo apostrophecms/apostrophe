@@ -170,8 +170,11 @@ export default {
       }
     },
     onContentChanged({ doc }) {
-      const [ docLocale ] = doc.aposLocale.split(':');
-      if (docLocale === this.modalData.locale) {
+      if (
+        !doc ||
+        !doc.aposLocale ||
+        doc.aposLocale.split(':')[0] === this.modalData.locale
+      ) {
         this.getPages();
       }
     },

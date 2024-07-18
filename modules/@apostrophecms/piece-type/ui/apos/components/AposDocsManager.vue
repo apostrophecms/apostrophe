@@ -491,8 +491,11 @@ export default {
     },
 
     async onContentChanged({ doc, action }) {
-      const [ docLocale ] = doc.aposLocale.split(':');
-      if (docLocale === this.modalData.locale) {
+      if (
+        !doc ||
+        !doc.aposLocale ||
+        doc.aposLocale.split(':')[0] === this.modalData.locale
+      ) {
         await this.getPieces();
         this.getAllPiecesTotal();
       }
