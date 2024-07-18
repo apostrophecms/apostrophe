@@ -111,8 +111,8 @@ module.exports = {
         return {
           title: 1,
           type: 1,
-          _url: 1,
-          _ancestors: 1
+          path: 1,
+          _url: 1
         };
       },
 

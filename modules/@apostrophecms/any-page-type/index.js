@@ -114,7 +114,6 @@ module.exports = {
             if (!options && req.aposAncestors !== true) {
               return;
             }
-            console.log('JE SUIS LA', options, req.aposAncestors);
             for (const page of results) {
               if (!page.path) {
                 // Projection is too limited, don't crash trying to get ancestors
