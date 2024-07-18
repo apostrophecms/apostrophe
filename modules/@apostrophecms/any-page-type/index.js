@@ -121,8 +121,7 @@ module.exports = {
               }
               const subquery = self.apos.page.find(req);
 
-              console.log('req.aposAncestorsProjection', req.aposAncestorsProjection);
-              if (req.aposAncestorsProjection) {
+              if (req.aposAncestors === true && req.aposAncestorsProjection) {
                 subquery.project(req.aposAncestorsProjection);
               }
 
