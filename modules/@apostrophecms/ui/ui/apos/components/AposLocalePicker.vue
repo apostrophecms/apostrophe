@@ -13,6 +13,7 @@
         v-for="locale in filteredLocales"
         :key="locale.name"
         class="apos-locale-picker__item"
+        data-apos-test="localeItem"
         @click="switchLocale(locale)"
       >
         <span class="apos-locale-picker__locale-display">

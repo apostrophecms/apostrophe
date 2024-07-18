@@ -6,6 +6,7 @@
     <AposContextMenu
       ref="menu"
       class="apos-doc-locales__switcher"
+      identifier="localePickerTrigger"
       :button="button"
       :unpadded="true"
       menu-placement="bottom-end"
