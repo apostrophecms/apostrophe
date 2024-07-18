@@ -22,6 +22,34 @@ describe('Search', function() {
         'event-page': {
           extend: '@apostrophecms/piece-page-type'
         },
+        '@apostrophecms/search': {
+          options: {
+            ancestorsApiProjection: {
+              _id: 1,
+              title: 1,
+              slug: 1,
+              type: 1,
+              visibility: 1,
+              orphan: 1,
+              parkedId: 1,
+              parked: 1,
+              rank: 1,
+              level: 1,
+              aposDocId: 1,
+              path: 1,
+              lastPublishedAt: 1,
+              aposLocale: 1,
+              aposMode: 1,
+              metaType: 1,
+              createdAt: 1,
+              archived: 1,
+              titleSortified: 1,
+              updatedAt: 1,
+              updatedBy: 1,
+              _url: 1
+            }
+          }
+        },
         '@apostrophecms/page': {
           options: {
             park: [
@@ -75,7 +103,7 @@ describe('Search', function() {
   it.only('should carry the _ancestors property', async function() {
     const response1 = await apos.http.get('/search?q=event');
     const [ piece ] = JSON.parse(response1);
-    console.dir(piece._parent, { depth: 9 });
+
     assert(piece._parent.title === 'Events');
     assert(piece._parent.type === 'event-page');
     assert(piece._parent.slug === '/events');
@@ -84,6 +112,41 @@ describe('Search', function() {
 
     const response2 = await apos.http.get('/search?q=home');
     const [ homepage ] = JSON.parse(response2);
+
     assert(homepage._ancestors.length === 0);
+  });
+
+  it.only('should apply a custom projection on the _ancestors', async function() {
+    const response1 = await apos.http.get('/search?q=event');
+    const [ piece ] = JSON.parse(response1);
+
+    assert.deepEqual(
+      Object.keys(piece._parent._ancestors[0]),
+      [
+        '_id',
+        'title',
+        'slug',
+        'type',
+        'visibility',
+        'orphan',
+        'parkedId',
+        'parked',
+        'rank',
+        'level',
+        'aposDocId',
+        'path',
+        'lastPublishedAt',
+        'aposLocale',
+        'aposMode',
+        'metaType',
+        'createdAt',
+        'archived',
+        'titleSortified',
+        'updatedAt',
+        'updatedBy',
+        '_url',
+        '_ancestors'
+      ]
+    );
   });
 });

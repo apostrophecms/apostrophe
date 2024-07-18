@@ -121,8 +121,8 @@ module.exports = {
               }
               const subquery = self.apos.page.find(req);
 
-              if (req.aposAncestors === true && req.aposAncestorsProjection) {
-                subquery.project(req.aposAncestorsProjection);
+              if (req.aposAncestors === true && req.aposAncestorsApiProjection) {
+                subquery.project(req.aposAncestorsApiProjection);
               }
 
               subquery.ancestorPerformanceRestrictions();
