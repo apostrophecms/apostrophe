@@ -107,6 +107,14 @@ module.exports = {
   },
   methods(self) {
     return {
+      getAncestorsProjection() {
+        return {
+          title: 1,
+          type: 1,
+          _url: 1,
+          _ancestors: 1
+        };
+      },
 
       enableFilters() {
         if (self.options.filters) {
@@ -208,6 +216,7 @@ module.exports = {
 
         async function findDocs() {
           req.aposAncestors = true;
+          req.aposAncestorsProjection = self.getAncestorsProjection();
 
           // Polymorphic find: fetch just the ids at first, then go back
           // and fetch them via their own type managers so that we get the

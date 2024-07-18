@@ -114,12 +114,19 @@ module.exports = {
             if (!options && req.aposAncestors !== true) {
               return;
             }
+            console.log('JE SUIS LA', options, req.aposAncestors);
             for (const page of results) {
               if (!page.path) {
                 // Projection is too limited, don't crash trying to get ancestors
                 continue;
               }
               const subquery = self.apos.page.find(req);
+
+              console.log('req.aposAncestorsProjection', req.aposAncestorsProjection);
+              if (req.aposAncestorsProjection) {
+                subquery.project(req.aposAncestorsProjection);
+              }
+
               subquery.ancestorPerformanceRestrictions();
               const parameters = applySubqueryOptions(subquery, options, [ 'depth' ]);
               const components = page.path.split('/');
@@ -145,7 +152,7 @@ module.exports = {
               }
               if (!paths.length) {
                 page._ancestors = [];
-                return;
+                continue;
               }
               subquery.and({
                 path: { $in: paths }

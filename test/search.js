@@ -72,9 +72,10 @@ describe('Search', function() {
     assert(_.includes(doc.highSearchWords, 'testing'));
   });
 
-  it('should carry the _ancestors property', async function() {
+  it.only('should carry the _ancestors property', async function() {
     const response1 = await apos.http.get('/search?q=event');
     const [ piece ] = JSON.parse(response1);
+    console.dir(piece._parent, { depth: 9 });
     assert(piece._parent.title === 'Events');
     assert(piece._parent.type === 'event-page');
     assert(piece._parent.slug === '/events');
