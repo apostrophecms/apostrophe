@@ -100,7 +100,7 @@ describe('Search', function() {
     assert(_.includes(doc.highSearchWords, 'testing'));
   });
 
-  it.only('should carry the _ancestors property', async function() {
+  it('should carry the _ancestors property', async function() {
     const response1 = await apos.http.get('/search?q=event');
     const [ piece ] = JSON.parse(response1);
 
@@ -116,7 +116,7 @@ describe('Search', function() {
     assert(homepage._ancestors.length === 0);
   });
 
-  it.only('should apply a custom projection on the _ancestors', async function() {
+  it('should apply a custom projection on the _ancestors', async function() {
     const response1 = await apos.http.get('/search?q=event');
     const [ piece ] = JSON.parse(response1);
 
