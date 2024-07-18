@@ -107,6 +107,10 @@ module.exports = {
   },
   methods(self) {
     return {
+      // Minimum required projection for ancestors, used in search results.
+      // See `req.aposAncestors` and `req.aposAncestorsProjection`
+      // in modules/@apostrophecms/search/index.js and
+      // in modules/@apostrophecms/any-page-type/index.js
       getAncestorsProjection() {
         return {
           title: 1,
