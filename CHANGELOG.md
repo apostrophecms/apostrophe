@@ -1,5 +1,11 @@
 # Changelog
 
+## 3.67.2 (2024-07-22)
+
+### Changes
+
+* Update `@apostrophecms/emulate-mongo-3-driver` dependency to keep supporting `mongodb@3.x` queries while using `mongodb@6.x`.
+
 ## 3.67.1 (2024-07-10)
 
 ### Changes
