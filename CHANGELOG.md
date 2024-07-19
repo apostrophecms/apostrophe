@@ -7,6 +7,7 @@
 * Add `title` and `_url` to select all projection.
 * Display `Select all` message on all pages in the manager modal.
 * Refresh `checked` in manager modal after archive action.
+* Update `@apostrophecms/emulate-mongo-3-driver` dependency to keep supporting `mongodb@3.x` queries while using `mongodb@6.x`.
 
 ### Fixes
 
