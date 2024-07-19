@@ -1,5 +1,27 @@
 # Changelog
 
+## UNRELEASED
+
+### Changes
+
+* Update CKEDITOR to 4.22.1.
+* Add CKEDITOR `Font`.
+It comes with two new tools: `Font` and `FontSize`.
+Please update `sanitizeHtml`.`allowedAttributes` with `span` `style`.
+You will find below the default configuration (please note that any attribute not listed below will be removed once the rich-text is saved):
+  ```js
+  // lib/modules/apostrophe-rich-text-widgets/index.js
+  module.exports = {
+    sanitizeHtml: {
+      allowedAttributes: {
+        a: [ 'href', 'name', 'target' ],
+        img: [ 'src', 'srcset', 'alt', 'title', 'width', 'height', 'loading' ],
+        span: [ 'style' ]
+      }
+    }
+  };
+  ```
+
 ## 2.227.7 (2024-07-10)
 
 ### Changes
