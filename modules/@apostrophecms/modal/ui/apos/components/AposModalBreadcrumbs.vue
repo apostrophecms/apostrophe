@@ -99,7 +99,9 @@ export default {
       @include apos-button-reset();
       @include link-primary;
 
-      & { text-decoration: none;}
+      & {
+        text-decoration: none;
+      }
 
       .apos-breadcrumb--dark & {
         color: inherit;

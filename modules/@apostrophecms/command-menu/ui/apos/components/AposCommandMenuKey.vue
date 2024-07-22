@@ -57,6 +57,7 @@ export default {
 
 .apos-command-menu-key {
   @include type-small;
+
   & {
     display: inline-flex;
     box-sizing: border-box;

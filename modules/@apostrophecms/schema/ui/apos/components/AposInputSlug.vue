@@ -53,6 +53,7 @@ export default {
 <style lang="scss" scoped>
   .apos-input-wrapper--with-prefix {
     @include apos-input();
+
     & {
       display: flex;
       align-items: center;

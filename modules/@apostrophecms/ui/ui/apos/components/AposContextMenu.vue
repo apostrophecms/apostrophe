@@ -303,7 +303,7 @@ async function setDropdownPosition() {
     list-style-type: none;
     width: max-content;
     margin: none;
-    margin-block: 0 0;
+    margin-block: 0;
     padding: 10px 0;
   }
 }

@@ -21,6 +21,7 @@
     // Some  browser styles set `textarea` to monospace.
     resize: none;
   }
+  
   &::placeholder {
     color: var(--a-base-4);
     font-style: italic;

@@ -1,30 +1,51 @@
 <template>
   <div role="alert" :class="classList">
     <span class="apos-notification__indicator">
-      <AposIndicator :icon="iconComponent" class="apos-notification__indicator__icon"
-        :icon-size="notification.icon ? 16 : 12" />
+      <AposIndicator
+        :icon="iconComponent"
+        class="apos-notification__indicator__icon"
+        :icon-size="notification.icon ? 16 : 12"
+      />
     </span>
     <span ref="label" class="apos-notification__label">
       {{ localize(notification.message) }}
       <!-- OK to use index as key because buttons are constant for the lifetime of the notification -->
-      <button v-for="(button, i) in notification.buttons" :key="i" :data-apos-bus-event="JSON.stringify({
-    name: button.name,
-    data: button.data
-  })">
+      <button
+        v-for="(button, i) in notification.buttons"
+        :key="i"
+        :data-apos-bus-event="JSON.stringify({
+          name: button.name,
+          data: button.data
+        })"
+      >
         {{ localize(button.label) }}
       </button>
     </span>
     <div v-if="job && job.total" class="apos-notification__progress">
       <div class="apos-notification__progress-bar">
-        <div class="apos-notification__progress-now" role="progressbar" :aria-valuenow="job.processed || 0"
-          :style="`width: ${job.percentage + '%'}`" aria-valuemin="0" :aria-valuemax="job.total" />
+        <div
+          class="apos-notification__progress-now"
+          role="progressbar"
+          :aria-valuenow="job.processed || 0"
+          :style="`width: ${job.percentage + '%'}`"
+          aria-valuemin="0"
+          :aria-valuemax="job.total"
+        />
       </div>
       <span class="apos-notification__progress-value">
         {{ Math.floor(job.percentage) + '%' }}
       </span>
     </div>
-    <button v-if="!job" class="apos-notification__button" @click="close">
-      <Close class="apos-notification__close-icon" title="Close Notification" :size="14" />
+    <button
+      v-if="!job"
+      class="apos-notification__button"
+      @click="close"
+    >
+      <Close
+        class="apos-notification__close-icon"
+        title="Close Notification"
+        :size="14"
+      />
     </button>
   </div>
 </template>
@@ -41,7 +62,7 @@ export default {
       required: true
     }
   },
-  emits: ['close'],
+  emits: [ 'close' ],
   data() {
     return {
       job: this.notification.job && this.notification.job._id ? {
@@ -55,7 +76,7 @@ export default {
   },
   computed: {
     classList() {
-      const classes = ['apos-notification'];
+      const classes = [ 'apos-notification' ];
 
       if (Array.isArray(this.notification.classes) && this.notification.classes.length) {
         classes.push(...this.notification.classes);
