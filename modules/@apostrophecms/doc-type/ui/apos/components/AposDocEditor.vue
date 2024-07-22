@@ -605,7 +605,7 @@ export default {
     async onSaveDraftAndView() {
       await this.onSaveDraft({ navigate: true });
     },
-    async onSaveDraft(navigate = false) {
+    async onSaveDraft({ navigate = false } = {}) {
       await this.save({
         andPublish: false,
         navigate
