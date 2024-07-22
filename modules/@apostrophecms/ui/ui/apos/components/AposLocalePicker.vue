@@ -1,5 +1,8 @@
 <template>
-  <div class="apos-locales-picker">
+  <div
+    class="apos-locales-picker"
+    data-apos-test="localePicker"
+  >
     <div class="apos-input-wrapper">
       <input
         v-model="search"
@@ -12,6 +15,7 @@
       <li
         v-for="locale in filteredLocales"
         :key="locale.name"
+        :class="localeClasses(locale)"
         class="apos-locale-picker__item"
         data-apos-test="localeItem"
         @click="switchLocale(locale)"
@@ -100,6 +104,15 @@ function isActive(locale) {
 
 function switchLocale(locale) {
   emit('switch-locale', locale);
+}
+
+function localeClasses(locale) {
+  const classes = {};
+  if (isActive(locale)) {
+    classes['apos-active'] = true;
+  }
+  classes['apos-exists'] = isLocalized(locale);
+  return classes;
 }
 </script>
 
