@@ -2,6 +2,12 @@
 
 ## UNRELEASED
 
+### Changes
+
+* Add `title` and `_url` to select all projection.
+* Display `Select all` message on all pages in the manager modal.
+* Refresh `checked` in manager modal after archive action.
+
 ### Fixes
 
 * Overriding standard Vue.js components with `editorModal` and `managerModal` are now applied all the time.
