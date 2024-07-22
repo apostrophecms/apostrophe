@@ -240,6 +240,9 @@ export default {
         // a published doc _id without a fuss
         this.selectPending.add(doc._id.replace(':published', ':draft'));
       }
+      if (action === 'archive') {
+        this.checked = this.checked.filter(checkedId => doc._id !== checkedId);
+      }
     },
     // update this.checkedDocs based on this.checked. The default
     // implementation is suitable for paginated lists. Can be overridden
@@ -263,6 +266,10 @@ export default {
           found && this.checkedDocs.push(found);
         }
       });
+      if (this.allPiecesSelection) {
+        this.allPiecesSelection.isSelected = this.checked.length === this.allPiecesSelection.total ||
+          (this.checked.length && this.maxReached());
+      }
     }
   }
 };

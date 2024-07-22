@@ -1146,8 +1146,8 @@ module.exports = {
           components: {}
         });
         _.defaults(browserOptions.components, {
-          editorModal: 'AposDocEditor',
-          managerModal: 'AposDocsManager'
+          editorModal: self.getComponentName('editorModal', 'AposDocEditor'),
+          managerModal: self.getComponentName('managerModal', 'AposDocsManager')
         });
         browserOptions.managerApiProjection = self.getManagerApiProjection(req);
 

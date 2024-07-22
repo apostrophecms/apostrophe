@@ -5,6 +5,25 @@
 ### Changes
 
 * Refactors Admin UI SASS to eliminate deprecation warnings from declarations coming after nested rules.
+* Add `title` and `_url` to select all projection.
+* Display `Select all` message on all pages in the manager modal.
+* Refresh `checked` in manager modal after archive action.
+
+### Fixes
+
+* Overriding standard Vue.js components with `editorModal` and `managerModal` are now applied all the time.
+
+## 4.5.4 (2024-07-22)
+
+### Fixes
+
+* Add a default projection to ancestors of search results in order to load a reasonable amount of data and avoid request timeouts.
+
+## 4.5.3 (2024-07-17)
+
+### Fixes
+
+* Enhanced media selection with touchpad on Windows by extending focus timeout.
 
 ## 4.5.2 (2024-07-11)
 
