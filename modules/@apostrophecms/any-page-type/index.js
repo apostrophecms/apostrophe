@@ -120,6 +120,11 @@ module.exports = {
                 continue;
               }
               const subquery = self.apos.page.find(req);
+
+              if (req.aposAncestors === true && req.aposAncestorsApiProjection) {
+                subquery.project(req.aposAncestorsApiProjection);
+              }
+
               subquery.ancestorPerformanceRestrictions();
               const parameters = applySubqueryOptions(subquery, options, [ 'depth' ]);
               const components = page.path.split('/');
@@ -145,7 +150,7 @@ module.exports = {
               }
               if (!paths.length) {
                 page._ancestors = [];
-                return;
+                continue;
               }
               subquery.and({
                 path: { $in: paths }

@@ -12,6 +12,12 @@
 
 * Overriding standard Vue.js components with `editorModal` and `managerModal` are now applied all the time.
 
+## 4.5.4 (2024-07-22)
+
+### Fixes
+
+* Add a default projection to ancestors of search results in order to load a reasonable amount of data and avoid request timeouts.
+
 ## 4.5.3 (2024-07-17)
 
 ### Fixes
