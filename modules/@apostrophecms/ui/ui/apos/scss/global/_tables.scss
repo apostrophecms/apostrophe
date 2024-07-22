@@ -24,8 +24,8 @@
 
 .apos-table__header-label,
 .apos-table__cell-field {
-  @include apos-button-reset();
   @include type-base;
+  @include apos-button-reset();
 
   &:hover {
     cursor: default;

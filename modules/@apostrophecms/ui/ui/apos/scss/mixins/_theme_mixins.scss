@@ -33,65 +33,52 @@ $input-color-disabled: var(--a-base-4);
 //Application Styles
 
 @mixin type-base {
-  & {
     color: var(--a-text-primary);
     font-family: var(--a-family-default);
     font-size: var(--a-type-base);
     font-weight: var(--a-weight-base);
     letter-spacing: var(--a-letter-base);
     line-height: var(--a-line-base);
-  }
 }
 
 @mixin type-help {
   @include type-base;
 
-  & {
-    font-size: var(--a-type-small);
-    text-transform: uppercase;
-  }
+  font-size: var(--a-type-small);
+  text-transform: uppercase;
 }
 
 @mixin type-small {
   @include type-base;
 
-  & {
-    font-size: var(--a-type-small);
-    line-height: var(--a-line-tall);
-  }
+  font-size: var(--a-type-small);
+  line-height: var(--a-line-tall);
 }
 
 @mixin type-label {
   @include type-base;
 
-  & {
-    font-size: var(--a-type-label);
-    line-height: var(--a-line-tall);
-  }
+  font-size: var(--a-type-label);
+  line-height: var(--a-line-tall);
 }
 
 @mixin type-large {
   @include type-base;
 
-  & {
-    font-size: var(--a-type-large);
-    line-height: var(--a-line-tall);
-  }
+  font-size: var(--a-type-large);
+  line-height: var(--a-line-tall);
+
 }
 
 @mixin type-title {
   @include type-base;
 
-  & {
-    font-size: var(--a-type-heading);
-    line-height: var(--a-line-tall);
-  }
+  font-size: var(--a-type-heading);
+  line-height: var(--a-line-tall);
 }
 
 @mixin type-display {
   @include type-base;
 
-  & {
-    font-size: var(--a-type-display);
-  }
+  font-size: var(--a-type-display);
 }

@@ -167,8 +167,8 @@ export default {
 }
 
 .apos-modal-tabs__btn {
-  @include apos-button-reset();
   @include type-base;
+  @include apos-button-reset();
 
   & {
     position: relative;

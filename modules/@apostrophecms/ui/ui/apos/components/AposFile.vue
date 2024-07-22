@@ -161,8 +161,8 @@ export default {
 </script>
 <style scoped lang='scss'>
   .apos-file-dropzone {
-    @include apos-button-reset();
     @include type-base;
+    @include apos-button-reset();
 
     & {
       display: block;

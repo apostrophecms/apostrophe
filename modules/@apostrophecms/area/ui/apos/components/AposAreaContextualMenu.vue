@@ -292,8 +292,8 @@ export default {
 }
 
 .apos-area-menu__button {
-  @include apos-button-reset();
   @include type-base;
+  @include apos-button-reset();
 
   & {
     box-sizing: border-box;
