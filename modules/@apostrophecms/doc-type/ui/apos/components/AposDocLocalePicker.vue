@@ -6,9 +6,9 @@
     <AposContextMenu
       ref="menu"
       class="apos-doc-locales__switcher"
+      identifier="localePickerTrigger"
       :button="button"
       :unpadded="true"
-      :disabled="disabled"
       menu-placement="bottom-end"
       @open="open"
     >
@@ -22,9 +22,11 @@
 </template>
 
 <script setup>
-import { ref, inject } from 'vue';
+import {
+  ref, inject, computed
+} from 'vue';
 
-const emit = defineEmits([ 'save-doc' ]);
+const emit = defineEmits([ 'save-doc', 'switch-locale' ]);
 const props = defineProps({
   locale: {
     type: String,
@@ -32,7 +34,7 @@ const props = defineProps({
   },
   docId: {
     type: String,
-    required: true
+    default: null
   },
   moduleOptions: {
     type: Object,
@@ -44,27 +46,30 @@ const props = defineProps({
   isModified: {
     type: Boolean,
     required: true
-  },
-  disabled: {
-    type: Boolean,
-    required: true
   }
 });
 
 const $t = inject('i18n');
 const menu = ref(null);
 const localized = ref({});
-const button = {
-  label: {
-    key: apos.i18n.locale,
-    localize: false
-  },
-  icon: 'chevron-down-icon',
-  modifiers: [ 'icon-right', 'no-motion', 'uppercase' ],
-  type: 'quiet'
-};
+const button = computed(() => {
+  const label = apos.i18n.locales[props.locale]?.label;
+  const key = label ? `${label} (${props.locale})` : props.locale;
+  return {
+    label: {
+      key,
+      localize: false
+    },
+    icon: 'chevron-down-icon',
+    modifiers: [ 'icon-right', 'no-motion' ],
+    type: 'quiet'
+  };
+});
 
 async function open() {
+  if (!props.docId) {
+    return;
+  }
   const docs = await apos.http.get(
     `${props.moduleOptions.action}/${props.docId}/locales`, { busy: true }
   );
@@ -75,10 +80,15 @@ async function open() {
   );
 };
 
-async function switchLocale() {
+async function switchLocale(locale) {
   menu.value.hide();
-  if (props.isModified) {
-    const saveAndSwitch = await apos.confirm({
+
+  if (locale.name === props.locale) {
+    return;
+  }
+
+  const save = props.isModified
+    ? await apos.confirm({
       heading: 'apostrophe:unsavedChanges',
       description: $t(
         'apostrophe:localeSwitcherDiscardChangesPrompt',
@@ -90,15 +100,17 @@ async function switchLocale() {
     }, {
       hasCloseButton: true,
       tiny: true
-    });
+    }) : false;
 
-    if (saveAndSwitch) {
-      emit('save-doc');
-      // TODO: If error during save we do not want to switch locale
-    }
-
-    // TODO: switch locale
+  if (save === null) {
+    return;
   }
+
+  emit('switch-locale', {
+    locale: locale.name,
+    localized: localized.value[locale.name],
+    save
+  });
 }
 </script>
 
@@ -108,14 +120,18 @@ async function switchLocale() {
   flex-direction: row;
   align-items: center;
   justify-content: center;
+
 }
 
 .apos-doc-locales__label {
+  @include type-base;
+
   margin-right: 0.3rem;
+  font-weight: var(--a-weight-bold);
 }
 
 .apos-doc-locales__switcher :deep(.apos-button__label) {
-  @include type-small;
+  @include type-base;
 
   color: var(--a-primary);
   font-weight: var(--a-weight-bold);

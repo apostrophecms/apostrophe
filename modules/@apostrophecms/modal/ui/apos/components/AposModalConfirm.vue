@@ -3,7 +3,7 @@
     :modal="modal"
     class="apos-confirm"
     :class="{ 'apos-confirm--tiny': options.tiny }"
-    v-on="mode !== 'alert' ? { esc: cancel } : null"
+    v-on="mode !== 'alert' ? { esc: close } : null"
     @inactive="modal.active = false"
     @show-modal="modal.showModal = true"
     @ready="ready"
@@ -16,7 +16,7 @@
             icon="close-icon"
             class="apos-confirm__close-btn"
             :icon-size="20"
-            @click="cancel"
+            @click="close"
           />
           <img
             v-if="content.icon"
@@ -140,6 +140,10 @@ export default {
     }
   },
   methods: {
+    close() {
+      this.modal.showModal = false;
+      this.$emit('modal-result', null);
+    },
     ready() {
       this.$refs.confirm.$el.querySelector('button').focus();
     },

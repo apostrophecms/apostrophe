@@ -240,7 +240,7 @@
   "live": "Live",
   "loadDocFailed": "The requested document was not found.",
   "locale": "Locale",
-  "localeSwitcherDiscardChangesAffirmative": "Save changed and discard",
+  "localeSwitcherDiscardChangesAffirmative": "Save as draft and switch",
   "localeSwitcherDiscardChangesNegative": "Discard changes and switch",
   "localeSwitcherDiscardChangesPrompt": "Do you want to discard changes to this {{ docType }} before switching locales?",
   "localize": "Localize...",

@@ -17,6 +17,7 @@ export default function() {
   apos.modal.getAt = modalStore.getAt;
   apos.modal.getProperties = modalStore.getProperties;
   apos.modal.onTopOf = modalStore.onTopOf;
+  apos.modal.getActiveLocale = modalStore.getActiveLocale;
   apos.confirm = modalStore.confirm;
   apos.alert = modalStore.alert;
 }
