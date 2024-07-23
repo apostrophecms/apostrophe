@@ -20,28 +20,27 @@
         }"
         @click.stop="buttonClicked($event)"
       />
-      <Teleport to="body">
-        <div
-          v-if="isOpen"
-          ref="dropdownContent"
-          v-click-outside-element="hide"
-          class="apos-context-menu__dropdown-content"
-          :class="popoverClass"
-          data-apos-menu
-          :style="dropdownContentStyle"
-          :aria-hidden="!isOpen"
+      <div
+        v-if="isOpen"
+        ref="dropdownContent"
+        v-click-outside-element="hide"
+        class="apos-context-menu__dropdown-content"
+        :class="popoverClass"
+        data-apos-menu
+        :style="dropdownContentStyle"
+        :aria-hidden="!isOpen"
+      >
+        <AposContextMenuDialog
+          :menu-placement="placement"
+          :class-list="classList"
+          :menu="menu"
+          :is-open="isOpen"
+          @item-clicked="menuItemClicked"
+          @set-arrow="setArrow"
         >
-          <AposContextMenuDialog
-            :menu-placement="placement"
-            :class-list="classList"
-            :menu="menu"
-            @item-clicked="menuItemClicked"
-            @set-arrow="setArrow"
-          >
-            <slot />
-          </AposContextMenuDialog>
-        </div>
-      </Teleport>
+          <slot />
+        </AposContextMenuDialog>
+      </div>
     </div>
   </div>
 </template>
@@ -159,10 +158,14 @@ watch(isOpen, (newVal) => {
   if (newVal) {
     window.addEventListener('resize', setDropdownPosition);
     window.addEventListener('scroll', setDropdownPosition);
+    window.addEventListener('keydown', handleKeyboard);
     setDropdownPosition();
+    dropdownContent.value.querySelector('[tabindex]')?.focus();
   } else {
     window.removeEventListener('resize', setDropdownPosition);
     window.removeEventListener('scroll', setDropdownPosition);
+    window.removeEventListener('keydown', handleKeyboard);
+    dropdown.value.querySelector('[tabindex]').focus();
   }
 }, { flush: 'post' });
 
@@ -240,6 +243,13 @@ async function setDropdownPosition() {
     ...arrowX && { left: `${arrowX}px` },
     ...arrowY && { top: `${arrowY}px` }
   });
+}
+
+function handleKeyboard(event) {
+  console.log('handler');
+  if (event.key === 'Escape') {
+    hide();
+  }
 }
 </script>
 
