@@ -145,7 +145,8 @@ export default {
           }
           apos.bus.$emit('content-changed', {
             doc,
-            action: 'archive'
+            action: 'archive',
+            isLocalizing: this.isLocalizing || false
           });
           return true;
         }
@@ -265,7 +266,8 @@ export default {
 
         apos.bus.$emit('content-changed', {
           doc,
-          action: 'restore'
+          action: 'restore',
+          isLocalizing: this.isLocalizing || false
         });
         return doc;
       } catch (e) {

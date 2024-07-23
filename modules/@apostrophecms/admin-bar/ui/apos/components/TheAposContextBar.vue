@@ -498,7 +498,7 @@ export default {
       const contextOptions = this.context
         ? apos.modules[this.context.type]
         : { contentChangedRefresh: true };
-      if (contextOptions.contentChangedRefresh) {
+      if (!e.isLocalizing && contextOptions.contentChangedRefresh) {
         await this.refresh({
           scrollcheck: e.action === 'history'
         });

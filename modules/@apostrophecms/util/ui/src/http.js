@@ -115,10 +115,10 @@ export default () => {
       return callback(new Error('url is not defined'));
     }
 
-    if (apos.prefix && options.prefix !== false) {
+    if (apos.sitePrefix && options.prefix !== false) {
       // Prepend the prefix if the URL is absolute:
       if (url.substring(0, 1) === '/') {
-        url = apos.prefix + url;
+        url = apos.sitePrefix + url;
       }
     }
 
@@ -153,9 +153,16 @@ export default () => {
     let keys;
     let i;
 
-    if (options.qs) {
-      url = apos.http.addQueryToUrl(url, options.qs);
-    }
+    qat = url.indexOf('?');
+    const qs = {
+      ...qat !== -1 && apos.http.parseQuery(url.substring(qat)),
+      ...options.qs || {},
+      ...options.qs?.aposLocale
+        ? { aposLocale: options.qs.aposLocale }
+        : { aposLocale: apos.getActiveLocale() }
+    };
+    url = apos.http.addQueryToUrl(url, qs);
+
     if (options.busy) {
       if (!busyActive[busyName]) {
         busyActive[busyName] = 0;

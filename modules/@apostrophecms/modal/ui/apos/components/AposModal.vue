@@ -11,7 +11,7 @@
       :class="classes"
       role="dialog"
       aria-modal="true"
-      :aria-labelledby="props.modalId"
+      :aria-labelledby="props.modalData.id"
       data-apos-modal
       @focus.capture="storeFocusedElement"
       @esc="close"
@@ -45,7 +45,7 @@
                 <div v-if="hasSlot('secondaryControls')" class="apos-modal__controls--secondary">
                   <slot name="secondaryControls" />
                 </div>
-                <h2 :id="props.modalId" class="apos-modal__heading">
+                <h2 :id="props.modalData.id" class="apos-modal__heading">
                   <span v-if="modal.a11yTitle" class="apos-sr-only">
                     {{ $t(modal.a11yTitle) }}
                   </span>
@@ -58,13 +58,11 @@
                   <div v-if="hasSlot('localeDisplay')" class="apos-modal__locale">
                     <slot name="localeDisplay" />
                   </div>
-                  <div v-else-if="hasBeenLocalized" class="apos-modal__locale">
-                    <span class="apos-modal__locale-label">
-                      {{ $t('apostrophe:locale') }}:
-                    </span> <span class="apos-modal__locale-name">
-                      {{ currentLocale }}
-                    </span>
-                  </div>
+                  <AposLocale
+                    v-else-if="hasBeenLocalized"
+                    class="apos-modal__locale"
+                    :locale="currentLocale"
+                  />
                   <div v-if="hasSlot('primaryControls')" class="apos-modal__controls--primary">
                     <slot name="primaryControls" />
                   </div>
@@ -125,8 +123,8 @@ const props = defineProps({
     type: [ String, Object ],
     default: ''
   },
-  modalId: {
-    type: String,
+  modalData: {
+    type: Object,
     required: true
   }
 });
@@ -136,6 +134,7 @@ const store = useModalStore();
 const slots = useSlots();
 const emit = defineEmits([ 'inactive', 'esc', 'show-modal', 'no-modal', 'ready' ]);
 const modalEl = ref(null);
+const currentLocale = ref(store.activeModal?.locale || apos.i18n.locale);
 
 const transitionType = computed(() => {
   if (props.modal.type !== 'slide') {
@@ -159,10 +158,6 @@ const triggerFocusRefresh = computed(() => {
 
 const hasBeenLocalized = computed(() => {
   return Object.keys(apos.i18n.locales).length > 1;
-});
-
-const currentLocale = computed(() => {
-  return apos.i18n.locale;
 });
 
 function hasSlot(slotName) {
@@ -222,7 +217,7 @@ onMounted(async () => {
   if (shouldTrapFocus.value) {
     trapFocus();
   }
-  store.updateModalData(props.modalId, { modalEl: modalEl.value });
+  store.updateModalData(props.modalData.id, { modalEl: modalEl.value });
   window.addEventListener('keydown', onKeydown);
 });
 
@@ -238,8 +233,7 @@ function onKeydown(e) {
 }
 
 function onTab(e) {
-  const currentModal = store.get(props.modalId);
-  cycleElementsToFocus(e, currentModal.elementsToFocus);
+  cycleElementsToFocus(e, props.modalData.elementsToFocus);
 }
 
 async function onEnter() {
@@ -250,7 +244,7 @@ async function onEnter() {
 }
 
 function onLeave() {
-  store.remove(props.modalId);
+  store.remove(props.modalData.id);
   focusLastModalFocusedElement();
   emit('no-modal');
 }
@@ -272,10 +266,9 @@ function trapFocus() {
   const elementsToFocus = [ ...modalEl.value.querySelectorAll(selector) ]
     .filter(isElementVisible);
 
-  store.updateModalData(props.modalId, { elementsToFocus });
-  const currentModal = store.get(props.modalId);
+  store.updateModalData(props.modalData.id, { elementsToFocus });
 
-  focusElement(currentModal.focusedElement, currentModal.elementsToFocus[0]);
+  focusElement(props.modalData.focusedElement, props.modalData.elementsToFocus[0]);
 
   function addExcludingAttributes(element) {
     return `${element}:not([tabindex="-1"]):not([disabled]):not([type="hidden"]):not([aria-hidden])`;
@@ -284,7 +277,7 @@ function trapFocus() {
 
 function close() {
   const activeModalId = store.activeModal?.id;
-  if (activeModalId === props.modalId) {
+  if (activeModalId === props.modalData.id) {
     emit('esc');
   }
 }
@@ -463,14 +456,7 @@ function close() {
   }
 
   .apos-modal__locale {
-    @include type-base;
-
     margin-right: $spacing-double;
-    font-weight: var(--a-weight-bold);
-  }
-
-  .apos-modal__locale-name {
-    color: var(--a-primary);
   }
 
   .apos-modal__heading {
