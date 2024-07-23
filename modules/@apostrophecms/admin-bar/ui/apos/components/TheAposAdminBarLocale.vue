@@ -56,6 +56,9 @@ export default {
     }
   },
   methods: {
+    close() {
+      this.isOpen = false;
+    },
     async open() {
       if (apos.adminBar.context) {
         const docs = await apos.http.get(
