@@ -6,6 +6,7 @@
     :unpadded="true"
     menu-placement="bottom-end"
     @open="open"
+    @close="close"
   >
     <div class="apos-locales-picker">
       <div class="apos-input-wrapper">
@@ -24,7 +25,7 @@
           :class="localeClasses(locale)"
           @click="switchLocale(locale)"
         >
-          <span class="apos-locale">
+          <button class="apos-locale" :tabindex="tabIndex">
             <AposIndicator
               v-if="isActive(locale)"
               icon="check-bold-icon"
@@ -41,7 +42,7 @@
               class="apos-locale-localized"
               :class="{ 'apos-state-is-localized': isLocalized(locale) }"
             />
-          </span>
+          </button>
         </li>
       </ul>
       <div class="apos-available-locales">
@@ -76,10 +77,14 @@ export default {
           };
         }
       ),
-      localized: {}
+      localized: {},
+      isOpen: false
     };
   },
   computed: {
+    tabIndex() {
+      return this.isOpen ? '0' : '-1';
+    },
     button() {
       return {
         label: {
@@ -106,6 +111,9 @@ export default {
     }
   },
   methods: {
+    close() {
+      this.isOpen = false;
+    },
     async open() {
       if (apos.adminBar.context) {
         const docs = await apos.http.get(
@@ -120,6 +128,7 @@ export default {
             .map(doc => [ doc.aposLocale.split(':')[0], doc ])
         );
       }
+      this.isOpen = true;
     },
     isActive(locale) {
       return window.apos.i18n.locale === locale.name;
@@ -261,16 +270,11 @@ export default {
 
 .apos-locale-item {
   position: relative;
-  padding: 12px 35px;
   line-height: 1;
   cursor: pointer;
 
   .state {
     opacity: 0;
-  }
-
-  &:hover {
-    background-color: var(--a-base-10);
   }
 
   .apos-check {
@@ -327,6 +331,24 @@ export default {
 
 .apos-locale-name {
   text-transform: uppercase;
+}
+
+.apos-locale {
+  @include apos-button-reset();
+  display: block;
+  width: 100%;
+  padding: 12px 35px;
+  box-sizing: border-box;
+
+  &:focus, &:active {
+    outline: none;
+    border: none;
+    background-color: var(--a-base-10);
+  }
+
+  &:hover {
+    background-color: var(--a-base-9);
+  }
 }
 
 </style>
