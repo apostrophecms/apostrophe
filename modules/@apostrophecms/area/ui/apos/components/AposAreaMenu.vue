@@ -54,6 +54,10 @@ export default {
       default: function() {
         return {};
       }
+    },
+    tabbable: {
+      type: Boolean,
+      default: false
     }
   },
   emits: [ 'add' ],
@@ -64,7 +68,8 @@ export default {
         icon: 'plus-icon',
         type: 'primary',
         modifiers: this.empty ? [] : [ 'round', 'tiny' ],
-        iconSize: this.empty ? 20 : 11
+        iconSize: this.empty ? 20 : 11,
+        disableFocus: !this.tabbable
       };
     }
   },
