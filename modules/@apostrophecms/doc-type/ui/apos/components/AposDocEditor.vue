@@ -198,7 +198,7 @@ export default {
       restoreOnly: false,
       saveMenu: null,
       generation: 0,
-      isLocalizing: false,
+      isLocalizing: this.modalData.hasContextLocale,
       referenceDocId: this.docId,
       currentId: this.docId
     };
