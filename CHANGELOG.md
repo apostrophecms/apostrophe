@@ -7,9 +7,12 @@
 * Add `title` and `_url` to select all projection.
 * Display `Select all` message on all pages in the manager modal.
 * Refresh `checked` in manager modal after archive action.
+* Updates rich text link tool's keyboard key detection strategy.
 
 ### Fixes
 
+* Fixes the rich text link tool's detection and display of the Remove Link button for removing existing links
+* Fixes the rich text link tool's detection and display of Apostrophe Page relationship field.
 * Overriding standard Vue.js components with `editorModal` and `managerModal` are now applied all the time.
 
 ## 4.5.4 (2024-07-22)
