@@ -138,7 +138,7 @@ export default {
     },
     active(newVal) {
       if (newVal) {
-        this.hasLinkOnOpen = !!(this.docFields.data.href);
+        this.hasLinkOnOpen = !!(this.attributes.href);
         window.addEventListener('keydown', this.keyboardHandler);
       } else {
         window.removeEventListener('keydown', this.keyboardHandler);
@@ -207,10 +207,10 @@ export default {
       });
     },
     keyboardHandler(e) {
-      if (e.keyCode === 27) {
+      if (e.key === 'Escape') {
         this.close();
       }
-      if (e.keyCode === 13) {
+      if (e.key === 'Enter') {
         if (this.docFields.data.href || e.metaKey) {
           this.save();
           this.close();
@@ -268,6 +268,7 @@ export default {
       } finally {
         this.generation++;
       }
+      this.evaluateConditions();
     }
   }
 };
