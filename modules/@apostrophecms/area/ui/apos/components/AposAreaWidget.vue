@@ -37,6 +37,7 @@
               icon="chevron-right-icon"
               :icon-size="9"
               :modifiers="['icon-right', 'no-motion']"
+              :disable-focus="!(isHovered || isFocused)"
               @click="getFocus($event, item.id)"
             />
           </li>
@@ -50,6 +51,7 @@
               :tooltip="!isContextual && 'apostrophe:editWidgetForeignTooltip'"
               :icon-size="11"
               :modifiers="['no-motion']"
+              :disable-focus="!(isHovered || isFocused)"
               @click="foreign ? $emit('edit', i) : null"
               @dblclick="(!foreign && !isContextual) ? $emit('edit', i) : null"
             />
@@ -68,28 +70,8 @@
           :widget-options="widgets"
           :options="options"
           :disabled="disabled"
+          :tabbable="isHovered || isFocused"
           @add="$emit('add', $event);"
-        />
-      </div>
-      <div
-        class="apos-area-widget-controls apos-area-widget-controls--modify"
-        :class="controlsClasses"
-      >
-        <AposWidgetControls
-          v-if="!foreign"
-          :first="i === 0"
-          :last="i === next.length - 1"
-          :options="{ contextual: isContextual }"
-          :foreign="foreign"
-          :disabled="disabled"
-          :max-reached="maxReached"
-          @up="$emit('up', i);"
-          @remove="$emit('remove', i);"
-          @edit="$emit('edit', i);"
-          @cut="$emit('cut', i);"
-          @copy="$emit('copy', i);"
-          @clone="$emit('clone', i);"
-          @down="$emit('down', i);"
         />
       </div>
       <!--
@@ -132,6 +114,28 @@
         @edit="$emit('edit', i);"
       />
       <div
+        class="apos-area-widget-controls apos-area-widget-controls--modify"
+        :class="controlsClasses"
+      >
+        <AposWidgetControls
+          v-if="!foreign"
+          :first="i === 0"
+          :last="i === next.length - 1"
+          :options="{ contextual: isContextual }"
+          :foreign="foreign"
+          :disabled="disabled"
+          :max-reached="maxReached"
+          :tabbable="isFocused"
+          @up="$emit('up', i);"
+          @remove="$emit('remove', i);"
+          @edit="$emit('edit', i);"
+          @cut="$emit('cut', i);"
+          @copy="$emit('copy', i);"
+          @clone="$emit('clone', i);"
+          @down="$emit('down', i);"
+        />
+      </div>
+      <div
         class="apos-area-widget-controls apos-area-widget-controls--add apos-area-widget-controls--add--bottom"
         :class="addClasses"
       >
@@ -143,6 +147,7 @@
           :widget-options="widgets"
           :options="options"
           :disabled="disabled"
+          :tabbable="isHovered || isFocused"
           @add="$emit('add', $event)"
         />
       </div>
@@ -514,6 +519,7 @@ export default {
 
     &.apos-is-ui-adjusted {
       .apos-area-widget-controls--modify {
+        top: 0;
         transform: translate3d(-10px, 50px, 0);
       }
 
@@ -572,8 +578,8 @@ export default {
 
   .apos-area-widget-controls--modify {
     right: 0;
-    transform: translate3d(-10px, 30px, 0);
-
+    top: 50%;
+    transform: translate3d(-10px, -50%, 0);
     :deep(.apos-button-group__inner) {
       border: 1px solid var(--a-primary-transparent-25);
       box-shadow: var(--a-box-shadow);
@@ -595,6 +601,10 @@ export default {
       &:hover:not([disabled]), &:active:not([disabled]), &:focus:not([disabled]) {
         background-color: var(--a-primary-transparent-10);
         color: var(--a-primary);
+      }
+
+      &:focus:not([disabled])::after {
+        background-color: transparent;
       }
 
       &[disabled] {
@@ -735,7 +745,9 @@ export default {
     color: var(--a-primary-dark-10);
 
     &:hover, &:active, &:focus {
-      text-decoration: none;
+      .apos-button__content {
+        color: var(--a-primary);
+      }
     }
   }
 
