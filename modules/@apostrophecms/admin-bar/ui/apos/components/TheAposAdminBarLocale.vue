@@ -335,10 +335,11 @@ export default {
 
 .apos-locale {
   @include apos-button-reset();
+
   display: block;
+  box-sizing: border-box;
   width: 100%;
   padding: 12px 35px;
-  box-sizing: border-box;
 
   &:focus, &:active {
     outline: none;

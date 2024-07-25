@@ -577,9 +577,10 @@ export default {
   }
 
   .apos-area-widget-controls--modify {
-    right: 0;
     top: 50%;
+    right: 0;
     transform: translate3d(-10px, -50%, 0);
+
     :deep(.apos-button-group__inner) {
       border: 1px solid var(--a-primary-transparent-25);
       box-shadow: var(--a-box-shadow);
