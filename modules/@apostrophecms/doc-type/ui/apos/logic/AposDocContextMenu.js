@@ -84,7 +84,7 @@ export default {
       type: Boolean,
       default: false
     },
-    isLocalizing: {
+    localeSwitched: {
       type: Boolean,
       default: false
     }

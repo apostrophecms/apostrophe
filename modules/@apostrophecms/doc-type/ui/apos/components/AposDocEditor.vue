@@ -33,7 +33,7 @@
         :published="published"
         :show-edit="false"
         :can-delete-draft="moduleOptions.canDeleteDraft"
-        :is-localizing="isLocalizing"
+        :locale-switched="localeSwitched"
         @close="close"
       />
       <AposButton
@@ -198,7 +198,7 @@ export default {
       restoreOnly: false,
       saveMenu: null,
       generation: 0,
-      isLocalizing: this.modalData.hasContextLocale,
+      localeSwitched: this.modalData.hasContextLocale,
       referenceDocId: this.docId,
       currentId: this.docId
     };
@@ -648,7 +648,7 @@ export default {
         apos.bus.$emit('content-changed', {
           doc,
           action: (requestMethod === apos.http.put) ? 'update' : 'insert',
-          isLocalizing: this.isLocalizing
+          localeSwitched: this.localeSwitched
         });
       } catch (e) {
         if (this.isLockedError(e)) {
@@ -857,7 +857,7 @@ export default {
         }
       }
       this.updateModalData(this.modalData.id, { locale });
-      this.isLocalizing = locale !== apos.i18n.locale;
+      this.localeSwitched = locale !== apos.i18n.locale;
       this.published = null;
       if (localized) {
         this.currentId = localized._id;
@@ -880,7 +880,7 @@ export default {
       if (this.moduleName === '@apostrophecms/page') {
         // New pages are always born as drafts
         // When in another locale we don't know if the current page exist
-        body._targetId = this.isLocalizing
+        body._targetId = this.localeSwitched
           ? '_home'
           : apos.page.page._id.replace(':published', ':draft');
         body._position = 'lastChild';
@@ -889,7 +889,7 @@ export default {
       if (!newInstance) {
         if (this.copyOfId) {
           body._copyingId = this.copyOfId;
-        } else if (this.isLocalizing && this.referenceDocId) {
+        } else if (this.localeSwitched && this.referenceDocId) {
           body._createId = this.referenceDocId.split(':')[0];
         }
       }
