@@ -146,7 +146,7 @@ export default {
           apos.bus.$emit('content-changed', {
             doc,
             action: 'archive',
-            isLocalizing: this.isLocalizing || false
+            localeSwitched: Boolean(this.localeSwitched)
           });
           return true;
         }
@@ -267,7 +267,7 @@ export default {
         apos.bus.$emit('content-changed', {
           doc,
           action: 'restore',
-          isLocalizing: this.isLocalizing || false
+          localeSwitched: Boolean(this.localeSwitched)
         });
         return doc;
       } catch (e) {

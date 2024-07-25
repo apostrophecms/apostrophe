@@ -43,7 +43,7 @@ export default {
         apos.bus.$emit('content-changed', {
           doc,
           action: 'publish',
-          isLocalizing: this.isLocalizing || false
+          localeSwitched: Boolean(this.localeSwitched)
         });
         return doc;
       } catch (e) {
@@ -99,7 +99,7 @@ export default {
         apos.bus.$emit('content-changed', {
           doc,
           action: 'unpublish',
-          isLocalizing: this.isLocalizing || false
+          localeSwitched: Boolean(this.localeSwitched)
         });
         return doc;
       } catch (e) {
@@ -134,7 +134,7 @@ export default {
         apos.bus.$emit('content-changed', {
           doc: newDoc,
           action: 'submit',
-          isLocalizing: this.isLocalizing || false
+          localeSwitched: Boolean(this.localeSwitched)
         });
         return submitted;
       } catch (e) {
@@ -167,7 +167,7 @@ export default {
         apos.bus.$emit('content-changed', {
           doc: newDoc,
           action: 'dismiss-submission',
-          isLocalizing: this.isLocalizing || false
+          localeSwitched: Boolean(this.localeSwitched)
         });
       } catch (e) {
         await apos.alert({
@@ -216,7 +216,7 @@ export default {
             apos.bus.$emit('content-changed', {
               doc: newDoc,
               action: 'revert-draft-to-published',
-              isLocalizing: this.isLocalizing || false
+              localeSwitched: Boolean(this.localeSwitched)
             });
             return {
               doc: newDoc
@@ -233,7 +233,7 @@ export default {
             apos.bus.$emit('content-changed', {
               doc,
               action: 'delete',
-              isLocalizing: this.isLocalizing || false
+              localeSwitched: Boolean(this.localeSwitched)
             });
             return {};
           }
