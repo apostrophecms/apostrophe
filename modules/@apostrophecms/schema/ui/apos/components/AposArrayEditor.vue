@@ -38,6 +38,7 @@
               </span>
             </div>
             <AposButton
+              ref="addButton"
               class="apos-modal-array-items__add"
               label="apostrophe:addItem"
               :icon-only="true"

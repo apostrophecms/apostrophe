@@ -9,6 +9,7 @@
       v-bind="attrs"
       :is="href ? 'a' : 'button'"
       :id="attrs.id ? attrs.id : id"
+      :target="target"
       :href="href.length ? href : false"
       class="apos-button"
       :class="modifierClass"
@@ -131,6 +132,10 @@ export default {
     tooltip: {
       type: [ String, Object, Boolean ],
       default: false
+    },
+    target: {
+      type: [ String, Boolean ],
+      default: false
     }
   },
   emits: [ 'click' ],
@@ -207,7 +212,7 @@ export default {
       return null;
     },
     isDisabled() {
-      return this.disabled || this.busy;
+      return (this.disabled || this.busy) || null;
     },
     actionTestLabel() {
       return this.action

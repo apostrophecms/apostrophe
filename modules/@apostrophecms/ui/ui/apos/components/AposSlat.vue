@@ -4,7 +4,7 @@
     <li
       class="apos-slat"
       :data-id="item._id"
-      tabindex="0"
+      :tabindex="slatCount > 1 ? '0' : '-1'"
       :class="{
         'apos-is-engaged': engaged,
         'apos-is-only-child': slatCount === 1,
@@ -19,7 +19,7 @@
       @keydown.prevent.escape="disengage"
       @keydown.prevent.arrow-down="move(1)"
       @keydown.prevent.arrow-up="move(-1)"
-      @keydown.prevent.backspace="remove(true)"
+      @keydown.prevent.backspace="remove($event, true)"
       @click="click"
     >
       <div class="apos-slat__main">
@@ -49,15 +49,22 @@
           :modifiers="['inline']"
           :disabled="disabled"
           @click="$emit('item-clicked', item)"
+          @keydown.prevent.enter="nativeClick"
+          @keydown.prevent.space="nativeClick"
         />
-        <a
+        <AposButton
           v-if="item._url || item._urls"
+          ref="viewLink"
           class="apos-slat__control apos-slat__control--view"
+          icon="eye-icon"
+          :icon-only="true"
+          :modifiers="['inline']"
+          label="apostrophe:preview"
           :href="item._url || item._urls.original"
           target="_blank"
-        >
-          <eye-icon :size="14" class="apos-slat__control--view-icon" />
-        </a>
+          @keydown.prevent.enter="nativeClick"
+          @keydown.prevent.space="nativeClick"
+        />
         <div
           v-if="item.attachment &&
             item.attachment.group === 'images' &&
@@ -93,7 +100,8 @@
           :modifiers="['inline']"
           label="apostrophe:removeItem"
           :disabled="disabled"
-          @click="remove"
+          @click="remove($event)"
+          @keydown.prevent.space="remove($event)"
         />
       </div>
     </li>
@@ -189,11 +197,17 @@ export default {
     }
   },
   methods: {
+    nativeClick(e) {
+      e.preventDefault();
+      return e.target.click();
+    },
     toggleEngage() {
-      if (this.engaged) {
-        this.disengage();
-      } else {
-        this.engage();
+      if (this.slatCount > 1) {
+        if (this.engaged) {
+          this.disengage();
+        } else {
+          this.engage();
+        }
       }
     },
     engage() {
@@ -208,7 +222,11 @@ export default {
         this.$emit('move', this.item._id, direction);
       }
     },
-    remove(focusNext) {
+    remove(event, focusNext) {
+      console.log('remove?');
+      console.log(event);
+      console.log(focusNext);
+      event.preventDefault();
       this.$emit('remove', this.item, focusNext);
     },
     click(e) {
@@ -247,8 +265,10 @@ export default {
     }
 
     &:active,
-    &:focus {
+    &:focus,
+    &:focus-visible {
       background-color: var(--a-base-7);
+      outline: 1px solid var(--a-primary-transparent-90);
     }
 
     &.apos-slat-list__item--disabled,
@@ -263,6 +283,20 @@ export default {
       &:focus {
         background-color: var(--a-base-9);
       }
+    }
+  }
+
+  .apos-slat {
+    :deep(.apos-button:focus) {
+      outline: 1px solid var(--a-primary-transparent-90)
+    }
+  }
+
+  .apos-slat.apos-is-engaged,
+  .apos-slat.sortable-chosen,
+  .apos-slat.apos-is-selected {
+    :deep(.apos-button:focus) {
+      outline: 1px solid var(--a-base-7);
     }
   }
 
