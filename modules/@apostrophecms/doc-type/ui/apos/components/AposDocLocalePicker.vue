@@ -15,6 +15,7 @@
       <AposLocalePicker
         :current-locale="locale"
         :localized="localized"
+        :forbidden="forbidden"
         @switch-locale="switchLocale"
       />
     </AposContextMenu>
@@ -49,9 +50,11 @@ const props = defineProps({
   }
 });
 
+const i18nAction = apos.modules['@apostrophecms/i18n'].action;
 const $t = inject('i18n');
 const menu = ref(null);
 const localized = ref({});
+const forbidden = ref([]);
 const button = computed(() => {
   const label = apos.i18n.locales[props.locale]?.label;
   const key = label ? `${label} (${props.locale})` : props.locale;
@@ -70,15 +73,49 @@ async function open() {
   if (!props.docId) {
     return;
   }
-  const docs = await apos.http.get(
+  try {
+    const docs = await apos.http.get(
     `${props.moduleOptions.action}/${props.docId}/locales`, { busy: true }
-  );
-  localized.value = Object.fromEntries(
-    docs.results
-      .filter(doc => doc.aposLocale.endsWith(':draft'))
-      .map(doc => [ doc.aposLocale.split(':')[0], doc ])
-  );
+    );
+    localized.value = Object.fromEntries(
+      docs.results
+        .filter(doc => doc.aposLocale.endsWith(':draft'))
+        .map(doc => [ doc.aposLocale.split(':')[0], doc ])
+    );
+
+    await checkCreatePermission();
+  } catch (err) {
+    console.err(err);
+  }
 };
+
+function wait(time = 500) {
+  return new Promise((resolve, reject) => {
+    setTimeout(() => {
+      resolve();
+    }, time);
+  });
+}
+
+async function checkCreatePermission() {
+  const locales = Object.keys(window.apos.i18n.locales)
+    .filter((locale) => !localized.value[locale]);
+
+  try {
+    const allowed = await apos.http.get(`${i18nAction}/locales-permissions`, {
+      qs: {
+        type: props.moduleOptions.name,
+        locales,
+        action: 'create'
+      }
+    });
+
+    forbidden.value = locales.filter((locale) => !allowed.includes(locale));
+    console.log('forbidden.value', forbidden.value);
+  } catch (err) {
+    console.err(err);
+  }
+}
 
 async function switchLocale(locale) {
   menu.value.hide();
