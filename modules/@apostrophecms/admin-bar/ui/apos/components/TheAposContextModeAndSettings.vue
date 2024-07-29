@@ -116,7 +116,7 @@ export default {
           } else {
             return 'apostrophe:update';
           }
-          // Document has never been published and has staged changes
+        // Document has never been published and has staged changes
         } else {
           return 'apostrophe:publish';
         }
