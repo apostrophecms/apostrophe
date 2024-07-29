@@ -10,7 +10,7 @@
       :is="href ? 'a' : 'button'"
       :id="attrs.id ? attrs.id : id"
       :target="target"
-      :href="href.length ? href : false"
+      :href="href"
       class="apos-button"
       :class="modifierClass"
       :tabindex="tabindex"
@@ -83,8 +83,8 @@ export default {
       default: null
     },
     href: {
-      type: [ String, Boolean ],
-      default: false
+      type: String,
+      default: null
     },
     iconSize: {
       type: Number,
@@ -122,20 +122,20 @@ export default {
     },
     disableFocus: Boolean,
     buttonType: {
-      type: [ String, Boolean ],
-      default: false
+      type: String,
+      default: null
     },
     role: {
-      type: [ String, Boolean ],
-      default: false
+      type: String,
+      default: null
     },
     tooltip: {
       type: [ String, Object, Boolean ],
       default: false
     },
     target: {
-      type: [ String, Boolean ],
-      default: false
+      type: String,
+      default: null
     }
   },
   emits: [ 'click' ],

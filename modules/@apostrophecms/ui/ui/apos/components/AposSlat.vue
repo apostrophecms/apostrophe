@@ -14,12 +14,12 @@
       :aria-pressed="engaged"
       role="listitem"
       :aria-labelledby="parent"
-      @keydown.prevent.space="toggleEngage"
-      @keydown.prevent.enter="toggleEngage"
-      @keydown.prevent.escape="disengage"
-      @keydown.prevent.arrow-down="move(1)"
-      @keydown.prevent.arrow-up="move(-1)"
-      @keydown.prevent.backspace="remove($event, true)"
+      @keydown.space="toggleEngage"
+      @keydown.enter="toggleEngage"
+      @keydown.escape="disengage"
+      @keydown.arrow-down="move(1)"
+      @keydown.arrow-up="move(-1)"
+      @keydown.backspace="remove($event, true)"
       @click="click"
     >
       <div class="apos-slat__main">
@@ -283,8 +283,16 @@ export default {
   }
 
   .apos-slat {
-    :deep(.apos-button:focus) {
-      outline: 1px solid var(--a-primary-transparent-90)
+    :deep(.apos-button) {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      width: 20px;
+      height: 20px;
+
+      &:focus {
+        outline: 1px solid var(--a-primary-transparent-90)
+      }
     }
   }
 
