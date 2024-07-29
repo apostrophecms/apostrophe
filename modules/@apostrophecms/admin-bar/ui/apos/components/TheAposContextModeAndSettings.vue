@@ -109,10 +109,10 @@ export default {
           // Document went from unpublished to published and has nothing staged
           if (this.hasBeenPublishedThisPageload && !this.readyToPublish && this.hasBeenPublishedButNotUpdated) {
             return 'apostrophe:published';
-            // Document *has* had changes published this page load, but nothing staged now
+          // Document *has* had changes published this page load, but nothing staged now
           } else if (this.hasBeenPublishedThisPageload && !this.readyToPublish) {
             return 'apostrophe:updated';
-            // Document has been published and has staged changes
+          // Document has been published and has staged changes
           } else {
             return 'apostrophe:update';
           }
@@ -129,7 +129,7 @@ export default {
         if (this.context.lastPublishedAt) {
           return 'apostrophe:submitUpdate';
         } else {
-          // Document has never been published and has staged changes
+        // Document has never been published and has staged changes
           return 'apostrophe:submit';
         }
       }
