@@ -385,7 +385,7 @@ export default {
       this.instantiateCopiedDoc();
     } else {
       await this.$nextTick();
-      await this.instantiateNewInstance();
+      await this.instantiateNewDoc();
     }
     apos.bus.$on('content-changed', this.onContentChanged);
   },
@@ -453,7 +453,7 @@ export default {
       this.docReady = true;
       this.modal.triggerFocusRefresh++;
     },
-    async instantiateNewInstance () {
+    async instantiateNewDoc () {
       this.docReady = false;
       const newInstance = await this.getNewInstance();
       this.original = newInstance;
@@ -865,7 +865,7 @@ export default {
       } else {
         this.currentId = '';
         this.docType = this.moduleName;
-        await this.instantiateNewInstance();
+        await this.instantiateNewDoc();
       }
     },
     getRequestBody({ newInstance = false, update = false }) {
