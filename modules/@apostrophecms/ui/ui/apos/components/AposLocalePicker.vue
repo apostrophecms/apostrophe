@@ -22,9 +22,17 @@
       >
         <span class="apos-locale-picker__locale-display">
           <AposIndicator
-            v-if="isActive(locale)"
+            v-if="isForbidden(locale)"
+            icon="lock-icon"
+            icon-color="var(--a-base-5)"
+            class="apos-locale-picker__check"
+            :icon-size="12"
+            :title="$t('apostrophe:primary')"
+          />
+          <AposIndicator
+            v-else-if="isActive(locale)"
             icon="check-bold-icon"
-            fill-color="var(--a-primary)"
+            icon-color="var(--a-primary)"
             class="apos-locale-picker__check"
             :icon-size="12"
             :title="$t('apostrophe:currentLocale')"
@@ -58,7 +66,9 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue';
+import {
+  ref, computed
+} from 'vue';
 
 const emit = defineEmits([ 'switch-locale' ]);
 const props = defineProps({
@@ -69,6 +79,10 @@ const props = defineProps({
   localized: {
     type: Object,
     required: true
+  },
+  forbidden: {
+    type: Array,
+    default: () => ([])
   }
 });
 
@@ -102,17 +116,20 @@ function isActive(locale) {
   return props.currentLocale === locale.name;
 }
 
+function isForbidden(locale) {
+  return props.forbidden.includes(locale.name);
+}
+
 function switchLocale(locale) {
   emit('switch-locale', locale);
 }
 
 function localeClasses(locale) {
-  const classes = {};
-  if (isActive(locale)) {
-    classes['apos-active'] = true;
-  }
-  classes['apos-exists'] = isLocalized(locale);
-  return classes;
+  return {
+    'apos-active': isActive(locale),
+    'apos-exists': isLocalized(locale),
+    'apos-forbidden': isForbidden(locale)
+  };
 }
 </script>
 
@@ -191,6 +208,15 @@ function localeClasses(locale) {
       background-color: var(--a-success);
       border-color: var(--a-success);
     }
+  }
+}
+
+.apos-forbidden {
+  color: var(--a-base-5);
+  cursor: forbidden;
+
+  &:hover {
+    background-color: var(--a-base-10);
   }
 }
 
