@@ -21,9 +21,9 @@
         type="subtle"
         :modifiers="['small', 'no-motion']"
         :tooltip="{
-      content: 'apostrophe:toggleEditMode',
-      placement: 'bottom'
-    }"
+          content: 'apostrophe:toggleEditMode',
+          placement: 'bottom'
+        }"
         @click="switchEditMode(true)"
       />
     </div>
@@ -42,9 +42,9 @@
         class="apos-admin-bar__context-button"
         label="apostrophe:preview"
         :tooltip="{
-      content: 'apostrophe:previewTooltip',
-      placement: 'bottom'
-    }"
+          content: 'apostrophe:previewTooltip',
+          placement: 'bottom'
+        }"
         type="subtle"
         :modifiers="['small', 'no-motion']"
         @click="switchEditMode(false)"
