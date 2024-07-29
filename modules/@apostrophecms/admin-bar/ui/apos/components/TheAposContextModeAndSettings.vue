@@ -21,9 +21,9 @@
         type="subtle"
         :modifiers="['small', 'no-motion']"
         :tooltip="{
-          content: 'apostrophe:toggleEditMode',
-          placement: 'bottom'
-        }"
+      content: 'apostrophe:toggleEditMode',
+      placement: 'bottom'
+    }"
         @click="switchEditMode(true)"
       />
     </div>
@@ -42,9 +42,9 @@
         class="apos-admin-bar__context-button"
         label="apostrophe:preview"
         :tooltip="{
-          content: 'apostrophe:previewTooltip',
-          placement: 'bottom'
-        }"
+      content: 'apostrophe:previewTooltip',
+      placement: 'bottom'
+    }"
         type="subtle"
         :modifiers="['small', 'no-motion']"
         @click="switchEditMode(false)"
@@ -53,6 +53,7 @@
         v-if="editMode && !isAutopublished"
         type="primary"
         :label="publishLabel"
+        :tooltip="publishTooltip"
         :disabled="!readyToPublish"
         class="apos-admin-bar__btn apos-admin-bar__context-button"
         :modifiers="['no-motion']"
@@ -108,14 +109,14 @@ export default {
           // Document went from unpublished to published and has nothing staged
           if (this.hasBeenPublishedThisPageload && !this.readyToPublish && this.hasBeenPublishedButNotUpdated) {
             return 'apostrophe:published';
-          // Document *has* had changes published this page load, but nothing staged now
+            // Document *has* had changes published this page load, but nothing staged now
           } else if (this.hasBeenPublishedThisPageload && !this.readyToPublish) {
             return 'apostrophe:updated';
-          // Document has been published and has staged changes
+            // Document has been published and has staged changes
           } else {
             return 'apostrophe:update';
           }
-        // Document has never been published and has staged changes
+          // Document has never been published and has staged changes
         } else {
           return 'apostrophe:publish';
         }
@@ -128,10 +129,20 @@ export default {
         if (this.context.lastPublishedAt) {
           return 'apostrophe:submitUpdate';
         } else {
-        // Document has never been published and has staged changes
+          // Document has never been published and has staged changes
           return 'apostrophe:submit';
         }
       }
+    },
+    publishTooltip() {
+      if (this.canPublish && this.context.lastPublishedAt && !this.hasBeenPublishedThisPageload) {
+        return {
+          content: 'apostrophe:updateTooltip',
+          placement: 'bottom'
+        };
+      }
+
+      return false;
     },
     isAutopublished() {
       return this.context._aposAutopublish ?? (window.apos.modules[this.context.type].autopublish || false);
