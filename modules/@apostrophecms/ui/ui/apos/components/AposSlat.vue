@@ -54,7 +54,6 @@
         />
         <AposButton
           v-if="item._url || item._urls"
-          ref="viewLink"
           class="apos-slat__control apos-slat__control--view"
           icon="eye-icon"
           :icon-only="true"
@@ -223,9 +222,6 @@ export default {
       }
     },
     remove(event, focusNext) {
-      console.log('remove?');
-      console.log(event);
-      console.log(focusNext);
       event.preventDefault();
       this.$emit('remove', this.item, focusNext);
     },
