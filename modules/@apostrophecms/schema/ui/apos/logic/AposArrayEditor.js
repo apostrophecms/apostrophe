@@ -141,10 +141,6 @@ export default {
   async mounted() {
     this.modal.active = true;
     await this.evaluateExternalConditions();
-    // if array is empty, stub in first item
-    if (!this.next.length) {
-      this.add();
-    }
     if (this.next.length) {
       this.setCurrentDoc(this.next.at(0)._id);
     }
@@ -159,13 +155,6 @@ export default {
       }
     }
     this.titleFieldChoices = await this.getTitleFieldChoices();
-    this.modal.triggerFocusRefresh++;
-    const firstSchemaEl = Object.values(this.$refs.schema.$refs)?.[0]?.[0]?.$refs?.input;
-    if (firstSchemaEl) {
-      await this.$nextTick();
-      await this.$nextTick();
-      firstSchemaEl.focus();
-    }
   },
   methods: {
     setCurrentDoc(_id) {
@@ -257,10 +246,6 @@ export default {
         }
       }
       if (this.next.length !== this.original.length) {
-        // Check if the difference is a stubbed in item without defaults
-        if (this.next.length === 1 && !this.schema.find(f => f.def)) {
-          return false;
-        }
         return true;
       }
       for (let i = 0; (i < this.next.length); i++) {
