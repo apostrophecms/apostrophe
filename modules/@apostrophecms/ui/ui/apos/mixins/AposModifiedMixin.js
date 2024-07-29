@@ -25,7 +25,8 @@ export default {
     // Returns true if the cancellation does occur
     async confirmAndCancel() {
       let dismiss;
-      if (this.isModified) {
+      const modified = typeof this.isModified === 'function' ? this.isModified() : this.isModified;
+      if (modified) {
         const discard = await apos.confirm({
           heading: this.cancelHeading,
           description: this.cancelDescription,

@@ -13,6 +13,7 @@
         <textarea
           v-if="field.textarea && field.type === 'string'"
           :id="uid"
+          ref="input"
           v-model="next"
           :rows="rows"
           :class="classes"
@@ -26,6 +27,7 @@
         <input
           v-else
           :id="uid"
+          ref="input"
           v-model="next"
           :class="classes"
           :type="type"
