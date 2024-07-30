@@ -27,6 +27,10 @@ export const useModalStore = defineStore('modal', () => {
     activeId.value = current.id || null;
   }
 
+  function getActiveLocale() {
+    return activeModal.value?.locale || apos.i18n.locale;
+  }
+
   function get(id) {
     return id
       ? stack.value.find(modal => id === modal.id)
@@ -67,7 +71,11 @@ export const useModalStore = defineStore('modal', () => {
         resolve,
         props: props || {},
         elementsToFocus: [],
-        focusedElement: null
+        focusedElement: null,
+        locale: activeModal.value?.locale || apos.i18n.locale,
+        hasContextLocale: activeModal.value
+          ? (activeModal.value.hasContextLocale || activeModal.value.locale !== apos.i18n.locale)
+          : false
       };
 
       activeId.value = item.id;
@@ -165,6 +173,7 @@ export const useModalStore = defineStore('modal', () => {
     stack,
     activeId,
     activeModal,
+    getActiveLocale,
     add,
     remove,
     get,

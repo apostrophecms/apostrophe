@@ -2,6 +2,11 @@
 
 ## UNRELEASED
 
+### Adds
+
+* Add a locale switcher in pieces and pages editor modals. This is available for localized documents only, and allows you to switch between locales for the same document.
+  The locale can be switche at only one level, meaning that sub documents of a document that already switched locale will not be able to switch locale itself.
+
 ### Changes
 
 * Add `title` and `_url` to select all projection.

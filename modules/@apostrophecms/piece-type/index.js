@@ -820,8 +820,10 @@ module.exports = {
       async convertInsertAndRefresh(req, input, options) {
         const piece = self.newInstance();
         const copyingId = self.apos.launder.id(input._copyingId);
+        const createId = self.apos.launder.id(input._createId);
         await self.convert(req, input, piece, {
-          copyingId
+          copyingId,
+          createId
         });
         await self.emit('afterConvert', req, input, piece);
         await self.insert(req, piece);
