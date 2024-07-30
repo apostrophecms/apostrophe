@@ -8,6 +8,7 @@
 * Display `Select all` message on all pages in the manager modal.
 * Refresh `checked` in manager modal after archive action.
 * Updates rich text link tool's keyboard key detection strategy.
+* Added tooltip for update button.
 
 ### Fixes
 
