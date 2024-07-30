@@ -97,19 +97,15 @@ async function checkCreatePermission() {
   const locales = Object.keys(window.apos.i18n.locales)
     .filter((locale) => !localized.value[locale]);
 
-  try {
-    const allowed = await apos.http.get(`${i18nAction}/locales-permissions`, {
-      qs: {
-        type: props.moduleOptions.name,
-        locales,
-        action: 'create'
-      }
-    });
+  const allowed = await apos.http.get(`${i18nAction}/locales-permissions`, {
+    qs: {
+      type: props.moduleOptions.name,
+      locales,
+      action: 'create'
+    }
+  });
 
-    forbidden.value = locales.filter((locale) => !allowed.includes(locale));
-  } catch (err) {
-    console.err(err);
-  }
+  forbidden.value = locales.filter((locale) => !allowed.includes(locale));
 }
 
 async function switchLocale(locale) {
