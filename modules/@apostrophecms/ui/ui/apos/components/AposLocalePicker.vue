@@ -28,7 +28,7 @@
             icon-color="var(--a-base-5)"
             class="apos-locale-picker__check"
             :icon-size="12"
-            :title="$t('apostrophe:primary')"
+            :title="$t('apostrophe:forbidden')"
           />
           <AposIndicator
             v-else-if="isActive(locale)"
