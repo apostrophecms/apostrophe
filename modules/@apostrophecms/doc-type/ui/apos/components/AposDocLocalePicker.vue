@@ -16,6 +16,7 @@
         :current-locale="locale"
         :localized="localized"
         :forbidden="forbidden"
+        :forbidden-tooltip="forbiddenTooltip"
         @switch-locale="switchLocale"
       />
     </AposContextMenu>
@@ -50,8 +51,11 @@ const props = defineProps({
   }
 });
 
-const i18nAction = apos.modules['@apostrophecms/i18n'].action;
 const $t = inject('i18n');
+const i18nAction = apos.modules['@apostrophecms/i18n'].action;
+const forbiddenTooltip = $t('apostrophe:localeSwitcherPermissionToCreate', {
+  docType: props.moduleOptions.label.toLowerCase()
+});
 const menu = ref(null);
 const localized = ref({});
 const forbidden = ref([]);
@@ -89,14 +93,6 @@ async function open() {
   }
 };
 
-function wait(time = 500) {
-  return new Promise((resolve, reject) => {
-    setTimeout(() => {
-      resolve();
-    }, time);
-  });
-}
-
 async function checkCreatePermission() {
   const locales = Object.keys(window.apos.i18n.locales)
     .filter((locale) => !localized.value[locale]);
@@ -111,15 +107,17 @@ async function checkCreatePermission() {
     });
 
     forbidden.value = locales.filter((locale) => !allowed.includes(locale));
-    console.log('forbidden.value', forbidden.value);
   } catch (err) {
     console.err(err);
   }
 }
 
 async function switchLocale(locale) {
-  menu.value.hide();
+  if (forbidden.value.includes(locale.name)) {
+    return;
+  };
 
+  menu.value.hide();
   if (locale.name === props.locale) {
     return;
   }
