@@ -1,5 +1,11 @@
 # Changelog
 
+## UNRELEASED
+
+### Changes
+
+* Minimum version of `oembetter` bumped to ensure support for all Vimeo videos that permit embedding.
+
 ## 2.227.7 (2024-07-10)
 
 ### Changes
