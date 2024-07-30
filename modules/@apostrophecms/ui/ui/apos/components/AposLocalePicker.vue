@@ -15,6 +15,7 @@
       <li
         v-for="locale in filteredLocales"
         :key="locale.name"
+        v-apos-tooltip="getForbiddenTooltip(locale)"
         :class="localeClasses(locale)"
         class="apos-locale-picker__item"
         data-apos-test="localeItem"
@@ -66,9 +67,7 @@
 </template>
 
 <script setup>
-import {
-  ref, computed
-} from 'vue';
+import { ref, computed } from 'vue';
 
 const emit = defineEmits([ 'switch-locale' ]);
 const props = defineProps({
@@ -83,6 +82,10 @@ const props = defineProps({
   forbidden: {
     type: Array,
     default: () => ([])
+  },
+  forbiddenTooltip: {
+    type: String,
+    default: null
   }
 });
 
@@ -129,6 +132,13 @@ function localeClasses(locale) {
     'apos-active': isActive(locale),
     'apos-exists': isLocalized(locale),
     'apos-forbidden': isForbidden(locale)
+  };
+}
+
+function getForbiddenTooltip(locale) {
+  return isForbidden(locale) && {
+    content: props.forbiddenTooltip,
+    placement: 'left'
   };
 }
 </script>
@@ -192,6 +202,10 @@ function localeClasses(locale) {
     transform: translateY(-50%);
     color: var(--a-primary);
     stroke: var(--a-primary);
+
+    :deep(.material-design-icon__svg) {
+      stroke: none;
+    }
   }
 
   .apos-locale-picker__localized {
@@ -213,7 +227,7 @@ function localeClasses(locale) {
 
 .apos-forbidden {
   color: var(--a-base-5);
-  cursor: forbidden;
+  cursor: not-allowed;
 
   &:hover {
     background-color: var(--a-base-10);

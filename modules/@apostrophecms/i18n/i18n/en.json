@@ -243,6 +243,7 @@
   "localeSwitcherDiscardChangesAffirmative": "Save as draft and switch",
   "localeSwitcherDiscardChangesNegative": "Discard changes and switch",
   "localeSwitcherDiscardChangesPrompt": "Do you want to discard changes to this {{ docType }} before switching locales?",
+  "localeSwitcherPermissionToCreate": "You don't have permission to create a new {{ docType }} in this locale",
   "localize": "Localize...",
   "localizeAllRelated": "Localize all related documents and overwrite existing documents",
   "localizeContent": "Localize Content",
