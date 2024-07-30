@@ -346,7 +346,9 @@ export default {
       return pref;
     },
     showLocalePicker() {
-      return this.moduleOptions.localized !== false && !this.modalData.hasContextLocale;
+      return Object.keys(window.apos.i18n.locales).length > 1 &&
+        this.moduleOptions.localized !== false &&
+        !this.modalData.hasContextLocale;
     }
   },
   watch: {
