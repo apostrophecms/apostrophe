@@ -21,7 +21,7 @@
         data-apos-test="localeItem"
         @click="switchLocale(locale)"
       >
-        <span class="apos-locale-picker__locale-display">
+        <button :tabindex="isOpen ? '0' : '-1'" class="apos-locale-picker__locale-display">
           <AposIndicator
             v-if="isForbidden(locale)"
             icon="lock-icon"
@@ -46,7 +46,7 @@
             class="apos-locale-picker__localized"
             :class="{ 'apos-state-is-localized': isLocalized(locale) }"
           />
-        </span>
+        </button>
       </li>
     </ul>
     <div class="apos-locales-picker__available">
@@ -86,6 +86,10 @@ const props = defineProps({
   forbiddenTooltip: {
     type: String,
     default: null
+  },
+  isOpen: {
+    type: Boolean,
+    default: false
   }
 });
 
@@ -144,6 +148,21 @@ function getForbiddenTooltip(locale) {
 </script>
 
 <style lang="scss" scoped>
+.apos-locale-picker__locale-display {
+  @include apos-button-reset();
+  @include type-base;
+
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 12px 35px;
+
+  &:focus {
+    outline: 1px solid var(--a-base-8);
+    background-color: var(--a-base-10);
+  }
+}
+
 .apos-locales-picker {
   width: 315px;
 }
@@ -183,7 +202,6 @@ function getForbiddenTooltip(locale) {
 
 .apos-locale-picker__item {
   position: relative;
-  padding: 12px 35px;
   line-height: 1;
   cursor: pointer;
 
