@@ -153,8 +153,8 @@ function getForbiddenTooltip(locale) {
   @include type-base;
 
   display: block;
-  width: 100%;
   box-sizing: border-box;
+  width: 100%;
   padding: 12px 35px;
 
   &:focus {
