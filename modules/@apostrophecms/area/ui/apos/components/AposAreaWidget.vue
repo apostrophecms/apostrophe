@@ -18,6 +18,7 @@
       @mouseleave="mouseleave"
       @click="getFocus($event, widget._id);"
       @focus="attachKeyboardFocusHandler"
+      @blur="removeKeyboardFocusHandler"
     >
       <div
         ref="label"
@@ -81,6 +82,28 @@
         class="apos-area-widget-guard"
         :class="{'apos-is-disabled': isFocused}"
       />
+      <div
+        class="apos-area-widget-controls apos-area-widget-controls--modify"
+        :class="controlsClasses"
+      >
+        <AposWidgetControls
+          v-if="!foreign"
+          :first="i === 0"
+          :last="i === next.length - 1"
+          :options="{ contextual: isContextual }"
+          :foreign="foreign"
+          :disabled="disabled"
+          :max-reached="maxReached"
+          :tabbable="isFocused"
+          @up="$emit('up', i);"
+          @remove="$emit('remove', i);"
+          @edit="$emit('edit', i);"
+          @cut="$emit('cut', i);"
+          @copy="$emit('copy', i);"
+          @clone="$emit('clone', i);"
+          @down="$emit('down', i);"
+        />
+      </div>
       <!-- Still used for contextual editing components -->
       <component
         :is="widgetEditorComponent(widget.type)"
@@ -112,28 +135,6 @@
         :rendering="rendering"
         @edit="$emit('edit', i);"
       />
-      <div
-        class="apos-area-widget-controls apos-area-widget-controls--modify"
-        :class="controlsClasses"
-      >
-        <AposWidgetControls
-          v-if="!foreign"
-          :first="i === 0"
-          :last="i === next.length - 1"
-          :options="{ contextual: isContextual }"
-          :foreign="foreign"
-          :disabled="disabled"
-          :max-reached="maxReached"
-          :tabbable="isFocused"
-          @up="$emit('up', i);"
-          @remove="$emit('remove', i);"
-          @edit="$emit('edit', i);"
-          @cut="$emit('cut', i);"
-          @copy="$emit('copy', i);"
-          @clone="$emit('clone', i);"
-          @down="$emit('down', i);"
-        />
-      </div>
       <div
         class="apos-area-widget-controls apos-area-widget-controls--add apos-area-widget-controls--add--bottom"
         :class="addClasses"
@@ -403,8 +404,12 @@ export default {
       return offsetTop - labelHeight < adminBarHeight;
     },
 
-    attachKeyboardFocusHandler($event) {
+    attachKeyboardFocusHandler() {
       this.$refs.wrapper.addEventListener('keydown', this.handleKeyboardFocus);
+    },
+
+    removeKeyboardFocusHandler() {
+      this.$refs.wrapper.removeEventListener('keydown', this.handleKeyboardFocus);
     },
 
     // Focus parent, useful for obtrusive UI
