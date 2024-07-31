@@ -3,10 +3,17 @@ const qs = require('qs');
 const fetch = require('node-fetch');
 const tough = require('tough-cookie');
 const escapeHost = require('../../../lib/escape-host');
+const util = require('util');
+const multiparty = require('connect-multiparty');
+const { readFile, open, unlink } = require('node:fs/promises');
 
 module.exports = {
   options: {
-    alias: 'http'
+    alias: 'http',
+    // 2 hour limit to process a "big upload,"
+    // which could be something like an entire site
+    // with its attachments
+    bigUploadMaxSeconds: 2 * 60 * 60
   },
   init(self) {
     // Map friendly errors created via `apos.error` to status codes.
@@ -26,6 +33,17 @@ module.exports = {
       unimplemented: 501
     };
     _.merge(self.errors, self.options.addErrors);
+  },
+  handlers(self) {
+    // Wait for the db module to be ready
+    return {
+      'apostrophe:modulesRegistered': {
+        setCollection() {
+          console.log('collection');
+          self.bigUploads = self.apos.db.collection('aposBigUploads');
+        }
+      }
+    };
   },
   methods(self) {
     return {
@@ -294,6 +312,255 @@ module.exports = {
       getBase() {
         const server = self.apos.modules['@apostrophecms/express'].server;
         return `http://${escapeHost(server.address().address)}:${server.address().port}`;
+      },
+
+      // Returns middleware that allows any route to receive large
+      // uploads made via big-upload-client. A workaround for
+      // the max POST size, max uploaded file size, etc. of
+      // nginx and other proxy servers.
+      //
+      // Before passing this middleware function you should use another
+      // to verify permissions.
+
+      bigUpload({ authorize } = {}) {
+        return (req, res, next) => {
+          const multipartyFn = multiparty();
+          console.log('before multiparty');
+          return multipartyFn(req, res, () => {
+            console.log('after multiparty');
+            return body(req, res, next);
+          });
+        };
+
+        async function body(req, res, next) {
+          const origFiles = req.files;
+          console.log('in body');
+          try {
+            if (authorize) {
+              try {
+                await authorize(req);
+              } catch (e) {
+                return res.status(403).send({
+                  name: 'forbidden',
+                  message: 'Unauthorized aposBigUpload request'
+                });
+              }
+            }
+            const params = req.query.aposBigUpload;
+            if (!params) {
+              return next();
+            }
+            if (params.type === 'start') {
+              return await self.bigUploadStart(req, req.body.files);
+            } else if (params.type === 'chunk') {
+              return await self.bigUploadChunk(req, params);
+            } else if (params.type === 'end') {
+              return await self.bigUploadEnd(req, params.id, next);
+            } else {
+              return res.status(400).send({
+                name: 'invalid',
+                message: 'Invalid aposBigUpload request'
+              });
+            }
+          } finally {
+            // Clean up multiparty temporary files
+            for (const { path } of Object.values(origFiles || {})) {
+              try {
+                await unlink(path);
+              } catch (e) {
+                // OK if it is already gone
+              }
+            }
+          }
+        };
+      },
+
+      async bigUploadStart(req, files = {}) {
+        try {
+          const id = self.apos.util.generateId();
+          files = Object.fromEntries(Object.entries(files).map(([ param, info ]) => {
+            console.log('-->', param, info);
+            if ((typeof param) !== 'string') {
+              throw invalid('param');
+            }
+            if (((typeof info) !== 'object') || (info == null)) {
+              throw invalid('info');
+            }
+            if ((typeof info.name) !== 'string') {
+              throw invalid('name');
+            }
+            if (!info.name.length) {
+              throw invalid('name empty');
+            }
+            if ((typeof info.size) !== 'number') {
+              throw invalid('size');
+            }
+            if ((typeof info.chunks) !== 'number') {
+              throw invalid('chunks');
+            }
+            return [ param, {
+              name: info.name,
+              size: info.size,
+              chunks: info.chunks
+            } ];
+          }));
+          console.log('>>', files);
+          await self.bigUploads.insert({
+            _id: id,
+            files,
+            start: Date.now()
+          });
+          return req.res.send({
+            id
+          });
+          function invalid(s) {
+            self.apos.util.error(`Invalid bigUpload parameter: ${s}`);
+            return self.apos.error('invalid', e);
+          }
+        } catch (e) {
+          console.error('!!!', e);
+          return req.res.status(500).send({
+            name: 'error',
+            message: 'aposBigUpload error'
+          });
+        }
+      },
+
+      async bigUploadChunk(req, params) {
+        console.log('a chunk!', params);
+        try {
+          const id = self.apos.launder.id(params.id);
+          const n = self.apos.launder.integer(params.n);
+          const chunk = self.apos.launder.integer(params.chunk);
+          const bigUpload = await self.bigUploads.findOne({ _id: id });
+          if (!bigUpload) {
+            throw self.apos.error('notfound');
+          }
+          if ((n < 0) || (n >= Object.keys(bigUpload.files).length)) {
+            throw self.apos.error('invalid', 'n out of range');
+          }
+          const info = Object.values(bigUpload.files)[n];
+          if ((chunk < 0) || (chunk >= info.chunks)) {
+            throw self.apos.error('invalid', 'chunk out of range');
+          }
+          const file = req.files.chunk;
+          const ufs = self.getBigUploadFs();
+          const ufsPath = `/big-uploads/${id}-${n}-${chunk}`;
+          await ufs.copyIn(file.path, ufsPath);
+          return req.res.send({});
+        } catch (e) {
+          console.error('!!!!', e);
+          self.logError('bigUploadError', e);
+          return req.res.status(500).send({
+            name: 'error',
+            message: 'aposBigUpload error'
+          });
+        }
+      },
+
+      async bigUploadEnd(req, id, next) {
+        const ufs = self.getBigUploadFs();
+        let bigUpload;
+        try {
+          bigUpload = await self.bigUploads.findOne({
+            _id: id
+          });
+          if (!bigUpload) {
+            return req.res.status(400).send({
+              name: 'invalid'
+            });
+          }
+          let n = 0;
+          req.files = {};
+          console.log('LOOPING');
+          for (const [ param, { name, size, chunks }] of Object.entries(bigUpload.files)) {
+            let ext = require('path').extname(name);
+            if (ext) {
+              ext = ext.substring(1);
+            } else {
+              ext = 'tmp';
+            }
+            const tmp = `${ufs.getTempPath()}/${id}-${n}.${ext}`;
+            console.log(`** TMP IS: ${tmp}`);
+            const out = await open(tmp, 'w');
+            console.log('BEFORE CHUNKS');
+            for (let i = 0; (i < chunks); i++) {
+              const ufsPath = `/big-uploads/${id}-${n}-${i}`;
+              const chunkTmp = `${tmp}.${i}`;
+              try {
+                await ufs.copyOut(ufsPath, chunkTmp);
+                const data = await readFile(chunkTmp);
+                await out.writeFile(data);
+              } finally {
+                try {
+                  await unlink(chunkTmp);
+                } catch (e) {
+                  // Probably never got that far
+                }
+              }
+            }
+            await out.close();
+            n++;
+            req.files[param] = {
+              name,
+              path: tmp
+            }
+          }
+          console.log('CALLING NEXT');
+          return next();
+        } catch (e) {
+          console.error('ERROR IN END:', e);
+          self.logError('bigUploadError', e);
+          return req.res.status(500).send({
+            name: 'error',
+            message: 'aposBigUpload error'
+          });
+        } finally {
+          // Intentionally in background
+          self.bigUploadCleanupOne(bigUpload);
+        }
+      },
+
+      async bigUploadCleanup() {
+        const old = self.bigUploads.find({
+          start: {
+            $lte: Date.now() - self.options.bigUploadMaxSeconds * 1000
+          }
+        });
+        for (const bigUpload of old) {
+          await self.bigUploadCleanupOne(bigUpload);
+        }
+      },
+
+      async bigUploadCleanupOne(bigUpload) {
+        const ufs = self.getBigUploadFs();
+        const id = bigUpload._id;
+        let n = 0;
+        for (const { id, chunks } of Object.values(bigUpload.files)) {
+          for (let i = 0; (i < chunks); i++) {
+            const ufsPath = `/big-uploads/${id}-${n}-${i}`;
+            try {
+              await ufs.remove(ufsPath);
+            } catch (e) {
+              // It's OK if someone else already removed it
+              // or it never got there
+            }
+          }
+          n++;
+        }
+        await self.bigUploads.deleteOne({
+          _id: bigUpload._id
+        });
+      },
+
+      getBigUploadFs() {
+        const uploadfs = self.apos.attachment.uploadfs;
+        return {
+          copyIn: util.promisify(uploadfs.copyIn),
+          copyOut: util.promisify(uploadfs.copyOut),
+          remove: util.promisify(uploadfs.remove),
+          getTempPath: uploadfs.getTempPath
+        };
       }
 
     };
