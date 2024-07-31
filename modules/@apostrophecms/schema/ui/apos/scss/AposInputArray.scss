@@ -75,7 +75,8 @@
     background-color: transparent;
   }
 
-  td, :deep(td) {
+  td,
+  :deep(td) {
     padding: $spacing-base;
     border: 1px solid var(--a-base-9);
     vertical-align: middle;
@@ -84,25 +85,31 @@
     background-color: var(--a-background-primary);
   }
 
-  td.apos-input-array-inline-item-controls { /* stylelint-disable-line selector-no-qualifying-type */
+  td.apos-input-array-inline-item-controls {
+    /* stylelint-disable-line selector-no-qualifying-type */
     width: 15px;
     min-width: 15px;
     border: none;
     background-color: transparent;
   }
 
-  tr.apos-is-dragging, :deep(tr.apos-is-dragging) { /* stylelint-disable-line selector-no-qualifying-type */
-    td, &:hover td {
+  tr.apos-is-dragging,
+  :deep(tr.apos-is-dragging) {
+    /* stylelint-disable-line selector-no-qualifying-type */
+    td,
+    &:hover td {
       background: var(--a-base-4);
     }
   }
 
-  tr:hover, :deep(tr:hover) {
+  tr:hover,
+  :deep(tr:hover) {
     td {
       background-color: var(--a-base-10);
     }
 
-    td.apos-input-array-inline-item-controls { /* stylelint-disable-line selector-no-qualifying-type */
+    td.apos-input-array-inline-item-controls {
+      /* stylelint-disable-line selector-no-qualifying-type */
       background-color: transparent;
     }
   }
@@ -163,21 +170,90 @@
   }
 }
 
+.apos-input-array-inline-header {
+  display: flex;
+  justify-content: space-between;
+  padding: $spacing-half;
+  &:hover {
+    cursor: grab;
+  }
+  &:active,
+  &:hover:active {
+    cursor: grabbing;
+  }
+}
+
+.apos-input-array-inline-header-ui {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.apos-input-array-inline-header-ui-element {
+  &.apos-indicator,
+  :deep(.apos-button),
+  :deep(.apos-button--icon-only.apos-button--small) {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 30px;
+    height: 30px;
+    padding: 0;
+  }
+}
+
+.apos-input-array-inline-body {
+  overflow: hidden;
+  max-height: 999px;
+  transition: all 400ms ease;
+  padding: $spacing-base 0;
+
+  &.collapse-enter-from,
+  &.collapse-leave-to {
+    max-height: 0;
+  }
+
+  &.collapse-enter-active,
+  &.collapse-leave-active {
+    transition: max-height 400ms ease;
+  }
+}
+
+.apos-input-array-inline-label {
+  @include type-large;
+
+  margin: 0;
+  padding-top: $spacing-base;
+  padding-bottom: $spacing-base;
+  text-align: left;
+  transition: background-color 400ms ease;
+  // grid-column: 2;
+}
+
 .apos-input-array-inline-standard {
-  .apos-input-array-inline-collapse {
-    position: absolute;
-    top: $spacing-quadruple;
-    left: $spacing-base;
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-base;
+
+  .apos-input-array-inline-item {
+    overflow: hidden;
+    background-color: var(--a-base-10);
+    border: 1px solid var(--a-base-9);
+    padding: 0;
+    border-radius: var(--a-border-radius);
+
+    &--open {
+      .apos-input-array-inline-header {
+        background: var(--a-base-8);
+      }
+    }
   }
 
   :deep(.apos-schema) {
-    position: relative;
-    display: grid;
-    grid-template-columns: 35px auto 35px;
-    gap: 5px;
-    width: 100%;
-    padding-bottom: $spacing-base;
-    border-bottom: 1px solid var(--a-base-9);
+    display: flex;
+    flex-direction: column;
+    gap: $spacing-double;
+    margin: 0 $spacing-double;
     transition: background-color 300ms ease;
 
     &:hover {
@@ -190,9 +266,9 @@
       margin-bottom: 0;
     }
 
-    & > div {
-      grid-column: 2;
-    }
+    // & > div {
+    //   grid-column: 2;
+    // }
 
     &.apos-input-array-inline-item--active {
       background-color: var(--a-base-10);
@@ -209,30 +285,28 @@
       display: block;
     }
 
-    .apos-input-array-inline-label {
-      @include type-label;
-
-      margin: 0;
-      padding-top: $spacing-base;
-      padding-bottom: $spacing-base;
-      text-align: left;
-      transition: background-color 300ms ease;
-      grid-column: 2;
-    }
-
     .apos-input-array-inline-label:hover {
       cursor: pointer;
     }
 
     .apos-input-array-inline-item-controls {
       padding: $spacing-base;
-      grid-column: 1;
-      grid-row: 1;
+      // grid-column: 1;
+      // grid-row: 1;
     }
 
     .apos-input-array-inline-item-controls--remove {
-      grid-column: 3;
-      grid-row: 1;
+      // grid-column: 3;
+      // grid-row: 1;
     }
   }
 }
+
+// .collapse-enter-active,
+// .collapse-leave-active {
+//   transition: height 200ms linear;
+// }
+// .collapse-enter,
+// .collapse-leave-to {
+//   height: 0;
+// }

@@ -8,7 +8,7 @@
       :data-apos-test-selected="selected"
       :data-apos-test-danger="danger"
       :data-apos-test-disabled="disabled"
-      @click="click"
+      v-on="disabled ? {} : { click: click }"
     >
       {{ $t(label) }}
     </button>
@@ -17,118 +17,120 @@
 
 <script>
 export default {
-  name: 'AposContextMenuItem',
+  name: "AposContextMenuItem",
   props: {
     menuItem: {
       type: Object,
-      required: true
+      required: true,
     },
-    open: Boolean
+    open: Boolean,
   },
-  emits: [ 'clicked' ],
+  emits: ["clicked"],
   computed: {
     tabindex() {
-      return this.open ? '0' : '-1';
+      return this.open ? "0" : "-1";
     },
     selected() {
-      return this.menuItem.modifiers?.includes('selected');
+      return this.menuItem.modifiers?.includes("selected");
     },
     danger() {
-      return this.menuItem.modifiers?.includes('danger');
+      return this.menuItem.modifiers?.includes("danger");
     },
     disabled() {
-      return this.menuItem.modifiers?.includes('disabled');
+      return !!this.menuItem.modifiers?.includes("disabled");
     },
     modifiers() {
       const classes = [];
       if (this.menuItem.modifiers) {
-        this.menuItem.modifiers.forEach(modifier => {
+        this.menuItem.modifiers.forEach((modifier) => {
           classes.push(`apos-context-menu__button--${modifier}`);
         });
       }
-      return classes.join(' ');
+      return classes.join(" ");
     },
     label() {
       let label = this.menuItem.label;
       if (this.selected) {
         label = {
-          key: 'apostrophe:selectedMenuItem',
-          label: this.$t(this.menuItem.label)
+          key: "apostrophe:selectedMenuItem",
+          label: this.$t(this.menuItem.label),
         };
       }
       return label;
-    }
+    },
   },
   methods: {
     click() {
-      this.$emit('clicked', this.menuItem.action);
-    }
-  }
+      console.log("did click");
+      this.$emit("clicked", this.menuItem.action);
+    },
+  },
 };
 </script>
 
 <style lang="scss" scoped>
-  .apos-context-menu__item {
-    display: flex;
+.apos-context-menu__item {
+  display: flex;
+}
+
+.apos-context-menu__button {
+  @include type-base;
+
+  display: inline-block;
+  flex-grow: 1;
+  width: 100%;
+  padding: 10px 20px;
+  border: none;
+  color: var(--a-base-1);
+  text-align: left;
+  background-color: var(--a-background-primary);
+
+  &:hover {
+    cursor: pointer;
+    color: var(--a-text-primary);
   }
 
-  .apos-context-menu__button {
-    @include type-base;
+  &:focus {
+    outline: none;
+    color: var(--a-text-primary);
+  }
 
-    display: inline-block;
-    flex-grow: 1;
-    width: 100%;
-    padding: 10px 20px;
-    border: none;
+  &:active {
     color: var(--a-base-1);
-    text-align: left;
-    background-color: var(--a-background-primary);
+  }
+
+  &--danger {
+    color: var(--a-danger);
 
     &:hover {
-      cursor: pointer;
-      color: var(--a-text-primary);
+      color: var(--a-danger-button-hover);
     }
 
-    &:focus {
-      outline: none;
-      color: var(--a-text-primary);
-    }
-
+    &:focus,
     &:active {
-      color: var(--a-base-1);
-    }
-
-    &--danger {
-      color: var(--a-danger);
-
-      &:hover {
-        color: var(--a-danger-button-hover);
-      }
-
-      &:focus, &:active {
-        color: var(--a-danger-button-active);
-      }
-    }
-
-    &--primary {
-      color: var(--a-primary);
-
-      &:hover,
-      &:focus,
-      &:active {
-        color: var(--a-primary);
-      }
-    }
-
-    &--disabled {
-      color: var(--a-base-5);
-
-      &:hover,
-      &:focus,
-      &:active {
-        cursor: not-allowed;
-        color: var(--a-base-5);
-      }
+      color: var(--a-danger-button-active);
     }
   }
+
+  &--primary {
+    color: var(--a-primary);
+
+    &:hover,
+    &:focus,
+    &:active {
+      color: var(--a-primary);
+    }
+  }
+
+  &--disabled {
+    color: var(--a-base-5);
+
+    &:hover,
+    &:focus,
+    &:active {
+      cursor: not-allowed;
+      color: var(--a-base-5);
+    }
+  }
+}
 </style>

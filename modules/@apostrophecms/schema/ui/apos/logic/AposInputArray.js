@@ -16,7 +16,7 @@ export default {
     AposInputFollowingMixin,
     AposInputConditionalFieldsMixin
   ],
-  emits: [ 'validate' ],
+  emits: ['validate'],
   props: {
     generation: {
       type: Number,
@@ -28,15 +28,20 @@ export default {
     const next = this.getNext();
     // this.schema is a computed property and is not available in data, that's why we use this.field.schema here instead
     const items = modelItems(next, this.field, this.field.schema);
-
     return {
       next,
       items,
       itemsConditionalFields: Object
-        .fromEntries(items.map(({ _id }) => [ _id, getConditionTypesObject() ]))
+        .fromEntries(items.map(({ _id }) => [_id, getConditionTypesObject()]))
     };
   },
   computed: {
+    isInlineTable() {
+      return this.field.style === 'table' && this.field.inline;
+    },
+    isInlineStandard() {
+      return this.field.style !== 'table' && this.field.inline;
+    },
     // required by the conditional fields mixin
     schema() {
       return this.field.schema;
@@ -49,9 +54,10 @@ export default {
     },
     dragOptions() {
       return {
-        disabled: !this.field.draggable || this.field.readOnly || this.next.length <= 1,
+        // disabled: !this.field.draggable || this.field.readOnly || this.next.length <= 1,
+        disabled: this.field.readOnly || this.next.length <= 1 || false,
         ghostClass: 'apos-is-dragging',
-        handle: '.apos-drag-handle'
+        handle: this.isInlineTable ? '.apos-drag-handle' : '.apos-input-array-inline-header'
       };
     },
     itemLabel() {
@@ -122,11 +128,50 @@ export default {
       await this.evaluateExternalConditions();
       this.setItemsConditionalFields();
     }
+    // if (this.field.inline && this.field.style !== 'table') {
+    //   console.log(this.$refs);
+    //   console.log(this.schemaRefs);
+    //   this.schemaRefs.forEach(c => {
+    //     console.log(c.$el.getBoundingClientRect());
+    //   });
+    // }
   },
   methods: {
+    getInlineMenuItems(index) {
+      console.log(index);
+      const menu = [
+        {
+          label: 'Duplicate',
+          action: 'duplicate'
+        },
+        {
+          label: 'Move Up',
+          action: 'move-up'
+        },
+        {
+          label: 'Move Down',
+          action: 'move-down'
+        },
+        {
+          label: 'Delete',
+          action: 'delete',
+          modifiers: ['danger']
+        }
+      ];
+      if (index === 0) {
+        menu.find(i => i.action === 'move-up').modifiers = ['disabled'];
+      }
+      if (index + 1 === this.items.length) {
+        menu.find(i => i.action === 'move-down').modifiers = ['disabled'];
+      }
+      return menu;
+    },
     moveUpdate({
       oldIndex, newIndex
     }) {
+      console.log('hi move update');
+      console.log(oldIndex);
+      console.log(newIndex);
       if (oldIndex !== newIndex) {
         this.items = this.items.map((elem, index) => {
           return index === oldIndex
@@ -165,7 +210,7 @@ export default {
         return 'max';
       }
       if (value.length && this.field.fields && this.field.fields.add) {
-        const [ uniqueFieldName, uniqueFieldSchema ] = Object.entries(this.field.fields.add).find(([ , subfield ]) => subfield.unique) || [];
+        const [uniqueFieldName, uniqueFieldSchema] = Object.entries(this.field.fields.add).find(([, subfield]) => subfield.unique) || [];
         if (uniqueFieldName) {
           const duplicates = this.next
             .map(item =>
@@ -233,6 +278,25 @@ export default {
       this.setItemsConditionalFields(_id);
       this.openInlineItem(_id);
     },
+    duplicate(originalId, originalIndex) {
+      const original = this.items.find(i => i._id === originalId);
+      const titleField = this.field.titleField || null;
+      const dup = {
+        _id: createId(),
+        schemaInput: klona(original.schemaInput),
+        open: false
+      };
+      const titleFieldVal = get(dup.schemaInput.data, titleField);
+      if (titleField) {
+        dup.schemaInput.data[titleField] = `Duplicate of ${titleFieldVal}`;
+      }
+
+      if (originalIndex + 1 === this.items.length) {
+        this.items.push(dup);
+      } else {
+        this.items.splice(originalIndex + 1, 0, dup);
+      }
+    },
     newInstance() {
       const instance = {};
       for (const field of this.schema) {
@@ -257,6 +321,9 @@ export default {
         item.open = this.alwaysExpand;
       });
     },
+    toggleOpenInlineItem(item) {
+      item.open = !item.open;
+    },
     getFollowingValues(item) {
       return this.computeFollowingValues(item.schemaInput.data);
     },
@@ -272,19 +339,45 @@ export default {
       return this.schema.filter(
         field => this.itemsConditionalFields[currentItem._id]?.if[field.name] !== false
       );
+    },
+    inlineMenuHandler(event, { index, id }) {
+      console.log(event);
+      switch (event) {
+        case 'move-up':
+          this.moveUpdate({
+            oldIndex: index,
+            newIndex: index - 1
+          });
+          break;
+        case 'move-down':
+          this.moveUpdate({
+            oldIndex: index,
+            newIndex: index + 1
+          });
+          break;
+        case 'delete':
+          this.remove(id);
+          break;
+        case 'duplicate':
+          this.duplicate(id, index);
+          break;
+        default:
+          console.log(`Sorry, we are out of ${expr}.`);
+      }
+
     }
   }
 };
 
 function modelItems(items, field, schema) {
   return items.map(item => {
-    const open = alwaysExpand(field, schema);
+    // const open = alwaysExpand(field, schema);
     return {
       _id: item._id || createId(),
       schemaInput: {
         data: item || {}
       },
-      open
+      open: false
     };
   });
 }
