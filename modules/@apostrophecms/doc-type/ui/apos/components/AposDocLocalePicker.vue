@@ -94,18 +94,20 @@ async function open() {
 };
 
 async function checkCreatePermission() {
-  const locales = Object.keys(window.apos.i18n.locales)
+  const localesWithNoDocs = Object.keys(apos.i18n.locales)
     .filter((locale) => !localized.value[locale]);
 
   const allowed = await apos.http.get(`${i18nAction}/locales-permissions`, {
     qs: {
       type: props.moduleOptions.name,
-      locales,
-      action: 'create'
+      locales: localesWithNoDocs,
+      action: 'create',
+      aposMode: 'draft'
     }
   });
 
-  forbidden.value = locales.filter((locale) => !allowed.includes(locale));
+  forbidden.value = localesWithNoDocs
+    .filter((locale) => !allowed.includes(locale));
 }
 
 async function switchLocale(locale) {
