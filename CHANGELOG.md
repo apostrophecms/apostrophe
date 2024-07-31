@@ -15,6 +15,9 @@
 * Updates rich text link tool's keyboard key detection strategy.
 * Added tooltip for update button.
 
+### Adds
+ * Adds visual focus states and keyboard handlers for engaging with areas and widgets in-context
+
 ### Fixes
 
 * Fixes the rich text link tool's detection and display of the Remove Link button for removing existing links

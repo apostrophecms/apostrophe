@@ -10,11 +10,14 @@
     :data-apos-widget-id="widget._id"
   >
     <div
+      ref="wrapper"
       class="apos-area-widget-inner"
       :class="containerClasses"
+      tabindex="0"
       @mouseover="mouseover($event)"
       @mouseleave="mouseleave"
-      @click="getFocus($event, widget._id)"
+      @click="getFocus($event, widget._id);"
+      @focus="attachKeyboardFocusHandler"
     >
       <div
         ref="label"
@@ -74,10 +77,6 @@
           @add="$emit('add', $event);"
         />
       </div>
-      <!--
-        Note: we will not need this guard layer when we implement widget controls outside of the widget DOM
-        because we will be drawing and fitting a new layer ontop of the widget, which we can use to proxy event handling.
-      -->
       <div
         class="apos-area-widget-guard"
         :class="{'apos-is-disabled': isFocused}"
@@ -353,6 +352,15 @@ export default {
       return !!(this.docId && (window.apos.adminBar.contextId !== this.docId));
     }
   },
+  watch: {
+    isFocused(newVal) {
+      if (newVal) {
+        this.$refs.wrapper.addEventListener('keydown', this.handleKeyboardUnfocus);
+      } else {
+        this.$refs.wrapper.removeEventListener('keydown', this.handleKeyboardUnfocus);
+      }
+    }
+  },
   created() {
     if (this.options.groups) {
       for (const group of Object.keys(this.options.groups)) {
@@ -393,6 +401,10 @@ export default {
       const adminBarHeight = window.apos.modules['@apostrophecms/admin-bar'].height;
       const offsetTop = widgetTop + window.scrollY;
       return offsetTop - labelHeight < adminBarHeight;
+    },
+
+    attachKeyboardFocusHandler($event) {
+      this.$refs.wrapper.addEventListener('keydown', this.handleKeyboardFocus);
     },
 
     // Focus parent, useful for obtrusive UI
@@ -441,6 +453,22 @@ export default {
         this.isSuppressed = true;
         document.removeEventListener('click', this.unfocus);
         apos.bus.$emit('widget-focus', null);
+      }
+    },
+
+    handleKeyboardFocus($event) {
+      if ($event.key === 'Enter' || $event.code === 'Space') {
+        $event.preventDefault();
+        this.getFocus($event, this.widget._id);
+        this.$refs.wrapper.removeEventListener('keydown', this.handleKeyboardFocus);
+      }
+    },
+
+    handleKeyboardUnfocus($event) {
+      if ($event.key === 'Escape') {
+        this.getFocus($event, null);
+        document.activeElement.blur();
+        this.$refs.wrapper.focus();
       }
     },
 
@@ -504,6 +532,12 @@ export default {
     border-radius: var(--a-border-radius);
     outline: 1px solid transparent;
     transition: outline 200ms ease;
+
+    &:focus {
+      box-shadow: 0 0px 11px 1px var(--a-primary-transparent-25);
+      outline: 1px dashed var(--a-primary-transparent-50);
+      outline-offset: 2px;
+    }
 
     &.apos-is-highlighted {
       outline: 1px dashed var(--a-primary-transparent-50);

@@ -150,17 +150,22 @@ function getForbiddenTooltip(locale) {
 <style lang="scss" scoped>
 .apos-locale-picker__locale-display {
   @include apos-button-reset();
-  @include type-base;
 
   display: block;
   box-sizing: border-box;
   width: 100%;
   padding: 12px 35px;
 
-  &:focus {
-    outline: 1px solid var(--a-base-8);
+  &:focus, &:active {
+    outline: none;
+    border: none;
     background-color: var(--a-base-10);
   }
+
+  &:hover {
+    background-color: var(--a-base-9);
+  }
+
 }
 
 .apos-locales-picker {
