@@ -22,10 +22,18 @@
   margin-right: 5px;
 }
 
+%apos-button-reset {
+  @include apos-button-reset();
+}
+
+%type-base {
+  @include type-base;
+}
+
 .apos-table__header-label,
 .apos-table__cell-field {
-  @include type-base;
-  @include apos-button-reset();
+  @extend %apos-button-reset;
+  @extend %type-base;
 
   &:hover {
     cursor: default;

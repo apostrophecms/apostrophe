@@ -33,12 +33,12 @@ $input-color-disabled: var(--a-base-4);
 //Application Styles
 
 @mixin type-base {
-    color: var(--a-text-primary);
-    font-family: var(--a-family-default);
-    font-size: var(--a-type-base);
-    font-weight: var(--a-weight-base);
-    letter-spacing: var(--a-letter-base);
-    line-height: var(--a-line-base);
+      color: var(--a-text-primary);
+      font-family: var(--a-family-default);
+      font-size: var(--a-type-base);
+      font-weight: var(--a-weight-base);
+      letter-spacing: var(--a-letter-base);
+      line-height: var(--a-line-base);
 }
 
 @mixin type-help {

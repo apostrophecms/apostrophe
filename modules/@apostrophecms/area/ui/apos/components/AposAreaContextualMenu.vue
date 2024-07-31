@@ -291,16 +291,22 @@ export default {
   min-width: 250px;
 }
 
-.apos-area-menu__button {
-  @include type-base;
+%apos-button-reset {
   @include apos-button-reset();
+}
 
-  & {
+%type-base {
+  @include type-base;
+}
+
+.apos-area-menu__button {
+  @extend %apos-button-reset;
+  @extend %type-base;
+
     box-sizing: border-box;
     width: 100%;
     padding: 5px 20px;
     color: var(--a-base-1);
-  }
 
   &:hover,
   &:focus {
