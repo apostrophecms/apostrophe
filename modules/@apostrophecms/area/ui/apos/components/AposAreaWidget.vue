@@ -539,7 +539,7 @@ export default {
     transition: outline 200ms ease;
 
     &:focus {
-      box-shadow: 0 0px 11px 1px var(--a-primary-transparent-25);
+      box-shadow: 0 0 11px 1px var(--a-primary-transparent-25);
       outline: 1px dashed var(--a-primary-transparent-50);
       outline-offset: 2px;
     }
