@@ -53,6 +53,7 @@
         v-if="editMode && !isAutopublished"
         type="primary"
         :label="publishLabel"
+        :tooltip="publishTooltip"
         :disabled="!readyToPublish"
         class="apos-admin-bar__btn apos-admin-bar__context-button"
         :modifiers="['no-motion']"
@@ -132,6 +133,16 @@ export default {
           return 'apostrophe:submit';
         }
       }
+    },
+    publishTooltip() {
+      if (this.canPublish && this.context.lastPublishedAt && !this.hasBeenPublishedThisPageload) {
+        return {
+          content: 'apostrophe:updateTooltip',
+          placement: 'bottom'
+        };
+      }
+
+      return false;
     },
     isAutopublished() {
       return this.context._aposAutopublish ?? (window.apos.modules[this.context.type].autopublish || false);
