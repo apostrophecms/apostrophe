@@ -10,8 +10,13 @@ export default {
   name: 'AposPagesManager',
   mixins: [ AposModifiedMixin, AposDocsManagerMixin, AposArchiveMixin, AposPublishMixin ],
   emits: [ 'archive', 'search', 'modal-result' ],
+  props: {
+    modalData: {
+      type: Object,
+      required: true
+    }
+  },
   data() {
-
     return {
       moduleName: '@apostrophecms/page',
       modal: {
@@ -149,12 +154,12 @@ export default {
     await this.getPages();
     this.modal.triggerFocusRefresh++;
 
-    apos.bus.$on('content-changed', this.getPages);
+    apos.bus.$on('content-changed', this.onContentChanged);
     apos.bus.$on('command-menu-manager-create-new', this.create);
     apos.bus.$on('command-menu-manager-close', this.confirmAndCancel);
   },
   unmounted() {
-    apos.bus.$off('content-changed', this.getPages);
+    apos.bus.$off('content-changed', this.onContentChanged);
     apos.bus.$off('command-menu-manager-create-new', this.create);
     apos.bus.$off('command-menu-manager-close', this.confirmAndCancel);
   },
@@ -162,6 +167,15 @@ export default {
     moreMenuHandler(action) {
       if (action === 'new') {
         this.create();
+      }
+    },
+    onContentChanged({ doc }) {
+      if (
+        !doc ||
+        !doc.aposLocale ||
+        doc.aposLocale.split(':')[0] === this.modalData.locale
+      ) {
+        this.getPages();
       }
     },
     async getPages () {

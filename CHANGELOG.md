@@ -2,16 +2,26 @@
 
 ## UNRELEASED
 
+### Adds
+
+* Add a locale switcher in pieces and pages editor modals. This is available for localized documents only, and allows you to switch between locales for the same document.
+  The locale can be switche at only one level, meaning that sub documents of a document that already switched locale will not be able to switch locale itself.
+
 ### Changes
 
 * Refactors Admin UI SASS to eliminate deprecation warnings from declarations coming after nested rules.
 * Add `title` and `_url` to select all projection.
 * Display `Select all` message on all pages in the manager modal.
 * Refresh `checked` in manager modal after archive action.
+* Updates rich text link tool's keyboard key detection strategy.
+* Added tooltip for update button.
 
 ### Fixes
 
+* Fixes the rich text link tool's detection and display of the Remove Link button for removing existing links
+* Fixes the rich text link tool's detection and display of Apostrophe Page relationship field.
 * Overriding standard Vue.js components with `editorModal` and `managerModal` are now applied all the time.
+* Accommodate old-style replica set URIs with comma-separated servers by passing any MongoDB URIs that Node.js cannot parse directly to the MongoDB driver.
 
 ## 4.5.4 (2024-07-22)
 

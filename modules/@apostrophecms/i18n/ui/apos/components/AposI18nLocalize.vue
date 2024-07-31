@@ -111,6 +111,7 @@
                   v-for="loc in filteredLocales"
                   :key="loc.name"
                   class="apos-locale-item"
+                  data-apos-test="localeItem"
                   :class="localeClasses(loc)"
                   @click="toggleLocale(loc)"
                 >

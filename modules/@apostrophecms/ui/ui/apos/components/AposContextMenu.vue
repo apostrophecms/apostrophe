@@ -9,8 +9,8 @@
         v-bind="button"
         ref="button"
         class="apos-context-menu__btn"
-        data-apos-test="contextMenuTrigger"
         role="button"
+        :data-apos-test="identifier"
         :state="buttonState"
         :disabled="disabled"
         :tooltip="tooltip"
@@ -57,6 +57,10 @@ import { useAposTheme } from 'Modules/@apostrophecms/ui/composables/AposTheme';
 import { createId } from '@paralleldrive/cuid2';
 
 const props = defineProps({
+  identifier: {
+    type: String,
+    default: 'contextMenuTrigger'
+  },
   menu: {
     type: Array,
     default: null

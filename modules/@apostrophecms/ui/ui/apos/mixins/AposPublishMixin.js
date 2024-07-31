@@ -42,7 +42,8 @@ export default {
         });
         apos.bus.$emit('content-changed', {
           doc,
-          action: 'publish'
+          action: 'publish',
+          localeSwitched: Boolean(this.localeSwitched)
         });
         return doc;
       } catch (e) {
@@ -97,7 +98,8 @@ export default {
         });
         apos.bus.$emit('content-changed', {
           doc,
-          action: 'unpublish'
+          action: 'unpublish',
+          localeSwitched: Boolean(this.localeSwitched)
         });
         return doc;
       } catch (e) {
@@ -131,7 +133,8 @@ export default {
 
         apos.bus.$emit('content-changed', {
           doc: newDoc,
-          action: 'submit'
+          action: 'submit',
+          localeSwitched: Boolean(this.localeSwitched)
         });
         return submitted;
       } catch (e) {
@@ -163,7 +166,8 @@ export default {
         };
         apos.bus.$emit('content-changed', {
           doc: newDoc,
-          action: 'dismiss-submission'
+          action: 'dismiss-submission',
+          localeSwitched: Boolean(this.localeSwitched)
         });
       } catch (e) {
         await apos.alert({
@@ -211,7 +215,8 @@ export default {
             });
             apos.bus.$emit('content-changed', {
               doc: newDoc,
-              action: 'revert-draft-to-published'
+              action: 'revert-draft-to-published',
+              localeSwitched: Boolean(this.localeSwitched)
             });
             return {
               doc: newDoc
@@ -227,7 +232,8 @@ export default {
             });
             apos.bus.$emit('content-changed', {
               doc,
-              action: 'delete'
+              action: 'delete',
+              localeSwitched: Boolean(this.localeSwitched)
             });
             return {};
           }
