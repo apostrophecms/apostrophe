@@ -697,20 +697,15 @@ module.exports = {
         return locales;
       },
       async getLocalesPermissions(req, action, type, locales) {
-        const fakeDocs = locales.map((locale) => {
-          return {
-            _id: 'fake',
-            type,
-            aposLocale: locale
-          };
-        });
-
         const allowed = [];
-        for (const doc of fakeDocs) {
-          if (await self.apos.permission.can(req, action, doc)) {
-            allowed.push(doc.aposLocale);
+        const originLocale = req.locale;
+        for (const locale of locales) {
+          req.locale = locale;
+          if (await self.apos.permission.can(req, action, type)) {
+            allowed.push(locale);
           }
         }
+        req.locale = originLocale;
         return allowed;
       },
       sanitizeLocaleName(locale) {
