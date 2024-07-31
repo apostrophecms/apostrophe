@@ -216,14 +216,12 @@
     .apos-input-array-inline-label {
       @include type-label;
 
-      & {
-        margin: 0;
-        padding-top: $spacing-base;
-        padding-bottom: $spacing-base;
-        text-align: left;
-        transition: background-color 300ms ease;
-        grid-column: 2;
-      }
+      margin: 0;
+      padding-top: $spacing-base;
+      padding-bottom: $spacing-base;
+      text-align: left;
+      transition: background-color 300ms ease;
+      grid-column: 2;
     }
 
     .apos-input-array-inline-label:hover {

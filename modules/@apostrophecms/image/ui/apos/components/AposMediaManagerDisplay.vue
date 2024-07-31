@@ -261,9 +261,7 @@ export default {
     &.apos-is-selected,
     &:focus {
       .apos-media-manager-display__media {
-        & {
-          opacity: 1;
-        }
+        opacity: 1;
       }
     }
   }
