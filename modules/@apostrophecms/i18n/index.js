@@ -698,14 +698,14 @@ module.exports = {
       },
       async getLocalesPermissions(req, action, type, locales) {
         const allowed = [];
-        const originLocale = req.locale;
         for (const locale of locales) {
-          req.locale = locale;
-          if (await self.apos.permission.can(req, action, type)) {
+          const clonedReq = req.clone({
+            locale
+          });
+          if (await self.apos.permission.can(clonedReq, action, type)) {
             allowed.push(locale);
           }
         }
-        req.locale = originLocale;
         return allowed;
       },
       sanitizeLocaleName(locale) {
