@@ -10,11 +10,15 @@
     :data-apos-widget-id="widget._id"
   >
     <div
+      ref="wrapper"
       class="apos-area-widget-inner"
       :class="containerClasses"
+      tabindex="0"
       @mouseover="mouseover($event)"
       @mouseleave="mouseleave"
-      @click="getFocus($event, widget._id)"
+      @click="getFocus($event, widget._id);"
+      @focus="attachKeyboardFocusHandler"
+      @blur="removeKeyboardFocusHandler"
     >
       <div
         ref="label"
@@ -37,6 +41,7 @@
               icon="chevron-right-icon"
               :icon-size="9"
               :modifiers="['icon-right', 'no-motion']"
+              :disable-focus="!(isHovered || isFocused)"
               @click="getFocus($event, item.id)"
             />
           </li>
@@ -50,6 +55,7 @@
               :tooltip="!isContextual && 'apostrophe:editWidgetForeignTooltip'"
               :icon-size="11"
               :modifiers="['no-motion']"
+              :disable-focus="!(isHovered || isFocused)"
               @click="foreign ? $emit('edit', i) : null"
               @dblclick="(!foreign && !isContextual) ? $emit('edit', i) : null"
             />
@@ -68,9 +74,14 @@
           :widget-options="widgets"
           :options="options"
           :disabled="disabled"
+          :tabbable="isHovered || isFocused"
           @add="$emit('add', $event);"
         />
       </div>
+      <div
+        class="apos-area-widget-guard"
+        :class="{'apos-is-disabled': isFocused}"
+      />
       <div
         class="apos-area-widget-controls apos-area-widget-controls--modify"
         :class="controlsClasses"
@@ -83,6 +94,7 @@
           :foreign="foreign"
           :disabled="disabled"
           :max-reached="maxReached"
+          :tabbable="isFocused"
           @up="$emit('up', i);"
           @remove="$emit('remove', i);"
           @edit="$emit('edit', i);"
@@ -92,14 +104,6 @@
           @down="$emit('down', i);"
         />
       </div>
-      <!--
-        Note: we will not need this guard layer when we implement widget controls outside of the widget DOM
-        because we will be drawing and fitting a new layer ontop of the widget, which we can use to proxy event handling.
-      -->
-      <div
-        class="apos-area-widget-guard"
-        :class="{'apos-is-disabled': isFocused}"
-      />
       <!-- Still used for contextual editing components -->
       <component
         :is="widgetEditorComponent(widget.type)"
@@ -143,6 +147,7 @@
           :widget-options="widgets"
           :options="options"
           :disabled="disabled"
+          :tabbable="isHovered || isFocused"
           @add="$emit('add', $event)"
         />
       </div>
@@ -348,6 +353,15 @@ export default {
       return !!(this.docId && (window.apos.adminBar.contextId !== this.docId));
     }
   },
+  watch: {
+    isFocused(newVal) {
+      if (newVal) {
+        this.$refs.wrapper.addEventListener('keydown', this.handleKeyboardUnfocus);
+      } else {
+        this.$refs.wrapper.removeEventListener('keydown', this.handleKeyboardUnfocus);
+      }
+    }
+  },
   created() {
     if (this.options.groups) {
       for (const group of Object.keys(this.options.groups)) {
@@ -388,6 +402,14 @@ export default {
       const adminBarHeight = window.apos.modules['@apostrophecms/admin-bar'].height;
       const offsetTop = widgetTop + window.scrollY;
       return offsetTop - labelHeight < adminBarHeight;
+    },
+
+    attachKeyboardFocusHandler() {
+      this.$refs.wrapper.addEventListener('keydown', this.handleKeyboardFocus);
+    },
+
+    removeKeyboardFocusHandler() {
+      this.$refs.wrapper.removeEventListener('keydown', this.handleKeyboardFocus);
     },
 
     // Focus parent, useful for obtrusive UI
@@ -436,6 +458,22 @@ export default {
         this.isSuppressed = true;
         document.removeEventListener('click', this.unfocus);
         apos.bus.$emit('widget-focus', null);
+      }
+    },
+
+    handleKeyboardFocus($event) {
+      if ($event.key === 'Enter' || $event.code === 'Space') {
+        $event.preventDefault();
+        this.getFocus($event, this.widget._id);
+        this.$refs.wrapper.removeEventListener('keydown', this.handleKeyboardFocus);
+      }
+    },
+
+    handleKeyboardUnfocus($event) {
+      if ($event.key === 'Escape') {
+        this.getFocus($event, null);
+        document.activeElement.blur();
+        this.$refs.wrapper.focus();
       }
     },
 
@@ -500,6 +538,12 @@ export default {
     outline: 1px solid transparent;
     transition: outline 200ms ease;
 
+    &:focus {
+      box-shadow: 0 0 11px 1px var(--a-primary-transparent-25);
+      outline: 1px dashed var(--a-primary-transparent-50);
+      outline-offset: 2px;
+    }
+
     &.apos-is-highlighted {
       outline: 1px dashed var(--a-primary-transparent-50);
     }
@@ -514,6 +558,7 @@ export default {
 
     &.apos-is-ui-adjusted {
       .apos-area-widget-controls--modify {
+        top: 0;
         transform: translate3d(-10px, 50px, 0);
       }
 
@@ -571,8 +616,9 @@ export default {
   }
 
   .apos-area-widget-controls--modify {
+    top: 50%;
     right: 0;
-    transform: translate3d(-10px, 30px, 0);
+    transform: translate3d(-10px, -50%, 0);
 
     :deep(.apos-button-group__inner) {
       border: 1px solid var(--a-primary-transparent-25);
@@ -595,6 +641,10 @@ export default {
       &:hover:not([disabled]), &:active:not([disabled]), &:focus:not([disabled]) {
         background-color: var(--a-primary-transparent-10);
         color: var(--a-primary);
+      }
+
+      &:focus:not([disabled])::after {
+        background-color: transparent;
       }
 
       &[disabled] {
@@ -735,7 +785,9 @@ export default {
     color: var(--a-primary-dark-10);
 
     &:hover, &:active, &:focus {
-      text-decoration: none;
+      .apos-button__content {
+        color: var(--a-primary);
+      }
     }
   }
 

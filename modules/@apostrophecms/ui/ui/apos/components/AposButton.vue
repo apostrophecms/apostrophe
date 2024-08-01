@@ -9,7 +9,8 @@
       v-bind="attrs"
       :is="href ? 'a' : 'button'"
       :id="attrs.id ? attrs.id : id"
-      :href="href.length ? href : false"
+      :target="target"
+      :href="href"
       class="apos-button"
       :class="modifierClass"
       :tabindex="tabindex"
@@ -82,8 +83,8 @@ export default {
       default: null
     },
     href: {
-      type: [ String, Boolean ],
-      default: false
+      type: String,
+      default: null
     },
     iconSize: {
       type: Number,
@@ -121,16 +122,20 @@ export default {
     },
     disableFocus: Boolean,
     buttonType: {
-      type: [ String, Boolean ],
-      default: false
+      type: String,
+      default: null
     },
     role: {
-      type: [ String, Boolean ],
-      default: false
+      type: String,
+      default: null
     },
     tooltip: {
       type: [ String, Object, Boolean ],
       default: false
+    },
+    target: {
+      type: String,
+      default: null
     }
   },
   emits: [ 'click' ],
@@ -207,7 +212,7 @@ export default {
       return null;
     },
     isDisabled() {
-      return this.disabled || this.busy;
+      return (this.disabled || this.busy) || null;
     },
     actionTestLabel() {
       return this.action
@@ -383,6 +388,10 @@ export default {
       color: var(--a-text-primary);
       text-decoration: none;
       background-color: var(--a-base-10);
+    }
+
+    &:focus {
+      outline: 1px solid var(--a-base-7);
     }
   }
 

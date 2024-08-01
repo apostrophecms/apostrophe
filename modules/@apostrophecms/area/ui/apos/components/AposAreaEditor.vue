@@ -15,6 +15,7 @@
             label: $t(contextMenuOptions.menu[0].label)
           }"
           :disabled="field && field.readOnly"
+          :disable-focus="false"
           type="primary"
           :icon="icon"
           @click="add({ index: 0, name: contextMenuOptions.menu[0].name })"
@@ -29,6 +30,7 @@
           :max-reached="maxReached"
           :disabled="field && field.readOnly"
           :widget-options="options.widgets"
+          :tabbable="true"
           @add="add"
         />
       </template>
