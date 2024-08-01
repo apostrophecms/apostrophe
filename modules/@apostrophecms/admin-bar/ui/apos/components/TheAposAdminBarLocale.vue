@@ -7,10 +7,12 @@
     :unpadded="true"
     menu-placement="bottom-end"
     @open="open"
+    @close="isOpen = false"
   >
     <AposLocalePicker
       :current-locale="locale"
       :localized="localized"
+      :is-open="isOpen"
       @switch-locale="switchLocale"
     />
   </AposContextMenu>
@@ -30,7 +32,8 @@ export default {
           };
         }
       ),
-      localized: {}
+      localized: {},
+      isOpen: false
     };
   },
   computed: {
@@ -53,6 +56,9 @@ export default {
     }
   },
   methods: {
+    close() {
+      this.isOpen = false;
+    },
     async open() {
       if (apos.adminBar.context) {
         const docs = await apos.http.get(
@@ -67,6 +73,7 @@ export default {
             .map(doc => [ doc.aposLocale.split(':')[0], doc ])
         );
       }
+      this.isOpen = true;
     },
     isActive(locale) {
       return window.apos.i18n.locale === locale.name;

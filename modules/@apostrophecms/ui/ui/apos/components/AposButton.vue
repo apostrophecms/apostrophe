@@ -384,6 +384,10 @@ export default {
       text-decoration: none;
       background-color: var(--a-base-10);
     }
+
+    &:focus {
+      outline: 1px solid var(--a-base-7);
+    }
   }
 
   .apos-button--gradient-on-hover {
@@ -661,8 +665,6 @@ export default {
     &:hover:not([disabled]),
     &:focus:not([disabled]) {
       transform: none;
-      box-shadow: none;
-      outline: none;
     }
   }
 
