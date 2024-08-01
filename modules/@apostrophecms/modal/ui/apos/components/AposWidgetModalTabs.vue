@@ -233,17 +233,9 @@ export default {
   border: 1px solid var(--a-danger);
 }
 
-%apos-button-reset {
-  @include apos-button-reset();
-}
-
-%type-base {
-  @include type-base;
-}
-
 .apos-modal-tabs__btn {
-  @extend %apos-button-reset;
-  @extend %type-base;
+  @include apos-button-reset;
+  @include type-base;
 
   & {
     position: relative;

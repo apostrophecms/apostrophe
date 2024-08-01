@@ -215,7 +215,9 @@
 
     .apos-input-array-inline-label {
       @include type-label;
+    }
 
+    .apos-input-array-inline-label {
       margin: 0;
       padding-top: $spacing-base;
       padding-bottom: $spacing-base;

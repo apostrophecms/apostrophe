@@ -159,7 +159,6 @@ export default {
     & {
       width: 100%;
       padding: $spacing-base 0;
-      // TODO do a11y
       outline: none;
     }
   }
