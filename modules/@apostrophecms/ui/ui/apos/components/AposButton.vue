@@ -662,7 +662,6 @@ export default {
     &:focus:not([disabled]) {
       transform: none;
       box-shadow: none;
-      outline: none;
     }
   }
 

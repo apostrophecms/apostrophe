@@ -27,7 +27,7 @@
   }
 }
 
-.apos-is-dragging {
+.apos-is-ghost {
   opacity: 0.5;
   background: var(--a-base-4);
 }
@@ -93,8 +93,8 @@
     background-color: transparent;
   }
 
-  tr.apos-is-dragging,
-  :deep(tr.apos-is-dragging) {
+  tr.apos-is-ghost,
+  :deep(tr.apos-is-ghost) {
     /* stylelint-disable-line selector-no-qualifying-type */
     td,
     &:hover td {
@@ -230,6 +230,18 @@
   // grid-column: 2;
 }
 
+.apos-input-array-inline-all-controls {
+  display: flex;
+  gap: $spacing-double;
+  :deep(.apos-button) {
+    color: var(--a-primary);
+    &:hover, &:hover * {
+      color: var(--a-primary);
+      text-decoration: underline;
+    }
+  }
+}
+
 .apos-input-array-inline-standard {
   display: flex;
   flex-direction: column;
@@ -241,6 +253,13 @@
     border: 1px solid var(--a-base-9);
     padding: 0;
     border-radius: var(--a-border-radius);
+    transition: all 400ms;
+
+    &.apos-is-dragging {
+      border-color: var(--a-primary-transparent-50);
+      // opacity: 1 !important;
+      box-shadow: var(--a-box-shadow)
+    }
 
     &--open {
       .apos-input-array-inline-header {
@@ -302,11 +321,21 @@
   }
 }
 
-// .collapse-enter-active,
-// .collapse-leave-active {
-//   transition: height 200ms linear;
-// }
-// .collapse-enter,
-// .collapse-leave-to {
-//   height: 0;
-// }
+.apos-input-array-inline-standard--is-dragging {
+  :deep(*::selection) {
+    background-color: transparent;
+  }
+}
+
+.apos-flip-list-leave-to {
+  opacity: 0;
+}
+
+// // .collapse-enter-active,
+// // .collapse-leave-active {
+// //   transition: height 200ms linear;
+// // }
+// // .collapse-enter,
+// // .collapse-leave-to {
+// //   height: 0;
+// // }

@@ -31,6 +31,7 @@ export default {
     return {
       next,
       items,
+      isDragging: false,
       itemsConditionalFields: Object
         .fromEntries(items.map(({ _id }) => [_id, getConditionTypesObject()]))
     };
@@ -56,8 +57,11 @@ export default {
       return {
         // disabled: !this.field.draggable || this.field.readOnly || this.next.length <= 1,
         disabled: this.field.readOnly || this.next.length <= 1 || false,
-        ghostClass: 'apos-is-dragging',
-        handle: this.isInlineTable ? '.apos-drag-handle' : '.apos-input-array-inline-header'
+        ghostClass: 'apos-is-ghost',
+        handle: this.isInlineTable ? '.apos-drag-handle' : '.apos-input-array-inline-header',
+        dragClass: 'apos-is-dragging',
+        forceFallback: true,
+        dragoverBubble: true
       };
     },
     itemLabel() {
@@ -137,8 +141,21 @@ export default {
     // }
   },
   methods: {
+    toggleAll(open) {
+      this.items = this.items.map(item => ({
+        ...item,
+        open
+      }));
+    },
+    startDragging() {
+      this.isDragging = true;
+      // this.toggleAll(false);
+    },
+    stopDragging(hello) {
+      this.isDragging = false;
+      document.getSelection().removeAllRanges();
+    },
     getInlineMenuItems(index) {
-      console.log(index);
       const menu = [
         {
           label: 'Duplicate',
@@ -155,14 +172,14 @@ export default {
         {
           label: 'Delete',
           action: 'delete',
-          modifiers: ['danger']
+          modifiers: [ 'danger' ]
         }
       ];
       if (index === 0) {
-        menu.find(i => i.action === 'move-up').modifiers = ['disabled'];
+        menu.find(i => i.action === 'move-up').modifiers = [ 'disabled' ];
       }
       if (index + 1 === this.items.length) {
-        menu.find(i => i.action === 'move-down').modifiers = ['disabled'];
+        menu.find(i => i.action === 'move-down').modifiers = [ 'disabled' ];
       }
       return menu;
     },
@@ -273,10 +290,10 @@ export default {
         schemaInput: {
           data: this.newInstance()
         },
-        open: alwaysExpand(this.field, this.schema)
+        open: true
       });
       this.setItemsConditionalFields(_id);
-      this.openInlineItem(_id);
+      // this.openInlineItem(_id);
     },
     duplicate(originalId, originalIndex) {
       const original = this.items.find(i => i._id === originalId);
