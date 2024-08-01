@@ -2,11 +2,13 @@
   <draggable
     item-key="_id"
     class="apos-tree__list"
+    :class="{ 'apos-tree__list--is-dragging': isDragging }"
     tag="ol"
     :list="rows"
     :options="dragOptions"
     @start="startDrag"
     @end="endDrag"
+    @update="test"
   >
     <template #item="{element: row}">
       <li
@@ -21,19 +23,6 @@
         } : {}"
       >
         <div class="apos-tree__row-data">
-          <button
-            v-if="row._children && row._children.length > 0"
-            class="apos-tree__row__toggle"
-            data-apos-tree-toggle
-            :aria-label="$t('apostrophe:toggleSection')"
-            :aria-expanded="!options.startCollapsed"
-            @click="toggleSection($event)"
-          >
-            <AposIndicator
-              icon="chevron-down-icon"
-              class="apos-tree__row__toggle-icon"
-            />
-          </button>
           <component
             :is="getEffectiveType(col, row)"
             v-for="(col, index) in headers"
@@ -50,11 +39,25 @@
             :options="moduleOptions"
             @click="((getEffectiveType(col, row) === 'button') && col.action) ? $emit(col.action, row._id) : null"
           >
-            <AposIndicator
+            <!-- <AposIndicator
               v-if="options.draggable && index === 0 && !row.parked"
               icon="drag-icon"
               class="apos-tree__row__icon apos-tree__row__icon--handle"
-            />
+            /> -->
+            <button
+              v-if="row._children && row._children.length > 0"
+              class="apos-tree__row__toggle"
+              data-apos-tree-toggle
+              :aria-label="$t('apostrophe:toggleSection')"
+              :aria-expanded="!options.startCollapsed"
+              @click="toggleSection($event)"
+            >
+              <AposIndicator
+                icon="arrow-down-drop-circle-icon"
+                class="apos-tree__row__toggle-icon"
+                :icon-size="16"
+              />
+            </button>
             <AposIndicator
               v-if="index === 0 && row.parked && row.type !== '@apostrophecms/archive-page'"
               icon="lock-icon"
@@ -194,7 +197,8 @@ export default {
   emits: [ 'update', 'update:checked', 'change' ],
   data() {
     return {
-      treeBranches: []
+      treeBranches: [],
+      isDragging: false
     };
   },
   computed: {
@@ -214,9 +218,12 @@ export default {
         swapThreshold: 0.65,
         dataListId: this.listId,
         disabled: !this.options.draggable,
-        handle: '.apos-tree__row__icon--handle',
+        // handle: '.apos-tree__row__icon--handle',
+        handle: '.apos-tree__row-data',
         ghostClass: 'apos-is-dragging',
-        filter: '.apos-is-parked'
+        filter: '.apos-is-parked',
+        forceFallback: true,
+        fallbackTolerance: 2
       };
     },
     maxReached() {
@@ -226,23 +233,33 @@ export default {
   mounted() {
     // Use $nextTick to make sure attributes like `clientHeight` are settled.
     this.$nextTick(() => {
-      if (!this.$refs['tree-branches']) {
+      // console.log('refs', this.$refs);
+      // console.log('branches', this.$refs.branches);
+      if (!this.treeBranches) {
         return;
       }
-      this.setHeights();
+      setTimeout(this.setHeights, 0);
+      ;
     });
   },
   methods: {
+    test() {
+      console.log('update')
+    },
     setHeights() {
+      console.log('running setheights');
+      console.log(this.treeBranches);
       this.treeBranches.forEach(branch => {
         // Add padding to the max-height to avoid needing a `resize`
         // event listener updating values.
         const height = branch.$el.clientHeight + 20;
-        branch.$el.setAttribute('data-apos-branch-height', `${height}px`);
         branch.$el.style.maxHeight = `${height}px`;
+        branch.$el.setAttribute('data-apos-branch-height', `${height}px`);
       });
     },
-    startDrag() {},
+    startDrag() {
+      this.isDragging = true;
+    },
     endDrag(event) {
       this.$emit('update', event);
       this.$nextTick(() => {
@@ -251,6 +268,8 @@ export default {
         }
         this.setHeights();
       });
+      this.isDragging = false;
+      document.activeElement.blur();
     },
     toggleSection(event, data) {
       const row = (data && data.row) ||
@@ -298,6 +317,7 @@ export default {
     getRowClasses(row) {
       const classes = [
         'apos-tree__row',
+        `apos-tree__row--level-${this.level}`,
         {
           'apos-is-parked': !!row.parked,
           'apos-tree__row--parent': row._children && row._children.length > 0,
@@ -423,7 +443,25 @@ export default {
         styles.width = `${this.colWidths[name]}px`;
       }
 
+      if (this.nested && index === 0) {
+        styles.paddingLeft = `${this.level * 18}px`;
+      }
+
       return styles;
+    },
+
+    getRowPadding(index) {
+      const stop = 12;
+      // const styles = {};
+      // // if (this.nested && index === 0 && this.colWidths && this.colWidths[name]) {
+      // //   styles.width = `${this.colWidths[name] - (24 * this.level)}px`;
+      // // } else if (this.colWidths && this.colWidths[name]) {
+      // //   styles.width = `${this.colWidths[name]}px`;
+      // // }
+
+      return {
+        paddingLeft: `${index * stop}px`
+      };
     },
 
     // From lodash core
@@ -445,15 +483,25 @@ export default {
     margin-bottom: 0;
     padding-left: 0;
     list-style-type: none;
+
+    &--is-dragging {
+      *, :deep(*) {
+        ::selection {
+          background-color: rgba(255,255,255,0);
+        }
+      }
+    }
   }
 
   .apos-tree__row {
+    @include type-base;
     &.apos-is-dragging {
       opacity: 0.5;
     }
   }
 
   .apos-tree__list {
+    overflow: hidden;
     transition: max-height 300ms ease;
 
     &.apos-is-collapsed {
@@ -466,6 +514,16 @@ export default {
   }
 
   .apos-tree__row-data {
+    margin-bottom: $spacing-half;
+    // background-color: var(--a-base-10);
+    border-radius: var(--a-border-radius);
+    height: 36px;
+    @include apos-transition();
+
+    &:hover {
+      background-color: var(--a-base-10);
+    }
+
     .apos-tree__row--selected > & {
       background-color: var(--a-base-9);
     }
@@ -474,17 +532,17 @@ export default {
   .apos-tree__row--parent {
     position: relative;
 
-    &::before {
-      position: absolute;
-      top: 24px;
-      bottom: 0;
-      left: math.div($row-nested-h-padding, 2);
-      display: block;
-      content: '';
-      background-color: var(--a-base-8);
-      width: 1px;
-      transition: background-color 300ms ease;
-    }
+    // &::before {
+    //   position: absolute;
+    //   top: 24px;
+    //   bottom: 0;
+    //   left: math.div($row-nested-h-padding, 2);
+    //   display: block;
+    //   content: '';
+    //   background-color: var(--a-base-8);
+    //   width: 1px;
+    //   transition: background-color 300ms ease;
+    // }
 
     &.apos-is-collapsed::before {
       background-color: transparent;
@@ -494,17 +552,26 @@ export default {
   .apos-tree__row__toggle {
     @include apos-button-reset();
 
-    position: absolute;
-    top: 50%;
-    left: -(math.div($row-nested-h-padding, 2));
-    background-color: var(--a-background-primary);
-    transform: translate(-50%, -50%);
+    margin-right: 8px;
+
+    // position: absolute;
+    // top: 50%;
+    // left: -(math.div($row-nested-h-padding, 2));
+    // background-color: var(--a-background-primary);
+    // transform: translate(-50%, -50%);
+  }
+
+  .apos-tree__row__toggle + .apos-tree__cell {
+    padding-left: 8px;
   }
 
   .apos-tree__row__toggle-icon {
-    display: block;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     transition: transform 300ms ease;
     transform: rotate(-90deg) translateY(0.25em);
+    color: var(--a-base-7);
 
     [aria-expanded="true"] > & {
       transform: none;
@@ -538,30 +605,28 @@ export default {
     margin-right: 0.5em;
   }
 
-  .apos-tree__row {
-    .apos-tree--nested & {
-      padding-left: $row-nested-h-padding;
-    }
+  .apos-tree__row:not(.apos-tree__row--level-1) {
+    // padding-left: $row-nested-h-padding;
   }
 
   .apos-tree__row-data {
     .apos-tree__row--parent .apos-tree__row & {
-      &::before {
-        position: absolute;
-        top: 50%;
-        left: -$row-nested-h-padding * 1.5;
-        display: block;
-        width: 24px;
-        height: 1px;
-        content: '';
-        background-color: var(--a-base-8);
-      }
+      // &::before {
+      //   position: absolute;
+      //   top: 50%;
+      //   left: -$row-nested-h-padding * 1.5;
+      //   display: block;
+      //   width: 24px;
+      //   height: 1px;
+      //   content: '';
+      //   background-color: var(--a-base-8);
+      // }
     }
 
     .apos-tree__row--parent > &:first-child {
-      &::before {
-        width: 14px;
-      }
+      // &::before {
+      //   width: 14px;
+      // }
     }
   }
 
@@ -578,7 +643,7 @@ export default {
     @include apos-button-reset();
 
     padding: $cell-padding;
-    border-bottom: 1px solid var(--a-base-8);
+    // border-bottom: 1px solid var(--a-base-8);
   }
 
 </style>

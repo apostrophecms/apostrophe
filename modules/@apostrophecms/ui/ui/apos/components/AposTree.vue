@@ -1,5 +1,5 @@
 <template>
-  <div class="apos-tree" :class="{ 'apos-tree--nested': nested }">
+  <div class="apos-tree">
     <AposTreeHeader
       :headers="spacingRow"
       :icons="icons"
@@ -203,7 +203,6 @@ export default {
 
   .apos-tree {
     @include type-base;
-
     color: var(--a-text-primary);
   }
 

@@ -11,6 +11,7 @@ module.exports = {
   'apple-keyboard-shift': 'AppleKeyboardShift',
   'archive-arrow-down-icon': 'ArchiveArrowDown',
   'archive-arrow-up-icon': 'ArchiveArrowUp',
+  'arrow-down-drop-circle-icon': 'ArrowDownDropCircle',
   'arrow-down-icon': 'ArrowDown',
   'arrow-left-icon': 'ArrowLeft',
   'arrow-right-icon': 'ArrowRight',
