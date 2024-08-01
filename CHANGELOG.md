@@ -6,6 +6,7 @@
 
 * Add a locale switcher in pieces and pages editor modals. This is available for localized documents only, and allows you to switch between locales for the same document.
   The locale can be switche at only one level, meaning that sub documents of a document that already switched locale will not be able to switch locale itself.
+* Adds visual focus states and keyboard handlers for engaging with areas and widgets in-context
 
 ### Changes
 
@@ -14,9 +15,6 @@
 * Refresh `checked` in manager modal after archive action.
 * Updates rich text link tool's keyboard key detection strategy.
 * Added tooltip for update button.
-
-### Adds
- * Adds visual focus states and keyboard handlers for engaging with areas and widgets in-context
 
 ### Fixes
 
