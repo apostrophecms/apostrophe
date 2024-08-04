@@ -109,6 +109,7 @@ module.exports = {
   'sign-text-icon': 'SignText',
   'tag-icon': 'Tag',
   'text-box-icon': 'TextBox',
+  'text-box-multiple-icon': 'TextBoxMultiple',
   'text-box-remove-icon': 'TextBoxRemove',
   'trash-can-icon': 'TrashCan',
   'trash-can-outline-icon': 'TrashCanOutline',

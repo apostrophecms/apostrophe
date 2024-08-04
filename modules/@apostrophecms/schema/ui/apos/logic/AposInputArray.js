@@ -16,7 +16,7 @@ export default {
     AposInputFollowingMixin,
     AposInputConditionalFieldsMixin
   ],
-  emits: ['validate'],
+  emits: [ 'validate' ],
   props: {
     generation: {
       type: Number,
@@ -33,7 +33,28 @@ export default {
       items,
       isDragging: false,
       itemsConditionalFields: Object
-        .fromEntries(items.map(({ _id }) => [_id, getConditionTypesObject()]))
+        .fromEntries(items.map(({ _id }) => [ _id, getConditionTypesObject() ])),
+      inlineContextMenu: [
+        {
+          label: this.$t('apostrophe:moveUp'),
+          action: 'move-up'
+        },
+        {
+          label: this.$t('apostrophe:moveDown'),
+          action: 'move-down'
+        },
+        {
+          label: this.$t('apostrophe:duplicate'),
+          action: 'duplicate'
+        },
+        {
+          label: this.$t('apostrophe:remove'),
+          action: 'remove',
+          modifiers: [ 'danger' ]
+        }
+      ],
+      emptyWhenIcon: this.field?.whenEmpty?.icon || 'text-box-multiple-icon',
+      emptyWhenLabel: this.field?.whenEmpty?.label || 'apostrophe:noItemsAdded'
     };
   },
   computed: {
@@ -43,25 +64,24 @@ export default {
     isInlineStandard() {
       return this.field.style !== 'table' && this.field.inline;
     },
+    isDisabled() {
+      return this.field.draggable === false || this.field.readOnly || this.next.length <= 1 || false;
+    },
     // required by the conditional fields mixin
     schema() {
       return this.field.schema;
-    },
-    alwaysExpand() {
-      return alwaysExpand(this.field, this.schema);
     },
     listId() {
       return `sortableList-${createId()}`;
     },
     dragOptions() {
       return {
-        // disabled: !this.field.draggable || this.field.readOnly || this.next.length <= 1,
-        disabled: this.field.readOnly || this.next.length <= 1 || false,
+        disabled: this.isDisabled,
         ghostClass: 'apos-is-ghost',
         handle: this.isInlineTable ? '.apos-drag-handle' : '.apos-input-array-inline-header',
         dragClass: 'apos-is-dragging',
         forceFallback: true,
-        dragoverBubble: true
+        fallbackTolerance: 5
       };
     },
     itemLabel() {
@@ -132,13 +152,6 @@ export default {
       await this.evaluateExternalConditions();
       this.setItemsConditionalFields();
     }
-    // if (this.field.inline && this.field.style !== 'table') {
-    //   console.log(this.$refs);
-    //   console.log(this.schemaRefs);
-    //   this.schemaRefs.forEach(c => {
-    //     console.log(c.$el.getBoundingClientRect());
-    //   });
-    // }
   },
   methods: {
     toggleAll(open) {
@@ -147,34 +160,19 @@ export default {
         open
       }));
     },
-    startDragging() {
+    startDragging(event) {
+      const dragId = event.item.getAttribute('data-id');
       this.isDragging = true;
-      // this.toggleAll(false);
+      this.disengageAll();
+      this.toggleEngage(null, dragId);
     },
-    stopDragging(hello) {
+    stopDragging(event) {
       this.isDragging = false;
       document.getSelection().removeAllRanges();
+      this.focusElement(event.item.getAttribute('data-id'));
     },
     getInlineMenuItems(index) {
-      const menu = [
-        {
-          label: 'Duplicate',
-          action: 'duplicate'
-        },
-        {
-          label: 'Move Up',
-          action: 'move-up'
-        },
-        {
-          label: 'Move Down',
-          action: 'move-down'
-        },
-        {
-          label: 'Delete',
-          action: 'delete',
-          modifiers: [ 'danger' ]
-        }
-      ];
+      const menu = klona(this.inlineContextMenu);
       if (index === 0) {
         menu.find(i => i.action === 'move-up').modifiers = [ 'disabled' ];
       }
@@ -183,12 +181,39 @@ export default {
       }
       return menu;
     },
+    toggleEngage(event, id) {
+      const elId =
+        event.target.getAttribute('data-id')
+          ? event.target.getAttribute('data-id')
+          : event.target.closest('[data-id]').getAttribute('data-id');
+      if (elId) {
+        if (this.items.find(i => i._id === elId)) {
+          event.preventDefault();
+          const was = this.items.find(i => i._id === elId).engaged;
+          this.disengageAll();
+          this.items.find(i => i._id === elId).engaged = !was;
+        } else {
+          this.disengageAll();
+        }
+      }
+    },
+    disengageAll() {
+      this.items = this.items.map(i => {
+        return {
+          ...i,
+          engaged: false
+        };
+      });
+    },
+    disengage(id) {
+      const wasEngaged = this.items.find(i => i._id === id).engaged;
+      if (wasEngaged) {
+        this.items.find(i => i._id === id).engaged = false;
+      }
+    },
     moveUpdate({
       oldIndex, newIndex
     }) {
-      console.log('hi move update');
-      console.log(oldIndex);
-      console.log(newIndex);
       if (oldIndex !== newIndex) {
         this.items = this.items.map((elem, index) => {
           return index === oldIndex
@@ -227,7 +252,7 @@ export default {
         return 'max';
       }
       if (value.length && this.field.fields && this.field.fields.add) {
-        const [uniqueFieldName, uniqueFieldSchema] = Object.entries(this.field.fields.add).find(([, subfield]) => subfield.unique) || [];
+        const [ uniqueFieldName, uniqueFieldSchema ] = Object.entries(this.field.fields.add).find(([ , subfield ]) => subfield.unique) || [];
         if (uniqueFieldName) {
           const duplicates = this.next
             .map(item =>
@@ -290,22 +315,25 @@ export default {
         schemaInput: {
           data: this.newInstance()
         },
-        open: true
+        open: true,
+        engaged: false
       });
       this.setItemsConditionalFields(_id);
-      // this.openInlineItem(_id);
+      this.focusElement(_id);
     },
     duplicate(originalId, originalIndex) {
       const original = this.items.find(i => i._id === originalId);
       const titleField = this.field.titleField || null;
+      const id = createId();
       const dup = {
-        _id: createId(),
+        _id: id,
         schemaInput: klona(original.schemaInput),
-        open: false
+        open: false,
+        engaged: false
       };
       const titleFieldVal = get(dup.schemaInput.data, titleField);
       if (titleField) {
-        dup.schemaInput.data[titleField] = `Duplicate of ${titleFieldVal}`;
+        dup.schemaInput.data[titleField] = `${this.$t('apostrophe:duplicateOf')} ${titleFieldVal}`;
       }
 
       if (originalIndex + 1 === this.items.length) {
@@ -313,6 +341,7 @@ export default {
       } else {
         this.items.splice(originalIndex + 1, 0, dup);
       }
+      this.focusElement(id);
     },
     newInstance() {
       const instance = {};
@@ -328,18 +357,58 @@ export default {
       const item = this.items.find(item => item._id === id);
       return get(item.schemaInput.data, titleField) || `Item ${index + 1}`;
     },
-    openInlineItem(id) {
-      this.items.forEach(item => {
-        item.open = (item._id === id) || this.alwaysExpand;
+    toggleOpenInlineItem(event, item) {
+      if (event) {
+        const elId =
+          event.target.getAttribute('data-id') ||
+          event.target.closest('[data-id]').getAttribute('data-id');
+        if (this.items.find(i => i._id === elId)) {
+          event.preventDefault();
+          const was = this.items.find(i => i._id === elId).open;
+          this.items.find(i => i._id === elId).open = !was;
+        }
+      }
+    },
+    moveEngaged($e, id, direction) {
+      const item = this.items.find(i => i._id === id);
+      const index = this.items.indexOf(item);
+
+      if (
+        ((index + direction) === this.items.length) ||
+        ((index + direction < 0))
+      ) {
+        // already first or last, don't move
+        return;
+      }
+
+      if (this.items.find(i => i._id === id).engaged) {
+        $e.stopImmediatePropagation();
+        $e.preventDefault();
+        this.moveUpdate({
+          oldIndex: index,
+          newIndex: index + direction
+        });
+        this.focusElement(id);
+      }
+    },
+    focusElement(id) {
+      this.$nextTick(() => {
+        if (this.$refs.root.$el.querySelector(`[data-id="${id}"]`)) {
+          this.$refs.root.$el.querySelector(`[data-id="${id}"]`).focus();
+        }
       });
     },
-    closeInlineItem(id) {
-      this.items.forEach(item => {
-        item.open = this.alwaysExpand;
+    scrollToElement(id) {
+      this.$nextTick(() => {
+        if (this.$refs.root.$el.querySelector(`[data-id="${id}"]`)) {
+          const el = this.$refs.root.$el.querySelector(`[data-id="${id}"]`);
+          el.setAttribute('tabindex', '-1');
+          this.$refs.root.$el.querySelector(`[data-id="${id}"] .apos-input-array-inline-header`).scrollIntoView({
+            behavior: 'smooth'
+          });
+          el.setAttribute('tabindex', '0');
+        }
       });
-    },
-    toggleOpenInlineItem(item) {
-      item.open = !item.open;
     },
     getFollowingValues(item) {
       return this.computeFollowingValues(item.schemaInput.data);
@@ -358,7 +427,6 @@ export default {
       );
     },
     inlineMenuHandler(event, { index, id }) {
-      console.log(event);
       switch (event) {
         case 'move-up':
           this.moveUpdate({
@@ -372,39 +440,26 @@ export default {
             newIndex: index + 1
           });
           break;
-        case 'delete':
+        case 'remove':
           this.remove(id);
           break;
         case 'duplicate':
           this.duplicate(id, index);
           break;
-        default:
-          console.log(`Sorry, we are out of ${expr}.`);
       }
-
     }
   }
 };
 
 function modelItems(items, field, schema) {
   return items.map(item => {
-    // const open = alwaysExpand(field, schema);
     return {
       _id: item._id || createId(),
       schemaInput: {
         data: item || {}
       },
-      open: false
+      open: false,
+      engaged: false
     };
   });
-}
-
-function alwaysExpand(field, schema) {
-  if (!field.inline) {
-    return false;
-  }
-  if (field.inline.alwaysExpand === undefined) {
-    return schema.length < 3;
-  }
-  return field.inline.alwaysExpand;
 }

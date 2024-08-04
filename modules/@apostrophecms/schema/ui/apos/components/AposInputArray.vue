@@ -1,17 +1,18 @@
 <template>
   <AposInputWrapper
+    ref="root"
     :field="field"
     :error="effectiveError"
     :uid="uid"
     :items="next"
     :display-options="displayOptions"
-    :modifiers="[...(field.style === 'table' ? ['full-width'] : [])]"
+    :modifiers="[...(isInlineTable ? ['full-width'] : [])]"
     :meta="arrayMeta"
   >
     <template #additional>
       <AposMinMaxCount :field="field" :model-value="next" />
     </template>
-    <template v-if="field.inline && field.style !== 'table'" #meta>
+    <template v-if="isInlineStandard" #meta>
       <div class="apos-input-array-inline-all-controls">
         <AposButton
           class="apos-input-array-inline-all-control apos-input-array-inline-all-control--expand"
@@ -30,57 +31,57 @@
       </div>
     </template>
     <template #body>
+      <div
+        v-if="(isInlineStandard || isInlineTable) && !items.length"
+        class="apos-input-array-inline-empty"
+      >
+        <component
+          :is="emptyWhenIcon"
+          :size="50"
+        />
+        <label class="apos-input-array-inline-empty-label">
+          {{ $t(emptyWhenLabel) }}
+        </label>
+      </div>
+
       <!-- INLINE TABLE -->
-      <div v-if="field.inline && field.style === 'table'">
-        <div
-          v-if="!items.length && field.whenEmpty"
-          class="apos-input-array-inline-empty"
-        >
-          <component
-            :is="field.whenEmpty.icon"
-            v-if="field.whenEmpty.icon"
-            :size="50"
-          />
-          <label
-            v-if="field.whenEmpty.label"
-            class="apos-input-array-inline-empty-label"
-          >
-            {{ $t(field.whenEmpty.label) }}
-          </label>
-        </div>
+      <div v-if="isInlineTable">
         <table v-if="items.length" class="apos-input-array-inline-table">
-          <thead>
-            <th class="apos-table-cell--hidden" />
+          <thead class="apos-input-array-inline-table-header">
+            <th class="apos-input-array-inline-table-header-cell" />
             <th
               v-for="subfield in visibleSchema()"
               :key="subfield._id"
+              class="apos-input-array-inline-table-header-cell"
               :style="subfield.columnStyle || {}"
             >
               {{ $t(subfield.label) }}
             </th>
-            <th />
+            <th class="apos-input-array-inline-table-header-cell" />
           </thead>
           <draggable
             :id="listId"
             item-key="_id"
-            class="apos-input-array-inline"
             role="list"
             :options="dragOptions"
             tag="tbody"
             :list="items"
             @update="moveUpdate"
+            @start="startDragging"
+            @end="stopDragging"
           >
             <template #item="{ element: item, index }">
               <AposSchema
                 :key="item._id"
                 v-model="item.schemaInput"
-                class="apos-input-array-inline-item"
+                :data-id="item._id"
+                tabindex="0"
+                class="apos-input-array-inline-table-row"
                 :meta="arrayMeta[item._id]?.aposMeta"
-                :class="
-                  item.open && !alwaysExpand
-                    ? 'apos-input-array-inline-item--active'
-                    : null
-                "
+                :class="{
+                  'apos-input-array-inline-table-row--active': item.open,
+                  'apos-input-array-inline-table-row--engaged': item.engaged
+                }"
                 :schema="schema"
                 :trigger-validation="triggerValidation"
                 :generation="generation"
@@ -91,76 +92,66 @@
                 field-style="table"
                 @update:model-value="setItemsConditionalFields(item._id)"
                 @validate="emitValidate()"
+                @keydown.space="toggleEngage($event, item._id)"
+                @keydown.enter="toggleEngage($event, item._id)"
+                @keydown.escape="disengage(item._id)"
+                @keydown.arrow-up="moveEngaged($event, item._id, -1)"
+                @keydown.arrow-down="moveEngaged($event, item._id, 1)"
               >
                 <template #before>
                   <td
-                    class="apos-input-array-inline-item-controls"
+                    class="apos-input-array-inline-table-cell apos-input-array-inline-table-cell--controls"
                     :style="field.columnStyle"
                   >
                     <AposIndicator
                       v-if="field.draggable"
                       icon="drag-icon"
                       class="apos-drag-handle"
+                      :decorative="false"
+                      @keydown.space="toggleEngage($event, item._id)"
+                      @keydown.enter="toggleEngage($event, item._id)"
                     />
-                    <!-- <AposButton
-                      v-if="item.open && !alwaysExpand"
-                      class="apos-input-array-inline-collapse"
-                      :icon-size="15"
-                      label="apostrophe:close"
-                      icon="unfold-less-horizontal-icon"
-                      type="subtle"
-                      :modifiers="['inline', 'no-motion']"
-                      :icon-only="true"
-                      @click="closeInlineItem(item._id)"
-                    /> -->
                   </td>
                 </template>
                 <template #after>
-                  <td class="apos-input-array-inline-item-controls--remove">
-                    <AposButton
+                  <td class="apos-input-array-inline-table-cell apos-input-array-inline-table-cell--controls apos-input-array-inline-table-cell--controls--menu">
+                    <AposContextMenu
+                      ref="menu"
+                      class=""
+                      :button="{
+                        label: 'apostrophe:moreOperations',
+                        iconOnly: true,
+                        icon: 'dots-vertical-icon',
+                        type: 'subtle',
+                        modifiers: ['small', 'no-motion'],
+                      }"
+                      :menu="getInlineMenuItems(index)"
+                      menu-placement="bottom-end"
+                      @keydown.space="$event.stopImmediatePropagation()"
+                      @keydown.enter="$event.stopImmediatePropagation()"
+                      @item-clicked="
+                        inlineMenuHandler($event, { index, id: item._id })
+                      "
+                    />
+                    <!-- <AposButton
                       label="apostrophe:removeItem"
                       icon="close-icon"
                       type="subtle"
                       :modifiers="['inline', 'no-motion']"
                       :icon-only="true"
                       @click="remove(item._id)"
-                    />
+                    /> -->
                   </td>
                 </template>
               </AposSchema>
             </template>
           </draggable>
         </table>
-        <AposButton
-          type="primary"
-          :label="itemLabel"
-          icon="plus-icon"
-          :disabled="disableAdd()"
-          :modifiers="['block']"
-          @click="add"
-        />
       </div>
 
       <!-- INLINE STANDARD-->
       <div v-else-if="field.inline">
-        <div
-          v-if="!items.length && field.whenEmpty"
-          class="apos-input-array-inline-empty"
-        >
-          <component
-            :is="field.whenEmpty.icon"
-            v-if="field.whenEmpty.icon"
-            :size="50"
-          />
-          <label
-            v-if="field.whenEmpty.label"
-            class="apos-input-array-inline-empty-label"
-          >
-            {{ $t(field.whenEmpty.label) }}
-          </label>
-        </div>
         <draggable
-          v-if="items.length"
           :id="listId"
           item-key="_id"
           class="apos-input-array-inline-standard"
@@ -174,129 +165,112 @@
           @end="stopDragging"
         >
           <template #item="{ element: item, index }">
-            <transition-group type="transition" name="apos-flip-list">
+            <div
+              :key="item._id"
+              class="apos-input-array-inline-item"
+              :data-id="item._id"
+              tabindex="0"
+              :aria-pressed="item.engaged"
+              role="listitem"
+              :class="{
+                'apos-input-array-inline-item--open': item.open,
+                'apos-input-array-inline-item--engaged': item.engaged
+              }"
+              @keydown.exact.space="toggleOpenInlineItem($event, item)"
+              @keydown.shift.space="toggleEngage($event, item._id)"
+              @keydown.enter="toggleEngage($event, item._id)"
+              @keydown.escape="disengage(item._id)"
+              @keydown.arrow-up="moveEngaged($event, item._id, -1)"
+              @keydown.arrow-down="moveEngaged($event, item._id, 1)"
+            >
               <div
-                :key="item._id"
-                class="apos-input-array-inline-item"
-                :class="{ 'apos-input-array-inline-item--open': item.open }"
+                class="apos-input-array-inline-header"
+                @dblclick="toggleOpenInlineItem($event, item)"
               >
                 <div
-                  class="apos-input-array-inline-header"
-                  @dblclick="toggleOpenInlineItem(item)"
+                  class="apos-input-array-inline-header-ui apos-input-array-inline-header-ui--left"
                 >
-                  <div
-                    class="apos-input-array-inline-header-ui apos-input-array-inline-header-ui--left"
-                  >
-                    <AposIndicator
-                      icon="drag-icon"
-                      class="apos-input-array-inline-header-ui-element"
-                    />
-                    <div class="apos-input-array-inline-label">
-                      {{ getLabel(item._id, index) }}
-                    </div>
-                  </div>
-                  <div
-                    class="apos-input-array-inline-header-ui apos-input-array-inline-header-ui--right"
-                  >
-                    <AposButton
-                      class="apos-input-array-inline-header-ui-element apos-input-array-inline-collapse"
-                      :icon-size="15"
-                      label="apostrophe:close"
-                      :tooltip="item.open ? 'Collapse item' : 'Expand item'"
-                      :icon="
-                        item.open
-                          ? 'arrow-collapse-vertical-icon'
-                          : 'arrow-expand-vertical-icon'
-                      "
-                      type="subtle"
-                      :modifiers="['inline', 'no-motion']"
-                      :icon-only="true"
-                      @click="toggleOpenInlineItem(item)"
-                    />
-                    <AposContextMenu
-                      ref="menu"
-                      class="apos-input-array-inline-header-ui-element"
-                      :button="{
-                        label: 'apostrophe:moreOperations',
-                        iconOnly: true,
-                        icon: 'dots-vertical-icon',
-                        type: 'subtle',
-                        modifiers: ['small', 'no-motion'],
-                      }"
-                      :menu="getInlineMenuItems(index)"
-                      menu-placement="bottom-end"
-                      @item-clicked="
-                        inlineMenuHandler($event, { index, id: item._id })
-                      "
-                    />
-                  </div>
-                </div>
-                <transition name="collapse">
-                  <div v-show="item.open" class="apos-input-array-inline-body">
-                    <AposSchema
-                      :key="item._id"
-                      v-model="item.schemaInput"
-                      :data-apos-id="item._id"
-                      class="apos-input-array-inline-schema"
-                      :meta="arrayMeta[item._id]?.aposMeta"
-                      :class="
-                        item.open && !alwaysExpand
-                          ? 'apos-input-array-inline-item--active'
-                          : null
-                      "
-                      :schema="schema"
-                      :trigger-validation="triggerValidation"
-                      :generation="generation"
-                      :modifiers="['small', 'inverted']"
-                      :doc-id="docId"
-                      :following-values="getFollowingValues(item)"
-                      :conditional-fields="itemsConditionalFields[item._id]"
-                      :field-style="field.style"
-                      @update:model-value="setItemsConditionalFields(item._id)"
-                      @validate="emitValidate()"
-                    >
-                      <!-- <template #after> -->
-                      <!-- <div class="apos-input-array-inline-item-controls--remove">
-                    <AposButton
-                      label="apostrophe:removeItem"
-                      icon="close-icon"
-                      type="subtle"
-                      :modifiers="['inline', 'no-motion']"
-                      :icon-only="true"
-                      @click="remove(item._id)"
-                    />
-                  </div> -->
-                      <!-- </template> -->
-                    </AposSchema>
-                  </div>
-                </transition>
-              </div>
-          </transition-group>
-            <!-- <div class="apos-input-array-inline-item-controls">
                   <AposIndicator
-                    v-if="field.draggable"
                     icon="drag-icon"
-                    class="apos-drag-handle"
+                    class="apos-input-array-inline-header-ui-element"
                   />
-
+                  <div class="apos-input-array-inline-label">
+                    {{ getLabel(item._id, index) }}
+                  </div>
                 </div>
-                <h3
-                  v-if="!item.open && !alwaysExpand"
-                  class="apos-input-array-inline-label"
-                  @click="openInlineItem(item._id)"
+                <div
+                  class="apos-input-array-inline-header-ui apos-input-array-inline-header-ui--right"
                 >
-                  {{ getLabel(item._id, index) }}
-                </h3> -->
+                  <AposButton
+                    class="apos-input-array-inline-header-ui-element apos-input-array-inline-collapse"
+                    :icon-size="16"
+                    label="apostrophe:close"
+                    :tooltip="item.open ? 'Collapse item' : 'Expand item'"
+                    :icon="
+                      item.open
+                        ? 'arrow-collapse-vertical-icon'
+                        : 'arrow-expand-vertical-icon'
+                    "
+                    type="subtle"
+                    :modifiers="['inline', 'no-motion']"
+                    :icon-only="true"
+                    @click="toggleOpenInlineItem(null, item)"
+                    @keydown.space="$event.stopImmediatePropagation()"
+                    @keydown.enter="$event.stopImmediatePropagation()"
+                  />
+                  <AposContextMenu
+                    ref="menu"
+                    class="apos-input-array-inline-header-ui-element"
+                    :button="{
+                      label: 'apostrophe:moreOperations',
+                      iconOnly: true,
+                      icon: 'dots-vertical-icon',
+                      type: 'subtle',
+                      modifiers: ['small', 'no-motion'],
+                    }"
+                    :menu="getInlineMenuItems(index)"
+                    menu-placement="bottom-end"
+                    @keydown.space="$event.stopImmediatePropagation()"
+                    @keydown.enter="$event.stopImmediatePropagation()"
+                    @item-clicked="
+                      inlineMenuHandler($event, { index, id: item._id })
+                    "
+                  />
+                </div>
+              </div>
+              <transition
+                name="collapse"
+                @after-enter="scrollToElement(item._id)"
+                @after-leave="scrollToElement(item._id)"
+              >
+                <div v-show="item.open" class="apos-input-array-inline-body">
+                  <AposSchema
+                    :key="item._id"
+                    v-model="item.schemaInput"
+                    :data-apos-id="item._id"
+                    class="apos-input-array-inline-schema"
+                    :meta="arrayMeta[item._id]?.aposMeta"
+                    :class="
+                      item.open
+                        ? 'apos-input-array-inline-item--active'
+                        : null
+                    "
+                    :schema="schema"
+                    :trigger-validation="triggerValidation"
+                    :generation="generation"
+                    :modifiers="['small', 'inverted']"
+                    :doc-id="docId"
+                    :following-values="getFollowingValues(item)"
+                    :conditional-fields="itemsConditionalFields[item._id]"
+                    :field-style="field.style"
+                    @update:model-value="setItemsConditionalFields(item._id)"
+                    @validate="emitValidate()"
+                  />
+                </div>
+              </transition>
+            </div>
           </template>
         </draggable>
-        <AposButton
-          type="primary"
-          :label="itemLabel"
-          icon="plus-icon"
-          :disabled="disableAdd()"
-          :modifiers="['block']"
-          @click="add"
-        />
       </div>
 
       <div v-else class="apos-input-array">
@@ -309,21 +283,39 @@
           />
         </label>
       </div>
+
+      <!-- INLINE ADD BUTTON -->
+      <AposButton
+        v-if="isInlineStandard || isInlineTable"
+        type="primary"
+        class="apos-input-array-inline-add-button"
+        :label="itemLabel"
+        icon="plus-icon"
+        :disabled="disableAdd()"
+        :modifiers="['block']"
+        @click="add"
+      />
     </template>
   </AposInputWrapper>
 </template>
 
 <script>
-import AposInputArrayLogic from "../logic/AposInputArray";
-import { Sortable } from "sortablejs-vue3";
+import AposInputArrayLogic from '../logic/AposInputArray';
+import { Sortable } from 'sortablejs-vue3';
 
 export default {
-  name: "AposInputArray",
+  name: 'AposInputArray',
   components: {
-    draggable: Sortable,
+    draggable: Sortable
   },
-  mixins: [AposInputArrayLogic],
+  mixins: [ AposInputArrayLogic ]
 };
 </script>
 
 <style lang="scss" src="../scss/AposInputArray.scss" scoped></style>
+<style lang="scss">
+.apos-is-dragging td {
+  flex: 1;
+  background-color: var(--a-background-primary);
+}
+</style>

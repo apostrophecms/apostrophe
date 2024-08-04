@@ -247,6 +247,7 @@ async function setDropdownPosition() {
 
 function handleKeyboard(event) {
   if (event.key === 'Escape') {
+    event.stopImmediatePropagation();
     hide();
   }
 }
