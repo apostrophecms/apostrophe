@@ -1076,6 +1076,25 @@ module.exports = {
         self.apos.doc.walkByMetaType(doc, handlers);
       },
 
+      simulateRelationshipsFromStorage(req, doc, schema) {
+        const handlers = {
+          relationship: (field, object) => {
+            const manager = self.apos.doc.getManager(field.withType);
+            const setId = (id) => manager.options.localized !== false
+              ? `${id}:${doc.aposLocale}`
+              : id;
+
+            const itemIds = object[field.idsStorage] || [];
+            object[field.name] = itemIds.map(id => ({
+              _id: setId(id),
+              fields: object[field.fieldsStorage]?.[id] || {}
+            }));
+          }
+        };
+
+        self.apos.doc.walkByMetaType(doc, handlers);
+      },
+
       // Add a new field type. The `type` object may contain the following properties:
       //
       // ### `name`
