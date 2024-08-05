@@ -34,25 +34,6 @@ export default {
       isDragging: false,
       itemsConditionalFields: Object
         .fromEntries(items.map(({ _id }) => [ _id, getConditionTypesObject() ])),
-      inlineContextMenu: [
-        {
-          label: this.$t('apostrophe:moveUp'),
-          action: 'move-up'
-        },
-        {
-          label: this.$t('apostrophe:moveDown'),
-          action: 'move-down'
-        },
-        {
-          label: this.$t('apostrophe:duplicate'),
-          action: 'duplicate'
-        },
-        {
-          label: this.$t('apostrophe:remove'),
-          action: 'remove',
-          modifiers: [ 'danger' ]
-        }
-      ],
       emptyWhenIcon: this.field?.whenEmpty?.icon || 'text-box-multiple-icon',
       emptyWhenLabel: this.field?.whenEmpty?.label || 'apostrophe:noItemsAdded'
     };
@@ -64,8 +45,48 @@ export default {
     isInlineStandard() {
       return this.field.style !== 'table' && this.field.inline;
     },
-    isDisabled() {
-      return this.field.draggable === false || this.field.readOnly || this.next.length <= 1 || false;
+    isDraggable() {
+      if (this.field.draggable === false) {
+        return false;
+      }
+      if (this.field.readOnly) {
+        return false;
+      }
+      if (this.next.length > 1) {
+        return true;
+      }
+      return true;
+    },
+    isAddDisabled() {
+      return this.field.readOnly || (this.field.max && (this.items.length >= this.field.max));
+    },
+    inlineContextMenu() {
+      const menu = [
+        {
+          label: this.$t('apostrophe:remove'),
+          action: 'remove',
+          modifiers: [ 'danger' ]
+        }
+      ];
+      if (this.field.duplicate !== false) {
+        menu.unshift({
+          label: this.$t('apostrophe:duplicate'),
+          action: 'duplicate'
+        });
+      }
+      if (this.isDraggable) {
+        menu.unshift(
+          {
+            label: this.$t('apostrophe:moveUp'),
+            action: 'move-up'
+          },
+          {
+            label: this.$t('apostrophe:moveDown'),
+            action: 'move-down'
+          }
+        );
+      }
+      return menu;
     },
     // required by the conditional fields mixin
     schema() {
@@ -76,7 +97,7 @@ export default {
     },
     dragOptions() {
       return {
-        disabled: this.isDisabled,
+        disabled: !this.isDraggable,
         ghostClass: 'apos-is-ghost',
         handle: this.isInlineTable ? '.apos-drag-handle' : '.apos-input-array-inline-header',
         dragClass: 'apos-is-dragging',
@@ -173,13 +194,20 @@ export default {
     },
     getInlineMenuItems(index) {
       const menu = klona(this.inlineContextMenu);
-      if (index === 0) {
+      if (index === 0 && menu.find(i => i.action === 'move-up')) {
         menu.find(i => i.action === 'move-up').modifiers = [ 'disabled' ];
       }
-      if (index + 1 === this.items.length) {
+      if (index + 1 === this.items.length && menu.find(i => i.action === 'move-down')) {
         menu.find(i => i.action === 'move-down').modifiers = [ 'disabled' ];
       }
       return menu;
+    },
+    getTableHeaderClass(field, baseClass) {
+      let label = this.$t(field.label);
+      const validChars = /[^a-zA-Z0-9_-]/g;
+      label = label.replace(validChars, '-');
+      label = label.toLowerCase();
+      return `${baseClass}--${label}`;
     },
     toggleEngage(event, id) {
       const elId =
@@ -357,11 +385,13 @@ export default {
       const item = this.items.find(item => item._id === id);
       return get(item.schemaInput.data, titleField) || `Item ${index + 1}`;
     },
-    toggleOpenInlineItem(event, item) {
+    toggleOpenInlineItem(event) {
       if (event) {
-        const elId =
-          event.target.getAttribute('data-id') ||
-          event.target.closest('[data-id]').getAttribute('data-id');
+        const el =
+          event.target.getAttribute('data-id')
+            ? event.target
+            : event.target.closest('[data-id]');
+        const elId = el.getAttribute('data-id');
         if (this.items.find(i => i._id === elId)) {
           event.preventDefault();
           const was = this.items.find(i => i._id === elId).open;
@@ -398,15 +428,15 @@ export default {
         }
       });
     },
-    scrollToElement(id) {
+    scrollToElement(el, id) {
+      this.observe(el);
       this.$nextTick(() => {
         if (this.$refs.root.$el.querySelector(`[data-id="${id}"]`)) {
-          const el = this.$refs.root.$el.querySelector(`[data-id="${id}"]`);
-          el.setAttribute('tabindex', '-1');
+          // const el = this.$refs.root.$el.querySelector(`[data-id="${id}"]`);
           this.$refs.root.$el.querySelector(`[data-id="${id}"] .apos-input-array-inline-header`).scrollIntoView({
             behavior: 'smooth'
           });
-          el.setAttribute('tabindex', '0');
+          this.observe(el);
         }
       });
     },

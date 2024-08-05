@@ -115,6 +115,10 @@
     }
   }
 
+  &:focus, &:focus-visible {
+    outline: 1px solid var(--a-primary-transparent-50);
+  }
+
   &.apos-is-ghost,
   :deep(.apos-is-ghost) {
     opacity: 0;
@@ -136,10 +140,23 @@
   }
 }
 
+.apos-input-array-inline-table-row--engaged {
+  &, &:focus, &:focus-visible {
+    outline: 2px solid var(--a-primary-transparent-50);
+  }
+}
+
+.apos-input-array-inline-table-cell-drag-handle {
+  &:focus, &:focus-visible {
+    outline: 1px solid var(--a-primary-transparent-50);
+  }
+}
+
 .apos-input-array-inline-table-cell,
 .apos-input-array-inline-table-row :deep(td),
 :deep(.apos-input-array-inline-table-cell) {
-  padding: $spacing-base $spacing-half;
+  padding: $spacing-base;
+  border: 1px solid var(--a-base-9);
   vertical-align: middle;
   text-align: center;
   transition: background-color 300ms ease;
@@ -150,12 +167,11 @@
   }
 
   &.apos-input-array-inline-table-cell--controls {
-    width: 15px;
-    padding: 0 $spacing-base 0 $spacing-base + $spacing-half;
+    width: 20px;
+    padding: 0 $spacing-base;
   }
 
   &.apos-input-array-inline-table-cell--controls--menu {
-    padding: 0 $spacing-base 0 $spacing-half;
     :deep(.apos-context-menu) {
       width: 30px;
     }
@@ -163,6 +179,7 @@
 }
 
 .apos-input-array-inline-table-header-cell {
+  @include type-base;
   height: 40px;
   padding-right: $spacing-base;
   padding-left: $spacing-base;
@@ -352,10 +369,6 @@
       padding: $spacing-base;
     }
   }
-}
-
-.apos-input-array-inline-table-row--engaged {
-  outline: 2px solid var(--a-primary-transparent-50);
 }
 
 .apos-input-array-inline-add-button {
