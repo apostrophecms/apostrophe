@@ -145,8 +145,8 @@ export default {
   // ... And here we are, but first let's see if we decide to rebuild this UI without the menu. -Tom
 
   .apos-tiptap-control--select {
-    @include apos-button-reset;
-    @include type-base;
+    @include apos-button-reset();
+    @include type-small;
 
     & {
       height: 100%;

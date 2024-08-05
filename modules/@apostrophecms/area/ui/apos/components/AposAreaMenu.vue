@@ -105,7 +105,7 @@ export default {
 }
 
 .apos-area-menu__button {
-  @include apos-button-reset;
+  @include apos-button-reset();
   @include type-base;
 
   & {

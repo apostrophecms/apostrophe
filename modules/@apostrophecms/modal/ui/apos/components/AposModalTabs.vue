@@ -167,7 +167,7 @@ export default {
 }
 
 .apos-modal-tabs__btn {
-  @include apos-button-reset;
+  @include apos-button-reset();
   @include type-base;
 
   & {

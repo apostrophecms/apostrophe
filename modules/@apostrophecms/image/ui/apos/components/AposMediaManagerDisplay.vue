@@ -299,7 +299,7 @@ export default {
   }
 
   .apos-media-manager-display__select {
-    //@include apos-button-reset();
+    @include apos-button-reset();
     @include apos-transition();
 
     & {
