@@ -64,6 +64,7 @@
             :id="listId"
             item-key="_id"
             role="list"
+            :class="{ 'apos-input-array-inline-array--is-dragging': isDragging }"
             :options="dragOptions"
             tag="tbody"
             :list="items"
@@ -93,10 +94,10 @@
                 field-style="table"
                 @update:model-value="setItemsConditionalFields(item._id)"
                 @validate="emitValidate()"
-                @keydown.space="isDraggable ? toggleEngage($event, item._id) : {}"
-                @keydown.enter="isDraggable ? toggleEngage($event, item._id) : {}"
-                @keydown.arrow-up="isDraggable ? moveEngaged($event, item._id, -1) : {}"
-                @keydown.arrow-down="isDraggable ? moveEngaged($event, item._id, 1) : {}"
+                @keydown.stop.space="isDraggable ? toggleEngage($event, { exact: true }) : {}"
+                @keydown.stop.enter="isDraggable ? toggleEngage($event, { exact: true }) : {}"
+                @keydown.stop.arrow-up="isDraggable ? moveEngaged($event, item._id, -1) : {}"
+                @keydown.stop.arrow-down="isDraggable ? moveEngaged($event, item._id, 1) : {}"
               >
                 <template #before>
                   <td
@@ -157,7 +158,7 @@
           :id="listId"
           item-key="_id"
           class="apos-input-array-inline-standard"
-          :class="{ 'apos-input-array-inline-standard--is-dragging': isDragging }"
+          :class="{ 'apos-input-array-inline-array--is-dragging': isDragging }"
           role="list"
           :options="dragOptions"
           tag="div"

@@ -334,6 +334,15 @@
         fill: var(--a-base-7);
       }
     }
+    
+    .apos-input-array-inline-item {
+      border-color: var(--a-base-8);
+      background-color: var(--a-background-primary);
+
+      .apos-input-array-inline-header {
+        background-color: var(--a-base-8);
+      }
+    }
   }
 
   :deep(.apos-schema) {
@@ -342,10 +351,6 @@
     gap: $spacing-double;
     margin: 0 $spacing-double;
     transition: background-color 300ms ease;
-
-    &:hover {
-      background-color: var(--a-base-10);
-    }
 
     .apos-field.apos-field--small,
     .apos-field.apos-field--micro,
@@ -375,7 +380,7 @@
   margin-top: $spacing-base;
 }
 
-.apos-input-array-inline-standard--is-dragging {
+.apos-input-array-inline-array--is-dragging {
   :deep(*::selection) {
     background-color: transparent;
   }

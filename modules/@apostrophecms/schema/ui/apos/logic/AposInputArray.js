@@ -209,14 +209,13 @@ export default {
       label = label.toLowerCase();
       return `${baseClass}--${label}`;
     },
-    toggleEngage(event, id) {
-      const elId =
-        event.target.getAttribute('data-id')
-          ? event.target.getAttribute('data-id')
-          : event.target.closest('[data-id]').getAttribute('data-id');
+    toggleEngage(event, options) {
+      let elId = event.target.getAttribute('data-id');
+      if (!elId && !options.exact) {
+        elId = event.target.closest('[data-id]').getAttribute('data-id');
+      }
       if (elId) {
         if (this.items.find(i => i._id === elId)) {
-          event.preventDefault();
           const was = this.items.find(i => i._id === elId).engaged;
           this.disengageAll();
           this.items.find(i => i._id === elId).engaged = !was;
