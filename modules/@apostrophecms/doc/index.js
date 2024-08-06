@@ -1734,14 +1734,13 @@ module.exports = {
         }
 
         function forSchema(schema, doc) {
+          if (!doc) {
+            return;
+          }
           for (const field of schema) {
             if (field.type === 'area' && doc[field.name] && doc[field.name].items) {
               for (const widget of doc[field.name].items) {
-                self.walkByMetaType(widget, {
-                  arrayItem: handlers.arrayItem,
-                  object: handlers.object,
-                  relationship: handlers.relationship
-                });
+                self.walkByMetaType(widget, handlers);
               }
             } else if (field.type === 'array') {
               if (doc[field.name]) {
@@ -1752,14 +1751,10 @@ module.exports = {
               }
             } else if (field.type === 'object') {
               const value = doc[field.name];
-              if (value) {
-                handlers.object(field, value);
-                forSchema(field.schema, value);
-              }
+              handlers.object(field, value);
+              forSchema(field.schema, value);
             } else if (field.type === 'relationship') {
-              if (Array.isArray(doc[field.name])) {
-                handlers.relationship(field, doc);
-              }
+              handlers.relationship(field, doc, true);
             }
           }
         }

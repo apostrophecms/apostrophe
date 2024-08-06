@@ -1039,7 +1039,7 @@ module.exports = {
 
         const handlers = {
           arrayItem: (field, object) => {
-            if (!can(field)) {
+            if (!object || !can(field)) {
               return;
             }
 
@@ -1048,7 +1048,7 @@ module.exports = {
             object.scopedArrayName = field.scopedArrayName;
           },
           object: (field, object) => {
-            if (!can(field)) {
+            if (!object || !can(field)) {
               return;
             }
 
@@ -1056,7 +1056,7 @@ module.exports = {
             object.scopedObjectName = field.scopedObjectName;
           },
           relationship: (field, doc) => {
-            if (!can(field)) {
+            if (!Array.isArray(doc[field.name]) || !can(field)) {
               return;
             }
 
