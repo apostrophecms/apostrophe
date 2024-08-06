@@ -2,6 +2,9 @@
 
 ## UNRELEASED
 
+### Removes
+* Inline array option for `alwaysOpen` replaced with UI toggles
+
 ### Adds
 
 * Add a locale switcher in pieces and pages editor modals. This is available for localized documents only, and allows you to switch between locales for the same document.
@@ -10,6 +13,7 @@
 
 ### Changes
 
+* UI and UX of inline arrays and their table styles
 * Add `title` and `_url` to select all projection.
 * Display `Select all` message on all pages in the manager modal.
 * Refresh `checked` in manager modal after archive action.

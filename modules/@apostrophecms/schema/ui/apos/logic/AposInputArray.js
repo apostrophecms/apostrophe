@@ -231,12 +231,6 @@ export default {
         };
       });
     },
-    disengage(id) {
-      const wasEngaged = this.items.find(i => i._id === id).engaged;
-      if (wasEngaged) {
-        this.items.find(i => i._id === id).engaged = false;
-      }
-    },
     moveUpdate({
       oldIndex, newIndex
     }) {
@@ -397,7 +391,7 @@ export default {
         }
       }
     },
-    moveEngaged($e, id, direction) {
+    moveEngaged(event, id, direction) {
       const item = this.items.find(i => i._id === id);
       const index = this.items.indexOf(item);
 
@@ -410,8 +404,8 @@ export default {
       }
 
       if (this.items.find(i => i._id === id).engaged) {
-        $e.stopImmediatePropagation();
-        $e.preventDefault();
+        event.stopImmediatePropagation();
+        event.preventDefault();
         this.moveUpdate({
           oldIndex: index,
           newIndex: index + direction
@@ -423,18 +417,6 @@ export default {
       this.$nextTick(() => {
         if (this.$refs.root.$el.querySelector(`[data-id="${id}"]`)) {
           this.$refs.root.$el.querySelector(`[data-id="${id}"]`).focus();
-        }
-      });
-    },
-    scrollToElement(el, id) {
-      this.observe(el);
-      this.$nextTick(() => {
-        if (this.$refs.root.$el.querySelector(`[data-id="${id}"]`)) {
-          // const el = this.$refs.root.$el.querySelector(`[data-id="${id}"]`);
-          this.$refs.root.$el.querySelector(`[data-id="${id}"] .apos-input-array-inline-header`).scrollIntoView({
-            behavior: 'smooth'
-          });
-          this.observe(el);
         }
       });
     },
