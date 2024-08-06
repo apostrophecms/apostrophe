@@ -24,7 +24,8 @@
         >
           <span class="apos-field_label-info">
             {{ $t(label) }}
-            <span v-if="field.required" class="apos-field__required"> * </span>
+            <span v-if="field.required" class="apos-field__required">
+              * </span>
             <AposLabel
               v-if="field.tag"
               class="apos-field__tag"
@@ -109,21 +110,21 @@
 </template>
 
 <script>
-import AposInputWrapperLogic from "../logic/AposInputWrapper";
+import AposInputWrapperLogic from '../logic/AposInputWrapper';
 export default {
-  name: "AposInputWrapper",
-  mixins: [AposInputWrapperLogic],
+  name: 'AposInputWrapper',
+  mixins: [ AposInputWrapperLogic ],
   methods: {
     getTranslatedErrorMessage(message) {
-      if (message === "required") {
-        return this.$t("apostrophe:required");
+      if (message === 'required') {
+        return this.$t('apostrophe:required');
       }
-      if (message === "invalid") {
-        return this.$t("apostrophe:invalid");
+      if (message === 'invalid') {
+        return this.$t('apostrophe:invalid');
       }
       return this.$t(message);
-    },
-  },
+    }
+  }
 };
 </script>
 

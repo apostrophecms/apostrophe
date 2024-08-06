@@ -234,13 +234,7 @@ export default {
     moveUpdate({
       oldIndex, newIndex
     }) {
-      if (oldIndex !== newIndex) {
-        this.items = this.items.map((elem, index) => {
-          return index === oldIndex
-            ? this.items[newIndex]
-            : (index === newIndex && this.items[oldIndex]) || elem;
-        });
-      }
+      this.items.splice(newIndex, 0, this.items.splice(oldIndex, 1)[0]);
     },
     getItemsSchema(_id) {
       return (this.items.find((item) => item._id === _id))?.schemaInput.data;

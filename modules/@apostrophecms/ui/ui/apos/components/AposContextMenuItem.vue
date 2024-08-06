@@ -18,27 +18,27 @@
 
 <script>
 export default {
-  name: "AposContextMenuItem",
+  name: 'AposContextMenuItem',
   props: {
     menuItem: {
       type: Object,
-      required: true,
+      required: true
     },
-    open: Boolean,
+    open: Boolean
   },
-  emits: ["clicked"],
+  emits: [ 'clicked' ],
   computed: {
     tabindex() {
-      return this.open ? "0" : "-1";
+      return this.open ? '0' : '-1';
     },
     selected() {
-      return this.menuItem.modifiers?.includes("selected");
+      return this.menuItem.modifiers?.includes('selected');
     },
     danger() {
-      return this.menuItem.modifiers?.includes("danger");
+      return this.menuItem.modifiers?.includes('danger');
     },
     disabled() {
-      return !!this.menuItem.modifiers?.includes("disabled");
+      return !!this.menuItem.modifiers?.includes('disabled');
     },
     modifiers() {
       const classes = [];
@@ -47,25 +47,24 @@ export default {
           classes.push(`apos-context-menu__button--${modifier}`);
         });
       }
-      return classes.join(" ");
+      return classes.join(' ');
     },
     label() {
       let label = this.menuItem.label;
       if (this.selected) {
         label = {
-          key: "apostrophe:selectedMenuItem",
-          label: this.$t(this.menuItem.label),
+          key: 'apostrophe:selectedMenuItem',
+          label: this.$t(this.menuItem.label)
         };
       }
       return label;
-    },
+    }
   },
   methods: {
     click() {
-      console.log("did click");
-      this.$emit("clicked", this.menuItem.action);
-    },
-  },
+      this.$emit('clicked', this.menuItem.action);
+    }
+  }
 };
 </script>
 
