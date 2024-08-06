@@ -45,6 +45,9 @@ module.exports = (options, apos) => {
             {
               loader: 'sass-loader',
               options: {
+                sassOptions: {
+                  silenceDeprecations: [ 'mixed-decls' ]
+                },
                 sourceMap: false,
                 // "use" rules must come first or sass throws an error
                 additionalData: `
