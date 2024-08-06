@@ -4,6 +4,7 @@
       class="apos-context-menu__button"
       :class="modifiers"
       :tabindex="tabindex"
+      role="menuitem"
       data-apos-test="context-menu-item"
       :data-apos-test-selected="selected"
       :data-apos-test-danger="danger"

@@ -11,7 +11,6 @@
           content: (!disabled && !first) ? 'apostrophe:nudgeUp' : null,
           placement: 'left'
         }"
-        :modifiers="[ 'inline' ]"
         @click="$emit('up')"
       />
       <AposButton
@@ -22,7 +21,6 @@
           content: 'apostrophe:editWidget',
           placement: 'left'
         }"
-        :modifiers="[ 'inline' ]"
         @click="$emit('edit')"
       />
       <AposButton
@@ -32,7 +30,6 @@
           content: 'apostrophe:cut',
           placement: 'left'
         }"
-        :modifiers="[ 'inline' ]"
         @click="$emit('cut')"
       />
       <AposButton
@@ -52,7 +49,6 @@
           content: 'apostrophe:duplicate',
           placement: 'left'
         }"
-        :modifiers="[ 'inline' ]"
         @click="$emit('clone')"
       />
       <AposButton
@@ -63,7 +59,6 @@
           content: 'apostrophe:delete',
           placement: 'left'
         }"
-        :modifiers="[ 'inline' ]"
         @click="$emit('remove')"
       />
       <AposButton
@@ -74,7 +69,6 @@
           content: (!disabled && !last) ? 'apostrophe:nudgeDown' : null,
           placement: 'left'
         }"
-        :modifiers="[ 'inline' ]"
         @click="$emit('down')"
       />
     </AposButtonGroup>
@@ -110,23 +104,26 @@ export default {
     maxReached: {
       type: Boolean,
       default: false
+    },
+    tabbable: {
+      type: Boolean,
+      default: false
     }
   },
   emits: [ 'remove', 'edit', 'cut', 'copy', 'clone', 'up', 'down' ],
-  data() {
-    return {
-      buttonDefaults: {
+  computed: {
+    buttonDefaults() {
+      return {
         iconOnly: true,
         icon: 'plus-icon',
         type: 'group',
-        modifiers: [ 'small' ],
+        modifiers: [ 'small', 'inline' ],
         role: 'menuitem',
         class: 'apos-area-modify-controls__button',
-        iconSize: 16
-      }
-    };
-  },
-  computed: {
+        iconSize: 16,
+        disableFocus: !this.tabbable
+      };
+    },
     upButton() {
       return {
         ...this.buttonDefaults,

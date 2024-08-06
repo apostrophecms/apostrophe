@@ -5,7 +5,12 @@
     :class="themeClass"
   >
     <div ref="spacer" class="apos-admin-bar-spacer" />
-    <nav ref="adminBar" class="apos-admin-bar">
+    <nav
+      ref="adminBar"
+      class="apos-admin-bar"
+      role="menubar"
+      aria-label="Apostrophe Admin Bar"
+    >
       <div class="apos-admin-bar__row">
         <AposLogoPadless class="apos-admin-bar__logo" />
         <TheAposAdminBarMenu :items="menuItems" />

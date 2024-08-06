@@ -11,12 +11,14 @@
       :unpadded="true"
       menu-placement="bottom-end"
       @open="open"
+      @close="isOpen = false"
     >
       <AposLocalePicker
         :current-locale="locale"
         :localized="localized"
         :forbidden="forbidden"
         :forbidden-tooltip="forbiddenTooltip"
+        :is-open="isOpen"
         @switch-locale="switchLocale"
       />
     </AposContextMenu>
@@ -59,6 +61,7 @@ const forbiddenTooltip = $t('apostrophe:localeSwitcherPermissionToCreate', {
 const menu = ref(null);
 const localized = ref({});
 const forbidden = ref([]);
+const isOpen = ref(false);
 const button = computed(() => {
   const label = apos.i18n.locales[props.locale]?.label;
   const key = label ? `${label} (${props.locale})` : props.locale;
@@ -74,6 +77,7 @@ const button = computed(() => {
 });
 
 async function open() {
+  isOpen.value = true;
   if (!props.docId) {
     return;
   }
