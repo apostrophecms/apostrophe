@@ -182,10 +182,9 @@ export default {
       }));
     },
     startDragging(event) {
-      const dragId = event.item.getAttribute('data-id');
       this.isDragging = true;
       this.disengageAll();
-      this.toggleEngage(null, dragId);
+      this.toggleEngage({ target: event.item });
     },
     stopDragging(event) {
       this.isDragging = false;

@@ -339,6 +339,13 @@
       border-color: var(--a-base-8);
       background-color: var(--a-background-primary);
 
+      &--engaged {
+        &,
+        .apos-input-array-inline-label,
+        & > .apos-input-array-inline-header {
+          color: var(--a-text-primary);
+        }
+      }
       .apos-input-array-inline-header {
         background-color: var(--a-base-8);
       }
@@ -352,6 +359,7 @@
     margin: 0 $spacing-double;
     transition: background-color 300ms ease;
 
+    .apos-field,
     .apos-field.apos-field--small,
     .apos-field.apos-field--micro,
     .apos-field.apos-field--margin-micro {
