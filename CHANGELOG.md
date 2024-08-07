@@ -15,7 +15,7 @@
 * Refresh `checked` in manager modal after archive action.
 * Updates rich text link tool's keyboard key detection strategy.
 * Buttons that appear on slats (preview, edit crop/relationship, remove) are visually focusable and keyboard accessible.
-* Added tooltip for update button.
+* Added tooltip for update button. Thanks to [gkumar9891](https://github.com/gkumar9891) for this addition.
 
 ### Fixes
 
