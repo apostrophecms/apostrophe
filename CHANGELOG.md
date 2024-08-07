@@ -1,10 +1,14 @@
 # Changelog
 
-## 3.67.2 (2024-07-22)
+## UNRELEASED
 
 ### Changes
 
 * Update `@apostrophecms/emulate-mongo-3-driver` dependency to keep supporting `mongodb@3.x` queries while using `mongodb@6.x`.
+
+### Fixes
+
+* Bump `oembetter` dependency to guarantee compatibility with YouTube. YouTube recently deployed broken `link rel="undefined"` tags on some of their video pages.
 
 ## 3.67.1 (2024-07-10)
 
