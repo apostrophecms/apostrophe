@@ -1,5 +1,11 @@
 # Changelog
 
+## UNRELEASED
+
+### Fixes
+
+* Bump `oembetter` dependency to guarantee compatibility with YouTube. YouTube recently deployed broken `link rel="undefined"` tags on some of their video pages.
+
 ## 3.67.1 (2024-07-10)
 
 ### Changes
