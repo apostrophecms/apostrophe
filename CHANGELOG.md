@@ -2,9 +2,9 @@
 
 ## UNRELEASED
 
-### Changes
+### Fixes
 
-* Minimum version of `oembetter` bumped to ensure support for all Vimeo videos that permit embedding.
+* Minimum version of `oembetter` bumped to ensure support for all YouTube and Vimeo videos that permit embedding.
 
 ## 2.227.7 (2024-07-10)
 
