@@ -1,10 +1,14 @@
 # Changelog
 
-## 2.227.8 (2024-07-22)
+## UNRELEASED
 
 ### Changes
 
 * Update `emulate-mongo-2-driver` dependency to keep supporting `mongodb@2.x` queries while using `mongodb@6.x`.
+
+### Fixes
+
+* Minimum version of `oembetter` bumped to ensure support for all YouTube and Vimeo videos that permit embedding.
 
 ## 2.227.7 (2024-07-10)
 
