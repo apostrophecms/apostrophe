@@ -1,5 +1,32 @@
 # Changelog
 
+## UNRELEASED
+
+### Fixes
+
+* Minimum version of `oembetter` bumped to ensure support for all YouTube and Vimeo videos that permit embedding.
+
+## 2.227.7 (2024-07-10)
+
+### Changes
+
+* Update `emulate-mongo-2-driver` dependency to keep supporting `mongodb@2.x` queries while using `mongodb@6.x`.
+
+## 2.227.6 (2024-04-29)
+
+### Changes
+
+* Replace `autocomplete="off"`, which modern browsers ignore, with `autocomplete="new-password"`
+so that (1) admin user's password is not stuffed into password fields when editing an entirely
+different user and (2) the admin user's username is not stuffed into the text field preceding
+it. Browser autocomplete is quite aggressive in 2024.
+
+## 2.227.5 (2024-04-18)
+
+### Changes
+
+* Update `emulate-mongo-2-driver` dependency to keep supporting `mongodb@2.x` queries while using `mongodb@6.x`.
+
 ## 2.227.4 2023-09-27
 
 ### Fixes
