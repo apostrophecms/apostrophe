@@ -2,6 +2,10 @@
 
 ## UNRELEASED
 
+### Changes
+
+* Update `emulate-mongo-2-driver` dependency to keep supporting `mongodb@2.x` queries while using `mongodb@6.x`.
+
 ### Fixes
 
 * Minimum version of `oembetter` bumped to ensure support for all YouTube and Vimeo videos that permit embedding.
