@@ -1077,7 +1077,7 @@ module.exports = {
         self.apos.doc.walkByMetaType(doc, handlers);
       },
 
-      simulateRelationshipsFromStorage(req, doc, schema) {
+      simulateRelationshipsFromStorage(req, doc) {
         const handlers = {
           relationship: (field, object) => {
             const manager = self.apos.doc.getManager(field.withType);
