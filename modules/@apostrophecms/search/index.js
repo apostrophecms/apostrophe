@@ -52,7 +52,41 @@ module.exports = {
   options: {
     alias: 'search',
     perPage: 10,
-    label: 'apostrophe:searchLabel'
+    label: 'apostrophe:searchLabel',
+
+    // Default projection for ancestors, used in search results.
+    // See `req.aposAncestors` and `req.ancestorsApiProjection`
+    // in modules/@apostrophecms/search/index.js and
+    // in modules/@apostrophecms/any-page-type/index.js
+    ancestorsApiProjection: {
+      _id: 1,
+      title: 1,
+      slug: 1,
+      type: 1,
+      visibility: 1,
+      orphan: 1,
+      parkedId: 1,
+      parked: 1,
+      rank: 1,
+      level: 1,
+      aposDocId: 1,
+      path: 1,
+      lastPublishedAt: 1,
+      aposLocale: 1,
+      aposMode: 1,
+      metaType: 1,
+      createdAt: 1,
+      archived: 1,
+      titleSortified: 1,
+      updatedAt: 1,
+      cacheInvalidatedAt: 1,
+      updatedBy: 1,
+      highSearchText: 1,
+      highSearchWords: 1,
+      lowSearchText: 1,
+      searchSummary: 1,
+      _url: 1
+    }
   },
   init(self) {
 
@@ -107,7 +141,6 @@ module.exports = {
   },
   methods(self) {
     return {
-
       enableFilters() {
         if (self.options.filters) {
           self.filters = self.options.filters;
@@ -208,6 +241,7 @@ module.exports = {
 
         async function findDocs() {
           req.aposAncestors = true;
+          req.aposAncestorsApiProjection = self.options.ancestorsApiProjection;
 
           // Polymorphic find: fetch just the ids at first, then go back
           // and fetch them via their own type managers so that we get the
