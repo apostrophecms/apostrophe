@@ -23,6 +23,7 @@
 
 ### Fixes
 
+* Fixes the rendering of conditional fields in arrays where the `inline: true` option is used.
 * Fixes the rich text link tool's detection and display of the Remove Link button for removing existing links
 * Fixes the rich text link tool's detection and display of Apostrophe Page relationship field.
 * Overriding standard Vue.js components with `editorModal` and `managerModal` are now applied all the time.
