@@ -13,6 +13,7 @@
 * Add `title` and `_url` to select all projection.
 * Display `Select all` message on all pages in the manager modal.
 * Refresh `checked` in manager modal after archive action.
+* Update `@apostrophecms/emulate-mongo-3-driver` dependency to keep supporting `mongodb@3.x` queries while using `mongodb@6.x`.
 * Updates rich text link tool's keyboard key detection strategy.
 * Buttons that appear on slats (preview, edit crop/relationship, remove) are visually focusable and keyboard accessible.
 * Added tooltip for update button. Thanks to [gkumar9891](https://github.com/gkumar9891) for this addition.
