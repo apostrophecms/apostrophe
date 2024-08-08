@@ -65,8 +65,10 @@ export default {
   .apos-input-wrapper {
     @include type-base;
 
-    display: flex;
-    place-content: flex-start space-between;
+    & {
+      display: flex;
+      place-content: flex-start space-between;
+    }
   }
 
   .apos-range__value {
@@ -97,8 +99,10 @@ export default {
   .apos-range__scale {
     @include type-small;
 
-    color: var(--a-base-4);
-    transition: color 500ms ease;
+    & {
+      color: var(--a-base-4);
+      transition: color 500ms ease;
+    }
   }
 
   // adapted from http://danielstern.ca/range.css/#/

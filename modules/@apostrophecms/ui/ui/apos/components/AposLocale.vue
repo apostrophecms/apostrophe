@@ -27,7 +27,9 @@ const locale = computed(() => {
   .apos-locale {
     @include type-base;
 
-    font-weight: var(--a-weight-bold);
+    & {
+      font-weight: var(--a-weight-bold);
+    }
   }
 
   .apos-locale__label-name {

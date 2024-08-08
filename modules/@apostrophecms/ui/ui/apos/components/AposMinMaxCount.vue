@@ -104,9 +104,11 @@ export default {
   .apos-min-max-count {
     @include type-help;
 
-    display: flex;
-    flex-grow: 1;
-    margin-bottom: $spacing-base;
+    & {
+      display: flex;
+      flex-grow: 1;
+      margin-bottom: $spacing-base;
+    }
   }
 
   .apos-has-error {

@@ -85,29 +85,35 @@ export default {
   &__project-subtitle {
     @include type-title;
 
-    margin: 0;
-    opacity: 0.6;
-    line-height: 1;
-    text-transform: capitalize;
-    white-space: nowrap;
+    & {
+      margin: 0;
+      opacity: 0.6;
+      line-height: 1;
+      text-transform: capitalize;
+      white-space: nowrap;
+    }
   }
 
   &__project-name {
     @include type-display;
 
-    margin: 0;
-    color: var(--a-text-primary);
-    text-transform: capitalize;
+    & {
+      margin: 0;
+      color: var(--a-text-primary);
+      text-transform: capitalize;
+    }
   }
 
   &__project-env {
     @include type-base;
 
-    text-transform: capitalize;
-    padding: 6px 12px;
-    color: var(--a-white);
-    background: var(--a-success);
-    border-radius: 5px;
+    & {
+      text-transform: capitalize;
+      padding: 6px 12px;
+      color: var(--a-white);
+      background: var(--a-success);
+      border-radius: 5px;
+    }
 
     &--development {
       background: var(--a-danger);
@@ -121,18 +127,22 @@ export default {
   &--help {
     @include type-label;
 
-    margin-top: $spacing-double;
-    text-align: center;
-    white-space: pre-line;
+    & {
+      margin-top: $spacing-double;
+      text-align: center;
+      white-space: pre-line;
+    }
   }
 
   &--error {
     @include type-help;
 
-    margin-top: 20px;
-    margin-bottom: 15px;
-    color: var(--a-danger);
-    min-height: 13px;
+    & {
+      margin-top: 20px;
+      margin-bottom: 15px;
+      color: var(--a-danger);
+      min-height: 13px;
+    }
   }
 
   &__header--center {

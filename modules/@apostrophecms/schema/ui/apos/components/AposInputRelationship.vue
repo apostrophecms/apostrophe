@@ -126,9 +126,11 @@ export default {
   .apos-field__min-size {
     @include type-help;
 
-    display: flex;
-    flex-grow: 1;
-    margin-bottom: $spacing-base;
-    font-weight: var(--a-weight-bold);
+    & {
+      display: flex;
+      flex-grow: 1;
+      margin-bottom: $spacing-base;
+      font-weight: var(--a-weight-bold);
+    }
   }
 </style>

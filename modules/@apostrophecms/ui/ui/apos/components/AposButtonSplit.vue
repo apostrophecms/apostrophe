@@ -182,8 +182,10 @@ function menuClose() {
     @include apos-button-reset();
     @include apos-transition();
 
-    padding: $spacing-base + $spacing-half $spacing-double $spacing-base + $spacing-half $spacing-quadruple;
-    border-bottom: 1px solid var(--a-base-9);
+    & {
+      padding: $spacing-base + $spacing-half $spacing-double $spacing-base + $spacing-half $spacing-quadruple;
+      border-bottom: 1px solid var(--a-base-9);
+    }
 
     &:hover,
     &:focus,
@@ -211,7 +213,9 @@ function menuClose() {
   .apos-button-split__menu__dialog-label {
     @include type-large;
 
-    margin-bottom: $spacing-half;
+    & {
+      margin-bottom: $spacing-half;
+    }
   }
 
   .apos-button-split__menu__dialog-description {

@@ -89,15 +89,19 @@ export default {
   .apos-breadcrumb__item {
     @include type-small;
 
-    display: inline-flex;
-    align-items: center;
-    color: var(--a-text-primary);
+    & {
+      display: inline-flex;
+      align-items: center;
+      color: var(--a-text-primary);
+    }
 
     button {
       @include apos-button-reset();
       @include link-primary;
 
-      text-decoration: none;
+      & {
+        text-decoration: none;
+      }
 
       .apos-breadcrumb--dark & {
         color: inherit;

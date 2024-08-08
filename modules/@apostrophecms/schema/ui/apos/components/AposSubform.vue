@@ -111,10 +111,12 @@ export default {
   &__schema-label {
     @include type-base;
 
-    display: block;
-    padding-bottom: $spacing-double;
-    color: var(--a-base-3);
-    line-height: 1;
+    & {
+      display: block;
+      padding-bottom: $spacing-double;
+      color: var(--a-base-3);
+      line-height: 1;
+    }
   }
 
   &__controls {

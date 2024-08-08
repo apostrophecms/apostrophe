@@ -13,8 +13,8 @@
   --a-danger-button-active: #a10000;
   --a-danger-button-disabled: #ff9d98;
   --a-sensitive: #643810;
-  --a-sensitive-medium: #E2C7B9;
-  --a-sensitive-light: #FFF3E7;
+  --a-sensitive-medium: #e2c7b9;
+  --a-sensitive-light: #fff3e7;
   --a-base-1: #5d5d5d;
   --a-base-2: #6f6f6f;
   --a-base-3: #818181;
@@ -58,7 +58,9 @@
   --a-pdf: #e74c3c;
 
   // Font-Family
-  --a-family-default: -apple-system, system-ui, 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'Helvetica', 'Arial', sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol';
+  --a-family-default: -apple-system, system-ui, "BlinkMacSystemFont", "Segoe UI",
+    "Roboto", "Helvetica", "Arial", sans-serif, "Apple Color Emoji",
+    "Segoe UI Emoji", "Segoe UI Symbol";
 
   // Font-Weights
   --a-weight-base: 500;
@@ -93,21 +95,23 @@
     @include apos-primary-mixin(#0062ff);
   }
 
-  --a-base-1: #d1d3d5;
-  --a-base-2: #6b7c92;
-  --a-base-3: #607084;
-  --a-base-4: #566477;
-  --a-base-5: #4b5869;
-  --a-base-6: #414d5b;
-  --a-base-7: #36414d;
-  --a-base-8: #2c3540;
-  --a-base-9: #212932;
-  --a-base-10: #171d24;
-  --a-background-primary: #0b0b0c;
-  --a-background-inverted: #fff;
-  --a-overlay: #0062ffe0;
-  --a-text-primary: #fff;
-  --a-text-inverted: #000;
+  & {
+    --a-base-1: #d1d3d5;
+    --a-base-2: #6b7c92;
+    --a-base-3: #607084;
+    --a-base-4: #566477;
+    --a-base-5: #4b5869;
+    --a-base-6: #414d5b;
+    --a-base-7: #36414d;
+    --a-base-8: #2c3540;
+    --a-base-9: #212932;
+    --a-base-10: #171d24;
+    --a-background-primary: #0b0b0c;
+    --a-background-inverted: #fff;
+    --a-overlay: #0062ffe0;
+    --a-text-primary: #fff;
+    --a-text-inverted: #000;
+  }
 }
 
 .apos-theme--primary-default {

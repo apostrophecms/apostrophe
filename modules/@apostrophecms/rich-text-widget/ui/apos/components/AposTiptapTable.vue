@@ -143,12 +143,15 @@ export default {
 <style lang="scss" scoped>
   // "If another select el is needed for the rich-text toolbar these styles should be made global."
   // ... And here we are, but first let's see if we decide to rebuild this UI without the menu. -Tom
+
   .apos-tiptap-control--select {
     @include apos-button-reset();
     @include type-small;
 
-    height: 100%;
-    padding: 0 15px 0 10px;
+    & {
+      height: 100%;
+      padding: 0 15px 0 10px;
+    }
 
     &:focus, &:active {
       background-color: var(--a-base-9);

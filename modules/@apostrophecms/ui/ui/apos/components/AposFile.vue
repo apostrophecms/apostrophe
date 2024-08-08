@@ -160,16 +160,19 @@ export default {
 };
 </script>
 <style scoped lang='scss'>
+
   .apos-file-dropzone {
     @include apos-button-reset();
     @include type-base;
 
-    display: block;
-    margin: 10px 0;
-    padding: 20px;
-    border: 2px dashed var(--a-base-8);
-    border-radius: var(--a-border-radius);
-    transition: all 200ms ease;
+    & {
+      display: block;
+      margin: 10px 0;
+      padding: 20px;
+      border: 2px dashed var(--a-base-8);
+      border-radius: var(--a-border-radius);
+      transition: all 200ms ease;
+    }
 
     &:hover {
       border-color: var(--a-primary);

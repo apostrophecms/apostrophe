@@ -60,17 +60,19 @@ export default {
   .apos-avatar {
     @include type-small;
 
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 30px;
-    height: 30px;
-    border: 1px solid var(--a-base-9);
-    /* stylelint-disable */
-    border-radius: 100%;
-    line-height: 30px;
-    /* stylelint-enable */
-    color: var(--a-white);
-    text-transform: uppercase;
+    & {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 30px;
+      height: 30px;
+      border: 1px solid var(--a-base-9);
+      /* stylelint-disable */
+      border-radius: 100%;
+      line-height: 30px;
+      /* stylelint-enable */
+      color: var(--a-white);
+      text-transform: uppercase;
+    }
   }
 </style>

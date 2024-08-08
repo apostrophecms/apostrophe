@@ -5,12 +5,14 @@ $box-width: 12px;
   @include type-base;
   @include apos-transition(all);
 
-  box-sizing: border-box;
-  width: 100%;
-  border: 1px solid var(--a-base-8);
-  color: var(--a-text-primary);
-  border-radius: var(--a-border-radius);
-  background-color: var(--a-base-9);
+  & {
+    box-sizing: border-box;
+    width: 100%;
+    border: 1px solid var(--a-base-8);
+    color: var(--a-text-primary);
+    border-radius: var(--a-border-radius);
+    background-color: var(--a-base-9);
+  }
 
   &::placeholder {
     color: var(--a-base-4);

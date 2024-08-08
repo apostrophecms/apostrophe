@@ -149,13 +149,17 @@ export default {
   &__title {
     @include type-base;
 
-    color: var(--a-text-primary);
+    & {
+      color: var(--a-text-primary);
+    }
   }
 
   &__field {
     @include type-base;
 
-    color: var(--a-base-2);
+    & {
+      color: var(--a-base-2);
+    }
   }
 
   &.apos-search__item--disabled {

@@ -231,16 +231,18 @@ export default {
   .apos-button {
     @include type-base;
 
-    position: relative;
-    display: inline-block;
-    overflow: hidden;
-    padding: 10px 20px;
-    border: 1px solid var(--a-base-5);
-    color: var(--a-text-primary);
-    border-radius: var(--a-border-radius);
-    background-color: var(--a-base-9);
-    transition: all 200ms ease;
-    text-decoration: none;
+    & {
+      position: relative;
+      display: inline-block;
+      overflow: hidden;
+      padding: 10px 20px;
+      border: 1px solid var(--a-base-5);
+      color: var(--a-text-primary);
+      border-radius: var(--a-border-radius);
+      background-color: var(--a-base-9);
+      transition: all 200ms ease;
+      text-decoration: none;
+    }
 
     &:hover {
       cursor: pointer;

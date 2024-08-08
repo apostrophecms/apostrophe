@@ -216,8 +216,10 @@ export default {
   .apos-slat-limit {
     @include type-help;
 
-    margin: 10px 0 0;
-    text-align: center;
+    & {
+      margin: 10px 0 0;
+      text-align: center;
+    }
 
     span {
       margin-right: 10px;

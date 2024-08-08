@@ -204,7 +204,9 @@ export default {
   .apos-tree {
     @include type-base;
 
-    color: var(--a-text-primary);
+    & {
+      color: var(--a-text-primary);
+    }
   }
 
 </style>

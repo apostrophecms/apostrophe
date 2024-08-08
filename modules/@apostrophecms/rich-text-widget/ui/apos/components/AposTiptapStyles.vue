@@ -157,9 +157,11 @@ export default {
     @include apos-button-reset();
     @include apos-transition();
 
-    height: 100%;
-    padding: 0 $spacing-half;
-    font-size: var(--a-type-smaller);
+    & {
+      height: 100%;
+      padding: 0 $spacing-half;
+      font-size: var(--a-type-smaller);
+    }
 
     &:focus, &:active {
       outline: none;

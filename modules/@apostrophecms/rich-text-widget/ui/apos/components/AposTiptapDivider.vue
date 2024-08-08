@@ -21,7 +21,9 @@ export default {
   .apos-rich-text-editor__control--divider {
     @include type-help;
 
-    padding: 10px;
-    opacity: 0.3;
+    & {
+      padding: 10px;
+      opacity: 0.3;
+    }
   }
 </style>

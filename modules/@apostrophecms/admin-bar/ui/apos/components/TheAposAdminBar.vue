@@ -107,9 +107,11 @@ export default {
 :deep(.apos-admin-bar__control-set) {
   @include type-base;
 
-  display: flex;
-  width: 100%;
-  height: 100%;
+  & {
+    display: flex;
+    width: 100%;
+    height: 100%;
+  }
 }
 
 .apos-admin-bar__user {
