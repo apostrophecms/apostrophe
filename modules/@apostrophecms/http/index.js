@@ -4,8 +4,6 @@ const fetch = require('node-fetch');
 const tough = require('tough-cookie');
 const escapeHost = require('../../../lib/escape-host');
 const util = require('util');
-const multiparty = require('connect-multiparty');
-const { readFile, open, unlink } = require('node:fs/promises');
 
 module.exports = {
   options: {
@@ -39,7 +37,6 @@ module.exports = {
     return {
       'apostrophe:modulesRegistered': {
         setCollection() {
-          console.log('collection');
           self.bigUploads = self.apos.db.collection('aposBigUploads');
         }
       }
@@ -221,7 +218,7 @@ module.exports = {
         }
         if (options.body && options.body.constructor && (options.body.constructor.name === 'FormData')) {
           // If we don't do this multiparty will not parse it properly
-          const contentLength = await require('util').promisify((callback) => {
+          const contentLength = await util.promisify((callback) => {
             return options.body.getLength(callback);
           })();
           options.headers = options.headers || {};

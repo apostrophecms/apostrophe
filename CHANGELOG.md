@@ -1,5 +1,11 @@
 # Changelog
 
+## UNRELEASED
+
+### Adds
+
+* The new `big-upload-client` module can now be used to upload very large files to any route that uses the new `big-upload-middleware`.
+
 ## 4.6.0 (2024-08-08)
 
 ### Adds

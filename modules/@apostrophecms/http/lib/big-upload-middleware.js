@@ -1,3 +1,7 @@
+const multiparty = require('connect-multiparty');
+const util = require('util');
+const { readFile, open, unlink } = require('node:fs/promises');
+
 module.exports = (self) => ({
   // Returns middleware that allows any route to receive large
   // uploads made via big-upload-client. A workaround for
@@ -63,6 +67,7 @@ module.exports = (self) => ({
   },
 
   async bigUploadStart(req, files = {}) {
+    await self.bigUploadCleanup();
     try {
       const id = self.apos.util.generateId();
       files = Object.fromEntries(Object.entries(files).map(([ param, info ]) => {
@@ -100,10 +105,9 @@ module.exports = (self) => ({
       });
       function invalid(s) {
         self.apos.util.error(`Invalid bigUpload parameter: ${s}`);
-        return self.apos.error('invalid', e);
+        return self.apos.error('invalid', s);
       }
     } catch (e) {
-      console.error('!!!', e);
       return req.res.status(500).send({
         name: 'error',
         message: 'aposBigUpload error'
@@ -133,7 +137,6 @@ module.exports = (self) => ({
       await ufs.copyIn(file.path, ufsPath);
       return req.res.send({});
     } catch (e) {
-      console.error('!!!!', e);
       self.logError('bigUploadError', e);
       return req.res.status(500).send({
         name: 'error',
@@ -201,11 +204,11 @@ module.exports = (self) => ({
   },
 
   async bigUploadCleanup() {
-    const old = self.bigUploads.find({
+    const old = await self.bigUploads.find({
       start: {
         $lte: Date.now() - self.options.bigUploadMaxSeconds * 1000
       }
-    });
+    }).toArray();
     for (const bigUpload of old) {
       await self.bigUploadCleanupOne(bigUpload);
     }
