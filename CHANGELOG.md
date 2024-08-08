@@ -25,6 +25,7 @@
 * Overriding standard Vue.js components with `editorModal` and `managerModal` are now applied all the time.
 * Accommodate old-style replica set URIs with comma-separated servers by passing any MongoDB URIs that Node.js cannot parse directly to the MongoDB driver, and avoiding unnecessary parsing of the URI in general.
 * Bump `oembetter` dependency to guarantee compatibility with YouTube. YouTube recently deployed broken `link rel="undefined"` tags on some of their video pages.
+* It is now possible to see the right filename and line number when debugging the admin UI build in the browser. This is automatically disabled when `@apostrophecms/security-headers` is installed, because its defaults are incompatible by design.
 
 ## 4.5.4 (2024-07-22)
 
