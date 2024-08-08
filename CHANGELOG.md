@@ -1,6 +1,6 @@
 # Changelog
 
-## UNRELEASED
+## 3.67.2 (2024-08-08)
 
 ### Changes
 
