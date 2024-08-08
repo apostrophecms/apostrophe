@@ -1754,7 +1754,7 @@ module.exports = {
               handlers.object(field, value);
               forSchema(field.schema, value);
             } else if (field.type === 'relationship') {
-              handlers.relationship(field, doc, true);
+              handlers.relationship(field, doc);
             }
           }
         }
