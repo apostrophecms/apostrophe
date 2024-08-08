@@ -308,6 +308,7 @@ module.exports = {
         targetId = normalized.targetId || '_home';
         position = normalized.position;
         const copyingId = self.apos.launder.id(req.body._copyingId);
+        const createId = self.apos.launder.id(req.body._createId);
         const input = _.omit(req.body, '_targetId', '_position', '_copyingId');
         if (typeof (input) !== 'object') {
           // cheeky
@@ -354,7 +355,8 @@ module.exports = {
             page = self.newChild(parentPage);
           }
           await manager.convert(req, input, page, {
-            copyingId
+            copyingId,
+            createId
           });
           await self.insert(req, targetPage._id, position, page, { lock: false });
           return self.findOneForEditing(req, { _id: page._id }, {
@@ -873,8 +875,8 @@ database.`);
           components: {}
         });
         _.defaults(browserOptions.components, {
-          editorModal: 'AposDocEditor',
-          managerModal: 'AposPagesManager'
+          editorModal: self.getComponentName('editorModal', 'AposDocEditor'),
+          managerModal: self.getComponentName('managerModal', 'AposPagesManager')
         });
 
         if (req.data.bestPage) {

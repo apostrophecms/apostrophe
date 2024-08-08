@@ -759,7 +759,9 @@ module.exports = {
 
       async convert(req, input, doc, options = {
         presentFieldsOnly: false,
-        copyingId: false
+        type: null,
+        copyingId: null,
+        createId: null
       }) {
         const fullSchema = self.apos.doc.getManager(options.type || self.name)
           .allowedSchema(req, doc);
@@ -783,6 +785,10 @@ module.exports = {
         }
 
         await self.apos.schema.convert(req, schema, input, doc);
+
+        if (options.createId) {
+          doc.aposDocId = options.createId;
+        }
 
         if (copyOf) {
           if (copyOf._id) {

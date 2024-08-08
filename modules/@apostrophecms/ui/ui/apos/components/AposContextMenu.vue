@@ -9,8 +9,8 @@
         v-bind="button"
         ref="button"
         class="apos-context-menu__btn"
-        data-apos-test="contextMenuTrigger"
         role="button"
+        :data-apos-test="identifier"
         :state="buttonState"
         :disabled="disabled"
         :tooltip="tooltip"
@@ -20,28 +20,27 @@
         }"
         @click.stop="buttonClicked($event)"
       />
-      <Teleport to="body">
-        <div
-          v-if="isOpen"
-          ref="dropdownContent"
-          v-click-outside-element="hide"
-          class="apos-context-menu__dropdown-content"
-          :class="popoverClass"
-          data-apos-menu
-          :style="dropdownContentStyle"
-          :aria-hidden="!isOpen"
+      <div
+        v-if="isOpen"
+        ref="dropdownContent"
+        v-click-outside-element="hide"
+        class="apos-context-menu__dropdown-content"
+        :class="popoverClass"
+        data-apos-menu
+        :style="dropdownContentStyle"
+        :aria-hidden="!isOpen"
+      >
+        <AposContextMenuDialog
+          :menu-placement="placement"
+          :class-list="classList"
+          :menu="menu"
+          :is-open="isOpen"
+          @item-clicked="menuItemClicked"
+          @set-arrow="setArrow"
         >
-          <AposContextMenuDialog
-            :menu-placement="placement"
-            :class-list="classList"
-            :menu="menu"
-            @item-clicked="menuItemClicked"
-            @set-arrow="setArrow"
-          >
-            <slot />
-          </AposContextMenuDialog>
-        </div>
-      </Teleport>
+          <slot />
+        </AposContextMenuDialog>
+      </div>
     </div>
   </div>
 </template>
@@ -57,6 +56,10 @@ import { useAposTheme } from 'Modules/@apostrophecms/ui/composables/AposTheme';
 import { createId } from '@paralleldrive/cuid2';
 
 const props = defineProps({
+  identifier: {
+    type: String,
+    default: 'contextMenuTrigger'
+  },
   menu: {
     type: Array,
     default: null
@@ -155,10 +158,14 @@ watch(isOpen, (newVal) => {
   if (newVal) {
     window.addEventListener('resize', setDropdownPosition);
     window.addEventListener('scroll', setDropdownPosition);
+    window.addEventListener('keydown', handleKeyboard);
     setDropdownPosition();
+    dropdownContent.value.querySelector('[tabindex]')?.focus();
   } else {
     window.removeEventListener('resize', setDropdownPosition);
     window.removeEventListener('scroll', setDropdownPosition);
+    window.removeEventListener('keydown', handleKeyboard);
+    dropdown.value.querySelector('[tabindex]').focus();
   }
 }, { flush: 'post' });
 
@@ -237,6 +244,12 @@ async function setDropdownPosition() {
     ...arrowY && { top: `${arrowY}px` }
   });
 }
+
+function handleKeyboard(event) {
+  if (event.key === 'Escape') {
+    hide();
+  }
+}
 </script>
 
 <style lang="scss">
@@ -300,7 +313,7 @@ async function setDropdownPosition() {
   list-style-type: none;
   width: max-content;
   margin: none;
-  margin-block: 0 0;
+  margin-block: 0;
   padding: 10px 0;
 }
 </style>

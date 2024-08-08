@@ -3,6 +3,7 @@
     ref="modal"
     :modal="modal"
     :modal-title="modalTitle"
+    :modal-data="modalData"
     @esc="confirmAndCancel"
     @inactive="modal.active = false"
     @show-modal="modal.showModal = true"
@@ -138,6 +139,10 @@ export default {
   props: {
     moduleName: {
       type: String,
+      required: true
+    },
+    modalData: {
+      type: Object,
       required: true
     }
   },
@@ -354,7 +359,9 @@ export default {
     async selectAllPieces () {
       const { results: docs } = await this.request({
         project: {
-          _id: 1
+          _id: 1,
+          _url: 1,
+          title: 1
         },
         attachments: false,
         perPage: this.allPiecesSelection.total
@@ -469,6 +476,11 @@ export default {
                 : this.moduleLabels.plural
             }
           });
+          if (action === 'archive') {
+            await this.getPieces();
+            this.getAllPiecesTotal();
+            this.checked = [];
+          }
         } catch (error) {
           apos.notify('apostrophe:errorBatchOperationNoti', {
             interpolate: { operation: label },
@@ -479,15 +491,24 @@ export default {
       }
     },
     setCheckedDocs(checked) {
-      this.checkedDocs = checked;
+      this.checkedDocs = checked.slice(0, this.relationshipField?.max || checked.length);
       this.checked = this.checkedDocs.map(item => {
         return item._id;
       });
     },
 
     async onContentChanged({ doc, action }) {
-      await this.getPieces();
-      this.getAllPiecesTotal();
+      if (
+        !doc ||
+        !doc.aposLocale ||
+        doc.aposLocale.split(':')[0] === this.modalData.locale
+      ) {
+        await this.getPieces();
+        this.getAllPiecesTotal();
+        if (action === 'archive') {
+          this.checked = this.checked.filter(checkedId => doc._id !== checkedId);
+        }
+      }
     }
   }
 };
