@@ -5,7 +5,7 @@ const { SemanticAttributes } = require('@opentelemetry/semantic-conventions');
 const expressCacheOnDemand = require('express-cache-on-demand')();
 
 module.exports = {
-  cascades: [ 'batchOperations', 'utilityOperations' ],
+  cascades: [ 'filters', 'batchOperations', 'utilityOperations' ],
   options: {
     alias: 'page',
     types: [
@@ -36,6 +36,49 @@ module.exports = {
     ],
     redirectFailedUpperCaseUrls: true,
     relationshipSuggestionIcon: 'web-icon'
+  },
+  filters: {
+    add: {
+      visibility: {
+        label: 'apostrophe:visibility',
+        inputType: 'radio',
+        choices: [
+          {
+            value: 'public',
+            label: 'apostrophe:public'
+          },
+          {
+            value: 'loginRequired',
+            label: 'apostrophe:loginRequired'
+          },
+          {
+            value: null,
+            label: 'apostrophe:any'
+          }
+        ],
+        // TODO: Delete `allowedInChooser` if not used.
+        allowedInChooser: false,
+        def: null
+      },
+      archived: {
+        label: 'apostrophe:archived',
+        inputType: 'radio',
+        choices: [
+          {
+            value: false,
+            label: 'apostrophe:live'
+          },
+          {
+            value: true,
+            label: 'apostrophe:archived'
+          }
+        ],
+        // TODO: Delete `allowedInChooser` if not used.
+        allowedInChooser: false,
+        def: false,
+        required: true
+      }
+    }
   },
   batchOperations: {
     add: {
@@ -718,6 +761,67 @@ database.`);
             }
           }
         },
+        composeBatchOperations() {
+          const groupedOperations = Object.entries(self.batchOperations)
+            .reduce((acc, [ opName, properties ]) => {
+              // Check if there is a required schema field for this batch operation.
+              const requiredFieldNotFound = properties.requiredField && !self.schema
+                .some((field) => field.name === properties.requiredField);
+
+              if (requiredFieldNotFound) {
+                return acc;
+              }
+              // Find a group for the operation, if there is one.
+              const associatedGroup = getAssociatedGroup(opName);
+              const currentOperation = {
+                action: opName,
+                ...properties
+              };
+              const { action, ...props } = getOperationOrGroup(
+                currentOperation,
+                associatedGroup,
+                acc
+              );
+
+              return {
+                ...acc,
+                [action]: {
+                  ...props
+                }
+              };
+            }, {});
+
+          self.batchOperations = Object.entries(groupedOperations)
+            .map(([ action, properties ]) => ({
+              action,
+              ...properties
+            }));
+
+          function getOperationOrGroup (currentOp, [ groupName, groupProperties ], acc) {
+            if (!groupName) {
+              // Operation is not grouped. Return it as it is.
+              return currentOp;
+            }
+
+            // Return the operation group with the new operation added.
+            return {
+              action: groupName,
+              ...groupProperties,
+              operations: [
+                ...(acc[groupName] && acc[groupName].operations) || [],
+                currentOp
+              ]
+            };
+          }
+
+          // Returns the object entry, e.g., `[groupName, { ...groupProperties }]`
+          function getAssociatedGroup (operation) {
+            return Object.entries(self.batchOperationsGroups)
+              .find(([ _key, { operations } ]) => {
+                return operations.includes(operation);
+              }) || [];
+          }
+        },
         composeUtilityOperations() {
           self.utilityOperations = Object.entries(self.utilityOperations || {})
             .map(([ action, properties ]) => ({
@@ -883,6 +987,7 @@ database.`);
           browserOptions.page = self.pruneCurrentPageForBrowser(req.data.bestPage);
         }
         browserOptions.name = self.__meta.name;
+        browserOptions.filters = self.filters;
         browserOptions.canPublish = self.apos.permission.can(req, 'publish', '@apostrophecms/any-page-type');
         browserOptions.canCreate = self.apos.permission.can(req, 'create', '@apostrophecms/any-page-type', 'draft');
         browserOptions.quickCreate = self.options.quickCreate && self.apos.permission.can(req, 'create', '@apostrophecms/any-page-type', 'draft');
@@ -896,6 +1001,7 @@ database.`);
           browserOptions.localized &&
           Object.keys(self.apos.i18n.locales).length > 1 &&
           Object.values(self.apos.i18n.locales).some(locale => locale._edit);
+        browserOptions.batchOperations = self.checkBatchOperationsPermissions(req);
         browserOptions.utilityOperations = self.utilityOperations;
         browserOptions.canDeleteDraft = self.apos.permission.can(req, 'delete', '@apostrophecms/any-page-type', 'draft');
 
@@ -2721,7 +2827,16 @@ database.`);
           lastTargetId: targetId,
           lastPosition: position
         };
-      }
+      },
+      checkBatchOperationsPermissions(req) {
+        return self.batchOperations.filter(batchOperation => {
+          if (batchOperation.permission) {
+            return self.apos.permission.can(req, batchOperation.permission, self.name);
+          }
+
+          return true;
+        });
+      },
     };
   },
   helpers(self) {

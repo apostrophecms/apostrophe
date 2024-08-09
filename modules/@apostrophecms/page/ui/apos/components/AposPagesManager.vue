@@ -77,6 +77,39 @@
               />
             </template>
           </AposModalToolbar>
+          <AposDocsManagerToolbar
+            :selected-state="selectAllState"
+            :total-pages=1
+            :current-page=1
+            :filters="moduleOptions.filters"
+            :filter-choices="filterChoices"
+            :filter-values="filterValues"
+            :labels="moduleLabels"
+            :displayed-items="items.length"
+            :is-relationship="!!relationshipField"
+            :checked="checked"
+            :checked-count="checked.length"
+            :batch-operations="moduleOptions.batchOperations"
+            :module-name="moduleName"
+            :options="{
+              disableUnchecked: maxReached(),
+              noPager: true
+            }"
+            @select-click="selectAll"
+            @search="onSearch"
+            @filter="filter"
+            @batch="handleBatchAction"
+          />
+          <AposDocsManagerSelectBox
+            :selected-state="selectAllState"
+            :module-labels="moduleLabels"
+            :filter-values="filterValues"
+            :checked-ids="checked"
+            :all-pieces-selection="allPiecesSelection"
+            :displayed-items="items.length"
+            @select-all="selectAllPieces"
+            @set-all-pieces-selection="setAllPiecesSelection"
+          />
         </template>
         <template #bodyMain>
           <AposTree
