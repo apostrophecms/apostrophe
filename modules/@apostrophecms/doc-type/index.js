@@ -759,6 +759,7 @@ module.exports = {
 
       async convert(req, input, doc, options = {
         presentFieldsOnly: false,
+        fetchRelationships: true,
         type: null,
         copyingId: null,
         createId: null
@@ -783,8 +784,10 @@ module.exports = {
             ...input
           };
         }
-
-        await self.apos.schema.convert(req, schema, input, doc);
+        const convertOptions = {
+          fetchRelationships: options.fetchRelationships
+        };
+        await self.apos.schema.convert(req, schema, input, doc, convertOptions);
 
         if (options.createId) {
           doc.aposDocId = options.createId;

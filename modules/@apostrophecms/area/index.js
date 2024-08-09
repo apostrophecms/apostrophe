@@ -299,11 +299,10 @@ module.exports = {
       // is thrown.
       //
       // Returns a new array of sanitized items.
-      async sanitizeItems(req, items, options) {
-        options = options || {};
+      async sanitizeItems(req, items, fieldOptions = {}, convertOptions) {
         const result = [];
         const errors = [];
-        const widgetsOptions = self.getWidgets(options);
+        const widgetsOptions = self.getWidgets(fieldOptions);
 
         for (let i = 0; i < items.length; i++) {
           const item = items[i];
@@ -322,7 +321,7 @@ module.exports = {
           }
           let newItem;
           try {
-            newItem = await manager.sanitize(req, item, widgetOptions);
+            newItem = await manager.sanitize(req, item, widgetOptions, convertOptions);
             newItem._id = self.apos.launder.id(item._id) || self.apos.util.generateId();
           } catch (e) {
             if (Array.isArray(e)) {

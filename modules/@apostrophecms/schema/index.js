@@ -599,7 +599,7 @@ module.exports = {
       // set error class names, etc. If the error is not a string, it is a
       // database error etc. and should not be displayed in the browser directly.
 
-      async convert(req, schema, data, destination) {
+      async convert(req, schema, data, destination, options) {
         if (Array.isArray(req)) {
           throw new Error('convert invoked without a req, do you have one in your context?');
         }
@@ -629,7 +629,8 @@ module.exports = {
                   required: isRequired
                 },
                 data,
-                destination
+                destination,
+                options
               );
             } catch (error) {
               if (Array.isArray(error)) {
@@ -1039,7 +1040,7 @@ module.exports = {
 
         const handlers = {
           arrayItem: (field, object) => {
-            if (!can(field)) {
+            if (!object || !can(field)) {
               return;
             }
 
@@ -1048,7 +1049,7 @@ module.exports = {
             object.scopedArrayName = field.scopedArrayName;
           },
           object: (field, object) => {
-            if (!can(field)) {
+            if (!object || !can(field)) {
               return;
             }
 
@@ -1056,7 +1057,7 @@ module.exports = {
             object.scopedObjectName = field.scopedObjectName;
           },
           relationship: (field, doc) => {
-            if (!can(field)) {
+            if (!Array.isArray(doc[field.name]) || !can(field)) {
               return;
             }
 
@@ -1070,6 +1071,25 @@ module.exports = {
               }
               doc[field.fieldsStorage] = fieldsById;
             }
+          }
+        };
+
+        self.apos.doc.walkByMetaType(doc, handlers);
+      },
+
+      simulateRelationshipsFromStorage(req, doc) {
+        const handlers = {
+          relationship: (field, object) => {
+            const manager = self.apos.doc.getManager(field.withType);
+            const setId = (id) => manager.options.localized !== false
+              ? `${id}:${doc.aposLocale}`
+              : id;
+
+            const itemIds = object[field.idsStorage] || [];
+            object[field.name] = itemIds.map(id => ({
+              _id: setId(id),
+              fields: object[field.fieldsStorage]?.[id] || {}
+            }));
           }
         };
 
