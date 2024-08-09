@@ -670,6 +670,7 @@ export default {
     &:hover:not([disabled]),
     &:focus:not([disabled]) {
       transform: none;
+      box-shadow: none;
     }
   }
 
