@@ -1,16 +1,16 @@
-const t = require('../test-lib/test.js');
 const assert = require('assert');
+const path = require('path');
 const fs = require('fs');
 const qs = require('qs');
 
+const t = require('../test-lib/test.js');
 const bigUpload = require('../lib/big-upload-client.js');
 
-const buffer = fs.readFileSync(`${__dirname}/data/upload_tests/crop_image.png`);
+const buffer = fs.readFileSync(path.resolve(__dirname, 'data/upload_tests/crop_image.png'));
 
 describe('Big Upload', function() {
 
   let apos;
-  let jar;
   let received = false;
 
   after(async function () {
@@ -51,7 +51,6 @@ describe('Big Upload', function() {
     });
 
     assert(apos.http);
-    jar = apos.http.jar();
   });
 
   it('should be able to make a big upload request', async function() {
@@ -66,7 +65,7 @@ describe('Big Upload', function() {
         return new Blob([ buffer.subarray(from, to) ]);
       }
     };
-    
+
     // Emulate the browser-side apos.http object just barely well enough to test
     // big-upload-client server-side.
     //
@@ -81,7 +80,7 @@ describe('Big Upload', function() {
         const isFormData = options.body instanceof FormData;
         const body = isFormData ? options.body : JSON.stringify(options.body);
         const headers = {};
-        headers['cookie'] = `${apos.csrfCookieName}=csrf`;
+        headers.cookie = `${apos.csrfCookieName}=csrf`;
         if (!isFormData) {
           headers['content-type'] = 'application/json';
         }

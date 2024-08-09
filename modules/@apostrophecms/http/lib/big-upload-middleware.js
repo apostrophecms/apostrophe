@@ -1,6 +1,8 @@
 const multiparty = require('connect-multiparty');
 const util = require('util');
-const { readFile, open, unlink } = require('node:fs/promises');
+const {
+  readFile, open, unlink
+} = require('node:fs/promises');
 
 module.exports = (self) => ({
   // Returns middleware that allows any route to receive large
@@ -103,15 +105,15 @@ module.exports = (self) => ({
       return req.res.send({
         id
       });
-      function invalid(s) {
-        self.apos.util.error(`Invalid bigUpload parameter: ${s}`);
-        return self.apos.error('invalid', s);
-      }
     } catch (e) {
       return req.res.status(500).send({
         name: 'error',
         message: 'aposBigUpload error'
       });
+    }
+    function invalid(s) {
+      self.apos.util.error(`Invalid bigUpload parameter: ${s}`);
+      return self.apos.error('invalid', s);
     }
   },
 
@@ -159,7 +161,9 @@ module.exports = (self) => ({
       }
       let n = 0;
       req.files = {};
-      for (const [ param, { name, size, chunks }] of Object.entries(bigUpload.files)) {
+      for (const [ param, {
+        name, chunks
+      } ] of Object.entries(bigUpload.files)) {
         let ext = require('path').extname(name);
         if (ext) {
           ext = ext.substring(1);
@@ -188,7 +192,7 @@ module.exports = (self) => ({
         req.files[param] = {
           name,
           path: tmp
-        }
+        };
       }
       return next();
     } catch (e) {
@@ -218,7 +222,7 @@ module.exports = (self) => ({
     const ufs = self.getBigUploadFs();
     const id = bigUpload._id;
     let n = 0;
-    for (const { id, chunks } of Object.values(bigUpload.files)) {
+    for (const { chunks } of Object.values(bigUpload.files)) {
       for (let i = 0; (i < chunks); i++) {
         const ufsPath = `/big-uploads/${id}-${n}-${i}`;
         try {
@@ -245,4 +249,3 @@ module.exports = (self) => ({
     };
   }
 });
-
