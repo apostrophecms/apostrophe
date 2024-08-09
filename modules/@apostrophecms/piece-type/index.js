@@ -1079,8 +1079,8 @@ module.exports = {
           if (batchOperation.permission) {
             return self.apos.permission.can(req, batchOperation.permission, self.name);
           }
-          return true;
 
+          return true;
         });
       },
       getManagerApiProjection(req) {

@@ -5,6 +5,7 @@ import AposArchiveMixin from 'Modules/@apostrophecms/ui/mixins/AposArchiveMixin'
 import AposPublishMixin from 'Modules/@apostrophecms/ui/mixins/AposPublishMixin';
 import AposDocsManagerMixin from 'Modules/@apostrophecms/modal/mixins/AposDocsManagerMixin';
 import { klona } from 'klona';
+import { debounce } from 'Modules/@apostrophecms/ui/utils';
 
 export default {
   name: 'AposPagesManager',
@@ -52,7 +53,7 @@ export default {
         ]
       },
       treeOptions: {
-        bulkSelect: !!this.relationshipField,
+        bulkSelect: true,
         draggable: true,
         ghostUnpublished: true,
         max: this.relationshipField.max || null
@@ -74,12 +75,27 @@ export default {
         type: 'subtle',
         modifiers: [ 'small', 'no-motion' ]
       },
-      pageSetMenuSelection: 'live'
+      pageSetMenuSelection: 'live',
+      queryExtras: {
+        viewContext: this.relationshipField ? 'relationship' : 'manage'
+      },
+      filterValues: {},
+      filterChoices: {},
+      allPiecesSelection: {
+        isSelected: false,
+        total: 0
+      }
     };
   },
   computed: {
     moduleOptions() {
       return apos.page;
+    },
+    moduleLabels() {
+      return {
+        singular: this.moduleOptions.label,
+        plural: this.moduleOptions.pluralLabel
+      };
     },
     items() {
       if (!this.pages || !this.headers.length) {
@@ -148,6 +164,19 @@ export default {
       await this.getPages();
     }
   },
+  created() {
+    const DEBOUNCE_TIMEOUT = 500;
+    this.onSearch = debounce(this.search, DEBOUNCE_TIMEOUT);
+
+    console.log(this.moduleOptions);
+    this.moduleOptions.filters.forEach(filter => {
+      this.filterValues[filter.name] = filter.def;
+      if (!filter.choices) {
+        this.queryExtras.choices = this.queryExtras.choices || [];
+        this.queryExtras.choices.push(filter.name);
+      }
+    });
+  },
   async mounted() {
     // Get the data. This will be more complex in actuality.
     this.modal.active = true;
@@ -198,7 +227,9 @@ export default {
               all: '1',
               archived: this.relationshipField || this.pageSetMenuSelectionIsLive ? '0' : 'any',
               // Also fetch published docs as _publishedDoc subproperties
-              withPublished: 1
+              withPublished: 1,
+              ...this.filterValues,
+              ...this.queryExtras
             },
             draft: true
           }
@@ -217,7 +248,8 @@ export default {
         }
 
         this.pages = [ ...pageTree ];
-
+        // TODO: uncomment
+        // this.filterChoices = choices;
       } finally {
         this.gettingPages = false;
       }
@@ -234,6 +266,12 @@ export default {
           page._children.forEach(formatPage);
         }
       }
+    },
+    selectAllPieces () {
+      this.setAllPiecesSelection({
+        isSelected: true,
+        docs: this.items
+      });
     },
     async update(page) {
       const body = {
@@ -289,7 +327,8 @@ export default {
     },
     async create() {
       const doc = await apos.modal.execute(this.moduleOptions.components.editorModal, {
-        moduleName: this.moduleName
+        moduleName: this.moduleName,
+        filterValues: this.filterValues
       });
       if (!doc) {
         // Cancel clicked
@@ -309,6 +348,73 @@ export default {
     },
     updateCheckedDocs() {
       this.checkedDocs = this.checked.map(_id => this.pagesFlat.find(page => page._id === _id));
+    },
+    setAllPiecesSelection ({
+      isSelected, total, docs
+    }) {
+      if (typeof isSelected === 'boolean') {
+        this.allPiecesSelection.isSelected = isSelected;
+      }
+
+      if (typeof total === 'number') {
+        this.allPiecesSelection.total = total;
+      }
+
+      if (docs) {
+        this.setCheckedDocs(docs);
+      }
+    },
+    async search(query) {
+      if (query) {
+        this.queryExtras.autocomplete = query;
+      } else if ('autocomplete' in this.queryExtras) {
+        delete this.queryExtras.autocomplete;
+      } else {
+        return;
+      }
+
+      this.currentPage = 1;
+
+      await this.getPages();
+    },
+    async filter(filter, value) {
+      if (this.filterValues[filter] === value) {
+        return;
+      }
+
+      this.filterValues[filter] = value;
+      this.currentPage = 1;
+
+      await this.getPages();
+
+      this.setCheckedDocs([]);
+    },
+    async handleBatchAction({
+      label, action, requestOptions = {}, messages
+    }) {
+      if (action) {
+        try {
+          await apos.http.post(`${this.moduleOptions.action}/${action}`, {
+            body: {
+              ...requestOptions,
+              _ids: this.checked,
+              messages: messages,
+              type: this.checked.length === 1 ? this.moduleLabels.singular
+                : this.moduleLabels.plural
+            }
+          });
+          if (action === 'archive') {
+            await this.getPages();
+            this.checked = [];
+          }
+        } catch (error) {
+          apos.notify('apostrophe:errorBatchOperationNoti', {
+            interpolate: { operation: label },
+            type: 'danger'
+          });
+          console.error(error);
+        }
+      }
     }
   }
 };
