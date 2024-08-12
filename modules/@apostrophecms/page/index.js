@@ -39,27 +39,6 @@ module.exports = {
   },
   filters: {
     add: {
-      visibility: {
-        label: 'apostrophe:visibility',
-        inputType: 'radio',
-        choices: [
-          {
-            value: 'public',
-            label: 'apostrophe:public'
-          },
-          {
-            value: 'loginRequired',
-            label: 'apostrophe:loginRequired'
-          },
-          {
-            value: null,
-            label: 'apostrophe:any'
-          }
-        ],
-        // TODO: Delete `allowedInChooser` if not used.
-        allowedInChooser: false,
-        def: null
-      },
       archived: {
         label: 'apostrophe:archived',
         inputType: 'radio',
@@ -96,6 +75,21 @@ module.exports = {
   commands(self) {
     return {
       add: {
+        [`${self.__meta.name}:manager`]: {
+          type: 'item',
+          label: 'apostrophe:page',
+          action: {
+            type: 'admin-menu-click',
+            payload: {
+              itemName: `${self.__meta.name}:manager`
+            }
+          },
+          permission: {
+            action: 'edit',
+            type: self.__meta.name
+          },
+          shortcut: self.options.shortcut ?? `G,${self.apos.task.getReq().t('apostrophe:page').slice(0, 1)}`
+        },
         [`${self.__meta.name}:create-new`]: {
           type: 'item',
           label: 'apostrophe:commandMenuCreateNew',
@@ -108,6 +102,34 @@ module.exports = {
           },
           shortcut: 'C'
         },
+        [`${self.__meta.name}:search`]: {
+          type: 'item',
+          label: 'apostrophe:commandMenuSearch',
+          action: {
+            type: 'command-menu-manager-focus-search'
+          },
+          shortcut: 'Ctrl+F Meta+F'
+        },
+        [`${self.__meta.name}:select-all`]: {
+          type: 'item',
+          label: 'apostrophe:commandMenuSelectAll',
+          action: {
+            type: 'command-menu-manager-select-all'
+          },
+          shortcut: 'Ctrl+Shift+A Meta+Shift+A'
+        },
+        [`${self.__meta.name}:archive-selected`]: {
+          type: 'item',
+          label: 'apostrophe:commandMenuArchiveSelected',
+          action: {
+            type: 'command-menu-manager-archive-selected'
+          },
+          permission: {
+            action: 'delete',
+            type: self.__meta.name
+          },
+          shortcut: 'E'
+        },
         [`${self.__meta.name}:exit-manager`]: {
           type: 'item',
           label: 'apostrophe:commandMenuExitManager',
@@ -118,11 +140,22 @@ module.exports = {
         }
       },
       modal: {
+        default: {
+          '@apostrophecms/command-menu:manager': {
+            label: 'apostrophe:commandMenuManager',
+            commands: [
+              `${self.__meta.name}:manager`
+            ]
+          }
+        },
         [`${self.__meta.name}:manager`]: {
           '@apostrophecms/command-menu:manager': {
             label: 'apostrophe:commandMenuManager',
             commands: [
               `${self.__meta.name}:create-new`,
+              `${self.__meta.name}:search`,
+              `${self.__meta.name}:select-all`,
+              `${self.__meta.name}:archive-selected`,
               `${self.__meta.name}:exit-manager`
             ]
           }
@@ -147,6 +180,7 @@ module.exports = {
     self.apos.migration.add('deduplicateRanks2', self.deduplicateRanks2Migration);
     self.apos.migration.add('missingLastPublishedAt', self.missingLastPublishedAtMigration);
     await self.createIndexes();
+    self.composeFilters();
   },
   restApiRoutes(self) {
 
@@ -2837,6 +2871,35 @@ database.`);
           return true;
         });
       },
+      composeFilters() {
+        self.filters = Object.keys(self.filters)
+          .map(name => ({
+            name,
+            ...self.filters[name],
+            inputType: self.filters[name].inputType || 'select'
+          }));
+
+        // Add a null choice if not already added or set to `required`
+        self.filters.forEach((filter) => {
+          if (filter.choices) {
+            if (
+              !filter.required &&
+              filter.choices &&
+              !filter.choices.find((choice) => choice.value === null)
+            ) {
+              filter.def = null;
+              filter.choices.push({
+                value: null,
+                label: 'apostrophe:none'
+              });
+            }
+          } else {
+            // Dynamic choices from the REST API, but
+            // we need a label for "no opinion"
+            filter.nullLabel = 'apostrophe:filterMenuChooseOne';
+          }
+        });
+      }
     };
   },
   helpers(self) {
