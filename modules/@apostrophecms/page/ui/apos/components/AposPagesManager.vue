@@ -67,16 +67,6 @@
     <template #main>
       <AposModalBody>
         <template v-if="!relationshipField" #bodyHeader>
-          <AposModalToolbar>
-            <template #rightControls>
-              <AposContextMenu
-                :menu="pageSetMenu"
-                menu-placement="bottom-end"
-                :button="pageSetMenuButton"
-                @item-clicked="pageSetMenuSelection = $event"
-              />
-            </template>
-          </AposModalToolbar>
           <AposDocsManagerToolbar
             :selected-state="selectAllState"
             :total-pages=1
@@ -93,7 +83,8 @@
             :module-name="moduleName"
             :options="{
               disableUnchecked: maxReached(),
-              noPager: true
+              noPager: true,
+              noSearch: true
             }"
             @select-click="selectAll"
             @search="onSearch"

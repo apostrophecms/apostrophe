@@ -27,6 +27,8 @@ export default {
         showModal: false,
         width: 'two-thirds'
       },
+      headers: [],
+      holdQueries: false,
       pages: [],
       pagesFlat: [],
       options: {
@@ -52,12 +54,6 @@ export default {
           }
         ]
       },
-      treeOptions: {
-        bulkSelect: true,
-        draggable: true,
-        ghostUnpublished: true,
-        max: this.relationshipField.max || null
-      },
       moreMenu: [
         {
           label: 'apostrophe:newPage',
@@ -75,7 +71,6 @@ export default {
         type: 'subtle',
         modifiers: [ 'small', 'no-motion' ]
       },
-      pageSetMenuSelection: 'live',
       queryExtras: {
         viewContext: this.relationshipField ? 'relationship' : 'manage'
       },
@@ -88,6 +83,14 @@ export default {
     };
   },
   computed: {
+    treeOptions() {
+      return {
+        bulkSelect: true,
+        draggable: !this.filterValues.archived,
+        ghostUnpublished: true,
+        max: this.relationshipField.max || null
+      };
+    },
     moduleOptions() {
       return apos.page;
     },
@@ -121,36 +124,6 @@ export default {
         return 'apostrophe:selectPages';
       }
     },
-    headers() {
-      let headers = this.options.columns || [];
-      if (!this.pageSetMenuSelectionIsLive) {
-        headers = headers.filter(h => h.component !== 'AposCellLabels');
-      }
-      return headers;
-    },
-    pageSetMenu() {
-      return [ {
-        label: 'apostrophe:live',
-        action: 'live',
-        modifiers: this.pageSetMenuSelectionIsLive ? [ 'selected', 'disabled' ] : []
-      }, {
-        label: 'apostrophe:archived',
-        action: 'archive',
-        modifiers: !this.pageSetMenuSelectionIsLive ? [ 'selected', 'disabled' ] : []
-      } ];
-    },
-    pageSetMenuButton() {
-      const button = {
-        label: this.pageSetMenuSelectionIsLive ? 'apostrophe:live' : 'apostrophe:archived',
-        icon: 'chevron-down-icon',
-        modifiers: [ 'no-motion', 'outline', 'icon-right' ],
-        class: 'apos-pages-manager__page-set-menu-button'
-      };
-      return button;
-    },
-    pageSetMenuSelectionIsLive() {
-      return this.pageSetMenuSelection === 'live';
-    },
     canCreate() {
       const page = this.pagesFlat.find(page => page.aposDocId === this.moduleOptions.page.aposDocId);
       if (page) {
@@ -159,16 +132,10 @@ export default {
       return this.moduleOptions.canCreate;
     }
   },
-  watch: {
-    async pageSetMenuSelection() {
-      await this.getPages();
-    }
-  },
   created() {
     const DEBOUNCE_TIMEOUT = 500;
     this.onSearch = debounce(this.search, DEBOUNCE_TIMEOUT);
 
-    console.log(this.moduleOptions);
     this.moduleOptions.filters.forEach(filter => {
       this.filterValues[filter.name] = filter.def;
       if (!filter.choices) {
@@ -178,9 +145,11 @@ export default {
     });
   },
   async mounted() {
+    this.headers = this.computeHeaders();
     // Get the data. This will be more complex in actuality.
     this.modal.active = true;
     await this.getPages();
+    this.getAllPagesTotal();
     this.modal.triggerFocusRefresh++;
 
     apos.bus.$on('content-changed', this.onContentChanged);
@@ -207,36 +176,52 @@ export default {
         this.getPages();
       }
     },
+    async request (mergeOptions) {
+      const options = {
+        ...this.filterValues,
+        ...this.queryExtras,
+        ...mergeOptions,
+        archived: this.relationshipField || !this.filterValues.archived ? '0' : 'any',
+        all: '1',
+        withPublished: 1
+      };
+
+      // Avoid undefined properties.
+      const qs = Object.entries(options)
+        .reduce((acc, [ key, val ]) => ({
+          ...acc,
+          ...val !== undefined && { [key]: val }
+        }), {});
+
+      return apos.http.get(
+        this.moduleOptions.action,
+        {
+          qs,
+          busy: true,
+          draft: true
+        }
+      );
+    },
     async getPages () {
-      const self = this;
-      if (this.gettingPages) {
+      if (this.holdQueries) {
         // Avoid race conditions by trying again later if already in progress
         setTimeout(this.getPages, 100);
         return;
       }
-      // Not reactive, so not in data()
-      this.gettingPages = true;
+
+      this.holdQueries = true;
+
+      const self = this;
       try {
         this.pages = [];
         this.pagesFlat = [];
 
-        let pageTree = (await apos.http.get(
-          '/api/v1/@apostrophecms/page', {
-            busy: true,
-            qs: {
-              all: '1',
-              archived: this.relationshipField || this.pageSetMenuSelectionIsLive ? '0' : 'any',
-              // Also fetch published docs as _publishedDoc subproperties
-              withPublished: 1,
-              ...this.filterValues,
-              ...this.queryExtras
-            },
-            draft: true
-          }
-        ));
+        let pageTree = await this.request({
+          page: this.currentPage
+        });
 
         // If editor is looking at the archive tree, trim the normal page tree response
-        if (this.pageSetMenuSelection === 'archive') {
+        if (this.filterValues.archived) {
           pageTree = pageTree._children.find(page => page.slug === '/archive');
           pageTree = pageTree._children;
         }
@@ -247,11 +232,11 @@ export default {
           pageTree = [ pageTree ];
         }
 
+        this.currentPage = 1;
+        this.totalPages = 1;
         this.pages = [ ...pageTree ];
-        // TODO: uncomment
-        // this.filterChoices = choices;
       } finally {
-        this.gettingPages = false;
+        this.holdQueries = false;
       }
 
       function formatPage(page) {
@@ -267,10 +252,16 @@ export default {
         }
       }
     },
+    getAllPagesTotal () {
+      this.setAllPiecesSelection({
+        isSelected: false,
+        total: this.pagesFlat.length
+      });
+    },
     selectAllPieces () {
       this.setAllPiecesSelection({
         isSelected: true,
-        docs: this.items
+        docs: this.pagesFlat
       });
     },
     async update(page) {
@@ -386,6 +377,8 @@ export default {
       this.currentPage = 1;
 
       await this.getPages();
+      this.getAllPagesTotal();
+      this.headers = this.computeHeaders();
 
       this.setCheckedDocs([]);
     },
@@ -405,6 +398,7 @@ export default {
           });
           if (action === 'archive') {
             await this.getPages();
+            this.getAllPagesTotal();
             this.checked = [];
           }
         } catch (error) {
@@ -415,6 +409,13 @@ export default {
           console.error(error);
         }
       }
+    },
+    computeHeaders() {
+      let headers = this.options.columns || [];
+      if (this.filterValues.archived) {
+        headers = headers.filter(h => h.component !== 'AposCellLabels');
+      }
+      return headers;
     }
   }
 };
