@@ -61,14 +61,59 @@ module.exports = {
   },
   batchOperations: {
     add: {
-      archive: {
-        label: 'apostrophe:archive'
-      },
       publish: {
-        label: 'apostrophe:publish'
+        label: 'apostrophe:publish',
+        messages: {
+          progress: 'Publishing {{ type }}...',
+          completed: 'Published {{ count }} {{ type }}.'
+        },
+        icon: 'earth-icon',
+        modalOptions: {
+          title: 'apostrophe:publishType',
+          description: 'apostrophe:publishingBatchConfirmation',
+          confirmationButton: 'apostrophe:publishingBatchConfirmationButton'
+        },
+        permission: 'publish'
       },
-      unpublish: {
-        label: 'apostrophe:unpublish'
+      archive: {
+        label: 'apostrophe:archive',
+        messages: {
+          progress: 'Archiving {{ type }}...',
+          completed: 'Archived {{ count }} {{ type }}.'
+        },
+        icon: 'archive-arrow-down-icon',
+        if: {
+          archived: false
+        },
+        modalOptions: {
+          title: 'apostrophe:archiveType',
+          description: 'apostrophe:archivingBatchConfirmation',
+          confirmationButton: 'apostrophe:archivingBatchConfirmationButton'
+        },
+        permission: 'delete'
+      },
+      restore: {
+        label: 'apostrophe:restore',
+        messages: {
+          progress: 'Restoring {{ type }}...',
+          completed: 'Restored {{ count }} {{ type }}.'
+        },
+        icon: 'archive-arrow-up-icon',
+        if: {
+          archived: true
+        },
+        modalOptions: {
+          title: 'apostrophe:restoreType',
+          description: 'apostrophe:restoreBatchConfirmation',
+          confirmationButton: 'apostrophe:restoreBatchConfirmationButton'
+        },
+        permission: 'edit'
+      }
+    },
+    group: {
+      more: {
+        icon: 'dots-vertical-icon',
+        operations: []
       }
     }
   },
@@ -674,6 +719,83 @@ module.exports = {
             : await self.unshare(req, draft);
 
           return sharedDoc;
+        },
+        async publish (req) {
+          if (!Array.isArray(req.body._ids)) {
+            throw self.apos.error('invalid');
+          }
+
+          req.body._ids = req.body._ids.map(_id => {
+            return self.inferIdLocaleAndMode(req, _id);
+          });
+
+          return self.apos.modules['@apostrophecms/job'].runBatch(
+            req,
+            req.body._ids,
+            async function(req, id) {
+              const piece = await self.findOneForEditing(req, { _id: id });
+
+              if (!piece) {
+                throw self.apos.error('notfound');
+              }
+
+              await self.publish(req, piece);
+            }, {
+              action: 'publish'
+            }
+          );
+        },
+        async archive (req) {
+          if (!Array.isArray(req.body._ids)) {
+            throw self.apos.error('invalid');
+          }
+
+          req.body._ids = req.body._ids.map(_id => {
+            return self.inferIdLocaleAndMode(req, _id);
+          });
+
+          return self.apos.modules['@apostrophecms/job'].runBatch(
+            req,
+            req.body._ids,
+            async function(req, id) {
+              const piece = await self.findOneForEditing(req, { _id: id });
+
+              if (!piece) {
+                throw self.apos.error('notfound');
+              }
+
+              piece.archived = true;
+              await self.update(req, piece);
+            }, {
+              action: 'archive'
+            }
+          );
+        },
+        async restore (req) {
+          if (!Array.isArray(req.body._ids)) {
+            throw self.apos.error('invalid');
+          }
+
+          req.body._ids = req.body._ids.map(_id => {
+            return self.inferIdLocaleAndMode(req, _id);
+          });
+
+          return self.apos.modules['@apostrophecms/job'].runBatch(
+            req,
+            req.body._ids,
+            async function(req, id) {
+              const piece = await self.findOneForEditing(req, { _id: id });
+
+              if (!piece) {
+                throw self.apos.error('notfound');
+              }
+
+              piece.archived = false;
+              await self.update(req, piece);
+            }, {
+              action: 'restore'
+            }
+          );
         }
       },
       get: {
@@ -1006,7 +1128,6 @@ database.`);
       },
       getBrowserData(req) {
         const browserOptions = _.pick(self, 'action', 'schema', 'types');
-        _.assign(browserOptions, _.pick(self.options, 'batchOperations'));
         _.defaults(browserOptions, {
           label: 'apostrophe:page',
           pluralLabel: 'apostrophe:pages',
@@ -2865,7 +2986,7 @@ database.`);
       checkBatchOperationsPermissions(req) {
         return self.batchOperations.filter(batchOperation => {
           if (batchOperation.permission) {
-            return self.apos.permission.can(req, batchOperation.permission, self.name);
+            return self.apos.permission.can(req, batchOperation.permission, '@apostrophecms/any-page-type');
           }
 
           return true;
