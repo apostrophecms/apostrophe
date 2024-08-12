@@ -337,9 +337,6 @@ export default {
     setCheckedDocs(checkedDocs) {
       this.checked = checkedDocs.map(doc => doc._id);
     },
-    updateCheckedDocs() {
-      this.checkedDocs = this.checked.map(_id => this.pagesFlat.find(page => page._id === _id));
-    },
     setAllPiecesSelection ({
       isSelected, total, docs
     }) {
