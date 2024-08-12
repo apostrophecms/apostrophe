@@ -478,7 +478,7 @@ export default {
           });
           if (action === 'archive') {
             await this.getPieces();
-            this.getAllPiecesTotal();
+            await this.getAllPiecesTotal();
             this.checked = [];
           }
         } catch (error) {
@@ -504,7 +504,7 @@ export default {
         doc.aposLocale.split(':')[0] === this.modalData.locale
       ) {
         await this.getPieces();
-        this.getAllPiecesTotal();
+        await this.getAllPiecesTotal();
         if (action === 'archive') {
           this.checked = this.checked.filter(checkedId => doc._id !== checkedId);
         }
