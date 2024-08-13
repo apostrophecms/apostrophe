@@ -734,18 +734,18 @@ module.exports = {
             req.body._ids,
             async function(req, id) {
               const piece = await self.findOneForEditing(req, { _id: id });
-
               if (!piece) {
                 throw self.apos.error('notfound');
               }
 
               await self.publish(req, piece);
-            }, {
+            },
+            {
               action: 'publish'
             }
           );
         },
-        async archive (req) {
+        archive(req) {
           if (!Array.isArray(req.body._ids)) {
             throw self.apos.error('invalid');
           }
@@ -758,20 +758,14 @@ module.exports = {
             req,
             req.body._ids,
             async function(req, id) {
-              const piece = await self.findOneForEditing(req, { _id: id });
-
-              if (!piece) {
-                throw self.apos.error('notfound');
-              }
-
-              piece.archived = true;
-              await self.update(req, piece);
-            }, {
+              await self.archive(req, id);
+            },
+            {
               action: 'archive'
             }
           );
         },
-        async restore (req) {
+        restore(req) {
           if (!Array.isArray(req.body._ids)) {
             throw self.apos.error('invalid');
           }
@@ -784,15 +778,9 @@ module.exports = {
             req,
             req.body._ids,
             async function(req, id) {
-              const piece = await self.findOneForEditing(req, { _id: id });
-
-              if (!piece) {
-                throw self.apos.error('notfound');
-              }
-
-              piece.archived = false;
-              await self.update(req, piece);
-            }, {
+              await self.patch(req, id);
+            },
+            {
               action: 'restore'
             }
           );
