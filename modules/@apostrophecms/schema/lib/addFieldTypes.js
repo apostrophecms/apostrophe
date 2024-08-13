@@ -992,6 +992,7 @@ module.exports = (self) => {
         throw self.apos.error('max', `Maximum ${field.withType} required reached.`);
       }
       if (options.fetchRelationships === false) {
+        console.log('input', input);
         destination[field.name] = input;
         return;
       }
@@ -1039,7 +1040,11 @@ module.exports = (self) => {
           const result = results.find(doc => (doc._id === item._id));
           if (result) {
             if (field.schema) {
-              result._fields = { ...(destination[field.name]?.find?.(doc => doc._id === item._id)?._fields || {}) };
+              result._fields = {
+                ...(destination[field.name]
+                  ?.find?.(doc => doc._id === item._id)
+                  ?._fields || {})
+              };
               if (item && ((typeof item._fields === 'object'))) {
                 await self.convert(req, field.schema, item._fields || {}, result._fields, options);
               }
