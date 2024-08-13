@@ -972,7 +972,8 @@ module.exports = (self) => {
     // properties is handled at a lower level in a beforeSave
     // handler of the doc-type module.
 
-    async convert(req, field, data, destination, options = { fetchRelationships: true }) {
+    async convert(req, field, data, destination, { fetchRelationships = true } = {}) {
+      const options = { fetchRelationships };
       const manager = self.apos.doc.getManager(field.withType);
       if (!manager) {
         throw Error('relationship with type ' + field.withType + ' unrecognized');
@@ -991,7 +992,7 @@ module.exports = (self) => {
       if (field.max && field.max < input.length) {
         throw self.apos.error('max', `Maximum ${field.withType} required reached.`);
       }
-      if (options.fetchRelationships === false) {
+      if (fetchRelationships === false) {
         destination[field.name] = [];
 
         for (const relation of input) {
