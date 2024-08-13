@@ -785,7 +785,7 @@ module.exports = {
           };
         }
         const convertOptions = {
-          fetchRelationships: options.fetchRelationships
+          fetchRelationships: options.fetchRelationships !== false
         };
         await self.apos.schema.convert(req, schema, input, doc, convertOptions);
 
