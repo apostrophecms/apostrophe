@@ -7,8 +7,11 @@
 * Add a locale switcher in pieces and pages editor modals. This is available for localized documents only, and allows you to switch between locales for the same document.
   The locale can be switche at only one level, meaning that sub documents of a document that already switched locale will not be able to switch locale itself.
 * Adds visual focus states and keyboard handlers for engaging with areas and widgets in-context
-* Adds method `simulateRelationshipsFromStorage` method in schema module, for generate relationships in documents from database, doing the opposite than `prepareForStorage`.
-* Adds new option `fetchRelationships` to fields `convert` to avoid to fetch relationships and to remove data when not found. 
+* Adds method `simulateRelationshipsFromStorage` method in schema module. 
+This method populates the relationship field with just enough information to allow convert to accept it. It does not fully fetch the related documents. It does the opposite of prepareForStorage.
+* A new options object has been added to the convert method. 
+Setting the `fetchRelationships` option to false will prevent convert from actually fetching relationships to check which related documents currently exist. 
+The shape of the relationship field is still validated.
 
 ### Changes
 
