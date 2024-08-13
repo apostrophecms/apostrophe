@@ -992,8 +992,27 @@ module.exports = (self) => {
         throw self.apos.error('max', `Maximum ${field.withType} required reached.`);
       }
       if (options.fetchRelationships === false) {
-        console.log('input', input);
-        destination[field.name] = input;
+        destination[field.name] = [];
+
+        for (const relation of input) {
+          if (typeof relation === 'string') {
+            destination[field.name].push({
+              _id: self.apos.launder.id(relation),
+              _fields: {}
+            });
+            continue;
+          }
+
+          const _fields = {};
+          if (field.schema?.length) {
+            await self.convert(req, field.schema, relation.fields || {}, _fields, options);
+          }
+
+          destination[field.name].push({
+            _id: self.apos.launder.id(relation._id),
+            _fields
+          });
+        }
         return;
       }
 
