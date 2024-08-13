@@ -599,7 +599,7 @@ module.exports = {
       // set error class names, etc. If the error is not a string, it is a
       // database error etc. and should not be displayed in the browser directly.
 
-      async convert(req, schema, data, destination, options) {
+      async convert(req, schema, data, destination, options = { fetchRelationships: true }) {
         if (Array.isArray(req)) {
           throw new Error('convert invoked without a req, do you have one in your context?');
         }
