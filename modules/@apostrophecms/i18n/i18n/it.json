@@ -181,7 +181,7 @@
   "fileTag": "Tag del file",
   "fileTags": "Tag dei file",
   "fileTypeCannotBeCropped": "I file {{ extension }} non possono essere ritagliati, non presentare l'interfaccia di ritaglio per questo tipo",
-  "fileTypeNotAccepted": "Il tipo di file non è stato accettato. Estensioni consentite: {{ extensions }}",
+  "fileTypeNotAccepted": "Il tipo di file {{ extension }} non è stato accettato. Estensioni consentite: {{ extensions }}",
   "files": "File",
   "filter": "Filtro",
   "filterByTag": "Filtra per tag",

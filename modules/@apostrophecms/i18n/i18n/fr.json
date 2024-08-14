@@ -156,7 +156,7 @@
   "fileTag": "Tag du fichier",
   "fileTags": "Tags du fichier",
   "fileTypeCannotBeCropped": "Les fichiers {{ extension }} ne peuvent être rognés",
-  "fileTypeNotAccepted": "Le type du fichier n'a pas été accepté. Extensions autorisées : {{ extensions }}",
+  "fileTypeNotAccepted": "Le type du fichier {{ extension }} n'a pas été accepté. Extensions autorisées : {{ extensions }}",
   "files": "Fichiers",
   "filter": "Filtrer",
   "filterByTag": "Filtrer par tag",

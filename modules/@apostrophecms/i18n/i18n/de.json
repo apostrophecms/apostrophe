@@ -169,7 +169,7 @@
   "fileTag": "Datei-Tag",
   "fileTags": "Datei-Tags",
   "fileTypeCannotBeCropped": "{{ extension }}-Dateien können nicht zugeschnitten werden.",
-  "fileTypeNotAccepted": "Dieser Dateityp wird nicht akzeptiert. Bitte wähle eine Datei mit einer der folgenden Endungen: {{ extensions }}",
+  "fileTypeNotAccepted": "Dieser Dateityp {{ extension}} wird nicht akzeptiert. Bitte wähle eine Datei mit einer der folgenden Endungen: {{ extensions }}",
   "files": "Dateien",
   "filter": "Filter",
   "filterByTag": "Nach Tag filtern",
