@@ -64,8 +64,8 @@ module.exports = {
       publish: {
         label: 'apostrophe:publish',
         messages: {
-          progress: 'Publishing {{ type }}...',
-          completed: 'Published {{ count }} {{ type }}.'
+          progress: 'apostrophe:batchPublishProgress',
+          completed: 'apostrophe:batchPublishCompleted'
         },
         icon: 'earth-icon',
         modalOptions: {
@@ -78,8 +78,8 @@ module.exports = {
       archive: {
         label: 'apostrophe:archive',
         messages: {
-          progress: 'Archiving {{ type }}...',
-          completed: 'Archived {{ count }} {{ type }}.'
+          progress: 'apostrophe:batchArchiveProgress',
+          completed: 'apostrophe:batchArchiveCompleted'
         },
         icon: 'archive-arrow-down-icon',
         if: {
@@ -95,8 +95,8 @@ module.exports = {
       restore: {
         label: 'apostrophe:restore',
         messages: {
-          progress: 'Restoring {{ type }}...',
-          completed: 'Restored {{ count }} {{ type }}.'
+          progress: 'apostrophe:batchRestoreProgress',
+          completed: 'apostrophe:batchRestoreCompleted'
         },
         icon: 'archive-arrow-up-icon',
         if: {
