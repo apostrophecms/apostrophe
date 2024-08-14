@@ -228,6 +228,7 @@ module.exports = {
     return {
       beforeSave: {
         prepareForStorage(req, doc, options) {
+          console.log('storing:', doc);
           self.apos.schema.prepareForStorage(req, doc, options);
         },
         async updateCacheField(req, doc) {

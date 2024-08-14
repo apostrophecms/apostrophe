@@ -293,7 +293,6 @@ async function apostrophe(options, telemetry, rootSpan) {
     self.aliasEvent('afterInit', 'ready');
 
     defineModules();
-
     await instantiateModules();
     lintModules();
     await self.emit('modulesRegistered'); // formerly modulesReady
