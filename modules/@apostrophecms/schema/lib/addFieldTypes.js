@@ -10,7 +10,8 @@ const dateRegex = /^\d{4}-(0[1-9]|1[012])-(0[1-9]|[12][0-9]|3[01])$/;
 module.exports = (self) => {
   self.addFieldType({
     name: 'area',
-    async convert(req, field, data, destination, options) {
+    async convert(req, field, data, destination, { fetchRelationships = true } = {}) {
+      const options = { fetchRelationships };
       const _id = self.apos.launder.id(data[field.name] && data[field.name]._id) || self.apos.util.generateId();
       if (typeof data[field.name] === 'string') {
         destination[field.name] = self.apos.area.fromPlaintext(data[field.name]);
@@ -775,7 +776,8 @@ module.exports = (self) => {
 
   self.addFieldType({
     name: 'array',
-    async convert(req, field, data, destination, options) {
+    async convert(req, field, data, destination, { fetchRelationships = true } = {}) {
+      const options = { fetchRelationships };
       const schema = field.schema;
       data = data[field.name];
       if (!Array.isArray(data)) {
@@ -876,7 +878,8 @@ module.exports = (self) => {
 
   self.addFieldType({
     name: 'object',
-    async convert(req, field, data, destination, options) {
+    async convert(req, field, data, destination, { fetchRelationships = true } = {}) {
+      const options = { fetchRelationships };
       data = data[field.name];
       const schema = field.schema;
       const errors = [];
