@@ -1,5 +1,11 @@
 # Changelog
 
+## UNRELEASED
+
+### Fixes
+
+* Registering duplicate icon is no longer breaking the build. 
+
 ## 4.6.0 (2024-08-08)
 
 ### Adds
