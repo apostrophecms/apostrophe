@@ -2556,13 +2556,13 @@ describe('Schemas', function() {
       rel: [
         {
           _id: 'reyvb1txf54noynckm1xy34a:en:draft',
-          fields: {}
+          _fields: {}
         }
       ],
       area: [
         {
           _id: 'u2gcjvq9wvds1hkd8xibn9h1:en:draft',
-          fields: {
+          _fields: {
             top: null,
             left: null,
             width: null,
@@ -2575,17 +2575,17 @@ describe('Schemas', function() {
       array: [
         {
           _id: 'nkr88dg4lds8noal9l4vrcgv:en:draft',
-          fields: {}
+          _fields: {}
         }
       ],
       object: [
         {
           _id: 'nkr88dg4lds8noal9l4vrcgv:en:draft',
-          fields: {}
+          _fields: {}
         },
         {
           _id: 'az82H8dg4lds8noal9l4vazd:en:draft',
-          fields: {}
+          _fields: {}
         }
       ]
     };

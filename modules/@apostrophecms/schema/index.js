@@ -1089,7 +1089,7 @@ module.exports = {
             const itemIds = object[field.idsStorage] || [];
             object[field.name] = itemIds.map(id => ({
               _id: setId(id),
-              fields: object[field.fieldsStorage]?.[id] || {}
+              _fields: object[field.fieldsStorage]?.[id] || {}
             }));
           }
         };
