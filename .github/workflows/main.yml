@@ -3,7 +3,7 @@ name: Tests
 # Controls when the action will run.
 on:
   push:
-    branches: ["main"]
+    branches: ["main", "a3"]
   pull_request:
     branches: ["*"]
 
