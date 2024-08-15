@@ -294,15 +294,19 @@ module.exports = {
       // options to sanitize against. Thus h5 can be legal
       // in one rich text widget and not in another.
       //
+      // The `convertOptions` parameter allows to pass options
+      // to the convert method to alter them.
+      //
       // If any errors occur sanitizing the individual widgets,
       // an array of errors with `path` and `error` properties
       // is thrown.
       //
       // Returns a new array of sanitized items.
-      async sanitizeItems(req, items, fieldOptions = {}, convertOptions) {
+      async sanitizeItems(req, items, options, convertOptions = {}) {
+        options = options || {};
         const result = [];
         const errors = [];
-        const widgetsOptions = self.getWidgets(fieldOptions);
+        const widgetsOptions = self.getWidgets(options);
 
         for (let i = 0; i < items.length; i++) {
           const item = items[i];
