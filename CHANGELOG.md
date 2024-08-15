@@ -2,6 +2,10 @@
 
 ## UNRELEASED
 
+### Fixes
+
+* Registering duplicate icon is no longer breaking the build. 
+
 ### Adds
 
 * To aid debugging, when a file extension is unacceptable as an Apostrophe attachment the rejected extension is now printed as part of the error message.

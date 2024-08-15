@@ -572,11 +572,15 @@ module.exports = {
               registerCode: 'window.apos.iconComponents = window.apos.iconComponents || {};\n'
             };
 
+            const importIndex = [];
             for (const [ registerAs, importFrom ] of Object.entries(self.iconMap)) {
-              if (importFrom.substring(0, 1) === '~') {
-                output.importCode += `import ${importFrom}Icon from '${importFrom.substring(1)}';\n`;
-              } else {
-                output.importCode += `import ${importFrom}Icon from '@apostrophecms/vue-material-design-icons/${importFrom}.vue';\n`;
+              if (!importIndex.includes(importFrom)) {
+                if (importFrom.substring(0, 1) === '~') {
+                  output.importCode += `import ${importFrom}Icon from '${importFrom.substring(1)}';\n`;
+                } else {
+                  output.importCode += `import ${importFrom}Icon from '@apostrophecms/vue-material-design-icons/${importFrom}.vue';\n`;
+                }
+                importIndex.push(importFrom);
               }
               output.registerCode += `window.apos.iconComponents['${registerAs}'] = ${importFrom}Icon;\n`;
             }
