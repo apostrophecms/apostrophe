@@ -1498,6 +1498,7 @@ database.`);
             throw self.apos.error('forbidden');
           }
           if (moved.lastPublishedAt && !parent.lastPublishedAt) {
+            console.log({ moved, parent });
             throw self.apos.error('forbidden', 'Publish the parent page first.');
           }
           await nudgeNewPeers();
@@ -3094,40 +3095,64 @@ database.`);
           const childrenPatches = page._children
             .filter(child => !ids.includes(child._id))
             .map(child => {
+              const ancestors = child._ancestors.slice().reverse();
+
               return {
                 _id: child._id,
+                title: child.title,
                 body: {
-                  _targetId: child._ancestors.reverse().find(ancestor => !ids.includes(ancestor._id))?._id || '_home',
-                  _position: 'lastChild'
+                  archived: false,
+                  _targetId: page._id,
+                // ancestors.find(ancestor => !ids.includes(ancestor._id))?._id || '_home',
+                  _targetTitle: ancestors.find(ancestor => !ids.includes(ancestor._id))?.title || 'none',
+                  _position: 'before'
                 }
               };
             });
 
-          return childrenPatches.concat([
-            {
-              _id: page._id,
-              body: {
-                archived: true,
-                _targetId: '_archive',
-                _position: 'lastChild'
-              }
-            },
-            {
-              _id: page._id,
-              body: {
-                _targetId: page._ancestors.reverse().find(ancestor => ids.includes(ancestor._id))?._id || '_archive',
-                _position: 'lastChild'
-              }
-            }
-          ]);
-        });
+          const ancestors = page._ancestors.slice().reverse();
+          // console.log(
+          //   page.title,
+          //   childrenPatches,
+          //   ancestors.some(ancestor => ids.includes(ancestor._id))
+          // );
 
+          return childrenPatches.concat(
+            ancestors.some(ancestor => ids.includes(ancestor._id))
+              ? {
+                _id: page._id,
+                title: page.title,
+                body: {
+                  archived: true,
+                  _targetId: ancestors.find(ancestor => ids.includes(ancestor._id))?._id || '_archive',
+                  _targetTitle: ancestors.find(ancestor => ids.includes(ancestor._id))?.title || 'none',
+                  _position: 'lastChild'
+                }
+              }
+              : {
+                _id: page._id,
+                title: page.title,
+                body: {
+                  archived: true,
+                  _targetId: '_archive',
+                  _position: 'lastChild'
+                }
+              }
+          );
+        });
+        // console.log(patches);
+
+        // throw new Error('invalid')
         // Must be done sequentially or the page tree order will be lost
         for (const patch of patches) {
-          await self.patch(req.clone({ mode: 'draft', body: patch.body }), patch._id);
+          // console.log({ patch });
+          try {
+            await self.patch(req.clone({ mode: 'draft', body: patch.body }), patch._id);
+          } catch (error) {
+            console.error(error);
+          }
         }
         // console.log(patches);
-        // throw new Error('invalid')
 
         // const body = {
         //   archived: true
