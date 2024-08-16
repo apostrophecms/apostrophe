@@ -759,6 +759,37 @@ module.exports = {
             req.body._ids,
             async function(req, id) {
               await self.archive(req, id);
+              // const body = {
+              //   archived: true
+              // };
+              //
+              // if (isPage) {
+              //   body._targetId = '_archive';
+              //   body._position = 'lastChild';
+              //
+              //   if (confirm.data && confirm.data.choice === 'this') {
+              //     // Editor wants to archive one page but not it's children
+              //     // Before archiving the page in question, move the children up a level,
+              //     // preserving their current order
+              //     for (const child of doc._children) {
+              //       await apos.http.patch(`${action}/${child._id}`, {
+              //         body: {
+              //           _targetId: doc._id,
+              //           _position: 'before'
+              //         },
+              //         busy: false,
+              //         draft: true
+              //       });
+              //     }
+              //   }
+              // }
+              //
+              // // Move doc in question
+              // doc = await apos.http.patch(`${action}/${doc._id}`, {
+              //   body,
+              //   busy: true,
+              //   draft: true
+              // });
             },
             {
               action: 'archive'
@@ -778,7 +809,38 @@ module.exports = {
             req,
             req.body._ids,
             async function(req, id) {
-              await self.patch(req, id);
+              // TODO: missing body to remove archived and move the page
+              const clone = req.clone({ body: { _targetId: '_home', _position: 'lastChild' } });
+              await self.patch(clone, id);
+              // // If restoring a page and the editor wants to leave the children in the archive
+              // if (confirm && confirm.data.choice === 'this') {
+              //   for (const child of doc._children) {
+              //     await apos.http.patch(`${action}/${child._id}`, {
+              //       body: {
+              //         _targetId: '_archive',
+              //         _position: 'lastChild',
+              //         archived: true
+              //       },
+              //       busy: false,
+              //       draft: true
+              //     });
+              //   }
+              // }
+              //
+              // // Move doc in question
+              // const body = {
+              //   archived: false,
+              //   _targetId: isPage ? '_home' : null,
+              //   _position: isPage ? 'firstChild' : null
+              // };
+              //
+              // AposAdvisoryLockMixin.methods.addLockToRequest(body);
+              //
+              // doc = await apos.http.patch(`${action}/${doc._id}`, {
+              //   body,
+              //   busy: true,
+              //   draft: true
+              // });
             },
             {
               action: 'restore'
@@ -2224,6 +2286,7 @@ database.`);
           path: matchParentPathPrefix
         }).areas(false).relationships(false).toArray();
         for (const descendant of descendants) {
+          // TODO: exclude descendant
           if (page.archived && !descendant.lastPublishedAt) {
             await self.delete(req, descendant, { checkForChildren: false });
             continue;
@@ -3008,6 +3071,95 @@ database.`);
             filter.nullLabel = 'apostrophe:filterMenuChooseOne';
           }
         });
+      },
+      async batchArchive(req, ids) {
+        const batchReq = req.clone({
+          aposAncestors: true,
+          aposAncestorsApiProjection: {
+            _id: 1,
+            title: 1,
+            level: 1,
+            rank: 1
+          }
+        });
+        const pages = await self
+          .find(batchReq, { _id: { $in: ids } })
+          .areas(false)
+          .relationships(false)
+          .ancestors(true)
+          .children(true)
+          .toArray();
+
+        const patches = pages.flatMap(page => {
+          const childrenPatches = page._children
+            .filter(child => !ids.includes(child._id))
+            .map(child => {
+              return {
+                _id: child._id,
+                body: {
+                  _targetId: child._ancestors.reverse().find(ancestor => !ids.includes(ancestor._id))?._id || '_home',
+                  _position: 'lastChild'
+                }
+              };
+            });
+
+          return childrenPatches.concat([
+            {
+              _id: page._id,
+              body: {
+                archived: true,
+                _targetId: '_archive',
+                _position: 'lastChild'
+              }
+            },
+            {
+              _id: page._id,
+              body: {
+                _targetId: page._ancestors.reverse().find(ancestor => ids.includes(ancestor._id))?._id || '_archive',
+                _position: 'lastChild'
+              }
+            }
+          ]);
+        });
+
+        // Must be done sequentially or the page tree order will be lost
+        for (const patch of patches) {
+          await self.patch(req.clone({ mode: 'draft', body: patch.body }), patch._id);
+        }
+        // console.log(patches);
+        // throw new Error('invalid')
+
+        // const body = {
+        //   archived: true
+        // };
+        //
+        // if (isPage) {
+        //   body._targetId = '_archive';
+        //   body._position = 'lastChild';
+        //
+        //   if (confirm.data && confirm.data.choice === 'this') {
+        //     // Editor wants to archive one page but not it's children
+        //     // Before archiving the page in question, move the children up a level,
+        //     // preserving their current order
+        //     for (const child of doc._children) {
+        //       await apos.http.patch(`${action}/${child._id}`, {
+        //         body: {
+        //           _targetId: doc._id,
+        //           _position: 'before'
+        //         },
+        //         busy: false,
+        //         draft: true
+        //       });
+        //     }
+        //   }
+        // }
+        //
+        // // Move doc in question
+        // doc = await apos.http.patch(`${action}/${doc._id}`, {
+        //   body,
+        //   busy: true,
+        //   draft: true
+        // });
       }
     };
   },

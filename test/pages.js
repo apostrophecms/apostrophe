@@ -1992,36 +1992,38 @@ describe('Pages', function() {
     it('should archive only the selected pages and move up the unselected ones', async function () {
       const req = apos.task.getReq({ mode: 'draft' });
 
-      // const ids = await apos.page
-      //   .find(
-      //     req,
-      //     {
-      //       title: {
-      //         $in: [
-      //           'Level 1 Page 1',
-      //           'Level 1 Page 2',
-      //           'Level 3 Page 1',
-      //           'Level 5 Page 1'
-      //         ]
-      //       }
-      //     },
-      //     {
-      //       _id: 1
-      //     }
-      //   )
-      //   .toArray();
-      // await apos.page.batchArchive(req, ids);
+      const ids = await apos.page
+        .find(
+          req,
+          {
+            title: {
+              $in: [
+                'Level 1 Page 1',
+                'Level 1 Page 3',
+                'Level 3 Page 1',
+                'Level 5 Page 1'
+              ]
+            }
+          },
+          {
+            project: {
+              _id: 1
+            }
+          }
+        )
+        .toArray();
+      await apos.page.batchArchive(req, ids.map(({ _id }) => _id));
 
       const home = await apos.page.find(req, { slug: '/' }).ancestors(false).children(false).toObject();
-      const archive = await apos.page.find(req, { slug: '/archive' }).ancestors(false).children(false).toObject();
-      const level1Page1 = await apos.page.find(req, { title: 'Level 1 Page 1' }).ancestors(true).children(true).toObject();
-      const level1Page2 = await apos.page.find(req, { title: 'Level 1 Page 2' }).ancestors(true).children(true).toObject();
-      const level1Page3 = await apos.page.find(req, { title: 'Level 1 Page 3' }).ancestors(true).children(true).toObject();
-      const level2Page1 = await apos.page.find(req, { title: 'Level 2 Page 1' }).ancestors(true).children(true).toObject();
-      const level3Page1 = await apos.page.find(req, { title: 'Level 3 Page 1' }).ancestors(true).children(true).toObject();
-      const level4Page1 = await apos.page.find(req, { title: 'Level 4 Page 1' }).ancestors(true).children(true).toObject();
-      const level5Page1 = await apos.page.find(req, { title: 'Level 5 Page 1' }).ancestors(true).children(true).toObject();
-      const level5Page2 = await apos.page.find(req, { title: 'Level 5 Page 2' }).ancestors(true).children(true).toObject();
+      const archive = await apos.page.find(req, { slug: '/archive' }).archived(true).ancestors(false).children(false).toObject();
+      const level1Page1 = await apos.page.find(req, { title: 'Level 1 Page 1' }).archived(null).ancestors(true).children(true).toObject();
+      const level1Page2 = await apos.page.find(req, { title: 'Level 1 Page 2' }).archived(null).ancestors(true).children(true).toObject();
+      const level1Page3 = await apos.page.find(req, { title: 'Level 1 Page 3' }).archived(null).ancestors(true).children(true).toObject();
+      const level2Page1 = await apos.page.find(req, { title: 'Level 2 Page 1' }).archived(null).ancestors(true).children(true).toObject();
+      const level3Page1 = await apos.page.find(req, { title: 'Level 3 Page 1' }).archived(null).ancestors(true).children(true).toObject();
+      const level4Page1 = await apos.page.find(req, { title: 'Level 4 Page 1' }).archived(null).ancestors(true).children(true).toObject();
+      const level5Page1 = await apos.page.find(req, { title: 'Level 5 Page 1' }).archived(null).ancestors(true).children(true).toObject();
+      const level5Page2 = await apos.page.find(req, { title: 'Level 5 Page 2' }).archived(null).ancestors(true).children(true).toObject();
 
       const formatPage = page => ({
         title: page.title,
@@ -2030,6 +2032,7 @@ describe('Pages', function() {
         level: page.level,
         rank: page.rank,
         archived: page.archived,
+        aposDocId: page.aposDocId,
         _children: page._children
           .map(childPage => {
             return {
@@ -2052,10 +2055,11 @@ describe('Pages', function() {
         level1Page1: {
           title: 'Level 1 Page 1',
           slug: '/level-1-page-1',
-          path: `${home.aposDocId}/${level1Page1.aposDocId}`,
+          path: `${archive.aposDocId}/${level1Page1.aposDocId}`,
           level: 1,
           rank: 1,
           archived: true,
+          aposDocId: level1Page1.aposDocId,
           _children: [
             {
               _id: level2Page1._id
@@ -2069,24 +2073,27 @@ describe('Pages', function() {
           level: 1,
           rank: 2,
           archived: false,
+          aposDocId: level1Page2.aposDocId,
           _children: []
         },
         level1Page3: {
           title: 'Level 1 Page 3',
           slug: '/level-1-page-3',
-          path: `${home.aposDocId}/${level1Page3.aposDocId}`,
+          path: `${archive.aposDocId}/${level1Page3.aposDocId}`,
           level: 1,
           rank: 3,
           archived: true,
+          aposDocId: level1Page3.aposDocId,
           _children: []
         },
         level2Page1: {
           title: 'Level 2 Page 1',
-          slug: '/level-1-page-1/level-2-page-1',
+          slug: '/level-2-page-1',
           path: `${home.aposDocId}/${level1Page1.aposDocId}/${level2Page1.aposDocId}`,
-          level: 2,
+          level: 1,
           rank: 1,
           archived: false,
+          aposDocId: level2Page1.aposDocId,
           _children: [
             {
               _id: level3Page1._id
@@ -2095,11 +2102,12 @@ describe('Pages', function() {
         },
         level3Page1: {
           title: 'Level 3 Page 1',
-          slug: '/level-1-page-1/level-2-page-1/level-3-page-1',
-          path: `${home.aposDocId}/${level1Page1.aposDocId}/${level2Page1.aposDocId}/${level3Page1.aposDocId}`,
+          slug: '/level-1-page-1/level-3-page-1',
+          path: `${archive.aposDocId}/${level1Page1.aposDocId}/${level3Page1.aposDocId}`,
           level: 3,
           rank: 1,
           archived: true,
+          aposDocId: level3Page1.aposDocId,
           _children: [
             {
               _id: level4Page1._id
@@ -2110,9 +2118,10 @@ describe('Pages', function() {
           title: 'Level 4 Page 1',
           slug: '/level-1-page-1/level-2-page-1/level-3-page-1/level-4-page-1',
           path: `${home.aposDocId}/${level1Page1.aposDocId}/${level2Page1.aposDocId}/${level3Page1.aposDocId}/${level4Page1.aposDocId}`,
-          level: 4,
+          level: 3,
           rank: 1,
           archived: false,
+          aposDocId: level4Page1.aposDocId,
           _children: [
             {
               _id: level5Page1._id
@@ -2129,6 +2138,7 @@ describe('Pages', function() {
           level: 5,
           rank: 1,
           archived: true,
+          aposDocId: level5Page1.aposDocId,
           _children: []
         },
         level5Page2: {
@@ -2138,6 +2148,7 @@ describe('Pages', function() {
           level: 5,
           rank: 2,
           archived: false,
+          aposDocId: level5Page2.aposDocId,
           _children: []
         },
       };
