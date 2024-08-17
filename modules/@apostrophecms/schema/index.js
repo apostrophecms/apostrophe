@@ -726,7 +726,7 @@ module.exports = {
         }
       },
 
-      async evaluateMethod(req, methodKey, fieldName, fieldModuleName, docId = null, optionalParenthesis = false) {
+      async evaluateMethod(req, methodKey, fieldName, fieldModuleName, docId = null, optionalParenthesis = false, following = {}) {
         const [ methodDefinition, rest ] = methodKey.split('(');
         const hasParenthesis = rest !== undefined;
 
@@ -750,7 +750,7 @@ module.exports = {
           throw new Error(`The "${methodName}" method from "${moduleName}" module defined in the "${fieldName}" field does not exist.`);
         }
 
-        return module[methodName](req, { docId });
+        return module[methodName](req, { docId }, following);
       },
 
       // Driver invoked by the "relationship" methods of the standard
@@ -1767,36 +1767,55 @@ module.exports = {
           props,
           if: condition
         });
-      }
+      },
+
+      async choicesRoute(req) {
+        const fieldId = self.apos.launder.string(req.query.fieldId);
+        const docId = self.apos.launder.string(req.query.docId);
+        const followingData = req.body?.following || {};
+        const following = {};
+        const field = self.getFieldById(fieldId);
+        let choices = [];
+        if (
+          !field ||
+          !self.fieldTypes[field.type].dynamicChoices ||
+          !(field.choices && typeof field.choices === 'string')
+        ) {
+          throw self.apos.error('invalid');
+        }
+        if (field.following) {
+          const subset = schema.fields.filter(field => field.following.includes(field.name));
+          try {
+            await self.convert(req, subset, followingData, following);
+          } catch (e) {
+            // the fields we are following are not yet in a valid state,
+            // so no choices offered yet
+            return {
+              choices: []
+            };
+          }
+        }
+        try {
+          choices = await self.evaluateMethod(req, field.choices, field.name, field.moduleName, docId, true, following);
+        } catch (error) {
+          throw self.apos.error('invalid', error.message);
+        }
+        if (Array.isArray(choices)) {
+          return {
+            choices
+          };
+        } else {
+          throw self.apos.error('invalid', `The method ${field.choices} from the module ${field.moduleName} did not return an array`);
+        }
+      },
+
     };
   },
   apiRoutes(self) {
     return {
       get: {
         async choices(req) {
-          const fieldId = self.apos.launder.string(req.query.fieldId);
-          const docId = self.apos.launder.string(req.query.docId);
-          const field = self.getFieldById(fieldId);
-          let choices = [];
-          if (
-            !field ||
-            !self.fieldTypes[field.type].dynamicChoices ||
-            !(field.choices && typeof field.choices === 'string')
-          ) {
-            throw self.apos.error('invalid');
-          }
-          try {
-            choices = await self.evaluateMethod(req, field.choices, field.name, field.moduleName, docId, true);
-          } catch (error) {
-            throw self.apos.error('invalid', error.message);
-          }
-          if (Array.isArray(choices)) {
-            return {
-              choices
-            };
-          } else {
-            throw self.apos.error('invalid', `The method ${field.choices} from the module ${field.moduleName} did not return an array`);
-          }
+          return self.choicesRoute(req);
         },
         async evaluateExternalCondition(req) {
           const fieldId = self.apos.launder.string(req.query.fieldId);
@@ -1815,6 +1834,11 @@ module.exports = {
           } catch (error) {
             throw self.apos.error('invalid', error.message);
           }
+        }
+      },
+      post: {
+        async choices(req) {
+          return self.choicesRoute(req);
         }
       }
     };
