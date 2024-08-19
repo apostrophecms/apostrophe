@@ -104,6 +104,61 @@ describe('change-doc-ids', function() {
     await sanityCheck(newPageId, newCategoryId);
   });
 
+  it('changeDocIds should skipReplace', async function() {
+
+    await sanityCheck();
+    const req = apos.task.getReq();
+    const pages = await apos.page.find(req, {}).toArray();
+    const categories = await apos.category.find(req, {}).toArray();
+    const category = categories.find(category => category._id.startsWith('new-test-category-id'));
+    const articles = await await apos.article.find(req, {}).toArray();
+    const test = pages.find(page => page.slug === '/test');
+    const existingPageId = `new-test-page-id:${test.aposLocale}`;
+    const oldPageId = `old-test-page-id:${test.aposLocale}`;
+    const existingCategoryId = `new-test-category-id:${category.aposLocale}`;
+    const oldCategoryId = `old-test-category-id:${category.aposLocale}`;
+
+    // Update articles to include the OLD category
+    for (const article of articles) {
+      if (article.categoriesIds.includes('new-test-category-id')) {
+        const newIds = article.categoriesIds
+          .filter(id => id !== 'new-test-category-id')
+          .concat('old-test-category-id');
+        await apos.doc.db.updateMany({
+          aposDocId: article.aposDocId
+        }, {
+          $set: {
+            categoriesIds: newIds
+          }
+        });
+      }
+    }
+    // Sanity check - existingCategoryId should not be present in articles
+    const articlesBefore = await apos.article.find(req, {}).toArray();
+    assert.strictEqual(
+      articlesBefore.every(article => !article.categoriesIds.includes('new-test-category-id')),
+      true,
+      'new-test-category-id should not be present in any articles'
+    );
+    assert.strictEqual(test._id, existingPageId);
+    assert.strictEqual(category._id, existingCategoryId);
+    const pairs = [
+      [ oldPageId, existingPageId ],
+      [ oldCategoryId, existingCategoryId ]
+    ];
+
+    await apos.doc.changeDocIds(pairs, { skipReplace: true });
+
+    const articlesAfter = await apos.article.find(req, {}).toArray();
+    assert.strictEqual(
+      articlesAfter.every(article => !article.categoriesIds.includes('old-test-category-id')),
+      true,
+      'old-test-category-id should not be present in any articles'
+    );
+
+    await sanityCheck(existingPageId, existingCategoryId);
+  });
+
   async function sanityCheck(newPageId, newCategoryId) {
     const pages = await apos.page.find(apos.task.getReq(), {}).children(true).toArray();
     const test = pages.find(page => page.slug === '/test');
@@ -125,7 +180,11 @@ describe('change-doc-ids', function() {
     assert(articles[0]._categories.find(category => category.slug === 'category-0'));
     assert(articles[0]._categories.find(category => category.slug === 'category-1'));
     if (newCategoryId) {
-      assert.strictEqual(articles[0]._categories[0]._id, newCategoryId);
+      assert.strictEqual(
+        articles[0]._categories.some(obj => obj._id === newCategoryId),
+        true,
+        'newCategoryId not found'
+      );
       const newCategory = articles[0]._categories.find(category => category._id === newCategoryId);
       assert(newCategory);
       assert.strictEqual(newCategory._id, newCategoryId);
