@@ -4,7 +4,8 @@
 
 ### Fixes
 
-* Registering duplicate icon is no longer breaking the build. 
+* Registering duplicate icon is no longer breaking the build.
+* Field inputs inside an array modal can now be focused/tabbed via keyboard
 
 ### Adds
 
