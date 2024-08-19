@@ -3,10 +3,15 @@ const qs = require('qs');
 const fetch = require('node-fetch');
 const tough = require('tough-cookie');
 const escapeHost = require('../../../lib/escape-host');
+const util = require('util');
 
 module.exports = {
   options: {
-    alias: 'http'
+    alias: 'http',
+    // 2 hour limit to process a "big upload,"
+    // which could be something like an entire site
+    // with its attachments
+    bigUploadMaxSeconds: 2 * 60 * 60
   },
   init(self) {
     // Map friendly errors created via `apos.error` to status codes.
@@ -26,6 +31,16 @@ module.exports = {
       unimplemented: 501
     };
     _.merge(self.errors, self.options.addErrors);
+  },
+  handlers(self) {
+    // Wait for the db module to be ready
+    return {
+      'apostrophe:modulesRegistered': {
+        setCollection() {
+          self.bigUploads = self.apos.db.collection('aposBigUploads');
+        }
+      }
+    };
   },
   methods(self) {
     return {
@@ -203,7 +218,7 @@ module.exports = {
         }
         if (options.body && options.body.constructor && (options.body.constructor.name === 'FormData')) {
           // If we don't do this multiparty will not parse it properly
-          const contentLength = await require('util').promisify((callback) => {
+          const contentLength = await util.promisify((callback) => {
             return options.body.getLength(callback);
           })();
           options.headers = options.headers || {};
@@ -294,8 +309,9 @@ module.exports = {
       getBase() {
         const server = self.apos.modules['@apostrophecms/express'].server;
         return `http://${escapeHost(server.address().address)}:${server.address().port}`;
-      }
+      },
 
+      ...require('./lib/big-upload-middleware.js')(self)
     };
   }
 };

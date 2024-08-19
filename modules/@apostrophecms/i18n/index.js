@@ -368,6 +368,19 @@ module.exports = {
   },
   apiRoutes(self) {
     return {
+      get: {
+        locales(req) {
+          return self.locales;
+        },
+        async localesPermissions(req) {
+          const action = self.apos.launder.string(req.query.action);
+          const type = self.apos.launder.string(req.query.type);
+          const locales = self.apos.launder.strings(req.query.locales);
+          const allowed = await self.getLocalesPermissions(req, action, type, locales);
+
+          return allowed;
+        }
+      },
       post: {
         async locale(req) {
           const sanitizedLocale = self.sanitizeLocaleName(req.body.locale);
@@ -685,6 +698,18 @@ module.exports = {
         }
         verifyLocales(locales, self.apos.options.baseUrl);
         return locales;
+      },
+      async getLocalesPermissions(req, action, type, locales) {
+        const allowed = [];
+        for (const locale of locales) {
+          const clonedReq = req.clone({
+            locale
+          });
+          if (await self.apos.permission.can(clonedReq, action, type)) {
+            allowed.push(locale);
+          }
+        }
+        return allowed;
       },
       sanitizeLocaleName(locale) {
         locale = self.apos.launder.string(locale);

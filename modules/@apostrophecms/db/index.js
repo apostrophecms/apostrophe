@@ -119,9 +119,8 @@ module.exports = {
 
         self.apos.dbClient = await mongodbConnect(uri, self.options.connect);
         self.uri = uri;
-        const parsed = new URL(uri);
-        self.apos.db = self.apos.dbClient.db(parsed.pathname.substring(1));
-
+        // Automatically uses the db name in the connection string
+        self.apos.db = self.apos.dbClient.db();
       },
       async versionCheck() {
         if (!self.options.versionCheck) {

@@ -2,18 +2,47 @@
 
 ## UNRELEASED
 
+### Fixes
+
+* Registering duplicate icon is no longer breaking the build. 
+
+### Adds
+
+* To aid debugging, when a file extension is unacceptable as an Apostrophe attachment the rejected extension is now printed as part of the error message.
+* The new `big-upload-client` module can now be used to upload very large files to any route that uses the new `big-upload-middleware`.
+* The `@apostrophecms/i18n` module now exposes a `locales` HTTP GET API to aid in implementation of native apps for localized sites.
+
+## 4.6.0 (2024-08-08)
+
+### Adds
+
+* Add a locale switcher in pieces and pages editor modals. This is available for localized documents only, and allows you to switch between locales for the same document.
+  The locale can be switche at only one level, meaning that sub documents of a document that already switched locale will not be able to switch locale itself.
+* Adds visual focus states and keyboard handlers for engaging with areas and widgets in-context
+* Adds method `simulateRelationshipsFromStorage` method in schema module. 
+This method populates the relationship field with just enough information to allow convert to accept it. It does not fully fetch the related documents. It does the opposite of prepareForStorage.
+* A new options object has been added to the convert method. 
+Setting the `fetchRelationships` option to false will prevent convert from actually fetching relationships to check which related documents currently exist. 
+The shape of the relationship field is still validated.
+
 ### Changes
 
 * Add `title` and `_url` to select all projection.
 * Display `Select all` message on all pages in the manager modal.
 * Refresh `checked` in manager modal after archive action.
+* Update `@apostrophecms/emulate-mongo-3-driver` dependency to keep supporting `mongodb@3.x` queries while using `mongodb@6.x`.
 * Updates rich text link tool's keyboard key detection strategy.
+* Buttons that appear on slats (preview, edit crop/relationship, remove) are visually focusable and keyboard accessible.
+* Added tooltip for update button. Thanks to [gkumar9891](https://github.com/gkumar9891) for this addition.
 
 ### Fixes
 
 * Fixes the rich text link tool's detection and display of the Remove Link button for removing existing links
 * Fixes the rich text link tool's detection and display of Apostrophe Page relationship field.
 * Overriding standard Vue.js components with `editorModal` and `managerModal` are now applied all the time.
+* Accommodate old-style replica set URIs with comma-separated servers by passing any MongoDB URIs that Node.js cannot parse directly to the MongoDB driver, and avoiding unnecessary parsing of the URI in general.
+* Bump `oembetter` dependency to guarantee compatibility with YouTube. YouTube recently deployed broken `link rel="undefined"` tags on some of their video pages.
+* It is now possible to see the right filename and line number when debugging the admin UI build in the browser. This is automatically disabled when `@apostrophecms/security-headers` is installed, because its defaults are incompatible by design.
 
 ## 4.5.4 (2024-07-22)
 
