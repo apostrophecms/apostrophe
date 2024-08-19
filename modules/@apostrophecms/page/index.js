@@ -1498,7 +1498,6 @@ database.`);
             throw self.apos.error('forbidden');
           }
           if (moved.lastPublishedAt && !parent.lastPublishedAt) {
-            console.log({ moved, parent });
             throw self.apos.error('forbidden', 'Publish the parent page first.');
           }
           await nudgeNewPeers();
@@ -3095,96 +3094,119 @@ database.`);
           const childrenPatches = page._children
             .filter(child => !ids.includes(child._id))
             .map(child => {
-              const ancestors = child._ancestors.slice().reverse();
-
               return {
                 _id: child._id,
-                title: child.title,
                 body: {
                   archived: false,
                   _targetId: page._id,
-                // ancestors.find(ancestor => !ids.includes(ancestor._id))?._id || '_home',
-                  _targetTitle: ancestors.find(ancestor => !ids.includes(ancestor._id))?.title || 'none',
                   _position: 'before'
                 }
               };
             });
 
           const ancestors = page._ancestors.slice().reverse();
-          // console.log(
-          //   page.title,
-          //   childrenPatches,
-          //   ancestors.some(ancestor => ids.includes(ancestor._id))
-          // );
 
-          return childrenPatches.concat(
-            ancestors.some(ancestor => ids.includes(ancestor._id))
-              ? {
-                _id: page._id,
-                title: page.title,
-                body: {
-                  archived: true,
-                  _targetId: ancestors.find(ancestor => ids.includes(ancestor._id))?._id || '_archive',
-                  _targetTitle: ancestors.find(ancestor => ids.includes(ancestor._id))?.title || 'none',
-                  _position: 'lastChild'
+          return childrenPatches
+            .concat(
+              ancestors.some(ancestor => ids.includes(ancestor._id))
+                ? {
+                  _id: page._id,
+                  title: page.title,
+                  body: {
+                    _targetId: ancestors.find(ancestor => ids.includes(ancestor._id))?._id || '_archive',
+                    _position: 'lastChild'
+                  }
                 }
-              }
-              : {
-                _id: page._id,
-                title: page.title,
-                body: {
-                  archived: true,
-                  _targetId: '_archive',
-                  _position: 'lastChild'
+                : {
+                  _id: page._id,
+                  body: {
+                    archived: true,
+                    _targetId: '_archive',
+                    _position: 'lastChild'
+                  }
                 }
-              }
-          );
+            );
         });
-        // console.log(patches);
 
-        // throw new Error('invalid')
+        patches
+          .sort((left, right) => left.body.archived && !right.body.archived
+            ? 1
+            : !left.body.archived && right.body.archived
+              ? -1
+              : 0
+          );
+
         // Must be done sequentially or the page tree order will be lost
         for (const patch of patches) {
-          // console.log({ patch });
           try {
             await self.patch(req.clone({ mode: 'draft', body: patch.body }), patch._id);
           } catch (error) {
             console.error(error);
           }
         }
-        // console.log(patches);
+      },
+      async batchRestore(req, ids) {
+        const batchReq = req.clone({
+          aposAncestors: true,
+          aposAncestorsApiProjection: {
+            _id: 1,
+            title: 1,
+            level: 1,
+            rank: 1
+          }
+        });
+        const pages = await self
+          .find(batchReq, { _id: { $in: ids } })
+          .areas(false)
+          .relationships(false)
+          .ancestors(true)
+          .children(true)
+          .archived(true)
+          .toArray();
 
-        // const body = {
-        //   archived: true
-        // };
-        //
-        // if (isPage) {
-        //   body._targetId = '_archive';
-        //   body._position = 'lastChild';
-        //
-        //   if (confirm.data && confirm.data.choice === 'this') {
-        //     // Editor wants to archive one page but not it's children
-        //     // Before archiving the page in question, move the children up a level,
-        //     // preserving their current order
-        //     for (const child of doc._children) {
-        //       await apos.http.patch(`${action}/${child._id}`, {
-        //         body: {
-        //           _targetId: doc._id,
-        //           _position: 'before'
-        //         },
-        //         busy: false,
-        //         draft: true
-        //       });
-        //     }
-        //   }
-        // }
-        //
-        // // Move doc in question
-        // doc = await apos.http.patch(`${action}/${doc._id}`, {
-        //   body,
-        //   busy: true,
-        //   draft: true
-        // });
+        const patches = pages.flatMap(page => {
+          const childrenPatches = page._children
+            .filter(child => !ids.includes(child._id))
+            .map(child => {
+              return {
+                _id: child._id,
+                body: {
+                  archived: true,
+                  _targetId: '_archive',
+                  _position: 'lastChild'
+                }
+              };
+            });
+
+          return childrenPatches
+            .concat(
+              {
+                _id: page._id,
+                body: {
+                  archived: false,
+                  _targetId: '_home',
+                  _position: 'firstChild'
+                }
+              }
+            );
+        });
+
+        patches
+          .sort((left, right) => left.body.archived && !right.body.archived
+            ? -1
+            : !left.body.archived && right.body.archived
+              ? 1
+              : 0
+          );
+
+        // Must be done sequentially or the page tree order will be lost
+        for (const patch of patches) {
+          try {
+            await self.patch(req.clone({ mode: 'draft', body: patch.body }), patch._id);
+          } catch (error) {
+            console.error(error);
+          }
+        }
       }
     };
   },
