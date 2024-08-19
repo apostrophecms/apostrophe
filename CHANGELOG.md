@@ -1,5 +1,9 @@
 # Changelog
 
+## 2.227.9 (2024-08-19)
+
+* Update CKEDITOR combo styles to target all combos in the toolbar.
+
 ## 2.227.8 (2024-08-08)
 
 ### Changes
