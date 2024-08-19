@@ -94,10 +94,10 @@
                 field-style="table"
                 @update:model-value="setItemsConditionalFields(item._id)"
                 @validate="emitValidate()"
-                @keydown.stop.space="isDraggable ? toggleEngage($event, { exact: true }) : {}"
-                @keydown.stop.enter="isDraggable ? toggleEngage($event, { exact: true }) : {}"
-                @keydown.stop.arrow-up="isDraggable ? moveEngaged($event, item._id, -1) : {}"
-                @keydown.stop.arrow-down="isDraggable ? moveEngaged($event, item._id, 1) : {}"
+                @keydown.prevent.space="isDraggable ? toggleEngage($event, { exact: true }) : {}"
+                @keydown.prevent.enter="isDraggable ? toggleEngage($event, { exact: true }) : {}"
+                @keydown.prevent.arrow-up="isDraggable ? moveEngaged($event, item._id, -1) : {}"
+                @keydown.prevent.arrow-down="isDraggable ? moveEngaged($event, item._id, 1) : {}"
               >
                 <template #before>
                   <td
@@ -109,8 +109,8 @@
                       icon="drag-icon"
                       class="apos-input-array-inline-table-cell-drag-handle apos-drag-handle"
                       :decorative="false"
-                      @keydown.stop.space="toggleEngage($event, item._id)"
-                      @keydown.stop.enter="toggleEngage($event, item._id)"
+                      @keydown.prevent.space="toggleEngage($event, item._id)"
+                      @keydown.prevent.enter="toggleEngage($event, item._id)"
                     />
                   </td>
                 </template>
@@ -177,13 +177,14 @@
               role="listitem"
               :class="{
                 'apos-input-array-inline-item--open': item.open,
-                'apos-input-array-inline-item--engaged': item.engaged
+                'apos-input-array-inline-item--engaged': item.engaged,
+                'apos-input-array-inline-item--drag-disabled': !isDraggable,
               }"
-              @keydown.exact.space="isDraggable ? toggleOpenInlineItem($event) : {}"
-              @keydown.shift.space="isDraggable ? toggleEngage($event, item._id) : {}"
-              @keydown.enter="isDraggable ? toggleEngage($event, item._id) : {}"
-              @keydown.arrow-up="isDraggable ? moveEngaged($event, item._id, -1) : {}"
-              @keydown.arrow-down="isDraggable ? moveEngaged($event, item._id, 1) : {}"
+              @keydown.prevent.exact.space="isDraggable ? toggleOpenInlineItem($event) : {}"
+              @keydown.prevent.shift.space="isDraggable ? toggleEngage($event, item._id) : {}"
+              @keydown.prevent.enter="isDraggable ? toggleEngage($event, item._id) : {}"
+              @keydown.prevent.arrow-up="isDraggable ? moveEngaged($event, item._id, -1) : {}"
+              @keydown.prevent.arrow-down="isDraggable ? moveEngaged($event, item._id, 1) : {}"
             >
               <div
                 class="apos-input-array-inline-header"

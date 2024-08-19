@@ -339,6 +339,12 @@
       background: var(--a-primary-transparent-90);
     }
 
+    &--drag-disabled {
+      .apos-input-array-inline-header-ui--left {
+        padding-left: $spacing-base;
+      }
+    }
+
     :deep(.apos-input-array-inline-empty) {
       border-color: var(--a-base-7);
       background-color: var(--a-background-primary);
