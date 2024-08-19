@@ -51,7 +51,8 @@ export default {
       modal: {
         active: false,
         type: 'overlay',
-        showModal: false
+        showModal: false,
+        triggerFocusRefresh: 0
       },
       modalTitle: {
         key: 'apostrophe:editType',
@@ -155,6 +156,7 @@ export default {
       }
     }
     this.titleFieldChoices = await this.getTitleFieldChoices();
+    this.modal.triggerFocusRefresh++;
   },
   methods: {
     setCurrentDoc(_id) {
@@ -199,6 +201,7 @@ export default {
         this.next.push(item);
         await this.select(item._id);
         this.updateMinMax();
+        this.modal.triggerFocusRefresh++;
       }
     },
     updateMinMax() {
