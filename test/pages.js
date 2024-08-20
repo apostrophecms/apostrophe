@@ -2223,7 +2223,7 @@ describe('Pages', function() {
           title: 'Level 1 Page 1',
           slug: '/level-1-page-1',
           path: `${home.aposDocId}/${level1Page1.aposDocId}`,
-          level: 2,
+          level: 1,
           rank: 0,
           archived: false,
           aposDocId: level1Page1.aposDocId,
@@ -2238,7 +2238,7 @@ describe('Pages', function() {
           slug: '/level-1-page-2',
           path: `${home.aposDocId}/${level1Page2.aposDocId}`,
           level: 1,
-          rank: 4,
+          rank: 5,
           archived: false,
           aposDocId: level1Page2.aposDocId,
           _children: []
@@ -2258,7 +2258,7 @@ describe('Pages', function() {
           slug: '/level-2-page-1',
           path: `${home.aposDocId}/${level2Page1.aposDocId}`,
           level: 1,
-          rank: 2,
+          rank: 3,
           archived: false,
           aposDocId: level2Page1.aposDocId,
           _children: [
@@ -2269,10 +2269,10 @@ describe('Pages', function() {
         },
         level3Page1: {
           title: 'Level 3 Page 1',
-          slug: level3Page1.slug.startsWith('/level-1-page-1/level-3-page-1-deduplicate-') ? level3Page1.slug : '/level-1-page-1/level-3-page-1-deduplicate-',
-          path: `${home.aposDocId}/${archive.aposDocId}/${level1Page1.aposDocId}/${level3Page1.aposDocId}`,
-          level: 3,
-          rank: 1,
+          slug: level3Page1.slug.startsWith('/level-3-page-1-deduplicate-') ? level3Page1.slug : '/level-3-page-1-deduplicate-',
+          path: `${home.aposDocId}/${archive.aposDocId}/${level3Page1.aposDocId}`,
+          level: 2,
+          rank: 2,
           archived: true,
           aposDocId: level3Page1.aposDocId,
           _children: []
@@ -2293,11 +2293,11 @@ describe('Pages', function() {
         },
         level5Page1: {
           title: 'Level 5 Page 1',
-          slug: level5Page1.slug.startsWith('/level-1-page-1/level-3-page-1/level-5-page-1-deduplicate-') ? level5Page1.slug : '/level-1-page-1/level-3-page-1/level-5-page-1-deduplicate-',
-          path: `${home.aposDocId}/${archive.aposDocId}/${level1Page1.aposDocId}/${level3Page1.aposDocId}/${level5Page1.aposDocId}`,
-          level: 4,
-          rank: 1,
-          archived: true,
+          slug: '/level-1-page-1/level-5-page-1',
+          path: `${home.aposDocId}/${level1Page1.aposDocId}/${level5Page1.aposDocId}`,
+          level: 2,
+          rank: 0,
+          archived: false,
           aposDocId: level5Page1.aposDocId,
           _children: []
         },
@@ -2313,11 +2313,7 @@ describe('Pages', function() {
         }
       };
 
-      // assert.deepEqual(actual, expected);
-      assert.deepEqual(
-          Object.values(actual).at(0),
-        Object.values(expected).at(0)
-      );
+      assert.deepEqual(actual, expected);
     });
   });
 });
