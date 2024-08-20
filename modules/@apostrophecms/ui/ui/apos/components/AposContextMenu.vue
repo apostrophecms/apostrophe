@@ -117,7 +117,6 @@ const props = defineProps({
 
 const emit = defineEmits([ 'open', 'close', 'item-clicked' ]);
 
-// const menuId = ref();
 const isOpen = ref(false);
 const placement = ref(props.menuPlacement);
 const event = ref(null);
@@ -195,13 +194,8 @@ function getMenuOffset() {
 }
 
 function hideWhenOtherOpen({ menuId }) {
-  console.log(menuId);
-  console.log(props.menuId);
-  console.log('====');
   if (props.menuId !== menuId) {
     hide();
-  } else {
-    console.log('dont hide me');
   }
 }
 
