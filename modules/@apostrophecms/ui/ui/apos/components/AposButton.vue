@@ -138,7 +138,7 @@ export default {
       default: null
     }
   },
-  emits: [ 'click' ],
+  emits: [ 'click', 'clunk' ],
   data() {
     return {
       id: createId()
@@ -222,6 +222,8 @@ export default {
   },
   methods: {
     click($event) {
+      console.log($event);
+      this.$emit('clunk', $event);
       this.$emit('click', $event);
     }
   }

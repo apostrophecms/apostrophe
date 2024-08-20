@@ -75,6 +75,8 @@
           :options="options"
           :disabled="disabled"
           :tabbable="isHovered || isFocused"
+          :menu-id="`${widget._id}-widget-menu-top`"
+          :class="{[classes.open]: menuOpen === 'top'}"
           @add="$emit('add', $event);"
         />
       </div>
@@ -148,6 +150,8 @@
           :options="options"
           :disabled="disabled"
           :tabbable="isHovered || isFocused"
+          :menu-id="`${widget._id}-widget-menu-bottom`"
+          :class="{[classes.open]: menuOpen === 'bottom'}"
           @add="$emit('add', $event)"
         />
       </div>
@@ -251,6 +255,7 @@ export default {
     return {
       mounted: false, // hack around needing DOM to be rendered for computed classes
       isSuppressed: false,
+      menuOpen: null,
       classes: {
         show: 'apos-is-visible',
         open: 'apos-is-open',
@@ -345,7 +350,8 @@ export default {
     },
     addClasses() {
       return {
-        [this.classes.show]: this.isHovered || this.isFocused
+        [this.classes.show]: this.isHovered || this.isFocused,
+        [`${this.classes.open}--menu-${this.menuOpen}`]: !!this.menuOpen
       };
     },
     foreign() {
@@ -358,6 +364,7 @@ export default {
       if (newVal) {
         this.$refs.wrapper.addEventListener('keydown', this.handleKeyboardUnfocus);
       } else {
+        this.menuOpen = null;
         this.$refs.wrapper.removeEventListener('keydown', this.handleKeyboardUnfocus);
       }
     }
@@ -377,6 +384,7 @@ export default {
     // AposAreaEditor is listening for keyboard input that triggers
     // a 'focus my parent' plea
     apos.bus.$on('widget-focus-parent', this.focusParent);
+    apos.bus.$on('context-menu-opened', this.getFocusForMenu);
 
     this.breadcrumbs.$lastEl = this.$el;
 
@@ -394,6 +402,22 @@ export default {
     apos.bus.$off('widget-focus-parent', this.focusParent);
   },
   methods: {
+
+    getFocusForMenu({ menuId, isOpen }) {
+      if (
+        (
+          menuId === `${this.widget._id}-widget-menu-top` ||
+          menuId === `${this.widget._id}-widget-menu-bottom`
+        ) &&
+        isOpen
+      ) {
+        const whichMenu = menuId.split('-')[menuId.split('-').length - 1];
+        this.menuOpen = whichMenu;
+        this.getFocus(null, this.widget._id);
+      } else {
+        this.menuOpen = null;
+      }
+    },
 
     // Determine whether or not we should adjust the label based on its position to the admin bar
     adjustUi() {
@@ -427,7 +451,9 @@ export default {
 
     // Ask the parent AposAreaEditor to make us focused
     getFocus(e, id) {
-      e.stopPropagation();
+      // if (e) {
+      e?.stopPropagation();
+      // }
       this.isSuppressed = false;
       apos.bus.$emit('widget-focus', id);
     },
@@ -515,6 +541,26 @@ export default {
 </script>
 
 <style lang="scss" scoped>
+@mixin showButton() {
+  transform: scale(1.15);
+  background-size: 150% 100%;
+  border-radius: 10px;
+  transition-duration: 500ms;
+
+  /* stylelint-disable-next-line max-nesting-depth */
+  .apos-button__label {
+    max-width: 100px;
+    max-height: 100px;
+    transition-duration: 500ms;
+    padding: 0 5px 0 0;
+  }
+
+  /* stylelint-disable-next-line max-nesting-depth */
+  .apos-button__icon {
+    margin-right: 5px;
+  }
+}
+
   .apos-area-widget-guard {
     position: absolute;
     top: 0;
@@ -657,6 +703,21 @@ export default {
     top: 0;
     left: 50%;
     transform: translate(-50%, -50%);
+    &.apos-area-widget-controls--add--top.apos-is-open--menu-top,
+    &.apos-area-widget-controls--add--bottom.apos-is-open--menu-bottom {
+      z-index: $z-index-widget-focused-controls;
+    }
+  }
+
+  .apos-area-widget-controls--add {
+    &.apos-area-widget-controls--add--top.apos-is-open--menu-top,
+    &.apos-area-widget-controls--add--bottom.apos-is-open--menu-bottom {
+      :deep(.apos-button__wrapper) {
+        .apos-button:not([disabled]) {
+          @include showButton;
+        }
+      }
+    }
   }
 
   .apos-area-widget-controls--add {
@@ -664,23 +725,7 @@ export default {
       padding: 8px;
 
       &:hover .apos-button:not([disabled]) {
-        transform: scale(1.15);
-        background-size: 150% 100%;
-        border-radius: 10px;
-        transition-duration: 500ms;
-
-        /* stylelint-disable-next-line max-nesting-depth */
-        .apos-button__label {
-          max-width: 100px;
-          max-height: 100px;
-          transition-duration: 500ms;
-          padding: 0 5px 0 0;
-        }
-
-        /* stylelint-disable-next-line max-nesting-depth */
-        .apos-button__icon {
-          margin-right: 5px;
-        }
+        @include showButton;
       }
     }
 

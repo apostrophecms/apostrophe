@@ -6,6 +6,7 @@
       :disabled="isDisabled"
       :button="buttonOptions"
       :popover-modifiers="inContext ? ['z-index-in-context'] : []"
+      :menu-id="menuId"
     >
       <ul class="apos-area-menu__wrapper">
         <li
@@ -117,6 +118,12 @@ export default {
       default: function() {
         return {};
       }
+    },
+    menuId: {
+      type: String,
+      default() {
+        return `areaMenu-${createId()}`;
+      }
     }
   },
   emits: [ 'add' ],
@@ -182,9 +189,6 @@ export default {
       } else {
         return menu;
       }
-    },
-    menuId() {
-      return `areaMenu-${createId()}`;
     }
   },
   mounted() {
