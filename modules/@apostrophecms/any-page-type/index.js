@@ -124,6 +124,10 @@ module.exports = {
               if (req.aposAncestors === true && req.aposAncestorsApiProjection) {
                 subquery.project(req.aposAncestorsApiProjection);
               }
+              // TODO: remove
+              // if (query.get('archived') === true) {
+              //   subquery.archived(null);
+              // }
 
               subquery.ancestorPerformanceRestrictions();
               const parameters = applySubqueryOptions(subquery, options, [ 'depth' ]);
@@ -215,6 +219,10 @@ module.exports = {
             }
 
             const subquery = self.apos.page.find(query.req).areas(false).relationships(false).orphan(false);
+            // TODO: remove
+            // if (query.get('archived') === true) {
+            //   subquery.archived(null);
+            // }
 
             const parameters = applySubqueryOptions(subquery, value, [ 'depth' ]);
 

@@ -1105,6 +1105,7 @@ database.`);
           const page = await self.findOneForEditing(req, { _id });
           let result;
           if (!page) {
+            console.log({ _id, page });
             throw self.apos.error('notfound');
           }
           if (!page._edit) {
@@ -1486,6 +1487,7 @@ database.`);
             throw self.apos.error('forbidden');
           }
           if (!(parent && oldParent)) {
+            console.log({ moved, parent, oldParent });
             // Move outside tree
             throw self.apos.error('forbidden');
           }
@@ -1519,8 +1521,11 @@ database.`);
               visibility: null,
               archived: null,
               areas: false,
+              relationships: false,
               permission: false
-            }).toObject();
+            })
+              .toObject();
+            console.log({ movedId, moved });
             if (!moved) {
               throw self.apos.error('invalid', 'No such page');
             }
@@ -1586,6 +1591,7 @@ database.`);
             const newPath = self.apos.util.addSlashIfNeeded(parent.path) + path.basename(moved.path);
             // We're going to use update with $set, but we also want to update
             // the object so that moveDescendants can see what we did
+            console.log({ newPath, path: moved.path });
             moved.path = newPath;
             // If the old slug wasn't customized, OR our new parent is
             // in the archive, update the slug as well as the path
@@ -2287,10 +2293,10 @@ database.`);
         }).areas(false).relationships(false).toArray();
         for (const descendant of descendants) {
           // TODO: exclude descendant
-          if (page.archived && !descendant.lastPublishedAt) {
-            await self.delete(req, descendant, { checkForChildren: false });
-            continue;
-          }
+          // if (page.archived && !descendant.lastPublishedAt) {
+          //   await self.delete(req, descendant, { checkForChildren: false });
+          //   continue;
+          // }
           let newSlug = descendant.slug.replace(matchParentSlugPrefix, page.slug + '/');
           if (page.archived && !descendant.archived) {
             // #385: we are moving this to the archive, force a new slug
@@ -3144,6 +3150,19 @@ database.`);
             console.error(error);
           }
         }
+
+        // return self.apos.modules['@apostrophecms/job'].runBatch(
+        //   req,
+        //   patches.map(patch => patch._id),
+        //   async function(req, id) {
+        //     const patch = patches.find(patch => patch._id === id);
+        //
+        //     await self.patch(req.clone({ mode: 'draft', body: patch.body }), patch._id);
+        //   },
+        //   {
+        //     action: 'archive'
+        //   }
+        // );
       },
       async batchRestore(req, ids) {
         const batchReq = req.clone({
@@ -3159,9 +3178,17 @@ database.`);
           .find(batchReq, { _id: { $in: ids } })
           .areas(false)
           .relationships(false)
-          .ancestors(true)
-          .children(true)
-          .archived(true)
+          .ancestors({
+            archived: null,
+            areas: false,
+            relationships: false
+          })
+          .children({
+            archived: null,
+            areas: false,
+            relationships: false
+          })
+          .archived(null)
           .toArray();
 
         const patches = pages.flatMap(page => {
@@ -3170,6 +3197,7 @@ database.`);
             .map(child => {
               return {
                 _id: child._id,
+                title: child.title,
                 body: {
                   archived: true,
                   _targetId: '_archive',
@@ -3178,14 +3206,18 @@ database.`);
               };
             });
 
+          const ancestors = page._ancestors.slice().reverse();
+          const ancestorId = ancestors.find(ancestor => ids.includes(ancestor._id))?._id || '_home';
+
           return childrenPatches
             .concat(
               {
                 _id: page._id,
+                title: page.title,
                 body: {
                   archived: false,
-                  _targetId: '_home',
-                  _position: 'firstChild'
+                  _targetId: ancestorId,
+                  _position: ancestorId === '_home' ? 'firstChild' : 'lastChild'
                 }
               }
             );
@@ -3198,15 +3230,29 @@ database.`);
               ? 1
               : 0
           );
+        // console.log(patches);
 
         // Must be done sequentially or the page tree order will be lost
         for (const patch of patches) {
-          try {
+          // try {
             await self.patch(req.clone({ mode: 'draft', body: patch.body }), patch._id);
-          } catch (error) {
-            console.error(error);
-          }
+          // } catch (error) {
+          //   console.error(error);
+          // }
         }
+
+        // return self.apos.modules['@apostrophecms/job'].runBatch(
+        //   req,
+        //   patches.map(patch => patch._id),
+        //   async function(req, id) {
+        //     const patch = patches.find(patch => patch._id === id);
+        //
+        //     await self.patch(req.clone({ mode: 'draft', body: patch.body }), patch._id);
+        //   },
+        //   {
+        //     action: 'archive'
+        //   }
+        // );
       }
     };
   },
