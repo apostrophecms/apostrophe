@@ -451,9 +451,9 @@ export default {
 
     // Ask the parent AposAreaEditor to make us focused
     getFocus(e, id) {
-      // if (e) {
-      e?.stopPropagation();
-      // }
+      if (e) {
+        e.stopPropagation();
+      }
       this.isSuppressed = false;
       apos.bus.$emit('widget-focus', id);
     },
