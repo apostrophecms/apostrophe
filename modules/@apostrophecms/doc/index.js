@@ -334,8 +334,12 @@ module.exports = {
       // new document's content wins in the event of a conflict.
       // If `keep` is not set, a `conflict` error is thrown in the
       // event of a conflict.
+      //
+      // If `skipReplace` is set to `true`, the method will not attempt to remove
+      // the old document, but will still update the new document. The new _id
+      // for each pair will be used for retrieving the "existing" document in this case.
 
-      async changeDocIds(pairs, { keep } = {}) {
+      async changeDocIds(pairs, { keep, skipReplace = false } = {}) {
         let renamed = 0;
         let kept = 0;
         // Get page paths up front so we can avoid multiple queries when working on path changes
@@ -347,13 +351,15 @@ module.exports = {
         }).toArray();
         for (const pair of pairs) {
           const [ from, to ] = pair;
-          const existing = await self.apos.doc.db.findOne({ _id: from });
+          const oldAposDocId = from.split(':')[0];
+          const existing = await self.apos.doc.db.findOne({ _id: skipReplace ? to : from });
           if (!existing) {
             throw self.apos.error('notfound');
           }
           const replacement = klona(existing);
-          await self.apos.doc.db.removeOne({ _id: from });
-          const oldAposDocId = existing.aposDocId;
+          if (!skipReplace) {
+            await self.apos.doc.db.removeOne({ _id: from });
+          }
           replacement._id = to;
           const parts = to.split(':');
           replacement.aposDocId = parts[0];
@@ -366,8 +372,10 @@ module.exports = {
             replacement.path = existing.path.replace(existing.aposDocId, replacement.aposDocId);
           }
           try {
-            await self.apos.doc.db.insertOne(replacement);
-            renamed++;
+            if (!skipReplace) {
+              await self.apos.doc.db.insertOne(replacement);
+              renamed++;
+            }
           } catch (e) {
             // First reinsert old doc to prevent content loss on new doc insert failure
             await self.apos.doc.db.insertOne(existing);
@@ -404,7 +412,7 @@ module.exports = {
               throw self.apos.error('conflict');
             }
           }
-          if (isPage) {
+          if (isPage && !skipReplace) {
             for (const page of pages) {
               if (page.path.includes(oldAposDocId)) {
                 await self.apos.doc.db.updateOne({
@@ -1734,14 +1742,13 @@ module.exports = {
         }
 
         function forSchema(schema, doc) {
+          if (!doc) {
+            return;
+          }
           for (const field of schema) {
             if (field.type === 'area' && doc[field.name] && doc[field.name].items) {
               for (const widget of doc[field.name].items) {
-                self.walkByMetaType(widget, {
-                  arrayItem: handlers.arrayItem,
-                  object: handlers.object,
-                  relationship: handlers.relationship
-                });
+                self.walkByMetaType(widget, handlers);
               }
             } else if (field.type === 'array') {
               if (doc[field.name]) {
@@ -1752,14 +1759,10 @@ module.exports = {
               }
             } else if (field.type === 'object') {
               const value = doc[field.name];
-              if (value) {
-                handlers.object(field, value);
-                forSchema(field.schema, value);
-              }
+              handlers.object(field, value);
+              forSchema(field.schema, value);
             } else if (field.type === 'relationship') {
-              if (Array.isArray(doc[field.name])) {
-                handlers.relationship(field, doc);
-              }
+              handlers.relationship(field, doc);
             }
           }
         }

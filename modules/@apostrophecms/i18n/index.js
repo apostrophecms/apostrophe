@@ -369,6 +369,9 @@ module.exports = {
   apiRoutes(self) {
     return {
       get: {
+        locales(req) {
+          return self.locales;
+        },
         async localesPermissions(req) {
           const action = self.apos.launder.string(req.query.action);
           const type = self.apos.launder.string(req.query.type);
