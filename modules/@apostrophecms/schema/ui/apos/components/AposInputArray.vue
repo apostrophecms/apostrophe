@@ -79,6 +79,7 @@
                 :data-id="item._id"
                 :tabindex="isDraggable ? '0' : '-1'"
                 class="apos-input-array-inline-table-row"
+                data-apos-input-array-inline-item
                 :meta="arrayMeta[item._id]?.aposMeta"
                 :class="{
                   'apos-input-array-inline-table-row--active': item.open,
@@ -171,6 +172,7 @@
             <div
               :key="item._id"
               class="apos-input-array-inline-item"
+              data-apos-input-array-inline-item
               :data-id="item._id"
               tabindex="0"
               :aria-pressed="item.engaged"
