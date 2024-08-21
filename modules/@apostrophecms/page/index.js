@@ -720,7 +720,7 @@ module.exports = {
 
           return sharedDoc;
         },
-        async publish (req) {
+        publish (req) {
           if (!Array.isArray(req.body._ids)) {
             throw self.apos.error('invalid');
           }
@@ -750,46 +750,25 @@ module.exports = {
             throw self.apos.error('invalid');
           }
 
-          req.body._ids = req.body._ids.map(_id => {
+          const ids = req.body._ids.map(_id => {
             return self.inferIdLocaleAndMode(req, _id);
           });
 
+          const patches = self.getBatchArchivePatches(req, ids);
+
           return self.apos.modules['@apostrophecms/job'].runBatch(
             req,
-            req.body._ids,
+            patches.map(patch => patch._id),
             async function(req, id) {
-              await self.archive(req, id);
-              // const body = {
-              //   archived: true
-              // };
-              //
-              // if (isPage) {
-              //   body._targetId = '_archive';
-              //   body._position = 'lastChild';
-              //
-              //   if (confirm.data && confirm.data.choice === 'this') {
-              //     // Editor wants to archive one page but not it's children
-              //     // Before archiving the page in question, move the children up a level,
-              //     // preserving their current order
-              //     for (const child of doc._children) {
-              //       await apos.http.patch(`${action}/${child._id}`, {
-              //         body: {
-              //           _targetId: doc._id,
-              //           _position: 'before'
-              //         },
-              //         busy: false,
-              //         draft: true
-              //       });
-              //     }
-              //   }
-              // }
-              //
-              // // Move doc in question
-              // doc = await apos.http.patch(`${action}/${doc._id}`, {
-              //   body,
-              //   busy: true,
-              //   draft: true
-              // });
+              const patch = patches.find(patch => patch._id === id);
+
+              await self.patch(
+                req.clone({
+                  mode: 'draft',
+                  body: patch.body
+                }),
+                patch._id
+              );
             },
             {
               action: 'archive'
@@ -801,46 +780,25 @@ module.exports = {
             throw self.apos.error('invalid');
           }
 
-          req.body._ids = req.body._ids.map(_id => {
+          const ids = req.body._ids.map(_id => {
             return self.inferIdLocaleAndMode(req, _id);
           });
 
+          const patches = self.getBatchRestorePatches(req, ids);
+
           return self.apos.modules['@apostrophecms/job'].runBatch(
             req,
-            req.body._ids,
+            patches.map(patch => patch._id),
             async function(req, id) {
-              // TODO: missing body to remove archived and move the page
-              const clone = req.clone({ body: { _targetId: '_home', _position: 'lastChild' } });
-              await self.patch(clone, id);
-              // // If restoring a page and the editor wants to leave the children in the archive
-              // if (confirm && confirm.data.choice === 'this') {
-              //   for (const child of doc._children) {
-              //     await apos.http.patch(`${action}/${child._id}`, {
-              //       body: {
-              //         _targetId: '_archive',
-              //         _position: 'lastChild',
-              //         archived: true
-              //       },
-              //       busy: false,
-              //       draft: true
-              //     });
-              //   }
-              // }
-              //
-              // // Move doc in question
-              // const body = {
-              //   archived: false,
-              //   _targetId: isPage ? '_home' : null,
-              //   _position: isPage ? 'firstChild' : null
-              // };
-              //
-              // AposAdvisoryLockMixin.methods.addLockToRequest(body);
-              //
-              // doc = await apos.http.patch(`${action}/${doc._id}`, {
-              //   body,
-              //   busy: true,
-              //   draft: true
-              // });
+              const patch = patches.find(patch => patch._id === id);
+
+              await self.patch(
+                req.clone({
+                  mode: 'draft',
+                  body: patch.body
+                }),
+                patch._id
+              );
             },
             {
               action: 'restore'
@@ -2288,11 +2246,6 @@ database.`);
           path: matchParentPathPrefix
         }).areas(false).relationships(false).toArray();
         for (const descendant of descendants) {
-          // TODO: exclude descendant
-          // if (page.archived && !descendant.lastPublishedAt) {
-          //   await self.delete(req, descendant, { checkForChildren: false });
-          //   continue;
-          // }
           let newSlug = descendant.slug.replace(matchParentSlugPrefix, page.slug + '/');
           if (page.archived && !descendant.archived) {
             // #385: we are moving this to the archive, force a new slug
@@ -3074,7 +3027,7 @@ database.`);
           }
         });
       },
-      async batchArchive(req, ids) {
+      async getBatchArchivePatches(req, ids) {
         const batchReq = req.clone({
           aposAncestors: true,
           aposAncestorsApiProjection: {
@@ -3088,8 +3041,17 @@ database.`);
           .find(batchReq, { _id: { $in: ids } })
           .areas(false)
           .relationships(false)
-          .ancestors(true)
-          .children(true)
+          .ancestors({
+            archived: null,
+            areas: false,
+            relationships: false
+          })
+          .children({
+            archived: null,
+            areas: false,
+            relationships: false
+          })
+          .archived(null)
           .toArray();
 
         const patches = pages.flatMap(page => {
@@ -3098,6 +3060,7 @@ database.`);
             .map(child => {
               return {
                 _id: child._id,
+                title: child.title,
                 body: {
                   archived: false,
                   _targetId: page._id,
@@ -3121,6 +3084,7 @@ database.`);
                 }
                 : {
                   _id: page._id,
+                  title: page.title,
                   body: {
                     archived: true,
                     _targetId: '_archive',
@@ -3138,29 +3102,9 @@ database.`);
               : 0
           );
 
-        // Must be done sequentially or the page tree order will be lost
-        for (const patch of patches) {
-          try {
-            await self.patch(req.clone({ mode: 'draft', body: patch.body }), patch._id);
-          } catch (error) {
-            console.error(error);
-          }
-        }
-
-        // return self.apos.modules['@apostrophecms/job'].runBatch(
-        //   req,
-        //   patches.map(patch => patch._id),
-        //   async function(req, id) {
-        //     const patch = patches.find(patch => patch._id === id);
-        //
-        //     await self.patch(req.clone({ mode: 'draft', body: patch.body }), patch._id);
-        //   },
-        //   {
-        //     action: 'archive'
-        //   }
-        // );
+        return patches;
       },
-      async batchRestore(req, ids) {
+      async getBatchRestorePatches(req, ids) {
         const batchReq = req.clone({
           aposAncestors: true,
           aposAncestorsApiProjection: {
@@ -3227,27 +3171,7 @@ database.`);
               : 0
           );
 
-        // Must be done sequentially or the page tree order will be lost
-        for (const patch of patches) {
-          // try {
-            await self.patch(req.clone({ mode: 'draft', body: patch.body }), patch._id);
-          // } catch (error) {
-          //   console.error(error);
-          // }
-        }
-
-        // return self.apos.modules['@apostrophecms/job'].runBatch(
-        //   req,
-        //   patches.map(patch => patch._id),
-        //   async function(req, id) {
-        //     const patch = patches.find(patch => patch._id === id);
-        //
-        //     await self.patch(req.clone({ mode: 'draft', body: patch.body }), patch._id);
-        //   },
-        //   {
-        //     action: 'archive'
-        //   }
-        // );
+        return patches;
       }
     };
   },

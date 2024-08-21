@@ -2016,7 +2016,20 @@ describe('Pages', function() {
           }
         )
         .toArray();
-      await apos.page.batchArchive(req, ids.map(({ _id }) => _id));
+      const patches = await apos.page.getBatchArchivePatches(req, ids.map(({ _id }) => _id));
+      for (const patch of patches) {
+        try {
+          await apos.page.patch(
+            req.clone({
+              mode: 'draft',
+              body: patch.body
+            }),
+            patch._id
+          );
+        } catch (error) {
+          console.error(error);
+        }
+      }
 
       const home = await apos.page.find(req, { slug: '/' }).ancestors(false).children(true).toObject();
       const archive = await apos.page.find(req, { slug: '/archive' }).archived(true).ancestors(false).children(true).toObject();
@@ -2173,13 +2186,40 @@ describe('Pages', function() {
           }
         )
         .toArray();
-      await apos.page.batchArchive(req, ids.map(({ _id }) => _id));
-      await apos.page.batchRestore(
+      const archivePatches = await apos.page.getBatchArchivePatches(req, ids.map(({ _id }) => _id));
+      for (const patch of archivePatches) {
+        try {
+          await apos.page.patch(
+            req.clone({
+              mode: 'draft',
+              body: patch.body
+            }),
+            patch._id
+          );
+        } catch (error) {
+          console.error(error);
+        }
+      }
+
+      const restorePatches = await apos.page.getBatchRestorePatches(
         req,
         ids
           .filter(({ title }) => [ 'Level 1 Page 1', 'Level 5 Page 1' ].includes(title))
           .map(({ _id }) => _id)
       );
+      for (const patch of restorePatches) {
+        try {
+          await apos.page.patch(
+            req.clone({
+              mode: 'draft',
+              body: patch.body
+            }),
+            patch._id
+          );
+        } catch (error) {
+          console.error(error);
+        }
+      }
 
       const home = await apos.page.find(req, { slug: '/' }).ancestors(false).children(true).toObject();
       const archive = await apos.page.find(req, { slug: '/archive' }).archived(true).ancestors(false).children(true).toObject();
