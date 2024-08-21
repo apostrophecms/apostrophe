@@ -703,6 +703,7 @@ export default {
     top: 0;
     left: 50%;
     transform: translate(-50%, -50%);
+
     &.apos-area-widget-controls--add--top.apos-is-open--menu-top,
     &.apos-area-widget-controls--add--bottom.apos-is-open--menu-bottom {
       z-index: $z-index-widget-focused-controls;
@@ -712,10 +713,10 @@ export default {
   .apos-area-widget-controls--add {
     &.apos-area-widget-controls--add--top.apos-is-open--menu-top,
     &.apos-area-widget-controls--add--bottom.apos-is-open--menu-bottom {
-      :deep(.apos-button__wrapper) {
-        .apos-button:not([disabled]) {
-          @include showButton;
-        }
+
+      /* stylelint-disable-next-line max-nesting-depth */
+      :deep(.apos-button__wrapper .apos-button:not([disabled])) {
+        @include showButton;
       }
     }
   }
