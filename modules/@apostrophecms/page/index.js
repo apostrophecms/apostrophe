@@ -1105,7 +1105,6 @@ database.`);
           const page = await self.findOneForEditing(req, { _id });
           let result;
           if (!page) {
-            console.log({ _id, page });
             throw self.apos.error('notfound');
           }
           if (!page._edit) {
@@ -1487,7 +1486,6 @@ database.`);
             throw self.apos.error('forbidden');
           }
           if (!(parent && oldParent)) {
-            console.log({ moved, parent, oldParent });
             // Move outside tree
             throw self.apos.error('forbidden');
           }
@@ -1525,7 +1523,6 @@ database.`);
               permission: false
             })
               .toObject();
-            console.log({ movedId, moved });
             if (!moved) {
               throw self.apos.error('invalid', 'No such page');
             }
@@ -1591,7 +1588,6 @@ database.`);
             const newPath = self.apos.util.addSlashIfNeeded(parent.path) + path.basename(moved.path);
             // We're going to use update with $set, but we also want to update
             // the object so that moveDescendants can see what we did
-            console.log({ newPath, path: moved.path });
             moved.path = newPath;
             // If the old slug wasn't customized, OR our new parent is
             // in the archive, update the slug as well as the path
@@ -3230,7 +3226,6 @@ database.`);
               ? 1
               : 0
           );
-        // console.log(patches);
 
         // Must be done sequentially or the page tree order will be lost
         for (const patch of patches) {

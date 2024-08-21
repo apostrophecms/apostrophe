@@ -2269,7 +2269,7 @@ describe('Pages', function() {
         },
         level3Page1: {
           title: 'Level 3 Page 1',
-          slug: level3Page1.slug.startsWith('/level-3-page-1-deduplicate-') ? level3Page1.slug : '/level-3-page-1-deduplicate-',
+          slug: level3Page1.slug.startsWith('/level-1-page-1/level-3-page-1-deduplicate-') ? level3Page1.slug : '/level-1-page-1/level-3-page-1-deduplicate-',
           path: `${home.aposDocId}/${archive.aposDocId}/${level3Page1.aposDocId}`,
           level: 2,
           rank: 2,
@@ -2293,7 +2293,7 @@ describe('Pages', function() {
         },
         level5Page1: {
           title: 'Level 5 Page 1',
-          slug: '/level-1-page-1/level-5-page-1',
+          slug: '/level-1-page-1/level-3-page-1/level-5-page-1',
           path: `${home.aposDocId}/${level1Page1.aposDocId}/${level5Page1.aposDocId}`,
           level: 2,
           rank: 0,
