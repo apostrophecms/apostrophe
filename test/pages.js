@@ -1869,7 +1869,7 @@ describe('Pages', function() {
     });
   });
 
-  describe.only('batch', function () {
+  describe('batch', function () {
     beforeEach(async function() {
       await t.destroy(apos);
       apos = await t.create({
