@@ -16,6 +16,7 @@
     :options="options"
     :max-reached="maxReached"
     :disabled="disabled"
+    :menu-id="menuId"
     @add="$emit('add', $event);"
   />
 </template>
@@ -58,6 +59,10 @@ export default {
     tabbable: {
       type: Boolean,
       default: false
+    },
+    menuId: {
+      type: String,
+      required: true
     }
   },
   emits: [ 'add' ],

@@ -1,5 +1,12 @@
 # Changelog
 
+## 4.6.1 (2024-08-22)
+
+### Fixes
+
+* Fix widget focus state so that the in-context Add Content menu stays visible during animation
+* Fix UI of areas in schemas so that their context menus are layered overtop sibling schema fields UI
+
 ## 4.6.0 (2024-08-08)
 
 ### Adds
