@@ -384,7 +384,7 @@ export default {
     // AposAreaEditor is listening for keyboard input that triggers
     // a 'focus my parent' plea
     apos.bus.$on('widget-focus-parent', this.focusParent);
-    apos.bus.$on('context-menu-opened', this.getFocusForMenu);
+    apos.bus.$on('context-menu-toggled', this.getFocusForMenu);
 
     this.breadcrumbs.$lastEl = this.$el;
 
