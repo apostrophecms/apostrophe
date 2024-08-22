@@ -327,8 +327,7 @@ export default {
           this.emitWidgetUpdate();
         }
       } else {
-        apos.bus.$emit('close-context-menu', `${this.modelValue._id}-widget-menu-top`);
-        apos.bus.$emit('close-context-menu', `${this.modelValue._id}-widget-menu-bottom`);
+        apos.bus.$emit('close-context-menus');
       }
     },
     isShowingInsert(newVal) {

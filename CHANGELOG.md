@@ -14,7 +14,7 @@
 * The new `big-upload-client` module can now be used to upload very large files to any route that uses the new `big-upload-middleware`.
 * Add option `skipReplace` for `apos.doc.changeDocIds` method to skip the replacing of the "old" document in the database.
 * The `@apostrophecms/i18n` module now exposes a `locales` HTTP GET API to aid in implementation of native apps for localized sites.
-* Context menus can be supplied a `menuId` so that interested components can listen to their opening/closing and close them by id.
+* Context menus can be supplied a `menuId` so that interested components can listen to their opening/closing.
 
 ## 4.6.0 (2024-08-08)
 

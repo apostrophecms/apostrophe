@@ -178,12 +178,12 @@ const { themeClass } = useAposTheme();
 
 onMounted(() => {
   apos.bus.$on('context-menu-toggled', hideWhenOtherOpen);
-  apos.bus.$on('close-context-menu', hideMe);
+  apos.bus.$on('close-context-menus', hide);
 });
 
 onBeforeUnmount(() => {
   apos.bus.$off('context-menu-toggled', hideWhenOtherOpen);
-  apos.bus.$off('close-context-menu', hideMe);
+  apos.bus.$off('close-context-menus', hide);
 });
 
 function getMenuOffset() {
@@ -195,12 +195,6 @@ function getMenuOffset() {
 
 function hideWhenOtherOpen({ menuId }) {
   if (props.menuId !== menuId) {
-    hide();
-  }
-}
-
-function hideMe(menuId) {
-  if (props.menuId === menuId) {
     hide();
   }
 }
