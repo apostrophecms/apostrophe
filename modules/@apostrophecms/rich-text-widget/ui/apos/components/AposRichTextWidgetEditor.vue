@@ -326,6 +326,8 @@ export default {
         if (this.pending) {
           this.emitWidgetUpdate();
         }
+      } else {
+        apos.bus.$emit('close-context-menus');
       }
     },
     isShowingInsert(newVal) {

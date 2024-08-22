@@ -127,6 +127,11 @@ export default {
   max-width: 100%;
 }
 
+.apos-field__wrapper.apos-field__wrapper--area {
+  z-index: $z-index-area-schema-ui;
+  position: relative;
+}
+
 .apos-field {
   border-width: 0;
   padding: 0;
