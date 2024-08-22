@@ -76,14 +76,16 @@ export default {
   .apos-context-menu__button {
     @include type-base;
 
-    display: inline-block;
-    flex-grow: 1;
-    width: 100%;
-    padding: 10px 20px;
-    border: none;
-    color: var(--a-base-1);
-    text-align: left;
-    background-color: var(--a-background-primary);
+    & {
+      display: inline-block;
+      flex-grow: 1;
+      width: 100%;
+      padding: 10px 20px;
+      border: none;
+      color: var(--a-base-1);
+      text-align: left;
+      background-color: var(--a-background-primary);
+    }
 
     &:hover {
       cursor: pointer;

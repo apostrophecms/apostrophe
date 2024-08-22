@@ -45,6 +45,8 @@ const props = defineProps({
 .apos-loading-block__text {
   @include type-base;
 
-  color: var(--a-base-1);
+  & {
+    color: var(--a-base-1);
+  }
 }
 </style>

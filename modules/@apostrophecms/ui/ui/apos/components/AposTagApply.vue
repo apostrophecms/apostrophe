@@ -339,9 +339,11 @@ export default {
   .apos-apply-tag-menu__empty-message {
     @include type-base;
 
-    margin-bottom: 20px;
-    max-width: 240px;
-    text-align: center;
+    & {
+      margin-bottom: 20px;
+      max-width: 240px;
+      text-align: center;
+    }
   }
 
   .apos-apply-tag-menu__empty-icon {
@@ -353,7 +355,9 @@ export default {
     /* stylelint-disable-next-line scale-unlimited/declaration-strict-value */
     @include type-title;
 
-    margin: 0;
+    & {
+      margin: 0;
+    }
   }
 
   .fade-enter-active, .fade-leave-active {

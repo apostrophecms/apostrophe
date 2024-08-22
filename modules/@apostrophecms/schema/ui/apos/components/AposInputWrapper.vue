@@ -148,14 +148,16 @@ export default {
 .apos-field__label {
   @include type-label;
 
-  display: flex;
-  flex-wrap: nowrap;
-  align-items: center;
-  justify-content: space-between;
-  margin: 0 0 $spacing-base;
-  padding: 0;
-  color: var(--a-text-primary);
-  gap: $spacing-double;
+  & {
+    display: flex;
+    flex-wrap: nowrap;
+    align-items: center;
+    justify-content: space-between;
+    margin: 0 0 $spacing-base;
+    padding: 0;
+    color: var(--a-text-primary);
+    gap: $spacing-double;
+  }
 
   &.apos-field__label--meta-left {
     justify-content: flex-start;
@@ -185,9 +187,11 @@ export default {
 .apos-field__help {
   @include type-base;
 
-  margin: 0 0 $spacing-base;
-  line-height: var(--a-line-tall);
-  color: var(--a-base-3);
+  & {
+    margin: 0 0 $spacing-base;
+    line-height: var(--a-line-tall);
+    color: var(--a-base-3);
+  }
 }
 
 .apos-field__help-tooltip__icon {
@@ -203,8 +207,10 @@ export default {
 .apos-field__error {
   @include type-help;
 
-  margin: $spacing-base 0;
-  color: var(--a-danger);
+  & {
+    margin: $spacing-base 0;
+    color: var(--a-danger);
+  }
 }
 
 .apos-field__required {

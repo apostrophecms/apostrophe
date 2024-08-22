@@ -785,23 +785,27 @@ export default {
   .apos-area-widget__breadcrumbs {
     @include apos-list-reset();
 
-    display: flex;
-    align-items: center;
-    margin: 0 0 8px;
-    padding: 4px 6px;
-    background-color: var(--a-background-primary);
-    border: 1px solid var(--a-primary-transparent-50);
-    border-radius: 8px;
+    & {
+      display: flex;
+      align-items: center;
+      margin: 0 0 8px;
+      padding: 4px 6px;
+      background-color: var(--a-background-primary);
+      border: 1px solid var(--a-primary-transparent-50);
+      border-radius: 8px;
+    }
   }
 
   .apos-area-widget__breadcrumb,
   .apos-area-widget__breadcrumb :deep(.apos-button__content) {
     @include type-help;
 
-    padding: 2px;
-    white-space: nowrap;
-    color: var(--a-base-1);
-    transition: background-color 300ms var(--a-transition-timing-bounce);
+    & {
+      padding: 2px;
+      white-space: nowrap;
+      color: var(--a-base-1);
+      transition: background-color 300ms var(--a-transition-timing-bounce);
+    }
   }
 
   .apos-area-widget__breadcrumbs:hover .apos-area-widget__breadcrumb,

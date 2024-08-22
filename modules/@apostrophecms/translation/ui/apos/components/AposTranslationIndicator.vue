@@ -66,9 +66,11 @@ $background: #F7FEF4;
 .apos-translation-indicator__text {
   @include type-label;
 
-  margin: 0 0 0 4px;
-  color: $color;
-  font-size: var(--a-type-tiny);
+  & {
+    margin: 0 0 0 4px;
+    color: $color;
+    font-size: var(--a-type-tiny);
+  }
 }
 
 #svg-path {

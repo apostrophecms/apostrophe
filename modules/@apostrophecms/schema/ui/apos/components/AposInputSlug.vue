@@ -54,9 +54,11 @@ export default {
   .apos-input-wrapper--with-prefix {
     @include apos-input();
 
-    display: flex;
-    align-items: center;
-    color: var(--a-base-4);
+    & {
+      display: flex;
+      align-items: center;
+      color: var(--a-base-4);
+    }
 
     .apos-input {
       padding-left: 0;
