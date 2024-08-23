@@ -59,6 +59,25 @@ module.exports = {
       }
     }
   },
+  utilityOperations(self) {
+    console.log(self.options);
+    return {
+      add: {
+        new: {
+          canCreate: true,
+          relationship: true,
+          label: {
+            key: 'apostrophe:newDocType',
+            type: `$t(${self.options.label})`
+          },
+          eventOptions: {
+            event: 'edit',
+            type: self.__meta.name
+          }
+        }
+      }
+    };
+  },
   batchOperations: {
     add: {
       publish: {
