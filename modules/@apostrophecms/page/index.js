@@ -68,7 +68,7 @@ module.exports = {
           relationship: true,
           label: {
             key: 'apostrophe:newDocType',
-            type: `$t(${self.options.label})`
+            type: '$t(apostrophe:page)'
           },
           eventOptions: {
             event: 'edit',
