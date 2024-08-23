@@ -100,7 +100,7 @@
         <template #bodyMain>
           <AposTree
             v-model:checked="checked"
-            :items="items"
+            :items="pages"
             :headers="headers"
             :icons="icons"
             :options="treeOptions"
