@@ -93,14 +93,14 @@ export default {
       }
     },
     items() {
-      if (!this.pages || !this.headers.length) {
+      if (!this.pagesFlat || !this.headers.length) {
         return [];
       }
-      return klona(this.pages);
+      return klona(this.pagesFlat);
     },
     selectAllChoice() {
       const checkLen = this.checked.length;
-      const rowLen = this.pagesFlat.length;
+      const rowLen = this.items.length;
 
       return checkLen > 0 && checkLen !== rowLen ? {
         value: 'checked',
@@ -110,7 +110,7 @@ export default {
       };
     },
     canCreate() {
-      const page = this.pagesFlat.find(page => page.aposDocId === this.moduleOptions.page.aposDocId);
+      const page = this.items.find(page => page.aposDocId === this.moduleOptions.page.aposDocId);
       if (page) {
         return page._create;
       }
@@ -147,51 +147,6 @@ export default {
     apos.bus.$off('command-menu-manager-close', this.confirmAndCancel);
   },
   methods: {
-    toggleRowCheck(id) {
-      if (this.checked.includes(id)) {
-        this.checked = this.checked.filter(item => item !== id);
-      } else {
-        this.checked = [ ...this.checked, id ];
-      }
-    },
-    // This is not used for now
-    selectAll(event) {
-      if (!this.checked.length) {
-        this.pagesFlat.forEach((row) => {
-          this.toggleRowCheck(row._id);
-        });
-        return;
-      }
-
-      if (this.checked.length <= this.pagesFlat.length) {
-        this.checked.forEach((id) => {
-          this.toggleRowCheck(id);
-        });
-      }
-    },
-    // TODO remove or refactor selectAll
-    // selectAll() {
-    //   if (!this.checked.length) {
-    //     const ids = [];
-    //     this.items.forEach((item) => {
-    //       const notPublished = this.manuallyPublished && !item.lastPublishedAt;
-    //       if (this.relationshipField && (this.maxReached(ids.length) || notPublished)) {
-    //         return;
-    //       }
-    //       ids.push(item._id);
-    //     });
-    //
-    //     this.checked = ids;
-    //     return;
-    //   }
-    //
-    //   if (this.allPiecesSelection) {
-    //     this.allPiecesSelection.isSelected = false;
-    //   }
-    //
-    //   this.checked = [];
-    // },
-
     async create() {
       const doc = await apos.modal.execute(this.moduleOptions.components.editorModal, {
         moduleName: this.moduleName,
@@ -233,7 +188,7 @@ export default {
       }
 
       await this.getPages();
-      if (this.pagesFlat.find(page => {
+      if (this.items.find(page => {
         return (page.aposDocId === (window.apos.page.page && window.apos.page.page.aposDocId)) && page.archived;
       })) {
         // With the current page gone, we need to move to safe ground
@@ -320,13 +275,13 @@ export default {
     getAllPagesTotal () {
       this.setAllPiecesSelection({
         isSelected: false,
-        total: this.pagesFlat.length
+        total: this.items.length
       });
     },
     selectAllPieces () {
       this.setAllPiecesSelection({
         isSelected: true,
-        docs: this.pagesFlat
+        docs: this.items
       });
     },
     async search(query) {
