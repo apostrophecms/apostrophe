@@ -46,7 +46,6 @@ function debounceAsync(fn, delay, options = {}) {
   function wrapper(...args) {
     return new Promise((resolve, reject) => {
       if (canceled) {
-        // eslint-disable-next-line prefer-promise-reject-errors
         return reject(canceledRejection);
       }
       clearTimeout(timer);
