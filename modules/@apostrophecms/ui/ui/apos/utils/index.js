@@ -1,10 +1,15 @@
 module.exports = {
-  debounce(fn, delay) {
+  debounce(fn, delay, options = {}) {
+    const canceledRejection = new Error('debounce:canceled');
     let timer;
+    let canceled = false;
     let previousDone = true;
 
     const setTimer = (res, rej, args, delay) => {
       return setTimeout(() => {
+        if (canceled) {
+          return rej(canceledRejection);
+        }
         if (!previousDone) {
           clearTimeout(timer);
           timer = setTimer(res, rej, args, delay);
@@ -15,7 +20,12 @@ module.exports = {
         const returned = fn.apply(this, args);
         if (returned instanceof Promise) {
           return returned
-            .then(res)
+            .then((result) => {
+              if (canceled) {
+                return rej(canceledRejection);
+              }
+              res(result);
+            })
             .catch(rej)
             .finally(() => {
               previousDone = true;
@@ -27,12 +37,24 @@ module.exports = {
       }, delay);
     };
 
-    return (...args) => {
+    function wrapper(...args) {
       return new Promise((resolve, reject) => {
+        if (canceled) {
+          // eslint-disable-next-line prefer-promise-reject-errors
+          return reject(canceledRejection);
+        }
         clearTimeout(timer);
         timer = setTimer(resolve, reject, args, delay);
       });
     };
+
+    wrapper.cancel = () => {
+      canceled = true;
+      clearTimeout(timer);
+      timer = null;
+    };
+
+    return wrapper;
   },
 
   throttle(fn, delay) {

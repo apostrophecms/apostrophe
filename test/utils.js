@@ -441,6 +441,126 @@ describe('Utils', function() {
 
     });
 
+    it('should cancel debounced calls (sync)', async function () {
+      let calledSync = [];
+
+      function syncFn(num) {
+        calledSync.push(num);
+        return 'test';
+      };
+
+      const debouncedSync = debounce(syncFn, 50);
+
+      debouncedSync(1);
+      await wait(200);
+      debouncedSync(2);
+      debouncedSync(3);
+      debouncedSync.cancel();
+      assert.deepEqual(calledSync, [ 1 ], 'should cancel all calls after the first call');
+      calledSync = [];
+
+      debouncedSync(1);
+      debouncedSync(2);
+      debouncedSync(3);
+      debouncedSync.cancel();
+      await wait(200);
+      assert.deepEqual(calledSync, [], 'should cancel all calls when canceled after the 3rd call');
+      calledSync = [];
+
+      debouncedSync(1);
+      debouncedSync(2);
+      debouncedSync.cancel();
+      debouncedSync(3);
+      await wait(100);
+      assert.deepEqual(calledSync, [], 'should cancel all calls when canceled after the 2nd call');
+      calledSync = [];
+
+      debouncedSync(1);
+      debouncedSync(2);
+      debouncedSync.cancel();
+      await wait(100);
+      debouncedSync(3);
+      await wait(100);
+      assert.deepEqual(
+        calledSync,
+        [],
+        'should cancel all calls when canceled and called again after some time'
+      );
+    });
+
+    it('should cancel debounced calls (async)', async function () {
+      let calledAsync = [];
+
+      async function asyncFn(num, time = 50) {
+        await wait(50);
+        calledAsync.push(num);
+        // Keep all console.debug around to easy debug - ensure
+        // all promises are awaited before the test ends.
+        console.debug('calledAsync', num);
+        return 'async';
+      }
+
+      const debouncedAsync = debounce(asyncFn, 50);
+
+      debouncedAsync(1);
+      await wait(100);
+      debouncedAsync(2);
+      debouncedAsync(3);
+      debouncedAsync.cancel();
+      await wait(200);
+      assert.deepEqual(calledAsync, [ 1 ], 'should cancel all calls after the first call');
+      calledAsync = [];
+
+      debouncedAsync(1);
+      debouncedAsync(2);
+      debouncedAsync(3);
+      debouncedAsync.cancel();
+      await wait(200);
+      assert.deepEqual(calledAsync, [], 'should cancel all calls when canceled after the 3rd call');
+      calledAsync = [];
+
+      debouncedAsync(1);
+      debouncedAsync(2);
+      debouncedAsync.cancel();
+      debouncedAsync(3);
+      await wait(200);
+      assert.deepEqual(calledAsync, [], 'should cancel all calls when canceled after the 2nd call');
+      calledAsync = [];
+
+      debouncedAsync(1);
+      debouncedAsync(2);
+      debouncedAsync.cancel();
+      await wait(200);
+      debouncedAsync(3);
+      await wait(100);
+      assert.deepEqual(
+        calledAsync,
+        [],
+        'should cancel all calls when canceled and called again after some time'
+      );
+    });
+
+    it('should reject ongoing promises after canceling debounced calls', async function () {
+      const calledAsync = [];
+      async function asyncFn(num, time = 50) {
+        await wait(time);
+        calledAsync.push(num);
+        console.debug('unstoppable async call', num);
+        return 'async';
+      }
+
+      const debouncedAsync = debounce(asyncFn, 50);
+      const promise = debouncedAsync(1, 300);
+      await wait(100);
+      debouncedAsync.cancel();
+
+      await assert.rejects(promise, {
+        message: 'debounce:canceled'
+      });
+
+      assert.deepEqual(calledAsync, [ 1 ], 'the original promise should always resolve');
+    });
+
     it('can throttle functions', async function () {
       const calledNormal = [];
       const calledAsync = [];
