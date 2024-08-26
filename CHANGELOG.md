@@ -2,12 +2,6 @@
 
 ## UNRELEASED
 
-### Fixes
-
-* Registering duplicate icon is no longer breaking the build.
-* Fix widget focus state so that the in-context Add Content menu stays visible during animation
-* Fix UI of areas in schemas so that their context menus are layered overtop sibling schema fields UI
-
 ### Adds
 
 * To aid debugging, when a file extension is unacceptable as an Apostrophe attachment the rejected extension is now printed as part of the error message.
@@ -15,6 +9,14 @@
 * Add option `skipReplace` for `apos.doc.changeDocIds` method to skip the replacing of the "old" document in the database.
 * The `@apostrophecms/i18n` module now exposes a `locales` HTTP GET API to aid in implementation of native apps for localized sites.
 * Context menus can be supplied a `menuId` so that interested components can listen to their opening/closing.
+
+## 4.6.1 (2024-08-26)
+
+### Fixes
+
+* Registering duplicate icon is no longer breaking the build.
+* Fix widget focus state so that the in-context Add Content menu stays visible during animation.
+* Fix UI of areas in schemas so that their context menus are layered overtop sibling schema fields UI.
 
 ## 4.6.0 (2024-08-08)
 
