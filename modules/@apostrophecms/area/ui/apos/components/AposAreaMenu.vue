@@ -62,7 +62,7 @@ export default {
     },
     menuId: {
       type: String,
-      required: true
+      default: null
     }
   },
   emits: [ 'add' ],
