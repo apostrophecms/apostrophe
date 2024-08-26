@@ -540,7 +540,7 @@ describe('Utils', function() {
       );
     });
 
-    it('should reject ongoing promises after canceling debounced calls', async function () {
+    it('should reject ongoing promises after debounce cancel', async function () {
       const calledAsync = [];
       async function asyncFn(num, time = 50) {
         await wait(time);
