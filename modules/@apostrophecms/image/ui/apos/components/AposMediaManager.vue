@@ -377,13 +377,10 @@ export default {
       this.isLoading = true;
       this.currentPage = 1;
       this.items = [];
-      try {
-        await this.debouncedGetMedia.skipDelay(opts);
-      } finally {
-        this.isLoading = false;
-        this.modified = false;
-        this.updateEditing(null);
-      }
+      await this.debouncedGetMedia.skipDelay(opts);
+      this.isLoading = false;
+      this.modified = false;
+      this.updateEditing(null);
     },
     async filter(name, value) {
       this.filterValues[name] = value;
