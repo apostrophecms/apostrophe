@@ -116,9 +116,11 @@ function inferFieldValues(schema, values, $t) {
   &__value {
     @include type-base;
 
-    line-height: 1;
-    // color: var(--a-base-1);
-    color: var(--a-text-primary);
+    & {
+      line-height: 1;
+      // color: var(--a-base-1);
+      color: var(--a-text-primary);
+    }
   }
 
   &__value-block {
@@ -129,9 +131,11 @@ function inferFieldValues(schema, values, $t) {
   &__label {
     @include type-base;
 
-    display: inline-block;
-    line-height: 1;
-    color: var(--a-base-3);
+    & {
+      display: inline-block;
+      line-height: 1;
+      color: var(--a-base-3);
+    }
   }
 }
 </style>

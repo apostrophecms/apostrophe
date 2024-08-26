@@ -1,6 +1,16 @@
 # Changelog
 
-## 4.6.1 (2024-08-22)
+## UNRELEASED
+
+### Adds
+
+* To aid debugging, when a file extension is unacceptable as an Apostrophe attachment the rejected extension is now printed as part of the error message.
+* The new `big-upload-client` module can now be used to upload very large files to any route that uses the new `big-upload-middleware`.
+* Add option `skipReplace` for `apos.doc.changeDocIds` method to skip the replacing of the "old" document in the database.
+* The `@apostrophecms/i18n` module now exposes a `locales` HTTP GET API to aid in implementation of native apps for localized sites.
+* Context menus can be supplied a `menuId` so that interested components can listen to their opening/closing.
+
+## 4.6.1 (2024-08-26)
 
 ### Fixes
 
@@ -13,11 +23,18 @@
 ### Adds
 
 * Add a locale switcher in pieces and pages editor modals. This is available for localized documents only, and allows you to switch between locales for the same document.
-  The locale can be switche at only one level, meaning that sub documents of a document that already switched locale will not be able to switch locale itself.
+  The locale can be switched at only one level, meaning that sub documents of a document that already switched locale will not be able to switch locale itself.
 * Adds visual focus states and keyboard handlers for engaging with areas and widgets in-context
+* Adds method `simulateRelationshipsFromStorage` method in schema module. 
+This method populates the relationship field with just enough information to allow convert to accept it. It does not fully fetch the related documents. It does the opposite of prepareForStorage.
+* A new options object has been added to the convert method. 
+Setting the `fetchRelationships` option to false will prevent convert from actually fetching relationships to check which related documents currently exist. 
+The shape of the relationship field is still validated.
 
 ### Changes
 
+* Refactors Admin UI SASS to eliminate deprecation warnings from declarations coming after nested rules.
+* Bumps the sass-loader version and adds a webpack option to suppress mixed declaration deprecation warnings to be removed when all modules are updated.
 * Add `title` and `_url` to select all projection.
 * Display `Select all` message on all pages in the manager modal.
 * Refresh `checked` in manager modal after archive action.

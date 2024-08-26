@@ -311,7 +311,8 @@ module.exports = {
       //
       // Returns a new, sanitized widget object.
 
-      async sanitize(req, input, options) {
+      async sanitize(req, input, options, { fetchRelationships = true } = {}) {
+        const convertOptions = { fetchRelationships };
         if (!input || typeof input !== 'object') {
           // Do not crash
           input = {};
@@ -325,7 +326,7 @@ module.exports = {
         output.aposPlaceholder = self.apos.launder.boolean(input.aposPlaceholder);
         if (!output.aposPlaceholder) {
           const schema = self.allowedSchema(req);
-          await self.apos.schema.convert(req, schema, input, output);
+          await self.apos.schema.convert(req, schema, input, output, convertOptions);
         }
         return output;
       },

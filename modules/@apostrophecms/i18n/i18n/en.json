@@ -194,7 +194,7 @@
   "fileTag": "File Tag",
   "fileTags": "File Tags",
   "fileTypeCannotBeCropped": "{{ extension }} files cannot be cropped, do not present the cropping UI for this type",
-  "fileTypeNotAccepted": "File type was not accepted. Allowed extensions: {{ extensions }}",
+  "fileTypeNotAccepted": "File type {{ extension}} was not accepted. Allowed extensions: {{ extensions }}",
   "fileUploaderAttachmentLimitReached": "Attachment limit reached",
   "fileUploaderDropFile": "Drop a file here or",
   "fileUploaderFieldIsDisabled": "Field is disabled",
