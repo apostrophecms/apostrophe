@@ -392,7 +392,7 @@ export default {
         doc.aposLocale.split(':')[0] === this.modalData.locale
       ) {
         await this.getPages();
-        this.getAllPiecesTotal();
+        this.getAllPagesTotal();
         if (action === 'archive') {
           this.checked = this.checked.filter(checkedId => doc._id !== checkedId);
         }

@@ -3,7 +3,7 @@
 // errors.
 import AposInputMixin from 'Modules/@apostrophecms/schema/mixins/AposInputMixin';
 import sluggo from 'sluggo';
-import debounce from 'debounce-async';
+import { debounce } from 'Modules/@apostrophecms/ui/utils';
 import { klona } from 'klona';
 
 export default {
