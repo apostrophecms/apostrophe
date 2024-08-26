@@ -106,12 +106,17 @@ const props = defineProps({
     default() {
       return [];
     }
+  },
+  menuId: {
+    type: String,
+    default() {
+      return createId();
+    }
   }
 });
 
 const emit = defineEmits([ 'open', 'close', 'item-clicked' ]);
 
-const menuId = ref(createId());
 const isOpen = ref(false);
 const placement = ref(props.menuPlacement);
 const event = ref(null);
@@ -172,13 +177,13 @@ watch(isOpen, (newVal) => {
 const { themeClass } = useAposTheme();
 
 onMounted(() => {
-  apos.bus.$on('context-menu-opened', hideWhenOtherOpen);
-  apos.bus.$on('widget-focus', hide);
+  apos.bus.$on('context-menu-toggled', hideWhenOtherOpen);
+  apos.bus.$on('close-context-menus', hide);
 });
 
 onBeforeUnmount(() => {
-  apos.bus.$off('context-menu-opened', hideWhenOtherOpen);
-  apos.bus.$off('widget-focus', hide);
+  apos.bus.$off('context-menu-toggled', hideWhenOtherOpen);
+  apos.bus.$off('close-context-menus', hide);
 });
 
 function getMenuOffset() {
@@ -188,8 +193,8 @@ function getMenuOffset() {
   };
 }
 
-function hideWhenOtherOpen(id) {
-  if (menuId.value !== id) {
+function hideWhenOtherOpen({ menuId }) {
+  if (props.menuId !== menuId) {
     hide();
   }
 }
@@ -199,8 +204,11 @@ function hide() {
 }
 
 function buttonClicked(e) {
-  apos.bus.$emit('context-menu-opened', menuId.value);
   isOpen.value = !isOpen.value;
+  apos.bus.$emit('context-menu-toggled', {
+    menuId: props.menuId,
+    isOpen: isOpen.value
+  });
   event.value = e;
 }
 

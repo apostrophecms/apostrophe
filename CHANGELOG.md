@@ -1,5 +1,13 @@
 # Changelog
 
+## 4.6.1 (2024-08-26)
+
+### Fixes
+
+* Registering duplicate icon is no longer breaking the build.
+* Fix widget focus state so that the in-context Add Content menu stays visible during animation.
+* Fix UI of areas in schemas so that their context menus are layered overtop sibling schema fields UI.
+
 ## 4.6.0 (2024-08-08)
 
 ### Adds
