@@ -111,7 +111,8 @@ const {
   focusElement,
   focusLastModalFocusedElement,
   isElementVisible,
-  storeFocusedElement
+  storeFocusedElement,
+  findPriorityElementOrFirst
 } = useAposFocus();
 
 const props = defineProps({
@@ -213,7 +214,9 @@ watch(triggerFocusRefresh, (newVal) => {
 });
 
 onMounted(async () => {
+  console.log('mounted');
   await nextTick();
+  // await new Promise(resolve => setTimeout(resolve, 500));
   if (shouldTrapFocus.value) {
     trapFocus();
   }
@@ -262,13 +265,26 @@ function trapFocus() {
   const selector = elementSelectors
     .map(addExcludingAttributes)
     .join(', ');
+  
+  // console.log('el', modalEl.value);
+
+  // const tmp = document.createElement('div');
+  // tmp.appendChild(modalEl.value);
+  // console.log('INNER', tmp.innerHTML);
 
   const elementsToFocus = [ ...modalEl.value.querySelectorAll(selector) ]
     .filter(isElementVisible);
+  
+  // console.log('elementsToFocus', elementsToFocus);
 
   store.updateModalData(props.modalData.id, { elementsToFocus });
 
-  focusElement(props.modalData.focusedElement, props.modalData.elementsToFocus[0]);
+  // console.log('imma do me');
+  // console.log(props.modalData.id);
+  // console.log(props.modalData.elementsToFocus);
+  // console.log(findPriorityElementOrFirst([ ...modalEl.value.querySelectorAll(selector) ]));
+
+  focusElement(props.modalData.focusedElement, findPriorityElementOrFirst([ ...modalEl.value.querySelectorAll(selector) ]));
 
   function addExcludingAttributes(element) {
     return `${element}:not([tabindex="-1"]):not([disabled]):not([type="hidden"]):not([aria-hidden])`;

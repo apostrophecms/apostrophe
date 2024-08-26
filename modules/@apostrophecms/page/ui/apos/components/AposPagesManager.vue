@@ -37,6 +37,7 @@
         v-else-if="canCreate"
         type="primary"
         label="apostrophe:newPage"
+        :attrs="{'data-apos-focus-priority': true}"
         @click="create()"
       />
       <AposButton
@@ -44,6 +45,7 @@
         type="primary"
         :label="saveRelationshipLabel"
         :disabled="!!relationshipErrors"
+        :attrs="{'data-apos-focus-priority': true}"
         @click="saveRelationship"
       />
     </template>

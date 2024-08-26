@@ -19,6 +19,7 @@
         type="primary"
         label="apostrophe:save"
         :disabled="!valid"
+        :attrs="{'data-apos-focus-priority': true}"
         @click="submit"
       />
     </template>

@@ -32,6 +32,7 @@
         type="primary"
         :label="saveRelationshipLabel"
         :disabled="!!relationshipErrors"
+        :attrs="{'data-apos-focus-priority': true}"
         @click="saveRelationship"
       />
       <AposButton
@@ -41,6 +42,7 @@
           type: $t(moduleOptions.label)
         }"
         type="primary"
+        :attrs="{'data-apos-focus-priority': true}"
         @click="create"
       />
     </template>

@@ -19,6 +19,7 @@
         type="primary"
         label="apostrophe:update"
         :disabled="docFields.hasErrors"
+        :attrs="{'data-apos-focus-priority': true}"
         @click="submit"
       />
     </template>

@@ -42,6 +42,7 @@
         :label="saveLabel"
         :disabled="saveDisabled"
         :tooltip="errorTooltip"
+        :attrs="{'data-apos-focus-priority': true}"
         @click="onRestore"
       />
       <AposButtonSplit
@@ -51,6 +52,7 @@
         :disabled="saveDisabled"
         :tooltip="errorTooltip"
         :selected="savePreference"
+        :attrs="{'data-apos-focus-priority': true}"
         @click="saveHandler($event)"
       />
     </template>

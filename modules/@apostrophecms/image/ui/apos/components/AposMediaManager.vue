@@ -37,6 +37,7 @@
         type="primary"
         :label="saveRelationshipLabel"
         :disabled="!!relationshipErrors"
+        :attrs="{'data-apos-focus-priority': true}"
         @click="saveRelationship"
       />
     </template>
