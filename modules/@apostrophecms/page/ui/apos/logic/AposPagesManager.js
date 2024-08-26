@@ -57,7 +57,8 @@ export default {
         ]
       },
       queryExtras: {
-        viewContext: this.relationshipField ? 'relationship' : 'manage'
+        // removed to allow per-document permissions users to see the page tree
+        // viewContext: this.relationshipField ? 'relationship' : 'manage'
       },
       filterValues: {},
       filterChoices: {},
