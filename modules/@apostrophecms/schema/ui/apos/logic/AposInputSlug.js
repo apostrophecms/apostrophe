@@ -1,10 +1,10 @@
 // NOTE: This is a temporary component, copying AposInputString. Base modules
 // already have `type: 'slug'` fields, so this is needed to avoid distracting
 // errors.
-import AposInputMixin from 'Modules/@apostrophecms/schema/mixins/AposInputMixin';
-import sluggo from 'sluggo';
-import debounce from 'debounce-async';
 import { klona } from 'klona';
+import sluggo from 'sluggo';
+import AposInputMixin from 'Modules/@apostrophecms/schema/mixins/AposInputMixin';
+import { debounceAsync } from 'Modules/@apostrophecms/ui/utils';
 
 export default {
   name: 'AposInputSlug',
@@ -12,6 +12,7 @@ export default {
   emits: [ 'return' ],
   data() {
     return {
+      mounted: false,
       conflict: false,
       isArchived: null,
       originalParentSlug: ''
@@ -102,11 +103,21 @@ export default {
     }
   },
   async mounted() {
-    this.debouncedCheckConflict = debounce(() => this.checkConflict(), 250);
+    this.mounted = true;
+    this.debouncedCheckConflict = debounceAsync(() => this.checkConflict(), 250);
     if (this.next.length) {
-      await this.debouncedCheckConflict();
+      try {
+        await this.debouncedCheckConflict();
+      } catch (e) {
+        if (e.message !== 'debounce:canceled') {
+          throw e;
+        }
+      }
     }
     this.originalParentSlug = this.getParentSlug(this.next);
+  },
+  onBeforeUnmount() {
+    this.debouncedCheckConflict.cancel();
   },
   methods: {
     getParentSlug(slug = '') {
@@ -120,9 +131,7 @@ export default {
       try {
         await this.debouncedCheckConflict();
       } catch (e) {
-        if (e === 'canceled') {
-          // That's fine
-        } else {
+        if (e.message !== 'debounce:canceled') {
           throw e;
         }
       }
@@ -243,6 +252,9 @@ export default {
             },
             draft: true
           });
+          if (!this.mounted) {
+            return;
+          }
           // Still relevant?
           if (slug === this.next) {
             this.conflict = false;

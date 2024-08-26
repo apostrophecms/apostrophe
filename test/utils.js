@@ -1,7 +1,7 @@
 const t = require('../test-lib/test.js');
 const assert = require('assert');
 const _ = require('lodash');
-const { debounce, throttle } = require('../modules/@apostrophecms/ui/ui/apos/utils/index');
+const { debounceAsync, throttle } = require('../modules/@apostrophecms/ui/ui/apos/utils/index');
 
 describe('Utils', function() {
 
@@ -376,10 +376,10 @@ describe('Utils', function() {
       const calledAsyncSlow = [];
       let asyncErrCatched = false;
 
-      const debouncedNormal = debounce(normalFn, 50);
-      const debouncedAsync = debounce(asyncFn, 50);
-      const debouncedAsyncSlow = debounce(asyncSlowFn, 50);
-      const debouncedAsyncErr = debounce(AsyncErrFn, 50);
+      const debouncedNormal = debounceAsync(normalFn, 50);
+      const debouncedAsync = debounceAsync(asyncFn, 50);
+      const debouncedAsyncSlow = debounceAsync(asyncSlowFn, 50);
+      const debouncedAsyncErr = debounceAsync(AsyncErrFn, 50);
 
       debouncedNormal(1);
       debouncedNormal(2);
@@ -449,7 +449,7 @@ describe('Utils', function() {
         return 'test';
       };
 
-      const debouncedSync = debounce(syncFn, 50);
+      const debouncedSync = debounceAsync(syncFn, 50);
 
       debouncedSync(1);
       await wait(200);
@@ -500,7 +500,7 @@ describe('Utils', function() {
         return 'async';
       }
 
-      const debouncedAsync = debounce(asyncFn, 50);
+      const debouncedAsync = debounceAsync(asyncFn, 50);
 
       debouncedAsync(1);
       await wait(100);
@@ -549,7 +549,7 @@ describe('Utils', function() {
         return 'async';
       }
 
-      const debouncedAsync = debounce(asyncFn, 50);
+      const debouncedAsync = debounceAsync(asyncFn, 50);
       const promise = debouncedAsync(1, 300);
       await wait(100);
       debouncedAsync.cancel();

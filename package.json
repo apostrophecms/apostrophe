@@ -69,7 +69,6 @@
     "cors": "^2.8.5",
     "css-loader": "^5.2.4",
     "dayjs": "^1.9.8",
-    "debounce-async": "0.0.2",
     "dompurify": "^2.3.1",
     "express": "^4.16.4",
     "express-bearer-token": "^2.4.0",

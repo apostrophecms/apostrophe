@@ -84,7 +84,7 @@
               disableUnchecked: maxReached()
             }"
             @select-click="selectAll"
-            @search="onSearch"
+            @search="onSearchSafe"
             @page-change="updatePage"
             @filter="filter"
             @batch="handleBatchAction"
@@ -129,7 +129,7 @@ import AposDocsManagerMixin from 'Modules/@apostrophecms/modal/mixins/AposDocsMa
 import AposModifiedMixin from 'Modules/@apostrophecms/ui/mixins/AposModifiedMixin';
 import AposPublishMixin from 'Modules/@apostrophecms/ui/mixins/AposPublishMixin';
 import { useModalStore } from 'Modules/@apostrophecms/ui/stores/modal';
-import { debounce } from 'Modules/@apostrophecms/ui/utils';
+import { debounceAsync } from 'Modules/@apostrophecms/ui/utils';
 
 export default {
   name: 'AposDocsManager',
@@ -149,6 +149,7 @@ export default {
   emits: [ 'archive' ],
   data() {
     return {
+      mounted: false,
       modal: {
         active: false,
         triggerFocusRefresh: 0,
@@ -229,7 +230,9 @@ export default {
   },
   created() {
     const DEBOUNCE_TIMEOUT = 500;
-    this.onSearch = debounce(this.search, DEBOUNCE_TIMEOUT);
+    // "mounted" in meaning of "able to mutate the state".
+    this.mounted = true;
+    this.onSearch = debounceAsync(this.search, DEBOUNCE_TIMEOUT);
 
     this.moduleOptions.filters.forEach(filter => {
       this.filterValues[filter.name] = filter.def;
@@ -251,6 +254,10 @@ export default {
     apos.bus.$on('content-changed', this.onContentChanged);
     apos.bus.$on('command-menu-manager-create-new', this.create);
     apos.bus.$on('command-menu-manager-close', this.confirmAndCancel);
+  },
+  onBeforeUnmount() {
+    this.mounted = false;
+    this.onSearch.cancel();
   },
   unmounted() {
     this.destroyShortcuts();
@@ -341,6 +348,9 @@ export default {
         ),
         page: this.currentPage
       });
+      if (!this.mounted) {
+        return;
+      }
 
       this.currentPage = currentPage;
       this.totalPages = pages;
@@ -350,6 +360,9 @@ export default {
     },
     async getAllPiecesTotal () {
       const { count: total } = await this.request({ count: 1 });
+      if (!this.mounted) {
+        return;
+      }
 
       this.setAllPiecesSelection({
         isSelected: false,
@@ -379,6 +392,9 @@ export default {
       }
     },
     async search(query) {
+      if (!this.mounted) {
+        return;
+      }
       if (query) {
         this.queryExtras.autocomplete = query;
       } else if ('autocomplete' in this.queryExtras) {
@@ -507,6 +523,17 @@ export default {
         this.getAllPiecesTotal();
         if (action === 'archive') {
           this.checked = this.checked.filter(checkedId => doc._id !== checkedId);
+        }
+      }
+    },
+
+    async onSearchSafe(...args) {
+      try {
+        const result = await this.onSearch(...args);
+        return result;
+      } catch (error) {
+        if (error.message !== 'debounce:canceled') {
+          throw error;
         }
       }
     }

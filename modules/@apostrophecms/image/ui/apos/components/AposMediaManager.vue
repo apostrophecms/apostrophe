@@ -125,10 +125,10 @@
 </template>
 
 <script>
-import { debounce } from 'Modules/@apostrophecms/ui/utils';
+import { createId } from '@paralleldrive/cuid2';
+import { debounceAsync } from 'Modules/@apostrophecms/ui/utils';
 import AposModifiedMixin from 'Modules/@apostrophecms/ui/mixins/AposModifiedMixin';
 import AposDocsManagerMixin from 'Modules/@apostrophecms/modal/mixins/AposDocsManagerMixin';
-import { createId } from '@paralleldrive/cuid2';
 
 const DEBOUNCE_TIMEOUT = 500;
 
@@ -143,6 +143,7 @@ export default {
   emits: [ 'archive', 'save', 'search', 'piece-relationship-query' ],
   data() {
     return {
+      mounted: false,
       items: [],
       isFirstLoading: true,
       isLoading: false,
@@ -166,7 +167,7 @@ export default {
         emoji: '🖼'
       },
       cancelDescription: 'apostrophe:discardImageChangesPrompt',
-      debouncedGetMedia: debounce(this.getMedia, DEBOUNCE_TIMEOUT),
+      debouncedGetMedia: null,
       loadObserver: new IntersectionObserver(
         this.handleIntersect,
         {
@@ -243,6 +244,7 @@ export default {
       return this.totalPages > 1 && this.currentPage === this.totalPages;
     }
   },
+
   watch: {
     async checked (newVal, oldVal) {
       this.lastSelected = newVal.at(-1);
@@ -272,8 +274,21 @@ export default {
   },
   created() {
     this.setDefaultFilters();
+    const debouncedGetMedia = debounceAsync(this.getMedia, DEBOUNCE_TIMEOUT);
+    this.debouncedGetMedia = async function (...args) {
+      try {
+        const result = await debouncedGetMedia(...args);
+        return result;
+      } catch (e) {
+        if (e.message !== 'debounce:canceled') {
+          throw e;
+        }
+      }
+    };
+    this.debouncedGetMedia.cancel = debouncedGetMedia.cancel;
   },
   async mounted() {
+    this.mounted = true;
     this.modal.active = true;
     await this.getMedia({ tags: true });
     this.isFirstLoading = false;
@@ -281,7 +296,9 @@ export default {
     apos.bus.$on('content-changed', this.onContentChanged);
     apos.bus.$on('command-menu-manager-close', this.confirmAndCancel);
   },
-  unmounted() {
+  beforeUnmount() {
+    this.mounted = false;
+    this.debouncedGetMedia.cancel();
     apos.bus.$off('content-changed', this.onContentChanged);
     apos.bus.$off('command-menu-manager-close', this.confirmAndCancel);
   },
@@ -296,7 +313,10 @@ export default {
     editorModified (val) {
       this.modified = val;
     },
-    async getMedia (options = {}) {
+    async getMedia(options = {}) {
+      if (!this.mounted) {
+        return;
+      }
       const qs = {
         ...this.filterValues,
         page: this.currentPage,
@@ -329,6 +349,9 @@ export default {
           draft: true
         }
       ));
+      if (!this.mounted) {
+        return;
+      }
 
       if (options.tags) {
         if (filtered) {
@@ -344,6 +367,9 @@ export default {
               draft: true
             }
           ));
+          if (!this.mounted) {
+            return;
+          }
           this.tagList = apiResponse.choices._tags;
         } else {
           this.tagList = apiResponse.choices ? apiResponse.choices._tags : [];
