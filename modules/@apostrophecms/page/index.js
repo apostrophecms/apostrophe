@@ -60,7 +60,6 @@ module.exports = {
     }
   },
   utilityOperations(self) {
-    console.log(self.options);
     return {
       add: {
         new: {
