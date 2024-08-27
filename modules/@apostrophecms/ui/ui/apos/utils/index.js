@@ -10,7 +10,7 @@ module.exports = {
 // Returns a debounced function that invokes "fn", but no more frequently than every "delay"
 // milliseconds and never while "fn" is already in progress.
 //
-// As always when debouncing, extra calls are discarded, however the most recent call 
+// As always when debouncing, extra calls are discarded, however the most recent call
 // is guaranteed to result in a final invocation if not preempted by a new call, so you may
 // trust that the user's most recent input will eventually be sent etc.
 //
@@ -36,7 +36,7 @@ module.exports = {
 // reporting is the responsibility of "fn".
 //
 // If "ifNotCanceled" is not provided, then after cancellation any invocations will be rejected
-// with an error such that "e.name === 'debounce:canceled'". Any other errors are passed through
+// with an error such that "e.name === 'debounce.canceled'". Any other errors are passed through
 // as errors in the debounced function.
 
 function debounceAsync(fn, delay, options = {}) {
@@ -84,8 +84,8 @@ function debounceAsync(fn, delay, options = {}) {
     }
   };
 
-  let wrapper = (...args) => {
-    return new Promise((resolve, reject) => {
+  const wrapper = async (...args) => {
+    const promise = new Promise((resolve, reject) => {
       if (canceled) {
         return reject(canceledRejection);
       }
@@ -96,15 +96,21 @@ function debounceAsync(fn, delay, options = {}) {
       clearTimeout(timer);
       timer = setTimer(resolve, reject, args, delay);
     });
-  };
 
-  if (options.ifNotCanceled) {
-    wrapper = wrapper().then(...args => {
-      options.ifNotCanceled(...args);
-    }).finally(() => {
-      return Promise.resolve(null);
-    });
-  }
+    try {
+      const result = await promise;
+      if (options.ifNotCanceled) {
+        await options.ifNotCanceled(result);
+        return null;
+      }
+      return promise;
+    } catch (e) {
+      if (e.name !== 'debounce.canceled' || !options.ifNotCanceled) {
+        throw e;
+      }
+      return null;
+    }
+  };
 
   wrapper.cancel = () => {
     canceled = true;
@@ -112,8 +118,9 @@ function debounceAsync(fn, delay, options = {}) {
     timer = null;
   };
 
-  wrapper.skipDelay = () => {
+  wrapper.skipDelay = (...args) => {
     skipNextDelay = true;
+    return wrapper(...args);
   };
 
   return wrapper;
