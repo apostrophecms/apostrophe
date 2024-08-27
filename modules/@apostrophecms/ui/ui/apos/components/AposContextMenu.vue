@@ -18,6 +18,7 @@
           'aria-haspopup': 'menu',
           'aria-expanded': isMenuVisible ? true : false
         }"
+        @icon="setIconToCenterTo"
         @click.stop="buttonClicked($event)"
       />
       <div
@@ -125,6 +126,7 @@ const dropdown = ref();
 const dropdownContent = ref();
 const dropdownContentStyle = ref({});
 const arrowEl = ref();
+const iconToCenterTo = ref(null);
 const menuOffset = getMenuOffset();
 
 defineExpose({
@@ -206,6 +208,13 @@ function hideWhenOtherOpen({ menuId }) {
   }
 }
 
+// Center arrow on chevron-down-icon
+function setIconToCenterTo(el) {
+  if (el && props.button.icon === 'chevron-down-icon') {
+    iconToCenterTo.value = el;
+  }
+}
+
 function hide() {
   isOpen.value = false;
 }
@@ -232,9 +241,10 @@ async function setDropdownPosition() {
   if (!dropdown.value || !dropdownContent.value) {
     return;
   }
+  const centerArrowIcon = iconToCenterTo.value || dropdown.value;
   const {
     x, y, middlewareData, placement: dropdownPlacement
-  } = await computePosition(dropdown.value, dropdownContent.value, {
+  } = await computePosition(centerArrowIcon, dropdownContent.value, {
     placement: props.menuPlacement,
     middleware: [
       offset(menuOffset),
