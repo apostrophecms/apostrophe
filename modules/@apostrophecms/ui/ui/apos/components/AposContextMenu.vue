@@ -16,25 +16,25 @@
         :tooltip="tooltip"
         :attrs="{
           'aria-haspopup': 'menu',
-          'aria-expanded': isOpen ? true : false
+          'aria-expanded': isMenuVisible ? true : false
         }"
         @click.stop="buttonClicked($event)"
       />
       <div
-        v-if="isOpen"
+        v-show="isMenuVisible"
         ref="dropdownContent"
         v-click-outside-element="hide"
         class="apos-context-menu__dropdown-content"
         :class="popoverClass"
         data-apos-menu
         :style="dropdownContentStyle"
-        :aria-hidden="!isOpen"
+        :aria-hidden="!isMenuVisible"
       >
         <AposContextMenuDialog
           :menu-placement="placement"
           :class-list="classList"
           :menu="menu"
-          :is-open="isOpen"
+          :is-open="isMenuVisible"
           @item-clicked="menuItemClicked"
           @set-arrow="setArrow"
         >
@@ -118,6 +118,7 @@ const props = defineProps({
 const emit = defineEmits([ 'open', 'close', 'item-clicked' ]);
 
 const isOpen = ref(false);
+const positionComputed = ref(false);
 const placement = ref(props.menuPlacement);
 const event = ref(null);
 const dropdown = ref();
@@ -129,6 +130,10 @@ const menuOffset = getMenuOffset();
 defineExpose({
   hide,
   setDropdownPosition
+});
+
+const isMenuVisible = computed(() => {
+  return isOpen.value && positionComputed.value;
 });
 
 const popoverClass = computed(() => {
@@ -165,8 +170,10 @@ watch(isOpen, (newVal) => {
     window.addEventListener('scroll', setDropdownPosition);
     window.addEventListener('keydown', handleKeyboard);
     setDropdownPosition();
+    positionComputed.value = true;
     dropdownContent.value.querySelector('[tabindex]')?.focus();
   } else {
+    positionComputed.value = false;
     window.removeEventListener('resize', setDropdownPosition);
     window.removeEventListener('scroll', setDropdownPosition);
     window.removeEventListener('keydown', handleKeyboard);
