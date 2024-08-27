@@ -54,7 +54,8 @@ function debounceAsync(fn, delay, options = {}) {
       }
       if (!previousDone) {
         clearTimeout(timer);
-        timer = setTimer(res, rej, args, delay);
+        // At least 100ms delay to let current invocation finish
+        timer = setTimer(res, rej, args, delay || 100);
         return;
       }
 
@@ -77,11 +78,7 @@ function debounceAsync(fn, delay, options = {}) {
       previousDone = true;
       res(returned);
     }
-    if (delay === false) {
-      return body();
-    } else {
-      return setTimeout(body, delay);
-    }
+    return setTimeout(body, delay);
   };
 
   let wrapper = (...args) => {
@@ -91,7 +88,8 @@ function debounceAsync(fn, delay, options = {}) {
       }
       if (skipNextDelay) {
         skipNextDelay = false;
-        setTimer(resolve, reject, args, false);
+        setTimer(resolve, reject, args, 0);
+        return;
       }
       clearTimeout(timer);
       timer = setTimer(resolve, reject, args, delay);
