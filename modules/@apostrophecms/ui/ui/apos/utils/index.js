@@ -88,7 +88,7 @@ function debounceAsync(fn, delay, options = {}) {
       }
       if (skipNextDelay) {
         skipNextDelay = false;
-        setTimer(resolve, reject, args, 0);
+        timer = setTimer(resolve, reject, args, 0);
         return;
       }
       clearTimeout(timer);
