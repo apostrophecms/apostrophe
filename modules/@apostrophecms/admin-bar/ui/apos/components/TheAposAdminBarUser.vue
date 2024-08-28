@@ -57,7 +57,9 @@ export default {
   :deep(.apos-button) {
     @include type-base;
 
-    color: var(--a-text-primary);
+    & {
+      color: var(--a-text-primary);
+    }
   }
 
   :deep(.apos-context-menu__popup) {

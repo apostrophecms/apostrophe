@@ -61,8 +61,10 @@ export default {
   .apos-color__info {
     @include type-base;
 
-    margin-left: 15px;
-    color: var(--a-text-primary);
+    & {
+      margin-left: 15px;
+      color: var(--a-text-primary);
+    }
   }
 </style>
 

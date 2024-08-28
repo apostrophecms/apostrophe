@@ -250,36 +250,40 @@ export default {
     @include apos-button-reset();
     @include apos-transition();
 
-    display: flex;
-    box-sizing: border-box;
-    align-items: center;
-    justify-content: center;
-    border: 2px dashed var(--a-base-3);
-    color: inherit;
-    grid-column: 1 / 3;
-    grid-row: 1 / 3;
+    & {
+      display: flex;
+      box-sizing: border-box;
+      align-items: center;
+      justify-content: center;
+      border: 2px dashed var(--a-base-3);
+      color: inherit;
+      grid-column: 1 / 3;
+      grid-row: 1 / 3;
+    }
   }
 
   .apos-media-uploader--enabled {
     &::after {
       @include apos-transition($duration: 0.3s);
 
-      z-index: $z-index-under;
-      position: absolute;
-      content: '';
-      width: 90%;
-      height: 90%;
-      background-image:
-        linear-gradient(to right, rgba($brand-magenta, 0.3), rgba($brand-blue, 0.3)),
-        linear-gradient(to right, rgba($brand-gold, 0.3), rgba($brand-magenta, 0.3));
-      background-size:
-        100% 60%,
-        100% 60%;
-      background-position:
-        5% -5%,
-        5% 100%;
-      background-repeat: no-repeat;
-      filter: blur(10px);
+      & {
+        z-index: $z-index-under;
+        position: absolute;
+        content: '';
+        width: 90%;
+        height: 90%;
+        background-image:
+          linear-gradient(to right, rgba($brand-magenta, 0.3), rgba($brand-blue, 0.3)),
+          linear-gradient(to right, rgba($brand-gold, 0.3), rgba($brand-magenta, 0.3));
+        background-size:
+          100% 60%,
+          100% 60%;
+        background-position:
+          5% -5%,
+          5% 100%;
+        background-repeat: no-repeat;
+        filter: blur(10px);
+      }
     }
 
     &:hover,
@@ -318,11 +322,13 @@ export default {
   .apos-media-uploader__icon {
     @include apos-transition($duration: 0.2s);
 
-    width: 57px;
-    max-width: 50%;
-    height: auto;
-    margin-bottom: 5px;
-    fill: var(--a-text-primary);
+    & {
+      width: 57px;
+      max-width: 50%;
+      height: auto;
+      margin-bottom: 5px;
+      fill: var(--a-text-primary);
+    }
   }
 
   .apos-media-uploader__instructions {
@@ -343,7 +349,9 @@ export default {
   .apos-media-uploader__primary {
     @include type-large;
 
-    max-width: 100px;
-    margin: 5px auto 10px;
+    & {
+      max-width: 100px;
+      margin: 5px auto 10px;
+    }
   }
 </style>

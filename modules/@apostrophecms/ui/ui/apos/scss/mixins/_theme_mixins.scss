@@ -1,4 +1,4 @@
-@use 'sass:math';
+@use "sass:math";
 
 $brand-red: #ea433a;
 $brand-gold: #cc9300;
@@ -27,57 +27,72 @@ $input-color-disabled: var(--a-base-4);
   --a-primary-transparent-10: #{transparentize($color, 0.9)};
   --a-primary-dark-10: #{mix(#000, $color, 10%)};
   --a-primary-dark-15: #{mix(#000, $color, 15%)};
-  --a-primary-light-40: #{mix(#FFF, $color, 40%)};
+  --a-primary-light-40: #{mix(#fff, $color, 40%)};
 }
 
 //Application Styles
 
 @mixin type-base {
-  color: var(--a-text-primary);
-  font-family: var(--a-family-default);
-  font-size: var(--a-type-base);
-  font-weight: var(--a-weight-base);
-  letter-spacing: var(--a-letter-base);
-  line-height: var(--a-line-base);
+  & {
+    color: var(--a-text-primary);
+    font-family: var(--a-family-default);
+    font-size: var(--a-type-base);
+    font-weight: var(--a-weight-base);
+    letter-spacing: var(--a-letter-base);
+    line-height: var(--a-line-base);
+  }
 }
 
 @mixin type-help {
   @include type-base;
 
-  font-size: var(--a-type-small);
-  text-transform: uppercase;
+  & {
+    font-size: var(--a-type-small);
+    text-transform: uppercase;
+  }
 }
 
 @mixin type-small {
   @include type-base;
 
-  font-size: var(--a-type-small);
-  line-height: var(--a-line-tall);
+  & {
+    font-size: var(--a-type-small);
+    line-height: var(--a-line-tall);
+  }
 }
 
 @mixin type-label {
   @include type-base;
 
-  font-size: var(--a-type-label);
-  line-height: var(--a-line-tall);
+  & {
+    font-size: var(--a-type-label);
+    line-height: var(--a-line-tall);
+  }
 }
 
 @mixin type-large {
   @include type-base;
 
-  font-size: var(--a-type-large);
-  line-height: var(--a-line-tall);
+  & {
+    font-size: var(--a-type-large);
+    line-height: var(--a-line-tall);
+  }
+
 }
 
 @mixin type-title {
   @include type-base;
 
-  font-size: var(--a-type-heading);
-  line-height: var(--a-line-tall);
+  & {
+    font-size: var(--a-type-heading);
+    line-height: var(--a-line-tall);
+  }
 }
 
 @mixin type-display {
   @include type-base;
 
-  font-size: var(--a-type-display);
+  & {
+    font-size: var(--a-type-display);
+  }
 }

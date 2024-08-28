@@ -326,6 +326,8 @@ export default {
         if (this.pending) {
           this.emitWidgetUpdate();
         }
+      } else {
+        apos.bus.$emit('close-context-menus');
       }
     },
     isShowingInsert(newVal) {
@@ -850,9 +852,11 @@ function traverseNextNode(node) {
   .apos-rich-text-editor__editor {
     @include apos-transition();
 
-    position: relative;
-    border-radius: var(--a-border-radius);
-    background-color: transparent;
+    & {
+      position: relative;
+      border-radius: var(--a-border-radius);
+      background-color: transparent;
+    }
   }
 
   .apos-rich-text-editor__editor :deep([data-tippy-root]) {
@@ -872,20 +876,22 @@ function traverseNextNode(node) {
   .apos-rich-text-editor__editor_after {
     @include type-small;
 
-    position: absolute;
-    inset: 0;
-    display: block;
-    width: 200px;
-    height: 10px;
-    margin: auto;
-    color: var(--a-primary-transparent-50);
-    opacity: 0;
-    visibility: hidden;
-    pointer-events: none;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-    text-align: center;
+    & {
+      position: absolute;
+      inset: 0;
+      display: block;
+      width: 200px;
+      height: 10px;
+      margin: auto;
+      color: var(--a-primary-transparent-50);
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      text-align: center;
+    }
 
     &.apos-is-visually-empty {
       opacity: 1;
@@ -951,13 +957,15 @@ function traverseNextNode(node) {
   .apos-rich-text-insert-menu-item {
     @include apos-transition();
 
-    all: unset;
-    display: flex;
-    flex-direction: row;
-    align-items: center;
-    gap: 12px;
-    padding: 14px 16px;
-    border-bottom: 1px solid var(--a-base-9);
+    & {
+      all: unset;
+      display: flex;
+      flex-direction: row;
+      align-items: center;
+      gap: 12px;
+      padding: 14px 16px;
+      border-bottom: 1px solid var(--a-base-9);
+    }
 
     &:last-of-type {
       border-bottom: none;

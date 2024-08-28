@@ -76,11 +76,13 @@ export default {
 .apos-confirm__notifications {
   @include type-base;
 
-  margin-left: 0;
-  padding-top: 0;
-  padding-bottom: 0;
-  text-align: left;
-  list-style-type: none;
+  & {
+    margin-left: 0;
+    padding-top: 0;
+    padding-bottom: 0;
+    text-align: left;
+    list-style-type: none;
+  }
 }
 
 .apos-confirm__notification:not(:last-of-type)  {
