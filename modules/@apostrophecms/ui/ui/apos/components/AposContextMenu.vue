@@ -18,6 +18,7 @@
           'aria-haspopup': 'menu',
           'aria-expanded': isOpen ? true : false
         }"
+        @icon="setIconToCenterTo"
         @click.stop="buttonClicked($event)"
       />
       <div
@@ -112,6 +113,10 @@ const props = defineProps({
     default() {
       return createId();
     }
+  },
+  centerOnIcon: {
+    type: Boolean,
+    default: false
   }
 });
 
@@ -120,10 +125,11 @@ const emit = defineEmits([ 'open', 'close', 'item-clicked' ]);
 const isOpen = ref(false);
 const placement = ref(props.menuPlacement);
 const event = ref(null);
-const dropdown = ref();
-const dropdownContent = ref();
+const dropdown = ref(null);
+const dropdownContent = ref(null);
 const dropdownContentStyle = ref({});
-const arrowEl = ref();
+const arrowEl = ref(null);
+const iconToCenterTo = ref(null);
 const menuOffset = getMenuOffset();
 
 defineExpose({
@@ -161,10 +167,10 @@ const buttonState = computed(() => {
 watch(isOpen, (newVal) => {
   emit(newVal ? 'open' : 'close', event.value);
   if (newVal) {
+    setDropdownPosition();
     window.addEventListener('resize', setDropdownPosition);
     window.addEventListener('scroll', setDropdownPosition);
     window.addEventListener('keydown', handleKeyboard);
-    setDropdownPosition();
     dropdownContent.value.querySelector('[tabindex]')?.focus();
   } else {
     window.removeEventListener('resize', setDropdownPosition);
@@ -199,6 +205,12 @@ function hideWhenOtherOpen({ menuId }) {
   }
 }
 
+function setIconToCenterTo(el) {
+  if (el && props.centerOnIcon) {
+    iconToCenterTo.value = el;
+  }
+}
+
 function hide() {
   isOpen.value = false;
 }
@@ -225,9 +237,10 @@ async function setDropdownPosition() {
   if (!dropdown.value || !dropdownContent.value) {
     return;
   }
+  const centerArrowEl = iconToCenterTo.value || dropdown.value;
   const {
     x, y, middlewareData, placement: dropdownPlacement
-  } = await computePosition(dropdown.value, dropdownContent.value, {
+  } = await computePosition(centerArrowEl, dropdownContent.value, {
     placement: props.menuPlacement,
     middleware: [
       offset(menuOffset),

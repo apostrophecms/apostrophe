@@ -9,6 +9,7 @@
       identifier="localePickerTrigger"
       :button="button"
       :unpadded="true"
+      :center-on-icon="true"
       menu-placement="bottom-end"
       @open="open"
       @close="isOpen = false"
