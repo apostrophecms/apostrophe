@@ -16,26 +16,26 @@
         :tooltip="tooltip"
         :attrs="{
           'aria-haspopup': 'menu',
-          'aria-expanded': isMenuVisible ? true : false
+          'aria-expanded': isOpen ? true : false
         }"
         @icon="setIconToCenterTo"
         @click.stop="buttonClicked($event)"
       />
       <div
-        v-show="isMenuVisible"
+        v-if="isOpen"
         ref="dropdownContent"
         v-click-outside-element="hide"
         class="apos-context-menu__dropdown-content"
         :class="popoverClass"
         data-apos-menu
         :style="dropdownContentStyle"
-        :aria-hidden="!isMenuVisible"
+        :aria-hidden="!isOpen"
       >
         <AposContextMenuDialog
           :menu-placement="placement"
           :class-list="classList"
           :menu="menu"
-          :is-open="isMenuVisible"
+          :is-open="isOpen"
           @item-clicked="menuItemClicked"
           @set-arrow="setArrow"
         >
@@ -123,23 +123,18 @@ const props = defineProps({
 const emit = defineEmits([ 'open', 'close', 'item-clicked' ]);
 
 const isOpen = ref(false);
-const positionComputed = ref(false);
 const placement = ref(props.menuPlacement);
 const event = ref(null);
-const dropdown = ref();
-const dropdownContent = ref();
+const dropdown = ref(null);
+const dropdownContent = ref(null);
 const dropdownContentStyle = ref({});
-const arrowEl = ref();
+const arrowEl = ref(null);
 const iconToCenterTo = ref(null);
 const menuOffset = getMenuOffset();
 
 defineExpose({
   hide,
   setDropdownPosition
-});
-
-const isMenuVisible = computed(() => {
-  return isOpen.value && positionComputed.value;
 });
 
 const popoverClass = computed(() => {
@@ -172,14 +167,12 @@ const buttonState = computed(() => {
 watch(isOpen, (newVal) => {
   emit(newVal ? 'open' : 'close', event.value);
   if (newVal) {
+    setDropdownPosition();
     window.addEventListener('resize', setDropdownPosition);
     window.addEventListener('scroll', setDropdownPosition);
     window.addEventListener('keydown', handleKeyboard);
-    setDropdownPosition();
-    positionComputed.value = true;
     dropdownContent.value.querySelector('[tabindex]')?.focus();
   } else {
-    positionComputed.value = false;
     window.removeEventListener('resize', setDropdownPosition);
     window.removeEventListener('scroll', setDropdownPosition);
     window.removeEventListener('keydown', handleKeyboard);
@@ -244,10 +237,10 @@ async function setDropdownPosition() {
   if (!dropdown.value || !dropdownContent.value) {
     return;
   }
-  const centerArrowIcon = iconToCenterTo.value || dropdown.value;
+  const centerArrowEl = iconToCenterTo.value || dropdown.value;
   const {
     x, y, middlewareData, placement: dropdownPlacement
-  } = await computePosition(centerArrowIcon, dropdownContent.value, {
+  } = await computePosition(centerArrowEl, dropdownContent.value, {
     placement: props.menuPlacement,
     middleware: [
       offset(menuOffset),
