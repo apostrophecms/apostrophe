@@ -215,8 +215,8 @@ watch(triggerFocusRefresh, (newVal) => {
 
 onMounted(async () => {
   console.log('mounted');
-  await nextTick();
-  // await new Promise(resolve => setTimeout(resolve, 500));
+  // await nextTick();
+  await new Promise(resolve => setTimeout(resolve, 500));
   if (shouldTrapFocus.value) {
     trapFocus();
   }
