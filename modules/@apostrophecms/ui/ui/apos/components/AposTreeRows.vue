@@ -71,7 +71,6 @@
               v-if="options.bulkSelect && index === 0"
               v-model="checkedProxy"
               class="apos-tree__row__checkbox"
-              tabindex="-1"
               :field="{
                 name: row._id,
                 hideLabel: true,
@@ -79,7 +78,6 @@
                   key: 'apostrophe:toggleSelectionOf',
                   title: row.title
                 }),
-                disableFocus: true,
                 readOnly: maxReached && !checked.includes(row._id)
               }"
               :choice="{ value: row._id }"

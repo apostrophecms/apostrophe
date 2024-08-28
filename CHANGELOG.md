@@ -12,6 +12,10 @@
 * The `@apostrophecms/i18n` module now exposes a `locales` HTTP GET API to aid in implementation of native apps for localized sites.
 * Context menus can be supplied a `menuId` so that interested components can listen to their opening/closing.
 
+### Fixes
+
+* Adds an option to center the context menu arrow on the button icon. Sets this new option on some context menus in the admin UI.
+
 ## 4.6.1 (2024-08-26)
 
 ### Fixes
