@@ -98,7 +98,7 @@ export function useAposFocus() {
   }
 
   function findPriorityElementOrFirst(elements) {
-    console.log('find prio', elements);
+    // console.log('find prio', elements);
     return elements.find(e => e.hasAttribute('data-apos-focus-priority')) || elements[0];
   }
 }

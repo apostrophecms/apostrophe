@@ -135,6 +135,8 @@ const store = useModalStore();
 const slots = useSlots();
 const emit = defineEmits([ 'inactive', 'esc', 'show-modal', 'no-modal', 'ready' ]);
 const modalEl = ref(null);
+const findPriorityFocusElementRetryMax = ref(5);
+const currentPriorityFocusElementRetry = ref(0);
 const currentLocale = ref(store.activeModal?.locale || apos.i18n.locale);
 
 const transitionType = computed(() => {
@@ -214,9 +216,7 @@ watch(triggerFocusRefresh, (newVal) => {
 });
 
 onMounted(async () => {
-  console.log('mounted');
-  // await nextTick();
-  await new Promise(resolve => setTimeout(resolve, 500));
+  await nextTick();
   if (shouldTrapFocus.value) {
     trapFocus();
   }
@@ -252,7 +252,7 @@ function onLeave() {
   emit('no-modal');
 }
 
-function trapFocus() {
+async function trapFocus() {
   const elementSelectors = [
     '[tabindex]',
     '[href]',
@@ -265,26 +265,22 @@ function trapFocus() {
   const selector = elementSelectors
     .map(addExcludingAttributes)
     .join(', ');
-  
-  // console.log('el', modalEl.value);
-
-  // const tmp = document.createElement('div');
-  // tmp.appendChild(modalEl.value);
-  // console.log('INNER', tmp.innerHTML);
 
   const elementsToFocus = [ ...modalEl.value.querySelectorAll(selector) ]
     .filter(isElementVisible);
-  
-  // console.log('elementsToFocus', elementsToFocus);
 
   store.updateModalData(props.modalData.id, { elementsToFocus });
 
-  // console.log('imma do me');
-  // console.log(props.modalData.id);
-  // console.log(props.modalData.elementsToFocus);
-  // console.log(findPriorityElementOrFirst([ ...modalEl.value.querySelectorAll(selector) ]));
+  const firstElementToFocus = findPriorityElementOrFirst(elementsToFocus);
+  const foundPriorityElement = firstElementToFocus.hasAttribute('data-apos-focus-priority');
 
-  focusElement(props.modalData.focusedElement, findPriorityElementOrFirst([ ...modalEl.value.querySelectorAll(selector) ]));
+  focusElement(props.modalData.focusedElement, findPriorityElementOrFirst(elementsToFocus));
+
+  if (!foundPriorityElement && findPriorityFocusElementRetryMax.value > currentPriorityFocusElementRetry.value) {
+    await new Promise(resolve => setTimeout(resolve, 200));
+    currentPriorityFocusElementRetry.value++;
+    trapFocus();
+  }
 
   function addExcludingAttributes(element) {
     return `${element}:not([tabindex="-1"]):not([disabled]):not([type="hidden"]):not([aria-hidden])`;

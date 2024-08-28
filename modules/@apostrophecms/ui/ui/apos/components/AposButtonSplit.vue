@@ -165,7 +165,6 @@ function trapFocus() {
 }
 function menuOpen() {
   nextTick(() => {
-    console.log('/??? ');
     trapFocus();
   });
 }
