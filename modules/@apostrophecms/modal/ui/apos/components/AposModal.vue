@@ -277,7 +277,7 @@ async function trapFocus() {
   focusElement(props.modalData.focusedElement, findPriorityElementOrFirst(elementsToFocus));
 
   if (!foundPriorityElement && findPriorityFocusElementRetryMax.value > currentPriorityFocusElementRetry.value) {
-    await new Promise(resolve => setTimeout(resolve, 200));
+    await nextTick();
     currentPriorityFocusElementRetry.value++;
     trapFocus();
   }
