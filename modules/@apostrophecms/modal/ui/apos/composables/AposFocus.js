@@ -86,8 +86,6 @@ export function useAposFocus() {
         continue;
       }
       if (!isAlreadySelected) {
-        console.log('Focusing:');
-        console.log(element);
         element.focus();
       }
       // Element exists in the DOM and is focused, stop iterating.
