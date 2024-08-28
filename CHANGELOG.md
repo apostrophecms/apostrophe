@@ -16,6 +16,10 @@
 
 * Wait for notify before navigating to a new page.
 
+### Fixes
+
+* Fix link to pages in rich-text not showing UI to select page during edit.
+
 ## 4.6.1 (2024-08-26)
 
 ### Fixes
