@@ -113,6 +113,10 @@ const props = defineProps({
     default() {
       return createId();
     }
+  },
+  centerOnIcon: {
+    type: Boolean,
+    default: false
   }
 });
 
@@ -208,9 +212,8 @@ function hideWhenOtherOpen({ menuId }) {
   }
 }
 
-// Center arrow on chevron-down-icon
 function setIconToCenterTo(el) {
-  if (el && props.button.icon === 'chevron-down-icon') {
+  if (el && props.centerOnIcon) {
     iconToCenterTo.value = el;
   }
 }
