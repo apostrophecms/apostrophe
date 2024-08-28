@@ -19,7 +19,6 @@
         type="primary"
         label="apostrophe:save"
         :disabled="!valid"
-        :attrs="{'data-apos-focus-priority': true}"
         @click="submit"
       />
     </template>
@@ -44,6 +43,7 @@
               :icon-only="true"
               icon="plus-icon"
               :modifiers="[ 'tiny', 'round' ]"
+              :attrs="{'data-apos-focus-priority': true}"
               :disabled="maxed || itemError"
               @click.prevent="add"
             />

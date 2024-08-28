@@ -1,17 +1,16 @@
 <template>
   <label
     :class="dropzoneClasses"
-    :disabled="disabled"
+    :disabled="disabled ? disabled : null"
+    data-apos-focus-priority
+    tabindex="0"
+    @keydown="onUploadDragAndDropKeyDown"
     @drop.prevent="uploadMedia"
     @dragover.prevent=""
     @dragenter="incrementDragover"
     @dragleave="decrementDragover"
   >
-    <div
-      class="apos-media-uploader__inner"
-      tabindex="0"
-      @keydown="onUploadDragAndDropKeyDown"
-    >
+    <div class="apos-media-uploader__inner">
       <AposCloudUploadIcon
         class="apos-media-uploader__icon"
       />
@@ -236,6 +235,10 @@ export default {
     onUploadDragAndDropKeyDown(e) {
       const isEnterPressed = e.key === 'Enter' || e.code === 'Enter' || e.code === 'NumpadEnter';
       const isSpaceBarPressed = e.keyCode === 32 || e.code === 'Space';
+
+      if (isSpaceBarPressed) {
+        e.preventDefault();
+      }
 
       if (isEnterPressed || isSpaceBarPressed) {
         this.create();

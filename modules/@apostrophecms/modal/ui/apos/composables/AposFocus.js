@@ -86,6 +86,8 @@ export function useAposFocus() {
         continue;
       }
       if (!isAlreadySelected) {
+        console.log('Focusing:');
+        console.log(element);
         element.focus();
       }
       // Element exists in the DOM and is focused, stop iterating.
@@ -98,7 +100,6 @@ export function useAposFocus() {
   }
 
   function findPriorityElementOrFirst(elements) {
-    // console.log('find prio', elements);
     return elements.find(e => e.hasAttribute('data-apos-focus-priority')) || elements[0];
   }
 }

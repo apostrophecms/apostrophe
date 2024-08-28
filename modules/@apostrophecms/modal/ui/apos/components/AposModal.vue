@@ -259,7 +259,8 @@ async function trapFocus() {
     'input',
     'select',
     'textarea',
-    'button'
+    'button',
+    '[data-apos-focus-priority]'
   ];
 
   const selector = elementSelectors
@@ -276,8 +277,10 @@ async function trapFocus() {
 
   focusElement(props.modalData.focusedElement, findPriorityElementOrFirst(elementsToFocus));
 
+  // Components render at various times and can't be counted on to be available on modal's mount
+  // Update the trap focus list until a data-apos-focus-priority element is found or the retry limit is reached
   if (!foundPriorityElement && findPriorityFocusElementRetryMax.value > currentPriorityFocusElementRetry.value) {
-    await nextTick();
+    await new Promise(resolve => setTimeout(resolve, 200));
     currentPriorityFocusElementRetry.value++;
     trapFocus();
   }
