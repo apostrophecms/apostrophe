@@ -103,7 +103,7 @@ export default {
   },
   async mounted() {
     this.debouncedCheckConflict = debounceAsync(this.requestCheckConflict, 250, {
-      ifNotCancelled: this.checkConflict
+      onSuccess: this.setConflict
     });
     if (this.next.length) {
       await this.debouncedCheckConflict.skipDelay();
@@ -264,7 +264,7 @@ export default {
         }
       }
     },
-    async checkConflict(result) {
+    async setConflict(result) {
       if (result === null) {
         return;
       }
