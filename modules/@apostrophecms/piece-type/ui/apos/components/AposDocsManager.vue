@@ -448,7 +448,7 @@ export default {
       };
     },
     async search({ pieces, total }) {
-      // Most probably due to ongoing (holdQueries) requests.
+      // Most probably due to empty/invalid query.
       if (!pieces) {
         return;
       }
