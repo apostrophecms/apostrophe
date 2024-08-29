@@ -9,6 +9,7 @@
 * Add option `skipReplace` for `apos.doc.changeDocIds` method to skip the replacing of the "old" document in the database.
 * The `@apostrophecms/i18n` module now exposes a `locales` HTTP GET API to aid in implementation of native apps for localized sites.
 * Context menus can be supplied a `menuId` so that interested components can listen to their opening/closing.
+* Allow to set mode in `AposWidget` component through props.
 
 ### Fixes
 
