@@ -2,8 +2,12 @@
   <div class="apos-toggle__container">
     <div
       class="apos-toggle__slider"
+      data-at
+      tabindex="0"
       :class="{'apos-toggle__slider--activated': !modelValue}"
       @click="$emit('toggle')"
+      @keydown.stop.space="$emit('toggle')"
+      @keydown.stop.enter="$emit('toggle')"
     />
   </div>
 </template>
@@ -46,6 +50,13 @@ export default {
       cursor: pointer;
       background-color: var(--a-base-3);
 
+      &:focus,
+      &:hover,
+      &:active {
+        box-shadow: 0 0 10px var(--a-base-1);
+        outline: 2px solid var(--a-primary-transparent-90);
+      }
+
       &::before {
         content: '';
         position: absolute;
@@ -59,6 +70,12 @@ export default {
 
     &__slider--activated {
       background-color: var(--a-primary);
+
+      &:focus,
+      &:hover,
+      &:active {
+        outline: 2px solid var(--a-primary-transparent-25);
+      }
 
       &::before {
         transform: translateX(calc($toggle-width - $btn-size));
