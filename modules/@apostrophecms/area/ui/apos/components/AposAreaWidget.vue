@@ -706,7 +706,7 @@ export default {
 
     &.apos-area-widget-controls--add--top.apos-is-open--menu-top,
     &.apos-area-widget-controls--add--bottom.apos-is-open--menu-bottom {
-      z-index: $z-index-widget-focused-controls;
+      z-index: $z-index-area-schema-ui;
     }
   }
 

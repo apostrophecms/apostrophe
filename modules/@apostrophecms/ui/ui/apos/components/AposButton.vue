@@ -37,6 +37,7 @@
           :icon-size="iconSize"
           class="apos-button__icon"
           :icon-color="iconFill"
+          @icon="$emit('icon', $event)"
         />
         <slot name="label">
           <span class="apos-button__label" :class="{ 'apos-sr-only' : (iconOnly || type === 'color') }">
@@ -138,7 +139,7 @@ export default {
       default: null
     }
   },
-  emits: [ 'click' ],
+  emits: [ 'click', 'icon' ],
   data() {
     return {
       id: createId()
