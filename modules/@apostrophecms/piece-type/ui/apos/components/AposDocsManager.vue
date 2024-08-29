@@ -149,7 +149,7 @@ export default {
   emits: [ 'archive' ],
   data() {
     return {
-      mounted: false,
+      isMounted: false,
       modal: {
         active: false,
         triggerFocusRefresh: 0,
@@ -231,8 +231,10 @@ export default {
   created() {
     const DEBOUNCE_TIMEOUT = 500;
     // "mounted" in meaning of "able to mutate the state".
-    this.mounted = true;
-    this.onSearch = debounceAsync(this.search, DEBOUNCE_TIMEOUT);
+    this.isMounted = true;
+    this.onSearch = debounceAsync(this.onSearch, DEBOUNCE_TIMEOUT, {
+      onSuccess: this.search
+    });
 
     this.moduleOptions.filters.forEach(filter => {
       this.filterValues[filter.name] = filter.def;
@@ -247,8 +249,8 @@ export default {
     this.headers = this.computeHeaders();
     // Get the data. This will be more complex in actuality.
     this.modal.active = true;
-    await this.getPieces();
-    await this.getAllPiecesTotal();
+    await this.managePieces();
+    await this.manageAllPiecesTotal();
     this.modal.triggerFocusRefresh++;
 
     apos.bus.$on('content-changed', this.onContentChanged);
@@ -256,7 +258,7 @@ export default {
     apos.bus.$on('command-menu-manager-close', this.confirmAndCancel);
   },
   onBeforeUnmount() {
-    this.mounted = false;
+    this.isMounted = false;
     this.onSearch.cancel();
   },
   unmounted() {
@@ -301,9 +303,9 @@ export default {
       });
     },
     async finishSaved() {
-      await this.getPieces();
+      await this.managePieces();
     },
-    async request (mergeOptions) {
+    async request(mergeOptions) {
       const options = {
         ...this.filterValues,
         ...this.queryExtras,
@@ -332,7 +334,45 @@ export default {
         draft: true
       });
     },
-    async getPieces () {
+    async requestPieces(page = 1, mergeOptions = {}) {
+      const {
+        currentPage, pages, results, choices
+      } = await this.request({
+        ...mergeOptions,
+        ...(
+          this.moduleOptions.managerApiProjection &&
+          { project: this.moduleOptions.managerApiProjection }
+        ),
+        page
+      });
+
+      return {
+        currentPage,
+        pages,
+        results,
+        choices
+      };
+    },
+    async requestAllPiecesTotal() {
+      const { count: total } = await this.request({ count: 1 });
+      return total;
+    },
+    async requestData(currentPage = 1) {
+      const pieces = await this.requestPieces(currentPage);
+      const total = await this.requestAllPiecesTotal();
+
+      return {
+        ...pieces,
+        total
+      };
+    },
+    setPieces(data) {
+      this.currentPage = data.currentPage;
+      this.totalPages = data.pages;
+      this.items = data.results;
+      this.filterChoices = data.choices;
+    },
+    async managePieces () {
       if (this.holdQueries) {
         return;
       }
@@ -341,26 +381,22 @@ export default {
 
       const {
         currentPage, pages, results, choices
-      } = await this.request({
-        ...(
-          this.moduleOptions.managerApiProjection &&
-          { project: this.moduleOptions.managerApiProjection }
-        ),
-        page: this.currentPage
-      });
-      if (!this.mounted) {
+      } = await this.requestPieces(this.currentPage);
+      if (!this.isMounted) {
         return;
       }
 
-      this.currentPage = currentPage;
-      this.totalPages = pages;
-      this.items = results;
-      this.filterChoices = choices;
+      this.setPieces({
+        currentPage,
+        pages,
+        results,
+        choices
+      });
       this.holdQueries = false;
     },
-    async getAllPiecesTotal () {
-      const { count: total } = await this.request({ count: 1 });
-      if (!this.mounted) {
+    async manageAllPiecesTotal () {
+      const total = await this.requestAllPiecesTotal();
+      if (!this.isMounted) {
         return;
       }
 
@@ -388,25 +424,41 @@ export default {
     updatePage(num) {
       if (num) {
         this.currentPage = num;
-        this.getPieces();
+        this.managePieces();
       }
     },
-    async search(query) {
-      if (!this.mounted) {
-        return;
-      }
+    // A stateless search handler, only requesting the data.
+    // It's meant to be debounced and used in conjunction with the search
+    // method that actually updates the state.
+    async onSearch(query) {
+      const queryExtras = {};
       if (query) {
-        this.queryExtras.autocomplete = query;
+        queryExtras.autocomplete = query;
       } else if ('autocomplete' in this.queryExtras) {
-        delete this.queryExtras.autocomplete;
+        queryExtras.autocomplete = undefined;
       } else {
+        return {};
+      }
+      const { total, ...pieces } = await this.requestData(queryExtras);
+
+      return {
+        pieces,
+        total
+      };
+    },
+    async search({ pieces, total }) {
+      // Most probably due to ongoing (holdQueries) requests.
+      if (!pieces) {
         return;
       }
 
       this.currentPage = 1;
 
-      await this.getPieces();
-      await this.getAllPiecesTotal();
+      this.setPieces(pieces);
+      this.setAllPiecesSelection({
+        isSelected: false,
+        total
+      });
     },
     async filter(filter, value) {
       if (this.filterValues[filter] === value) {
@@ -416,8 +468,8 @@ export default {
       this.filterValues[filter] = value;
       this.currentPage = 1;
 
-      await this.getPieces();
-      await this.getAllPiecesTotal();
+      await this.managePieces();
+      await this.manageAllPiecesTotal();
       this.headers = this.computeHeaders();
 
       this.setCheckedDocs([]);
@@ -493,8 +545,8 @@ export default {
             }
           });
           if (action === 'archive') {
-            await this.getPieces();
-            this.getAllPiecesTotal();
+            await this.managePieces();
+            await this.manageAllPiecesTotal();
             this.checked = [];
           }
         } catch (error) {
@@ -512,28 +564,16 @@ export default {
         return item._id;
       });
     },
-
     async onContentChanged({ doc, action }) {
       if (
         !doc ||
         !doc.aposLocale ||
         doc.aposLocale.split(':')[0] === this.modalData.locale
       ) {
-        await this.getPieces();
-        this.getAllPiecesTotal();
+        await this.managePieces();
+        await this.manageAllPiecesTotal();
         if (action === 'archive') {
           this.checked = this.checked.filter(checkedId => doc._id !== checkedId);
-        }
-      }
-    },
-
-    async onSearchSafe(...args) {
-      try {
-        const result = await this.onSearch(...args);
-        return result;
-      } catch (error) {
-        if (error.message !== 'debounce:canceled') {
-          throw error;
         }
       }
     }

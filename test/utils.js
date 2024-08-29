@@ -555,10 +555,151 @@ describe('Utils', function() {
       debouncedAsync.cancel();
 
       await assert.rejects(promise, {
+        name: 'debounce.canceled',
         message: 'debounce:canceled'
       });
 
       assert.deepEqual(calledAsync, [ 1 ], 'the original promise should always resolve');
+    });
+
+    it('should NOT INVOKE onSuccess callback and not reject when canceled', async function () {
+      const calledAsync = [];
+      async function asyncStatelessFn(num, time = 50) {
+        await wait(time);
+        console.debug('asyncStatelessFn:', num);
+        return `async ${num}`;
+      }
+      async function asyncSideEffectFn(result) {
+        await wait(50);
+        console.debug('asyncSideEffectFn:', result);
+        calledAsync.push(result + ' side effect');
+      }
+
+      const debouncedAsync = debounceAsync(asyncStatelessFn, 50, {
+        onSuccess: asyncSideEffectFn
+      });
+      const promise = debouncedAsync(1, 300);
+      await wait(100);
+      debouncedAsync.cancel();
+
+      const result = await promise;
+
+      assert.strictEqual(result, null);
+      assert.deepEqual(
+        calledAsync,
+        [],
+        'the side effect should not be called'
+      );
+    });
+
+    it('should invoke onSuccess callback when not canceled', async function () {
+      const calledAsync = [];
+      async function asyncStatelessFn(num, time = 50) {
+        await wait(time);
+        console.debug('asyncStatelessFn:', num);
+        return `async ${num}`;
+      }
+      async function asyncSideEffectFn(result) {
+        await wait(50);
+        console.debug('asyncSideEffectFn:', result);
+        calledAsync.push(result + ' side effect');
+      }
+
+      const debouncedAsync = debounceAsync(asyncStatelessFn, 50, {
+        onSuccess: asyncSideEffectFn
+      });
+      const result = await debouncedAsync(1);
+      await wait(300);
+
+      assert.deepEqual(
+        calledAsync,
+        [ 'async 1 side effect' ],
+        'the side effect should be called'
+      );
+      assert.strictEqual(result, null);
+    });
+
+    it('should skip the next delay when invoked via skipDelay', async function () {
+      const invoked = [];
+      const calledAsync = [];
+      async function asyncStatelessFn(num, time = 50) {
+        invoked.push(num);
+        await wait(time);
+        console.debug('asyncStatelessFn:', num);
+        return `async ${num}`;
+      }
+      async function asyncSideEffectFn(result) {
+        await wait(50);
+        console.debug('asyncSideEffectFn:', result);
+        calledAsync.push(result + ' side effect');
+      }
+
+      const debouncedAsync = debounceAsync(asyncStatelessFn, 300, {
+        onSuccess: asyncSideEffectFn
+      });
+      debouncedAsync.skipDelay(1, 20);
+      await wait(100);
+      debouncedAsync(2);
+
+      assert.deepEqual(
+        calledAsync,
+        [ 'async 1 side effect' ],
+        'the side effect should be called'
+      );
+      assert.deepEqual(
+        invoked,
+        [ 1 ],
+        'bad invokation of the original function'
+      );
+
+      // Wait for the entire delay time to pass.
+      await wait(500);
+      assert.deepEqual(
+        calledAsync,
+        [ 'async 1 side effect', 'async 2 side effect' ],
+        'the side effect should be called'
+      );
+      assert.deepEqual(
+        invoked,
+        [ 1, 2 ],
+        'bad invokation of the original function after the end of the delay'
+      );
+    });
+
+    it('should bounce skipDelay as well', async function () {
+      const invoked = [];
+      const calledAsync = [];
+
+      async function asyncStatelessFn(num, time = 50) {
+        invoked.push(num);
+        await wait(time);
+        console.debug('asyncStatelessFn:', num);
+        return `async ${num}`;
+      }
+      async function asyncSideEffectFn(result) {
+        await wait(50);
+        console.debug('asyncSideEffectFn:', result);
+        calledAsync.push(result + ' side effect');
+      }
+
+      const debouncedAsync = debounceAsync(asyncStatelessFn, 100, {
+        onSuccess: asyncSideEffectFn
+      });
+      debouncedAsync(1);
+      debouncedAsync.skipDelay(2);
+      debouncedAsync(3);
+      await wait(500);
+
+      assert.deepEqual(
+        calledAsync,
+        [ 'async 1 side effect', 'async 3 side effect' ],
+        'the side effect should be called'
+      );
+      assert.deepEqual(
+        invoked,
+        [ 1, 3 ],
+        'bad invokation of the original function'
+      );
     });
 
     it('can throttle functions', async function () {

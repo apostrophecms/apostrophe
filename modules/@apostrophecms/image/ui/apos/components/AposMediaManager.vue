@@ -143,7 +143,6 @@ export default {
   emits: [ 'archive', 'save', 'search', 'piece-relationship-query' ],
   data() {
     return {
-      mounted: false,
       items: [],
       isFirstLoading: true,
       isLoading: false,
@@ -274,30 +273,19 @@ export default {
   },
   created() {
     this.setDefaultFilters();
-    const debouncedGetMedia = debounceAsync(this.getMedia, DEBOUNCE_TIMEOUT);
-    this.debouncedGetMedia = async function (...args) {
-      try {
-        const result = await debouncedGetMedia(...args);
-        return result;
-      } catch (e) {
-        if (e.message !== 'debounce:canceled') {
-          throw e;
-        }
-      }
-    };
-    this.debouncedGetMedia.cancel = debouncedGetMedia.cancel;
+    this.debouncedGetMedia = debounceAsync(this.getMedia, DEBOUNCE_TIMEOUT, {
+      onSuccess: this.appendMedia
+    });
   },
   async mounted() {
-    this.mounted = true;
     this.modal.active = true;
-    await this.getMedia({ tags: true });
-    this.isFirstLoading = false;
-
+    // Do these before any async work or they might get added after they are "removed"
     apos.bus.$on('content-changed', this.onContentChanged);
     apos.bus.$on('command-menu-manager-close', this.confirmAndCancel);
+    await this.debouncedGetMedia.skipDelay({ tags: true });
+    this.isFirstLoading = false;
   },
   beforeUnmount() {
-    this.mounted = false;
     this.debouncedGetMedia.cancel();
     apos.bus.$off('content-changed', this.onContentChanged);
     apos.bus.$off('command-menu-manager-close', this.confirmAndCancel);
@@ -314,9 +302,7 @@ export default {
       this.modified = val;
     },
     async getMedia(options = {}) {
-      if (!this.mounted) {
-        return;
-      }
+      const result = {};
       const qs = {
         ...this.filterValues,
         page: this.currentPage,
@@ -349,9 +335,6 @@ export default {
           draft: true
         }
       ));
-      if (!this.mounted) {
-        return;
-      }
 
       if (options.tags) {
         if (filtered) {
@@ -367,26 +350,35 @@ export default {
               draft: true
             }
           ));
-          if (!this.mounted) {
-            return;
-          }
-          this.tagList = apiResponse.choices._tags;
+          result.tagList = apiResponse.choices._tags;
         } else {
-          this.tagList = apiResponse.choices ? apiResponse.choices._tags : [];
+          result.tagList = apiResponse.choices ? apiResponse.choices._tags : [];
         }
       }
 
-      this.currentPage = apiResponse.currentPage;
-      this.totalPages = apiResponse.pages;
+      result.currentPage = apiResponse.currentPage;
+      result.totalPages = apiResponse.pages;
+      result.items = [];
       for (const image of apiResponse.results) {
-        this.items.push(image);
+        result.items.push(image);
+      }
+      return result;
+    },
+    async appendMedia({
+      tagList, currentPage, totalPages, items
+    }) {
+      this.tagList = tagList;
+      this.currentPage = currentPage;
+      this.totalPages = totalPages;
+      for (const item of items) {
+        this.items.push(item);
       }
     },
     async refetchMedia(opts) {
       this.isLoading = true;
       this.currentPage = 1;
       this.items = [];
-      await this.getMedia(opts);
+      await this.debouncedGetMedia.skipDelay(opts);
       this.isLoading = false;
       this.modified = false;
       this.updateEditing(null);
@@ -402,11 +394,10 @@ export default {
         dimensions
       });
     },
-    async completeUploading (imgIds) {
+    async completeUploading(imgIds) {
       this.currentPage = 1;
       this.items = [];
-      await this.getMedia();
-
+      await this.debouncedGetMedia.skipDelay();
       if (Array.isArray(imgIds) && imgIds.length && this.items.length === 0) {
         const [ widgetOptions = {} ] = apos.area.widgetOptions;
         const [ width, height ] = widgetOptions.minSize || [];
@@ -577,7 +568,7 @@ export default {
           this.loadRef.scrollIntoView({
             behavior: 'smooth'
           });
-          await this.getMedia();
+          await this.debouncedGetMedia.skipDelay();
           this.isScrollLoading = false;
         }
       }
