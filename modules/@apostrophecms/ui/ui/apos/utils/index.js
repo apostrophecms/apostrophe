@@ -14,28 +14,28 @@ module.exports = {
 // is guaranteed to result in a final invocation if not preempted by a new call, so you may
 // trust that the user's most recent input will eventually be sent etc.
 //
-// ### Avoiding race conditions with ifNotCanceled
+// ### Avoiding race conditions with onSuccess
 //
 // Race conditions are a challenge. To avoid them, "fn" should have no side effects, and you should
-// pass a synchronous function that accepts the return value of "fn" as the "ifNotCanceled" option.
-// The "ifNotCanceled" function should then implement all needed side effects (e.g. changes to component
-// state, etc) when invoked. The debounced function has no return value when "ifNotCanceled" is used.
+// pass a synchronous function that accepts the return value of "fn" as the "onSuccess" option.
+// The "onSuccess" function should then implement all needed side effects (e.g. changes to component
+// state, etc) when invoked. The debounced function has no return value when "onSuccess" is used.
 //
 // You can cancel the debounced function and cause any further invocations to be rejected by
 // calling the "cancel()" method attached to it.
 //
 // You can skip the initial delay for a particular invocation by calling the "skipDelay()" method
 // attached to the debounced function, passing any appropriate arguments for "fn" to "skipDelay" instead.
-// This is useful when immediate action is sometimes needed but you still want to use "ifNotCanceled" in
+// This is useful when immediate action is sometimes needed but you still want to use "onSuccess" in
 // a consistent manner and prevent race conditions.
 //
 // ### Detecting Cancellations
 //
-// If "ifNotCanceled" is provided then all invocations of the debounced function resolve with "null",
+// If "onSuccess" is provided then all invocations of the debounced function resolve with "null",
 // whether or not they succeed, are canceled or reject with an error. In this case any needed error
 // reporting is the responsibility of "fn".
 //
-// If "ifNotCanceled" is not provided, then after cancellation any invocations will be rejected
+// If "onSuccess" is not provided, then after cancellation any invocations will be rejected
 // with an error such that "e.name === 'debounce.canceled'". Any other errors are passed through
 // as errors in the debounced function.
 
@@ -97,13 +97,13 @@ function debounceAsync(fn, delay, options = {}) {
 
     try {
       const result = await promise;
-      if (options.ifNotCanceled) {
-        await options.ifNotCanceled(result);
+      if (options.onSuccess) {
+        await options.onSuccess(result);
         return null;
       }
       return promise;
     } catch (e) {
-      if (e.name !== 'debounce.canceled' || !options.ifNotCanceled) {
+      if (e.name !== 'debounce.canceled' || !options.onSuccess) {
         throw e;
       }
       return null;

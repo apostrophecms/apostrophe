@@ -143,7 +143,6 @@ export default {
   emits: [ 'archive', 'save', 'search', 'piece-relationship-query' ],
   data() {
     return {
-      mounted: false,
       items: [],
       isFirstLoading: true,
       isLoading: false,
@@ -275,7 +274,7 @@ export default {
   created() {
     this.setDefaultFilters();
     this.debouncedGetMedia = debounceAsync(this.getMedia, DEBOUNCE_TIMEOUT, {
-      ifNotCanceled: this.appendMedia
+      onSuccess: this.appendMedia
     });
   },
   async mounted() {
@@ -365,7 +364,9 @@ export default {
       }
       return result;
     },
-    async appendMedia({ tagList, currentPage, totalPages, items }) {
+    async appendMedia({
+      tagList, currentPage, totalPages, items
+    }) {
       this.tagList = tagList;
       this.currentPage = currentPage;
       this.totalPages = totalPages;
@@ -393,7 +394,7 @@ export default {
         dimensions
       });
     },
-    async completeUploading (imgIds) {
+    async completeUploading(imgIds) {
       this.currentPage = 1;
       this.items = [];
       await this.debouncedGetMedia.skipDelay();

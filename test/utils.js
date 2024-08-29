@@ -562,21 +562,21 @@ describe('Utils', function() {
       assert.deepEqual(calledAsync, [ 1 ], 'the original promise should always resolve');
     });
 
-    it('should NOT INVOKE ifNotCanceled callback and not reject when canceled', async function () {
+    it('should NOT INVOKE onSuccess callback and not reject when canceled', async function () {
       const calledAsync = [];
       async function asyncStatelessFn(num, time = 50) {
         await wait(time);
-        console.debug('NO side effect asyncFn', num);
+        console.debug('asyncStatelessFn:', num);
         return `async ${num}`;
       }
       async function asyncSideEffectFn(result) {
         await wait(50);
-        console.debug('side effect asyncFn', result);
+        console.debug('asyncSideEffectFn:', result);
         calledAsync.push(result + ' side effect');
       }
 
       const debouncedAsync = debounceAsync(asyncStatelessFn, 50, {
-        ifNotCanceled: asyncSideEffectFn
+        onSuccess: asyncSideEffectFn
       });
       const promise = debouncedAsync(1, 300);
       await wait(100);
@@ -592,21 +592,21 @@ describe('Utils', function() {
       );
     });
 
-    it('should invoke ifNotCanceled callback when not canceled', async function () {
+    it('should invoke onSuccess callback when not canceled', async function () {
       const calledAsync = [];
       async function asyncStatelessFn(num, time = 50) {
         await wait(time);
-        console.debug('NO side effect asyncFn', num);
+        console.debug('asyncStatelessFn:', num);
         return `async ${num}`;
       }
       async function asyncSideEffectFn(result) {
         await wait(50);
-        console.debug('side effect asyncFn result:', result);
+        console.debug('asyncSideEffectFn:', result);
         calledAsync.push(result + ' side effect');
       }
 
       const debouncedAsync = debounceAsync(asyncStatelessFn, 50, {
-        ifNotCanceled: asyncSideEffectFn
+        onSuccess: asyncSideEffectFn
       });
       const result = await debouncedAsync(1);
       await wait(300);
@@ -625,20 +625,21 @@ describe('Utils', function() {
       async function asyncStatelessFn(num, time = 50) {
         invoked.push(num);
         await wait(time);
-        console.debug('NO side effect asyncFn', num);
+        console.debug('asyncStatelessFn:', num);
         return `async ${num}`;
       }
       async function asyncSideEffectFn(result) {
         await wait(50);
-        console.debug('side effect asyncFn', result);
+        console.debug('asyncSideEffectFn:', result);
         calledAsync.push(result + ' side effect');
       }
 
       const debouncedAsync = debounceAsync(asyncStatelessFn, 300, {
-        ifNotCanceled: asyncSideEffectFn
+        onSuccess: asyncSideEffectFn
       });
       debouncedAsync.skipDelay(1, 20);
       await wait(100);
+      debouncedAsync(2);
 
       assert.deepEqual(
         calledAsync,
@@ -652,17 +653,52 @@ describe('Utils', function() {
       );
 
       // Wait for the entire delay time to pass.
-      // No change in the calledAsync array should be observed.
-      await wait(300);
+      await wait(500);
       assert.deepEqual(
         calledAsync,
-        [ 'async 1 side effect' ],
+        [ 'async 1 side effect', 'async 2 side effect' ],
         'the side effect should be called'
       );
       assert.deepEqual(
         invoked,
-        [ 1 ],
+        [ 1, 2 ],
         'bad invokation of the original function after the end of the delay'
+      );
+    });
+
+    it('should bounce skipDelay as well', async function () {
+      const invoked = [];
+      const calledAsync = [];
+
+      async function asyncStatelessFn(num, time = 50) {
+        invoked.push(num);
+        await wait(time);
+        console.debug('asyncStatelessFn:', num);
+        return `async ${num}`;
+      }
+      async function asyncSideEffectFn(result) {
+        await wait(50);
+        console.debug('asyncSideEffectFn:', result);
+        calledAsync.push(result + ' side effect');
+      }
+
+      const debouncedAsync = debounceAsync(asyncStatelessFn, 100, {
+        onSuccess: asyncSideEffectFn
+      });
+      debouncedAsync(1);
+      debouncedAsync.skipDelay(2);
+      debouncedAsync(3);
+      await wait(500);
+
+      assert.deepEqual(
+        calledAsync,
+        [ 'async 1 side effect', 'async 3 side effect' ],
+        'the side effect should be called'
+      );
+      assert.deepEqual(
+        invoked,
+        [ 1, 3 ],
+        'bad invokation of the original function'
       );
     });
 

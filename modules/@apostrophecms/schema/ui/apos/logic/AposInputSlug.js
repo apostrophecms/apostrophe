@@ -12,7 +12,6 @@ export default {
   emits: [ 'return' ],
   data() {
     return {
-      mounted: false,
       conflict: false,
       isArchived: null,
       originalParentSlug: ''
@@ -103,16 +102,11 @@ export default {
     }
   },
   async mounted() {
-    this.mounted = true;
-    this.debouncedCheckConflict = debounceAsync(() => this.checkConflict(), 250);
+    this.debouncedCheckConflict = debounceAsync(this.requestCheckConflict, 250, {
+      ifNotCancelled: this.checkConflict
+    });
     if (this.next.length) {
-      try {
-        await this.debouncedCheckConflict();
-      } catch (e) {
-        if (e.message !== 'debounce:canceled') {
-          throw e;
-        }
-      }
+      await this.debouncedCheckConflict.skipDelay();
     }
     this.originalParentSlug = this.getParentSlug(this.next);
   },
@@ -128,13 +122,7 @@ export default {
     async watchNext() {
       this.next = this.slugify(this.next);
       this.validateAndEmit();
-      try {
-        await this.debouncedCheckConflict();
-      } catch (e) {
-        if (e.message !== 'debounce:canceled') {
-          throw e;
-        }
-      }
+      await this.debouncedCheckConflict();
     },
     validate(value) {
       if (this.conflict) {
@@ -240,7 +228,7 @@ export default {
 
       return updated;
     },
-    async checkConflict() {
+    async requestCheckConflict() {
       let slug;
       try {
         slug = this.next;
@@ -252,33 +240,36 @@ export default {
             },
             draft: true
           });
-          if (!this.mounted) {
-            return;
-          }
+
           // Still relevant?
           if (slug === this.next) {
-            this.conflict = false;
-            this.validateAndEmit();
-          } else {
-            // Can ignore it, another request
-            // probably already in-flight
+            return false;
           }
+          // Should not happen, another request
+          // already in-flight shouldn't be possible now.
+          return null;
         }
       } catch (e) {
         // 409: Conflict (slug in use)
         if (e.status === 409) {
           // Still relevant?
           if (slug === this.next) {
-            this.conflict = true;
-            this.validateAndEmit();
-          } else {
-            // Can ignore it, another request
-            // probably already in-flight
+            return true;
           }
+          // Should not happen, another request
+          // already in-flight shouldn't be possible now.
+          return null;
         } else {
           throw e;
         }
       }
+    },
+    async checkConflict(result) {
+      if (result === null) {
+        return;
+      }
+      this.conflict = result;
+      this.validateAndEmit();
     },
     passFocus() {
       this.$refs.input.focus();
