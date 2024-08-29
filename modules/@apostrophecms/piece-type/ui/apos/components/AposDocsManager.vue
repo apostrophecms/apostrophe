@@ -421,10 +421,10 @@ export default {
         docs
       });
     },
-    updatePage(num) {
+    async updatePage(num) {
       if (num) {
         this.currentPage = num;
-        this.managePieces();
+        await this.managePieces();
       }
     },
     // A stateless search handler, only requesting the data.
