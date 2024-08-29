@@ -84,7 +84,7 @@
               disableUnchecked: maxReached()
             }"
             @select-click="selectAll"
-            @search="onSearchSafe"
+            @search="onSearchDebounced"
             @page-change="updatePage"
             @filter="filter"
             @batch="handleBatchAction"
@@ -232,7 +232,7 @@ export default {
     const DEBOUNCE_TIMEOUT = 500;
     // "mounted" in meaning of "able to mutate the state".
     this.isMounted = true;
-    this.onSearch = debounceAsync(this.onSearch, DEBOUNCE_TIMEOUT, {
+    this.onSearchDebounced = debounceAsync(this.onSearch, DEBOUNCE_TIMEOUT, {
       onSuccess: this.search
     });
 
@@ -259,7 +259,7 @@ export default {
   },
   onBeforeUnmount() {
     this.isMounted = false;
-    this.onSearch.cancel();
+    this.onSearchDebounced.cancel();
   },
   unmounted() {
     this.destroyShortcuts();
