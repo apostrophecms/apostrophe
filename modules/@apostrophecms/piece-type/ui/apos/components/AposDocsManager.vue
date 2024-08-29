@@ -231,6 +231,7 @@ export default {
   created() {
     const DEBOUNCE_TIMEOUT = 500;
     // "mounted" in meaning of "able to mutate the state".
+    // It is used in async methods that are not handled by debounceAsync.
     this.isMounted = true;
     this.onSearchDebounced = debounceAsync(this.onSearch, DEBOUNCE_TIMEOUT, {
       onSuccess: this.search
