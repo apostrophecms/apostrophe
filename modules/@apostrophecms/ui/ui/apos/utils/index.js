@@ -5,7 +5,7 @@ module.exports = {
   throttle
 };
 
-// Debounce the async function "fn". For synchronous functions, use _.debounce, not this function.
+// Debounce the async function "fn". For synchronous functions, use "lodash/debounce", not this function.
 //
 // Returns a debounced function that invokes "fn", but no more frequently than every "delay"
 // milliseconds and never while "fn" is already in progress.
@@ -21,7 +21,7 @@ module.exports = {
 // The "onSuccess" function should then implement all needed side effects (e.g. changes to component
 // state, etc) when invoked. The debounced function has no return value when "onSuccess" is used.
 //
-// You can cancel the debounced function and cause any further invocations to be rejected by
+// You can cancel the debounced function and cause all ongoing and any further invocations to be rejected by
 // calling the "cancel()" method attached to it.
 //
 // You can skip the initial delay for a particular invocation by calling the "skipDelay()" method
@@ -31,13 +31,14 @@ module.exports = {
 //
 // ### Detecting Cancellations
 //
-// If "onSuccess" is provided then all invocations of the debounced function resolve with "null",
-// whether or not they succeed, are canceled or reject with an error. In this case any needed error
-// reporting is the responsibility of "fn".
-//
 // If "onSuccess" is not provided, then after cancellation any invocations will be rejected
 // with an error such that "e.name === 'debounce.canceled'". Any other errors are passed through
 // as errors in the debounced function.
+//
+// If "onSuccess" is provided then all invocations of the debounced function resolve with "null".
+// If a rejection due to cancelation is detected ("e.name === 'debounce.canceled'") then
+// it will be "muted" internally. Howeever, if any other type of error occurs, it will be passed through,
+// resulting in a rejection of the debounced function.
 
 function debounceAsync(fn, delay, options = {}) {
   const canceledRejection = new Error('debounce:canceled');

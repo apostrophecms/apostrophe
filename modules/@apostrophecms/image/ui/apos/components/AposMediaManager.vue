@@ -166,7 +166,9 @@ export default {
         emoji: '🖼'
       },
       cancelDescription: 'apostrophe:discardImageChangesPrompt',
-      debouncedGetMedia: null,
+      debouncedGetMedia: debounceAsync(this.getMedia, DEBOUNCE_TIMEOUT, {
+        onSuccess: this.appendMedia
+      }),
       loadObserver: new IntersectionObserver(
         this.handleIntersect,
         {
@@ -271,12 +273,11 @@ export default {
       }
     }
   },
+
   created() {
     this.setDefaultFilters();
-    this.debouncedGetMedia = debounceAsync(this.getMedia, DEBOUNCE_TIMEOUT, {
-      onSuccess: this.appendMedia
-    });
   },
+
   async mounted() {
     this.modal.active = true;
     // Do these before any async work or they might get added after they are "removed"
@@ -285,11 +286,13 @@ export default {
     await this.debouncedGetMedia.skipDelay({ tags: true });
     this.isFirstLoading = false;
   },
+
   beforeUnmount() {
     this.debouncedGetMedia.cancel();
     apos.bus.$off('content-changed', this.onContentChanged);
     apos.bus.$off('command-menu-manager-close', this.confirmAndCancel);
   },
+
   methods: {
     setDefaultFilters() {
       this.moduleOptions.filters.forEach(filter => {

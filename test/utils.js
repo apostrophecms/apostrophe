@@ -491,7 +491,7 @@ describe('Utils', function() {
     it('should cancel debounced calls (async)', async function () {
       let calledAsync = [];
 
-      async function asyncFn(num, time = 50) {
+      async function asyncFn(num) {
         await wait(50);
         calledAsync.push(num);
         // Keep all console.debug around to easy debug - ensure
