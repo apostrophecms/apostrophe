@@ -31,6 +31,7 @@
           :button="draftButton"
           :menu="draftMenu"
           :disabled="hasCustomUi || isUnpublished"
+          :center-on-icon="true"
           menu-placement="bottom-end"
           @item-clicked="switchDraftMode"
         />

@@ -417,21 +417,27 @@ export default {
   .apos-media-editor__details {
     @include apos-list-reset();
 
-    margin-bottom: $spacing-double;
+    & {
+      margin-bottom: $spacing-double;
+    }
   }
 
   .apos-media-editor__detail {
     @include type-base;
 
-    line-height: var(--a-line-tallest);
-    color: var(--a-base-4);
+    & {
+      line-height: var(--a-line-tallest);
+      color: var(--a-base-4);
+    }
   }
 
   .apos-media-editor__links {
     @include apos-list-reset();
 
-    display: flex;
-    margin-bottom: $spacing-triple;
+    & {
+      display: flex;
+      margin-bottom: $spacing-triple;
+    }
 
     :deep(.apos-button--quiet) {
       display: inline;

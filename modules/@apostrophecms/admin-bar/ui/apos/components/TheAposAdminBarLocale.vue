@@ -5,6 +5,7 @@
     identifier="localePickerTrigger"
     :button="button"
     :unpadded="true"
+    :center-on-icon="true"
     menu-placement="bottom-end"
     @open="open"
     @close="isOpen = false"
@@ -162,9 +163,11 @@ export default {
   &:deep(.apos-button__label) {
     @include type-small;
 
-    color: var(--a-primary);
-    font-weight: var(--a-weight-bold);
-    letter-spacing: 1px;
+    & {
+      color: var(--a-primary);
+      font-weight: var(--a-weight-bold);
+      letter-spacing: 1px;
+    }
   }
 }
 </style>

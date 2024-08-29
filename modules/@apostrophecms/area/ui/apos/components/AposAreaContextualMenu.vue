@@ -6,6 +6,7 @@
       :disabled="isDisabled"
       :button="buttonOptions"
       :popover-modifiers="inContext ? ['z-index-in-context'] : []"
+      :menu-id="menuId"
     >
       <ul class="apos-area-menu__wrapper">
         <li
@@ -117,6 +118,12 @@ export default {
       default: function() {
         return {};
       }
+    },
+    menuId: {
+      type: String,
+      default() {
+        return `areaMenu-${createId()}`;
+      }
     }
   },
   emits: [ 'add' ],
@@ -182,9 +189,6 @@ export default {
       } else {
         return menu;
       }
-    },
-    menuId() {
-      return `areaMenu-${createId()}`;
     }
   },
   mounted() {
@@ -295,10 +299,12 @@ export default {
   @include apos-button-reset();
   @include type-base;
 
-  box-sizing: border-box;
-  width: 100%;
-  padding: 5px 20px;
-  color: var(--a-base-1);
+    & {
+      box-sizing: border-box;
+      width: 100%;
+      padding: 5px 20px;
+      color: var(--a-base-1);
+    }
 
   &:hover,
   &:focus {
@@ -331,11 +337,13 @@ export default {
 .apos-area-menu__group-label {
   @include apos-button-reset();
 
-  display: flex;
-  box-sizing: border-box;
-  justify-content: space-between;
-  width: 100%;
-  padding: 10px 20px;
+  & {
+    display: flex;
+    box-sizing: border-box;
+    justify-content: space-between;
+    width: 100%;
+    padding: 10px 20px;
+  }
 
   &:hover {
     cursor: pointer;
@@ -350,7 +358,9 @@ export default {
 .apos-area-menu__group-chevron {
   @include apos-transition();
 
-  transform: rotate(90deg);
+  & {
+    transform: rotate(90deg);
+  }
 }
 
 .apos-area-menu__group-chevron.apos-is-active {
@@ -371,8 +381,10 @@ export default {
 .apos-area-menu__items--accordion {
   @include apos-transition($duration:0.3s);
 
-  overflow: hidden;
-  max-height: 0;
+  & {
+    overflow: hidden;
+    max-height: 0;
+  }
 }
 
 .apos-area-menu__items--accordion.apos-is-active {

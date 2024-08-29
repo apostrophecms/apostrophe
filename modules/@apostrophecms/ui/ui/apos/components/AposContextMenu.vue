@@ -18,6 +18,7 @@
           'aria-haspopup': 'menu',
           'aria-expanded': isOpen ? true : false
         }"
+        @icon="setIconToCenterTo"
         @click.stop="buttonClicked($event)"
       />
       <div
@@ -106,19 +107,29 @@ const props = defineProps({
     default() {
       return [];
     }
+  },
+  menuId: {
+    type: String,
+    default() {
+      return createId();
+    }
+  },
+  centerOnIcon: {
+    type: Boolean,
+    default: false
   }
 });
 
 const emit = defineEmits([ 'open', 'close', 'item-clicked' ]);
 
-const menuId = ref(createId());
 const isOpen = ref(false);
 const placement = ref(props.menuPlacement);
 const event = ref(null);
-const dropdown = ref();
-const dropdownContent = ref();
+const dropdown = ref(null);
+const dropdownContent = ref(null);
 const dropdownContentStyle = ref({});
-const arrowEl = ref();
+const arrowEl = ref(null);
+const iconToCenterTo = ref(null);
 const menuOffset = getMenuOffset();
 
 defineExpose({
@@ -156,10 +167,10 @@ const buttonState = computed(() => {
 watch(isOpen, (newVal) => {
   emit(newVal ? 'open' : 'close', event.value);
   if (newVal) {
+    setDropdownPosition();
     window.addEventListener('resize', setDropdownPosition);
     window.addEventListener('scroll', setDropdownPosition);
     window.addEventListener('keydown', handleKeyboard);
-    setDropdownPosition();
     dropdownContent.value.querySelector('[tabindex]')?.focus();
   } else {
     window.removeEventListener('resize', setDropdownPosition);
@@ -172,13 +183,13 @@ watch(isOpen, (newVal) => {
 const { themeClass } = useAposTheme();
 
 onMounted(() => {
-  apos.bus.$on('context-menu-opened', hideWhenOtherOpen);
-  apos.bus.$on('widget-focus', hide);
+  apos.bus.$on('context-menu-toggled', hideWhenOtherOpen);
+  apos.bus.$on('close-context-menus', hide);
 });
 
 onBeforeUnmount(() => {
-  apos.bus.$off('context-menu-opened', hideWhenOtherOpen);
-  apos.bus.$off('widget-focus', hide);
+  apos.bus.$off('context-menu-toggled', hideWhenOtherOpen);
+  apos.bus.$off('close-context-menus', hide);
 });
 
 function getMenuOffset() {
@@ -188,9 +199,15 @@ function getMenuOffset() {
   };
 }
 
-function hideWhenOtherOpen(id) {
-  if (menuId.value !== id) {
+function hideWhenOtherOpen({ menuId }) {
+  if (props.menuId !== menuId) {
     hide();
+  }
+}
+
+function setIconToCenterTo(el) {
+  if (el && props.centerOnIcon) {
+    iconToCenterTo.value = el;
   }
 }
 
@@ -199,8 +216,11 @@ function hide() {
 }
 
 function buttonClicked(e) {
-  apos.bus.$emit('context-menu-opened', menuId.value);
   isOpen.value = !isOpen.value;
+  apos.bus.$emit('context-menu-toggled', {
+    menuId: props.menuId,
+    isOpen: isOpen.value
+  });
   event.value = e;
 }
 
@@ -217,9 +237,10 @@ async function setDropdownPosition() {
   if (!dropdown.value || !dropdownContent.value) {
     return;
   }
+  const centerArrowEl = iconToCenterTo.value || dropdown.value;
   const {
     x, y, middlewareData, placement: dropdownPlacement
-  } = await computePosition(dropdown.value, dropdownContent.value, {
+  } = await computePosition(centerArrowEl, dropdownContent.value, {
     placement: props.menuPlacement,
     middleware: [
       offset(menuOffset),
@@ -296,11 +317,13 @@ function handleKeyboard(event) {
 .apos-context-menu__pane {
   @include type-base;
 
-  padding: 20px;
-  border: 1px solid var(--a-base-8);
-  border-radius: var(--a-border-radius);
-  box-shadow: var(--a-box-shadow);
-  background-color: var(--a-background-primary);
+  & {
+    padding: 20px;
+    border: 1px solid var(--a-base-8);
+    border-radius: var(--a-border-radius);
+    box-shadow: var(--a-box-shadow);
+    background-color: var(--a-background-primary);
+  }
 
   &:focus {
     outline: none;

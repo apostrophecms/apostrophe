@@ -2,9 +2,9 @@
 
 ## UNRELEASED
 
-### Fixes
+### Changes
 
-* Registering duplicate icon is no longer breaking the build. 
+* UI and UX of inline arrays and their table styles
 
 ### Adds
 
@@ -12,6 +12,19 @@
 * The new `big-upload-client` module can now be used to upload very large files to any route that uses the new `big-upload-middleware`.
 * Add option `skipReplace` for `apos.doc.changeDocIds` method to skip the replacing of the "old" document in the database.
 * The `@apostrophecms/i18n` module now exposes a `locales` HTTP GET API to aid in implementation of native apps for localized sites.
+* Context menus can be supplied a `menuId` so that interested components can listen to their opening/closing.
+
+### Fixes
+
+* Adds an option to center the context menu arrow on the button icon. Sets this new option on some context menus in the admin UI.
+
+## 4.6.1 (2024-08-26)
+
+### Fixes
+
+* Registering duplicate icon is no longer breaking the build.
+* Fix widget focus state so that the in-context Add Content menu stays visible during animation.
+* Fix UI of areas in schemas so that their context menus are layered overtop sibling schema fields UI.
 
 ### Removes
 * Inline array option for `alwaysOpen` replaced with UI toggles
@@ -21,7 +34,7 @@
 ### Adds
 
 * Add a locale switcher in pieces and pages editor modals. This is available for localized documents only, and allows you to switch between locales for the same document.
-  The locale can be switche at only one level, meaning that sub documents of a document that already switched locale will not be able to switch locale itself.
+  The locale can be switched at only one level, meaning that sub documents of a document that already switched locale will not be able to switch locale itself.
 * Adds visual focus states and keyboard handlers for engaging with areas and widgets in-context
 * Adds method `simulateRelationshipsFromStorage` method in schema module. 
 This method populates the relationship field with just enough information to allow convert to accept it. It does not fully fetch the related documents. It does the opposite of prepareForStorage.
@@ -31,7 +44,8 @@ The shape of the relationship field is still validated.
 
 ### Changes
 
-* UI and UX of inline arrays and their table styles
+* Refactors Admin UI SASS to eliminate deprecation warnings from declarations coming after nested rules.
+* Bumps the sass-loader version and adds a webpack option to suppress mixed declaration deprecation warnings to be removed when all modules are updated.
 * Add `title` and `_url` to select all projection.
 * Display `Select all` message on all pages in the manager modal.
 * Refresh `checked` in manager modal after archive action.

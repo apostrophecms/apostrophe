@@ -36,13 +36,15 @@ export default {
 .apos-tag {
   @include type-base;
 
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: 6px 12px;
-  color: var(--a-base-8);
-  border-radius: var(--a-border-radius);
-  background-color: var(--a-base-1);
+  & {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 6px 12px;
+    color: var(--a-base-8);
+    border-radius: var(--a-border-radius);
+    background-color: var(--a-base-1);
+  }
 }
 
 .apos-tag__remove {

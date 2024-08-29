@@ -41,16 +41,20 @@
 .apos-input-array-inline-empty-label {
   @include type-label;
 
-  color: var(--a-base-3);
+  & {
+    color: var(--a-base-3);
+  }
 }
 
 .apos-input-array-inline-table {
   @include type-label;
 
-  position: relative;
-  width: 100%;
-  margin: 0 0 $spacing-base;
-  border-collapse: collapse;
+  & {
+    position: relative;
+    width: 100%;
+    margin: 0 0 $spacing-base;
+    border-collapse: collapse;
+  }
 
   :deep(.apos-field__info) {
     padding-top: 0;
