@@ -720,14 +720,18 @@ export default {
     async updateDraftIsEditable() {
       if (this.context.aposLocale && this.context.aposLocale.endsWith('published') && !this.context._edit) {
         // A contributor might be able to edit the draft
-        const draftContext = await apos.http.get(`${this.action}/${this.context._id}`, {
-          busy: true,
-          qs: {
-            aposMode: 'draft',
-            aposLocale: this.context.aposLocale.split(':')[0]
-          }
-        });
-        this.draftIsEditable = draftContext && draftContext._edit;
+        try {
+          const draftContext = await apos.http.get(`${this.action}/${this.context._id}`, {
+            busy: true,
+            qs: {
+              aposMode: 'draft',
+              aposLocale: this.context.aposLocale.split(':')[0]
+            }
+          });
+          this.draftIsEditable = draftContext && draftContext._edit;
+        } catch (e) {
+          console.error(e);
+        }
       }
     },
     async getPublished() {
@@ -735,13 +739,17 @@ export default {
       const manuallyPublished = moduleOptions.localized && !this.autopublish;
       if (manuallyPublished && this.context.lastPublishedAt) {
         const action = window.apos.modules[this.context.type].action;
-        const doc = await apos.http.get(`${action}/${this.context._id}`, {
-          busy: true,
-          qs: {
-            aposMode: 'published'
-          }
-        });
-        return doc;
+        try {
+          const doc = await apos.http.get(`${action}/${this.context._id}`, {
+            busy: true,
+            qs: {
+              aposMode: 'published'
+            }
+          });
+          return doc;
+        } catch (error) {
+          console.error(error);
+        }
       }
       return null;
     },
