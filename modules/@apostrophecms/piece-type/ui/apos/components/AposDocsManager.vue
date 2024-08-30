@@ -358,8 +358,8 @@ export default {
       const { count: total } = await this.request({ count: 1 });
       return total;
     },
-    async requestData(currentPage = 1) {
-      const pieces = await this.requestPieces(currentPage);
+    async requestData(currentPage = 1, mergeOptions = {}) {
+      const pieces = await this.requestPieces(currentPage, mergeOptions);
       const total = await this.requestAllPiecesTotal();
 
       return {
@@ -432,7 +432,7 @@ export default {
     // It's meant to be debounced and used in conjunction with the search
     // method that actually updates the state.
     async onSearch(query) {
-      const queryExtras = {};
+      const queryExtras = { ...this.queryExtras };
       if (query) {
         queryExtras.autocomplete = query;
       } else if ('autocomplete' in this.queryExtras) {
@@ -440,7 +440,7 @@ export default {
       } else {
         return {};
       }
-      const { total, ...pieces } = await this.requestData(queryExtras);
+      const { total, ...pieces } = await this.requestData(1, queryExtras);
 
       return {
         pieces,
