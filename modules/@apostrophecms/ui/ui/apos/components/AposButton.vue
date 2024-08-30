@@ -14,7 +14,7 @@
       class="apos-button"
       :class="modifierClass"
       :tabindex="tabindex"
-      :disabled="isDisabled"
+      :disabled="isDisabled ? isDisabled : null"
       :type="buttonType"
       :role="role"
       :style="{color: textColor}"

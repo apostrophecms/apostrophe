@@ -217,6 +217,10 @@ export default {
       const wasEngaged = item.engaged;
       this.disengageAll();
       item.engaged = !wasEngaged;
+
+      if (options.prevent) {
+        event.preventDefault();
+      }
     },
     disengageAll() {
       this.items.forEach(i => {
@@ -377,7 +381,7 @@ export default {
         item.open = !item.open;
       }
     },
-    moveEngaged(event, id, direction) {
+    moveEngaged(event, id, direction, options = {}) {
       const item = this.items.find(i => i._id === id);
       const index = this.items.indexOf(item);
 
@@ -395,6 +399,10 @@ export default {
           newIndex: index + direction
         });
         this.focusElement(id);
+
+        if (options.prevent) {
+          event.preventDefault();
+        }
       }
     },
     focusElement(id) {

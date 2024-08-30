@@ -95,10 +95,10 @@
                 field-style="table"
                 @update:model-value="setItemsConditionalFields(item._id)"
                 @validate="emitValidate()"
-                @keydown.prevent.space="isDraggable ? toggleEngage($event, { exact: true }) : {}"
-                @keydown.prevent.enter="isDraggable ? toggleEngage($event, { exact: true }) : {}"
-                @keydown.prevent.arrow-up="isDraggable ? moveEngaged($event, item._id, -1) : {}"
-                @keydown.prevent.arrow-down="isDraggable ? moveEngaged($event, item._id, 1) : {}"
+                @keydown.space="isDraggable ? toggleEngage($event, { exact: true, prevent: true }) : {}"
+                @keydown.enter="isDraggable ? toggleEngage($event, { exact: true, prevent: true }) : {}"
+                @keydown.arrow-up="isDraggable ? moveEngaged($event, item._id, -1, { prevent: true }) : {}"
+                @keydown.arrow-down="isDraggable ? moveEngaged($event, item._id, 1, { prevent: true }) : {}"
               >
                 <template #before>
                   <td
@@ -120,6 +120,7 @@
                     <AposContextMenu
                       v-if="getInlineMenuItems(index).length > 1"
                       ref="menu"
+                      data-apos-input-array-inline-item-menu
                       class=""
                       :button="{
                         label: 'apostrophe:moreOperations',
@@ -138,6 +139,7 @@
                     />
                     <AposButton
                       v-else
+                      data-apos-input-array-inline-item-remove
                       label="apostrophe:removeItem"
                       icon="close-icon"
                       type="subtle"
