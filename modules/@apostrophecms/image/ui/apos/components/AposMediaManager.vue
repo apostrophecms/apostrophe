@@ -370,7 +370,9 @@ export default {
     async appendMedia({
       tagList, currentPage, totalPages, items
     }) {
-      this.tagList = tagList;
+      if (Array.isArray(tagList)) {
+        this.tagList = tagList;
+      }
       this.currentPage = currentPage;
       this.totalPages = totalPages;
       for (const item of items) {
