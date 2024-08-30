@@ -229,6 +229,7 @@
                   <AposContextMenu
                     ref="menu"
                     class="apos-input-array-inline-header-ui-element"
+                    data-apos-input-array-inline-item-menu
                     :button="{
                       label: 'apostrophe:moreOperations',
                       iconOnly: true,
