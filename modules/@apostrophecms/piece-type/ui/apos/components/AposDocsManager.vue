@@ -149,7 +149,6 @@ export default {
   emits: [ 'archive' ],
   data() {
     return {
-      isMounted: false,
       modal: {
         active: false,
         triggerFocusRefresh: 0,
@@ -230,9 +229,6 @@ export default {
   },
   created() {
     const DEBOUNCE_TIMEOUT = 500;
-    // "mounted" in meaning of "able to mutate the state".
-    // It is used in async methods that are not handled by debounceAsync.
-    this.isMounted = true;
     this.onSearchDebounced = debounceAsync(this.onSearch, DEBOUNCE_TIMEOUT, {
       onSuccess: this.search
     });
@@ -259,7 +255,6 @@ export default {
     apos.bus.$on('command-menu-manager-close', this.confirmAndCancel);
   },
   onBeforeUnmount() {
-    this.isMounted = false;
     this.onSearchDebounced.cancel();
   },
   unmounted() {
@@ -272,7 +267,6 @@ export default {
     async create() {
       await this.edit(null);
     },
-
     // If pieceOrId is null, a new piece is created
     async edit(pieceOrId) {
       let piece;
@@ -358,8 +352,8 @@ export default {
       const { count: total } = await this.request({ count: 1 });
       return total;
     },
-    async requestData(currentPage = 1, mergeOptions = {}) {
-      const pieces = await this.requestPieces(currentPage, mergeOptions);
+    async requestData(page = 1, mergeOptions = {}) {
+      const pieces = await this.requestPieces(page, mergeOptions);
       const total = await this.requestAllPiecesTotal();
 
       return {
@@ -383,9 +377,6 @@ export default {
       const {
         currentPage, pages, results, choices
       } = await this.requestPieces(this.currentPage);
-      if (!this.isMounted) {
-        return;
-      }
 
       this.setPieces({
         currentPage,
@@ -397,9 +388,6 @@ export default {
     },
     async manageAllPiecesTotal () {
       const total = await this.requestAllPiecesTotal();
-      if (!this.isMounted) {
-        return;
-      }
 
       this.setAllPiecesSelection({
         isSelected: false,
