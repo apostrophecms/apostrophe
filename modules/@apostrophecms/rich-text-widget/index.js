@@ -557,6 +557,10 @@ module.exports = {
           color: {
             tag: '*',
             attributes: [ 'style' ]
+          },
+          bulletList: {
+            tag: 'ul',
+            attributes: [ 'class' ]
           }
         };
         for (const item of self.combinedItems(options)) {
