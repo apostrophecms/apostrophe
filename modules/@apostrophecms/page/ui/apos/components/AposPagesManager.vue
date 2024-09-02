@@ -73,6 +73,7 @@
             :displayed-items="items.length"
             :is-relationship="!!relationshipField"
             :checked="checked"
+            :checked-types="checkedTypes"
             :checked-count="checked.length"
             :batch-operations="moduleOptions.batchOperations"
             :module-name="moduleName"

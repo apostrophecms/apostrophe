@@ -133,6 +133,10 @@ export default {
       type: Array,
       default: () => []
     },
+    checkedTypes: {
+      type: Array,
+      default: () => []
+    },
     checkedCount: {
       type: Number,
       required: true
@@ -274,6 +278,7 @@ export default {
     }) {
       await apos.modal.execute(modal, {
         checked: this.checked,
+        checkedTypes: this.checkedTypes,
         moduleName: this.moduleName,
         ...rest
       });

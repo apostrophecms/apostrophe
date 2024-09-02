@@ -116,6 +116,9 @@ export default {
         return page._create;
       }
       return this.moduleOptions.canCreate;
+    },
+    checkedTypes() {
+      return this.checkedDocs.map(doc => doc.type);
     }
   },
   created() {
