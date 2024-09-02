@@ -173,10 +173,12 @@ export default {
 .apos-modal__heading {
   @include type-base;
 
-  display: inline-block;
-  margin: 0;
-  font-size: var(--a-type-large);
-  line-height: $spacing-double;
+  & {
+    display: inline-block;
+    margin: 0;
+    font-size: var(--a-type-large);
+    line-height: $spacing-double;
+  }
 }
 
 .apos-command-menu-key {
@@ -205,18 +207,22 @@ export default {
 .apos-command-menu-shortcut-group {
   @include type-base;
 
-  font-weight: 400;
+  & {
+    font-weight: 400;
+  }
 }
 
 .apos-command-menu-shortcut-group-title {
   @include type-base;
 
-  box-sizing: border-box;
-  height: 24px;
-  margin: 0;
-  padding: $spacing-half 0;
-  color: var(--a-base-3);
-  text-align: left;
+  & {
+    box-sizing: border-box;
+    height: 24px;
+    margin: 0;
+    padding: $spacing-half 0;
+    color: var(--a-base-3);
+    text-align: left;
+  }
 }
 
 .apos-command-menu-shortcut-command {

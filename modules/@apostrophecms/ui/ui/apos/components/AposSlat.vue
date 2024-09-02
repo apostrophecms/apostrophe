@@ -236,14 +236,16 @@ export default {
   .apos-slat {
     @include apos-transition();
 
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 10px;
-    border: 1px solid var(--a-base-5);
-    border-radius: var(--a-border-radius);
-    background-color: var(--a-base-9);
-    color: var(--a-text-primary);
+    & {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px;
+      border: 1px solid var(--a-base-5);
+      border-radius: var(--a-border-radius);
+      background-color: var(--a-base-9);
+      color: var(--a-text-primary);
+    }
 
     &.apos-is-disabled {
       .apos-slat__control--view {
@@ -349,10 +351,12 @@ export default {
   .apos-slat__label {
     @include type-small;
 
-    overflow: hidden;
-    margin-left: 5px;
-    white-space: nowrap;
-    text-overflow: ellipsis;
+    & {
+      overflow: hidden;
+      margin-left: 5px;
+      white-space: nowrap;
+      text-overflow: ellipsis;
+    }
   }
 
   .apos-slat__editor-btn {
@@ -386,7 +390,9 @@ export default {
   .apos-slat__size {
     @include type-small;
 
-    margin-right: 5px;
+    & {
+      margin-right: 5px;
+    }
   }
 
   .apos-slat__control--view {
@@ -396,10 +402,12 @@ export default {
   .apos-slat__extension {
     @include type-help;
 
-    display: inline-block;
-    padding: 4px;
-    background-color: var(--a-generic);
-    color: var(--a-white);
+    & {
+      display: inline-block;
+      padding: 4px;
+      background-color: var(--a-generic);
+      color: var(--a-white);
+    }
   }
 
   // file types

@@ -26,25 +26,18 @@
         :module-options="moduleOptions"
         :has-relationship-field="!!relationshipField"
       />
-      <AposContextMenu
-        v-if="relationshipField"
-        :menu="moreMenu"
-        menu-placement="bottom-end"
-        :button="moreMenuButton"
-        @item-clicked="moreMenuHandler"
-      />
-      <AposButton
-        v-else-if="canCreate"
-        type="primary"
-        label="apostrophe:newPage"
-        @click="create()"
-      />
       <AposButton
         v-if="relationshipField"
         type="primary"
         :label="saveRelationshipLabel"
         :disabled="!!relationshipErrors"
         @click="saveRelationship"
+      />
+      <AposButton
+        v-else-if="canCreate"
+        type="primary"
+        label="apostrophe:newPage"
+        @click="create()"
       />
     </template>
     <template v-if="relationshipField" #leftRail>
@@ -59,7 +52,9 @@
           <AposSlatList
             class="apos-pages-manager__relationship__items"
             :model-value="checkedDocs"
+            :relationship-schema="relationshipField?.schema"
             @update:model-value="setCheckedDocs"
+            @item-clicked="editRelationship"
           />
         </div>
       </AposModalRail>
@@ -69,11 +64,11 @@
         <template v-if="!relationshipField" #bodyHeader>
           <AposDocsManagerToolbar
             :selected-state="selectAllState"
-            :total-pages=1
-            :current-page=1
-            :filters="moduleOptions.filters"
+            :total-pages="totalPages"
+            :current-page="currentPage"
             :filter-choices="filterChoices"
             :filter-values="filterValues"
+            :filters="moduleOptions.filters"
             :labels="moduleLabels"
             :displayed-items="items.length"
             :is-relationship="!!relationshipField"
@@ -105,7 +100,7 @@
         <template #bodyMain>
           <AposTree
             v-model:checked="checked"
-            :items="items"
+            :items="pages"
             :headers="headers"
             :icons="icons"
             :options="treeOptions"

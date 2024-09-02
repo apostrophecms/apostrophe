@@ -100,13 +100,15 @@ export default {
     &__link {
       @include type-large;
 
-      position: relative;
-      // AposSchema adds $spacing-quadruple margin bottom
-      top: -$spacing-triple;
-      display: block;
-      text-align: right;
-      text-decoration: underline;
-      text-underline-offset: 2px;
+      & {
+        position: relative;
+        // AposSchema adds $spacing-quadruple margin bottom
+        top: -$spacing-triple;
+        display: block;
+        text-align: right;
+        text-decoration: underline;
+        text-underline-offset: 2px;
+      }
 
       &:hover,
       &:focus,

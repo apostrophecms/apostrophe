@@ -67,7 +67,9 @@ export default {
   .apos-area-menu__item-icon {
     @include apos-align-icon();
 
-    margin-right: 10px;
+    & {
+      margin-right: 10px;
+    }
   }
 
   .apos-area-menu__item-content {

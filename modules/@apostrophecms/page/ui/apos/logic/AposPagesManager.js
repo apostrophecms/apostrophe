@@ -29,6 +29,8 @@ export default {
       },
       headers: [],
       holdQueries: false,
+      currentPage: 1,
+      totalPages: 1,
       pages: [],
       pagesFlat: [],
       options: {
@@ -54,25 +56,9 @@ export default {
           }
         ]
       },
-      moreMenu: [
-        {
-          label: 'apostrophe:newPage',
-          action: 'new'
-        }
-      ],
-      moreMenuButton: {
-        tooltip: {
-          content: 'apostrophe:moreOptions',
-          placement: 'bottom'
-        },
-        label: 'apostrophe:moreOptions',
-        icon: 'dots-vertical-icon',
-        iconOnly: true,
-        type: 'subtle',
-        modifiers: [ 'small', 'no-motion' ]
-      },
       queryExtras: {
-        viewContext: this.relationshipField ? 'relationship' : 'manage'
+        // removed to allow per-document permissions users to see the page tree
+        // viewContext: this.relationshipField ? 'relationship' : 'manage'
       },
       filterValues: {},
       filterChoices: {},
@@ -100,15 +86,22 @@ export default {
         plural: this.moduleOptions.pluralLabel
       };
     },
+    saveRelationshipLabel() {
+      if (this.relationshipField && (this.relationshipField.max === 1)) {
+        return 'apostrophe:selectPage';
+      } else {
+        return 'apostrophe:selectPages';
+      }
+    },
     items() {
-      if (!this.pages || !this.headers.length) {
+      if (!this.pagesFlat || !this.headers.length) {
         return [];
       }
-      return klona(this.pages);
+      return klona(this.pagesFlat);
     },
     selectAllChoice() {
       const checkLen = this.checked.length;
-      const rowLen = this.pagesFlat.length;
+      const rowLen = this.items.length;
 
       return checkLen > 0 && checkLen !== rowLen ? {
         value: 'checked',
@@ -117,15 +110,8 @@ export default {
         value: 'checked'
       };
     },
-    saveRelationshipLabel() {
-      if (this.relationshipField && (this.relationshipField.max === 1)) {
-        return 'apostrophe:selectPage';
-      } else {
-        return 'apostrophe:selectPages';
-      }
-    },
     canCreate() {
-      const page = this.pagesFlat.find(page => page.aposDocId === this.moduleOptions.page.aposDocId);
+      const page = this.items.find(page => page.aposDocId === this.moduleOptions.page.aposDocId);
       if (page) {
         return page._create;
       }
@@ -162,20 +148,55 @@ export default {
     apos.bus.$off('command-menu-manager-close', this.confirmAndCancel);
   },
   methods: {
-    moreMenuHandler(action) {
-      if (action === 'new') {
-        this.create();
+    async create() {
+      const doc = await apos.modal.execute(this.moduleOptions.components.editorModal, {
+        moduleName: this.moduleName,
+        filterValues: this.filterValues
+      });
+      if (!doc) {
+        // Cancel clicked
+        return;
+      }
+      await this.getPages();
+      if (this.relationshipField) {
+        doc._fields = doc._fields || {};
+        // Must push to checked docs or it will try to do it for us
+        // and not include _fields
+        this.checkedDocs.push(doc);
+        this.checked.push(doc._id);
       }
     },
-    onContentChanged({ doc }) {
-      if (
-        !doc ||
-        !doc.aposLocale ||
-        doc.aposLocale.split(':')[0] === this.modalData.locale
-      ) {
-        this.getPages();
+    async update(page) {
+      const body = {
+        _targetId: page.endContext,
+        _position: page.endIndex
+      };
+
+      const route = `${this.moduleOptions.action}/${page.changedId}`;
+      try {
+        await apos.http.patch(route, {
+          busy: true,
+          body,
+          draft: true
+        });
+      } catch (error) {
+        await apos.notify(error.body.message || this.$t('apostrophe:treeError'), {
+          type: 'danger',
+          icon: 'alert-circle-icon',
+          dismiss: true,
+          localize: false
+        });
+      }
+
+      await this.getPages();
+      if (this.items.find(page => {
+        return (page.aposDocId === (window.apos.page.page && window.apos.page.page.aposDocId)) && page.archived;
+      })) {
+        // With the current page gone, we need to move to safe ground
+        location.assign(`${window.apos.prefix}/`);
       }
     },
+
     async request (mergeOptions) {
       const options = {
         ...this.filterValues,
@@ -255,102 +276,14 @@ export default {
     getAllPagesTotal () {
       this.setAllPiecesSelection({
         isSelected: false,
-        total: this.pagesFlat.length
+        total: this.items.length
       });
     },
     selectAllPieces () {
       this.setAllPiecesSelection({
         isSelected: true,
-        docs: this.pagesFlat
+        docs: this.items
       });
-    },
-    async update(page) {
-      const body = {
-        _targetId: page.endContext,
-        _position: page.endIndex
-      };
-
-      const route = `${this.moduleOptions.action}/${page.changedId}`;
-      try {
-        await apos.http.patch(route, {
-          busy: true,
-          body,
-          draft: true
-        });
-      } catch (error) {
-        await apos.notify(error.body.message || this.$t('apostrophe:treeError'), {
-          type: 'danger',
-          icon: 'alert-circle-icon',
-          dismiss: true,
-          localize: false
-        });
-      }
-
-      await this.getPages();
-      if (this.pagesFlat.find(page => {
-        return (page.aposDocId === (window.apos.page.page && window.apos.page.page.aposDocId)) && page.archived;
-      })) {
-        // With the current page gone, we need to move to safe ground
-        location.assign(`${window.apos.prefix}/`);
-      }
-    },
-    toggleRowCheck(id) {
-      if (this.checked.includes(id)) {
-        this.checked = this.checked.filter(item => item !== id);
-      } else {
-        this.checked = [ ...this.checked, id ];
-      }
-    },
-    // This is not used for now
-    selectAll(event) {
-      if (!this.checked.length) {
-        this.pagesFlat.forEach((row) => {
-          this.toggleRowCheck(row._id);
-        });
-        return;
-      }
-
-      if (this.checked.length <= this.pagesFlat.length) {
-        this.checked.forEach((id) => {
-          this.toggleRowCheck(id);
-        });
-      }
-    },
-    async create() {
-      const doc = await apos.modal.execute(this.moduleOptions.components.editorModal, {
-        moduleName: this.moduleName,
-        filterValues: this.filterValues
-      });
-      if (!doc) {
-        // Cancel clicked
-        return;
-      }
-      await this.getPages();
-      if (this.relationshipField) {
-        doc._fields = doc._fields || {};
-        // Must push to checked docs or it will try to do it for us
-        // and not include _fields
-        this.checkedDocs.push(doc);
-        this.checked.push(doc._id);
-      }
-    },
-    setCheckedDocs(checkedDocs) {
-      this.checked = checkedDocs.map(doc => doc._id);
-    },
-    setAllPiecesSelection ({
-      isSelected, total, docs
-    }) {
-      if (typeof isSelected === 'boolean') {
-        this.allPiecesSelection.isSelected = isSelected;
-      }
-
-      if (typeof total === 'number') {
-        this.allPiecesSelection.total = total;
-      }
-
-      if (docs) {
-        this.setCheckedDocs(docs);
-      }
     },
     async search(query) {
       if (query) {
@@ -378,6 +311,46 @@ export default {
       this.headers = this.computeHeaders();
 
       this.setCheckedDocs([]);
+    },
+    computeHeaders() {
+      let headers = this.options.columns || [];
+      if (this.filterValues.archived) {
+        headers = headers.filter(h => h.component !== 'AposCellLabels');
+      }
+      return headers;
+    },
+    async editRelationship(item) {
+      const result = await apos.modal.execute('AposRelationshipEditor', {
+        schema: this.relationshipField.schema,
+        title: item.title,
+        modelValue: item._fields
+      });
+      if (result) {
+        this.checkedDocs = this.checkedDocs.map((doc) => {
+          if (doc._id !== item._id) {
+            return doc;
+          }
+          return {
+            ...doc,
+            _fields: result
+          };
+        });
+      }
+    },
+    setAllPiecesSelection ({
+      isSelected, total, docs
+    }) {
+      if (typeof isSelected === 'boolean') {
+        this.allPiecesSelection.isSelected = isSelected;
+      }
+
+      if (typeof total === 'number') {
+        this.allPiecesSelection.total = total;
+      }
+
+      if (docs) {
+        this.setCheckedDocs(docs);
+      }
     },
     async handleBatchAction({
       label, action, requestOptions = {}, messages
@@ -407,12 +380,24 @@ export default {
         }
       }
     },
-    computeHeaders() {
-      let headers = this.options.columns || [];
-      if (this.filterValues.archived) {
-        headers = headers.filter(h => h.component !== 'AposCellLabels');
+    setCheckedDocs(checked) {
+      this.checkedDocs = checked.slice(0, this.relationshipField?.max || checked.length);
+      this.checked = this.checkedDocs.map(item => {
+        return item._id;
+      });
+    },
+    async onContentChanged({ doc, action }) {
+      if (
+        !doc ||
+        !doc.aposLocale ||
+        doc.aposLocale.split(':')[0] === this.modalData.locale
+      ) {
+        await this.getPages();
+        this.getAllPagesTotal();
+        if (action === 'archive') {
+          this.checked = this.checked.filter(checkedId => doc._id !== checkedId);
+        }
       }
-      return headers;
     }
   }
 };

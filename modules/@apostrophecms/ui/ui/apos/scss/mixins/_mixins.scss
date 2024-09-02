@@ -2,7 +2,9 @@
 // until used
 
 @mixin apos-transition($what: all, $duration: 0.1s, $ease: ease-in-out) {
-  transition: $what $duration $ease;
+  & {
+    transition: $what $duration $ease;
+  }
 }
 
 @mixin apos-p-reset() {

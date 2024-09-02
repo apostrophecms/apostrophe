@@ -55,11 +55,13 @@ export default {
   @include apos-button-reset();
   @include apos-transition($what: all, $duration: 0.1s, $ease: ease-in-out);
 
-  display: flex;
-  align-items: center;
-  padding: 2px 0;
-  border-radius: 5px;
-  background: transparent;
+  & {
+    display: flex;
+    align-items: center;
+    padding: 2px 0;
+    border-radius: 5px;
+    background: transparent;
+  }
 
   &.apos-is-active {
     color: var(--a-primary);
