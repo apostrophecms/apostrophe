@@ -763,7 +763,7 @@ module.exports = {
             }
           );
         },
-        archive(req) {
+        async archive(req) {
           if (!Array.isArray(req.body._ids)) {
             throw self.apos.error('invalid');
           }
@@ -772,7 +772,7 @@ module.exports = {
             return self.inferIdLocaleAndMode(req, _id);
           });
 
-          const patches = self.getBatchArchivePatches(req, ids);
+          const patches = await self.getBatchArchivePatches(req, ids);
 
           return self.apos.modules['@apostrophecms/job'].runBatch(
             req,
@@ -793,7 +793,7 @@ module.exports = {
             }
           );
         },
-        restore(req) {
+        async restore(req) {
           if (!Array.isArray(req.body._ids)) {
             throw self.apos.error('invalid');
           }
@@ -802,7 +802,7 @@ module.exports = {
             return self.inferIdLocaleAndMode(req, _id);
           });
 
-          const patches = self.getBatchRestorePatches(req, ids);
+          const patches = await self.getBatchRestorePatches(req, ids);
 
           return self.apos.modules['@apostrophecms/job'].runBatch(
             req,
