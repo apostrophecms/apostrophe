@@ -1,10 +1,10 @@
 // NOTE: This is a temporary component, copying AposInputString. Base modules
 // already have `type: 'slug'` fields, so this is needed to avoid distracting
 // errors.
-import AposInputMixin from 'Modules/@apostrophecms/schema/mixins/AposInputMixin';
-import sluggo from 'sluggo';
-import debounce from 'debounce-async';
 import { klona } from 'klona';
+import sluggo from 'sluggo';
+import AposInputMixin from 'Modules/@apostrophecms/schema/mixins/AposInputMixin';
+import { debounceAsync } from 'Modules/@apostrophecms/ui/utils';
 
 export default {
   name: 'AposInputSlug',
@@ -102,11 +102,16 @@ export default {
     }
   },
   async mounted() {
-    this.debouncedCheckConflict = debounce(() => this.checkConflict(), 250);
+    this.debouncedCheckConflict = debounceAsync(this.requestCheckConflict, 250, {
+      onSuccess: this.setConflict
+    });
     if (this.next.length) {
-      await this.debouncedCheckConflict();
+      await this.debouncedCheckConflict.skipDelay();
     }
     this.originalParentSlug = this.getParentSlug(this.next);
+  },
+  onBeforeUnmount() {
+    this.debouncedCheckConflict.cancel();
   },
   methods: {
     getParentSlug(slug = '') {
@@ -117,15 +122,7 @@ export default {
     async watchNext() {
       this.next = this.slugify(this.next);
       this.validateAndEmit();
-      try {
-        await this.debouncedCheckConflict();
-      } catch (e) {
-        if (e === 'canceled') {
-          // That's fine
-        } else {
-          throw e;
-        }
-      }
+      await this.debouncedCheckConflict();
     },
     validate(value) {
       if (this.conflict) {
@@ -231,7 +228,7 @@ export default {
 
       return updated;
     },
-    async checkConflict() {
+    async requestCheckConflict() {
       let slug;
       try {
         slug = this.next;
@@ -243,30 +240,36 @@ export default {
             },
             draft: true
           });
+
           // Still relevant?
           if (slug === this.next) {
-            this.conflict = false;
-            this.validateAndEmit();
-          } else {
-            // Can ignore it, another request
-            // probably already in-flight
+            return false;
           }
+          // Should not happen, another request
+          // already in-flight shouldn't be possible now.
+          return null;
         }
       } catch (e) {
         // 409: Conflict (slug in use)
         if (e.status === 409) {
           // Still relevant?
           if (slug === this.next) {
-            this.conflict = true;
-            this.validateAndEmit();
-          } else {
-            // Can ignore it, another request
-            // probably already in-flight
+            return true;
           }
+          // Should not happen, another request
+          // already in-flight shouldn't be possible now.
+          return null;
         } else {
           throw e;
         }
       }
+    },
+    async setConflict(result) {
+      if (result === null) {
+        return;
+      }
+      this.conflict = result;
+      this.validateAndEmit();
     },
     passFocus() {
       this.$refs.input.focus();

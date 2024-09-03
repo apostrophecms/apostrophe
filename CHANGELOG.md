@@ -12,6 +12,10 @@
 
 ### Fixes
 
+* Registering duplicate icon is no longer breaking the build.
+* Fix widget focus state so that the in-context Add Content menu stays visible during animation
+* Fix UI of areas in schemas so that their context menus are layered overtop sibling schema fields UI
+* Fix unhandled promise rejections and guard against potential memory leaks, remove 3rd party `debounce-async` dependency
 * Adds an option to center the context menu arrow on the button icon. Sets this new option on some context menus in the admin UI.
 * Fixes the update function of `AposSlatLists` so that elements are properly reordered on drag
 
