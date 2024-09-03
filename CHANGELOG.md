@@ -15,6 +15,7 @@
 ### Fixes
 
 * Adds an option to center the context menu arrow on the button icon. Sets this new option on some context menus in the admin UI.
+* Fixes the update function of `AposSlatLists` so that elements are properly reordered on drag
 
 ## 4.6.1 (2024-08-26)
 
