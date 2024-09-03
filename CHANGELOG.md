@@ -9,6 +9,17 @@
 * Add option `skipReplace` for `apos.doc.changeDocIds` method to skip the replacing of the "old" document in the database.
 * The `@apostrophecms/i18n` module now exposes a `locales` HTTP GET API to aid in implementation of native apps for localized sites.
 * Context menus can be supplied a `menuId` so that interested components can listen to their opening/closing.
+* Add batch operations to pages.
+* Add shortcuts to pages manager.
+
+### Changes
+
+* Wait for notify before navigating to a new page.
+* Send also `checkedTypes` via the pages body toolbar operations (e.g. 'batch') to the modal.
+
+### Fixes
+
+* Fix link to pages in rich-text not showing UI to select page during edit.
 
 ### Fixes
 

@@ -615,7 +615,7 @@ export default {
           body: {},
           busy: true
         });
-        apos.notify('apostrophe:restoredPrevious', {
+        await apos.notify('apostrophe:restoredPrevious', {
           type: 'success',
           dismiss: true
         });
