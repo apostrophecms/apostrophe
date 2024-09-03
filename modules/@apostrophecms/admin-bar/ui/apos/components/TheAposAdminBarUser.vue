@@ -3,6 +3,7 @@
     class="apos-admin-user"
     :button="button"
     :menu="items"
+    :center-on-icon="true"
     menu-placement="bottom-end"
     @item-clicked="emitEvent"
   >
