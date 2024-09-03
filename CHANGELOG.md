@@ -15,6 +15,7 @@
 ### Changes
 
 * Wait for notify before navigating to a new page.
+* Send also `checkedTypes` via the pages body toolbar operations (e.g. 'batch') to the modal.
 
 ### Fixes
 
