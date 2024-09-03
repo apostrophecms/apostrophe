@@ -612,18 +612,15 @@ export default {
     async onSaveDraft({ navigate = false } = {}) {
       await this.save({
         andPublish: false,
+        draft: true,
         navigate
-      });
-      await apos.notify('apostrophe:draftSaved', {
-        type: 'success',
-        dismiss: true,
-        icon: 'file-document-icon'
       });
     },
     async save({
       andPublish = false,
       navigate = false,
       andSubmit = false,
+      draft = false,
       keepOpen = false
     }) {
       const body = this.getRequestBody({ update: Boolean(this.currentId) });
@@ -669,6 +666,13 @@ export default {
       if (!keepOpen) {
         this.$emit('modal-result', doc);
         this.modal.showModal = false;
+      }
+      if (draft) {
+        await apos.notify('apostrophe:draftSaved', {
+          type: 'success',
+          dismiss: true,
+          icon: 'file-document-icon'
+        });
       }
       if (navigate) {
         if (doc._url) {

@@ -466,6 +466,7 @@ function close() {
   :deep(.apos-modal__controls--primary) {
     & > .apos-button__wrapper,
     & > .apos-context-menu {
+      margin-right: 7.5px;
       margin-left: 7.5px;
     }
   }

@@ -30,7 +30,7 @@
 </template>
 
 <script>
-import { debounce } from 'Modules/@apostrophecms/ui/utils';
+import debounce from 'lodash/debounce';
 import { Cropper } from 'vue-advanced-cropper';
 import 'vue-advanced-cropper/dist/style.css';
 
@@ -129,6 +129,10 @@ export default {
     };
   },
   beforeUnmount() {
+    this.onScreenResizeDebounced.cancel();
+    this.handleCropperChangeDebounced.cancel();
+    this.setCropperCoordinatesDebounced.cancel();
+    this.updateFocalPointCoordinatesDebounced.cancel();
     this.$refs.focalPoint.removeEventListener('mousedown', this.onFocalPointMouseDown);
     window.removeEventListener('resize', this.onScreenResizeDebounced);
   },
