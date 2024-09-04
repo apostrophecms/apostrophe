@@ -429,6 +429,18 @@ export default {
 
     },
     async customAction(doc, operation) {
+      if (operation.replaces) {
+        const confirm = await apos.confirm({
+          heading: 'apostrophe:replaceHeadingPrompt',
+          description: this.$t('apostrophe:replaceDescPrompt'),
+          affirmativeLabel: 'apostrophe:replace',
+          icon: false
+        });
+        if (!confirm) {
+          return;
+        }
+        this.$emit('close', doc);
+      }
       const props = {
         moduleName: operation.moduleName || this.moduleName,
         // For backwards compatibility
