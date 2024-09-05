@@ -1009,7 +1009,7 @@ module.exports = (self) => {
 
           const _fields = {};
           if (field.schema?.length) {
-            await self.convert(req, field.schema, relation.fields || {}, _fields, options);
+            await self.convert(req, field.schema, relation._fields || {}, _fields, options);
           }
 
           destination[field.name].push({
