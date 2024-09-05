@@ -131,13 +131,7 @@ export default {
     update({
       oldIndex, newIndex
     }) {
-      if (oldIndex !== newIndex) {
-        this.next = this.next.map((elem, index) => {
-          return index === oldIndex
-            ? this.next[newIndex]
-            : (index === newIndex && this.next[oldIndex]) || elem;
-        });
-      }
+      this.next.splice(newIndex, 0, this.next.splice(oldIndex, 1)[0]);
     },
     engage(id) {
       this.engaged = id;

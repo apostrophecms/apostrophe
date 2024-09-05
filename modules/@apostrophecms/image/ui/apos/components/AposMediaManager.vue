@@ -125,10 +125,10 @@
 </template>
 
 <script>
-import { debounce } from 'Modules/@apostrophecms/ui/utils';
+import { createId } from '@paralleldrive/cuid2';
+import { debounceAsync } from 'Modules/@apostrophecms/ui/utils';
 import AposModifiedMixin from 'Modules/@apostrophecms/ui/mixins/AposModifiedMixin';
 import AposDocsManagerMixin from 'Modules/@apostrophecms/modal/mixins/AposDocsManagerMixin';
-import { createId } from '@paralleldrive/cuid2';
 
 const DEBOUNCE_TIMEOUT = 500;
 
@@ -166,7 +166,9 @@ export default {
         emoji: '🖼'
       },
       cancelDescription: 'apostrophe:discardImageChangesPrompt',
-      debouncedGetMedia: debounce(this.getMedia, DEBOUNCE_TIMEOUT),
+      debouncedGetMedia: debounceAsync(this.getMedia, DEBOUNCE_TIMEOUT, {
+        onSuccess: this.appendMedia
+      }),
       loadObserver: new IntersectionObserver(
         this.handleIntersect,
         {
@@ -243,6 +245,7 @@ export default {
       return this.totalPages > 1 && this.currentPage === this.totalPages;
     }
   },
+
   watch: {
     async checked (newVal, oldVal) {
       this.lastSelected = newVal.at(-1);
@@ -270,21 +273,26 @@ export default {
       }
     }
   },
+
   created() {
     this.setDefaultFilters();
   },
+
   async mounted() {
     this.modal.active = true;
-    await this.getMedia({ tags: true });
-    this.isFirstLoading = false;
-
+    // Do these before any async work or they might get added after they are "removed"
     apos.bus.$on('content-changed', this.onContentChanged);
     apos.bus.$on('command-menu-manager-close', this.confirmAndCancel);
+    await this.debouncedGetMedia.skipDelay({ tags: true });
+    this.isFirstLoading = false;
   },
-  unmounted() {
+
+  beforeUnmount() {
+    this.debouncedGetMedia.cancel();
     apos.bus.$off('content-changed', this.onContentChanged);
     apos.bus.$off('command-menu-manager-close', this.confirmAndCancel);
   },
+
   methods: {
     setDefaultFilters() {
       this.moduleOptions.filters.forEach(filter => {
@@ -296,7 +304,8 @@ export default {
     editorModified (val) {
       this.modified = val;
     },
-    async getMedia (options = {}) {
+    async getMedia(options = {}) {
+      const result = {};
       const qs = {
         ...this.filterValues,
         page: this.currentPage,
@@ -344,23 +353,37 @@ export default {
               draft: true
             }
           ));
-          this.tagList = apiResponse.choices._tags;
+          result.tagList = apiResponse.choices._tags;
         } else {
-          this.tagList = apiResponse.choices ? apiResponse.choices._tags : [];
+          result.tagList = apiResponse.choices ? apiResponse.choices._tags : [];
         }
       }
 
-      this.currentPage = apiResponse.currentPage;
-      this.totalPages = apiResponse.pages;
+      result.currentPage = apiResponse.currentPage;
+      result.totalPages = apiResponse.pages;
+      result.items = [];
       for (const image of apiResponse.results) {
-        this.items.push(image);
+        result.items.push(image);
+      }
+      return result;
+    },
+    async appendMedia({
+      tagList, currentPage, totalPages, items
+    }) {
+      if (Array.isArray(tagList)) {
+        this.tagList = tagList;
+      }
+      this.currentPage = currentPage;
+      this.totalPages = totalPages;
+      for (const item of items) {
+        this.items.push(item);
       }
     },
     async refetchMedia(opts) {
       this.isLoading = true;
       this.currentPage = 1;
       this.items = [];
-      await this.getMedia(opts);
+      await this.debouncedGetMedia.skipDelay(opts);
       this.isLoading = false;
       this.modified = false;
       this.updateEditing(null);
@@ -376,11 +399,10 @@ export default {
         dimensions
       });
     },
-    async completeUploading (imgIds) {
+    async completeUploading(imgIds) {
       this.currentPage = 1;
       this.items = [];
-      await this.getMedia();
-
+      await this.debouncedGetMedia.skipDelay();
       if (Array.isArray(imgIds) && imgIds.length && this.items.length === 0) {
         const [ widgetOptions = {} ] = apos.area.widgetOptions;
         const [ width, height ] = widgetOptions.minSize || [];
@@ -551,7 +573,7 @@ export default {
           this.loadRef.scrollIntoView({
             behavior: 'smooth'
           });
-          await this.getMedia();
+          await this.debouncedGetMedia.skipDelay();
           this.isScrollLoading = false;
         }
       }
