@@ -11,6 +11,7 @@
 * Context menus can be supplied a `menuId` so that interested components can listen to their opening/closing.
 * Add batch operations to pages.
 * Add shortcuts to pages manager.
+* Add `replaces` (boolean, `false` by default) option to the context operation definition (registered via `apos.doc.addContextOperation()`) to allow the operation to require a replace confirmation before being executed. The user confirmation results in the Editor modal being closed and the operation being executed. The operation is not executed if the user cancels the confirmation.
 
 ### Changes
 
