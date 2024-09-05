@@ -276,7 +276,7 @@ module.exports = {
         return self.apos.notification.trigger(req, req.body.messages[stage], {
           interpolate: {
             count: options.count || (req.body._ids && req.body._ids.length),
-            type: req.body.type || req.t('apostrophe:document')
+            type: req.t(req.body.type) || req.t('apostrophe:document')
           },
           dismiss: options.dismiss,
           job: {

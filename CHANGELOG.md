@@ -10,10 +10,26 @@
 * The `@apostrophecms/i18n` module now exposes a `locales` HTTP GET API to aid in implementation of native apps for localized sites.
 * Context menus can be supplied a `menuId` so that interested components can listen to their opening/closing.
 * Allow to set mode in `AposWidget` component through props.
+* Add batch operations to pages.
+* Add shortcuts to pages manager.
+* Add `replaces` (boolean, `false` by default) option to the context operation definition (registered via `apos.doc.addContextOperation()`) to allow the operation to require a replace confirmation before being executed. The user confirmation results in the Editor modal being closed and the operation being executed. The operation is not executed if the user cancels the confirmation.
+
+### Changes
+
+* Wait for notify before navigating to a new page.
+* Send also `checkedTypes` via the pages body toolbar operations (e.g. 'batch') to the modal.
 
 ### Fixes
 
+* Fix link to pages in rich-text not showing UI to select page during edit.
+* Bumps `uploadfs` dependency to ensure `.tar.gz`, `.tgz` and `.gz` files uploaded to S3 download without double-gzipping.
+This resolves the issue for new uploads.
+* Registering duplicate icon is no longer breaking the build.
+* Fix widget focus state so that the in-context Add Content menu stays visible during animation
+* Fix UI of areas in schemas so that their context menus are layered overtop sibling schema fields UI
+* Fix unhandled promise rejections and guard against potential memory leaks, remove 3rd party `debounce-async` dependency
 * Adds an option to center the context menu arrow on the button icon. Sets this new option on some context menus in the admin UI.
+* Fixes the update function of `AposSlatLists` so that elements are properly reordered on drag
 
 ## 4.6.1 (2024-08-26)
 

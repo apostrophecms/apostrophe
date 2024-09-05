@@ -251,7 +251,8 @@ export default {
         this.docFields.data.href = '';
         try {
           const doc = await apos.http.get(`/api/v1/@apostrophecms/doc/${matches[1]}`, {
-            busy: true
+            busy: true,
+            draft: true
           });
           this.docFields.data.linkTo = doc.slug.startsWith('/') ? '@apostrophecms/any-page-type' : doc.type;
           this.docFields.data[`_${this.docFields.data.linkTo}`] = [ doc ];
