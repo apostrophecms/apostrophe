@@ -17,6 +17,7 @@
         :context="context"
         :draft-mode="draftMode"
         @switch-draft-mode="switchDraftMode"
+        @switch-preview-mode="switchPreviewMode"
       />
       <TheAposContextModeAndSettings
         :context="context"
@@ -467,6 +468,9 @@ export default {
         }
       }
       this.rememberLastBaseContext();
+    },
+    switchPreviewMode(mode) {
+      document.querySelector('[data-apos-refreshable]').setAttribute('preview-mode', mode);
     },
     onContextEdited(patch) {
       patch = klona(patch);
