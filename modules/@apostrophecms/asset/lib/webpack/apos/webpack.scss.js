@@ -1,3 +1,5 @@
+const path = require('path');
+
 module.exports = (options, apos) => {
   return {
     module: {
@@ -6,28 +8,20 @@ module.exports = (options, apos) => {
           test: /\.css$/,
           use: [
             'vue-style-loader',
-            // https://github.com/vuejs/vue-style-loader/issues/46#issuecomment-670624576
             {
-              loader: 'css-loader',
-              options: {
-                esModule: false,
-                sourceMap: true
-              }
-            }
+              loader: path.resolve(__dirname, '../media-to-container-loader.js')
+            },
+            'css-loader'
           ]
         },
-        // https://github.com/vuejs/vue-style-loader/issues/46#issuecomment-670624576
         {
           test: /\.s[ac]ss$/,
           use: [
             'vue-style-loader',
             {
-              loader: 'css-loader',
-              options: {
-                esModule: false,
-                sourceMap: true
-              }
+              loader: path.resolve(__dirname, '../media-to-container-loader.js')
             },
+            'css-loader',
             {
               loader: 'postcss-loader',
               options: {
