@@ -30,6 +30,7 @@ export default {
   },
   data () {
     const next = this.getNext();
+    // console.log('🚀 ~ data ~ next:', next);
     return {
       schemaInput: {
         data: next
@@ -117,6 +118,8 @@ export default {
     },
     // Return next at mount or when generation changes
     getNext() {
+      // console.log('this.modelValue', this.modelValue);
+      // console.log('{ ...this.modelValue }', { ...this.modelValue });
       return this.modelValue?.data ? this.modelValue.data : (this.field.def || {});
     }
   }

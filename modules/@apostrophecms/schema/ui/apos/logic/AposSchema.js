@@ -256,6 +256,10 @@ export default {
         };
         next.data[field.name] = fieldState[field.name].data;
       });
+      // console.log('fieldState');
+      // console.dir(fieldState, { depth: 9 });
+      // console.log('next');
+      // console.dir(next, { depth: 9 });
       this.next = next;
       this.fieldState = fieldState;
 

@@ -124,6 +124,7 @@
 </template>
 
 <script>
+import _ from 'lodash';
 import { klona } from 'klona';
 import { mapActions } from 'pinia';
 import AposModifiedMixin from 'Modules/@apostrophecms/ui/mixins/AposModifiedMixin';
@@ -528,10 +529,13 @@ export default {
             this.docType = docData.type;
           }
           this.original = klona(docData);
-          this.docFields.data = {
-            ...this.getDefault(),
-            ...docData
-          };
+          console.log('docData');
+          console.dir(docData, { depth: 9 });
+          console.log('this.getDefault()');
+          console.dir(this.getDefault(docData), { depth: 9 });
+          this.docFields.data = _.merge(this.getDefault(docData), docData);
+          console.log('this.docFields.data');
+          console.dir(this.docFields.data, { depth: 9 });
           // TODO: Is this block even useful since published is fetched after loadDoc?
           if (this.published) {
             this.changed = detectDocChange(
@@ -546,20 +550,57 @@ export default {
         }
       }
     },
-    getDefault() {
+    getDefault(docData) {
       const doc = {};
-      this.schema.forEach(field => {
-        if (field.name.startsWith('_')) {
-          return;
-        }
-        // Using `hasOwn` here, not simply checking if `field.def` is truthy
-        // so that `false`, `null`, `''` or `0` are taken into account:
-        const hasDefaultValue = Object.hasOwn(field, 'def');
-        doc[field.name] = hasDefaultValue
-          ? klona(field.def)
-          : null;
-      });
+
+      getSchemaDefault(doc, this.schema, docData);
+
       return doc;
+
+      function getSchemaDefault(doc, schema, docData, isArray = false) {
+        schema.forEach(field => {
+          if (field.name.startsWith('_')) {
+            return;
+          }
+
+          // Using `hasOwn` here, not simply checking if `field.def` is truthy
+          // so that `false`, `null`, `''` or `0` are taken into account:
+          const hasDefaultValue = Object.hasOwn(field, 'def');
+
+          if (isArray && hasDefaultValue) {
+            console.log('isArray && hasDefaultValue');
+            console.log(doc);
+
+            docData.forEach((item, index) => {
+              if (!doc[index]) {
+                doc[index] = {};
+              }
+
+              doc[index][field.name] = klona(field.def);
+
+              // if (field.type === 'object') {
+              //   getSchemaDefault(doc[index][field.name], field.schema);
+              // }
+
+              // if (field.type === 'array') {
+              //   getSchemaDefault(doc[index][field.name], field.schema, true, docData[index][field.name]);
+              // }
+            });
+          } else {
+            doc[field.name] = hasDefaultValue
+              ? klona(field.def)
+              : null;
+          }
+
+          if (field.type === 'object') {
+            getSchemaDefault(doc[field.name], field.schema, docData[field.name]);
+          }
+
+          if (field.type === 'array') {
+            getSchemaDefault(doc[field.name], field.schema, docData[field.name], true);
+          }
+        });
+      }
     },
     async preview() {
       if (!await this.confirmAndCancel()) {

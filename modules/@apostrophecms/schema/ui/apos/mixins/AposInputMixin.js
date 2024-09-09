@@ -138,6 +138,16 @@ export default {
     validateAndEmit () {
       // If the field is conditional and isn't shown, disregard any errors.
       const error = this.conditionMet === false ? false : this.validate(this.next);
+      // console.log('🚀 ~ validateAndEmit ~ error:', error);
+
+      // console.log('this.next', this.next);
+      // console.log('this.convert(this.next)', this.convert(this.next));
+
+      // const isObject = x => typeof x === 'object' && !Array.isArray(x) && x !== null;
+      // if (isObject(this.next)) {
+      //   console.log('this.next is an object');
+      //   this.next
+      // }
 
       this.$emit('update:modelValue', {
         data: error ? this.next : this.convert(this.next),
