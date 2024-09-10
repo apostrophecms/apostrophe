@@ -44,7 +44,14 @@ module.exports = {
     rebundleModules: undefined,
     // In case of external front end like Astro, this option allows to
     // disable the build of the public UI assets.
-    publicBundle: true
+    publicBundle: true,
+    // Enable mobile preview in the admin UI.
+    mobilePreview: {
+      // Enable mobile preview
+      enable: false,
+      // Warn during build about unsupported media queries.
+      debug: false
+    }
   },
 
   async init(self) {

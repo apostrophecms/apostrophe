@@ -20,13 +20,14 @@ module.exports = (options, apos, srcBuildNames) => {
     })
   ];
 
-  const mediaToContainerQueriesLoader = {
-    loader: path.resolve(__dirname, '../media-to-container-queries-loader.js'),
-    options: {
-      // TODO: use apos configuration
-      debug: true
+  const mediaToContainerQueriesLoader = apos.asset.options.mobilePreview?.enable === true
+    ? {
+      loader: path.resolve(__dirname, '../media-to-container-queries-loader.js'),
+      options: {
+        debug: apos.asset.options.mobilePreview?.debug === true
+      }
     }
-  };
+    : '';
 
   return {
     plugins,
