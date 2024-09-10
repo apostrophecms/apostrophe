@@ -2,8 +2,7 @@
   container-type: size;
 }
 
-[data-apos-refreshable][preview-mode="mobile"] {
-  width: 480px;
+[data-apos-refreshable][preview-mode] {
   margin: 20px auto;
   padding: 20px;
   border: 5px #ccc solid;
@@ -14,7 +13,14 @@
   background-color: $brand-red;
 }
 
-@media (min-width < 500px) {
+@media (max-width < 400px) {
+  [data-apos-refreshable] header {
+    font-size: 10rem;
+    background-color: $brand-gold;
+  }
+}
+
+@media (max-width: 400px) {
   [data-apos-refreshable] header {
     font-size: 10rem;
     background-color: $brand-gold;

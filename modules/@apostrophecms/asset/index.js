@@ -52,8 +52,12 @@ module.exports = {
       // Warn during build about unsupported media queries.
       debug: false,
       // Breakpoints
-      // icons can be added using https://docs.apostrophecms.org/reference/module-api/module-overview.html#icons
       breakpoints: {
+        // If we can resize the preview container?
+        resizable: false,
+        // Screen list with icons
+        // For adding icons, please refer to the icons documentation
+        // https://docs.apostrophecms.org/reference/module-api/module-overview.html#icons
         screens: {
           phone: {
             minWidth: 480,

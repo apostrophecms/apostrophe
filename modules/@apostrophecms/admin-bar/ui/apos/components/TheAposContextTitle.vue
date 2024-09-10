@@ -50,25 +50,8 @@
         :tooltip="tooltip"
         :modifiers="modifiers"
       />
-      <AposButton
-        type="subtle"
-        :modifiers="['small', 'no-motion']"
-        label="apostrophe:previewDesktop"
-        data-apos-test="preview-desktop"
-        class="apos-admin-bar__context-button"
-        icon="monitor-icon"
-        :icon-only="true"
-        @click="preview('desktop')"
-      />
-      <AposButton
-        type="subtle"
-        :modifiers="['small', 'no-motion']"
-        label="apostrophe:previewMobile"
-        data-apos-test="preview-mobile"
-        class="apos-admin-bar__context-button"
-        icon="cellphone-icon"
-        :icon-only="true"
-        @click="preview('mobile')"
+      <TheAposContextMobilePreview
+        @switch-preview-mode="preview"
       />
     </span>
   </transition-group>
@@ -163,8 +146,8 @@ export default {
     switchDraftMode(mode) {
       this.$emit('switch-draft-mode', mode);
     },
-    preview(mode) {
-      this.$emit('switch-preview-mode', mode);
+    preview(mode, width) {
+      this.$emit('switch-preview-mode', mode, width);
     }
   }
 };

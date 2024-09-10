@@ -469,8 +469,9 @@ export default {
       }
       this.rememberLastBaseContext();
     },
-    switchPreviewMode(mode) {
+    switchPreviewMode(mode, width) {
       document.querySelector('[data-apos-refreshable]').setAttribute('preview-mode', mode);
+      document.querySelector('[data-apos-refreshable]').style.width = `${width}px`;
     },
     onContextEdited(patch) {
       patch = klona(patch);
