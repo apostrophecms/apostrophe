@@ -16,7 +16,7 @@ module.exports = (options, apos, srcBuildNames) => {
           ? `[name]${contentHash}.css`
           : `[name]-bundle${contentHash}.css`;
       },
-      chunkFilename: devMode ? '[id].css' : `[id]${contentHash}.css`,
+      chunkFilename: devMode ? '[id].css' : '[id].[contentHash].css'
     })
   ];
 

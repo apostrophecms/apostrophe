@@ -107,6 +107,7 @@ module.exports = {
   'refresh-icon': 'Refresh',
   'shape-icon': 'Shape',
   'sign-text-icon': 'SignText',
+  'tablet-icon': 'Tablet',
   'tag-icon': 'Tag',
   'text-box-icon': 'TextBox',
   'text-box-remove-icon': 'TextBoxRemove',

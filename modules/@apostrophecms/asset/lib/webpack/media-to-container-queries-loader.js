@@ -4,9 +4,9 @@ module.exports = function (source) {
     type: 'object',
     properties: {
       debug: {
-        type: 'boolean',
-      },
-    },
+        type: 'boolean'
+      }
+    }
   };
   const options = this.getOptions(schema);
 
@@ -20,7 +20,7 @@ module.exports = function (source) {
       'min-width',
       'max-width',
       'min-height',
-      'max-height',
+      'max-height'
     ];
     const OPERATORS = [
       '>',
@@ -37,7 +37,7 @@ module.exports = function (source) {
       console.warn('[mediaToContainerQueryLoader] Unsupported media query', mediaFeature);
     }
 
-    return `@container ${mediaFeature} \{${content}\}`
+    return `@container ${mediaFeature} {${content}}`;
   };
 
   // Prepend container query to media queries

@@ -50,7 +50,25 @@ module.exports = {
       // Enable mobile preview
       enable: false,
       // Warn during build about unsupported media queries.
-      debug: false
+      debug: false,
+      // Breakpoints
+      // icons can be added using https://docs.apostrophecms.org/reference/module-api/module-overview.html#icons
+      breakpoints: {
+        screens: {
+          phone: {
+            minWidth: 480,
+            icon: 'cellphone-icon'
+          },
+          tablet: {
+            minWidth: 640,
+            icon: 'tablet-icon'
+          },
+          desktop: {
+            minWidth: 1024,
+            icon: 'monitor-icon'
+          }
+        }
+      }
     }
   },
 
