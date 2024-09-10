@@ -4,20 +4,28 @@ const { klona } = require('klona');
 module.exports = (self) => {
   return {
     async addMissingSchemaFields() {
+      let scans = 0; let updates = 0;
       const lastPropLists = await self.getLastPropLists();
       const propLists = self.getPropLists();
       let changesToPropLists = false;
       for (const name of Object.keys(propLists)) {
         if (!_.isEqual(lastPropLists?.[name], propLists[name])) {
           changesToPropLists = true;
-          await self.addMissingSchemaFieldsForDocType(name, propLists[name]);
+          scans++;
+          updates += await self.addMissingSchemaFieldsForDocType(name, propLists[name]);
         }
       }
       if (changesToPropLists) {
         await self.updateLastPropLists(propLists);
       }
+      // Returned for tests
+      return {
+        scans,
+        updates
+      };
     },
     async addMissingSchemaFieldsForDocType(name) {
+      let updates = 0;
       const schema = (self.apos.doc.managers[name] || {}).schema;
       if (!schema) {
         return;
@@ -28,6 +36,7 @@ module.exports = (self) => {
         const changes = {};
         await self.addMissingSchemaFieldsFor(doc, schema, '', changes);
         if (Object.keys(changes).length > 0) {
+          updates++;
           return self.apos.doc.db.updateOne({
             _id: doc._id
           }, {
@@ -35,6 +44,7 @@ module.exports = (self) => {
           });
         }
       });
+      return updates;
     },
     // Adds changes to the object "changes" so that a single
     // $set call can be made at the end. Use of a single
@@ -127,5 +137,5 @@ module.exports = (self) => {
         upsert: true
       });
     }
-  }
+  };
 };

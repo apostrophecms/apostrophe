@@ -2,7 +2,7 @@ const t = require('../test-lib/test.js');
 const assert = require('assert');
 const _ = require('lodash');
 
-let cleanup = [];
+const cleanup = [];
 
 after(async () => {
   for (const apos of cleanup) {
@@ -14,7 +14,7 @@ describe('add missing schema fields', function() {
 
   this.timeout(t.timeout);
 
-  it('can set up and insert a piece normally', async function() {
+  it('first generation & sanity checks', async function() {
     const apos = await t.create({
       root: module,
       shortName: 'test-amsf',
@@ -68,7 +68,7 @@ describe('add missing schema fields', function() {
       ]
     };
     const req = apos.task.getReq();
-    const result = await apos.product.insert(req, product);
+    await apos.product.insert(req, product);
     const products = await apos.doc.db.find({
       type: 'product'
     }).sort({
@@ -84,7 +84,7 @@ describe('add missing schema fields', function() {
     }
   });
 
-  it('can set up with an expanded schema and see the default values of an array and an object automatically added', async function() {
+  it('second generation schema (objects, arrays, new widget fields)', async function() {
     const apos = await t.create({
       root: module,
       // Same on purpose so we reuse the database
@@ -205,7 +205,7 @@ describe('add missing schema fields', function() {
     assert.strictEqual(result.addresses[0].street, '1168 E Passyunk Ave');
   });
 
-  it('can set up with an expanded schema and see the default value of an array subfield automatically added', async function() {
+  it('third generation schema (new array fields & verify new defaults do not crush existing values)', async function() {
     const apos = await t.create({
       root: module,
       // Same on purpose so we reuse the database
@@ -311,6 +311,13 @@ describe('add missing schema fields', function() {
       assert.strictEqual(product.addresses[0].street, '1168 E Passyunk Ave');
       assert.strictEqual(product.addresses[0].city, 'Philadelphia');
     }
+
+    // Direct invocation to make sure an additional invocation with the same schemas
+    // does no new work
+
+    const { scans, updates } = await apos.migration.addMissingSchemaFields();
+    assert.strictEqual(scans, 0);
+    assert.strictEqual(updates, 0);
   });
 
 });
