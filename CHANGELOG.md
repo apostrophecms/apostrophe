@@ -1,7 +1,5 @@
 # Changelog
 
-<<<<<<< Updated upstream
-=======
 ## UNRELEASED
 
 ### Adds
@@ -17,7 +15,6 @@
 * Apostrophe's migration logic is no longer executed twice on every startup and three times in the migration task. It is executed exactly once, always at the same point in the startup process. This bug did not cause significant performance issues because migrations were only executed once, but there is a small performance improvement.
 * Default properties of object fields present in a widget now populate correctly even if never focused in the editor.
 
->>>>>>> Stashed changes
 ## 4.7.0 (2024-09-05)
 
 ### Adds
