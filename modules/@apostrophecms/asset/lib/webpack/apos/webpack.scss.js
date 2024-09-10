@@ -1,6 +1,14 @@
 const path = require('path');
 
 module.exports = (options, apos) => {
+  const mediaToContainerQueriesLoader = {
+    loader: path.resolve(__dirname, '../media-to-container-queries-loader.js'),
+    options: {
+      // TODO: use apos configuration
+      debug: true
+    }
+  };
+
   return {
     module: {
       rules: [
@@ -8,9 +16,7 @@ module.exports = (options, apos) => {
           test: /\.css$/,
           use: [
             'vue-style-loader',
-            {
-              loader: path.resolve(__dirname, '../media-to-container-loader.js')
-            },
+            mediaToContainerQueriesLoader,
             'css-loader'
           ]
         },
@@ -18,9 +24,7 @@ module.exports = (options, apos) => {
           test: /\.s[ac]ss$/,
           use: [
             'vue-style-loader',
-            {
-              loader: path.resolve(__dirname, '../media-to-container-loader.js')
-            },
+            mediaToContainerQueriesLoader,
             'css-loader',
             {
               loader: 'postcss-loader',
