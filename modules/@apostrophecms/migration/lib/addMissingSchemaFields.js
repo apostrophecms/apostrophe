@@ -1,4 +1,5 @@
 const _ = require('lodash');
+const { klona } = require('klona');
 
 module.exports = (self) => {
   return {
@@ -8,19 +9,11 @@ module.exports = (self) => {
       let changesToPropLists = false;
       for (const name of Object.keys(propLists)) {
         if (!_.isEqual(lastPropLists?.[name], propLists[name])) {
-          if (lastPropLists) {
-            console.log(JSON.stringify({
-              last: lastPropLists[name],
-              next: propLists[name]
-            }, null, '  '));
-          }
-          console.log('necessary for ' + name);
           changesToPropLists = true;
           await self.addMissingSchemaFieldsForDocType(name, propLists[name]);
         }
       }
       if (changesToPropLists) {
-        console.log('** UPDATING');
         await self.updateLastPropLists(propLists);
       }
     },
@@ -35,7 +28,6 @@ module.exports = (self) => {
         const changes = {};
         await self.addMissingSchemaFieldsFor(doc, schema, '', changes);
         if (Object.keys(changes).length > 0) {
-          console.log('patched', changes);
           return self.apos.doc.db.updateOne({
             _id: doc._id
           }, {
@@ -55,9 +47,16 @@ module.exports = (self) => {
         // Supply the default
         if (doc[field.name] === undefined) {
           // Only undefined should fall back here
-          const def = (field.def === undefined) ? self.apos.schema.fieldTypes[field.type]?.def : field.def;
+          const def = klona((field.def === undefined) ? self.apos.schema.fieldTypes[field.type]?.def : field.def);
           if (def !== undefined) {
-            changes[newDotPath] = def;
+            if (!Object.hasOwn(changes, dotPath)) {
+              changes[newDotPath] = def;
+            }
+            // Also change it in memory so that if this is a subproperty of a
+            // new object, the change for that new object will have this
+            // subproperty too, plus we don't get crashes above when testing the
+            // subproperties' current values
+            doc[field.name] = def;
           }
         }
         // Address defaults of subproperties
@@ -75,7 +74,7 @@ module.exports = (self) => {
         } else if (field.type === 'object') {
           self.addMissingSchemaFieldsFor(doc[field.name], field.schema, newDotPath, changes);
         } else if (field.type === 'array') {
-          for (let i = 0; (i < doc[field.name].length); i++) {
+          for (let i = 0; (i < (doc[field.name] || []).length); i++) {
             const itemPath = `${newDotPath}.${i}`;
             const item = doc[field.name][i];
             self.addMissingSchemaFieldsFor(item, field.schema, itemPath, changes);
