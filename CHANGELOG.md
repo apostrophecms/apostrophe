@@ -1,5 +1,23 @@
 # Changelog
 
+<<<<<<< Updated upstream
+=======
+## UNRELEASED
+
+### Adds
+
+* Apostrophe now automatically adds the appropriate default values for new properties in the schema, even for existing documents in the database. This is done automatically during the migration phase of startup.
+
+### Changes
+
+* The various implementations of `newInstance` found in Apostrophe, e.g. for widgets, array items, relationship fields and documents themselves, have been consolidated in one implementation. The same code is now reused both on the front and the back end, ensuring the same result without the need to introduce additional back end API calls.
+
+### Fixes
+
+* Apostrophe's migration logic is no longer executed twice on every startup and three times in the migration task. It is executed exactly once, always at the same point in the startup process. This bug did not cause significant performance issues because migrations were only executed once, but there is a small performance improvement.
+* Default properties of object fields present in a widget now populate correctly even if never focused in the editor.
+
+>>>>>>> Stashed changes
 ## 4.7.0 (2024-09-05)
 
 ### Adds
