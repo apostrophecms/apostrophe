@@ -124,7 +124,6 @@
 </template>
 
 <script>
-import _ from 'lodash';
 import { klona } from 'klona';
 import { mapActions } from 'pinia';
 import AposModifiedMixin from 'Modules/@apostrophecms/ui/mixins/AposModifiedMixin';
