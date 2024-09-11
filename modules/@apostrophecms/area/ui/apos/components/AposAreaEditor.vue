@@ -75,6 +75,7 @@
 import { createId } from '@paralleldrive/cuid2';
 import { klona } from 'klona';
 import AposThemeMixin from 'Modules/@apostrophecms/ui/mixins/AposThemeMixin';
+import newInstance from 'apostrophe/modules/@apostrophecms/schema/lib/newInstance.js';
 
 export default {
   name: 'AposAreaEditor',
@@ -595,21 +596,11 @@ export default {
     // Return a new widget object in which defaults are fully populated,
     // especially valid sub-area objects, so that nested edits work on the page
     newWidget(type) {
+      const schema = apos.modules[apos.area.widgetManagers[type]].schema;
       const widget = {
+        ...newInstance(schema),
         type
       };
-      const schema = apos.modules[apos.area.widgetManagers[type]].schema;
-      schema.forEach(field => {
-        if (field.type === 'area') {
-          widget[field.name] = {
-            _id: createId(),
-            metaType: 'area',
-            items: []
-          };
-        } else {
-          widget[field.name] = field.def ? klona(field.def) : field.def;
-        }
-      });
       return widget;
     }
   }
