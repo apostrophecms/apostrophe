@@ -1,8 +1,5 @@
-[data-apos-refreshable] {
+[data-apos-refreshable][device-preview-mode] {
   container-type: size;
-}
-
-[data-apos-refreshable][preview-mode] {
   margin: 20px auto;
   padding: 20px;
   border: 5px #ccc solid;
@@ -28,22 +25,22 @@
 }
 
 // @container (width < 650px) {
-//   [data-apos-refreshable][preview-mode="mobile"] header {
+//   [data-apos-refreshable][device-preview-mode="mobile"] header {
 //     background-color: $brand-gold;
 //   }
 // }
 //
 // @container (width < 800px) {
-//   [data-apos-refreshable][preview-mode="mobile"] .demo-rte h2,
-//   [data-apos-refreshable][preview-mode="mobile"] .h2 .demo-rte p {
+//   [data-apos-refreshable][device-preview-mode="mobile"] .demo-rte h2,
+//   [data-apos-refreshable][device-preview-mode="mobile"] .h2 .demo-rte p {
 //     font-size: 2rem;
 //     letter-spacing: -1px;
 //   }
 // }
 //
 // @container (width < 600px) {
-//   [data-apos-refreshable][preview-mode="mobile"] .demo-rte h2,
-//   [data-apos-refreshable][preview-mode="mobile"] .h2 .demo-rte p {
+//   [data-apos-refreshable][device-preview-mode="mobile"] .demo-rte h2,
+//   [data-apos-refreshable][device-preview-mode="mobile"] .h2 .demo-rte p {
 //     font-size: 1.5rem;
 //   }
 // }

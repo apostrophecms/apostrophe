@@ -50,8 +50,10 @@
         :tooltip="tooltip"
         :modifiers="modifiers"
       />
-      <TheAposContextMobilePreview
-        @switch-preview-mode="preview"
+      <TheAposContextDevicePreviewMode
+        v-if="isDevicePreviewModeEnabled"
+        :screens="devicePreviewModeScreens"
+        :resizable="devicePreviewModeResizable"
       />
     </span>
   </transition-group>
@@ -74,7 +76,7 @@ export default {
       }
     }
   },
-  emits: [ 'switch-draft-mode', 'switch-preview-mode' ],
+  emits: [ 'switch-draft-mode' ],
   computed: {
     updatedBy() {
       let editorLabel = 'ApostropheCMS ■●▲';
@@ -96,6 +98,15 @@ export default {
     },
     isUnpublished() {
       return !this.context.lastPublishedAt;
+    },
+    isDevicePreviewModeEnabled() {
+      return this.moduleOptions.devicePreviewMode.enable || false;
+    },
+    devicePreviewModeScreens() {
+      return this.moduleOptions.devicePreviewMode.breakpoints?.screens || {};
+    },
+    devicePreviewModeResizable() {
+      return this.moduleOptions.devicePreviewMode.breakpoints?.resizable || false;
     },
     docTooltip() {
       return {
@@ -145,9 +156,6 @@ export default {
     },
     switchDraftMode(mode) {
       this.$emit('switch-draft-mode', mode);
-    },
-    preview(mode, width) {
-      this.$emit('switch-preview-mode', mode, width);
     }
   }
 };

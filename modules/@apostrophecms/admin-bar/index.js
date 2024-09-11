@@ -355,6 +355,7 @@ module.exports = {
             aposLocale: context.aposLocale,
             aposDocId: context.aposDocId
           },
+          devicePreviewMode: self.apos.asset.options.devicePreviewMode || { enable: false },
           // Base API URL appropriate to the context document
           contextBar: context && self.apos.doc.getManager(context.type).options.contextBar,
           showAdminBar: self.getShowAdminBar(req),

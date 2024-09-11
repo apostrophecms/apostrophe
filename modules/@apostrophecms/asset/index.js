@@ -45,9 +45,9 @@ module.exports = {
     // In case of external front end like Astro, this option allows to
     // disable the build of the public UI assets.
     publicBundle: true,
-    // Enable mobile preview in the admin UI.
-    mobilePreview: {
-      // Enable mobile preview
+    // Device preview in the admin UI.
+    devicePreviewMode: {
+      // Enable device preview mode
       enable: false,
       // Warn during build about unsupported media queries.
       debug: false,
@@ -59,17 +59,20 @@ module.exports = {
         // For adding icons, please refer to the icons documentation
         // https://docs.apostrophecms.org/reference/module-api/module-overview.html#icons
         screens: {
-          phone: {
-            minWidth: 480,
-            icon: 'cellphone-icon'
+          desktop: {
+            label: 'apostrophe:devicePreviewDesktop',
+            minWidth: 1024,
+            icon: 'monitor-icon'
           },
           tablet: {
+            label: 'apostrophe:devicePreviewTablet',
             minWidth: 640,
             icon: 'tablet-icon'
           },
-          desktop: {
-            minWidth: 1024,
-            icon: 'monitor-icon'
+          phone: {
+            label: 'apostrophe:devicePreviewPhone',
+            minWidth: 480,
+            icon: 'cellphone-icon'
           }
         }
       }
