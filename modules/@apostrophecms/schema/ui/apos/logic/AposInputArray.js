@@ -4,6 +4,7 @@ import AposInputConditionalFieldsMixin from 'Modules/@apostrophecms/schema/mixin
 import { getConditionTypesObject } from 'Modules/@apostrophecms/schema/lib/conditionalFields';
 
 import { createId } from '@paralleldrive/cuid2';
+import { klona } from 'klona';
 import { get } from 'lodash';
 import { Sortable } from 'sortablejs-vue3';
 import newInstance from 'apostrophe/modules/@apostrophecms/schema/lib/newInstance.js';
