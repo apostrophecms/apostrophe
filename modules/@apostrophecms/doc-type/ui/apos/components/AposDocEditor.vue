@@ -124,6 +124,7 @@
 </template>
 
 <script>
+import _ from 'lodash';
 import { klona } from 'klona';
 import { mapActions } from 'pinia';
 import AposModifiedMixin from 'Modules/@apostrophecms/ui/mixins/AposModifiedMixin';
@@ -135,6 +136,7 @@ import AposAdvisoryLockMixin from 'Modules/@apostrophecms/ui/mixins/AposAdvisory
 import AposDocErrorsMixin from 'Modules/@apostrophecms/modal/mixins/AposDocErrorsMixin';
 import { detectDocChange } from 'Modules/@apostrophecms/schema/lib/detectChange';
 import { useModalStore } from 'Modules/@apostrophecms/ui/stores/modal';
+import newInstance from 'apostrophe/modules/@apostrophecms/schema/lib/newInstance.js';
 
 export default {
   name: 'AposDocEditor',
@@ -528,10 +530,10 @@ export default {
             this.docType = docData.type;
           }
           this.original = klona(docData);
-          this.docFields.data = {
-            ...this.getDefault(),
-            ...docData
-          };
+          this.docFields.data = _.merge(
+            newInstance(this.schema),
+            docData
+          );
           // TODO: Is this block even useful since published is fetched after loadDoc?
           if (this.published) {
             this.changed = detectDocChange(
@@ -545,21 +547,6 @@ export default {
           this.prepErrors();
         }
       }
-    },
-    getDefault() {
-      const doc = {};
-      this.schema.forEach(field => {
-        if (field.name.startsWith('_')) {
-          return;
-        }
-        // Using `hasOwn` here, not simply checking if `field.def` is truthy
-        // so that `false`, `null`, `''` or `0` are taken into account:
-        const hasDefaultValue = Object.hasOwn(field, 'def');
-        doc[field.name] = hasDefaultValue
-          ? klona(field.def)
-          : null;
-      });
-      return doc;
     },
     async preview() {
       if (!await this.confirmAndCancel()) {
