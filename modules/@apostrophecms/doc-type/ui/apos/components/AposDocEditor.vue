@@ -528,10 +528,7 @@ export default {
             this.docType = docData.type;
           }
           this.original = klona(docData);
-          this.docFields.data = {
-            ...this.getDefault(),
-            ...docData
-          };
+          this.docFields.data = docData;
           // TODO: Is this block even useful since published is fetched after loadDoc?
           if (this.published) {
             this.changed = detectDocChange(
@@ -545,21 +542,6 @@ export default {
           this.prepErrors();
         }
       }
-    },
-    getDefault() {
-      const doc = {};
-      this.schema.forEach(field => {
-        if (field.name.startsWith('_')) {
-          return;
-        }
-        // Using `hasOwn` here, not simply checking if `field.def` is truthy
-        // so that `false`, `null`, `''` or `0` are taken into account:
-        const hasDefaultValue = Object.hasOwn(field, 'def');
-        doc[field.name] = hasDefaultValue
-          ? klona(field.def)
-          : null;
-      });
-      return doc;
     },
     async preview() {
       if (!await this.confirmAndCancel()) {

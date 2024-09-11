@@ -67,6 +67,7 @@ import AposModalTabsMixin from 'Modules/@apostrophecms/modal/mixins/AposModalTab
 import { detectDocChange } from 'Modules/@apostrophecms/schema/lib/detectChange';
 import { createId } from '@paralleldrive/cuid2';
 import { klona } from 'klona';
+import newInstance from 'apostrophe/modules/@apostrophecms/schema/lib/newInstance.js';
 
 export default {
   name: 'AposWidgetEditor',
@@ -234,19 +235,7 @@ export default {
       });
     },
     getDefault() {
-      const widget = {};
-      this.schema.forEach(field => {
-        if (field.name.startsWith('_')) {
-          return;
-        }
-        // Using `hasOwn` here, not simply checking if `field.def` is truthy
-        // so that `false`, `null`, `''` or `0` are taken into account:
-        const hasDefaultValue = Object.hasOwn(field, 'def');
-        widget[field.name] = hasDefaultValue
-          ? klona(field.def)
-          : null;
-      });
-      return widget;
+      return newInstance(this.schema);
     },
     getAposSchema(field) {
       return this.$refs[field.group.name][0];

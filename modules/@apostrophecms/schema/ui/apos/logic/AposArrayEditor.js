@@ -4,6 +4,7 @@ import { createId } from '@paralleldrive/cuid2';
 import { klona } from 'klona';
 import { get } from 'lodash';
 import { detectDocChange } from 'Modules/@apostrophecms/schema/lib/detectChange';
+import newInstance from 'apostrophe/modules/@apostrophecms/schema/lib/newInstance.js';
 
 export default {
   name: 'AposArrayEditor',
@@ -281,13 +282,7 @@ export default {
       }
     },
     newInstance() {
-      const instance = {};
-      for (const field of this.schema) {
-        if (field.def !== undefined) {
-          instance[field.name] = klona(field.def);
-        }
-      }
-      return instance;
+      return newInstance(this.schema);
     },
     label(item) {
       let candidate;
