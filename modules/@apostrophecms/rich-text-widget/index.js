@@ -3,9 +3,8 @@
 
 const sanitizeHtml = require('sanitize-html');
 const cheerio = require('cheerio');
-const { createWriteStream } = require('fs');
+const { createWriteStream, unlinkSync } = require('fs');
 const { Readable, pipeline } = require('stream');
-const path = require('path');
 const util = require('util');
 
 module.exports = {
@@ -927,7 +926,7 @@ module.exports = {
                 );
               } finally {
                 try {
-                  fs.unlinkSync(temp);
+                  unlinkSync(temp);
                 } catch (e) {
                   // It's OK if we never created it
                 }
