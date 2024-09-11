@@ -136,7 +136,6 @@ import AposAdvisoryLockMixin from 'Modules/@apostrophecms/ui/mixins/AposAdvisory
 import AposDocErrorsMixin from 'Modules/@apostrophecms/modal/mixins/AposDocErrorsMixin';
 import { detectDocChange } from 'Modules/@apostrophecms/schema/lib/detectChange';
 import { useModalStore } from 'Modules/@apostrophecms/ui/stores/modal';
-import newInstance from 'apostrophe/modules/@apostrophecms/schema/lib/newInstance.js';
 
 export default {
   name: 'AposDocEditor',
@@ -530,10 +529,7 @@ export default {
             this.docType = docData.type;
           }
           this.original = klona(docData);
-          this.docFields.data = _.merge(
-            newInstance(this.schema),
-            docData
-          );
+          this.docFields.data = docData;
           // TODO: Is this block even useful since published is fetched after loadDoc?
           if (this.published) {
             this.changed = detectDocChange(
