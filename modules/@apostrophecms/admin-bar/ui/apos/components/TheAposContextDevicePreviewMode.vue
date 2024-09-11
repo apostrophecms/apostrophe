@@ -20,15 +20,18 @@
 </template>
 <script>
 
+// TODO: set :data-apos-test="preview-${screen.id}"
+// TODO: validator for screens sub properties
+// validator(value, props) {
+//   return props.resizable && props.screens;
+// },
+// TODO: add keyboard shortcuts for device preview mode
+// TODO: set styles
 export default {
   name: 'TheAposContextDevicePreview',
   props: {
     screens: {
       type: Object,
-      // TODO: validator
-      // validator(value, props) {
-      //   return props.resizable && props.screens;
-      // },
       default: () => {
         return {};
       }
@@ -44,41 +47,12 @@ export default {
       mode: null
     };
   },
-  computed: {
-    // screens() {
-    //   // TODO: set from asset options
-    //   // TODO: set toggle mode
-    //   // TODO: set :data-apos-test="preview-${screen.id}"
-    //   return [
-    //     {
-    //       id: 'desktop',
-    //       label: 'apostrophe:previewDesktop',
-    //       icon: 'monitor-icon',
-    //       width: 1024
-    //     },
-    //     {
-    //       id: 'tablet',
-    //       label: 'apostrophe:previewTablet',
-    //       icon: 'tablet-icon',
-    //       width: 640
-    //     },
-    //     {
-    //       id: 'phone',
-    //       label: 'apostrophe:previewPhone',
-    //       icon: 'cellphone-icon',
-    //       width: 480
-    //     }
-    //   ];
-    // }
+  mounted() {
+    apos.bus.$on('command-menu-admin-bar-toggle-device-preview-mode', this.toggleDevicePreviewMode);
   },
-  // mounted() {
-  //   // TODO: add keyboard shortcuts for device preview mode
-  //   apos.bus.$on('command-menu-admin-bar-toggle-publish-draft', this.togglePublishDraftMode);
-  // },
-  // unmounted() {
-  //   // TODO: remove keyboard shortcuts for device preview mode
-  //   apos.bus.$off('command-menu-admin-bar-toggle-publish-draft', this.togglePublishDraftMode);
-  // },
+  unmounted() {
+    apos.bus.$off('command-menu-admin-bar-toggle-device-preview-mode', this.toggleDevicePreviewMode);
+  },
   methods: {
     switchDevicePreviewMode(mode, width) {
       document.querySelector('[data-apos-refreshable]').setAttribute('device-preview-mode', mode);
