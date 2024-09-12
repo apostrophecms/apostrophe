@@ -60,11 +60,10 @@
 </template>
 
 <script>
-import { klona } from 'klona';
 import AposModifiedMixin from 'Modules/@apostrophecms/ui/mixins/AposModifiedMixin';
 import AposModalTabsMixin from 'Modules/@apostrophecms/modal/mixins/AposModalTabsMixin';
 import AposDocErrorsMixin from 'Modules/@apostrophecms/modal/mixins/AposDocErrorsMixin';
-
+import newInstance from 'apostrophe/modules/@apostrophecms/schema/lib/newInstance.js';
 import { detectDocChange } from 'Modules/@apostrophecms/schema/lib/detectChange';
 
 export default {
@@ -100,11 +99,7 @@ export default {
       docFields: {
         data: {
           ...((this.modelValue != null) ? this.modelValue
-            : Object.fromEntries(
-              this.schema.map(field =>
-                [ field.name, (field.def !== undefined) ? klona(field.def) : null ]
-              )
-            )
+            : newInstance(this.schema)
           )
         },
         hasErrors: false
