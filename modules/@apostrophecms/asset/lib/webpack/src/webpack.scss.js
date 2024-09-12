@@ -1,22 +1,15 @@
 const path = require('path');
 const MiniCssExtractPlugin = require('mini-css-extract-plugin');
 
-const devMode = process.env.NODE_ENV !== 'production';
-
 module.exports = (options, apos, srcBuildNames) => {
   const plugins = [
     new MiniCssExtractPlugin({
       // Should be automatic but we wind up with main.css if we try to go with that
       filename: ({ chunk }) => {
-        // TODO: uncomment for HMR?
-        // const contentHash = devMode ? '' : '.[contenthash]';
-        const contentHash = devMode ? '' : '';
-
         return srcBuildNames.includes(chunk.name)
-          ? `[name]${contentHash}.css`
-          : `[name]-bundle${contentHash}.css`;
-      },
-      chunkFilename: devMode ? '[id].css' : '[id].[contentHash].css'
+          ? '[name].css'
+          : '[name]-bundle.css';
+      }
     })
   ];
 
