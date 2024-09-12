@@ -2,6 +2,16 @@
 
 ## UNRELEASED
 
+### Changes
+
+* The various implementations of `newInstance` found in Apostrophe, e.g. for widgets, array items, relationship fields and documents themselves, have been consolidated in one implementation. The same code is now reused both on the front and the back end, ensuring the same result without the need to introduce additional back end API calls.
+
+### Fixes
+
+* Default properties of object fields present in a widget now populate correctly even if never focused in the editor.
+
+## 4.7.0 (2024-09-05)
+
 ### Adds
 
 * Elements inside modals can have a `data-apos-focus-priority` attribute that prioritizes them inside the focusable elements list.
@@ -11,8 +21,10 @@
 * Add option `skipReplace` for `apos.doc.changeDocIds` method to skip the replacing of the "old" document in the database.
 * The `@apostrophecms/i18n` module now exposes a `locales` HTTP GET API to aid in implementation of native apps for localized sites.
 * Context menus can be supplied a `menuId` so that interested components can listen to their opening/closing.
+* Allow to set mode in `AposWidget` component through props.
 * Add batch operations to pages.
 * Add shortcuts to pages manager.
+* Add `replaces` (boolean, `false` by default) option to the context operation definition (registered via `apos.doc.addContextOperation()`) to allow the operation to require a replace confirmation before being executed. The user confirmation results in the Editor modal being closed and the operation being executed. The operation is not executed if the user cancels the confirmation.
 
 ### Changes
 
@@ -24,9 +36,6 @@
 * Fix link to pages in rich-text not showing UI to select page during edit.
 * Bumps `uploadfs` dependency to ensure `.tar.gz`, `.tgz` and `.gz` files uploaded to S3 download without double-gzipping.
 This resolves the issue for new uploads.
-
-### Fixes
-
 * Registering duplicate icon is no longer breaking the build.
 * Fix widget focus state so that the in-context Add Content menu stays visible during animation
 * Fix UI of areas in schemas so that their context menus are layered overtop sibling schema fields UI

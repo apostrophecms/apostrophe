@@ -4,9 +4,9 @@ import AposInputConditionalFieldsMixin from 'Modules/@apostrophecms/schema/mixin
 import { getConditionTypesObject } from 'Modules/@apostrophecms/schema/lib/conditionalFields';
 
 import { createId } from '@paralleldrive/cuid2';
-import { klona } from 'klona';
 import { get } from 'lodash';
 import { Sortable } from 'sortablejs-vue3';
+import newInstance from 'apostrophe/modules/@apostrophecms/schema/lib/newInstance.js';
 
 export default {
   name: 'AposInputArray',
@@ -234,13 +234,7 @@ export default {
       this.openInlineItem(_id);
     },
     newInstance() {
-      const instance = {};
-      for (const field of this.schema) {
-        if (field.def !== undefined) {
-          instance[field.name] = klona(field.def);
-        }
-      }
-      return instance;
+      return newInstance(this.schema);
     },
     getLabel(id, index) {
       const titleField = this.field.titleField || null;

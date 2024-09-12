@@ -1,5 +1,6 @@
-import AposInputMixin from 'Modules/@apostrophecms/schema/mixins/AposInputMixin';
 import { klona } from 'klona';
+import AposInputMixin from 'Modules/@apostrophecms/schema/mixins/AposInputMixin';
+import newInstance from 'apostrophe/modules/@apostrophecms/schema/lib/newInstance.js';
 
 export default {
   name: 'AposInputRelationship',
@@ -254,19 +255,7 @@ export default {
       }
     },
     getDefault() {
-      const object = {};
-      this.field.schema.forEach(field => {
-        if (field.name.startsWith('_')) {
-          return;
-        }
-        // Using `hasOwn` here, not simply checking if `field.def` is truthy
-        // so that `false`, `null`, `''` or `0` are taken into account:
-        const hasDefaultValue = Object.hasOwn(field, 'def');
-        object[field.name] = hasDefaultValue
-          ? klona(field.def)
-          : null;
-      });
-      return object;
+      return newInstance(this.field.schema);
     }
   }
 };
