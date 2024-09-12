@@ -21,17 +21,21 @@
 <script>
 
 // TODO: set :data-apos-test="preview-${screen.id}"
-// TODO: validator for screens sub properties
-// validator(value, props) {
-//   return props.resizable && props.screens;
-// },
 // TODO: add keyboard shortcuts for device preview mode
 // TODO: set styles
 export default {
   name: 'TheAposContextDevicePreview',
   props: {
+    // { screenName: { label: string, minWidth: number, icon: string } }
     screens: {
       type: Object,
+      validator(value, props) {
+        return Object.values(value).every(screen =>
+          typeof screen.label === 'string' &&
+          typeof screen.minWidth === 'number' &&
+          typeof screen.icon === 'string'
+        );
+      },
       default: () => {
         return {};
       }
@@ -56,6 +60,7 @@ export default {
   methods: {
     switchDevicePreviewMode(mode, width) {
       document.querySelector('[data-apos-refreshable]').setAttribute('device-preview-mode', mode);
+      document.querySelector('[data-apos-refreshable]').setAttribute('resizable', this.resizable);
       document.querySelector('[data-apos-refreshable]').style.width = `${width}px`;
       this.mode = mode;
       this.$emit('switch-device-preview-mode', mode, width);

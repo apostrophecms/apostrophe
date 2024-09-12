@@ -4,28 +4,45 @@
   padding: 20px;
   border: 5px #ccc solid;
   border-radius: 5px;
+
+  &[resizable="true"] {
+    resize: both;
+    overflow: scroll;
+  }
 }
 
-[data-apos-refreshable] header {
-  background-color: $brand-red;
-}
-
-@media (max-width < 400px) {
-  [data-apos-refreshable] header {
-    font-size: 10rem;
+@media (max-width: 1400px) {
+  [data-apos-refreshable] main h1 {
     background-color: $brand-gold;
+  }
+}
+
+@media (max-width: 1200px) {
+  [data-apos-refreshable] main h1 {
+    background-color: $brand-green;
+  }
+}
+
+@media (max-width: 800px) {
+  [data-apos-refreshable] main h1 {
+    background-color: $brand-blue;
+  }
+}
+
+@media (max-width: 600px) {
+  [data-apos-refreshable] main h1 {
+    background-color: $brand-magenta;
   }
 }
 
 @media (max-width: 400px) {
-  [data-apos-refreshable] header {
-    font-size: 10rem;
-    background-color: $brand-gold;
+  [data-apos-refreshable] main h1 {
+    background-color: $brand-red;
   }
 }
 
 // @container (width < 650px) {
-//   [data-apos-refreshable][device-preview-mode="mobile"] header {
+//   [data-apos-refreshable][device-preview-mode="mobile"] main h1 {
 //     background-color: $brand-gold;
 //   }
 // }

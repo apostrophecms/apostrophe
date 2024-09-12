@@ -20,11 +20,11 @@ module.exports = (options, apos, srcBuildNames) => {
     })
   ];
 
-  const mediaToContainerQueriesLoader = apos.asset.options.devicePreview?.enable === true
+  const mediaToContainerQueriesLoader = apos.asset.options.devicePreviewMode?.enable === true
     ? {
       loader: path.resolve(__dirname, '../media-to-container-queries-loader.js'),
       options: {
-        debug: apos.asset.options.devicePreview?.debug === true
+        debug: apos.asset.options.devicePreviewMode?.debug === true
       }
     }
     : '';
