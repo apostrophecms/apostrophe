@@ -4,6 +4,7 @@
     v-apos-tooltip="tooltip"
     class="apos-indicator"
     :aria-hidden="decorative"
+    :tabindex="decorative ? '-1' : '0'"
   >
     <component
       :is="icon"

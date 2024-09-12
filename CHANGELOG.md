@@ -6,11 +6,21 @@
 
 * Apostrophe now automatically adds the appropriate default values for new properties in the schema, even for existing documents in the database. This is done automatically during the migration phase of startup.
 
+### Changes
+
+* The various implementations of `newInstance` found in Apostrophe, e.g. for widgets, array items, relationship fields and documents themselves, have been consolidated in one implementation. The same code is now reused both on the front and the back end, ensuring the same result without the need to introduce additional back end API calls.
+
 ### Fixes
 
 * Apostrophe's migration logic is no longer executed twice on every startup and three times in the migration task. It is executed exactly once, always at the same point in the startup process. This bug did not cause significant performance issues because migrations were only executed once, but there is a small performance improvement.
+* Simplified importing rich text widgets via the REST API. If you  you have HTML that contains `img` tags pointing to existing images, you can now import them all quickly. When supplying the rich text widget object, include an `import` property with an `html` subproperty, rather than the usual `content` property. You can optionally provide a `baseUrl` subproperty as well. Any images present in `html` will be imported automatically and the correct `figure` tags will be added to the new rich text widget, along with any other markup acceptable to the widget's configuration.
+* Default properties of object fields present in a widget now populate correctly even if never focused in the editor.
 
 ## 4.7.0 (2024-09-05)
+
+### Changes
+
+* UI and UX of inline arrays and their table styles
 
 ### Adds
 
@@ -49,6 +59,9 @@ This resolves the issue for new uploads.
 * Fix widget focus state so that the in-context Add Content menu stays visible during animation.
 * Fix UI of areas in schemas so that their context menus are layered overtop sibling schema fields UI.
 
+### Removes
+* Inline array option for `alwaysOpen` replaced with UI toggles
+
 ## 4.6.0 (2024-08-08)
 
 ### Adds
@@ -76,6 +89,7 @@ The shape of the relationship field is still validated.
 
 ### Fixes
 
+* Fixes the rendering of conditional fields in arrays where the `inline: true` option is used.
 * Fixes the rich text link tool's detection and display of the Remove Link button for removing existing links
 * Fixes the rich text link tool's detection and display of Apostrophe Page relationship field.
 * Overriding standard Vue.js components with `editorModal` and `managerModal` are now applied all the time.
