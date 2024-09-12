@@ -46,6 +46,9 @@ module.exports = {
     // disable the build of the public UI assets.
     publicBundle: true,
     // Device preview in the admin UI.
+    // NOTE: the whole devicePreviewMode option must be carried over
+    // to the project for override to work properly.
+    // Nested object options are not deep merged in Apostrophe.
     devicePreviewMode: {
       // Enable device preview mode
       enable: false,
