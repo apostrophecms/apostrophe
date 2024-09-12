@@ -1,9 +1,8 @@
 [data-apos-refreshable][device-preview-mode] {
   container-type: size;
   margin: 20px auto;
-  padding: 20px;
-  border: 5px #ccc solid;
-  border-radius: 5px;
+  border: 1px solid var(--a-base-2);
+  box-shadow: 0 0 3px var(--a-base-2);
 
   &[resizable="true"] {
     resize: both;

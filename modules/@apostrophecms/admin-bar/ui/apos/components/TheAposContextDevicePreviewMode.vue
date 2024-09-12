@@ -1,28 +1,29 @@
 <template>
   <div
-    data-apos-test="devicePreview"
-    class="apos-admin-bar"
+    data-apos-test="devicePreviewMode"
+    class="apos-admin-bar__device-preview-mode"
   >
     <component
       :is="'AposButton'"
       v-for="(screen, name) in screens"
       :key="name"
-      :data-apos-test="name"
+      :data-apos-test="`devicePreviewMode:${name}`"
       :modifiers="['small', 'no-motion']"
       :label="screen.label"
       :icon="screen.icon"
       :icon-only="true"
       type="subtle"
-      class="apos-admin-bar__context-button"
+      class="apos-admin-bar__device-preview-mode-button"
+      :class="{ 'apos-is-active': mode === name }"
       @click="toggleDevicePreviewMode(name, screen.minWidth)"
     />
   </div>
 </template>
 <script>
 
-// TODO: set :data-apos-test="preview-${screen.id}"
+// TODO: add i18n keys
 // TODO: add keyboard shortcuts for device preview mode
-// TODO: set styles
+// TODO: fix active style
 export default {
   name: 'TheAposContextDevicePreview',
   props: {
@@ -81,4 +82,20 @@ export default {
 };
 </script>
 <style lang="scss" scoped>
+.apos-admin-bar__device-preview-mode {
+  margin-left: 22px;
+}
+
+.apos-admin-bar__device-preview-mode-button {
+  & + & {
+    margin-left: 6px;
+  }
+
+  // &.active {
+  //   color: var(--a-text-primary);
+  //   text-decoration: none;
+  //   background-color: var(--a-base-10);
+  //   outline: 1px solid var(--a-base-7);
+  // }
+}
 </style>
