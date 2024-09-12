@@ -72,8 +72,8 @@ module.exports = {
             minWidth: 640,
             icon: 'tablet-icon'
           },
-          phone: {
-            label: 'apostrophe:devicePreviewPhone',
+          mobile: {
+            label: 'apostrophe:devicePreviewMobile',
             minWidth: 480,
             icon: 'cellphone-icon'
           }

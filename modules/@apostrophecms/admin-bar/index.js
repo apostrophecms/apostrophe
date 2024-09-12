@@ -23,7 +23,7 @@ module.exports = {
         type: 'item',
         label: {
           key: 'apostrophe:commandMenuToggleDevicePreviewMode',
-          device: 'exit'
+          device: '$t(apostrophe:devicePreviewExit)'
         },
         action: {
           type: 'command-menu-admin-bar-toggle-device-preview-mode',
@@ -41,7 +41,7 @@ module.exports = {
         type: 'item',
         label: {
           key: 'apostrophe:commandMenuToggleDevicePreviewMode',
-          device: name
+          device: `$t(${screen.label})`
         },
         action: {
           type: 'command-menu-admin-bar-toggle-device-preview-mode',
