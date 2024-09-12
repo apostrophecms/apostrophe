@@ -15,15 +15,12 @@
       type="subtle"
       class="apos-admin-bar__device-preview-mode-button"
       :class="{ 'apos-is-active': mode === name }"
-      @click="toggleDevicePreviewMode(name, screen.minWidth)"
+      @click="toggleDevicePreviewMode({ mode: name, width: screen.minWidth })"
     />
   </div>
 </template>
 <script>
 
-// TODO: add i18n keys
-// TODO: add keyboard shortcuts for device preview mode
-// TODO: fix active style
 export default {
   name: 'TheAposContextDevicePreview',
   props: {
@@ -59,15 +56,15 @@ export default {
     apos.bus.$off('command-menu-admin-bar-toggle-device-preview-mode', this.toggleDevicePreviewMode);
   },
   methods: {
-    switchDevicePreviewMode(mode, width) {
+    switchDevicePreviewMode({ mode, width }) {
       document.querySelector('[data-apos-refreshable]').setAttribute('device-preview-mode', mode);
       document.querySelector('[data-apos-refreshable]').setAttribute('resizable', this.resizable);
       document.querySelector('[data-apos-refreshable]').style.width = `${width}px`;
       this.mode = mode;
       this.$emit('switch-device-preview-mode', mode, width);
     },
-    toggleDevicePreviewMode(mode, width) {
-      if (this.mode === mode) {
+    toggleDevicePreviewMode({ mode, width }) {
+      if (this.mode === mode || mode === null) {
         document.querySelector('[data-apos-refreshable]').removeAttribute('device-preview-mode');
         document.querySelector('[data-apos-refreshable]').style.removeProperty('width');
         this.mode = null;
@@ -76,7 +73,10 @@ export default {
         return;
       }
 
-      this.switchDevicePreviewMode(mode, width);
+      this.switchDevicePreviewMode({
+        mode,
+        width
+      });
     }
   }
 };
@@ -91,11 +91,12 @@ export default {
     margin-left: 6px;
   }
 
-  // &.active {
-  //   color: var(--a-text-primary);
-  //   text-decoration: none;
-  //   background-color: var(--a-base-10);
-  //   outline: 1px solid var(--a-base-7);
-  // }
+  &.apos-is-active {
+    color: var(--a-text-primary);
+    text-decoration: none;
+    background-color: var(--a-base-10);
+    border-radius: var(--a-border-radius);
+    outline: 1px solid var(--a-base-7);
+  }
 }
 </style>

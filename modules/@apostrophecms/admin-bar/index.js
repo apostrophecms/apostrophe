@@ -14,6 +14,48 @@ module.exports = {
     pageTree: true
   },
   commands(self) {
+    const devicePreviewModeScreens = (
+      self.apos.asset.options.devicePreviewMode?.enable &&
+      self.apos.asset.options.devicePreviewMode?.breakpoints?.screens
+    ) || {};
+    const devicePreviewModeCommands = {
+      [`${self.__meta.name}:toggle-device-preview-mode:exit`]: {
+        type: 'item',
+        label: {
+          key: 'apostrophe:commandMenuToggleDevicePreviewMode',
+          device: 'exit'
+        },
+        action: {
+          type: 'command-menu-admin-bar-toggle-device-preview-mode',
+          payload: {
+            mode: null,
+            width: null
+          }
+        },
+        shortcut: 'P,0'
+      }
+    };
+    let index = 1;
+    for (const [ name, screen ] of Object.entries(devicePreviewModeScreens)) {
+      devicePreviewModeCommands[`${self.__meta.name}:toggle-device-preview-mode:${name}`] = {
+        type: 'item',
+        label: {
+          key: 'apostrophe:commandMenuToggleDevicePreviewMode',
+          device: name
+        },
+        action: {
+          type: 'command-menu-admin-bar-toggle-device-preview-mode',
+          payload: {
+            mode: name,
+            width: screen.minWidth
+          }
+        },
+        shortcut: `P,${index}`
+      };
+
+      index += 1;
+    };
+
     return {
       add: {
         [`${self.__meta.name}:undo`]: {
@@ -63,7 +105,8 @@ module.exports = {
             type: 'command-menu-admin-bar-toggle-publish-draft'
           },
           shortcut: 'Ctrl+Shift+D Meta+Shift+D'
-        }
+        },
+        ...devicePreviewModeCommands
       },
       modal: {
         default: {
@@ -80,7 +123,8 @@ module.exports = {
             label: 'apostrophe:commandMenuMode',
             commands: [
               `${self.__meta.name}:toggle-edit-preview-mode`,
-              `${self.__meta.name}:toggle-published-draft-document`
+              `${self.__meta.name}:toggle-published-draft-document`,
+              ...Object.keys(devicePreviewModeCommands)
             ]
           }
         }
