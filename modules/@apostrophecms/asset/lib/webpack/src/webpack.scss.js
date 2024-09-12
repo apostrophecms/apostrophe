@@ -2,17 +2,6 @@ const path = require('path');
 const MiniCssExtractPlugin = require('mini-css-extract-plugin');
 
 module.exports = (options, apos, srcBuildNames) => {
-  const plugins = [
-    new MiniCssExtractPlugin({
-      // Should be automatic but we wind up with main.css if we try to go with that
-      filename: ({ chunk }) => {
-        return srcBuildNames.includes(chunk.name)
-          ? '[name].css'
-          : '[name]-bundle.css';
-      }
-    })
-  ];
-
   const mediaToContainerQueriesLoader = apos.asset.options.devicePreviewMode?.enable === true
     ? {
       loader: path.resolve(__dirname, '../media-to-container-queries-loader.js'),
@@ -23,7 +12,6 @@ module.exports = (options, apos, srcBuildNames) => {
     : '';
 
   return {
-    plugins,
     module: {
       rules: [
         {
@@ -59,6 +47,16 @@ module.exports = (options, apos, srcBuildNames) => {
           sideEffects: true
         }
       ]
-    }
+    },
+    plugins: [
+      new MiniCssExtractPlugin({
+        // Should be automatic but we wind up with main.css if we try to go with that
+        filename: ({ chunk }) => {
+          return srcBuildNames.includes(chunk.name)
+            ? '[name].css'
+            : '[name]-bundle.css';
+        }
+      })
+    ]
   };
 };
