@@ -12,6 +12,10 @@
 
 ## 4.7.0 (2024-09-05)
 
+### Changes
+
+* UI and UX of inline arrays and their table styles
+
 ### Adds
 
 * To aid debugging, when a file extension is unacceptable as an Apostrophe attachment the rejected extension is now printed as part of the error message.
@@ -49,6 +53,9 @@ This resolves the issue for new uploads.
 * Fix widget focus state so that the in-context Add Content menu stays visible during animation.
 * Fix UI of areas in schemas so that their context menus are layered overtop sibling schema fields UI.
 
+### Removes
+* Inline array option for `alwaysOpen` replaced with UI toggles
+
 ## 4.6.0 (2024-08-08)
 
 ### Adds
@@ -76,6 +83,7 @@ The shape of the relationship field is still validated.
 
 ### Fixes
 
+* Fixes the rendering of conditional fields in arrays where the `inline: true` option is used.
 * Fixes the rich text link tool's detection and display of the Remove Link button for removing existing links
 * Fixes the rich text link tool's detection and display of Apostrophe Page relationship field.
 * Overriding standard Vue.js components with `editorModal` and `managerModal` are now applied all the time.
