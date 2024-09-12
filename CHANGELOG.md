@@ -5,6 +5,7 @@
 ### Adds
 
 * Simplified importing rich text widgets via the REST API. If you  you have HTML that contains `img` tags pointing to existing images, you can now import them all quickly. When supplying the rich text widget object, include an `import` property with an `html` subproperty, rather than the usual `content` property. You can optionally provide a `baseUrl` subproperty as well. Any images present in `html` will be imported automatically and the correct `figure` tags will be added to the new rich text widget, along with any other markup acceptable to the widget's configuration.
+* Add mobile preview feature to the admin UI. The feature can be enabled using the `@apostrophecms/asset` module new `devicePreviewMode` option. Once enabled, the asset build process will duplicate existing media queries as container queries. There are some limitations in the equivalence media queries / container queries. You can refer to the [CSS @container at-rule](https://developer.mozilla.org/en-US/docs/Web/CSS/@container) documentation for more information. You can also enable `devicePreviewMode.debug` to be notified in the console when the build encounter an unsupported media query.
 
 ### Changes
 
