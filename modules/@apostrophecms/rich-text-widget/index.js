@@ -3,6 +3,9 @@
 
 const sanitizeHtml = require('sanitize-html');
 const cheerio = require('cheerio');
+const { createWriteStream, unlinkSync } = require('fs');
+const { Readable, pipeline } = require('stream');
+const util = require('util');
 
 module.exports = {
   extend: '@apostrophecms/widget-type',
@@ -868,6 +871,69 @@ module.exports = {
 
           const output = await _super(req, input, rteOptions);
           const finalOptions = self.optionsToSanitizeHtml(rteOptions);
+
+          if (input.import?.html) {
+            if ((typeof input.import.html) !== 'string') {
+              throw self.apos.error('invalid', 'import.html must be a string');
+            }
+            if (input.import.baseUrl && ((typeof input.import.html) !== 'string')) {
+              throw self.apos.error('invalid', 'If present, import.baseUrl must be a string');
+            }
+            const $ = cheerio.load(input.import.html);
+            const $images = $('img');
+            // Build an array of cheerio objects because
+            // we need to iterate while doing async work,
+            // which .each() can't do
+            const $$images = [];
+            $images.each((i, el) => {
+              const $image = $(el);
+              $$images.push($image);
+            });
+            for (const $image of $$images) {
+              const src = $image.attr('src');
+              const alt = $image.attr('alt') && self.apos.util.escapeHtml($image.attr('alt'));
+              const url = new URL(src, input.import.baseUrl || self.apos.baseUrl);
+              const res = await fetch(url);
+              if (res.status >= 400) {
+                self.apos.util.warn(`Error ${res.status} while importing ${src}, ignoring image`);
+                continue;
+              }
+              const id = self.apos.util.generateId();
+              const temp = self.apos.attachment.uploadfs.getTempPath() + `/${id}`;
+              const matches = src.match(/\/([^/]+\.\w+)$/);
+              if (!matches) {
+                self.apos.util.warn('img URL has no extension, skipping:', src);
+                continue;
+              }
+              const name = matches[1];
+              try {
+                await util.promisify(pipeline)(Readable.fromWeb(res.body), createWriteStream(temp));
+                const attachment = await self.apos.attachment.insert(req, {
+                  name,
+                  path: temp
+                });
+                const image = await self.apos.image.insert(req, {
+                  title: name,
+                  attachment
+                });
+                const newSrc = `${self.apos.image.action}/${image.aposDocId}/src`;
+                $image.replaceWith(
+                  `<figure>
+                    <img src="${newSrc}" ${alt && `alt="${alt}"`} />
+                    <figcaption></figcaption>
+                  </figure>
+                  `
+                );
+              } finally {
+                try {
+                  unlinkSync(temp);
+                } catch (e) {
+                  // It's OK if we never created it
+                }
+              }
+            }
+            input.content = $.html();
+          }
 
           output.content = self.sanitizeHtml(input.content, finalOptions);
 
