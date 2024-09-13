@@ -78,7 +78,10 @@ module.exports = {
             icon: 'cellphone-icon'
           }
         }
-      }
+      },
+      // Transform method used on media feature
+      // (mediaFeature) => {} or null
+      transform: null
     }
   },
 

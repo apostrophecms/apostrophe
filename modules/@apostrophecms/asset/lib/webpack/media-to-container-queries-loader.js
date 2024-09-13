@@ -5,6 +5,12 @@ module.exports = function (source) {
     properties: {
       debug: {
         type: 'boolean'
+      },
+      transform: {
+        anyOf: [
+          { type: 'null' },
+          { instanceof: 'Function' }
+        ]
       }
     }
   };
@@ -29,15 +35,19 @@ module.exports = function (source) {
       '<='
     ];
 
+    const containerFeature = typeof options.transform === 'function'
+      ? options.transform(mediaFeature)
+      : mediaFeature;
+
     if (
       options.debug &&
-      DESCRIPTORS.some(descriptor => mediaFeature.includes(descriptor)) &&
-      OPERATORS.some(operator => mediaFeature.includes(operator))
+      DESCRIPTORS.some(descriptor => containerFeature.includes(descriptor)) &&
+      OPERATORS.some(operator => containerFeature.includes(operator))
     ) {
-      console.warn('[mediaToContainerQueryLoader] Unsupported media query', mediaFeature);
+      console.warn('[mediaToContainerQueryLoader] Unsupported media query', containerFeature);
     }
 
-    return `@container ${mediaFeature} {${content}}`;
+    return `@container ${containerFeature} {${content}}`;
   };
 
   // Prepend container query to media queries

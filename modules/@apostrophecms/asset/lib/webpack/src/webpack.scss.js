@@ -6,7 +6,8 @@ module.exports = (options, apos, srcBuildNames) => {
     ? {
       loader: path.resolve(__dirname, '../media-to-container-queries-loader.js'),
       options: {
-        debug: apos.asset.options.devicePreviewMode?.debug === true
+        debug: apos.asset.options.devicePreviewMode?.debug === true,
+        transform: apos.asset.options.devicePreviewMode?.transform || null
       }
     }
     : '';
