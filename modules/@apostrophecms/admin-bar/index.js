@@ -37,6 +37,11 @@ module.exports = {
     };
     let index = 1;
     for (const [ name, screen ] of Object.entries(devicePreviewModeScreens)) {
+      // Up to 9 shortcuts available
+      if (index === 9) {
+        break;
+      }
+
       devicePreviewModeCommands[`${self.__meta.name}:toggle-device-preview-mode:${name}`] = {
         type: 'item',
         label: {
