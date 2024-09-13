@@ -80,7 +80,9 @@ module.exports = {
         }
       },
       // Transform method used on media feature
-      // (mediaFeature) => {} or null
+      // Can be either:
+      // - (mediaFeature) => { return mediaFeature; }
+      // - null
       transform: null
     }
   },
