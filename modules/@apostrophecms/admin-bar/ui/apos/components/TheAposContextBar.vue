@@ -35,7 +35,7 @@
 
 <script>
 import { klona } from 'klona';
-import cuid from 'cuid';
+import { createId } from '@paralleldrive/cuid2';
 import AposPublishMixin from 'Modules/@apostrophecms/ui/mixins/AposPublishMixin';
 import AposAdvisoryLockMixin from 'Modules/@apostrophecms/ui/mixins/AposAdvisoryLockMixin';
 
@@ -159,7 +159,7 @@ export default {
     // sessionStorage because it is deliberately browser-tab specific
     let tabId = sessionStorage.getItem('aposTabId');
     if (!tabId) {
-      tabId = cuid();
+      tabId = createId();
       sessionStorage.setItem('aposTabId', tabId);
     }
     window.apos.adminBar.tabId = tabId;
@@ -498,7 +498,7 @@ export default {
       const contextOptions = this.context
         ? apos.modules[this.context.type]
         : { contentChangedRefresh: true };
-      if (contextOptions.contentChangedRefresh) {
+      if (!e.localeSwitched && contextOptions.contentChangedRefresh) {
         await this.refresh({
           scrollcheck: e.action === 'history'
         });
@@ -615,7 +615,7 @@ export default {
           body: {},
           busy: true
         });
-        apos.notify('apostrophe:restoredPrevious', {
+        await apos.notify('apostrophe:restoredPrevious', {
           type: 'success',
           dismiss: true
         });
@@ -720,14 +720,18 @@ export default {
     async updateDraftIsEditable() {
       if (this.context.aposLocale && this.context.aposLocale.endsWith('published') && !this.context._edit) {
         // A contributor might be able to edit the draft
-        const draftContext = await apos.http.get(`${this.action}/${this.context._id}`, {
-          busy: true,
-          qs: {
-            aposMode: 'draft',
-            aposLocale: this.context.aposLocale.split(':')[0]
-          }
-        });
-        this.draftIsEditable = draftContext && draftContext._edit;
+        try {
+          const draftContext = await apos.http.get(`${this.action}/${this.context._id}`, {
+            busy: true,
+            qs: {
+              aposMode: 'draft',
+              aposLocale: this.context.aposLocale.split(':')[0]
+            }
+          });
+          this.draftIsEditable = draftContext && draftContext._edit;
+        } catch (e) {
+          console.error(e);
+        }
       }
     },
     async getPublished() {
@@ -735,13 +739,17 @@ export default {
       const manuallyPublished = moduleOptions.localized && !this.autopublish;
       if (manuallyPublished && this.context.lastPublishedAt) {
         const action = window.apos.modules[this.context.type].action;
-        const doc = await apos.http.get(`${action}/${this.context._id}`, {
-          busy: true,
-          qs: {
-            aposMode: 'published'
-          }
-        });
-        return doc;
+        try {
+          const doc = await apos.http.get(`${action}/${this.context._id}`, {
+            busy: true,
+            qs: {
+              aposMode: 'published'
+            }
+          });
+          return doc;
+        } catch (error) {
+          console.error(error);
+        }
       }
       return null;
     },

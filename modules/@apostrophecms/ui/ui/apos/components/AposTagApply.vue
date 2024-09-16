@@ -42,9 +42,12 @@
           </ol>
           <div v-if="(!searchTags.length && myTags.length) && !creating" class="apos-apply-tag-menu__empty">
             <p class="apos-apply-tag-menu__empty-message">
-              We couldn't find any matching tags. Perhaps
+              {{ $t('apostrophe:tagNoTagsFoundPerhaps') }}
               <AposButton
-                :label="`create ${searchInputValue} ?`"
+                :label="{
+                  key: 'apostrophe:tagNoTagsFoundCreateOne',
+                  tag: searchInputValue
+                }"
                 type="quiet"
                 :disabled="disabledCreate"
                 :disable-focus="!open"
@@ -62,7 +65,7 @@
 </template>
 
 <script>
-import cuid from 'cuid';
+import { createId } from '@paralleldrive/cuid2';
 
 export default {
   props: {
@@ -70,7 +73,7 @@ export default {
       type: Object,
       default() {
         return {
-          label: 'Add Tag',
+          label: 'apostrophe:tagAddTag',
           action: 'add-tag'
         };
       }
@@ -102,7 +105,7 @@ export default {
       myTags: [ ...this.tags ],
       checked: [],
       searchInputValue: '',
-      keyPrefix: `key-${cuid()}`, // used to keep checkboxes in sync w state
+      keyPrefix: `key-${createId()}`, // used to keep checkboxes in sync w state
       origin: 'below',
       open: false,
       button: {
@@ -143,17 +146,20 @@ export default {
     // Generate the button label.
     createLabel() {
       if (this.searchInputValue.length) {
-        return `Create tag "${this.searchInputValue}"`;
+        return {
+          key: 'apostrophe:tagCreateTag',
+          tag: this.searchInputValue
+        };
       } else {
-        return 'Create new tag';
+        return 'apostrophe:tagCreateNewTag';
       }
     },
     // Generate the field object for the search field.
     searchField() {
       return {
         name: 'tagSearch',
-        label: 'Apply Tags',
-        placeholder: 'Tags...',
+        label: 'apostrophe:tagSearchApplyTags',
+        placeholder: 'apostrophe:tagSearchPlaceholder',
         help: 'apostrophe:findOrAddTag',
         icon: (!this.searchTags || !this.searchTags.length) ? 'pencil-icon' : 'magnify-icon',
         disableFocus: !this.open
@@ -178,7 +184,7 @@ export default {
 
       if (!this.searchInputValue || !this.searchInputValue.length) {
         this.creating = true;
-        this.searchValue.data = 'New Tag';
+        this.searchValue.data = this.$t('apostrophe:tagNewTag');
         this.$refs.textInput.$el.querySelector('input').focus();
         this.$nextTick(() => {
           this.$refs.textInput.$el.querySelector('input').select();
@@ -228,7 +234,7 @@ export default {
         }
       }
       // Force refresh the checkboxes.
-      this.keyPrefix = `key-${cuid()}`;
+      this.keyPrefix = `key-${createId()}`;
 
       // TODO: This should probably have an "Apply" or "Save" button to confirm
       // before running emitting the updates.
@@ -333,9 +339,11 @@ export default {
   .apos-apply-tag-menu__empty-message {
     @include type-base;
 
-    margin-bottom: 20px;
-    max-width: 240px;
-    text-align: center;
+    & {
+      margin-bottom: 20px;
+      max-width: 240px;
+      text-align: center;
+    }
   }
 
   .apos-apply-tag-menu__empty-icon {
@@ -347,7 +355,9 @@ export default {
     /* stylelint-disable-next-line scale-unlimited/declaration-strict-value */
     @include type-title;
 
-    margin: 0;
+    & {
+      margin: 0;
+    }
   }
 
   .fade-enter-active, .fade-leave-active {

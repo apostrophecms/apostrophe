@@ -1,9 +1,9 @@
 // Vue plugin. Create a new directive with i18n support by applying the decorator
 import { $t } from './i18next';
 import {
-  computePosition, arrow, offset, shift
+  computePosition, arrow, offset, flip, shift
 } from '@floating-ui/dom';
-import cuid from 'cuid';
+import { createId } from '@paralleldrive/cuid2';
 import { isEqual } from 'lodash';
 
 const getTooltipHtml = (id, tooltip) =>
@@ -57,7 +57,7 @@ export default {
       if (!localized) {
         return;
       }
-      const tooltipId = `tooltip__${cuid()}`;
+      const tooltipId = `tooltip__${createId()}`;
 
       // Attach event listeners to elements to retrieve them in beforeUnmount
       el.aposShowTooltipListener = setupShowTooltip({
@@ -122,6 +122,7 @@ export default {
           middleware: [
             offset(11),
             shift({ padding: 5 }),
+            flip(),
             arrow({
               element: arrowEl,
               padding: 10

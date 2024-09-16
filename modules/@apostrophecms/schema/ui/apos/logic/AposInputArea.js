@@ -1,6 +1,6 @@
 
 import AposInputMixin from 'Modules/@apostrophecms/schema/mixins/AposInputMixin';
-import cuid from 'cuid';
+import { createId } from '@paralleldrive/cuid2';
 
 export default {
   name: 'AposInputArea',
@@ -43,8 +43,8 @@ export default {
       for (const [ name, options ] of Object.entries(widgets)) {
         result.push({
           name,
-          label: options.addLabel || apos.modules[`${name}-widget`].label,
-          icon: apos.modules[`${name}-widget`].icon
+          label: options.addLabel || apos.modules[`${name}-widget`]?.label,
+          icon: apos.modules[`${name}-widget`]?.icon
         });
       }
       return result;
@@ -65,7 +65,7 @@ export default {
     getEmptyValue() {
       return {
         metaType: 'area',
-        _id: cuid(),
+        _id: createId(),
         items: []
       };
     },

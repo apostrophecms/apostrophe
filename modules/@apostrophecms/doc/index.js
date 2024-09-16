@@ -1,5 +1,5 @@
 const _ = require('lodash');
-const cuid = require('cuid');
+const { createId } = require('@paralleldrive/cuid2');
 const { SemanticAttributes } = require('@opentelemetry/semantic-conventions');
 const { klona } = require('klona');
 
@@ -334,8 +334,12 @@ module.exports = {
       // new document's content wins in the event of a conflict.
       // If `keep` is not set, a `conflict` error is thrown in the
       // event of a conflict.
+      //
+      // If `skipReplace` is set to `true`, the method will not attempt to remove
+      // the old document, but will still update the new document. The new _id
+      // for each pair will be used for retrieving the "existing" document in this case.
 
-      async changeDocIds(pairs, { keep } = {}) {
+      async changeDocIds(pairs, { keep, skipReplace = false } = {}) {
         let renamed = 0;
         let kept = 0;
         // Get page paths up front so we can avoid multiple queries when working on path changes
@@ -347,13 +351,15 @@ module.exports = {
         }).toArray();
         for (const pair of pairs) {
           const [ from, to ] = pair;
-          const existing = await self.apos.doc.db.findOne({ _id: from });
+          const oldAposDocId = from.split(':')[0];
+          const existing = await self.apos.doc.db.findOne({ _id: skipReplace ? to : from });
           if (!existing) {
             throw self.apos.error('notfound');
           }
           const replacement = klona(existing);
-          await self.apos.doc.db.removeOne({ _id: from });
-          const oldAposDocId = existing.aposDocId;
+          if (!skipReplace) {
+            await self.apos.doc.db.removeOne({ _id: from });
+          }
           replacement._id = to;
           const parts = to.split(':');
           replacement.aposDocId = parts[0];
@@ -366,8 +372,10 @@ module.exports = {
             replacement.path = existing.path.replace(existing.aposDocId, replacement.aposDocId);
           }
           try {
-            await self.apos.doc.db.insertOne(replacement);
-            renamed++;
+            if (!skipReplace) {
+              await self.apos.doc.db.insertOne(replacement);
+              renamed++;
+            }
           } catch (e) {
             // First reinsert old doc to prevent content loss on new doc insert failure
             await self.apos.doc.db.insertOne(existing);
@@ -404,7 +412,7 @@ module.exports = {
               throw self.apos.error('conflict');
             }
           }
-          if (isPage) {
+          if (isPage && !skipReplace) {
             for (const page of pages) {
               if (page.path.includes(oldAposDocId)) {
                 await self.apos.doc.db.updateOne({
@@ -786,39 +794,40 @@ module.exports = {
       // will be `b`, the value will be `5`, the dotPath
       // will be the string `a.b`, and ancestors will be
       // [ { a: { b: 5 } } ].
-      //
-      // You do not need to pass the `_dotPath` and `_ancestors` arguments.
-      // They are used for recursive invocation.
-      walk(doc, iterator, _dotPath, _ancestors) {
-        // We do not use lodash here because of
-        // performance issues.
-        //
-        // Pruning big nested objects is not something we
-        // can afford to do slowly. -Tom
-        if (_dotPath !== undefined) {
-          _dotPath += '.';
-        } else {
-          _dotPath = '';
-        }
-        _ancestors = (_ancestors || []).concat(doc);
-        const remove = [];
-        for (const key in doc) {
-          const __dotPath = _dotPath + key.toString();
-          const ow = '_originalWidgets';
-          if (__dotPath === ow || __dotPath.substring(0, ow.length) === ow + '.') {
-            continue;
+      walk(doc, iterator) {
+        return walkBody(doc, iterator, undefined, []);
+        function walkBody(doc, iterator, _dotPath, _ancestors) {
+          if (_ancestors.includes(doc)) {
+            // No infinite loops on circular references
+            return;
           }
-          if (iterator(doc, key, doc[key], __dotPath, _ancestors) === false) {
-            remove.push(key);
+          // Don't use concat, doc can be an array in which case
+          // it is important to preserve the nesting
+          _ancestors = [ ..._ancestors, doc ];
+          if (_dotPath !== undefined) {
+            _dotPath += '.';
           } else {
-            const val = doc[key];
-            if (typeof val === 'object') {
-              self.walk(val, iterator, __dotPath, _ancestors.concat([ doc ]));
+            _dotPath = '';
+          }
+          const remove = [];
+          for (const key in doc) {
+            const __dotPath = _dotPath + key.toString();
+            const ow = '_originalWidgets';
+            if (__dotPath === ow || __dotPath.substring(0, ow.length) === ow + '.') {
+              continue;
+            }
+            if (iterator(doc, key, doc[key], __dotPath, _ancestors) === false) {
+              remove.push(key);
+            } else {
+              const val = doc[key];
+              if (typeof val === 'object') {
+                walkBody(val, iterator, __dotPath, _ancestors);
+              }
             }
           }
-        }
-        for (const key of remove) {
-          delete doc[key];
+          for (const key of remove) {
+            delete doc[key];
+          }
         }
       },
       // Retry the given "actor" async function until it
@@ -1696,7 +1705,7 @@ module.exports = {
           }
           for (const widget of area.items || []) {
             if ((!widget._id) || seen.has(widget._id)) {
-              widget._id = cuid();
+              widget._id = createId();
             } else {
               seen.add(widget._id);
             }
@@ -1733,14 +1742,13 @@ module.exports = {
         }
 
         function forSchema(schema, doc) {
+          if (!doc) {
+            return;
+          }
           for (const field of schema) {
             if (field.type === 'area' && doc[field.name] && doc[field.name].items) {
               for (const widget of doc[field.name].items) {
-                self.walkByMetaType(widget, {
-                  arrayItem: handlers.arrayItem,
-                  object: handlers.object,
-                  relationship: handlers.relationship
-                });
+                self.walkByMetaType(widget, handlers);
               }
             } else if (field.type === 'array') {
               if (doc[field.name]) {
@@ -1751,14 +1759,10 @@ module.exports = {
               }
             } else if (field.type === 'object') {
               const value = doc[field.name];
-              if (value) {
-                handlers.object(field, value);
-                forSchema(field.schema, value);
-              }
+              handlers.object(field, value);
+              forSchema(field.schema, value);
             } else if (field.type === 'relationship') {
-              if (Array.isArray(doc[field.name])) {
-                handlers.relationship(field, doc);
-              }
+              handlers.relationship(field, doc);
             }
           }
         }

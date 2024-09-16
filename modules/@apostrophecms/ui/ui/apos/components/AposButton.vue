@@ -9,11 +9,12 @@
       v-bind="attrs"
       :is="href ? 'a' : 'button'"
       :id="attrs.id ? attrs.id : id"
-      :href="href.length ? href : false"
+      :target="target"
+      :href="href"
       class="apos-button"
       :class="modifierClass"
       :tabindex="tabindex"
-      :disabled="isDisabled"
+      :disabled="isDisabled ? isDisabled : null"
       :type="buttonType"
       :role="role"
       :style="{color: textColor}"
@@ -35,7 +36,8 @@
           :icon="icon"
           :icon-size="iconSize"
           class="apos-button__icon"
-          fill-color="currentColor"
+          :icon-color="iconFill"
+          @icon="$emit('icon', $event)"
         />
         <slot name="label">
           <span class="apos-button__label" :class="{ 'apos-sr-only' : (iconOnly || type === 'color') }">
@@ -48,7 +50,7 @@
 </template>
 
 <script>
-import cuid from 'cuid';
+import { createId } from '@paralleldrive/cuid2';
 
 export default {
   name: 'AposButton',
@@ -82,12 +84,16 @@ export default {
       default: null
     },
     href: {
-      type: [ String, Boolean ],
-      default: false
+      type: String,
+      default: null
     },
     iconSize: {
       type: Number,
       default: 15
+    },
+    iconFill: {
+      type: String,
+      default: 'currentColor'
     },
     disabled: Boolean,
     busy: Boolean,
@@ -117,22 +123,26 @@ export default {
     },
     disableFocus: Boolean,
     buttonType: {
-      type: [ String, Boolean ],
-      default: false
+      type: String,
+      default: null
     },
     role: {
-      type: [ String, Boolean ],
-      default: false
+      type: String,
+      default: null
     },
     tooltip: {
       type: [ String, Object, Boolean ],
       default: false
+    },
+    target: {
+      type: String,
+      default: null
     }
   },
-  emits: [ 'click' ],
+  emits: [ 'click', 'icon' ],
   data() {
     return {
-      id: cuid()
+      id: createId()
     };
   },
   computed: {
@@ -203,7 +213,7 @@ export default {
       return null;
     },
     isDisabled() {
-      return this.disabled || this.busy;
+      return (this.disabled || this.busy) || null;
     },
     actionTestLabel() {
       return this.action
@@ -222,16 +232,18 @@ export default {
   .apos-button {
     @include type-base;
 
-    position: relative;
-    display: inline-block;
-    overflow: hidden;
-    padding: 10px 20px;
-    border: 1px solid var(--a-base-5);
-    color: var(--a-text-primary);
-    border-radius: var(--a-border-radius);
-    background-color: var(--a-base-9);
-    transition: all 200ms ease;
-    text-decoration: none;
+    & {
+      position: relative;
+      display: inline-block;
+      overflow: hidden;
+      padding: 10px 20px;
+      border: 1px solid var(--a-base-5);
+      color: var(--a-text-primary);
+      border-radius: var(--a-border-radius);
+      background-color: var(--a-base-9);
+      transition: all 200ms ease;
+      text-decoration: none;
+    }
 
     &:hover {
       cursor: pointer;
@@ -379,6 +391,10 @@ export default {
       color: var(--a-text-primary);
       text-decoration: none;
       background-color: var(--a-base-10);
+    }
+
+    &:focus {
+      outline: 1px solid var(--a-base-7);
     }
   }
 
@@ -658,7 +674,6 @@ export default {
     &:focus:not([disabled]) {
       transform: none;
       box-shadow: none;
-      outline: none;
     }
   }
 

@@ -219,9 +219,11 @@ export default {
     .apos-marks-control__button {
       @include apos-button-reset();
 
-      display: block;
-      width: 100%;
-      padding: $spacing-base;
+      & {
+        display: block;
+        width: 100%;
+        padding: $spacing-base;
+      }
     }
   }
 

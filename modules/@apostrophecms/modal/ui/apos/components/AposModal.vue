@@ -11,7 +11,7 @@
       :class="classes"
       role="dialog"
       aria-modal="true"
-      :aria-labelledby="props.modalId"
+      :aria-labelledby="props.modalData.id"
       data-apos-modal
       @focus.capture="storeFocusedElement"
       @esc="close"
@@ -45,20 +45,24 @@
                 <div v-if="hasSlot('secondaryControls')" class="apos-modal__controls--secondary">
                   <slot name="secondaryControls" />
                 </div>
-                <h2 :id="props.modalId" class="apos-modal__heading">
+                <h2 :id="props.modalData.id" class="apos-modal__heading">
                   <span v-if="modal.a11yTitle" class="apos-sr-only">
                     {{ $t(modal.a11yTitle) }}
                   </span>
                   {{ $t(modalTitle) }}
                 </h2>
-                <div v-if="hasBeenLocalized || hasSlot('primaryControls')" class="apos-modal__controls--header">
-                  <div v-if="hasBeenLocalized" class="apos-modal__locale">
-                    <span class="apos-modal__locale-label">
-                      {{ $t('apostrophe:locale') }}:
-                    </span> <span class="apos-modal__locale-name">
-                      {{ currentLocale }}
-                    </span>
+                <div
+                  v-if="hasBeenLocalized || hasSlot('primaryControls') || hasSlot('localeDisplay')"
+                  class="apos-modal__controls--header"
+                >
+                  <div v-if="hasSlot('localeDisplay')" class="apos-modal__locale">
+                    <slot name="localeDisplay" />
                   </div>
+                  <AposLocale
+                    v-else-if="hasBeenLocalized"
+                    class="apos-modal__locale"
+                    :locale="currentLocale"
+                  />
                   <div v-if="hasSlot('primaryControls')" class="apos-modal__controls--primary">
                     <slot name="primaryControls" />
                   </div>
@@ -119,8 +123,8 @@ const props = defineProps({
     type: [ String, Object ],
     default: ''
   },
-  modalId: {
-    type: String,
+  modalData: {
+    type: Object,
     required: true
   }
 });
@@ -130,6 +134,7 @@ const store = useModalStore();
 const slots = useSlots();
 const emit = defineEmits([ 'inactive', 'esc', 'show-modal', 'no-modal', 'ready' ]);
 const modalEl = ref(null);
+const currentLocale = ref(store.activeModal?.locale || apos.i18n.locale);
 
 const transitionType = computed(() => {
   if (props.modal.type !== 'slide') {
@@ -153,10 +158,6 @@ const triggerFocusRefresh = computed(() => {
 
 const hasBeenLocalized = computed(() => {
   return Object.keys(apos.i18n.locales).length > 1;
-});
-
-const currentLocale = computed(() => {
-  return apos.i18n.locale;
 });
 
 function hasSlot(slotName) {
@@ -216,7 +217,7 @@ onMounted(async () => {
   if (shouldTrapFocus.value) {
     trapFocus();
   }
-  store.updateModalData(props.modalId, { modalEl: modalEl.value });
+  store.updateModalData(props.modalData.id, { modalEl: modalEl.value });
   window.addEventListener('keydown', onKeydown);
 });
 
@@ -232,8 +233,7 @@ function onKeydown(e) {
 }
 
 function onTab(e) {
-  const currentModal = store.get(props.modalId);
-  cycleElementsToFocus(e, currentModal.elementsToFocus);
+  cycleElementsToFocus(e, props.modalData.elementsToFocus);
 }
 
 async function onEnter() {
@@ -244,7 +244,7 @@ async function onEnter() {
 }
 
 function onLeave() {
-  store.remove(props.modalId);
+  store.remove(props.modalData.id);
   focusLastModalFocusedElement();
   emit('no-modal');
 }
@@ -266,10 +266,9 @@ function trapFocus() {
   const elementsToFocus = [ ...modalEl.value.querySelectorAll(selector) ]
     .filter(isElementVisible);
 
-  store.updateModalData(props.modalId, { elementsToFocus });
-  const currentModal = store.get(props.modalId);
+  store.updateModalData(props.modalData.id, { elementsToFocus });
 
-  focusElement(currentModal.focusedElement, currentModal.elementsToFocus[0]);
+  focusElement(props.modalData.focusedElement, props.modalData.elementsToFocus[0]);
 
   function addExcludingAttributes(element) {
     return `${element}:not([tabindex="-1"]):not([disabled]):not([type="hidden"]):not([aria-hidden])`;
@@ -278,7 +277,7 @@ function trapFocus() {
 
 function close() {
   const activeModalId = store.activeModal?.id;
-  if (activeModalId === props.modalId) {
+  if (activeModalId === props.modalData.id) {
     emit('esc');
   }
 }
@@ -291,9 +290,9 @@ function close() {
     z-index: $z-index-modal;
     position: fixed;
     inset: $spacing-base $spacing-base $spacing-base $spacing-base;
-    display: grid;
-    grid-template-rows: auto 1fr auto;
-    height: calc(100vh - #{$spacing-base * 2});
+    display: flex;
+    flex-direction: column;
+    height: calc(100vh - $spacing-base * 2);
     border-radius: var(--a-border-radius);
     background-color: var(--a-background-primary);
     border: 1px solid var(--a-base-9);
@@ -373,13 +372,9 @@ function close() {
     height: 100%;
   }
 
-  .apos-modal__header {
-    grid-row: 1 / 2;
-  }
-
   .apos-modal__main {
     display: grid;
-    grid-row: 2 / 3;
+    flex-grow: 1;
     overflow-y: auto;
   }
 
@@ -426,14 +421,11 @@ function close() {
     display: flex;
     align-items: center;
     padding: $spacing-double;
+    line-height: var(--a-line-base);
   }
 
   .apos-modal__header__main {
     border-bottom: 1px solid var(--a-base-9);
-  }
-
-  .apos-modal__footer {
-    grid-row: 3 / 4;
   }
 
   .apos-modal__footer__inner {
@@ -459,25 +451,21 @@ function close() {
   :deep(.apos-modal__controls--primary) {
     & > .apos-button__wrapper,
     & > .apos-context-menu {
+      margin-right: 7.5px;
       margin-left: 7.5px;
     }
   }
 
   .apos-modal__locale {
-    @include type-base;
-
     margin-right: $spacing-double;
-    font-weight: var(--a-weight-bold);
-  }
-
-  .apos-modal__locale-name {
-    color: var(--a-primary);
   }
 
   .apos-modal__heading {
     @include type-title;
 
-    margin: 0;
+    & {
+      margin: 0;
+    }
   }
 
   .apos-modal__controls--secondary {

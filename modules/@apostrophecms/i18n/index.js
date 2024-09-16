@@ -368,6 +368,19 @@ module.exports = {
   },
   apiRoutes(self) {
     return {
+      get: {
+        locales(req) {
+          return self.locales;
+        },
+        async localesPermissions(req) {
+          const action = self.apos.launder.string(req.query.action);
+          const type = self.apos.launder.string(req.query.type);
+          const locales = self.apos.launder.strings(req.query.locales);
+          const allowed = await self.getLocalesPermissions(req, action, type, locales);
+
+          return allowed;
+        }
+      },
       post: {
         async locale(req) {
           const sanitizedLocale = self.sanitizeLocaleName(req.body.locale);
@@ -595,7 +608,7 @@ module.exports = {
       // if the appropriate query parameters were set, rewrite
       // `_id` accordingly. Returns `_id`, after rewriting if appropriate.
       inferIdLocaleAndMode(req, _id) {
-        let [ cuid, locale, mode ] = _id.split(':');
+        let [ id, locale, mode ] = _id.split(':');
         if (locale && mode) {
           if (!req.query.aposLocale) {
             req.locale = locale;
@@ -621,7 +634,7 @@ module.exports = {
           // will be interpreted later
           return _id;
         } else {
-          return `${cuid}:${locale}:${mode}`;
+          return `${id}:${locale}:${mode}`;
         }
       },
       getBrowserData(req) {
@@ -685,6 +698,18 @@ module.exports = {
         }
         verifyLocales(locales, self.apos.options.baseUrl);
         return locales;
+      },
+      async getLocalesPermissions(req, action, type, locales) {
+        const allowed = [];
+        for (const locale of locales) {
+          const clonedReq = req.clone({
+            locale
+          });
+          if (await self.apos.permission.can(clonedReq, action, type)) {
+            allowed.push(locale);
+          }
+        }
+        return allowed;
       },
       sanitizeLocaleName(locale) {
         locale = self.apos.launder.string(locale);

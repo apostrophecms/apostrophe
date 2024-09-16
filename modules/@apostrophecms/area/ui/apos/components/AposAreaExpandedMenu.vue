@@ -140,7 +140,7 @@ export default {
       }
 
       const group = {
-        label: 'Clipboard',
+        label: this.$t('apostrophe:areaExpandedMenuClipboard'),
         widgets: [
           {
             type: 'clipboard',
@@ -220,6 +220,12 @@ export default {
     background-color: var(--a-base-10);
   }
 
+  &--1-column {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 15px;
+  }
+
   &--2-columns {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
@@ -250,10 +256,12 @@ export default {
 .apos-widget {
   @include type-base;
 
-  padding: 0;
-  border: none;
-  background: none;
-  text-align: inherit;
+  & {
+    padding: 0;
+    border: none;
+    background: none;
+    text-align: inherit;
+  }
 
   .apos-widget__preview {
     transition: opacity 250ms ease-in-out;
@@ -310,9 +318,11 @@ export default {
 .apos-widget__help {
   @include type-base;
 
-  margin-top: 0;
-  line-height: var(--a-line-tall);
-  text-align: left;
+  & {
+    margin-top: 0;
+    line-height: var(--a-line-tall);
+    text-align: left;
+  }
 }
 
 .apos-widget__help {

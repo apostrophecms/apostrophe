@@ -24,7 +24,7 @@ export default {
           body: {},
           busy: true
         });
-        apos.notify('apostrophe:changesPublished', {
+        await apos.notify('apostrophe:changesPublished', {
           type: 'success',
           dismiss: true,
           icon: 'check-all-icon',
@@ -42,7 +42,8 @@ export default {
         });
         apos.bus.$emit('content-changed', {
           doc,
-          action: 'publish'
+          action: 'publish',
+          localeSwitched: Boolean(this.localeSwitched)
         });
         return doc;
       } catch (e) {
@@ -91,13 +92,14 @@ export default {
           body: {},
           busy: true
         });
-        apos.notify('apostrophe:noLongerPublished', {
+        await apos.notify('apostrophe:noLongerPublished', {
           type: 'success',
           dismiss: true
         });
         apos.bus.$emit('content-changed', {
           doc,
-          action: 'unpublish'
+          action: 'unpublish',
+          localeSwitched: Boolean(this.localeSwitched)
         });
         return doc;
       } catch (e) {
@@ -123,7 +125,7 @@ export default {
           ...doc,
           submitted
         };
-        apos.notify('apostrophe:submittedForReview', {
+        await apos.notify('apostrophe:submittedForReview', {
           type: 'success',
           icon: 'list-status-icon',
           dismiss: true
@@ -131,7 +133,8 @@ export default {
 
         apos.bus.$emit('content-changed', {
           doc: newDoc,
-          action: 'submit'
+          action: 'submit',
+          localeSwitched: Boolean(this.localeSwitched)
         });
         return submitted;
       } catch (e) {
@@ -152,7 +155,7 @@ export default {
           body: {},
           busy: true
         });
-        apos.notify('apostrophe:dismissedSubmission', {
+        await apos.notify('apostrophe:dismissedSubmission', {
           type: 'success',
           dismiss: true,
           icon: 'close-circle-icon'
@@ -163,7 +166,8 @@ export default {
         };
         apos.bus.$emit('content-changed', {
           doc: newDoc,
-          action: 'dismiss-submission'
+          action: 'dismiss-submission',
+          localeSwitched: Boolean(this.localeSwitched)
         });
       } catch (e) {
         await apos.alert({
@@ -204,14 +208,15 @@ export default {
               body: {},
               busy: true
             });
-            apos.notify('apostrophe:draftDiscarded', {
+            await apos.notify('apostrophe:draftDiscarded', {
               type: 'success',
               dismiss: true,
               icon: 'text-box-remove-icon'
             });
             apos.bus.$emit('content-changed', {
               doc: newDoc,
-              action: 'revert-draft-to-published'
+              action: 'revert-draft-to-published',
+              localeSwitched: Boolean(this.localeSwitched)
             });
             return {
               doc: newDoc
@@ -221,13 +226,14 @@ export default {
               body: {},
               busy: true
             });
-            apos.notify('apostrophe:draftDeleted', {
+            await apos.notify('apostrophe:draftDeleted', {
               type: 'success',
               dismiss: true
             });
             apos.bus.$emit('content-changed', {
               doc,
-              action: 'delete'
+              action: 'delete',
+              localeSwitched: Boolean(this.localeSwitched)
             });
             return {};
           }

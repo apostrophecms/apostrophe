@@ -89,6 +89,10 @@ export default {
 </script>
 
 <style lang="scss" scoped>
+  .apos-schema {
+    line-height: var(--a-line-base);
+  }
+
   .apos-schema :deep(.apos-field__wrapper) {
     max-width: $input-max-width;
   }

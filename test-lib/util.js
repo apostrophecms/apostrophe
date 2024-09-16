@@ -1,4 +1,4 @@
-const cuid = require('cuid');
+const { createId } = require('@paralleldrive/cuid2');
 const mongodbConnect = require('../lib/mongodb-connect');
 
 // Properly clean up an apostrophe instance and drop its
@@ -31,7 +31,7 @@ async function destroy(apos) {
 
 async function create(options = {}) {
   const config = {
-    shortName: options.shortName || `test-${cuid()}`,
+    shortName: options.shortName || `test-${createId()}`,
     argv: {
       _: [],
       'ignore-orphan-modules': true

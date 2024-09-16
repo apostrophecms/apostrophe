@@ -132,7 +132,7 @@ export default {
             draft: true
           });
 
-          apos.notify('apostrophe:contentArchived', {
+          await apos.notify('apostrophe:contentArchived', {
             type: 'success',
             icon: 'archive-arrow-down-icon',
             dismiss: true
@@ -145,7 +145,8 @@ export default {
           }
           apos.bus.$emit('content-changed', {
             doc,
-            action: 'archive'
+            action: 'archive',
+            localeSwitched: Boolean(this.localeSwitched)
           });
           return true;
         }
@@ -257,7 +258,7 @@ export default {
           draft: true
         });
 
-        apos.notify('apostrophe:contentRestored', {
+        await apos.notify('apostrophe:contentRestored', {
           type: 'success',
           icon: 'archive-arrow-up-icon',
           dismiss: true
@@ -265,7 +266,8 @@ export default {
 
         apos.bus.$emit('content-changed', {
           doc,
-          action: 'restore'
+          action: 'restore',
+          localeSwitched: Boolean(this.localeSwitched)
         });
         return doc;
       } catch (e) {

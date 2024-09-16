@@ -3,7 +3,6 @@
     <div class="apos-media-manager-display__grid">
       <AposMediaUploader
         v-if="moduleOptions.canCreate"
-        :disabled="maxReached"
         :action="moduleOptions.action"
         :accept="accept"
         @upload-started="$emit('upload-started')"
@@ -25,9 +24,12 @@
             :field="{
               name: item._id,
               hideLabel: true,
-              label: `Toggle selection of ${item.title}`,
+              label: $t({
+                key: 'apostrophe:toggleSelectionOf',
+                title: item.title
+              }),
               disableFocus: true,
-              readOnly: options.disableUnchecked && !checked.includes(item._id)
+              readOnly: canSelect(item._id) === false
             }"
             :choice="{ value: item._id }"
           />
@@ -35,20 +37,19 @@
         <button
           :id="`btn-${item._id}`"
           :disabled="
-            item._id === 'placeholder' ||
-              (options.disableUnchecked && !checked.includes(item._id))
+            item._id === 'placeholder' || canSelect(item._id) === false
           "
           class="apos-media-manager-display__select"
           @click.exact="$emit('select', item._id)"
           @click.shift="$emit('select-series', item._id)"
           @click.meta="$emit('select-another', item._id)"
+          @click.ctrl="$emit('select-another', item._id)"
         >
           <div
             v-if="item.dimensions"
             class="apos-media-manager-display__placeholder"
             :style="getPlaceholderStyles(item)"
           />
-          <!-- TODO: make sure using TITLE is the correct alt tag application here. -->
           <img
             v-else
             class="apos-media-manager-display__media"
@@ -57,8 +58,6 @@
           >
         </button>
       </div>
-      <!-- We need a placeholder display cell to generate the first image
-      placeholder. -->
       <div
         v-if="items.length === 0"
         class="apos-media-manager-display__cell apos-is-hidden"
@@ -70,11 +69,25 @@
         />
       </div>
     </div>
+    <div
+      v-if="!isLastPage"
+      ref="scrollLoad"
+      class="apos-media-manager-display__scroll-load"
+      :class="{ 'apos-media-manager-display__scroll-load--loading': isScrollLoading }"
+    >
+      <AposLoading
+        v-if="isScrollLoading"
+        class="apos-loading"
+      />
+    </div>
+    <div v-else class="apos-media-manager-display__end-reached">
+      <p>{{ $t('apostrophe:mediaLibraryEndReached') }}</p>
+    </div>
   </div>
 </template>
 
 <script>
-import cuid from 'cuid';
+import { createId } from '@paralleldrive/cuid2';
 
 export default {
   // Custom model to handle the v-model connection on the parent.
@@ -111,6 +124,18 @@ export default {
     largePreview: {
       type: Boolean,
       default: false
+    },
+    relationshipField: {
+      type: [ Object, Boolean ],
+      default: false
+    },
+    isLastPage: {
+      type: Boolean,
+      default: false
+    },
+    isScrollLoading: {
+      type: Boolean,
+      default: false
     }
   },
   emits: [
@@ -120,7 +145,8 @@ export default {
     'select-another',
     'upload-started',
     'upload-complete',
-    'create-placeholder'
+    'create-placeholder',
+    'set-load-ref'
   ],
   computed: {
     // Handle the local check state within this component.
@@ -129,9 +155,23 @@ export default {
         return this.checked;
       },
       set(val) {
-        this.$emit('update:checked', val);
+        this.$emit(
+          'update:checked',
+          this.relationshipField?.max === 1
+            ? [].concat(val.at(-1) || [])
+            : val
+        );
       }
     }
+  },
+  watch: {
+    async isLastPage(val) {
+      await this.$nextTick();
+      this.$emit('set-load-ref', this.$refs.scrollLoad);
+    }
+  },
+  mounted() {
+    this.$emit('set-load-ref', this.$refs.scrollLoad);
   },
   methods: {
     getPlaceholderStyles(item) {
@@ -178,7 +218,12 @@ export default {
       event.target.classList.remove('apos-is-hovering');
     },
     idFor(item) {
-      return `${item._id}-${cuid()}`;
+      return `${item._id}-${createId()}`;
+    },
+    canSelect(id) {
+      return this.checked.includes(id) ||
+        this.relationshipField?.max === 1 ||
+        (this.relationshipField?.max && !this.maxReached);
     }
   }
 };
@@ -188,34 +233,29 @@ export default {
   .apos-media-manager-display__grid {
     display: grid;
     grid-auto-rows: 140px;
-    grid-template-columns: repeat(5, 17.1%);
-    gap: 2.4% 2.4%;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 15px;
+    padding: 20px 0;
 
     @include media-up(lap) {
-      grid-template-columns: repeat(7, 12.22%);
-      gap: 2.4% 2.4%;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 20px;
     }
   }
 
   .apos-media-manager-display__cell {
     @include apos-transition();
 
-    position: relative;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 100%;
-    height: 100%;
+    & {
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+      height: 100%;
+    }
 
     &.apos-is-hidden { visibility: hidden; }
-
-    &::before {
-      content: '';
-      display: inline-block;
-      width: 1px;
-      height: 0;
-      padding-bottom: calc(100% / (1/1));
-    }
 
     &:hover,
     &.apos-is-selected,
@@ -229,11 +269,13 @@ export default {
   .apos-media-manager-display__checkbox {
     @include apos-transition();
 
-    z-index: $z-index-manager-display;
-    position: absolute;
-    top: -6px;
-    left: -6px;
-    opacity: 0;
+    & {
+      z-index: $z-index-manager-display;
+      position: absolute;
+      top: -6px;
+      left: -6px;
+      opacity: 0;
+    }
   }
 
   .apos-media-manager-display__cell:hover .apos-media-manager-display__checkbox,
@@ -245,9 +287,11 @@ export default {
   .apos-media-manager-display__placeholder {
     @include apos-transition();
 
-    max-width: 100%;
-    max-height: 100%;
-    opacity: 0.85;
+    & {
+      max-width: 100%;
+      max-height: 100%;
+      opacity: 0.85;
+    }
   }
 
   .apos-media-manager-display__placeholder {
@@ -258,12 +302,15 @@ export default {
     @include apos-button-reset();
     @include apos-transition();
 
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 100%;
-    height: 100%;
-    border: 1px solid var(--a-base-7);
+    & {
+      display: flex;
+      box-sizing: border-box;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+      height: 100%;
+      border: 1px solid var(--a-base-7);
+    }
 
     &:active + .apos-media-manager-display__checkbox {
       opacity: 1;
@@ -289,6 +336,36 @@ export default {
       border-color: var(--a-base-7);
       outline-width: 0;
       box-shadow: none;
+    }
+  }
+
+  .apos-media-manager-display__scroll-load {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    &--loading {
+      height: 80px;
+      margin-top: 15px;
+      background-color: var(--a-base-10);
+      margin-bottom: 10px;
+      border: 1px solid var(--a-base-8);
+      border-radius: 8px;
+    }
+
+    .apos-loading {
+      flex-grow: 1;
+    }
+  }
+
+  .apos-media-manager-display__end-reached {
+    @include type-label;
+
+    & {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 40px;
     }
   }
 </style>

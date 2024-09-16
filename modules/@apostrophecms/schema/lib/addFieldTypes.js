@@ -10,7 +10,8 @@ const dateRegex = /^\d{4}-(0[1-9]|1[012])-(0[1-9]|[12][0-9]|3[01])$/;
 module.exports = (self) => {
   self.addFieldType({
     name: 'area',
-    async convert(req, field, data, destination) {
+    async convert(req, field, data, destination, { fetchRelationships = true } = {}) {
+      const options = { fetchRelationships };
       const _id = self.apos.launder.id(data[field.name] && data[field.name]._id) || self.apos.util.generateId();
       if (typeof data[field.name] === 'string') {
         destination[field.name] = self.apos.area.fromPlaintext(data[field.name]);
@@ -34,7 +35,7 @@ module.exports = (self) => {
         // Always recover graciously and import something reasonable, like an empty area
         items = [];
       }
-      items = await self.apos.area.sanitizeItems(req, items, field.options || {});
+      items = await self.apos.area.sanitizeItems(req, items, field.options, options);
       destination[field.name] = {
         _id,
         items,
@@ -96,7 +97,7 @@ module.exports = (self) => {
   self.addFieldType({
     name: 'string',
     convert(req, field, data, destination) {
-      destination[field.name] = self.apos.launder.string(data[field.name], field.def);
+      destination[field.name] = self.apos.launder.string(data[field.name]);
       destination[field.name] = checkStringLength(destination[field.name], field.min, field.max);
       // If field is required but empty (and client side didn't catch that)
       // This is new and until now if JS client side failed, then it would
@@ -165,7 +166,7 @@ module.exports = (self) => {
     convert (req, field, data, destination) {
       const options = self.getSlugFieldOptions(field, data);
 
-      destination[field.name] = self.apos.util.slugify(self.apos.launder.string(data[field.name], field.def), options);
+      destination[field.name] = self.apos.util.slugify(self.apos.launder.string(data[field.name]), options);
 
       if (field.page) {
         if (!(destination[field.name].charAt(0) === '/')) {
@@ -205,7 +206,7 @@ module.exports = (self) => {
   self.addFieldType({
     name: 'boolean',
     convert: function (req, field, data, destination) {
-      destination[field.name] = self.apos.launder.boolean(data[field.name], field.def);
+      destination[field.name] = self.apos.launder.boolean(data[field.name]);
     },
     isEmpty: function (field, value) {
       return !value && value !== false;
@@ -256,7 +257,7 @@ module.exports = (self) => {
   self.addFieldType({
     name: 'color',
     async convert(req, field, data, destination) {
-      destination[field.name] = self.apos.launder.string(data[field.name], field.def);
+      destination[field.name] = self.apos.launder.string(data[field.name]);
 
       if (field.required && (_.isUndefined(destination[field.name]) || !destination[field.name].toString().length)) {
         throw self.apos.error('required');
@@ -366,7 +367,7 @@ module.exports = (self) => {
     dynamicChoices: true,
     async convert(req, field, data, destination) {
       const choices = await self.getChoices(req, field);
-      destination[field.name] = self.apos.launder.select(data[field.name], choices, field.def);
+      destination[field.name] = self.apos.launder.select(data[field.name], choices);
     },
     index: function (value, field, texts) {
       const silent = field.silent === undefined ? true : field.silent;
@@ -438,7 +439,7 @@ module.exports = (self) => {
     name: 'integer',
     vueComponent: 'AposInputString',
     async convert(req, field, data, destination) {
-      destination[field.name] = self.apos.launder.integer(data[field.name], field.def, field.min, field.max);
+      destination[field.name] = self.apos.launder.integer(data[field.name], undefined, field.min, field.max);
       if (field.required && ((data[field.name] == null) || !data[field.name].toString().length)) {
         throw self.apos.error('required');
       }
@@ -492,7 +493,7 @@ module.exports = (self) => {
     name: 'float',
     vueComponent: 'AposInputString',
     async convert(req, field, data, destination) {
-      destination[field.name] = self.apos.launder.float(data[field.name], field.def, field.min, field.max);
+      destination[field.name] = self.apos.launder.float(data[field.name], undefined, field.min, field.max);
       if (field.required && (_.isUndefined(data[field.name]) || !data[field.name].toString().length)) {
         throw self.apos.error('required');
       }
@@ -563,7 +564,7 @@ module.exports = (self) => {
     name: 'url',
     vueComponent: 'AposInputString',
     async convert(req, field, data, destination) {
-      destination[field.name] = self.apos.launder.url(data[field.name], field.def, true);
+      destination[field.name] = self.apos.launder.url(data[field.name], undefined, true);
 
       if (field.required && (data[field.name] == null || !data[field.name].toString().length)) {
         throw self.apos.error('required');
@@ -642,7 +643,7 @@ module.exports = (self) => {
         return;
       }
 
-      destination[field.name] = self.apos.launder.date(newDateVal, field.def);
+      destination[field.name] = self.apos.launder.date(newDateVal);
     },
     validate: function (field, options, warn, fail) {
       if (field.max && !field.max.match(dateRegex)) {
@@ -698,7 +699,7 @@ module.exports = (self) => {
     name: 'time',
     vueComponent: 'AposInputString',
     async convert(req, field, data, destination) {
-      destination[field.name] = self.apos.launder.time(data[field.name], field.def);
+      destination[field.name] = self.apos.launder.time(data[field.name]);
     }
   });
 
@@ -718,11 +719,12 @@ module.exports = (self) => {
       // This is the only field type that we never update unless
       // there is actually a new value — a blank password is not cool. -Tom
       if (data[field.name]) {
-        destination[field.name] = self.apos.launder.string(data[field.name], field.def);
+        destination[field.name] = self.apos.launder.string(data[field.name]);
 
         destination[field.name] = checkStringLength(destination[field.name], field.min, field.max);
       }
-    }
+    },
+    def: ''
   });
 
   self.addFieldType({
@@ -733,7 +735,7 @@ module.exports = (self) => {
     name: 'range',
     vueComponent: 'AposInputRange',
     async convert(req, field, data, destination) {
-      destination[field.name] = self.apos.launder.float(data[field.name], field.def, field.min, field.max);
+      destination[field.name] = self.apos.launder.float(data[field.name], undefined, field.min, field.max);
       if (field.required && (_.isUndefined(data[field.name]) || !data[field.name].toString().length)) {
         throw self.apos.error('required');
       }
@@ -774,7 +776,8 @@ module.exports = (self) => {
 
   self.addFieldType({
     name: 'array',
-    async convert(req, field, data, destination) {
+    async convert(req, field, data, destination, { fetchRelationships = true } = {}) {
+      const options = { fetchRelationships };
       const schema = field.schema;
       data = data[field.name];
       if (!Array.isArray(data)) {
@@ -795,7 +798,7 @@ module.exports = (self) => {
         result.metaType = 'arrayItem';
         result.scopedArrayName = field.scopedArrayName;
         try {
-          await self.convert(req, schema, datum, result);
+          await self.convert(req, schema, datum, result, options);
         } catch (e) {
           if (Array.isArray(e)) {
             for (const error of e) {
@@ -875,7 +878,8 @@ module.exports = (self) => {
 
   self.addFieldType({
     name: 'object',
-    async convert(req, field, data, destination) {
+    async convert(req, field, data, destination, { fetchRelationships = true } = {}) {
+      const options = { fetchRelationships };
       data = data[field.name];
       const schema = field.schema;
       const errors = [];
@@ -887,13 +891,14 @@ module.exports = (self) => {
         data = {};
       }
       try {
-        await self.convert(req, schema, data, result);
+        await self.convert(req, schema, data, result, options);
       } catch (e) {
-        for (const error of e) {
-          errors.push({
-            path: error.path,
-            error: error.error
-          });
+        if (Array.isArray(e)) {
+          for (const error of e) {
+            errors.push(error);
+          }
+        } else {
+          throw e;
         }
       }
       result.metaType = 'objectItem';
@@ -912,7 +917,7 @@ module.exports = (self) => {
       self.register(metaType, type, field.schema);
     },
     validate: function (field, options, warn, fail) {
-      for (const subField of field.schema || field.fields.add) {
+      for (const subField of field.schema) {
         self.validateField(subField, options, field);
       }
     },
@@ -970,7 +975,8 @@ module.exports = (self) => {
     // properties is handled at a lower level in a beforeSave
     // handler of the doc-type module.
 
-    async convert(req, field, data, destination) {
+    async convert(req, field, data, destination, { fetchRelationships = true } = {}) {
+      const options = { fetchRelationships };
       const manager = self.apos.doc.getManager(field.withType);
       if (!manager) {
         throw Error('relationship with type ' + field.withType + ' unrecognized');
@@ -989,6 +995,31 @@ module.exports = (self) => {
       if (field.max && field.max < input.length) {
         throw self.apos.error('max', `Maximum ${field.withType} required reached.`);
       }
+      if (fetchRelationships === false) {
+        destination[field.name] = [];
+
+        for (const relation of input) {
+          if (typeof relation === 'string') {
+            destination[field.name].push({
+              _id: self.apos.launder.id(relation),
+              _fields: {}
+            });
+            continue;
+          }
+
+          const _fields = {};
+          if (field.schema?.length) {
+            await self.convert(req, field.schema, relation._fields || {}, _fields, options);
+          }
+
+          destination[field.name].push({
+            _id: self.apos.launder.id(relation._id),
+            _fields
+          });
+        }
+        return;
+      }
+
       const ids = [];
       const titlesOrIds = [];
       for (const item of input) {
@@ -1032,9 +1063,13 @@ module.exports = (self) => {
           const result = results.find(doc => (doc._id === item._id));
           if (result) {
             if (field.schema) {
-              result._fields = { ...(destination[field.name]?.find?.(doc => doc._id === item._id)?._fields || {}) };
+              result._fields = {
+                ...(destination[field.name]
+                  ?.find?.(doc => doc._id === item._id)
+                  ?._fields || {})
+              };
               if (item && ((typeof item._fields === 'object'))) {
-                await self.convert(req, field.schema, item._fields || {}, result._fields);
+                await self.convert(req, field.schema, item._fields || {}, result._fields, options);
               }
             }
             actualDocs.push(result);
@@ -1139,12 +1174,7 @@ module.exports = (self) => {
           field.schema = self.fieldsToArray(`Relationship field ${field.name}`, field.fields);
         }
       }
-      if (field.schema && !field.fieldsStorage) {
-        field.fieldsStorage = field.name.replace(/^_/, '') + 'Fields';
-      }
-      if (field.schema && !Array.isArray(field.schema)) {
-        fail('schema property should be an array if present at this stage');
-      }
+      validateSchema(field);
       if (field.filters) {
         fail('"filters" property should be changed to "builders" for 3.x');
       }
@@ -1155,6 +1185,22 @@ module.exports = (self) => {
         type = self.apos.doc.normalizeType(type);
         if (!_.find(self.apos.doc.managers, { name: type })) {
           fail('withType property, ' + type + ', does not match the name of any piece or page type module.');
+        }
+      }
+
+      function validateSchema(_field) {
+        if (!_field.schema) {
+          return;
+        }
+        if (!Array.isArray(_field.schema)) {
+          fail('schema property should be an array if present at this stage');
+        }
+        self.validate(_field.schema, {
+          type: 'relationship',
+          subtype: _field.withType
+        });
+        if (!_field.fieldsStorage) {
+          _field.fieldsStorage = _field.name.replace(/^_/, '') + 'Fields';
         }
       }
     },

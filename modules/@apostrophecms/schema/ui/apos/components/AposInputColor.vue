@@ -12,7 +12,6 @@
           <AposContextMenu
             :button="buttonOptions"
             menu-placement="bottom-start"
-            menu-offset="5, 20"
             :disabled="field.readOnly"
             :tooltip="tooltip"
             @open="open"
@@ -62,8 +61,10 @@ export default {
   .apos-color__info {
     @include type-base;
 
-    margin-left: 15px;
-    color: var(--a-text-primary);
+    & {
+      margin-left: 15px;
+      color: var(--a-text-primary);
+    }
   }
 </style>
 

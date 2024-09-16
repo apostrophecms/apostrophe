@@ -9,9 +9,8 @@ const cluster = require('cluster');
 const { cpus } = require('os');
 const process = require('process');
 const npmResolve = require('resolve');
-const glob = require('glob');
+const glob = require('./lib/glob.js');
 const moogRequire = require('./lib/moog-require');
-
 let defaults = require('./defaults.js');
 
 // ## Top-level options
@@ -390,7 +389,7 @@ async function apostrophe(options, telemetry, rootSpan) {
     if (!options.nestedModuleSubdirs) {
       return;
     }
-    const configs = glob.sync(self.localModules + '/**/modules.js', { follow: true });
+    const configs = glob(self.localModules + '/**/modules.js', { follow: true });
     _.each(configs, function(config) {
       try {
         _.merge(self.options.modules, require(config));

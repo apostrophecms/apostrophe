@@ -84,14 +84,19 @@ export default {
 .apos-media-manager-selections {
   @include type-base;
 
-  height: 100%;
-  padding: 20px;
+  & {
+    box-sizing: border-box;
+    height: 100%;
+    padding: 20px;
+  }
 }
 
 .apos-media-manager-selections__heading {
   @include type-base;
 
-  margin-bottom: $spacing-double;
+  & {
+    margin-bottom: $spacing-double;
+  }
 }
 
 .apos-media-manager-selections__heading :deep(.apos-button) {
@@ -131,11 +136,13 @@ export default {
 .apos-media-manager-selections__item-title {
   @include type-base;
 
-  max-width: 150px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  margin-bottom: 5px;
+  & {
+    max-width: 150px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin-bottom: 5px;
+  }
 }
 
 .apos-media-manager-selection__empty {

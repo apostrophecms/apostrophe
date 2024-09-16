@@ -1,6 +1,6 @@
 const t = require('../test-lib/test.js');
 const assert = require('assert');
-const cuid = require('cuid');
+const { createId } = require('@paralleldrive/cuid2');
 
 describe('Recursion Guard', function() {
 
@@ -166,13 +166,13 @@ describe('Recursion Guard', function() {
     const product = await apos.product.insert(req, {
       title: 'Test Product'
     });
-    const selfRefId = cuid();
+    const selfRefId = createId();
     await apos.article.insert(req, {
       aposDocId: selfRefId,
       title: 'Self Referential Article',
       main: {
         metaType: 'area',
-        _id: cuid(),
+        _id: createId(),
         items: [
           {
             metaType: 'widget',
@@ -208,13 +208,13 @@ describe('Recursion Guard', function() {
 
   it('should eventually stop runaway self-references among widgets that use neverLoadSelf: false', async function() {
     const req = apos.task.getReq();
-    const selfRefId = cuid();
+    const selfRefId = createId();
     await apos.article.insert(req, {
       aposDocId: selfRefId,
       title: 'Very Self Referential Article',
       main: {
         metaType: 'area',
-        _id: cuid(),
+        _id: createId(),
         items: [
           {
             metaType: 'widget',

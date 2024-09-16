@@ -71,15 +71,13 @@
               v-if="options.bulkSelect && index === 0"
               v-model="checkedProxy"
               class="apos-tree__row__checkbox"
-              tabindex="-1"
               :field="{
                 name: row._id,
                 hideLabel: true,
-                label: {
+                label: $t({
                   key: 'apostrophe:toggleSelectionOf',
                   title: row.title
-                },
-                disableFocus: true,
+                }),
                 readOnly: maxReached && !checked.includes(row._id)
               }"
               :choice="{ value: row._id }"
@@ -494,11 +492,13 @@ export default {
   .apos-tree__row__toggle {
     @include apos-button-reset();
 
-    position: absolute;
-    top: 50%;
-    left: -(math.div($row-nested-h-padding, 2));
-    background-color: var(--a-background-primary);
-    transform: translate(-50%, -50%);
+    & {
+      position: absolute;
+      top: 50%;
+      left: -(math.div($row-nested-h-padding, 2));
+      background-color: var(--a-background-primary);
+      transform: translate(-50%, -50%);
+    }
   }
 
   .apos-tree__row__toggle-icon {
@@ -577,8 +577,10 @@ export default {
   button.apos-tree__cell { /* stylelint-disable-line selector-no-qualifying-type */
     @include apos-button-reset();
 
-    padding: $cell-padding;
-    border-bottom: 1px solid var(--a-base-8);
+    & {
+      padding: $cell-padding;
+      border-bottom: 1px solid var(--a-base-8);
+    }
   }
 
 </style>

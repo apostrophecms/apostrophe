@@ -63,7 +63,7 @@ export default {
     showSelectAll() {
       if (
         this.allPiecesSelection.isSelected ||
-        (this.selectedState === 'checked' && this.allPiecesSelection.total > this.displayedItems)
+        ([ 'checked', 'indeterminate' ].includes(this.selectedState) && this.allPiecesSelection.total > this.displayedItems)
       ) {
         return true;
       }

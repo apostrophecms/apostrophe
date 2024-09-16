@@ -34,16 +34,20 @@ export default {
   .apos-title {
     @include type-title;
 
-    margin: 0 0 10px;
+    & {
+      margin: 0 0 10px;
+    }
   }
 
   .apos-hint {
     @include type-base;
 
-    font-style: italic;
-    line-height: var(--a-line-tallest);
-    color: var(--a-base-1);
-    text-align: center;
+    & {
+      font-style: italic;
+      line-height: var(--a-line-tallest);
+      color: var(--a-base-1);
+      text-align: center;
+    }
   }
 
   .apos-emoji {

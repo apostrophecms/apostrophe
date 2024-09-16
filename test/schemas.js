@@ -326,6 +326,63 @@ describe('Schemas', function() {
               }
             };
           }
+        },
+        topic: {
+          extend: '@apostrophecms/piece-type',
+          options: {
+            alias: 'topic'
+          },
+          fields(self) {
+            return {
+              add: {
+                title: {
+                  label: 'Title',
+                  type: 'string',
+                  required: true
+                },
+                area: {
+                  label: 'Area',
+                  type: 'area',
+                  options: {
+                    widgets: {
+                      '@apostrophecms/image': {}
+                    }
+                  }
+                },
+                _rel: {
+                  label: 'Rel',
+                  type: 'relationship',
+                  withType: 'article'
+                },
+                array: {
+                  label: 'Array',
+                  type: 'array',
+                  fields: {
+                    add: {
+                      _arrayRel: {
+                        label: 'Array Rel',
+                        type: 'relationship',
+                        withType: 'article'
+                      }
+                    }
+                  }
+                },
+                object: {
+                  label: 'Object',
+                  type: 'object',
+                  fields: {
+                    add: {
+                      _objectRel: {
+                        label: 'Object Rel',
+                        type: 'relationship',
+                        withType: 'article'
+                      }
+                    }
+                  }
+                }
+              }
+            };
+          }
         }
       }
     });
@@ -1326,7 +1383,7 @@ describe('Schemas', function() {
     assert(result.name === input.name);
     assert(result.address === input.address);
     // default
-    assert(result.variety === simpleFields[2].choices[0].value);
+    assert(result.variety === undefined);
     assert(result.slug === 'this-is-cool');
   });
 
@@ -2396,6 +2453,276 @@ describe('Schemas', function() {
       changes11: [],
       changes12: [ 'title', 'slug' ],
       changes23: [ 'title', 'slug', 'area', 'array' ]
+    };
+
+    assert.deepEqual(actual, expected);
+  });
+
+  it('should allow to simulate a populate of relationships on database data', async function() {
+    const req = apos.task.getReq();
+    const doc = {
+      _id: 'gvoyi3l0ncsj2yq36743zeum:en:draft',
+      title: 'topic',
+      array: [
+        {
+          _id: 'hy56r2znrs427m47e15yesfb',
+          metaType: 'arrayItem',
+          scopedArrayName: 'doc.topic.array',
+          arrayRelIds: [ 'nkr88dg4lds8noal9l4vrcgv' ],
+          arrayRelFields: { nkr88dg4lds8noal9l4vrcgv: {} }
+        }
+      ],
+      object: {
+        _id: 'tfpq5v6lwlwomuampavh6zi8',
+        metaType: 'object',
+        scopedObjectName: 'doc.topic.object',
+        objectRelIds: [ 'nkr88dg4lds8noal9l4vrcgv', 'az82H8dg4lds8noal9l4vazd' ],
+        objectRelFields: {
+          nkr88dg4lds8noal9l4vrcgv: {},
+          az82H8dg4lds8noal9l4vazd: {}
+        }
+      },
+      slug: 'topic',
+      visibility: 'public',
+      scheduledPublish: null,
+      scheduledUnpublish: null,
+      aposIsTemplate: false,
+      aposPreviewImage: {
+        _id: 'gx4ankjn1s0i2g16qs16is0q',
+        items: [],
+        metaType: 'area'
+      },
+      userPermissions: [],
+      groupPermissions: [],
+      archived: false,
+      type: 'topic',
+      aposLocale: 'en:draft',
+      aposMode: 'draft',
+      aposDocId: 'gvoyi3l0ncsj2yq36743zeum',
+      metaType: 'doc',
+      createdAt: '2024-08-07T07:11:34.234Z',
+      updatedAt: '2024-08-07T07:24:17.889Z',
+      cacheInvalidatedAt: '2024-08-07T07:24:17.889Z',
+      updatedBy: {
+        _id: 'vndh00in6p565asvbivvzjos',
+        title: 'admin',
+        username: 'admin'
+      },
+      titleSortified: 'topic',
+      highSearchText: 'topic topic topic topic public',
+      highSearchWords: [ 'topic', 'public' ],
+      lowSearchText: 'topic topic topic topic public',
+      searchSummary: '',
+      aposPermissions: [],
+      modified: false,
+      lastPublishedAt: '2024-08-07T07:24:17.956Z',
+      relIds: [ 'reyvb1txf54noynckm1xy34a' ],
+      relFields: { reyvb1txf54noynckm1xy34a: {} },
+      area: {
+        _id: 'hfwxext12500kxy74coc3nf1',
+        items: [
+          {
+            _id: 'x38pvsmyqie83vzy57akpwb2',
+            metaType: 'widget',
+            type: '@apostrophecms/image',
+            aposPlaceholder: false,
+            imageIds: [ 'u2gcjvq9wvds1hkd8xibn9h1' ],
+            imageFields: {
+              u2gcjvq9wvds1hkd8xibn9h1: {
+                top: null,
+                left: null,
+                width: null,
+                height: null,
+                x: null,
+                y: null
+              }
+            }
+          }
+        ],
+        metaType: 'area'
+      }
+    };
+
+    apos.schema.simulateRelationshipsFromStorage(req, doc);
+
+    const actual = {
+      rel: doc._rel,
+      area: doc.area.items[0]._image,
+      array: doc.array[0]._arrayRel,
+      object: doc.object._objectRel
+    };
+
+    const expected = {
+      rel: [
+        {
+          _id: 'reyvb1txf54noynckm1xy34a:en:draft',
+          _fields: {}
+        }
+      ],
+      area: [
+        {
+          _id: 'u2gcjvq9wvds1hkd8xibn9h1:en:draft',
+          _fields: {
+            top: null,
+            left: null,
+            width: null,
+            height: null,
+            x: null,
+            y: null
+          }
+        }
+      ],
+      array: [
+        {
+          _id: 'nkr88dg4lds8noal9l4vrcgv:en:draft',
+          _fields: {}
+        }
+      ],
+      object: [
+        {
+          _id: 'nkr88dg4lds8noal9l4vrcgv:en:draft',
+          _fields: {}
+        },
+        {
+          _id: 'az82H8dg4lds8noal9l4vazd:en:draft',
+          _fields: {}
+        }
+      ]
+    };
+
+    assert.deepEqual(actual, expected);
+  });
+
+  it('should allow to convert a document without fetching relationships', async function() {
+    const req = apos.task.getReq();
+    const doc = {
+      _id: 'gvoyi3l0ncsj2yq36743zeum:en:draft',
+      title: 'topic',
+      array: [
+        {
+          _id: 'hy56r2znrs427m47e15yesfb',
+          metaType: 'arrayItem',
+          scopedArrayName: 'doc.topic.array',
+          arrayRelIds: [ 'nkr88dg4lds8noal9l4vrcgv' ],
+          arrayRelFields: { nkr88dg4lds8noal9l4vrcgv: {} }
+        }
+      ],
+      object: {
+        _id: 'tfpq5v6lwlwomuampavh6zi8',
+        metaType: 'object',
+        scopedObjectName: 'doc.topic.object',
+        objectRelIds: [ 'nkr88dg4lds8noal9l4vrcgv', 'az82H8dg4lds8noal9l4vazd' ],
+        objectRelFields: {
+          nkr88dg4lds8noal9l4vrcgv: {},
+          az82H8dg4lds8noal9l4vazd: {}
+        }
+      },
+      slug: 'topic',
+      visibility: 'public',
+      scheduledPublish: null,
+      scheduledUnpublish: null,
+      aposIsTemplate: false,
+      aposPreviewImage: {
+        _id: 'gx4ankjn1s0i2g16qs16is0q',
+        items: [],
+        metaType: 'area'
+      },
+      userPermissions: [],
+      groupPermissions: [],
+      archived: false,
+      type: 'topic',
+      aposLocale: 'en:draft',
+      aposMode: 'draft',
+      aposDocId: 'gvoyi3l0ncsj2yq36743zeum',
+      metaType: 'doc',
+      createdAt: '2024-08-07T07:11:34.234Z',
+      updatedAt: '2024-08-07T07:24:17.889Z',
+      cacheInvalidatedAt: '2024-08-07T07:24:17.889Z',
+      updatedBy: {
+        _id: 'vndh00in6p565asvbivvzjos',
+        title: 'admin',
+        username: 'admin'
+      },
+      titleSortified: 'topic',
+      highSearchText: 'topic topic topic topic public',
+      highSearchWords: [ 'topic', 'public' ],
+      lowSearchText: 'topic topic topic topic public',
+      searchSummary: '',
+      aposPermissions: [],
+      modified: false,
+      lastPublishedAt: '2024-08-07T07:24:17.956Z',
+      relIds: [ 'reyvb1txf54noynckm1xy34a' ],
+      relFields: { reyvb1txf54noynckm1xy34a: {} },
+      area: {
+        _id: 'hfwxext12500kxy74coc3nf1',
+        items: [
+          {
+            _id: 'x38pvsmyqie83vzy57akpwb2',
+            metaType: 'widget',
+            type: '@apostrophecms/image',
+            aposPlaceholder: false,
+            imageIds: [ 'u2gcjvq9wvds1hkd8xibn9h1' ],
+            imageFields: {
+              u2gcjvq9wvds1hkd8xibn9h1: {
+                top: null,
+                left: null,
+                width: null,
+                height: null,
+                x: null,
+                y: null
+              }
+            }
+          }
+        ],
+        metaType: 'area'
+      }
+    };
+
+    apos.schema.simulateRelationshipsFromStorage(req, doc);
+    const docToInsert = doc;
+    const schema = apos.doc.getManager('topic').schema;
+    await apos.schema.convert(req, schema, doc, docToInsert, {
+      fetchRelationships: false
+    });
+
+    const actual = {
+      rel: docToInsert._rel,
+      area: docToInsert.area.items[0]._image,
+      array: docToInsert.array[0]._arrayRel,
+      object: docToInsert.object._objectRel
+    };
+    const expected = {
+      rel: [ {
+        _id: 'reyvb1txf54noynckm1xy34a:en:draft',
+        _fields: {}
+      } ],
+      area: [
+        {
+          _id: 'u2gcjvq9wvds1hkd8xibn9h1:en:draft',
+          _fields: {
+            top: null,
+            left: null,
+            width: null,
+            height: null,
+            x: null,
+            y: null
+          }
+        }
+      ],
+      array: [ {
+        _id: 'nkr88dg4lds8noal9l4vrcgv:en:draft',
+        _fields: {}
+      } ],
+      object: [
+        {
+          _id: 'nkr88dg4lds8noal9l4vrcgv:en:draft',
+          _fields: {}
+        },
+        {
+          _id: 'az82H8dg4lds8noal9l4vazd:en:draft',
+          _fields: {}
+        }
+      ]
     };
 
     assert.deepEqual(actual, expected);

@@ -123,11 +123,9 @@ export default {
   },
   methods: {
     generateErrorLabel(errorCount) {
-      let label = 'Error';
-      if (errorCount > 1) {
-        label += 's';
-      }
-      return label;
+      return errorCount > 1
+        ? this.$t('apostrophe:modalTabsErrors')
+        : this.$t('apostrophe:modalTabsError');
     },
     selectTab: function (e) {
       const tab = e.target;
@@ -239,20 +237,22 @@ export default {
   @include apos-button-reset();
   @include type-base;
 
-  position: relative;
-  display: flex;
-  box-sizing: border-box;
-  align-items: center;
-  justify-content: space-between;
-  width: 100%;
-  height: 60px;
-  padding: 25px 10px;
-  border-bottom: 1px solid var(--a-base-7);
-  color: var(--a-text-primary);
-  text-align: left;
-  transition: all 200ms ease;
-  background-color: var(--a-base-9);
-  cursor: pointer;
+  & {
+    position: relative;
+    display: flex;
+    box-sizing: border-box;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    height: 60px;
+    padding: 25px 10px;
+    border-bottom: 1px solid var(--a-base-7);
+    color: var(--a-text-primary);
+    text-align: left;
+    transition: all 200ms ease;
+    background-color: var(--a-base-9);
+    cursor: pointer;
+  }
 
   @include media-up(lap) {
     padding: 25px 10px 25px 20px;

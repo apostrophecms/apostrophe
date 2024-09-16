@@ -9,8 +9,8 @@
         v-bind="button"
         ref="button"
         class="apos-context-menu__btn"
-        data-apos-test="contextMenuTrigger"
         role="button"
+        :data-apos-test="identifier"
         :state="buttonState"
         :disabled="disabled"
         :tooltip="tooltip"
@@ -18,30 +18,30 @@
           'aria-haspopup': 'menu',
           'aria-expanded': isOpen ? true : false
         }"
+        @icon="setIconToCenterTo"
         @click.stop="buttonClicked($event)"
       />
-      <Teleport to="body">
-        <div
-          v-if="isOpen"
-          ref="dropdownContent"
-          v-click-outside-element="hide"
-          class="apos-context-menu__dropdown-content"
-          :class="popoverClass"
-          data-apos-menu
-          :style="dropdownContentStyle"
-          :aria-hidden="!isOpen"
+      <div
+        v-if="isOpen"
+        ref="dropdownContent"
+        v-click-outside-element="hide"
+        class="apos-context-menu__dropdown-content"
+        :class="popoverClass"
+        data-apos-menu
+        :style="dropdownContentStyle"
+        :aria-hidden="!isOpen"
+      >
+        <AposContextMenuDialog
+          :menu-placement="placement"
+          :class-list="classList"
+          :menu="menu"
+          :is-open="isOpen"
+          @item-clicked="menuItemClicked"
+          @set-arrow="setArrow"
         >
-          <AposContextMenuDialog
-            :menu-placement="placement"
-            :class-list="classList"
-            :menu="menu"
-            @item-clicked="menuItemClicked"
-            @set-arrow="setArrow"
-          >
-            <slot />
-          </AposContextMenuDialog>
-        </div>
-      </Teleport>
+          <slot />
+        </AposContextMenuDialog>
+      </div>
     </div>
   </div>
 </template>
@@ -54,9 +54,13 @@ import {
   computePosition, offset, shift, flip, arrow
 } from '@floating-ui/dom';
 import { useAposTheme } from 'Modules/@apostrophecms/ui/composables/AposTheme';
-import cuid from 'cuid';
+import { createId } from '@paralleldrive/cuid2';
 
 const props = defineProps({
+  identifier: {
+    type: String,
+    default: 'contextMenuTrigger'
+  },
   menu: {
     type: Array,
     default: null
@@ -87,7 +91,7 @@ const props = defineProps({
     default: 'bottom'
   },
   menuOffset: {
-    type: [ Number, String ],
+    type: [ Number, Array ],
     default: 15
   },
   disabled: {
@@ -103,19 +107,30 @@ const props = defineProps({
     default() {
       return [];
     }
+  },
+  menuId: {
+    type: String,
+    default() {
+      return createId();
+    }
+  },
+  centerOnIcon: {
+    type: Boolean,
+    default: false
   }
 });
 
 const emit = defineEmits([ 'open', 'close', 'item-clicked' ]);
 
-const menuId = ref(cuid());
 const isOpen = ref(false);
 const placement = ref(props.menuPlacement);
 const event = ref(null);
-const dropdown = ref();
-const dropdownContent = ref();
+const dropdown = ref(null);
+const dropdownContent = ref(null);
 const dropdownContentStyle = ref({});
-const arrowEl = ref();
+const arrowEl = ref(null);
+const iconToCenterTo = ref(null);
+const menuOffset = getMenuOffset();
 
 defineExpose({
   hide,
@@ -152,30 +167,47 @@ const buttonState = computed(() => {
 watch(isOpen, (newVal) => {
   emit(newVal ? 'open' : 'close', event.value);
   if (newVal) {
+    setDropdownPosition();
     window.addEventListener('resize', setDropdownPosition);
     window.addEventListener('scroll', setDropdownPosition);
-    setDropdownPosition();
+    window.addEventListener('keydown', handleKeyboard);
+    dropdownContent.value.querySelector('[tabindex]')?.focus();
   } else {
     window.removeEventListener('resize', setDropdownPosition);
     window.removeEventListener('scroll', setDropdownPosition);
+    window.removeEventListener('keydown', handleKeyboard);
+    dropdown.value.querySelector('[tabindex]').focus();
   }
 }, { flush: 'post' });
 
 const { themeClass } = useAposTheme();
 
 onMounted(() => {
-  apos.bus.$on('context-menu-opened', hideWhenOtherOpen);
-  apos.bus.$on('widget-focus', hide);
+  apos.bus.$on('context-menu-toggled', hideWhenOtherOpen);
+  apos.bus.$on('close-context-menus', hide);
 });
 
 onBeforeUnmount(() => {
-  apos.bus.$off('context-menu-opened', hideWhenOtherOpen);
-  apos.bus.$off('widget-focus', hide);
+  apos.bus.$off('context-menu-toggled', hideWhenOtherOpen);
+  apos.bus.$off('close-context-menus', hide);
 });
 
-function hideWhenOtherOpen(id) {
-  if (menuId.value !== id) {
+function getMenuOffset() {
+  return {
+    mainAxis: Array.isArray(props.menuOffset) ? props.menuOffset[0] : props.menuOffset,
+    crossAxis: Array.isArray(props.menuOffset) ? (props.menuOffset[1] ?? 0) : 0
+  };
+}
+
+function hideWhenOtherOpen({ menuId }) {
+  if (props.menuId !== menuId) {
     hide();
+  }
+}
+
+function setIconToCenterTo(el) {
+  if (el && props.centerOnIcon) {
+    iconToCenterTo.value = el;
   }
 }
 
@@ -184,8 +216,11 @@ function hide() {
 }
 
 function buttonClicked(e) {
-  apos.bus.$emit('context-menu-opened', menuId.value);
   isOpen.value = !isOpen.value;
+  apos.bus.$emit('context-menu-toggled', {
+    menuId: props.menuId,
+    isOpen: isOpen.value
+  });
   event.value = e;
 }
 
@@ -202,12 +237,13 @@ async function setDropdownPosition() {
   if (!dropdown.value || !dropdownContent.value) {
     return;
   }
+  const centerArrowEl = iconToCenterTo.value || dropdown.value;
   const {
     x, y, middlewareData, placement: dropdownPlacement
-  } = await computePosition(dropdown.value, dropdownContent.value, {
+  } = await computePosition(centerArrowEl, dropdownContent.value, {
     placement: props.menuPlacement,
     middleware: [
-      offset(props.menuOffset),
+      offset(menuOffset),
       shift({ padding: 5 }),
       flip(),
       arrow({
@@ -229,12 +265,20 @@ async function setDropdownPosition() {
     ...arrowY && { top: `${arrowY}px` }
   });
 }
+
+function handleKeyboard(event) {
+  if (event.key === 'Escape') {
+    event.stopImmediatePropagation();
+    hide();
+  }
+}
 </script>
 
 <style lang="scss">
 .apos-context-menu__dropdown-content {
   z-index: $z-index-notifications;
   position: absolute;
+  line-height: var(--a-line-base);
   width: max-content;
 
   &[aria-hidden='true'] {
@@ -273,11 +317,13 @@ async function setDropdownPosition() {
 .apos-context-menu__pane {
   @include type-base;
 
-  padding: 20px;
-  border: 1px solid var(--a-base-8);
-  border-radius: var(--a-border-radius);
-  box-shadow: var(--a-box-shadow);
-  background-color: var(--a-background-primary);
+  & {
+    padding: 20px;
+    border: 1px solid var(--a-base-8);
+    border-radius: var(--a-border-radius);
+    box-shadow: var(--a-box-shadow);
+    background-color: var(--a-background-primary);
+  }
 
   &:focus {
     outline: none;
@@ -291,7 +337,7 @@ async function setDropdownPosition() {
   list-style-type: none;
   width: max-content;
   margin: none;
-  margin-block: 0 0;
+  margin-block: 0;
   padding: 10px 0;
 }
 </style>

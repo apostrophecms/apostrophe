@@ -242,8 +242,10 @@ export default {
 .apos-share-draft__heading {
   @include type-title;
 
-  line-height: var(--a-line-tall);
-  margin: 0;
+  & {
+    line-height: var(--a-line-tall);
+    margin: 0;
+  }
 }
 
 .apos-share-draft__close {
@@ -269,10 +271,12 @@ export default {
 .apos-share-draft__toggle-label {
   @include type-large;
 
-  flex-grow: 1;
-  max-width: 370px;
-  line-height: var(--a-line-tallest);
-  margin: 0;
+  & {
+    flex-grow: 1;
+    max-width: 370px;
+    line-height: var(--a-line-tallest);
+    margin: 0;
+  }
 
   &:hover {
     cursor: pointer;
@@ -282,9 +286,11 @@ export default {
 .apos-share-draft__description {
   @include type-base;
 
-  line-height: var(--a-line-tall);
-  max-width: 355px;
-  color: var(--a-base-2);
+  & {
+    line-height: var(--a-line-tall);
+    max-width: 355px;
+    color: var(--a-base-2);
+  }
 }
 
 .apos-share-draft__url-block {
@@ -301,12 +307,14 @@ export default {
 .apos-share-draft__url {
   @include type-base;
 
-  box-sizing: border-box;
-  width: 100%;
-  padding: 5px;
-  border: 1px solid var(--a-base-8);
-  border-radius: 5px;
-  background-color: var(--a-base-9);
+  & {
+    box-sizing: border-box;
+    width: 100%;
+    padding: 5px;
+    border: 1px solid var(--a-base-8);
+    border-radius: 5px;
+    background-color: var(--a-base-9);
+  }
 }
 
 .apos-share-draft__link-icon {
@@ -316,12 +324,14 @@ export default {
 .apos-share-draft__link-copy {
   @include type-base;
 
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  margin-top: $spacing-double;
-  color: var(--a-primary);
-  text-decoration: none;
-  font-weight: var(--a-weight-bold);;
+  & {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    margin-top: $spacing-double;
+    color: var(--a-primary);
+    text-decoration: none;
+    font-weight: var(--a-weight-bold);
+  }
 }
 </style>

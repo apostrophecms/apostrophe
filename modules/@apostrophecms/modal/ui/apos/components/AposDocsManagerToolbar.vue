@@ -69,8 +69,9 @@
         :status="searchField.status"
         :model-value="searchField.value"
         :modifiers="['small']"
+        :no-blur-emit="true"
         @update:model-value="search"
-        @return="search($event, true)"
+        @return="search($event)"
       />
     </template>
   </AposModalToolbar>
@@ -129,6 +130,10 @@ export default {
       required: true
     },
     checked: {
+      type: Array,
+      default: () => []
+    },
+    checkedTypes: {
       type: Array,
       default: () => []
     },
@@ -257,16 +262,7 @@ export default {
         this.computeActiveOperations();
       }
     },
-    search(value, force) {
-      if ((force && !value) || value.data === '') {
-        value = {
-          data: '',
-          error: false
-        };
-      } else if (!value || value.error || (!force && value.data.length < 3)) {
-        return;
-      }
-
+    search(value) {
       this.$emit('search', value.data);
     },
     registerPageChange(pageNum) {
@@ -282,6 +278,7 @@ export default {
     }) {
       await apos.modal.execute(modal, {
         checked: this.checked,
+        checkedTypes: this.checkedTypes,
         moduleName: this.moduleName,
         ...rest
       });

@@ -1,11 +1,12 @@
 <template>
-  <ul class="apos-admin-bar__items">
+  <ol class="apos-admin-bar__items" role="menu">
     <li v-if="pageTree" class="apos-admin-bar__item">
       <AposButton
         type="subtle"
         label="apostrophe:pages"
         class="apos-admin-bar__btn"
         :modifiers="['no-motion']"
+        role="menuitem"
         @click="emitEvent('@apostrophecms/page:manager')"
       />
     </li>
@@ -24,6 +25,7 @@
           class: 'apos-admin-bar__btn',
           type: 'subtle'
         }"
+        role="menuitem"
         @item-clicked="emitEvent"
       />
       <Component
@@ -33,6 +35,7 @@
         :label="item.label"
         :modifiers="['no-motion']"
         class="apos-admin-bar__btn"
+        role="menuitem"
         @click="emitEvent(item.action)"
       />
     </li>
@@ -47,6 +50,7 @@
           type: 'primary',
           modifiers: ['round', 'no-motion']
         }"
+        role="menuitem"
         @item-clicked="emitEvent"
       />
     </li>
@@ -76,7 +80,7 @@
         />
       </template>
     </li>
-  </ul>
+  </ol>
 </template>
 
 <script>
@@ -176,6 +180,7 @@ export default {
 .apos-admin-bar__items {
   display: flex;
   flex-grow: 1;
+  line-height: var(--a-line-base);
   margin: 0;
   padding: 0;
 }

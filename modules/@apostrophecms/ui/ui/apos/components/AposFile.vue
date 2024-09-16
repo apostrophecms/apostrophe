@@ -86,15 +86,15 @@ export default {
     },
     messages() {
       const msgs = {
-        primary: 'Drop a file here or',
-        highlighted: 'click to open the file explorer'
+        primary: this.$t('apostrophe:fileUploaderDropFile'),
+        highlighted: this.$t('apostrophe:fileUploaderOpenExplorer')
       };
       if (this.disabled) {
-        msgs.primary = 'Field is disabled';
+        msgs.primary = this.$t('apostrophe:fileUploaderFieldIsDisabled');
         msgs.highlighted = '';
       }
       if (this.fileOrAttachment) {
-        msgs.primary = 'Attachment limit reached';
+        msgs.primary = this.$t('apostrophe:fileUploaderAttachmentLimitReached');
         msgs.highlighted = '';
       }
       return msgs;
@@ -160,16 +160,19 @@ export default {
 };
 </script>
 <style scoped lang='scss'>
+
   .apos-file-dropzone {
     @include apos-button-reset();
     @include type-base;
 
-    display: block;
-    margin: 10px 0;
-    padding: 20px;
-    border: 2px dashed var(--a-base-8);
-    border-radius: var(--a-border-radius);
-    transition: all 200ms ease;
+    & {
+      display: block;
+      margin: 10px 0;
+      padding: 20px;
+      border: 2px dashed var(--a-base-8);
+      border-radius: var(--a-border-radius);
+      transition: all 200ms ease;
+    }
 
     &:hover {
       border-color: var(--a-primary);

@@ -142,9 +142,11 @@ export default {
     &__link {
       @include type-large;
 
-      display: inline-block;
-      text-decoration: underline;
-      text-underline-offset: 2px;
+      & {
+        display: inline-block;
+        text-decoration: underline;
+        text-underline-offset: 2px;
+      }
 
       &:hover,
       &:focus,
@@ -202,16 +204,18 @@ export default {
     &__footer {
       @include type-base;
 
-      position: absolute;
-      right: 0;
-      bottom: 32px;
-      left: 0;
-      display: flex;
-      align-items: center;
-      justify-content: flex-start;
-      width: 100%;
-      margin: auto;
-      max-width: $login-container;
+      & {
+        position: absolute;
+        right: 0;
+        bottom: 32px;
+        left: 0;
+        display: flex;
+        align-items: center;
+        justify-content: flex-start;
+        width: 100%;
+        margin: auto;
+        max-width: $login-container;
+      }
     }
 
     &__project-version {

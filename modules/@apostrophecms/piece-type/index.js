@@ -147,8 +147,8 @@ module.exports = {
       publish: {
         label: 'apostrophe:publish',
         messages: {
-          progress: 'Publishing {{ type }}...',
-          completed: 'Published {{ count }} {{ type }}.'
+          progress: 'apostrophe:batchPublishProgress',
+          completed: 'apostrophe:batchPublishCompleted'
         },
         icon: 'earth-icon',
         modalOptions: {
@@ -161,8 +161,8 @@ module.exports = {
       archive: {
         label: 'apostrophe:archive',
         messages: {
-          progress: 'Archiving {{ type }}...',
-          completed: 'Archived {{ count }} {{ type }}.'
+          progress: 'apostrophe:batchArchiveProgress',
+          completed: 'apostrophe:batchArchiveCompleted'
         },
         icon: 'archive-arrow-down-icon',
         if: {
@@ -178,8 +178,8 @@ module.exports = {
       restore: {
         label: 'apostrophe:restore',
         messages: {
-          progress: 'Restoring {{ type }}...',
-          completed: 'Restored {{ count }} {{ type }}.'
+          progress: 'apostrophe:batchRestoreProgress',
+          completed: 'apostrophe:batchRestoreCompleted'
         },
         icon: 'archive-arrow-up-icon',
         if: {
@@ -301,7 +301,11 @@ module.exports = {
       async post(req) {
         await self.publicApiCheckAsync(req);
         if (req.body._newInstance) {
-          const newInstance = self.newInstance();
+          const { _newInstance, ...body } = req.body;
+          const newInstance = {
+            ...self.newInstance(),
+            ...body
+          };
           newInstance._previewable = self.addUrlsViaModule && (await self.addUrlsViaModule.readyToAddUrlsToPieces(req, self.name));
           delete newInstance._url;
           return newInstance;
@@ -816,9 +820,10 @@ module.exports = {
       async convertInsertAndRefresh(req, input, options) {
         const piece = self.newInstance();
         const copyingId = self.apos.launder.id(input._copyingId);
+        const createId = self.apos.launder.id(input._createId);
         await self.convert(req, input, piece, {
-          onlyPresentFields: true,
-          copyingId
+          copyingId,
+          createId
         });
         await self.emit('afterConvert', req, input, piece);
         await self.insert(req, piece);
@@ -1074,8 +1079,8 @@ module.exports = {
           if (batchOperation.permission) {
             return self.apos.permission.can(req, batchOperation.permission, self.name);
           }
-          return true;
 
+          return true;
         });
       },
       getManagerApiProjection(req) {
@@ -1143,8 +1148,8 @@ module.exports = {
           components: {}
         });
         _.defaults(browserOptions.components, {
-          editorModal: 'AposDocEditor',
-          managerModal: 'AposDocsManager'
+          editorModal: self.getComponentName('editorModal', 'AposDocEditor'),
+          managerModal: self.getComponentName('managerModal', 'AposDocsManager')
         });
         browserOptions.managerApiProjection = self.getManagerApiProjection(req);
 

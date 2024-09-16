@@ -33,6 +33,7 @@ export default {
   .apos-toolbar {
     display: flex;
     justify-content: space-between;
+    line-height: var(--a-line-base);
   }
 
   .apos-toolbar__group {

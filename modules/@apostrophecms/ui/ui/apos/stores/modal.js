@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
-import cuid from 'cuid';
+import { createId } from '@paralleldrive/cuid2';
 
 export const useModalStore = defineStore('modal', () => {
   const stack = ref([]);
@@ -21,10 +21,14 @@ export const useModalStore = defineStore('modal', () => {
     }
 
     modal.resolve(modal.result);
+    apos.bus.$emit('modal-resolved', modal);
     stack.value = stack.value.filter(modal => id !== modal.id);
     const current = getAt(-1);
     activeId.value = current.id || null;
-    apos.bus.$emit('modal-resolved', modal);
+  }
+
+  function getActiveLocale() {
+    return activeModal.value?.locale || apos.i18n.locale;
   }
 
   function get(id) {
@@ -62,12 +66,16 @@ export const useModalStore = defineStore('modal', () => {
   async function execute(componentName, props) {
     return new Promise((resolve) => {
       const item = {
-        id: `modal:${cuid()}`,
+        id: `modal:${createId()}`,
         componentName,
         resolve,
         props: props || {},
         elementsToFocus: [],
-        focusedElement: null
+        focusedElement: null,
+        locale: activeModal.value?.locale || apos.i18n.locale,
+        hasContextLocale: activeModal.value
+          ? (activeModal.value.hasContextLocale || activeModal.value.locale !== apos.i18n.locale)
+          : false
       };
 
       activeId.value = item.id;
@@ -165,6 +173,7 @@ export const useModalStore = defineStore('modal', () => {
     stack,
     activeId,
     activeModal,
+    getActiveLocale,
     add,
     remove,
     get,

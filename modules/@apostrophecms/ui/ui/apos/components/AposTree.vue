@@ -31,7 +31,7 @@
 
 <script>
 import { klona } from 'klona';
-import cuid from 'cuid';
+import { createId } from '@paralleldrive/cuid2';
 
 export default {
   name: 'AposTree',
@@ -84,7 +84,7 @@ export default {
       myItems: klona(this.items),
       nested: false,
       colWidths: null,
-      treeId: cuid()
+      treeId: createId()
     };
   },
   computed: {
@@ -204,7 +204,9 @@ export default {
   .apos-tree {
     @include type-base;
 
-    color: var(--a-text-primary);
+    & {
+      color: var(--a-text-primary);
+    }
   }
 
 </style>

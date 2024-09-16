@@ -116,6 +116,7 @@ module.exports = {
         },
         role: {
           type: 'role',
+          label: 'apostrophe:role',
           choices: [
             {
               label: 'apostrophe:guest',

@@ -759,7 +759,10 @@ module.exports = {
 
       async convert(req, input, doc, options = {
         presentFieldsOnly: false,
-        copyingId: false
+        fetchRelationships: true,
+        type: null,
+        copyingId: null,
+        createId: null
       }) {
         const fullSchema = self.apos.doc.getManager(options.type || self.name)
           .allowedSchema(req, doc);
@@ -781,8 +784,14 @@ module.exports = {
             ...input
           };
         }
+        const convertOptions = {
+          fetchRelationships: options.fetchRelationships !== false
+        };
+        await self.apos.schema.convert(req, schema, input, doc, convertOptions);
 
-        await self.apos.schema.convert(req, schema, input, doc);
+        if (options.createId) {
+          doc.aposDocId = options.createId;
+        }
 
         if (copyOf) {
           if (copyOf._id) {
@@ -1554,7 +1563,7 @@ module.exports = {
           } else {
             // Dynamic choices from the REST API, but
             // we need a label for "no opinion"
-            filter.nullLabel = 'Choose One';
+            filter.nullLabel = 'apostrophe:filterMenuChooseOne';
           }
         });
       },

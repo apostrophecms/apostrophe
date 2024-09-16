@@ -14,6 +14,7 @@
           :icon="
             set.field.type === 'select' ? 'unfold-more-horizontal-icon' : ''
           "
+          :no-blur-emit="true"
           @update:model-value="input($event, set.name)"
         />
       </div>
@@ -110,7 +111,7 @@ export default {
         // Still pending
         return [
           {
-            label: 'Loading Choices...',
+            label: 'apostrophe:filterMenuLoadingChoices',
             value: filter.def
           }
         ];

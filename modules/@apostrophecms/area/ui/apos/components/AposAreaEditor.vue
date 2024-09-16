@@ -15,6 +15,7 @@
             label: $t(contextMenuOptions.menu[0].label)
           }"
           :disabled="field && field.readOnly"
+          :disable-focus="false"
           type="primary"
           :icon="icon"
           @click="add({ index: 0, name: contextMenuOptions.menu[0].name })"
@@ -29,6 +30,7 @@
           :max-reached="maxReached"
           :disabled="field && field.readOnly"
           :widget-options="options.widgets"
+          :tabbable="true"
           @add="add"
         />
       </template>
@@ -70,9 +72,10 @@
 </template>
 
 <script>
-import cuid from 'cuid';
+import { createId } from '@paralleldrive/cuid2';
 import { klona } from 'klona';
 import AposThemeMixin from 'Modules/@apostrophecms/ui/mixins/AposThemeMixin';
+import newInstance from 'apostrophe/modules/@apostrophecms/schema/lib/newInstance.js';
 
 export default {
   name: 'AposAreaEditor',
@@ -148,7 +151,7 @@ export default {
       addWidgetEditor: null,
       addWidgetOptions: null,
       addWidgetType: null,
-      areaId: cuid(),
+      areaId: createId(),
       next: this.getValidItems(),
       hoveredWidget: null,
       hoveredNonForeignWidget: null,
@@ -406,7 +409,7 @@ export default {
     // Regenerate all array item, area, object and widget ids so they are considered
     // new. Useful when copying a widget with nested content.
     regenerateIds(schema, object) {
-      object._id = cuid();
+      object._id = createId();
       for (const field of schema) {
         if (field.type === 'array') {
           for (const item of (object[field.name] || [])) {
@@ -416,7 +419,7 @@ export default {
           this.regenerateIds(field.schema, object[field.name] || {});
         } else if (field.type === 'area') {
           if (object[field.name]) {
-            object[field.name]._id = cuid();
+            object[field.name]._id = createId();
             for (const item of (object[field.name].items || [])) {
               const schema = apos.modules[apos.area.widgetManagers[item.type]].schema;
               this.regenerateIds(schema, item);
@@ -513,7 +516,7 @@ export default {
     },
     async insert({ index, widget }) {
       if (!widget._id) {
-        widget._id = cuid();
+        widget._id = createId();
       }
       if (!widget.metaType) {
         widget.metaType = 'widget';
@@ -593,21 +596,11 @@ export default {
     // Return a new widget object in which defaults are fully populated,
     // especially valid sub-area objects, so that nested edits work on the page
     newWidget(type) {
+      const schema = apos.modules[apos.area.widgetManagers[type]].schema;
       const widget = {
+        ...newInstance(schema),
         type
       };
-      const schema = apos.modules[apos.area.widgetManagers[type]].schema;
-      schema.forEach(field => {
-        if (field.type === 'area') {
-          widget[field.name] = {
-            _id: cuid(),
-            metaType: 'area',
-            items: []
-          };
-        } else {
-          widget[field.name] = field.def ? klona(field.def) : field.def;
-        }
-      });
       return widget;
     }
   }

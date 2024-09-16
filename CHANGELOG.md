@@ -1,5 +1,190 @@
 # Changelog
 
+## UNRELEASED
+
+### Adds
+
+* Simplified importing rich text widgets via the REST API. If you  you have HTML that contains `img` tags pointing to existing images, you can now import them all quickly. When supplying the rich text widget object, include an `import` property with an `html` subproperty, rather than the usual `content` property. You can optionally provide a `baseUrl` subproperty as well. Any images present in `html` will be imported automatically and the correct `figure` tags will be added to the new rich text widget, along with any other markup acceptable to the widget's configuration.
+
+### Changes
+
+* The various implementations of `newInstance` found in Apostrophe, e.g. for widgets, array items, relationship fields and documents themselves, have been consolidated in one implementation. The same code is now reused both on the front and the back end, ensuring the same result without the need to introduce additional back end API calls.
+
+### Fixes
+
+* Default properties of object fields present in a widget now populate correctly even if never focused in the editor.
+
+## 4.7.0 (2024-09-05)
+
+### Changes
+
+* UI and UX of inline arrays and their table styles
+
+### Adds
+
+* To aid debugging, when a file extension is unacceptable as an Apostrophe attachment the rejected extension is now printed as part of the error message.
+* The new `big-upload-client` module can now be used to upload very large files to any route that uses the new `big-upload-middleware`.
+* Add option `skipReplace` for `apos.doc.changeDocIds` method to skip the replacing of the "old" document in the database.
+* The `@apostrophecms/i18n` module now exposes a `locales` HTTP GET API to aid in implementation of native apps for localized sites.
+* Context menus can be supplied a `menuId` so that interested components can listen to their opening/closing.
+* Allow to set mode in `AposWidget` component through props.
+* Add batch operations to pages.
+* Add shortcuts to pages manager.
+* Add `replaces` (boolean, `false` by default) option to the context operation definition (registered via `apos.doc.addContextOperation()`) to allow the operation to require a replace confirmation before being executed. The user confirmation results in the Editor modal being closed and the operation being executed. The operation is not executed if the user cancels the confirmation.
+
+### Changes
+
+* Wait for notify before navigating to a new page.
+* Send also `checkedTypes` via the pages body toolbar operations (e.g. 'batch') to the modal.
+
+### Fixes
+
+* Fix link to pages in rich-text not showing UI to select page during edit.
+* Bumps `uploadfs` dependency to ensure `.tar.gz`, `.tgz` and `.gz` files uploaded to S3 download without double-gzipping.
+This resolves the issue for new uploads.
+* Registering duplicate icon is no longer breaking the build.
+* Fix widget focus state so that the in-context Add Content menu stays visible during animation
+* Fix UI of areas in schemas so that their context menus are layered overtop sibling schema fields UI
+* Fix unhandled promise rejections and guard against potential memory leaks, remove 3rd party `debounce-async` dependency
+* Adds an option to center the context menu arrow on the button icon. Sets this new option on some context menus in the admin UI.
+* Fixes the update function of `AposSlatLists` so that elements are properly reordered on drag
+
+## 4.6.1 (2024-08-26)
+
+### Fixes
+
+* Registering duplicate icon is no longer breaking the build.
+* Fix widget focus state so that the in-context Add Content menu stays visible during animation.
+* Fix UI of areas in schemas so that their context menus are layered overtop sibling schema fields UI.
+
+### Removes
+* Inline array option for `alwaysOpen` replaced with UI toggles
+
+## 4.6.0 (2024-08-08)
+
+### Adds
+
+* Add a locale switcher in pieces and pages editor modals. This is available for localized documents only, and allows you to switch between locales for the same document.
+  The locale can be switched at only one level, meaning that sub documents of a document that already switched locale will not be able to switch locale itself.
+* Adds visual focus states and keyboard handlers for engaging with areas and widgets in-context
+* Adds method `simulateRelationshipsFromStorage` method in schema module. 
+This method populates the relationship field with just enough information to allow convert to accept it. It does not fully fetch the related documents. It does the opposite of prepareForStorage.
+* A new options object has been added to the convert method. 
+Setting the `fetchRelationships` option to false will prevent convert from actually fetching relationships to check which related documents currently exist. 
+The shape of the relationship field is still validated.
+
+### Changes
+
+* Refactors Admin UI SASS to eliminate deprecation warnings from declarations coming after nested rules.
+* Bumps the sass-loader version and adds a webpack option to suppress mixed declaration deprecation warnings to be removed when all modules are updated.
+* Add `title` and `_url` to select all projection.
+* Display `Select all` message on all pages in the manager modal.
+* Refresh `checked` in manager modal after archive action.
+* Update `@apostrophecms/emulate-mongo-3-driver` dependency to keep supporting `mongodb@3.x` queries while using `mongodb@6.x`.
+* Updates rich text link tool's keyboard key detection strategy.
+* Buttons that appear on slats (preview, edit crop/relationship, remove) are visually focusable and keyboard accessible.
+* Added tooltip for update button. Thanks to [gkumar9891](https://github.com/gkumar9891) for this addition.
+
+### Fixes
+
+* Fixes the rendering of conditional fields in arrays where the `inline: true` option is used.
+* Fixes the rich text link tool's detection and display of the Remove Link button for removing existing links
+* Fixes the rich text link tool's detection and display of Apostrophe Page relationship field.
+* Overriding standard Vue.js components with `editorModal` and `managerModal` are now applied all the time.
+* Accommodate old-style replica set URIs with comma-separated servers by passing any MongoDB URIs that Node.js cannot parse directly to the MongoDB driver, and avoiding unnecessary parsing of the URI in general.
+* Bump `oembetter` dependency to guarantee compatibility with YouTube. YouTube recently deployed broken `link rel="undefined"` tags on some of their video pages.
+* It is now possible to see the right filename and line number when debugging the admin UI build in the browser. This is automatically disabled when `@apostrophecms/security-headers` is installed, because its defaults are incompatible by design.
+
+## 4.5.4 (2024-07-22)
+
+### Fixes
+
+* Add a default projection to ancestors of search results in order to load a reasonable amount of data and avoid request timeouts.
+
+## 4.5.3 (2024-07-17)
+
+### Fixes
+
+* Enhanced media selection with touchpad on Windows by extending focus timeout.
+
+## 4.5.2 (2024-07-11)
+
+### Fixes
+
+* Ensure that `apos.doc.walk` never gets caught in an infinite loop even if circular references are present in the data. This is a hotfix for an issue that can arise when the new support for breadcrumbs in search results is combined with a more inclusive projection for page ancestors.
+* Correct a longstanding bug in `apos.doc.walk` that led items to be listed twice in the `ancestors` array passed to the iterator.
+* Correct a longstanding bug in `apos.doc.walk` that led ancestors that are themselves arrays to be misrepresented as a series of objects in the `ancestors` array passed to the iterator.
+* For additional guarantees of reliability the `_dotPath` and `_ancestors` arguments to `apos.doc.walk`, which were always clearly documented as for internal use only, can no longer be passed in externally.
+
+## 4.5.1 (2024-07-11)
+
+### Changes
+
+* Allow tiptap rich-text widget to open modals for images and links without closing the toolbar.
+
+## 4.5.0 (2024-07-10)
+
+### Adds
+
+* Allow to disable shortcut by setting the option `shortcut: false`
+* Adds a new color picker tool for the rich-text-widget toolbar that matches the existing `color` schema field. This also adds the same `pickerOptions` and `format` options to the rich-text-widget configuration that exist in the `color` schema field.
+* Add missing UI translation keys.
+* Infite scroll in media manager instead of pagination and related search fixes.
+* Improves loaders by using new `AposLoadingBlock` that uses `AposLoading` instead of the purple screen in media manager.
+* Select the configured aspect ratio and add `data-apos-field` attributes to the fields inside `AposImageRelationshipEditor.vue`.
+* Add `getShowAdminBar` method. This method can be overriden in projects to drive the admin bar visibility for logged-in users.
+
+### Fixes
+
+* Removes unnecessary, broadly applied line-height setting that may cause logged-in vs logged-out visual discrepencies.
+* Remove double GET request when saving image update.
+* Fix filter menu forgetting selecting filters and not instantiating them.
+* Remove blur emit for filter buttons and search bar to avoid re requesting when clicking outside…
+* `this.modified` was not working properly (set to false when saving). We can now avoid to reload images when saving no changes.
+* In media manager images checkboxes are disabled when max is reached.
+* In media manager when updating an image or archiving, update the list instead of fetching and update checked documents to see changes in the right panel selected list.
+* The `password` field type now has a proper fallback default, the empty string, just like the string field type
+and its derivatives. This resolves bugs in which the unexpected `null` caused problems during validation. This bug
+was old, but was masked in some situations until the release of version `4.4.3`.
+* Identify and mark server validation errors in the admin UI. This helps editors identify already existing data fields, having validation errors when schema changes (e.g. optional field becomes required).
+* Removes `menu-offset` props that were causing `AposContextMenu` to not display properly. 
+* Allows to pass a number or an array to `AposContextMenu` to set the offset of the context menu (main and cross axis see `floating-ui` documentation).
+* Fixes the relationship fields not having the data when coming from the relationship modal.
+* Fixes watch on `checkedDocs` passed to `AposSlatList` not being reactive and not seeing updated relationship fields.
+* Adds styles for 1 column expanded area ([#4608](https://github.com/apostrophecms/apostrophe/issues/4608))
+* Fixes weird slug computations based on followed values like title. Simplifies based on the new tech design.
+* Prevent broken admin UI when there is a missing widget.
+* Fixes media manager not loading images when last infinite scroll page have been reached (when uploading image for example).
+* Upgrade oembetter versions to allow all vimeo urls.
+
+### Changes
+
+* Update `Choose Images` selection behavior. When choosing images as part of a relationship, you click on the image or checkbox to add the image to the selection.
+If a max is set to allow only one image, clicking on the selected image will remove it from the selection. Clicking on another image will update the selection with the newly clicked image. 
+If a max is set to allow multiple images, you can remove images from the selection by using the checkbox. Clicking on the image will bring the image schema in the right panel.
+You can upload images even if the max has been reached. We will append the uploaded images to the existing selection up to the max if any.
+* Update `@apostrophecms/emulate-mongo-3-driver` dependency to keep supporting `mongodb@3.x` queries while using `mongodb@6.x`.
+
+## 4.4.3 (2024-06-17)
+
+### Fixes
+
+* Do not use schema `field.def` when calling `convert`. Applying defaults to new documents is the job of `newInstance()` and similar code.
+If you wish a field to be mandatory use `required: true`.
+* As a convenience, using `POST` for pieces and pages with `_newInstance: true` keeps any additional `req.body` properties in the API response.
+This feature unofficially existed before, it is now supported.
+* Rollbacks watcher on `checked` array. Fixes, checked docs not being properly updated.
+
+
+## 4.4.2 (2024-06-14)
+
+### Fixes
+
+* Hotfix: the new `_parent` property of pieces, which refers to the same piece page as `_parentUrl`, is now a carefully pruned
+subset to avoid the risk of infinite recursion when the piece page has a relationship to a piece. Those who want `_parent`
+to be more complete can extend the new `pruneParent` method of the relevant piece page module. This regression was
+introduced in version 4.4.0.
+
 ## 4.4.1 (2024-06-12)
 
 ### Fixes
@@ -49,13 +234,19 @@ We will now end up with page B slug as `/peer/page` and not `/peer/peer/page` as
 * Detect shortcut conflicts when using multiple shortcuts.
 * Updating schema fields as read-only no longer reset the value when updating the document.
 * Fixes stylelint config file, uses config from our shared configuration, fixes all lint errors. 
-* Removes `$nextTick` use to re render schema in `AposArrayEditor` because it was triggering weird vue error in production.
-Instead, makes the AposSchema for loop keys more unique using `modelValue.data._id`, 
-if document changes it re-renders schema fields.
 * Fixes `TheAposCommandMenu` modals not computing shortcuts from the current opened modal.
 * Fixes select boxes of relationships, we can now check manually published relationships, and `AposSlatList` renders properly checked relationships.
 * Fixes issues in `AposInputArray` on production build to be able to add, remove and edit array items after `required` error.
 * Relationships browse button isn't disabled when max is reached.
+* In media manager images checkboxes are disabled when max is reached.
+
+## 4.3.3 (2024-06-04)
+
+### Fixes
+
+* Removes `$nextTick` use to re render schema in `AposArrayEditor` because it was triggering weird vue error in production.
+Instead, makes the AposSchema for loop keys more unique using `modelValue.data._id`, 
+if document changes it re-renders schema fields.
 * In media manager image checkboxes are disabled when max is reached.
 * Fixes tiptap bubble menu jumping on Firefox when clicking on buttons. Also fixes the fact that 
 double clicking on bubble menu out of buttons would prevent it from closing when unfocusing the rich text area.

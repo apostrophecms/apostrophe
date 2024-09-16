@@ -4,7 +4,7 @@
     <li
       class="apos-slat"
       :data-id="item._id"
-      tabindex="0"
+      :tabindex="slatCount > 1 ? '0' : '-1'"
       :class="{
         'apos-is-engaged': engaged,
         'apos-is-only-child': slatCount === 1,
@@ -14,12 +14,12 @@
       :aria-pressed="engaged"
       role="listitem"
       :aria-labelledby="parent"
-      @keydown.prevent.space="toggleEngage"
-      @keydown.prevent.enter="toggleEngage"
-      @keydown.prevent.escape="disengage"
-      @keydown.prevent.arrow-down="move(1)"
-      @keydown.prevent.arrow-up="move(-1)"
-      @keydown.prevent.backspace="remove(true)"
+      @keydown.space="toggleEngage"
+      @keydown.enter="toggleEngage"
+      @keydown.escape="disengage"
+      @keydown.arrow-down="move(1)"
+      @keydown.arrow-up="move(-1)"
+      @keydown.backspace="remove($event, true)"
       @click="click"
     >
       <div class="apos-slat__main">
@@ -33,7 +33,6 @@
           :button="more.button"
           :menu="more.menu"
           menu-placement="bottom-start"
-          menu-offset="40, 10"
           :disabled="disabled"
           @item-clicked="$emit('item-clicked', item)"
         />
@@ -50,15 +49,21 @@
           :modifiers="['inline']"
           :disabled="disabled"
           @click="$emit('item-clicked', item)"
+          @keydown.prevent.enter="nativeClick"
+          @keydown.prevent.space="nativeClick"
         />
-        <a
+        <AposButton
           v-if="item._url || item._urls"
           class="apos-slat__control apos-slat__control--view"
+          icon="eye-icon"
+          :icon-only="true"
+          :modifiers="['inline']"
+          label="apostrophe:preview"
           :href="item._url || item._urls.original"
           target="_blank"
-        >
-          <eye-icon :size="14" class="apos-slat__control--view-icon" />
-        </a>
+          @keydown.prevent.enter="nativeClick"
+          @keydown.prevent.space="nativeClick"
+        />
         <div
           v-if="item.attachment &&
             item.attachment.group === 'images' &&
@@ -94,7 +99,8 @@
           :modifiers="['inline']"
           label="apostrophe:removeItem"
           :disabled="disabled"
-          @click="remove"
+          @click="remove($event)"
+          @keydown.prevent.space="remove($event)"
         />
       </div>
     </li>
@@ -190,11 +196,17 @@ export default {
     }
   },
   methods: {
+    nativeClick(e) {
+      e.preventDefault();
+      return e.target.click();
+    },
     toggleEngage() {
-      if (this.engaged) {
-        this.disengage();
-      } else {
-        this.engage();
+      if (this.slatCount > 1) {
+        if (this.engaged) {
+          this.disengage();
+        } else {
+          this.engage();
+        }
       }
     },
     engage() {
@@ -209,7 +221,8 @@ export default {
         this.$emit('move', this.item._id, direction);
       }
     },
-    remove(focusNext) {
+    remove(event, focusNext) {
+      event.preventDefault();
       this.$emit('remove', this.item, focusNext);
     },
     click(e) {
@@ -223,14 +236,16 @@ export default {
   .apos-slat {
     @include apos-transition();
 
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 10px;
-    border: 1px solid var(--a-base-5);
-    border-radius: var(--a-border-radius);
-    background-color: var(--a-base-9);
-    color: var(--a-text-primary);
+    & {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px;
+      border: 1px solid var(--a-base-5);
+      border-radius: var(--a-border-radius);
+      background-color: var(--a-base-9);
+      color: var(--a-text-primary);
+    }
 
     &.apos-is-disabled {
       .apos-slat__control--view {
@@ -248,8 +263,10 @@ export default {
     }
 
     &:active,
-    &:focus {
+    &:focus,
+    &:focus-visible {
       background-color: var(--a-base-7);
+      outline: 1px solid var(--a-primary-transparent-90);
     }
 
     &.apos-slat-list__item--disabled,
@@ -264,6 +281,28 @@ export default {
       &:focus {
         background-color: var(--a-base-9);
       }
+    }
+  }
+
+  .apos-slat {
+    :deep(.apos-button) {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 20px;
+      height: 20px;
+
+      &:focus {
+        outline: 1px solid var(--a-primary-transparent-90)
+      }
+    }
+  }
+
+  .apos-slat.apos-is-engaged,
+  .apos-slat.sortable-chosen,
+  .apos-slat.apos-is-selected {
+    :deep(.apos-button:focus) {
+      outline: 1px solid var(--a-base-7);
     }
   }
 
@@ -312,10 +351,12 @@ export default {
   .apos-slat__label {
     @include type-small;
 
-    overflow: hidden;
-    margin-left: 5px;
-    white-space: nowrap;
-    text-overflow: ellipsis;
+    & {
+      overflow: hidden;
+      margin-left: 5px;
+      white-space: nowrap;
+      text-overflow: ellipsis;
+    }
   }
 
   .apos-slat__editor-btn {
@@ -349,7 +390,9 @@ export default {
   .apos-slat__size {
     @include type-small;
 
-    margin-right: 5px;
+    & {
+      margin-right: 5px;
+    }
   }
 
   .apos-slat__control--view {
@@ -359,10 +402,12 @@ export default {
   .apos-slat__extension {
     @include type-help;
 
-    display: inline-block;
-    padding: 4px;
-    background-color: var(--a-generic);
-    color: var(--a-white);
+    & {
+      display: inline-block;
+      padding: 4px;
+      background-color: var(--a-generic);
+      color: var(--a-white);
+    }
   }
 
   // file types

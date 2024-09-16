@@ -112,7 +112,7 @@ import { klona } from 'klona';
 import dayjs from 'dayjs';
 import { isEqual } from 'lodash';
 import advancedFormat from 'dayjs/plugin/advancedFormat';
-import cuid from 'cuid';
+import { createId } from '@paralleldrive/cuid2';
 
 dayjs.extend(advancedFormat);
 
@@ -123,12 +123,6 @@ export default {
       type: Object,
       default() {
         return {};
-      }
-    },
-    selected: {
-      type: Array,
-      default() {
-        return [];
       }
     },
     isModified: {
@@ -145,7 +139,7 @@ export default {
       }
     }
   },
-  emits: [ 'saved', 'back', 'modified' ],
+  emits: [ 'back', 'modified' ],
   data() {
     return {
       // Primarily use `activeMedia` to support hot-swapping image docs.
@@ -294,60 +288,63 @@ export default {
       });
       await this.cancel();
     },
-    save() {
+    async save() {
       this.triggerValidation = true;
       const route = `${this.moduleOptions.action}/${this.activeMedia._id}`;
       // Repopulate `attachment` since it was removed from the schema.
       this.docFields.data.attachment = this.activeMedia.attachment;
 
-      this.$nextTick(async () => {
-        if (this.docFields.hasErrors) {
-          this.triggerValidation = false;
-          await apos.notify('apostrophe:resolveErrorsBeforeSaving', {
-            type: 'warning',
-            icon: 'alert-circle-icon',
-            dismiss: true
-          });
-          return;
-        }
+      await this.$nextTick();
 
-        let body = this.docFields.data;
-        this.addLockToRequest(body);
-        try {
-          const requestMethod = this.restoreOnly ? apos.http.patch : apos.http.put;
-          if (this.restoreOnly) {
-            body = {
-              archived: false
-            };
-          }
-          const doc = await requestMethod(route, {
-            busy: true,
-            body,
-            draft: true
-          });
-          apos.bus.$emit('content-changed', {
-            doc,
-            action: 'update'
-          });
-          this.original = klona(this.docFields.data);
-          this.$emit('modified', false);
-          this.$emit('saved');
-        } catch (e) {
-          if (this.isLockedError(e)) {
-            await this.showLockedError(e);
-            this.lockNotAvailable();
-          } else {
-            await this.handleSaveError(e, {
-              fallback: `Error ${this.restoreOnly ? 'Restoring' : 'Saving'} ${this.moduleLabels.label}`
-            });
-          }
-        } finally {
-          this.showReplace = false;
+      if (this.docFields.hasErrors) {
+        this.triggerValidation = false;
+        await apos.notify('apostrophe:resolveErrorsBeforeSaving', {
+          type: 'warning',
+          icon: 'alert-circle-icon',
+          dismiss: true
+        });
+        return;
+      }
+
+      let body = this.docFields.data;
+      this.addLockToRequest(body);
+      try {
+        const requestMethod = this.restoreOnly ? apos.http.patch : apos.http.put;
+        if (this.restoreOnly) {
+          body = {
+            archived: false
+          };
         }
-      });
+        const doc = await requestMethod(route, {
+          busy: true,
+          body,
+          draft: true
+        });
+        apos.bus.$emit('content-changed', {
+          doc,
+          action: 'update'
+        });
+        this.original = klona(this.docFields.data);
+      } catch (e) {
+        if (this.isLockedError(e)) {
+          await this.showLockedError(e);
+          this.lockNotAvailable();
+        } else {
+          const errorMessage = this.restoreOnly
+            ? this.$t('apostrophe:mediaManagerErrorRestoring')
+            : this.$t('apostrophe:mediaManagerErrorSaving');
+
+          await this.handleSaveError(e, {
+            fallback: `${errorMessage} ${this.moduleLabels.label}`
+          });
+        }
+      } finally {
+        this.showReplace = false;
+
+      }
     },
     generateLipKey() {
-      this.lipKey = cuid();
+      this.lipKey = createId();
     },
     cancel() {
       this.showReplace = false;
@@ -420,21 +417,27 @@ export default {
   .apos-media-editor__details {
     @include apos-list-reset();
 
-    margin-bottom: $spacing-double;
+    & {
+      margin-bottom: $spacing-double;
+    }
   }
 
   .apos-media-editor__detail {
     @include type-base;
 
-    line-height: var(--a-line-tallest);
-    color: var(--a-base-4);
+    & {
+      line-height: var(--a-line-tallest);
+      color: var(--a-base-4);
+    }
   }
 
   .apos-media-editor__links {
     @include apos-list-reset();
 
-    display: flex;
-    margin-bottom: $spacing-triple;
+    & {
+      display: flex;
+      margin-bottom: $spacing-triple;
+    }
 
     :deep(.apos-button--quiet) {
       display: inline;
@@ -464,6 +467,7 @@ export default {
   .apos-media-editor__lip {
     display: flex;
     justify-content: flex-end;
+    line-height: var(--a-line-base);
 
     & > .apos-context-menu, & > .apos-button__wrapper {
       margin-left: 7.5px;

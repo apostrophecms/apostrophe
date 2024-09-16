@@ -42,7 +42,7 @@
 
 <script>
 import { Sortable } from 'sortablejs-vue3';
-import cuid from 'cuid';
+import { createId } from '@paralleldrive/cuid2';
 
 export default {
   name: 'AposSlatList',
@@ -93,7 +93,7 @@ export default {
   },
   computed: {
     listId() {
-      return `sortableList-${cuid()}`;
+      return `sortableList-${createId()}`;
     },
     dragOptions() {
       return {
@@ -103,7 +103,6 @@ export default {
       };
     }
   },
-
   watch: {
     modelValue() {
       this.next = this.modelValue.slice();
@@ -112,7 +111,10 @@ export default {
       let equal = true;
       if (newValue.length === this.modelValue.length) {
         for (let i = 0; (i < newValue.length); i++) {
-          if ((newValue[i]._id !== this.modelValue[i]._id) || (newValue[i].title !== this.modelValue[i].title)) {
+          if (
+            (newValue[i]._id !== this.modelValue[i]._id) ||
+            (newValue[i].title !== this.modelValue[i].title)
+          ) {
             equal = false;
             break;
           }
@@ -129,13 +131,7 @@ export default {
     update({
       oldIndex, newIndex
     }) {
-      if (oldIndex !== newIndex) {
-        this.next = this.next.map((elem, index) => {
-          return index === oldIndex
-            ? this.next[newIndex]
-            : (index === newIndex && this.next[oldIndex]) || elem;
-        });
-      }
+      this.next.splice(newIndex, 0, this.next.splice(oldIndex, 1)[0]);
     },
     engage(id) {
       this.engaged = id;
@@ -214,8 +210,10 @@ export default {
   .apos-slat-limit {
     @include type-help;
 
-    margin: 10px 0 0;
-    text-align: center;
+    & {
+      margin: 10px 0 0;
+      text-align: center;
+    }
 
     span {
       margin-right: 10px;
