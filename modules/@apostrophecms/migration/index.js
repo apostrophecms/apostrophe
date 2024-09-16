@@ -1,5 +1,6 @@
 const broadband = require('broadband');
 const _ = require('lodash');
+const addMissingSchemaFields = require('./lib/addMissingSchemaFields.js');
 
 // Provide services for database migration. The `@apostrophecms/migration:migrate` task
 // carries out all migrations that have been registered with this module. Migrations
@@ -289,7 +290,7 @@ module.exports = {
           }
         }
       },
-      ...require('./lib/addMissingSchemaFields.js')(self)
+      ...addMissingSchemaFields(self)
     };
   },
   tasks(self) {

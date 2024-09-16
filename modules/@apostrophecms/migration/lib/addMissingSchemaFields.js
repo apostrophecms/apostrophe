@@ -12,7 +12,7 @@ module.exports = (self) => {
         if (!_.isEqual(lastPropLists?.[name], propLists[name])) {
           changesToPropLists = true;
           scans++;
-          updates += await self.addMissingSchemaFieldsForDocType(name, propLists[name]);
+          updates += await self.addMissingSchemaFieldsForDocType(name);
         }
       }
       if (changesToPropLists) {
