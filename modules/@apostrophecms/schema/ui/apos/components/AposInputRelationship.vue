@@ -34,6 +34,10 @@
             v-model="searchTerm"
             class="apos-input apos-input--text apos-input--relationship"
             type="text"
+            role="combobox"
+            :aria-owns="`apos-relationship-${field._id}`"
+            :aria-expanded="!!searchList.length"
+            aria-autocomplete="both"
             :placeholder="$t(placeholder)"
             :disabled="field.readOnly || limitReached"
             :required="field.required"
@@ -41,6 +45,7 @@
             @input="input"
             @focus="input"
             @focusout="handleFocusOut"
+            @keydown="handleKeydown"
           >
           <AposButton
             v-if="field.browse !== false"
@@ -65,11 +70,16 @@
           @item-clicked="editRelationship"
         />
         <AposSearchList
+          ref="searchList"
+          :aria-id="`apos-relationship-${field._id}`"
           :list="searchList"
           :selected-items="next"
           :icon="field.suggestionIcon"
           :icon-size="field.suggestionIconSize"
           :fields="suggestionFields"
+          :focus-index="searchFocusIndex"
+          :suggestion="searchSuggestion"
+          :hint="searchHint"
           disabled-tooltip="apostrophe:publishBeforeUsingTooltip"
           @select="updateSelected"
         />

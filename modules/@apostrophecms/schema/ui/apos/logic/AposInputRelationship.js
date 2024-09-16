@@ -23,6 +23,9 @@ export default {
     return {
       searchTerm: '',
       searchList: [],
+      searchFocusIndex: null,
+      searchHint: null,
+      searchSuggestion: null,
       suggestionFields,
       next,
       subfields,
@@ -185,10 +188,9 @@ export default {
         .filter(removeSelectedItem)
         .map(formatItems);
 
-      const suggestion = !qs.autocomplete && this.suggestion;
-      const hint = (!qs.autocomplete || !results.length) && this.hint;
-
-      this.searchList = [ suggestion, ...results, hint ].filter(Boolean);
+      this.searchSuggestion = !qs.autocomplete && this.suggestion;
+      this.searchHint = (!qs.autocomplete || !results.length) && this.hint;
+      this.searchList = [ ...results ].filter(Boolean);
       this.searching = false;
     },
     async input () {
@@ -204,6 +206,10 @@ export default {
         : {};
 
       await this.search(qs);
+      if (this.searchList.length) {
+        // psuedo focus first element
+        this.searchFocusIndex = 0;
+      }
     },
     handleFocusOut() {
       // hide search list when click outside the input
@@ -211,6 +217,36 @@ export default {
       setTimeout(() => {
         this.searchList = [];
       }, 300);
+      this.searchFocusIndex = null;
+    },
+    handleKeydown(event) {
+      switch (event.key) {
+        case 'ArrowDown':
+          if (this.searchFocusIndex + 1 < this.searchList.length) {
+            return this.searchFocusIndex++;
+          }
+          if (!this.searchList.length) {
+            this.input();
+          }
+          break;
+        case 'ArrowUp':
+          if (this.searchFocusIndex - 1 >= 0) {
+            return this.searchFocusIndex--;
+          }
+          if (!this.searchList.length) {
+            this.input();
+          }
+          break;
+        case 'Enter':
+          this.updateSelected([ ...this.next, this.searchList[this.searchFocusIndex] ]);
+          this.handleFocusOut();
+          this.input();
+          break;
+        case 'Escape':
+          this.handleFocusOut();
+          event.stopPropagation();
+          break;
+      }
     },
     watchValue () {
       this.error = this.modelValue.error;
