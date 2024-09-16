@@ -520,7 +520,9 @@ module.exports = {
         const window = new JSDOM('').window;
         const DOMPurify = createDOMPurify(window);
         const dirty = await readFile(path);
-        const clean = DOMPurify.sanitize(dirty);
+        const clean = DOMPurify.sanitize(dirty, {
+          ADD_TAGS: [ 'use' ]
+        });
         return writeFile(path, clean);
       },
       getFileGroup(extension) {
