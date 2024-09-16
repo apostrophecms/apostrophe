@@ -70,7 +70,6 @@
           @item-clicked="editRelationship"
         />
         <AposSearchList
-          ref="searchList"
           :aria-id="`apos-relationship-${field._id}`"
           :list="searchList"
           :selected-items="next"
