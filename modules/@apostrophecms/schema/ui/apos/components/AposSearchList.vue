@@ -23,7 +23,7 @@
       v-apos-tooltip="getTooltip(item)"
       aria-selected="false"
       :class="getClasses(item, index)"
-      @click="select(item, $event)"
+      @click="select(item)"
     >
       <div
         v-if="item?.attachment?._urls?.['one-sixth']"

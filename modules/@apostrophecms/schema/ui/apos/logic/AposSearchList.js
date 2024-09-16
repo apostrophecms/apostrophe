@@ -68,11 +68,7 @@ export default {
   },
   emits: [ 'select' ],
   methods: {
-    select(item, $event) {
-      // if (item.disabled) {
-      //   $event.stopPropagation();
-      //   return;
-      // }
+    select(item) {
       const selectedItems = this.selectedItems;
       if (!selectedItems.some(selectedItem => selectedItem._id === item._id)) {
         // Never modify a prop
