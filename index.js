@@ -524,6 +524,7 @@ async function apostrophe(options, telemetry, rootSpan) {
     // it also makes sure we encounter mocha along the way
     // and throws an exception if we don't
     function findTestModule() {
+      // TODO: support esm
       let m = module;
       const testFor = `node_modules${path.sep}mocha`;
       if (!require.main.filename.includes(testFor)) {
