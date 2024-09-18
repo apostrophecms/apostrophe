@@ -339,7 +339,9 @@ export default {
   .apos-media-uploader__secondary {
     @include apos-p-reset();
 
-    text-align: center;
+    & {
+      text-align: center;
+    }
   }
 
   .apos-media-uploader__secondary {
