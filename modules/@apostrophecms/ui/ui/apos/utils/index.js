@@ -1,7 +1,7 @@
-module.exports = {
+export {
   debounceAsync,
   // BC alias
-  debounce: debounceAsync,
+  debounceAsync as debounce,
   throttle
 };
 
