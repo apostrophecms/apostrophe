@@ -4,7 +4,10 @@ import url from 'node:url';
 import t from '../test-lib/test.js';
 
 describe('Apostrophe ESM', function() {
-  t.setupPackages('tests');
+  t.setupPackages({
+    folder: 'tests',
+    type: 'module'
+  });
   this.timeout(t.timeout);
 
   let apos;

@@ -527,6 +527,7 @@ async function apostrophe(options, telemetry, rootSpan) {
       secret: 'irrelevant'
     });
     const m = self.root;
+    checkTestModule();
     // Allow tests to be in test/ or in tests/
     const testDir = path.dirname(m.filename);
     const moduleDir = testDir.replace(/\/tests?$/, '');
@@ -544,6 +545,14 @@ async function apostrophe(options, telemetry, rootSpan) {
     if (!fs.existsSync(testDir + '/node_modules')) {
       fs.mkdirSync(testDir + '/node_modules' + pkgNamespace, { recursive: true });
       fs.symlinkSync(moduleDir, testDir + '/node_modules/' + pkgName, 'dir');
+    }
+    // Makes sure we encounter mocha along the way
+    // and throws an exception if we don't
+    function checkTestModule() {
+      const testFor = `node_modules${path.sep}mocha`;
+      if (!require.main.filename.includes(testFor)) {
+        throw new Error('mocha does not seem to be running, is this really a test?');
+      }
     }
   }
 

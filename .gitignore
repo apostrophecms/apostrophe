@@ -42,7 +42,6 @@ tests/public/modules/*
 tests/public/css/master-*
 tests/locales
 /tests/node_modules
-tests/package.json
 tests/public
 tests/apos-build
 tests/public/css/*.css
