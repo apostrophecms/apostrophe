@@ -1,22 +1,22 @@
 import { strict as assert } from 'node:assert';
 import path from 'node:path';
 import url from 'node:url';
-import t from '../test-lib/test.js';
+import util from 'node:util';
+import { exec } from 'node:child_process';
+import t from '../../test-lib/test.js';
+import app from './app.js';
 
 describe('Apostrophe ESM', function() {
-  t.setupPackages({
-    folder: 'tests',
-    type: 'module'
-  });
   this.timeout(t.timeout);
 
   let apos;
 
   before(async function() {
+    await util.promisify(exec)('npm install', { cwd: path.resolve(process.cwd(), 'test/esm-project') });
+
     apos = await t.create({
-      root: import.meta,
-      modules: {
-      }
+      ...app,
+      root: import.meta
     });
   });
 

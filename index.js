@@ -227,49 +227,18 @@ async function apostrophe(options, telemetry, rootSpan) {
     Object.assign(self, require('./modules/@apostrophecms/module/lib/events.js')(self));
 
     // Determine root module and root directory
-    self.buildRoot = (options) => {
-      self.root = options.root;
 
-      if (self.root.url) {
-        // Apostrophe was started from an ESM project
-        const filename = url.fileURLToPath(self.root.url);
-
-        self.root = {
-          filename,
-          require: async (id) => import(id)
-        };
-
-        return;
-      }
-
-      // Legacy commonjs logic
-      let _module = module;
-      let m = _module;
-      while (m.parent && m.parent.filename) {
-        // The test file is the root as far as we are concerned,
-        // not mocha itself
-        if (m.parent.filename.match(/\/node_modules\/mocha\//)) {
-          self.root = {
-            filename: m.filename,
-            require: async (id) => m.require(id)
-          };
-
-          return;
-        }
-        m = m.parent;
-        _module = m;
-      }
-
-      self.root = {
-        filename: _module.filename,
-        require: async (id) => _module.require(id)
-      };
-    };
-
-    self.buildRoot(options);
-    self.rootDir = options.rootDir || path.dirname(self.root.filename);
-    self.npmRootDir = options.npmRootDir || self.rootDir;
-    self.selfDir = __dirname;
+    const {
+      root,
+      rootDir,
+      npmRootDir,
+      selfDir
+    } = buildRoot(options);
+    self.root = root;
+    self.rootDir = rootDir;
+    self.npmRootDir = npmRootDir;
+    self.selfDir = selfDir;
+    self.getNpmPath = (name, baseDir = self.npmRootDir) => getNpmPath(name, baseDir);
 
     // Signals to various (build related) places that we are running a pnpm installation.
     // The relevant option, if set, has a higher precedence over the automated check.
@@ -441,34 +410,29 @@ async function apostrophe(options, telemetry, rootSpan) {
   function autodetectBundles() {
     const modules = _.keys(self.options.modules);
     _.each(modules, function(name) {
-      const npmPath = getNpmPath(name);
-      if (!npmPath) {
-        return;
-      }
-      const module = require(npmPath);
-      if (module.bundle) {
-        self.options.bundles = (self.options.bundles || []).concat(name);
-        _.each(module.bundle.modules, function(name) {
-          if (!_.has(self.options.modules, name)) {
-            const bundledModule = require(path.dirname(npmPath) + '/' + module.bundle.directory + '/' + name);
-            if (bundledModule.improve) {
-              self.options.modules[name] = {};
+      try {
+        const npmPath = getNpmPath(name, self.rootDir);
+        if (!npmPath) {
+          return;
+        }
+
+        const module = require(npmPath);
+        if (module.bundle) {
+          self.options.bundles = (self.options.bundles || []).concat(name);
+          _.each(module.bundle.modules, function(name) {
+            if (!_.has(self.options.modules, name)) {
+              const bundledModule = require(path.dirname(npmPath) + '/' + module.bundle.directory + '/' + name);
+              if (bundledModule.improve) {
+                self.options.modules[name] = {};
+              }
             }
-          }
-        });
+          });
+        }
+      } catch (e) {
+        // Not found via npm. This does not mean it doesn't
+        // exist as a project-level thing
       }
     });
-  }
-
-  function getNpmPath(name) {
-    const parentPath = path.resolve(self.npmRootDir);
-    try {
-      return npmResolve.sync(name, { basedir: parentPath });
-    } catch (e) {
-      // Not found via npm. This does not mean it doesn't
-      // exist as a project-level thing
-      return null;
-    }
   }
 
   function acceptGlobalOptions() {
@@ -790,4 +754,63 @@ function clusterFork() {
 function respawn(worker) {
   console.error(`Respawning worker process ${worker.process.pid}`);
   clusterFork();
+}
+
+module.exports.buildRoot = buildRoot;
+
+function buildRoot(options) {
+  const root = getRoot(options);
+  const rootDir = options.rootDir || path.dirname(root.filename);
+  const npmRootDir = options.npmRootDir || rootDir;
+  const selfDir = __dirname;
+
+  return {
+    root,
+    rootDir,
+    npmRootDir,
+    selfDir
+  };
+}
+function getRoot(options) {
+  const root = options.root;
+  if (root?.filename && root?.require) {
+    return root;
+  }
+
+  if (root?.url) {
+    // Apostrophe was started from an ESM project
+    const filename = url.fileURLToPath(root.url);
+
+    return {
+      filename,
+      require: async (id) => import(id)
+    };
+  }
+
+  // Legacy commonjs logic
+  function getLegacyRoot() {
+    let _module = module;
+    let m = _module;
+    while (m.parent && m.parent.filename) {
+      // The test file is the root as far as we are concerned,
+      // not mocha itself
+      if (m.parent.filename.match(/\/node_modules\/mocha\//)) {
+        return m;
+      }
+      m = m.parent;
+      _module = m;
+    }
+    return _module;
+  }
+  const legacyRoot = getLegacyRoot();
+  return {
+    filename: legacyRoot.filename,
+    require: async (id) => legacyRoot.require(id)
+  };
+};
+
+module.exports.getNpmPath = getNpmPath;
+
+function getNpmPath(name, baseDir) {
+  return npmResolve.sync(name, { basedir: path.resolve(baseDir) });
 }

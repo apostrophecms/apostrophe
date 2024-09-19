@@ -25,10 +25,12 @@ test/public/css/master-*
 test/locales
 /test/node_modules
 /test/workspaces-project/node_modules
+/test/esm-project/node_modules
 test/package.json
 test/public
 test/apos-build
 test/workspaces-project/node_modules
+test/esm-project/node_modules
 
 # Dont commit test generated css
 test/public/css/*.css
@@ -36,17 +38,6 @@ test/public/css/master-*.less
 
 # Dont commit test uploads
 test/public/uploads
-
-# tests files - ESM only
-tests/public/modules/*
-tests/public/css/master-*
-tests/locales
-/tests/node_modules
-tests/public
-tests/apos-build
-tests/public/css/*.css
-tests/public/css/master-*.less
-tests/public/uploads
 
 # vim swp files
 .*.sw*
