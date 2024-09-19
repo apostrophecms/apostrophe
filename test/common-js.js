@@ -1,16 +1,14 @@
 const { strict: assert } = require('node:assert');
 const t = require('../test-lib/test.js');
 
-describe('Apostrophe CJS', function() {
+describe('Apostrophe CommonJS', function() {
   this.timeout(t.timeout);
 
   let apos;
 
   before(async function() {
     apos = await t.create({
-      root: module,
-      modules: {
-      }
+      root: module
     });
   });
 
@@ -20,14 +18,17 @@ describe('Apostrophe CJS', function() {
 
   it('should have root, rootDir, npmRootDir', function() {
     const actual = {
-      root: apos.root,
+      root: {
+        filename: apos.root.filename,
+        require: apos.root.require.toString()
+      },
       rootDir: apos.rootDir,
       npmRootDir: apos.npmRootDir
     };
     const expected = {
       root: {
-        filename: __filename,
-        require: actual.root.require
+        filename: module.filename,
+        require: module.require.toString()
       },
       rootDir: __dirname,
       npmRootDir: __dirname
