@@ -1,6 +1,4 @@
 const { strict: assert } = require('node:assert');
-const path = require('node:path');
-const url = require('node:url');
 const t = require('../test-lib/test.js');
 
 describe('Apostrophe CJS', function() {
