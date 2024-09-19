@@ -1,6 +1,7 @@
 // this should be loaded first
 const opentelemetry = require('./lib/opentelemetry');
 const path = require('path');
+const url = require('url');
 const _ = require('lodash');
 const argv = require('boring')({ end: true });
 const fs = require('fs');
@@ -226,10 +227,50 @@ async function apostrophe(options, telemetry, rootSpan) {
     Object.assign(self, require('./modules/@apostrophecms/module/lib/events.js')(self));
 
     // Determine root module and root directory
-    self.root = options.root || getRoot();
+    self.buildRoot = (options) => {
+      self.root = options.root;
+
+      if (self.root.url) {
+        // Apostrophe was started from an ESM project
+        const filename = url.fileURLToPath(self.root.url);
+
+        self.root = {
+          filename,
+          require: async (id) => import(id)
+        };
+
+        return;
+      }
+
+      // Legacy commonjs logic
+      let _module = module;
+      let m = _module;
+      while (m.parent && m.parent.filename) {
+        // The test file is the root as far as we are concerned,
+        // not mocha itself
+        if (m.parent.filename.match(/\/node_modules\/mocha\//)) {
+          self.root = {
+            filename: m.filename,
+            require: async (id) => m.require(id)
+          };
+
+          return;
+        }
+        m = m.parent;
+        _module = m;
+      }
+
+      self.root = {
+        filename: _module.filename,
+        require: async (id) => _module.require(id)
+      };
+    };
+
+    self.buildRoot(options);
     self.rootDir = options.rootDir || path.dirname(self.root.filename);
     self.npmRootDir = options.npmRootDir || self.rootDir;
     self.selfDir = __dirname;
+
     // Signals to various (build related) places that we are running a pnpm installation.
     // The relevant option, if set, has a higher precedence over the automated check.
     self.isPnpm = options.pnpm ??
@@ -370,21 +411,6 @@ async function apostrophe(options, telemetry, rootSpan) {
     return config;
   }
 
-  function getRoot() {
-    let _module = module;
-    let m = _module;
-    while (m.parent && m.parent.filename) {
-      // The test file is the root as far as we are concerned,
-      // not mocha itself
-      if (m.parent.filename.match(/\/node_modules\/mocha\//)) {
-        return m;
-      }
-      m = m.parent;
-      _module = m;
-    }
-    return _module;
-  }
-
   function nestedModuleSubdirs() {
     if (!options.nestedModuleSubdirs) {
       return;
@@ -415,16 +441,16 @@ async function apostrophe(options, telemetry, rootSpan) {
   function autodetectBundles() {
     const modules = _.keys(self.options.modules);
     _.each(modules, function(name) {
-      const path = getNpmPath(name);
-      if (!path) {
+      const npmPath = getNpmPath(name);
+      if (!npmPath) {
         return;
       }
-      const module = require(path);
+      const module = require(npmPath);
       if (module.bundle) {
         self.options.bundles = (self.options.bundles || []).concat(name);
         _.each(module.bundle.modules, function(name) {
           if (!_.has(self.options.modules, name)) {
-            const bundledModule = require(require('path').dirname(path) + '/' + module.bundle.directory + '/' + name);
+            const bundledModule = require(path.dirname(npmPath) + '/' + module.bundle.directory + '/' + name);
             if (bundledModule.improve) {
               self.options.modules[name] = {};
             }
@@ -500,9 +526,9 @@ async function apostrophe(options, telemetry, rootSpan) {
       port: 7900,
       secret: 'irrelevant'
     });
-    const m = findTestModule();
+    const m = self.root;
     // Allow tests to be in test/ or in tests/
-    const testDir = require('path').dirname(m.filename);
+    const testDir = path.dirname(m.filename);
     const moduleDir = testDir.replace(/\/tests?$/, '');
     if (testDir === moduleDir) {
       throw new Error('Test file must be in test/ or tests/ subdirectory of module');
@@ -518,27 +544,6 @@ async function apostrophe(options, telemetry, rootSpan) {
     if (!fs.existsSync(testDir + '/node_modules')) {
       fs.mkdirSync(testDir + '/node_modules' + pkgNamespace, { recursive: true });
       fs.symlinkSync(moduleDir, testDir + '/node_modules/' + pkgName, 'dir');
-    }
-
-    // Not quite superfluous: it'll return self.root, but
-    // it also makes sure we encounter mocha along the way
-    // and throws an exception if we don't
-    function findTestModule() {
-      // TODO: support esm
-      let m = module;
-      const testFor = `node_modules${path.sep}mocha`;
-      if (!require.main.filename.includes(testFor)) {
-        throw new Error('mocha does not seem to be running, is this really a test?');
-      }
-      while (m) {
-        if (m.parent && m.parent.filename.includes(testFor)) {
-          return m;
-        } else if (!m.parent) {
-          // Mocha v10 doesn't inject mocha paths inside `module`, therefore, we only detect the parent until the last parent. But we can get Mocha running using `require.main` - Amin
-          return m;
-        }
-        m = m.parent;
-      }
     }
   }
 
@@ -630,7 +635,7 @@ async function apostrophe(options, telemetry, rootSpan) {
       // seemingly unused modules with "theme" in the name
       if (!validSteps.includes(name)) {
         try {
-          const submodule = require(require('path').resolve(`${self.localModules}/${name}`));
+          const submodule = require(path.resolve(`${self.localModules}/${name}`));
           if (submodule && submodule.options && submodule.options.ignoreUnusedFolderWarning) {
             return;
           }
