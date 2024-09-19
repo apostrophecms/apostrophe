@@ -253,36 +253,38 @@ function onLeave() {
 }
 
 async function trapFocus() {
-  const elementSelectors = [
-    '[tabindex]',
-    '[href]',
-    'input',
-    'select',
-    'textarea',
-    'button',
-    '[data-apos-focus-priority]'
-  ];
+  if (modalEl?.value) {
+    const elementSelectors = [
+      '[tabindex]',
+      '[href]',
+      'input',
+      'select',
+      'textarea',
+      'button',
+      '[data-apos-focus-priority]'
+    ];
 
-  const selector = elementSelectors
-    .map(addExcludingAttributes)
-    .join(', ');
+    const selector = elementSelectors
+      .map(addExcludingAttributes)
+      .join(', ');
 
-  const elementsToFocus = [ ...modalEl.value.querySelectorAll(selector) ]
-    .filter(isElementVisible);
+    const elementsToFocus = [ ...modalEl.value.querySelectorAll(selector) ]
+      .filter(isElementVisible);
 
-  store.updateModalData(props.modalData.id, { elementsToFocus });
+    store.updateModalData(props.modalData.id, { elementsToFocus });
 
-  const firstElementToFocus = findPriorityElementOrFirst(elementsToFocus);
-  const foundPriorityElement = firstElementToFocus.hasAttribute('data-apos-focus-priority');
+    const firstElementToFocus = findPriorityElementOrFirst(elementsToFocus);
+    const foundPriorityElement = firstElementToFocus?.hasAttribute('data-apos-focus-priority');
 
-  focusElement(props.modalData.focusedElement, findPriorityElementOrFirst(elementsToFocus));
+    focusElement(props.modalData.focusedElement, findPriorityElementOrFirst(elementsToFocus));
 
-  // Components render at various times and can't be counted on to be available on modal's mount
-  // Update the trap focus list until a data-apos-focus-priority element is found or the retry limit is reached
-  if (!foundPriorityElement && findPriorityFocusElementRetryMax.value > currentPriorityFocusElementRetry.value) {
-    await new Promise(resolve => setTimeout(resolve, 200));
-    currentPriorityFocusElementRetry.value++;
-    trapFocus();
+    // // Components render at various times and can't be counted on to be available on modal's mount
+    // // Update the trap focus list until a data-apos-focus-priority element is found or the retry limit is reached
+    if (!foundPriorityElement && findPriorityFocusElementRetryMax.value > currentPriorityFocusElementRetry.value) {
+      await new Promise(resolve => setTimeout(resolve, 200));
+      currentPriorityFocusElementRetry.value++;
+      trapFocus();
+    }
   }
 
   function addExcludingAttributes(element) {
