@@ -421,6 +421,16 @@ describe('Pages', function() {
     assert.strictEqual(page.rank, 1);
   });
 
+  it('is not able to move a page under itself', async function() {
+    await assert.rejects(
+      apos.page.move(apos.task.getReq(), 'cousin:en:published', 'cousin:en:published', 'lastChild'),
+      {
+        name: 'forbidden',
+        message: 'Cannot move a page under itself'
+      }
+    );
+  });
+
   it('is able to move root/cousin before root/parent/child', async function() {
     // 'Cousin' _id === 4312
     // 'Child' _id === 2341

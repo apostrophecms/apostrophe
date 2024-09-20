@@ -14,6 +14,7 @@
 
 ### Fixes
 
+* The `@apostrophecms/page` module APIs no longer allow a page to become a child of itself. Thanks to [Maarten Marx](https://github.com/Pixelguymm) for reporting the issue.
 * Uploaded SVGs now permit `<use>` tags granted their `xlink:href` property is a local reference and begins with the `#` character. This improves SVG support while mitgating XSS vulnerabilities.
 * Default properties of object fields present in a widget now populate correctly even if never focused in the editor.
 
