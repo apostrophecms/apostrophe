@@ -519,8 +519,15 @@ module.exports = {
         const writeFile = require('util').promisify(fs.writeFile);
         const window = new JSDOM('').window;
         const DOMPurify = createDOMPurify(window);
+        DOMPurify.addHook('afterSanitizeAttributes', node => {
+          if (node.hasAttribute('xlink:href') && !node.getAttribute('xlink:href').match(/^#/)) {
+            node.remove();
+          }
+        });
         const dirty = await readFile(path);
-        const clean = DOMPurify.sanitize(dirty);
+        const clean = DOMPurify.sanitize(dirty, {
+          ADD_TAGS: [ 'use' ]
+        });
         return writeFile(path, clean);
       },
       getFileGroup(extension) {
