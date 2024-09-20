@@ -188,11 +188,13 @@
 .apos-input-array-inline-table-header-cell {
   @include type-base;
 
-  height: 40px;
-  padding-right: $spacing-base;
-  padding-left: $spacing-base;
-  text-align: left;
-  background-color: var(--a-base-9);
+  & {
+    height: 40px;
+    padding-right: $spacing-base;
+    padding-left: $spacing-base;
+    text-align: left;
+    background-color: var(--a-base-9);
+  }
 }
 
 .apos-input-array-inline-header {
@@ -270,14 +272,16 @@
 .apos-input-array-inline-label {
   @include type-large;
 
-  margin: 0;
-  padding-top: $spacing-base;
-  padding-bottom: $spacing-base;
-  // stylelint-disable scale-unlimited/declaration-strict-value
-  color: currentcolor; 
-  // stylelint-enable scale-unlimited/declaration-strict-value
-  text-align: left;
-  transition: background-color 400ms ease;
+  & {
+    margin: 0;
+    padding-top: $spacing-base;
+    padding-bottom: $spacing-base;
+    // stylelint-disable scale-unlimited/declaration-strict-value
+    color: currentcolor;
+    // stylelint-enable scale-unlimited/declaration-strict-value
+    text-align: left;
+    transition: background-color 400ms ease;
+  }
 }
 
 .apos-input-array-inline-all-controls {
@@ -302,12 +306,14 @@
   .apos-input-array-inline-item {
     @include apos-transition();
 
-    overflow: hidden;
-    padding: 0;
-    border: 1px solid var(--a-base-9);
-    outline: 1px solid transparent;
-    background-color: var(--a-base-10);
-    border-radius: var(--a-border-radius);
+    & {
+      overflow: hidden;
+      padding: 0;
+      border: 1px solid var(--a-base-9);
+      outline: 1px solid transparent;
+      background-color: var(--a-base-10);
+      border-radius: var(--a-border-radius);
+    }
 
     &.apos-is-dragging {
       // stylelint-disable declaration-no-important
@@ -359,7 +365,7 @@
     :deep(.apos-input-array-inline-empty .material-design-icon__svg) {
       fill: var(--a-base-7);
     }
-    
+
     // stylelint-disable max-nesting-depth
     .apos-input-array-inline-item {
       border-color: var(--a-base-8);
@@ -370,7 +376,7 @@
       &--engaged > .apos-input-array-inline-header {
         color: var(--a-text-primary);
       }
-      
+
       .apos-input-array-inline-header {
         background-color: var(--a-base-8);
       }
