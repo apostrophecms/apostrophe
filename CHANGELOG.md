@@ -5,6 +5,8 @@
 ### Adds
 
 * Apostrophe now automatically adds the appropriate default values for new properties in the schema, even for existing documents in the database. This is done automatically during the migration phase of startup.
+* Adds focus states for media library's Uploader tile
+* Adds focus states file attachment's input UI
 * Simplified importing rich text widgets via the REST API. If you  you have HTML that contains `img` tags pointing to existing images, you can now import them all quickly. When supplying the rich text widget object, include an `import` property with an `html` subproperty, rather than the usual `content` property. You can optionally provide a `baseUrl` subproperty as well. Any images present in `html` will be imported automatically and the correct `figure` tags will be added to the new rich text widget, along with any other markup acceptable to the widget's configuration.
 
 ### Changes
@@ -14,6 +16,7 @@
 ### Fixes
 
 * Apostrophe's migration logic is no longer executed twice on every startup and three times in the migration task. It is executed exactly once, always at the same point in the startup process. This bug did not cause significant performance issues because migrations were only executed once, but there is a small performance improvement.
+* Uploaded SVGs now permit `<use>` tags granted their `xlink:href` property is a local reference and begins with the `#` character. This improves SVG support while mitgating XSS vulnerabilities.
 * Default properties of object fields present in a widget now populate correctly even if never focused in the editor.
 
 ## 4.7.0 (2024-09-05)
