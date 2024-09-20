@@ -242,6 +242,7 @@ module.exports = {
     self.addDuplicateParkedPagesMigration();
     self.apos.migration.add('deduplicateRanks2', self.deduplicateRanks2Migration);
     self.apos.migration.add('missingLastPublishedAt', self.missingLastPublishedAtMigration);
+    self.apos.migration.add('ensureHomeSlug', self.ensureHomeSlugMigration);
     await self.createIndexes();
     self.composeFilters();
   },
@@ -2978,6 +2979,22 @@ database.`);
           }, {
             $set: {
               lastPublishedAt: draft.lastPublishedAt
+            }
+          });
+        });
+      },
+      ensureHomeSlugMigration() {
+        return self.apos.migration.eachDoc({
+          parkedId: 'home'
+        }, async doc => {
+          if (doc.slug === '/') {
+            return;
+          }
+          await self.apos.doc.db.updateOne({
+            _id: doc._id
+          }, {
+            $set: {
+              slug: '/'
             }
           });
         });
