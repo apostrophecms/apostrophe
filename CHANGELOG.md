@@ -11,7 +11,7 @@
 
 * The various implementations of `newInstance` found in Apostrophe, e.g. for widgets, array items, relationship fields and documents themselves, have been consolidated in one implementation. The same code is now reused both on the front and the back end, ensuring the same result without the need to introduce additional back end API calls.
 * Internal methods `mergeConfiguration`, `autodetectBundles`, `lintModules`, `nestedModuleSubdirs` and `testDir` are now async.
-* `verifyLocales` and `i18n.getLocales` are now async.
+* `verifyLocales` and `i18n.getLocales`, `express.getSessionOptions` are now async.
 
 ### Fixes
 

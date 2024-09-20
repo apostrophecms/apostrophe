@@ -296,7 +296,10 @@ module.exports = {
         req.aposStack = [];
         return next();
       },
-      sessions: expressSession(self.getSessionOptions()),
+      async sessions(req, res, next) {
+        expressSession(await self.getSessionOptions());
+        next();
+      },
       cookieParser: cookieParser(),
       apiKeys(req, res, next) {
         const key = req.query.apikey || req.query.apiKey || getAuthorizationApiKey();
@@ -489,7 +492,7 @@ module.exports = {
       },
 
       // Options to be passed to the express session options middleware
-      getSessionOptions() {
+      async getSessionOptions() {
         if (self.sessionOptions) {
           return self.sessionOptions;
         }
@@ -558,8 +561,7 @@ module.exports = {
             sessionOptions.store = MongoStore.create(sessionOptions.store.options);
           } else {
             // require from project's dependencies
-            // TODO: await, import is async
-            Store = self.apos.root.import(sessionOptions.store.name)(expressSession);
+            Store = await self.apos.root.import(sessionOptions.store.name)(expressSession);
             sessionOptions.store = new Store(sessionOptions.store.options);
           }
         }
