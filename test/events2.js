@@ -45,10 +45,12 @@ describe('Promisified Events: @apostrophecms/doc-type:beforeInsert', function() 
               {
                 type: 'default-page',
                 findMeAgain: true,
-                title: 'Test',
                 slug: '/test',
                 visibility: 'public',
-                parkedId: 'test'
+                parkedId: 'test',
+                _defaults: {
+                  title: 'Test'
+                }
               }
             ]
           }

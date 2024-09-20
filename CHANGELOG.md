@@ -1,5 +1,11 @@
 # Changelog
 
+## 4.7.1 (2024-09-20)
+
+### Fixes
+
+* Ensure parked fields are not modified for parked pages when not configured in `_defaults`.
+
 ## 4.7.0 (2024-09-05)
 
 ### Adds

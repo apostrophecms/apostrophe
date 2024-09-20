@@ -846,6 +846,21 @@ module.exports = {
   },
   handlers(self) {
     return {
+      '@apostrophecms/page-type:beforeSave': {
+        handleParkedFieldsOverride(req, doc) {
+          if (!doc.parkedId) {
+            return;
+          }
+          const parked = self.parked.find(p => p.parkedId === doc.parkedId);
+          if (!parked) {
+            return;
+          }
+          const parkedFields = Object.keys(parked).filter(field => field !== '_defaults');
+          for (const parkedField of parkedFields) {
+            doc[parkedField] = parked[parkedField];
+          }
+        }
+      },
       beforeSend: {
         async addLevelAttributeToBody(req) {
           // Add level as a data attribute on the body tag
