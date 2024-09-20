@@ -1458,6 +1458,10 @@ database.`);
           const manager = self.apos.doc.getManager(moved.type);
           await manager.emit('beforeMove', req, moved, target, position);
           determineRankAndNewParent();
+          // Simple check to see if we are moving the page beneath itself
+          if (parent.path.split('/').includes(moved.aposDocId)) {
+            throw self.apos.error('forbidden', 'Cannot move a page under itself');
+          }
           if (!moved._edit) {
             throw self.apos.error('forbidden');
           }
