@@ -847,7 +847,7 @@ module.exports = {
   handlers(self) {
     return {
       '@apostrophecms/page-type:beforeSave': {
-        handleParkedSlugOverride(req, doc) {
+        handleParkedFieldsOverride(req, doc) {
           if (!doc.parkedId) {
             return;
           }
@@ -855,8 +855,9 @@ module.exports = {
           if (!parked) {
             return;
           }
-          if (parked.slug && !parked._defaults?.slug) {
-            doc.slug = parked.slug;
+          const parkedFields = Object.keys(parked).filter(field => field !== '_defaults');
+          for (const parkedField of parkedFields) {
+            doc[parkedField] = parked[parkedField];
           }
         }
       },

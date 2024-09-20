@@ -272,7 +272,7 @@ describe('Parked Pages', function() {
     await validate(apos6, [ '/', '/archive', '/default1', '/default2', '/default3', '/default3/child1' ]);
   });
 
-  it('slug override on save is possible only when slug is configured as default', async function () {
+  it('field override on save is possible only when it is configured as default', async function () {
     this.timeout(20000);
     await t.destroy(apos6);
     apos6 = await t.create({

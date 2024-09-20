@@ -16,7 +16,7 @@
 
 * Uploaded SVGs now permit `<use>` tags granted their `xlink:href` property is a local reference and begins with the `#` character. This improves SVG support while mitgating XSS vulnerabilities.
 * Default properties of object fields present in a widget now populate correctly even if never focused in the editor.
-* Ensure `slug` is not modified for parked pages when not configured in `_defaults`.
+* Ensure parked fields are not modified for parked pages when not configured in `_defaults`.
 
 ## 4.7.0 (2024-09-05)
 
