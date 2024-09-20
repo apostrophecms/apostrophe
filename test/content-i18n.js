@@ -96,7 +96,7 @@ describe('content-i18n', function() {
     peoplePageFrCA = await apos.page.find(frCAReq, {
       parkedId: 'people'
     }).toObject();
-    assert(peoplePageFrCA.title === 'Altered');
+    assert(peoplePageFrCA.title === 'People');
   });
 
   let home;
