@@ -777,20 +777,27 @@ function getRoot(options) {
   if (root?.filename && root?.require) {
     return {
       filename: root.filename,
-      import: async (id) => root.require(id)
+      import: async (id) => root.require(id),
+      require: (id) => root.require(id)
     };
   }
 
   if (root?.url) {
     // Apostrophe was started from an ESM project
     const filename = url.fileURLToPath(root.url);
+    const dynamicImport = async (id) => {
+      const { default: defaultExport, ...rest } = await import(id);
+
+      return defaultExport || rest;
+    };
 
     return {
       filename,
-      import: async (id) => {
-        const { default: defaultExport, ...rest } = await import(id);
+      import: dynamicImport,
+      require: (id) => {
+        console.warn(`self.apos.root.require is now async, please verify that you await the promise (${id})`);
 
-        return defaultExport || rest;
+        return dynamicImport(id);
       }
     };
   }
@@ -813,7 +820,8 @@ function getRoot(options) {
   const legacyRoot = getLegacyRoot();
   return {
     filename: legacyRoot.filename,
-    import: async (id) => legacyRoot.require(id)
+    import: async (id) => legacyRoot.require(id),
+    require: (id) => legacyRoot.require(id)
   };
 };
 
