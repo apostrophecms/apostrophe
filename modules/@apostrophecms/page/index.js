@@ -846,6 +846,20 @@ module.exports = {
   },
   handlers(self) {
     return {
+      '@apostrophecms/page-type:beforeSave': {
+        handleParkedSlugOverride(req, doc) {
+          if (!doc.parkedId) {
+            return;
+          }
+          const parked = self.parked.find(p => p.parkedId === doc.parkedId);
+          if (!parked) {
+            return;
+          }
+          if (parked.slug && !parked._defaults?.slug) {
+            doc.slug = parked.slug;
+          }
+        }
+      },
       beforeSend: {
         async addLevelAttributeToBody(req) {
           // Add level as a data attribute on the body tag
