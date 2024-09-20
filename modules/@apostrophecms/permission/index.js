@@ -275,31 +275,31 @@ module.exports = {
       // Returns an object with properties describing the permissions associated
       // with the given module, which should be a piece type or the `@apostrophecms/any-page-type`
       // module. Used to populate the permission grid on the front end
-      describePermissionSet(req, module, options = {}) {
+      describePermissionSet(req, apostropheModule, options = {}) {
         const permissionSet = {
-          label: module.options.permissionsLabel || module.options.pluralLabel || module.options.label,
-          name: module.__meta.name,
-          singleton: module.options.singleton,
-          page: module.__meta.name === '@apostrophecms/any-page-type',
+          label: apostropheModule.options.permissionsLabel || apostropheModule.options.pluralLabel || apostropheModule.options.label,
+          name: apostropheModule.__meta.name,
+          singleton: apostropheModule.options.singleton,
+          page: apostropheModule.__meta.name === '@apostrophecms/any-page-type',
           ...options
         };
         const permissions = [];
-        if (!module.options.singleton) {
+        if (!apostropheModule.options.singleton) {
           permissions.push({
             name: 'create',
             label: 'apostrophe:create',
-            value: self.can(req, 'create', module.name)
+            value: self.can(req, 'create', apostropheModule.name)
           });
         }
         permissions.push({
           name: 'edit',
-          label: module.options.singleton ? 'apostrophe:modify' : 'apostrophe:modifyOrDelete',
-          value: self.can(req, 'edit', module.name)
+          label: apostropheModule.options.singleton ? 'apostrophe:modify' : 'apostrophe:modifyOrDelete',
+          value: self.can(req, 'edit', apostropheModule.name)
         });
         permissions.push({
           name: 'publish',
           label: 'apostrophe:publish',
-          value: self.can(req, 'publish', module.name)
+          value: self.can(req, 'publish', apostropheModule.name)
         });
         permissionSet.permissions = permissions;
         return permissionSet;

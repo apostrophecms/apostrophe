@@ -5,10 +5,13 @@
 ### Adds
 
 * Simplified importing rich text widgets via the REST API. If you  you have HTML that contains `img` tags pointing to existing images, you can now import them all quickly. When supplying the rich text widget object, include an `import` property with an `html` subproperty, rather than the usual `content` property. You can optionally provide a `baseUrl` subproperty as well. Any images present in `html` will be imported automatically and the correct `figure` tags will be added to the new rich text widget, along with any other markup acceptable to the widget's configuration.
+* Add support for ESM projects.
 
 ### Changes
 
 * The various implementations of `newInstance` found in Apostrophe, e.g. for widgets, array items, relationship fields and documents themselves, have been consolidated in one implementation. The same code is now reused both on the front and the back end, ensuring the same result without the need to introduce additional back end API calls.
+* Internal methods `mergeConfiguration`, `autodetectBundles`, `lintModules`, `nestedModuleSubdirs` and `testDir` are now async.
+* `verifyLocales` and `i18n.getLocales` are now async.
 
 ### Fixes
 

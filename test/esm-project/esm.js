@@ -33,7 +33,7 @@ describe('Apostrophe ESM', function() {
     const expected = {
       root: {
         filename: url.fileURLToPath(import.meta.url),
-        require: actual.root.require
+        import: actual.root.import
       },
       rootDir: path.dirname(url.fileURLToPath(import.meta.url)),
       npmRootDir: path.dirname(url.fileURLToPath(import.meta.url))

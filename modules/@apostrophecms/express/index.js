@@ -558,7 +558,8 @@ module.exports = {
             sessionOptions.store = MongoStore.create(sessionOptions.store.options);
           } else {
             // require from project's dependencies
-            Store = self.apos.root.require(sessionOptions.store.name)(expressSession);
+            // TODO: await, import is async
+            Store = self.apos.root.import(sessionOptions.store.name)(expressSession);
             sessionOptions.store = new Store(sessionOptions.store.options);
           }
         }

@@ -20,7 +20,7 @@ describe('Apostrophe CommonJS', function() {
     const actual = {
       root: {
         filename: apos.root.filename,
-        require: apos.root.require.toString()
+        import: apos.root.import.toString()
       },
       rootDir: apos.rootDir,
       npmRootDir: apos.npmRootDir
@@ -28,7 +28,7 @@ describe('Apostrophe CommonJS', function() {
     const expected = {
       root: {
         filename: module.filename,
-        require: module.require.toString()
+        import: module.require.toString()
       },
       rootDir: __dirname,
       npmRootDir: __dirname

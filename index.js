@@ -214,8 +214,8 @@ async function apostrophe(options, telemetry, rootSpan) {
   try {
     const matches = process.version.match(/^v(\d+)/);
     const version = parseInt(matches[1]);
-    if (version < 12) {
-      throw new Error('Apostrophe 3.x requires at least Node.js 12.x.');
+    if (version < 18) {
+      throw new Error('Apostrophe requires at least Node.js 18.x.');
     }
     // The core must have a reference to itself in order to use the
     // promise event emitter code
@@ -247,8 +247,8 @@ async function apostrophe(options, telemetry, rootSpan) {
 
     testModule();
 
-    self.options = mergeConfiguration(options, defaults);
-    autodetectBundles();
+    self.options = await mergeConfiguration(options, defaults);
+    await autodetectBundles();
     acceptGlobalOptions();
 
     // Module-based async events (self.on and self.emit of each module,
@@ -282,8 +282,8 @@ async function apostrophe(options, telemetry, rootSpan) {
     // your own piece types
 
     self.instancesOf = function(name) {
-      return _.filter(self.modules, function(module) {
-        return self.synth.instanceOf(module, name);
+      return _.filter(self.modules, function(apostropheModule) {
+        return self.synth.instanceOf(apostropheModule, name);
       });
     };
 
@@ -306,7 +306,7 @@ async function apostrophe(options, telemetry, rootSpan) {
     await defineModules();
 
     await instantiateModules();
-    lintModules();
+    await lintModules();
     await self.emit('modulesRegistered'); // formerly modulesReady
     self.apos.schema.validateAllSchemas();
     self.apos.schema.registerAllSchemas();
@@ -314,9 +314,9 @@ async function apostrophe(options, telemetry, rootSpan) {
       await self.apos.migration.migrate(); // emits before and after events, inside the lock
       // Inserts the global doc in the default locale if it does not exist; same for other
       // singleton piece types registered by other modules
-      for (const module of Object.values(self.modules)) {
-        if (self.instanceOf(module, '@apostrophecms/piece-type') && module.options.singletonAuto) {
-          await module.insertIfMissing();
+      for (const apostropheModule of Object.values(self.modules)) {
+        if (self.instanceOf(apostropheModule, '@apostrophecms/piece-type') && apostropheModule.options.singletonAuto) {
+          await apostropheModule.insertIfMissing();
         }
       }
       await self.apos.page.implementParkAllInDefaultLocale();
@@ -348,14 +348,14 @@ async function apostrophe(options, telemetry, rootSpan) {
   // SUPPORTING FUNCTIONS BEGIN HERE
 
   // Merge configuration from defaults, data/local.js and app.js
-  function mergeConfiguration(options, defaults) {
+  async function mergeConfiguration(options, defaults) {
     let config = {};
     let local = {};
     const localPath = options.__localPath || '/data/local.js';
     const reallyLocalPath = self.rootDir + localPath;
 
     if (fs.existsSync(reallyLocalPath)) {
-      local = require(reallyLocalPath);
+      local = await self.root.import(reallyLocalPath);
     }
 
     // Otherwise making a second apos instance
@@ -380,14 +380,14 @@ async function apostrophe(options, telemetry, rootSpan) {
     return config;
   }
 
-  function nestedModuleSubdirs() {
+  async function nestedModuleSubdirs() {
     if (!options.nestedModuleSubdirs) {
       return;
     }
     const configs = glob(self.localModules + '/**/modules.js', { follow: true });
-    _.each(configs, function(config) {
+    for (const config of configs) {
       try {
-        _.merge(self.options.modules, require(config));
+        _.merge(self.options.modules, await self.root.import(config));
       } catch (e) {
         console.error(stripIndent`
           When nestedModuleSubdirs is active, any modules.js file beneath:
@@ -404,35 +404,36 @@ async function apostrophe(options, telemetry, rootSpan) {
         `);
         throw e;
       }
-    });
+    }
   }
 
-  function autodetectBundles() {
-    const modules = _.keys(self.options.modules);
-    _.each(modules, function(name) {
+  async function autodetectBundles() {
+    const apostropheModules = Object.keys(self.options.modules);
+    for (const apostropheModuleName of apostropheModules) {
       try {
-        const npmPath = getNpmPath(name, self.rootDir);
+        const npmPath = getNpmPath(apostropheModuleName, self.rootDir);
         if (!npmPath) {
           return;
         }
 
-        const module = require(npmPath);
-        if (module.bundle) {
-          self.options.bundles = (self.options.bundles || []).concat(name);
-          _.each(module.bundle.modules, function(name) {
-            if (!_.has(self.options.modules, name)) {
-              const bundledModule = require(path.dirname(npmPath) + '/' + module.bundle.directory + '/' + name);
+        const apostropheModule = await self.root.import(npmPath);
+        if (apostropheModule.bundle) {
+          self.options.bundles = (self.options.bundles || []).concat(apostropheModuleName);
+          const bundleModules = apostropheModule.bundle.modules;
+          for (const bundleModuleName of bundleModules) {
+            if (!apostropheModules.includes(bundleModuleName)) {
+              const bundledModule = await self.root.import(path.dirname(npmPath) + '/' + apostropheModule.bundle.directory + '/' + bundleModuleName);
               if (bundledModule.improve) {
-                self.options.modules[name] = {};
+                self.options.modules[bundleModuleName] = {};
               }
             }
-          });
+          }
         }
       } catch (e) {
         // Not found via npm. This does not mean it doesn't
         // exist as a project-level thing
       }
-    });
+    }
   }
 
   function acceptGlobalOptions() {
@@ -549,7 +550,7 @@ async function apostrophe(options, telemetry, rootSpan) {
     self.redefine = self.synth.redefine;
     self.create = self.synth.create;
 
-    nestedModuleSubdirs();
+    await nestedModuleSubdirs();
 
     for (const [ name, options ] of Object.entries(self.options.modules)) {
       await synth.define(name, options);
@@ -566,8 +567,8 @@ async function apostrophe(options, telemetry, rootSpan) {
     self.modules = {};
     for (const item of modulesToBeInstantiated()) {
       // module registers itself in self.modules
-      const module = await self.synth.create(item, { apos: self });
-      await module.emit('moduleReady');
+      const apostropheModule = await self.synth.create(item, { apos: self });
+      await apostropheModule.emit('moduleReady');
     }
   }
 
@@ -578,10 +579,10 @@ async function apostrophe(options, telemetry, rootSpan) {
     });
   }
 
-  function lintModules() {
+  async function lintModules() {
     const validSteps = [];
-    for (const module of Object.values(self.modules)) {
-      for (const step of module.__meta.chain) {
+    for (const apostropheModule of Object.values(self.modules)) {
+      for (const step of apostropheModule.__meta.chain) {
         validSteps.push(step.name);
       }
     }
@@ -596,19 +597,19 @@ async function apostrophe(options, telemetry, rootSpan) {
         const nsDirs = fs.readdirSync(`${self.localModules}/${dir}`);
         for (let nsDir of nsDirs) {
           nsDir = `${dir}/${nsDir}`;
-          testDir(nsDir);
+          await testDir(nsDir);
         }
       } else {
         testDir(dir);
       }
     }
-    function testDir(name) {
+    async function testDir(name) {
       // Projects that have different theme modules activated at different times
       // are a frequent source of false positives for this warning, so ignore
       // seemingly unused modules with "theme" in the name
       if (!validSteps.includes(name)) {
         try {
-          const submodule = require(path.resolve(`${self.localModules}/${name}`));
+          const submodule = await self.root.import(path.resolve(`${self.localModules}/${name}`));
           if (submodule && submodule.options && submodule.options.ignoreUnusedFolderWarning) {
             return;
           }
@@ -646,7 +647,7 @@ async function apostrophe(options, telemetry, rootSpan) {
       }
     }
 
-    for (const [ name, module ] of Object.entries(self.modules)) {
+    for (const [ name, apostropheModule ] of Object.entries(self.modules)) {
       if (name.match(/^apostrophe-/)) {
         self.util.warnDevOnce(
           'namespace-apostrophe-modules',
@@ -671,17 +672,17 @@ async function apostrophe(options, telemetry, rootSpan) {
         );
       }
 
-      if (module.options.extends && ((typeof module.options.extends) === 'string')) {
+      if (apostropheModule.options.extends && ((typeof apostropheModule.options.extends) === 'string')) {
         lint(`The module ${name} contains an "extends" option. This is probably a\nmistake. In Apostrophe "extend" is used to extend other modules.`);
       }
-      if (module.options.singletonWarningIfNot && (name !== module.options.singletonWarningIfNot)) {
-        lint(`The module ${name} extends ${module.options.singletonWarningIfNot}, which is normally\na singleton (Apostrophe creates only one instance of it). Two competing\ninstances will lead to problems. If you are adding project-level code to it,\njust use modules/${module.options.singletonWarningIfNot}/index.js and do not use "extend".\nIf you are improving it via an npm module, use "improve" rather than "extend".\nIf neither situation applies you should probably just make a new module that does\nnot extend anything.\n\nIf you are sure you know what you are doing, you can set the\nsingletonWarningIfNot: false option for this module.`);
+      if (apostropheModule.options.singletonWarningIfNot && (name !== apostropheModule.options.singletonWarningIfNot)) {
+        lint(`The module ${name} extends ${apostropheModule.options.singletonWarningIfNot}, which is normally\na singleton (Apostrophe creates only one instance of it). Two competing\ninstances will lead to problems. If you are adding project-level code to it,\njust use modules/${apostropheModule.options.singletonWarningIfNot}/index.js and do not use "extend".\nIf you are improving it via an npm module, use "improve" rather than "extend".\nIf neither situation applies you should probably just make a new module that does\nnot extend anything.\n\nIf you are sure you know what you are doing, you can set the\nsingletonWarningIfNot: false option for this module.`);
       }
-      if (name.match(/-widget$/) && (!extending(module)) && (!module.options.ignoreNoExtendWarning)) {
+      if (name.match(/-widget$/) && (!extending(apostropheModule)) && (!apostropheModule.options.ignoreNoExtendWarning)) {
         lint(`The module ${name} does not extend anything.\n\nA -widget module usually extends @apostrophecms/widget-type or another widget type.\nOr possibly you forgot to npm install something.\n\nIf you are sure you are doing the right thing, set the\nignoreNoExtendWarning option to true for this module.`);
-      } else if (name.match(/-page$/) && (name !== '@apostrophecms/page') && (!extending(module)) && (!module.options.ignoreNoExtendWarning)) {
+      } else if (name.match(/-page$/) && (name !== '@apostrophecms/page') && (!extending(apostropheModule)) && (!apostropheModule.options.ignoreNoExtendWarning)) {
         lint(`The module ${name} does not extend anything.\n\nA -page module usually extends @apostrophecms/page-type or\n@apostrophecms/piece-page-type or another page type.\nOr possibly you forgot to npm install something.\n\nIf you are sure you are doing the right thing, set the\nignoreNoExtendWarning option to true for this module.`);
-      } else if ((!extending(module)) && (!hasCode(name)) && (!isBundle(name)) && (!module.options.ignoreNoCodeWarning)) {
+      } else if ((!extending(apostropheModule)) && (!hasCode(name)) && (!isBundle(name)) && (!apostropheModule.options.ignoreNoCodeWarning)) {
         lint(`The module ${name} does not extend anything and does not have any code.\n\nThis usually means that you:\n\n1. Forgot to "extend" another module\n2. Configured a module that comes from npm without npm installing it\n3. Simply haven't written your "index.js" yet\n\nIf you really want a module with no code, set the ignoreNoCodeWarning option\nto true for this module.`);
       }
     }
@@ -718,12 +719,12 @@ async function apostrophe(options, telemetry, rootSpan) {
       const d = self.synth.definitions[name];
       return d.bundle || (d.extend && d.extend.bundle);
     }
-    function extending(module) {
+    function extending(apostropheModule) {
       // If the module extends no other module, then it will
       // have up to four entries in its inheritance chain:
       // project level self, npm level self, `apostrophe-modules`
       // project-level and `apostrophe-modules` npm level.
-      return module.__meta.chain.length > 4;
+      return apostropheModule.__meta.chain.length > 4;
     }
 
     function lint(s) {
@@ -774,7 +775,10 @@ function buildRoot(options) {
 function getRoot(options) {
   const root = options.root;
   if (root?.filename && root?.require) {
-    return root;
+    return {
+      filename: root.filename,
+      import: async (id) => root.require(id)
+    };
   }
 
   if (root?.url) {
@@ -783,7 +787,11 @@ function getRoot(options) {
 
     return {
       filename,
-      require: async (id) => import(id)
+      import: async (id) => {
+        const { default: defaultExport, ...rest } = await import(id);
+
+        return defaultExport || rest;
+      }
     };
   }
 
@@ -805,7 +813,7 @@ function getRoot(options) {
   const legacyRoot = getLegacyRoot();
   return {
     filename: legacyRoot.filename,
-    require: async (id) => legacyRoot.require(id)
+    import: async (id) => legacyRoot.require(id)
   };
 };
 
