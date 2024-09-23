@@ -83,14 +83,12 @@ export default {
 </script>
 <style lang="scss" scoped>
 .apos-admin-bar__device-preview-mode {
-  margin-left: 22px;
+  margin-left: $spacing-double;
+  display: flex;
+  gap: $spacing-half;
 }
 
 .apos-admin-bar__device-preview-mode-button {
-  & + & {
-    margin-left: 6px;
-  }
-
   &.apos-is-active {
     color: var(--a-text-primary);
     text-decoration: none;
