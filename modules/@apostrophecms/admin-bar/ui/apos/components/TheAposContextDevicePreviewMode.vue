@@ -64,8 +64,8 @@ export default {
       width,
       height
     }) {
+      document.querySelector('body').setAttribute('data-device-preview-mode', mode);
       document.querySelector('[data-apos-refreshable]').setAttribute('data-resizable', this.resizable);
-      document.querySelector('[data-apos-refreshable]').setAttribute('data-device-preview-mode', mode);
       document.querySelector('[data-apos-refreshable]').setAttribute('data-label', this.$t(label));
       document.querySelector('[data-apos-refreshable]').style.width = width;
       document.querySelector('[data-apos-refreshable]').style.height = height;
@@ -84,8 +84,8 @@ export default {
       height
     }) {
       if (this.mode === mode || mode === null) {
+        document.querySelector('body').removeAttribute('data-device-preview-mode');
         document.querySelector('[data-apos-refreshable]').removeAttribute('data-resizable');
-        document.querySelector('[data-apos-refreshable]').removeAttribute('data-device-preview-mode');
         document.querySelector('[data-apos-refreshable]').removeAttribute('data-label');
         document.querySelector('[data-apos-refreshable]').style.removeProperty('width');
         document.querySelector('[data-apos-refreshable]').style.removeProperty('height');
