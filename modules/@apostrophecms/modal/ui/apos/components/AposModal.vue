@@ -323,6 +323,7 @@ function close() {
     background-color: var(--a-background-primary);
     border: 1px solid var(--a-base-9);
     color: var(--a-text-primary);
+
     @include media-up(lap) {
       inset: $spacing-double $spacing-double $spacing-double $spacing-double;
       height: calc(100vh - #{$spacing-double * 2});
@@ -398,9 +399,9 @@ function close() {
   }
 
   .apos-modal__content {
-    height: 100%;
     display: flex;
     flex-direction: column;
+    height: 100%;
   }
 
   .apos-modal__main {
