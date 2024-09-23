@@ -103,10 +103,10 @@ export default {
       return this.moduleOptions.devicePreviewMode.enable || false;
     },
     devicePreviewModeScreens() {
-      return this.moduleOptions.devicePreviewMode.breakpoints?.screens || {};
+      return this.moduleOptions.devicePreviewMode.screens || {};
     },
     devicePreviewModeResizable() {
-      return this.moduleOptions.devicePreviewMode.breakpoints?.resizable || false;
+      return this.moduleOptions.devicePreviewMode.resizable || false;
     },
     docTooltip() {
       return {

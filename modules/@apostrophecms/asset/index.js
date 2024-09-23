@@ -54,29 +54,29 @@ module.exports = {
       enable: false,
       // Warn during build about unsupported media queries.
       debug: false,
-      // Breakpoints
-      breakpoints: {
-        // If we can resize the preview container?
-        resizable: false,
-        // Screen list with icons
-        // For adding icons, please refer to the icons documentation
-        // https://docs.apostrophecms.org/reference/module-api/module-overview.html#icons
-        screens: {
-          desktop: {
-            label: 'apostrophe:devicePreviewDesktop',
-            minWidth: 1024,
-            icon: 'monitor-icon'
-          },
-          tablet: {
-            label: 'apostrophe:devicePreviewTablet',
-            minWidth: 640,
-            icon: 'tablet-icon'
-          },
-          mobile: {
-            label: 'apostrophe:devicePreviewMobile',
-            minWidth: 480,
-            icon: 'cellphone-icon'
-          }
+      // If we can resize the preview container?
+      resizable: false,
+      // Screens with icons
+      // For adding icons, please refer to the icons documentation
+      // https://docs.apostrophecms.org/reference/module-api/module-overview.html#icons
+      screens: {
+        desktop: {
+          label: 'apostrophe:devicePreviewDesktop',
+          width: '1024px',
+          height: '90vh',
+          icon: 'monitor-icon'
+        },
+        tablet: {
+          label: 'apostrophe:devicePreviewTablet',
+          width: '640px',
+          height: '90vh',
+          icon: 'tablet-icon'
+        },
+        mobile: {
+          label: 'apostrophe:devicePreviewMobile',
+          width: '480px',
+          height: '90vh',
+          icon: 'cellphone-icon'
         }
       },
       // Transform method used on media feature

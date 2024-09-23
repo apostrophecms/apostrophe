@@ -16,7 +16,7 @@ module.exports = {
   commands(self) {
     const devicePreviewModeScreens = (
       self.apos.asset.options.devicePreviewMode?.enable &&
-      self.apos.asset.options.devicePreviewMode?.breakpoints?.screens
+      self.apos.asset.options.devicePreviewMode?.screens
     ) || {};
     const devicePreviewModeCommands = {
       [`${self.__meta.name}:toggle-device-preview-mode:exit`]: {
@@ -29,7 +29,8 @@ module.exports = {
           type: 'command-menu-admin-bar-toggle-device-preview-mode',
           payload: {
             mode: null,
-            width: null
+            width: null,
+            height: null
           }
         },
         shortcut: 'P,0'
@@ -52,7 +53,8 @@ module.exports = {
           type: 'command-menu-admin-bar-toggle-device-preview-mode',
           payload: {
             mode: name,
-            width: screen.minWidth
+            width: screen.width,
+            height: screen.height
           }
         },
         shortcut: `P,${index}`
@@ -404,7 +406,13 @@ module.exports = {
             aposLocale: context.aposLocale,
             aposDocId: context.aposDocId
           },
-          devicePreviewMode: self.apos.asset.options.devicePreviewMode || { enable: false },
+          devicePreviewMode: self.apos.asset.options.devicePreviewMode ||
+            {
+              enable: false,
+              debug: false,
+              resizable: false,
+              screens: {}
+            },
           // Base API URL appropriate to the context document
           contextBar: context && self.apos.doc.getManager(context.type).options.contextBar,
           showAdminBar: self.getShowAdminBar(req),
