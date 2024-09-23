@@ -6,9 +6,9 @@ body[data-device-preview-mode] {
     flex-grow: unset;
     margin: 60px auto auto;
     border: 1px solid var(--a-base-6);
-    box-shadow: 0 0px 12px 0px var(--a-base-7);
+    box-shadow: 0 0 12px 0 var(--a-base-7);
     background-color: var(--a-background-primary);
-    transition: width 0.4s ease, height 0.4s ease;
+    transition: width 400ms ease, height 400ms ease;
 
     &[data-resizable="true"] {
       resize: both;
