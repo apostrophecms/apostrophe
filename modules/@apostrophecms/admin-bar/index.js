@@ -53,6 +53,7 @@ module.exports = {
           type: 'command-menu-admin-bar-toggle-device-preview-mode',
           payload: {
             mode: name,
+            label: `$t(${screen.label})`,
             width: screen.width,
             height: screen.height
           }

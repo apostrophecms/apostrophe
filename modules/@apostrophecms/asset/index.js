@@ -62,20 +62,20 @@ module.exports = {
       screens: {
         desktop: {
           label: 'apostrophe:devicePreviewDesktop',
-          width: '1024px',
-          height: '90vh',
+          width: '1500px',
+          height: '900px',
           icon: 'monitor-icon'
         },
         tablet: {
           label: 'apostrophe:devicePreviewTablet',
-          width: '640px',
-          height: '90vh',
+          width: '1024px',
+          height: '768px',
           icon: 'tablet-icon'
         },
         mobile: {
           label: 'apostrophe:devicePreviewMobile',
           width: '480px',
-          height: '90vh',
+          height: '1000px',
           icon: 'cellphone-icon'
         }
       },

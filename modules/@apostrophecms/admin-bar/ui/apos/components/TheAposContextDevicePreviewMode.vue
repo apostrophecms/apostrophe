@@ -10,12 +10,13 @@
       :data-apos-test="`devicePreviewMode:${name}`"
       :modifiers="['small', 'no-motion']"
       :label="screen.label"
+      :title="$t(screen.label)"
       :icon="screen.icon"
       :icon-only="true"
       type="subtle"
       class="apos-admin-bar__device-preview-mode-button"
       :class="{ 'apos-is-active': mode === name }"
-      @click="toggleDevicePreviewMode({ mode: name, width: screen.width, height: screen.height })"
+      @click="toggleDevicePreviewMode({ mode: name, label: screen.label, width: screen.width, height: screen.height })"
     />
   </div>
 </template>
@@ -59,28 +60,33 @@ export default {
   methods: {
     switchDevicePreviewMode({
       mode,
+      label,
       width,
       height
     }) {
-      document.querySelector('[data-apos-refreshable]').setAttribute('device-preview-mode', mode);
-      document.querySelector('[data-apos-refreshable]').setAttribute('resizable', this.resizable);
+      document.querySelector('[data-apos-refreshable]').setAttribute('data-resizable', this.resizable);
+      document.querySelector('[data-apos-refreshable]').setAttribute('data-device-preview-mode', mode);
+      document.querySelector('[data-apos-refreshable]').setAttribute('data-label', this.$t(label));
       document.querySelector('[data-apos-refreshable]').style.width = width;
       document.querySelector('[data-apos-refreshable]').style.height = height;
       this.mode = mode;
       this.$emit('switch-device-preview-mode', {
         mode,
+        label,
         width,
         height
       });
     },
     toggleDevicePreviewMode({
       mode,
+      label,
       width,
       height
     }) {
       if (this.mode === mode || mode === null) {
-        document.querySelector('[data-apos-refreshable]').removeAttribute('device-preview-mode');
-        document.querySelector('[data-apos-refreshable]').removeAttribute('resizable');
+        document.querySelector('[data-apos-refreshable]').removeAttribute('data-resizable');
+        document.querySelector('[data-apos-refreshable]').removeAttribute('data-device-preview-mode');
+        document.querySelector('[data-apos-refreshable]').removeAttribute('data-label');
         document.querySelector('[data-apos-refreshable]').style.removeProperty('width');
         document.querySelector('[data-apos-refreshable]').style.removeProperty('height');
         this.mode = null;
@@ -91,6 +97,7 @@ export default {
 
       this.switchDevicePreviewMode({
         mode,
+        label,
         width,
         height
       });

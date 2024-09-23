@@ -1,11 +1,20 @@
-[data-apos-refreshable][device-preview-mode] {
+[data-apos-refreshable][data-device-preview-mode] {
   container-type: size;
-  margin: 20px auto;
+  flex-grow: unset;
+  margin: 60px auto auto;
   border: 1px solid var(--a-base-2);
   box-shadow: 0 0 3px var(--a-base-2);
 
-  &[resizable="true"] {
+  &[data-resizable="true"] {
     resize: both;
     overflow: scroll;
+  }
+
+  &::before {
+    content: attr(data-label);
+    position: relative;
+    top: -1.5rem;
+    left: $spacing-half;
+    display: block;
   }
 }
