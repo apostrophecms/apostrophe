@@ -107,9 +107,9 @@ export default {
 </script>
 <style lang="scss" scoped>
 .apos-admin-bar__device-preview-mode {
-  margin-left: $spacing-double;
   display: flex;
   gap: $spacing-half;
+  margin-left: $spacing-double;
 }
 
 .apos-admin-bar__device-preview-mode-button {
