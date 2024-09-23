@@ -271,6 +271,81 @@ describe('Parked Pages', function() {
     });
     await validate(apos6, [ '/', '/archive', '/default1', '/default2', '/default3', '/default3/child1' ]);
   });
+
+  it('field override on save is possible only when it is configured as default', async function () {
+    this.timeout(20000);
+    await t.destroy(apos6);
+    apos6 = await t.create({
+      root: module,
+      modules: {
+        '@apostrophecms/page': {
+          options: {
+            park: [
+              ...park2,
+              {
+                parkedId: 'default3',
+                type: 'default-page',
+                title: 'Default 3',
+                slug: '/default3'
+              },
+              {
+                parkedId: 'default4',
+                type: 'default-page',
+                title: 'Default 4',
+                _defaults: {
+                  slug: '/default4'
+                }
+              }
+            ]
+          }
+        },
+        'default-page': {}
+      }
+    });
+    const manager = apos6.doc.getManager('default-page');
+    const req = apos.task.getReq({ mode: 'draft' });
+
+    // slug override not possible, slug is NOT configured in defaults
+    {
+      const page = await manager.find(req, {
+        parkedId: 'default3',
+        aposMode: 'draft'
+      }).toObject();
+      assert.strictEqual(page.slug, '/default3');
+      assert.deepStrictEqual(page.parked, [ 'parkedId', 'type', 'title', 'slug' ]);
+
+      page.slug = '/default3-overridden';
+      await manager.update(req, page);
+      const updated = await manager.find(req, {
+        parkedId: 'default3',
+        aposMode: 'draft'
+      }).toObject();
+
+      assert.strictEqual(updated.slug, '/default3');
+    }
+
+    // slug override is possible because slug is configured in defaults
+    {
+      const page = await manager.find(req, {
+        parkedId: 'default4',
+        aposMode: 'draft'
+      }).toObject();
+      assert.strictEqual(page.slug, '/default4');
+      assert.deepStrictEqual(page.parked, [ 'parkedId', 'type', 'title' ]);
+
+      page.slug = '/default4-overridden';
+      await manager.update(req, page);
+      const updated = await manager.find(req, {
+        parkedId: 'default4',
+        aposMode: 'draft'
+      }).toObject();
+
+      assert.strictEqual(updated.slug, '/default4-overridden');
+    }
+
+    await t.destroy(apos6);
+    apos6 = null;
+  });
 });
 
 async function validate(apos, expected) {

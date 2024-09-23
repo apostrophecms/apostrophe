@@ -199,8 +199,10 @@ export default {
   .apos-slat-list {
     @include apos-list-reset();
 
-    min-height: 20px;
-    max-width: $input-max-width;
+    & {
+      min-height: 20px;
+      max-width: $input-max-width;
+    }
   }
 
   .apos-slat-status {

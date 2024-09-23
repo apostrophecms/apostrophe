@@ -339,16 +339,7 @@ module.exports = (self) => {
           }
         },
         choices: async function () {
-          const values = await query.toDistinct(field.name);
-          const choices = _.map(values, function (value) {
-            const choice = _.find(field.choices, { value: value });
-            return {
-              value: value,
-              label: choice && (choice.label || value)
-            };
-          });
-          self.apos.util.insensitiveSortByProperty(choices, 'label');
-          return choices;
+          return self.getChoicesForQueryBuilder(field, query);
         }
       });
     },
@@ -408,23 +399,7 @@ module.exports = (self) => {
           }
         },
         choices: async function () {
-          let allChoices;
-          const values = await query.toDistinct(field.name);
-          if ((typeof field.choices) === 'string') {
-            const req = self.apos.task.getReq();
-            allChoices = await self.apos.modules[field.moduleName][field.choices](req);
-          } else {
-            allChoices = field.choices;
-          }
-          const choices = _.map(values, function (value) {
-            const choice = _.find(allChoices, { value: value });
-            return {
-              value: value,
-              label: choice && (choice.label || value)
-            };
-          });
-          self.apos.util.insensitiveSortByProperty(choices, 'label');
-          return choices;
+          return self.getChoicesForQueryBuilder(field, query);
         }
       });
     }
