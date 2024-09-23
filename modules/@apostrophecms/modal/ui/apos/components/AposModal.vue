@@ -6,7 +6,7 @@
     @leave="onLeave"
   >
     <section
-      v-if="modal.active"
+      v-show="modal.active"
       ref="modalEl"
       :class="classes"
       role="dialog"
@@ -39,7 +39,7 @@
               <AposSpinner :weight="'heavy'" class="apos-busy__spinner" />
             </div>
           </template>
-          <template v-else>
+          <div v-show="!renderingElements && !modal.busy" class="apos-modal__content">
             <header v-if="!modal.disableHeader" class="apos-modal__header">
               <div class="apos-modal__header__main">
                 <div v-if="hasSlot('secondaryControls')" class="apos-modal__controls--secondary">
@@ -72,17 +72,23 @@
                 <slot class="apos-modal__breadcrumbs" name="breadcrumbs" />
               </div>
             </header>
-            <div class="apos-modal__main" :class="gridModifier">
+            <div
+              class="apos-modal__main"
+              :class="gridModifier"
+            >
               <slot name="leftRail" />
               <slot name="main" />
               <slot name="rightRail" />
             </div>
-            <footer v-if="hasSlot('footer')" class="apos-modal__footer">
+            <footer
+              v-if="hasSlot('footer')"
+              class="apos-modal__footer"
+            >
               <div class="apos-modal__footer__inner">
                 <slot name="footer" />
               </div>
             </footer>
-          </template>
+          </div>
         </div>
       </transition>
     </section>
@@ -110,7 +116,6 @@ const {
   cycleElementsToFocus,
   focusElement,
   focusLastModalFocusedElement,
-  isElementVisible,
   storeFocusedElement,
   findPriorityElementOrFirst
 } = useAposFocus();
@@ -135,8 +140,9 @@ const store = useModalStore();
 const slots = useSlots();
 const emit = defineEmits([ 'inactive', 'esc', 'show-modal', 'no-modal', 'ready' ]);
 const modalEl = ref(null);
-const findPriorityFocusElementRetryMax = ref(5);
+const findPriorityFocusElementRetryMax = ref(3);
 const currentPriorityFocusElementRetry = ref(0);
+const renderingElements = ref(true);
 const currentLocale = ref(store.activeModal?.locale || apos.i18n.locale);
 
 const transitionType = computed(() => {
@@ -219,6 +225,8 @@ onMounted(async () => {
   await nextTick();
   if (shouldTrapFocus.value) {
     trapFocus();
+  } else {
+    renderingElements.value = false;
   }
   store.updateModalData(props.modalData.id, { modalEl: modalEl.value });
   window.addEventListener('keydown', onKeydown);
@@ -268,27 +276,28 @@ async function trapFocus() {
       .map(addExcludingAttributes)
       .join(', ');
 
-    const elementsToFocus = [ ...modalEl.value.querySelectorAll(selector) ]
-      .filter(isElementVisible);
+    const elementsToFocus = [ ...modalEl.value.querySelectorAll(selector) ];
 
     store.updateModalData(props.modalData.id, { elementsToFocus });
 
     const firstElementToFocus = findPriorityElementOrFirst(elementsToFocus);
     const foundPriorityElement = firstElementToFocus?.hasAttribute('data-apos-focus-priority');
 
-    focusElement(props.modalData.focusedElement, findPriorityElementOrFirst(elementsToFocus));
-
     // // Components render at various times and can't be counted on to be available on modal's mount
     // // Update the trap focus list until a data-apos-focus-priority element is found or the retry limit is reached
     if (!foundPriorityElement && findPriorityFocusElementRetryMax.value > currentPriorityFocusElementRetry.value) {
-      await new Promise(resolve => setTimeout(resolve, 100));
+      await new Promise(resolve => setTimeout(resolve, 50));
       currentPriorityFocusElementRetry.value++;
       trapFocus();
+      return;
     }
+    renderingElements.value = false;
+    await nextTick();
+    focusElement(props.modalData.focusedElement, firstElementToFocus);
   }
 
   function addExcludingAttributes(element) {
-    return `${element}:not([tabindex="-1"]):not([disabled]):not([type="hidden"]):not([aria-hidden])`;
+    return `${element}:not([tabindex="-1"]):not([disabled]):not([type="hidden"]):not([aria-hidden]):not(.apos-sr-only)`;
   }
 }
 
@@ -314,11 +323,11 @@ function close() {
     background-color: var(--a-background-primary);
     border: 1px solid var(--a-base-9);
     color: var(--a-text-primary);
-
     @include media-up(lap) {
       inset: $spacing-double $spacing-double $spacing-double $spacing-double;
       height: calc(100vh - #{$spacing-double * 2});
     }
+
 
     .apos-modal--slide & {
       position: fixed;
@@ -387,6 +396,12 @@ function close() {
 
   .apos-modal--full-height .apos-modal__inner {
     height: 100%;
+  }
+
+  .apos-modal__content {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
   }
 
   .apos-modal__main {

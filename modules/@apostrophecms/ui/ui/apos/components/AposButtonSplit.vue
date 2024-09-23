@@ -107,7 +107,7 @@ const label = ref(null);
 const action = ref(null);
 const button = ref({
   type: props.type,
-  // modifiers: [ 'no-motion' ],
+  modifiers: [ 'no-motion' ],
   attrs: props.attrs
 });
 const contextMenu = ref();

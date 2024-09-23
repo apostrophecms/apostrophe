@@ -26,6 +26,7 @@
               <button
                 v-for="(item, itemIndex) in group.widgets"
                 :key="itemIndex"
+                :data-apos-focus-priority="itemIndex === 0 ? true : null"
                 class="apos-widget"
                 @click="add(item)"
               >
@@ -259,6 +260,7 @@ export default {
   & {
     padding: 0;
     border: none;
+    border-radius: var(--a-border-radius);
     background: none;
     text-align: inherit;
   }
@@ -292,6 +294,12 @@ export default {
       background-color: var(--a-primary);
       opacity: 0;
     }
+  }
+
+  &:focus,
+  &:active {
+    outline: 2px solid var(--a-primary-light-40);
+    outline-offset: 4px;
   }
 
   &:hover {

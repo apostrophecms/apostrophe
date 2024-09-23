@@ -27,6 +27,7 @@
               <AposToggle
                 v-model="disabled"
                 class="apos-share-draft__toggle"
+                data-apos-focus-priority
                 @toggle="toggle"
               />
               <p class="apos-share-draft__toggle-label" @click="toggle">
