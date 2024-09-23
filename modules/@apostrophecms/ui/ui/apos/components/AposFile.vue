@@ -2,10 +2,12 @@
   <div>
     <label
       class="apos-input-wrapper apos-file-dropzone"
+      tabindex="0"
       :class="{
         'apos-file-dropzone--dragover': dragging,
         'apos-is-disabled': disabled || fileOrAttachment
       }"
+      @keydown="handleKeydown"
       @drop.prevent="uploadFile"
       @dragover="dragHandler"
       @dragleave="dragging = false"
@@ -29,6 +31,7 @@
         class="apos-sr-only"
         :disabled="disabled || fileOrAttachment"
         :accept="allowedExtensions"
+        tabindex="-1"
         @input="uploadFile"
       >
     </label>
@@ -101,6 +104,15 @@ export default {
     }
   },
   methods: {
+    handleKeydown(event) {
+      switch (event.key) {
+        case ' ':
+        case 'Enter':
+          event.preventDefault();
+          this.$refs.uploadField.click();
+          break;
+      }
+    },
     async uploadFile ({ target, dataTransfer }) {
       this.dragging = false;
       const [ file ] = target.files ? target.files : (dataTransfer.files || []);
@@ -174,14 +186,12 @@ export default {
       transition: all 200ms ease;
     }
 
-    &:hover {
-      border-color: var(--a-primary);
-      background-color: var(--a-base-10);
-    }
-
+    &:hover,
     &:active,
     &:focus {
-      border: 2px solid var(--a-primary);
+      border-color: var(--a-primary);
+      background-color: var(--a-base-10);
+      outline: none;
     }
 
     &.apos-is-disabled {
