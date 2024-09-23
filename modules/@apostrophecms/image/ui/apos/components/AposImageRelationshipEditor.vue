@@ -95,7 +95,6 @@
     <template #main>
       <div ref="cropperContainer" class="apos-image-cropper__container">
         <AposImageCropper
-          v-if="containerHeight"
           :attachment="item.attachment"
           :doc-fields="docFields"
           :aspect-ratio="aspectRatio"
