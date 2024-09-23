@@ -328,7 +328,6 @@ function close() {
       height: calc(100vh - #{$spacing-double * 2});
     }
 
-
     .apos-modal--slide & {
       position: fixed;
       top: 0;
