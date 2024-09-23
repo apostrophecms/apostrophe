@@ -5,9 +5,10 @@ body[data-device-preview-mode] {
     container-type: size;
     flex-grow: unset;
     margin: 60px auto auto;
-    border: 1px solid var(--a-base-2);
-    box-shadow: 0 2px 10px 2px var(--a-base-5);
+    border: 1px solid var(--a-base-6);
+    box-shadow: 0 0px 12px 0px var(--a-base-7);
     background-color: var(--a-background-primary);
+    transition: width 0.4s ease, height 0.4s ease;
 
     &[data-resizable="true"] {
       resize: both;
@@ -15,9 +16,11 @@ body[data-device-preview-mode] {
     }
 
     &::before {
+      @include type-help;
+
       content: attr(data-label);
       position: relative;
-      top: -1.5rem;
+      top: -1.25rem;
       display: block;
     }
   }
