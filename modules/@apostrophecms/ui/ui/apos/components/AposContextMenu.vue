@@ -333,11 +333,13 @@ function handleKeyboard(event) {
 .apos-context-menu__items {
   @include apos-list-reset();
 
-  display: inline-block;
-  list-style-type: none;
-  width: max-content;
-  margin: none;
-  margin-block: 0;
-  padding: 10px 0;
+  & {
+    display: inline-block;
+    list-style-type: none;
+    width: max-content;
+    margin: none;
+    margin-block: 0;
+    padding: 10px 0;
+  }
 }
 </style>

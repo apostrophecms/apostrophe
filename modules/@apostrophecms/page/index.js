@@ -846,6 +846,21 @@ module.exports = {
   },
   handlers(self) {
     return {
+      '@apostrophecms/page-type:beforeSave': {
+        handleParkedFieldsOverride(req, doc) {
+          if (!doc.parkedId) {
+            return;
+          }
+          const parked = self.parked.find(p => p.parkedId === doc.parkedId);
+          if (!parked) {
+            return;
+          }
+          const parkedFields = Object.keys(parked).filter(field => field !== '_defaults');
+          for (const parkedField of parkedFields) {
+            doc[parkedField] = parked[parkedField];
+          }
+        }
+      },
       beforeSend: {
         async addLevelAttributeToBody(req) {
           // Add level as a data attribute on the body tag
@@ -1458,6 +1473,10 @@ database.`);
           const manager = self.apos.doc.getManager(moved.type);
           await manager.emit('beforeMove', req, moved, target, position);
           determineRankAndNewParent();
+          // Simple check to see if we are moving the page beneath itself
+          if (parent.path.split('/').includes(moved.aposDocId)) {
+            throw self.apos.error('forbidden', 'Cannot move a page under itself');
+          }
           if (!moved._edit) {
             throw self.apos.error('forbidden');
           }
