@@ -18,16 +18,16 @@ body[data-device-preview-mode] {
       resize: both;
       overflow: scroll;
     }
+  }
 
-    &::before {
-      @include type-help;
+  [data-apos-refreshable]::before {
+    @include type-help;
 
-      & {
-        content: attr(data-label);
-        position: relative;
-        top: -1.25rem;
-        display: block;
-      }
+    & {
+      content: attr(data-label);
+      position: relative;
+      top: -1.25rem;
+      display: block;
     }
   }
 }

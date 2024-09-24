@@ -48,7 +48,10 @@ export default {
   emits: [ 'switch-device-preview-mode', 'reset-device-preview-mode' ],
   data() {
     return {
-      mode: null
+      mode: null,
+      label: null,
+      width: null,
+      height: null
     };
   },
   mounted() {
@@ -100,14 +103,16 @@ export default {
         document.querySelector('[data-apos-refreshable]').removeAttribute('data-label');
         document.querySelector('[data-apos-refreshable]').style.removeProperty('width');
         document.querySelector('[data-apos-refreshable]').style.removeProperty('height');
+
         this.mode = null;
         this.$emit('reset-device-preview-mode');
+        this.saveState({});
 
         return;
       }
 
       this.switchDevicePreviewMode({
-        mode,
+        mode: this.mode,
         label,
         width,
         height
@@ -117,20 +122,23 @@ export default {
       return JSON.parse(sessionStorage.getItem('aposDevicePreviewMode') || '{}');
     },
     saveState({
-      mode,
-      label,
-      width,
-      height
-    }) {
-      sessionStorage.setItem(
-        'aposDevicePreviewMode',
-        JSON.stringify({
-          mode,
-          label,
-          width,
-          height
-        })
-      );
+      mode = null,
+      label = null,
+      width = null,
+      height = null
+    } = {}) {
+      const state = this.loadState();
+      if (state.mode !== mode) {
+        sessionStorage.setItem(
+          'aposDevicePreviewMode',
+          JSON.stringify({
+            mode,
+            label,
+            width,
+            height
+          })
+        );
+      }
     }
   }
 };
