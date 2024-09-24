@@ -111,13 +111,13 @@ export default {
 
         this.mode = null;
         this.$emit('reset-device-preview-mode');
-        this.saveState({});
+        this.saveState({ mode: this.mode });
 
         return;
       }
 
       this.switchDevicePreviewMode({
-        mode: this.mode,
+        mode,
         label,
         width,
         height
