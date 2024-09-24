@@ -53,6 +53,11 @@ export default {
   },
   mounted() {
     apos.bus.$on('command-menu-admin-bar-toggle-device-preview-mode', this.toggleDevicePreviewMode);
+
+    const state = this.loadState();
+    if (state.mode) {
+      this.toggleDevicePreviewMode(state);
+    }
   },
   unmounted() {
     apos.bus.$off('command-menu-admin-bar-toggle-device-preview-mode', this.toggleDevicePreviewMode);
@@ -71,6 +76,12 @@ export default {
       document.querySelector('[data-apos-refreshable]').style.height = height;
       this.mode = mode;
       this.$emit('switch-device-preview-mode', {
+        mode,
+        label,
+        width,
+        height
+      });
+      this.saveState({
         mode,
         label,
         width,
@@ -101,6 +112,25 @@ export default {
         width,
         height
       });
+    },
+    loadState() {
+      return JSON.parse(sessionStorage.getItem('aposDevicePreviewMode') || '{}');
+    },
+    saveState({
+      mode,
+      label,
+      width,
+      height
+    }) {
+      sessionStorage.setItem(
+        'aposDevicePreviewMode',
+        JSON.stringify({
+          mode,
+          label,
+          width,
+          height
+        })
+      );
     }
   }
 };

@@ -3,12 +3,16 @@ body[data-device-preview-mode] {
 
   [data-apos-refreshable] {
     container-type: size;
+    overflow: clip scroll;
     flex-grow: unset;
     margin: 60px auto auto;
     border: 1px solid var(--a-base-6);
     box-shadow: 0 0 12px 0 var(--a-base-7);
     background-color: var(--a-background-primary);
-    transition: width 400ms ease, height 400ms ease;
+
+    &[data-resizable="false"] {
+      transition: width 400ms ease, height 400ms ease;
+    }
 
     &[data-resizable="true"] {
       resize: both;
@@ -18,10 +22,12 @@ body[data-device-preview-mode] {
     &::before {
       @include type-help;
 
-      content: attr(data-label);
-      position: relative;
-      top: -1.25rem;
-      display: block;
+      & {
+        content: attr(data-label);
+        position: relative;
+        top: -1.25rem;
+        display: block;
+      }
     }
   }
 }
