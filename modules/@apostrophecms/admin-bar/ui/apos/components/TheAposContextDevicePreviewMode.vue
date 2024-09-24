@@ -49,13 +49,15 @@ export default {
   data() {
     return {
       mode: null,
-      label: null,
-      width: null,
-      height: null
+      originalBodyBackground: null
     };
   },
   mounted() {
     apos.bus.$on('command-menu-admin-bar-toggle-device-preview-mode', this.toggleDevicePreviewMode);
+
+    this.originalBodyBackground = window.getComputedStyle(document.querySelector('body'))?.background ||
+      window.getComputedStyle(document.querySelector('[data-apos-refreshable]'))?.background ||
+      '#fff';
 
     const state = this.loadState();
     if (state.mode) {
@@ -77,6 +79,8 @@ export default {
       document.querySelector('[data-apos-refreshable]').setAttribute('data-label', this.$t(label));
       document.querySelector('[data-apos-refreshable]').style.width = width;
       document.querySelector('[data-apos-refreshable]').style.height = height;
+      document.querySelector('[data-apos-refreshable]').style.background = this.originalBodyBackground;
+
       this.mode = mode;
       this.$emit('switch-device-preview-mode', {
         mode,
@@ -103,6 +107,7 @@ export default {
         document.querySelector('[data-apos-refreshable]').removeAttribute('data-label');
         document.querySelector('[data-apos-refreshable]').style.removeProperty('width');
         document.querySelector('[data-apos-refreshable]').style.removeProperty('height');
+        document.querySelector('[data-apos-refreshable]').style.removeProperty('background');
 
         this.mode = null;
         this.$emit('reset-device-preview-mode');
