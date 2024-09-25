@@ -1706,6 +1706,24 @@ module.exports = {
         });
       },
 
+      async getChoicesForQueryBuilder(field, query) {
+        const req = self.apos.task.getReq();
+        const allChoices = await self.getChoices(req, field);
+        const values = await query.toDistinct(field.name);
+
+        const choices = _.map(values, function (value) {
+          const choice = _.find(allChoices, { value: value });
+          return {
+            value: value,
+            label: choice && (choice.label || value)
+          };
+        });
+
+        self.apos.util.insensitiveSortByProperty(choices, 'label');
+
+        return choices;
+      },
+
       async getChoices(req, field) {
         if (typeof field.choices !== 'string') {
           return field.choices;

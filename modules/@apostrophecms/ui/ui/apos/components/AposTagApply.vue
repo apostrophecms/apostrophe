@@ -317,12 +317,14 @@ export default {
   .apos-apply-tag-menu__tags {
     @include apos-list-reset();
 
-    max-height: 160px;
-    overflow-y: auto;
-    margin-top: 15px;
-    // Negative margin/padding below is for the checkbox focus state.
-    margin-left: -10px;
-    padding-left: 10px;
+    & {
+      max-height: 160px;
+      overflow-y: auto;
+      margin-top: 15px;
+      // Negative margin/padding below is for the checkbox focus state.
+      margin-left: -10px;
+      padding-left: 10px;
+    }
   }
 
   .apos-apply-tag-menu__tag {
