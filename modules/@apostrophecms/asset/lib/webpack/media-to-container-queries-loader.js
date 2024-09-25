@@ -1,3 +1,5 @@
+const postcss = require('postcss');
+
 module.exports = function (source) {
   const schema = {
     title: 'Media to Container Queries Loader options',
@@ -64,7 +66,21 @@ module.exports = function (source) {
 
     const containerQuery = convertToContainerQuery(mediaFeature, content);
 
-    return `${containerQuery} ${match}`;
+    const root = postcss.parse(match.replaceAll(/\\[frntv]/g, ''));
+    root.walkRules(rule => {
+      const newRule = rule.clone();
+      newRule.selectors = newRule.selectors.map(selector => {
+        if (selector.startsWith('body')) {
+          return selector.replace('body', 'body:not([data-device-preview-mode])');
+        }
+
+        return `body:not([data-device-preview-mode]) ${selector}`;
+      });
+
+      rule.replaceWith(newRule);
+    });
+
+    return `${root.toString()} ${containerQuery}`;
   });
 
   return modifiedSource;
