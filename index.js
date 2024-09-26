@@ -311,7 +311,7 @@ async function apostrophe(options, telemetry, rootSpan) {
     self.apos.schema.validateAllSchemas();
     self.apos.schema.registerAllSchemas();
     await self.apos.lock.withLock('@apostrophecms/migration:migrate', async () => {
-      await self.apos.migration.migrate(); // emits before and after events, inside the lock
+      await self.apos.migration.migrate(self.argv);
       // Inserts the global doc in the default locale if it does not exist; same for other
       // singleton piece types registered by other modules
       for (const apostropheModule of Object.values(self.modules)) {
