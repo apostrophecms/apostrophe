@@ -80,7 +80,7 @@ module.exports = function (source) {
       rule.replaceWith(newRule);
     });
 
-    return `${root.toString()} ${containerQuery}`;
+    return `${root.toString()}\\n\\n${containerQuery}`;
   });
 
   return modifiedSource;
