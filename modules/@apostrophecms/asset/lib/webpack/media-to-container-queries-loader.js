@@ -66,7 +66,7 @@ module.exports = function (source) {
 
     const containerQuery = convertToContainerQuery(mediaFeature, content);
 
-    const root = postcss.parse(match.replaceAll(/[^\\]\\[frntv]/g, ''));
+    const root = postcss.parse(match.replaceAll(/(?<!\\)\\[frntv]/g, ''));
     root.walkRules(rule => {
       const newRule = rule.clone();
       newRule.selectors = newRule.selectors.map(selector => {
