@@ -71,10 +71,10 @@ module.exports = function (source) {
       const newRule = rule.clone();
       newRule.selectors = newRule.selectors.map(selector => {
         if (selector.startsWith('body')) {
-          return selector.replace('body', 'body:not([data-device-preview-mode])');
+          return selector.replace('body', ':not([data-device-preview-mode])');
         }
 
-        return `body:not([data-device-preview-mode]) ${selector}`;
+        return `:not([data-device-preview-mode]) ${selector}`;
       });
 
       rule.replaceWith(newRule);
