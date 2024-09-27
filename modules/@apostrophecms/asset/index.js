@@ -81,7 +81,7 @@ module.exports = {
       },
       // Transform method used on media feature
       // Can be either:
-      // - (mediaFeature) => { return mediaFeature; }
+      // - (mediaFeature) => { return mediaFeature.replaceAll('xx', 'yy'); }
       // - null
       transform: null
     }
