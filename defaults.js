@@ -9,6 +9,7 @@ module.exports = {
     '@apostrophecms/schema': {},
     '@apostrophecms/uploadfs': {},
     '@apostrophecms/asset': {},
+    '@apostrophecms/debugger': {},
     '@apostrophecms/busy': {},
     '@apostrophecms/launder': {},
     '@apostrophecms/http': {},

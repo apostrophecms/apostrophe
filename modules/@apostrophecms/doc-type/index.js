@@ -2,6 +2,8 @@ const { SemanticAttributes } = require('@opentelemetry/semantic-conventions');
 const _ = require('lodash');
 const util = require('util');
 const extendQueries = require('./lib/extendQueries');
+const loader = require('sass-loader');
+const { klona } = require('klona');
 
 module.exports = {
   options: {
@@ -2714,17 +2716,39 @@ module.exports = {
               subquery.page(undefined);
               subquery.perPage(undefined);
               await subquery.finalize();
+              const loggingServerSide = query.get('log') || process.env.APOS_LOG_ALL_QUERIES;
+              const loggingClientSide = process.env !== 'production';
+              const logging = loggingServerSide || loggingClientSide;
+              let loggingData = null;
+              if (logging) {
+                loggingData = {
+                  module: self.__meta.name,
+                  criteria: query.get('criteria'),
+                  count: true
+                };
+              }
+              let start = logging && Date.now();
               const count = await self.apos.doc.db.countDocuments({
                 ...subquery.get('criteria'),
                 ...(subquery.get('lateCriteria') || {})
               });
+              const end = logging && Date.now();
+              if (logging) {
+                loggingData.time = end - start;
+                loggingData.results = count;
+              }
               if (query.get('perPage')) {
                 const perPage = query.get('perPage');
                 const totalPages = Math.ceil(count / perPage);
-
                 query.set('totalPages', totalPages);
               }
-
+              if (loggingServerSide) {
+                self.apos.util.log(util.inspect(loggingData, { depth: 10 }));
+              }
+              if (loggingClientSide) {
+                query.req.aposQueries ||= [];
+                query.req.aposQueries.push(loggingData);
+              }
               span.setAttribute(
                 SemanticAttributes.DB_STATEMENT,
                 telemetry.stringify({
@@ -2766,7 +2790,23 @@ module.exports = {
 
             try {
               const mongo = await query.toMongo();
+              const log = mongo.aposLoggingData;
+              let start = log && Date.now();
               const docs = await query.mongoToArray(mongo);
+              const end = log && Date.now();
+              if (log) {
+                log.time = end - start;
+                log.results = docs.length;
+              }
+              const loggingServerSide = query.get('log') || process.env.APOS_LOG_ALL_QUERIES;
+              const loggingClientSide = process.env !== 'production';
+              if (log && loggingServerSide) {
+                self.apos.util.log(util.inspect(log, { depth: 10 }));
+              }
+              if (log && loggingClientSide) {
+                query.req.aposQueries ||= [];
+                query.req.aposQueries.push(log);
+              }
               await query.after(docs);
               span.setStatus({ code: telemetry.api.SpanStatusCode.OK });
               return docs;
@@ -2793,20 +2833,36 @@ module.exports = {
           if (lateCriteria) {
             _.assign(criteria, lateCriteria);
           }
-          if (query.get('log') || process.env.APOS_LOG_ALL_QUERIES) {
-            self.apos.util.log(util.inspect({
+          const loggingServerSide = query.get('log') || process.env.APOS_LOG_ALL_QUERIES;
+          const loggingClientSide = process.env !== 'production';
+          const logging = loggingServerSide || loggingClientSide;
+          let loggingData = null;
+          if (logging) {
+            loggingData = {
+              module: self.__meta.name,
               criteria: query.get('criteria'),
               skip: query.get('skip'),
               limit: query.get('limit'),
               sort: query.get('sortMongo'),
               project: query.get('project')
-            }, { depth: 20 }));
+            };
+            if (loggingServerSide) {
+              self.apos.util.log(util.inspect(loggingData, { depth: 10 }));
+            }
+            if (loggingClientSide) {
+              query.req.aposQueries ||= [];
+              query.req.aposQueries.push(loggingData);
+            }
           }
-          return query.lowLevelMongoCursor(query.req, query.get('criteria'), query.get('project'), {
+          const m = query.lowLevelMongoCursor(query.req, query.get('criteria'), query.get('project'), {
             skip: query.get('skip'),
             limit: query.get('limit'),
             sort: query.get('sortMongo')
           });
+          if (loggingClientSide) {
+            m.aposLoggingData = loggingData;
+          }
+          return m;
         },
 
         // Given the name of a computed field (a field other than _id that
