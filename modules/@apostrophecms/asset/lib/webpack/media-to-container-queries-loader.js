@@ -74,10 +74,10 @@ module.exports = function (source) {
         const newRule = rule.clone({
           selectors: rule.selectors.map(selector => {
             if (selector.startsWith('body')) {
-              return selector.replace('body', ':where(:not([data-device-preview-mode]))');
+              return selector.replace('body', ':where(body:not([data-device-preview-mode]))');
             }
 
-            return `:where(:not([data-device-preview-mode])) ${selector}`;
+            return `:where(body:not([data-device-preview-mode])) ${selector}`;
           })
         });
 
