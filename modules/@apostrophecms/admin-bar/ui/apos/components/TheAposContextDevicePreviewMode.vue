@@ -56,7 +56,6 @@ export default {
     apos.bus.$on('command-menu-admin-bar-toggle-device-preview-mode', this.toggleDevicePreviewMode);
 
     this.originalBodyBackground = window.getComputedStyle(document.querySelector('body'))?.background ||
-      window.getComputedStyle(document.querySelector('[data-apos-refreshable]'))?.background ||
       '#fff';
 
     const state = this.loadState();

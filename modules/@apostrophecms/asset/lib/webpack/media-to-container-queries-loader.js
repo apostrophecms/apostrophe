@@ -18,12 +18,12 @@ module.exports = function (source) {
   };
   const options = this.getOptions(schema);
 
-  const mediaQueryRegex = /@media\s*(all|print|screen(?: and | or )?)?([^{]+)[^{]*{([\s\S]*?})\s*(\\n)*}/g;
+  const mediaQueryRegex = /@media[^{]*{([\s\S]*?})\s*(\\n)*}/g;
 
-  const convertToContainerQuery = (mediaFeature, content) => {
-    // NOTE: container query does not work with the combo
+  const convertToContainerQuery = (mediaFeature) => {
+    // NOTE: media queries does not work with the combo
     // - min-width, max-width, min-height, max-height
-    // - lower than, lower than equal, greater than, greater than equal
+    // - lower than equal, greater than equal
     const DESCRIPTORS = [
       'min-width',
       'max-width',
@@ -31,9 +31,7 @@ module.exports = function (source) {
       'max-height'
     ];
     const OPERATORS = [
-      '>',
       '>=',
-      '<',
       '<='
     ];
 
@@ -49,38 +47,47 @@ module.exports = function (source) {
       console.warn('[mediaToContainerQueryLoader] Unsupported media query', containerFeature);
     }
 
-    return `@container ${containerFeature} {${content}}`;
+    return containerFeature;
   };
 
   // Prepend container query to media queries
-  const modifiedSource = source.replace(mediaQueryRegex, (match, mediaType, mediaFeature, content) => {
-    if (
-      mediaType === 'print' ||
-      (
-        mediaType !== undefined &&
-        ([ 'all', 'screen' ].some(media => mediaType.includes(media))) === false
-      )
-    ) {
-      return match;
-    }
-
-    const containerQuery = convertToContainerQuery(mediaFeature, content);
-
+  const modifiedSource = source.replace(mediaQueryRegex, (match) => {
     const root = postcss.parse(match.replaceAll(/(?<!\\)\\[frntv]/g, ''));
-    root.walkRules(rule => {
-      const newRule = rule.clone();
-      newRule.selectors = newRule.selectors.map(selector => {
-        if (selector.startsWith('body')) {
-          return selector.replace('body', ':not([data-device-preview-mode])');
-        }
+    root.walkAtRules('media', atRule => {
+      if (
+        atRule.params.includes('print') &&
+        (!atRule.params.includes('all') || !atRule.params.includes('screen'))
+      ) {
+        return;
+      }
 
-        return `:where(:not([data-device-preview-mode])) ${selector}`;
+      // Container query
+      const containerAtRule = atRule.clone({
+        name: 'container',
+        params: convertToContainerQuery(atRule.params)
+          .replaceAll(/(only\s*)?(all|screen|print)(,)?(\s)*(and\s*)?/g, '')
       });
 
-      rule.replaceWith(newRule);
+      // Media query
+      // Only apply when data-device-preview-mode is not set
+      atRule.walkRules(rule => {
+        const newRule = rule.clone({
+          selectors: rule.selectors.map(selector => {
+            if (selector.startsWith('body')) {
+              return selector.replace('body', ':where(:not([data-device-preview-mode]))');
+            }
+
+            return `:where(:not([data-device-preview-mode])) ${selector}`;
+          })
+        });
+
+        rule.replaceWith(newRule);
+      });
+
+      root.append(containerAtRule);
     });
 
-    return `${root.toString()}\\n\\n${containerQuery}`;
+    return root.toString();
   });
 
   return modifiedSource;
