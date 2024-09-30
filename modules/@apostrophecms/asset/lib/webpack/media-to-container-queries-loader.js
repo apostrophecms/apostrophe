@@ -74,7 +74,7 @@ module.exports = function (source) {
           return selector.replace('body', ':not([data-device-preview-mode])');
         }
 
-        return `:not([data-device-preview-mode]) ${selector}`;
+        return `:where(:not([data-device-preview-mode])) ${selector}`;
       });
 
       rule.replaceWith(newRule);
