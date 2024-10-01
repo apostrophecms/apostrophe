@@ -54,6 +54,8 @@
         v-if="isDevicePreviewModeEnabled"
         :screens="devicePreviewModeScreens"
         :resizable="devicePreviewModeResizable"
+        @switch-device-preview-mode="addContextLabel"
+        @reset-device-preview-mode="removeContextLabel"
       />
     </span>
   </transition-group>
@@ -156,6 +158,15 @@ export default {
     },
     switchDraftMode(mode) {
       this.$emit('switch-draft-mode', mode);
+    },
+    addContextLabel({
+      label
+    }) {
+      document.querySelector('[data-apos-context-label]')
+        ?.replaceChildren(document.createTextNode(this.$t(label)));
+    },
+    removeContextLabel() {
+      document.querySelector('[data-apos-context-label]')?.replaceChildren();
     }
   }
 };
