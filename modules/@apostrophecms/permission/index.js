@@ -54,8 +54,6 @@ module.exports = {
       // though they are technically in published mode on the page.
 
       can(req, action, docOrType, mode) {
-        console.log('CAN');
-
         mode = mode || req.mode;
         const role = req.user && req.user.role;
         if (role === 'admin') {
@@ -131,13 +129,6 @@ module.exports = {
         }
 
         function canDelete() {
-          console.log('🚀 ~ canDelete ~ canDelete:');
-          console.log(manager?.options.singleton);
-
-          if (manager?.options.singleton) {
-            return false;
-          }
-
           if (doc && (!doc.lastPublishedAt || doc.aposMode === 'draft')) {
             return self.can(req, 'edit', doc, mode);
           }

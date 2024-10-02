@@ -288,7 +288,7 @@ export default {
         this.canEdit &&
         !this.context.parked &&
         this.moduleOptions.canPublish &&
-        // !this.moduleOptions.singleton &&
+        !this.moduleOptions.singleton &&
         this.context.lastPublishedAt &&
         this.manuallyPublished
       );

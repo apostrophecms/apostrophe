@@ -205,6 +205,14 @@ module.exports = {
           }
         }
       },
+      '@apostrophecms/doc-type:beforeUnpublish': {
+        testPermissions(req, doc) {
+          const manager = self.getManager(doc.type);
+          if (manager.options.singleton) {
+            throw self.apos.error('forbidden');
+          }
+        }
+      },
       '@apostrophecms/doc-type:beforeSave': {
         ensureSlugSortifyAndUpdatedAt(req, doc, options) {
           const manager = self.getManager(doc.type);
@@ -753,7 +761,9 @@ module.exports = {
       // Unpublish a given document.
       async unpublish(req, doc) {
         const m = self.getManager(doc.type);
-        return m.unpublish(req, doc);
+        await m.emit('beforeUnpublish', req, doc);
+        await m.unpublish(req, doc);
+        await m.emit('afterUnpublish', req, doc);
       },
 
       // Revert to the previously published content, or if
