@@ -3,6 +3,7 @@ const assert = require('assert');
 const _ = require('lodash');
 
 describe('Docs', function() {
+  const apiKey = 'this is a test api key';
   let apos;
 
   this.timeout(t.timeout);
@@ -18,6 +19,15 @@ describe('Docs', function() {
       root: module,
 
       modules: {
+        '@apostrophecms/express': {
+          options: {
+            apiKeys: {
+              [apiKey]: {
+                role: 'admin'
+              }
+            }
+          }
+        },
         'test-people': {
           extend: '@apostrophecms/piece-type',
           fields: {
@@ -1195,6 +1205,28 @@ describe('Docs', function() {
       };
 
       assert.deepEqual(actual, expected);
+    });
+  });
+
+  describe('beforeUnpublish handler', function() {
+    it('should prevent un-publishing of the global doc', async function() {
+      const req = apos.task.getReq();
+
+      const global = await apos.doc.find(req, { type: '@apostrophecms/global' }).toObject();
+
+      try {
+        await apos.http.post(
+          `/api/v1/@apostrophecms/global/${global._id}/unpublish?apiKey=${apiKey}`,
+          {
+            body: {},
+            busy: true
+          }
+        );
+      } catch (error) {
+        assert(error.status === 403);
+        return;
+      }
+      throw new Error('Should have thrown a forbidden error (should not be able to unpublish the global doc)');
     });
   });
 
