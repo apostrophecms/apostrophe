@@ -50,6 +50,13 @@
         :tooltip="tooltip"
         :modifiers="modifiers"
       />
+      <TheAposContextDevicePreviewMode
+        v-if="isDevicePreviewModeEnabled"
+        :screens="devicePreviewModeScreens"
+        :resizable="devicePreviewModeResizable"
+        @switch-device-preview-mode="addContextLabel"
+        @reset-device-preview-mode="removeContextLabel"
+      />
     </span>
   </transition-group>
 </template>
@@ -93,6 +100,15 @@ export default {
     },
     isUnpublished() {
       return !this.context.lastPublishedAt;
+    },
+    isDevicePreviewModeEnabled() {
+      return this.moduleOptions.devicePreviewMode.enable || false;
+    },
+    devicePreviewModeScreens() {
+      return this.moduleOptions.devicePreviewMode.screens || {};
+    },
+    devicePreviewModeResizable() {
+      return this.moduleOptions.devicePreviewMode.resizable || false;
     },
     docTooltip() {
       return {
@@ -142,6 +158,15 @@ export default {
     },
     switchDraftMode(mode) {
       this.$emit('switch-draft-mode', mode);
+    },
+    addContextLabel({
+      label
+    }) {
+      document.querySelector('[data-apos-context-label]')
+        ?.replaceChildren(document.createTextNode(this.$t(label)));
+    },
+    removeContextLabel() {
+      document.querySelector('[data-apos-context-label]')?.replaceChildren();
     }
   }
 };

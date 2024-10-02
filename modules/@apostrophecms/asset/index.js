@@ -44,7 +44,47 @@ module.exports = {
     rebundleModules: undefined,
     // In case of external front end like Astro, this option allows to
     // disable the build of the public UI assets.
-    publicBundle: true
+    publicBundle: true,
+    // Device preview in the admin UI.
+    // NOTE: the whole devicePreviewMode option must be carried over
+    // to the project for override to work properly.
+    // Nested object options are not deep merged in Apostrophe.
+    devicePreviewMode: {
+      // Enable device preview mode
+      enable: false,
+      // Warn during build about unsupported media queries.
+      debug: false,
+      // If we can resize the preview container?
+      resizable: false,
+      // Screens with icons
+      // For adding icons, please refer to the icons documentation
+      // https://docs.apostrophecms.org/reference/module-api/module-overview.html#icons
+      screens: {
+        desktop: {
+          label: 'apostrophe:devicePreviewDesktop',
+          width: '1500px',
+          height: '900px',
+          icon: 'monitor-icon'
+        },
+        tablet: {
+          label: 'apostrophe:devicePreviewTablet',
+          width: '1024px',
+          height: '768px',
+          icon: 'tablet-icon'
+        },
+        mobile: {
+          label: 'apostrophe:devicePreviewMobile',
+          width: '480px',
+          height: '1000px',
+          icon: 'cellphone-icon'
+        }
+      },
+      // Transform method used on media feature
+      // Can be either:
+      // - (mediaFeature) => { return mediaFeature.replaceAll('xx', 'yy'); }
+      // - null
+      transform: null
+    }
   },
 
   async init(self) {

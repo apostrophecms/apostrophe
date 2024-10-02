@@ -1,6 +1,17 @@
+const path = require('path');
 const MiniCssExtractPlugin = require('mini-css-extract-plugin');
 
 module.exports = (options, apos, srcBuildNames) => {
+  const mediaToContainerQueriesLoader = apos.asset.options.devicePreviewMode?.enable === true
+    ? {
+      loader: path.resolve(__dirname, '../media-to-container-queries-loader.js'),
+      options: {
+        debug: apos.asset.options.devicePreviewMode?.debug === true,
+        transform: apos.asset.options.devicePreviewMode?.transform || null
+      }
+    }
+    : '';
+
   return {
     module: {
       rules: [
@@ -9,6 +20,7 @@ module.exports = (options, apos, srcBuildNames) => {
           use: [
             // Instead of style-loader, to avoid FOUC
             MiniCssExtractPlugin.loader,
+            mediaToContainerQueriesLoader,
             // Parses CSS imports and make css-loader ignore urls. Urls will still be handled by webpack
             {
               loader: 'css-loader',

@@ -1,4 +1,16 @@
+const path = require('path');
+
 module.exports = (options, apos) => {
+  const mediaToContainerQueriesLoader = apos.asset.options.devicePreviewMode?.enable === true
+    ? {
+      loader: path.resolve(__dirname, '../media-to-container-queries-loader.js'),
+      options: {
+        debug: apos.asset.options.devicePreviewMode?.debug === true,
+        transform: apos.asset.options.devicePreviewMode?.transform || null
+      }
+    }
+    : '';
+
   return {
     module: {
       rules: [
@@ -6,28 +18,16 @@ module.exports = (options, apos) => {
           test: /\.css$/,
           use: [
             'vue-style-loader',
-            // https://github.com/vuejs/vue-style-loader/issues/46#issuecomment-670624576
-            {
-              loader: 'css-loader',
-              options: {
-                esModule: false,
-                sourceMap: true
-              }
-            }
+            mediaToContainerQueriesLoader,
+            'css-loader'
           ]
         },
-        // https://github.com/vuejs/vue-style-loader/issues/46#issuecomment-670624576
         {
           test: /\.s[ac]ss$/,
           use: [
             'vue-style-loader',
-            {
-              loader: 'css-loader',
-              options: {
-                esModule: false,
-                sourceMap: true
-              }
-            },
+            mediaToContainerQueriesLoader,
+            'css-loader',
             {
               loader: 'postcss-loader',
               options: {

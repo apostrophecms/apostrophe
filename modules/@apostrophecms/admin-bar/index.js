@@ -14,6 +14,56 @@ module.exports = {
     pageTree: true
   },
   commands(self) {
+    const devicePreviewModeScreens = (
+      self.apos.asset.options.devicePreviewMode?.enable &&
+      self.apos.asset.options.devicePreviewMode?.screens
+    ) || {};
+    const devicePreviewModeCommands = {
+      [`${self.__meta.name}:toggle-device-preview-mode:exit`]: {
+        type: 'item',
+        label: {
+          key: 'apostrophe:commandMenuToggleDevicePreviewMode',
+          device: '$t(apostrophe:devicePreviewExit)'
+        },
+        action: {
+          type: 'command-menu-admin-bar-toggle-device-preview-mode',
+          payload: {
+            mode: null,
+            width: null,
+            height: null
+          }
+        },
+        shortcut: 'P,0'
+      }
+    };
+    let index = 1;
+    for (const [ name, screen ] of Object.entries(devicePreviewModeScreens)) {
+      // Up to 9 shortcuts available
+      if (index === 9) {
+        break;
+      }
+
+      devicePreviewModeCommands[`${self.__meta.name}:toggle-device-preview-mode:${name}`] = {
+        type: 'item',
+        label: {
+          key: 'apostrophe:commandMenuToggleDevicePreviewMode',
+          device: `$t(${screen.label})`
+        },
+        action: {
+          type: 'command-menu-admin-bar-toggle-device-preview-mode',
+          payload: {
+            mode: name,
+            label: `$t(${screen.label})`,
+            width: screen.width,
+            height: screen.height
+          }
+        },
+        shortcut: `P,${index}`
+      };
+
+      index += 1;
+    };
+
     return {
       add: {
         [`${self.__meta.name}:undo`]: {
@@ -63,7 +113,8 @@ module.exports = {
             type: 'command-menu-admin-bar-toggle-publish-draft'
           },
           shortcut: 'Ctrl+Shift+D Meta+Shift+D'
-        }
+        },
+        ...devicePreviewModeCommands
       },
       modal: {
         default: {
@@ -80,7 +131,8 @@ module.exports = {
             label: 'apostrophe:commandMenuMode',
             commands: [
               `${self.__meta.name}:toggle-edit-preview-mode`,
-              `${self.__meta.name}:toggle-published-draft-document`
+              `${self.__meta.name}:toggle-published-draft-document`,
+              ...Object.keys(devicePreviewModeCommands)
             ]
           }
         }
@@ -355,6 +407,13 @@ module.exports = {
             aposLocale: context.aposLocale,
             aposDocId: context.aposDocId
           },
+          devicePreviewMode: self.apos.asset.options.devicePreviewMode ||
+            {
+              enable: false,
+              debug: false,
+              resizable: false,
+              screens: {}
+            },
           // Base API URL appropriate to the context document
           contextBar: context && self.apos.doc.getManager(context.type).options.contextBar,
           showAdminBar: self.getShowAdminBar(req),
