@@ -360,7 +360,28 @@ export default {
     getLabel(id, index) {
       const titleField = this.field.titleField || null;
       const item = this.items.find(item => item._id === id);
-      return get(item.schemaInput.data, titleField) || `Item ${index + 1}`;
+      let def = get(item.schemaInput.data, this.schema[0].name);
+
+      console.log(this.schema[0]);
+
+      console.log(def);
+
+      if (Array.isArray(def)) {
+        console.log(def);
+        def = def[0];
+      }
+
+      if (def !== null && typeof def === 'object' && !Array.isArray(def)) {
+        def = def.title;
+      }
+
+      if (def) {
+        def = `${this.schema[0].label}: ${def}`;
+      } else {
+        def = 'Item';
+      }
+
+      return get(item.schemaInput.data, titleField) || def;
     },
     toggleOpenInlineItem(event) {
       if (!event) {
