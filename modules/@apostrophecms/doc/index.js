@@ -205,14 +205,6 @@ module.exports = {
           }
         }
       },
-      // '@apostrophecms/doc-type:beforeUnpublish': {
-      //   testPermissions(req, doc, options) {
-      //     const manager = self.getManager(doc.type);
-      //     if (manager.options.singleton) {
-      //       throw self.apos.error('forbidden');
-      //     }
-      //   }
-      // },
       '@apostrophecms/doc-type:beforeSave': {
         ensureSlugSortifyAndUpdatedAt(req, doc, options) {
           const manager = self.getManager(doc.type);
