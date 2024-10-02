@@ -23,7 +23,7 @@ module.exports = {
         type: 'item',
         label: {
           key: 'apostrophe:commandMenuToggleDevicePreviewMode',
-          device: '$t(apostrophe:devicePreviewExit)'
+          device: '$t(apostrophe:breakpointPreviewExit)'
         },
         action: {
           type: 'command-menu-admin-bar-toggle-device-preview-mode',
