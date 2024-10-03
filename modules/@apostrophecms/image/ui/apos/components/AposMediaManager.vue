@@ -611,7 +611,8 @@ export default {
   }
 
   :deep(.apos-modal__body-inner) {
-    overflow: hidden;
+    display: flex;
+    flex-direction: column;
     height: 100%;
   }
 
