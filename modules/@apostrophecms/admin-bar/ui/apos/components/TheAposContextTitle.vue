@@ -50,12 +50,12 @@
         :tooltip="tooltip"
         :modifiers="modifiers"
       />
-      <TheAposContextDevicePreviewMode
-        v-if="isDevicePreviewModeEnabled"
-        :screens="devicePreviewModeScreens"
-        :resizable="devicePreviewModeResizable"
-        @switch-device-preview-mode="addContextLabel"
-        @reset-device-preview-mode="removeContextLabel"
+      <TheAposContextBreakpointPreviewMode
+        v-if="isBreakpointPreviewModeEnabled"
+        :screens="breakpointPreviewModeScreens"
+        :resizable="breakpointPreviewModeResizable"
+        @switch-breakpoint-preview-mode="addContextLabel"
+        @reset-breakpoint-preview-mode="removeContextLabel"
       />
     </span>
   </transition-group>
@@ -101,14 +101,14 @@ export default {
     isUnpublished() {
       return !this.context.lastPublishedAt;
     },
-    isDevicePreviewModeEnabled() {
-      return this.moduleOptions.devicePreviewMode.enable || false;
+    isBreakpointPreviewModeEnabled() {
+      return this.moduleOptions.breakpointPreviewMode.enable || false;
     },
-    devicePreviewModeScreens() {
-      return this.moduleOptions.devicePreviewMode.screens || {};
+    breakpointPreviewModeScreens() {
+      return this.moduleOptions.breakpointPreviewMode.screens || {};
     },
-    devicePreviewModeResizable() {
-      return this.moduleOptions.devicePreviewMode.resizable || false;
+    breakpointPreviewModeResizable() {
+      return this.moduleOptions.breakpointPreviewMode.resizable || false;
     },
     docTooltip() {
       return {

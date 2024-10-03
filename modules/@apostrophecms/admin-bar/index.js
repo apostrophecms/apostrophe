@@ -14,19 +14,19 @@ module.exports = {
     pageTree: true
   },
   commands(self) {
-    const devicePreviewModeScreens = (
-      self.apos.asset.options.devicePreviewMode?.enable &&
-      self.apos.asset.options.devicePreviewMode?.screens
+    const breakpointPreviewModeScreens = (
+      self.apos.asset.options.breakpointPreviewMode?.enable &&
+      self.apos.asset.options.breakpointPreviewMode?.screens
     ) || {};
-    const devicePreviewModeCommands = {
-      [`${self.__meta.name}:toggle-device-preview-mode:exit`]: {
+    const breakpointPreviewModeCommands = {
+      [`${self.__meta.name}:toggle-breakpoint-preview-mode:exit`]: {
         type: 'item',
         label: {
-          key: 'apostrophe:commandMenuToggleDevicePreviewMode',
-          device: '$t(apostrophe:devicePreviewExit)'
+          key: 'apostrophe:commandMenuToggleBreakpointPreviewMode',
+          breakpoint: '$t(apostrophe:breakpointPreviewExit)'
         },
         action: {
-          type: 'command-menu-admin-bar-toggle-device-preview-mode',
+          type: 'command-menu-admin-bar-toggle-breakpoint-preview-mode',
           payload: {
             mode: null,
             width: null,
@@ -37,20 +37,20 @@ module.exports = {
       }
     };
     let index = 1;
-    for (const [ name, screen ] of Object.entries(devicePreviewModeScreens)) {
+    for (const [ name, screen ] of Object.entries(breakpointPreviewModeScreens)) {
       // Up to 9 shortcuts available
       if (index === 9) {
         break;
       }
 
-      devicePreviewModeCommands[`${self.__meta.name}:toggle-device-preview-mode:${name}`] = {
+      breakpointPreviewModeCommands[`${self.__meta.name}:toggle-breakpoint-preview-mode:${name}`] = {
         type: 'item',
         label: {
-          key: 'apostrophe:commandMenuToggleDevicePreviewMode',
-          device: `$t(${screen.label})`
+          key: 'apostrophe:commandMenuToggleBreakpointPreviewMode',
+          breakpoint: `$t(${screen.label})`
         },
         action: {
-          type: 'command-menu-admin-bar-toggle-device-preview-mode',
+          type: 'command-menu-admin-bar-toggle-breakpoint-preview-mode',
           payload: {
             mode: name,
             label: `$t(${screen.label})`,
@@ -114,7 +114,7 @@ module.exports = {
           },
           shortcut: 'Ctrl+Shift+D Meta+Shift+D'
         },
-        ...devicePreviewModeCommands
+        ...breakpointPreviewModeCommands
       },
       modal: {
         default: {
@@ -132,7 +132,7 @@ module.exports = {
             commands: [
               `${self.__meta.name}:toggle-edit-preview-mode`,
               `${self.__meta.name}:toggle-published-draft-document`,
-              ...Object.keys(devicePreviewModeCommands)
+              ...Object.keys(breakpointPreviewModeCommands)
             ]
           }
         }
@@ -407,7 +407,7 @@ module.exports = {
             aposLocale: context.aposLocale,
             aposDocId: context.aposDocId
           },
-          devicePreviewMode: self.apos.asset.options.devicePreviewMode ||
+          breakpointPreviewMode: self.apos.asset.options.breakpointPreviewMode ||
             {
               enable: false,
               debug: false,

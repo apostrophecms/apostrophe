@@ -45,13 +45,13 @@ module.exports = {
     // In case of external front end like Astro, this option allows to
     // disable the build of the public UI assets.
     publicBundle: true,
-    // Device preview in the admin UI.
-    // NOTE: the whole devicePreviewMode option must be carried over
-    // to the project for override to work properly.
+    // Breakpoint preview in the admin UI.
+    // NOTE: the whole breakpointPreviewMode option must be carried over
+    // to the project for overrides to work properly.
     // Nested object options are not deep merged in Apostrophe.
-    devicePreviewMode: {
-      // Enable device preview mode
-      enable: false,
+    breakpointPreviewMode: {
+      // Enable breakpoint preview mode
+      enable: true,
       // Warn during build about unsupported media queries.
       debug: false,
       // If we can resize the preview container?
@@ -61,21 +61,21 @@ module.exports = {
       // https://docs.apostrophecms.org/reference/module-api/module-overview.html#icons
       screens: {
         desktop: {
-          label: 'apostrophe:devicePreviewDesktop',
-          width: '1500px',
+          label: 'apostrophe:breakpointPreviewDesktop',
+          width: '1440px',
           height: '900px',
           icon: 'monitor-icon'
         },
         tablet: {
-          label: 'apostrophe:devicePreviewTablet',
+          label: 'apostrophe:breakpointPreviewTablet',
           width: '1024px',
           height: '768px',
           icon: 'tablet-icon'
         },
         mobile: {
-          label: 'apostrophe:devicePreviewMobile',
-          width: '480px',
-          height: '1000px',
+          label: 'apostrophe:breakpointPreviewMobile',
+          width: '414px',
+          height: '896px',
           icon: 'cellphone-icon'
         }
       },
