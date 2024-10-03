@@ -21,6 +21,8 @@
 * Uploaded SVGs now permit `<use>` tags granted their `xlink:href` property is a local reference and begins with the `#` character. This improves SVG support while mitgating XSS vulnerabilities.
 * Default properties of object fields present in a widget now populate correctly even if never focused in the editor.
 * Fixed the "choices" query builder to correctly support dynamic choices, ensuring compatibility with the [`piecesFilters`](https://docs.apostrophecms.org/reference/modules/piece-page-type.html#piecesfilters) feature when using dynamic choices.
+* Fix a reorder issue for arrays when dragging and dropping items in the admin UI.
+* The inline array item extract the label now using `title` as `titleField` value by default (consistent with the Slat list).
 
 ## 4.7.1 (2024-09-20)
 

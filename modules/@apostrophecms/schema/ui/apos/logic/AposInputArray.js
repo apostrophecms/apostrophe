@@ -204,7 +204,7 @@ export default {
         .toLowerCase();
       return `${baseClass}--${label}`;
     },
-    toggleEngage(event, options) {
+    toggleEngage(event, options = {}) {
       let elId = event.target.getAttribute('data-id');
       if (!elId && !options.exact) {
         elId = event.target.closest('[data-id]').getAttribute('data-id');
@@ -358,7 +358,7 @@ export default {
       return newInstance(this.schema);
     },
     getLabel(id, index) {
-      const titleField = this.field.titleField || null;
+      const titleField = this.field.titleField || 'title';
       const item = this.items.find(item => item._id === id);
       return get(item.schemaInput.data, titleField) || `Item ${index + 1}`;
     },
