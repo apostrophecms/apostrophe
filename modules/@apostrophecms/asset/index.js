@@ -45,7 +45,7 @@ module.exports = {
     // In case of external front end like Astro, this option allows to
     // disable the build of the public UI assets.
     publicBundle: true,
-    // Device preview in the admin UI.
+    // Breakpoint preview in the admin UI.
     // NOTE: the whole breakpointPreviewMode option must be carried over
     // to the project for overrides to work properly.
     // Nested object options are not deep merged in Apostrophe.
@@ -89,7 +89,6 @@ module.exports = {
 
   async init(self) {
 
-    self.options.devicePreviewMode = self.options.breakpointPreviewMode || self.options.devicePreviewMode;
     self.restartId = self.apos.util.generateId();
     self.iconMap = {
       ...globalIcons

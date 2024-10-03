@@ -1,29 +1,29 @@
 <template>
   <div
-    data-apos-test="devicePreviewMode"
-    class="apos-admin-bar__device-preview-mode"
+    data-apos-test="breakpointPreviewMode"
+    class="apos-admin-bar__breakpoint-preview-mode"
   >
     <component
       :is="'AposButton'"
       v-for="(screen, name) in screens"
       :key="name"
-      :data-apos-test="`devicePreviewMode:${name}`"
+      :data-apos-test="`breakpointPreviewMode:${name}`"
       :modifiers="['small', 'no-motion']"
       :label="screen.label"
       :title="$t(screen.label)"
       :icon="screen.icon"
       :icon-only="true"
       type="subtle"
-      class="apos-admin-bar__device-preview-mode-button"
+      class="apos-admin-bar__breakpoint-preview-mode-button"
       :class="{ 'apos-is-active': mode === name }"
-      @click="toggleDevicePreviewMode({ mode: name, label: screen.label, width: screen.width, height: screen.height })"
+      @click="toggleBreakpointPreviewMode({ mode: name, label: screen.label, width: screen.width, height: screen.height })"
     />
   </div>
 </template>
 <script>
 
 export default {
-  name: 'TheAposContextDevicePreview',
+  name: 'TheAposContextBreakpointPreviewMode',
   props: {
     // { screenName: { label: string, width: string, height: string, icon: string } }
     screens: {
@@ -45,7 +45,7 @@ export default {
       default: false
     }
   },
-  emits: [ 'switch-device-preview-mode', 'reset-device-preview-mode' ],
+  emits: [ 'switch-breakpoint-preview-mode', 'reset-breakpoint-preview-mode' ],
   data() {
     return {
       mode: null,
@@ -53,27 +53,27 @@ export default {
     };
   },
   mounted() {
-    apos.bus.$on('command-menu-admin-bar-toggle-device-preview-mode', this.toggleDevicePreviewMode);
+    apos.bus.$on('command-menu-admin-bar-toggle-breakpoint-preview-mode', this.toggleBreakpointPreviewMode);
 
     this.originalBodyBackground = window.getComputedStyle(document.querySelector('body'))?.background ||
       '#fff';
 
     const state = this.loadState();
     if (state.mode) {
-      this.toggleDevicePreviewMode(state);
+      this.toggleBreakpointPreviewMode(state);
     }
   },
   unmounted() {
-    apos.bus.$off('command-menu-admin-bar-toggle-device-preview-mode', this.toggleDevicePreviewMode);
+    apos.bus.$off('command-menu-admin-bar-toggle-breakpoint-preview-mode', this.toggleBreakpointPreviewMode);
   },
   methods: {
-    switchDevicePreviewMode({
+    switchBreakpointPreviewMode({
       mode,
       label,
       width,
       height
     }) {
-      document.querySelector('body').setAttribute('data-device-preview-mode', mode);
+      document.querySelector('body').setAttribute('data-breakpoint-preview-mode', mode);
       document.querySelector('[data-apos-refreshable]').setAttribute('data-resizable', this.resizable);
       document.querySelector('[data-apos-refreshable]').setAttribute('data-label', this.$t(label));
       document.querySelector('[data-apos-refreshable]').style.width = width;
@@ -81,7 +81,7 @@ export default {
       document.querySelector('[data-apos-refreshable]').style.background = this.originalBodyBackground;
 
       this.mode = mode;
-      this.$emit('switch-device-preview-mode', {
+      this.$emit('switch-breakpoint-preview-mode', {
         mode,
         label,
         width,
@@ -94,14 +94,14 @@ export default {
         height
       });
     },
-    toggleDevicePreviewMode({
+    toggleBreakpointPreviewMode({
       mode,
       label,
       width,
       height
     }) {
       if (this.mode === mode || mode === null) {
-        document.querySelector('body').removeAttribute('data-device-preview-mode');
+        document.querySelector('body').removeAttribute('data-breakpoint-preview-mode');
         document.querySelector('[data-apos-refreshable]').removeAttribute('data-resizable');
         document.querySelector('[data-apos-refreshable]').removeAttribute('data-label');
         document.querySelector('[data-apos-refreshable]').style.removeProperty('width');
@@ -109,13 +109,13 @@ export default {
         document.querySelector('[data-apos-refreshable]').style.removeProperty('background');
 
         this.mode = null;
-        this.$emit('reset-device-preview-mode');
+        this.$emit('reset-breakpoint-preview-mode');
         this.saveState({ mode: this.mode });
 
         return;
       }
 
-      this.switchDevicePreviewMode({
+      this.switchBreakpointPreviewMode({
         mode,
         label,
         width,
@@ -123,7 +123,7 @@ export default {
       });
     },
     loadState() {
-      return JSON.parse(sessionStorage.getItem('aposDevicePreviewMode') || '{}');
+      return JSON.parse(sessionStorage.getItem('aposBreakpointPreviewMode') || '{}');
     },
     saveState({
       mode = null,
@@ -134,7 +134,7 @@ export default {
       const state = this.loadState();
       if (state.mode !== mode) {
         sessionStorage.setItem(
-          'aposDevicePreviewMode',
+          'aposBreakpointPreviewMode',
           JSON.stringify({
             mode,
             label,
@@ -148,13 +148,13 @@ export default {
 };
 </script>
 <style lang="scss" scoped>
-.apos-admin-bar__device-preview-mode {
+.apos-admin-bar__breakpoint-preview-mode {
   display: flex;
   gap: $spacing-half;
   margin-left: $spacing-double;
 }
 
-.apos-admin-bar__device-preview-mode-button {
+.apos-admin-bar__breakpoint-preview-mode-button {
   &.apos-is-active {
     color: var(--a-text-primary);
     text-decoration: none;

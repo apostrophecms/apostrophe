@@ -69,15 +69,15 @@ module.exports = function (source) {
       });
 
       // Media query
-      // Only apply when data-device-preview-mode is not set
+      // Only apply when data-breakpoint-preview-mode is not set
       atRule.walkRules(rule => {
         const newRule = rule.clone({
           selectors: rule.selectors.map(selector => {
             if (selector.startsWith('body')) {
-              return selector.replace('body', ':where(body:not([data-device-preview-mode]))');
+              return selector.replace('body', ':where(body:not([data-breakpoint-preview-mode]))');
             }
 
-            return `:where(body:not([data-device-preview-mode])) ${selector}`;
+            return `:where(body:not([data-breakpoint-preview-mode])) ${selector}`;
           })
         });
 
