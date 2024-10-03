@@ -132,6 +132,8 @@ export default {
       oldIndex, newIndex
     }) {
       this.next.splice(newIndex, 0, this.next.splice(oldIndex, 1)[0]);
+      // FIX: swapping the items does not trigger the watcher
+      this.next = this.next.slice();
     },
     engage(id) {
       this.engaged = id;

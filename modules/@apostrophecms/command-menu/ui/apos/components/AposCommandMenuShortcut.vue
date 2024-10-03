@@ -111,10 +111,13 @@ export default {
       this.modal.showModal = false;
     },
     getLabel(label) {
-      if (label && label.key && label.type) {
+      if (typeof label === 'object' && label.key) {
+        const type = label.type ? this.$t(label.type) : '';
+
         return this.$t({
+          ...label,
           key: label.key,
-          type: this.$t(label.type)
+          type
         });
       }
 

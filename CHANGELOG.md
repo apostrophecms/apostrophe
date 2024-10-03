@@ -8,6 +8,7 @@
 * Adds focus states for media library's Uploader tile
 * Adds focus states file attachment's input UI
 * Simplified importing rich text widgets via the REST API. If you  you have HTML that contains `img` tags pointing to existing images, you can now import them all quickly. When supplying the rich text widget object, include an `import` property with an `html` subproperty, rather than the usual `content` property. You can optionally provide a `baseUrl` subproperty as well. Any images present in `html` will be imported automatically and the correct `figure` tags will be added to the new rich text widget, along with any other markup acceptable to the widget's configuration.
+* Add mobile preview feature to the admin UI. The feature can be enabled using the `@apostrophecms/asset` module new `breakpointPreviewMode` option. Once enabled, the asset build process will duplicate existing media queries as container queries. There are some limitations in the equivalence media queries / container queries. You can refer to the [CSS @container at-rule](https://developer.mozilla.org/en-US/docs/Web/CSS/@container) documentation for more information. You can also enable `breakpointPreviewMode.debug` to be notified in the console when the build encounter an unsupported media query.
 
 ### Changes
 
@@ -20,6 +21,8 @@
 * Uploaded SVGs now permit `<use>` tags granted their `xlink:href` property is a local reference and begins with the `#` character. This improves SVG support while mitgating XSS vulnerabilities.
 * Default properties of object fields present in a widget now populate correctly even if never focused in the editor.
 * Fixed the "choices" query builder to correctly support dynamic choices, ensuring compatibility with the [`piecesFilters`](https://docs.apostrophecms.org/reference/modules/piece-page-type.html#piecesfilters) feature when using dynamic choices.
+* Fix a reorder issue for arrays when dragging and dropping items in the admin UI.
+* The inline array item extract the label now using `title` as `titleField` value by default (consistent with the Slat list).
 
 ## 4.7.1 (2024-09-20)
 
