@@ -1,5 +1,11 @@
 # Changelog
 
+## UNRELEASED
+
+### Fixes
+
+* Takes care of an edge case where Media Manager would duplicate search results.
+
 ## 4.8.0 (2024-10-03)
 
 ### Adds
