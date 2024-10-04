@@ -1,14 +1,14 @@
 # Changelog
 
-## UNRELEASED
+## 4.8.0 (2024-10-03)
 
 ### Adds
 
+* Adds a mobile preview feature to the admin UI. The feature can be enabled using the `@apostrophecms/asset` module's new `breakpointPreviewMode` option. Once enabled, the asset build process will duplicate existing media queries as container queries. There are some limitations in the equivalence between media queries and container queries. You can refer to the [CSS @container at-rule](https://developer.mozilla.org/en-US/docs/Web/CSS/@container) documentation for more information. You can also enable `breakpointPreviewMode.debug` to be notified in the console when the build encounters an unsupported media query.
 * Apostrophe now automatically adds the appropriate default values for new properties in the schema, even for existing documents in the database. This is done automatically during the migration phase of startup.
-* Adds focus states for media library's Uploader tile
-* Adds focus states file attachment's input UI
+* Adds focus states for media library's Uploader tile.
+* Adds focus states file attachment's input UI.
 * Simplified importing rich text widgets via the REST API. If you  you have HTML that contains `img` tags pointing to existing images, you can now import them all quickly. When supplying the rich text widget object, include an `import` property with an `html` subproperty, rather than the usual `content` property. You can optionally provide a `baseUrl` subproperty as well. Any images present in `html` will be imported automatically and the correct `figure` tags will be added to the new rich text widget, along with any other markup acceptable to the widget's configuration.
-* Add mobile preview feature to the admin UI. The feature can be enabled using the `@apostrophecms/asset` module new `breakpointPreviewMode` option. Once enabled, the asset build process will duplicate existing media queries as container queries. There are some limitations in the equivalence media queries / container queries. You can refer to the [CSS @container at-rule](https://developer.mozilla.org/en-US/docs/Web/CSS/@container) documentation for more information. You can also enable `breakpointPreviewMode.debug` to be notified in the console when the build encounter an unsupported media query.
 
 ### Changes
 
@@ -16,12 +16,12 @@
 
 ### Fixes
 
-* Apostrophe's migration logic is no longer executed twice on every startup and three times in the migration task. It is executed exactly once, always at the same point in the startup process. This bug did not cause significant performance issues because migrations were only executed once, but there is a small performance improvement.
+* Apostrophe's migration logic is no longer executed twice on every startup and three times in the migration task. It is executed exactly once, always at the same point in the startup process. This bug did not cause significant performance issues because migrations were always only executed once, but there is a small performance improvement due to not checking for them more than once.
 * The `@apostrophecms/page` module APIs no longer allow a page to become a child of itself. Thanks to [Maarten Marx](https://github.com/Pixelguymm) for reporting the issue.
 * Uploaded SVGs now permit `<use>` tags granted their `xlink:href` property is a local reference and begins with the `#` character. This improves SVG support while mitgating XSS vulnerabilities.
 * Default properties of object fields present in a widget now populate correctly even if never focused in the editor.
 * Fixed the "choices" query builder to correctly support dynamic choices, ensuring compatibility with the [`piecesFilters`](https://docs.apostrophecms.org/reference/modules/piece-page-type.html#piecesfilters) feature when using dynamic choices.
-* Fix a reorder issue for arrays when dragging and dropping items in the admin UI.
+* Fix a reordering issue for arrays when dragging and dropping items in the admin UI.
 * The inline array item extract the label now using `title` as `titleField` value by default (consistent with the Slat list).
 
 ## 4.7.1 (2024-09-20)
