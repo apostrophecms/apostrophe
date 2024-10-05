@@ -582,9 +582,83 @@ async function apostrophe(options, telemetry, rootSpan) {
     return synth;
   }
 
+  // Reorder modules based on their `before` property.
+  function sortModules(moduleNames) {
+    const definitions = self.options.modules;
+    // The module names that have a `before` property
+    const beforeModules = [];
+    // The metadata quick access of all modules
+    const modules = {};
+    // The sorted modules result
+    const sorted = [];
+
+    // The base module sort metadata
+    for (const name of moduleNames) {
+      if (definitions[name].before) {
+        beforeModules.push(name);
+      }
+      modules[name] = {
+        before: definitions[name].before,
+        beforeSelf: []
+      };
+    }
+
+    // Loop through the modules that have a `before` property,
+    // validate and fill the initial `beforeSelf` metadata (first pass).
+    for (const name of beforeModules) {
+      const m = modules[name];
+      const before = m.before;
+      if (m.before === name) {
+        console.warn(`Module "${name}" has a 'before' property that references itself. Skipping.`);
+        continue;
+      }
+      if (!modules[before]) {
+        console.warn(`Module "${name}" has a 'before' property that references a non-existent module: "${before}". Skipping.`);
+        continue;
+      }
+      // Add the current module name to the target's beforeSelf.
+      modules[before].beforeSelf.push(name);
+    }
+
+    // Loop through the modules that have a `before` properties
+    // now that we have the initial metadata (second pass).
+    // This takes care of edge cases like `before` that points to another module
+    // that has a `before` property itself, circular `before` references, etc.
+    // in a very predictable way.
+    for (const name of beforeModules) {
+      const m = modules[name];
+      const target = modules[m.before];
+      if (!target) {
+        continue;
+      }
+      // Add all the modules that want to be before this one to the target's beforeSelf.
+      // Do this recursively for every module from the beforeSelf array that has own `beforeSelf` members.
+      addBeforeSelfRecursive(m.beforeSelf, target.beforeSelf);
+
+    }
+
+    // Fill in the sorted array, first wins when uniquefy-ing.
+    for (const name of moduleNames) {
+      sorted.push(...modules[name].beforeSelf, name);
+    }
+
+    // A unique array of sorted module names.
+    return [ ...new Set(sorted) ];
+
+    function addBeforeSelfRecursive(beforeSelf, target) {
+      if (beforeSelf.length === 0) {
+        return;
+      }
+      beforeSelf.forEach((name) => {
+        target.unshift(name);
+        addBeforeSelfRecursive(modules[name].beforeSelf, target);
+      });
+    }
+  }
+
   async function instantiateModules() {
     self.modules = {};
-    for (const item of modulesToBeInstantiated()) {
+    for (const item of sortModules(modulesToBeInstantiated())) {
       // module registers itself in self.modules
       const module = await self.synth.create(item, { apos: self });
       await module.emit('moduleReady');
