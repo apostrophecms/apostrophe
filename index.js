@@ -589,6 +589,8 @@ async function apostrophe(options, telemetry, rootSpan) {
     const beforeModules = [];
     // The metadata quick access of all modules
     const modules = {};
+    // Recursion guard
+    const recursionGuard = {};
     // The sorted modules result
     const sorted = [];
 
@@ -633,7 +635,7 @@ async function apostrophe(options, telemetry, rootSpan) {
       }
       // Add all the modules that want to be before this one to the target's beforeSelf.
       // Do this recursively for every module from the beforeSelf array that has own `beforeSelf` members.
-      addBeforeSelfRecursive(m.beforeSelf, target.beforeSelf);
+      addBeforeSelfRecursive(name, m.beforeSelf, target.beforeSelf);
 
     }
 
@@ -645,13 +647,21 @@ async function apostrophe(options, telemetry, rootSpan) {
     // A unique array of sorted module names.
     return [ ...new Set(sorted) ];
 
-    function addBeforeSelfRecursive(beforeSelf, target) {
+    function addBeforeSelfRecursive(moduleName, beforeSelf, target) {
       if (beforeSelf.length === 0) {
         return;
       }
+      if (recursionGuard[moduleName]) {
+        return;
+      }
+      recursionGuard[moduleName] = true;
+
       beforeSelf.forEach((name) => {
+        if (recursionGuard[name]) {
+          return;
+        }
         target.unshift(name);
-        addBeforeSelfRecursive(modules[name].beforeSelf, target);
+        addBeforeSelfRecursive(name, modules[name].beforeSelf, target);
       });
     }
   }
