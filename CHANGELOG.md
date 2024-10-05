@@ -4,10 +4,10 @@
 
 ### Adds
 
-* Modules can now have a `before: "module-name"` property in their configuration to run (initialization) before another module.
+* Modules can now have a `before: "module-name"` property in their configuration to run (initialization) before another module. That works only for target modules that are initializable. 
 
 ### Fixes
-
+  
 * Modifies the `AposAreaMenu.vue` component to set the `disabled` attribute to `true` if the max number of widgets have been added in an area with `expanded: true`.
 
 ## 4.8.0 (2024-10-03)

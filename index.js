@@ -636,7 +636,6 @@ async function apostrophe(options, telemetry, rootSpan) {
       // Add all the modules that want to be before this one to the target's beforeSelf.
       // Do this recursively for every module from the beforeSelf array that has own `beforeSelf` members.
       addBeforeSelfRecursive(name, m.beforeSelf, target.beforeSelf);
-
     }
 
     // Fill in the sorted array, first wins when uniquefy-ing.
