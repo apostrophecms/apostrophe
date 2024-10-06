@@ -598,7 +598,11 @@ module.exports = {
         if (process.env.NODE_ENV === 'production') {
           return;
         }
-        self.warn(...[ '\n⚠️ ', ...args, '\n' ]);
+        const m = args[0];
+        if ((typeof m) === 'string') {
+          args[0] = `⚠️  ${m}`;
+        }
+        self.warn(...args);
       },
 
       // Identical to `apos.util.warnDev`, except that the warning is
