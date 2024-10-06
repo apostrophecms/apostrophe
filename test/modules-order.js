@@ -67,7 +67,7 @@ describe('Modules Order', function() {
     assert.strictEqual(apos.modules.first.before, undefined);
 
     // Ensure we have the same number of modules when not reordering
-    const actualModuleCount = apos.modules.length;
+    const expectedModuleCount = apos.modules.length;
     await t.destroy(apos);
 
     apos = await t.create({
@@ -96,7 +96,7 @@ describe('Modules Order', function() {
         }
       }
     });
-    assert.strictEqual(apos.modules.length, actualModuleCount, 'module count is not the same');
+    assert.strictEqual(apos.modules.length, expectedModuleCount, 'module count is not the same');
 
     {
       // ...and the natural order should be preserved
