@@ -1,5 +1,5 @@
 const path = require('path');
-const replaceViewportUnitsPlugin = require('../replace-viewport-units-plugin');
+const replaceViewportUnitsPlugin = require('../postcss-replace-viewport-units-plugin');
 
 module.exports = (options, apos) => {
   const mediaToContainerQueriesLoader = apos.asset.options.breakpointPreviewMode?.enable === true

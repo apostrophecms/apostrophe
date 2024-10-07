@@ -4,7 +4,7 @@
 module.exports = (opts = {}) => {
   return {
     postcssPlugin: 'postcss-replace-viewport-units-plugin',
-    Root (root, postcss) {
+    Once (root, postcss) {
       root.walkRules(rule => {
         const declsWithContainerQueryRelativeUnits = [];
 
