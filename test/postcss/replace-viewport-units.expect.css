@@ -1,0 +1,36 @@
+.hello {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: calc(100vh - 50px);
+}
+
+:where(body[data-breakpoint-preview-mode]) .hello {
+  width: 100cqw;
+  height: calc(100cqh - 50px);
+}
+
+.hello1 {
+  width: 80vw;
+}
+
+:where(body[data-breakpoint-preview-mode]) .hello1 {
+  width: 80cqw;
+}
+
+.hello1 .hello2 {
+  width: 20vw;
+}
+
+:where(body[data-breakpoint-preview-mode]) .hello1 .hello2 {
+  width: 20cqw;
+}
+
+.hello3.hello4 {
+  width: 120vw;
+}
+
+:where(body[data-breakpoint-preview-mode]) .hello3.hello4 {
+  width: 120cqw;
+}
