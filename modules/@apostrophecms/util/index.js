@@ -604,8 +604,6 @@ module.exports = {
         const m = args[0];
         if ((typeof m) === 'string') {
           args[0] = `⚠️  ${m}`;
-        } else {
-          // Just call warn normally
         }
         self.warn(...args);
       },
