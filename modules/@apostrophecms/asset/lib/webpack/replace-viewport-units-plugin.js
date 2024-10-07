@@ -28,11 +28,14 @@ module.exports = (opts = {}) => {
           return;
         }
 
-        const prefixedRule = rule.clone({
-          selector: `:where(body[data-breakpoint-preview-mode]) ${rule.selector}`
+        // Trailing space is wanted because otherwise postcss sticks `{` to the selector...
+        // This doesn't happen when we are duplicating the rule, but when we are creating a new one.
+        // It would have been working without the space, but it is nicer with it.
+        const selector = `:where(body[data-breakpoint-preview-mode]) ${rule.selector} `;
+        const prefixedRule = new postcss.Rule({
+          selector,
+          nodes: declsWithContainerQueryRelativeUnits
         });
-        prefixedRule.removeAll();
-        prefixedRule.append(...declsWithContainerQueryRelativeUnits);
 
         root.insertAfter(rule, prefixedRule);
       });
