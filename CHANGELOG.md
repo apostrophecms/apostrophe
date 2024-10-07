@@ -4,7 +4,7 @@
 
 ### Adds
 
-* Modules can now have a `before: "module-name"` property in their configuration to run (initialization) before another module. That works only for target modules that are initializable. 
+* Modules can now have a `before: "module-name"` property in their configuration to run (initialization) before another module.
 
 ### Fixes
   
