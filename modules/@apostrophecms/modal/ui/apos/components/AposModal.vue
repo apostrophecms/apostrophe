@@ -39,7 +39,11 @@
               <AposSpinner :weight="'heavy'" class="apos-busy__spinner" />
             </div>
           </template>
-          <div v-show="!renderingElements && !modal.busy" class="apos-modal__content">
+          <div
+            v-show="!renderingElements && !modal.busy"
+            class="apos-modal__content"
+            data-apos-test="modal-content"
+          >
             <header v-if="!modal.disableHeader" class="apos-modal__header">
               <div class="apos-modal__header__main">
                 <div v-if="hasSlot('secondaryControls')" class="apos-modal__controls--secondary">

@@ -374,6 +374,7 @@ export default {
       if (Array.isArray(tagList)) {
         this.tagList = tagList;
       }
+      this.items = [];
       this.currentPage = currentPage;
       this.totalPages = totalPages;
       for (const item of items) {
