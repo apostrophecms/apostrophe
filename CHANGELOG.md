@@ -2,9 +2,14 @@
 
 ## UNRELEASED
 
+### Adds
+
+* Adding the attribute `data-apos-focus-priority` to an element in a modal will prioritize it's initial focus when rendered.
+
 ### Fixes
 
 * Takes care of an edge case where Media Manager would duplicate search results.
+* Modifies the `AposAreaMenu.vue` component to set the `disabled` attribute to `true` if the max number of widgets have been added in an area with `expanded: true`.
 
 ## 4.8.0 (2024-10-03)
 

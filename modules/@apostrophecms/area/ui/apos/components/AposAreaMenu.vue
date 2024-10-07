@@ -2,7 +2,7 @@
   <AposButton
     v-if="options.expanded"
     v-bind="buttonOptions"
-    :disabled="disabled"
+    :disabled="isDisabled"
     role="button"
     @click="openExpandedMenu(index)"
   />
@@ -15,7 +15,7 @@
     :widget-options="options.widgets"
     :options="options"
     :max-reached="maxReached"
-    :disabled="disabled"
+    :disabled="isDisabled"
     :menu-id="menuId"
     @add="$emit('add', $event);"
   />
@@ -76,6 +76,13 @@ export default {
         iconSize: this.empty ? 20 : 11,
         disableFocus: !this.tabbable
       };
+    },
+    isDisabled() {
+      let flag = this.disabled;
+      if (this.maxReached) {
+        flag = true;
+      }
+      return flag;
     }
   },
   methods: {
