@@ -88,6 +88,9 @@ module.exports = {
   },
 
   async init(self) {
+    // External build module configuration.
+    // See method `configureBuildModule` for more information.
+    self.externalBuildModule = {};
 
     self.restartId = self.apos.util.generateId();
     self.iconMap = {
@@ -116,13 +119,17 @@ module.exports = {
     self.buildWatcherEnable = process.env.APOS_ASSET_WATCH !== '0' && self.options.watch !== false;
     self.buildWatcherDebounceMs = parseInt(self.options.watchDebounceMs || 1000, 10);
     self.buildWatcher = null;
+    await self.emit('afterInit');
   },
   handlers (self) {
     return {
       'apostrophe:modulesRegistered': {
         async runUiBuildTask() {
+          // TODO: refactor autorunUiBuildTask to get rid of the webpack related
+          // code and make it a generic method playing well with external builds.
           const ran = await self.autorunUiBuildTask();
-          if (ran) {
+          // Temporary disable watchers
+          if (ran && !self.hasBuildModule()) {
             await self.watchUiAndRebuild();
           }
         },
@@ -174,6 +181,9 @@ module.exports = {
         usage: 'Build Apostrophe frontend CSS and JS bundles',
         afterModuleInit: true,
         async task(argv = {}) {
+          if (self.hasBuildModule()) {
+            return self.buildProxy(argv);
+          }
           if (self.options.es5 && !self.es5TaskFn) {
             self.apos.util.warnDev(stripIndent`
               es5: true is set. IE11 compatibility builds now require that you
@@ -994,6 +1004,7 @@ module.exports = {
       'clear-cache': {
         usage: 'Clear build cache',
         afterModuleReady: true,
+        // TODO: add and call `proxyClearCache` method for external build modules.
         async task(argv) {
           const cacheBaseDir = self.getCacheBasePath();
 
@@ -1015,6 +1026,67 @@ module.exports = {
   },
   methods(self) {
     return {
+      // START external build modules feature
+
+      // Extending this method allows to override the external build module configuration.
+      getBuildModuleConfig() {
+        return self.externalBuildModule;
+      },
+      // External build modules can register themselves here.
+      // options:
+      // - alias (required): the alias string to use in the webpack configuration.
+      //   This usually matches the bundler name, e.g. 'vite', 'webpack', etc.
+      // - hasDevServer (optional): whether the build module supports a dev server.
+      // - hasHMR (optional): whether the build module supports a hot module replacement.
+      //
+      // The external build module should initialize before the asset module:
+      // module.exports = {
+      //   before: '@apostrophecms/asset',
+      //   ...
+      // };
+      //
+      // The external build module must implement various methods to be used by Apostrophe:
+      // - async build(options): the build method to be called by Apostrophe.
+      // TODO: document it, add the rest of the required methods.
+      configureBuildModule(moduleSelf, options = {}) {
+        const name = moduleSelf.__meta.name;
+        if (self.hasBuildModule()) {
+          throw new Error(
+            `Module ${name} is attempting to register as a build module, but ${self.getBuildModuleConfig().name} is already registered.`
+          );
+        }
+
+        if (!options.alias) {
+          throw new Error(
+            `Module ${name} is attempting to register as a build module, but no alias is provided.`
+          );
+        }
+
+        self.externalBuildModule = {
+          name,
+          alias: options.alias,
+          hasDevServer: options.hasDevServer,
+          hasHMR: options.hasHMR
+        };
+      },
+      hasBuildModule() {
+        return !!self.getBuildModuleConfig().name;
+      },
+      getBuildModule() {
+        return self.apos.modules[self.getBuildModuleConfig().name];
+      },
+      getBuildModuleAlias() {
+        return self.getBuildModuleConfig().alias;
+      },
+      // Build the assets using the external build module.
+      // The `argv` object is the `argv` object passed to the task.
+      // TODO: modify and send the argv, document it.
+      buildProxy(argv) {
+        return self.getBuildModule().build();
+      },
+
+      // END external build modules feature
+
       // Register the library function as method to be used by core modules.
       // Open the implementation for more dev comments.
       transformRebundledFor,
