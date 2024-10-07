@@ -2,8 +2,6 @@
  * @type {import('postcss').PluginCreator}
  */
 module.exports = (opts = {}) => {
-  // Work with options here
-
   return {
     postcssPlugin: 'postcss-replace-viewport-units-plugin',
     Root (root, postcss) {
