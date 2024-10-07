@@ -589,8 +589,11 @@ module.exports = {
         self.logger.warn(...self.convertLegacyLogPayload(args));
       },
 
-      // Identical to `apos.util.warn`, except that the warning is
-      // not displayed if `process.env.NODE_ENV` is `production`.
+      // Identical to `apos.util.warn`, except that (1) the warning is
+      // not displayed if `process.env.NODE_ENV` is `production`, and
+      // (2) if the warning's first argument is a message it is
+      // automatically prefixed with a warning icon.
+      //
       // Also see `warnDevOnce` which is less likely to irritate
       // the developer until they stop paying attention.
 
@@ -601,6 +604,8 @@ module.exports = {
         const m = args[0];
         if ((typeof m) === 'string') {
           args[0] = `⚠️  ${m}`;
+        } else {
+          // Just call warn normally
         }
         self.warn(...args);
       },
