@@ -1,4 +1,5 @@
 const path = require('path');
+const replaceViewportUnitsPlugin = require('../replace-viewport-units-plugin');
 
 module.exports = (options, apos) => {
   const mediaToContainerQueriesLoader = apos.asset.options.breakpointPreviewMode?.enable === true
@@ -35,6 +36,7 @@ module.exports = (options, apos) => {
                 postcssOptions: {
                   plugins: [
                     [
+                      replaceViewportUnitsPlugin(),
                       'autoprefixer',
                       {}
                     ]

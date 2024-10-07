@@ -1,5 +1,6 @@
 const path = require('path');
 const MiniCssExtractPlugin = require('mini-css-extract-plugin');
+const replaceViewportUnitsPlugin = require('../replace-viewport-units-plugin');
 
 module.exports = (options, apos, srcBuildNames) => {
   const mediaToContainerQueriesLoader = apos.asset.options.breakpointPreviewMode?.enable === true
@@ -34,6 +35,7 @@ module.exports = (options, apos, srcBuildNames) => {
                 postcssOptions: {
                   plugins: [
                     [
+                      replaceViewportUnitsPlugin(),
                       'autoprefixer',
                       {}
                     ]
