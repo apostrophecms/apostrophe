@@ -238,7 +238,15 @@ async function apostrophe(options, telemetry, rootSpan) {
     self.rootDir = rootDir;
     self.npmRootDir = npmRootDir;
     self.selfDir = selfDir;
-    self.getNpmPath = (name, baseDir = self.npmRootDir) => getNpmPath(name, baseDir);
+    self.getNpmPath = (name) => {
+      try {
+        return getNpmPath(name, self.npmRootDir);
+      } catch (e) {
+        // Not found via npm. This does not mean it doesn't
+        // exist as a project-level thing
+        return null;
+      }
+    };
 
     // Signals to various (build related) places that we are running a pnpm installation.
     // The relevant option, if set, has a higher precedence over the automated check.
@@ -410,28 +418,30 @@ async function apostrophe(options, telemetry, rootSpan) {
   async function autodetectBundles() {
     const apostropheModules = Object.keys(self.options.modules);
     for (const apostropheModuleName of apostropheModules) {
-      try {
-        const npmPath = getNpmPath(apostropheModuleName, self.rootDir);
-        if (!npmPath) {
-          return;
-        }
+      const npmPath = self.getNpmPath(apostropheModuleName);
+      if (!npmPath) {
+        continue;
+      }
 
-        const apostropheModule = await self.root.import(npmPath);
-        if (apostropheModule.bundle) {
-          self.options.bundles = (self.options.bundles || []).concat(apostropheModuleName);
-          const bundleModules = apostropheModule.bundle.modules;
-          for (const bundleModuleName of bundleModules) {
-            if (!apostropheModules.includes(bundleModuleName)) {
-              const bundledModule = await self.root.import(path.dirname(npmPath) + '/' + apostropheModule.bundle.directory + '/' + bundleModuleName);
-              if (bundledModule.improve) {
-                self.options.modules[bundleModuleName] = {};
-              }
+      const apostropheModule = await self.root.import(npmPath);
+      if (apostropheModule.bundle) {
+        self.options.bundles = (self.options.bundles || []).concat(apostropheModuleName);
+        const bundleModules = apostropheModule.bundle.modules;
+        for (const bundleModuleName of bundleModules) {
+          if (!apostropheModules.includes(bundleModuleName)) {
+            const bundledModule = await self.root.import(
+              path.resolve(
+                path.dirname(npmPath),
+                apostropheModule.bundle.directory,
+                bundleModuleName,
+                'index.js'
+              )
+            );
+            if (bundledModule.improve) {
+              self.options.modules[bundleModuleName] = {};
             }
           }
         }
-      } catch (e) {
-        // Not found via npm. This does not mean it doesn't
-        // exist as a project-level thing
       }
     }
   }
@@ -609,7 +619,7 @@ async function apostrophe(options, telemetry, rootSpan) {
       // seemingly unused modules with "theme" in the name
       if (!validSteps.includes(name)) {
         try {
-          const submodule = await self.root.import(path.resolve(`${self.localModules}/${name}`));
+          const submodule = await self.root.import(path.resolve(self.localModules, name, 'index.js'));
           if (submodule && submodule.options && submodule.options.ignoreUnusedFolderWarning) {
             return;
           }
@@ -786,7 +796,12 @@ function getRoot(options) {
     // Apostrophe was started from an ESM project
     const filename = url.fileURLToPath(root.url);
     const dynamicImport = async (id) => {
-      const { default: defaultExport, ...rest } = await import(id);
+      const name = id.endsWith('.js') ? id : path.resolve(id, 'index.js');
+      if (id !== name) {
+        console.warn(`do you mean "${name}"? Please specify the file you want to import (${id})`);
+      }
+
+      const { default: defaultExport, ...rest } = await import(name);
 
       return defaultExport || rest;
     };

@@ -26,14 +26,20 @@ describe('Apostrophe ESM', function() {
 
   it('should have root, rootDir, npmRootDir', function() {
     const actual = {
-      root: apos.root,
+      root: {
+        ...apos.root,
+        filename: apos.root.filename,
+        import: apos.root.import.toString(),
+        require: apos.root.require.toString()
+      },
       rootDir: apos.rootDir,
       npmRootDir: apos.npmRootDir
     };
     const expected = {
       root: {
         filename: url.fileURLToPath(import.meta.url),
-        import: actual.root.import
+        import: actual.root.import.toString(),
+        require: actual.root.require.toString()
       },
       rootDir: path.dirname(url.fileURLToPath(import.meta.url)),
       npmRootDir: path.dirname(url.fileURLToPath(import.meta.url))
