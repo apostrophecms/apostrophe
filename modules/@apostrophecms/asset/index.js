@@ -13,6 +13,7 @@ const _ = require('lodash');
 const {
   checkModulesWebpackConfig,
   getWebpackExtensions,
+  getBuildExtensions,
   fillExtraBundles,
   getBundlesNames,
   writeBundlesImportFiles,
@@ -96,35 +97,46 @@ module.exports = {
     self.iconMap = {
       ...globalIcons
     };
+
+    // The namespace filled by `configureBuilds()`
+    self.builds = {};
     self.configureBuilds();
+
+    // The namespace filled by `initUploadfs()`
+    self.uploadfs = null;
     self.initUploadfs();
+
     self.enableBrowserData();
 
-    const {
-      extensions = {},
-      extensionOptions = {},
-      verifiedBundles = {},
-      rebundleModules = {}
-    } = await getWebpackExtensions({
-      getMetadata: self.apos.synth.getMetadata,
-      modulesToInstantiate: self.apos.modulesToBeInstantiated(),
-      rebundleModulesConfig: self.options.rebundleModules
-    });
+    // The namespace filled by `setWebpackExtensions()`
+    self.extraBundles = {};
+    self.webpackExtensions = {};
+    self.webpackExtensionOptions = {};
+    self.verifiedBundles = {};
+    self.rebundleModules = [];
+    await self.setWebpackExtensions();
 
-    self.extraBundles = fillExtraBundles(verifiedBundles);
-    self.webpackExtensions = extensions;
-    self.webpackExtensionOptions = extensionOptions;
-    self.verifiedBundles = verifiedBundles;
-    self.rebundleModules = rebundleModules;
+    // The namespace filled by `setBuildExtensions()`
+    self.moduleBuildExtensions = {};
+    await self.setBuildExtensions();
+
+    // Additional props (beside the non-webpack props above by `setWebpackExtensions()`)
+    // filled by `setBuildExtensionsForExternalModule()` if a build module is registered.
+    self.extraExtensions = {};
+    self.extraExtensionOptions = {};
+
     self.buildWatcherEnable = process.env.APOS_ASSET_WATCH !== '0' && self.options.watch !== false;
     self.buildWatcherDebounceMs = parseInt(self.options.watchDebounceMs || 1000, 10);
     self.buildWatcher = null;
-    await self.emit('afterInit');
   },
   handlers (self) {
     return {
       'apostrophe:modulesRegistered': {
         async runUiBuildTask() {
+          // A signal that the build data has been initialized and all modules
+          // have been registered.
+          await self.emit('afterInit');
+
           // TODO: refactor autorunUiBuildTask to get rid of the webpack related
           // code and make it a generic method playing well with external builds.
           const ran = await self.autorunUiBuildTask();
@@ -1068,6 +1080,7 @@ module.exports = {
           hasDevServer: options.hasDevServer,
           hasHMR: options.hasHMR
         };
+        self.setBuildExtensionsForExternalModule();
       },
       hasBuildModule() {
         return !!self.getBuildModuleConfig().name;
@@ -1084,8 +1097,62 @@ module.exports = {
       buildProxy(argv) {
         return self.getBuildModule().build();
       },
+      // Compute the configuration provided per module as a `build` property.
+      // It has the same shape as the legacy `webpack` property. The difference
+      // is that the `build` property no supports different "vendors". An upgrade
+      // path would be moving existing `webpack` configurations to `build.webpack`.
+      // However, for now we keep the legacy `webpack` property only for compatibility.
+      // Only external build modules will consume the `build` property.
+      async setBuildExtensions() {
+        self.moduleBuildExtensions = await getBuildExtensions({
+          getMetadata: self.apos.synth.getMetadata,
+          modulesToInstantiate: self.apos.modulesToBeInstantiated(),
+          rebundleModulesConfig: self.options.rebundleModules
+        });
+      },
+      // Ensure the namespaced by alias `moduleBuildExtensions` data is available.
+      setBuildExtensionsForExternalModule() {
+        if (self.hasBuildModule()) {
+          return;
+        }
 
+        const {
+          extensions = {},
+          extensionOptions = {},
+          verifiedBundles = {},
+          rebundleModules = {}
+        } = self.moduleBuildExtensions[self.getBuildModuleAlias()] ?? {};
+
+        self.extraBundles = fillExtraBundles(verifiedBundles);
+        self.verifiedBundles = verifiedBundles;
+        self.rebundleModules = rebundleModules;
+        self.extraExtensions = extensions;
+        self.extraExtensionOptions = extensionOptions;
+      },
       // END external build modules feature
+
+      // START Webpack refactoring
+
+      async setWebpackExtensions() {
+        const {
+          extensions = {},
+          extensionOptions = {},
+          verifiedBundles = {},
+          rebundleModules = {}
+        } = await getWebpackExtensions({
+          getMetadata: self.apos.synth.getMetadata,
+          modulesToInstantiate: self.apos.modulesToBeInstantiated(),
+          rebundleModulesConfig: self.options.rebundleModules
+        });
+
+        self.extraBundles = fillExtraBundles(verifiedBundles);
+        self.webpackExtensions = extensions;
+        self.webpackExtensionOptions = extensionOptions;
+        self.verifiedBundles = verifiedBundles;
+        self.rebundleModules = rebundleModules;
+      },
+
+      // END Webpack refactoring
 
       // Register the library function as method to be used by core modules.
       // Open the implementation for more dev comments.
