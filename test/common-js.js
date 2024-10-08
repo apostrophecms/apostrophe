@@ -30,8 +30,8 @@ describe('Apostrophe CommonJS', function() {
     const expected = {
       root: {
         filename: module.filename,
-        import: 'async (id) => root.require(id)',
-        require: '(id) => root.require(id)'
+        import: actual.root.import.toString(),
+        require: actual.root.require.toString()
       },
       rootDir: __dirname,
       npmRootDir: __dirname
