@@ -56,7 +56,11 @@ module.exports = {
   async getWebpackExtensions ({
     getMetadata, modulesToInstantiate, rebundleModulesConfig = {}
   }) {
-    const modulesMeta = await Promise.all(modulesToInstantiate.map((name) => getMetadata(name)));
+    const modulesMeta = [];
+    // NOTE: this is important, it must be sequential
+    for (const name of modulesToInstantiate) {
+      modulesMeta.push(await getMetadata(name));
+    }
 
     const rebundleModules = formatRebundleConfig(rebundleModulesConfig);
 
