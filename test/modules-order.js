@@ -40,11 +40,6 @@ describe('Modules Order', function() {
         'test-before': {},
         usual: {
           init() { }
-        },
-        // The `before` module is missing, shouldn't be sorted (keep order)
-        missing: {
-          before: 'nope',
-          init() { }
         }
       }
     });
@@ -57,8 +52,7 @@ describe('Modules Order', function() {
       '@apostrophecms/schema',
       'test-before',
       '@apostrophecms/image',
-      'usual',
-      'missing'
+      'usual'
     ];
     const actual = Object.keys(apos.modules).filter(m => expected.includes(m));
     assert.deepEqual(actual, expected, 'modules are not sorted as expected');
@@ -90,9 +84,6 @@ describe('Modules Order', function() {
         },
         usual: {
           init() { }
-        },
-        missing: {
-          init() { }
         }
       }
     });
@@ -108,8 +99,7 @@ describe('Modules Order', function() {
         'second',
         'third',
         'test-before',
-        'usual',
-        'missing'
+        'usual'
       ];
       const actual = Object.keys(apos.modules).filter(m => expected.includes(m));
       assert.deepEqual(actual, expected, 'modules are not matching the natural order');

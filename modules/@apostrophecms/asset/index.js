@@ -354,6 +354,8 @@ module.exports = {
                 const srcDir = `${dir}/${source}`;
                 if (fs.existsSync(srcDir)) {
                   if (
+                    // pnpmPaths is provided
+                    pnpmPaths &&
                     // is pnpm installation
                     self.apos.isPnpm &&
                     // is npm module and not bundled
