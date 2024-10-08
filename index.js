@@ -611,10 +611,10 @@ async function apostrophe(options, telemetry, rootSpan) {
       const m = modules[name];
       const before = m.before;
       if (m.before === name) {
-        throw new Error(`Module "${name}" has a 'before' property that references itself. Skipping.`);
+        throw new Error(`Module "${name}" has a 'before' property that references itself.`);
       }
       if (!modules[before]) {
-        throw new Error(`Module "${name}" has a 'before' property that references a non-existent module: "${before}". Skipping.`);
+        throw new Error(`Module "${name}" has a 'before' property that references a non-existent module: "${before}".`);
       }
       // Add the current module name to the target's beforeSelf.
       modules[before].beforeSelf.push(name);
