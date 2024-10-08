@@ -5,6 +5,7 @@
 ### Fixes
 
 * Registering duplicate icon is no longer breaking the build.
+* `pnpm: true` option in `app.js` is no longer breaking the application.
 
 ## 3.67.2 (2024-08-08)
 
