@@ -8,7 +8,7 @@
       fill-color="color"
     />
     <slot v-if="label" name="label">
-      {{ $t(label ) }}
+      {{ $t(label) }}
     </slot>
   </span>
 </template>

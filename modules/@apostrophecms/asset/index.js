@@ -44,7 +44,47 @@ module.exports = {
     rebundleModules: undefined,
     // In case of external front end like Astro, this option allows to
     // disable the build of the public UI assets.
-    publicBundle: true
+    publicBundle: true,
+    // Breakpoint preview in the admin UI.
+    // NOTE: the whole breakpointPreviewMode option must be carried over
+    // to the project for overrides to work properly.
+    // Nested object options are not deep merged in Apostrophe.
+    breakpointPreviewMode: {
+      // Enable breakpoint preview mode
+      enable: true,
+      // Warn during build about unsupported media queries.
+      debug: false,
+      // If we can resize the preview container?
+      resizable: false,
+      // Screens with icons
+      // For adding icons, please refer to the icons documentation
+      // https://docs.apostrophecms.org/reference/module-api/module-overview.html#icons
+      screens: {
+        desktop: {
+          label: 'apostrophe:breakpointPreviewDesktop',
+          width: '1440px',
+          height: '900px',
+          icon: 'monitor-icon'
+        },
+        tablet: {
+          label: 'apostrophe:breakpointPreviewTablet',
+          width: '1024px',
+          height: '768px',
+          icon: 'tablet-icon'
+        },
+        mobile: {
+          label: 'apostrophe:breakpointPreviewMobile',
+          width: '414px',
+          height: '896px',
+          icon: 'cellphone-icon'
+        }
+      },
+      // Transform method used on media feature
+      // Can be either:
+      // - (mediaFeature) => { return mediaFeature.replaceAll('xx', 'yy'); }
+      // - null
+      transform: null
+    }
   },
 
   async init(self) {
@@ -292,6 +332,8 @@ module.exports = {
                 const srcDir = `${dir}/${source}`;
                 if (fs.existsSync(srcDir)) {
                   if (
+                    // pnpmPaths is provided
+                    pnpmPaths &&
                     // is pnpm installation
                     self.apos.isPnpm &&
                     // is npm module and not bundled
