@@ -6,6 +6,7 @@
 
 * Modifies the `AposAreaMenu.vue` component to set the `disabled` attribute to `true` if the max number of widgets have been added in an area with `expanded: true`.
 * `pnpm: true` option in `app.js` is no longer breaking the application. 
+* Remove unused `vue-template-compiler` dependency.
 
 ## 4.8.0 (2024-10-03)
 
