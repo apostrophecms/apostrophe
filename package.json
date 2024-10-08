@@ -26,8 +26,7 @@
     "cms",
     "node cms",
     "headless cms",
-    "content management system",
-    "postcss-plugin"
+    "content management system"
   ],
   "author": "Apostrophe Technologies, Inc.",
   "license": "MIT",
@@ -132,7 +131,6 @@
   },
   "devDependencies": {
     "@babel/eslint-parser": "^7.17.0",
-    "@csstools/postcss-tape": "^5.0.0",
     "eslint": "^7.25.0",
     "eslint-config-apostrophe": "^3.4.0",
     "eslint-plugin-n": "^15.2.1",
