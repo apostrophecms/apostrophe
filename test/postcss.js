@@ -3,7 +3,7 @@ const { equal } = require('node:assert');
 const { test, describe } = require('node:test');
 
 describe('postcss-replace-viewport-units-plugin', () => {
-  const plugin = require('../../modules/@apostrophecms/asset/lib/webpack/postcss-replace-viewport-units-plugin.js');
+  const plugin = require('../modules/@apostrophecms/asset/lib/webpack/postcss-replace-viewport-units-plugin.js');
 
   test('should map `vh` values to `cqh` in a rule that applies only on device preview ', async () => {
     const input = '.hello { width: 100vh; }';
