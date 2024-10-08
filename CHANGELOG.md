@@ -4,7 +4,7 @@
 
 ### Adds
 
-* Add a postcss plugin to handle `vh` and `vw` values on device preview mode.
+* Add a postcss plugin to handle `vh` and `vw` values on breakpoint preview mode.
 
 ### Fixes
 

@@ -5,21 +5,21 @@ const { test, describe } = require('node:test');
 describe('postcss-replace-viewport-units-plugin', () => {
   const plugin = require('../modules/@apostrophecms/asset/lib/webpack/postcss-replace-viewport-units-plugin.js');
 
-  test('should map `vh` values to `cqh` in a rule that applies only on device preview ', async () => {
+  test('should map `vh` values to `cqh` in a rule that applies only on breakpoint preview ', async () => {
     const input = '.hello { width: 100vh; }';
     const output = '.hello { width: 100vh; }\n:where(body[data-breakpoint-preview-mode]) .hello { width: 100cqh; }';
 
     await run(plugin, input, output, { });
   });
 
-  test('should map `vw` values to `cqw` in a rule that applies only on device preview ', async () => {
+  test('should map `vw` values to `cqw` in a rule that applies only on breakpoint preview ', async () => {
     const input = '.hello { width: 100vw; }';
     const output = '.hello { width: 100vw; }\n:where(body[data-breakpoint-preview-mode]) .hello { width: 100cqw; }';
 
     await run(plugin, input, output, { });
   });
 
-  test('should map `vh` and `vw` values used in `calc` to `cqh` and `cqw` in a rule that applies only on device preview', async () => {
+  test('should map `vh` and `vw` values used in `calc` to `cqh` and `cqw` in a rule that applies only on breakpoint preview', async () => {
     const input = `
 .hello { height: calc(100vh - 50px); width: calc(100vw - 10px); }`;
     const output = `
@@ -29,7 +29,7 @@ describe('postcss-replace-viewport-units-plugin', () => {
     await run(plugin, input, output, { });
   });
 
-  test('should add only declarations containing `vh` and `vw` values in a rule that applies only on device preview', async () => {
+  test('should add only declarations containing `vh` and `vw` values in a rule that applies only on breakpoint preview', async () => {
     const input = `
 .hello {
   position: absolute;
