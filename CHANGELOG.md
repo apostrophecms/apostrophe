@@ -2,6 +2,10 @@
 
 ## UNRELEASED
 
+### Adds
+
+* Add a postcss plugin to handle `vh` and `vw` values on device preview mode.
+
 ### Fixes
 
 * Modifies the `AposAreaMenu.vue` component to set the `disabled` attribute to `true` if the max number of widgets have been added in an area with `expanded: true`.
