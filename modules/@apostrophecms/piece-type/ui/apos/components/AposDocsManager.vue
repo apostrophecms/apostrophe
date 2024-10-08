@@ -129,7 +129,7 @@ import AposDocsManagerMixin from 'Modules/@apostrophecms/modal/mixins/AposDocsMa
 import AposModifiedMixin from 'Modules/@apostrophecms/ui/mixins/AposModifiedMixin';
 import AposPublishMixin from 'Modules/@apostrophecms/ui/mixins/AposPublishMixin';
 import { useModalStore } from 'Modules/@apostrophecms/ui/stores/modal';
-import { debounceAsync } from 'Modules/@apostrophecms/ui/utils';
+import { debounceAsync } from 'Modules/@apostrophecms/ui/utils/index.js';
 
 export default {
   name: 'AposDocsManager',

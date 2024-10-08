@@ -114,7 +114,8 @@ module.exports = {
         req.scriptsPlaceholder = placeholder;
 
         return {
-          placeholder
+          placeholder,
+          isDev: process.env.NODE_ENV !== 'production'
         };
       },
       stylesheets(req, data) {
@@ -123,7 +124,8 @@ module.exports = {
         req.stylesheetsPlaceholder = placeholder;
 
         return {
-          placeholder
+          placeholder,
+          isDev: process.env.NODE_ENV !== 'production'
         };
       }
     };
@@ -151,6 +153,13 @@ module.exports = {
           const bundleDir = `${self.apos.rootDir}/public/apos-frontend/${namespace}`;
           const modulesToInstantiate = self.apos.modulesToBeInstantiated();
           const symLinkModules = await findNodeModulesSymlinks(self.apos.npmRootDir);
+
+          // Vite HMR PoC START
+          const viteBuildDir = `${self.apos.rootDir}/apos-build/vite`;
+          await fs.remove(viteBuildDir);
+          await fs.mkdirp(viteBuildDir);
+          // Vite HMR PoC END
+
           // Make it clear if builds should detect changes
           const detectChanges = typeof argv.changes === 'string';
           // Remove invalid changes. `argv.changes` is a comma separated list of relative
@@ -165,8 +174,8 @@ module.exports = {
           const buildsExecuted = [];
 
           // Don't clutter up with previous builds.
-          await fs.remove(buildDir);
-          await fs.mkdirp(buildDir);
+          // await fs.remove(buildDir);
+          // await fs.mkdirp(buildDir);
 
           // Static asset files in `public` subdirs of each module are copied
           // to the same relative path `/public/apos-frontend/namespace/modules/modulename`.
@@ -365,6 +374,26 @@ module.exports = {
               });
             }
 
+            // Vite HMR PoC START
+            const copiedLocations = [];
+            if (options.webpack) {
+              await fs.writeFile(`${viteBuildDir}/index.html`, 'Vite HMR PoC');
+              await fs.copy(`${self.apos.rootDir}/node_modules/@apostrophecms/vue-material-design-icons`, `${viteBuildDir}/src/vue-material-design-icons`);
+              await writeViteEntry({
+                folder: name,
+                importFile: `${viteBuildDir}/src/${name}.js`,
+                prologue: options.prologue,
+                icon: iconImports,
+                components: componentImports,
+                tiptap: tiptapExtensionImports,
+                app: appImports,
+                indexJs: indexJsImports,
+                indexSass: indexSassImports
+              });
+              return;
+            }
+            // Vite HMR PoC END
+
             if (options.webpack) {
               const importFile = `${buildDir}/${name}-import.js`;
 
@@ -427,6 +456,7 @@ module.exports = {
                   managedPaths: [ cacheMeta.managedPathsRegex ]
                 };
               }
+              // fs.writeFileSync(`${name}-webpack-config.json`, JSON.stringify(webpackInstanceConfigMerged, null, 2));
 
               const result = await webpack(webpackInstanceConfigMerged);
               await writeCacheMeta(name, cacheMeta);
@@ -480,6 +510,169 @@ module.exports = {
             self.apos.util.log(req.t('apostrophe:assetTypeBuildComplete', {
               label: req.t(options.label)
             }));
+
+            // Vite HMR PoC START
+            async function copyLocation(sourcePath, targetPath) {
+              if (sourcePath.includes('ui/apos')) {
+                const sourceDir = sourcePath.split('/ui/apos/')[0] + '/ui/apos/';
+                if (!copiedLocations.includes(sourceDir)) {
+                  const targetDir = targetPath.split('/ui/apos/')[0] + '/';
+                  await fs.copy(sourceDir, targetDir);
+                  copiedLocations.push(sourceDir);
+                  console.log('copiedLocation', `${sourceDir} => ${targetDir}`);
+                }
+                return;
+              }
+              if (sourcePath.includes('ui/src')) {
+                const sourceDir = sourcePath.split('/ui/src/')[0] + '/ui/src/';
+                if (!copiedLocations.includes(sourceDir)) {
+                  const targetDir = targetPath.split('/ui/src/')[0] + '/';
+                  await fs.copy(sourceDir, targetDir);
+                  copiedLocations.push(sourceDir);
+                  console.log('copiedLocation', `${sourceDir} => ${targetDir}`);
+                }
+              }
+            }
+            async function compileViteSources(entry, folder) {
+              // console.log('writeViteSources', entry.paths, self.apos.rootDir, buildDir);
+              const pathIndex = {};
+              for (const sourcePath of entry.paths || []) {
+                // console.log('sourcePath', sourcePath);
+                let targetPath = sourcePath.replace(path.join(self.apos.rootDir, '/'), '');
+                if (targetPath.startsWith('node_modules')) {
+                  targetPath = targetPath.replace(path.join('node_modules', '/'), '');
+                }
+                if (targetPath.startsWith(path.join('apostrophe', '/'))) {
+                  targetPath = targetPath.replace(path.join('apostrophe', '/'), '');
+                }
+                // targetPath = targetPath.replace('ui/', '');
+                // console.log('targetPath', targetPath);
+                // await fs.copy(sourcePath, path.join(viteBuildDir, targetPath));
+                targetPath = path.join(folder, targetPath);
+                await copyLocation(sourcePath, path.join(viteBuildDir, 'src', targetPath));
+                if (targetPath.includes('ui/apos')) {
+                  targetPath = targetPath.split('/ui/apos/').join('/');
+                } else if (targetPath.includes('ui/src')) {
+                  targetPath = targetPath.split('/ui/src/').join('/');
+                }
+                pathIndex[sourcePath] = targetPath;
+              }
+              entry.pathIndex = pathIndex;
+              if (entry.importCode && Object.keys(pathIndex).length > 0) {
+                entry.importCode = getImportCode(entry.importCode, pathIndex);
+              }
+
+              return entry;
+            }
+            function getImportCode(fullPathImport, normalizeIndex) {
+              for (const [ sourcePath, targetPath ] of Object.entries(normalizeIndex)) {
+                fullPathImport = fullPathImport.replace(sourcePath, './' + targetPath);
+              }
+              return fullPathImport;
+            }
+            async function writeViteEntry(entry) {
+              let content = '';
+              const registerCode = [];
+              const invokeCode = [];
+              const { folder } = entry;
+              const indexSass = entry.indexSas ? { ...entry.indexSass } : null;
+              const icon = entry.icon ? { ...entry.icon } : null;
+              const indexJs = entry.indexJs ? { ...entry.indexJs } : null;
+              const app = entry.app ? { ...entry.app } : null;
+              const components = entry.components ? { ...entry.components } : null;
+              const tiptap = entry.tiptap ? { ...entry.tiptap } : null;
+              console.log('writeViteEntry', entry.importFile);
+
+              if (indexJs) {
+                await compileViteSources(indexJs, folder);
+                if (indexJs.importCode) {
+                  content += indexJs.importCode + '\n\n';
+                }
+                if (indexJs.registerCode) {
+                  registerCode.push(indexJs.registerCode);
+                }
+                if (indexJs.invokeCode) {
+                  invokeCode.push(indexJs.invokeCode);
+                }
+              }
+              if (icon) {
+                await compileViteSources(icon);
+                if (icon.importCode) {
+                  content += icon.importCode + '\n\n';
+                }
+                if (icon.registerCode) {
+                  registerCode.push(icon.registerCode);
+                }
+                if (icon.invokeCode) {
+                  invokeCode.push(icon.invokeCode);
+                }
+              }
+              if (components) {
+                await compileViteSources(components, folder);
+                if (components.importCode) {
+                  content += components.importCode + '\n\n';
+                }
+                if (components.registerCode) {
+                  registerCode.push(components.registerCode);
+                }
+                if (components.invokeCode) {
+                  invokeCode.push(components.invokeCode);
+                }
+              }
+              if (tiptap && tiptap.paths?.length) {
+                await compileViteSources(tiptap, folder);
+                if (tiptap.importCode) {
+                  content += tiptap.importCode + '\n\n';
+                }
+                if (tiptap.registerCode) {
+                  registerCode.push(tiptap.registerCode);
+                }
+                if (tiptap.invokeCode) {
+                  invokeCode.push(tiptap.invokeCode);
+                }
+              }
+              if (app && app.paths?.length) {
+                await compileViteSources(app, folder);
+                if (app.importCode) {
+                  content += app.importCode + '\n\n';
+                }
+                if (app.registerCode) {
+                  registerCode.push(app.registerCode);
+                }
+                if (app.invokeCode) {
+                  invokeCode.push(app.invokeCode);
+                }
+              }
+              if (indexSass) {
+                await compileViteSources(indexSass, folder);
+                if (indexSass.importCode) {
+                  content += indexSass.importCode + '\n\n';
+                }
+                if (indexSass.registerCode) {
+                  registerCode.push(indexSass.registerCode);
+                }
+                if (indexSass.invokeCode) {
+                  invokeCode.push(indexSass.invokeCode);
+                }
+              }
+
+              if (entry.prologue) {
+                console.log('options.prologue', options.prologue);
+                content += options.prologue + '\n';
+              }
+              if (registerCode.length > 0) {
+                content += registerCode.join('\n') + '\n';
+              }
+              if (invokeCode.length > 0) {
+                content += invokeCode.join('\n');
+              }
+
+              await fs.writeFile(entry.importFile, content);
+
+              // TODO importCode, registerCode, invokeCode write to entry.importFile
+
+            }
+            // Vite HMR PoC END
           }
 
           function getMainModuleBundleFiles(ext) {

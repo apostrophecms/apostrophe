@@ -4,7 +4,7 @@
 import { klona } from 'klona';
 import sluggo from 'sluggo';
 import AposInputMixin from 'Modules/@apostrophecms/schema/mixins/AposInputMixin';
-import { debounceAsync } from 'Modules/@apostrophecms/ui/utils';
+import { debounceAsync } from 'Modules/@apostrophecms/ui/utils/index.js';
 
 export default {
   name: 'AposInputSlug',

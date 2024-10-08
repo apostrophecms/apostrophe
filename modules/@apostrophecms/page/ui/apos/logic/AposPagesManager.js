@@ -5,7 +5,7 @@ import AposArchiveMixin from 'Modules/@apostrophecms/ui/mixins/AposArchiveMixin'
 import AposPublishMixin from 'Modules/@apostrophecms/ui/mixins/AposPublishMixin';
 import AposDocsManagerMixin from 'Modules/@apostrophecms/modal/mixins/AposDocsManagerMixin';
 import { klona } from 'klona';
-import { debounce } from 'Modules/@apostrophecms/ui/utils';
+import { debounce } from 'Modules/@apostrophecms/ui/utils/index.js';
 
 export default {
   name: 'AposPagesManager',

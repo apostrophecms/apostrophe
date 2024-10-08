@@ -126,7 +126,7 @@
 
 <script>
 import { createId } from '@paralleldrive/cuid2';
-import { debounceAsync } from 'Modules/@apostrophecms/ui/utils';
+import { debounceAsync } from 'Modules/@apostrophecms/ui/utils/index.js';
 import AposModifiedMixin from 'Modules/@apostrophecms/ui/mixins/AposModifiedMixin';
 import AposDocsManagerMixin from 'Modules/@apostrophecms/modal/mixins/AposDocsManagerMixin';
 

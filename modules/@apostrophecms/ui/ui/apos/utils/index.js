@@ -1,9 +1,20 @@
-module.exports = {
+// module.exports = {
+//   debounceAsync,
+//   // BC alias
+//   debounce: debounceAsync,
+//   throttle
+// };
+
+export default {
   debounceAsync,
   // BC alias
   debounce: debounceAsync,
   throttle
 };
+
+export { debounceAsync };
+export { debounceAsync as debounce };
+export { throttle };
 
 // Debounce the async function "fn". For synchronous functions, use "lodash/debounce", not this function.
 //
