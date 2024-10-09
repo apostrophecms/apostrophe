@@ -991,6 +991,10 @@ module.exports = {
       // This method accepts the draft or the published version of the document
       // to achieve this.
       async unpublish(req, doc, options) {
+        if (self.options.singleton) {
+          throw self.apos.error('forbidden');
+        }
+
         const DRAFT_SUFFIX = ':draft';
         const PUBLISHED_SUFFIX = ':published';
 
