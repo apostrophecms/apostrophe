@@ -4,11 +4,15 @@
 
 ### Adds
 
+* Modules can now have a `before: "module-name"` property in their configuration to run (initialization) before another module.
 * Add a postcss plugin to handle `vh` and `vw` values on breakpoint preview mode.
 
 ### Fixes
 
 * Modifies the `AposAreaMenu.vue` component to set the `disabled` attribute to `true` if the max number of widgets have been added in an area with `expanded: true`.
+* `pnpm: true` option in `app.js` is no longer breaking the application. 
+* Remove unused `vue-template-compiler` dependency.
+* Prevent un-publishing the `@apostrophecms/global` doc and more generally all singletons.
 
 ## 4.8.0 (2024-10-03)
 
