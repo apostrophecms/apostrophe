@@ -5,11 +5,24 @@
 ### Adds
 
 * Adding the attribute `data-apos-focus-priority` to an element in a modal will prioritize it's initial focus when rendered.
+* Elements inside modals can have a `data-apos-focus-priority` attribute that prioritizes them inside the focusable elements list.
+* Modals will continute trying to find focusable elements until an element marked `data-apos-focus-priority` appears or the max retry threshold is reached.
+* Takes care of an edge case where Media Manager would duplicate search results.
+* Modules can now have a `before: "module-name"` property in their configuration to run (initialization) before another module.
+* Add support for ESM projects.
 
 ### Fixes
 
 * Takes care of an edge case where Media Manager would duplicate search results.
 * Modifies the `AposAreaMenu.vue` component to set the `disabled` attribute to `true` if the max number of widgets have been added in an area with `expanded: true`.
+* `pnpm: true` option in `app.js` is no longer breaking the application. 
+* Remove unused `vue-template-compiler` dependency.
+* Prevent un-publishing the `@apostrophecms/global` doc and more generally all singletons.
+* Correct a race condition that can cause a crash at startup when custom `uploadfs` options are present in some environments.
+
+### Changes
+
+* Internal methods `mergeConfiguration`, `autodetectBundles`, `lintModules`, `nestedModuleSubdirs` and `testDir` are now async.
 
 ## 4.8.0 (2024-10-03)
 
@@ -20,12 +33,10 @@
 * Adds focus states for media library's Uploader tile.
 * Adds focus states file attachment's input UI.
 * Simplified importing rich text widgets via the REST API. If you  you have HTML that contains `img` tags pointing to existing images, you can now import them all quickly. When supplying the rich text widget object, include an `import` property with an `html` subproperty, rather than the usual `content` property. You can optionally provide a `baseUrl` subproperty as well. Any images present in `html` will be imported automatically and the correct `figure` tags will be added to the new rich text widget, along with any other markup acceptable to the widget's configuration.
-* Add support for ESM projects.
 
 ### Changes
 
 * The various implementations of `newInstance` found in Apostrophe, e.g. for widgets, array items, relationship fields and documents themselves, have been consolidated in one implementation. The same code is now reused both on the front and the back end, ensuring the same result without the need to introduce additional back end API calls.
-* Internal methods `mergeConfiguration`, `autodetectBundles`, `lintModules`, `nestedModuleSubdirs` and `testDir` are now async.
 * `verifyLocales` and `i18n.getLocales`, `express.getSessionOptions` are now async.
 
 ### Fixes
