@@ -1698,12 +1698,76 @@ module.exports = {
       },
 
       registerAllSchemas() {
-        _.each(self.apos.doc.managers, function (manager, type) {
-          self.register('doc', type, manager.schema);
-        });
-        _.each(self.apos.area.widgetManagers, function (manager, type) {
-          self.register('widget', type, manager.schema);
-        });
+        self.schemaPointers = {};
+        registerMetaType(self.apos.doc.managers, 'doc');
+        registerMetaType(self.apos.area.widgetManagers, 'widget');
+        function registerMetaType(managers, metaType) {
+          for (const [ type, manager ] of Object.entries(managers)) {
+            const schema = manager.schema;
+            self.register(metaType, type, schema);
+            const pointer = {
+              parent: null,
+              fieldIdsByName: getFieldIdsByName(schema)
+            };
+            for (const field of schema) {
+              setSchemaPointers(pointer, field);
+            }
+          }
+        }
+        function setSchemaPointers(parent, field) {
+          const pointer = {
+            parent
+          };
+          if (field.schema) {
+            pointer.fieldIdsByName = getFieldIdsByName(field.schema);
+            for (const child of field.schema) {
+              setSchemaPointers(pointer, child);
+            }
+          }
+          self.schemaPointers[field.id] = pointer;
+        }
+      },
+
+      // resolves paths such as:
+      // 'siblingname'
+      // '<fieldofparentname'
+      // '<<fieldofgrandparentname'
+      //
+      // Throws an 'invalid' exception if id is not a
+      // valid field id, the field does not list the path
+      // in its 'following' property or relativePath does
+      // not point to a valid field
+
+      getFieldByRelativePath(id, relativePath) {
+        const field = self.apos.schema.getFieldById(id);
+        if (!field) {
+          throw self.apos.error('invalid', 'no such field id');
+        }
+        if (!(field.following || []).includes(relativePath)) {
+          throw self.apos.error('invalid', `${relativePath} does not appear in "following" for this field`);
+        }
+        const pointer = self.schemaPointers[field.id];
+        if (!pointer) {
+          // Should not be possible
+          throw self.apos.error('error', 'schema pointer not found even though field id is valid');
+        }
+        let path = relativePath;
+        while (path.startsWith('<')) {
+          pointer = pointer.parent;
+          if (!pointer) {
+            throw self.apos.error('invalid', `${relativePath} points above the schema tree`);
+          }
+          path = path.substring(1);
+        }
+        const relatedId = pointer.fieldIdsByName[path];
+        if (!relatedId) {
+          throw self.apos.error('invalid', `${relativePath} is not a valid field in the schema tree`);
+        }
+        const relatedField = self.getFieldById(relatedId);
+        if (!relatedField) {
+          throw self.apos.error('error', `${relativePath} resolves to a field id but getFieldById somehow does not return a field`);
+        }
+        return relatedField;
       },
 
       async getChoicesForQueryBuilder(field, query) {
@@ -1796,15 +1860,21 @@ module.exports = {
           throw self.apos.error('invalid');
         }
         if (field.following) {
-          const subset = schema.fields.filter(field => field.following.includes(field.name));
-          try {
-            await self.convert(req, subset, followingData, following);
-          } catch (e) {
-            // the fields we are following are not yet in a valid state,
-            // so no choices offered yet
-            return {
-              choices: []
-            };
+          for (const follows of field.following) {
+            const subset = [ self.getFieldByRelativePath(follows) ];
+            const source = {
+              [follows.name]: followingData && followingData[follows]
+            }
+            try {
+              await self.convert(req, subset, source, following);
+            } catch (e) {
+              self.apos.util.debug(e);
+              // the fields we are following are not yet in a valid state
+              // (if they ever will be), so no choices offered yet
+              return {
+                choices: []
+              };
+            }
           }
         }
         try {
