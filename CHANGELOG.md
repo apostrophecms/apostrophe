@@ -6,11 +6,11 @@
 
 * Elements inside modals can have a `data-apos-focus-priority` attribute that prioritizes them inside the focusable elements list.
 * Modals will continute trying to find focusable elements until an element marked `data-apos-focus-priority` appears or the max retry threshold is reached.
+* Takes care of an edge case where Media Manager would duplicate search results.
+* Modules can now have a `before: "module-name"` property in their configuration to run (initialization) before another module.
 
 ### Fixes
 
-* Takes care of an edge case where Media Manager would duplicate search results.
-* Modules can now have a `before: "module-name"` property in their configuration to run (initialization) before another module.
 * Modifies the `AposAreaMenu.vue` component to set the `disabled` attribute to `true` if the max number of widgets have been added in an area with `expanded: true`.
 * `pnpm: true` option in `app.js` is no longer breaking the application. 
 * Remove unused `vue-template-compiler` dependency.
