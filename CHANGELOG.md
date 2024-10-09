@@ -17,6 +17,12 @@
 * Prevent un-publishing the `@apostrophecms/global` doc and more generally all singletons.
 * Correct a race condition that can cause a crash at startup when custom `uploadfs` options are present in some environments.
 
+## 4.7.2 and 4.8.1 (2024-10-09)
+
+### Fixes
+
+* Correct a race condition that can cause a crash at startup when custom `uploadfs` options are present in some specific cloud environments e.g. when using Azure Blob Storage.
+
 ## 4.8.0 (2024-10-03)
 
 ### Adds
