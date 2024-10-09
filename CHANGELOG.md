@@ -12,6 +12,7 @@
 * `pnpm: true` option in `app.js` is no longer breaking the application. 
 * Remove unused `vue-template-compiler` dependency.
 * Prevent un-publishing the `@apostrophecms/global` doc and more generally all singletons.
+* Correct a race condition that can cause a crash at startup when custom `uploadfs` options are present in some environments.
 
 ## 4.8.0 (2024-10-03)
 
