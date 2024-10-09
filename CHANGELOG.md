@@ -1,5 +1,9 @@
 # Changelog
 
+## 4.8.1 (2024-10-09)
+
+* Correct a race condition that can cause a crash at startup when custom `uploadfs` options are present in some environments.
+
 ## 4.8.0 (2024-10-03)
 
 ### Adds
