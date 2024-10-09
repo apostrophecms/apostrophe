@@ -1,5 +1,11 @@
 # Changelog
 
+## 4.7.2 (2024-10-09)
+
+### Fixes
+
+* Correct a race condition that can cause a crash at startup when custom `uploadfs` options are present in some specific cloud environments e.g. when using Azure Blob Storage.
+
 ## 4.7.1 (2024-09-20)
 
 ### Fixes

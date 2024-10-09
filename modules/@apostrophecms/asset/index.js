@@ -54,7 +54,7 @@ module.exports = {
       ...globalIcons
     };
     self.configureBuilds();
-    self.initUploadfs();
+    await self.initUploadfs();
     self.enableBrowserData();
 
     const {
