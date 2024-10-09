@@ -3,7 +3,9 @@
 * or defaulting to the choices provided with the field.
 */
 
-import { debounce } from 'Modules/@apostrophecms/ui/ui/apos/utils/index';
+import { debounceAsync } from 'Modules/@apostrophecms/ui/utils';
+
+const DEBOUNCE_TIMEOUT = 500;
 
 export default {
   data() {
@@ -13,8 +15,13 @@ export default {
   },
 
   async mounted() {
-    this.debouncedUpdateChoices = debounce(this.updateChoices, 250);
-    return updateChoices();
+    console.log('getting debounced fn for ' + this.field.name);
+    this.debouncedUpdateChoices = debounceAsync(this.getChoices, DEBOUNCE_TIMEOUT, {
+      onSuccess: this.updateChoices
+    });
+    console.log('calling debounced fn for ' + this.field.name);
+    await this.debouncedUpdateChoices.skipDelay();
+    console.log('after initial call for ' + this.field.name);
   },
 
   watch: {
@@ -27,7 +34,8 @@ export default {
   },
 
   methods: {
-    async updateChoices() {
+    async getChoices() {
+      console.log('entering debounced fn for ' + this.field.name);
       if (typeof this.field.choices === 'string') {
         const action = this.options.action;
         const response = await apos.http.post(
@@ -39,18 +47,27 @@ export default {
             },
             busy: true,
             body: {
-              ...this.followingValues
+              following: {
+                ...this.followingValues
+              }
             }
           }
         );
         if (response.choices) {
-          this.choices = response.choices;
+          console.log('returning:', response.choices);
+          return response.choices;
         }
       } else {
-        this.choices = this.field.choices;
+        console.log('returning:', this.field.choices);
+        return this.field.choices;
       }
-
+    },
+    updateChoices(choices) {
+      console.log('setting');
+      this.choices = choices;
+      console.log('after set');
       if (this.field.type === 'select') {
+        console.log('prepending');
         this.prependEmptyChoice();
       }
     },

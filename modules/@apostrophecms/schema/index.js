@@ -1724,7 +1724,14 @@ module.exports = {
               setSchemaPointers(pointer, child);
             }
           }
-          self.schemaPointers[field.id] = pointer;
+          self.schemaPointers[field._id] = pointer;
+        }
+        function getFieldIdsByName(schema) {
+          const idsByName = {};
+          for (const field of schema) {
+            idsByName[field.name] = field._id;
+          }
+          return idsByName;
         }
       },
 
@@ -1739,6 +1746,7 @@ module.exports = {
       // not point to a valid field
 
       getFieldByRelativePath(id, relativePath) {
+        console.log(`coming in relativePath is ${relativePath}`);
         const field = self.apos.schema.getFieldById(id);
         if (!field) {
           throw self.apos.error('invalid', 'no such field id');
@@ -1746,26 +1754,33 @@ module.exports = {
         if (!(field.following || []).includes(relativePath)) {
           throw self.apos.error('invalid', `${relativePath} does not appear in "following" for this field`);
         }
-        const pointer = self.schemaPointers[field.id];
+        let pointer = self.schemaPointers[field._id];
+        log('pointer was:', pointer);
         if (!pointer) {
           // Should not be possible
           throw self.apos.error('error', 'schema pointer not found even though field id is valid');
         }
         let path = relativePath;
+        // We are at the field level, first step to our own parent, which is a schema,
+        // so that a path like "peername" works
+        pointer = pointer.parent;
+        // Now deal with any ancestor paths
         while (path.startsWith('<')) {
           pointer = pointer.parent;
+          log('pointer is:', pointer);
           if (!pointer) {
-            throw self.apos.error('invalid', `${relativePath} points above the schema tree`);
+            throw self.apos.error('invalid', `${path} (${relativePath}) points above the schema tree`);
           }
           path = path.substring(1);
         }
+        console.log(JSON.stringify(pointer, null, '  '));
         const relatedId = pointer.fieldIdsByName[path];
         if (!relatedId) {
-          throw self.apos.error('invalid', `${relativePath} is not a valid field in the schema tree`);
+          throw self.apos.error('invalid', `${path} (${relativePath}) is not a valid field in the schema tree`);
         }
         const relatedField = self.getFieldById(relatedId);
         if (!relatedField) {
-          throw self.apos.error('error', `${relativePath} resolves to a field id but getFieldById somehow does not return a field`);
+          throw self.apos.error('error', `${path} (${relativePath}) resolves to a field id but getFieldById somehow does not return a field`);
         }
         return relatedField;
       },
@@ -1859,14 +1874,26 @@ module.exports = {
         ) {
           throw self.apos.error('invalid');
         }
+        console.log('entered for: ' + field.name);
+        console.log(field);
         if (field.following) {
           for (const follows of field.following) {
-            const subset = [ self.getFieldByRelativePath(follows) ];
+            console.log(`** ${field._id} ${fieldId}`);
+            const relatedField = self.getFieldByRelativePath(field._id, follows);
+            relatedField.if = undefined;
+            relatedField.requiredIf = undefined;
+            const subset = [ relatedField ];
+            console.log(JSON.stringify(subset));
+            log('following:', followingData);
             const source = {
-              [follows.name]: followingData && followingData[follows]
+              [relatedField.name]: followingData && followingData[follows]
             }
+            console.log(JSON.stringify(source));
+            const output = {};
             try {
-              await self.convert(req, subset, source, following);
+              await self.convert(req, subset, source, output);
+              following[follows] = output[relatedField.name];
+              console.log('converted:', following);
             } catch (e) {
               self.apos.util.debug(e);
               // the fields we are following are not yet in a valid state
@@ -1971,4 +1998,8 @@ function getConditionTypeExternalConditionKeys(conditions) {
     }
   }
   return results;
+}
+
+function log(s, o) {
+  console.log(s, JSON.stringify(o, null, '  '));
 }
