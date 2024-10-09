@@ -19,6 +19,7 @@
         type="primary"
         label="apostrophe:update"
         :disabled="docFields.hasErrors"
+        :attrs="{'data-apos-focus-priority': true}"
         @click="submit"
       />
     </template>
@@ -94,7 +95,6 @@
     <template #main>
       <div ref="cropperContainer" class="apos-image-cropper__container">
         <AposImageCropper
-          v-if="containerHeight"
           :attachment="item.attachment"
           :doc-fields="docFields"
           :aspect-ratio="aspectRatio"

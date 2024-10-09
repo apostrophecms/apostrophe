@@ -1,5 +1,16 @@
 # Changelog
 
+## UNRELEASED
+
+### Adds
+
+* Adding the attribute `data-apos-focus-priority` to an element in a modal will prioritize it's initial focus when rendered.
+
+### Fixes
+
+* Takes care of an edge case where Media Manager would duplicate search results.
+* Modifies the `AposAreaMenu.vue` component to set the `disabled` attribute to `true` if the max number of widgets have been added in an area with `expanded: true`.
+
 ## 4.8.0 (2024-10-03)
 
 ### Adds
@@ -41,6 +52,8 @@
 
 ### Adds
 
+* Elements inside modals can have a `data-apos-focus-priority` attribute that prioritizes them inside the focusable elements list.
+* Modals will continute trying to find focusable elements until an element marked `data-apos-focus-priority` appears or the max retry threshold is reached.
 * To aid debugging, when a file extension is unacceptable as an Apostrophe attachment the rejected extension is now printed as part of the error message.
 * The new `big-upload-client` module can now be used to upload very large files to any route that uses the new `big-upload-middleware`.
 * Add option `skipReplace` for `apos.doc.changeDocIds` method to skip the replacing of the "old" document in the database.

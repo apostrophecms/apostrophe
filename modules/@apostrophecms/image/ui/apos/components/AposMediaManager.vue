@@ -37,6 +37,7 @@
         type="primary"
         :label="saveRelationshipLabel"
         :disabled="!!relationshipErrors"
+        :attrs="{'data-apos-focus-priority': true}"
         @click="saveRelationship"
       />
     </template>
@@ -373,6 +374,7 @@ export default {
       if (Array.isArray(tagList)) {
         this.tagList = tagList;
       }
+      this.items = [];
       this.currentPage = currentPage;
       this.totalPages = totalPages;
       for (const item of items) {
@@ -610,7 +612,8 @@ export default {
   }
 
   :deep(.apos-modal__body-inner) {
-    overflow: hidden;
+    display: flex;
+    flex-direction: column;
     height: 100%;
   }
 
