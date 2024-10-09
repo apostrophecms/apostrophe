@@ -12,6 +12,7 @@
       <AposButton
         type="default"
         label="apostrophe:cancel"
+        :attrs="{'data-apos-focus-priority': isPriorityButton('cancel')}"
         @click="confirmAndCancel"
       />
     </template>
@@ -42,6 +43,7 @@
         :label="saveLabel"
         :disabled="saveDisabled"
         :tooltip="errorTooltip"
+        :attrs="{'data-apos-focus-priority': isPriorityButton('save')}"
         @click="onRestore"
       />
       <AposButtonSplit
@@ -51,6 +53,7 @@
         :disabled="saveDisabled"
         :tooltip="errorTooltip"
         :selected="savePreference"
+        :attrs="{'data-apos-focus-priority': isPriorityButton('splitSave')}"
         @click="saveHandler($event)"
       />
     </template>
@@ -883,6 +886,12 @@ export default {
       }
 
       return body;
+    },
+    isPriorityButton(name) {
+      const priority = this.restoreOnly ? 'save'
+        : this.saveMenu ? 'splitSave'
+          : this.saveDisabled ? 'cancel' : null;
+      return name === priority || null;
     }
   }
 };
