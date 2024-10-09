@@ -31,6 +31,7 @@
           :button="draftButton"
           :menu="draftMenu"
           :disabled="hasCustomUi || isUnpublished"
+          :center-on-icon="true"
           menu-placement="bottom-end"
           @item-clicked="switchDraftMode"
         />
@@ -48,6 +49,13 @@
         :label="label"
         :tooltip="tooltip"
         :modifiers="modifiers"
+      />
+      <TheAposContextBreakpointPreviewMode
+        v-if="isBreakpointPreviewModeEnabled"
+        :screens="breakpointPreviewModeScreens"
+        :resizable="breakpointPreviewModeResizable"
+        @switch-breakpoint-preview-mode="addContextLabel"
+        @reset-breakpoint-preview-mode="removeContextLabel"
       />
     </span>
   </transition-group>
@@ -92,6 +100,15 @@ export default {
     },
     isUnpublished() {
       return !this.context.lastPublishedAt;
+    },
+    isBreakpointPreviewModeEnabled() {
+      return this.moduleOptions.breakpointPreviewMode.enable || false;
+    },
+    breakpointPreviewModeScreens() {
+      return this.moduleOptions.breakpointPreviewMode.screens || {};
+    },
+    breakpointPreviewModeResizable() {
+      return this.moduleOptions.breakpointPreviewMode.resizable || false;
     },
     docTooltip() {
       return {
@@ -141,6 +158,15 @@ export default {
     },
     switchDraftMode(mode) {
       this.$emit('switch-draft-mode', mode);
+    },
+    addContextLabel({
+      label
+    }) {
+      document.querySelector('[data-apos-context-label]')
+        ?.replaceChildren(document.createTextNode(this.$t(label)));
+    },
+    removeContextLabel() {
+      document.querySelector('[data-apos-context-label]')?.replaceChildren();
     }
   }
 };

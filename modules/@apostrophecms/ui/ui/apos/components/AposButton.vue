@@ -14,7 +14,7 @@
       class="apos-button"
       :class="modifierClass"
       :tabindex="tabindex"
-      :disabled="isDisabled"
+      :disabled="isDisabled ? isDisabled : null"
       :type="buttonType"
       :role="role"
       :style="{color: textColor}"
@@ -37,6 +37,7 @@
           :icon-size="iconSize"
           class="apos-button__icon"
           :icon-color="iconFill"
+          @icon="$emit('icon', $event)"
         />
         <slot name="label">
           <span class="apos-button__label" :class="{ 'apos-sr-only' : (iconOnly || type === 'color') }">
@@ -138,7 +139,7 @@ export default {
       default: null
     }
   },
-  emits: [ 'click' ],
+  emits: [ 'click', 'icon' ],
   data() {
     return {
       id: createId()
@@ -231,16 +232,18 @@ export default {
   .apos-button {
     @include type-base;
 
-    position: relative;
-    display: inline-block;
-    overflow: hidden;
-    padding: 10px 20px;
-    border: 1px solid var(--a-base-5);
-    color: var(--a-text-primary);
-    border-radius: var(--a-border-radius);
-    background-color: var(--a-base-9);
-    transition: all 200ms ease;
-    text-decoration: none;
+    & {
+      position: relative;
+      display: inline-block;
+      overflow: hidden;
+      padding: 10px 20px;
+      border: 1px solid var(--a-base-5);
+      color: var(--a-text-primary);
+      border-radius: var(--a-border-radius);
+      background-color: var(--a-base-9);
+      transition: all 200ms ease;
+      text-decoration: none;
+    }
 
     &:hover {
       cursor: pointer;
@@ -670,6 +673,7 @@ export default {
     &:hover:not([disabled]),
     &:focus:not([disabled]) {
       transform: none;
+      box-shadow: none;
     }
   }
 

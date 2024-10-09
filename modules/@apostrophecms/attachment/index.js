@@ -278,7 +278,8 @@ module.exports = {
         if (correctedExtensions) {
           const message = req.t('apostrophe:fileTypeNotAccepted', {
             // i18next has no built-in support for interpolating an array argument
-            extensions: correctedExtensions.join(req.t('apostrophe:listJoiner'))
+            extensions: correctedExtensions.join(req.t('apostrophe:listJoiner')),
+            extension: dbInfo.extension
           });
           throw self.apos.error('invalid', message);
         }
@@ -398,7 +399,8 @@ module.exports = {
         if (!group) {
           const accepted = _.union(_.map(self.fileGroups, 'extensions')).flat();
           throw self.apos.error('invalid', req.t('apostrophe:fileTypeNotAccepted', {
-            extensions: accepted.join(req.t('apostrophe:listJoiner'))
+            extensions: accepted.join(req.t('apostrophe:listJoiner')),
+            extension
           }));
         }
 
@@ -517,8 +519,15 @@ module.exports = {
         const writeFile = require('util').promisify(fs.writeFile);
         const window = new JSDOM('').window;
         const DOMPurify = createDOMPurify(window);
+        DOMPurify.addHook('afterSanitizeAttributes', node => {
+          if (node.hasAttribute('xlink:href') && !node.getAttribute('xlink:href').match(/^#/)) {
+            node.remove();
+          }
+        });
         const dirty = await readFile(path);
-        const clean = DOMPurify.sanitize(dirty);
+        const clean = DOMPurify.sanitize(dirty, {
+          ADD_TAGS: [ 'use' ]
+        });
         return writeFile(path, clean);
       },
       getFileGroup(extension) {

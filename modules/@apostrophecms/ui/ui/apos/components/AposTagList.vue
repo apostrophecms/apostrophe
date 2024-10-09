@@ -69,8 +69,10 @@ export default {
 .apos-tag-list__title {
   @include type-base;
 
-  margin-bottom: 15px;
-  color: var(--a-base-3);
+  & {
+    margin-bottom: 15px;
+    color: var(--a-base-3);
+  }
 }
 
 .apos-tag-list__items {

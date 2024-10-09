@@ -19,6 +19,7 @@
         type="primary"
         label="apostrophe:update"
         :disabled="docFields.hasErrors"
+        :attrs="{'data-apos-focus-priority': true}"
         @click="submit"
       />
     </template>
@@ -94,7 +95,6 @@
     <template #main>
       <div ref="cropperContainer" class="apos-image-cropper__container">
         <AposImageCropper
-          v-if="containerHeight"
           :attachment="item.attachment"
           :doc-fields="docFields"
           :aspect-ratio="aspectRatio"
@@ -479,8 +479,10 @@ export default {
 .apos-field__min-size {
   @include type-small;
 
-  margin-bottom: 10px;
-  color: var(--a-base-1);
+  & {
+    margin-bottom: 10px;
+    color: var(--a-base-1);
+  }
 
   &--correcting {
     color: var(--a-primary);
@@ -490,10 +492,12 @@ export default {
 .apos-field__label {
   @include type-label;
 
-  display: block;
-  margin: 0 0 $spacing-base;
-  padding: 0;
-  color: var(--a-text-primary);
+  & {
+    display: block;
+    margin: 0 0 $spacing-base;
+    padding: 0;
+    color: var(--a-text-primary);
+  }
 }
 
 .apos-field__label--aligned {

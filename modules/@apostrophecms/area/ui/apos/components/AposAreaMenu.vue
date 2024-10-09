@@ -2,7 +2,7 @@
   <AposButton
     v-if="options.expanded"
     v-bind="buttonOptions"
-    :disabled="disabled"
+    :disabled="isDisabled"
     role="button"
     @click="openExpandedMenu(index)"
   />
@@ -15,7 +15,8 @@
     :widget-options="options.widgets"
     :options="options"
     :max-reached="maxReached"
-    :disabled="disabled"
+    :disabled="isDisabled"
+    :menu-id="menuId"
     @add="$emit('add', $event);"
   />
 </template>
@@ -58,6 +59,10 @@ export default {
     tabbable: {
       type: Boolean,
       default: false
+    },
+    menuId: {
+      type: String,
+      default: null
     }
   },
   emits: [ 'add' ],
@@ -71,6 +76,13 @@ export default {
         iconSize: this.empty ? 20 : 11,
         disableFocus: !this.tabbable
       };
+    },
+    isDisabled() {
+      let flag = this.disabled;
+      if (this.maxReached) {
+        flag = true;
+      }
+      return flag;
     }
   },
   methods: {
@@ -113,10 +125,12 @@ export default {
   @include apos-button-reset();
   @include type-base;
 
-  box-sizing: border-box;
-  width: 100%;
-  padding: 5px 20px;
-  color: var(--a-base-1);
+  & {
+    box-sizing: border-box;
+    width: 100%;
+    padding: 5px 20px;
+    color: var(--a-base-1);
+  }
 
   &:hover,
   &:focus {
@@ -149,11 +163,13 @@ export default {
 .apos-area-menu__group-label {
   @include apos-button-reset();
 
-  display: flex;
-  box-sizing: border-box;
-  justify-content: space-between;
-  width: 100%;
-  padding: 10px 20px;
+  & {
+    display: flex;
+    box-sizing: border-box;
+    justify-content: space-between;
+    width: 100%;
+    padding: 10px 20px;
+  }
 
   &:hover {
     cursor: pointer;
@@ -168,7 +184,9 @@ export default {
 .apos-area-menu__group-chevron {
   @include apos-transition();
 
-  transform: rotate(90deg);
+  & {
+    transform: rotate(90deg);
+  }
 }
 
 .apos-area-menu__group-chevron.apos-is-active {
@@ -189,8 +207,10 @@ export default {
 .apos-area-menu__items--accordion {
   @include apos-transition($duration:0.3s);
 
-  overflow: hidden;
-  max-height: 0;
+  & {
+    overflow: hidden;
+    max-height: 0;
+  }
 }
 
 .apos-area-menu__items--accordion.apos-is-active {

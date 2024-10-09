@@ -24,7 +24,7 @@ export default {
           body: {},
           busy: true
         });
-        apos.notify('apostrophe:changesPublished', {
+        await apos.notify('apostrophe:changesPublished', {
           type: 'success',
           dismiss: true,
           icon: 'check-all-icon',
@@ -92,7 +92,7 @@ export default {
           body: {},
           busy: true
         });
-        apos.notify('apostrophe:noLongerPublished', {
+        await apos.notify('apostrophe:noLongerPublished', {
           type: 'success',
           dismiss: true
         });
@@ -125,7 +125,7 @@ export default {
           ...doc,
           submitted
         };
-        apos.notify('apostrophe:submittedForReview', {
+        await apos.notify('apostrophe:submittedForReview', {
           type: 'success',
           icon: 'list-status-icon',
           dismiss: true
@@ -155,7 +155,7 @@ export default {
           body: {},
           busy: true
         });
-        apos.notify('apostrophe:dismissedSubmission', {
+        await apos.notify('apostrophe:dismissedSubmission', {
           type: 'success',
           dismiss: true,
           icon: 'close-circle-icon'
@@ -208,7 +208,7 @@ export default {
               body: {},
               busy: true
             });
-            apos.notify('apostrophe:draftDiscarded', {
+            await apos.notify('apostrophe:draftDiscarded', {
               type: 'success',
               dismiss: true,
               icon: 'text-box-remove-icon'
@@ -226,7 +226,7 @@ export default {
               body: {},
               busy: true
             });
-            apos.notify('apostrophe:draftDeleted', {
+            await apos.notify('apostrophe:draftDeleted', {
               type: 'success',
               dismiss: true
             });

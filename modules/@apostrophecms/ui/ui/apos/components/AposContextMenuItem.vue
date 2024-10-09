@@ -9,7 +9,7 @@
       :data-apos-test-selected="selected"
       :data-apos-test-danger="danger"
       :data-apos-test-disabled="disabled"
-      @click="click"
+      v-on="disabled ? {} : { click: click }"
     >
       {{ $t(label) }}
     </button>
@@ -38,12 +38,12 @@ export default {
       return this.menuItem.modifiers?.includes('danger');
     },
     disabled() {
-      return this.menuItem.modifiers?.includes('disabled');
+      return !!this.menuItem.modifiers?.includes('disabled');
     },
     modifiers() {
       const classes = [];
       if (this.menuItem.modifiers) {
-        this.menuItem.modifiers.forEach(modifier => {
+        this.menuItem.modifiers.forEach((modifier) => {
           classes.push(`apos-context-menu__button--${modifier}`);
         });
       }
@@ -69,13 +69,14 @@ export default {
 </script>
 
 <style lang="scss" scoped>
-  .apos-context-menu__item {
-    display: flex;
-  }
+.apos-context-menu__item {
+  display: flex;
+}
 
-  .apos-context-menu__button {
-    @include type-base;
+.apos-context-menu__button {
+  @include type-base;
 
+  & {
     display: inline-block;
     flex-grow: 1;
     width: 100%;
@@ -84,52 +85,54 @@ export default {
     color: var(--a-base-1);
     text-align: left;
     background-color: var(--a-background-primary);
+  }
+
+  &:hover {
+    cursor: pointer;
+    color: var(--a-text-primary);
+  }
+
+  &:focus {
+    outline: none;
+    color: var(--a-text-primary);
+  }
+
+  &:active {
+    color: var(--a-base-1);
+  }
+
+  &--danger {
+    color: var(--a-danger);
 
     &:hover {
-      cursor: pointer;
-      color: var(--a-text-primary);
+      color: var(--a-danger-button-hover);
     }
 
-    &:focus {
-      outline: none;
-      color: var(--a-text-primary);
-    }
-
+    &:focus,
     &:active {
-      color: var(--a-base-1);
-    }
-
-    &--danger {
-      color: var(--a-danger);
-
-      &:hover {
-        color: var(--a-danger-button-hover);
-      }
-
-      &:focus, &:active {
-        color: var(--a-danger-button-active);
-      }
-    }
-
-    &--primary {
-      color: var(--a-primary);
-
-      &:hover,
-      &:focus,
-      &:active {
-        color: var(--a-primary);
-      }
-    }
-
-    &--disabled {
-      color: var(--a-base-5);
-
-      &:hover,
-      &:focus,
-      &:active {
-        cursor: not-allowed;
-        color: var(--a-base-5);
-      }
+      color: var(--a-danger-button-active);
     }
   }
+
+  &--primary {
+    color: var(--a-primary);
+
+    &:hover,
+    &:focus,
+    &:active {
+      color: var(--a-primary);
+    }
+  }
+
+  &--disabled {
+    color: var(--a-base-5);
+
+    &:hover,
+    &:focus,
+    &:active {
+      cursor: not-allowed;
+      color: var(--a-base-5);
+    }
+  }
+}
 </style>

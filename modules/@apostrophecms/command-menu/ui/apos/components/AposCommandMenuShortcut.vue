@@ -12,6 +12,7 @@
           <header class="apos-modal__header">
             <div class="apos-modal__header__main">
               <AposButton
+                :attrs="{'data-apos-focus-priority': true}"
                 type="default"
                 :title="$t('apostrophe:commandMenuEsc')"
                 :icon-only="true"
@@ -110,10 +111,13 @@ export default {
       this.modal.showModal = false;
     },
     getLabel(label) {
-      if (label && label.key && label.type) {
+      if (typeof label === 'object' && label.key) {
+        const type = label.type ? this.$t(label.type) : '';
+
         return this.$t({
+          ...label,
           key: label.key,
-          type: this.$t(label.type)
+          type
         });
       }
 
@@ -173,10 +177,12 @@ export default {
 .apos-modal__heading {
   @include type-base;
 
-  display: inline-block;
-  margin: 0;
-  font-size: var(--a-type-large);
-  line-height: $spacing-double;
+  & {
+    display: inline-block;
+    margin: 0;
+    font-size: var(--a-type-large);
+    line-height: $spacing-double;
+  }
 }
 
 .apos-command-menu-key {
@@ -205,18 +211,22 @@ export default {
 .apos-command-menu-shortcut-group {
   @include type-base;
 
-  font-weight: 400;
+  & {
+    font-weight: 400;
+  }
 }
 
 .apos-command-menu-shortcut-group-title {
   @include type-base;
 
-  box-sizing: border-box;
-  height: 24px;
-  margin: 0;
-  padding: $spacing-half 0;
-  color: var(--a-base-3);
-  text-align: left;
+  & {
+    box-sizing: border-box;
+    height: 24px;
+    margin: 0;
+    padding: $spacing-half 0;
+    color: var(--a-base-3);
+    text-align: left;
+  }
 }
 
 .apos-command-menu-shortcut-command {

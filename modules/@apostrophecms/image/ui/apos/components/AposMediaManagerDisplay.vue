@@ -35,7 +35,7 @@
           />
         </div>
         <button
-          :id="`btn-${item._id}`"
+          :id="`btn-${item._id.replaceAll(':', '-')}`"
           :disabled="
             item._id === 'placeholder' || canSelect(item._id) === false
           "
@@ -168,6 +168,13 @@ export default {
     async isLastPage(val) {
       await this.$nextTick();
       this.$emit('set-load-ref', this.$refs.scrollLoad);
+    },
+    async checked(newVal) {
+      if (newVal.length) {
+        await this.$nextTick();
+        const target = newVal[newVal.length - 1];
+        this.$el.querySelector(`#btn-${target.replaceAll(':', '-')}`).focus();
+      }
     }
   },
   mounted() {
@@ -246,12 +253,14 @@ export default {
   .apos-media-manager-display__cell {
     @include apos-transition();
 
-    position: relative;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 100%;
-    height: 100%;
+    & {
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+      height: 100%;
+    }
 
     &.apos-is-hidden { visibility: hidden; }
 
@@ -267,11 +276,13 @@ export default {
   .apos-media-manager-display__checkbox {
     @include apos-transition();
 
-    z-index: $z-index-manager-display;
-    position: absolute;
-    top: -6px;
-    left: -6px;
-    opacity: 0;
+    & {
+      z-index: $z-index-manager-display;
+      position: absolute;
+      top: -6px;
+      left: -6px;
+      opacity: 0;
+    }
   }
 
   .apos-media-manager-display__cell:hover .apos-media-manager-display__checkbox,
@@ -283,9 +294,11 @@ export default {
   .apos-media-manager-display__placeholder {
     @include apos-transition();
 
-    max-width: 100%;
-    max-height: 100%;
-    opacity: 0.85;
+    & {
+      max-width: 100%;
+      max-height: 100%;
+      opacity: 0.85;
+    }
   }
 
   .apos-media-manager-display__placeholder {
@@ -296,13 +309,15 @@ export default {
     @include apos-button-reset();
     @include apos-transition();
 
-    display: flex;
-    box-sizing: border-box;
-    align-items: center;
-    justify-content: center;
-    width: 100%;
-    height: 100%;
-    border: 1px solid var(--a-base-7);
+    & {
+      display: flex;
+      box-sizing: border-box;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+      height: 100%;
+      border: 1px solid var(--a-base-7);
+    }
 
     &:active + .apos-media-manager-display__checkbox {
       opacity: 1;
@@ -353,9 +368,11 @@ export default {
   .apos-media-manager-display__end-reached {
     @include type-label;
 
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    height: 40px;
+    & {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 40px;
+    }
   }
 </style>

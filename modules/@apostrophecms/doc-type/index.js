@@ -759,6 +759,7 @@ module.exports = {
 
       async convert(req, input, doc, options = {
         presentFieldsOnly: false,
+        fetchRelationships: true,
         type: null,
         copyingId: null,
         createId: null
@@ -783,8 +784,10 @@ module.exports = {
             ...input
           };
         }
-
-        await self.apos.schema.convert(req, schema, input, doc);
+        const convertOptions = {
+          fetchRelationships: options.fetchRelationships !== false
+        };
+        await self.apos.schema.convert(req, schema, input, doc, convertOptions);
 
         if (options.createId) {
           doc.aposDocId = options.createId;
@@ -988,6 +991,10 @@ module.exports = {
       // This method accepts the draft or the published version of the document
       // to achieve this.
       async unpublish(req, doc, options) {
+        if (self.options.singleton) {
+          throw self.apos.error('forbidden');
+        }
+
         const DRAFT_SUFFIX = ':draft';
         const PUBLISHED_SUFFIX = ':published';
 

@@ -17,6 +17,7 @@ const _ = require('lodash');
 const { klona } = require('klona');
 const { stripIndents } = require('common-tags');
 const addFieldTypes = require('./lib/addFieldTypes');
+const newInstance = require('./lib/newInstance.js');
 
 module.exports = {
   options: {
@@ -368,35 +369,7 @@ module.exports = {
       // Return a new object with all default settings
       // defined in the schema
       newInstance(schema) {
-        const instance = {};
-        for (const field of schema) {
-          if (field.def !== undefined) {
-            instance[field.name] = klona(field.def);
-          } else {
-            // All fields should have an initial value in the database
-            instance[field.name] = null;
-          }
-          // A workaround specifically for areas. They must have a
-          // unique `_id` which makes `klona` a poor way to establish
-          // a default, and we don't pass functions in schema
-          // definitions, but top-level areas should always exist
-          // for reasonable results if the output of `newInstance`
-          // is saved without further editing on the front end
-          if ((field.type === 'area') && (!instance[field.name])) {
-            instance[field.name] = {
-              metaType: 'area',
-              items: [],
-              _id: self.apos.util.generateId()
-            };
-          }
-          // A workaround specifically for objects. These too need
-          // to have reasonable values in parked pages and any other
-          // situation where the data never passes through the UI
-          if ((field.type === 'object') && ((!instance[field.name]) || _.isEmpty(instance[field.name]))) {
-            instance[field.name] = self.newInstance(field.schema);
-          }
-        }
-        return instance;
+        return newInstance(schema);
       },
 
       subsetInstance(schema, instance) {
@@ -599,7 +572,8 @@ module.exports = {
       // set error class names, etc. If the error is not a string, it is a
       // database error etc. and should not be displayed in the browser directly.
 
-      async convert(req, schema, data, destination) {
+      async convert(req, schema, data, destination, { fetchRelationships = true } = {}) {
+        const options = { fetchRelationships };
         if (Array.isArray(req)) {
           throw new Error('convert invoked without a req, do you have one in your context?');
         }
@@ -629,7 +603,8 @@ module.exports = {
                   required: isRequired
                 },
                 data,
-                destination
+                destination,
+                options
               );
             } catch (error) {
               if (Array.isArray(error)) {
@@ -1039,7 +1014,7 @@ module.exports = {
 
         const handlers = {
           arrayItem: (field, object) => {
-            if (!can(field)) {
+            if (!object || !can(field)) {
               return;
             }
 
@@ -1048,7 +1023,7 @@ module.exports = {
             object.scopedArrayName = field.scopedArrayName;
           },
           object: (field, object) => {
-            if (!can(field)) {
+            if (!object || !can(field)) {
               return;
             }
 
@@ -1056,7 +1031,7 @@ module.exports = {
             object.scopedObjectName = field.scopedObjectName;
           },
           relationship: (field, doc) => {
-            if (!can(field)) {
+            if (!Array.isArray(doc[field.name]) || !can(field)) {
               return;
             }
 
@@ -1070,6 +1045,25 @@ module.exports = {
               }
               doc[field.fieldsStorage] = fieldsById;
             }
+          }
+        };
+
+        self.apos.doc.walkByMetaType(doc, handlers);
+      },
+
+      simulateRelationshipsFromStorage(req, doc) {
+        const handlers = {
+          relationship: (field, object) => {
+            const manager = self.apos.doc.getManager(field.withType);
+            const setId = (id) => manager.options.localized !== false
+              ? `${id}:${doc.aposLocale}`
+              : id;
+
+            const itemIds = object[field.idsStorage] || [];
+            object[field.name] = itemIds.map(id => ({
+              _id: setId(id),
+              _fields: object[field.fieldsStorage]?.[id] || {}
+            }));
           }
         };
 
@@ -1710,6 +1704,24 @@ module.exports = {
         _.each(self.apos.area.widgetManagers, function (manager, type) {
           self.register('widget', type, manager.schema);
         });
+      },
+
+      async getChoicesForQueryBuilder(field, query) {
+        const req = self.apos.task.getReq();
+        const allChoices = await self.getChoices(req, field);
+        const values = await query.toDistinct(field.name);
+
+        const choices = _.map(values, function (value) {
+          const choice = _.find(allChoices, { value: value });
+          return {
+            value: value,
+            label: choice && (choice.label || value)
+          };
+        });
+
+        self.apos.util.insensitiveSortByProperty(choices, 'label');
+
+        return choices;
       },
 
       async getChoices(req, field) {

@@ -56,12 +56,14 @@ export default {
   .apos-pager-dots__button {
     @include apos-button-reset();
 
-    width: 12px;
-    height: 12px;
-    border-radius: 50%;
-    background-color: var(--a-primary-light-40);
-    margin-right: 20px;
-    transition: all 300ms ease;
+    & {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background-color: var(--a-primary-light-40);
+      margin-right: 20px;
+      transition: all 300ms ease;
+    }
   }
 
   .apos-pager-dots__button.apos-is-active {

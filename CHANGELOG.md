@@ -1,15 +1,115 @@
 # Changelog
 
+## UNRELEASED
+
+### Adds
+
+* Elements inside modals can have a `data-apos-focus-priority` attribute that prioritizes them inside the focusable elements list.
+* Modals will continute trying to find focusable elements until an element marked `data-apos-focus-priority` appears or the max retry threshold is reached.
+* Takes care of an edge case where Media Manager would duplicate search results.
+* Modules can now have a `before: "module-name"` property in their configuration to run (initialization) before another module.
+
+### Fixes
+
+* Modifies the `AposAreaMenu.vue` component to set the `disabled` attribute to `true` if the max number of widgets have been added in an area with `expanded: true`.
+* `pnpm: true` option in `app.js` is no longer breaking the application. 
+* Remove unused `vue-template-compiler` dependency.
+* Prevent un-publishing the `@apostrophecms/global` doc and more generally all singletons.
+* Correct a race condition that can cause a crash at startup when custom `uploadfs` options are present in some environments.
+
+## 4.8.0 (2024-10-03)
+
+### Adds
+
+* Adds a mobile preview feature to the admin UI. The feature can be enabled using the `@apostrophecms/asset` module's new `breakpointPreviewMode` option. Once enabled, the asset build process will duplicate existing media queries as container queries. There are some limitations in the equivalence between media queries and container queries. You can refer to the [CSS @container at-rule](https://developer.mozilla.org/en-US/docs/Web/CSS/@container) documentation for more information. You can also enable `breakpointPreviewMode.debug` to be notified in the console when the build encounters an unsupported media query.
+* Apostrophe now automatically adds the appropriate default values for new properties in the schema, even for existing documents in the database. This is done automatically during the migration phase of startup.
+* Adds focus states for media library's Uploader tile.
+* Adds focus states file attachment's input UI.
+* Simplified importing rich text widgets via the REST API. If you  you have HTML that contains `img` tags pointing to existing images, you can now import them all quickly. When supplying the rich text widget object, include an `import` property with an `html` subproperty, rather than the usual `content` property. You can optionally provide a `baseUrl` subproperty as well. Any images present in `html` will be imported automatically and the correct `figure` tags will be added to the new rich text widget, along with any other markup acceptable to the widget's configuration.
+
+### Changes
+
+* The various implementations of `newInstance` found in Apostrophe, e.g. for widgets, array items, relationship fields and documents themselves, have been consolidated in one implementation. The same code is now reused both on the front and the back end, ensuring the same result without the need to introduce additional back end API calls.
+
+### Fixes
+
+* Apostrophe's migration logic is no longer executed twice on every startup and three times in the migration task. It is executed exactly once, always at the same point in the startup process. This bug did not cause significant performance issues because migrations were always only executed once, but there is a small performance improvement due to not checking for them more than once.
+* The `@apostrophecms/page` module APIs no longer allow a page to become a child of itself. Thanks to [Maarten Marx](https://github.com/Pixelguymm) for reporting the issue.
+* Uploaded SVGs now permit `<use>` tags granted their `xlink:href` property is a local reference and begins with the `#` character. This improves SVG support while mitgating XSS vulnerabilities.
+* Default properties of object fields present in a widget now populate correctly even if never focused in the editor.
+* Fixed the "choices" query builder to correctly support dynamic choices, ensuring compatibility with the [`piecesFilters`](https://docs.apostrophecms.org/reference/modules/piece-page-type.html#piecesfilters) feature when using dynamic choices.
+* Fix a reordering issue for arrays when dragging and dropping items in the admin UI.
+* The inline array item extract the label now using `title` as `titleField` value by default (consistent with the Slat list).
+
+## 4.7.1 (2024-09-20)
+
+### Fixes
+
+* Ensure parked fields are not modified for parked pages when not configured in `_defaults`.
+
+## 4.7.0 (2024-09-05)
+
+### Changes
+
+* UI and UX of inline arrays and their table styles
+
+### Adds
+
+* To aid debugging, when a file extension is unacceptable as an Apostrophe attachment the rejected extension is now printed as part of the error message.
+* The new `big-upload-client` module can now be used to upload very large files to any route that uses the new `big-upload-middleware`.
+* Add option `skipReplace` for `apos.doc.changeDocIds` method to skip the replacing of the "old" document in the database.
+* The `@apostrophecms/i18n` module now exposes a `locales` HTTP GET API to aid in implementation of native apps for localized sites.
+* Context menus can be supplied a `menuId` so that interested components can listen to their opening/closing.
+* Allow to set mode in `AposWidget` component through props.
+* Add batch operations to pages.
+* Add shortcuts to pages manager.
+* Add `replaces` (boolean, `false` by default) option to the context operation definition (registered via `apos.doc.addContextOperation()`) to allow the operation to require a replace confirmation before being executed. The user confirmation results in the Editor modal being closed and the operation being executed. The operation is not executed if the user cancels the confirmation.
+
+### Changes
+
+* Wait for notify before navigating to a new page.
+* Send also `checkedTypes` via the pages body toolbar operations (e.g. 'batch') to the modal.
+
+### Fixes
+
+* Fix link to pages in rich-text not showing UI to select page during edit.
+* Bumps `uploadfs` dependency to ensure `.tar.gz`, `.tgz` and `.gz` files uploaded to S3 download without double-gzipping.
+This resolves the issue for new uploads.
+* Registering duplicate icon is no longer breaking the build.
+* Fix widget focus state so that the in-context Add Content menu stays visible during animation
+* Fix UI of areas in schemas so that their context menus are layered overtop sibling schema fields UI
+* Fix unhandled promise rejections and guard against potential memory leaks, remove 3rd party `debounce-async` dependency
+* Adds an option to center the context menu arrow on the button icon. Sets this new option on some context menus in the admin UI.
+* Fixes the update function of `AposSlatLists` so that elements are properly reordered on drag
+
+## 4.6.1 (2024-08-26)
+
+### Fixes
+
+* Registering duplicate icon is no longer breaking the build.
+* Fix widget focus state so that the in-context Add Content menu stays visible during animation.
+* Fix UI of areas in schemas so that their context menus are layered overtop sibling schema fields UI.
+
+### Removes
+* Inline array option for `alwaysOpen` replaced with UI toggles
+
 ## 4.6.0 (2024-08-08)
 
 ### Adds
 
 * Add a locale switcher in pieces and pages editor modals. This is available for localized documents only, and allows you to switch between locales for the same document.
-  The locale can be switche at only one level, meaning that sub documents of a document that already switched locale will not be able to switch locale itself.
+  The locale can be switched at only one level, meaning that sub documents of a document that already switched locale will not be able to switch locale itself.
 * Adds visual focus states and keyboard handlers for engaging with areas and widgets in-context
+* Adds method `simulateRelationshipsFromStorage` method in schema module. 
+This method populates the relationship field with just enough information to allow convert to accept it. It does not fully fetch the related documents. It does the opposite of prepareForStorage.
+* A new options object has been added to the convert method. 
+Setting the `fetchRelationships` option to false will prevent convert from actually fetching relationships to check which related documents currently exist. 
+The shape of the relationship field is still validated.
 
 ### Changes
 
+* Refactors Admin UI SASS to eliminate deprecation warnings from declarations coming after nested rules.
+* Bumps the sass-loader version and adds a webpack option to suppress mixed declaration deprecation warnings to be removed when all modules are updated.
 * Add `title` and `_url` to select all projection.
 * Display `Select all` message on all pages in the manager modal.
 * Refresh `checked` in manager modal after archive action.
@@ -20,6 +120,7 @@
 
 ### Fixes
 
+* Fixes the rendering of conditional fields in arrays where the `inline: true` option is used.
 * Fixes the rich text link tool's detection and display of the Remove Link button for removing existing links
 * Fixes the rich text link tool's detection and display of Apostrophe Page relationship field.
 * Overriding standard Vue.js components with `editorModal` and `managerModal` are now applied all the time.

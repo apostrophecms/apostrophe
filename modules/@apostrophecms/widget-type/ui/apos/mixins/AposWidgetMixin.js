@@ -7,6 +7,10 @@ export default {
     type: String,
     areaFieldId: String,
     modelValue: Object,
+    mode: {
+      type: String,
+      default: 'draft'
+    },
     meta: {
       type: Object,
       default() {
@@ -59,7 +63,7 @@ export default {
           this.rendered = this.rendering.html;
         } else {
           this.rendered = '...';
-          this.rendered = await apos.http.post(`${apos.area.action}/render-widget?aposEdit=1&aposMode=draft`, {
+          this.rendered = await apos.http.post(`${apos.area.action}/render-widget?aposEdit=1&aposMode=${this.mode}`, {
             busy: true,
             body: parameters
           });
