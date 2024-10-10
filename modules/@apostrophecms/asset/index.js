@@ -1,12 +1,13 @@
-const fs = require('fs-extra');
-const Promise = require('bluebird');
-const globalIcons = require('./lib/globalIcons');
 const path = require('path');
+const fs = require('fs-extra');
 const express = require('express');
+const Promise = require('bluebird');
 const { stripIndent } = require('common-tags');
 const { createId } = require('@paralleldrive/cuid2');
 const chokidar = require('chokidar');
 const _ = require('lodash');
+const { glob } = require('glob');
+const globalIcons = require('./lib/globalIcons');
 const {
   checkModulesWebpackConfig,
   getWebpackExtensions,
@@ -302,6 +303,22 @@ module.exports = {
         }
         return self.builds;
       },
+      getBuildRootDir() {
+        const namespace = self.getNamespace();
+        if (self.hasBuildModule()) {
+          return path.join(
+            self.apos.rootDir,
+            'apos-build',
+            self.getBuildModuleConfig().name,
+            namespace
+          );
+        }
+        return path.join(
+          self.apos.rootDir,
+          'apos-build',
+          namespace
+        );
+      },
       // Build the assets using the external build module.
       // The `argv` object is the `argv` object passed to the task.
       // TODO: modify and send the argv, document it.
@@ -342,6 +359,85 @@ module.exports = {
 
         self.printDebug('setBuildExtensions', self.moduleBuildExtensions);
       },
+      // Compute UI source and public files metadata of all modules. The result array
+      // order follows the following rules:
+      // - process modules in the order they are passed
+      // - process each module chain starting from the base parent instance and ending with the
+      //   the final extension
+      // This complies with a "last wins" strategy for sources overrides - the last module in the chain should
+      // win. Handling override scenarios is NOT the responsibility of this method, it only provides the
+      // metadata in the right order.
+      //
+      // If the `asyncHandler` is an optional async function, it will be called
+      // for each module entry. This is useful for external build modules to
+      // e.g. copy files to the build directory during the traversal.
+      //
+      // The `modules` option is usually the result of `self.apos.modulesToBeInstantiated()`.
+      // It's not resolved internally to avoid overhead (it's not cheap). The caller
+      // is responsible for resolving and caching the modules list.
+      //
+      // Returns an array of objects with the following properties:
+      //   - dirname - absolute module path with `/ui` appended.
+      //     For example `path/to/project/article/ui`
+      //     or `/path/to/project/node_modules/@apostrophecms/admin-bar/ui`.
+      //   - `id`: the module name, prefixed with `my-` if it's a project module.
+      //     For example `my-article` or `@apostrophecms/my-admin-bar`.
+      //   - `name`: the original module name (no prefix).
+      //   - `importAlias`: the alias base that is used for importing the module.
+      //     For example `Modules/@apostrophecms/admin-bar/`. This is used to fast
+      //     resolve the module in the Vite build.
+      //   - `project`: a boolean indicating if the module is a project module or inside
+      //     `node_modules`.
+      //   - `files`: an array of paths paths relative to the module `ui/` folder
+      async computeSourceMeta({
+        modules,
+        asyncHandler
+      }) {
+        const seen = {};
+        const meta = [];
+        for (const name of modules) {
+          const metadata = self.apos.synth.getMetadata(name);
+          for (const entry of metadata.__meta.chain) {
+            if (seen[entry.dirname]) {
+              continue;
+            }
+            const moduleName = entry.name.replace('/my-', '/');
+            const dirname = `${entry.dirname}/ui`;
+            const files = await glob('**/*', {
+              cwd: dirname,
+              ignore: '**/node_modules/**',
+              nodir: true,
+              follow: false,
+              absolute: false
+            });
+
+            seen[entry.dirname] = true;
+            const metaEntry = {
+              id: entry.name,
+              name: moduleName,
+              dirname,
+              importAlias: `Modules/${moduleName}/`,
+              project: !entry.npm,
+              files
+            };
+            meta.push(metaEntry);
+
+            if (asyncHandler) {
+              await asyncHandler(metaEntry);
+            }
+          }
+        }
+
+        return meta;
+      },
+      // Get the component name from a file path. The `enumerate` option allows
+      // to append a number to the component name.
+      getComponentNameForUI(componentPath, { enumerate } = {}) {
+        return path
+          .basename(componentPath)
+          .replace(/-/g, '_')
+          .replace(/\.\w+/, '') + (typeof enumerate === 'number' ? `_${enumerate}` : '');
+      },
       printDebug(id, data) {
         if (self.isDebugMode) {
           self.logDebug(id, data);
@@ -349,7 +445,7 @@ module.exports = {
       },
       // END external build modules feature
 
-      // START Webpack refactoring
+      // START refactoring
 
       async setWebpackExtensions(result) {
         const {
@@ -391,7 +487,7 @@ module.exports = {
         self.rebundleModules = rebundleModules;
       },
 
-      // END Webpack refactoring
+      // END refactoring
 
       // Register the library function as method to be used by core modules.
       // Open the implementation for more dev comments.
