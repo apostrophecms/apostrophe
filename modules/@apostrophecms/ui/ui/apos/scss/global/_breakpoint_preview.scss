@@ -17,6 +17,7 @@ body[data-breakpoint-preview-mode] {
   }
 
   [data-apos-refreshable] {
+    position: relative;
     container-type: size;
     overflow: clip scroll;
     flex-grow: unset;
