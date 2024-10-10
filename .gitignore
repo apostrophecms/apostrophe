@@ -3,9 +3,6 @@
 # Ignore unison sync files
 .unison*
 package-lock.json
-test/public/modules/*
-test/public/css/master-*
-test/locales
 npm-debug.log
 *.DS_Store
 *.npmignore
@@ -14,12 +11,6 @@ npm-debug.log
 .out
 coverage
 /node_modules
-/test/node_modules
-/test/workspaces-project/node_modules
-test/package.json
-test/public
-test/apos-build
-test/workspaces-project/node_modules
 
 # We do not commit CSS, only LESS, with the exception of a few vendor CSS files we don't have LESS for
 */public/css/*.css
@@ -28,6 +19,18 @@ modules/*/public/css/*.css
 modules/*/public/css/*.css
 # Never commit a CSS map file, anywhere
 *.css.map
+
+test/public/modules/*
+test/public/css/master-*
+test/locales
+/test/node_modules
+/test/workspaces-project/node_modules
+/test/esm-project/node_modules
+test/package.json
+test/public
+test/apos-build
+test/workspaces-project/node_modules
+test/esm-project/node_modules
 
 # Dont commit test generated css
 test/public/css/*.css
