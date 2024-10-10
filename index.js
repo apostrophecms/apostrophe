@@ -557,6 +557,7 @@ async function apostrophe(options, telemetry, rootSpan) {
         'icons',
         'i18n',
         'webpack',
+        'build',
         'commands'
       ]
     });
