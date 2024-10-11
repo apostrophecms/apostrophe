@@ -578,7 +578,10 @@ module.exports = {
       // `following` paths during sanitization.
 
       async convert(req, schema, data, destination, { fetchRelationships = true, ancestors = [] } = {}) {
-        const options = { fetchRelationships };
+        const options = { 
+          fetchRelationships,
+          ancestors 
+        };
         if (Array.isArray(req)) {
           throw new Error('convert invoked without a req, do you have one in your context?');
         }
@@ -1751,7 +1754,6 @@ module.exports = {
       // not point to a valid field
 
       getFieldByRelativePath(id, relativePath) {
-        console.log(`coming in relativePath is ${relativePath}`);
         const field = self.apos.schema.getFieldById(id);
         if (!field) {
           throw self.apos.error('invalid', 'no such field id');
@@ -1778,7 +1780,6 @@ module.exports = {
           }
           path = path.substring(1);
         }
-        console.log(JSON.stringify(pointer, null, '  '));
         const relatedId = pointer.fieldIdsByName[path];
         if (!relatedId) {
           throw self.apos.error('invalid', `${path} (${relativePath}) is not a valid field in the schema tree`);
@@ -1823,10 +1824,11 @@ module.exports = {
                 throw self.apos.error('invalid', `${follows} is not a valid path in ${field.name}`);
               }
               if (!path.startsWith('<')) {
-                following[follows] = contexts[level];
+                following[follows] = contexts[level][path];
                 break;
               }
               path = path.substring(1);
+              level--;
             }
           }
           const result = await self.evaluateMethod(req, field.choices, field.name, field.moduleName, null, true, following);
@@ -1894,26 +1896,19 @@ module.exports = {
         ) {
           throw self.apos.error('invalid');
         }
-        console.log('entered for: ' + field.name);
-        console.log(field);
         if (field.following) {
           for (const follows of field.following) {
-            console.log(`** ${field._id} ${fieldId}`);
             const relatedField = self.getFieldByRelativePath(field._id, follows);
             relatedField.if = undefined;
             relatedField.requiredIf = undefined;
             const subset = [ relatedField ];
-            console.log(JSON.stringify(subset));
-            log('following:', followingData);
             const source = {
               [relatedField.name]: followingData && followingData[follows]
             }
-            console.log(JSON.stringify(source));
             const output = {};
             try {
               await self.convert(req, subset, source, output);
               following[follows] = output[relatedField.name];
-              console.log('converted:', following);
             } catch (e) {
               self.apos.util.debug(e);
               // the fields we are following are not yet in a valid state
@@ -2018,8 +2013,4 @@ function getConditionTypeExternalConditionKeys(conditions) {
     }
   }
   return results;
-}
-
-function log(s, o) {
-  console.log(s, JSON.stringify(o, null, '  '));
 }
