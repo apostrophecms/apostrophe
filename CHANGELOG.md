@@ -4,7 +4,6 @@
 
 ### Adds
 
-* Adding the attribute `data-apos-focus-priority` to an element in a modal will prioritize it's initial focus when rendered.
 * Elements inside modals can have a `data-apos-focus-priority` attribute that prioritizes them inside the focusable elements list.
 * Modals will continute trying to find focusable elements until an element marked `data-apos-focus-priority` appears or the max retry threshold is reached.
 * Takes care of an edge case where Media Manager would duplicate search results.
