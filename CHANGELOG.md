@@ -13,21 +13,21 @@
 
 ### Fixes
 
-* Takes care of an edge case where Media Manager would duplicate search results.
 * Modifies the `AposAreaMenu.vue` component to set the `disabled` attribute to `true` if the max number of widgets have been added in an area with `expanded: true`.
 * `pnpm: true` option in `app.js` is no longer breaking the application. 
 * Remove unused `vue-template-compiler` dependency.
 * Prevent un-publishing the `@apostrophecms/global` doc and more generally all singletons.
+
+### Changes
+
+* Internal methods `mergeConfiguration`, `autodetectBundles`, `lintModules`, `nestedModuleSubdirs` and `testDir` are now async.
+* `verifyLocales` and `i18n.getLocales`, `express.getSessionOptions` are now async.
 
 ## 4.7.2 and 4.8.1 (2024-10-09)
 
 ### Fixes
 
 * Correct a race condition that can cause a crash at startup when custom `uploadfs` options are present in some specific cloud environments e.g. when using Azure Blob Storage.
-
-### Changes
-
-* Internal methods `mergeConfiguration`, `autodetectBundles`, `lintModules`, `nestedModuleSubdirs` and `testDir` are now async.
 
 ## 4.8.0 (2024-10-03)
 
@@ -42,7 +42,6 @@
 ### Changes
 
 * The various implementations of `newInstance` found in Apostrophe, e.g. for widgets, array items, relationship fields and documents themselves, have been consolidated in one implementation. The same code is now reused both on the front and the back end, ensuring the same result without the need to introduce additional back end API calls.
-* `verifyLocales` and `i18n.getLocales`, `express.getSessionOptions` are now async.
 
 ### Fixes
 
@@ -68,8 +67,6 @@
 
 ### Adds
 
-* Elements inside modals can have a `data-apos-focus-priority` attribute that prioritizes them inside the focusable elements list.
-* Modals will continute trying to find focusable elements until an element marked `data-apos-focus-priority` appears or the max retry threshold is reached.
 * To aid debugging, when a file extension is unacceptable as an Apostrophe attachment the rejected extension is now printed as part of the error message.
 * The new `big-upload-client` module can now be used to upload very large files to any route that uses the new `big-upload-middleware`.
 * Add option `skipReplace` for `apos.doc.changeDocIds` method to skip the replacing of the "old" document in the database.

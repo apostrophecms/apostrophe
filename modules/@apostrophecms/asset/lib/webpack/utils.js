@@ -57,7 +57,7 @@ module.exports = {
     getMetadata, modulesToInstantiate, rebundleModulesConfig = {}
   }) {
     const modulesMeta = [];
-    // NOTE: this is important, it must be sequential
+    // NOTE: this is important, it must be sequential due to getMetadata side effects
     for (const name of modulesToInstantiate) {
       modulesMeta.push(await getMetadata(name));
     }
