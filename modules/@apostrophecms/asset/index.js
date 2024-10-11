@@ -283,25 +283,95 @@ module.exports = {
       getBuildModuleAlias() {
         return self.getBuildModuleConfig().alias;
       },
-      // Get all build configurations available.
-      getBuilds() {
-        // TODO - work in progress, in the next phase this should return a unified
-        // build configuration for every entrypoint:
-        // - apos
-        // - src
-        // - verifiedBundles: the tricky part is to keep the standard configuration
-        //   signature for the external build modules.
-        //   Add `ignore` array in the source build containing all verifiedBundle
-        //   entries that should not be included in the main `src` build. They should
-        //   become separate entrypoints configuration, similar to the core configs, but preserving
-        //   the extra build parameters.
-        if (self.hasBuildModule()) {
-          return {
-            ...self.moduleBuildExtensions[self.getBuildModuleAlias()] ?? {},
-            ...self.builds
-          };
+      // Get entrypoints configuration for the build module.
+      // Returns an array of objects with the following properties:
+      // - `name`: the entrypoint name. It can be `src`, `apos` or extra bundle name.
+      // - `useMeta`: if `true`, the entrypoint will be created based on the source metadata (see
+      //   `computeSourceMeta()` method).
+      // - `bundle`: if `true`, the entrypoint should be bundled by the build module.
+      // - `index`: if `true`, the entrypoint processes only `{name}/index.{js,scss}` module files.
+      // - `apos`: if `true`, the entrypoint processes components, icons and apps.
+      // - `ignoreSources`: an array of sources that shouldn't be processed when creating the entrypoint.
+      // - `sources`: an object with `js` and `scss` arrays of extra sources to be included in the entrypoint.
+      // - `extensions`: an optional object with the additional configuration for the entrypoint, gathered from the
+      //    `build.extensions` modules property.
+      // - `prologue`: a string with the prologue to be added to the entrypoint.
+      // - `condition`: the script tag `module` or `nomodule` condition.
+      // - `outputs`: an array of output extensions for the entrypoint.
+      getBuildEntrypoints() {
+        if (!self.hasBuildModule()) {
+          return self.builds;
         }
-        return self.builds;
+
+        const entrypoints = [];
+        const extensions = self.moduleBuildExtensions[self.getBuildModuleAlias()] ?? {};
+        for (const [ name, config ] of Object.entries(self.builds)) {
+          // 1. Transform the core configuration, more abstract, standard format.
+          const enhancedConfig = {
+            name,
+            ...config,
+            // Use the source metadata (see `computeSourceMeta()`) to create the
+            // entrypoint by filtering the sources starting with this module name (e.g. `src/`, `apos/`)
+            useMeta: true,
+            // `false` if this configuration is already bundled
+            bundle: config.webpack,
+            // `true` if this configuration is concerns only `{name}/index.{js,scss}` files.
+            index: config.index ?? false,
+            // if `true`, components, icons and apps should be processed and included in the entrypoint.
+            apos: config.apos ?? false,
+            // sources that won't be processed when creating the entrypoint.
+            ignoreSources: [],
+            // extra sources to be included in the entrypoint.
+            sources: {
+              js: [],
+              scss: []
+            }
+          };
+          delete enhancedConfig.webpack;
+          entrypoints.push(enhancedConfig);
+
+          // 2. Add the extra bundles as separate configuration entries,
+          // similar to the core ones just after the `index` entry.
+          // Manage the extraFiles and ignoredModules arrays of the `index` entry.
+          // Add the extensions configuration to the `index` entry.
+          if (enhancedConfig.bundle && enhancedConfig.index) {
+            enhancedConfig.extensions = extensions.extensions;
+            for (const [ bundleName, bundleConfig ] of Object.entries(extensions.verifiedBundles)) {
+              // 2.1. Add extra files to the index bundle.
+              if (bundleConfig.main) {
+                enhancedConfig.sources.js.push(...bundleConfig.js);
+                enhancedConfig.sources.scss.push(...bundleConfig.scss);
+              }
+              // 2.2. Exclude sources from the index bundle.
+              if (!bundleConfig.main && bundleConfig.withIndex) {
+                enhancedConfig.ignoreSources.push(...bundleConfig.js);
+                enhancedConfig.ignoreSources.push(...bundleConfig.scss);
+              }
+              // 2.3. Add the extra bundle configuration. Setup it so that
+              // it only processes the configured `sources` (`useMeta: false`).
+              if (!bundleConfig.main) {
+                entrypoints.push({
+                  name: bundleName,
+                  scenes: enhancedConfig.scenes,
+                  bundle: true,
+                  outputs: enhancedConfig.outputs,
+                  label: `Extra bundle: ${bundleName}`,
+                  index: false,
+                  condition: enhancedConfig.condition,
+                  useMeta: false,
+                  prologue: '',
+                  apos: false,
+                  ignoreSources: [],
+                  sources: {
+                    js: bundleConfig.js,
+                    scss: bundleConfig.scss
+                  }
+                });
+              }
+            }
+          }
+        }
+        return entrypoints;
       },
       getBuildRootDir() {
         const namespace = self.getNamespace();
@@ -338,7 +408,8 @@ module.exports = {
           rebundleModulesConfig: self.options.rebundleModules
         });
       },
-      // Ensure the namespaced by alias `moduleBuildExtensions` data is available.
+      // Ensure the namespaced by alias `moduleBuildExtensions` data is available
+      // for existing further processing (BC).
       setBuildExtensionsForExternalModule() {
         if (!self.hasBuildModule()) {
           return;
@@ -401,11 +472,19 @@ module.exports = {
             if (seen[entry.dirname]) {
               continue;
             }
-            const moduleName = entry.name.replace('/my-', '/');
+            const moduleName = entry.name
+              .replace('/my-', '/')
+              .replace(/^my-/, '');
             const dirname = `${entry.dirname}/ui`;
             const files = await glob('**/*', {
               cwd: dirname,
-              ignore: '**/node_modules/**',
+              ignore: [
+                '**/node_modules/**'
+                // Keep the public folder for now so that
+                // we can easily copy it to the bundle folder later.
+                // Remove it if there's a better way to handle it.
+                // 'public/**'
+              ],
               nodir: true,
               follow: false,
               absolute: false
@@ -418,6 +497,7 @@ module.exports = {
               dirname,
               importAlias: `Modules/${moduleName}/`,
               project: !entry.npm,
+              apos: entry.bundled ?? false,
               files
             };
             meta.push(metaEntry);
@@ -437,6 +517,50 @@ module.exports = {
           .basename(componentPath)
           .replace(/-/g, '_')
           .replace(/\.\w+/, '') + (typeof enumerate === 'number' ? `_${enumerate}` : '');
+      },
+      // Generate the import code for all registered icons (`icons` module prop).
+      // The function returns an object with `importCode`, `registerCode`,
+      // and `invokeCode` string properties.
+      getAposIconsOutput(modules) {
+        for (const name of modules) {
+          const metadata = self.apos.synth.getMetadata(name);
+          // icons is an unparsed section, so getMetadata gives it back
+          // to us as an object with a property for each class in the
+          // inheritance tree, root first. Just keep merging in
+          // icons from that
+          for (const [ name, layer ] of Object.entries(metadata.icons)) {
+            if ((typeof layer) === 'function') {
+            // We should not support invoking a function to define the icons
+            // because the developer would expect `(self)` to behave
+            // normally, and they won't during an asset build. So we only
+            // accept a simple object with the icon mappings
+              throw new Error(`Error in ${name} module: the "icons" property may not be a function.`);
+            }
+            Object.assign(self.iconMap, layer || {});
+          }
+        }
+
+        // Load global vue icon components.
+        const output = {
+          importCode: '',
+          registerCode: 'window.apos.iconComponents = window.apos.iconComponents || {};\n',
+          invokeCode: ''
+        };
+
+        const importIndex = [];
+        for (const [ registerAs, importFrom ] of Object.entries(self.iconMap)) {
+          if (!importIndex.includes(importFrom)) {
+            if (importFrom.substring(0, 1) === '~') {
+              output.importCode += `import ${importFrom}Icon from '${importFrom.substring(1)}';\n`;
+            } else {
+              output.importCode += `import ${importFrom}Icon from '@apostrophecms/vue-material-design-icons/${importFrom}.vue';\n`;
+            }
+            importIndex.push(importFrom);
+          }
+          output.registerCode += `window.apos.iconComponents['${registerAs}'] = ${importFrom}Icon;\n`;
+        }
+
+        return output;
       },
       printDebug(id, data) {
         if (self.isDebugMode) {
