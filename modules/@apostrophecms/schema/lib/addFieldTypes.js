@@ -277,7 +277,7 @@ module.exports = (self) => {
     name: 'checkboxes',
     dynamicChoices: true,
     async convert(req, field, data, destination, { ancestors = [] } = {}) {
-      const choices = await self.getChoices(req, field, [...ancestors, destination]);
+      const choices = await self.getChoices(req, field, [ ...ancestors, destination ]);
       if (typeof data[field.name] === 'string') {
         data[field.name] = self.apos.launder.string(data[field.name]).split(',');
 
@@ -357,7 +357,7 @@ module.exports = (self) => {
     name: 'select',
     dynamicChoices: true,
     async convert(req, field, data, destination, { ancestors = [] } = {}) {
-      const choices = await self.getChoices(req, field, [...ancestors, destination]);
+      const choices = await self.getChoices(req, field, [ ...ancestors, destination ]);
       destination[field.name] = self.apos.launder.select(data[field.name], choices);
     },
     index: function (value, field, texts) {
@@ -774,7 +774,7 @@ module.exports = (self) => {
         try {
           const options = {
             fetchRelationships,
-            ancestors: [...ancestors, destination]
+            ancestors: [ ...ancestors, destination ]
           };
           await self.convert(req, schema, datum, result, options);
         } catch (e) {
@@ -864,7 +864,10 @@ module.exports = (self) => {
         ...(destination[field.name] || {}),
         _id: self.apos.launder.id(data && data._id) || self.apos.util.generateId()
       };
-      const options = { fetchRelationships, ancestors: [...frames, destination ] };
+      const options = {
+        fetchRelationships,
+        ancestors: [ ...frames, destination ]
+      };
       if (data == null || typeof data !== 'object' || Array.isArray(data)) {
         data = {};
       }

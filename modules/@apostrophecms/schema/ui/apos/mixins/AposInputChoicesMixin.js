@@ -15,13 +15,10 @@ export default {
   },
 
   async mounted() {
-    console.log('getting debounced fn for ' + this.field.name);
     this.debouncedUpdateChoices = debounceAsync(this.getChoices, DEBOUNCE_TIMEOUT, {
       onSuccess: this.updateChoices
     });
-    console.log('calling debounced fn for ' + this.field.name);
     await this.debouncedUpdateChoices.skipDelay();
-    console.log('after initial call for ' + this.field.name);
   },
 
   watch: {
@@ -35,7 +32,6 @@ export default {
 
   methods: {
     async getChoices() {
-      console.log('entering debounced fn for ' + this.field.name);
       if (typeof this.field.choices === 'string') {
         const action = this.options.action;
         const response = await apos.http.post(
@@ -54,20 +50,15 @@ export default {
           }
         );
         if (response.choices) {
-          console.log('returning:', response.choices);
           return response.choices;
         }
       } else {
-        console.log('returning:', this.field.choices);
         return this.field.choices;
       }
     },
     updateChoices(choices) {
-      console.log('setting');
       this.choices = choices;
-      console.log('after set');
       if (this.field.type === 'select') {
-        console.log('prepending');
         this.prependEmptyChoice();
       }
     },

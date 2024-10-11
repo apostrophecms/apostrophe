@@ -578,9 +578,9 @@ module.exports = {
       // `following` paths during sanitization.
 
       async convert(req, schema, data, destination, { fetchRelationships = true, ancestors = [] } = {}) {
-        const options = { 
+        const options = {
           fetchRelationships,
-          ancestors 
+          ancestors
         };
         if (Array.isArray(req)) {
           throw new Error('convert invoked without a req, do you have one in your context?');
@@ -1762,7 +1762,6 @@ module.exports = {
           throw self.apos.error('invalid', `${relativePath} does not appear in "following" for this field`);
         }
         let pointer = self.schemaPointers[field._id];
-        log('pointer was:', pointer);
         if (!pointer) {
           // Should not be possible
           throw self.apos.error('error', 'schema pointer not found even though field id is valid');
@@ -1774,7 +1773,6 @@ module.exports = {
         // Now deal with any ancestor paths
         while (path.startsWith('<')) {
           pointer = pointer.parent;
-          log('pointer is:', pointer);
           if (!pointer) {
             throw self.apos.error('invalid', `${path} (${relativePath}) points above the schema tree`);
           }
@@ -1904,7 +1902,7 @@ module.exports = {
             const subset = [ relatedField ];
             const source = {
               [relatedField.name]: followingData && followingData[follows]
-            }
+            };
             const output = {};
             try {
               await self.convert(req, subset, source, output);
@@ -1931,7 +1929,7 @@ module.exports = {
         } else {
           throw self.apos.error('invalid', `The method ${field.choices} from the module ${field.moduleName} did not return an array`);
         }
-      },
+      }
 
     };
   },
