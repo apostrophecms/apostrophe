@@ -276,8 +276,8 @@ module.exports = (self) => {
   self.addFieldType({
     name: 'checkboxes',
     dynamicChoices: true,
-    async convert(req, field, data, destination) {
-      const choices = await self.getChoices(req, field);
+    async convert(req, field, data, destination, { ancestors = [] } = {}) {
+      const choices = await self.getChoices(req, field, [...ancestors, destination]);
       if (typeof data[field.name] === 'string') {
         data[field.name] = self.apos.launder.string(data[field.name]).split(',');
 
@@ -356,8 +356,8 @@ module.exports = (self) => {
   self.addFieldType({
     name: 'select',
     dynamicChoices: true,
-    async convert(req, field, data, destination) {
-      const choices = await self.getChoices(req, field);
+    async convert(req, field, data, destination, { ancestors = [] } = {}) {
+      const choices = await self.getChoices(req, field, [...ancestors, destination]);
       destination[field.name] = self.apos.launder.select(data[field.name], choices);
     },
     index: function (value, field, texts) {
@@ -751,8 +751,7 @@ module.exports = (self) => {
 
   self.addFieldType({
     name: 'array',
-    async convert(req, field, data, destination, { fetchRelationships = true } = {}) {
-      const options = { fetchRelationships };
+    async convert(req, field, data, destination, { fetchRelationships = true, ancestors = [] } = {}) {
       const schema = field.schema;
       data = data[field.name];
       if (!Array.isArray(data)) {
@@ -773,6 +772,10 @@ module.exports = (self) => {
         result.metaType = 'arrayItem';
         result.scopedArrayName = field.scopedArrayName;
         try {
+          const options = {
+            fetchRelationships,
+            ancestors: [...ancestors, destination]
+          };
           await self.convert(req, schema, datum, result, options);
         } catch (e) {
           if (Array.isArray(e)) {
@@ -853,8 +856,7 @@ module.exports = (self) => {
 
   self.addFieldType({
     name: 'object',
-    async convert(req, field, data, destination, { fetchRelationships = true } = {}) {
-      const options = { fetchRelationships };
+    async convert(req, field, data, destination, { fetchRelationships = true, doc = {} } = {}) {
       data = data[field.name];
       const schema = field.schema;
       const errors = [];
@@ -862,6 +864,7 @@ module.exports = (self) => {
         ...(destination[field.name] || {}),
         _id: self.apos.launder.id(data && data._id) || self.apos.util.generateId()
       };
+      const options = { fetchRelationships, ancestors: [...frames, destination ] };
       if (data == null || typeof data !== 'object' || Array.isArray(data)) {
         data = {};
       }

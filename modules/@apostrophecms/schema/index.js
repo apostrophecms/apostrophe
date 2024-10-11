@@ -571,8 +571,13 @@ module.exports = {
       // may  be a short string such as `required` or `min` that can be used to
       // set error class names, etc. If the error is not a string, it is a
       // database error etc. and should not be displayed in the browser directly.
+      //
+      // acnestors consists of an array of objects where each represents
+      // the context object at each level of nested sanitization, excluding
+      // `destination` (the current level). This allows resolution of relative
+      // `following` paths during sanitization.
 
-      async convert(req, schema, data, destination, { fetchRelationships = true } = {}) {
+      async convert(req, schema, data, destination, { fetchRelationships = true, ancestors = [] } = {}) {
         const options = { fetchRelationships };
         if (Array.isArray(req)) {
           throw new Error('convert invoked without a req, do you have one in your context?');
@@ -1803,13 +1808,28 @@ module.exports = {
         return choices;
       },
 
-      async getChoices(req, field) {
+      async getChoices(req, field, contexts = []) {
         if (typeof field.choices !== 'string') {
           return field.choices;
         }
 
         try {
-          const result = await self.evaluateMethod(req, field.choices, field.name, field.moduleName, null, true);
+          const following = {};
+          for (const follows of field.following || []) {
+            let level = contexts.length - 1;
+            let path = follows;
+            while (true) {
+              if (level < 0) {
+                throw self.apos.error('invalid', `${follows} is not a valid path in ${field.name}`);
+              }
+              if (!path.startsWith('<')) {
+                following[follows] = contexts[level];
+                break;
+              }
+              path = path.substring(1);
+            }
+          }
+          const result = await self.evaluateMethod(req, field.choices, field.name, field.moduleName, null, true, following);
           return result;
         } catch (error) {
           throw self.apos.error('invalid', error.message);
