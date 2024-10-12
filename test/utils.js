@@ -1,10 +1,10 @@
 const t = require('../test-lib/test.js');
 const assert = require('assert');
 const _ = require('lodash');
-const { debounceAsync, throttle } = require('../modules/@apostrophecms/ui/ui/apos/utils/index');
+
+const getUtils = async () => import('../modules/@apostrophecms/ui/ui/apos/utils/index.js');
 
 describe('Utils', function() {
-
   this.timeout(t.timeout);
 
   let apos;
@@ -376,6 +376,7 @@ describe('Utils', function() {
       const calledAsyncSlow = [];
       let asyncErrCatched = false;
 
+      const { debounceAsync } = await getUtils();
       const debouncedNormal = debounceAsync(normalFn, 50);
       const debouncedAsync = debounceAsync(asyncFn, 50);
       const debouncedAsyncSlow = debounceAsync(asyncSlowFn, 50);
@@ -449,6 +450,7 @@ describe('Utils', function() {
         return 'test';
       };
 
+      const { debounceAsync } = await getUtils();
       const debouncedSync = debounceAsync(syncFn, 50);
 
       debouncedSync(1);
@@ -500,6 +502,7 @@ describe('Utils', function() {
         return 'async';
       }
 
+      const { debounceAsync } = await getUtils();
       const debouncedAsync = debounceAsync(asyncFn, 50);
 
       debouncedAsync(1);
@@ -549,6 +552,7 @@ describe('Utils', function() {
         return 'async';
       }
 
+      const { debounceAsync } = await getUtils();
       const debouncedAsync = debounceAsync(asyncFn, 50);
       const promise = debouncedAsync(1, 300);
       await wait(100);
@@ -575,6 +579,7 @@ describe('Utils', function() {
         calledAsync.push(result + ' side effect');
       }
 
+      const { debounceAsync } = await getUtils();
       const debouncedAsync = debounceAsync(asyncStatelessFn, 50, {
         onSuccess: asyncSideEffectFn
       });
@@ -605,6 +610,7 @@ describe('Utils', function() {
         calledAsync.push(result + ' side effect');
       }
 
+      const { debounceAsync } = await getUtils();
       const debouncedAsync = debounceAsync(asyncStatelessFn, 50, {
         onSuccess: asyncSideEffectFn
       });
@@ -634,6 +640,7 @@ describe('Utils', function() {
         calledAsync.push(result + ' side effect');
       }
 
+      const { debounceAsync } = await getUtils();
       const debouncedAsync = debounceAsync(asyncStatelessFn, 300, {
         onSuccess: asyncSideEffectFn
       });
@@ -682,6 +689,7 @@ describe('Utils', function() {
         calledAsync.push(result + ' side effect');
       }
 
+      const { debounceAsync } = await getUtils();
       const debouncedAsync = debounceAsync(asyncStatelessFn, 100, {
         onSuccess: asyncSideEffectFn
       });
@@ -707,6 +715,7 @@ describe('Utils', function() {
       const calledAsync = [];
       let asyncErrCatched = false;
 
+      const { throttle } = await getUtils();
       const throttledNormal = throttle(normalFn, 50);
       const throttledAsync = throttle(asyncFn, 50);
       const throttledAsyncErr = throttle(AsyncErrFn, 100);

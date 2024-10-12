@@ -8,6 +8,7 @@
 * Modals will continute trying to find focusable elements until an element marked `data-apos-focus-priority` appears or the max retry threshold is reached.
 * Takes care of an edge case where Media Manager would duplicate search results.
 * Modules can now have a `before: "module-name"` property in their configuration to run (initialization) before another module.
+* Add support for ESM projects.
 
 ### Fixes
 
@@ -15,6 +16,11 @@
 * `pnpm: true` option in `app.js` is no longer breaking the application. 
 * Remove unused `vue-template-compiler` dependency.
 * Prevent un-publishing the `@apostrophecms/global` doc and more generally all singletons.
+
+### Changes
+
+* Internal methods `mergeConfiguration`, `autodetectBundles`, `lintModules`, `nestedModuleSubdirs` and `testDir` are now async.
+* `verifyLocales` and `i18n.getLocales`, `express.getSessionOptions` are now async.
 
 ## 4.7.2 and 4.8.1 (2024-10-09)
 
