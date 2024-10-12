@@ -92,7 +92,7 @@ module.exports = {
     // debug mode, which logs extensive build and configuration
     // information.
     self.isDebugMode = process.env.APOS_ASSET_DEBUG === '1';
-    // External build module configuration.
+    // External build module configuration (when registered).
     // See method `configureBuildModule` for more information.
     self.externalBuildModule = {};
 
@@ -111,7 +111,7 @@ module.exports = {
 
     self.enableBrowserData();
 
-    // The namespace filled by `setWebpackExtensions()`
+    // The namespace filled by `setWebpackExtensions()` (`webpack` property).
     self.extraBundles = {};
     self.webpackExtensions = {};
     self.webpackExtensionOptions = {};
@@ -119,14 +119,13 @@ module.exports = {
     self.rebundleModules = [];
     await self.setWebpackExtensions();
 
-    // The namespace filled by `setBuildExtensions()`
+    // The namespace filled by `setBuildExtensions()` (`build` property).
+    // The properties above set by `setWebpackExtensions()` will be also overridden.
     self.moduleBuildExtensions = {};
     await self.setBuildExtensions();
-
-    // Additional props (beside the non-webpack props above by `setWebpackExtensions()`)
-    // filled by `setBuildExtensionsForExternalModule()` if a build module is registered.
-    self.extraExtensions = {};
-    self.extraExtensionOptions = {};
+    // Set only if the external build module is registered. Contains
+    // the entrypoints configuration for the current build module.
+    self.moduleBuildEntrypoints = [];
 
     self.buildWatcherEnable = process.env.APOS_ASSET_WATCH !== '0' && self.options.watch !== false;
     self.buildWatcherDebounceMs = parseInt(self.options.watchDebounceMs || 1000, 10);
@@ -232,11 +231,13 @@ module.exports = {
     return {
       // START external build modules feature
 
-      // Extending this method allows to override the external build module configuration.
+      // Extending this method allows a direct override the external build module configuration.
+      // The internal module property should never be used directly used nor modified after the initialization.
       getBuildModuleConfig() {
         return self.externalBuildModule;
       },
-      // External build modules can register themselves here.
+      // External build modules can register themselves here. This should happen on the
+      // special asset module event `afterInit` (see `handlers`).
       // options:
       // - alias (required): the alias string to use in the webpack configuration.
       //   This usually matches the bundler name, e.g. 'vite', 'webpack', etc.
@@ -249,7 +250,7 @@ module.exports = {
       //   ...
       // };
       //
-      // The external build module must implement various methods to be used by Apostrophe:
+      // The external build module must implement various methods to be used by the Apostrophe core:
       // - async build(options): the build method to be called by Apostrophe.
       // TODO: document it, add the rest of the required methods.
       configureBuildModule(moduleSelf, options = {}) {
@@ -284,6 +285,11 @@ module.exports = {
         return self.getBuildModuleConfig().alias;
       },
       // Get entrypoints configuration for the build module.
+      // Provide recompute `true` to force the recomputation of the entrypoints.
+      // This is useful in HMR mode, where after a "create" file event, the verified bundles
+      // can change and the entrypoints configuration should be updated. Usually the
+      // the core asset module will take care of this.
+      //
       // Returns an array of objects with the following properties:
       // - `name`: the entrypoint name. It can be `src`, `apos` or extra bundle name.
       // - `useMeta`: if `true`, the entrypoint will be created based on the source metadata (see
@@ -293,25 +299,77 @@ module.exports = {
       // - `apos`: if `true`, the entrypoint processes components, icons and apps.
       // - `ignoreSources`: an array of sources that shouldn't be processed when creating the entrypoint.
       // - `sources`: an object with `js` and `scss` arrays of extra sources to be included in the entrypoint.
+      //    These sources are not affected by the `ignoreSources` configuration.
       // - `extensions`: an optional object with the additional configuration for the entrypoint, gathered from the
       //    `build.extensions` modules property.
       // - `prologue`: a string with the prologue to be added to the entrypoint.
       // - `condition`: the script tag `module` or `nomodule` condition.
       // - `outputs`: an array of output extensions for the entrypoint.
-      getBuildEntrypoints() {
+      getBuildEntrypoints(recompute = false) {
         if (!self.hasBuildModule()) {
           return self.builds;
         }
+        if (recompute) {
+          self.setBuildExtensionsForExternalModule();
+        }
 
+        return self.moduleBuildEntrypoints;
+      },
+      // Build the assets using the external build module.
+      // The `argv` object is the `argv` object passed to the task.
+      // TODO: modify and send the argv, document it.
+      buildProxy(argv) {
+        return self.getBuildModule().build();
+      },
+      // Compute the configuration provided per module as a `build` property.
+      // It has the same shape as the legacy `webpack` property. The difference
+      // is that the `build` property now supports different "vendors". An upgrade
+      // path would be moving existing `webpack` configurations to `build.webpack`.
+      // However, we keep the legacy `webpack` property for compatibility reasons.
+      // Only external build modules will consume the `build` property.
+      async setBuildExtensions() {
+        self.moduleBuildExtensions = await getBuildExtensions({
+          getMetadata: self.apos.synth.getMetadata,
+          modulesToInstantiate: self.apos.modulesToBeInstantiated(),
+          rebundleModulesConfig: self.options.rebundleModules
+        });
+      },
+      // Ensure the namespaced by alias `moduleBuildExtensions` data is available
+      // for the existing systems (BC).
+      // Generate the entrypoints configuration - the new format for the build module,
+      // describing the entrypoint configuration, including the extra bundles.
+      // Pass evnironment variable `APOS_ASSET_DEBUG=1` to see the debug output in both
+      // external build and the legacy webpack mode.
+      // See the `getBuildEntrypoints()` method for the entrypoint configuration schema.
+      setBuildExtensionsForExternalModule() {
+        if (!self.hasBuildModule()) {
+          return;
+        }
+
+        const {
+          extensions = {},
+          extensionOptions = {},
+          verifiedBundles = {},
+          rebundleModules = []
+        } = self.moduleBuildExtensions[self.getBuildModuleAlias()] ?? {};
+
+        self.extraBundles = fillExtraBundles(verifiedBundles);
+        self.verifiedBundles = verifiedBundles;
+        self.rebundleModules = rebundleModules;
+        self.extraExtensions = extensions;
+        self.extraExtensionOptions = extensionOptions;
+
+        // Generate the entrypoints configuration.
         const entrypoints = [];
-        const extensions = self.moduleBuildExtensions[self.getBuildModuleAlias()] ?? {};
         for (const [ name, config ] of Object.entries(self.builds)) {
           // 1. Transform the core configuration, more abstract, standard format.
           const enhancedConfig = {
             name,
             ...config,
-            // Use the source metadata (see `computeSourceMeta()`) to create the
-            // entrypoint by filtering the sources starting with this module name (e.g. `src/`, `apos/`)
+            // Use the source metadata (see `computeSourceMeta()`) to extract the files for the
+            // entrypoint by matching releative paths (e.g. `src/`, `apos/`).
+            // When `useMeta` is `false`, the entrypoint should only rely on the
+            // extra `sources` configuration.
             useMeta: true,
             // `false` if this configuration is already bundled
             bundle: config.webpack,
@@ -319,9 +377,10 @@ module.exports = {
             index: config.index ?? false,
             // if `true`, components, icons and apps should be processed and included in the entrypoint.
             apos: config.apos ?? false,
-            // sources that won't be processed when creating the entrypoint.
+            // absolute path to the original sources that shouldn't be processed by the entrypoint.
             ignoreSources: [],
-            // extra sources to be included in the entrypoint.
+            // extra sources (absolute path) to be included in the entrypoint. These sources
+            // are not affected by the `ignoreSources` configuration.
             sources: {
               js: [],
               scss: []
@@ -335,8 +394,8 @@ module.exports = {
           // Manage the extraFiles and ignoredModules arrays of the `index` entry.
           // Add the extensions configuration to the `index` entry.
           if (enhancedConfig.bundle && enhancedConfig.index) {
-            enhancedConfig.extensions = extensions.extensions;
-            for (const [ bundleName, bundleConfig ] of Object.entries(extensions.verifiedBundles)) {
+            enhancedConfig.extensions = extensions;
+            for (const [ bundleName, bundleConfig ] of Object.entries(verifiedBundles)) {
               // 2.1. Add extra files to the index bundle.
               if (bundleConfig.main) {
                 enhancedConfig.sources.js.push(...bundleConfig.js);
@@ -347,7 +406,7 @@ module.exports = {
                 enhancedConfig.ignoreSources.push(...bundleConfig.js);
                 enhancedConfig.ignoreSources.push(...bundleConfig.scss);
               }
-              // 2.3. Add the extra bundle configuration. Setup it so that
+              // 2.3. Add the extra bundle configuration so that
               // it only processes the configured `sources` (`useMeta: false`).
               if (!bundleConfig.main) {
                 entrypoints.push({
@@ -371,64 +430,8 @@ module.exports = {
             }
           }
         }
-        return entrypoints;
-      },
-      getBuildRootDir() {
-        const namespace = self.getNamespace();
-        if (self.hasBuildModule()) {
-          return path.join(
-            self.apos.rootDir,
-            'apos-build',
-            self.getBuildModuleConfig().name,
-            namespace
-          );
-        }
-        return path.join(
-          self.apos.rootDir,
-          'apos-build',
-          namespace
-        );
-      },
-      // Build the assets using the external build module.
-      // The `argv` object is the `argv` object passed to the task.
-      // TODO: modify and send the argv, document it.
-      buildProxy(argv) {
-        return self.getBuildModule().build();
-      },
-      // Compute the configuration provided per module as a `build` property.
-      // It has the same shape as the legacy `webpack` property. The difference
-      // is that the `build` property no supports different "vendors". An upgrade
-      // path would be moving existing `webpack` configurations to `build.webpack`.
-      // However, for now we keep the legacy `webpack` property only for compatibility.
-      // Only external build modules will consume the `build` property.
-      async setBuildExtensions() {
-        self.moduleBuildExtensions = await getBuildExtensions({
-          getMetadata: self.apos.synth.getMetadata,
-          modulesToInstantiate: self.apos.modulesToBeInstantiated(),
-          rebundleModulesConfig: self.options.rebundleModules
-        });
-      },
-      // Ensure the namespaced by alias `moduleBuildExtensions` data is available
-      // for existing further processing (BC).
-      setBuildExtensionsForExternalModule() {
-        if (!self.hasBuildModule()) {
-          return;
-        }
-
-        const {
-          extensions = {},
-          extensionOptions = {},
-          verifiedBundles = {},
-          rebundleModules = []
-        } = self.moduleBuildExtensions[self.getBuildModuleAlias()] ?? {};
-
-        self.extraBundles = fillExtraBundles(verifiedBundles);
-        self.verifiedBundles = verifiedBundles;
-        self.rebundleModules = rebundleModules;
-        self.extraExtensions = extensions;
-        self.extraExtensionOptions = extensionOptions;
-
-        self.printDebug('setBuildExtensions', self.moduleBuildExtensions);
+        self.moduleBuildEntrypoints = entrypoints;
+        self.printDebug('setBuildExtensions', self.moduleBuildEntrypoints);
       },
       // Compute UI source and public files metadata of all modules. The result array
       // order follows the following rules:
@@ -472,9 +475,11 @@ module.exports = {
             if (seen[entry.dirname]) {
               continue;
             }
-            const moduleName = entry.name
-              .replace('/my-', '/')
-              .replace(/^my-/, '');
+            const moduleName = entry.my
+              ? entry.name
+                .replace('/my-', '/')
+                .replace(/^my-/, '')
+              : entry.name;
             const dirname = `${entry.dirname}/ui`;
             const files = await glob('**/*', {
               cwd: dirname,
@@ -562,6 +567,351 @@ module.exports = {
 
         return output;
       },
+      // This is a low level public helper for the external build modules.
+      // It allows finding source files from the computed source metadata
+      // for a give entrypoint configuration.
+      //
+      // The `meta` array is the (cached) return value of `computeSourceMeta()`.
+      // The `pathComposer` is used to create the component path for
+      // the import file. It should be a function that takes
+      // the file relative to a module `ui/` folder and a metadata entry object
+      // as arguments and returns the relative path to the file from within the
+      // apos-build folder.
+      // Example: (file, entry) => `./${entry.name}/${file}`
+      //
+      // The `predicates` object is used to filter the files and determines the
+      // output.
+      // It should contain the output name as the key and a predicate function as
+      // the value. The function takes the same arguments as the `pathComposer`
+      // (file and entry) and should return a boolean - `true` if the file should
+      // be included in the output.
+      // Example:
+      // {
+      //   js: (file, entry) => file.endsWith('.js'),
+      //   scss: (file, entry) => file.endsWith('.scss')
+      // }
+      // will result in return value like:
+      // {
+      //   js: [
+      //     {
+      //       component: './module-name/file.js',
+      //       path: '/path/to/module-name/file.js'
+      //     }
+      //   ],
+      //   scss: [
+      //     {
+      //       component: './module-name/file.scss',
+      //       path: '/path/to/module-name/file.scss'
+      //     }
+      //   ]
+      // }
+      //
+      // If the `skipPredicates` option is set to `true`, the function will skip
+      // the predicates and only validate and include the extra sources if provided.
+      // In this case, the `predicates` object values (the functions) will be ignored and can be
+      // set to `null`.
+      // Example:
+      // const sources = self.apos.asset.findSourceFilesForUI(
+      //   meta,
+      //   self.myComposeSourceImportPath,
+      //   {
+      //     js: null,
+      //     scss: null
+      //   },
+      //   {
+      //     skipPredicates: true,
+      //     extraSources: {
+      //       js: [
+      //         '/path/to/module-name/file.js'
+      //       ],
+      //       scss: [
+      //         '/path/to/module-name/file.scss'
+      //       ]
+      //     }
+      //   }
+      // );
+      //
+      // The `options` object can be used to customize the filtering.
+      // The following options are available:
+      // - extraSources: An array of extra source files to include. The files
+      //   should be absolute paths. Each file will be checked against the
+      //   metadata and included if it exists. These sources are not affected
+      //   by the `ignoreSources` option.
+      // - componentOverrides: If `true`, the function will filter out earlier
+      //   versions of a component if a later version exists. If an array of
+      //   predicate names is passed, the function will only filter the components
+      //   for the given predicates. For example, passing `['js']` will only
+      //   apply the override algorithm to the result of the `js` predicate.
+      // - ignoreSources: An array of source files to ignore. The files should
+      //   be absolute paths.
+      // - skipPredicates: If `true`, the function will skip the predicates and
+      //   only include the extra sources if provided.
+      //
+      // Usage:
+      // const sources = self.apos.asset.findSourceFilesForUI(
+      //   meta,
+      //   self.myComposeSourceImportPath,
+      //   {
+      //     js: (file, entry) => file.startsWith(`${entry.name}/components/`) && file.endsWith('.vue')
+      //   },
+      //   {
+      //     componentOverrides: true
+      //   }
+      // );
+      // Example output:
+      // {
+      //   js: [
+      //     {
+      //       component: './module-name/components/MyComponent.vue',
+      //       path: '/path/to/module-name/components/MyComponent.vue'
+      //     },
+      //     // ...
+      //   ]
+      // }
+      findSourceFilesForUI(meta, pathComposer, predicates, options = {}) {
+        const map = Object.entries(predicates)
+          .reduce(
+            (acc, [ name, predicate ]) => (
+              acc.set(
+                name,
+                {
+                  predicate,
+                  results: new Map()
+                }
+              )
+            ),
+            new Map()
+          );
+        for (const entry of meta) {
+          if (!entry.files.length) {
+            continue;
+          }
+          for (const [ name, { predicate, results } ] of map) {
+            if (options.skipPredicates !== true) {
+              entry.files.filter(f => predicate(f, entry))
+                .forEach((file) => {
+                  const fullPath = path.join(entry.dirname, file);
+                  if (options.ignoreSources?.includes(fullPath)) {
+                    return;
+                  }
+                  const result = {
+                    component: pathComposer(file, entry),
+                    path: fullPath
+                  };
+                  results.set(result.component, result);
+                });
+            }
+
+            if (options.extraSources) {
+              const files = options.extraSources[name]
+                ?.filter(sourcePath => sourcePath.includes(entry.dirname)) ?? [];
+              for (const sourcePath of files) {
+                const source = self.getSourceByPathForUI(entry, pathComposer, sourcePath);
+                if (source) {
+                  results.set(source.component, source);
+                }
+              }
+            }
+          }
+        }
+
+        const result = {};
+        for (const [ name, { results } ] of map) {
+          result[name] = [ ...results.values() ];
+        }
+
+        if (options.componentOverrides) {
+          for (let [ name, components ] of Object.entries(result)) {
+            if (
+              Array.isArray(options.componentOverrides) &&
+              !options.componentOverrides.includes(name)
+            ) {
+              continue;
+            }
+
+            // Reverse the list so we can easily find the last configured import
+            // of a given component, allowing "improve" modules to win over
+            // the originals when shipping an override of a Vue component
+            // with the same name, and filter out earlier versions
+            components.reverse();
+            const seen = new Set();
+            components = components.filter(item => {
+              const name = self.getComponentNameForUI(item.component);
+              if (seen.has(name)) {
+                return false;
+              }
+              seen.add(name);
+              return true;
+            });
+            // Put the components back in their original order
+            components.reverse();
+            result[name] = components;
+          }
+        }
+
+        return result;
+      },
+      // Identify an absolute path to an Apostrophe UI source and return the
+      // component relative build path and the path to the source file.
+      // The method returns `null` if the source path is not found or
+      // an object with `component` and `path` properties.
+      getSourceByPathForUI(metaOrEntry, pathComposer, sourcePath) {
+        const entry = Array.isArray(metaOrEntry)
+          ? metaOrEntry.find((entry) => sourcePath.includes(entry.dirname))
+          : metaOrEntry;
+
+        if (!entry) {
+          self.logDebug('getSourceByPathForUI', `No meta entry found for "${sourcePath}".`);
+          return null;
+        }
+        const component = sourcePath.replace(entry.dirname + '/', '');
+        if (entry.files.includes(component)) {
+          return {
+            component: pathComposer(component, entry),
+            path: sourcePath
+          };
+        }
+        self.logDebug('getSourceByPathForUI', `No match found for "${sourcePath}" in "${entry.id}".`, {
+          entry: entry.id,
+          component,
+          sourcePath
+        });
+        return null;
+      },
+      // Generate the import code for the given components.
+      // The components array should contain objects with `component` and `path`
+      // properties. The `component` property is the relative path to the file
+      // from within the apos-build folder, and the `path` property is the absolute
+      // path to the original file.
+      //
+      // The `options` object can be used to customize the output.
+      // The following options are available:
+      //
+      // - requireDefaultExport: If true, the function will throw an error
+      //   if a component does not have a default export.
+      // - registerComponents: If true, the function will generate code to
+      //   register the components in the window.apos.vueComponents object.
+      // - registerTiptapExtensions: If true, the function will generate code
+      //   to register the components in the window.apos.tiptapExtensions array.
+      // - invokeApps: If true, the function will generate code to invoke the
+      //   components as functions.
+      // - importSuffix: A string that will be appended to the import name.
+      // - importName: If false, the function will not generate an import name.
+      // - enumerateImports: If true, the function will enumerate the import names.
+      //
+      // The function returns an object with `importCode`, `registerCode`, and
+      // `invokeCode` string properties.
+      getImportFileOutputForUI(components, options = {}) {
+        let registerCode = '';
+        if (options.registerComponents) {
+          registerCode = 'window.apos.vueComponents = window.apos.vueComponents || {};\n';
+        } else if (options.registerTiptapExtensions) {
+          registerCode = 'window.apos.tiptapExtensions = window.apos.tiptapExtensions || [];\n';
+        }
+        const output = {
+          importCode: '',
+          registerCode,
+          invokeCode: ''
+        };
+
+        components.forEach((entry, i) => {
+          const { component, path: realPath } = entry;
+          if (options.requireDefaultExport) {
+            try {
+              if (!fs.readFileSync(realPath, 'utf8').match(/export[\s\n]+default/)) {
+                throw new Error(stripIndent`
+                      The file ${component} does not have a default export.
+  
+                      Any ui/src/index.js file that does not have a function as
+                      its default export will cause the build to fail in production.
+                    `);
+              }
+            } catch (e) {
+              throw new Error(`The file ${realPath} does not exist.`);
+            }
+          }
+          const jsFilename = JSON.stringify(component);
+          const name = self.getComponentNameForUI(
+            component,
+            { enumerate: options.enumerateImports === true ? i : false }
+          );
+          const jsName = JSON.stringify(name);
+          const importName = `${name}${options.importSuffix || ''}`;
+          const importCode = options.importName === false
+            ? `import ${jsFilename};\n`
+            : `import ${importName} from ${jsFilename};\n`;
+
+          output.importCode += `${importCode}`;
+
+          if (options.registerComponents) {
+            output.registerCode += `window.apos.vueComponents[${jsName}] = ${importName};\n`;
+          }
+
+          if (options.registerTiptapExtensions) {
+            output.registerCode += stripIndent`
+                  apos.tiptapExtensions.push(${importName});
+                ` + '\n';
+          }
+          if (options.invokeApps) {
+            output.invokeCode += `  ${name}${options.importSuffix || ''}();\n`;
+          }
+        });
+
+        return output;
+      },
+      // Write the entrypoint file in the build source folder. The possible
+      // argument properties:
+      // - importFile: The absolute path to the entrypoint file.
+      // - prologue: The prologue string to prepend to the file.
+      // - icon: The admin UI icon import code.
+      // - components: The admin UI component import code.
+      // - tiptap: The admin UI tiptap import code.
+      // - app: The admin UI app import code.
+      // - indexJs: The public index.js import code.
+      // - indexSass: The public index.scss import code.
+      //
+      // Only the `importFile` property is required. The rest will be used
+      // to generate the entrypoint file content only when available.
+      async writeEntrypointFileForUI({
+        importFile,
+        prologue,
+        icon,
+        components,
+        tiptap,
+        app,
+        indexJs,
+        indexSass
+      }) {
+        let output = prologue?.trim()
+          ? prologue.trim() + '\n'
+          : '';
+        output += (indexSass && indexSass.importCode) || '';
+        output += (indexJs && indexJs.importCode) || '';
+        output += (icon && icon.importCode) || '';
+        output += (components && components.importCode) || '';
+        output += (tiptap && tiptap.importCode) || '';
+        output += (app && app.importCode) || '';
+        output += (icon && icon.registerCode) || '';
+        output += (components && components.registerCode) || '';
+        output += (tiptap && tiptap.registerCode) || '';
+        // Do not strip indentation here, keep it nice and formatted
+        output += app
+          ? `if (document.readyState !== 'loading') {
+  setTimeout(invoke, 0);
+} else {
+  window.addEventListener('DOMContentLoaded', invoke);
+}
+function invoke() {
+  ${app.invokeCode.trim()}
+}` + '\n'
+          : '';
+
+        // Remove the identation per line.
+        // It may look weird, but the result is nice and formatted import file.
+        output += (indexJs && indexJs.invokeCode.trim().split('\n').map(l => l.trim()).join('\n') + '\n') || '';
+
+        await fs.writeFile(importFile, output);
+      },
       printDebug(id, data) {
         if (self.isDebugMode) {
           self.logDebug(id, data);
@@ -570,7 +920,6 @@ module.exports = {
       // END external build modules feature
 
       // START refactoring
-
       async setWebpackExtensions(result) {
         const {
           extensions = {},
@@ -597,6 +946,7 @@ module.exports = {
         // If we do, the debug output is handled by the respective setter.
         if (!self.hasBuildModule()) {
           self.printDebug('setWebpackExtensions', {
+            builds: self.builds,
             extensions,
             extensionOptions,
             verifiedBundles,
@@ -609,6 +959,24 @@ module.exports = {
         self.webpackExtensionOptions = extensionOptions;
         self.verifiedBundles = verifiedBundles;
         self.rebundleModules = rebundleModules;
+      },
+      // Get the absolute path to the project build directory.
+      // Can be used with both external build and legacy webpack mode.
+      getBuildRootDir() {
+        const namespace = self.getNamespace();
+        if (self.hasBuildModule()) {
+          return path.join(
+            self.apos.rootDir,
+            'apos-build',
+            self.getBuildModuleConfig().name,
+            namespace
+          );
+        }
+        return path.join(
+          self.apos.rootDir,
+          'apos-build',
+          namespace
+        );
       },
 
       // END refactoring
