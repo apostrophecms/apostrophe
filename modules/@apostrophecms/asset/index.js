@@ -633,10 +633,11 @@ module.exports = {
       //
       // The `options` object can be used to customize the filtering.
       // The following options are available:
-      // - extraSources: An array of extra source files to include. The files
-      //   should be absolute paths. Each file will be checked against the
-      //   metadata and included if it exists. These sources are not affected
-      //   by the `ignoreSources` option.
+      // - extraSources: An object with the same structure as the `predicates`
+      //   object. The object values should be arrays of absolute paths to the
+      //   source files. The files will be validated against the metadata and
+      //   included in the output regardless of the predicates and the `ignoreSources`
+      //   option.
       // - componentOverrides: If `true`, the function will filter out earlier
       //   versions of a component if a later version exists. If an array of
       //   predicate names is passed, the function will only filter the components
@@ -645,7 +646,8 @@ module.exports = {
       // - ignoreSources: An array of source files to ignore. The files should
       //   be absolute paths.
       // - skipPredicates: If `true`, the function will skip the predicates and
-      //   only include the extra sources if provided.
+      //   only include the extra sources if provided. This option makes no sense
+      //   if the `extraSources` option is not provided.
       //
       // Usage:
       // const sources = self.apos.asset.findSourceFilesForUI(
