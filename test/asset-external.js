@@ -73,4 +73,171 @@ describe('Asset - External Build', function () {
       code: 'ENOENT'
     });
   });
+
+  it('should support `build` configuration per module (BC)', async function () {
+    await t.destroy(apos);
+    apos = await t.create({
+      root: module,
+      modules: {
+        '@apostrophecms/asset': {
+          options: {
+            rebundleModules: {
+              'article-page': 'article',
+              'article-widget': 'main',
+              'selected-article-widget:tabs': 'tools',
+              '@apostrophecms/my-home-page:main': 'main'
+            }
+          }
+        },
+        webpack: {
+          before: '@apostrophecms/asset',
+          init() {},
+          handlers(self) {
+            return {
+              '@apostrophecms/asset:afterInit': {
+                async registerExternalBuild() {
+                  self.apos.asset.configureBuildModule(self, {
+                    alias: 'webpack',
+                    hasDevServer: true,
+                    hasHMR: true
+                  });
+                }
+              }
+            };
+          },
+          methods(self) {
+            return {
+              async build() {}
+            };
+          }
+        },
+        '@apostrophecms/home-page': {
+          webpack: {
+            bundles: {
+              topic: {},
+              main: {}
+            }
+          },
+          build: {
+            webpack: {
+              bundles: {
+                topic: {},
+                main: {}
+              }
+            }
+          }
+        },
+        article: {
+          extend: '@apostrophecms/piece-type',
+          init() {}
+        },
+        'article-page': {
+          webpack: {
+            bundles: {
+              main: {}
+            },
+            extensions: {
+              topic: {
+                resolve: {
+                  alias: {
+                    Utils: path.join(process.cwd(), 'lib/utils/')
+                  }
+                }
+              },
+              ext1 ({ mode, alias = {} }) {
+                return {
+                  mode,
+                  resolve: {
+                    alias: {
+                      ext1: 'ext1-path',
+                      ...alias
+                    }
+                  }
+                };
+              }
+            },
+            extensionOptions: {
+              ext1: {
+                mode: 'production'
+              }
+            }
+          },
+          build: {
+            webpack: {
+              bundles: {
+                main: {}
+              },
+              // Here only to demonstrate that it's BC,
+              // this is ignored by the new Vite build module
+              extensions: {
+                topic: {
+                  resolve: {
+                    alias: {
+                      Utils: path.join(process.cwd(), 'lib/utils/')
+                    }
+                  }
+                },
+                ext1 ({ mode, alias = {} }) {
+                  return {
+                    mode,
+                    resolve: {
+                      alias: {
+                        ext1: 'ext1-path',
+                        ...alias
+                      }
+                    }
+                  };
+                }
+              },
+              extensionOptions: {
+                ext1: {
+                  mode: 'production'
+                }
+              }
+            }
+          }
+        },
+        'article-widget': {
+          webpack: {
+            bundles: {
+              topic: {},
+              carousel: {}
+            }
+          },
+          build: {
+            webpack: {
+              bundles: {
+                topic: {},
+                carousel: {}
+              }
+            }
+          }
+        },
+        'selected-article-widget': {
+          webpack: {
+            bundles: {
+              tabs: {}
+            }
+          },
+          build: {
+            webpack: {
+              bundles: {
+                tabs: {}
+              }
+            }
+          }
+        }
+      }
+    });
+
+    const actual = apos.asset.moduleBuildExtensions.webpack;
+    const expected = {};
+    await apos.asset.setWebpackExtensions(expected);
+
+    assert.deepEqual(
+      actual,
+      expected,
+      '`build` configuration is not identical to the legacy `webpack` configuration'
+    );
+  });
 });
