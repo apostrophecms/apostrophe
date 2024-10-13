@@ -20,6 +20,7 @@
         label="apostrophe:save"
         :disabled="!!errorCount"
         :tooltip="errorTooltip"
+        :attrs="{'data-apos-focus-priority': true}"
         @click="submit"
       />
     </template>

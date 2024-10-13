@@ -261,6 +261,7 @@
         <template #footer>
           <AposButton
             v-if="isLastStep()"
+            :attrs="{'data-apos-focus-priority': true}"
             type="primary"
             label="apostrophe:localizeContent"
             :disabled="!complete() || wizard.busy"
@@ -268,6 +269,7 @@
           />
           <AposButton
             v-else
+            :attrs="{'data-apos-focus-priority': true}"
             type="primary"
             icon="arrow-right-icon"
             :modifiers="['icon-right']"

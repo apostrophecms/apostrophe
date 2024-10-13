@@ -10,7 +10,6 @@
       </div>
       <div
         class="apos-modal__body-main"
-        :style="{ height: `calc(100% - ${headerHeight}px)`}"
       >
         <slot name="bodyMain" />
       </div>

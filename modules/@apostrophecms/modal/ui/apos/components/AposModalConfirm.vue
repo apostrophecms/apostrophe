@@ -50,12 +50,14 @@
           <div class="apos-confirm__btns">
             <AposButton
               v-if="mode !== 'alert'"
+              :attrs="{'data-apos-focus-priority': mode !== 'alert' ? true : null}"
               class="apos-confirm__btn"
               :label="content.negativeLabel || 'apostrophe:cancel'"
               @click="cancel"
             />
             <AposButton
               ref="confirm"
+              :attrs="{'data-apos-focus-priority': mode === 'alert' ? true : null}"
               class="apos-confirm__btn"
               :label="affirmativeLabel"
               :type="content.theme || 'primary'"
