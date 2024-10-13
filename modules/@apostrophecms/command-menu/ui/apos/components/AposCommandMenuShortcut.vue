@@ -12,6 +12,7 @@
           <header class="apos-modal__header">
             <div class="apos-modal__header__main">
               <AposButton
+                :attrs="{'data-apos-focus-priority': true}"
                 type="default"
                 :title="$t('apostrophe:commandMenuEsc')"
                 :icon-only="true"
