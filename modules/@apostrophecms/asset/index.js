@@ -871,12 +871,14 @@ module.exports = {
       // - app: The admin UI app import code.
       // - indexJs: The public index.js import code.
       // - indexSass: The public index.scss import code.
+      // - raw: string content to write to the file.
       //
       // Only the `importFile` property is required. The rest will be used
       // to generate the entrypoint file content only when available.
       async writeEntrypointFileForUI({
         importFile,
         prologue,
+        raw,
         icon,
         components,
         tiptap,
@@ -887,6 +889,7 @@ module.exports = {
         let output = prologue?.trim()
           ? prologue.trim() + '\n'
           : '';
+        output += raw || '';
         output += (indexSass && indexSass.importCode) || '';
         output += (indexJs && indexJs.importCode) || '';
         output += (icon && icon.importCode) || '';
