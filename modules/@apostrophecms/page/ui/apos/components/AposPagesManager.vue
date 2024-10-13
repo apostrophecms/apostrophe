@@ -31,12 +31,14 @@
         type="primary"
         :label="saveRelationshipLabel"
         :disabled="!!relationshipErrors"
+        :attrs="{'data-apos-focus-priority': true}"
         @click="saveRelationship"
       />
       <AposButton
         v-else-if="canCreate"
         type="primary"
         label="apostrophe:newPage"
+        :attrs="{'data-apos-focus-priority': true}"
         @click="create()"
       />
     </template>

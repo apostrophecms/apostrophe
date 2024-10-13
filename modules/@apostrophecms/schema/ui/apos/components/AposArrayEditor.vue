@@ -43,6 +43,7 @@
               :icon-only="true"
               icon="plus-icon"
               :modifiers="[ 'tiny', 'round' ]"
+              :attrs="{'data-apos-focus-priority': true}"
               :disabled="maxed || itemError"
               @click.prevent="add"
             />

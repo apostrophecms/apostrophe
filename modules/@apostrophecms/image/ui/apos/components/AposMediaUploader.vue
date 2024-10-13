@@ -2,7 +2,7 @@
   <label
     class="apos-media-manager-display__cell apos-media-uploader"
     :class="{'apos-media-uploader--enabled': !disabled}"
-    :disabled="disabled"
+    :disabled="disabled ? disabled : null"
     @drop.prevent="uploadMedia"
     @dragover.prevent=""
     @dragenter="incrementDragover"
@@ -12,6 +12,7 @@
       class="apos-media-uploader__inner"
       :class="{'apos-is-dragging': dragover}"
       tabindex="0"
+      data-apos-focus-priority
       @keydown="onUploadDragAndDropKeyDown"
     >
       <AposCloudUploadIcon
@@ -230,6 +231,10 @@ export default {
     onUploadDragAndDropKeyDown(e) {
       const isEnterPressed = e.key === 'Enter' || e.code === 'Enter' || e.code === 'NumpadEnter';
       const isSpaceBarPressed = e.keyCode === 32 || e.code === 'Space';
+
+      if (isSpaceBarPressed) {
+        e.preventDefault();
+      }
 
       if (isEnterPressed || isSpaceBarPressed) {
         this.create();

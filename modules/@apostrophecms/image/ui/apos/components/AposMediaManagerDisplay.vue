@@ -35,7 +35,7 @@
           />
         </div>
         <button
-          :id="`btn-${item._id}`"
+          :id="`btn-${item._id.replaceAll(':', '-')}`"
           :disabled="
             item._id === 'placeholder' || canSelect(item._id) === false
           "
@@ -168,6 +168,13 @@ export default {
     async isLastPage(val) {
       await this.$nextTick();
       this.$emit('set-load-ref', this.$refs.scrollLoad);
+    },
+    async checked(newVal) {
+      if (newVal.length) {
+        await this.$nextTick();
+        const target = newVal[newVal.length - 1];
+        this.$el.querySelector(`#btn-${target.replaceAll(':', '-')}`).focus();
+      }
     }
   },
   mounted() {

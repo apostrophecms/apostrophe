@@ -107,7 +107,7 @@ module.exports = {
 
     // The namespace filled by `initUploadfs()`
     self.uploadfs = null;
-    self.initUploadfs();
+    await self.initUploadfs();
 
     self.enableBrowserData();
 
