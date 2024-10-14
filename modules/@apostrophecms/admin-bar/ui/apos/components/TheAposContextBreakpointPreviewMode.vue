@@ -18,6 +18,19 @@
       :class="{ 'apos-is-active': mode === name }"
       @click="toggleBreakpointPreviewMode({ mode: name, label: screen.label, width: screen.width, height: screen.height })"
     />
+
+    <AposContextMenu
+      class="apos-admin-bar__breakpoint-preview-mode-dropdown"
+      :button="button"
+      :menu="screenItems"
+      :center-on-icon="true"
+      menu-placement="bottom-end"
+      @item-clicked="emitEvent"
+    >
+      <template #prebutton>
+        <div>icon</div>
+      </template>
+    </AposContextMenu>
   </div>
 </template>
 <script>
@@ -49,8 +62,23 @@ export default {
   data() {
     return {
       mode: null,
-      originalBodyBackground: null
+      originalBodyBackground: null,
+      screenItems: []
     };
+  },
+  computed: {
+    button() {
+      return {
+        class: 'apos-admin-bar__breakpoint-preview-mode-dropdown-btn',
+        label: {
+          key: 'toto',
+          localize: false
+        },
+        icon: 'chevron-down-icon',
+        modifiers: [ 'icon-right', 'no-motion' ],
+        type: 'outline'
+      };
+    }
   },
   mounted() {
     apos.bus.$on('command-menu-admin-bar-toggle-breakpoint-preview-mode', this.toggleBreakpointPreviewMode);
@@ -161,6 +189,14 @@ export default {
     background-color: var(--a-base-10);
     border-radius: var(--a-border-radius);
     outline: 1px solid var(--a-base-7);
+  }
+}
+
+.apos-admin-bar__breakpoint-preview-mode-dropdown {
+  :deep(.apos-admin-bar__breakpoint-preview-mode-dropdown-btn .apos-button) {
+    padding: 5px 10px;
+    border-radius: 3px;
+    border-color: var(--a-base-8);
   }
 }
 </style>
