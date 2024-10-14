@@ -126,6 +126,9 @@ module.exports = {
     // Set only if the external build module is registered. Contains
     // the entrypoints configuration for the current build module.
     self.moduleBuildEntrypoints = [];
+    // Set after a successful build. Contains the (absolute) paths to the built
+    // bundles.
+    self.currentDeployTargets = [];
 
     self.buildWatcherEnable = process.env.APOS_ASSET_WATCH !== '0' && self.options.watch !== false;
     self.buildWatcherDebounceMs = parseInt(self.options.watchDebounceMs || 1000, 10);
@@ -303,8 +306,12 @@ module.exports = {
       // - `extensions`: an optional object with the additional configuration for the entrypoint, gathered from the
       //    `build.extensions` modules property.
       // - `prologue`: a string with the prologue to be added to the entrypoint.
-      // - `condition`: the script tag `module` or `nomodule` condition.
-      // - `outputs`: an array of output extensions for the entrypoint.
+      // - `condition`: the JS `module` or `nomodule` condition. Undefined for no specific condition.
+      // - `outputs`: an array of output extensions for the entrypoint (currently not fully utilized)
+      // - `scenes`: an array of scenes to be in the final post-bundle step. The scenes are instructions
+      //   for the Apostrophe core to combine the builds and release them. Currently supported scenes are
+      //   `apos` and `public` and custom scene names equal to extra bundle (only those who should be
+      //   loaded separately in the browser).
       getBuildEntrypoints(recompute = false) {
         if (!self.hasBuildModule()) {
           return self.builds;
@@ -317,9 +324,78 @@ module.exports = {
       },
       // Build the assets using the external build module.
       // The `argv` object is the `argv` object passed to the task.
-      // TODO: modify and send the argv, document it.
-      buildProxy(argv) {
-        return self.getBuildModule().build();
+      // TODO: modify and send the argv, document it. Execute the build
+      // only if it's a task (apos.isTask()) or devServer is not configured.
+      // Unlike our previous webpack implementation, the external build
+      // executes the `build` method only when it really needs to build.
+      // All other cases should be handled here (with calling separate external methods
+      // when appropriate).
+      async buildProxy(argv) {
+        const manifest = await self.getBuildModule().build();
+        self.logDebug('buildProxy', manifest);
+        self.currentDeployTargets = await self.writeBuildScenes(manifest);
+        // FIXME: copy and add to currentDeployTargets all `public/` files
+        // from the modules. Ensure the deploy works correctly.
+      },
+      async writeBuildScenes(manifest) {
+        const bundlePath = self.getBundleRootDir();
+        const { entrypoints } = manifest;
+        const configs = entrypoints.filter((entry) => !!entry.manifest);
+
+        const scenes = [
+          ...new Set(configs.reduce((acc, { scenes }) => [ ...acc, ...scenes ], []))
+        ];
+
+        const bundles = scenes.reduce((acc, scene) => {
+          const sceneConfigs = configs.filter((config) => config.scenes.includes(scene));
+          return [
+            ...acc,
+            ...writeScene({
+              configs: sceneConfigs,
+              scene,
+              bundlePath
+            })
+          ];
+        }, []);
+
+        return bundles;
+
+        function writeScene({
+          scene, configs, bundlePath
+        }) {
+          const bundles = configs.reduce((acc, config) => {
+            const {
+              root, file, imports = [], css = []
+            } = config.manifest;
+
+            const jsFiles = [ file, ...imports ];
+            const jsTarget = path.join(bundlePath, `${scene}-${config.condition ?? 'module'}-bundle.js`);
+            const cssTarget = path.join(bundlePath, `${scene}-bundle.css`);
+            const jsFilePaths = jsFiles.map(f => path.join(root, f));
+            const cssFilePaths = css.map(f => path.join(root, f));
+
+            if (jsFilePaths.length) {
+              if (!acc[jsTarget]) {
+                acc[jsTarget] = [];
+              }
+              acc[jsTarget].push(...jsFilePaths);
+            }
+
+            if (cssFilePaths.length) {
+              if (!acc[cssTarget]) {
+                acc[cssTarget] = [];
+              }
+              acc[cssTarget].push(...cssFilePaths);
+            }
+            return acc;
+          }, {});
+
+          for (const [ target, files ] of Object.entries(bundles)) {
+            fs.outputFileSync(target, files.map(f => fs.readFileSync(f, 'utf-8')).join('\n'));
+          }
+
+          return Object.keys(bundles);
+        }
       },
       // Compute the configuration provided per module as a `build` property.
       // It has the same shape as the legacy `webpack` property. The difference
@@ -411,7 +487,7 @@ module.exports = {
               if (!bundleConfig.main) {
                 entrypoints.push({
                   name: bundleName,
-                  scenes: enhancedConfig.scenes,
+                  scenes: [ bundleName ],
                   bundle: true,
                   outputs: enhancedConfig.outputs,
                   label: `Extra bundle: ${bundleName}`,
@@ -981,6 +1057,13 @@ function invoke() {
           self.apos.rootDir,
           'apos-build',
           namespace
+        );
+      },
+      getBundleRootDir() {
+        return path.join(
+          self.apos.rootDir,
+          'public/apos-frontend/',
+          self.getNamespace()
         );
       },
 
