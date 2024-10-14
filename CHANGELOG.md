@@ -15,6 +15,7 @@
 * `pnpm: true` option in `app.js` is no longer breaking the application. 
 * Remove unused `vue-template-compiler` dependency.
 * Prevent un-publishing the `@apostrophecms/global` doc and more generally all singletons.
+* When opening a context menu while another is already opened, prevent from focusing the button of the first one instead of the newly opened menu.
 
 ## 4.7.2 and 4.8.1 (2024-10-09)
 
