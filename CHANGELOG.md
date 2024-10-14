@@ -8,6 +8,7 @@
 * Modals will continute trying to find focusable elements until an element marked `data-apos-focus-priority` appears or the max retry threshold is reached.
 * Takes care of an edge case where Media Manager would duplicate search results.
 * Modules can now have a `before: "module-name"` property in their configuration to run (initialization) before another module.
+* Adds AI-generated missing translations
 
 ### Fixes
 
