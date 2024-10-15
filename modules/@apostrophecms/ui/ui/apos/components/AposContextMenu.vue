@@ -35,6 +35,7 @@
           :menu-placement="placement"
           :class-list="classList"
           :menu="menu"
+          :active-item="activeItem"
           :is-open="isOpen"
           @item-clicked="menuItemClicked"
           @set-arrow="setArrow"
@@ -117,6 +118,10 @@ const props = defineProps({
   centerOnIcon: {
     type: Boolean,
     default: false
+  },
+  activeItem: {
+    type: String,
+    default: null
   }
 });
 

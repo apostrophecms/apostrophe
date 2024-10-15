@@ -5,7 +5,7 @@
   >
     <component
       :is="'AposButton'"
-      v-for="(screen, name) in screens"
+      v-for="(screen, name) in shortcuts"
       :key="name"
       :data-apos-test="`breakpointPreviewMode:${name}`"
       :modifiers="['small', 'no-motion']"
@@ -16,21 +16,22 @@
       type="subtle"
       class="apos-admin-bar__breakpoint-preview-mode-button"
       :class="{ 'apos-is-active': mode === name }"
-      @click="toggleBreakpointPreviewMode({ mode: name, label: screen.label, width: screen.width, height: screen.height })"
+      @click="toggleBreakpointPreviewMode({
+        mode: name,
+        label: screen.label,
+        width: screen.width,
+        height: screen.height
+      })"
     />
-
     <AposContextMenu
       class="apos-admin-bar__breakpoint-preview-mode-dropdown"
       :button="button"
-      :menu="screenItems"
+      :menu="breakpoints"
+      :active-item="mode"
       :center-on-icon="true"
       menu-placement="bottom-end"
-      @item-clicked="emitEvent"
-    >
-      <template #prebutton>
-        <div>icon</div>
-      </template>
-    </AposContextMenu>
+      @item-clicked="selectBreakpoint"
+    />
   </div>
 </template>
 <script>
@@ -63,6 +64,8 @@ export default {
     return {
       mode: null,
       originalBodyBackground: null,
+      shortcuts: this.getShortcuts(),
+      breakpoints: this.getBreakpointItems(),
       screenItems: []
     };
   },
@@ -71,20 +74,24 @@ export default {
       return {
         class: 'apos-admin-bar__breakpoint-preview-mode-dropdown-btn',
         label: {
-          key: 'toto',
+          key: 'Responsive',
           localize: false
         },
         icon: 'chevron-down-icon',
+        secondIcon: 'monitor-icon',
         modifiers: [ 'icon-right', 'no-motion' ],
         type: 'outline'
       };
     }
   },
   mounted() {
-    apos.bus.$on('command-menu-admin-bar-toggle-breakpoint-preview-mode', this.toggleBreakpointPreviewMode);
+    apos.bus.$on(
+      'command-menu-admin-bar-toggle-breakpoint-preview-mode',
+      this.toggleBreakpointPreviewMode
+    );
 
-    this.originalBodyBackground = window.getComputedStyle(document.querySelector('body'))?.background ||
-      '#fff';
+    this.originalBodyBackground = window.getComputedStyle(document.querySelector('body'))
+      ?.background || '#fff';
 
     const state = this.loadState();
     if (state.mode) {
@@ -92,7 +99,10 @@ export default {
     }
   },
   unmounted() {
-    apos.bus.$off('command-menu-admin-bar-toggle-breakpoint-preview-mode', this.toggleBreakpointPreviewMode);
+    apos.bus.$off(
+      'command-menu-admin-bar-toggle-breakpoint-preview-mode',
+      this.toggleBreakpointPreviewMode
+    );
   },
   methods: {
     switchBreakpointPreviewMode({
@@ -171,14 +181,50 @@ export default {
           })
         );
       }
+    },
+    getShortcuts() {
+      return Object.fromEntries(
+        Object.entries(this.screens).filter(([ _, { shortcut } ]) => shortcut)
+      );
+    },
+    getBreakpointItems() {
+      return Object.entries(this.screens).map(([ name, screen ]) => ({
+        name,
+        action: name,
+        label: screen.width,
+        width: screen.width,
+        height: screen.height,
+        icon: screen.icon || this.getScreenIcon(parseInt(screen.width))
+      }));
+    },
+    getScreenIcon(width) {
+      if (width > 1024) {
+        return 'monitor-icon';
+      } else if (width > 540) {
+        return 'tablet-icon';
+      }
+      return 'cellphone-icon';
+    },
+    selectBreakpoint(selected) {
+      const {
+        name, label, width, height
+      } = this.breakpoints.find(({ name }) => name === selected);
+      this.toggleBreakpointPreviewMode({
+        mode: name,
+        label,
+        width,
+        height
+      });
     }
   }
 };
 </script>
+
 <style lang="scss" scoped>
 .apos-admin-bar__breakpoint-preview-mode {
   display: flex;
   gap: $spacing-half;
+  align-items: center;
   margin-left: $spacing-double;
 }
 
@@ -194,9 +240,13 @@ export default {
 
 .apos-admin-bar__breakpoint-preview-mode-dropdown {
   :deep(.apos-admin-bar__breakpoint-preview-mode-dropdown-btn .apos-button) {
-    padding: 5px 10px;
-    border-radius: 3px;
+    padding: 7.5px 10px;
+    border-radius: 3.9px;
     border-color: var(--a-base-8);
+
+    &.apos-is-active {
+      background-color: transparent;
+    }
   }
 }
 </style>

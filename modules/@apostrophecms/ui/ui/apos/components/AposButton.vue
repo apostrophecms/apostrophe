@@ -33,9 +33,9 @@
       <div class="apos-button__content">
         <AposIndicator
           v-if="icon"
+          class="apos-button__icon"
           :icon="icon"
           :icon-size="iconSize"
-          class="apos-button__icon"
           :icon-color="iconFill"
           @icon="$emit('icon', $event)"
         />
@@ -44,6 +44,13 @@
             {{ $t(label, interpolate) }}
           </span>
         </slot>
+        <AposIndicator
+          v-if="secondIcon"
+          class="apos-button__second-icon"
+          :icon="secondIcon"
+          :icon-size="iconSize"
+          :icon-color="iconFill"
+        />
       </div>
     </component>
   </span>
@@ -137,10 +144,15 @@ export default {
     target: {
       type: String,
       default: null
+    },
+    secondIcon: {
+      type: String,
+      default: null
     }
   },
   emits: [ 'click', 'icon' ],
   data() {
+    console.log('this.secondIcon', this.secondIcon);
     return {
       id: createId()
     };
@@ -464,6 +476,11 @@ export default {
       margin-right: 0;
       margin-left: 5px;
     }
+
+    .apos-button__second-icon {
+      margin-right: 5px;
+      margin-left: 0;
+    }
   }
 
   .apos-button--outline {
@@ -632,6 +649,10 @@ export default {
 
   .apos-button__icon {
     margin-right: 5px;
+  }
+
+  .apos-button__second-icon {
+    margin-left: 5px;
   }
 
   .apos-button--danger-on-hover:hover {
