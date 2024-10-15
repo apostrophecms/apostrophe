@@ -24,6 +24,7 @@
       })"
     />
     <AposContextMenu
+      v-if="showDropdown"
       class="apos-admin-bar__breakpoint-preview-mode-dropdown"
       :button="button"
       :menu="breakpoints"
@@ -66,7 +67,7 @@ export default {
       originalBodyBackground: null,
       shortcuts: this.getShortcuts(),
       breakpoints: this.getBreakpointItems(),
-      screenItems: []
+      showDropdown: false
     };
   },
   computed: {
@@ -90,6 +91,7 @@ export default {
     }
   },
   mounted() {
+    this.setShowDropdown();
     apos.bus.$on(
       'command-menu-admin-bar-toggle-breakpoint-preview-mode',
       this.toggleBreakpointPreviewMode
@@ -225,6 +227,9 @@ export default {
         width,
         height
       });
+    },
+    setShowDropdown() {
+      this.showDropdown = Object.values(this.screens).some(({ shortcut }) => !shortcut);
     }
   }
 };
