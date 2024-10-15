@@ -70,15 +70,20 @@ export default {
     };
   },
   computed: {
+    activeScreen() {
+      return this.mode && this.screens[this.mode];
+    },
     button() {
       return {
         class: 'apos-admin-bar__breakpoint-preview-mode-dropdown-btn',
         label: {
-          key: 'Responsive',
+          key: this.activeScreen?.width || 'Responsive',
           localize: false
         },
         icon: 'chevron-down-icon',
-        secondIcon: 'monitor-icon',
+        secondIcon: this.activeScreen
+          ? this.getScreenIcon(this.activeScreen)
+          : 'monitor-icon',
         modifiers: [ 'icon-right', 'no-motion' ],
         type: 'outline'
       };
@@ -194,10 +199,15 @@ export default {
         label: screen.width,
         width: screen.width,
         height: screen.height,
-        icon: screen.icon || this.getScreenIcon(parseInt(screen.width))
+        icon: this.getScreenIcon(screen)
       }));
     },
-    getScreenIcon(width) {
+    getScreenIcon(screen) {
+      if (screen.icon) {
+        return screen.icon;
+      }
+
+      const width = parseInt(screen.width);
       if (width > 1024) {
         return 'monitor-icon';
       } else if (width > 540) {
