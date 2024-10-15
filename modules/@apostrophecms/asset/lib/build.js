@@ -14,7 +14,7 @@ const {
 module.exports = (self) => ({
   async task(argv = {}) {
     if (self.hasBuildModule()) {
-      return self.buildProxy(argv);
+      return self.build(argv);
     }
     if (self.options.es5 && !self.es5TaskFn) {
       self.apos.util.warnDev(stripIndent`

@@ -1,5 +1,6 @@
 const path = require('path');
 const fs = require('fs-extra');
+const util = require('util');
 const express = require('express');
 const Promise = require('bluebird');
 const { stripIndent } = require('common-tags');
@@ -126,9 +127,16 @@ module.exports = {
     // Set only if the external build module is registered. Contains
     // the entrypoints configuration for the current build module.
     self.moduleBuildEntrypoints = [];
-    // Set after a successful build. Contains the (absolute) paths to the built
-    // bundles.
-    self.currentDeployTargets = [];
+    // Set after a successful build. It contains only the processed entrypoints
+    // with attached `bundles` property containing the bundle files. This can be
+    // later called by the systems that are injecting the scripts and stylesheets
+    // in the browser. We also need this as a separate property for possible
+    // server side hot module replacement scenarios.
+    self.currentBuildEntrypoints = [];
+    // Set after a successful build. Contains objects with properties `name`, `source`,
+    // and `target` for each copied public asset location. We need this as a separate
+    // property for possible server side hot module replacement scenarios.
+    self.currentPublicAssetLocations = [];
 
     self.buildWatcherEnable = process.env.APOS_ASSET_WATCH !== '0' && self.options.watch !== false;
     self.buildWatcherDebounceMs = parseInt(self.options.watchDebounceMs || 1000, 10);
@@ -201,7 +209,7 @@ module.exports = {
         afterModuleInit: true,
         async task(argv = {}) {
           if (self.hasBuildModule()) {
-            return self.buildProxy(argv);
+            return self.build(argv);
           }
           return webpackBuild.task(argv);
         }
@@ -330,13 +338,78 @@ module.exports = {
       // executes the `build` method only when it really needs to build.
       // All other cases should be handled here (with calling separate external methods
       // when appropriate).
-      async buildProxy(argv) {
-        const manifest = await self.getBuildModule().build();
-        self.logDebug('buildProxy', manifest);
-        self.currentDeployTargets = await self.writeBuildScenes(manifest);
-        // FIXME: copy and add to currentDeployTargets all `public/` files
-        // from the modules. Ensure the deploy works correctly.
+      // FIXME: refactor the whole `currentBuildEntrypoints`. We currently keep 3 copies of the
+      // entrypoints configuration: two here (the initial and post-build), and one in the external
+      // build module as it has to responsd on `getBuildManifest` method. We should have probably
+      // two copies here. Either way, we need a better architecture for this.
+      async build(argv) {
+        self.currentPublicAssetLocations = await self.copyModulesFolder({
+          target: path.join(self.getBundleRootDir(), 'modules'),
+          folder: 'public',
+          modules: self.apos.modulesToBeInstantiated()
+        });
+
+        self.currentBuildEntrypoints = await self.getBuildModule()
+          .build();
+
+        const deployTargets = await self.writeBuildScenes(self.currentBuildEntrypoints);
+        const publicAssets = await glob('modules/**/*', {
+          cwd: self.getBundleRootDir(),
+          nodir: true,
+          follow: false,
+          absolute: false
+        });
+
+        self.printDebug('build', {
+          currentBuildEntrypoints: self.currentBuildEntrypoints,
+          currentPublicAssetLocations: self.currentPublicAssetLocations
+        });
+
+        await self.deploy([
+          ...publicAssets,
+          ...deployTargets
+        ]);
       },
+      // Deploy all public assets for release. Executes only in production.
+      // `files` is a flat array of relative to the bundleRoot (getBundleRoot) paths
+      // to the files to be deployed.
+      async deploy(files) {
+        if (process.env.NODE_ENV !== 'production') {
+          return;
+        }
+        let copyIn;
+        let releaseDir;
+        const bundleDir = self.getBundleRootDir();
+        if (process.env.APOS_UPLOADFS_ASSETS) {
+        // The right choice if uploadfs is mapped to S3, Azure, etc.,
+        // not the local filesystem
+          copyIn = util.promisify(self.uploadfs.copyIn);
+          releaseDir = self.getRelaseRootDir(true);
+        } else {
+        // The right choice with Docker if uploadfs is just the local filesystem
+        // mapped to a volume (a Docker build step can't access that)
+          copyIn = fsCopyIn;
+          releaseDir = self.getRelaseRootDir();
+          await fs.mkdirp(releaseDir);
+        }
+        for (const file of files) {
+          const src = path.join(bundleDir, file);
+          await copyIn(
+            src,
+            path.join(releaseDir, file)
+          );
+          await fs.remove(src);
+        }
+
+        async function fsCopyIn(from, to) {
+          const base = path.dirname(to);
+          await fs.mkdirp(base);
+          return fs.copyFile(from, to);
+        }
+      },
+      // Write the bundle files for the scenes, using the external build module manifest.
+      // Add `bundles` property to the entrypoiny configuration contaning the bundle files
+      // used later when injecting the scripts and stylesheets in the browser.
       async writeBuildScenes(manifest) {
         const bundlePath = self.getBundleRootDir();
         const { entrypoints } = manifest;
@@ -368,30 +441,33 @@ module.exports = {
               root, file, imports = [], css = []
             } = config.manifest;
 
+            const jsTargetName = `${scene}-${config.condition ?? 'module'}-bundle.js`;
+            const cssTargetName = `${scene}-bundle.css`;
             const jsFiles = [ file, ...imports ];
-            const jsTarget = path.join(bundlePath, `${scene}-${config.condition ?? 'module'}-bundle.js`);
-            const cssTarget = path.join(bundlePath, `${scene}-bundle.css`);
             const jsFilePaths = jsFiles.map(f => path.join(root, f));
             const cssFilePaths = css.map(f => path.join(root, f));
 
             if (jsFilePaths.length) {
-              if (!acc[jsTarget]) {
-                acc[jsTarget] = [];
-              }
-              acc[jsTarget].push(...jsFilePaths);
+              config.bundles = config.bundles || new Set();
+              config.bundles.add(cssTargetName);
+              acc[jsTargetName] = acc[jsTargetName] || [];
+              acc[jsTargetName].push(...jsFilePaths);
             }
 
             if (cssFilePaths.length) {
-              if (!acc[cssTarget]) {
-                acc[cssTarget] = [];
-              }
-              acc[cssTarget].push(...cssFilePaths);
+              config.bundles = config.bundles || new Set();
+              config.bundles.add(cssTargetName);
+              acc[cssTargetName] = acc[cssTargetName] || [];
+              acc[cssTargetName].push(...cssFilePaths);
             }
             return acc;
           }, {});
 
           for (const [ target, files ] of Object.entries(bundles)) {
-            fs.outputFileSync(target, files.map(f => fs.readFileSync(f, 'utf-8')).join('\n'));
+            fs.outputFileSync(
+              path.join(bundlePath, target),
+              files.map(f => fs.readFileSync(f, 'utf-8')).join('\n')
+            );
           }
 
           return Object.keys(bundles);
@@ -507,7 +583,9 @@ module.exports = {
           }
         }
         self.moduleBuildEntrypoints = entrypoints;
-        self.printDebug('setBuildExtensions', self.moduleBuildEntrypoints);
+        self.printDebug('setBuildExtensionsForExternalModule', {
+          moduleBuildEntrypoints: self.moduleBuildEntrypoints
+        });
       },
       // Compute UI source and public files metadata of all modules. The result array
       // order follows the following rules:
@@ -591,6 +669,69 @@ module.exports = {
 
         return meta;
       },
+      // Copy a `folder` (if exists) from any existing module to the `target` directory.
+      // The `modules` option is usually the result of `self.apos.modulesToBeInstantiated()`.
+      // It's not resolved internally to avoid overhead (it's not cheap). The caller
+      // is responsible for resolving and caching the modules list.
+      // `target` is the absolute path to the target directory.
+      // Usage:
+      // const modules = self.apos.modulesToBeInstantiated();
+      // const copied = await self.copyModulesFolder({
+      //   target: '/path/to/build',
+      //   folder: 'public',
+      //   modules
+      // });
+      // Returns an array of objects with the following properties:
+      //   - `name`: the module name.
+      //   - `source`: the absolute path to the source directory.
+      //   - `target`: the absolute path to the target directory.
+      async copyModulesFolder({
+        target, folder, modules
+      }) {
+        await fs.remove(target);
+        await fs.mkdirp(target);
+        let names = {};
+        const directories = {};
+        const result = [];
+        // Most other modules are not actually instantiated yet, but
+        // we can access their metadata, which is sufficient
+        for (const name of modules) {
+          const ancestorDirectories = [];
+          const metadata = self.apos.synth.getMetadata(name);
+          for (const entry of metadata.__meta.chain) {
+            const effectiveName = entry.my
+              ? entry.name
+                .replace('/my-', '/')
+                .replace(/^my-/, '')
+              : entry.name;
+            names[effectiveName] = true;
+            ancestorDirectories.push(entry.dirname);
+            directories[effectiveName] = directories[effectiveName] || [];
+            for (const dir of ancestorDirectories) {
+              if (!directories[effectiveName].includes(dir)) {
+                directories[effectiveName].push(dir);
+              }
+            }
+          }
+        }
+        names = Object.keys(names);
+        for (const name of names) {
+          const moduleDir = `${target}/${name}`;
+          for (const dir of directories[name]) {
+            const srcDir = `${dir}/${folder}`;
+            if (fs.existsSync(srcDir)) {
+              await fs.copy(srcDir, moduleDir);
+              result.push({
+                name,
+                source: srcDir,
+                target: moduleDir
+              });
+            }
+          }
+        }
+
+        return result;
+      },
       // Get the component name from a file path. The `enumerate` option allows
       // to append a number to the component name.
       getComponentNameForUI(componentPath, { enumerate } = {}) {
@@ -645,7 +786,7 @@ module.exports = {
       },
       // This is a low level public helper for the external build modules.
       // It allows finding source files from the computed source metadata
-      // for a give entrypoint configuration.
+      // for a given entrypoint configuration.
       //
       // The `meta` array is the (cached) return value of `computeSourceMeta()`.
       // The `pathComposer` is used to create the component path for
@@ -1065,6 +1206,16 @@ function invoke() {
           'public/apos-frontend/',
           self.getNamespace()
         );
+      },
+      getRelaseRootDir(isUploadFs) {
+        const releaseId = self.getReleaseId();
+        const namespace = self.getNamespace();
+        if (isUploadFs) {
+          // the relative to the uploadfs root path
+          return `/apos-frontend/releases/${releaseId}/${namespace}`;
+        }
+        // the absolute path to the release local directory
+        return `${self.apos.rootDir}/public/apos-frontend/releases/${releaseId}/${namespace}`;
       },
 
       // END refactoring
