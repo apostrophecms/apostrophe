@@ -152,7 +152,6 @@ export default {
   },
   emits: [ 'click', 'icon' ],
   data() {
-    console.log('this.secondIcon', this.secondIcon);
     return {
       id: createId()
     };

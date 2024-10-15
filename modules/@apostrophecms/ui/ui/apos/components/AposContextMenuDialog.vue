@@ -71,8 +71,6 @@ const props = defineProps({
   }
 });
 
-console.log('props.activeItem', props.activeItem);
-
 const emit = defineEmits([ 'item-clicked', 'set-arrow' ]);
 
 const menuPositions = computed(() => {
