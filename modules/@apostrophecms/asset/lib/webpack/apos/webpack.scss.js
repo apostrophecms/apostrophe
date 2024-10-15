@@ -1,5 +1,5 @@
 const path = require('path');
-const replaceViewportUnitsPlugin = require('../postcss-replace-viewport-units-plugin');
+const postcssReplaceViewportUnitsPlugin = require('../postcss-replace-viewport-units-plugin');
 
 module.exports = (options, apos) => {
   const mediaToContainerQueriesLoader = apos.asset.options.breakpointPreviewMode?.enable === true
@@ -36,7 +36,7 @@ module.exports = (options, apos) => {
                 postcssOptions: {
                   plugins: [
                     [
-                      replaceViewportUnitsPlugin(),
+                      postcssReplaceViewportUnitsPlugin(),
                       'autoprefixer',
                       {}
                     ]
