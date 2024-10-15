@@ -9,6 +9,9 @@
 * Takes care of an edge case where Media Manager would duplicate search results.
 * Modules can now have a `before: "module-name"` property in their configuration to run (initialization) before another module.
 * Adds AI-generated missing translations
+* Adds the mobile preview dropdown for non visibles breakpoints. Uses the new `shortcut` property to display breakpoints out of the dropdown.
+* Adds possibility to have two icons in a button.
+* Adds a `isActive` state to context menu items. Also adds possibility to add icons to context menu items.
 
 ### Fixes
 
