@@ -77,8 +77,8 @@ export default {
       return {
         class: 'apos-admin-bar__breakpoint-preview-mode-dropdown-btn',
         label: {
-          key: this.activeScreen?.width || 'Responsive',
-          localize: false
+          key: this.activeScreen?.label || 'Preview', // TODO: Temporary waiting for new design
+          localize: true
         },
         icon: 'chevron-down-icon',
         secondIcon: this.activeScreen
@@ -196,7 +196,7 @@ export default {
       return Object.entries(this.screens).map(([ name, screen ]) => ({
         name,
         action: name,
-        label: screen.width,
+        label: screen.label,
         width: screen.width,
         height: screen.height,
         icon: this.getScreenIcon(screen)
