@@ -6,29 +6,29 @@ module.exports = (opts = {}) => {
     postcssPlugin: 'postcss-replace-viewport-units-plugin',
     Once (root, postcss) {
       root.walkRules(rule => {
-        const declsWithContainerQueryRelativeUnits = [];
+        const declsToCopy = [];
 
         rule.walkDecls(decl => {
           if (!decl.value.includes('vh') && !decl.value.includes('vw')) {
             return;
           }
 
-          const declWithContainerQueryRelativeUnits = decl.clone({
+          const clonedDeclWithContainerQueryUnits = decl.clone({
             value: decl.value
               .replaceAll('vh', 'cqh')
               .replaceAll('vw', 'cqw')
           });
 
-          declsWithContainerQueryRelativeUnits.push(declWithContainerQueryRelativeUnits);
+          declsToCopy.push(clonedDeclWithContainerQueryUnits);
         });
 
-        if (!declsWithContainerQueryRelativeUnits.length) {
+        if (!declsToCopy.length) {
           return;
         }
 
         const prefixedRule = new postcss.Rule({
           selector: `:where(body[data-breakpoint-preview-mode]) ${rule.selector}`,
-          nodes: declsWithContainerQueryRelativeUnits
+          nodes: declsToCopy
         });
 
         root.insertAfter(rule, prefixedRule);
