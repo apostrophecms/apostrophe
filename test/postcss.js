@@ -1,5 +1,5 @@
 const postcss = require('postcss');
-const { equal } = require('node:assert');
+const { equal, deepEqual } = require('node:assert');
 const { test, describe } = require('node:test');
 
 describe('postcss-replace-viewport-units-plugin', () => {
@@ -61,5 +61,5 @@ async function run(plugin, input, output, opts = {}) {
   const result = await postcss([ plugin(opts) ]).process(input, { from: undefined });
 
   equal(result.css, output);
-  equal(result.warnings().length, 0);
+  deepEqual(result.warnings(), []);
 }
