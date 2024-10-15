@@ -255,7 +255,7 @@ export default {
 
 .apos-admin-bar__breakpoint-preview-mode-dropdown {
   :deep(.apos-admin-bar__breakpoint-preview-mode-dropdown-btn .apos-button) {
-    padding: $spacing-base;
+    padding: $spacing-three-quarters $spacing-base;
     border-radius: var(--a-border-radius);
     border-color: var(--a-base-8);
 
