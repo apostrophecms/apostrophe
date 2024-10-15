@@ -92,6 +92,12 @@ const props = defineProps({
     // corresponds to a menu item action
     type: String,
     default: null
+  },
+  attrs: {
+    type: Object,
+    default() {
+      return {};
+    }
   }
 });
 
@@ -101,7 +107,8 @@ const label = ref(null);
 const action = ref(null);
 const button = ref({
   type: props.type,
-  modifiers: [ 'no-motion' ]
+  modifiers: [ 'no-motion' ],
+  attrs: props.attrs
 });
 const contextMenu = ref();
 const choices = ref([]);

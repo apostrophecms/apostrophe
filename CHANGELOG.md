@@ -4,7 +4,11 @@
 
 ### Adds
 
+* Elements inside modals can have a `data-apos-focus-priority` attribute that prioritizes them inside the focusable elements list.
+* Modals will continute trying to find focusable elements until an element marked `data-apos-focus-priority` appears or the max retry threshold is reached.
+* Takes care of an edge case where Media Manager would duplicate search results.
 * Modules can now have a `before: "module-name"` property in their configuration to run (initialization) before another module.
+* Adds AI-generated missing translations
 * Add a postcss plugin to handle `vh` and `vw` values on breakpoint preview mode.
 
 ### Fixes
@@ -13,6 +17,12 @@
 * `pnpm: true` option in `app.js` is no longer breaking the application. 
 * Remove unused `vue-template-compiler` dependency.
 * Prevent un-publishing the `@apostrophecms/global` doc and more generally all singletons.
+
+## 4.7.2 and 4.8.1 (2024-10-09)
+
+### Fixes
+
+* Correct a race condition that can cause a crash at startup when custom `uploadfs` options are present in some specific cloud environments e.g. when using Azure Blob Storage.
 
 ## 4.8.0 (2024-10-03)
 
