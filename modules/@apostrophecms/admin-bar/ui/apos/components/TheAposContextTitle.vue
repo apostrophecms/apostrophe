@@ -50,13 +50,6 @@
         :tooltip="tooltip"
         :modifiers="modifiers"
       />
-      <!-- <TheAposContextBreakpointPreviewMode
-        v-if="isBreakpointPreviewModeEnabled"
-        :screens="breakpointPreviewModeScreens"
-        :resizable="breakpointPreviewModeResizable"
-        @switch-breakpoint-preview-mode="addContextLabel"
-        @reset-breakpoint-preview-mode="removeContextLabel"
-      /> -->
     </span>
   </transition-group>
 </template>
