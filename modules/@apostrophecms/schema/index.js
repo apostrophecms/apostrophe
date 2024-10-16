@@ -572,7 +572,7 @@ module.exports = {
       // set error class names, etc. If the error is not a string, it is a
       // database error etc. and should not be displayed in the browser directly.
       //
-      // acnestors consists of an array of objects where each represents
+      // ancestors consists of an array of objects where each represents
       // the context object at each level of nested sanitization, excluding
       // `destination` (the current level). This allows resolution of relative
       // `following` paths during sanitization.
