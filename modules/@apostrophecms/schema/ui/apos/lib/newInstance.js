@@ -1,5 +1,5 @@
-const { klona } = require('klona');
-const { createId } = require('@paralleldrive/cuid2');
+import { klona } from 'klona';
+import { createId } from '@paralleldrive/cuid2';
 
 export default newInstance;
 

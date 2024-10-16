@@ -141,15 +141,14 @@ module.exports = {
     self.buildWatcherEnable = process.env.APOS_ASSET_WATCH !== '0' && self.options.watch !== false;
     self.buildWatcherDebounceMs = parseInt(self.options.watchDebounceMs || 1000, 10);
     self.buildWatcher = null;
+    // A signal that the build data has been initialized and all modules
+    // have been registered.
+    await self.emit('afterInit');
   },
   handlers (self) {
     return {
       'apostrophe:modulesRegistered': {
         async runUiBuildTask() {
-          // A signal that the build data has been initialized and all modules
-          // have been registered.
-          await self.emit('afterInit');
-
           // TODO: refactor autorunUiBuildTask to get rid of the webpack related
           // code and make it a generic method playing well with external builds.
           const ran = await self.autorunUiBuildTask();
@@ -1103,16 +1102,17 @@ module.exports = {
         indexJs,
         indexSass
       }) {
-        let output = prologue?.trim()
-          ? prologue.trim() + '\n'
-          : '';
-        output += raw || '';
+        let output = '';
         output += (indexSass && indexSass.importCode) || '';
         output += (indexJs && indexJs.importCode) || '';
         output += (icon && icon.importCode) || '';
         output += (components && components.importCode) || '';
         output += (tiptap && tiptap.importCode) || '';
         output += (app && app.importCode) || '';
+        output += prologue?.trim()
+          ? prologue.trim() + '\n'
+          : '';
+        output += raw || '';
         output += (icon && icon.registerCode) || '';
         output += (components && components.registerCode) || '';
         output += (tiptap && tiptap.registerCode) || '';
