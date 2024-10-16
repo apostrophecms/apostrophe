@@ -3,26 +3,30 @@
     data-apos-test="breakpointPreviewMode"
     class="apos-admin-bar__breakpoint-preview-mode"
   >
-    <component
-      :is="'AposButton'"
-      v-for="(screen, name) in shortcuts"
-      :key="name"
-      :data-apos-test="`breakpointPreviewMode:${name}`"
-      :modifiers="['small', 'no-motion']"
-      :label="screen.label"
-      :title="$t(screen.label)"
-      :icon="screen.icon"
-      :icon-only="true"
-      type="subtle"
-      class="apos-admin-bar__breakpoint-preview-mode-button"
-      :class="{ 'apos-is-active': mode === name }"
-      @click="toggleBreakpointPreviewMode({
-        mode: name,
-        label: screen.label,
-        width: screen.width,
-        height: screen.height
-      })"
-    />
+    <div class="apos-admin-bar__breakpoint-preview-mode-shortcuts">
+      <component
+        :is="'AposButton'"
+        v-for="(screen, name) in shortcuts"
+        :key="name"
+        :data-apos-test="`breakpointPreviewMode:${name}`"
+        :modifiers="['small', 'no-motion']"
+        :label="screen.label"
+        :tooltip="$t(screen.label)"
+        :title="$t(screen.label)"
+        :icon="screen.icon"
+        :icon-only="true"
+        type="subtle"
+        class="apos-admin-bar__breakpoint-preview-mode-button"
+        :class="{ 'apos-is-active': mode === name }"
+        @click="toggleBreakpointPreviewMode({
+          mode: name,
+          label: screen.label,
+          width: screen.width,
+          height: screen.height
+        })"
+      />
+    </div>
+
     <AposContextMenu
       v-if="showDropdown"
       class="apos-admin-bar__breakpoint-preview-mode-dropdown"
@@ -33,6 +37,21 @@
       menu-placement="bottom-end"
       @item-clicked="selectBreakpoint"
     />
+    <Transition>
+      <AposButton
+        v-show="activeScreen"
+        tooltip="apostrophe:breakpointPreviewClear"
+        :icon-only="true"
+        icon="close-icon"
+        :modifiers="['small', 'no-motion']"
+        label="apostrophe:breakpointPreviewClear"
+        type="subtle"
+        @click="toggleBreakpointPreviewMode({
+          mode,
+          ...activeScreen
+        })"
+      />
+    </Transition>
   </div>
 </template>
 <script>
@@ -75,16 +94,20 @@ export default {
       return this.mode && this.screens[this.mode];
     },
     button() {
+      let className = 'apos-admin-bar__breakpoint-preview-mode-dropdown-btn';
+      if (!this.activeScreen) {
+        className += ' apos-admin-bar__breakpoint-preview-mode-dropdown-btn--inactive';
+      }
       return {
-        class: 'apos-admin-bar__breakpoint-preview-mode-dropdown-btn',
+        class: className,
         label: {
-          key: this.activeScreen?.label || 'Preview', // TODO: Temporary waiting for new design
+          key: this.activeScreen?.label || 'apostrophe:breakpointPreviewSelect',
           localize: true
         },
         icon: 'chevron-down-icon',
         secondIcon: this.activeScreen
           ? this.getScreenIcon(this.activeScreen)
-          : 'monitor-icon',
+          : null,
         modifiers: [ 'icon-right', 'no-motion' ],
         type: 'outline'
       };
@@ -238,9 +261,9 @@ export default {
 <style lang="scss" scoped>
 .apos-admin-bar__breakpoint-preview-mode {
   display: flex;
-  gap: $spacing-half;
+  gap: $spacing-one-quarter;
   align-items: center;
-  margin-left: $spacing-double;
+  margin-left: $spacing-base;
 }
 
 .apos-admin-bar__breakpoint-preview-mode-button {
@@ -254,8 +277,9 @@ export default {
 }
 
 .apos-admin-bar__breakpoint-preview-mode-dropdown {
+
   :deep(.apos-admin-bar__breakpoint-preview-mode-dropdown-btn .apos-button) {
-    padding: $spacing-three-quarters $spacing-base;
+    padding: $spacing-three-quarters;
     border-radius: var(--a-border-radius);
     border-color: var(--a-base-8);
 
@@ -264,12 +288,39 @@ export default {
     }
 
     .apos-button__icon {
-      margin-left: $spacing-double;
+      margin-left: $spacing-base;
     }
 
     .apos-button__second-icon {
       margin-right: $spacing-three-quarters;
     }
+
+    .apos-button__label {
+      white-space: pre;
+    }
+  }
+
+  :deep(.apos-admin-bar__breakpoint-preview-mode-dropdown-btn--inactive .apos-button) {
+    padding-left: $spacing-base;
+    font-style: italic;
+    color: var(--a-base-2);
   }
 }
+
+.v-enter-active,
+.v-leave-active {
+  transition: opacity 0.5s ease;
+}
+
+.v-enter-from,
+.v-leave-to {
+  opacity: 0;
+}
+.apos-admin-bar__breakpoint-preview-mode-shortcuts {
+  display: none;
+  @include media-up(hands-wide) {
+    display: flex;
+  }
+}
+
 </style>

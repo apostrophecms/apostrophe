@@ -8,6 +8,7 @@ $brand-green: #00bf9a;
 
 $spacing-base: 10px;
 $spacing-half: math.div($spacing-base, 2);
+$spacing-one-quarter: math.div($spacing-base, 4);
 $spacing-three-quarters: math.div($spacing-base, 4) * 3;
 $spacing-double: $spacing-base * 2;
 $spacing-triple: $spacing-base * 3;
