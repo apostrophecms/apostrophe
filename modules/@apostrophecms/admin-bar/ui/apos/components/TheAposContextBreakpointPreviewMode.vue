@@ -277,7 +277,6 @@ export default {
 }
 
 .apos-admin-bar__breakpoint-preview-mode-dropdown {
-
   :deep(.apos-admin-bar__breakpoint-preview-mode-dropdown-btn .apos-button) {
     padding: $spacing-three-quarters;
     border-radius: var(--a-border-radius);
@@ -309,15 +308,17 @@ export default {
 
 .v-enter-active,
 .v-leave-active {
-  transition: opacity 0.5s ease;
+  @include apos-transition($duration:0.3s);
 }
 
 .v-enter-from,
 .v-leave-to {
   opacity: 0;
 }
+
 .apos-admin-bar__breakpoint-preview-mode-shortcuts {
   display: none;
+
   @include media-up(hands-wide) {
     display: flex;
   }

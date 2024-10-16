@@ -153,7 +153,7 @@ export default {
     },
     breakpointPreviewModeResizable() {
       return this.moduleOptions.breakpointPreviewMode.resizable || false;
-    },
+    }
   },
   watch: {
     editMode(newVal) {
@@ -814,8 +814,8 @@ function depth(el) {
   height: 100%;
 
   .apos-admin-bar__control-set {
-    width: auto;
     align-items: center;
+    width: auto;
   }
 }
 </style>
