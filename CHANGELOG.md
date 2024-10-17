@@ -21,6 +21,8 @@
 * Remove unused `vue-template-compiler` dependency.
 * Prevent un-publishing the `@apostrophecms/global` doc and more generally all singletons.
 * When opening a context menu while another is already opened, prevent from focusing the button of the first one instead of the newly opened menu.
+* Updates `isEqual` method of `area` field type to avoid comparing an area having temporary properties with one having none.
+
 
 ## 4.7.2 and 4.8.1 (2024-10-09)
 
