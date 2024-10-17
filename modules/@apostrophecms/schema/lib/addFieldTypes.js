@@ -46,10 +46,15 @@ module.exports = (self) => {
       return self.apos.area.isEmpty({ area: value });
     },
     isEqual (req, field, one, two) {
-      if (self.apos.area.isEmpty({ area: one[field.name] }) && self.apos.area.isEmpty({ area: two[field.name] })) {
+      const oneArea = self.apos.util.clonePermanent(one[field.name] || {});
+      const twoArea = self.apos.util.clonePermanent(two[field.name] || {});
+      if (
+        self.apos.area.isEmpty({ area: oneArea }) &&
+        self.apos.area.isEmpty({ area: twoArea })
+      ) {
         return true;
       }
-      return _.isEqual(one[field.name], two[field.name]);
+      return _.isEqual(oneArea, twoArea);
     },
     validate: function (field, options, warn, fail) {
       let widgets = (field.options && field.options.widgets) || {};
