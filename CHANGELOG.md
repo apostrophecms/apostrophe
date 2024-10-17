@@ -12,6 +12,7 @@
 * Adds the mobile preview dropdown for non visibles breakpoints. Uses the new `shortcut` property to display breakpoints out of the dropdown.
 * Adds possibility to have two icons in a button.
 * Adds a `isActive` state to context menu items. Also adds possibility to add icons to context menu items.
+* Add a postcss plugin to handle `vh` and `vw` values on breakpoint preview mode.
 
 ### Fixes
 
