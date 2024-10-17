@@ -1,24 +1,36 @@
 <template>
   <div :class="classes">
     <template v-if="contextBarActive">
-      <TheAposContextUndoRedo
-        :v-if="editMode"
-        :can-undo="canUndo"
-        :can-redo="canRedo"
-        :retrying="retrying"
-        :editing="editing"
-        :saving="saving"
-        :saved="saved"
-        @undo="undo"
-        @redo="redo"
-      />
+      <div class="apos-admin-bar__control-group">
+        <TheAposContextUndoRedo
+          :v-if="editMode"
+          :can-undo="canUndo"
+          :can-redo="canRedo"
+          :retrying="retrying"
+          :editing="editing"
+          :saving="saving"
+          :saved="saved"
+          @undo="undo"
+          @redo="redo"
+        />
+        <TheAposContextBreakpointPreviewMode
+          v-if="isBreakpointPreviewModeEnabled"
+          :screens="breakpointPreviewModeScreens"
+          :resizable="breakpointPreviewModeResizable"
+          @switch-breakpoint-preview-mode="addContextLabel"
+          @reset-breakpoint-preview-mode="removeContextLabel"
+        />
+      </div>
+
       <TheAposContextTitle
         v-if="!hasCustomUi"
+        class="apos-admin-bar__control-group"
         :context="context"
         :draft-mode="draftMode"
         @switch-draft-mode="switchDraftMode"
       />
       <TheAposContextModeAndSettings
+        class="apos-admin-bar__control-group"
         :context="context"
         :published="published"
         :edit-mode="editMode"
@@ -132,6 +144,15 @@ export default {
     },
     autopublish() {
       return this.context.autopublish ?? this.moduleOptions.autopublish;
+    },
+    isBreakpointPreviewModeEnabled() {
+      return this.moduleOptions.breakpointPreviewMode.enable || false;
+    },
+    breakpointPreviewModeScreens() {
+      return this.moduleOptions.breakpointPreviewMode.screens || {};
+    },
+    breakpointPreviewModeResizable() {
+      return this.moduleOptions.breakpointPreviewMode.resizable || false;
     }
   },
   watch: {
@@ -759,6 +780,15 @@ export default {
         draftMode: this.draftMode,
         editMode: this.editMode
       }));
+    },
+    addContextLabel({
+      label
+    }) {
+      document.querySelector('[data-apos-context-label]')
+        ?.replaceChildren(document.createTextNode(this.$t(label)));
+    },
+    removeContextLabel() {
+      document.querySelector('[data-apos-context-label]')?.replaceChildren();
     }
   }
 };
@@ -773,8 +803,19 @@ function depth(el) {
 }
 </script>
 <style lang="scss" scoped>
-.apos-admin-bar__row--utils {
+.apos-admin-bar__row--utils,
+.apos-admin-bar__control-group {
   display: flex;
   align-items: center;
+}
+
+.apos-admin-bar__control-group {
+  flex: 1;
+  height: 100%;
+
+  .apos-admin-bar__control-set {
+    align-items: center;
+    width: auto;
+  }
 }
 </style>
