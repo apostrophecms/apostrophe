@@ -2,6 +2,7 @@
   <div
     data-apos-test="breakpointPreviewMode"
     class="apos-admin-bar__breakpoint-preview-mode"
+    :class="modifiers"
   >
     <div class="apos-admin-bar__breakpoint-preview-mode-shortcuts">
       <component
@@ -111,6 +112,20 @@ export default {
         modifiers: [ 'icon-right', 'no-motion' ],
         type: 'outline'
       };
+    },
+    modifiers() {
+      const base = 'apos-admin-bar__breakpoint-preview-mode';
+      const result = [];
+
+      if (!Object.keys(this.shortcuts).length) {
+        result.push(`${base}--no-shortcuts`);
+      }
+
+      if (!this.showDropdown) {
+        result.push(`${base}--no-dropdown`);
+      }
+
+      return result;
     }
   },
   mounted() {
@@ -264,6 +279,15 @@ export default {
   gap: $spacing-one-quarter;
   align-items: center;
   margin-left: $spacing-base;
+
+  // NOTE Restore this when BP's CSS re-writes ignore apos admin styles
+  // &:not(&--no-dropdown) .apos-admin-bar__breakpoint-preview-mode-shortcuts {
+  //   display: none;
+
+  //   @include media-up(hands-wide) {
+  //     display: flex;
+  //   }
+  // }
 }
 
 .apos-admin-bar__breakpoint-preview-mode-button {
@@ -317,11 +341,7 @@ export default {
 }
 
 .apos-admin-bar__breakpoint-preview-mode-shortcuts {
-  display: none;
-
-  @include media-up(hands-wide) {
-    display: flex;
-  }
+  display: flex;
 }
 
 </style>
