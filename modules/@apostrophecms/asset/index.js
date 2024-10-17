@@ -64,19 +64,22 @@ module.exports = {
           label: 'apostrophe:breakpointPreviewDesktop',
           width: '1440px',
           height: '900px',
-          icon: 'monitor-icon'
+          icon: 'monitor-icon',
+          shortcut: true
         },
         tablet: {
           label: 'apostrophe:breakpointPreviewTablet',
           width: '1024px',
           height: '768px',
-          icon: 'tablet-icon'
+          icon: 'tablet-icon',
+          shortcut: true
         },
         mobile: {
           label: 'apostrophe:breakpointPreviewMobile',
           width: '414px',
           height: '896px',
-          icon: 'cellphone-icon'
+          icon: 'cellphone-icon',
+          shortcut: true
         }
       },
       // Transform method used on media feature

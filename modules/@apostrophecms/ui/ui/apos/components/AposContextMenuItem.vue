@@ -11,7 +11,16 @@
       :data-apos-test-disabled="disabled"
       v-on="disabled ? {} : { click: click }"
     >
-      {{ $t(label) }}
+      <AposIndicator
+        v-if="menuItem.icon"
+        class="apos-context-menu__icon"
+        :icon="menuItem.icon"
+        :icon-size="menuItem.iconSize"
+        :icon-color="menuItem.iconFill"
+      />
+      <span class="apos-context-menu__label">
+        {{ $t(label) }}
+      </span>
     </button>
   </li>
 </template>
@@ -24,7 +33,11 @@ export default {
       type: Object,
       required: true
     },
-    open: Boolean
+    open: Boolean,
+    isActive: {
+      type: Boolean,
+      default: false
+    }
   },
   emits: [ 'clicked' ],
   computed: {
@@ -46,6 +59,9 @@ export default {
         this.menuItem.modifiers.forEach((modifier) => {
           classes.push(`apos-context-menu__button--${modifier}`);
         });
+      }
+      if (this.isActive) {
+        classes.push('apos-context-menu__active');
       }
       return classes.join(' ');
     },
@@ -71,19 +87,23 @@ export default {
 <style lang="scss" scoped>
 .apos-context-menu__item {
   display: flex;
+
 }
 
 .apos-context-menu__button {
   @include type-base;
 
   & {
-    display: inline-block;
+    display: inline-flex;
     flex-grow: 1;
+    align-items: center;
     width: 100%;
-    padding: 10px 20px;
+    margin: 0 10px;
+    padding: 10px;
     border: none;
     color: var(--a-base-1);
     text-align: left;
+    border-radius: 3px;
     background-color: var(--a-background-primary);
   }
 
@@ -134,5 +154,13 @@ export default {
       color: var(--a-base-5);
     }
   }
+
+  .apos-context-menu__icon {
+    margin-right: 7px;
+  }
+}
+
+.apos-context-menu__active {
+  background-color: var(--a-base-10)
 }
 </style>
