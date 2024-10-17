@@ -228,7 +228,7 @@ watch(triggerFocusRefresh, (newVal) => {
 onMounted(async () => {
   await nextTick();
   if (shouldTrapFocus.value) {
-    trapFocus();
+    await trapFocus();
   } else {
     renderingElements.value = false;
   }
@@ -292,7 +292,7 @@ async function trapFocus() {
     if (!foundPriorityElement && findPriorityFocusElementRetryMax.value > currentPriorityFocusElementRetry.value) {
       await new Promise(resolve => setTimeout(resolve, 50));
       currentPriorityFocusElementRetry.value++;
-      trapFocus();
+      await trapFocus();
       return;
     }
     renderingElements.value = false;

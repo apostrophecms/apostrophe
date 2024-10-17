@@ -888,10 +888,21 @@ export default {
       return body;
     },
     isPriorityButton(name) {
-      const priority = this.restoreOnly ? 'save'
-        : this.saveMenu ? 'splitSave'
-          : this.saveDisabled ? 'cancel' : null;
-      return name === priority || null;
+      let priority;
+
+      if (this.restoreOnly) {
+        priority = 'save';
+      }
+
+      if (this.saveMenu) {
+        priority = 'splitSave';
+      }
+
+      if (this.saveDisabled) {
+        priority = 'cancel';
+      }
+
+      return name === priority ? true : null;
     }
   }
 };

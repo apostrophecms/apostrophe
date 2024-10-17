@@ -14,6 +14,10 @@ a `following` property with an array of other field names. Array and object subf
 by adding a `<` prefix (or more than one) to field names in `following` to look upwards a level. Your custom method on the server side will
 now receive a `following` object as an additional argument. One limitation: for now, a field with dynamic choices cannot depend on another field
 with dynamic choices in this way.
+* Adds AI-generated missing translations
+* Adds the mobile preview dropdown for non visibles breakpoints. Uses the new `shortcut` property to display breakpoints out of the dropdown.
+* Adds possibility to have two icons in a button.
+* Adds a `isActive` state to context menu items. Also adds possibility to add icons to context menu items.
 
 ### Fixes
 
@@ -21,7 +25,13 @@ with dynamic choices in this way.
 * `pnpm: true` option in `app.js` is no longer breaking the application. 
 * Remove unused `vue-template-compiler` dependency.
 * Prevent un-publishing the `@apostrophecms/global` doc and more generally all singletons.
-* Correct a race condition that can cause a crash at startup when custom `uploadfs` options are present in some environments.
+* When opening a context menu while another is already opened, prevent from focusing the button of the first one instead of the newly opened menu.
+
+## 4.7.2 and 4.8.1 (2024-10-09)
+
+### Fixes
+
+* Correct a race condition that can cause a crash at startup when custom `uploadfs` options are present in some specific cloud environments e.g. when using Azure Blob Storage.
 
 ## 4.8.0 (2024-10-03)
 
