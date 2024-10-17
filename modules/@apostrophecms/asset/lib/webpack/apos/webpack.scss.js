@@ -1,15 +1,25 @@
 const path = require('path');
+const postcssReplaceViewportUnitsPlugin = require('../postcss-replace-viewport-units-plugin');
 
 module.exports = (options, apos) => {
-  const mediaToContainerQueriesLoader = apos.asset.options.breakpointPreviewMode?.enable === true
-    ? {
+  const postcssPlugins = [
+    'autoprefixer',
+    {}
+  ];
+  let mediaToContainerQueriesLoader = '';
+
+  if (apos.asset.options.breakpointPreviewMode?.enable === true) {
+    postcssPlugins.unshift(
+      postcssReplaceViewportUnitsPlugin()
+    );
+    mediaToContainerQueriesLoader = {
       loader: path.resolve(__dirname, '../media-to-container-queries-loader.js'),
       options: {
         debug: apos.asset.options.breakpointPreviewMode?.debug === true,
         transform: apos.asset.options.breakpointPreviewMode?.transform || null
       }
-    }
-    : '';
+    };
+  }
 
   return {
     module: {
@@ -33,12 +43,7 @@ module.exports = (options, apos) => {
               options: {
                 sourceMap: true,
                 postcssOptions: {
-                  plugins: [
-                    [
-                      'autoprefixer',
-                      {}
-                    ]
-                  ]
+                  plugins: [ postcssPlugins ]
                 }
               }
             },
