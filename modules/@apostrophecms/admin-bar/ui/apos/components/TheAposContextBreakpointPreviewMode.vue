@@ -5,7 +5,7 @@
   >
     <component
       :is="'AposButton'"
-      v-for="(screen, name) in screens"
+      v-for="(screen, name) in shortcuts"
       :key="name"
       :data-apos-test="`breakpointPreviewMode:${name}`"
       :modifiers="['small', 'no-motion']"
@@ -16,7 +16,22 @@
       type="subtle"
       class="apos-admin-bar__breakpoint-preview-mode-button"
       :class="{ 'apos-is-active': mode === name }"
-      @click="toggleBreakpointPreviewMode({ mode: name, label: screen.label, width: screen.width, height: screen.height })"
+      @click="toggleBreakpointPreviewMode({
+        mode: name,
+        label: screen.label,
+        width: screen.width,
+        height: screen.height
+      })"
+    />
+    <AposContextMenu
+      v-if="showDropdown"
+      class="apos-admin-bar__breakpoint-preview-mode-dropdown"
+      :button="button"
+      :menu="breakpoints"
+      :active-item="mode"
+      :center-on-icon="true"
+      menu-placement="bottom-end"
+      @item-clicked="selectBreakpoint"
     />
   </div>
 </template>
@@ -49,14 +64,41 @@ export default {
   data() {
     return {
       mode: null,
-      originalBodyBackground: null
+      originalBodyBackground: null,
+      shortcuts: this.getShortcuts(),
+      breakpoints: this.getBreakpointItems(),
+      showDropdown: false
     };
   },
+  computed: {
+    activeScreen() {
+      return this.mode && this.screens[this.mode];
+    },
+    button() {
+      return {
+        class: 'apos-admin-bar__breakpoint-preview-mode-dropdown-btn',
+        label: {
+          key: this.activeScreen?.label || 'Preview', // TODO: Temporary waiting for new design
+          localize: true
+        },
+        icon: 'chevron-down-icon',
+        secondIcon: this.activeScreen
+          ? this.getScreenIcon(this.activeScreen)
+          : 'monitor-icon',
+        modifiers: [ 'icon-right', 'no-motion' ],
+        type: 'outline'
+      };
+    }
+  },
   mounted() {
-    apos.bus.$on('command-menu-admin-bar-toggle-breakpoint-preview-mode', this.toggleBreakpointPreviewMode);
+    this.setShowDropdown();
+    apos.bus.$on(
+      'command-menu-admin-bar-toggle-breakpoint-preview-mode',
+      this.toggleBreakpointPreviewMode
+    );
 
-    this.originalBodyBackground = window.getComputedStyle(document.querySelector('body'))?.background ||
-      '#fff';
+    this.originalBodyBackground = window.getComputedStyle(document.querySelector('body'))
+      ?.background || '#fff';
 
     const state = this.loadState();
     if (state.mode) {
@@ -64,7 +106,10 @@ export default {
     }
   },
   unmounted() {
-    apos.bus.$off('command-menu-admin-bar-toggle-breakpoint-preview-mode', this.toggleBreakpointPreviewMode);
+    apos.bus.$off(
+      'command-menu-admin-bar-toggle-breakpoint-preview-mode',
+      this.toggleBreakpointPreviewMode
+    );
   },
   methods: {
     switchBreakpointPreviewMode({
@@ -143,14 +188,58 @@ export default {
           })
         );
       }
+    },
+    getShortcuts() {
+      return Object.fromEntries(
+        Object.entries(this.screens).filter(([ _, { shortcut } ]) => shortcut)
+      );
+    },
+    getBreakpointItems() {
+      return Object.entries(this.screens).map(([ name, screen ]) => ({
+        name,
+        action: name,
+        label: screen.label,
+        width: screen.width,
+        height: screen.height,
+        icon: this.getScreenIcon(screen)
+      }));
+    },
+    getScreenIcon(screen) {
+      if (screen.icon) {
+        return screen.icon;
+      }
+
+      const width = parseInt(screen.width);
+      if (width > 1024) {
+        return 'monitor-icon';
+      } else if (width > 540) {
+        return 'tablet-icon';
+      }
+      return 'cellphone-icon';
+    },
+    selectBreakpoint(selected) {
+      const {
+        name, label, width, height
+      } = this.breakpoints.find(({ name }) => name === selected);
+      this.toggleBreakpointPreviewMode({
+        mode: name,
+        label,
+        width,
+        height
+      });
+    },
+    setShowDropdown() {
+      this.showDropdown = Object.values(this.screens).some(({ shortcut }) => !shortcut);
     }
   }
 };
 </script>
+
 <style lang="scss" scoped>
 .apos-admin-bar__breakpoint-preview-mode {
   display: flex;
   gap: $spacing-half;
+  align-items: center;
   margin-left: $spacing-double;
 }
 
@@ -161,6 +250,26 @@ export default {
     background-color: var(--a-base-10);
     border-radius: var(--a-border-radius);
     outline: 1px solid var(--a-base-7);
+  }
+}
+
+.apos-admin-bar__breakpoint-preview-mode-dropdown {
+  :deep(.apos-admin-bar__breakpoint-preview-mode-dropdown-btn .apos-button) {
+    padding: $spacing-three-quarters $spacing-base;
+    border-radius: var(--a-border-radius);
+    border-color: var(--a-base-8);
+
+    &.apos-is-active {
+      background-color: transparent;
+    }
+
+    .apos-button__icon {
+      margin-left: $spacing-double;
+    }
+
+    .apos-button__second-icon {
+      margin-right: $spacing-three-quarters;
+    }
   }
 }
 </style>

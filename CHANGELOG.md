@@ -9,6 +9,11 @@
 * Takes care of an edge case where Media Manager would duplicate search results.
 * Modules can now have a `before: "module-name"` property in their configuration to run (initialization) before another module.
 * Add support for ESM projects.
+* Adds AI-generated missing translations
+* Adds the mobile preview dropdown for non visibles breakpoints. Uses the new `shortcut` property to display breakpoints out of the dropdown.
+* Adds possibility to have two icons in a button.
+* Adds a `isActive` state to context menu items. Also adds possibility to add icons to context menu items.
+* Add a postcss plugin to handle `vh` and `vw` values on breakpoint preview mode.
 
 ### Fixes
 
@@ -16,6 +21,7 @@
 * `pnpm: true` option in `app.js` is no longer breaking the application. 
 * Remove unused `vue-template-compiler` dependency.
 * Prevent un-publishing the `@apostrophecms/global` doc and more generally all singletons.
+* When opening a context menu while another is already opened, prevent from focusing the button of the first one instead of the newly opened menu.
 
 ### Changes
 

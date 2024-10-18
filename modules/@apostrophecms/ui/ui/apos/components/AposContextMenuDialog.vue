@@ -23,6 +23,7 @@
             :key="item.action"
             :data-apos-test-context-menu-item="item.action"
             :menu-item="item"
+            :is-active="item.name === activeItem"
             :open="isOpen"
             @clicked="menuItemClicked"
           />
@@ -63,6 +64,10 @@ const props = defineProps({
   hasTip: {
     type: Boolean,
     default: true
+  },
+  activeItem: {
+    type: String,
+    default: null
   }
 });
 
