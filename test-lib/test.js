@@ -1,10 +1,7 @@
 const fs = require('fs-extra');
 const path = require('path');
 
-const setupPackages = ({
-  folder = 'test',
-  type = 'commonjs'
-}) => {
+const setupPackages = ({ folder = 'test' }) => {
   const testNodeModules = path.join(__dirname, '../', folder, 'node_modules/');
   fs.removeSync(testNodeModules);
   fs.mkdirSync(testNodeModules);
@@ -59,10 +56,7 @@ const setupPackages = ({
   fs.removeSync(packageLockJson);
   fs.writeFileSync(packageLockJson, JSON.stringify(packageLockJsonInfo, null, '  '));
 };
-setupPackages({
-  folder: 'test',
-  type: 'commonjs'
-});
+setupPackages({ folder: 'test' });
 
 module.exports = require('./util.js');
 module.exports.setupPackages = setupPackages;
