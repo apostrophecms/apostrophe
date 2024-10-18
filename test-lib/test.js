@@ -22,7 +22,6 @@ const setupPackages = ({ folder = 'test' }) => {
   fs.removeSync(packageJson);
   const packageJsonInfo = {
     name: folder,
-    // type, // prevent asset build with esm support
     dependencies: {
       apostrophe: '^4.0.0'
     },
