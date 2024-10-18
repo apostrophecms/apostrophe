@@ -48,17 +48,19 @@
       <div v-if="isInlineTable">
         <table v-if="items.length" class="apos-input-array-inline-table">
           <thead class="apos-input-array-inline-table-header">
-            <th v-if="isDraggable" class="apos-input-array-inline-table-header-cell" />
-            <th
-              v-for="subfield in visibleSchema()"
-              :key="subfield._id"
-              class="apos-input-array-inline-table-header-cell"
-              :class="getTableHeaderClass(subfield, 'apos-input-array-inline-table-header-cell')"
-              :style="subfield.columnStyle || {}"
-            >
-              {{ $t(subfield.label) }}
-            </th>
-            <th class="apos-input-array-inline-table-header-cell" />
+            <tr>
+              <th v-if="isDraggable" class="apos-input-array-inline-table-header-cell" />
+              <th
+                v-for="subfield in visibleSchema()"
+                :key="subfield._id"
+                class="apos-input-array-inline-table-header-cell"
+                :class="getTableHeaderClass(subfield, 'apos-input-array-inline-table-header-cell')"
+                :style="subfield.columnStyle || {}"
+              >
+                {{ $t(subfield.label) }}
+              </th>
+              <th class="apos-input-array-inline-table-header-cell" />
+            </tr>
           </thead>
           <draggable
             :id="listId"
