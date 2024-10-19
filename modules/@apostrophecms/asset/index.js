@@ -87,7 +87,11 @@ module.exports = {
       // - null
       transform: null
     },
-    productionSourceMap: true
+    // If true, the source maps will be generated in production.
+    // This option is useful for debugging in production and is only
+    // available when an external build module is registered (it doesn't
+    // with the internal webpack build).
+    productionSourceMap: false
   },
 
   async init(self) {
