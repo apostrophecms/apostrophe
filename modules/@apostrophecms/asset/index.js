@@ -744,7 +744,7 @@ module.exports = {
                   type: 'custom',
                   label: `Extra bundle: ${bundleName}`,
                   scenes: [ bundleName ],
-                  inputs: enhancedConfig.outputs,
+                  inputs: enhancedConfig.inputs,
                   outputs: enhancedConfig.outputs,
                   condition: enhancedConfig.condition,
                   prologue: '',
