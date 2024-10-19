@@ -1,10 +1,9 @@
 const t = require('../test-lib/test.js');
 const assert = require('assert');
 const _ = require('lodash');
-const { debounceAsync, throttle } = require('../modules/@apostrophecms/ui/ui/apos/utils/index');
 
-describe('Utils', function() {
-
+describe('Utils', async function() {
+  const { debounceAsync, throttle } = await import('../modules/@apostrophecms/ui/ui/apos/utils/index');
   this.timeout(t.timeout);
 
   let apos;

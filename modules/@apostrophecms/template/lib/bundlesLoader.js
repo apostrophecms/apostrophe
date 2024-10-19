@@ -131,7 +131,7 @@ function renderBundleMarkup (safe, base) {
     }
 
     return safe(stripIndent`
-      <script src="${base}/${fileName}-module-bundle.${ext}"></script>
+      <script type="module" src="${base}/${fileName}-module-bundle.${ext}"></script>
     `);
   };
 }
