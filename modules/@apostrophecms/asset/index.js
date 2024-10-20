@@ -95,13 +95,15 @@ module.exports = {
   },
 
   async init(self) {
-    // Set the environment variable APOS_ASSET_DEBUG=1 to enable
-    // debug mode, which logs extensive build and configuration
-    // information.
+    // Cache the environment variables, because Node.js doesn't makes
+    // system calls to get them every time. We don't expect them to change during
+    // the runtime.
     self.isDebugMode = process.env.APOS_ASSET_DEBUG === '1';
+    self.isDevMode = process.env.NODE_ENV !== 'production';
+    self.isProductionMode = process.env.NODE_ENV === 'production';
     // External build module configuration (when registered).
     // See method `configureBuildModule` for more information.
-    self.externalBuildModule = {};
+    self.externalBuildModuleConfig = {};
 
     self.restartId = self.apos.util.generateId();
     self.iconMap = {
@@ -264,7 +266,7 @@ module.exports = {
       // Extending this method allows a direct override the external build module configuration.
       // The internal module property should never be used directly used nor modified after the initialization.
       getBuildModuleConfig() {
-        return self.externalBuildModule;
+        return self.externalBuildModuleConfig;
       },
       // External build modules can register themselves here. This should happen on the
       // special asset module event `afterInit` (see `handlers`).
@@ -322,7 +324,7 @@ module.exports = {
           );
         }
 
-        self.externalBuildModule = {
+        self.externalBuildModuleConfig = {
           name,
           alias: options.alias,
           hasDevServer: options.hasDevServer,
@@ -392,6 +394,25 @@ module.exports = {
       getEntrypointManger(entrypoint) {
         return getBuildManager(entrypoint);
       },
+      hasDevServer() {
+        return self.isDevMode &&
+          // self.options.devServer !== false &&
+          !!self.getBuildModuleConfig().hasDevServer;
+      },
+      hasHMR() {
+        return self.options.watch &&
+          self.hasDevServer() &&
+          !!self.getBuildModuleConfig().hasHMR;
+      },
+      getBuildOptions(argv) {
+        const options = {
+          isTask: !argv['check-apos-build'],
+          hmr: self.hasHMR()
+        };
+        options.devServer = !options.isTask && self.hasDevServer();
+
+        return options;
+      },
       // Build the assets using the external build module.
       // The `argv` object is the `argv` object passed to the task.
       // TODO: modify and send the argv, document it. Execute the build
@@ -406,6 +427,8 @@ module.exports = {
       // methods. Call external tool methods in those. Remove the imports bundling. Improve the
       // entire bundling post-processing, manifest schema, etc.
       async build(argv) {
+        const buildOptions = self.getBuildOptions(argv);
+
         self.currentPublicAssetLocations = await self.copyModulesFolder({
           target: path.join(self.getBundleRootDir(), 'modules'),
           folder: 'public',
@@ -414,11 +437,16 @@ module.exports = {
           modules: self.apos.modulesToBeInstantiated()
         });
 
+        // Switch to dev server mode if the dev server is enabled.
+        // if (buildOptions.devServer) {
+        //   return self.startDevServer(buildOptions);
+        // }
+
         self.currentBuildManifest = await self.getBuildModule()
-          .build();
+          .build(buildOptions);
 
         // Create and copy bundles per scene into the bundle root.
-        const bundles = await self.writeBuildScenes(self.currentBuildManifest);
+        const bundles = await self.computeBuildScenes(self.currentBuildManifest);
         // Retrieve the public assets from the bundle root for deployment.
         const publicAssets = await glob('modules/**/*', {
           cwd: self.getBundleRootDir(),
@@ -453,6 +481,26 @@ module.exports = {
           currentBuildManifest: self.currentBuildManifest,
           deployFiles
         });
+      },
+      async startDevServer(buildOptions) {
+        self.currentBuildManifest = await self.getBuildModule()
+          .startDevServer(buildOptions);
+
+        await self.computeBuildScenes(self.currentBuildManifest, { write: false });
+        await self.copyBundledAssetsForDev(self.currentBuildManifest);
+      },
+      // Get the entrypoints containing manifest data currently initialized. The information
+      // is available after the build initialization is done:
+      // - after an actual build task (any environment)
+      // - after the dev server is started (development)
+      // - after a saved build manifest is loaded (production)
+      getCurrentBuildEntrypoints() {
+        return self.currentBuildManifest.entrypoints ?? [];
+      },
+      // This should be used by build systems to assemble the URL for a dev server middleware.
+      // This method can be overridden for e.g. multisite setups.
+      getBaseDevSiteUrl() {
+        return (self.apos.baseUrl || '') + self.apos.prefix;
       },
       // Deploy all public assets for release. Executes only in production.
       // `files` is a flat array of relative to the bundleRoot (getBundleRoot) paths
@@ -494,7 +542,9 @@ module.exports = {
       // Write the bundle files for the scenes, using the external build module manifest.
       // Add `bundles` property to the entrypoiny configuration contaning the bundle files
       // used later when injecting the scripts and stylesheets in the browser.
-      async writeBuildScenes(manifest) {
+      // The manifest is the return value of the external build module build method
+      // (see `self.build()` method).
+      async computeBuildScenes(manifest, { write = true } = {}) {
         const bundlePath = self.getBundleRootDir();
         const buildRoot = self.getBuildRootDir();
 
@@ -532,7 +582,7 @@ module.exports = {
 
             if (jsFilePaths.length) {
               config.bundles = config.bundles || new Set();
-              config.bundles.add(cssTargetName);
+              config.bundles.add(jsTargetName);
               acc[jsTargetName] = acc[jsTargetName] || [];
               acc[jsTargetName].push(...jsFilePaths);
             }
@@ -546,13 +596,21 @@ module.exports = {
             return acc;
           }, {});
 
+          if (!write) {
+            return Object.keys(bundles);
+          }
           for (const [ target, files ] of Object.entries(bundles)) {
             if (!files.length) {
               delete bundles[target];
               continue;
             }
-            const content = files.map(f => fs.existsSync(f) ? fs.readFileSync(f, 'utf-8') : '')
-              .join('\n');
+            const content = files.map(f =>
+              fs.existsSync(f)
+                ? `\n\n/** ${path.basename(f)} **/\n\n` + fs.readFileSync(f, 'utf-8')
+                : ''
+            )
+              .join('\n')
+              .trim();
             if (!content.trim().length) {
               delete bundles[target];
               continue;
@@ -623,7 +681,8 @@ module.exports = {
           content.push({
             name,
             files,
-            bundles: Array.from(bundles ?? [])
+            bundles: Array.from(bundles ?? []),
+            devServerUrl: manifest.devServerUrl
           });
         }
         await fs.outputJson(
@@ -658,6 +717,30 @@ module.exports = {
         }
 
         return result;
+      },
+      async copyBundledAssetsForDev(manifest) {
+        const bundleRoot = self.getBundleRootDir();
+        const buildRoot = self.getBuildRootDir();
+        const { entrypoints } = manifest;
+        await fs.mkdirp(bundleRoot);
+
+        for (const entrypoint of entrypoints) {
+          if (entrypoint.type !== 'bundled' || !entrypoint.manifest) {
+            continue;
+          }
+          for (const files of Object.values(entrypoint.manifest.files)) {
+            for (const file of files) {
+              try {
+                await fs.copyFile(
+                  path.join(buildRoot, entrypoint.manifest.root, file),
+                  path.join(bundleRoot, file)
+                );
+              } catch (e) {
+                self.apos.util.error(`Error copying ${file} to the bundle root: ${e.message}`);
+              }
+            }
+          }
+        }
       },
       // Compute the configuration provided per module as a `build` property.
       // It has the same shape as the legacy `webpack` property. The difference
@@ -1332,6 +1415,75 @@ function invoke() {
         }
         return output;
       },
+      // Generate the browser script/stylesheet import code based on the available
+      // manifest data.
+      getBundleMarkup({
+        scene, output, es5
+      }) {
+        const entrypoints = self.apos.asset.getCurrentBuildEntrypoints()
+          .filter(e => !!e.manifest && e.scenes.includes(scene) && e.outputs?.includes(output));
+
+        const markup = [];
+        for (const {
+          manifest, condition, bundles: bundleSet
+        } of entrypoints) {
+          const hasDevServer = manifest.devServerUrl && !!self.isDevMode;
+          const assetUrl = self.getAssetBaseSystemUrl();
+          const bundles = [ ...bundleSet ?? [] ]
+            .filter(b => b.startsWith(scene) && b.endsWith(`.${output}`));
+          const files = hasDevServer
+            ? manifest.src?.[output] ?? []
+            : manifest.files?.[output] ?? [];
+            // bundles.filter(b => b.startsWith(scene) && b.endsWith(`.${output}`));
+
+          console.log(`BUNDLES FOR ${scene} [${output}]`, bundles, 'FILES', files, hasDevServer);
+          markup.push(...getTag(
+            {
+              files,
+              manifest,
+              output,
+              condition,
+              devServer: hasDevServer,
+              assetUrl,
+              es5
+            }
+          ));
+        }
+
+        console.log(`MARKUP FOR ${scene} [${output}]`, markup);
+        return markup;
+
+        function getTag({
+          files, manifest, output, condition, devServer, es5, assetUrl
+        }) {
+          if (output === 'css') {
+            return files.map(file => {
+              const url = devServer
+                ? `${manifest.devServerUrl}/${file}`
+                : `${assetUrl}/${file}`;
+
+              return `<link rel="stylesheet" href="${url}">`;
+            });
+          }
+          // What is it?
+          if (output !== 'js') {
+            return [];
+          }
+          const attr = condition !== 'nomodule' ? 'type="module"' : 'nomodule';
+          if (devServer) {
+            return files.map(file => `<script ${attr} src="${manifest.devServerUrl}/${file}"></script>`);
+          }
+          if (es5 || condition === 'nomodule') {
+            return files.map(file => {
+              return `
+                <script nomodule src="${assetUrl}/${file.replace('-module-', '-nomodule-')}"></script>
+                <script type="module" src="${assetUrl}/${file}"></script>
+              `;
+            });
+          }
+          return files.map(file => `<script ${attr} src="${assetUrl}/${file}"></script>`);
+        }
+      },
       printDebug(id, data) {
         if (self.isDebugMode) {
           self.logDebug(id, data);
@@ -1505,8 +1657,15 @@ function invoke() {
         return process.env.APOS_DEBUG_NAMESPACE || 'default';
       },
       getAssetBaseUrl() {
+        // if (self.hasDevServer() && self.currentBuildManifest.devServerUrl) {
+        //   return self.currentBuildManifest.devServerUrl;
+        // }
+        return self.getAssetBaseSystemUrl();
+      },
+      // For internal use only
+      getAssetBaseSystemUrl() {
         const namespace = self.getNamespace();
-        if (process.env.NODE_ENV === 'production') {
+        if (self.isProductionMode) {
           const releaseId = self.getReleaseId();
           const releaseDir = `/apos-frontend/releases/${releaseId}/${namespace}`;
           if (process.env.APOS_UPLOADFS_ASSETS) {
@@ -1514,9 +1673,8 @@ function invoke() {
           } else {
             return releaseDir;
           }
-        } else {
-          return `/apos-frontend/${namespace}`;
         }
+        return `/apos-frontend/${namespace}`;
       },
       getCacheBasePath() {
         return process.env.APOS_ASSET_CACHE ||
