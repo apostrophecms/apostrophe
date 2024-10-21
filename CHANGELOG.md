@@ -7,7 +7,13 @@
 * Elements inside modals can have a `data-apos-focus-priority` attribute that prioritizes them inside the focusable elements list.
 * Modals will continute trying to find focusable elements until an element marked `data-apos-focus-priority` appears or the max retry threshold is reached.
 * Takes care of an edge case where Media Manager would duplicate search results.
-* Modules can now have a `before: "module-name"` property in their configuration to run (initialization) before another module.
+* Modules can now have a `before: "module-name"` property in their configuration to initialize them before another module, bypassing the normal
+order implied by `defaults.js` and `app.js`.
+* `select` and `checkboxes` fields that implement dynamic choices can now take into account the value of other fields on the fly, by specifying
+a `following` property with an array of other field names. Array and object subfields can access properties of the parent document
+by adding a `<` prefix (or more than one) to field names in `following` to look upwards a level. Your custom method on the server side will
+now receive a `following` object as an additional argument. One limitation: for now, a field with dynamic choices cannot depend on another field
+with dynamic choices in this way.
 * Adds AI-generated missing translations
 * Adds the mobile preview dropdown for non visibles breakpoints. Uses the new `shortcut` property to display breakpoints out of the dropdown.
 * Adds possibility to have two icons in a button.
