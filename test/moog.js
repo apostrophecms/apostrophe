@@ -34,10 +34,10 @@ describe('moog', function() {
   });
 
   describe('defining and creating', function() {
-    it('should be able to `define` a class', function() {
+    it('should be able to `define` a class', async function() {
       const moog = require('../lib/moog.js')({});
 
-      moog.define('myObject', {
+      await moog.define('myObject', {
         methods(self) {
           return {};
         }
@@ -47,7 +47,7 @@ describe('moog', function() {
     it('should be able to `define` and then `create` an instance', async function() {
       const moog = require('../lib/moog.js')({});
 
-      moog.define('myObject', {
+      await moog.define('myObject', {
         options: {
           color: 'blue'
         },
@@ -66,7 +66,7 @@ describe('moog', function() {
     it('should `create` without options', async function() {
       const moog = require('../lib/moog.js')();
 
-      moog.define('myClass', {});
+      await moog.define('myClass', {});
 
       const myObj = await moog.create('myClass');
       assert(myObj);
@@ -80,13 +80,13 @@ describe('moog', function() {
     it('should be able to create a subclass with expected default option behavior (async)', async function() {
       const moog = require('../lib/moog.js')({});
 
-      moog.define('baseClass', {
+      await moog.define('baseClass', {
         options: {
           color: 'blue'
         }
       });
 
-      moog.define('subClass', {
+      await moog.define('subClass', {
         options: {
           color: 'red'
         },
@@ -102,7 +102,7 @@ describe('moog', function() {
       const moog = require('../lib/moog.js')({});
 
       // base class does not actually exist
-      moog.define('subClass', {
+      await moog.define('subClass', {
         options: {
           color: 'red'
         },
@@ -121,20 +121,20 @@ describe('moog', function() {
     it('should be able to `extend` a subclass into yet another subclass', async function() {
       const moog = require('../lib/moog.js')({});
 
-      moog.define('baseClass', {
+      await moog.define('baseClass', {
         options: {
           color: 'blue'
         }
       });
 
-      moog.define('subClassOne', {
+      await moog.define('subClassOne', {
         options: {
           color: 'red'
         },
         extend: 'baseClass'
       });
 
-      moog.define('subClassTwo', {
+      await moog.define('subClassTwo', {
         options: {
           color: 'green'
         },
@@ -149,7 +149,7 @@ describe('moog', function() {
     it('default base class should take effect if configured', async function() {
       const moog = require('../lib/moog.js')({ defaultBaseClass: 'baseClass' });
 
-      moog.define('baseClass', {
+      await moog.define('baseClass', {
         init(self) {
           assert(self.__meta);
           assert(self.__meta.chain);
@@ -161,7 +161,7 @@ describe('moog', function() {
         }
       });
 
-      moog.define('subClass', {
+      await moog.define('subClass', {
         options: {
           color: 'red'
         }
@@ -176,13 +176,13 @@ describe('moog', function() {
     it('default base class should not take effect if extend is explicitly set to false', async function() {
       const moog = require('../lib/moog.js')({ defaultBaseClass: 'baseClass' });
 
-      moog.define('baseClass', {
+      await moog.define('baseClass', {
         construct: function(self) {
           self.based = true;
         }
       });
 
-      moog.define('subClass', {
+      await moog.define('subClass', {
         options: {
           color: 'red'
         },
@@ -197,7 +197,7 @@ describe('moog', function() {
     it('should define methods and allow overriding and extending them through implicit subclassing', async function() {
       const moog = require('../lib/moog.js')({});
 
-      moog.define('myObject', {
+      await moog.define('myObject', {
         methods(self) {
           return {
             basic() {
@@ -213,7 +213,7 @@ describe('moog', function() {
         }
       });
 
-      moog.define('myObject', {
+      await moog.define('myObject', {
         methods(self) {
           return {
             overridden() {
@@ -240,7 +240,7 @@ describe('moog', function() {
     it('should support inheriting field group fields rather than requiring all fields to be restated', async function() {
       const moog = require('../lib/moog.js')({});
 
-      moog.define('myObject', {
+      await moog.define('myObject', {
         cascades: [ 'fields' ],
         fields: {
           add: {
@@ -256,7 +256,7 @@ describe('moog', function() {
         }
       });
 
-      moog.define('myObject', {
+      await moog.define('myObject', {
         fields: {
           add: {
             four: { type: 'string' },
@@ -287,7 +287,7 @@ describe('moog', function() {
     it('should order fields with the last option unless the order array overrides', async function() {
       const moog = require('../lib/moog.js')({});
 
-      moog.define('unorderedObject', {
+      await moog.define('unorderedObject', {
         cascades: [ 'fields' ],
         fields: {
           add: {
@@ -302,7 +302,7 @@ describe('moog', function() {
         }
       });
 
-      moog.define('orderedObject', {
+      await moog.define('orderedObject', {
         cascades: [ 'fields' ],
         fields: {
           add: {
@@ -339,7 +339,7 @@ describe('moog', function() {
     it('should allow a module to be redefined', async function() {
       const moog = require('../lib/moog.js')({});
 
-      moog.define('myObject', {
+      await moog.define('myObject', {
         methods(self) {
           return {
             oldMethod() {}
@@ -347,7 +347,7 @@ describe('moog', function() {
         }
       });
 
-      moog.redefine('myObject', {
+      await moog.redefine('myObject', {
         methods(self) {
           return {
             newMethod() {}
@@ -361,18 +361,18 @@ describe('moog', function() {
       assert(myObject.newMethod);
     });
 
-    it('should find a module definition using `isDefined`', function() {
+    it('should find a module definition using `isDefined`', async function() {
       const moog = require('../lib/moog.js')({});
 
-      moog.define('myObject', {});
+      await moog.define('myObject', {});
 
-      assert(moog.isDefined('myObject'));
+      assert.equal(await moog.isDefined('myObject'), true);
     });
 
-    it('should NOT find a non-existant module definition using `isDefined`', function() {
+    it('should NOT find a non-existant module definition using `isDefined`', async function() {
       const moog = require('../lib/moog.js')({});
 
-      assert(!moog.isDefined('myObject'));
+      assert.equal(await moog.isDefined('myObject'), false);
     });
 
   });
@@ -381,13 +381,13 @@ describe('moog', function() {
     it('should allow a class defined twice to be implicitly subclassed', async function() {
       const moog = require('../lib/moog.js')({});
 
-      moog.define('myObject', {
+      await moog.define('myObject', {
         init(self) {
           self.order = (self.order || []).concat('first');
         }
       });
 
-      moog.define('myObject', {
+      await moog.define('myObject', {
         init(self) {
           self.order = (self.order || []).concat('second');
         }
@@ -409,20 +409,20 @@ describe('moog', function() {
     it('should call `init` methods baseClass-first', async function() {
       const moog = require('../lib/moog.js')({});
 
-      moog.define('baseClass', {
+      await moog.define('baseClass', {
         init(self) {
           self.order = (self.order || []).concat('first');
         }
       });
 
-      moog.define('subClassOne', {
+      await moog.define('subClassOne', {
         extend: 'baseClass',
         init(self) {
           self.order = (self.order || []).concat('second');
         }
       });
 
-      moog.define('subClassTwo', {
+      await moog.define('subClassTwo', {
         extend: 'subClassOne',
         init(self) {
           self.order = (self.order || []).concat('third');
@@ -438,20 +438,20 @@ describe('moog', function() {
     it('should call `beforeSuperClass` methods subClass-first', async function() {
       const moog = require('../lib/moog.js')({});
 
-      moog.define('baseClass', {
+      await moog.define('baseClass', {
         beforeSuperClass(self) {
           self.options.order = (self.options.order || []).concat('third');
         }
       });
 
-      moog.define('subClassOne', {
+      await moog.define('subClassOne', {
         extend: 'baseClass',
         beforeSuperClass(self) {
           self.options.order = (self.options.order || []).concat('second');
         }
       });
 
-      moog.define('subClassTwo', {
+      await moog.define('subClassTwo', {
         extend: 'subClassOne',
         beforeSuperClass(self) {
           self.options.order = (self.options.order || []).concat('first');
@@ -474,11 +474,11 @@ describe('moog', function() {
     it('should report an error on a cyclical reference (extend in a loop)', async function() {
       const moog = require('../lib/moog.js')({});
 
-      moog.define('classOne', {
+      await moog.define('classOne', {
         extend: 'classTwo'
       });
 
-      moog.define('classTwo', {
+      await moog.define('classTwo', {
         extend: 'classOne'
       });
 
@@ -506,15 +506,15 @@ describe('moog', function() {
     it('instanceOf should yield correct results', async function() {
       const moog = require('../lib/moog.js')({});
 
-      moog.define('classOne', {});
+      await moog.define('classOne', {});
 
-      moog.define('classTwo', {
+      await moog.define('classTwo', {
         extend: 'classOne'
       });
 
-      moog.define('classThree', {});
+      await moog.define('classThree', {});
 
-      moog.define('classFour', {
+      await moog.define('classFour', {
         extend: 'classTwo'
       });
 
@@ -533,13 +533,13 @@ describe('moog', function() {
 
     it('sanity check of await behavior', async function() {
       const moog = require('../lib/moog.js')({});
-      moog.define('classOne', {
+      await moog.define('classOne', {
         async init(self) {
           await delay(100);
           self.size = 1;
         }
       });
-      moog.define('classTwo', {
+      await moog.define('classTwo', {
         extend: 'classOne',
         async init(self) {
           await delay(1);
@@ -577,7 +577,7 @@ describe('moog', function() {
   describe('sections should work', function() {
     it('routes should work, including extending routes', async function() {
       const moog = require('../lib/moog.js')({ sections: [ 'routes' ] });
-      moog.define('baseclass', {
+      await moog.define('baseclass', {
         routes(self) {
           return {
             post: {
@@ -591,7 +591,7 @@ describe('moog', function() {
           };
         }
       });
-      moog.define('subclass', {
+      await moog.define('subclass', {
         extend: 'baseclass',
         routes(self) {
           return {

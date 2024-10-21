@@ -8,6 +8,7 @@
 * Modals will continute trying to find focusable elements until an element marked `data-apos-focus-priority` appears or the max retry threshold is reached.
 * Takes care of an edge case where Media Manager would duplicate search results.
 * Modules can now have a `before: "module-name"` property in their configuration to run (initialization) before another module.
+* Add support for ESM projects.
 * Adds AI-generated missing translations
 * Adds the mobile preview dropdown for non visibles breakpoints. Uses the new `shortcut` property to display breakpoints out of the dropdown.
 * Adds possibility to have two icons in a button.
@@ -23,6 +24,11 @@
 * When opening a context menu while another is already opened, prevent from focusing the button of the first one instead of the newly opened menu.
 * Updates `isEqual` method of `area` field type to avoid comparing an area having temporary properties with one having none.
 
+
+### Changes
+
+* Internal methods `mergeConfiguration`, `autodetectBundles`, `lintModules`, `nestedModuleSubdirs` and `testDir` are now async.
+* `verifyLocales` and `i18n.getLocales`, `express.getSessionOptions` are now async.
 
 ## 4.7.2 and 4.8.1 (2024-10-09)
 
