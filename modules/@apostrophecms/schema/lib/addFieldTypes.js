@@ -1061,9 +1061,21 @@ module.exports = (self) => {
 
     relate: async function (req, field, objects, options) {
       if ((!self.apos.doc?.replicateReached) && (!field.idsStorage)) {
-        self.apos.util.warnDevOnce('premature-relationship-query', 'Database queries for types with relationships may fail if made before the @apostrophecms/doc:beforeReplicate event');
+        self.apos.util.warnDevOnce(
+          'premature-relationship-query',
+          'Database queries for types with relationships may fail if made before the @apostrophecms/doc:beforeReplicate event'
+        );
       }
-      return self.relationshipDriver(req, joinr.byArray, false, objects, field.idsStorage, field.fieldsStorage, field.name, options);
+      return self.relationshipDriver(
+        req,
+        joinr.byArray,
+        false,
+        objects,
+        field.idsStorage,
+        field.fieldsStorage,
+        field.name,
+        options
+      );
     },
 
     addQueryBuilder(field, query) {
@@ -1129,6 +1141,7 @@ module.exports = (self) => {
       if (!field.withType) {
         fail('withType property is missing. Hint: it must match the name of a doc type module.');
       }
+
       if (Array.isArray(field.withType)) {
         _.each(field.withType, function (type) {
           lintType(type);
@@ -1152,6 +1165,14 @@ module.exports = (self) => {
           const fields = fieldsOption && fieldsOption.add;
           field.fields = fields && klona(fields);
           field.schema = self.fieldsToArray(`Relationship field ${field.name}`, field.fields);
+        }
+
+        if (field.withRelationships && field.builders?.project) {
+          for (const relName of field.withRelationships) {
+            const relManager = self.apos.doc.getManager(field.withType);
+            const relField = relManager.schema.find((f) => f.name === relName);
+            field.builders.project[relField.idsStorage] = 1;
+          }
         }
       }
       validateSchema(field);
