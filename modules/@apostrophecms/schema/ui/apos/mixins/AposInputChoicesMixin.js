@@ -25,7 +25,8 @@ export default {
     followingValues: {
       deep: true,
       handler() {
-        return this.debouncedUpdateChoices();
+        // Avoid race condition
+        return this.debouncedUpdateChoices && this.debouncedUpdateChoices();
       }
     }
   },
