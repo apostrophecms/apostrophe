@@ -11,7 +11,7 @@ module.exports = (self) => {
     widgetsBundles = {}
   }) {
     const renderMarkup = renderBundleMarkup(self);
-
+    console.log('insertBundlesMarkup');
     if (!scriptsPlaceholder && !stylesheetsPlaceholder) {
       return content;
     }
@@ -102,7 +102,6 @@ module.exports = (self) => {
         cssBundles: cssMainBundle
       });
 
-    console.log('insertBundlesMarkup', scene, jsBundles, cssBundles);
     return content
       .replace(scriptsPlaceholder, jsBundles)
       .replace(stylesheetsPlaceholder, cssBundles);
@@ -116,9 +115,9 @@ function renderBundleMarkup(self) {
   const base = self.apos.asset.getAssetBaseUrl();
 
   // The new system only for external build modules
-  // if (self.apos.asset.hasDevServer()) {
-  //   return renderBundleMarkupByManifest(self);
-  // }
+  if (self.apos.asset.hasBuildModule()) {
+    return renderBundleMarkupByManifest(self);
+  }
 
   return ({
     fileName, ext = 'js', es5 = false
@@ -142,28 +141,25 @@ function renderBundleMarkup(self) {
   };
 }
 
-// function renderBundleMarkupByManifest(self) {
-//   const safe = self.apos.template.safe;
+function renderBundleMarkupByManifest(self) {
+  const safe = self.apos.template.safe;
 
-//   return ({
-//     fileName, ext = 'js', es5 = false
-//   }) => {
-//     const entries = self.apos.asset.getBundleMarkup({
-//       scene: fileName,
-//       output: ext,
-//       es5
-//     });
-//     if (!entries.length) {
-//       return '';
-//     }
+  return ({
+    fileName, ext = 'js', es5 = false
+  }) => {
+    const entries = self.apos.asset.getBundlePageMarkup({
+      scene: fileName,
+      output: ext,
+      es5
+    });
 
-//     return safe(
-//       stripIndent`
-//       ${entries.join('\n')}
-//       `
-//     );
-//   };
-// }
+    return safe(
+      stripIndent`
+      ${entries.join('\n')}
+      `
+    );
+  };
+}
 
 function loadAllBundles({
   content,

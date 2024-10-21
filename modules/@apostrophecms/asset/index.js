@@ -91,7 +91,9 @@ module.exports = {
     // This option is useful for debugging in production and is only
     // available when an external build module is registered (it doesn't
     // with the internal webpack build).
-    productionSourceMap: false
+    productionSourceMap: false,
+    // The configuration to disable development server.
+    devServer: true
   },
 
   async init(self) {
@@ -110,6 +112,8 @@ module.exports = {
       ...globalIcons
     };
 
+    // Used throughout the build init process.
+    self.modulesToBeInstantiated = self.apos.modulesToBeInstantiated();
     // The namespace filled by `configureBuilds()`
     self.builds = {};
     self.configureBuilds();
@@ -141,7 +145,8 @@ module.exports = {
     // in the browser. We also need this as a separate property for possible
     // server side hot module replacement scenarios.
     self.currentBuildManifest = {
-      distRoot: null,
+      sourceMapsRoot: null,
+      devServerUrl: null,
       entrypoints: []
     };
     // Set after a successful build. Contains objects with properties `name`, `source`,
@@ -163,6 +168,12 @@ module.exports = {
           // TODO: refactor autorunUiBuildTask to get rid of the webpack related
           // code and make it a generic method playing well with external builds.
           const ran = await self.autorunUiBuildTask();
+
+          // When the build is not executed, make the minimum required computations
+          // to ensure we can inject the assets in the browser.
+          if (!ran) {
+            await self.runWithoutBuild();
+          }
           // Temporary disable watchers
           if (ran && !self.hasBuildModule()) {
             await self.watchUiAndRebuild();
@@ -273,8 +284,8 @@ module.exports = {
       // options:
       // - alias (required): the alias string to use in the webpack configuration.
       //   This usually matches the bundler name, e.g. 'vite', 'webpack', etc.
-      // - hasDevServer (optional): whether the build module supports a dev server.
-      // - hasHMR (optional): whether the build module supports a hot module replacement.
+      // - devServer (optional): whether the build module supports a dev server.
+      // - hmr (optional): whether the build module supports a hot module replacement.
       //
       // The external build module should initialize before the asset module:
       // module.exports = {
@@ -327,8 +338,8 @@ module.exports = {
         self.externalBuildModuleConfig = {
           name,
           alias: options.alias,
-          hasDevServer: options.hasDevServer,
-          hasHMR: options.hasHMR
+          devServer: options.devServer,
+          hmr: options.hmr
         };
         self.setBuildExtensionsForExternalModule();
       },
@@ -396,13 +407,13 @@ module.exports = {
       },
       hasDevServer() {
         return self.isDevMode &&
-          // self.options.devServer !== false &&
-          !!self.getBuildModuleConfig().hasDevServer;
+          self.options.devServer !== false &&
+          !!self.getBuildModuleConfig().devServer;
       },
       hasHMR() {
         return self.options.watch &&
           self.hasDevServer() &&
-          !!self.getBuildModuleConfig().hasHMR;
+          !!self.getBuildModuleConfig().hmr;
       },
       getBuildOptions(argv) {
         const options = {
@@ -415,32 +426,20 @@ module.exports = {
       },
       // Build the assets using the external build module.
       // The `argv` object is the `argv` object passed to the task.
-      // TODO: modify and send the argv, document it. Execute the build
-      // only if it's a task (apos.isTask()) or devServer is not configured.
-      // Unlike our previous webpack implementation, the external build
-      // executes the `build` method only when it really needs to build.
-      // All other cases should be handled here (with calling separate external methods
-      // when appropriate).
-      // FIXME: copy `/assets` folder to the bundle root. Esnure it's also deployed.
-      // Do not copy /assets map files when releasing. Possibly introduce a option
-      // to copy map files. Split the build method and add `beforeBuild` and `afterBuild`
-      // methods. Call external tool methods in those. Remove the imports bundling. Improve the
-      // entire bundling post-processing, manifest schema, etc.
+      // TODO: All other cases should be handled here (external frontend, see the legacy `build` task).
       async build(argv) {
         const buildOptions = self.getBuildOptions(argv);
 
         self.currentPublicAssetLocations = await self.copyModulesFolder({
           target: path.join(self.getBundleRootDir(), 'modules'),
           folder: 'public',
-          // FIXME - optimize the module list, cache it here, pass it to the
-          // external build modulue.
-          modules: self.apos.modulesToBeInstantiated()
+          modules: self.modulesToBeInstantiated
         });
 
         // Switch to dev server mode if the dev server is enabled.
-        // if (buildOptions.devServer) {
-        //   return self.startDevServer(buildOptions);
-        // }
+        if (buildOptions.devServer) {
+          return self.startDevServer(buildOptions);
+        }
 
         self.currentBuildManifest = await self.getBuildModule()
           .build(buildOptions);
@@ -486,8 +485,74 @@ module.exports = {
         self.currentBuildManifest = await self.getBuildModule()
           .startDevServer(buildOptions);
 
-        await self.computeBuildScenes(self.currentBuildManifest, { write: false });
-        await self.copyBundledAssetsForDev(self.currentBuildManifest);
+        await self.computeBuildScenes(self.currentBuildManifest, { write: true });
+      },
+      // Run the minimal required computations to ensure manifest data is available.
+      async runWithoutBuild() {
+        if (!self.hasBuildModule()) {
+          return;
+        }
+
+        // Hidrate the entrypoints with the saved manifest data and
+        // set the current build manifest data.
+        const entrypoints = self.getBuildEntrypoints();
+        const { manifest = [] } = await self.loadSavedBuildManifest();
+        for (const entry of manifest) {
+          const entrypoint = entrypoints.find((e) => e.name === entry.name);
+          if (!entrypoint || entrypoint.manifest) {
+            continue;
+          }
+          entrypoint.manifest = entry;
+          if (!manifest.bundles) {
+            entrypoint.bundles = new Set(entry.bundles);
+          }
+          self.currentBuildManifest.entrypoints.push({
+            ...entrypoint,
+            manifest: entry
+          });
+        }
+      },
+      async saveBuildManifest(manifest) {
+        const { entrypoints } = manifest;
+        const content = [];
+
+        for (const entrypoint of entrypoints) {
+          const {
+            manifest, name, bundles
+          } = entrypoint;
+          if (!manifest) {
+            continue;
+          }
+
+          const {
+            files, devServerUrl, root
+          } = manifest;
+          content.push({
+            name,
+            root,
+            files,
+            bundles: Array.from(bundles ?? []),
+            devServerUrl
+          });
+        }
+        await fs.outputJson(
+          path.join(self.getBundleRootDir(), '.manifest.json'),
+          {
+            ts: Date.now(),
+            manifest: content
+          }
+        );
+      },
+      async loadSavedBuildManifest() {
+        const manifestPath = path.join(self.getBundleRootDir(), '.manifest.json');
+        try {
+          return JSON.parse(await fs.readFile(manifestPath, 'utf-8'));
+        } catch (e) {
+          self.apos.util.error(`Error loading the saved build manifest: ${e.message}`);
+        }
+      },
+      getRegisteredModules() {
+        return self.modulesToBeInstantiated;
       },
       // Get the entrypoints containing manifest data currently initialized. The information
       // is available after the build initialization is done:
@@ -575,7 +640,12 @@ module.exports = {
           const bundles = configs.reduce((acc, config) => {
             const { root, files } = config.manifest;
 
-            const jsTargetName = `${scene}-${config.condition ?? 'module'}-bundle.js`;
+            // const jsTargetName = `${scene}-${config.condition ?? 'module'}-bundle.js`;
+            // Combining script type modules is a bad idea. We need to load them per
+            // entrypoint and not a scene.
+            const prefix = config.name === scene ? scene : `${scene}-${config.name}`;
+            const jsTargetName = `${prefix}-${config.condition ?? 'module'}-bundle.js`;
+            // CSS bundles are always scene based.
             const cssTargetName = `${scene}-bundle.css`;
             const jsFilePaths = files.js?.map(f => path.join(buildRoot, root, f)) ?? [];
             const cssFilePaths = files.css?.map(f => path.join(buildRoot, root, f)) ?? [];
@@ -665,34 +735,6 @@ module.exports = {
 
         return result;
       },
-      async saveBuildManifest(manifest) {
-        const { entrypoints } = manifest;
-        const content = [];
-
-        for (const entrypoint of entrypoints) {
-          const {
-            manifest, name, bundles
-          } = entrypoint;
-          if (!manifest) {
-            continue;
-          }
-
-          const { files } = manifest;
-          content.push({
-            name,
-            files,
-            bundles: Array.from(bundles ?? []),
-            devServerUrl: manifest.devServerUrl
-          });
-        }
-        await fs.outputJson(
-          path.join(self.getBundleRootDir(), '.manifest.json'),
-          {
-            ts: Date.now(),
-            manifest: content
-          }
-        );
-      },
       async copyBuildSourceMaps(manifest) {
         if (!manifest.sourceMapsRoot) {
           return [];
@@ -718,30 +760,31 @@ module.exports = {
 
         return result;
       },
-      async copyBundledAssetsForDev(manifest) {
-        const bundleRoot = self.getBundleRootDir();
-        const buildRoot = self.getBuildRootDir();
-        const { entrypoints } = manifest;
-        await fs.mkdirp(bundleRoot);
+      // Shouldn't be needed, here for reference for now.
+      // async copyBundledAssetsForDev(manifest) {
+      //   const bundleRoot = self.getBundleRootDir();
+      //   const buildRoot = self.getBuildRootDir();
+      //   const { entrypoints } = manifest;
+      //   await fs.mkdirp(bundleRoot);
 
-        for (const entrypoint of entrypoints) {
-          if (entrypoint.type !== 'bundled' || !entrypoint.manifest) {
-            continue;
-          }
-          for (const files of Object.values(entrypoint.manifest.files)) {
-            for (const file of files) {
-              try {
-                await fs.copyFile(
-                  path.join(buildRoot, entrypoint.manifest.root, file),
-                  path.join(bundleRoot, file)
-                );
-              } catch (e) {
-                self.apos.util.error(`Error copying ${file} to the bundle root: ${e.message}`);
-              }
-            }
-          }
-        }
-      },
+      //   for (const entrypoint of entrypoints) {
+      //     if (entrypoint.type !== 'bundled' || !entrypoint.manifest) {
+      //       continue;
+      //     }
+      //     for (const files of Object.values(entrypoint.manifest.files)) {
+      //       for (const file of files) {
+      //         try {
+      //           await fs.copyFile(
+      //             path.join(buildRoot, entrypoint.manifest.root, file),
+      //             path.join(bundleRoot, file)
+      //           );
+      //         } catch (e) {
+      //           self.apos.util.error(`Error copying ${file} to the bundle root: ${e.message}`);
+      //         }
+      //       }
+      //     }
+      //   }
+      // },
       // Compute the configuration provided per module as a `build` property.
       // It has the same shape as the legacy `webpack` property. The difference
       // is that the `build` property now supports different "vendors". An upgrade
@@ -1415,72 +1458,59 @@ function invoke() {
         }
         return output;
       },
-      // Generate the browser script/stylesheet import code based on the available
-      // manifest data.
-      getBundleMarkup({
-        scene, output, es5
+      // Generate the browser script/stylesheet import code for a scene based on the available
+      // manifest data and environmnent.
+      // The `scene` argument is the scene name, and the `output` argument is the output type
+      // - `js` or `css`.
+      getBundlePageMarkup({
+        scene, output
       }) {
         const entrypoints = self.apos.asset.getCurrentBuildEntrypoints()
           .filter(e => !!e.manifest && e.scenes.includes(scene) && e.outputs?.includes(output));
 
         const markup = [];
+        const seen = {};
+
         for (const {
           manifest, condition, bundles: bundleSet
         } of entrypoints) {
-          const hasDevServer = manifest.devServerUrl && !!self.isDevMode;
-          const assetUrl = self.getAssetBaseSystemUrl();
+          const hasDevServer = manifest.devServerUrl && self.hasDevServer();
+          const assetUrl = hasDevServer ? manifest.devServerUrl : self.getAssetBaseSystemUrl();
           const bundles = [ ...bundleSet ?? [] ]
             .filter(b => b.startsWith(scene) && b.endsWith(`.${output}`));
+
           const files = hasDevServer
             ? manifest.src?.[output] ?? []
-            : manifest.files?.[output] ?? [];
-            // bundles.filter(b => b.startsWith(scene) && b.endsWith(`.${output}`));
+            : bundles;
 
-          console.log(`BUNDLES FOR ${scene} [${output}]`, bundles, 'FILES', files, hasDevServer);
-          markup.push(...getTag(
+          markup.push(...getMarkup(
             {
               files,
-              manifest,
               output,
               condition,
-              devServer: hasDevServer,
-              assetUrl,
-              es5
+              assetUrl
             }
           ));
         }
 
-        console.log(`MARKUP FOR ${scene} [${output}]`, markup);
         return markup;
 
-        function getTag({
-          files, manifest, output, condition, devServer, es5, assetUrl
+        function getMarkup({
+          files, output, condition, assetUrl
         }) {
           if (output === 'css') {
-            return files.map(file => {
-              const url = devServer
-                ? `${manifest.devServerUrl}/${file}`
-                : `${assetUrl}/${file}`;
-
-              return `<link rel="stylesheet" href="${url}">`;
-            });
+            return files
+              .filter(file => !seen[`${assetUrl}/${file}`])
+              .map(file => {
+                seen[`${assetUrl}/${file}`] = true;
+                return `<link rel="stylesheet" href="${assetUrl}/${file}">`;
+              });
           }
           // What is it?
           if (output !== 'js') {
             return [];
           }
           const attr = condition !== 'nomodule' ? 'type="module"' : 'nomodule';
-          if (devServer) {
-            return files.map(file => `<script ${attr} src="${manifest.devServerUrl}/${file}"></script>`);
-          }
-          if (es5 || condition === 'nomodule') {
-            return files.map(file => {
-              return `
-                <script nomodule src="${assetUrl}/${file.replace('-module-', '-nomodule-')}"></script>
-                <script type="module" src="${assetUrl}/${file}"></script>
-              `;
-            });
-          }
           return files.map(file => `<script ${attr} src="${assetUrl}/${file}"></script>`);
         }
       },
