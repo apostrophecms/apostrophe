@@ -11,7 +11,6 @@ module.exports = (self) => {
     widgetsBundles = {}
   }) {
     const renderMarkup = renderBundleMarkup(self);
-    console.log('insertBundlesMarkup');
     if (!scriptsPlaceholder && !stylesheetsPlaceholder) {
       return content;
     }
