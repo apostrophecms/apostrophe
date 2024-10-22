@@ -585,7 +585,7 @@ async function apostrophe(options, telemetry, rootSpan) {
 
   // Reorder modules based on their `before` property.
   function sortModules(moduleNames) {
-    const definitions = self.options.modules;
+    const { definitions } = self.synth;
     // The module names that have a `before` property
     const beforeModules = [];
     // The metadata quick access of all modules
@@ -597,11 +597,11 @@ async function apostrophe(options, telemetry, rootSpan) {
 
     // The base module sort metadata
     for (const name of moduleNames) {
-      if (definitions[name].before) {
+      if (definitions[name].extend.before) {
         beforeModules.push(name);
       }
       modules[name] = {
-        before: definitions[name].before,
+        before: definitions[name].extend.before,
         beforeSelf: []
       };
     }
