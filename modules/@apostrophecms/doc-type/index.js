@@ -1758,10 +1758,11 @@ module.exports = {
               add.push('metaType');
             }
 
+            const type = query.get('type');
             // Add relationships storage fields in projection
             if (relationships && Object.keys(projection).length) {
               console.log('relationships', relationships);
-              const type = query.get('type');
+              console.log('type', type);
               const manager = self.apos.doc.getManager(type);
               if (Array.isArray(relationships)) {
                 relationships.forEach(relPath => {
@@ -1777,6 +1778,26 @@ module.exports = {
                 /* const relationships = self.apos.schema.findRelationships(self.schema); */
               }
             }
+
+            // Add relationships storage fields in projection
+            /* if (relationships && Object.keys(projection).length) { */
+            /*   const type = query.get('type'); */
+            /*   console.log('type', type); */
+            /*   const manager = self.apos.doc.getManager(type); */
+            /*   console.dir(manager, { depth: 0 }); */
+            /**/
+            /*   if (manager) { */
+            /*     for (const field of manager.schema) { */
+            /*       if (field.type !== 'relationship') { */
+            /*         continue; */
+            /*       } */
+            /**/
+            /*       if (relationships === true || relationships.includes(field.name)) { */
+            /*         add.push(field.idsStorage); */
+            /*       } */
+            /*     } */
+            /*   } */
+            /* } */
 
             for (const [ key, val ] of Object.entries(projection)) {
               if (!val) {
