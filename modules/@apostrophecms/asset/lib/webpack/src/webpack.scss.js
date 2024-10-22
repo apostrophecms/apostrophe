@@ -47,7 +47,14 @@ module.exports = (options, apos, srcBuildNames) => {
               }
             },
             // Parses SASS imports
-            'sass-loader'
+            {
+              loader: 'sass-loader',
+              options: {
+                sassOptions: {
+                  silenceDeprecations: [ 'import' ]
+                }
+              }
+            }
           ],
           // https://stackoverflow.com/a/60482491/389684
           sideEffects: true
