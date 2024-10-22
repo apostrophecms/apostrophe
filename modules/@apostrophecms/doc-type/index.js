@@ -1758,46 +1758,27 @@ module.exports = {
               add.push('metaType');
             }
 
-            const type = query.get('type');
             // Add relationships storage fields in projection
             if (relationships && Object.keys(projection).length) {
-              console.log('relationships', relationships);
-              console.log('type', type);
+              // Didn't find any other way, should work
+              const type = query.get('type');
               const manager = self.apos.doc.getManager(type);
-              if (Array.isArray(relationships)) {
-                relationships.forEach(relPath => {
-                  const [ relName ] = relPath.split('.');
-                  const relField = manager.schema.find((field) => field.name === relName);
-                  console.log('relField', relField);
-                  if (relField) {
-                    add.push(relField.idsStorage);
+              const directRelations = Array.isArray(relationships)
+                ? relationships.map(rel => rel.split('.')[0])
+                : [];
+
+              if (manager) {
+                for (const field of manager.schema) {
+                  if (field.type !== 'relationship') {
+                    continue;
                   }
-                });
-              } else {
-                // TODO: How? Get all relationships from schema?
-                /* const relationships = self.apos.schema.findRelationships(self.schema); */
+
+                  if (relationships === true || directRelations.includes(field.name)) {
+                    add.push(field.idsStorage);
+                  }
+                }
               }
             }
-
-            // Add relationships storage fields in projection
-            /* if (relationships && Object.keys(projection).length) { */
-            /*   const type = query.get('type'); */
-            /*   console.log('type', type); */
-            /*   const manager = self.apos.doc.getManager(type); */
-            /*   console.dir(manager, { depth: 0 }); */
-            /**/
-            /*   if (manager) { */
-            /*     for (const field of manager.schema) { */
-            /*       if (field.type !== 'relationship') { */
-            /*         continue; */
-            /*       } */
-            /**/
-            /*       if (relationships === true || relationships.includes(field.name)) { */
-            /*         add.push(field.idsStorage); */
-            /*       } */
-            /*     } */
-            /*   } */
-            /* } */
 
             for (const [ key, val ] of Object.entries(projection)) {
               if (!val) {
