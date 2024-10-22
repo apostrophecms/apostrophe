@@ -1166,14 +1166,6 @@ module.exports = (self) => {
           field.fields = fields && klona(fields);
           field.schema = self.fieldsToArray(`Relationship field ${field.name}`, field.fields);
         }
-
-        if (field.withRelationships && field.builders?.project) {
-          for (const relName of field.withRelationships) {
-            const relManager = self.apos.doc.getManager(field.withType);
-            const relField = relManager.schema.find((f) => f.name === relName);
-            field.builders.project[relField.idsStorage] = 1;
-          }
-        }
       }
       validateSchema(field);
       if (field.filters) {
