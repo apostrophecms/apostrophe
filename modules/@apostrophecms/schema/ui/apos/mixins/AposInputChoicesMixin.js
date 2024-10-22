@@ -3,6 +3,10 @@
 * or defaulting to the choices provided with the field.
 */
 
+import { debounceAsync } from 'Modules/@apostrophecms/ui/utils';
+
+const DEBOUNCE_TIMEOUT = 500;
+
 export default {
   data() {
     return {
@@ -11,31 +15,54 @@ export default {
   },
 
   async mounted() {
-    if (typeof this.field.choices === 'string') {
-      const action = this.options.action;
-      const response = await apos.http.get(
-        `${action}/choices`,
-        {
-          qs: {
-            fieldId: this.field._id,
-            docId: this.docId
-          },
-          busy: true
-        }
-      );
-      if (response.choices) {
-        this.choices = response.choices;
-      }
-    } else {
-      this.choices = this.field.choices;
-    }
+    this.debouncedUpdateChoices = debounceAsync(this.getChoices, DEBOUNCE_TIMEOUT, {
+      onSuccess: this.updateChoices
+    });
+    await this.debouncedUpdateChoices.skipDelay();
+  },
 
-    if (this.field.type === 'select') {
-      this.prependEmptyChoice();
+  watch: {
+    followingValues: {
+      deep: true,
+      handler() {
+        // Avoid race condition
+        return this.debouncedUpdateChoices && this.debouncedUpdateChoices();
+      }
     }
   },
 
   methods: {
+    async getChoices() {
+      if (typeof this.field.choices === 'string') {
+        const action = this.options.action;
+        const response = await apos.http.post(
+          `${action}/choices`,
+          {
+            qs: {
+              fieldId: this.field._id,
+              docId: this.docId
+            },
+            busy: true,
+            body: {
+              following: {
+                ...this.followingValues
+              }
+            }
+          }
+        );
+        if (response.choices) {
+          return response.choices;
+        }
+      } else {
+        return this.field.choices;
+      }
+    },
+    updateChoices(choices) {
+      this.choices = choices;
+      if (this.field.type === 'select') {
+        this.prependEmptyChoice();
+      }
+    },
     prependEmptyChoice() {
       // Using `hasOwn` here, not simply checking if `field.def` is truthy
       // so that `false`, `null`, `''` or `0` are taken into account:
