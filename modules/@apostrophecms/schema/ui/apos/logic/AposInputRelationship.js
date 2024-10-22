@@ -223,7 +223,8 @@ export default {
       switch (event.key) {
         case 'ArrowDown':
           if (this.searchFocusIndex + 1 < this.searchList.length) {
-            return this.searchFocusIndex++;
+            this.searchFocusIndex++;
+            return;
           }
           if (!this.searchList.length) {
             this.input();
