@@ -1740,6 +1740,7 @@ module.exports = {
           },
           finalize() {
             let projection = query.get('project') || {};
+            const relationships = query.get('relationships');
             // Keys beginning with `_` are computed values
             // (exception: `_id`). They do not make sense
             // in MongoDB projections. However Apostrophe
@@ -1755,6 +1756,26 @@ module.exports = {
             if (!_.isEmpty(projection) && !hasExclusion) {
               add.push('type');
               add.push('metaType');
+            }
+
+            // Add relationships storage fields in projection
+            if (relationships && Object.keys(projection).length) {
+              console.log('relationships', relationships);
+              const type = query.get('type');
+              const manager = self.apos.doc.getManager(type);
+              if (Array.isArray(relationships)) {
+                relationships.forEach(relPath => {
+                  const [ relName ] = relPath.split('.');
+                  const relField = manager.schema.find((field) => field.name === relName);
+                  console.log('relField', relField);
+                  if (relField) {
+                    add.push(relField.idsStorage);
+                  }
+                });
+              } else {
+                // TODO: How? Get all relationships from schema?
+                /* const relationships = self.apos.schema.findRelationships(self.schema); */
+              }
             }
 
             for (const [ key, val ] of Object.entries(projection)) {
@@ -2219,7 +2240,8 @@ module.exports = {
         relationships: {
           def: true,
           async after(results) {
-            if (!query.get('relationships')) {
+            const relationships = query.get('relationships');
+            if (!relationships) {
               return;
             }
             const resultsByType = _.groupBy(results, 'type');
@@ -2227,7 +2249,12 @@ module.exports = {
               const manager = self.apos.doc.getManager(type);
               // Careful, there will be no manager if type was not part of the projection
               if (manager && manager.schema) {
-                await self.apos.schema.relate(query.req, manager.schema, resultsByType[type], query.get('relationships'));
+                await self.apos.schema.relate(
+                  query.req,
+                  manager.schema,
+                  resultsByType[type],
+                  relationships
+                );
               }
             }
           }
