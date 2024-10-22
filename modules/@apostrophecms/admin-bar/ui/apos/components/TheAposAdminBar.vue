@@ -118,10 +118,6 @@ export default {
   margin-left: auto;
 }
 
-:deep(.apos-context-menu__pane) {
-  min-width: 150px;
-}
-
 :deep(.flip-enter) { // to the ground
   transform: translateY(-20%);
   opacity: 0;

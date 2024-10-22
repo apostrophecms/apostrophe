@@ -1288,15 +1288,13 @@ describe('structured logging', function () {
       savedArgs = [];
       apos.util.warnDev('some message');
       assert.deepEqual(savedArgs, [ {
-        msg: 'some message',
-        args: [ '\n⚠️ ', '\n' ]
+        msg: '⚠️  some message'
       } ]);
 
       savedArgs = [];
       apos.util.warnDev({ foo: 'bar' });
       assert.deepEqual(savedArgs, [ {
-        foo: 'bar',
-        args: [ '\n⚠️ ', '\n' ]
+        foo: 'bar'
       }
       ]);
 
@@ -1304,16 +1302,15 @@ describe('structured logging', function () {
       apos.util.warnDev('some message', { foo: 'bar' });
       assert.deepEqual(savedArgs, [ {
         foo: 'bar',
-        msg: 'some message',
-        args: [ '\n⚠️ ', '\n' ]
+        msg: '⚠️  some message'
       } ]);
 
       savedArgs = [];
       apos.util.warnDev('some message', 'more', { foo: 'bar' });
       assert.deepEqual(savedArgs, [ {
         foo: 'bar',
-        msg: 'some message',
-        args: [ '\n⚠️ ', 'more', '\n' ]
+        msg: '⚠️  some message',
+        args: [ 'more' ]
       } ]);
 
       savedArgs = [];
@@ -1321,7 +1318,7 @@ describe('structured logging', function () {
       assert.deepEqual(savedArgs, [ {
         foo: 'bar',
         msg: 'some message',
-        args: [ '\n⚠️ ', 'more', '\n' ]
+        args: [ 'more' ]
       } ]);
 
       apos.util.logger.warn = saved;

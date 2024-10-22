@@ -42,6 +42,9 @@ module.exports = {
       if (index === 9) {
         break;
       }
+      if (!screen.shortcut) {
+        continue;
+      }
 
       breakpointPreviewModeCommands[`${self.__meta.name}:toggle-breakpoint-preview-mode:${name}`] = {
         type: 'item',
