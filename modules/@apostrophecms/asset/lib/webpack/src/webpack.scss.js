@@ -1,16 +1,26 @@
 const path = require('path');
 const MiniCssExtractPlugin = require('mini-css-extract-plugin');
+const postcssReplaceViewportUnitsPlugin = require('../postcss-replace-viewport-units-plugin');
 
 module.exports = (options, apos, srcBuildNames) => {
-  const mediaToContainerQueriesLoader = apos.asset.options.breakpointPreviewMode?.enable === true
-    ? {
+  const postcssPlugins = [
+    'autoprefixer',
+    {}
+  ];
+  let mediaToContainerQueriesLoader = '';
+
+  if (apos.asset.options.breakpointPreviewMode?.enable === true) {
+    postcssPlugins.unshift(
+      postcssReplaceViewportUnitsPlugin()
+    );
+    mediaToContainerQueriesLoader = {
       loader: path.resolve(__dirname, '../media-to-container-queries-loader.js'),
       options: {
         debug: apos.asset.options.breakpointPreviewMode?.debug === true,
         transform: apos.asset.options.breakpointPreviewMode?.transform || null
       }
-    }
-    : '';
+    };
+  }
 
   return {
     module: {
@@ -32,17 +42,19 @@ module.exports = (options, apos, srcBuildNames) => {
               options: {
                 sourceMap: true,
                 postcssOptions: {
-                  plugins: [
-                    [
-                      'autoprefixer',
-                      {}
-                    ]
-                  ]
+                  plugins: [ postcssPlugins ]
                 }
               }
             },
             // Parses SASS imports
-            'sass-loader'
+            {
+              loader: 'sass-loader',
+              options: {
+                sassOptions: {
+                  silenceDeprecations: [ 'import' ]
+                }
+              }
+            }
           ],
           // https://stackoverflow.com/a/60482491/389684
           sideEffects: true

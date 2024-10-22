@@ -16,7 +16,7 @@ module.exports = (self, entrypoint) => {
         }
       );
     },
-    getOutput(sourceFiles) {
+    async getOutput(sourceFiles) {
       const output = (Object.entries(sourceFiles))
         .reduce((acc, [ type, files ]) => {
           switch (type) {

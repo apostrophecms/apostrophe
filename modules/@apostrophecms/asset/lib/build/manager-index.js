@@ -24,7 +24,7 @@ module.exports = (self, entrypoint) => {
     // with the output of `getSourceFiles()`. The return value is an object with the
     // same keys as `sourceFiles`, and the values are the output of getImportFileOutput().
     // Additionally, the return value has a `prologue` key that contains the prologue for the entrypoint.
-    getOutput(sourceFiles) {
+    async getOutput(sourceFiles) {
       const output = (Object.entries(sourceFiles))
         .reduce((acc, [ type, files ]) => {
           switch (type) {

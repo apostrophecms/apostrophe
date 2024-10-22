@@ -66,19 +66,22 @@ module.exports = {
           label: 'apostrophe:breakpointPreviewDesktop',
           width: '1440px',
           height: '900px',
-          icon: 'monitor-icon'
+          icon: 'monitor-icon',
+          shortcut: true
         },
         tablet: {
           label: 'apostrophe:breakpointPreviewTablet',
           width: '1024px',
           height: '768px',
-          icon: 'tablet-icon'
+          icon: 'tablet-icon',
+          shortcut: true
         },
         mobile: {
           label: 'apostrophe:breakpointPreviewMobile',
           width: '414px',
           height: '896px',
-          icon: 'cellphone-icon'
+          icon: 'cellphone-icon',
+          shortcut: true
         }
       },
       // Transform method used on media feature
@@ -91,8 +94,8 @@ module.exports = {
     // This option is useful for debugging in production and is only
     // available when an external build module is registered (it doesn't
     // with the internal webpack build).
-    productionSourceMap: false,
-    // The configuration to disable development server.
+    productionSourceMaps: false,
+    // The configuration to disable development server when supported.
     devServer: true
   },
 
@@ -165,8 +168,6 @@ module.exports = {
     return {
       'apostrophe:modulesRegistered': {
         async runUiBuildTask() {
-          // TODO: refactor autorunUiBuildTask to get rid of the webpack related
-          // code and make it a generic method playing well with external builds.
           const ran = await self.autorunUiBuildTask();
 
           // When the build is not executed, make the minimum required computations
@@ -174,8 +175,7 @@ module.exports = {
           if (!ran) {
             await self.runWithoutBuild();
           }
-          // Temporary disable watchers
-          if (ran && !self.hasBuildModule()) {
+          if (ran) {
             await self.watchUiAndRebuild();
           }
         },
@@ -398,7 +398,7 @@ module.exports = {
       //   The `composePath` is an optional function to compose the path to the source file.
       //   It accepts `file` (a relative to `ui/{folderToSearch}` file path) and `metaEntry`
       //   (the module metadata entry, see `computeSourceMeta()`).
-      // - getOutput(sourceFiles, { modules }): get the output data for the entrypoint.
+      // - async getOutput(sourceFiles, { modules }): get the output data for the entrypoint.
       //   The `sourceFiles` is in format compatible with the output of `manager.getSourceFiles()`.
       //   The `modules` option is the list of all modules, usually the cached result
       //   of `self.apos.modulesToBeInstantiated()`.
@@ -408,11 +408,11 @@ module.exports = {
       hasDevServer() {
         return self.isDevMode &&
           self.options.devServer !== false &&
+          self.buildWatcherEnable &&
           !!self.getBuildModuleConfig().devServer;
       },
       hasHMR() {
-        return self.options.watch &&
-          self.hasDevServer() &&
+        return self.hasDevServer() &&
           !!self.getBuildModuleConfig().hmr;
       },
       getBuildOptions(argv) {
@@ -471,7 +471,7 @@ module.exports = {
             ]
           )
         ];
-        if (self.options.productionSourceMap) {
+        if (self.options.productionSourceMaps) {
           deployFiles.push(...sourceMaps);
         }
         await self.deploy(deployFiles);
@@ -486,6 +486,64 @@ module.exports = {
           .startDevServer(buildOptions);
 
         await self.computeBuildScenes(self.currentBuildManifest, { write: true });
+      },
+      // The new watch system, works only when an external build module is registered.
+      // This method is invoked only when appropriate.
+      async watch() {
+        if (!self.buildWatcher) {
+          const watchDirs = (await self.computeWatchMeta(self.getRegisteredModules()))
+            .map(entry => entry.dirname);
+
+          const instance = chokidar.watch(watchDirs, {
+            cwd: self.apos.rootDir,
+            ignoreInitial: true
+            // ignored: self.ignoreWatchLocation
+          });
+          self.buildWatcher = instance;
+        }
+
+        // Log the initial watch message
+        let loggedOnce = false;
+        const logOnce = (...msg) => {
+          if (!loggedOnce) {
+            self.apos.util.log(...msg);
+            loggedOnce = true;
+          }
+        };
+
+        // Allow the module to add more paths, attach listeners, etc.
+        await self.getBuildModule().watch(self.buildWatcher);
+
+        self.buildWatcher
+          .on('error', e => self.apos.util.error(`Watcher error: ${e}`))
+          .on('ready', () => logOnce(
+            self.apos.task.getReq().t('apostrophe:assetBuildWatchStarted')
+          ));
+
+        self.getBuildModule().watch(self.buildWatcher);
+      },
+      // Override to ignore files/folders from the watch. The method is called twice:
+      // - once with only the `file` parameter
+      // - once with both `file` and `fsStats` parameters
+      // https://github.com/paulmillr/chokidar?tab=readme-ov-file#path-filtering
+      // The `file` is the relative to the `apos.rootDir` path to the file or folder.
+      // The `fsStats` is the `fs.Stats` object.
+      // Return `true` to ignore the file/folder.
+      ignoreWatchLocation(file, fsStats) {
+        return false;
+      },
+      // Retrieve only existing `/ui` paths for local and npm symlinked modules.
+      // Modules is usually the `modulesToBeInstantiated` array.
+      async computeWatchMeta(modules) {
+        const meta = (await self.computeSourceMeta({
+          modules,
+          stats: true
+        }))
+          .filter(entry => {
+            return (!entry.npm && entry.exists) || (entry.npm && entry.symlink);
+          });
+
+        return meta;
       },
       // Run the minimal required computations to ensure manifest data is available.
       async runWithoutBuild() {
@@ -548,7 +606,10 @@ module.exports = {
         try {
           return JSON.parse(await fs.readFile(manifestPath, 'utf-8'));
         } catch (e) {
-          self.apos.util.error(`Error loading the saved build manifest: ${e.message}`);
+          if (self.apos.options.autoBuild !== false) {
+            self.apos.util.error(`Error loading the saved build manifest: ${e.message}`);
+          }
+          return {};
         }
       },
       getRegisteredModules() {
@@ -916,21 +977,25 @@ module.exports = {
       //     or `/path/to/project/node_modules/@apostrophecms/admin-bar/ui`.
       //   - `id`: the module name, prefixed with `my-` if it's a project module.
       //     For example `my-article` or `@apostrophecms/my-admin-bar`.
-      //   - `name`: the original module name (no prefix).
+      //   - `name`: the original module name (no `my-` prefix).
       //   - `importAlias`: the alias base that is used for importing the module.
       //     For example `Modules/@apostrophecms/admin-bar/`. This is used to fast
       //     resolve the module in the Vite build.
-      //   - `project`: a boolean indicating if the module is a project module or inside
-      //     `node_modules`.
-      //   - `files`: an array of paths paths relative to the module `ui/` folder
+      //   - `npm`: a boolean indicating if the module is a npm module
+      //   - `files`: an array of paths paths relative to the module `ui/` folder,
+      //   - `exists`: a boolean indicating if the `dirname` exists.
+      //   - `symlink`: a boolean indicating if the npm module is a symlink. Non-npm
+      //     modules are always considered as non-symlinks.
       async computeSourceMeta({
         modules,
+        stats = true,
         asyncHandler
       }) {
         const seen = {};
+        const npmSeen = {};
         const meta = [];
         for (const name of modules) {
-          const metadata = self.apos.synth.getMetadata(name);
+          const metadata = await self.apos.synth.getMetadata(name);
           for (const entry of metadata.__meta.chain) {
             if (seen[entry.dirname]) {
               continue;
@@ -941,6 +1006,9 @@ module.exports = {
                 .replace(/^my-/, '')
               : entry.name;
             const dirname = `${entry.dirname}/ui`;
+            let exists = null;
+            let isSymlink = null;
+
             const files = await glob('**/*', {
               cwd: dirname,
               ignore: [
@@ -955,14 +1023,21 @@ module.exports = {
               absolute: false
             });
 
+            if (stats) {
+              // optimize fs calls
+              exists = files.length > 0 ? true : fs.existsSync(dirname);
+              isSymlink = exists ? checkSymlink(entry) : false;
+            }
+
             seen[entry.dirname] = true;
             const metaEntry = {
               id: entry.name,
               name: moduleName,
               dirname,
               importAlias: `Modules/${moduleName}/`,
-              project: !entry.npm,
-              apos: entry.bundled ?? false,
+              npm: entry.npm ?? false,
+              symlink: isSymlink,
+              exists,
               files
             };
             meta.push(metaEntry);
@@ -971,6 +1046,31 @@ module.exports = {
               await asyncHandler(metaEntry);
             }
           }
+        }
+
+        function checkSymlink(entry) {
+          if (!entry.npm) {
+            return false;
+          }
+          let dir;
+          if (entry.bundled) {
+            const baseChunks = entry.dirname.split('/node_modules/');
+            const end = baseChunks.pop();
+            const base = baseChunks.join('/node_modules/');
+            if (end.startsWith('@')) {
+              dir = `${base}/node_modules/${end.split('/').slice(0, 2).join('/')}`;
+            } else {
+              dir = `${base}/node_modules/${end.split('/')[0]}`;
+            }
+          } else {
+            dir = entry.dirname;
+          }
+          if (typeof npmSeen[dir] === 'boolean') {
+            return npmSeen[dir];
+          }
+          npmSeen[dir] = fs.lstatSync(dir, { throwIfNoEntry: false })
+            ?.isSymbolicLink() ?? false;
+          return npmSeen[dir];
         }
 
         return meta;
@@ -1003,7 +1103,7 @@ module.exports = {
         // we can access their metadata, which is sufficient
         for (const name of modules) {
           const ancestorDirectories = [];
-          const metadata = self.apos.synth.getMetadata(name);
+          const metadata = await self.apos.synth.getMetadata(name);
           for (const entry of metadata.__meta.chain) {
             const effectiveName = entry.my
               ? entry.name
@@ -1049,9 +1149,9 @@ module.exports = {
       // Generate the import code for all registered icons (`icons` module prop).
       // The function returns an object with `importCode`, `registerCode`,
       // and `invokeCode` string properties.
-      getAposIconsOutput(modules) {
+      async getAposIconsOutput(modules) {
         for (const name of modules) {
-          const metadata = self.apos.synth.getMetadata(name);
+          const metadata = await self.apos.synth.getMetadata(name);
           // icons is an unparsed section, so getMetadata gives it back
           // to us as an object with a property for each class in the
           // inheritance tree, root first. Just keep merging in
@@ -1736,6 +1836,8 @@ function invoke() {
       // The build watcher initialization (event triggered) depends on a Boolean value,
       // and the rebuild handler (triggered by the build watcher on
       // detected change) depends on an Array value.
+      // Returns boolean if `changes` is not provided, otherwise an array of builds
+      // that were triggered by the changes.
       async autorunUiBuildTask(changes) {
         let result = changes ? [] : false;
         let _changes;
@@ -1747,7 +1849,10 @@ function invoke() {
             // Or if we've set an app option to skip the auto build
             self.apos.options.autoBuild !== false
         ) {
-          checkModulesWebpackConfig(self.apos.modules, self.apos.task.getReq().t);
+          // Only when a legacy build is in play.
+          if (!self.hasBuildModule()) {
+            checkModulesWebpackConfig(self.apos.modules, self.apos.task.getReq().t);
+          }
           // If starting up normally, run the build task, checking if we
           // really need to update the apos build
           if (changes) {
@@ -1825,6 +1930,33 @@ function invoke() {
         // Allow custom watcher registration
         self.registerBuildWatcher();
         const rootDir = self.apos.rootDir;
+        if (self.hasBuildModule()) {
+          return self.watch(rebuildCallback);
+        }
+        if (!self.buildWatcher) {
+          const symLinkModules = await findNodeModulesSymlinks(rootDir);
+          const watchDirs = [
+            './modules/**/ui/apos/**',
+            './modules/**/ui/src/**',
+            './modules/**/ui/public/**',
+            ...symLinkModules.reduce(
+              (prev, m) => [
+                ...prev,
+              `./node_modules/${m}/ui/apos/**`,
+              `./node_modules/${m}/ui/src/**`,
+              `./node_modules/${m}/ui/public/**`,
+              `./node_modules/${m}/modules/**/ui/apos/**`,
+              `./node_modules/${m}/modules/**/ui/src/**`,
+              `./node_modules/${m}/modules/**/ui/public/**`
+              ],
+              []
+            )
+          ];
+          self.buildWatcher = chokidar.watch(watchDirs, {
+            cwd: rootDir,
+            ignoreInitial: true
+          });
+        }
         // chokidar may invoke ready event multiple times,
         // we want one "watch enabled" message.
         let loggedOnce = false;
@@ -1850,31 +1982,6 @@ function invoke() {
           changesPool.push(fileOrDir);
           return debounceRebuild();
         };
-
-        if (!self.buildWatcher) {
-          const symLinkModules = await findNodeModulesSymlinks(rootDir);
-          const watchDirs = [
-            './modules/**/ui/apos/**',
-            './modules/**/ui/src/**',
-            './modules/**/ui/public/**',
-            ...symLinkModules.reduce(
-              (prev, m) => [
-                ...prev,
-              `./node_modules/${m}/ui/apos/**`,
-              `./node_modules/${m}/ui/src/**`,
-              `./node_modules/${m}/ui/public/**`,
-              `./node_modules/${m}/modules/**/ui/apos/**`,
-              `./node_modules/${m}/modules/**/ui/src/**`,
-              `./node_modules/${m}/modules/**/ui/public/**`
-              ],
-              []
-            )
-          ];
-          self.buildWatcher = chokidar.watch(watchDirs, {
-            cwd: rootDir,
-            ignoreInitial: true
-          });
-        }
 
         self.buildWatcher
           .on('add', addChangeAndDebounceRebuild)

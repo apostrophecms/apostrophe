@@ -33,8 +33,8 @@ module.exports = (self, entrypoint) => {
         apps: apps.js
       };
     },
-    getOutput(sourceFiles, { modules }) {
-      const icons = self.apos.asset.getAposIconsOutput(modules);
+    async getOutput(sourceFiles, { modules }) {
+      const icons = await self.apos.asset.getAposIconsOutput(modules);
       const components = self.apos.asset.getImportFileOutput(sourceFiles.components, {
         registerComponents: true
       });
