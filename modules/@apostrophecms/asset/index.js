@@ -603,7 +603,10 @@ module.exports = {
         try {
           return JSON.parse(await fs.readFile(manifestPath, 'utf-8'));
         } catch (e) {
-          self.apos.util.error(`Error loading the saved build manifest: ${e.message}`);
+          if (self.apos.options.autoBuild !== false) {
+            self.apos.util.error(`Error loading the saved build manifest: ${e.message}`);
+          }
+          return {};
         }
       },
       getRegisteredModules() {
