@@ -176,6 +176,10 @@ export default {
 
   &__document {
     margin-top: 3.5px;
+
+    :deep(.apos-context-menu__pane) {
+      min-width: 150px;
+    }
   }
 }
 

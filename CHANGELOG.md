@@ -5,6 +5,49 @@
 ### Adds
 
 * Relationship inputs have aria accessibility tags and autocomplete suggestions can be controlled by keyboard.
+* Elements inside modals can have a `data-apos-focus-priority` attribute that prioritizes them inside the focusable elements list.
+* Modals will continute trying to find focusable elements until an element marked `data-apos-focus-priority` appears or the max retry threshold is reached.
+* Takes care of an edge case where Media Manager would duplicate search results.
+* Modules can now have a `before: "module-name"` property in their configuration to initialize them before another module, bypassing the normal
+order implied by `defaults.js` and `app.js`.
+* `select` and `checkboxes` fields that implement dynamic choices can now take into account the value of other fields on the fly, by specifying
+a `following` property with an array of other field names. Array and object subfields can access properties of the parent document
+by adding a `<` prefix (or more than one) to field names in `following` to look upwards a level. Your custom method on the server side will
+now receive a `following` object as an additional argument. One limitation: for now, a field with dynamic choices cannot depend on another field
+with dynamic choices in this way.
+* Adds AI-generated missing translations
+* Adds the mobile preview dropdown for non visibles breakpoints. Uses the new `shortcut` property to display breakpoints out of the dropdown.
+* Adds possibility to have two icons in a button.
+* Adds a `isActive` state to context menu items. Also adds possibility to add icons to context menu items.
+* Add a postcss plugin to handle `vh` and `vw` values on breakpoint preview mode.
+
+### Changes
+
+* Silence deprecation warnings from Sass 1.80+ regarding the use of `@import`. The Sass team [has stated there will be a two-year transition period](https://sass-lang.com/documentation/breaking-changes/import/#transition-period) before the feature is actually removed. The use of `@import` is common practice in the Apostrophe codebase and in many project codebases. We will arrange for an orderly migration to the new `@use` directive before Sass 3.x appears.
+
+### Fixes
+
+* Modifies the `AposAreaMenu.vue` component to set the `disabled` attribute to `true` if the max number of widgets have been added in an area with `expanded: true`.
+* `pnpm: true` option in `app.js` is no longer breaking the application. 
+* Remove unused `vue-template-compiler` dependency.
+* Prevent un-publishing the `@apostrophecms/global` doc and more generally all singletons.
+* When opening a context menu while another is already opened, prevent from focusing the button of the first one instead of the newly opened menu.
+* Updates `isEqual` method of `area` field type to avoid comparing an area having temporary properties with one having none.
+
+## 4.7.2 and 4.8.1 (2024-10-09)
+
+### Fixes
+
+* Correct a race condition that can cause a crash at startup when custom `uploadfs` options are present in some specific cloud environments e.g. when using Azure Blob Storage.
+
+## 4.8.0 (2024-10-03)
+
+### Adds
+
+* Adds a mobile preview feature to the admin UI. The feature can be enabled using the `@apostrophecms/asset` module's new `breakpointPreviewMode` option. Once enabled, the asset build process will duplicate existing media queries as container queries. There are some limitations in the equivalence between media queries and container queries. You can refer to the [CSS @container at-rule](https://developer.mozilla.org/en-US/docs/Web/CSS/@container) documentation for more information. You can also enable `breakpointPreviewMode.debug` to be notified in the console when the build encounters an unsupported media query.
+* Apostrophe now automatically adds the appropriate default values for new properties in the schema, even for existing documents in the database. This is done automatically during the migration phase of startup.
+* Adds focus states for media library's Uploader tile.
+* Adds focus states file attachment's input UI.
 * Simplified importing rich text widgets via the REST API. If you  you have HTML that contains `img` tags pointing to existing images, you can now import them all quickly. When supplying the rich text widget object, include an `import` property with an `html` subproperty, rather than the usual `content` property. You can optionally provide a `baseUrl` subproperty as well. Any images present in `html` will be imported automatically and the correct `figure` tags will be added to the new rich text widget, along with any other markup acceptable to the widget's configuration.
 
 ### Changes
@@ -13,8 +56,19 @@
 
 ### Fixes
 
+* Apostrophe's migration logic is no longer executed twice on every startup and three times in the migration task. It is executed exactly once, always at the same point in the startup process. This bug did not cause significant performance issues because migrations were always only executed once, but there is a small performance improvement due to not checking for them more than once.
+* The `@apostrophecms/page` module APIs no longer allow a page to become a child of itself. Thanks to [Maarten Marx](https://github.com/Pixelguymm) for reporting the issue.
 * Uploaded SVGs now permit `<use>` tags granted their `xlink:href` property is a local reference and begins with the `#` character. This improves SVG support while mitgating XSS vulnerabilities.
 * Default properties of object fields present in a widget now populate correctly even if never focused in the editor.
+* Fixed the "choices" query builder to correctly support dynamic choices, ensuring compatibility with the [`piecesFilters`](https://docs.apostrophecms.org/reference/modules/piece-page-type.html#piecesfilters) feature when using dynamic choices.
+* Fix a reordering issue for arrays when dragging and dropping items in the admin UI.
+* The inline array item extract the label now using `title` as `titleField` value by default (consistent with the Slat list).
+
+## 4.7.1 (2024-09-20)
+
+### Fixes
+
+* Ensure parked fields are not modified for parked pages when not configured in `_defaults`.
 
 ## 4.7.0 (2024-09-05)
 

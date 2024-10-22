@@ -14,7 +14,8 @@ export function useAposFocus() {
     focusLastModalFocusedElement,
     storeFocusedElement,
     focusElement,
-    isElementVisible
+    isElementVisible,
+    findPriorityElementOrFirst
   };
 
   // Adapted from https://uxdesign.cc/how-to-trap-focus-inside-modal-to-make-it-ada-compliant-6a50f9a70700
@@ -68,7 +69,7 @@ export function useAposFocus() {
 
     const { focusedElement, elementsToFocus } = lastModal;
 
-    focusElement(focusedElement, elementsToFocus[0]);
+    focusElement(focusedElement, findPriorityElementOrFirst(elementsToFocus));
   }
 
   function storeFocusedElement(e) {
@@ -94,5 +95,9 @@ export function useAposFocus() {
 
   function isElementVisible(element) {
     return element.offsetParent !== null;
+  }
+
+  function findPriorityElementOrFirst(elements) {
+    return elements.find(e => e.hasAttribute('data-apos-focus-priority')) || elements[0];
   }
 }

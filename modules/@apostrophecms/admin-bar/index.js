@@ -14,6 +14,59 @@ module.exports = {
     pageTree: true
   },
   commands(self) {
+    const breakpointPreviewModeScreens = (
+      self.apos.asset.options.breakpointPreviewMode?.enable &&
+      self.apos.asset.options.breakpointPreviewMode?.screens
+    ) || {};
+    const breakpointPreviewModeCommands = {
+      [`${self.__meta.name}:toggle-breakpoint-preview-mode:exit`]: {
+        type: 'item',
+        label: {
+          key: 'apostrophe:commandMenuToggleBreakpointPreviewMode',
+          breakpoint: '$t(apostrophe:breakpointPreviewExit)'
+        },
+        action: {
+          type: 'command-menu-admin-bar-toggle-breakpoint-preview-mode',
+          payload: {
+            mode: null,
+            width: null,
+            height: null
+          }
+        },
+        shortcut: 'P,0'
+      }
+    };
+    let index = 1;
+    for (const [ name, screen ] of Object.entries(breakpointPreviewModeScreens)) {
+      // Up to 9 shortcuts available
+      if (index === 9) {
+        break;
+      }
+      if (!screen.shortcut) {
+        continue;
+      }
+
+      breakpointPreviewModeCommands[`${self.__meta.name}:toggle-breakpoint-preview-mode:${name}`] = {
+        type: 'item',
+        label: {
+          key: 'apostrophe:commandMenuToggleBreakpointPreviewMode',
+          breakpoint: `$t(${screen.label})`
+        },
+        action: {
+          type: 'command-menu-admin-bar-toggle-breakpoint-preview-mode',
+          payload: {
+            mode: name,
+            label: `$t(${screen.label})`,
+            width: screen.width,
+            height: screen.height
+          }
+        },
+        shortcut: `P,${index}`
+      };
+
+      index += 1;
+    };
+
     return {
       add: {
         [`${self.__meta.name}:undo`]: {
@@ -63,7 +116,8 @@ module.exports = {
             type: 'command-menu-admin-bar-toggle-publish-draft'
           },
           shortcut: 'Ctrl+Shift+D Meta+Shift+D'
-        }
+        },
+        ...breakpointPreviewModeCommands
       },
       modal: {
         default: {
@@ -80,7 +134,8 @@ module.exports = {
             label: 'apostrophe:commandMenuMode',
             commands: [
               `${self.__meta.name}:toggle-edit-preview-mode`,
-              `${self.__meta.name}:toggle-published-draft-document`
+              `${self.__meta.name}:toggle-published-draft-document`,
+              ...Object.keys(breakpointPreviewModeCommands)
             ]
           }
         }
@@ -355,6 +410,13 @@ module.exports = {
             aposLocale: context.aposLocale,
             aposDocId: context.aposDocId
           },
+          breakpointPreviewMode: self.apos.asset.options.breakpointPreviewMode ||
+            {
+              enable: false,
+              debug: false,
+              resizable: false,
+              screens: {}
+            },
           // Base API URL appropriate to the context document
           contextBar: context && self.apos.doc.getManager(context.type).options.contextBar,
           showAdminBar: self.getShowAdminBar(req),

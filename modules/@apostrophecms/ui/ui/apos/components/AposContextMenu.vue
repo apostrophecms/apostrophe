@@ -35,6 +35,7 @@
           :menu-placement="placement"
           :class-list="classList"
           :menu="menu"
+          :active-item="activeItem"
           :is-open="isOpen"
           @item-clicked="menuItemClicked"
           @set-arrow="setArrow"
@@ -117,6 +118,10 @@ const props = defineProps({
   centerOnIcon: {
     type: Boolean,
     default: false
+  },
+  activeItem: {
+    type: String,
+    default: null
   }
 });
 
@@ -131,6 +136,7 @@ const dropdownContentStyle = ref({});
 const arrowEl = ref(null);
 const iconToCenterTo = ref(null);
 const menuOffset = getMenuOffset();
+const otherMenuOpened = ref(false);
 
 defineExpose({
   hide,
@@ -176,8 +182,11 @@ watch(isOpen, (newVal) => {
     window.removeEventListener('resize', setDropdownPosition);
     window.removeEventListener('scroll', setDropdownPosition);
     window.removeEventListener('keydown', handleKeyboard);
-    dropdown.value.querySelector('[tabindex]').focus();
+    if (!otherMenuOpened.value) {
+      dropdown.value.querySelector('[tabindex]').focus();
+    }
   }
+  otherMenuOpened.value = false;
 }, { flush: 'post' });
 
 const { themeClass } = useAposTheme();
@@ -201,6 +210,7 @@ function getMenuOffset() {
 
 function hideWhenOtherOpen({ menuId }) {
   if (props.menuId !== menuId) {
+    otherMenuOpened.value = true;
     hide();
   }
 }
@@ -333,11 +343,13 @@ function handleKeyboard(event) {
 .apos-context-menu__items {
   @include apos-list-reset();
 
-  display: inline-block;
-  list-style-type: none;
-  width: max-content;
-  margin: none;
-  margin-block: 0;
-  padding: 10px 0;
+  & {
+    display: inline-block;
+    list-style-type: none;
+    width: max-content;
+    margin: none;
+    margin-block: 0;
+    padding: 10px 0;
+  }
 }
 </style>

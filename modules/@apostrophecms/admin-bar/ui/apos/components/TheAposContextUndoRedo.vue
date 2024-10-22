@@ -99,6 +99,10 @@ export default {
 };
 </script>
 <style lang="scss" scoped>
+  .apos-admin-bar__control-set--context-controls {
+    border-right: 1px solid var(--a-base-9);
+  }
+
   :deep(.apos-admin-bar__context-button.apos-button__wrapper) {
     display: flex;
   }

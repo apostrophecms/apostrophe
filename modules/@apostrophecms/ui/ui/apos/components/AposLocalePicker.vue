@@ -151,10 +151,12 @@ function getForbiddenTooltip(locale) {
 .apos-locale-picker__locale-display {
   @include apos-button-reset();
 
-  display: block;
-  box-sizing: border-box;
-  width: 100%;
-  padding: 12px 35px;
+  & {
+    display: block;
+    box-sizing: border-box;
+    width: 100%;
+    padding: 12px 35px;
+  }
 
   &:focus, &:active {
     outline: none;

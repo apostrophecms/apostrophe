@@ -571,9 +571,17 @@ module.exports = {
       // may  be a short string such as `required` or `min` that can be used to
       // set error class names, etc. If the error is not a string, it is a
       // database error etc. and should not be displayed in the browser directly.
+      //
+      // ancestors consists of an array of objects where each represents
+      // the context object at each level of nested sanitization, excluding
+      // `destination` (the current level). This allows resolution of relative
+      // `following` paths during sanitization.
 
-      async convert(req, schema, data, destination, { fetchRelationships = true } = {}) {
-        const options = { fetchRelationships };
+      async convert(req, schema, data, destination, { fetchRelationships = true, ancestors = [] } = {}) {
+        const options = {
+          fetchRelationships,
+          ancestors
+        };
         if (Array.isArray(req)) {
           throw new Error('convert invoked without a req, do you have one in your context?');
         }
@@ -701,7 +709,7 @@ module.exports = {
         }
       },
 
-      async evaluateMethod(req, methodKey, fieldName, fieldModuleName, docId = null, optionalParenthesis = false) {
+      async evaluateMethod(req, methodKey, fieldName, fieldModuleName, docId = null, optionalParenthesis = false, following = {}) {
         const [ methodDefinition, rest ] = methodKey.split('(');
         const hasParenthesis = rest !== undefined;
 
@@ -725,7 +733,7 @@ module.exports = {
           throw new Error(`The "${methodName}" method from "${moduleName}" module defined in the "${fieldName}" field does not exist.`);
         }
 
-        return module[methodName](req, { docId });
+        return module[methodName](req, { docId }, following);
       },
 
       // Driver invoked by the "relationship" methods of the standard
@@ -1698,21 +1706,130 @@ module.exports = {
       },
 
       registerAllSchemas() {
-        _.each(self.apos.doc.managers, function (manager, type) {
-          self.register('doc', type, manager.schema);
-        });
-        _.each(self.apos.area.widgetManagers, function (manager, type) {
-          self.register('widget', type, manager.schema);
-        });
+        self.schemaPointers = {};
+        registerMetaType(self.apos.doc.managers, 'doc');
+        registerMetaType(self.apos.area.widgetManagers, 'widget');
+        function registerMetaType(managers, metaType) {
+          for (const [ type, manager ] of Object.entries(managers)) {
+            const schema = manager.schema;
+            self.register(metaType, type, schema);
+            const pointer = {
+              parent: null,
+              fieldIdsByName: getFieldIdsByName(schema)
+            };
+            for (const field of schema) {
+              setSchemaPointers(pointer, field);
+            }
+          }
+        }
+        function setSchemaPointers(parent, field) {
+          const pointer = {
+            parent
+          };
+          if (field.schema) {
+            pointer.fieldIdsByName = getFieldIdsByName(field.schema);
+            for (const child of field.schema) {
+              setSchemaPointers(pointer, child);
+            }
+          }
+          self.schemaPointers[field._id] = pointer;
+        }
+        function getFieldIdsByName(schema) {
+          const idsByName = {};
+          for (const field of schema) {
+            idsByName[field.name] = field._id;
+          }
+          return idsByName;
+        }
       },
 
-      async getChoices(req, field) {
+      // resolves paths such as:
+      // 'siblingname'
+      // '<fieldofparentname'
+      // '<<fieldofgrandparentname'
+      //
+      // Throws an 'invalid' exception if id is not a
+      // valid field id, the field does not list the path
+      // in its 'following' property or relativePath does
+      // not point to a valid field
+
+      getFieldByRelativePath(id, relativePath) {
+        const field = self.apos.schema.getFieldById(id);
+        if (!field) {
+          throw self.apos.error('invalid', 'no such field id');
+        }
+        if (!(field.following || []).includes(relativePath)) {
+          throw self.apos.error('invalid', `${relativePath} does not appear in "following" for this field`);
+        }
+        let pointer = self.schemaPointers[field._id];
+        if (!pointer) {
+          // Should not be possible
+          throw self.apos.error('error', 'schema pointer not found even though field id is valid');
+        }
+        let path = relativePath;
+        // We are at the field level, first step to our own parent, which is a schema,
+        // so that a path like "peername" works
+        pointer = pointer.parent;
+        // Now deal with any ancestor paths
+        while (path.startsWith('<')) {
+          pointer = pointer.parent;
+          if (!pointer) {
+            throw self.apos.error('invalid', `${path} (${relativePath}) points above the schema tree`);
+          }
+          path = path.substring(1);
+        }
+        const relatedId = pointer.fieldIdsByName[path];
+        if (!relatedId) {
+          throw self.apos.error('invalid', `${path} (${relativePath}) is not a valid field in the schema tree`);
+        }
+        const relatedField = self.getFieldById(relatedId);
+        if (!relatedField) {
+          throw self.apos.error('error', `${path} (${relativePath}) resolves to a field id but getFieldById somehow does not return a field`);
+        }
+        return relatedField;
+      },
+
+      async getChoicesForQueryBuilder(field, query) {
+        const req = self.apos.task.getReq();
+        const allChoices = await self.getChoices(req, field);
+        const values = await query.toDistinct(field.name);
+
+        const choices = _.map(values, function (value) {
+          const choice = _.find(allChoices, { value: value });
+          return {
+            value: value,
+            label: choice && (choice.label || value)
+          };
+        });
+
+        self.apos.util.insensitiveSortByProperty(choices, 'label');
+
+        return choices;
+      },
+
+      async getChoices(req, field, contexts = []) {
         if (typeof field.choices !== 'string') {
           return field.choices;
         }
 
         try {
-          const result = await self.evaluateMethod(req, field.choices, field.name, field.moduleName, null, true);
+          const following = {};
+          for (const follows of field.following || []) {
+            let level = contexts.length - 1;
+            let path = follows;
+            while (true) {
+              if (level < 0) {
+                throw self.apos.error('invalid', `${follows} is not a valid path in ${field.name}`);
+              }
+              if (!path.startsWith('<')) {
+                following[follows] = contexts[level][path];
+                break;
+              }
+              path = path.substring(1);
+              level--;
+            }
+          }
+          const result = await self.evaluateMethod(req, field.choices, field.name, field.moduleName, null, true, following);
           return result;
         } catch (error) {
           throw self.apos.error('invalid', error.message);
@@ -1761,36 +1878,66 @@ module.exports = {
           props,
           if: condition
         });
+      },
+
+      async choicesRoute(req) {
+        const fieldId = self.apos.launder.string(req.query.fieldId);
+        const docId = self.apos.launder.string(req.query.docId);
+        const followingData = req.body?.following || {};
+        const following = {};
+        const field = self.getFieldById(fieldId);
+        let choices = [];
+        if (
+          !field ||
+          !self.fieldTypes[field.type].dynamicChoices ||
+          !(field.choices && typeof field.choices === 'string')
+        ) {
+          throw self.apos.error('invalid');
+        }
+        if (field.following) {
+          for (const follows of field.following) {
+            const relatedField = self.getFieldByRelativePath(field._id, follows);
+            relatedField.if = undefined;
+            relatedField.requiredIf = undefined;
+            const subset = [ relatedField ];
+            const source = {
+              [relatedField.name]: followingData && followingData[follows]
+            };
+            const output = {};
+            try {
+              await self.convert(req, subset, source, output);
+              following[follows] = output[relatedField.name];
+            } catch (e) {
+              self.apos.util.debug(e);
+              // the fields we are following are not yet in a valid state
+              // (if they ever will be), so no choices offered yet
+              return {
+                choices: []
+              };
+            }
+          }
+        }
+        try {
+          choices = await self.evaluateMethod(req, field.choices, field.name, field.moduleName, docId, true, following);
+        } catch (error) {
+          throw self.apos.error('invalid', error.message);
+        }
+        if (Array.isArray(choices)) {
+          return {
+            choices
+          };
+        } else {
+          throw self.apos.error('invalid', `The method ${field.choices} from the module ${field.moduleName} did not return an array`);
+        }
       }
+
     };
   },
   apiRoutes(self) {
     return {
       get: {
         async choices(req) {
-          const fieldId = self.apos.launder.string(req.query.fieldId);
-          const docId = self.apos.launder.string(req.query.docId);
-          const field = self.getFieldById(fieldId);
-          let choices = [];
-          if (
-            !field ||
-            !self.fieldTypes[field.type].dynamicChoices ||
-            !(field.choices && typeof field.choices === 'string')
-          ) {
-            throw self.apos.error('invalid');
-          }
-          try {
-            choices = await self.evaluateMethod(req, field.choices, field.name, field.moduleName, docId, true);
-          } catch (error) {
-            throw self.apos.error('invalid', error.message);
-          }
-          if (Array.isArray(choices)) {
-            return {
-              choices
-            };
-          } else {
-            throw self.apos.error('invalid', `The method ${field.choices} from the module ${field.moduleName} did not return an array`);
-          }
+          return self.choicesRoute(req);
         },
         async evaluateExternalCondition(req) {
           const fieldId = self.apos.launder.string(req.query.fieldId);
@@ -1809,6 +1956,11 @@ module.exports = {
           } catch (error) {
             throw self.apos.error('invalid', error.message);
           }
+        }
+      },
+      post: {
+        async choices(req) {
+          return self.choicesRoute(req);
         }
       }
     };

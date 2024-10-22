@@ -1,7 +1,8 @@
 <template>
   <label
-    :class="dropzoneClasses"
-    :disabled="disabled"
+    class="apos-media-manager-display__cell apos-media-uploader"
+    :class="{'apos-media-uploader--enabled': !disabled}"
+    :disabled="disabled ? disabled : null"
     @drop.prevent="uploadMedia"
     @dragover.prevent=""
     @dragenter="incrementDragover"
@@ -9,7 +10,9 @@
   >
     <div
       class="apos-media-uploader__inner"
+      :class="{'apos-is-dragging': dragover}"
       tabindex="0"
+      data-apos-focus-priority
       @keydown="onUploadDragAndDropKeyDown"
     >
       <AposCloudUploadIcon
@@ -70,15 +73,7 @@ export default {
     };
   },
   computed: {
-    dropzoneClasses () {
-      return [
-        'apos-media-manager-display__cell',
-        'apos-media-uploader',
-        {
-          'apos-is-dragging': this.dragover
-        }
-      ].concat(this.disabled ? [] : [ 'apos-media-uploader--enabled' ]);
-    }
+
   },
   mounted() {
     apos.bus.$on('command-menu-manager-create-new', this.create);
@@ -237,6 +232,10 @@ export default {
       const isEnterPressed = e.key === 'Enter' || e.code === 'Enter' || e.code === 'NumpadEnter';
       const isSpaceBarPressed = e.keyCode === 32 || e.code === 'Space';
 
+      if (isSpaceBarPressed) {
+        e.preventDefault();
+      }
+
       if (isEnterPressed || isSpaceBarPressed) {
         this.create();
       }
@@ -262,7 +261,7 @@ export default {
     }
   }
 
-  .apos-media-uploader--enabled {
+  .apos-media-uploader--enabled .apos-media-uploader__inner {
     &::after {
       @include apos-transition($duration: 0.3s);
 
@@ -290,7 +289,7 @@ export default {
     &:active,
     &:focus,
     &.apos-is-dragging {
-      border-width: 0;
+      outline: 2px dashed var(--a-primary);
 
       &::after {
         width: 102%;
@@ -301,11 +300,6 @@ export default {
         fill: url("#apos-upload-gradient");
         transform: translateY(-2px);
       }
-    }
-
-    &:active,
-    &:focus {
-      outline: 1px solid var(--a-primary);
     }
   }
 
@@ -339,7 +333,9 @@ export default {
   .apos-media-uploader__secondary {
     @include apos-p-reset();
 
-    text-align: center;
+    & {
+      text-align: center;
+    }
   }
 
   .apos-media-uploader__secondary {

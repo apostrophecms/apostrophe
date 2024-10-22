@@ -1,4 +1,26 @@
+const path = require('path');
+const postcssReplaceViewportUnitsPlugin = require('../postcss-replace-viewport-units-plugin');
+
 module.exports = (options, apos) => {
+  const postcssPlugins = [
+    'autoprefixer',
+    {}
+  ];
+  let mediaToContainerQueriesLoader = '';
+
+  if (apos.asset.options.breakpointPreviewMode?.enable === true) {
+    postcssPlugins.unshift(
+      postcssReplaceViewportUnitsPlugin()
+    );
+    mediaToContainerQueriesLoader = {
+      loader: path.resolve(__dirname, '../media-to-container-queries-loader.js'),
+      options: {
+        debug: apos.asset.options.breakpointPreviewMode?.debug === true,
+        transform: apos.asset.options.breakpointPreviewMode?.transform || null
+      }
+    };
+  }
+
   return {
     module: {
       rules: [
@@ -6,45 +28,31 @@ module.exports = (options, apos) => {
           test: /\.css$/,
           use: [
             'vue-style-loader',
-            // https://github.com/vuejs/vue-style-loader/issues/46#issuecomment-670624576
-            {
-              loader: 'css-loader',
-              options: {
-                esModule: false,
-                sourceMap: true
-              }
-            }
+            mediaToContainerQueriesLoader,
+            'css-loader'
           ]
         },
-        // https://github.com/vuejs/vue-style-loader/issues/46#issuecomment-670624576
         {
           test: /\.s[ac]ss$/,
           use: [
             'vue-style-loader',
-            {
-              loader: 'css-loader',
-              options: {
-                esModule: false,
-                sourceMap: true
-              }
-            },
+            mediaToContainerQueriesLoader,
+            'css-loader',
             {
               loader: 'postcss-loader',
               options: {
                 sourceMap: true,
                 postcssOptions: {
-                  plugins: [
-                    [
-                      'autoprefixer',
-                      {}
-                    ]
-                  ]
+                  plugins: [ postcssPlugins ]
                 }
               }
             },
             {
               loader: 'sass-loader',
               options: {
+                sassOptions: {
+                  silenceDeprecations: [ 'import' ]
+                },
                 sourceMap: false,
                 // "use" rules must come first or sass throws an error
                 additionalData: `
