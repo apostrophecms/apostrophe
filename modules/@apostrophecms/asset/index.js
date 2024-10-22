@@ -95,8 +95,13 @@ module.exports = {
     // available when an external build module is registered (it doesn't
     // with the internal webpack build).
     productionSourceMaps: false,
-    // The configuration to disable development server when supported.
-    devServer: true
+    // The configuration to control the development server and HMR when supported.
+    // The value can be:
+    // - boolen `false`: disable the dev server and HMR.
+    // - boolean `true`: same as `public` (default).
+    // - string `public`: serve only the source files from the `ui/src` folder.
+    // - string `apos`: serve only the admin UI files from the `ui/apos` folder.
+    hmr: true
   },
 
   async init(self) {
@@ -156,6 +161,20 @@ module.exports = {
     // and `target` for each copied public asset location. We need this as a separate
     // property for possible server side hot module replacement scenarios.
     self.currentPublicAssetLocations = [];
+    // Adapt the options to not contradict each other.
+    if (self.options.hmr === true) {
+      self.options.hmr = 'public';
+    }
+    // do not allow the dev server value contradicting the `publicBundle` option
+    if (!self.options.publicBundle && self.options.hmr === 'public') {
+      self.options.hmr = false;
+    }
+    // Initial build options, will be updated during the build process.
+    self.currentBuildOptions = {
+      isTask: null,
+      hmr: self.options.hmr,
+      devServer: self.options.hmr
+    };
 
     self.buildWatcherEnable = process.env.APOS_ASSET_WATCH !== '0' && self.options.watch !== false;
     self.buildWatcherDebounceMs = parseInt(self.options.watchDebounceMs || 1000, 10);
@@ -280,7 +299,10 @@ module.exports = {
         return self.externalBuildModuleConfig;
       },
       // External build modules can register themselves here. This should happen on the
-      // special asset module event `afterInit` (see `handlers`).
+      // special asset module event `afterInit` (see `handlers`). This module will also
+      // detect if a system watcher should be disabled depending on the asset module configuration and
+      // the external build module capabilities.
+      //
       // options:
       // - alias (required): the alias string to use in the webpack configuration.
       //   This usually matches the bundler name, e.g. 'vite', 'webpack', etc.
@@ -298,7 +320,7 @@ module.exports = {
       // `async build(options)` - the build method to be called by Apostrophe.
       // TODO: document the options object.
       // Returns an object with properties:
-      // * `entrypoints`(array of objects), containing all entrypoints that are processed by the build module.
+      // * `entrypoints`(required, array of objects), containing all entrypoints that are processed by the build module.
       //    Beside the standard entrypoint shape (see `getBuildEntrypoints()`),
       //    each entrypoint should also contain a `manifest` object with the following properties:
       //    - `root` - the relative to `apos.asset.getBuildRootDir()` path to the folder containing
@@ -315,12 +337,17 @@ module.exports = {
       //        These are copied to the bundle folder and released, but not inserted into the HTML.
       //      - `assets` - an array of paths to the assets (images, fonts, etc.) used by the entrypoint.
       //        These should be copied to the bundle folder and released and are not inserted into the HTML.
-      //    - `src` - array of relative URL path to the entry source file that should be served
-      //      by the dev server. Can be null (e.g. `ui/public`). Usually the main entrypoint file.
-      //      It's an array to allow additional files for serving.
+      //    - `src` - an object with keys corresponding to the input extension and values array of relative
+      //      URL path to the entry source file that should be served by the dev server. Currently only `js`
+      //      key is supported. Can be null (e.g. for `ui/public`). Usually contains the main entrypoint file.
       //    - `devServerUrl` - the base server URL for the dev server if available.
-      // * `sourceMapsRoot` (string) the absolute path to the location when source maps are stored. They will be
+      // * `sourceMapsRoot` (optional, string) the absolute path to the location when source maps are stored. They will be
       //    copied to the bundle folder with the folder same structure.
+      // * `devServerUrl` (optional, string) the base server URL for the dev server when available.
+      // * `hmrTypes` (optional, array of strings) the entrypoint types that are currently served with HMR.
+      // * `ts` (optional, number) the timestamp ms of the last `apos` build. This number will be written to the
+      //    `.manifest.json` file to allow the external build module to optimize the build time based on the
+      //    last build change.
       configureBuildModule(moduleSelf, options = {}) {
         const name = moduleSelf.__meta.name;
         if (self.hasBuildModule()) {
@@ -342,6 +369,12 @@ module.exports = {
           hmr: options.hmr
         };
         self.setBuildExtensionsForExternalModule();
+        // We can now query if the build module is going to perform HRM
+        // and thus if it's safe to explicitly disable the watcher. It's early
+        // enough to do that here.
+        if (!self.hasHMR()) {
+          self.buildWatcherEnable = false;
+        }
       },
       hasBuildModule() {
         return !!self.getBuildModuleConfig().name;
@@ -357,6 +390,7 @@ module.exports = {
       // This is useful in HMR mode, where after a "create" file event, the verified bundles
       // can change and the entrypoints configuration should be updated. Usually the
       // the core asset module will take care of this.
+      // Optional `types` array can be provided to filter the entrypoints by type.
       //
       // Returns an array of objects with the following properties:
       // - `name`: the entrypoint name. It's usually the relative to `ui` folder
@@ -380,12 +414,20 @@ module.exports = {
       //   for the Apostrophe core to combine the builds and release them. Currently supported scenes are
       //   `apos` and `public` and custom scene names equal to extra bundle (only those who should be
       //   loaded separately in the browser).
-      getBuildEntrypoints(recompute = false) {
+      getBuildEntrypoints(types, recompute = false) {
         if (!self.hasBuildModule()) {
           return self.builds;
         }
+        if (typeof types === 'boolean') {
+          recompute = types;
+          types = null;
+        }
         if (recompute) {
           self.setBuildExtensionsForExternalModule();
+        }
+
+        if (types) {
+          return self.moduleBuildEntrypoints.filter((entry) => types.includes(entry.type));
         }
 
         return self.moduleBuildEntrypoints;
@@ -407,7 +449,7 @@ module.exports = {
       },
       hasDevServer() {
         return self.isDevMode &&
-          self.options.devServer !== false &&
+          self.options.hmr !== false &&
           self.buildWatcherEnable &&
           !!self.getBuildModuleConfig().devServer;
       },
@@ -415,20 +457,56 @@ module.exports = {
         return self.hasDevServer() &&
           !!self.getBuildModuleConfig().hmr;
       },
+      // `argv` is the arguments passed to the original build task
+      // - `check-apos-build` is a boolean flag (or undefined) that indicates if build checks should be performed.
+      //   `false` means that the build should be executed as a task (no checks are performed). `true` means that
+      //   the build should be executed with a cached mechanisms for `apos`.
+      // - `changes` is an array of changed files. This is reserved for the legacy build system and should
+      //   never appear in the external build module.
+      //
+      // Returns an object:
+      // - `isTask`: if `true`, the build is executed as a task. If false
+      //   optimization can be applied (e.g. build apostrophe admin UI only once).
+      // - `hmr`: if `true`, the hot module replacement is enabled.
+      // - `devServer`: if `false`, the dev server is disabled. Otherwise, it's a string
+      //   (enum) `public` or `apos`. Note that if `hmr` is disabled, the dev server will be always
+      //   `false`.
+      // - `types`: optional array, if present it represents the only entrypoint types (entrypoint.type)
+      //   that should be built.
+      // - `sourcemaps`: if `true`, the source maps are generated in production.
+      //
+      // Note that this getter depends on the current build task arguments. You shouldn't
+      // use that directly.
       getBuildOptions(argv) {
+        if (!argv) {
+          // assuming not a task, legacy stuff
+          argv = {
+            'check-apos-build': true
+          };
+        }
         const options = {
           isTask: !argv['check-apos-build'],
-          hmr: self.hasHMR()
+          hmr: self.hasHMR(),
+          sourcemaps: self.options.productionSourceMaps
         };
-        options.devServer = !options.isTask && self.hasDevServer();
+        options.devServer = !options.isTask && self.hasDevServer()
+          ? self.options.hmr
+          : false;
+
+        // Skip all public and keep only the apos scenes.
+        if (!self.options.publicBundle) {
+          options.types = [ 'apos', 'bundled' ];
+        }
 
         return options;
       },
       // Build the assets using the external build module.
-      // The `argv` object is the `argv` object passed to the task.
+      // The `argv` object is the `argv` object passed to the original build task.
+      // See getBuildOptions() for more information.
       // TODO: All other cases should be handled here (external frontend, see the legacy `build` task).
       async build(argv) {
         const buildOptions = self.getBuildOptions(argv);
+        self.currentBuildOptions = buildOptions;
 
         self.currentPublicAssetLocations = await self.copyModulesFolder({
           target: path.join(self.getBundleRootDir(), 'modules'),
@@ -438,11 +516,11 @@ module.exports = {
 
         // Switch to dev server mode if the dev server is enabled.
         if (buildOptions.devServer) {
-          return self.startDevServer(buildOptions);
+          await self.startDevServer(buildOptions);
+        } else {
+          self.currentBuildManifest = await self.getBuildModule()
+            .build(buildOptions);
         }
-
-        self.currentBuildManifest = await self.getBuildModule()
-          .build(buildOptions);
 
         // Create and copy bundles per scene into the bundle root.
         const bundles = await self.computeBuildScenes(self.currentBuildManifest);
@@ -472,8 +550,9 @@ module.exports = {
           )
         ];
         if (self.options.productionSourceMaps) {
-          deployFiles.push(...sourceMaps);
+          deployFiles.push(...sourceMaps || []);
         }
+
         await self.deploy(deployFiles);
 
         self.printDebug('build-end', {
@@ -485,7 +564,6 @@ module.exports = {
         self.currentBuildManifest = await self.getBuildModule()
           .startDevServer(buildOptions);
 
-        await self.computeBuildScenes(self.currentBuildManifest, { write: true });
       },
       // The new watch system, works only when an external build module is registered.
       // This method is invoked only when appropriate.
@@ -532,6 +610,32 @@ module.exports = {
       ignoreWatchLocation(file, fsStats) {
         return false;
       },
+      // Helper function for external build modules to find the last package change timestamp
+      // in milliseconds. Works with Node.js and npm, yarn, and pnpm package managers.
+      // Might be extended if a need arises.
+      async getSystemLastChangeMs() {
+        const packageLock = await findPackageLock();
+        if (!packageLock) {
+          return false;
+        }
+
+        return (await fs.stat(packageLock)).mtimeMs;
+
+        async function findPackageLock() {
+          const packageLockPath = path.join(self.apos.npmRootDir, 'package-lock.json');
+          const yarnPath = path.join(self.apos.npmRootDir, 'yarn.lock');
+          const pnpmPath = path.join(self.apos.npmRootDir, 'pnpm-lock.yaml');
+          if (await fs.pathExists(packageLockPath)) {
+            return packageLockPath;
+          } else if (await fs.pathExists(yarnPath)) {
+            return yarnPath;
+          } else if (await fs.pathExists(pnpmPath)) {
+            return pnpmPath;
+          } else {
+            return false;
+          }
+        }
+      },
       // Retrieve only existing `/ui` paths for local and npm symlinked modules.
       // Modules is usually the `modulesToBeInstantiated` array.
       async computeWatchMeta(modules) {
@@ -553,7 +657,8 @@ module.exports = {
 
         // Hidrate the entrypoints with the saved manifest data and
         // set the current build manifest data.
-        const entrypoints = self.getBuildEntrypoints();
+        const buildOptions = self.getBuildOptions();
+        const entrypoints = self.getBuildEntrypoints(buildOptions.types);
         const { manifest = [] } = await self.loadSavedBuildManifest();
         for (const entry of manifest) {
           const entrypoint = entrypoints.find((e) => e.name === entry.name);
@@ -571,7 +676,7 @@ module.exports = {
         }
       },
       async saveBuildManifest(manifest) {
-        const { entrypoints } = manifest;
+        const { entrypoints, ts } = manifest;
         const content = [];
 
         for (const entrypoint of entrypoints) {
@@ -583,30 +688,30 @@ module.exports = {
           }
 
           const {
-            files, devServerUrl, root
+            files, root
           } = manifest;
           content.push({
             name,
             root,
             files,
-            bundles: Array.from(bundles ?? []),
-            devServerUrl
+            bundles: Array.from(bundles ?? [])
           });
         }
+        const current = await self.loadSavedBuildManifest(true);
         await fs.outputJson(
           path.join(self.getBundleRootDir(), '.manifest.json'),
           {
-            ts: Date.now(),
+            ts: ts || current.ts,
             manifest: content
           }
         );
       },
-      async loadSavedBuildManifest() {
+      async loadSavedBuildManifest(silent = false) {
         const manifestPath = path.join(self.getBundleRootDir(), '.manifest.json');
         try {
           return JSON.parse(await fs.readFile(manifestPath, 'utf-8'));
         } catch (e) {
-          if (self.apos.options.autoBuild !== false) {
+          if (!silent && self.apos.options.autoBuild !== false) {
             self.apos.util.error(`Error loading the saved build manifest: ${e.message}`);
           }
           return {};
@@ -1565,8 +1670,22 @@ function invoke() {
       getBundlePageMarkup({
         scene, output
       }) {
-        const entrypoints = self.apos.asset.getCurrentBuildEntrypoints()
-          .filter(e => !!e.manifest && e.scenes.includes(scene) && e.outputs?.includes(output));
+        let entrypoints;
+
+        // CSS is special (as always!). In HMR mode, we want to serve ONLY
+        // the CSS that is not HMRed (because we run either `apos` or `public` dev server).
+        // We filter it no matter the output, because `apos` type doesn't have `css` in its `output
+        // property. This is intended, the CSS is combined and delivered via the `index` entrypoint.
+        if (self.currentBuildManifest.hmrTypes && output === 'css') {
+          entrypoints = self.apos.asset.getCurrentBuildEntrypoints()
+            .filter(e => !!e.manifest &&
+              e.scenes.includes(scene) &&
+              !self.currentBuildManifest.hmrTypes.includes(e.type)
+            );
+        } else {
+          entrypoints = self.apos.asset.getCurrentBuildEntrypoints()
+            .filter(e => !!e.manifest && e.scenes.includes(scene) && e.outputs?.includes(output));
+        }
 
         const markup = [];
         const seen = {};
@@ -1574,7 +1693,12 @@ function invoke() {
         for (const {
           manifest, condition, bundles: bundleSet
         } of entrypoints) {
-          const hasDevServer = manifest.devServerUrl && self.hasDevServer();
+          // For CSS, in HMR mode we already filtered the entries, so we can
+          // use the bundled files directly. For JS, we need to check if we
+          // have a dev server and use the dev server URL if available.
+          const hasDevServer = output === 'css'
+            ? false
+            : manifest.devServerUrl && self.hasDevServer();
           const assetUrl = hasDevServer ? manifest.devServerUrl : self.getAssetBaseSystemUrl();
           const bundles = [ ...bundleSet ?? [] ]
             .filter(b => b.startsWith(scene) && b.endsWith(`.${output}`));
