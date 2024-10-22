@@ -50,6 +50,9 @@ module.exports = (options, apos) => {
             {
               loader: 'sass-loader',
               options: {
+                sassOptions: {
+                  silenceDeprecations: [ 'import' ]
+                },
                 sourceMap: false,
                 // "use" rules must come first or sass throws an error
                 additionalData: `
