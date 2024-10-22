@@ -13,7 +13,7 @@ module.exports = (self, entrypoint) => {
         predicates
       );
     },
-    getOutput(sourceFiles) {
+    async getOutput(sourceFiles) {
       throw new Error(`"getOutput" is not supported for entrypoint type: ${entrypoint.type}`);
     }
   };

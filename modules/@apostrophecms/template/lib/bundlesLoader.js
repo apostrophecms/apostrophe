@@ -10,11 +10,7 @@ module.exports = (self) => {
     stylesheetsPlaceholder,
     widgetsBundles = {}
   }) {
-    const renderMarkup = renderBundleMarkup(
-      self.apos.template.safe,
-      self.apos.asset.getAssetBaseUrl()
-    );
-
+    const renderMarkup = renderBundleMarkup(self);
     if (!scriptsPlaceholder && !stylesheetsPlaceholder) {
       return content;
     }
@@ -113,7 +109,15 @@ module.exports = (self) => {
   return { insertBundlesMarkup };
 };
 
-function renderBundleMarkup (safe, base) {
+function renderBundleMarkup(self) {
+  const safe = self.apos.template.safe;
+  const base = self.apos.asset.getAssetBaseUrl();
+
+  // The new system only for external build modules
+  if (self.apos.asset.hasBuildModule()) {
+    return renderBundleMarkupByManifest(self);
+  }
+
   return ({
     fileName, ext = 'js', es5 = false
   }) => {
@@ -133,6 +137,26 @@ function renderBundleMarkup (safe, base) {
     return safe(stripIndent`
       <script type="module" src="${base}/${fileName}-module-bundle.${ext}"></script>
     `);
+  };
+}
+
+function renderBundleMarkupByManifest(self) {
+  const safe = self.apos.template.safe;
+
+  return ({
+    fileName, ext = 'js', es5 = false
+  }) => {
+    const entries = self.apos.asset.getBundlePageMarkup({
+      scene: fileName,
+      output: ext,
+      es5
+    });
+
+    return safe(
+      stripIndent`
+      ${entries.join('\n')}
+      `
+    );
   };
 }
 

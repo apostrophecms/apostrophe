@@ -91,23 +91,29 @@ module.exports = {
     // This option is useful for debugging in production and is only
     // available when an external build module is registered (it doesn't
     // with the internal webpack build).
-    productionSourceMap: false
+    productionSourceMaps: false,
+    // The configuration to disable development server when supported.
+    devServer: true
   },
 
   async init(self) {
-    // Set the environment variable APOS_ASSET_DEBUG=1 to enable
-    // debug mode, which logs extensive build and configuration
-    // information.
+    // Cache the environment variables, because Node.js doesn't makes
+    // system calls to get them every time. We don't expect them to change during
+    // the runtime.
     self.isDebugMode = process.env.APOS_ASSET_DEBUG === '1';
+    self.isDevMode = process.env.NODE_ENV !== 'production';
+    self.isProductionMode = process.env.NODE_ENV === 'production';
     // External build module configuration (when registered).
     // See method `configureBuildModule` for more information.
-    self.externalBuildModule = {};
+    self.externalBuildModuleConfig = {};
 
     self.restartId = self.apos.util.generateId();
     self.iconMap = {
       ...globalIcons
     };
 
+    // Used throughout the build init process.
+    self.modulesToBeInstantiated = self.apos.modulesToBeInstantiated();
     // The namespace filled by `configureBuilds()`
     self.builds = {};
     self.configureBuilds();
@@ -139,7 +145,8 @@ module.exports = {
     // in the browser. We also need this as a separate property for possible
     // server side hot module replacement scenarios.
     self.currentBuildManifest = {
-      distRoot: null,
+      sourceMapsRoot: null,
+      devServerUrl: null,
       entrypoints: []
     };
     // Set after a successful build. Contains objects with properties `name`, `source`,
@@ -158,11 +165,14 @@ module.exports = {
     return {
       'apostrophe:modulesRegistered': {
         async runUiBuildTask() {
-          // TODO: refactor autorunUiBuildTask to get rid of the webpack related
-          // code and make it a generic method playing well with external builds.
           const ran = await self.autorunUiBuildTask();
-          // Temporary disable watchers
-          if (ran && !self.hasBuildModule()) {
+
+          // When the build is not executed, make the minimum required computations
+          // to ensure we can inject the assets in the browser.
+          if (!ran) {
+            await self.runWithoutBuild();
+          }
+          if (ran) {
             await self.watchUiAndRebuild();
           }
         },
@@ -264,15 +274,15 @@ module.exports = {
       // Extending this method allows a direct override the external build module configuration.
       // The internal module property should never be used directly used nor modified after the initialization.
       getBuildModuleConfig() {
-        return self.externalBuildModule;
+        return self.externalBuildModuleConfig;
       },
       // External build modules can register themselves here. This should happen on the
       // special asset module event `afterInit` (see `handlers`).
       // options:
       // - alias (required): the alias string to use in the webpack configuration.
       //   This usually matches the bundler name, e.g. 'vite', 'webpack', etc.
-      // - hasDevServer (optional): whether the build module supports a dev server.
-      // - hasHMR (optional): whether the build module supports a hot module replacement.
+      // - devServer (optional): whether the build module supports a dev server.
+      // - hmr (optional): whether the build module supports a hot module replacement.
       //
       // The external build module should initialize before the asset module:
       // module.exports = {
@@ -322,11 +332,11 @@ module.exports = {
           );
         }
 
-        self.externalBuildModule = {
+        self.externalBuildModuleConfig = {
           name,
           alias: options.alias,
-          hasDevServer: options.hasDevServer,
-          hasHMR: options.hasHMR
+          devServer: options.devServer,
+          hmr: options.hmr
         };
         self.setBuildExtensionsForExternalModule();
       },
@@ -385,40 +395,54 @@ module.exports = {
       //   The `composePath` is an optional function to compose the path to the source file.
       //   It accepts `file` (a relative to `ui/{folderToSearch}` file path) and `metaEntry`
       //   (the module metadata entry, see `computeSourceMeta()`).
-      // - getOutput(sourceFiles, { modules }): get the output data for the entrypoint.
+      // - async getOutput(sourceFiles, { modules }): get the output data for the entrypoint.
       //   The `sourceFiles` is in format compatible with the output of `manager.getSourceFiles()`.
       //   The `modules` option is the list of all modules, usually the cached result
       //   of `self.apos.modulesToBeInstantiated()`.
       getEntrypointManger(entrypoint) {
         return getBuildManager(entrypoint);
       },
+      hasDevServer() {
+        return self.isDevMode &&
+          self.options.devServer !== false &&
+          self.buildWatcherEnable &&
+          !!self.getBuildModuleConfig().devServer;
+      },
+      hasHMR() {
+        return self.hasDevServer() &&
+          !!self.getBuildModuleConfig().hmr;
+      },
+      getBuildOptions(argv) {
+        const options = {
+          isTask: !argv['check-apos-build'],
+          hmr: self.hasHMR()
+        };
+        options.devServer = !options.isTask && self.hasDevServer();
+
+        return options;
+      },
       // Build the assets using the external build module.
       // The `argv` object is the `argv` object passed to the task.
-      // TODO: modify and send the argv, document it. Execute the build
-      // only if it's a task (apos.isTask()) or devServer is not configured.
-      // Unlike our previous webpack implementation, the external build
-      // executes the `build` method only when it really needs to build.
-      // All other cases should be handled here (with calling separate external methods
-      // when appropriate).
-      // FIXME: copy `/assets` folder to the bundle root. Esnure it's also deployed.
-      // Do not copy /assets map files when releasing. Possibly introduce a option
-      // to copy map files. Split the build method and add `beforeBuild` and `afterBuild`
-      // methods. Call external tool methods in those. Remove the imports bundling. Improve the
-      // entire bundling post-processing, manifest schema, etc.
+      // TODO: All other cases should be handled here (external frontend, see the legacy `build` task).
       async build(argv) {
+        const buildOptions = self.getBuildOptions(argv);
+
         self.currentPublicAssetLocations = await self.copyModulesFolder({
           target: path.join(self.getBundleRootDir(), 'modules'),
           folder: 'public',
-          // FIXME - optimize the module list, cache it here, pass it to the
-          // external build modulue.
-          modules: self.apos.modulesToBeInstantiated()
+          modules: self.modulesToBeInstantiated
         });
 
+        // Switch to dev server mode if the dev server is enabled.
+        if (buildOptions.devServer) {
+          return self.startDevServer(buildOptions);
+        }
+
         self.currentBuildManifest = await self.getBuildModule()
-          .build();
+          .build(buildOptions);
 
         // Create and copy bundles per scene into the bundle root.
-        const bundles = await self.writeBuildScenes(self.currentBuildManifest);
+        const bundles = await self.computeBuildScenes(self.currentBuildManifest);
         // Retrieve the public assets from the bundle root for deployment.
         const publicAssets = await glob('modules/**/*', {
           cwd: self.getBundleRootDir(),
@@ -444,7 +468,7 @@ module.exports = {
             ]
           )
         ];
-        if (self.options.productionSourceMap) {
+        if (self.options.productionSourceMaps) {
           deployFiles.push(...sourceMaps);
         }
         await self.deploy(deployFiles);
@@ -453,6 +477,153 @@ module.exports = {
           currentBuildManifest: self.currentBuildManifest,
           deployFiles
         });
+      },
+      async startDevServer(buildOptions) {
+        self.currentBuildManifest = await self.getBuildModule()
+          .startDevServer(buildOptions);
+
+        await self.computeBuildScenes(self.currentBuildManifest, { write: true });
+      },
+      // The new watch system, works only when an external build module is registered.
+      // This method is invoked only when appropriate.
+      async watch() {
+        if (!self.buildWatcher) {
+          const watchDirs = (await self.computeWatchMeta(self.getRegisteredModules()))
+            .map(entry => entry.dirname);
+
+          const instance = chokidar.watch(watchDirs, {
+            cwd: self.apos.rootDir,
+            ignoreInitial: true
+            // ignored: self.ignoreWatchLocation
+          });
+          self.buildWatcher = instance;
+        }
+
+        // Log the initial watch message
+        let loggedOnce = false;
+        const logOnce = (...msg) => {
+          if (!loggedOnce) {
+            self.apos.util.log(...msg);
+            loggedOnce = true;
+          }
+        };
+
+        // Allow the module to add more paths, attach listeners, etc.
+        await self.getBuildModule().watch(self.buildWatcher);
+
+        self.buildWatcher
+          .on('error', e => self.apos.util.error(`Watcher error: ${e}`))
+          .on('ready', () => logOnce(
+            self.apos.task.getReq().t('apostrophe:assetBuildWatchStarted')
+          ));
+
+        self.getBuildModule().watch(self.buildWatcher);
+      },
+      // Override to ignore files/folders from the watch. The method is called twice:
+      // - once with only the `file` parameter
+      // - once with both `file` and `fsStats` parameters
+      // https://github.com/paulmillr/chokidar?tab=readme-ov-file#path-filtering
+      // The `file` is the relative to the `apos.rootDir` path to the file or folder.
+      // The `fsStats` is the `fs.Stats` object.
+      // Return `true` to ignore the file/folder.
+      ignoreWatchLocation(file, fsStats) {
+        return false;
+      },
+      // Retrieve only existing `/ui` paths for local and npm symlinked modules.
+      // Modules is usually the `modulesToBeInstantiated` array.
+      async computeWatchMeta(modules) {
+        const meta = (await self.computeSourceMeta({
+          modules,
+          stats: true
+        }))
+          .filter(entry => {
+            return (!entry.npm && entry.exists) || (entry.npm && entry.symlink);
+          });
+
+        return meta;
+      },
+      // Run the minimal required computations to ensure manifest data is available.
+      async runWithoutBuild() {
+        if (!self.hasBuildModule()) {
+          return;
+        }
+
+        // Hidrate the entrypoints with the saved manifest data and
+        // set the current build manifest data.
+        const entrypoints = self.getBuildEntrypoints();
+        const { manifest = [] } = await self.loadSavedBuildManifest();
+        for (const entry of manifest) {
+          const entrypoint = entrypoints.find((e) => e.name === entry.name);
+          if (!entrypoint || entrypoint.manifest) {
+            continue;
+          }
+          entrypoint.manifest = entry;
+          if (!manifest.bundles) {
+            entrypoint.bundles = new Set(entry.bundles);
+          }
+          self.currentBuildManifest.entrypoints.push({
+            ...entrypoint,
+            manifest: entry
+          });
+        }
+      },
+      async saveBuildManifest(manifest) {
+        const { entrypoints } = manifest;
+        const content = [];
+
+        for (const entrypoint of entrypoints) {
+          const {
+            manifest, name, bundles
+          } = entrypoint;
+          if (!manifest) {
+            continue;
+          }
+
+          const {
+            files, devServerUrl, root
+          } = manifest;
+          content.push({
+            name,
+            root,
+            files,
+            bundles: Array.from(bundles ?? []),
+            devServerUrl
+          });
+        }
+        await fs.outputJson(
+          path.join(self.getBundleRootDir(), '.manifest.json'),
+          {
+            ts: Date.now(),
+            manifest: content
+          }
+        );
+      },
+      async loadSavedBuildManifest() {
+        const manifestPath = path.join(self.getBundleRootDir(), '.manifest.json');
+        try {
+          return JSON.parse(await fs.readFile(manifestPath, 'utf-8'));
+        } catch (e) {
+          if (self.apos.options.autoBuild !== false) {
+            self.apos.util.error(`Error loading the saved build manifest: ${e.message}`);
+          }
+          return {};
+        }
+      },
+      getRegisteredModules() {
+        return self.modulesToBeInstantiated;
+      },
+      // Get the entrypoints containing manifest data currently initialized. The information
+      // is available after the build initialization is done:
+      // - after an actual build task (any environment)
+      // - after the dev server is started (development)
+      // - after a saved build manifest is loaded (production)
+      getCurrentBuildEntrypoints() {
+        return self.currentBuildManifest.entrypoints ?? [];
+      },
+      // This should be used by build systems to assemble the URL for a dev server middleware.
+      // This method can be overridden for e.g. multisite setups.
+      getBaseDevSiteUrl() {
+        return (self.apos.baseUrl || '') + self.apos.prefix;
       },
       // Deploy all public assets for release. Executes only in production.
       // `files` is a flat array of relative to the bundleRoot (getBundleRoot) paths
@@ -494,7 +665,9 @@ module.exports = {
       // Write the bundle files for the scenes, using the external build module manifest.
       // Add `bundles` property to the entrypoiny configuration contaning the bundle files
       // used later when injecting the scripts and stylesheets in the browser.
-      async writeBuildScenes(manifest) {
+      // The manifest is the return value of the external build module build method
+      // (see `self.build()` method).
+      async computeBuildScenes(manifest, { write = true } = {}) {
         const bundlePath = self.getBundleRootDir();
         const buildRoot = self.getBuildRootDir();
 
@@ -525,14 +698,19 @@ module.exports = {
           const bundles = configs.reduce((acc, config) => {
             const { root, files } = config.manifest;
 
-            const jsTargetName = `${scene}-${config.condition ?? 'module'}-bundle.js`;
+            // const jsTargetName = `${scene}-${config.condition ?? 'module'}-bundle.js`;
+            // Combining script type modules is a bad idea. We need to load them per
+            // entrypoint and not a scene.
+            const prefix = config.name === scene ? scene : `${scene}-${config.name}`;
+            const jsTargetName = `${prefix}-${config.condition ?? 'module'}-bundle.js`;
+            // CSS bundles are always scene based.
             const cssTargetName = `${scene}-bundle.css`;
             const jsFilePaths = files.js?.map(f => path.join(buildRoot, root, f)) ?? [];
             const cssFilePaths = files.css?.map(f => path.join(buildRoot, root, f)) ?? [];
 
             if (jsFilePaths.length) {
               config.bundles = config.bundles || new Set();
-              config.bundles.add(cssTargetName);
+              config.bundles.add(jsTargetName);
               acc[jsTargetName] = acc[jsTargetName] || [];
               acc[jsTargetName].push(...jsFilePaths);
             }
@@ -546,13 +724,21 @@ module.exports = {
             return acc;
           }, {});
 
+          if (!write) {
+            return Object.keys(bundles);
+          }
           for (const [ target, files ] of Object.entries(bundles)) {
             if (!files.length) {
               delete bundles[target];
               continue;
             }
-            const content = files.map(f => fs.existsSync(f) ? fs.readFileSync(f, 'utf-8') : '')
-              .join('\n');
+            const content = files.map(f =>
+              fs.existsSync(f)
+                ? `\n\n/** ${path.basename(f)} **/\n\n` + fs.readFileSync(f, 'utf-8')
+                : ''
+            )
+              .join('\n')
+              .trim();
             if (!content.trim().length) {
               delete bundles[target];
               continue;
@@ -607,33 +793,6 @@ module.exports = {
 
         return result;
       },
-      async saveBuildManifest(manifest) {
-        const { entrypoints } = manifest;
-        const content = [];
-
-        for (const entrypoint of entrypoints) {
-          const {
-            manifest, name, bundles
-          } = entrypoint;
-          if (!manifest) {
-            continue;
-          }
-
-          const { files } = manifest;
-          content.push({
-            name,
-            files,
-            bundles: Array.from(bundles ?? [])
-          });
-        }
-        await fs.outputJson(
-          path.join(self.getBundleRootDir(), '.manifest.json'),
-          {
-            ts: Date.now(),
-            manifest: content
-          }
-        );
-      },
       async copyBuildSourceMaps(manifest) {
         if (!manifest.sourceMapsRoot) {
           return [];
@@ -659,6 +818,31 @@ module.exports = {
 
         return result;
       },
+      // Shouldn't be needed, here for reference for now.
+      // async copyBundledAssetsForDev(manifest) {
+      //   const bundleRoot = self.getBundleRootDir();
+      //   const buildRoot = self.getBuildRootDir();
+      //   const { entrypoints } = manifest;
+      //   await fs.mkdirp(bundleRoot);
+
+      //   for (const entrypoint of entrypoints) {
+      //     if (entrypoint.type !== 'bundled' || !entrypoint.manifest) {
+      //       continue;
+      //     }
+      //     for (const files of Object.values(entrypoint.manifest.files)) {
+      //       for (const file of files) {
+      //         try {
+      //           await fs.copyFile(
+      //             path.join(buildRoot, entrypoint.manifest.root, file),
+      //             path.join(bundleRoot, file)
+      //           );
+      //         } catch (e) {
+      //           self.apos.util.error(`Error copying ${file} to the bundle root: ${e.message}`);
+      //         }
+      //       }
+      //     }
+      //   }
+      // },
       // Compute the configuration provided per module as a `build` property.
       // It has the same shape as the legacy `webpack` property. The difference
       // is that the `build` property now supports different "vendors". An upgrade
@@ -790,21 +974,25 @@ module.exports = {
       //     or `/path/to/project/node_modules/@apostrophecms/admin-bar/ui`.
       //   - `id`: the module name, prefixed with `my-` if it's a project module.
       //     For example `my-article` or `@apostrophecms/my-admin-bar`.
-      //   - `name`: the original module name (no prefix).
+      //   - `name`: the original module name (no `my-` prefix).
       //   - `importAlias`: the alias base that is used for importing the module.
       //     For example `Modules/@apostrophecms/admin-bar/`. This is used to fast
       //     resolve the module in the Vite build.
-      //   - `project`: a boolean indicating if the module is a project module or inside
-      //     `node_modules`.
-      //   - `files`: an array of paths paths relative to the module `ui/` folder
+      //   - `npm`: a boolean indicating if the module is a npm module
+      //   - `files`: an array of paths paths relative to the module `ui/` folder,
+      //   - `exists`: a boolean indicating if the `dirname` exists.
+      //   - `symlink`: a boolean indicating if the npm module is a symlink. Non-npm
+      //     modules are always considered as non-symlinks.
       async computeSourceMeta({
         modules,
+        stats = true,
         asyncHandler
       }) {
         const seen = {};
+        const npmSeen = {};
         const meta = [];
         for (const name of modules) {
-          const metadata = self.apos.synth.getMetadata(name);
+          const metadata = await self.apos.synth.getMetadata(name);
           for (const entry of metadata.__meta.chain) {
             if (seen[entry.dirname]) {
               continue;
@@ -815,6 +1003,9 @@ module.exports = {
                 .replace(/^my-/, '')
               : entry.name;
             const dirname = `${entry.dirname}/ui`;
+            let exists = null;
+            let isSymlink = null;
+
             const files = await glob('**/*', {
               cwd: dirname,
               ignore: [
@@ -829,14 +1020,21 @@ module.exports = {
               absolute: false
             });
 
+            if (stats) {
+              // optimize fs calls
+              exists = files.length > 0 ? true : fs.existsSync(dirname);
+              isSymlink = exists ? checkSymlink(entry) : false;
+            }
+
             seen[entry.dirname] = true;
             const metaEntry = {
               id: entry.name,
               name: moduleName,
               dirname,
               importAlias: `Modules/${moduleName}/`,
-              project: !entry.npm,
-              apos: entry.bundled ?? false,
+              npm: entry.npm ?? false,
+              symlink: isSymlink,
+              exists,
               files
             };
             meta.push(metaEntry);
@@ -845,6 +1043,31 @@ module.exports = {
               await asyncHandler(metaEntry);
             }
           }
+        }
+
+        function checkSymlink(entry) {
+          if (!entry.npm) {
+            return false;
+          }
+          let dir;
+          if (entry.bundled) {
+            const baseChunks = entry.dirname.split('/node_modules/');
+            const end = baseChunks.pop();
+            const base = baseChunks.join('/node_modules/');
+            if (end.startsWith('@')) {
+              dir = `${base}/node_modules/${end.split('/').slice(0, 2).join('/')}`;
+            } else {
+              dir = `${base}/node_modules/${end.split('/')[0]}`;
+            }
+          } else {
+            dir = entry.dirname;
+          }
+          if (typeof npmSeen[dir] === 'boolean') {
+            return npmSeen[dir];
+          }
+          npmSeen[dir] = fs.lstatSync(dir, { throwIfNoEntry: false })
+            ?.isSymbolicLink() ?? false;
+          return npmSeen[dir];
         }
 
         return meta;
@@ -877,7 +1100,7 @@ module.exports = {
         // we can access their metadata, which is sufficient
         for (const name of modules) {
           const ancestorDirectories = [];
-          const metadata = self.apos.synth.getMetadata(name);
+          const metadata = await self.apos.synth.getMetadata(name);
           for (const entry of metadata.__meta.chain) {
             const effectiveName = entry.my
               ? entry.name
@@ -923,9 +1146,9 @@ module.exports = {
       // Generate the import code for all registered icons (`icons` module prop).
       // The function returns an object with `importCode`, `registerCode`,
       // and `invokeCode` string properties.
-      getAposIconsOutput(modules) {
+      async getAposIconsOutput(modules) {
         for (const name of modules) {
-          const metadata = self.apos.synth.getMetadata(name);
+          const metadata = await self.apos.synth.getMetadata(name);
           // icons is an unparsed section, so getMetadata gives it back
           // to us as an object with a property for each class in the
           // inheritance tree, root first. Just keep merging in
@@ -1332,6 +1555,62 @@ function invoke() {
         }
         return output;
       },
+      // Generate the browser script/stylesheet import code for a scene based on the available
+      // manifest data and environmnent.
+      // The `scene` argument is the scene name, and the `output` argument is the output type
+      // - `js` or `css`.
+      getBundlePageMarkup({
+        scene, output
+      }) {
+        const entrypoints = self.apos.asset.getCurrentBuildEntrypoints()
+          .filter(e => !!e.manifest && e.scenes.includes(scene) && e.outputs?.includes(output));
+
+        const markup = [];
+        const seen = {};
+
+        for (const {
+          manifest, condition, bundles: bundleSet
+        } of entrypoints) {
+          const hasDevServer = manifest.devServerUrl && self.hasDevServer();
+          const assetUrl = hasDevServer ? manifest.devServerUrl : self.getAssetBaseSystemUrl();
+          const bundles = [ ...bundleSet ?? [] ]
+            .filter(b => b.startsWith(scene) && b.endsWith(`.${output}`));
+
+          const files = hasDevServer
+            ? manifest.src?.[output] ?? []
+            : bundles;
+
+          markup.push(...getMarkup(
+            {
+              files,
+              output,
+              condition,
+              assetUrl
+            }
+          ));
+        }
+
+        return markup;
+
+        function getMarkup({
+          files, output, condition, assetUrl
+        }) {
+          if (output === 'css') {
+            return files
+              .filter(file => !seen[`${assetUrl}/${file}`])
+              .map(file => {
+                seen[`${assetUrl}/${file}`] = true;
+                return `<link rel="stylesheet" href="${assetUrl}/${file}">`;
+              });
+          }
+          // What is it?
+          if (output !== 'js') {
+            return [];
+          }
+          const attr = condition !== 'nomodule' ? 'type="module"' : 'nomodule';
+          return files.map(file => `<script ${attr} src="${assetUrl}/${file}"></script>`);
+        }
+      },
       printDebug(id, data) {
         if (self.isDebugMode) {
           self.logDebug(id, data);
@@ -1505,8 +1784,15 @@ function invoke() {
         return process.env.APOS_DEBUG_NAMESPACE || 'default';
       },
       getAssetBaseUrl() {
+        // if (self.hasDevServer() && self.currentBuildManifest.devServerUrl) {
+        //   return self.currentBuildManifest.devServerUrl;
+        // }
+        return self.getAssetBaseSystemUrl();
+      },
+      // For internal use only
+      getAssetBaseSystemUrl() {
         const namespace = self.getNamespace();
-        if (process.env.NODE_ENV === 'production') {
+        if (self.isProductionMode) {
           const releaseId = self.getReleaseId();
           const releaseDir = `/apos-frontend/releases/${releaseId}/${namespace}`;
           if (process.env.APOS_UPLOADFS_ASSETS) {
@@ -1514,9 +1800,8 @@ function invoke() {
           } else {
             return releaseDir;
           }
-        } else {
-          return `/apos-frontend/${namespace}`;
         }
+        return `/apos-frontend/${namespace}`;
       },
       getCacheBasePath() {
         return process.env.APOS_ASSET_CACHE ||
@@ -1548,6 +1833,8 @@ function invoke() {
       // The build watcher initialization (event triggered) depends on a Boolean value,
       // and the rebuild handler (triggered by the build watcher on
       // detected change) depends on an Array value.
+      // Returns boolean if `changes` is not provided, otherwise an array of builds
+      // that were triggered by the changes.
       async autorunUiBuildTask(changes) {
         let result = changes ? [] : false;
         let _changes;
@@ -1559,7 +1846,10 @@ function invoke() {
             // Or if we've set an app option to skip the auto build
             self.apos.options.autoBuild !== false
         ) {
-          checkModulesWebpackConfig(self.apos.modules, self.apos.task.getReq().t);
+          // Only when a legacy build is in play.
+          if (!self.hasBuildModule()) {
+            checkModulesWebpackConfig(self.apos.modules, self.apos.task.getReq().t);
+          }
           // If starting up normally, run the build task, checking if we
           // really need to update the apos build
           if (changes) {
@@ -1637,6 +1927,33 @@ function invoke() {
         // Allow custom watcher registration
         self.registerBuildWatcher();
         const rootDir = self.apos.rootDir;
+        if (self.hasBuildModule()) {
+          return self.watch(rebuildCallback);
+        }
+        if (!self.buildWatcher) {
+          const symLinkModules = await findNodeModulesSymlinks(rootDir);
+          const watchDirs = [
+            './modules/**/ui/apos/**',
+            './modules/**/ui/src/**',
+            './modules/**/ui/public/**',
+            ...symLinkModules.reduce(
+              (prev, m) => [
+                ...prev,
+              `./node_modules/${m}/ui/apos/**`,
+              `./node_modules/${m}/ui/src/**`,
+              `./node_modules/${m}/ui/public/**`,
+              `./node_modules/${m}/modules/**/ui/apos/**`,
+              `./node_modules/${m}/modules/**/ui/src/**`,
+              `./node_modules/${m}/modules/**/ui/public/**`
+              ],
+              []
+            )
+          ];
+          self.buildWatcher = chokidar.watch(watchDirs, {
+            cwd: rootDir,
+            ignoreInitial: true
+          });
+        }
         // chokidar may invoke ready event multiple times,
         // we want one "watch enabled" message.
         let loggedOnce = false;
@@ -1662,31 +1979,6 @@ function invoke() {
           changesPool.push(fileOrDir);
           return debounceRebuild();
         };
-
-        if (!self.buildWatcher) {
-          const symLinkModules = await findNodeModulesSymlinks(rootDir);
-          const watchDirs = [
-            './modules/**/ui/apos/**',
-            './modules/**/ui/src/**',
-            './modules/**/ui/public/**',
-            ...symLinkModules.reduce(
-              (prev, m) => [
-                ...prev,
-              `./node_modules/${m}/ui/apos/**`,
-              `./node_modules/${m}/ui/src/**`,
-              `./node_modules/${m}/ui/public/**`,
-              `./node_modules/${m}/modules/**/ui/apos/**`,
-              `./node_modules/${m}/modules/**/ui/src/**`,
-              `./node_modules/${m}/modules/**/ui/public/**`
-              ],
-              []
-            )
-          ];
-          self.buildWatcher = chokidar.watch(watchDirs, {
-            cwd: rootDir,
-            ignoreInitial: true
-          });
-        }
 
         self.buildWatcher
           .on('add', addChangeAndDebounceRebuild)
