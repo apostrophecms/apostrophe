@@ -20,6 +20,10 @@ with dynamic choices in this way.
 * Adds a `isActive` state to context menu items. Also adds possibility to add icons to context menu items.
 * Add a postcss plugin to handle `vh` and `vw` values on breakpoint preview mode.
 
+### Changes
+
+* Silence deprecation warnings from Sass 1.80+ regarding the use of `@import`. The Sass team [has stated there will be a two-year transition period](https://sass-lang.com/documentation/breaking-changes/import/#transition-period) before the feature is actually removed. The use of `@import` is common practice in the Apostrophe codebase and in many project codebases. We will arrange for an orderly migration to the new `@use` directive before Sass 3.x appears.
+
 ### Fixes
 
 * Modifies the `AposAreaMenu.vue` component to set the `disabled` attribute to `true` if the max number of widgets have been added in an area with `expanded: true`.
@@ -28,7 +32,6 @@ with dynamic choices in this way.
 * Prevent un-publishing the `@apostrophecms/global` doc and more generally all singletons.
 * When opening a context menu while another is already opened, prevent from focusing the button of the first one instead of the newly opened menu.
 * Updates `isEqual` method of `area` field type to avoid comparing an area having temporary properties with one having none.
-
 
 ## 4.7.2 and 4.8.1 (2024-10-09)
 
