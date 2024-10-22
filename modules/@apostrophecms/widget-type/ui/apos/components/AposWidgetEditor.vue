@@ -68,7 +68,7 @@ import AposModalTabsMixin from 'Modules/@apostrophecms/modal/mixins/AposModalTab
 import { detectDocChange } from 'Modules/@apostrophecms/schema/lib/detectChange';
 import { createId } from '@paralleldrive/cuid2';
 import { klona } from 'klona';
-import newInstance from 'apostrophe/modules/@apostrophecms/schema/lib/newInstance.js';
+import newInstance from 'Modules/@apostrophecms/schema/lib/newInstance.js';
 
 export default {
   name: 'AposWidgetEditor',
