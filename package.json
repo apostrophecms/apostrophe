@@ -110,7 +110,7 @@
     "resolve": "^1.19.0",
     "resolve-from": "^5.0.0",
     "sanitize-html": "^2.12.1",
-    "sass": "^1.77.8",
+    "sass": "^1.80.3",
     "sass-loader": "^16.0.0",
     "server-destroy": "^1.0.1",
     "sluggo": "^1.0.0",
