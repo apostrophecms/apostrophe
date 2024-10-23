@@ -158,11 +158,13 @@ const cors = require('cors');
 const Promise = require('bluebird');
 
 module.exports = {
-  init(self) {
+  async init(self) {
     self.createApp();
     self.prefix();
     self.trustProxy();
     self.options.externalFrontKey = process.env.APOS_EXTERNAL_FRONT_KEY || self.options.externalFrontKey;
+
+    await self.getSessionOptions();
     if (self.options.baseUrl && !self.apos.baseUrl) {
       self.apos.util.error('WARNING: you have baseUrl set as an option to the `@apostrophecms/express` module.');
       self.apos.util.error('Set it as a global option (a property of the main object passed to apostrophe).');
@@ -296,7 +298,7 @@ module.exports = {
         req.aposStack = [];
         return next();
       },
-      sessions: expressSession(self.getSessionOptions()),
+      sessions: expressSession(self.sessionOptions),
       cookieParser: cookieParser(),
       apiKeys(req, res, next) {
         const key = req.query.apikey || req.query.apiKey || getAuthorizationApiKey();
@@ -489,7 +491,7 @@ module.exports = {
       },
 
       // Options to be passed to the express session options middleware
-      getSessionOptions() {
+      async getSessionOptions() {
         if (self.sessionOptions) {
           return self.sessionOptions;
         }
@@ -558,7 +560,7 @@ module.exports = {
             sessionOptions.store = MongoStore.create(sessionOptions.store.options);
           } else {
             // require from project's dependencies
-            Store = self.apos.root.require(sessionOptions.store.name)(expressSession);
+            Store = await self.apos.root.import(sessionOptions.store.name)(expressSession);
             sessionOptions.store = new Store(sessionOptions.store.options);
           }
         }
