@@ -24,16 +24,28 @@ describe('Relationships', function() {
 
   it('should get multiple levels of relationships when withRelationships is an array', async function() {
     const homePage = await apos.page.find(req, { slug: '/' }).toObject();
-
-    assert.equal(homePage.main.items[0]._relPage[0]._articles[0].title, 'article 1');
+    assert.equal(homePage.main.items[0]._pages[0]._articles[0].title, 'article 1');
   });
 
   it('should get one level of relationships when withRelationships is true', async function() {
     const paper = await apos.paper.find(req, { title: 'paper 1' }).toObject();
-    console.log('paper', paper);
 
+    const { _articles } = paper._pages[0];
+    const actual = {
+      page1: paper._pages[0].title,
+      page2: paper._pages[1].title,
+      page1article: _articles[0].title,
+      topicRel: _articles[0]._topics
+    };
+    const expected = {
+      page1: 'page 1',
+      page2: 'page 2',
+      page1article: 'article 1',
+      topicRel: undefined
+    };
+
+    assert.deepEqual(actual, expected);
   });
-
 });
 
 async function insertRelationships(apos) {
@@ -50,23 +62,24 @@ async function insertRelationships(apos) {
     _topics: [ topic ]
   });
 
-  const article2 = await apos.article.insert(req, {
-    ...apos.article.newInstance(),
-    title: 'article 2',
-    _topics: []
+  const page1 = await apos.page.insert(req, '_home', 'lastChild', {
+    ...apos.modules['default-page'].newInstance(),
+    title: 'page 1',
+    slug: '/page-1',
+    _articles: [ article1 ]
+  });
+
+  const page2 = await apos.page.insert(req, '_home', 'lastChild', {
+    ...apos.modules['default-page'].newInstance(),
+    title: 'page 2',
+    slug: '/page-2',
+    _articles: []
   });
 
   await apos.paper.insert(req, {
     ...apos.paper.newInstance(),
     title: 'paper 1',
-    _articles: [ article1, article2 ]
-  });
-
-  const page = await apos.page.insert(req, '_home', 'lastChild', {
-    ...apos.modules['default-page'].newInstance(),
-    title: 'page 1',
-    slug: '/page-1',
-    _articles: [ article1 ]
+    _pages: [ page1, page2 ]
   });
 
   const homePage = await apos.page.find(req, { slug: '/' }).toObject();
@@ -78,8 +91,8 @@ async function insertRelationships(apos) {
       metaType: 'widget',
       type: 'random',
       aposPlaceholder: false,
-      relPageIds: [ page.aposDocId ],
-      relPageFields: { [page.aposDocId]: {} }
+      pagesIds: [ page1.aposDocId ],
+      pagesFields: { [page1.aposDocId]: {} }
     }
   ];
 
@@ -111,11 +124,11 @@ function getModules() {
             type: 'string',
             required: true
           },
-          _relPage: {
+          _pages: {
             label: 'Rel page',
             type: 'relationship',
             withType: 'default-page',
-            withRelationships: true,
+            withRelationships: [ '_articles._topics' ],
             builders: {
               project: {
                 title: 1
@@ -149,14 +162,15 @@ function getModules() {
       },
       fields: {
         add: {
-          _articles: {
-            label: 'Articles',
+          _pages: {
+            label: 'Pages',
             type: 'relationship',
-            withType: 'article',
+            withType: 'default-page',
             withRelationships: true,
             builders: {
               project: {
-                title: 1
+                title: 1,
+                _url: 1
               }
             }
           }
