@@ -1141,7 +1141,6 @@ module.exports = (self) => {
       if (!field.withType) {
         fail('withType property is missing. Hint: it must match the name of a doc type module.');
       }
-
       if (Array.isArray(field.withType)) {
         _.each(field.withType, function (type) {
           lintType(type);
