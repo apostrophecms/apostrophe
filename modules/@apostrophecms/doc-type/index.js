@@ -1759,7 +1759,11 @@ module.exports = {
             }
 
             // Add relationships storage fields in projection
-            if (relationships && Object.keys(projection).length) {
+            if (
+              relationships &&
+              Object.keys(projection).length &&
+              !Object.values(projection).some((val) => !val)
+            ) {
               // Didn't find any other way, should work
               const type = query.get('type');
               const manager = self.apos.doc.getManager(type);
