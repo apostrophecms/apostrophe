@@ -67,7 +67,7 @@ module.exports = {
           }
           const slug = self.apos.launder.string(req.body.slug);
           const _id = self.apos.launder.id(req.body._id);
-          const criteria = { slug: slug };
+          const criteria = { slug };
           if (_id) {
             criteria._id = { $ne: _id };
           }

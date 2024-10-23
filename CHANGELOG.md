@@ -24,6 +24,8 @@ with dynamic choices in this way.
 ### Changes
 
 * Silence deprecation warnings from Sass 1.80+ regarding the use of `@import`. The Sass team [has stated there will be a two-year transition period](https://sass-lang.com/documentation/breaking-changes/import/#transition-period) before the feature is actually removed. The use of `@import` is common practice in the Apostrophe codebase and in many project codebases. We will arrange for an orderly migration to the new `@use` directive before Sass 3.x appears.
+* Internal methods `mergeConfiguration`, `autodetectBundles`, `lintModules`, `nestedModuleSubdirs` and `testDir` are now async.
+* `express.getSessionOptions` is now async.
 
 ### Fixes
 
@@ -33,11 +35,6 @@ with dynamic choices in this way.
 * Prevent un-publishing the `@apostrophecms/global` doc and more generally all singletons.
 * When opening a context menu while another is already opened, prevent from focusing the button of the first one instead of the newly opened menu.
 * Updates `isEqual` method of `area` field type to avoid comparing an area having temporary properties with one having none.
-
-### Changes
-
-* Internal methods `mergeConfiguration`, `autodetectBundles`, `lintModules`, `nestedModuleSubdirs` and `testDir` are now async.
-* `verifyLocales` and `i18n.getLocales`, `express.getSessionOptions` are now async.
 
 ## 4.7.2 and 4.8.1 (2024-10-09)
 

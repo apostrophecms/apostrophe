@@ -80,7 +80,7 @@ module.exports = {
     self.namespaces = {};
     self.debug = process.env.APOS_DEBUG_I18N ? true : self.options.debug;
     self.show = process.env.APOS_SHOW_I18N ? true : self.options.show;
-    self.locales = await self.getLocales();
+    self.locales = self.getLocales();
     self.hostnamesInUse = Object.values(self.locales).find(locale => locale.hostname);
     self.defaultLocale = self.options.defaultLocale || Object.keys(self.locales)[0];
     // Contains label/value object for each locale
@@ -687,7 +687,7 @@ module.exports = {
         }
         return i18n;
       },
-      async getLocales() {
+      getLocales() {
         const locales = self.options.locales || {
           en: {
             label: 'English'
@@ -696,7 +696,7 @@ module.exports = {
         for (const locale in locales) {
           locales[locale]._edit = true;
         }
-        await verifyLocales(locales, self.apos.options.baseUrl);
+        verifyLocales(locales, self.apos.options.baseUrl);
         return locales;
       },
       async getLocalesPermissions(req, action, type, locales) {
