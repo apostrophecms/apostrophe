@@ -4,6 +4,7 @@
 
 ### Adds
 
+* Relationship inputs have aria accessibility tags and autocomplete suggestions can be controlled by keyboard.
 * Elements inside modals can have a `data-apos-focus-priority` attribute that prioritizes them inside the focusable elements list.
 * Modals will continute trying to find focusable elements until an element marked `data-apos-focus-priority` appears or the max retry threshold is reached.
 * Takes care of an edge case where Media Manager would duplicate search results.
