@@ -19,6 +19,8 @@ with dynamic choices in this way.
 * Adds possibility to have two icons in a button.
 * Adds a `isActive` state to context menu items. Also adds possibility to add icons to context menu items.
 * Add a postcss plugin to handle `vh` and `vw` values on breakpoint preview mode.
+* Adds inject component `when` condition with possible values `hmr`, `prod`, and `dev`. Modules should explicitely register their components with the same `when` value and the condition should be met to inject the component.
+* Addjs inject `bundler` registration condition. It's in use only when registering a component and will be evaluated on runtime. The value should match the current build module (`webpack` or the external build module alias).
 
 ### Changes
 
