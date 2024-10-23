@@ -877,12 +877,7 @@ function getRoot(options) {
     // Apostrophe was started from an ESM project
     const filename = url.fileURLToPath(root.url);
     const dynamicImport = async (id) => {
-      const name = id.endsWith('.js') ? id : path.resolve(id, 'index.js');
-      if (id !== name) {
-        console.warn(`do you mean "${name}"? Please specify the file you want to import (${id})`);
-      }
-
-      const { default: defaultExport, ...rest } = await import(name);
+      const { default: defaultExport, ...rest } = await import(id);
 
       return defaultExport || rest;
     };
