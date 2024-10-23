@@ -47,7 +47,7 @@ module.exports = {
     return {
       async inject(req, data) {
         const key = `${data.end}-${data.where}`;
-        const components = self.getInjectComponents(key, data);
+        const components = self.getInjectedComponents(key, data);
 
         return {
           components
@@ -960,8 +960,8 @@ module.exports = {
       },
 
       // Accepts the position and component key (e.g. `prepend-head`) and returns
-      //
-      getInjectComponents(key, data) {
+      // an array of components that should be injected at that position.
+      getInjectedComponents(key, data) {
         const components = [];
 
         self.insertions[key]?.forEach(({ component, conditions = {} }) => {
@@ -1017,7 +1017,7 @@ module.exports = {
         return components;
       },
 
-      // A simple conditions handling for `when` injects. It can be extended to support
+      // Simple conditions handling for `when` injects. It can be extended to support
       // custom conditions in the future - registered by modules similar to
       // `helpers`.
       // Every condition function receives the nunjucks `data` (`when`, `where`, etc)
