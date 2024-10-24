@@ -448,7 +448,8 @@ module.exports = {
         return getBuildManager(entrypoint);
       },
       hasDevServer() {
-        return self.isDevMode &&
+        return self.hasBuildModule() &&
+          self.isDevMode &&
           self.options.hmr !== false &&
           self.buildWatcherEnable &&
           !!self.getBuildModuleConfig().devServer;
