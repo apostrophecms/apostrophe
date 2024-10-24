@@ -55,7 +55,7 @@
 </template>
 
 <script>
-module.exports = {
+export default {
   name: 'AposLoading'
 };
 </script>

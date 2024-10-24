@@ -1,6 +1,6 @@
 import { klona } from 'klona';
 import AposInputMixin from 'Modules/@apostrophecms/schema/mixins/AposInputMixin';
-import newInstance from 'apostrophe/modules/@apostrophecms/schema/lib/newInstance.js';
+import newInstance from 'Modules/@apostrophecms/schema/lib/newInstance.js';
 
 export default {
   name: 'AposInputRelationship',

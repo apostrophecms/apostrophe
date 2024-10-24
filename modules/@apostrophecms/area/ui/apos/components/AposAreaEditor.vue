@@ -75,7 +75,7 @@
 import { createId } from '@paralleldrive/cuid2';
 import { klona } from 'klona';
 import AposThemeMixin from 'Modules/@apostrophecms/ui/mixins/AposThemeMixin';
-import newInstance from 'apostrophe/modules/@apostrophecms/schema/lib/newInstance.js';
+import newInstance from 'Modules/@apostrophecms/schema/lib/newInstance.js';
 
 export default {
   name: 'AposAreaEditor',
