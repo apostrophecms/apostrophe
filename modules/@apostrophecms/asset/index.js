@@ -448,7 +448,8 @@ module.exports = {
         return getBuildManager(entrypoint);
       },
       hasDevServer() {
-        return self.isDevMode &&
+        return self.hasBuildModule() &&
+          self.isDevMode &&
           self.options.hmr !== false &&
           self.buildWatcherEnable &&
           !!self.getBuildModuleConfig().devServer;
@@ -574,8 +575,8 @@ module.exports = {
 
           const instance = chokidar.watch(watchDirs, {
             cwd: self.apos.rootDir,
-            ignoreInitial: true
-            // ignored: self.ignoreWatchLocation
+            ignoreInitial: true,
+            ignored: self.ignoreWatchLocation
           });
           self.buildWatcher = instance;
         }
@@ -1738,9 +1739,9 @@ function invoke() {
           return files.map(file => `<script ${attr} src="${assetUrl}/${file}"></script>`);
         }
       },
-      printDebug(id, data) {
+      printDebug(id, ...rest) {
         if (self.isDebugMode) {
-          self.logDebug(id, data);
+          self.logDebug(id, ...rest);
         }
       },
       // END external build modules feature
