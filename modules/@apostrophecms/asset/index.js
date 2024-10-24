@@ -575,8 +575,8 @@ module.exports = {
 
           const instance = chokidar.watch(watchDirs, {
             cwd: self.apos.rootDir,
-            ignoreInitial: true
-            // ignored: self.ignoreWatchLocation
+            ignoreInitial: true,
+            ignored: self.ignoreWatchLocation
           });
           self.buildWatcher = instance;
         }
