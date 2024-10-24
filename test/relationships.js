@@ -24,7 +24,24 @@ describe('Relationships', function() {
 
   it('should get multiple levels of relationships when withRelationships is an array', async function() {
     const homePage = await apos.page.find(req, { slug: '/' }).toObject();
-    assert.equal(homePage.main.items[0]._pages[0]._articles[0].title, 'article 1');
+    const subPage = homePage.main.items[0]._pages[0];
+    const subArticle = subPage._articles[0];
+    const subTopic = subArticle._topics[0];
+
+    const expected = {
+      subArticleTitle: 'article 1',
+      subTopicTitle: 'topic 1',
+      hasArticlesFields: true,
+      hasTopcicsFields: true
+    };
+    const actual = {
+      subArticleTitle: subArticle.title,
+      subTopicTitle: subTopic.title,
+      hasArticlesFields: Boolean(subPage.articlesFields),
+      hasTopcicsFields: Boolean(subArticle.topicsFields)
+    };
+
+    assert.deepEqual(actual, expected);
   });
 
   it('should get one level of relationships when withRelationships is true', async function() {

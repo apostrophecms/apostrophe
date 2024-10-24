@@ -1779,6 +1779,9 @@ module.exports = {
 
                   if (relationships === true || directRelations.includes(field.name)) {
                     add.push(field.idsStorage);
+                    if (field.fieldsStorage) {
+                      add.push(field.fieldsStorage);
+                    }
                   }
                 }
               }
