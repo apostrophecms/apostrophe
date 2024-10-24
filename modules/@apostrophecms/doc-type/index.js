@@ -1740,6 +1740,7 @@ module.exports = {
           },
           finalize() {
             let projection = query.get('project') || {};
+            const relationships = query.get('relationships');
             // Keys beginning with `_` are computed values
             // (exception: `_id`). They do not make sense
             // in MongoDB projections. However Apostrophe
@@ -1755,6 +1756,35 @@ module.exports = {
             if (!_.isEmpty(projection) && !hasExclusion) {
               add.push('type');
               add.push('metaType');
+            }
+
+            // Add relationships storage fields in projection
+            if (
+              relationships &&
+              Object.keys(projection).length &&
+              !Object.values(projection).some((val) => !val)
+            ) {
+              // Didn't find any other way, should work
+              const type = query.get('type');
+              const manager = self.apos.doc.getManager(type);
+              const directRelations = Array.isArray(relationships)
+                ? relationships.map(rel => rel.split('.')[0])
+                : [];
+
+              if (manager) {
+                for (const field of manager.schema) {
+                  if (field.type !== 'relationship') {
+                    continue;
+                  }
+
+                  if (relationships === true || directRelations.includes(field.name)) {
+                    add.push(field.idsStorage);
+                    if (field.fieldsStorage) {
+                      add.push(field.fieldsStorage);
+                    }
+                  }
+                }
+              }
             }
 
             for (const [ key, val ] of Object.entries(projection)) {
@@ -2219,7 +2249,8 @@ module.exports = {
         relationships: {
           def: true,
           async after(results) {
-            if (!query.get('relationships')) {
+            const relationships = query.get('relationships');
+            if (!relationships) {
               return;
             }
             const resultsByType = _.groupBy(results, 'type');
@@ -2227,7 +2258,12 @@ module.exports = {
               const manager = self.apos.doc.getManager(type);
               // Careful, there will be no manager if type was not part of the projection
               if (manager && manager.schema) {
-                await self.apos.schema.relate(query.req, manager.schema, resultsByType[type], query.get('relationships'));
+                await self.apos.schema.relate(
+                  query.req,
+                  manager.schema,
+                  resultsByType[type],
+                  relationships
+                );
               }
             }
           }

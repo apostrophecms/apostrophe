@@ -611,21 +611,19 @@ describe('Pieces', function() {
     assert(person._things.length === 2);
   });
 
-  it('people cannot find things via a relationship with an inadequate projection', function() {
+  it('people can find things via a relationship with relationship storage fields in projection', async function() {
     const req = apos.task.getReq();
-    return apos.doc.getManager('person').find(req, {}, {
+    const person = await apos.person.find(req, {}, {
       // Use the options object rather than a chainable method
       project: {
         title: 1
       }
-    }).toObject()
-      .then(function(person) {
-        assert(person);
-        assert(person.title === 'Bob');
-        // Verify projection
-        assert(!person.slug);
-        assert((!person._things) || (person._things.length === 0));
-      });
+    }).toObject();
+
+    assert(person);
+    assert(person.title === 'Bob');
+    assert(!person.slug);
+    assert(person._things.length === 2);
   });
 
   it('people can find things via a relationship with a "projection" of the relationship name', function() {
