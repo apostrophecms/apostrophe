@@ -1738,9 +1738,9 @@ function invoke() {
           return files.map(file => `<script ${attr} src="${assetUrl}/${file}"></script>`);
         }
       },
-      printDebug(id, data) {
+      printDebug(id, ...rest) {
         if (self.isDebugMode) {
-          self.logDebug(id, data);
+          self.logDebug(id, ...rest);
         }
       },
       // END external build modules feature
