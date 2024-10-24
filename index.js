@@ -598,7 +598,7 @@ async function apostrophe(options, telemetry, rootSpan) {
     // The base module sort metadata
     for (const name of moduleNames) {
       const metadata = await self.synth.getMetadata(name);
-      const before = Object.values(metadata.before).find(name => name !== undefined);
+      const before = Object.values(metadata.before).reverse().find(name => typeof name === 'string');
       if (before) {
         beforeModules.push(name);
       }
