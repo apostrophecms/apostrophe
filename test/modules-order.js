@@ -40,6 +40,20 @@ describe('Modules Order', function() {
         'test-before': {},
         usual: {
           init() { }
+        },
+
+        'before-global': {},
+        extendOne: {
+          before: 'usual',
+          extend: '@apostrophecms/piece-type'
+        },
+        extendTwo: {
+          before: '@apostrophecms/image',
+          extend: 'extendOne'
+        },
+        extendThree: {
+          before: 'test-before',
+          extend: 'extendTwo'
         }
       }
     });
@@ -50,8 +64,13 @@ describe('Modules Order', function() {
       'first',
       'second',
       '@apostrophecms/schema',
+      'before-global',
+      '@apostrophecms/global',
+      'extendThree',
       'test-before',
+      'extendTwo',
       '@apostrophecms/image',
+      'extendOne',
       'usual'
     ];
     const actual = Object.keys(apos.modules).filter(m => expected.includes(m));
@@ -84,6 +103,17 @@ describe('Modules Order', function() {
         },
         usual: {
           init() { }
+        },
+
+        'before-global': {},
+        extendOne: {
+          extend: '@apostrophecms/piece-type'
+        },
+        extendTwo: {
+          extend: 'extendOne'
+        },
+        extendThree: {
+          extend: 'extendTwo'
         }
       }
     });
@@ -93,13 +123,18 @@ describe('Modules Order', function() {
       // ...and the natural order should be preserved
       const expected = [
         '@apostrophecms/schema',
+        'before-global',
+        '@apostrophecms/global',
         '@apostrophecms/image',
         'strange',
         'first',
         'second',
         'third',
         'test-before',
-        'usual'
+        'usual',
+        'extendOne',
+        'extendTwo',
+        'extendThree'
       ];
       const actual = Object.keys(apos.modules).filter(m => expected.includes(m));
       assert.deepEqual(actual, expected, 'modules are not matching the natural order');
