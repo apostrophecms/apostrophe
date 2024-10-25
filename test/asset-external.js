@@ -55,11 +55,14 @@ describe('Asset - External Build', function () {
                 };
               },
               async watch() { },
-              startDevServer() {
+              async startDevServer() {
                 actualDevServer = true;
                 return {
                   entrypoints: []
                 };
+              },
+              async entrypoints() {
+                return [];
               }
             };
           }
@@ -119,7 +122,12 @@ describe('Asset - External Build', function () {
           },
           methods(self) {
             return {
-              async build() {}
+              async build() { },
+              async watch() { },
+              async startDevServer() {},
+              async entrypoints() {
+                return [];
+              }
             };
           }
         },
