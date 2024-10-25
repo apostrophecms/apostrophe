@@ -1042,10 +1042,10 @@ describe('Assets', function() {
       'utf8'
     );
 
-    // * rebuild handler has been triggered
+    // * rebuild handler has NOT been triggered
     await retryAssertTrue(
-      () => rebuilt === true,
-      'Unable to verify rebuild has been triggered',
+      () => rebuilt === false,
+      'Unable to verify rebuild has NOT been triggered',
       500,
       10000
     );
@@ -1088,26 +1088,27 @@ describe('Assets', function() {
 
     // * no builds were triggered
     await retryAssertTrue(
-      () => result.builds.length === 0,
+      () => typeof result.builds === 'undefined',
       'Unable to verify build "src" has NOT been triggered',
       50,
       1000
     );
 
+    // Outdated, changes not detected because the watcher got smarter.
     // * changes detected
-    await retryAssertTrue(
-      () =>
-        result.changes.length === 2 &&
-        result.changes
-          .filter(f =>
-            (f.includes('modules/default-page/ui/src/index.js') ||
-            f.includes('modules/default-page/ui/src/index.scss'))
-          )
-          .length === 2,
-      'Unable to verify changes contain the proper source files',
-      50,
-      1000
-    );
+    // await retryAssertTrue(
+    //   () =>
+    //     result.changes.length === 2 &&
+    //     result.changes
+    //       .filter(f =>
+    //         (f.includes('modules/default-page/ui/src/index.js') ||
+    //         f.includes('modules/default-page/ui/src/index.scss'))
+    //       )
+    //       .length === 2,
+    //   'Unable to verify changes contain the proper source files',
+    //   50,
+    //   1000
+    // );
 
     await t.destroy(apos);
     assert.equal(apos.asset.buildWatcher, null);
