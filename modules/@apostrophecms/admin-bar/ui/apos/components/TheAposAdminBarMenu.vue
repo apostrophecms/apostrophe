@@ -128,12 +128,12 @@ export default {
       });
     this.trayItems = itemsSet.filter(item => item.options && item.options.contextUtility);
 
-    Object.values(apos.modules).forEach(module => {
-      if (module.quickCreate) {
+    Object.values(apos.modules).forEach(apostropheModule => {
+      if (apostropheModule.quickCreate) {
         this.createMenu.push({
-          label: module.label || module.name,
-          name: module.name,
-          action: `${module.name}:editor`
+          label: apostropheModule.label || apostropheModule.name,
+          name: apostropheModule.name,
+          action: `${apostropheModule.name}:editor`
         });
       }
     });

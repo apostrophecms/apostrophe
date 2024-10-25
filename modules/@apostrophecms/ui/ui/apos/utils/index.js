@@ -1,9 +1,3 @@
-// module.exports = {
-//   debounceAsync,
-//   // BC alias
-//   debounce: debounceAsync,
-//   throttle
-// };
 export {
   debounceAsync,
   // BC alias

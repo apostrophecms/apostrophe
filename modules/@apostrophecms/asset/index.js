@@ -1589,7 +1589,7 @@ module.exports = {
               if (!fs.readFileSync(realPath, 'utf8').match(/export[\s\n]+default/)) {
                 throw new Error(stripIndent`
                       The file ${component} does not have a default export.
-  
+
                       Any ui/src/index.js file that does not have a function as
                       its default export will cause the build to fail in production.
                     `);
