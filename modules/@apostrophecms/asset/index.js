@@ -13,7 +13,6 @@ const {
   checkModulesWebpackConfig,
   getWebpackExtensions,
   fillExtraBundles,
-  findNodeModulesSymlinks,
   transformRebundledFor
 } = require('./lib/webpack/utils');
 
@@ -101,7 +100,14 @@ module.exports = {
     // - boolean `true`: same as `public` (default).
     // - string `public`: serve only the source files from the `ui/src` folder.
     // - string `apos`: serve only the admin UI files from the `ui/apos` folder.
-    hmr: true
+    hmr: true,
+    // Force the HMR WS port when it operates on the same process as Apostrophe.
+    // Most of the time you won't need to change this.
+    hmrPort: null,
+    // Completely disable the asset runtime auto-build system.
+    // When an external build module is registered, only manifest data
+    // will be loaded and no build will be executed.
+    autoBuild: true
   },
 
   async init(self) {
@@ -120,8 +126,8 @@ module.exports = {
       ...globalIcons
     };
 
-    // Used throughout the build init process.
-    self.modulesToBeInstantiated = self.apos.modulesToBeInstantiated();
+    // Used throughout the build process, cached forever here.
+    self.modulesToBeInstantiated = await self.apos.modulesToBeInstantiated();
     // The namespace filled by `configureBuilds()`
     self.builds = {};
     self.configureBuilds();
@@ -340,10 +346,10 @@ module.exports = {
       //    - `src` - an object with keys corresponding to the input extension and values array of relative
       //      URL path to the entry source file that should be served by the dev server. Currently only `js`
       //      key is supported. Can be null (e.g. for `ui/public`). Usually contains the main entrypoint file.
-      //    - `devServerUrl` - the base server URL for the dev server if available.
-      // * `sourceMapsRoot` (optional, string) the absolute path to the location when source maps are stored. They will be
+      //    - `devServer` - boolean if the entrypoint should be served by the dev server.
+      // * `sourceMapsRoot` (optional, string or null) the absolute path to the location when source maps are stored. They will be
       //    copied to the bundle folder with the folder same structure.
-      // * `devServerUrl` (optional, string) the base server URL for the dev server when available.
+      // * `devServerUrl` (optional, string or null) the base server URL for the dev server when available.
       // * `hmrTypes` (optional, array of strings) the entrypoint types that are currently served with HMR.
       // * `ts` (optional, number) the timestamp ms of the last `apos` build. This number will be written to the
       //    `.manifest.json` file to allow the external build module to optimize the build time based on the
@@ -443,7 +449,7 @@ module.exports = {
       // - async getOutput(sourceFiles, { modules }): get the output data for the entrypoint.
       //   The `sourceFiles` is in format compatible with the output of `manager.getSourceFiles()`.
       //   The `modules` option is the list of all modules, usually the cached result
-      //   of `self.apos.modulesToBeInstantiated()`.
+      //   of `self.getRegisteredModules()`.
       getEntrypointManger(entrypoint) {
         return getBuildManager(entrypoint);
       },
@@ -469,6 +475,7 @@ module.exports = {
       // - `isTask`: if `true`, the build is executed as a task. If false
       //   optimization can be applied (e.g. build apostrophe admin UI only once).
       // - `hmr`: if `true`, the hot module replacement is enabled.
+      // - `hmrPort`: the port for the HMR WS server. If not set, the default port is used.
       // - `devServer`: if `false`, the dev server is disabled. Otherwise, it's a string
       //   (enum) `public` or `apos`. Note that if `hmr` is disabled, the dev server will be always
       //   `false`.
@@ -488,6 +495,7 @@ module.exports = {
         const options = {
           isTask: !argv['check-apos-build'],
           hmr: self.hasHMR(),
+          hmrPort: self.options.hmrPort,
           sourcemaps: self.options.productionSourceMaps
         };
         options.devServer = !options.isTask && self.hasDevServer()
@@ -504,7 +512,6 @@ module.exports = {
       // Build the assets using the external build module.
       // The `argv` object is the `argv` object passed to the original build task.
       // See getBuildOptions() for more information.
-      // TODO: All other cases should be handled here (external frontend, see the legacy `build` task).
       async build(argv) {
         const buildOptions = self.getBuildOptions(argv);
         self.currentBuildOptions = buildOptions;
@@ -512,7 +519,7 @@ module.exports = {
         self.currentPublicAssetLocations = await self.copyModulesFolder({
           target: path.join(self.getBundleRootDir(), 'modules'),
           folder: 'public',
-          modules: self.modulesToBeInstantiated
+          modules: self.getRegisteredModules()
         });
 
         // Switch to dev server mode if the dev server is enabled.
@@ -564,21 +571,27 @@ module.exports = {
       async startDevServer(buildOptions) {
         self.currentBuildManifest = await self.getBuildModule()
           .startDevServer(buildOptions);
-
+      },
+      // A before hook for the new `watch` and the legacy `watchUiAndRebuild` methods.
+      // Extend to apply custom logic before the watch system is started.
+      // It is called after a custom watcher is (optionally) registered and before
+      // an internal watcher is instantiated (when appropriate).
+      async beforeWatch() {
+        // Do nothing by default.
       },
       // The new watch system, works only when an external build module is registered.
       // This method is invoked only when appropriate.
+      // The watcher will trigger changes with paths relative to the `apos.npmRootDir`.
       async watch() {
-        if (!self.buildWatcher) {
-          const watchDirs = (await self.computeWatchMeta(self.getRegisteredModules()))
-            .map(entry => entry.dirname);
+        await self.beforeWatch();
 
-          const instance = chokidar.watch(watchDirs, {
-            cwd: self.apos.rootDir,
+        if (!self.buildWatcher) {
+          const watchDirs = await self.computeWatchFolders();
+          self.buildWatcher = chokidar.watch(watchDirs, {
+            cwd: self.apos.npmRootDir,
             ignoreInitial: true,
             ignored: self.ignoreWatchLocation
-          });
-          self.buildWatcher = instance;
+          }); ;
         }
 
         // Log the initial watch message
@@ -601,10 +614,10 @@ module.exports = {
 
         self.getBuildModule().watch(self.buildWatcher);
       },
+      // https://github.com/paulmillr/chokidar?tab=readme-ov-file#path-filtering
       // Override to ignore files/folders from the watch. The method is called twice:
       // - once with only the `file` parameter
       // - once with both `file` and `fsStats` parameters
-      // https://github.com/paulmillr/chokidar?tab=readme-ov-file#path-filtering
       // The `file` is the relative to the `apos.rootDir` path to the file or folder.
       // The `fsStats` is the `fs.Stats` object.
       // Return `true` to ignore the file/folder.
@@ -638,7 +651,7 @@ module.exports = {
         }
       },
       // Retrieve only existing `/ui` paths for local and npm symlinked modules.
-      // Modules is usually the `modulesToBeInstantiated` array.
+      // Modules is usually the rsult of `self.getRegisteredModules()`.
       async computeWatchMeta(modules) {
         const meta = (await self.computeSourceMeta({
           modules,
@@ -650,6 +663,10 @@ module.exports = {
 
         return meta;
       },
+      async computeWatchFolders() {
+        return (await self.computeWatchMeta(self.getRegisteredModules()))
+          .map(entry => entry.dirname);
+      },
       // Run the minimal required computations to ensure manifest data is available.
       async runWithoutBuild() {
         if (!self.hasBuildModule()) {
@@ -659,16 +676,24 @@ module.exports = {
         // Hidrate the entrypoints with the saved manifest data and
         // set the current build manifest data.
         const buildOptions = self.getBuildOptions();
-        const entrypoints = self.getBuildEntrypoints(buildOptions.types);
-        const { manifest = [] } = await self.loadSavedBuildManifest();
+        const entrypoints = await self.getBuildModule().entrypoints(buildOptions);
+
+        const {
+          manifest = [], devServerUrl, hmrTypes
+        } = await self.loadSavedBuildManifest();
+        self.currentBuildManifest.devServerUrl = devServerUrl;
+        self.currentBuildManifest.hmrTypes = hmrTypes ?? [];
+
         for (const entry of manifest) {
           const entrypoint = entrypoints.find((e) => e.name === entry.name);
-          if (!entrypoint || entrypoint.manifest) {
+          // It is possible that we run without build in development mode
+          // when we are in a "shared" mode (e.g. use external vite instance).
+          if (!entrypoint) {
             continue;
           }
           entrypoint.manifest = entry;
-          if (!manifest.bundles) {
-            entrypoint.bundles = new Set(entry.bundles);
+          if (!entrypoint.bundles) {
+            entrypoint.bundles = new Set(entry.bundles ?? []);
           }
           self.currentBuildManifest.entrypoints.push({
             ...entrypoint,
@@ -677,7 +702,9 @@ module.exports = {
         }
       },
       async saveBuildManifest(manifest) {
-        const { entrypoints, ts } = manifest;
+        const {
+          entrypoints, ts, devServerUrl, hmrTypes
+        } = manifest;
         const content = [];
 
         for (const entrypoint of entrypoints) {
@@ -688,13 +715,9 @@ module.exports = {
             continue;
           }
 
-          const {
-            files, root
-          } = manifest;
           content.push({
+            ...manifest,
             name,
-            root,
-            files,
             bundles: Array.from(bundles ?? [])
           });
         }
@@ -703,6 +726,8 @@ module.exports = {
           path.join(self.getBundleRootDir(), '.manifest.json'),
           {
             ts: ts || current.ts,
+            devServerUrl,
+            hmrTypes,
             manifest: content
           }
         );
@@ -729,10 +754,17 @@ module.exports = {
       getCurrentBuildEntrypoints() {
         return self.currentBuildManifest.entrypoints ?? [];
       },
-      // This should be used by build systems to assemble the URL for a dev server middleware.
-      // This method can be overridden for e.g. multisite setups.
-      getBaseDevSiteUrl() {
+      // This is used only by the external build systems to assemble
+      // the URL for a dev server middleware. It's not in effect when
+      // `self.options.autoBuild` is `false` because the external module
+      // is not asked to build the assets.
+      getBaseMiddlewareUrl() {
         return (self.apos.baseUrl || '') + self.apos.prefix;
+      },
+      // Return the actual dev server URL. It is set after the build is done
+      // or when a manifest is loaded.
+      getDevServerUrl() {
+        return self.currentBuildManifest.devServerUrl;
       },
       // Deploy all public assets for release. Executes only in production.
       // `files` is a flat array of relative to the bundleRoot (getBundleRoot) paths
@@ -961,7 +993,7 @@ module.exports = {
       async setBuildExtensions() {
         self.moduleBuildExtensions = await getBuildExtensions({
           getMetadata: self.apos.synth.getMetadata,
-          modulesToInstantiate: self.apos.modulesToBeInstantiated(),
+          modulesToInstantiate: self.getRegisteredModules(),
           rebundleModulesConfig: self.options.rebundleModules
         });
       },
@@ -1073,7 +1105,7 @@ module.exports = {
       // for each module entry. This is useful for external build modules to
       // e.g. copy files to the build directory during the traversal.
       //
-      // The `modules` option is usually the result of `self.apos.modulesToBeInstantiated()`.
+      // The `modules` option is usually the result of `self.getRegisteredModules()`.
       // It's not resolved internally to avoid overhead (it's not cheap). The caller
       // is responsible for resolving and caching the modules list.
       //
@@ -1182,12 +1214,12 @@ module.exports = {
         return meta;
       },
       // Copy a `folder` (if exists) from any existing module to the `target` directory.
-      // The `modules` option is usually the result of `self.apos.modulesToBeInstantiated()`.
+      // The `modules` option is usually the result of `self.getRegisteredModules()`.
       // It's not resolved internally to avoid overhead (it's not cheap). The caller
       // is responsible for resolving and caching the modules list.
       // `target` is the absolute path to the target directory.
       // Usage:
-      // const modules = self.apos.modulesToBeInstantiated();
+      // const modules = self.getRegisteredModules();
       // const copied = await self.copyModulesFolder({
       //   target: '/path/to/build',
       //   folder: 'public',
@@ -1699,8 +1731,8 @@ function invoke() {
           // have a dev server and use the dev server URL if available.
           const hasDevServer = output === 'css'
             ? false
-            : manifest.devServerUrl && self.hasDevServer();
-          const assetUrl = hasDevServer ? manifest.devServerUrl : self.getAssetBaseSystemUrl();
+            : manifest.devServer && self.hasDevServer();
+          const assetUrl = hasDevServer ? self.getDevServerUrl() : self.getAssetBaseUrl();
           const bundles = [ ...bundleSet ?? [] ]
             .filter(b => b.startsWith(scene) && b.endsWith(`.${output}`));
 
@@ -1755,7 +1787,7 @@ function invoke() {
           rebundleModules = {}
         } = await getWebpackExtensions({
           getMetadata: self.apos.synth.getMetadata,
-          modulesToInstantiate: self.apos.modulesToBeInstantiated(),
+          modulesToInstantiate: self.getRegisteredModules(),
           rebundleModulesConfig: self.options.rebundleModules
         });
 
@@ -1912,13 +1944,6 @@ function invoke() {
         return process.env.APOS_DEBUG_NAMESPACE || 'default';
       },
       getAssetBaseUrl() {
-        // if (self.hasDevServer() && self.currentBuildManifest.devServerUrl) {
-        //   return self.currentBuildManifest.devServerUrl;
-        // }
-        return self.getAssetBaseSystemUrl();
-      },
-      // For internal use only
-      getAssetBaseSystemUrl() {
         const namespace = self.getNamespace();
         if (self.isProductionMode) {
           const releaseId = self.getReleaseId();
@@ -2054,32 +2079,25 @@ function invoke() {
         }
         // Allow custom watcher registration
         self.registerBuildWatcher();
-        const rootDir = self.apos.rootDir;
+
         if (self.hasBuildModule()) {
           return self.watch(rebuildCallback);
         }
+
+        // A before hook, after the watcher is registered.
+        await self.beforeWatch();
+
         if (!self.buildWatcher) {
-          const symLinkModules = await findNodeModulesSymlinks(rootDir);
-          const watchDirs = [
-            './modules/**/ui/apos/**',
-            './modules/**/ui/src/**',
-            './modules/**/ui/public/**',
-            ...symLinkModules.reduce(
-              (prev, m) => [
-                ...prev,
-              `./node_modules/${m}/ui/apos/**`,
-              `./node_modules/${m}/ui/src/**`,
-              `./node_modules/${m}/ui/public/**`,
-              `./node_modules/${m}/modules/**/ui/apos/**`,
-              `./node_modules/${m}/modules/**/ui/src/**`,
-              `./node_modules/${m}/modules/**/ui/public/**`
-              ],
-              []
-            )
-          ];
+          // Whach the entire `module-name/ui` folder now, but only
+          // for the registered modules that have one.
+          // Also add support for ignoring the watch location - same
+          // as the external build module system.
+          const watchDirs = await self.computeWatchFolders();
+          const rootDir = self.apos.rootDir;
           self.buildWatcher = chokidar.watch(watchDirs, {
             cwd: rootDir,
-            ignoreInitial: true
+            ignoreInitial: true,
+            ignored: self.ignoreWatchLocation
           });
         }
         // chokidar may invoke ready event multiple times,
@@ -2248,6 +2266,9 @@ function invoke() {
       // the release id, uploadfs, etc.
       url(path) {
         return `${self.getAssetBaseUrl()}${path}`;
+      },
+      devServerUrl(path) {
+        return `${self.getDevServerUrl()}${path}`;
       }
     };
   },
@@ -2269,6 +2290,9 @@ function invoke() {
       // the release id, uploadfs, etc.
       url(path) {
         return self.url(path);
+      },
+      devServerUrl(path) {
+        return self.devServerUrl(path);
       }
     };
   },
