@@ -516,7 +516,6 @@ export default {
         this.readOnly = canEdit === false;
         if (canEdit && !await this.lock(this.getOnePath, this.currentId)) {
           this.lockNotAvailable();
-          return;
         }
       } catch {
         await apos.notify('apostrophe:loadDocFailed', {

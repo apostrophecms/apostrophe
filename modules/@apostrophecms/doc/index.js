@@ -67,7 +67,7 @@ module.exports = {
           }
           const slug = self.apos.launder.string(req.body.slug);
           const _id = self.apos.launder.id(req.body._id);
-          const criteria = { slug: slug };
+          const criteria = { slug };
           if (_id) {
             criteria._id = { $ne: _id };
           }
@@ -1630,10 +1630,14 @@ module.exports = {
           });
           (page._children || []).forEach(pushParkedPageAndParkedChildren);
         }
-        const pieceModules = Object.values(self.apos.modules).filter(module => self.apos.instanceOf(module, '@apostrophecms/piece-type') && module.options.replicate);
-        for (const module of pieceModules) {
+        const pieceModules = Object.values(self.apos.modules)
+          .filter(pieceModule =>
+            self.apos.instanceOf(pieceModule, '@apostrophecms/piece-type') &&
+            pieceModule.options.replicate
+          );
+        for (const pieceModule of pieceModules) {
           criteria.push({
-            type: module.name
+            type: pieceModule.name
           });
         }
         self.replicateReached = true;
@@ -1670,9 +1674,9 @@ module.exports = {
               }).archived(null).toObject();
               for (const locale of localeNames) {
                 if (!existing.find(doc => doc.aposLocale === locale)) {
-                  const module = self.getManager(sourceDoc.type);
-                  const localized = await module.localize(req, sourceDoc, locale);
-                  await module.publish(req.clone({ locale }), localized);
+                  const manager = self.getManager(sourceDoc.type);
+                  const localized = await manager.localize(req, sourceDoc, locale);
+                  await manager.publish(req.clone({ locale }), localized);
                 }
               }
             }

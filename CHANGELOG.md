@@ -7,6 +7,7 @@
 * Elements inside modals can have a `data-apos-focus-priority` attribute that prioritizes them inside the focusable elements list.
 * Modals will continute trying to find focusable elements until an element marked `data-apos-focus-priority` appears or the max retry threshold is reached.
 * Takes care of an edge case where Media Manager would duplicate search results.
+* Add support for ESM projects.
 * Modules can now have a `before: "module-name"` property in their configuration to initialize them before another module, bypassing the normal
 order implied by `defaults.js` and `app.js`.
 * `select` and `checkboxes` fields that implement dynamic choices can now take into account the value of other fields on the fly, by specifying
@@ -25,6 +26,8 @@ with dynamic choices in this way.
 ### Changes
 
 * Silence deprecation warnings from Sass 1.80+ regarding the use of `@import`. The Sass team [has stated there will be a two-year transition period](https://sass-lang.com/documentation/breaking-changes/import/#transition-period) before the feature is actually removed. The use of `@import` is common practice in the Apostrophe codebase and in many project codebases. We will arrange for an orderly migration to the new `@use` directive before Sass 3.x appears.
+* Internal methods `mergeConfiguration`, `autodetectBundles`, `lintModules`, `nestedModuleSubdirs` and `testDir` are now async.
+* `express.getSessionOptions` is now async.
 
 ### Fixes
 
