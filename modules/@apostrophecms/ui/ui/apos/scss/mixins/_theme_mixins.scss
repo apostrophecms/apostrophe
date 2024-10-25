@@ -1,4 +1,5 @@
 @use "sass:math";
+@use "sass:color";
 
 $brand-red: #ea433a;
 $brand-gold: #cc9300;
@@ -21,11 +22,11 @@ $input-color-disabled: var(--a-base-4);
 
 @mixin apos-primary-mixin($color) {
   --a-primary: #{$color};
-  --a-primary-transparent-90: #{transparentize($color, 0.1)};
-  --a-primary-transparent-25: #{transparentize($color, 0.75)};
-  --a-primary-transparent-50: #{transparentize($color, 0.5)};
-  --a-primary-transparent-15: #{transparentize($color, 0.85)};
-  --a-primary-transparent-10: #{transparentize($color, 0.9)};
+  --a-primary-transparent-90: #{color.adjust($color, $alpha: -0.1)};
+  --a-primary-transparent-25: #{color.adjust($color, $alpha: -0.75)};
+  --a-primary-transparent-50: #{color.adjust($color, $alpha: -0.5)};
+  --a-primary-transparent-15: #{color.adjust($color, $alpha: -0.85)};
+  --a-primary-transparent-10: #{color.adjust($color, $alpha: -0.9)};
   --a-primary-dark-10: #{mix(#000, $color, 10%)};
   --a-primary-dark-15: #{mix(#000, $color, 15%)};
   --a-primary-light-40: #{mix(#fff, $color, 40%)};
