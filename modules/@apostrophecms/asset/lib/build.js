@@ -216,7 +216,7 @@ module.exports = (self) => ({
           importLastVersion: true
         });
         /* componentImports = getGlobalVueComponents(self); */
-        tiptapExtensionImports = await (`${source}/tiptap-extensions`, '*.js', { registerTiptapExtensions: true });
+        tiptapExtensionImports = await getImports(`${source}/tiptap-extensions`, '*.js', { registerTiptapExtensions: true });
         appImports = await getImports(`${source}/apps`, '*.js', {
           invokeApps: true,
           enumerateImports: true,
