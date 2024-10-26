@@ -591,7 +591,7 @@ module.exports = {
             cwd: self.apos.npmRootDir,
             ignoreInitial: true,
             ignored: self.ignoreWatchLocation
-          }); ;
+          });
         }
 
         // Log the initial watch message
@@ -604,15 +604,13 @@ module.exports = {
         };
 
         // Allow the module to add more paths, attach listeners, etc.
-        await self.getBuildModule().watch(self.buildWatcher);
-
         self.buildWatcher
           .on('error', e => self.apos.util.error(`Watcher error: ${e}`))
           .on('ready', () => logOnce(
             self.apos.task.getReq().t('apostrophe:assetBuildWatchStarted')
           ));
 
-        self.getBuildModule().watch(self.buildWatcher);
+        await self.getBuildModule().watch(self.buildWatcher);
       },
       // https://github.com/paulmillr/chokidar?tab=readme-ov-file#path-filtering
       // Override to ignore files/folders from the watch. The method is called twice:
