@@ -110,13 +110,12 @@ module.exports = (self) => {
 };
 
 function renderBundleMarkup(self) {
-  const safe = self.apos.template.safe;
-  const base = self.apos.asset.getAssetBaseUrl();
-
   // The new system only for external build modules
   if (self.apos.asset.hasBuildModule()) {
     return renderBundleMarkupByManifest(self);
   }
+  const safe = self.apos.template.safe;
+  const base = self.apos.asset.getAssetBaseUrl();
 
   return ({
     fileName, ext = 'js', es5 = false
