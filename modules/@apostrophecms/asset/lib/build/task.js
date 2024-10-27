@@ -9,8 +9,9 @@ const {
   getBundlesNames,
   writeBundlesImportFiles,
   findNodeModulesSymlinks
-} = require('./webpack/utils');
+} = require('../webpack/utils');
 
+// The internal Webpack build task.
 module.exports = (self) => ({
   async task(argv = {}) {
     if (self.hasBuildModule()) {

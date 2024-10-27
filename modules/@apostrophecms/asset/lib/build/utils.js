@@ -3,8 +3,9 @@ const {
   verifyBundlesEntryPoints,
   formatExtensionsOptions,
   fillExtensionsOptions,
-  flattenBundles
-} = require('./webpack/utils');
+  flattenBundles,
+  fillExtraBundles
+} = require('../webpack/utils');
 
 module.exports = {
   // Walk through the modules, detect `build` property and
@@ -81,7 +82,8 @@ module.exports = {
     }
 
     return configs;
-  }
+  },
+  fillExtraBundles
 
 };
 

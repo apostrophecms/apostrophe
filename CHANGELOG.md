@@ -22,6 +22,9 @@ with dynamic choices in this way.
 * Add a postcss plugin to handle `vh` and `vw` values on breakpoint preview mode.
 * Adds inject component `when` condition with possible values `hmr`, `prod`, and `dev`. Modules should explicitely register their components with the same `when` value and the condition should be met to inject the component.
 * Adds inject `bundler` registration condition. It's in use only when registering a component and will be evaluated on runtime. The value should match the current build module (`webpack` or the external build module alias).
+* Adds new development task `@apostrophecms/asset:reset` to reset the asset build cache and all build artifacts.
+* Revamps the `@apostrophecms/asset` module to enable bundling via build modules.
+* Add `apos.asset.devServerUrl()` nunjucks helper to get the (bundle) dev server URL when available.
 
 ### Changes
 

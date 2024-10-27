@@ -1028,10 +1028,10 @@ module.exports = {
             return self.apos.asset.hasHMR();
           },
           dev() {
-            return self.apos.asset.isDevMode;
+            return self.apos.asset.isDevMode();
           },
           prod() {
-            return self.apos.asset.isProductionMode;
+            return self.apos.asset.isProductionMode();
           }
         };
       },

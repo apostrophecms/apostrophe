@@ -43,7 +43,7 @@
   "assetTypeBuildComplete": "👍 {{ label }} je kompletný!",
   "assetTypeBuilding": "🧑‍💻 Budovanie {{ label }}...",
   "assetWebpackBundlesWarning": "⚠️ V module {{ module }} je vaša webpack konfigurácia nesprávna. Každý balík môže mať iba jeden vlastnosť 'templates', ktorá musí byť pole reťazcov.",
-  "assetWebpackCacheCleared": "Cache zostavenia bola vymazaná.",
+  "assetBuildCacheCleared": "Cache zostavenia bola vymazaná.",
   "assetWebpackConfigWarning": "⚠️ V module {{ module }} je vaša webpack konfigurácia nesprávna. Musí to byť objekt a má obsahovať iba vlastnosti: {{ properties }}.",
   "at": "o",
   "automaticTranslationCheckbox": "Preložiť textový obsah",

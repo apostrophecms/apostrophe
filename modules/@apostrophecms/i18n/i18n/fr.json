@@ -43,7 +43,7 @@
   "assetTypeBuildComplete": "👍 {{ label }} est terminé !",
   "assetTypeBuilding": "🧑‍💻 Construction de {{ label }}...",
   "assetWebpackBundlesWarning": "⚠️ Dans le module {{ module }}, votre configuration webpack est incorrecte. Chaque bundle ne peut avoir qu'une seule propriété 'templates' qui doit être un tableau de chaînes.",
-  "assetWebpackCacheCleared": "Cache de construction effacé.",
+  "assetBuildCacheCleared": "Cache de construction effacé.",
   "assetWebpackConfigWarning": "⚠️ Dans le module {{ module }}, votre configuration webpack est incorrecte. Elle doit être un objet et ne doit contenir que les propriétés : {{ properties }}.",
   "at": "à",
   "automaticTranslationCheckbox": "Traduire le contenu texte",
