@@ -271,7 +271,7 @@ module.exports = (self) => ({
         const cssPath = `${bundleDir}/${outputFilename}`.replace(/\.js$/, '.css');
         fs.removeSync(cssPath);
         const webpack = Promise.promisify(webpackModule);
-        const webpackBaseConfig = require(`./webpack/${name}/webpack.config`);
+        const webpackBaseConfig = require(`../webpack/${name}/webpack.config`);
 
         const webpackExtraBundles = writeBundlesImportFiles({
           name,
