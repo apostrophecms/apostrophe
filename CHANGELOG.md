@@ -24,7 +24,10 @@ with dynamic choices in this way.
 * Adds inject `bundler` registration condition. It's in use only when registering a component and will be evaluated on runtime. The value should match the current build module (`webpack` or the external build module alias).
 * Adds new development task `@apostrophecms/asset:reset` to reset the asset build cache and all build artifacts.
 * Revamps the `@apostrophecms/asset` module to enable bundling via build modules.
-* Add `apos.asset.devServerUrl()` nunjucks helper to get the (bundle) dev server URL when available.
+* Adds `apos.asset.devServerUrl()` nunjucks helper to get the (bundle) dev server URL when available.
+* Adds new option `asset.options.hmr` that accepts `public` (default) or `apos` to enable HMR for the public bundle or the admin UI bundle respectively. This configuration works only with external build modules that support HMR.
+* Adds new option `asset.options.hmrPort` that accepts an integer (default `null`) to specify the HMR WS port. This configuration works only with external build modules that support HMR WS.
+* Adds new option `asset.options.productionSourceMaps` that accepts a boolean (default `false`) to enable source maps in production. This configuration works only with external build modules that support source maps.
 
 ### Changes
 

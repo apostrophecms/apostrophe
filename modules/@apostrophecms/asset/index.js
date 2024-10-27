@@ -94,7 +94,7 @@ module.exports = {
     // - boolean `true`: same as `public` (default).
     // - string `public`: serve only the source files from the `ui/src` folder.
     // - string `apos`: serve only the admin UI files from the `ui/apos` folder.
-    hmr: true,
+    hmr: 'public',
     // Force the HMR WS port when it operates on the same process as Apostrophe.
     // Most of the time you won't need to change this.
     hmrPort: null,
