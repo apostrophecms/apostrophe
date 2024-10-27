@@ -157,10 +157,6 @@ module.exports = {
       devServerUrl: null,
       entrypoints: []
     };
-    // Set after a successful build. Contains objects with properties `name`, `source`,
-    // and `target` for each copied public asset location. We need this as a separate
-    // property for possible server side hot module replacement scenarios.
-    self.currentPublicAssetLocations = [];
     // Adapt the options to not contradict each other.
     if (self.options.hmr === true) {
       self.options.hmr = 'public';
@@ -518,7 +514,8 @@ module.exports = {
         const buildOptions = self.getBuildOptions(argv);
         self.currentBuildOptions = buildOptions;
 
-        self.currentPublicAssetLocations = await self.copyModulesFolder({
+        // Copy all `/public` folders from the modules to the bundle root.
+        await self.copyModulesFolder({
           target: path.join(self.getBundleRootDir(), 'modules'),
           folder: 'public',
           modules: self.getRegisteredModules()
@@ -532,9 +529,9 @@ module.exports = {
             .build(buildOptions);
         }
 
-        // Create and copy bundles per scene into the bundle root.
+        // Create and copy bundles (`-bundle.xxx` files) per scene into the bundle root.
         const bundles = await self.computeBuildScenes(self.currentBuildManifest);
-        // Retrieve the public assets from the bundle root for deployment.
+        // Retrieve `/modules` public assets from the bundle root for deployment.
         const publicAssets = await glob('modules/**/*', {
           cwd: self.getBundleRootDir(),
           nodir: true,
