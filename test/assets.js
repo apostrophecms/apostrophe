@@ -1043,6 +1043,8 @@ describe('Assets', function() {
     );
 
     // * rebuild handler has NOT been triggered
+    // This changes now because the watcher listens ONLY
+    // for registered modules.
     await retryAssertTrue(
       () => rebuilt === false,
       'Unable to verify rebuild has NOT been triggered',
@@ -1087,6 +1089,8 @@ describe('Assets', function() {
     );
 
     // * no builds were triggered
+    // A test change because we don't watch this location at all,
+    // so no chokidar trigger.
     await retryAssertTrue(
       () => typeof result.builds === 'undefined',
       'Unable to verify build "src" has NOT been triggered',
