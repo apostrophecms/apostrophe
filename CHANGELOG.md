@@ -20,6 +20,7 @@ with dynamic choices in this way.
 * Adds possibility to have two icons in a button.
 * Adds a `isActive` state to context menu items. Also adds possibility to add icons to context menu items.
 * Add a postcss plugin to handle `vh` and `vw` values on breakpoint preview mode.
+* Breakpoint preview only targets `[data-apos-refreshable]`.
 
 ### Changes
 
