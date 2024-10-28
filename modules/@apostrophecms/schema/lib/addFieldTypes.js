@@ -1067,9 +1067,21 @@ module.exports = (self) => {
 
     relate: async function (req, field, objects, options) {
       if ((!self.apos.doc?.replicateReached) && (!field.idsStorage)) {
-        self.apos.util.warnDevOnce('premature-relationship-query', 'Database queries for types with relationships may fail if made before the @apostrophecms/doc:beforeReplicate event');
+        self.apos.util.warnDevOnce(
+          'premature-relationship-query',
+          'Database queries for types with relationships may fail if made before the @apostrophecms/doc:beforeReplicate event'
+        );
       }
-      return self.relationshipDriver(req, joinr.byArray, false, objects, field.idsStorage, field.fieldsStorage, field.name, options);
+      return self.relationshipDriver(
+        req,
+        joinr.byArray,
+        false,
+        objects,
+        field.idsStorage,
+        field.fieldsStorage,
+        field.name,
+        options
+      );
     },
 
     addQueryBuilder(field, query) {
