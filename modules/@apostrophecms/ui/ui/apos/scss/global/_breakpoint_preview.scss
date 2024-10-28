@@ -10,6 +10,7 @@
 }
 
 body[data-breakpoint-preview-mode] {
+  container-type: size;
   background: var(--a-base-10);
 
   [data-apos-context-label] {
@@ -27,7 +28,9 @@ body[data-breakpoint-preview-mode] {
     background-color: var(--a-background-primary);
 
     &[data-resizable="false"] {
-      transition: width 400ms ease, height 400ms ease;
+      transition:
+        width 400ms ease,
+        height 400ms ease;
     }
 
     &[data-resizable="true"] {
@@ -35,5 +38,4 @@ body[data-breakpoint-preview-mode] {
       overflow: scroll;
     }
   }
-
 }

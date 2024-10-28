@@ -19,12 +19,14 @@ with dynamic choices in this way.
 * Adds AI-generated missing translations
 * Adds the mobile preview dropdown for non visibles breakpoints. Uses the new `shortcut` property to display breakpoints out of the dropdown.
 * Adds possibility to have two icons in a button.
+* Breakpoint preview only targets `[data-apos-refreshable]`.
 * Adds a `isActive` state to context menu items. Also adds possibility to add icons to context menu items.
 * Add a postcss plugin to handle `vh` and `vw` values on breakpoint preview mode.
 
 ### Changes
 
 * Silence deprecation warnings from Sass 1.80+ regarding the use of `@import`. The Sass team [has stated there will be a two-year transition period](https://sass-lang.com/documentation/breaking-changes/import/#transition-period) before the feature is actually removed. The use of `@import` is common practice in the Apostrophe codebase and in many project codebases. We will arrange for an orderly migration to the new `@use` directive before Sass 3.x appears.
+* Move saving indicator after breakpoint preview.
 * Internal methods `mergeConfiguration`, `autodetectBundles`, `lintModules`, `nestedModuleSubdirs` and `testDir` are now async.
 * `express.getSessionOptions` is now async.
 

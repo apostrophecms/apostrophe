@@ -280,14 +280,13 @@ export default {
   align-items: center;
   margin-left: $spacing-base;
 
-  // NOTE Restore this when BP's CSS re-writes ignore apos admin styles
-  // &:not(&--no-dropdown) .apos-admin-bar__breakpoint-preview-mode-shortcuts {
-  //   display: none;
+  &:not(&--no-dropdown) .apos-admin-bar__breakpoint-preview-mode-shortcuts {
+    display: none;
 
-  //   @include media-up(hands-wide) {
-  //     display: flex;
-  //   }
-  // }
+    @include media-up(hands-wide) {
+      display: flex;
+    }
+  }
 }
 
 .apos-admin-bar__breakpoint-preview-mode-button {
