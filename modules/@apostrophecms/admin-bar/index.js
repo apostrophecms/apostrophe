@@ -377,6 +377,7 @@ module.exports = {
         }
         const items = self.getVisibleItems(req);
         const context = req.data.piece || req.data.page;
+        console.log(`for ${req.url} the context is: ${context?.slug}`);
         // Page caching is never desirable when possibly
         // editing that page
         if (context && context._edit) {

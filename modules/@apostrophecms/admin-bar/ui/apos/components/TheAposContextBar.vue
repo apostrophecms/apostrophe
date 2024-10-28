@@ -756,8 +756,8 @@ export default {
       }
     },
     async getPublished() {
-      const moduleOptions = window.apos.modules[this.context.type];
-      const manuallyPublished = moduleOptions.localized && !this.autopublish;
+      const moduleOptions = window.apos.modules?.[this.context.type];
+      const manuallyPublished = moduleOptions?.localized && !this.autopublish;
       if (manuallyPublished && this.context.lastPublishedAt) {
         const action = window.apos.modules[this.context.type].action;
         try {
