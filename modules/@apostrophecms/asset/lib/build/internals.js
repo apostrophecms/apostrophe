@@ -130,6 +130,7 @@ module.exports = (self) => {
       return path
         .basename(componentPath)
         .replace(/-/g, '_')
+        .replace(/\s+/g, '')
         .replace(/\.\w+/, '') + (typeof enumerate === 'number' ? `_${enumerate}` : '');
     },
 

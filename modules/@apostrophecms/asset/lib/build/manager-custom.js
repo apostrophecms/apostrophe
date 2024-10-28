@@ -1,12 +1,13 @@
+const path = require('node:path');
 module.exports = (self, entrypoint) => {
+  const predicates = (entrypoint.inputs || [ 'js', 'scss' ])
+    .reduce((acc, type) => {
+      acc[type] = null;
+      return acc;
+    }, {});
+
   return {
     getSourceFiles(meta, { composePath }) {
-      const predicates = (entrypoint.inputs || [ 'js', 'scss' ])
-        .reduce((acc, type) => {
-          acc[type] = null;
-          return acc;
-        }, {});
-
       return self.apos.asset.findSourceFiles(
         meta,
         predicates,
@@ -42,6 +43,20 @@ module.exports = (self, entrypoint) => {
 
       output.prologue = entrypoint.prologue ?? '';
       return output;
+    },
+    match(relSourcePath, metaEntry) {
+      const result = self.apos.asset.findSourceFiles(
+        [ metaEntry ],
+        predicates,
+        {
+          extraSources: entrypoint.sources,
+          skipPredicates: true
+        }
+      );
+      const match = Object.values(result).flat()
+        .some((file) => file.path === path.join(metaEntry.dirname, relSourcePath));
+
+      return match;
     }
   };
 };

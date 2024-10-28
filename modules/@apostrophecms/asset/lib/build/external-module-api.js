@@ -115,10 +115,14 @@ module.exports = (self) => {
     //   The `composePath` is an optional function to compose the path to the source file.
     //   It accepts `file` (a relative to `ui/{folderToSearch}` file path) and `metaEntry`
     //   (the module metadata entry, see `computeSourceMeta()`).
-    // - async getOutput(sourceFiles, { modules }): get the output data for the entrypoint.
+    // - async getOutput(sourceFiles, { modules, suppressErrors }): get the output data for the entrypoint.
     //   The `sourceFiles` is in format compatible with the output of `manager.getSourceFiles()`.
     //   The `modules` option is the list of all modules, usually the cached result
-    //   of `self.getRegisteredModules()`.
+    //   of `self.getRegisteredModules()`. `suppressErrors` is an optional boolean to suppress
+    //   the errors in the output generation (useful in the development environment and HMR).
+    // - match(relPath, rootPath): vote on whether a given source file is part of this entrypoint. The `relPath`
+    //   is a relative to the `ui` folder path (e.g. `src/index.js`). The `rootPath` is the absolute path to the
+    //   `ui` folder. The method should return boolean `true` if the file is part of the entrypoint.
     getEntrypointManger(entrypoint) {
       return getBuildManager(entrypoint);
     },
@@ -242,6 +246,12 @@ function invoke() {
         }
         return {};
       }
+    },
+
+    // Save the core metadata during the build process. It's async to allow
+    // future improvements.
+    async forcePageReload() {
+      self.restartId = self.apos.util.generateId();
     },
 
     // A low-level helper to compute the source metadata for the external modules.
@@ -610,6 +620,10 @@ function invoke() {
     // - importSuffix: A string that will be appended to the import name.
     // - importName: If false, the function will not generate an import name.
     // - enumerateImports: If true, the function will enumerate the import names.
+    // - suppressErrors: If true, the function will not throw an error and will attempt
+    //   to generate a correct output. Use with caution. This option is meant to be used
+    //   in the development environment (HMR) where the build should not e.g. empty
+    //   file (when creating a new file).
     //
     // The function returns an object with `importCode`, `registerCode`, and
     // `invokeCode` string properties.
@@ -629,17 +643,24 @@ function invoke() {
       components.forEach((entry, i) => {
         const { component, path: realPath } = entry;
         if (options.requireDefaultExport) {
+          let content = '';
           try {
-            if (!fs.readFileSync(realPath, 'utf8').match(/export[\s\n]+default/)) {
+            content = fs.readFileSync(realPath, 'utf8');
+          } catch (e) {
+            throw new Error(`The file ${realPath} does not exist.`);
+          }
+          if (!content.match(/export[\s\n]+default/)) {
+            if (!options.suppressErrors) {
               throw new Error(stripIndent`
                       The file ${component} does not have a default export.
 
                       Any ui/src/index.js file that does not have a function as
                       its default export will cause the build to fail in production.
                     `);
+            } else if (content.trim().length === 0) {
+              // Patch it
+              fs.writeFileSync(realPath, 'export default () => {\n\n}\n');
             }
-          } catch (e) {
-            throw new Error(`The file ${realPath} does not exist.`);
           }
         }
         const jsFilename = JSON.stringify(component);
