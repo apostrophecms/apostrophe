@@ -430,8 +430,10 @@ module.exports = (self) => {
     // manifest data and environmnent.
     // The `scene` argument is the scene name (`apos` or `public`), and the `output`
     // argument is the output type - `js` or `css`.
+    // The `modulePreload` argument is a Set that might be provided by the caller to collect
+    // the unique list of module preload links (this method is called multiple times).
     getBundlePageMarkup({
-      scene, output
+      scene, output, modulePreload = new Set()
     }) {
       let entrypoints;
 
@@ -469,6 +471,14 @@ module.exports = (self) => {
         const files = hasDevServer
           ? manifest.src?.[output] ?? []
           : bundles;
+
+        const preload = !hasDevServer && output === 'js'
+          ? manifest.files?.imports ?? []
+          : [];
+
+        preload.forEach(file =>
+          modulePreload.add(`<link rel="modulepreload" href="${assetUrl}/${file}">`)
+        );
 
         markup.push(...getMarkup(
           {
