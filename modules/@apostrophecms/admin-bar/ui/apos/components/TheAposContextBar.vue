@@ -6,10 +6,6 @@
           :v-if="editMode"
           :can-undo="canUndo"
           :can-redo="canRedo"
-          :retrying="retrying"
-          :editing="editing"
-          :saving="saving"
-          :saved="saved"
           @undo="undo"
           @redo="redo"
         />
@@ -19,6 +15,13 @@
           :resizable="breakpointPreviewModeResizable"
           @switch-breakpoint-preview-mode="addContextLabel"
           @reset-breakpoint-preview-mode="removeContextLabel"
+        />
+        <TheAposSavingIndicator
+          :key="'status'"
+          :retrying="retrying"
+          :editing="editing"
+          :saving="saving"
+          :saved="saved"
         />
       </div>
 
