@@ -10,7 +10,7 @@
     "apos": true
   },
   "rules": {
-    "max-len": [ "warn", { "code": 120, "ignoreUrls": true } ],
+    "max-len": "off",
     "no-var": "error",
     "no-console": 0,
     "vue/no-deprecated-v-on-native-modifier": 0,

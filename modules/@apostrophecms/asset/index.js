@@ -276,7 +276,7 @@ module.exports = {
         }
       },
       reset: {
-        usage: 'Clear all build artifcats, public folders (without release) and cache',
+        usage: 'Clear all build artifacts, public folders (without release) and cache',
         afterModuleReady: true,
         async task(argv) {
           if (self.hasBuildModule()) {
@@ -404,7 +404,7 @@ module.exports = {
       // should include the current namespace (`apos.asset.getNamespace()`) and build module alias
       // to avoid conflicts with other modules and multisite environments.
       //
-      // ** `async reset()`: Clear all build artifcats (including manifest).
+      // ** `async reset()`: Clear all build artifacts (including manifest).
       //
       // Called when the `@apostrophecms/asset:reset` task is executed.
       //
