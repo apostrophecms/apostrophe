@@ -10,11 +10,8 @@ module.exports = (self) => {
     stylesheetsPlaceholder,
     widgetsBundles = {}
   }) {
-    const renderMarkup = renderBundleMarkup(
-      self.apos.template.safe,
-      self.apos.asset.getAssetBaseUrl()
-    );
-
+    const modulePreload = new Set();
+    const renderMarkup = renderBundleMarkup(self, modulePreload);
     if (!scriptsPlaceholder && !stylesheetsPlaceholder) {
       return content;
     }
@@ -40,6 +37,7 @@ module.exports = (self) => {
         extraBundles,
         renderMarkup,
         jsMainBundle,
+        modulePreload,
         cssMainBundle,
         es5
       });
@@ -105,15 +103,27 @@ module.exports = (self) => {
         cssBundles: cssMainBundle
       });
 
+    const jsFinal = stripIndent`
+        ${jsBundles}
+        ${Array.from(modulePreload).join('\n')}
+      `;
+
     return content
-      .replace(scriptsPlaceholder, jsBundles)
+      .replace(scriptsPlaceholder, jsFinal)
       .replace(stylesheetsPlaceholder, cssBundles);
   }
 
   return { insertBundlesMarkup };
 };
 
-function renderBundleMarkup (safe, base) {
+function renderBundleMarkup(self, modulePreload) {
+  // The new system only for external build modules
+  if (self.apos.asset.hasBuildModule()) {
+    return renderBundleMarkupByManifest(self, modulePreload);
+  }
+  const safe = self.apos.template.safe;
+  const base = self.apos.asset.getAssetBaseUrl();
+
   return ({
     fileName, ext = 'js', es5 = false
   }) => {
@@ -136,12 +146,34 @@ function renderBundleMarkup (safe, base) {
   };
 }
 
+function renderBundleMarkupByManifest(self, modulePreload) {
+  const safe = self.apos.template.safe;
+
+  return ({
+    fileName, ext = 'js', es5 = false
+  }) => {
+    const entries = self.apos.asset.getBundlePageMarkup({
+      scene: fileName,
+      output: ext,
+      modulePreload,
+      es5
+    });
+
+    return safe(
+      stripIndent`
+      ${entries.join('\n')}
+      `
+    );
+  };
+}
+
 function loadAllBundles({
   content,
   extraBundles,
   scriptsPlaceholder,
   stylesheetsPlaceholder,
   jsMainBundle,
+  modulePreload,
   cssMainBundle,
   renderMarkup,
   es5
@@ -167,7 +199,12 @@ function loadAllBundles({
     (acc, bundle) => reduceToMarkup(acc, bundle, 'css'), cssMainBundle
   );
 
+  const jsFinal = stripIndent`
+    ${jsBundles}
+    ${Array.from(modulePreload).join('\n')}
+  `;
+
   return content
-    .replace(scriptsPlaceholder, jsBundles)
+    .replace(scriptsPlaceholder, jsFinal)
     .replace(stylesheetsPlaceholder, cssBundles);
 }

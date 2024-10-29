@@ -22,6 +22,14 @@ with dynamic choices in this way.
 * Breakpoint preview only targets `[data-apos-refreshable]`.
 * Adds a `isActive` state to context menu items. Also adds possibility to add icons to context menu items.
 * Add a postcss plugin to handle `vh` and `vw` values on breakpoint preview mode.
+* Adds inject component `when` condition with possible values `hmr`, `prod`, and `dev`. Modules should explicitely register their components with the same `when` value and the condition should be met to inject the component.
+* Adds inject `bundler` registration condition. It's in use only when registering a component and will be evaluated on runtime. The value should match the current build module (`webpack` or the external build module alias).
+* Adds new development task `@apostrophecms/asset:reset` to reset the asset build cache and all build artifacts.
+* Revamps the `@apostrophecms/asset` module to enable bundling via build modules.
+* Adds `apos.asset.devServerUrl()` nunjucks helper to get the (bundle) dev server URL when available.
+* The asset module has a new option, `options.hmr` that accepts `public` (default), `apos` or `false` to enable HMR for the public bundle or the admin UI bundle or disable it respectively. This configuration works only with external build modules that support HMR.
+* The asset module has a new option, `options.hmrPort` that accepts an integer (default `null`) to specify the HMR WS port. If not specified, the default express port is used. This configuration works only with external build modules that support HMR WS.
+* The asset module has a new option, `options.productionSourceMaps` that accepts a boolean (default `false`) to enable source maps in production. This configuration works only with external build modules that support source maps.
 
 ### Changes
 

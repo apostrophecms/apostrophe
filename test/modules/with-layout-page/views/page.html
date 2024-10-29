@@ -1,3 +1,9 @@
 {% extends data.outerLayout %}
 
+{% block extraHead %}
+  {% component '@apostrophecms/template:inject' with { where: 'head', end: 'prepend', when: 'dev' } %}
+  <meta name="condition-separator-test" />
+  {% component '@apostrophecms/template:inject' with { where: 'head', end: 'append', when: 'dev' } %}
+{% endblock %}
+
 <h4>Test page with layout</h4>

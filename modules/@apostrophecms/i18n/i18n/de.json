@@ -43,7 +43,7 @@
   "assetTypeBuildComplete": "👍 {{ label }} ist abgeschlossen!",
   "assetTypeBuilding": "🧑‍💻 {{ label }} wird erstellt...",
   "assetWebpackBundlesWarning": "⚠️ Die Webpack-Konfiguration des Moduls {{ module }} ist fehlerhaft. Jedes Bundle kann nur die Eigenschaft 'templates' enthalten, welches ein String-Array sein muss.",
-  "assetWebpackCacheCleared": "Build-Cache geleert.",
+  "assetBuildCacheCleared": "Build-Cache geleert.",
   "assetWebpackConfigWarning": "⚠️ Die Webpack-Konfiguration des Moduls {{ module }} ist fehlerhaft. Es muss ein Objekt sein und sollte nur die folgenden Eigenschaften enthalten: {{ properties }}.",
   "at": "um",
   "automaticTranslationCheckbox": "Textinhalte übersetzen",

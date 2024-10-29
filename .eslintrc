@@ -10,6 +10,7 @@
     "apos": true
   },
   "rules": {
+    "max-len": "off",
     "no-var": "error",
     "no-console": 0,
     "vue/no-deprecated-v-on-native-modifier": 0,
@@ -56,12 +57,12 @@
     {
       "files": "*.vue",
       "globals": {
-        "defineProps": "readable",
-        "defineEmits": "readable",
-        "defineExpose": "readable",
-        "defineOptions": "readable",
-        "defineModel": "readable",
-        "defineSlots": "readable"
+        "defineProps": "readonly",
+        "defineEmits": "readonly",
+        "defineExpose": "readonly",
+        "defineOptions": "readonly",
+        "defineModel": "readonly",
+        "defineSlots": "readonly"
       }
     },
     {

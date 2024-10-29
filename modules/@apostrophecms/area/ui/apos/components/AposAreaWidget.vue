@@ -160,7 +160,7 @@
 </template>
 
 <script>
-import AposIndicator from '../../../../ui/ui/apos/components/AposIndicator.vue';
+import AposIndicator from 'Modules/@apostrophecms/ui/components/AposIndicator.vue';
 
 export default {
   name: 'AposAreaWidget',

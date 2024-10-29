@@ -47,9 +47,12 @@ module.exports = {
     }
   },
 
-  // Export for testing
   formatRebundleConfig,
   verifyRebundleConfig,
+  verifyBundlesEntryPoints,
+  formatExtensionsOptions,
+  fillExtensionsOptions,
+  flattenBundles,
 
   transformRebundledFor,
 
@@ -310,6 +313,7 @@ async function verifyBundlesEntryPoints (bundles) {
 
     return {
       bundleName,
+      modulePath,
       main,
       withIndex,
       ...jsFileExists && { jsPath },
@@ -351,7 +355,7 @@ async function verifyBundlesEntryPoints (bundles) {
   }
 
   const packedFilesByBundle = bundlesPathsWithIndex.reduce((acc, {
-    bundleName, jsPath, scssPath, main, withIndex
+    bundleName, modulePath, jsPath, scssPath, main, withIndex
   }) => {
     if (!jsPath && !scssPath) {
       return acc;
@@ -364,7 +368,8 @@ async function verifyBundlesEntryPoints (bundles) {
         // Boolean indicating if the "main" index.js is included
         // caused by a remapping. It's not yet used anywhere but
         // it's an useful information that we keep.
-        withIndex: !!withIndex || acc[bundleName]?.withIndex,
+        withIndex: !!withIndex || acc[bundleName]?.withIndex || false,
+        modulePath,
         js: [
           ...withIndex?.jsPath ? [ withIndex?.jsPath ] : [],
           ...acc[bundleName] ? acc[bundleName].js : [],

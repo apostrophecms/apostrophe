@@ -548,7 +548,9 @@ async function apostrophe(options, telemetry, rootSpan) {
         'icons',
         'i18n',
         'webpack',
-        'commands'
+        'build',
+        'commands',
+        'before'
       ]
     });
 
@@ -574,8 +576,7 @@ async function apostrophe(options, telemetry, rootSpan) {
   }
 
   // Reorder modules based on their `before` property.
-  function sortModules(moduleNames) {
-    const definitions = self.options.modules;
+  async function sortModules(moduleNames) {
     // The module names that have a `before` property
     const beforeModules = [];
     // The metadata quick access of all modules
@@ -587,11 +588,13 @@ async function apostrophe(options, telemetry, rootSpan) {
 
     // The base module sort metadata
     for (const name of moduleNames) {
-      if (definitions[name].before) {
+      const metadata = await self.synth.getMetadata(name);
+      const before = Object.values(metadata.before).reverse().find(name => typeof name === 'string');
+      if (before) {
         beforeModules.push(name);
       }
       modules[name] = {
-        before: definitions[name].before,
+        before,
         beforeSelf: []
       };
     }
@@ -656,7 +659,8 @@ async function apostrophe(options, telemetry, rootSpan) {
 
   async function instantiateModules() {
     self.modules = {};
-    for (const item of sortModules(modulesToBeInstantiated())) {
+    const sorted = await sortModules(modulesToBeInstantiated());
+    for (const item of sorted) {
       // module registers itself in self.modules
       const apostropheModule = await self.synth.create(item, { apos: self });
       await apostropheModule.emit('moduleReady');

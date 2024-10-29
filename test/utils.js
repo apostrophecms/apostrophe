@@ -4,7 +4,7 @@ const _ = require('lodash');
 
 const getUtils = async () => import('../modules/@apostrophecms/ui/ui/apos/utils/index.js');
 
-describe('Utils', function() {
+describe('Utils', async function() {
   this.timeout(t.timeout);
 
   let apos;
