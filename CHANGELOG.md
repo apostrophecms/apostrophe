@@ -37,6 +37,7 @@ with dynamic choices in this way.
 * Move saving indicator after breakpoint preview.
 * Internal methods `mergeConfiguration`, `autodetectBundles`, `lintModules`, `nestedModuleSubdirs` and `testDir` are now async.
 * `express.getSessionOptions` is now async.
+* `detectDocChange` now returns `true` when one of the docs contains `modified: true`.
 
 ### Fixes
 
