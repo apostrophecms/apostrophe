@@ -1,6 +1,6 @@
 const path = require('path');
 const MiniCssExtractPlugin = require('mini-css-extract-plugin');
-const postcssReplaceViewportUnitsPlugin = require('../postcss-replace-viewport-units-plugin');
+const postcssCopyViewportToContainerUnits = require('postcss-copy-viewport-to-container-units');
 
 module.exports = (options, apos, srcBuildNames) => {
   const postcssPlugins = [
@@ -11,7 +11,9 @@ module.exports = (options, apos, srcBuildNames) => {
 
   if (apos.asset.options.breakpointPreviewMode?.enable === true) {
     postcssPlugins.unshift(
-      postcssReplaceViewportUnitsPlugin()
+      postcssCopyViewportToContainerUnits({
+        selector: ':where(body[data-breakpoint-preview-mode])'
+      })
     );
     mediaToContainerQueriesLoader = {
       loader: path.resolve(__dirname, '../media-to-container-queries-loader.js'),
