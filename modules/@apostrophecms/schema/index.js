@@ -942,10 +942,7 @@ module.exports = {
               _.each(_objects, function (object) {
                 if (object[relationship.name]) {
                   const locale = `${req.locale}:${req.mode}`;
-                  object[relationship.name] = self.apos.util.orderById(
-                    object[relationship.idsStorage].map(id => `${id}:${locale}`),
-                    object[relationship.name]
-                  );
+                  object[relationship.name] = self.apos.util.orderById(object[relationship.idsStorage].map(id => `${id}:${locale}`), object[relationship.name]);
                 }
               });
             }
