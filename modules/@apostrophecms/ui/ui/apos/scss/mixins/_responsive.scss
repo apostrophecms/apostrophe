@@ -1,3 +1,5 @@
+@use "sass:map";
+
 // For more on this naming system, search "ergonomic responsive breakpoints."
 $breakpoints: (
   palm: 320px,
