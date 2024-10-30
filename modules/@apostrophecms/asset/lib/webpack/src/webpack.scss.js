@@ -1,28 +1,25 @@
-const path = require('path');
 const MiniCssExtractPlugin = require('mini-css-extract-plugin');
-const postcssCopyViewportToContainerUnits = require('postcss-copy-viewport-to-container-units');
+const {
+  postcssCopyViewportToContainerUnits,
+  postcssMediaToContainerQueries
+} = require('@apostrophecms/postcss');
 
 module.exports = (options, apos, srcBuildNames) => {
   const postcssPlugins = [
     'autoprefixer',
     {}
   ];
-  let mediaToContainerQueriesLoader = '';
-
   if (apos.asset.options.breakpointPreviewMode?.enable === true) {
     postcssPlugins.unshift(
       postcssCopyViewportToContainerUnits({
         selector: ':where(body[data-breakpoint-preview-mode])'
+      }),
+      postcssMediaToContainerQueries({
+        selector: ':where(body:not([data-breakpoint-preview-mode]))'
       })
     );
-    mediaToContainerQueriesLoader = {
-      loader: path.resolve(__dirname, '../media-to-container-queries-loader.js'),
-      options: {
-        debug: apos.asset.options.breakpointPreviewMode?.debug === true,
-        transform: apos.asset.options.breakpointPreviewMode?.transform || null
-      }
-    };
   }
+  console.log('postcssPlugins', postcssPlugins);
 
   return {
     module: {
@@ -32,8 +29,8 @@ module.exports = (options, apos, srcBuildNames) => {
           use: [
             // Instead of style-loader, to avoid FOUC
             MiniCssExtractPlugin.loader,
-            mediaToContainerQueriesLoader,
-            // Parses CSS imports and make css-loader ignore urls. Urls will still be handled by webpack
+            // Parses CSS imports and make css-loader ignore urls.
+            // Urls will still be handled by webpack
             {
               loader: 'css-loader',
               options: { url: false }

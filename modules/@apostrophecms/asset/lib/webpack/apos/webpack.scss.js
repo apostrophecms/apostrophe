@@ -1,36 +1,33 @@
-const path = require('path');
-const postcssCopyViewportToContainerUnits = require('postcss-copy-viewport-to-container-units');
+const {
+  postcssCopyViewportToContainerUnits,
+  postcssMediaToContainerQueries
+} = require('@apostrophecms/postcss');
 
 module.exports = (options, apos) => {
   const postcssPlugins = [
     'autoprefixer',
     {}
   ];
-  let mediaToContainerQueriesLoader = '';
 
   if (apos.asset.options.breakpointPreviewMode?.enable === true) {
     postcssPlugins.unshift(
       postcssCopyViewportToContainerUnits({
         selector: ':where(body[data-breakpoint-preview-mode])'
+      }),
+      postcssMediaToContainerQueries({
+        selector: ':where(body:not([data-breakpoint-preview-mode]))'
       })
     );
-    mediaToContainerQueriesLoader = {
-      loader: path.resolve(__dirname, '../media-to-container-queries-loader.js'),
-      options: {
-        debug: apos.asset.options.breakpointPreviewMode?.debug === true,
-        transform: apos.asset.options.breakpointPreviewMode?.transform || null
-      }
-    };
   }
 
   return {
     module: {
       rules: [
+        // TODO: Why no postcss plugin here while loader was here?
         {
           test: /\.css$/,
           use: [
             'vue-style-loader',
-            mediaToContainerQueriesLoader,
             'css-loader'
           ]
         },
@@ -38,7 +35,6 @@ module.exports = (options, apos) => {
           test: /\.s[ac]ss$/,
           use: [
             'vue-style-loader',
-            mediaToContainerQueriesLoader,
             'css-loader',
             {
               loader: 'postcss-loader',
