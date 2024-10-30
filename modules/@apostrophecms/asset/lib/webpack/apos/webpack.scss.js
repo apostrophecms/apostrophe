@@ -57,6 +57,9 @@ module.exports = (options, apos) => {
                 // "use" rules must come first or sass throws an error
                 additionalData: `
 @use 'sass:math';
+@use "sass:color";
+@use "sass:map";
+
 @import "Modules/@apostrophecms/ui/scss/mixins/import-all.scss";
               `
               }
