@@ -11,13 +11,6 @@ module.exports = (options, apos, srcBuildNames) => {
     'autoprefixer',
     {}
   ];
-  if (apos.asset.options.breakpointPreviewMode?.enable === true) {
-    postcssPlugins.unshift(
-      postcssViewportToContainerToggle({
-        modifierAttr: 'data-breakpoint-preview-mode'
-      })
-    );
-  }
 
   return {
     module: {
