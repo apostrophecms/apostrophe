@@ -1,5 +1,11 @@
 # Changelog
 
+## UNRELEASED
+
+### Fixes
+
+* Extra bundle detection when using external build module works properly now.
+
 ## 4.9.0 (2024-10-31)
 
 ### Adds
