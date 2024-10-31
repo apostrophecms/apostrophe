@@ -1,4 +1,4 @@
-const postcssViewportToContainerToggle = require('@apostrophecms/postcss');
+const postcssViewportToContainerToggle = require('postcss-viewport-to-container-toggle');
 
 module.exports = (options, apos) => {
   const postcssPlugins = [
