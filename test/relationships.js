@@ -44,7 +44,7 @@ describe('Relationships', function() {
     assert.deepEqual(actual, expected);
   });
 
-  it('should get one level of relationships when withRelationships is true', async function() {
+  it('should get one level of relationships when withRelationships set to one level array', async function() {
     const paper = await apos.paper.find(req, { title: 'paper 1' }).toObject();
 
     const { _articles } = paper._pages[0];
@@ -183,7 +183,7 @@ function getModules() {
             label: 'Pages',
             type: 'relationship',
             withType: 'default-page',
-            withRelationships: true,
+            withRelationships: [ '_articles' ],
             builders: {
               project: {
                 title: 1,
