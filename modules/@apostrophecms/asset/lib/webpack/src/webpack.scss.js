@@ -1,25 +1,23 @@
 const MiniCssExtractPlugin = require('mini-css-extract-plugin');
-const {
-  postcssCopyViewportToContainerUnits,
-  postcssMediaToContainerQueries
-} = require('@apostrophecms/postcss');
+const postcssViewportToContainerToggle = require('@apostrophecms/postcss');
 
 module.exports = (options, apos, srcBuildNames) => {
   const postcssPlugins = [
+    ...apos.asset.options.breakpointPreviewMode?.enable === true ? [
+      postcssViewportToContainerToggle({
+        modifierAttr: 'data-breakpoint-preview-mode'
+      })
+    ] : [],
     'autoprefixer',
     {}
   ];
   if (apos.asset.options.breakpointPreviewMode?.enable === true) {
     postcssPlugins.unshift(
-      postcssCopyViewportToContainerUnits({
-        selector: ':where(body[data-breakpoint-preview-mode])'
-      }),
-      postcssMediaToContainerQueries({
-        selector: ':where(body:not([data-breakpoint-preview-mode]))'
+      postcssViewportToContainerToggle({
+        modifierAttr: 'data-breakpoint-preview-mode'
       })
     );
   }
-  console.log('postcssPlugins', postcssPlugins);
 
   return {
     module: {

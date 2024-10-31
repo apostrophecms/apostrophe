@@ -1,24 +1,16 @@
-const {
-  postcssCopyViewportToContainerUnits,
-  postcssMediaToContainerQueries
-} = require('@apostrophecms/postcss');
+const postcssViewportToContainerToggle = require('@apostrophecms/postcss');
+console.log('postcssViewportToContainerToggle', postcssViewportToContainerToggle);
 
 module.exports = (options, apos) => {
   const postcssPlugins = [
+    ...apos.asset.options.breakpointPreviewMode?.enable === true ? [
+      postcssViewportToContainerToggle({
+        modifierAttr: 'data-breakpoint-preview-mode'
+      })
+    ] : [],
     'autoprefixer',
     {}
   ];
-
-  if (apos.asset.options.breakpointPreviewMode?.enable === true) {
-    postcssPlugins.unshift(
-      postcssCopyViewportToContainerUnits({
-        selector: ':where(body[data-breakpoint-preview-mode])'
-      }),
-      postcssMediaToContainerQueries({
-        selector: ':where(body:not([data-breakpoint-preview-mode]))'
-      })
-    );
-  }
 
   return {
     module: {
