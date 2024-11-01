@@ -128,7 +128,20 @@ export default () => {
   // THAT ONE WIDGET and NO OTHER. Don't worry about finding the
   // others, we will do that for you and we guarantee only one call per widget.
 
-  apos.util.widgetPlayers = {};
+  apos.util.widgetPlayersConfig = {
+    list: {},
+    initialized: false
+  };
+  apos.util.widgetPlayers = new Proxy(apos.util.widgetPlayersConfig.list, {
+    set(target, prop, value) {
+      target[prop] = value;
+      // run the player if we missed the initial run
+      if (apos.util.widgetPlayersConfig.initialized) {
+        apos.util.runPlayers(document, { [prop]: value });
+      }
+      return true;
+    }
+  });
 
   // Run the given function whenever the DOM has new changes that
   // may require attention. The passed function will be
@@ -164,6 +177,23 @@ export default () => {
   // Alias for onReadyAndRefresh, the recommended way to use and document this functionality
   apos.util.onReady = apos.util.onReadyAndRefresh.bind(apos.util.onReadyAndRefresh);
 
+  // Debounce a function execution. Only the last call within the
+  // given timeout will be executed.
+  // Example:
+  // const debounced = apos.util.debounce((msg) => console.log(msg), 1000);
+  // debounced('Hello');
+  // debounced('World');
+  // Only 'World' will be printed after 1 second.
+  apos.util.debounce = function (fn, timeout) {
+    let timer;
+    return (...args) => {
+      timer && clearTimeout(timer);
+      timer = setTimeout(() => {
+        fn(...args);
+      }, timeout);
+    };
+  };
+
   // Run all the players that haven't been run. Invoked for you at DOMready
   // time. You may also invoke it if you just AJAXed in some content and
   // have reason to suspect there could be widgets in there. You may pass:
@@ -184,24 +214,24 @@ export default () => {
   // DON'T try to find all the widgets. DO just enhance `el`.
   // This is a computer science principle known as "separation of concerns."
 
-  apos.util.runPlayers = function(el) {
-    const players = apos.util.widgetPlayers;
+  apos.util.runPlayers = function (el, newPlayer) {
+    const players = newPlayer || apos.util.widgetPlayers;
     const playerList = Object.keys(players);
 
     for (let i = 0; i < playerList.length; i++) {
       const playerOpts = players[playerList[i]];
       const playerEls = (el || document).querySelectorAll(playerOpts.selector);
 
-      playerEls.forEach(function (el) {
-        if (el.aposWidgetPlayed) {
+      playerEls.forEach(function (playerEl) {
+        if (playerEl.aposWidgetPlayed) {
           return;
         }
         // Use an actual property, not a DOM attribute or
         // "data" prefix property, to avoid the problem of
         // elements cloned from innerHTML appearing to have
         // been played too
-        el.aposWidgetPlayed = true;
-        playerOpts.player(el);
+        playerEl.aposWidgetPlayed = true;
+        playerOpts.player(playerEl);
       });
     }
   };
@@ -210,7 +240,8 @@ export default () => {
   // when the page is partially refreshed by the editor.
 
   if (!apos.bus) {
-    apos.util.onReadyAndRefresh(function() {
+    apos.util.onReady(function () {
+      apos.util.widgetPlayersConfig.initialized = true;
       apos.util.runPlayers();
     });
   }
