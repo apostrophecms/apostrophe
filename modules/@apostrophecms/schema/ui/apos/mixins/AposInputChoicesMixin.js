@@ -10,7 +10,8 @@ const DEBOUNCE_TIMEOUT = 500;
 export default {
   data() {
     return {
-      choices: []
+      choices: [],
+      enableValidate: false
     };
   },
 
@@ -58,10 +59,12 @@ export default {
       }
     },
     updateChoices(choices) {
+      this.enableValidate = true;
       this.choices = choices;
       if (this.field.type === 'select') {
         this.prependEmptyChoice();
       }
+      this.validateAndEmit();
     },
     prependEmptyChoice() {
       // Using `hasOwn` here, not simply checking if `field.def` is truthy

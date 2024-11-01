@@ -12,8 +12,7 @@ export default {
   },
   data() {
     return {
-      next: (this.modelValue.data == null) ? null : this.modelValue.data,
-      choices: []
+      next: (this.modelValue.data == null) ? null : this.modelValue.data
     };
   },
   computed: {

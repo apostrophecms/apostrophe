@@ -756,7 +756,7 @@ module.exports = (self) => {
 
   self.addFieldType({
     name: 'array',
-    async convert(req, field, data, destination, { fetchRelationships = true, ancestors = [] } = {}) {
+    async convert(req, field, data, destination, { fetchRelationships = true, ancestors = [], parentIsVisible = true } = {}) {
       const schema = field.schema;
       data = data[field.name];
       if (!Array.isArray(data)) {
@@ -779,7 +779,8 @@ module.exports = (self) => {
         try {
           const options = {
             fetchRelationships,
-            ancestors: [ ...ancestors, destination ]
+            ancestors: [ ...ancestors, destination ],
+            parentIsVisible
           };
           await self.convert(req, schema, datum, result, options);
         } catch (e) {
@@ -861,7 +862,9 @@ module.exports = (self) => {
 
   self.addFieldType({
     name: 'object',
-    async convert(req, field, data, destination, { fetchRelationships = true, ancestors = {}, doc = {} } = {}) {
+    async convert(req, field, data, destination, {
+      fetchRelationships = true, ancestors = {}, doc = {}, parentIsVisible = true
+    } = {}) {
       data = data[field.name];
       const schema = field.schema;
       const errors = [];
@@ -871,7 +874,8 @@ module.exports = (self) => {
       };
       const options = {
         fetchRelationships,
-        ancestors: [ ...ancestors, destination ]
+        ancestors: [ ...ancestors, destination ],
+        parentIsVisible
       };
       if (data == null || typeof data !== 'object' || Array.isArray(data)) {
         data = {};

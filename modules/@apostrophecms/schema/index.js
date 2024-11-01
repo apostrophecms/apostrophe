@@ -577,10 +577,11 @@ module.exports = {
       // `destination` (the current level). This allows resolution of relative
       // `following` paths during sanitization.
 
-      async convert(req, schema, data, destination, { fetchRelationships = true, ancestors = [] } = {}) {
+      async convert(req, schema, data, destination, { fetchRelationships = true, ancestors = [], parentIsVisible = true } = {}) {
         const options = {
           fetchRelationships,
-          ancestors
+          ancestors,
+          parentIsVisible
         };
         if (Array.isArray(req)) {
           throw new Error('convert invoked without a req, do you have one in your context?');
@@ -603,6 +604,7 @@ module.exports = {
 
           if (convert) {
             try {
+              const parentIsVisible = await self.isVisible(req, schema, destination, field.name);
               const isRequired = await self.isFieldRequired(req, field, destination);
               await convert(
                 req,
@@ -612,7 +614,10 @@ module.exports = {
                 },
                 data,
                 destination,
-                options
+                {
+                  ...options,
+                  parentIsVisible
+                }
               );
             } catch (error) {
               if (Array.isArray(error)) {
@@ -655,6 +660,9 @@ module.exports = {
                 destination[field.name] = klona((field.def !== undefined) ? field.def : self.fieldTypes[field.type]?.def);
                 continue;
               }
+            }
+            if (parentIsVisible === false) {
+              continue;
             }
           }
 
