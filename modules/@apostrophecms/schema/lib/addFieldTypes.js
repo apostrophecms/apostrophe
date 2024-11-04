@@ -1,6 +1,5 @@
 const _ = require('lodash');
 const dayjs = require('dayjs');
-const tinycolor = require('tinycolor2');
 const { klona } = require('klona');
 const { stripIndents } = require('common-tags');
 const joinr = require('./joinr');
@@ -256,25 +255,6 @@ module.exports = (self) => {
           return choices;
         }
       });
-    }
-  });
-
-  self.addFieldType({
-    name: 'color',
-    async convert(req, field, data, destination) {
-      destination[field.name] = self.apos.launder.string(data[field.name]);
-
-      if (field.required && (_.isUndefined(destination[field.name]) || !destination[field.name].toString().length)) {
-        throw self.apos.error('required');
-      }
-
-      const test = tinycolor(destination[field.name]);
-      if (!tinycolor(test).isValid()) {
-        destination[field.name] = null;
-      }
-    },
-    isEmpty: function (field, value) {
-      return !value.length;
     }
   });
 

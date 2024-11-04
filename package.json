@@ -35,6 +35,7 @@
     "@apostrophecms/emulate-mongo-3-driver": "^1.0.6",
     "@apostrophecms/vue-material-design-icons": "^1.0.0",
     "@ckpack/vue-color": "^1.4.1",
+    "@ctrl/tinycolor": "^4.1.0",
     "@floating-ui/dom": "^1.5.3",
     "@opentelemetry/api": "^1.0.4",
     "@opentelemetry/semantic-conventions": "^1.0.1",
