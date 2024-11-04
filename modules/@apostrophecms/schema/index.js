@@ -673,7 +673,7 @@ module.exports = {
                 continue;
               }
             }
-            if (parentIsVisible === false) {
+            if (isParentVisible === false) {
               continue;
             }
           }
