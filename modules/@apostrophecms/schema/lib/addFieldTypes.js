@@ -756,7 +756,17 @@ module.exports = (self) => {
 
   self.addFieldType({
     name: 'array',
-    async convert(req, field, data, destination, { fetchRelationships = true, ancestors = [], parentIsVisible = true } = {}) {
+    async convert(
+      req,
+      field,
+      data,
+      destination,
+      {
+        fetchRelationships = true,
+        ancestors = [],
+        isParentVisible = true
+      } = {}
+    ) {
       const schema = field.schema;
       data = data[field.name];
       if (!Array.isArray(data)) {
@@ -780,7 +790,7 @@ module.exports = (self) => {
           const options = {
             fetchRelationships,
             ancestors: [ ...ancestors, destination ],
-            parentIsVisible
+            isParentVisible
           };
           await self.convert(req, schema, datum, result, options);
         } catch (e) {
@@ -862,9 +872,18 @@ module.exports = (self) => {
 
   self.addFieldType({
     name: 'object',
-    async convert(req, field, data, destination, {
-      fetchRelationships = true, ancestors = {}, doc = {}, parentIsVisible = true
-    } = {}) {
+    async convert(
+      req,
+      field,
+      data,
+      destination,
+      {
+        fetchRelationships = true,
+        ancestors = {},
+        isParentVisible = true,
+        doc = {}
+      } = {}
+    ) {
       data = data[field.name];
       const schema = field.schema;
       const errors = [];
@@ -875,7 +894,7 @@ module.exports = (self) => {
       const options = {
         fetchRelationships,
         ancestors: [ ...ancestors, destination ],
-        parentIsVisible
+        isParentVisible
       };
       if (data == null || typeof data !== 'object' || Array.isArray(data)) {
         data = {};
@@ -965,8 +984,20 @@ module.exports = (self) => {
     // properties is handled at a lower level in a beforeSave
     // handler of the doc-type module.
 
-    async convert(req, field, data, destination, { fetchRelationships = true } = {}) {
-      const options = { fetchRelationships };
+    async convert(
+      req,
+      field,
+      data,
+      destination,
+      {
+        fetchRelationships = true,
+        isParentVisible = true
+      } = {}
+    ) {
+      const options = {
+        fetchRelationships,
+        isParentVisible
+      };
       const manager = self.apos.doc.getManager(field.withType);
       if (!manager) {
         throw Error('relationship with type ' + field.withType + ' unrecognized');
