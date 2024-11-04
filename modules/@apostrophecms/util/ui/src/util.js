@@ -177,23 +177,6 @@ export default () => {
   // Alias for onReadyAndRefresh, the recommended way to use and document this functionality
   apos.util.onReady = apos.util.onReadyAndRefresh.bind(apos.util.onReadyAndRefresh);
 
-  // Debounce a function execution. Only the last call within the
-  // given timeout will be executed.
-  // Example:
-  // const debounced = apos.util.debounce((msg) => console.log(msg), 1000);
-  // debounced('Hello');
-  // debounced('World');
-  // Only 'World' will be printed after 1 second.
-  apos.util.debounce = function (fn, timeout) {
-    let timer;
-    return (...args) => {
-      timer && clearTimeout(timer);
-      timer = setTimeout(() => {
-        fn(...args);
-      }, timeout);
-    };
-  };
-
   // Run all the players that haven't been run. Invoked for you at DOMready
   // time. You may also invoke it if you just AJAXed in some content and
   // have reason to suspect there could be widgets in there. You may pass:
