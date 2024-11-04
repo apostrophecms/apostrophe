@@ -34,6 +34,7 @@ export default {
 
   methods: {
     async getChoices() {
+      this.enableValidate = false;
       if (typeof this.field.choices === 'string') {
         const action = this.options.action;
         const response = await apos.http.post(
