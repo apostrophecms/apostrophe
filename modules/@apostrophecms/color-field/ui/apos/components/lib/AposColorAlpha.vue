@@ -1,24 +1,53 @@
+<template>
+  <div class="apos-color__alpha">
+    <div class="apos-color__alpha-checkboard-wrap">
+      <Checkboard />
+    </div>
+    <div class="apos-color__alpha-gradient" :style="{ background: gradientColor }" />
+    <div
+      ref="container"
+      class="apos-color__alpha-container"
+      @mousedown="handleMouseDown"
+      @touchmove="handleChange"
+      @touchstart="handleChange"
+    >
+      <div class="apos-color__alpha-pointer" :style="{ left: `${colors.a * 100}%` }">
+        <div class="apos-color__alpha-picker" />
+      </div>
+    </div>
+  </div>
+</template>
+
 <script>
 import checkboard from './AposColorCheckerboard';
 
 export default {
   name: 'AposColorAlpha',
   components: {
-    Checkboard: checkboard,
+    Checkboard: checkboard
   },
   props: {
-    value: Object,
-    onChange: Function,
+    value: {
+      type: Object,
+      default: () => {
+        return {};
+      }
+    },
+    onChange: {
+      type: Function,
+      default: () => {}
+    }
   },
+  emits: [ 'change' ],
   computed: {
     colors() {
       return this.value;
     },
     gradientColor() {
       const { rgba } = this.colors;
-      const rgbStr = [rgba.r, rgba.g, rgba.b].join(',');
+      const rgbStr = [ rgba.r, rgba.g, rgba.b ].join(',');
       return `linear-gradient(to right, rgba(${rgbStr}, 0) 0%, rgba(${rgbStr}, 1) 100%)`;
-    },
+    }
   },
   methods: {
     handleChange(e, skip) {
@@ -35,12 +64,13 @@ export default {
       const left = pageX - xOffset;
 
       let a;
-      if (left < 0)
+      if (left < 0) {
         a = 0;
-      else if (left > containerWidth)
+      } else if (left > containerWidth) {
         a = 1;
-      else
+      } else {
         a = Math.round(left * 100 / containerWidth) / 100;
+      }
 
       if (this.colors.a !== a) {
         this.$emit('change', {
@@ -48,7 +78,7 @@ export default {
           s: this.colors.hsl.s,
           l: this.colors.hsl.l,
           a,
-          source: 'rgba',
+          source: 'rgba'
         });
       }
     },
@@ -63,40 +93,20 @@ export default {
     unbindEventListeners() {
       window.removeEventListener('mousemove', this.handleChange);
       window.removeEventListener('mouseup', this.handleMouseUp);
-    },
-  },
+    }
+  }
 };
 </script>
 
-<template>
-  <div class="vc-alpha">
-    <div class="vc-alpha-checkboard-wrap">
-      <Checkboard />
-    </div>
-    <div class="vc-alpha-gradient" :style="{ background: gradientColor }" />
-    <div
-      ref="container"
-      class="vc-alpha-container"
-      @mousedown="handleMouseDown"
-      @touchmove="handleChange"
-      @touchstart="handleChange"
-    >
-      <div class="vc-alpha-pointer" :style="{ left: `${colors.a * 100}%` }">
-        <div class="vc-alpha-picker" />
-      </div>
-    </div>
-  </div>
-</template>
-
 <style>
-.vc-alpha {
+.apos-color__alpha {
   position: absolute;
   top: 0px;
   right: 0px;
   bottom: 0px;
   left: 0px;
 }
-.vc-alpha-checkboard-wrap {
+.apos-color__alpha-checkboard-wrap {
   position: absolute;
   top: 0px;
   right: 0px;
@@ -104,25 +114,25 @@ export default {
   left: 0px;
   overflow: hidden;
 }
-.vc-alpha-gradient {
+.apos-color__alpha-gradient {
   position: absolute;
   top: 0px;
   right: 0px;
   bottom: 0px;
   left: 0px;
 }
-.vc-alpha-container {
+.apos-color__alpha-container {
   cursor: pointer;
   position: relative;
   z-index: 2;
   height: 100%;
   margin: 0 3px;
 }
-.vc-alpha-pointer {
+.apos-color__alpha-pointer {
   z-index: 2;
   position: absolute;
 }
-.vc-alpha-picker {
+.apos-color__alpha-picker {
   cursor: pointer;
   width: 4px;
   border-radius: 1px;

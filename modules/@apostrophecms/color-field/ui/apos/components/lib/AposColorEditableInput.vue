@@ -1,18 +1,63 @@
+<template>
+  <div class="apos-color__editable-input">
+    <input
+      ref="input"
+      v-model="val"
+      :aria-labelledby="labelId"
+      class="apos-color__input"
+      @keydown="handleKeyDown"
+      @input="update"
+    >
+    <span
+      :id="labelId"
+      :for="label"
+      class="apos-color__label"
+    >
+      {{ labelSpanText }}
+    </span>
+    <span class="apos-color__desc">
+      {{ desc }}
+    </span>
+  </div>
+</template>
+
 <script>
 export default {
   name: 'AposColorEditableInput',
   props: {
-    label: String,
-    labelText: String,
-    desc: String,
-    value: [String, Number],
-    max: Number,
-    min: Number,
+    label: {
+      type: String,
+      default: ''
+    },
+    labelText: {
+      type: String,
+      default: ''
+    },
+    desc: {
+      type: String,
+      default: ''
+    },
+    // TODO double check default
+    value: {
+      type: [ String, Number ],
+      default: () => {
+        return '';
+      }
+    },
+    max: {
+      type: Number,
+      default: undefined
+    },
+    min: {
+      type: Number,
+      default: undefined
+    },
     arrowOffset: {
       type: Number,
-      default: 1,
-    },
+      default: 1
+    }
   },
+  emits: [ 'change' ],
   computed: {
     val: {
       get() {
@@ -20,18 +65,19 @@ export default {
       },
       set(v) {
         // TODO: min
-        if (!(this.max === undefined) && +v > this.max)
+        if (!(this.max === undefined) && +v > this.max) {
           this.$refs.input.value = this.max;
-        else
+        } else {
           return v;
-      },
+        }
+      }
     },
     labelId() {
       return `input__label__${this.label}__${Math.random().toString().slice(2, 5)}`;
     },
     labelSpanText() {
       return this.labelText || this.label;
-    },
+    }
   },
   methods: {
     update(e) {
@@ -40,15 +86,12 @@ export default {
     handleChange(newVal) {
       const data = {};
       data[this.label] = newVal;
-      if (data.hex === undefined && data['#'] === undefined)
+      if (data.hex === undefined && data['#'] === undefined) {
         this.$emit('change', data);
-      else if (newVal.length > 5)
+      } else if (newVal.length > 5) {
         this.$emit('change', data);
+      }
     },
-    // **** unused
-    // handleBlur (e) {
-    //   console.log(e)
-    // },
     handleKeyDown(e) {
       let { val } = this;
       const number = Number(val);
@@ -70,43 +113,21 @@ export default {
           e.preventDefault();
         }
       }
-    },
-    // **** unused
-    // handleDrag (e) {
-    //   console.log(e)
-    // },
-    // handleMouseDown (e) {
-    //   console.log(e)
-    // }
-  },
+    }
+  }
 };
 </script>
 
-<template>
-  <div class="vc-editable-input">
-    <input
-      ref="input"
-      v-model="val"
-      :aria-labelledby="labelId"
-      class="vc-input__input"
-      @keydown="handleKeyDown"
-      @input="update"
-    >
-    <span :id="labelId" :for="label" class="vc-input__label">{{ labelSpanText }}</span>
-    <span class="vc-input__desc">{{ desc }}</span>
-  </div>
-</template>
-
 <style>
-.vc-editable-input {
+.apos-color__editable-input {
   position: relative;
 }
-.vc-input__input {
+.apos-color__input {
   padding: 0;
   border: 0;
   outline: none;
 }
-.vc-input__label {
+.apos-color__label {
   text-transform: capitalize;
 }
 </style>

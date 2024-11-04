@@ -1,18 +1,50 @@
+<template>
+  <div class="apos-color__hue" :class="[directionClass]">
+    <div
+      ref="container"
+      class="vc-hue-container"
+      role="slider"
+      :aria-valuenow="colors.hsl.h"
+      aria-valuemin="0"
+      aria-valuemax="360"
+      @mousedown="handleMouseDown"
+      @touchmove="handleChange"
+      @touchstart="handleChange"
+    >
+      <div
+        class="apos-color__hue-pointer"
+        :style="{ top: pointerTop, left: pointerLeft }"
+        role="presentation"
+      >
+        <div class="apos-color__hue-picker" />
+      </div>
+    </div>
+  </div>
+</template>
+
 <script>
 export default {
   name: 'AposColorHue',
   props: {
-    value: Object,
+    value: {
+      type: Object,
+      default: () => {
+        return {};
+      }
+    },
     direction: {
       type: String,
-      // [horizontal | vertical]
       default: 'horizontal',
-    },
+      validator(value) {
+        return [ 'horizontal', 'vertical' ].includes(value);
+      }
+    }
   },
+  emits: [ 'change' ],
   data() {
     return {
       oldHue: 0,
-      pullDirection: '',
+      pullDirection: ''
     };
   },
   computed: {
@@ -21,40 +53,45 @@ export default {
     },
     directionClass() {
       return {
-        'vc-hue--horizontal': this.direction === 'horizontal',
-        'vc-hue--vertical': this.direction === 'vertical',
+        'apos-color__hue--horizontal': this.direction === 'horizontal',
+        'apos-color__hue--vertical': this.direction === 'vertical'
       };
     },
     pointerTop() {
       if (this.direction === 'vertical') {
-        if (this.colors.hsl.h === 0 && this.pullDirection === 'right')
+        if (this.colors.hsl.h === 0 && this.pullDirection === 'right') {
           return 0;
+        }
         return `${-((this.colors.hsl.h * 100) / 360) + 100}%`;
       }
       return 0;
     },
     pointerLeft() {
-      if (this.direction === 'vertical')
+      if (this.direction === 'vertical') {
         return 0;
+      }
 
-      if (this.colors.hsl.h === 0 && this.pullDirection === 'right')
+      if (this.colors.hsl.h === 0 && this.pullDirection === 'right') {
         return '100%';
+      }
       return `${(this.colors.hsl.h * 100) / 360}%`;
-    },
+    }
   },
   watch: {
     value: {
-      handler(value, oldVal) {
+      handler(value) {
         const { h } = value.hsl;
-        if (h !== 0 && h - this.oldHue > 0)
+        if (h !== 0 && h - this.oldHue > 0) {
           this.pullDirection = 'right';
-        if (h !== 0 && h - this.oldHue < 0)
+        }
+        if (h !== 0 && h - this.oldHue < 0) {
           this.pullDirection = 'left';
+        }
         this.oldHue = h;
       },
       deep: true,
-      immediate: true,
-    },
+      immediate: true
+    }
   },
   methods: {
     handleChange(e, skip) {
@@ -81,11 +118,9 @@ export default {
       if (this.direction === 'vertical') {
         if (top < 0) {
           h = 360;
-        }
-        else if (top > containerHeight) {
+        } else if (top > containerHeight) {
           h = 0;
-        }
-        else {
+        } else {
           percent = -(top * 100 / containerHeight) + 100;
           h = (360 * percent / 100);
         }
@@ -96,18 +131,15 @@ export default {
             s: this.colors.hsl.s,
             l: this.colors.hsl.l,
             a: this.colors.hsl.a,
-            source: 'hsl',
+            source: 'hsl'
           });
         }
-      }
-      else {
+      } else {
         if (left < 0) {
           h = 0;
-        }
-        else if (left > containerWidth) {
+        } else if (left > containerWidth) {
           h = 360;
-        }
-        else {
+        } else {
           percent = left * 100 / containerWidth;
           h = (360 * percent / 100);
         }
@@ -118,7 +150,7 @@ export default {
             s: this.colors.hsl.s,
             l: this.colors.hsl.l,
             a: this.colors.hsl.a,
-            source: 'hsl',
+            source: 'hsl'
           });
         }
       }
@@ -136,33 +168,13 @@ export default {
       window.removeEventListener('mousemove', this.handleChange);
       window.removeEventListener('mouseup', this.handleChange);
       window.removeEventListener('mouseup', this.handleMouseUp);
-    },
-  },
+    }
+  }
 };
 </script>
 
-<template>
-  <div class="vc-hue" :class="[directionClass]">
-    <div
-      ref="container"
-      class="vc-hue-container"
-      role="slider"
-      :aria-valuenow="colors.hsl.h"
-      aria-valuemin="0"
-      aria-valuemax="360"
-      @mousedown="handleMouseDown"
-      @touchmove="handleChange"
-      @touchstart="handleChange"
-    >
-      <div class="vc-hue-pointer" :style="{ top: pointerTop, left: pointerLeft }" role="presentation">
-        <div class="vc-hue-picker" />
-      </div>
-    </div>
-  </div>
-</template>
-
 <style>
-.vc-hue {
+.apos-color__hue {
   position: absolute;
   top: 0px;
   right: 0px;
@@ -170,23 +182,23 @@ export default {
   left: 0px;
   border-radius: 2px;
 }
-.vc-hue--horizontal {
+.apos-color__hue--horizontal {
   background: linear-gradient(to right, #f00 0%, #ff0 17%, #0f0 33%, #0ff 50%, #00f 67%, #f0f 83%, #f00 100%);
 }
-.vc-hue--vertical {
+.apos-color__hue--vertical {
   background: linear-gradient(to top, #f00 0%, #ff0 17%, #0f0 33%, #0ff 50%, #00f 67%, #f0f 83%, #f00 100%);
 }
-.vc-hue-container {
+.apos-color__hue-container {
   cursor: pointer;
   margin: 0 2px;
   position: relative;
   height: 100%;
 }
-.vc-hue-pointer {
+.apos-color__hue-pointer {
   z-index: 2;
   position: absolute;
 }
-.vc-hue-picker {
+.apos-color__hue-picker {
   cursor: pointer;
   margin-top: 1px;
   width: 4px;

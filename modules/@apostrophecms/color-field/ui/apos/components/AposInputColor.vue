@@ -42,12 +42,8 @@
 
 <script>
 import AposInputColorLogic from '../logic/AposInputColor';
-import AposColor from './AposColor';
 export default {
   name: 'AposInputColor',
-  components: [
-    AposColor
-  ],
   mixins: [ AposInputColorLogic ]
 };
 </script>
@@ -70,20 +66,4 @@ export default {
       color: var(--a-text-primary);
     }
   }
-
-  :deep(.apos-popover .apos-color) {
-    padding: 0;
-    box-shadow: none;
-  }
 </style>
-
-<!--
-  This styleblock is unscoped so that it reaches the color field's implementation
-  of AposContextMenu, which is outside the component's DOM tree
--->
-<!-- <style lang="scss">
-  .apos-popover .vc-sketch {
-    padding: 0;
-    box-shadow: none;
-  }
-</style> -->

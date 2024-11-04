@@ -119,7 +119,6 @@
     "sortablejs": "^1.15.0",
     "sortablejs-vue3": "^1.2.11",
     "tiny-emitter": "^2.1.0",
-    "tinycolor2": "^1.4.2",
     "tough-cookie": "^4.0.0",
     "underscore.string": "^3.3.4",
     "uploadfs": "^1.22.6",

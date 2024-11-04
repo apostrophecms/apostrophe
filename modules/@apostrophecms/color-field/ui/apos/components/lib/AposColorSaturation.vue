@@ -1,16 +1,16 @@
 <template>
   <div
     ref="container"
-    class="vc-saturation"
+    class="apos-color__saturation"
     :style="{ background: bgColor }"
     @mousedown="handleMouseDown"
     @touchmove="handleChange"
     @touchstart="handleChange"
   >
-    <div class="vc-saturation--white" />
-    <div class="vc-saturation--black" />
-    <div class="vc-saturation-pointer" :style="{ top: pointerTop, left: pointerLeft }">
-      <div class="vc-saturation-circle" />
+    <div class="apos-color__saturation-white" />
+    <div class="apos-color__saturation-black" />
+    <div class="apos-color__saturation-pointer" :style="{ top: pointerTop, left: pointerLeft }">
+      <div class="apos-color__saturation-circle" />
     </div>
   </div>
 </template>
@@ -26,6 +26,7 @@ export default {
       }
     }
   },
+  emits: [ 'change' ],
   computed: {
     colors() {
       return this.value;
@@ -38,7 +39,7 @@ export default {
     },
     pointerLeft() {
       return `${this.colors.hsv.s * 100}%`;
-    },
+    }
   },
   methods: {
     handleChange(e, skip) {
@@ -55,17 +56,17 @@ export default {
       const yOffset = container.getBoundingClientRect().top + window.pageYOffset;
       const pageX = e.pageX || (e.touches ? e.touches[0].pageX : 0);
       const pageY = e.pageY || (e.touches ? e.touches[0].pageY : 0);
-      const left = clamp(pageX - xOffset, 0, containerWidth);
-      const top = clamp(pageY - yOffset, 0, containerHeight);
+      const left = this.clamp(pageX - xOffset, 0, containerWidth);
+      const top = this.clamp(pageY - yOffset, 0, containerHeight);
       const saturation = left / containerWidth;
-      const bright = clamp(-(top / containerHeight) + 1, 0, 1);
+      const bright = this.clamp(-(top / containerHeight) + 1, 0, 1);
 
       this.onChange({
         h: this.colors.hsv.h,
         s: saturation,
         v: bright,
         a: this.colors.hsv.a,
-        source: 'hsva',
+        source: 'hsva'
       });
     },
     onChange(param) {
@@ -95,9 +96,9 @@ export default {
 </script>
 
 <style>
-.vc-saturation,
-.vc-saturation--white,
-.vc-saturation--black {
+.apos-color__saturation,
+.apos-color__saturation-white,
+.apos-color__saturation-black {
   cursor: pointer;
   position: absolute;
   top: 0;
@@ -106,17 +107,17 @@ export default {
   bottom: 0;
 }
 
-.vc-saturation--white {
+.apos-color__saturation-white {
   background: linear-gradient(to right, #fff, rgba(255,255,255,0));
 }
-.vc-saturation--black {
+.apos-color__saturation-black {
   background: linear-gradient(to top, #000, rgba(0,0,0,0));
 }
-.vc-saturation-pointer {
+.apos-color__saturation-pointer {
   cursor: pointer;
   position: absolute;
 }
-.vc-saturation-circle {
+.apos-color__saturation-circle {
   cursor: head;
   width: 4px;
   height: 4px;

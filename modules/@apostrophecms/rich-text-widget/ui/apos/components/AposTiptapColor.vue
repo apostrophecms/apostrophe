@@ -36,7 +36,7 @@
           class="text-color-component"
           @mousedown="handleMouseDown"
         >
-          <Picker
+          <AposColor
             v-bind="pickerOptions"
             :model-value="pickerValue"
             @update:model-value="update"
@@ -60,13 +60,13 @@
 import {
   ref, watch, computed, defineComponent
 } from 'vue';
-import { Sketch as Picker } from '@ckpack/vue-color';
-import tinycolor from 'tinycolor2';
+import AposColor from '../../../../color-field/ui/apos/components/AposColor';
+import { TinyColor } from '@ctrl/tinycolor';
 
 export default defineComponent({
   name: 'AposTiptapColor',
   components: {
-    Picker
+    AposColor
   },
   props: {
     name: {
@@ -181,7 +181,7 @@ export default defineComponent({
     };
 
     const update = (value) => {
-      tinyColorObj.value = tinycolor(value.hsl);
+      tinyColorObj.value = new TinyColor(value.hsl);
       next.value = tinyColorObj.value.toString(format.value);
       props.editor.chain().focus().setColor(next.value).run();
       indicatorColor.value = next.value;

@@ -1,29 +1,32 @@
+<template>
+  <div class="apos-color__checkerboard" :style="bgStyle" />
+</template>
+
 <script>
 const _checkboardCache = {};
-
 export default {
   name: 'AposColorCheckerboard',
   props: {
     size: {
-      type: [Number, String],
-      default: 8,
+      type: [ Number, String ],
+      default: 8
     },
     white: {
       type: String,
-      default: '#fff',
+      default: '#fff'
     },
     grey: {
       type: String,
-      default: '#e6e6e6',
-    },
+      default: '#e6e6e6'
+    }
   },
   computed: {
     bgStyle() {
       return {
-        'background-image': `url(${getCheckboard(this.white, this.grey, this.size)})`,
+        'background-image': `url(${getCheckboard(this.white, this.grey, this.size)})`
       };
-    },
-  },
+    }
+  }
 };
 
 /**
@@ -36,15 +39,17 @@ export default {
 
 function renderCheckboard(c1, c2, size) {
   // Dont Render On Server
-  if (typeof document === 'undefined')
+  if (typeof document === 'undefined') {
     return null;
+  }
 
   const canvas = document.createElement('canvas');
   canvas.width = canvas.height = size * 2;
   const ctx = canvas.getContext('2d');
   // If no context can be found, return early.
-  if (!ctx)
+  if (!ctx) {
     return null;
+  }
 
   ctx.fillStyle = c1;
   ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -66,8 +71,9 @@ function renderCheckboard(c1, c2, size) {
 function getCheckboard(c1, c2, size) {
   const key = `${c1},${c2},${size}`;
 
-  if (_checkboardCache[key])
+  if (_checkboardCache[key]) {
     return _checkboardCache[key];
+  }
 
   const checkboard = renderCheckboard(c1, c2, size);
   _checkboardCache[key] = checkboard;
@@ -75,12 +81,8 @@ function getCheckboard(c1, c2, size) {
 }
 </script>
 
-<template>
-  <div class="vc-checkerboard" :style="bgStyle" />
-</template>
-
 <style>
-.vc-checkerboard {
+.apos-color__checkerboard {
   position: absolute;
   top: 0px;
   right: 0px;

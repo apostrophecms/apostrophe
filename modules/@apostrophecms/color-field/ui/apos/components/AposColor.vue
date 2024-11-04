@@ -95,7 +95,7 @@
 </template>
 
 <script>
-import colorMixin from '../logic/AposColor';
+import colorMixin from '../mixins/AposColorMixin';
 import editableInput from './lib/AposColorEditableInput';
 import saturation from './lib/AposColorSaturation';
 import hue from './lib/AposColorHue';
@@ -138,17 +138,18 @@ export default {
   computed: {
     hex() {
       let hex;
-      if (this.colors.a < 1)
+      if (this.colors.a < 1) {
         hex = this.colors.hex8;
-      else
+      } else {
         hex = this.colors.hex;
+      }
 
       return hex.replace('#', '');
     },
     activeColor() {
       const { rgba } = this.colors;
-      return `rgba(${[rgba.r, rgba.g, rgba.b, rgba.a].join(',')})`;
-    },
+      return `rgba(${[ rgba.r, rgba.g, rgba.b, rgba.a ].join(',')})`;
+    }
   },
   methods: {
     handlePreset(c) {
@@ -158,26 +159,26 @@ export default {
       this.colorChange(data);
     },
     inputChange(data) {
-      if (!data)
+      if (!data) {
         return;
+      }
 
       if (data.hex) {
         this.isValidHex(data.hex) && this.colorChange({
           hex: data.hex,
-          source: 'hex',
+          source: 'hex'
         });
-      }
-      else if (data.r || data.g || data.b || data.a) {
+      } else if (data.r || data.g || data.b || data.a) {
         this.colorChange({
           r: data.r || this.colors.rgba.r,
           g: data.g || this.colors.rgba.g,
           b: data.b || this.colors.rgba.b,
           a: data.a || this.colors.rgba.a,
-          source: 'rgba',
+          source: 'rgba'
         });
       }
-    },
-  },
+    }
+  }
 };
 </script>
 
@@ -203,7 +204,7 @@ export default {
   display: flex;
 }
 
-.apos-color__-sliders {
+.apos-color__sliders {
   padding: 4px 0;
   flex: 1;
 }
@@ -309,5 +310,10 @@ export default {
 
 .apos-color--disable-alpha .apos-color__color-wrap {
   height: 10px;
+}
+
+.apos-popover .apos-color {
+  padding: 0;
+  box-shadow: none;
 }
 </style>
