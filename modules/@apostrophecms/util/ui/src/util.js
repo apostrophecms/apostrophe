@@ -128,15 +128,15 @@ export default () => {
   // THAT ONE WIDGET and NO OTHER. Don't worry about finding the
   // others, we will do that for you and we guarantee only one call per widget.
 
-  apos.util.widgetPlayersConfig = {
+  const widgetPlayersConfig = {
     list: {},
     initialized: false
   };
-  apos.util.widgetPlayers = new Proxy(apos.util.widgetPlayersConfig.list, {
+  apos.util.widgetPlayers = new Proxy(widgetPlayersConfig.list, {
     set(target, prop, value) {
       target[prop] = value;
       // run the player if we missed the initial run
-      if (apos.util.widgetPlayersConfig.initialized) {
+      if (widgetPlayersConfig.initialized) {
         apos.util.runPlayers(document, { [prop]: value });
       }
       return true;
@@ -241,7 +241,7 @@ export default () => {
 
   if (!apos.bus) {
     apos.util.onReady(function () {
-      apos.util.widgetPlayersConfig.initialized = true;
+      widgetPlayersConfig.initialized = true;
       apos.util.runPlayers();
     });
   }
