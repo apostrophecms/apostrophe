@@ -4,7 +4,9 @@ module.exports = (options, apos) => {
   const postcssPlugins = [
     ...apos.asset.options.breakpointPreviewMode?.enable === true ? [
       postcssViewportToContainerToggle({
-        modifierAttr: 'data-breakpoint-preview-mode'
+        modifierAttr: 'data-breakpoint-preview-mode',
+        debug: apos.asset.options.breakpointPreviewMode?.debug === true,
+        transform: apos.asset.options.breakpointPreviewMode?.transform || null
       })
     ] : [],
     'autoprefixer',
@@ -14,12 +16,20 @@ module.exports = (options, apos) => {
   return {
     module: {
       rules: [
-        // TODO: Why no postcss plugin here while loader was here?
         {
           test: /\.css$/,
           use: [
             'vue-style-loader',
-            'css-loader'
+            'css-loader',
+            {
+              loader: 'postcss-loader',
+              options: {
+                sourceMap: true,
+                postcssOptions: {
+                  plugins: [ postcssPlugins ]
+                }
+              }
+            }
           ]
         },
         {
