@@ -198,7 +198,7 @@ export default defineComponent({
 
     const handleMouseDown = (event) => {
       const target = event.target;
-      if (target.closest('.vc-sketch-saturation-wrap') || target.closest('.vc-sketch-presets')) {
+      if (target.closest('.apos-color__saturation-wrap') || target.closest('.apos-color__presets')) {
         event.preventDefault();
       } else {
         props.editor.view.dom.focus();
