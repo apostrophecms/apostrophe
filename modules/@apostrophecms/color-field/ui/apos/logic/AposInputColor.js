@@ -1,6 +1,6 @@
 
 import AposInputMixin from 'Modules/@apostrophecms/schema/mixins/AposInputMixin';
-import AposColor from '../components/AposColor';
+import AposColor from '../components/AposColor.vue';
 import { TinyColor } from '@ctrl/tinycolor';
 
 export default {
