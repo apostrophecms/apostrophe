@@ -96,11 +96,11 @@
 
 <script>
 import colorMixin from '../mixins/AposColorMixin';
-import editableInput from './lib/AposColorEditableInput';
-import saturation from './lib/AposColorSaturation';
-import hue from './lib/AposColorHue';
-import alpha from './lib/AposColorAlpha';
-import checkboard from './lib/AposColorCheckerboard';
+import editableInput from '../lib/AposColorEditableInput';
+import saturation from '../lib/AposColorSaturation';
+import hue from '../lib/AposColorHue';
+import alpha from '../lib/AposColorAlpha';
+import checkboard from '../lib/AposColorCheckerboard';
 
 const presetColors = [
   '#D0021B', '#F5A623', '#F8E71C', '#8B572A', '#7ED321',
