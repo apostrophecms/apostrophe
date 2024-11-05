@@ -113,7 +113,7 @@ export default {
       html.appendChild(list);
 
       return {
-        content: html,
+        content: html.innerHTML,
         localize: false
       };
     },
