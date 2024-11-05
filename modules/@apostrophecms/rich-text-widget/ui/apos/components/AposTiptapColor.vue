@@ -60,14 +60,10 @@
 import {
   ref, watch, computed, defineComponent
 } from 'vue';
-import AposColor from '../../../../color-field/ui/apos/components/AposColor';
 import { TinyColor } from '@ctrl/tinycolor';
 
 export default defineComponent({
   name: 'AposTiptapColor',
-  components: {
-    AposColor
-  },
   props: {
     name: {
       type: String,
