@@ -60,7 +60,7 @@
 import {
   ref, watch, computed, defineComponent
 } from 'vue';
-import AposColor from '../../../../color-field/ui/apos/components/AposColor';
+import AposColor from 'Modules/@apostrophecms/color-field/components/AposColor.vue';
 import { TinyColor } from '@ctrl/tinycolor';
 
 export default defineComponent({
