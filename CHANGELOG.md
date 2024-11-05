@@ -5,6 +5,7 @@
 ### Fixes
 
 * Extra bundle detection when using external build module works properly now.
+* Fix permission grid tooltip display.
 
 ## 4.9.0 (2024-10-31)
 
