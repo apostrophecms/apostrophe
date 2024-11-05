@@ -1,8 +1,6 @@
 const { TinyColor } = require('@ctrl/tinycolor');
 const _ = require('lodash');
 
-console.log(TinyColor);
-
 module.exports = {
   options: {
     name: 'color',
