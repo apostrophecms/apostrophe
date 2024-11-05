@@ -24,7 +24,7 @@
             />
           </AposContextMenu>
         </div>
-        <div class="apos-input-color__info">
+        <div class="apos-input-color__info" data-apos-test="colorInfo">
           {{ valueLabel }}
           <AposButton
             v-if="next"
