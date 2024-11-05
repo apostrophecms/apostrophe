@@ -19,7 +19,7 @@
 </template>
 
 <script>
-import checkboard from './AposColorCheckerboard';
+import checkboard from './AposColorCheckerboard.vue';
 
 export default {
   name: 'AposColorAlpha',
