@@ -137,7 +137,7 @@ export default () => {
       target[prop] = value;
       // run the player if we missed the initial run
       if (widgetPlayersConfig.initialized) {
-        apos.util.runPlayers(document, { [prop]: value });
+        apos.util.runPlayers(null, { init: true });
       }
       return true;
     }
@@ -196,13 +196,25 @@ export default () => {
   // Your player is guaranteed to run only once per widget. Hint:
   // DON'T try to find all the widgets. DO just enhance `el`.
   // This is a computer science principle known as "separation of concerns."
+  //
+  // The second argument is an options object. If the `init` option is true, only
+  // players that haven't already been yet initialized will be run. This option
+  // is only used internally and shouldn't be passed outside of the core
+  // initialization process.
 
-  apos.util.runPlayers = function (el, newPlayer) {
-    const players = newPlayer || apos.util.widgetPlayers;
+  apos.util.runPlayers = function (el, { init = false } = {}) {
+    const players = apos.util.widgetPlayers;
     const playerList = Object.keys(players);
 
     for (let i = 0; i < playerList.length; i++) {
       const playerOpts = players[playerList[i]];
+      // Guard against multiple player runs early during initialization.
+      if (init) {
+        if (playerOpts.initialized) {
+          continue;
+        }
+        playerOpts.initialized = true;
+      }
       const playerEls = (el || document).querySelectorAll(playerOpts.selector);
 
       playerEls.forEach(function (playerEl) {
@@ -225,7 +237,7 @@ export default () => {
   if (!apos.bus) {
     apos.util.onReady(function () {
       widgetPlayersConfig.initialized = true;
-      apos.util.runPlayers();
+      apos.util.runPlayers(null, { init: true });
     });
   }
 
