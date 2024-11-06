@@ -137,7 +137,7 @@ export default () => {
       target[prop] = value;
       // run the player if we missed the initial run
       if (widgetPlayersConfig.initialized) {
-        apos.util.runPlayers(null, { init: true });
+        apos.util.runPlayers(null, { newPlayersOnly: true });
       }
       return true;
     }
@@ -197,24 +197,23 @@ export default () => {
   // DON'T try to find all the widgets. DO just enhance `el`.
   // This is a computer science principle known as "separation of concerns."
   //
-  // The second argument is an options object. If the `init` option is true, only
-  // players that haven't already been yet initialized will be run. This option
-  // is only used internally and shouldn't be passed outside of the core
-  // initialization process.
+  // The second argument is an options object.
+  // If the `newPlayersOnly` option is true, only widget player types whose players
+  // have not been invoked before will be invoked. This option is used internally
+  // and shouldn't be needed outside of the core initialization process.
 
-  apos.util.runPlayers = function (el, { init = false } = {}) {
+  apos.util.runPlayers = function (el, { newPlayersOnly = false } = {}) {
     const players = apos.util.widgetPlayers;
-    const playerList = Object.keys(players);
+    let playerList = Object.keys(players);
+
+    // Guard against multiple player runs early during initialization.
+    if (newPlayersOnly) {
+      playerList = playerList.filter(player => !players[player].initialized);
+      playerList.forEach(player => (players[player].initialized = true));
+    }
 
     for (let i = 0; i < playerList.length; i++) {
       const playerOpts = players[playerList[i]];
-      // Guard against multiple player runs early during initialization.
-      if (init) {
-        if (playerOpts.initialized) {
-          continue;
-        }
-        playerOpts.initialized = true;
-      }
       const playerEls = (el || document).querySelectorAll(playerOpts.selector);
 
       playerEls.forEach(function (playerEl) {
@@ -237,7 +236,7 @@ export default () => {
   if (!apos.bus) {
     apos.util.onReady(function () {
       widgetPlayersConfig.initialized = true;
-      apos.util.runPlayers(null, { init: true });
+      apos.util.runPlayers(null, { newPlayersOnly: true });
     });
   }
 
