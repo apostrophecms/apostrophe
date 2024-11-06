@@ -500,7 +500,13 @@ module.exports = {
           hmr: self.hasHMR(),
           hmrPort: self.options.hmrPort,
           modulePreloadPolyfill: self.options.modulePreloadPolyfill,
-          sourcemaps: self.options.productionSourceMaps
+          sourcemaps: self.options.productionSourceMaps,
+          postcssViewportToContainerToggle: {
+            enable: self.options.breakpointPreviewMode?.enable,
+            debug: self.options.breakpointPreviewMode?.debug === true,
+            modifierAttr: 'data-breakpoint-preview-mode',
+            transform: self.options.breakpointPreviewMode?.transform
+          }
         };
         options.devServer = !options.isTask && self.hasDevServer()
           ? self.options.hmr
@@ -633,7 +639,7 @@ module.exports = {
           return;
         }
 
-        // Hidrate the entrypoints with the saved manifest data and
+        // Hydrate the entrypoints with the saved manifest data and
         // set the current build manifest data.
         const buildOptions = self.getBuildOptions();
         const entrypoints = await self.getBuildModule().entrypoints(buildOptions);
