@@ -6,6 +6,7 @@
 
 * Extra bundle detection when using external build module works properly now.
 * Widget players are now properly invoked when they arrive later in the page load process.
+* Fix permission grid tooltip display.
 
 ### Adds
 
