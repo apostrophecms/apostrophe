@@ -485,6 +485,7 @@ module.exports = {
       // - `types`: optional array, if present it represents the only entrypoint types (entrypoint.type)
       //   that should be built.
       // - `sourcemaps`: if `true`, the source maps are generated in production.
+      // - `postcssViewportToContainerToggle`: the configuration for the breakpoint preview plugin.
       //
       // Note that this getter depends on the current build task arguments. You shouldn't
       // use that directly.
