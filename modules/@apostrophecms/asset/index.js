@@ -503,7 +503,7 @@ module.exports = {
           modulePreloadPolyfill: self.options.modulePreloadPolyfill,
           sourcemaps: self.options.productionSourceMaps,
           postcssViewportToContainerToggle: {
-            enable: self.options.breakpointPreviewMode?.enable,
+            enable: self.options.breakpointPreviewMode?.enable === true,
             debug: self.options.breakpointPreviewMode?.debug === true,
             modifierAttr: 'data-breakpoint-preview-mode',
             transform: self.options.breakpointPreviewMode?.transform
