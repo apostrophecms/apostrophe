@@ -864,7 +864,7 @@ module.exports = {
       // apos.template.prepend({
       //   component: 'module-name:async-component-name',
       //   where: 'head',
-      //   when: 'hmr, // or e.g. ['hmr', 'dev'], logical AND
+      //   when: 'hmr', // or e.g. ['hmr', 'dev'], logical AND
       //   bundler: 'vite',
       // });
       // OR
@@ -909,7 +909,7 @@ module.exports = {
       // apos.template.append({
       //   component: 'module-name:async-component-name',
       //   where: 'head',
-      //   when: 'hmr, // or e.g. ['hmr', 'dev'], logical AND
+      //   when: 'hmr', // or e.g. ['hmr', 'dev'], logical AND
       //   bundler: 'vite',
       // });
       // OR
@@ -938,6 +938,8 @@ module.exports = {
       // - `when`: (optional) string or array of strings, the conditions to be met to insert the component.
       //   When an array, a logical AND is applied. One match against the injected `when` data is required.
       //   Currently supported values are `hmr`, `dev`, `prod`. See `getInjectConditionHandlers()` for more info.
+      //   The `when` value can include an argument separated by `:`. E.g. `hmr:apos`, `hmr:public`. If the condition
+      //   handler does not support arguments, it's ignored.
       // - `bundler`: (optional) string, the alias of the currently registered asset external build module.
       //   The bundler condition is not parth of the actual inject data. It's evaluated just on the registration
       //   data.
@@ -975,7 +977,7 @@ module.exports = {
             conditions.when = conditions.when ? [ conditions.when ] : [];
           }
           // Both sides `when` should match
-          if (data.when && !conditions.when.includes(data.when)) {
+          if (data.when && !conditions.when.map(s => s.split(':')[0]).includes(data.when)) {
             return;
           }
           if (!data.when && conditions.when.length) {
@@ -990,11 +992,12 @@ module.exports = {
           // `when` being an object same as the schema `if`, supporting
           // the same logical operators. But it's too much for now.
           const conditionMet = when.every(val => {
-            if (!handlers[val]) {
+            const [ fn, arg ] = val.split(':');
+            if (!handlers[fn]) {
               self.apos.util.error(`Invalid inject condition: ${when}`);
               return false;
             }
-            return handlers[when](data);
+            return handlers[fn](arg, data);
           });
 
           if (bundler) {
@@ -1020,11 +1023,16 @@ module.exports = {
       // Simple conditions handling for `when` injects. It can be extended to support
       // custom conditions in the future - registered by modules similar to
       // `helpers`.
-      // Every condition function receives the nunjucks `data` (`when`, `where`, etc)
-      // object as an argument.
+      // Every condition function receives an argument if available and the nunjucks
+      // data object. For example `when: hmr:apos` will call `hmr('apos', data)`.
+      // The function should return a boolean.
       getInjectConditionHandlers() {
         return {
-          hmr() {
+          hmr(kind) {
+            if (kind) {
+              return self.apos.asset.hasHMR() &&
+                self.apos.asset.getBuildOptions().devServer === kind;
+            }
             return self.apos.asset.hasHMR();
           },
           dev() {

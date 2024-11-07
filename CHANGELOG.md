@@ -5,7 +5,12 @@
 ### Fixes
 
 * Extra bundle detection when using external build module works properly now.
+* Widget players are now properly invoked when they arrive later in the page load process.
 * Fix permission grid tooltip display.
+
+### Adds
+
+* It's possible now to target the HMR build when registering via `template.append` and `template.prepend`. Use `when: 'hmr:public'` or `when: 'hmr:apos'` that will be evaluated against the current asset `options.hmr` configuration.
 
 ## 4.9.0 (2024-10-31)
 
