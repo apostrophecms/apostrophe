@@ -7,10 +7,13 @@
 * Extra bundle detection when using external build module works properly now.
 * Widget players are now properly invoked when they arrive later in the page load process.
 * Fix permission grid tooltip display.
+* Fixes a bug that crashes external frontend applications.
 
 ### Adds
 
 * It's possible now to target the HMR build when registering via `template.append` and `template.prepend`. Use `when: 'hmr:public'` or `when: 'hmr:apos'` that will be evaluated against the current asset `options.hmr` configuration.
+* Adds asset module option `options.modulePreloadPolyfill` (default `true`) to allow disabling the polyfill preload for e.g. external front-ends. 
+* Adds `bundleMarkup` to the data sent to the external front-end, containing all markup for injecting Apostrophe UI in the front-end.
 
 ## 4.9.0 (2024-10-31)
 
