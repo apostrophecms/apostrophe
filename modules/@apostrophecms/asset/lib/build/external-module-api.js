@@ -323,6 +323,7 @@ function invoke() {
             follow: false,
             absolute: false
           });
+          files.sort((a, b) => a.localeCompare(b, 'en'));
 
           if (stats) {
             // optimize fs calls
