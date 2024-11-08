@@ -124,7 +124,7 @@ module.exports = (self) => {
       texts.push({
         weight: field.weight || 15,
         text: value,
-        silent: silent
+        silent
       });
     },
     isEmpty(field, value) {
@@ -316,7 +316,7 @@ module.exports = (self) => {
       texts.push({
         weight: field.weight || 15,
         text: (value || []).join(' '),
-        silent: silent
+        silent
       });
     },
     addQueryBuilder(field, query) {
@@ -370,7 +370,7 @@ module.exports = (self) => {
       texts.push({
         weight: field.weight || 15,
         text: value,
-        silent: silent
+        silent
       });
     },
     addQueryBuilder(field, query) {
@@ -861,7 +861,9 @@ module.exports = (self) => {
 
   self.addFieldType({
     name: 'object',
-    async convert(req, field, data, destination, { fetchRelationships = true, ancestors = {}, doc = {} } = {}) {
+    async convert(req, field, data, destination, {
+      fetchRelationships = true, ancestors = {}, doc = {}
+    } = {}) {
       data = data[field.name];
       const schema = field.schema;
       const errors = [];

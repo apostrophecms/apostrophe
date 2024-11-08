@@ -530,7 +530,7 @@ export default {
             body: {
               ...requestOptions,
               _ids: this.checked,
-              messages: messages,
+              messages,
               type: this.checked.length === 1 ? this.moduleLabels.singular
                 : this.moduleLabels.plural
             }

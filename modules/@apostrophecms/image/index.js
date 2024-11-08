@@ -653,7 +653,7 @@ module.exports = {
             const criteria = {
               $or: [
                 {
-                  'attachment.extension': { $nin: $nin }
+                  'attachment.extension': { $nin }
                 },
                 {
                   'attachment.width': { $gte: minSize[0] },
