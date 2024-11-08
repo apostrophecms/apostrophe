@@ -98,6 +98,10 @@ module.exports = {
     // Force the HMR WS port when it operates on the same process as Apostrophe.
     // Most of the time you won't need to change this.
     hmrPort: null,
+    // Let the external build module inject a pollyfill for the module preload,
+    // adding the `modulepreload` support for the browsers that don't support it.
+    // Can be disabled in e.g. external front-ends.
+    modulePreloadPolyfill: true,
     // Completely disable the asset runtime auto-build system.
     // When an external build module is registered, only manifest data
     // will be loaded and no build will be executed.
@@ -477,6 +481,7 @@ module.exports = {
       // - `devServer`: if `false`, the dev server is disabled. Otherwise, it's a string
       //   (enum) `public` or `apos`. Note that if `hmr` is disabled, the dev server will be always
       //   `false`.
+      // - `modulePreloadPolyfill`: if `true`, a module preload polyfill is injected.
       // - `types`: optional array, if present it represents the only entrypoint types (entrypoint.type)
       //   that should be built.
       // - `sourcemaps`: if `true`, the source maps are generated in production.
@@ -494,15 +499,16 @@ module.exports = {
           isTask: !argv['check-apos-build'],
           hmr: self.hasHMR(),
           hmrPort: self.options.hmrPort,
+          modulePreloadPolyfill: self.options.modulePreloadPolyfill,
           sourcemaps: self.options.productionSourceMaps
         };
         options.devServer = !options.isTask && self.hasDevServer()
           ? self.options.hmr
           : false;
 
-        // Skip all public and keep only the apos scenes.
+        // Skip prebundled UI and keep only the apos scenes.
         if (!self.options.publicBundle) {
-          options.types = [ 'apos', 'bundled' ];
+          options.types = [ 'apos', 'index' ];
         }
 
         return options;
