@@ -69,13 +69,8 @@ module.exports = (self) => {
     // Returns an array of objects with the following properties:
     // - `name`: the entrypoint name. It's usually the relative to `ui` folder
     //   name(`src`, `apos`, `public`) or an extra bundle name.
+    // - `label`: the human-readable label for the entrypoint, used to print CLI messages.
     // - `type`: (enum) the entrypoint type. It can be `index`, `apos`, `custom` (e.g. extra bundles) or
-    //   `bundled` (e.g. `ui/public`). Every type has associated manager that provides handling for the entrypoint.
-    // - `useMeta`: if `true`, the entrypoint will be created based on the source metadata (see
-    //   `computeSourceMeta()` method).
-    // - `bundle`: if `true`, the entrypoint should be bundled by the build module.
-    // - `index`: if `true`, the entrypoint processes only `{name}/index.{js,scss}` module files.
-    // - `apos`: if `true`, the entrypoint processes components, icons and apps.
     // - `ignoreSources`: an array of sources that shouldn't be processed when creating the entrypoint.
     // - `sources`: an object with `js` and `scss` arrays of extra sources to be included in the entrypoint.
     //    These sources are not affected by the `ignoreSources` configuration.
@@ -84,10 +79,15 @@ module.exports = (self) => {
     // - `prologue`: a string with the prologue to be added to the entrypoint.
     // - `condition`: the JS `module` or `nomodule` condition. Undefined for no specific condition.
     // - `outputs`: an array of output extensions for the entrypoint (currently not fully utilized)
+    // - `inputs`: an array of input extensions for the entrypoint (currently not fully utilized)
     // - `scenes`: an array of scenes to be in the final post-bundle step. The scenes are instructions
     //   for the Apostrophe core to combine the builds and release them. Currently supported scenes are
     //   `apos` and `public` and custom scene names equal to extra bundle (only those who should be
     //   loaded separately in the browser).
+    //
+    // Additonal properties added after entrypoints are processed by the core and the external build module:
+    // - `manifest`: object, see the manifest section of `configureBuildModule()` docs for more information.
+    // - `bundles`: a `Set` containing the bundle names that this entrypoint is part of (both css and js).
     getBuildEntrypoints(types, recompute = false) {
       if (!self.hasBuildModule()) {
         return self.builds;

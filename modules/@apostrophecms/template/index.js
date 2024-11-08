@@ -1054,6 +1054,24 @@ module.exports = {
         data.template = template;
         // For simple cases (not piece pages and the like)
         data.module = moduleName;
+
+        // Provide the `apos` scene bundles to the exsternal front-end
+        if (self.apos.asset.hasBuildModule()) {
+          const modulePreload = new Set();
+          data.bundleMarkup = {
+            js: self.apos.asset.getBundlePageMarkup({
+              scene: 'apos',
+              output: 'js',
+              modulePreload
+            }),
+            css: self.apos.asset.getBundlePageMarkup({
+              scene: 'apos',
+              output: 'css'
+            })
+          };
+          data.bundleMarkup.js.push(...Array.from(modulePreload));
+        }
+
         return data;
       },
 
