@@ -11,6 +11,7 @@
   },
   "rules": {
     "max-len": "off",
+    "object-shorthand": "off",
     "no-var": "error",
     "no-console": 0,
     "vue/no-deprecated-v-on-native-modifier": 0,
