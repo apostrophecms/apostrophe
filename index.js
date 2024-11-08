@@ -699,6 +699,9 @@ async function apostrophe(options, telemetry, rootSpan) {
       }
     }
     async function testDir(name) {
+      if (name.startsWith('.')) {
+        return;
+      }
       // Projects that have different theme modules activated at different times
       // are a frequent source of false positives for this warning, so ignore
       // seemingly unused modules with "theme" in the name

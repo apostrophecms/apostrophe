@@ -8,7 +8,7 @@
 * Widget players are now properly invoked when they arrive later in the page load process.
 * Fix permission grid tooltip display.
 * Fixes a bug that crashes external frontend applications.
-* Fixes a false positive warning for module not in use for project level submodules (e.g. `widges/module.js`).
+* Fixes a false positive warning for module not in use for project level submodules (e.g. `widges/module.js`) and dot-folders (e.g. `.DS_Store`).
 
 ### Adds
 

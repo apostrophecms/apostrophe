@@ -1,7 +1,3 @@
 {
-  "extends": "stylelint-config-apostrophe",
-  "//": "declaration-strict-value issue: https://github.com/AndyOGo/stylelint-declaration-strict-value/issues/379",
-  "rules": {
-    "scale-unlimited/declaration-strict-value": null
-  }
+  "extends": "stylelint-config-apostrophe"
 }
