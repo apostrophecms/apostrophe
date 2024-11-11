@@ -128,7 +128,20 @@ export default () => {
   // THAT ONE WIDGET and NO OTHER. Don't worry about finding the
   // others, we will do that for you and we guarantee only one call per widget.
 
-  apos.util.widgetPlayers = {};
+  const widgetPlayersConfig = {
+    list: {},
+    initialized: false
+  };
+  apos.util.widgetPlayers = new Proxy(widgetPlayersConfig.list, {
+    set(target, prop, value) {
+      target[prop] = value;
+      // run the player if we missed the initial run
+      if (widgetPlayersConfig.initialized) {
+        apos.util.runPlayers();
+      }
+      return true;
+    }
+  });
 
   // Run the given function whenever the DOM has new changes that
   // may require attention. The passed function will be
@@ -183,8 +196,7 @@ export default () => {
   // Your player is guaranteed to run only once per widget. Hint:
   // DON'T try to find all the widgets. DO just enhance `el`.
   // This is a computer science principle known as "separation of concerns."
-
-  apos.util.runPlayers = function(el) {
+  apos.util.runPlayers = function (el) {
     const players = apos.util.widgetPlayers;
     const playerList = Object.keys(players);
 
@@ -192,16 +204,16 @@ export default () => {
       const playerOpts = players[playerList[i]];
       const playerEls = (el || document).querySelectorAll(playerOpts.selector);
 
-      playerEls.forEach(function (el) {
-        if (el.aposWidgetPlayed) {
+      playerEls.forEach(function (playerEl) {
+        if (playerEl.aposWidgetPlayed) {
           return;
         }
         // Use an actual property, not a DOM attribute or
         // "data" prefix property, to avoid the problem of
         // elements cloned from innerHTML appearing to have
         // been played too
-        el.aposWidgetPlayed = true;
-        playerOpts.player(el);
+        playerEl.aposWidgetPlayed = true;
+        playerOpts.player(playerEl);
       });
     }
   };
@@ -210,7 +222,8 @@ export default () => {
   // when the page is partially refreshed by the editor.
 
   if (!apos.bus) {
-    apos.util.onReadyAndRefresh(function() {
+    apos.util.onReady(function () {
+      widgetPlayersConfig.initialized = true;
       apos.util.runPlayers();
     });
   }

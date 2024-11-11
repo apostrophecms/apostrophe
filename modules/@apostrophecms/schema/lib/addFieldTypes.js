@@ -841,7 +841,9 @@ module.exports = (self) => {
 
   self.addFieldType({
     name: 'object',
-    async convert(req, field, data, destination, { fetchRelationships = true, ancestors = {}, doc = {} } = {}) {
+    async convert(req, field, data, destination, {
+      fetchRelationships = true, ancestors = {}, doc = {}
+    } = {}) {
       data = data[field.name];
       const schema = field.schema;
       const errors = [];

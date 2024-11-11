@@ -1,25 +1,17 @@
-const path = require('path');
-const postcssReplaceViewportUnitsPlugin = require('../postcss-replace-viewport-units-plugin');
+const postcssViewportToContainerToggle = require('postcss-viewport-to-container-toggle');
 
 module.exports = (options, apos) => {
   const postcssPlugins = [
+    ...apos.asset.options.breakpointPreviewMode?.enable === true ? [
+      postcssViewportToContainerToggle({
+        modifierAttr: 'data-breakpoint-preview-mode',
+        debug: apos.asset.options.breakpointPreviewMode?.debug === true,
+        transform: apos.asset.options.breakpointPreviewMode?.transform || null
+      })
+    ] : [],
     'autoprefixer',
     {}
   ];
-  let mediaToContainerQueriesLoader = '';
-
-  if (apos.asset.options.breakpointPreviewMode?.enable === true) {
-    postcssPlugins.unshift(
-      postcssReplaceViewportUnitsPlugin()
-    );
-    mediaToContainerQueriesLoader = {
-      loader: path.resolve(__dirname, '../media-to-container-queries-loader.js'),
-      options: {
-        debug: apos.asset.options.breakpointPreviewMode?.debug === true,
-        transform: apos.asset.options.breakpointPreviewMode?.transform || null
-      }
-    };
-  }
 
   return {
     module: {
@@ -28,15 +20,22 @@ module.exports = (options, apos) => {
           test: /\.css$/,
           use: [
             'vue-style-loader',
-            mediaToContainerQueriesLoader,
-            'css-loader'
+            'css-loader',
+            {
+              loader: 'postcss-loader',
+              options: {
+                sourceMap: true,
+                postcssOptions: {
+                  plugins: [ postcssPlugins ]
+                }
+              }
+            }
           ]
         },
         {
           test: /\.s[ac]ss$/,
           use: [
             'vue-style-loader',
-            mediaToContainerQueriesLoader,
             'css-loader',
             {
               loader: 'postcss-loader',
