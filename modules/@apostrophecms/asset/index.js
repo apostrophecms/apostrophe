@@ -485,6 +485,7 @@ module.exports = {
       // - `types`: optional array, if present it represents the only entrypoint types (entrypoint.type)
       //   that should be built.
       // - `sourcemaps`: if `true`, the source maps are generated in production.
+      // - `postcssViewportToContainerToggle`: the configuration for the breakpoint preview plugin.
       //
       // Note that this getter depends on the current build task arguments. You shouldn't
       // use that directly.
@@ -500,7 +501,13 @@ module.exports = {
           hmr: self.hasHMR(),
           hmrPort: self.options.hmrPort,
           modulePreloadPolyfill: self.options.modulePreloadPolyfill,
-          sourcemaps: self.options.productionSourceMaps
+          sourcemaps: self.options.productionSourceMaps,
+          postcssViewportToContainerToggle: {
+            enable: self.options.breakpointPreviewMode?.enable === true,
+            debug: self.options.breakpointPreviewMode?.debug === true,
+            modifierAttr: 'data-breakpoint-preview-mode',
+            transform: self.options.breakpointPreviewMode?.transform
+          }
         };
         options.devServer = !options.isTask && self.hasDevServer()
           ? self.options.hmr
@@ -633,7 +640,7 @@ module.exports = {
           return;
         }
 
-        // Hidrate the entrypoints with the saved manifest data and
+        // Hydrate the entrypoints with the saved manifest data and
         // set the current build manifest data.
         const buildOptions = self.getBuildOptions();
         const entrypoints = await self.getBuildModule().entrypoints(buildOptions);
