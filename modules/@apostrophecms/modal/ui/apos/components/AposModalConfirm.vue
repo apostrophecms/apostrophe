@@ -175,33 +175,33 @@ export default {
   display: flex;
   align-items: center;
   justify-content: center;
-}
 
-:deep(.apos-modal__inner) {
-  inset: auto;
-  max-width: 700px;
-  height: auto;
-  text-align: center;
-}
-
-:deep(.apos-modal__overlay) {
-  .apos-modal + .apos-confirm & {
-    display: block;
+  :deep(.apos-modal__inner) {
+    inset: auto;
+    max-width: 700px;
+    height: auto;
+    text-align: center;
   }
-}
 
-:deep(.apos-modal__body) {
-  padding: 60px;
+  :deep(.apos-modal__overlay) {
+    .apos-modal + .apos-confirm & {
+      display: block;
+    }
+  }
+
+  :deep(.apos-modal__body) {
+    padding: 60px;
+  }
+
+  :deep(.apos-modal__body-main) {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
 }
 
 .apos-confirm--tiny :deep(.apos-modal__body) {
   padding: 40px;
-}
-
-:deep(.apos-modal__body-main) {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
 }
 
 .apos-confirm__logo,

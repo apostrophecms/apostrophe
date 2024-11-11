@@ -207,29 +207,29 @@ export default {
   display: flex;
   align-items: center;
   justify-content: center;
-}
 
-:deep(.apos-modal__inner) {
-  inset: auto;
-  max-width: 700px;
-  height: auto;
-  border-radius: 15px;
-}
-
-:deep(.apos-modal__overlay) {
-  .apos-modal + .apos-share-draft & {
-    display: block;
+  :deep(.apos-modal__inner) {
+    inset: auto;
+    max-width: 700px;
+    height: auto;
+    border-radius: 15px;
   }
-}
 
-:deep(.apos-modal__body) {
-  padding: 20px;
-}
+  :deep(.apos-modal__overlay) {
+    .apos-modal + .apos-share-draft & {
+      display: block;
+    }
+  }
 
-:deep(.apos-modal__body-main) {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
+  :deep(.apos-modal__body) {
+    padding: 20px;
+  }
+
+  :deep(.apos-modal__body-main) {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
 }
 
 .apos-share-draft__header {
