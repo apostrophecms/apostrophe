@@ -699,11 +699,18 @@ async function apostrophe(options, telemetry, rootSpan) {
       }
     }
     async function testDir(name) {
+      if (name.startsWith('.')) {
+        return;
+      }
       // Projects that have different theme modules activated at different times
       // are a frequent source of false positives for this warning, so ignore
       // seemingly unused modules with "theme" in the name
       if (!validSteps.includes(name)) {
         try {
+          // It's a project level modules definition, skip it.
+          if (fs.existsSync(path.resolve(self.localModules, name, 'modules.js'))) {
+            return;
+          }
           const submodule = await self.root.import(path.resolve(self.localModules, name, 'index.js'));
           if (submodule && submodule.options && submodule.options.ignoreUnusedFolderWarning) {
             return;

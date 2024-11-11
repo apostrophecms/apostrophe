@@ -1,26 +1,18 @@
-const path = require('path');
 const MiniCssExtractPlugin = require('mini-css-extract-plugin');
-const postcssReplaceViewportUnitsPlugin = require('../postcss-replace-viewport-units-plugin');
+const postcssViewportToContainerToggle = require('postcss-viewport-to-container-toggle');
 
 module.exports = (options, apos, srcBuildNames) => {
   const postcssPlugins = [
+    ...apos.asset.options.breakpointPreviewMode?.enable === true ? [
+      postcssViewportToContainerToggle({
+        modifierAttr: 'data-breakpoint-preview-mode',
+        debug: apos.asset.options.breakpointPreviewMode?.debug === true,
+        transform: apos.asset.options.breakpointPreviewMode?.transform || null
+      })
+    ] : [],
     'autoprefixer',
     {}
   ];
-  let mediaToContainerQueriesLoader = '';
-
-  if (apos.asset.options.breakpointPreviewMode?.enable === true) {
-    postcssPlugins.unshift(
-      postcssReplaceViewportUnitsPlugin()
-    );
-    mediaToContainerQueriesLoader = {
-      loader: path.resolve(__dirname, '../media-to-container-queries-loader.js'),
-      options: {
-        debug: apos.asset.options.breakpointPreviewMode?.debug === true,
-        transform: apos.asset.options.breakpointPreviewMode?.transform || null
-      }
-    };
-  }
 
   return {
     module: {
@@ -30,8 +22,8 @@ module.exports = (options, apos, srcBuildNames) => {
           use: [
             // Instead of style-loader, to avoid FOUC
             MiniCssExtractPlugin.loader,
-            mediaToContainerQueriesLoader,
-            // Parses CSS imports and make css-loader ignore urls. Urls will still be handled by webpack
+            // Parses CSS imports and make css-loader ignore urls.
+            // Urls will still be handled by webpack
             {
               loader: 'css-loader',
               options: { url: false }
