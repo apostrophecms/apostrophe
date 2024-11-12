@@ -2,6 +2,28 @@
 
 ## UNRELEASED
 
+### Fixes
+
+* Extra bundle detection when using external build module works properly now.
+* Widget players are now properly invoked when they arrive later in the page load process.
+* Fix permission grid tooltip display.
+* Fixes a bug that crashes external frontend applications.
+* Fixes a false positive warning for module not in use for project level submodules (e.g. `widges/module.js`) and dot-folders (e.g. `.DS_Store`).
+* Bumped `express-bearer-token` dependency to address a low-severity `npm audit` warning regarding noncompliant cookie names and values. Apostrophe
+did not actually use any noncompliant cookie names or values, so there was no vulnerability in Apostrophe.
+
+### Adds
+
+* It's possible now to target the HMR build when registering via `template.append` and `template.prepend`. Use `when: 'hmr:public'` or `when: 'hmr:apos'` that will be evaluated against the current asset `options.hmr` configuration.
+* Adds asset module option `options.modulePreloadPolyfill` (default `true`) to allow disabling the polyfill preload for e.g. external front-ends. 
+* Adds `bundleMarkup` to the data sent to the external front-end, containing all markup for injecting Apostrophe UI in the front-end.
+
+### Changes
+
+* Removes postcss plugin and webpack loader used for breakpoint preview mode. Uses instead the new `postcss-viewport-to-container-toggle` plugin in the webpack config.
+
+## 4.9.0 (2024-10-31)
+
 ### Adds
 
 * Relationship inputs have aria accessibility tags and autocomplete suggestions can be controlled by keyboard.

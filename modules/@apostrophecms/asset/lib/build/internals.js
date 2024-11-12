@@ -88,7 +88,7 @@ module.exports = (self) => {
               enhancedConfig.ignoreSources.push(...bundleConfig.scss);
             }
             // 2.3. Add the extra bundle configuration so that
-            // it only processes the configured `sources` (`useMeta: false`).
+            // it only processes the configured `sources`
             if (!bundleConfig.main) {
               entrypoints.push({
                 name: bundleName,

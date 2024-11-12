@@ -45,15 +45,23 @@ module.exports = (self) => {
 
     const templateType = template.substring(template.lastIndexOf(':') + 1);
     const pageModule = page.type && self.apos.modules[page.type];
-    const { webpack = {} } = pageModule ? pageModule.__meta : {};
+    const metadata = pageModule
+      ? (
+        self.apos.asset.hasBuildModule()
+          ? pageModule.__meta.build
+          : pageModule.__meta.webpack
+      ) : {};
 
     const rebundleConfigs = rebundleModules.filter(entry => {
       const names = pageModule?.__meta?.chain?.map(c => c.name) ?? [ page.type ];
       return names.includes(entry.name);
     });
 
-    const configs = Object.entries(webpack || {})
+    const configs = Object.entries(metadata || {})
       .reduce((acc, [ moduleName, config ]) => {
+        if (self.apos.asset.hasBuildModule()) {
+          config = config?.[self.apos.asset.getBuildModuleAlias()];
+        }
         if (!config || !config.bundles) {
           return acc;
         }

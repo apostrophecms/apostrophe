@@ -1760,16 +1760,14 @@ module.exports = {
 
             // Add relationships storage fields in projection
             if (
-              relationships &&
+              Array.isArray(relationships) &&
               Object.keys(projection).length &&
               !Object.values(projection).some((val) => !val)
             ) {
               // Didn't find any other way, should work
               const type = query.get('type');
               const manager = self.apos.doc.getManager(type);
-              const directRelations = Array.isArray(relationships)
-                ? relationships.map(rel => rel.split('.')[0])
-                : [];
+              const directRelations = relationships.map(rel => rel.split('.')[0]);
 
               if (manager) {
                 for (const field of manager.schema) {
@@ -2233,7 +2231,7 @@ module.exports = {
           finalize() {
             const type = query.get('type');
             if (type) {
-              query.and({ type: type });
+              query.and({ type });
             }
           }
         },
