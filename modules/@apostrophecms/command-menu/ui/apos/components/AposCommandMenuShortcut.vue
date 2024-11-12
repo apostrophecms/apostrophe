@@ -128,23 +128,25 @@ export default {
 </script>
 
 <style lang="scss" scoped>
-:deep(.apos-modal__body) {
-  padding: 0;
-}
+.apos-command-menu-shortcut {
+  :deep(.apos-modal__body) {
+    padding: 0;
+  }
 
-:deep(.apos-modal__inner) {
-  inset: auto $spacing-quadruple $spacing-quadruple auto;
-  max-width: 700px;
-  height: auto;
-  border-radius: $spacing-base + $spacing-half;
-}
+  :deep(.apos-modal__inner) {
+    inset: auto $spacing-quadruple $spacing-quadruple auto;
+    max-width: 700px;
+    height: auto;
+    border-radius: $spacing-base + $spacing-half;
+  }
 
-:deep(.apos-modal__overlay) {
-  display: none;
-}
+  :deep(.apos-modal__overlay) {
+    display: none;
+  }
 
-:deep(.apos-modal__body-main) {
-  padding-bottom: 15px;
+  :deep(.apos-modal__body-main) {
+    padding-bottom: 15px;
+  }
 }
 
 .apos-modal__header {
