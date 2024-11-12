@@ -122,11 +122,13 @@ export default {
 .apos-color__editable-input {
   position: relative;
 }
+
 .apos-color__input {
   padding: 0;
   border: 0;
   outline: none;
 }
+
 .apos-color__label {
   text-transform: capitalize;
 }
