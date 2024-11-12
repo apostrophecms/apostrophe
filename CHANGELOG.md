@@ -17,6 +17,7 @@ did not actually use any noncompliant cookie names or values, so there was no vu
 * It's possible now to target the HMR build when registering via `template.append` and `template.prepend`. Use `when: 'hmr:public'` or `when: 'hmr:apos'` that will be evaluated against the current asset `options.hmr` configuration.
 * Adds asset module option `options.modulePreloadPolyfill` (default `true`) to allow disabling the polyfill preload for e.g. external front-ends. 
 * Adds `bundleMarkup` to the data sent to the external front-end, containing all markup for injecting Apostrophe UI in the front-end.
+* Warns users when two page types shares the same field name, but has a different type. This may cause errors or other problems when an editor switches page types.
 
 ### Changes
 

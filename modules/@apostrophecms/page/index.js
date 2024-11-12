@@ -925,7 +925,7 @@ module.exports = {
             for (const right of self.typeChoices) {
               const diff = compareSchema(left, right);
               if (diff.size) {
-                self.apos.util.warnDev(`The page type "${left.name}" has a conflict with "${right.name}" (${formatDiff(diff)})`);
+                self.apos.util.warnDev(`The page type "${left.name}" has a conflict with "${right.name}" (${formatDiff(diff)}). This may cause errors or other problems when an editor switches page types.`);
               }
             }
           }
