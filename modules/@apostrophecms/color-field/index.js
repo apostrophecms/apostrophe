@@ -24,7 +24,7 @@ module.exports = {
             }
 
             const test = new TinyColor(destination[field.name]);
-            if (!test.isValid) {
+            if (!test.isValid && !destination[field.name].startsWith('--')) {
               destination[field.name] = null;
             }
           },

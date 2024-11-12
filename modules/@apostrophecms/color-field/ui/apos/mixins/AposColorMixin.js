@@ -8,28 +8,44 @@ function _colorChange(data, oldHue) {
   const alpha = data && data.a;
   let color;
 
-  // hsl is better than hex between conversions
-  if (data && data.hsl)
-    color = tinycolor(data.hsl);
-  else if (data && data.hex && data.hex.length > 0)
-    color = tinycolor(data.hex);
-  else if (data && data.hsv)
-    color = tinycolor(data.hsv);
-  else if (data && data.rgba)
-    color = tinycolor(data.rgba);
-  else if (data && data.rgb)
-    color = tinycolor(data.rgb);
-  else
-    color = tinycolor(data);
+  console.log('supp');
 
-  if (color && (color._a === undefined || color._a === null))
+  // hsl is better than hex between conversions
+  if (data && data.hsl) {
+    console.log('223r');
+    color = tinycolor(data.hsl);
+  } else if (data && data.hex && data.hex.length > 0) {
+    console.log('r2r2r');
+    color = tinycolor(data.hex);
+  } else if (data && data.hsv) {
+    console.log('wefwefe');
+    color = tinycolor(data.hsv);
+  } else if (data && data.rgba) {
+    console.log('ryjhtyj');
+    color = tinycolor(data.rgba);
+  } else if (data && data.rgb) {
+    console.log('43t');
+    color = tinycolor(data.rgb);
+  } else if (data && typeof data === 'string' && data.startsWith('--')) {
+    console.log('where i want to be');
+    color = tinycolor(getComputedStyle(document.body).getPropertyValue(data));
+    color._cssVariable = data;
+    console.log(color);
+  } else {
+    console.log('how long gone?');
+    color = tinycolor(data);
+  }
+
+  if (color && (color._a === undefined || color._a === null)) {
     color.setAlpha(alpha || color.getAlpha());
+  }
 
   const hsl = color.toHsl();
   const hsv = color.toHsv();
 
-  if (hsl.s === 0)
+  if (hsl.s === 0) {
     hsv.h = hsl.h = data.h || (data.hsl && data.hsl.h) || oldHue || 0;
+  }
 
   /* --- comment this block to fix #109, may cause #25 again --- */
   // when the hsv.v is less than 0.0164 (base on test)
@@ -47,6 +63,7 @@ function _colorChange(data, oldHue) {
   /* ------ */
 
   return {
+    _cssVariable: color._cssVariable,
     hsl,
     hex: color.toHexString().toUpperCase(),
     hex8: color.toHex8String().toUpperCase(),
@@ -54,19 +71,19 @@ function _colorChange(data, oldHue) {
     hsv,
     oldHue: data.h || oldHue || hsl.h,
     source: data.source,
-    a: color.getAlpha(),
+    a: color.getAlpha()
   };
 }
 
 export default {
   model: {
     prop: 'modelValue',
-    event: 'update:modelValue',
+    event: 'update:modelValue'
   },
-  props: ['modelValue'],
+  props: [ 'modelValue' ],
   data() {
     return {
-      val: _colorChange(this.modelValue),
+      val: _colorChange(this.modelValue)
     };
   },
   computed: {
@@ -77,13 +94,13 @@ export default {
       set(newVal) {
         this.val = newVal;
         this.$emit('update:modelValue', newVal);
-      },
-    },
+      }
+    }
   },
   watch: {
     modelValue(newVal) {
       this.val = _colorChange(newVal);
-    },
+    }
   },
   methods: {
     colorChange(data, oldHue) {
@@ -94,7 +111,7 @@ export default {
       return tinycolor(hex).isValid;
     },
     simpleCheckForValidColor(data) {
-      const keysToCheck = ['r', 'g', 'b', 'a', 'h', 's', 'l', 'v'];
+      const keysToCheck = [ 'r', 'g', 'b', 'a', 'h', 's', 'l', 'v' ];
       let checked = 0;
       let passed = 0;
 
@@ -102,19 +119,21 @@ export default {
         const letter = keysToCheck[i];
         if (data[letter]) {
           checked++;
-          if (!isNaN(data[letter]))
+          if (!isNaN(data[letter])) {
             passed++;
+          }
         }
       }
 
-      if (checked === passed)
+      if (checked === passed) {
         return data;
+      }
     },
     paletteUpperCase(palette) {
       return palette.map(c => c.toUpperCase());
     },
     isTransparent(color) {
       return tinycolor(color).getAlpha() === 0;
-    },
-  },
+    }
+  }
 };

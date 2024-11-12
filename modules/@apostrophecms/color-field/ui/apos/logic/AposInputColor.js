@@ -75,8 +75,13 @@ export default {
       this.active = false;
     },
     update(value) {
+      console.log(value);
       this.tinyColorObj = new TinyColor(value.hsl);
-      this.next = this.tinyColorObj.toString(this.format);
+      if (value._cssVariable) {
+        this.next = value._cssVariable;
+      } else {
+        this.next = this.tinyColorObj.toString(this.format);
+      }
     },
     validate(value) {
       if (this.field.required) {
@@ -89,8 +94,11 @@ export default {
         return false;
       }
 
+      console.log('validate', value);
       const color = new TinyColor(value);
-      return color.isValid ? false : 'Error';
+      if (!value.startsWith('--')) {
+        return color.isValid ? false : 'Error';
+      }
     },
     clear() {
       this.next = '';

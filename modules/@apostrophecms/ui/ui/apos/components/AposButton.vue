@@ -164,8 +164,15 @@ export default {
       if (this.type === 'color') {
         // if color exists, use it
         if (this.color) {
+
+          let color = this.color;
+
+          if (color.startsWith('--')) {
+            color = `var(${color})`;
+          }
+
           return {
-            backgroundColor: this.color
+            backgroundColor: color
           };
         // if not provide a default placeholder
         } else {
