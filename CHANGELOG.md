@@ -21,6 +21,8 @@ did not actually use any noncompliant cookie names or values, so there was no vu
 ### Changes
 
 * Removes postcss plugin and webpack loader used for breakpoint preview mode. Uses instead the new `postcss-viewport-to-container-toggle` plugin in the webpack config.
+* Implement `vue-color` directly in Apostrophe rather than as a dependency
+* Switch color handling libraries from `tinycolor2` to `@ctrl/tinycolor`
 
 ## 4.9.0 (2024-10-31)
 
