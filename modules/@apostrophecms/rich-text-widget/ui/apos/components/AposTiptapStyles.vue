@@ -177,6 +177,7 @@ export default {
     border-radius: var(--a-border-radius);
     transition: all 500ms ease;
 
+    &:focus-within,
     &:hover {
       color: var(--a-text-primary);
       background-color: var(--a-base-9);
