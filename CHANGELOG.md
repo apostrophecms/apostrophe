@@ -21,6 +21,8 @@ did not actually use any noncompliant cookie names or values, so there was no vu
 ### Changes
 
 * Removes postcss plugin and webpack loader used for breakpoint preview mode. Uses instead the new `postcss-viewport-to-container-toggle` plugin in the webpack config.
+* Removes error messages in server console for hidden fields. These messages should not have been printed out in the server console in the first place.
+* Removes invalid error messages on select fields appearing while opening an existing valid document.
 
 ## 4.9.0 (2024-10-31)
 
