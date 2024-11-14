@@ -1,5 +1,5 @@
 <template>
-  <div class="apos-context-menu">
+  <section class="apos-context-menu" @keydown.tab="onTab">
     <slot name="prebutton" />
     <div
       ref="dropdown"
@@ -7,7 +7,7 @@
     >
       <AposButton
         v-bind="button"
-        ref="button"
+        ref="dropdownButton"
         class="apos-context-menu__btn"
         role="button"
         :data-apos-test="identifier"
@@ -25,6 +25,7 @@
         v-if="isOpen"
         ref="dropdownContent"
         v-click-outside-element="hide"
+        :data-apos-test="isRendered ? 'context-menu-content' : null"
         class="apos-context-menu__dropdown-content"
         :class="popoverClass"
         data-apos-menu
@@ -44,7 +45,7 @@
         </AposContextMenuDialog>
       </div>
     </div>
-  </div>
+  </section>
 </template>
 
 <script setup>
@@ -54,8 +55,10 @@ import {
 import {
   computePosition, offset, shift, flip, arrow
 } from '@floating-ui/dom';
-import { useAposTheme } from 'Modules/@apostrophecms/ui/composables/AposTheme';
 import { createId } from '@paralleldrive/cuid2';
+
+import { useAposTheme } from '../composables/AposTheme.js';
+import { useFocusTrap } from '../composables/AposFocusTrap.js';
 
 const props = defineProps({
   identifier: {
@@ -122,21 +125,37 @@ const props = defineProps({
   activeItem: {
     type: String,
     default: null
+  },
+  trapFocus: {
+    type: Boolean,
+    default: true
   }
 });
 
 const emit = defineEmits([ 'open', 'close', 'item-clicked' ]);
 
 const isOpen = ref(false);
+const isRendered = ref(false);
 const placement = ref(props.menuPlacement);
 const event = ref(null);
 const dropdown = ref(null);
+/** @type {import('vue').Ref<import('vue').ComponentPublicInstance | null>} */
+const dropdownButton = ref(null);
+/** @type {import('vue').Ref<HTMLElement | null>} */
 const dropdownContent = ref(null);
 const dropdownContentStyle = ref({});
 const arrowEl = ref(null);
 const iconToCenterTo = ref(null);
 const menuOffset = getMenuOffset();
 const otherMenuOpened = ref(false);
+
+const {
+  onTab, runTrap, hasRunningTrap, resetTrap
+} = useFocusTrap({
+  withPriority: true,
+  triggerRef: dropdownButton,
+  onExit: hide
+});
 
 defineExpose({
   hide,
@@ -170,19 +189,28 @@ const buttonState = computed(() => {
   return isOpen.value ? [ 'active' ] : null;
 });
 
-watch(isOpen, (newVal) => {
+watch(isOpen, async (newVal) => {
   emit(newVal ? 'open' : 'close', event.value);
   if (newVal) {
     setDropdownPosition();
     window.addEventListener('resize', setDropdownPosition);
     window.addEventListener('scroll', setDropdownPosition);
     window.addEventListener('keydown', handleKeyboard);
-    dropdownContent.value.querySelector('[tabindex]')?.focus();
+    if (props.trapFocus && !hasRunningTrap.value) {
+      await runTrap(dropdownContent);
+    }
+    if (!props.trapFocus) {
+      dropdownContent.value.querySelector('[tabindex]')?.focus();
+    }
+    isRendered.value = true;
   } else {
+    if (props.trapFocus) {
+      resetTrap();
+    }
     window.removeEventListener('resize', setDropdownPosition);
     window.removeEventListener('scroll', setDropdownPosition);
     window.removeEventListener('keydown', handleKeyboard);
-    if (!otherMenuOpened.value) {
+    if (!otherMenuOpened.value && !props.trapFocus) {
       dropdown.value.querySelector('[tabindex]').focus();
     }
   }
