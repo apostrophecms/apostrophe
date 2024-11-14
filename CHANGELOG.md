@@ -9,6 +9,7 @@
 * Fix permission grid tooltip display.
 * Fixes a bug that crashes external frontend applications.
 * Fixes a false positive warning for module not in use for project level submodules (e.g. `widges/module.js`) and dot-folders (e.g. `.DS_Store`).
+* a11y improvements for Filter UI menu.
 
 ### Adds
 
