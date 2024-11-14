@@ -12,6 +12,7 @@
 * a11y improvements for context menus.
 * Bumped `express-bearer-token` dependency to address a low-severity `npm audit` warning regarding noncompliant cookie names and values. Apostrophe
 did not actually use any noncompliant cookie names or values, so there was no vulnerability in Apostrophe.
+* Rich text "Styles" toolbar now has visually focused state.
 
 ### Adds
 
