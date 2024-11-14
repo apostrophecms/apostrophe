@@ -9,17 +9,24 @@
 * Fix permission grid tooltip display.
 * Fixes a bug that crashes external frontend applications.
 * Fixes a false positive warning for module not in use for project level submodules (e.g. `widges/module.js`) and dot-folders (e.g. `.DS_Store`).
-* a11y improvements for Filter UI menu.
+* a11y improvements for context menus.
+* Bumped `express-bearer-token` dependency to address a low-severity `npm audit` warning regarding noncompliant cookie names and values. Apostrophe
+did not actually use any noncompliant cookie names or values, so there was no vulnerability in Apostrophe.
 
 ### Adds
 
 * It's possible now to target the HMR build when registering via `template.append` and `template.prepend`. Use `when: 'hmr:public'` or `when: 'hmr:apos'` that will be evaluated against the current asset `options.hmr` configuration.
 * Adds asset module option `options.modulePreloadPolyfill` (default `true`) to allow disabling the polyfill preload for e.g. external front-ends. 
 * Adds `bundleMarkup` to the data sent to the external front-end, containing all markup for injecting Apostrophe UI in the front-end.
+* Warns users when two page types have the same field name, but a different field type. This may cause errors or other problems when an editor switches page types.
 
 ### Changes
 
 * Removes postcss plugin and webpack loader used for breakpoint preview mode. Uses instead the new `postcss-viewport-to-container-toggle` plugin in the webpack config.
+* Implement `vue-color` directly in Apostrophe rather than as a dependency
+* Switch color handling library from `tinycolor2` to `@ctrl/tinycolor`
+* Removes error messages in server console for hidden fields. These messages should not have been printed out in the server console in the first place.
+* Removes invalid error messages on select fields appearing while opening an existing valid document.
 
 ## 4.9.0 (2024-10-31)
 

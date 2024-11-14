@@ -136,6 +136,9 @@ export default {
     // You must supply the validate method. It receives the
     // internal representation used for editing (a string, for instance)
     validateAndEmit () {
+      if (this.enableValidate === false) {
+        return;
+      }
       // If the field is conditional and isn't shown, disregard any errors.
       const error = this.conditionMet === false ? false : this.validate(this.next);
 

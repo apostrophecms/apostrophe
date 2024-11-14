@@ -920,6 +920,37 @@ module.exports = {
             }
           }
         },
+        detectSchemaConflicts() {
+          for (const left of self.typeChoices) {
+            for (const right of self.typeChoices) {
+              const diff = compareSchema(left, right);
+              if (diff.size) {
+                self.apos.util.warnDev(`The page type "${left.name}" has a conflict with "${right.name}" (${formatDiff(diff)}). This may cause errors or other problems when an editor switches page types.`);
+              }
+            }
+          }
+          function compareSchema(left, right) {
+            const conflicts = new Map();
+            if (left.name === right.name) {
+              return conflicts;
+            }
+
+            const leftSchema = self.apos.modules[left.name].schema;
+            const rightSchema = self.apos.modules[right.name].schema;
+            for (const leftField of leftSchema) {
+              const rightField = rightSchema.find(field => field.name === leftField.name);
+              if (rightField && leftField.type !== rightField.type) {
+                conflicts.set(leftField.name, [ leftField.type, rightField.type ]);
+              }
+            }
+
+            return conflicts;
+          }
+          function formatDiff(diff) {
+            return Array.from(diff.entries())
+              .map(([ entry, [ left, right ] ]) => `${entry}:${left} vs ${entry}:${right}`);
+          }
+        },
         async manageOrphans() {
           const managed = self.apos.doc.getManaged();
 
