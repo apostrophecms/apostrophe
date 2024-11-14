@@ -34,7 +34,7 @@
   "dependencies": {
     "@apostrophecms/emulate-mongo-3-driver": "^1.0.6",
     "@apostrophecms/vue-material-design-icons": "^1.0.0",
-    "@ckpack/vue-color": "^1.4.1",
+    "@ctrl/tinycolor": "^4.1.0",
     "@floating-ui/dom": "^1.5.3",
     "@opentelemetry/api": "^1.0.4",
     "@opentelemetry/semantic-conventions": "^1.0.1",
@@ -119,7 +119,6 @@
     "sortablejs": "^1.15.0",
     "sortablejs-vue3": "^1.2.11",
     "tiny-emitter": "^2.1.0",
-    "tinycolor2": "^1.4.2",
     "tough-cookie": "^4.0.0",
     "underscore.string": "^3.3.4",
     "uploadfs": "^1.22.6",

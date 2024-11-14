@@ -1,12 +1,12 @@
 
 import AposInputMixin from 'Modules/@apostrophecms/schema/mixins/AposInputMixin';
-import { Sketch as Picker } from '@ckpack/vue-color';
-import tinycolor from 'tinycolor2';
+import AposColor from '../components/AposColor.vue';
+import { TinyColor } from '@ctrl/tinycolor';
 
 export default {
   name: 'AposInputColor',
   components: {
-    Picker
+    AposColor
   },
   mixins: [ AposInputMixin ],
   data() {
@@ -75,7 +75,7 @@ export default {
       this.active = false;
     },
     update(value) {
-      this.tinyColorObj = tinycolor(value.hsl);
+      this.tinyColorObj = new TinyColor(value.hsl);
       this.next = this.tinyColorObj.toString(this.format);
     },
     validate(value) {
@@ -89,8 +89,8 @@ export default {
         return false;
       }
 
-      const color = tinycolor(value);
-      return color.isValid() ? false : 'Error';
+      const color = new TinyColor(value);
+      return color.isValid ? false : 'Error';
     },
     clear() {
       this.next = '';

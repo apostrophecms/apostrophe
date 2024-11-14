@@ -7,8 +7,8 @@
     :display-options="displayOptions"
   >
     <template #body>
-      <div class="apos-color">
-        <div class="apos-color__ui">
+      <div class="apos-input-color">
+        <div class="apos-input-color__ui">
           <AposContextMenu
             :button="buttonOptions"
             menu-placement="bottom-start"
@@ -17,20 +17,20 @@
             @open="open"
             @close="close"
           >
-            <Picker
+            <AposColor
               v-bind="pickerOptions"
               :model-value="pickerValue"
               @update:model-value="update"
             />
           </AposContextMenu>
         </div>
-        <div class="apos-color__info">
+        <div class="apos-input-color__info" data-apos-test="colorInfo">
           {{ valueLabel }}
           <AposButton
             v-if="next"
             type="quiet"
             label="apostrophe:clear"
-            class="apos-color__clear"
+            class="apos-input-color__clear"
             :modifiers="['no-motion']"
             @click="clear"
           />
@@ -49,32 +49,21 @@ export default {
 </script>
 
 <style lang="scss" scoped>
-  .apos-color {
+  .apos-input-color {
     display: flex;
     align-items: center;
   }
 
-  .apos-color__clear {
+  .apos-input-color__clear {
     margin-left: 10px;
   }
 
-  .apos-color__info {
+  .apos-input-color__info {
     @include type-base;
 
     & {
       margin-left: 15px;
       color: var(--a-text-primary);
     }
-  }
-</style>
-
-<!--
-  This styleblock is unscoped so that it reaches the color field's implementation
-  of AposContextMenu, which is outside the component's DOM tree
--->
-<style lang="scss">
-  .apos-popover .vc-sketch {
-    padding: 0;
-    box-shadow: none;
   }
 </style>
