@@ -417,8 +417,12 @@ module.exports = {
           if (!result) {
             throw self.apos.error('notfound');
           }
-          if (self.apos.launder.boolean(req.query['render-areas']) === true) {
-            await self.apos.area.renderDocsAreas(req, [ result ]);
+          const renderAreas = req.query['render-areas'];
+          const inline = renderAreas === 'inline';
+          if (inline || self.apos.launder.boolean(renderAreas)) {
+            await self.apos.area.renderDocsAreas(req, [ result ], {
+              inline
+            });
           }
           // Attach `_url` and `_urls` properties
           self.apos.attachment.all(result, { annotate: true });
