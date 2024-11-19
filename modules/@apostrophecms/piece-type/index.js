@@ -251,8 +251,12 @@ module.exports = {
           result.currentPage = query.get('page') || 1;
           result.results = (await query.toArray())
             .map(doc => self.removeForbiddenFields(req, doc));
-          if (self.apos.launder.boolean(req.query['render-areas']) === true) {
-            await self.apos.area.renderDocsAreas(req, result.results);
+          const renderAreas = req.query['render-areas'];
+          const inline = renderAreas === 'inline';
+          if (inline || self.apos.launder.boolean(renderAreas)) {
+            await self.apos.area.renderDocsAreas(req, result.results, {
+              inline
+            });
           }
           if (query.get('choicesResults')) {
             result.choices = query.get('choicesResults');
@@ -291,8 +295,12 @@ module.exports = {
           if (!doc) {
             throw self.apos.error('notfound');
           }
-          if (self.apos.launder.boolean(req.query['render-areas']) === true) {
-            await self.apos.area.renderDocsAreas(req, [ doc ]);
+          const renderAreas = req.query['render-areas'];
+          const inline = renderAreas === 'inline';
+          if (inline || self.apos.launder.boolean(renderAreas)) {
+            await self.apos.area.renderDocsAreas(req, [ doc ], {
+              inline
+            });
           }
           self.apos.attachment.all(doc, { annotate: true });
           return doc;
