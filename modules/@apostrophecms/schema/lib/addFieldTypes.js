@@ -123,7 +123,7 @@ module.exports = (self) => {
       texts.push({
         weight: field.weight || 15,
         text: value,
-        silent: silent
+        silent
       });
     },
     isEmpty(field, value) {
@@ -296,7 +296,7 @@ module.exports = (self) => {
       texts.push({
         weight: field.weight || 15,
         text: (value || []).join(' '),
-        silent: silent
+        silent
       });
     },
     addQueryBuilder(field, query) {
@@ -350,7 +350,7 @@ module.exports = (self) => {
       texts.push({
         weight: field.weight || 15,
         text: value,
-        silent: silent
+        silent
       });
     },
     addQueryBuilder(field, query) {

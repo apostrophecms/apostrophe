@@ -212,8 +212,8 @@ module.exports = {
         const item = {
           name: name.indexOf(':') === -1 ? name : name.split(':')[0],
           action: name,
-          label: label,
-          permission: permission,
+          label,
+          permission,
           options: options || {}
         };
         if (options && options.after) {
@@ -294,7 +294,7 @@ module.exports = {
         self.items = self.items.concat(moving);
         // ... But then explicit order kicks in
         _.each(self.options.order || [], function (name) {
-          const item = _.find(self.items, { name: name });
+          const item = _.find(self.items, { name });
           if (item) {
             self.items = [ item ].concat(_.filter(self.items, function (item) {
               return item.name !== name;
@@ -323,7 +323,7 @@ module.exports = {
           self.groupLabels[group.items[0]] = group.label;
 
           group.items.forEach(function (name, groupIndex) {
-            const item = _.find(self.items, { name: name });
+            const item = _.find(self.items, { name });
             if (item) {
               item.menuLeader = group.items[0];
             } else {
@@ -336,7 +336,7 @@ module.exports = {
               if (indexLeader === -1) {
                 throw new Error('Admin bar grouping error: no match for ' + item.menuLeader + ' in menu item ' + item.name);
               }
-              let indexMe = _.findIndex(self.items, { name: name });
+              let indexMe = _.findIndex(self.items, { name });
               if (indexMe !== indexLeader + groupIndex) {
                 // Swap ourselves into the right position following our leader
                 if (indexLeader + groupIndex < indexMe) {
@@ -391,7 +391,7 @@ module.exports = {
           }
         }
         return {
-          items: items,
+          items,
           components: { the: 'TheAposAdminBar' },
           context: context && {
             _id: context._id,
