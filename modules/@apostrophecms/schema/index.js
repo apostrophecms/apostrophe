@@ -577,10 +577,21 @@ module.exports = {
       // `destination` (the current level). This allows resolution of relative
       // `following` paths during sanitization.
 
-      async convert(req, schema, data, destination, { fetchRelationships = true, ancestors = [] } = {}) {
+      async convert(
+        req,
+        schema,
+        data,
+        destination,
+        {
+          fetchRelationships = true,
+          ancestors = [],
+          isParentVisible = true
+        } = {}
+      ) {
         const options = {
           fetchRelationships,
-          ancestors
+          ancestors,
+          isParentVisible
         };
         if (Array.isArray(req)) {
           throw new Error('convert invoked without a req, do you have one in your context?');
@@ -603,6 +614,9 @@ module.exports = {
 
           if (convert) {
             try {
+              const isAllParentsVisible = isParentVisible === false
+                ? false
+                : await self.isVisible(req, schema, destination, field.name);
               const isRequired = await self.isFieldRequired(req, field, destination);
               await convert(
                 req,
@@ -612,7 +626,10 @@ module.exports = {
                 },
                 data,
                 destination,
-                options
+                {
+                  ...options,
+                  isParentVisible: isAllParentsVisible
+                }
               );
             } catch (error) {
               if (Array.isArray(error)) {
@@ -635,7 +652,9 @@ module.exports = {
           if (error.path) {
             // `self.isVisible` will only throw for required fields that have
             // an external condition containing an unknown module or method:
-            const isVisible = await self.isVisible(req, schema, destination, error.path);
+            const isVisible = isParentVisible === false
+              ? false
+              : await self.isVisible(req, schema, destination, error.path);
 
             if (!isVisible) {
               // It is not reasonable to enforce required,
@@ -652,9 +671,14 @@ module.exports = {
                 // for a field that is not visible should be quietly discarded.
                 // We only worry about this if the value is not valid, as otherwise
                 // it's a kindness to save the work so the user can toggle back to it
-                destination[field.name] = klona((field.def !== undefined) ? field.def : self.fieldTypes[field.type]?.def);
+                destination[field.name] = klona((field.def !== undefined)
+                  ? field.def
+                  : self.fieldTypes[field.type]?.def);
                 continue;
               }
+            }
+            if (isParentVisible === false) {
+              continue;
             }
           }
 

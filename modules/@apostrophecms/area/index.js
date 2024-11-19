@@ -126,6 +126,10 @@ module.exports = {
       setWidgetManager(name, manager) {
         self.widgetManagers[name] = manager;
       },
+      // Given the options passed to the area field, return the options passed
+      // to each widget type, indexed by widget name. This provides a consistent
+      // interface regardless of whether `options.widgets` or `options.groups`
+      // was used.
       getWidgets(options) {
         let widgets = options.widgets || {};
 
@@ -167,7 +171,11 @@ module.exports = {
       },
       // Render the given `area` object via `area.html`, with the given `context`
       // which may be omitted. Called for you by the `{% area %} custom tag.
-      async renderArea(req, area, _with) {
+      //
+      // If `inline` is true then the rendering of each widget is attached
+      // to the widget as a `_rendered` property, bypassing normal full-area
+      // HTML responses, and the return value of this method is `null`.
+      async renderArea(req, area, _with, { inline = false } = {}) {
         if (!area._id) {
           throw new Error('All areas must have an _id property in A3.x. Area details:\n\n' + JSON.stringify(area));
         }
@@ -212,6 +220,12 @@ module.exports = {
           // just use the helpers
           self.apos.attachment.all(area, { annotate: true });
         }
+        if (inline) {
+          for (const item of area.items) {
+            item._rendered = await self.renderWidget(req, item.type, item, widgets[item.type]);
+          }
+          return null;
+        }
         return self.render(req, 'area', {
           // TODO filter area to exclude big relationship objects, but
           // not so sloppy this time please
@@ -226,7 +240,13 @@ module.exports = {
       // Replace documents' area objects with rendered HTML for each area.
       // This is used by GET requests including the `render-areas` query
       // parameter. `within` is an array of Apostrophe documents.
-      async renderDocsAreas(req, within) {
+      //
+      // If `inline` is true a rendering of each individual widget is
+      // added as an extra `_rendered` property of that widget, alongside
+      // its normal properties. Otherwise a rendering of the entire area
+      // is supplied as the `_rendered` property of that area and the
+      // `items` array is suppressed from the response.
+      async renderDocsAreas(req, within, { inline = false } = {}) {
         within = Array.isArray(within) ? within : [];
         let index = 0;
         // Loop over the docs in the array passed in.
@@ -270,8 +290,10 @@ module.exports = {
         async function render(area, path, context, opts) {
           const preppedArea = self.prepForRender(area, context, path);
 
-          const areaRendered = await self.apos.area.renderArea(req, preppedArea, context);
-
+          const areaRendered = await self.apos.area.renderArea(req, preppedArea, context, { inline });
+          if (inline) {
+            return;
+          }
           _.set(context, [ path, '_rendered' ], areaRendered);
           _.set(context, [ path, '_fieldId' ], undefined);
           _.set(context, [ path, 'items' ], undefined);

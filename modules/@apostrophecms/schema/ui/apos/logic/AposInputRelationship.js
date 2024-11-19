@@ -188,8 +188,8 @@ export default {
         .filter(removeSelectedItem)
         .map(formatItems);
 
-      this.searchSuggestion = !qs.autocomplete && this.suggestion;
-      this.searchHint = (!qs.autocomplete || !results.length) && this.hint;
+      this.searchSuggestion = !qs.autocomplete ? this.suggestion : null;
+      this.searchHint = (!qs.autocomplete || !results.length) ? this.hint : null;
       this.searchList = [ ...results ].filter(Boolean);
       this.searching = false;
     },

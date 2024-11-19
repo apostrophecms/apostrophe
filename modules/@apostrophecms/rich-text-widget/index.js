@@ -731,7 +731,8 @@ module.exports = {
       },
 
       // Quickly replaces rich text permalink placeholder URLs with
-      // actual, SEO-friendly URLs based on `widget._relatedDocs`
+      // actual, SEO-friendly URLs based on `widget._relatedDocs`.
+
       linkPermalinks(widget, content) {
         // "Why no regexps?" We need to do this as quickly as we can.
         // indexOf and lastIndexOf are much faster.
@@ -756,13 +757,11 @@ module.exports = {
             const left = content.lastIndexOf('<', i);
             const href = content.indexOf(' href="', left);
             const close = content.indexOf('"', href + 7);
-            if (!widget._edit) {
-              if ((left !== -1) && (href !== -1) && (close !== -1)) {
-                content = content.substring(0, href + 6) + doc._url + content.substring(close + 1);
-              } else {
-                // So we don't get stuck in an infinite loop
-                break;
-              }
+            if ((left !== -1) && (href !== -1) && (close !== -1)) {
+              content = content.substring(0, href + 6) + doc._url + content.substring(close + 1);
+            } else {
+              // So we don't get stuck in an infinite loop
+              break;
             }
             if (!updateTitle) {
               continue;
@@ -777,11 +776,8 @@ module.exports = {
         return content;
       },
       // Quickly replaces inline image placeholder URLs with
-      // actual, SEO-friendly URLs based on `widget._relatedDocs`
+      // actual, SEO-friendly URLs based on `widget._relatedDocs`.
       linkImages(widget, content) {
-        if (widget._edit) {
-          return content;
-        }
         // "Why no regexps?" We need to do this as quickly as we can.
         // indexOf and lastIndexOf are much faster.
         let i;
@@ -799,13 +795,11 @@ module.exports = {
             const left = content.lastIndexOf('<', i);
             const src = content.indexOf(' src="', left);
             const close = content.indexOf('"', src + 6);
-            if (!widget._edit) {
-              if ((left !== -1) && (src !== -1) && (close !== -1)) {
-                content = content.substring(0, src + 5) + doc.attachment._urls[self.apos.modules['@apostrophecms/image'].getLargestSize()] + content.substring(close + 1);
-              } else {
-                // So we don't get stuck in an infinite loop
-                break;
-              }
+            if ((left !== -1) && (src !== -1) && (close !== -1)) {
+              content = content.substring(0, src + 5) + doc.attachment._urls[self.apos.modules['@apostrophecms/image'].getLargestSize()] + content.substring(close + 1);
+            } else {
+              // So we don't get stuck in an infinite loop
+              break;
             }
           }
         }
