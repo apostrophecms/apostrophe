@@ -29,35 +29,35 @@
     <div v-if="!disableFields" class="apos-color__field">
       <!-- rgba -->
       <div class="apos-color__field--double">
-        <EdIn
+        <EditableContent
           label="hex"
           :value="hex"
           @change="inputChange"
         />
       </div>
       <div class="apos-color__field--single">
-        <EdIn
+        <EditableContent
           label="r"
           :value="colors.rgba.r"
           @change="inputChange"
         />
       </div>
       <div class="apos-color__field--single">
-        <EdIn
+        <EditableContent
           label="g"
           :value="colors.rgba.g"
           @change="inputChange"
         />
       </div>
       <div class="apos-color__field--single">
-        <EdIn
+        <EditableContent
           label="b"
           :value="colors.rgba.b"
           @change="inputChange"
         />
       </div>
       <div v-if="!disableAlpha" class="apos-color__field--single">
-        <EdIn
+        <EditableContent
           label="a"
           :value="colors.a"
           :arrow-offset="0.01"
@@ -115,7 +115,7 @@ export default {
     Saturation: saturation,
     Hue: hue,
     Alpha: alpha,
-    EdIn: editableInput,
+    EditableContent: editableInput,
     Checkboard: checkboard
   },
   mixins: [ colorMixin ],
