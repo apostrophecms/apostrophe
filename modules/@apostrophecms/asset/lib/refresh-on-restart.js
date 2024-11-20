@@ -17,7 +17,7 @@
     } else {
       apos.http.post(document.querySelector('[data-apos-refresh-on-restart]').getAttribute('data-apos-refresh-on-restart'), {
         qs: {
-          fast: fast
+          fast
         }
       }, function(err, result) {
         if (err) {

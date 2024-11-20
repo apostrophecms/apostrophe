@@ -13,6 +13,8 @@
 * Bumped `express-bearer-token` dependency to address a low-severity `npm audit` warning regarding noncompliant cookie names and values. Apostrophe
 did not actually use any noncompliant cookie names or values, so there was no vulnerability in Apostrophe.
 * Rich text "Styles" toolbar now has visually focused state.
+* The `renderPermalinks` and `renderImages` methods of the `@apostrophecms/rich-text` module now correctly resolve the final URLs of page links and inline images in rich text widgets, even when the user has editing privileges. Formerly this was mistakenly prevented by logic intended to preserve the editing experience. The editing experience never actually relied on the
+rendered output.
 
 ### Adds
 
@@ -20,6 +22,7 @@ did not actually use any noncompliant cookie names or values, so there was no vu
 * Adds asset module option `options.modulePreloadPolyfill` (default `true`) to allow disabling the polyfill preload for e.g. external front-ends. 
 * Adds `bundleMarkup` to the data sent to the external front-end, containing all markup for injecting Apostrophe UI in the front-end.
 * Warns users when two page types have the same field name, but a different field type. This may cause errors or other problems when an editor switches page types.
+* The piece and page `GET` REST APIs now support `?render-areas=inline`. When this parameter is used, an HTML rendering of each widget is added to that specific widget in each area's `items` array as a new `_rendered` property. The existing `?render-areas=1` parameter is still supported to render the entire area as a single `_rendered` property. Note that this older option also causes `items` to be omitted from the response.
 
 ### Changes
 

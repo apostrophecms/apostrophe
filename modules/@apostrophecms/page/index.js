@@ -417,8 +417,12 @@ module.exports = {
           if (!result) {
             throw self.apos.error('notfound');
           }
-          if (self.apos.launder.boolean(req.query['render-areas']) === true) {
-            await self.apos.area.renderDocsAreas(req, [ result ]);
+          const renderAreas = req.query['render-areas'];
+          const inline = renderAreas === 'inline';
+          if (inline || self.apos.launder.boolean(renderAreas)) {
+            await self.apos.area.renderDocsAreas(req, [ result ], {
+              inline
+            });
           }
           // Attach `_url` and `_urls` properties
           self.apos.attachment.all(result, { annotate: true });
@@ -1827,7 +1831,7 @@ database.`);
         }
         async function findPage() {
           // Also checks permissions
-          return self.find(req, { _id: _id }).permission('edit').ancestors({
+          return self.find(req, { _id }).permission('edit').ancestors({
             depth: 1,
             archived: null,
             areas: false
@@ -2451,7 +2455,7 @@ database.`);
           throw new Error('Wrong number of arguments');
         }
         const slug = argv._[1];
-        const count = await self.apos.doc.db.updateOne({ slug: slug }, { $unset: { parked: 1 } });
+        const count = await self.apos.doc.db.updateOne({ slug }, { $unset: { parked: 1 } });
         if (!count) {
           throw 'No page with that slug was found.';
         }
