@@ -249,7 +249,7 @@
                   />
                 </div>
               </div>
-              <transition name="collapse">
+              <transition name="collapse" :duration="400">
                 <div v-show="item.open" class="apos-input-array-inline-body">
                   <AposSchema
                     :key="item._id"
