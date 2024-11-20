@@ -308,9 +308,6 @@ module.exports = (self) => {
         const {
           imports = [], assets = [], dynamicImports = []
         } = files;
-        if (!imports.length) {
-          continue;
-        }
 
         for (const file of [ ...imports, ...dynamicImports, ...assets ]) {
           if (seen[file]) {
