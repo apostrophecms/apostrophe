@@ -1,5 +1,9 @@
 <template>
-  <section class="apos-context-menu" @keydown.tab="onTab">
+  <section
+    ref="contextMenuRef"
+    class="apos-context-menu"
+    @keydown.tab="onTab"
+  >
     <slot name="prebutton" />
     <div
       ref="dropdown"
@@ -138,6 +142,9 @@ const isOpen = ref(false);
 const isRendered = ref(false);
 const placement = ref(props.menuPlacement);
 const event = ref(null);
+/** @type {import('vue').Ref<HTMLElement | null>}} */
+const contextMenuRef = ref(null);
+/** @type {import('vue').Ref<HTMLElement | null>}} */
 const dropdown = ref(null);
 /** @type {import('vue').Ref<import('vue').ComponentPublicInstance | null>} */
 const dropdownButton = ref(null);
@@ -152,9 +159,11 @@ const otherMenuOpened = ref(false);
 const {
   onTab, runTrap, hasRunningTrap, resetTrap
 } = useFocusTrap({
-  withPriority: true,
-  triggerRef: dropdownButton,
-  onExit: hide
+  withPriority: true
+  // If enabled, the dropdown gets closed when the focus leaves
+  // the context menu.
+  // triggerRef: dropdownButton,
+  // onExit: hide
 });
 
 defineExpose({
@@ -195,7 +204,7 @@ watch(isOpen, async (newVal) => {
     setDropdownPosition();
     window.addEventListener('resize', setDropdownPosition);
     window.addEventListener('scroll', setDropdownPosition);
-    window.addEventListener('keydown', handleKeyboard);
+    contextMenuRef.value?.addEventListener('keydown', handleKeyboard);
     if (props.trapFocus && !hasRunningTrap.value) {
       await runTrap(dropdownContent);
     }
@@ -209,7 +218,7 @@ watch(isOpen, async (newVal) => {
     }
     window.removeEventListener('resize', setDropdownPosition);
     window.removeEventListener('scroll', setDropdownPosition);
-    window.removeEventListener('keydown', handleKeyboard);
+    contextMenuRef.value?.addEventListener('keydown', handleKeyboard);
     if (!otherMenuOpened.value && !props.trapFocus) {
       dropdown.value.querySelector('[tabindex]').focus();
     }
@@ -304,11 +313,51 @@ async function setDropdownPosition() {
   });
 }
 
+const ignoreInputTypes = [
+  'text',
+  'password',
+  'email',
+  'file',
+  'number',
+  'search',
+  'tel',
+  'url',
+  'date',
+  'time',
+  'datetime-local',
+  'month',
+  'search',
+  'week'
+];
+
+/**
+ * @param {KeyboardEvent} event
+ */
 function handleKeyboard(event) {
-  if (event.key === 'Escape') {
-    event.stopImmediatePropagation();
-    hide();
+  if (event.key !== 'Escape' || !isOpen.value) {
+    return;
   }
+  /** @type {HTMLElement} */
+  const target = event.target;
+
+  // If inside of an input or textarea, don't close the dropdown
+  // and don't allow other event listeners to close it either (e.g. modals)
+  if (
+    target?.nodeName?.toLowerCase() === 'textarea' ||
+    (target?.nodeName?.toLowerCase() === 'input' &&
+      ignoreInputTypes.includes(target.getAttribute('type'))
+    )
+  ) {
+    event.stopImmediatePropagation();
+    return;
+  }
+
+  dropdownButton.value?.focus
+    ? dropdownButton.value.focus()
+    : dropdownButton.value?.$el?.focus();
+
+  event.stopImmediatePropagation();
+  hide();
 }
 </script>
 

@@ -13,13 +13,14 @@ import {
  *   to find the first element to focus. Default is true.
  * - `triggerRef`: (optional) A ref to the element that will trigger the focus trap.
  *   It's used as a focus target when exiting the current element focusable elements.
+ *   If boolean `true` is passed, the active modal focused element will be used.
  * - `onExit`: (optional) A callback to be called when exiting the focus trap.
  *
  * @param {{
  *  retries?: number;
  *  withPriority?: boolean;
  *  triggerRef?: import('vue').Ref<HTMLElement | import('vue').ComponentPublicInstance>
- *    | HTMLElement;
+ *    | HTMLElement | boolean;
  *  onExit?: () => void;
  * }} options
  * @returns {{
@@ -53,6 +54,9 @@ export function useFocusTrap({
   });
   const triggerRefElement = computed(() => {
     const value = unref(triggerRef);
+    if (value === true) {
+      return activeModalFocusedElement;
+    }
     if (value) {
       const element = value.$el || value;
       if (element instanceof HTMLElement) {
@@ -160,7 +164,14 @@ export function useFocusTrap({
     // Keep the if branches for better readability and future changes.
     function focus(ev, element) {
       let toFocusEl;
-      const currentFocused = triggerRefElement.value || activeModalFocusedElement;
+      const currentFocused = triggerRefElement.value;
+
+      // If no trigger element is found, fallback to the original behavior.
+      if (!currentFocused) {
+        element.focus();
+        ev.preventDefault();
+      }
+
       // We did a full cycle and are returning back to the first element.
       // We don't want that, but to exit the cycle and continue to the next
       // modal element to focus or the next natural focusable element (if

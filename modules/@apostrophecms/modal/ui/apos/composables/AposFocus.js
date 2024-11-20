@@ -51,14 +51,16 @@ export function useAposFocus() {
       return;
     }
 
-    const firstElementToFocus = elems.at(0);
-    const lastElementToFocus = elems.at(-1);
+    let firstElementToFocus = elems.at(0);
+    let lastElementToFocus = elems.at(-1);
 
     // Take into account radio inputs with the same name, the
     // browser will cycle through them as a group, stepping on
     // the active one per stack.
     const firstElementRadioStack = getInputRadioStack(firstElementToFocus, elems);
     const lastElementRadioStack = getInputRadioStack(lastElementToFocus, elems);
+    firstElementToFocus = getInputCheckedOrCurrent(firstElementToFocus, firstElementRadioStack);
+    lastElementToFocus = getInputCheckedOrCurrent(lastElementToFocus, lastElementRadioStack);
 
     const focus = fnFocus || ((ev, el) => {
       el.focus();
@@ -101,6 +103,22 @@ export function useAposFocus() {
           e.getAttribute('name') === currentElement.getAttribute('name'))
       )
       : [];
+  }
+
+  /**
+   *
+   * @param {HTMLElement} currentElement
+   * @param {HTMLElement[]} elements
+   * @returns
+   */
+  function getInputCheckedOrCurrent(currentElement, elements = []) {
+    const checked = elements.find(el => (el.hasAttribute('checked')));
+
+    if (checked) {
+      return checked;
+    }
+
+    return currentElement;
   }
 
   // Focus the last focused element from the last modal.
