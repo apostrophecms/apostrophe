@@ -1,5 +1,11 @@
 # Changelog
 
+## UNRELEASED
+
+### Fixes
+
+* Focus properly Widget Editor modals when opened. Keep the previous active focus on the modal when closing the widget editor.
+
 ## 4.10.0 (2024-11-20)
 
 ### Fixes
