@@ -429,11 +429,11 @@ export default {
     },
 
     attachKeyboardFocusHandler() {
-      this.$refs.wrapper.addEventListener('keydown', this.handleKeyboardFocus);
+      this.$refs.wrapper?.addEventListener('keydown', this.handleKeyboardFocus);
     },
 
     removeKeyboardFocusHandler() {
-      this.$refs.wrapper.removeEventListener('keydown', this.handleKeyboardFocus);
+      this.$refs.wrapper?.removeEventListener('keydown', this.handleKeyboardFocus);
     },
 
     // Focus parent, useful for obtrusive UI

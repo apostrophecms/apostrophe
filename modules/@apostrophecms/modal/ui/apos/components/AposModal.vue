@@ -13,7 +13,7 @@
       aria-modal="true"
       :aria-labelledby="props.modalData.id"
       data-apos-modal
-      @focus.capture="storeFocusedElement"
+      @focus.capture="captureFocus"
       @esc="close"
       @keydown.tab="onTab"
     >
@@ -262,6 +262,11 @@ function onLeave() {
   store.remove(props.modalData.id);
   focusLastModalFocusedElement();
   emit('no-modal');
+}
+
+function captureFocus(e) {
+  storeFocusedElement(e);
+  store.updateModalData(props.modalData.id, { focusedElement: e.target });
 }
 
 async function trapFocus() {
