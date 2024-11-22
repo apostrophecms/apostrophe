@@ -1,6 +1,6 @@
 # Changelog
 
-## UNRELEASED
+## 4.10.0 (2024-11-20)
 
 ### Fixes
 
@@ -15,6 +15,8 @@ did not actually use any noncompliant cookie names or values, so there was no vu
 * Rich text "Styles" toolbar now has visually focused state.
 * The `renderPermalinks` and `renderImages` methods of the `@apostrophecms/rich-text` module now correctly resolve the final URLs of page links and inline images in rich text widgets, even when the user has editing privileges. Formerly this was mistakenly prevented by logic intended to preserve the editing experience. The editing experience never actually relied on the
 rendered output.
+* Search bar will perform the search even if the bar is empty allowing to reset a search.
+* Fixes Color picker being hidden in an inline array schema field, also fixes rgba inputs going off the modal.
 
 ### Adds
 

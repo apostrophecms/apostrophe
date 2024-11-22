@@ -1,6 +1,6 @@
 .apos-schema {
-  padding-top: $spacing-base;
-  padding-bottom: $spacing-base;
+  padding-top: $spacing-base * 2;
+  padding-bottom: $spacing-base * 2;
 }
 
 :deep(.apos-field--array.apos-field--error-duplicate) {
@@ -253,9 +253,7 @@
 }
 
 .apos-input-array-inline-body {
-  overflow: hidden;
   max-height: 999px;
-  padding: $spacing-base 0;
   transition: all 400ms ease;
 
   &.collapse-enter-from,
@@ -265,6 +263,7 @@
 
   &.collapse-enter-active,
   &.collapse-leave-active {
+    overflow: hidden;
     transition: max-height 400ms ease;
   }
 }
@@ -307,7 +306,6 @@
     @include apos-transition();
 
     & {
-      overflow: hidden;
       padding: 0;
       border: 1px solid var(--a-base-9);
       outline: 1px solid transparent;

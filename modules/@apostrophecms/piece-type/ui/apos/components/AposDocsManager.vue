@@ -427,8 +427,6 @@ export default {
         queryExtras.autocomplete = query;
       } else if ('autocomplete' in this.queryExtras) {
         queryExtras.autocomplete = undefined;
-      } else {
-        return {};
       }
       const { total, ...pieces } = await this.requestData(1, queryExtras);
 
