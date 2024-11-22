@@ -38,7 +38,6 @@ export function useFocusTrap({
   withPriority = true
 }) {
   const {
-    activeModal,
     activeModalFocusedElement,
     findPriorityElementOrFirst,
     cycleElementsToFocus: parentCycleElementsToFocus,
@@ -155,9 +154,6 @@ export function useFocusTrap({
    * @param {KeyboardEvent} event
    */
   function cycle(event) {
-    if (!activeModal) {
-      return;
-    }
     const elements = unref(elementsToFocus);
     parentCycleElementsToFocus(event, elements, focus);
 
