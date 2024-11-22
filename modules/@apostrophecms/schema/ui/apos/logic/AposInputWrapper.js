@@ -139,7 +139,7 @@ export default {
         .map(({ name, namespace }) => {
           return {
             name,
-            namespace: namespace,
+            namespace,
             data: meta[namespace] || {}
           };
         });

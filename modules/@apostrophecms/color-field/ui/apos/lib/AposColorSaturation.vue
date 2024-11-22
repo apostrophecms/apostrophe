@@ -99,20 +99,19 @@ export default {
 .apos-color__saturation,
 .apos-color__saturation-white,
 .apos-color__saturation-black {
-  cursor: pointer;
   position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
+  inset: 0;
+  cursor: pointer;
 }
 
 .apos-color__saturation-white {
-  background: linear-gradient(to right, #fff, rgba(255,255,255,0));
+  background: linear-gradient(to right, #fff, rgb(255 255 255 / 0%));
 }
+
 .apos-color__saturation-black {
-  background: linear-gradient(to top, #000, rgba(0,0,0,0));
+  background: linear-gradient(to top, #000, rgb(0 0 0 / 0%));
 }
+
 .apos-color__saturation-pointer {
   cursor: pointer;
   position: absolute;
@@ -121,7 +120,7 @@ export default {
   cursor: head;
   width: 4px;
   height: 4px;
-  box-shadow: 0 0 0 1.5px #fff, inset 0 0 1px 1px rgba(0,0,0,.3), 0 0 1px 2px rgba(0,0,0,.4);
+  box-shadow: 0 0 0 1.5px #fff, inset 0 0 1px 1px rgb(0 0 0 / 30%), 0 0 1px 2px rgb(0 0 0 / 40%);
   border-radius: 50%;
   transform: translate(-2px, -2px);
 }

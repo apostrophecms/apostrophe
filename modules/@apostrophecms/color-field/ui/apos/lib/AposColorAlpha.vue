@@ -98,48 +98,44 @@ export default {
 };
 </script>
 
-<style>
+<style lang="scss" scoped>
 .apos-color__alpha {
   position: absolute;
-  top: 0px;
-  right: 0px;
-  bottom: 0px;
-  left: 0px;
+  inset: 0;
 }
+
 .apos-color__alpha-checkboard-wrap {
   position: absolute;
-  top: 0px;
-  right: 0px;
-  bottom: 0px;
-  left: 0px;
+  inset: 0;
   overflow: hidden;
 }
+
 .apos-color__alpha-gradient {
   position: absolute;
-  top: 0px;
-  right: 0px;
-  bottom: 0px;
-  left: 0px;
+  inset: 0;
 }
+
 .apos-color__alpha-container {
-  cursor: pointer;
+  z-index: $z-index-default;
   position: relative;
-  z-index: 2;
   height: 100%;
   margin: 0 3px;
+  cursor: pointer;
 }
+
 .apos-color__alpha-pointer {
-  z-index: 2;
+  z-index: $z-index-default;
   position: absolute;
 }
+
 .apos-color__alpha-picker {
-  cursor: pointer;
   width: 4px;
-  border-radius: 1px;
   height: 8px;
-  box-shadow: 0 0 2px rgba(0, 0, 0, .6);
-  background: #fff;
   margin-top: 1px;
+  background: #fff;
+  cursor: pointer;
+  border-radius: 1px;
+  box-shadow: 0 0 2px rgb(0 0 0 / 60%);
   transform: translateX(-2px);
 }
 </style>

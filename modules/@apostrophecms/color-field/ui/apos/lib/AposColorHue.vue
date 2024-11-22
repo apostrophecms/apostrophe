@@ -173,39 +173,41 @@ export default {
 };
 </script>
 
-<style>
+<style lang="scss" scoped>
 .apos-color__hue {
   position: absolute;
-  top: 0px;
-  right: 0px;
-  bottom: 0px;
-  left: 0px;
+  inset: 0;
   border-radius: 2px;
 }
+
 .apos-color__hue--horizontal {
   background: linear-gradient(to right, #f00 0%, #ff0 17%, #0f0 33%, #0ff 50%, #00f 67%, #f0f 83%, #f00 100%);
 }
+
 .apos-color__hue--vertical {
   background: linear-gradient(to top, #f00 0%, #ff0 17%, #0f0 33%, #0ff 50%, #00f 67%, #f0f 83%, #f00 100%);
 }
+
 .apos-color__hue-container {
-  cursor: pointer;
-  margin: 0 2px;
   position: relative;
   height: 100%;
+  margin: 0 2px;
+  cursor: pointer;
 }
+
 .apos-color__hue-pointer {
-  z-index: 2;
+  z-index: $z-index-default;
   position: absolute;
 }
+
 .apos-color__hue-picker {
-  cursor: pointer;
-  margin-top: 1px;
   width: 4px;
-  border-radius: 1px;
   height: 8px;
-  box-shadow: 0 0 2px rgba(0, 0, 0, .6);
+  margin-top: 1px;
   background: #fff;
+  cursor: pointer;
+  border-radius: 1px;
+  box-shadow: 0 0 2px rgb(0 0 0 / 60%);
   transform: translateX(-2px) ;
 }
 </style>

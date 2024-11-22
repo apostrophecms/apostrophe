@@ -84,10 +84,7 @@ function getCheckboard(c1, c2, size) {
 <style>
 .apos-color__checkerboard {
   position: absolute;
-  top: 0px;
-  right: 0px;
-  bottom: 0px;
-  left: 0px;
+  inset: 0;
   background-size: contain;
 }
 </style>

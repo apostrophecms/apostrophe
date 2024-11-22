@@ -19,7 +19,10 @@
       </div>
       <div class="apos-color__color-wrap">
         <div
+<<<<<<< HEAD
           :data-apos-active-color="activeColor"
+=======
+>>>>>>> d3fd291ceac29969a464c5aa8bd66086e8902611
           :aria-label="`Current color is ${activeColor}`"
           class="apos-color__active-color"
           :style="{ background: activeColor }"
@@ -30,35 +33,55 @@
     <div v-if="!disableFields" class="apos-color__field">
       <!-- rgba -->
       <div class="apos-color__field--double">
+<<<<<<< HEAD
         <EdIn
+=======
+        <EditableContent
+>>>>>>> d3fd291ceac29969a464c5aa8bd66086e8902611
           label="hex"
           :value="hex"
           @change="inputChange"
         />
       </div>
       <div class="apos-color__field--single">
+<<<<<<< HEAD
         <EdIn
+=======
+        <EditableContent
+>>>>>>> d3fd291ceac29969a464c5aa8bd66086e8902611
           label="r"
           :value="colors.rgba.r"
           @change="inputChange"
         />
       </div>
       <div class="apos-color__field--single">
+<<<<<<< HEAD
         <EdIn
+=======
+        <EditableContent
+>>>>>>> d3fd291ceac29969a464c5aa8bd66086e8902611
           label="g"
           :value="colors.rgba.g"
           @change="inputChange"
         />
       </div>
       <div class="apos-color__field--single">
+<<<<<<< HEAD
         <EdIn
+=======
+        <EditableContent
+>>>>>>> d3fd291ceac29969a464c5aa8bd66086e8902611
           label="b"
           :value="colors.rgba.b"
           @change="inputChange"
         />
       </div>
       <div v-if="!disableAlpha" class="apos-color__field--single">
+<<<<<<< HEAD
         <EdIn
+=======
+        <EditableContent
+>>>>>>> d3fd291ceac29969a464c5aa8bd66086e8902611
           label="a"
           :value="colors.a"
           :arrow-offset="0.01"
@@ -78,7 +101,11 @@
           :key="`!${c}`"
           class="apos-color__presets-color"
           :aria-label="`Color:${c}`"
+<<<<<<< HEAD
           :style="{ background: formatCssValue(c) }"
+=======
+          :style="{ background: c }"
+>>>>>>> d3fd291ceac29969a464c5aa8bd66086e8902611
           @click="handlePreset(c)"
         />
         <div
@@ -116,7 +143,11 @@ export default {
     Saturation: saturation,
     Hue: hue,
     Alpha: alpha,
+<<<<<<< HEAD
     EdIn: editableInput,
+=======
+    EditableContent: editableInput,
+>>>>>>> d3fd291ceac29969a464c5aa8bd66086e8902611
     Checkboard: checkboard
   },
   mixins: [ colorMixin ],
@@ -191,22 +222,22 @@ export default {
 };
 </script>
 
-<style>
+<style lang="scss" scoped>
 .apos-color {
   position: relative;
-  width: 200px;
-  padding: 10px 10px 0;
   box-sizing: initial;
+  width: 200px;
+  padding: $spacing-base $spacing-base 0;
   background: #fff;
   border-radius: 4px;
-  box-shadow: 0 0 0 1px rgba(0, 0, 0, .15), 0 8px 16px rgba(0, 0, 0, .15);
+  box-shadow: 0 0 0 1px rgb(0 0 0 / 15%), 0 8px 16px rgb(0 0 0 / 15%);
 }
 
 .apos-color__saturation-wrap {
-  width: 100%;
-  padding-bottom: 75%;
   position: relative;
   overflow: hidden;
+  width: 100%;
+  padding-bottom: 75%;
 }
 
 .apos-color__controls {
@@ -214,8 +245,8 @@ export default {
 }
 
 .apos-color__sliders {
-  padding: 4px 0;
   flex: 1;
+  padding: 4px 0;
 }
 
 .apos-color__sliders .apos-color__hue,
@@ -225,34 +256,31 @@ export default {
 
 .apos-color__hue-wrap {
   position: relative;
-  height: 10px;
+  height: $spacing-base;
 }
 
 .apos-color__alpha-wrap {
   position: relative;
-  height: 10px;
-  margin-top: 4px;
   overflow: hidden;
+  height: $spacing-base;
+  margin-top: 4px;
 }
 
 .apos-color__color-wrap {
+  position: relative;
   width: 24px;
   height: 24px;
-  position: relative;
   margin-top: 4px;
   margin-left: 4px;
   border-radius: 3px;
 }
 
 .apos-color__active-color {
+  z-index: $z-index-default;
   position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
+  inset: 0;
   border-radius: 2px;
-  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, .15), inset 0 0 4px rgba(0, 0, 0, .25);
-  z-index: 2;
+  box-shadow: inset 0 0 0 1px rgb(0 0 0 / 15%), inset 0 0 4px rgb(0 0 0 / 25%);
 }
 
 .apos-color__color-wrap .apos-color__checkerboard {
@@ -269,16 +297,16 @@ export default {
   padding: 4px 0 3px 10%;
   border: none;
   box-shadow: inset 0 0 0 1px #ccc;
-  font-size: 10px;
+  font-size: var(--a-type-small);
 }
 
 .apos-color__field .apos-color__label {
   display: block;
-  text-align: center;
-  font-size: 11px;
-  color: #222;
   padding-top: 3px;
   padding-bottom: 4px;
+  color: var(--a-text-primary);
+  font-size: var(--a-type-smaller);
+  text-align: center;
   text-transform: capitalize;
 }
 
@@ -292,33 +320,33 @@ export default {
 }
 
 .apos-color__presets {
-  margin-right: -10px;
-  margin-left: -10px;
-  padding-left: 10px;
-  padding-top: 10px;
+  margin-right: -$spacing-base;
+  margin-left: -$spacing-base;
+  padding-top: $spacing-base;
+  padding-left: $spacing-base;
   border-top: 1px solid #eee;
 }
 
 .apos-color__presets-color {
-  border-radius: 3px;
-  overflow: hidden;
   position: relative;
   display: inline-block;
-  margin: 0 10px 10px 0;
-  vertical-align: top;
-  cursor: pointer;
+  overflow: hidden;
   width: 16px;
   height: 16px;
-  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, .15);
+  margin: 0 $spacing-base $spacing-base 0;
+  vertical-align: top;
+  cursor: pointer;
+  border-radius: 3px;
+  box-shadow: inset 0 0 0 1px rgb(0 0 0 / 15%);
 }
 
 .apos-color__presets-color .apos-color__checkerboard {
-  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, .15);
+  box-shadow: inset 0 0 0 1px rgb(0 0 0 / 15%);
   border-radius: 3px;
 }
 
 .apos-color--disable-alpha .apos-color__color-wrap {
-  height: 10px;
+  height: $spacing-base;
 }
 
 .apos-popover .apos-color {

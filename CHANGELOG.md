@@ -1,6 +1,6 @@
 # Changelog
 
-## UNRELEASED
+## 4.10.0 (2024-11-20)
 
 ### Fixes
 
@@ -9,16 +9,29 @@
 * Fix permission grid tooltip display.
 * Fixes a bug that crashes external frontend applications.
 * Fixes a false positive warning for module not in use for project level submodules (e.g. `widges/module.js`) and dot-folders (e.g. `.DS_Store`).
+* Bumped `express-bearer-token` dependency to address a low-severity `npm audit` warning regarding noncompliant cookie names and values. Apostrophe
+did not actually use any noncompliant cookie names or values, so there was no vulnerability in Apostrophe.
+* Rich text "Styles" toolbar now has visually focused state.
+* The `renderPermalinks` and `renderImages` methods of the `@apostrophecms/rich-text` module now correctly resolve the final URLs of page links and inline images in rich text widgets, even when the user has editing privileges. Formerly this was mistakenly prevented by logic intended to preserve the editing experience. The editing experience never actually relied on the
+rendered output.
+* Search bar will perform the search even if the bar is empty allowing to reset a search.
+* Fixes Color picker being hidden in an inline array schema field, also fixes rgba inputs going off the modal.
 
 ### Adds
 
 * It's possible now to target the HMR build when registering via `template.append` and `template.prepend`. Use `when: 'hmr:public'` or `when: 'hmr:apos'` that will be evaluated against the current asset `options.hmr` configuration.
 * Adds asset module option `options.modulePreloadPolyfill` (default `true`) to allow disabling the polyfill preload for e.g. external front-ends. 
 * Adds `bundleMarkup` to the data sent to the external front-end, containing all markup for injecting Apostrophe UI in the front-end.
+* Warns users when two page types have the same field name, but a different field type. This may cause errors or other problems when an editor switches page types.
+* The piece and page `GET` REST APIs now support `?render-areas=inline`. When this parameter is used, an HTML rendering of each widget is added to that specific widget in each area's `items` array as a new `_rendered` property. The existing `?render-areas=1` parameter is still supported to render the entire area as a single `_rendered` property. Note that this older option also causes `items` to be omitted from the response.
 
 ### Changes
 
 * Removes postcss plugin and webpack loader used for breakpoint preview mode. Uses instead the new `postcss-viewport-to-container-toggle` plugin in the webpack config.
+* Implement `vue-color` directly in Apostrophe rather than as a dependency
+* Switch color handling library from `tinycolor2` to `@ctrl/tinycolor`
+* Removes error messages in server console for hidden fields. These messages should not have been printed out in the server console in the first place.
+* Removes invalid error messages on select fields appearing while opening an existing valid document.
 
 ## 4.9.0 (2024-10-31)
 

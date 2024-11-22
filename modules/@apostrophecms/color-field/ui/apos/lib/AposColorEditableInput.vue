@@ -122,7 +122,9 @@ export default {
 .apos-color__editable-input {
   position: relative;
 }
+
 .apos-color__input {
+  width: 100%;
   padding: 0;
   border: 0;
   outline: none;
