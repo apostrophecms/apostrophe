@@ -10,6 +10,9 @@ export function useAposFocus() {
   return {
     elementsToFocus,
     focusedElement,
+    activeModal: modalStore.activeModal,
+    activeModalElementsToFocus: modalStore.activeModal?.elementsToFocus,
+    activeModalFocusedElement: modalStore.activeModal?.focusedElement,
     cycleElementsToFocus,
     focusLastModalFocusedElement,
     storeFocusedElement,
@@ -26,7 +29,18 @@ export function useAposFocus() {
   // `cycleElementsToFocus` listeners relies on this dynamic list which has the advantage of
   // taking new or less elements to focus, after an update has happened inside a modal,
   // like an XHR call to get the pieces list in the AposDocsManager modal, for instance.
-  function cycleElementsToFocus(e, elements) {
+  // If the fnFocus argument is provided, it will be called with the event and
+  // the element to focus. Otherwise, the default behavior is to focus the element
+  // and prevent the default event behavior.
+  /**
+   * @param {KeyboardEvent} e event
+   * @param {HTMLElement[]} elements
+   * @param {
+   *  (event: KeyboardEvent, element: HTMLElement) => void
+   * } [fnFocus] optional function to focus the element
+   * @returns {void}
+   */
+  function cycleElementsToFocus(e, elements, fnFocus) {
     const elems = elements || elementsToFocus.value;
     if (!elems.length) {
       return;
@@ -37,25 +51,74 @@ export function useAposFocus() {
       return;
     }
 
-    const firstElementToFocus = elems.at(0);
-    const lastElementToFocus = elems.at(-1);
+    let firstElementToFocus = elems.at(0);
+    let lastElementToFocus = elems.at(-1);
+
+    // Take into account radio inputs with the same name, the
+    // browser will cycle through them as a group, stepping on
+    // the active one per stack.
+    const firstElementRadioStack = getInputRadioStack(firstElementToFocus, elems);
+    const lastElementRadioStack = getInputRadioStack(lastElementToFocus, elems);
+    firstElementToFocus = getInputCheckedOrCurrent(firstElementToFocus, firstElementRadioStack);
+    lastElementToFocus = getInputCheckedOrCurrent(lastElementToFocus, lastElementRadioStack);
+
+    const focus = fnFocus || ((ev, el) => {
+      el.focus();
+      ev.preventDefault();
+    });
 
     // If shift key pressed for shift + tab combination
     if (e.shiftKey) {
-      if (document.activeElement === firstElementToFocus) {
+      if (document.activeElement === firstElementToFocus ||
+        firstElementRadioStack.includes(document.activeElement)
+      ) {
         // Add focus for the last focusable element
-        lastElementToFocus.focus();
-        e.preventDefault();
+        focus(e, lastElementToFocus);
       }
       return;
     }
 
     // If tab key is pressed
-    if (document.activeElement === lastElementToFocus) {
+    if (document.activeElement === lastElementToFocus ||
+      lastElementRadioStack.includes(document.activeElement)
+    ) {
       // Add focus for the first focusable element
-      firstElementToFocus.focus();
-      e.preventDefault();
+      focus(e, firstElementToFocus);
     }
+  }
+
+  /**
+   * Returns an array of radio inputs with the same name attribute
+   * as the current element. If the current element is not a radio input,
+   * an empty array is returned.
+   *
+   * @param {HTMLElement} currentElement
+   * @param {HTMLElement[]} elements
+   * @returns {HTMLElement[]}
+   */
+  function getInputRadioStack(currentElement, elements) {
+    return currentElement.getAttribute('type') === 'radio'
+      ? elements.filter(
+        e => (e.getAttribute('type') === 'radio' &&
+          e.getAttribute('name') === currentElement.getAttribute('name'))
+      )
+      : [];
+  }
+
+  /**
+   *
+   * @param {HTMLElement} currentElement
+   * @param {HTMLElement[]} elements
+   * @returns
+   */
+  function getInputCheckedOrCurrent(currentElement, elements = []) {
+    const checked = elements.find(el => (el.hasAttribute('checked')));
+
+    if (checked) {
+      return checked;
+    }
+
+    return currentElement;
   }
 
   // Focus the last focused element from the last modal.
