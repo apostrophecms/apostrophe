@@ -1,5 +1,11 @@
 # Changelog
 
+## UNRELEASED
+
+### Fixes
+
+* Fixes broken widget preview URL when the image is overridden (module improve) and external build module is registered.
+
 ## 4.10.0 (2024-11-20)
 
 ### Fixes
