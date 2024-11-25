@@ -632,6 +632,15 @@ module.exports = {
                 }
               );
             } catch (error) {
+              const isVisible = isParentVisible === false
+                ? false
+                : await self.isVisible(req, schema, destination, error.path);
+
+              if (!isVisible) {
+                setDefaultValues(schema, field.name);
+                continue;
+              }
+
               if (Array.isArray(error)) {
                 const invalid = self.apos.error('invalid', {
                   errors: error
@@ -646,56 +655,39 @@ module.exports = {
           }
         }
 
-        const errorsList = [];
-
         for (const error of errors) {
-          if (error.path) {
-            // `self.isVisible` will only throw for required fields that have
-            // an external condition containing an unknown module or method:
-            const isVisible = isParentVisible === false
-              ? false
-              : await self.isVisible(req, schema, destination, error.path);
-
-            if (!isVisible) {
-              // It is not reasonable to enforce required,
-              // min, max or anything else for fields
-              // hidden via "if" as the user cannot correct it
-              // and it will not be used. If the user changes
-              // the conditional field later then they won't
-              // be able to save until the erroneous field
-              // is corrected
-              const name = error.path;
-              const field = schema.find(field => field.name === name);
-              if (field) {
-                // To protect against security issues, an invalid value
-                // for a field that is not visible should be quietly discarded.
-                // We only worry about this if the value is not valid, as otherwise
-                // it's a kindness to save the work so the user can toggle back to it
-                destination[field.name] = klona((field.def !== undefined)
-                  ? field.def
-                  : self.fieldTypes[field.type]?.def);
-                continue;
-              }
-            }
-            if (isParentVisible === false) {
-              continue;
-            }
-          }
-
           if (!Array.isArray(error) && typeof error !== 'string') {
             self.apos.util.error(error + '\n\n' + error.stack);
           }
-          errorsList.push(error);
         }
 
-        if (errorsList.length) {
-          throw errorsList;
+        if (errors.length) {
+          throw errors;
+        }
+
+        function setDefaultValues(schema, fieldName) {
+          // It is not reasonable to enforce required,
+          // min, max or anything else for fields
+          // hidden via "if" as the user cannot correct it
+          // and it will not be used. If the user changes
+          // the conditional field later then they won't
+          // be able to save until the erroneous field
+          // is corrected
+          const field = schema.find(field => field.name === fieldName);
+          if (field) {
+            // To protect against security issues, an invalid value
+            // for a field that is not visible should be quietly discarded.
+            // We only worry about this if the value is not valid, as otherwise
+            // it's a kindness to save the work so the user can toggle back to it
+            destination[field.name] = klona((field.def !== undefined)
+              ? field.def
+              : self.fieldTypes[field.type]?.def);
+          }
         }
       },
 
       // Determine whether the given field is visible
       // based on `if` conditions of all fields
-
       async isVisible(req, schema, object, name) {
         const conditionalFields = {};
         const errors = {};
