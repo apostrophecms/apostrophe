@@ -274,6 +274,7 @@
                     @validate="emitValidate()"
                     @keydown.space="$event.stopImmediatePropagation()"
                     @keydown.enter="$event.stopImmediatePropagation()"
+                    @field-ready="setFieldReady"
                   />
                 </div>
               </transition>
