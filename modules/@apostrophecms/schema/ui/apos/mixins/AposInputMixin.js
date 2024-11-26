@@ -2,7 +2,7 @@ import { klona } from 'klona';
 
 export default {
   // Implements v-model pattern
-  emits: [ 'update:modelValue' ],
+  emits: [ 'update:modelValue', 'field-ready' ],
   props: {
     // The value passed in from the parent component through the v-model
     // directive.
@@ -70,12 +70,14 @@ export default {
       // in the UI between id attributes
       uid: Math.random(),
       // Automatically updated for you, can be watched
-      focus: false
+      focus: false,
+      fieldReady: true
     };
   },
   mounted () {
     this.$el.addEventListener('focusin', this.focusInListener);
     this.$el.addEventListener('focusout', this.focusOutListener);
+    this.setFieldReady();
   },
   unmounted () {
     this.$el.removeEventListener('focusin', this.focusInListener);
@@ -136,16 +138,17 @@ export default {
     // You must supply the validate method. It receives the
     // internal representation used for editing (a string, for instance)
     validateAndEmit () {
-      if (this.enableValidate === false) {
-        return;
-      }
       // If the field is conditional and isn't shown, disregard any errors.
-      const error = this.conditionMet === false ? false : this.validate(this.next);
+      // If field isn't ready we don't want to validate its value
+      const error = this.conditionMet === false || !this.fieldReady
+        ? false
+        : this.validate(this.next);
 
       this.$emit('update:modelValue', {
         data: error ? this.next : this.convert(this.next),
         error,
-        ranValidation: this.conditionMet === false ? this.modelValue.ranValidation : true
+        ranValidation: this.conditionMet === false ? this.modelValue.ranValidation : true,
+        ready: this.fieldReady
       });
     },
     // Allows replacing the current component value externally, e.g. via
@@ -206,6 +209,10 @@ export default {
       }
 
       return fieldMeta;
+    },
+
+    setFieldReady() {
+      this.$emit('field-ready', this.field.name);
     }
   }
 };
