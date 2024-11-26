@@ -99,7 +99,7 @@ export default {
   ],
   data() {
     return {
-      schemaReady: false,
+      /* schemaReady: false, */
       next: {
         hasErrors: false,
         data: {},
@@ -164,6 +164,8 @@ export default {
     }
   },
   watch: {
+    // Deep watch update emit when fieldState changes, could we do without this?
+    // Check where fieldState is updated
     fieldState: {
       deep: true,
       handler() {
@@ -228,8 +230,9 @@ export default {
       }
       return options;
     },
+    // This method instantiate default value to fieldState, might trigger watcher
     populateDocData() {
-      this.schemaReady = false;
+      /* this.schemaReady = false; */
       const next = {
         hasErrors: false,
         data: {}
@@ -263,15 +266,15 @@ export default {
       // updating. This is only really a concern in editors that can swap
       // the active doc/object without unmounting AposSchema.
       this.$nextTick(() => {
-        this.schemaReady = true;
+        /* this.schemaReady = true; */
         // Signal that the schema data is ready to be tracked.
         this.$emit('reset');
       });
     },
     updateNextAndEmit() {
-      if (!this.schemaReady) {
-        return;
-      }
+      /* if (!this.schemaReady) { */
+      /*   return; */
+      /* } */
       const oldHasErrors = this.next.hasErrors;
       // destructure these for non-linked comparison
       const oldFieldState = { ...this.next.fieldState };
@@ -282,20 +285,23 @@ export default {
       this.next.hasErrors = false;
       this.next.fieldState = { ...this.fieldState };
 
-      this.schema.filter(field => this.displayComponent(field)).forEach(field => {
-        if (this.fieldState[field.name].error) {
-          this.next.hasErrors = true;
-        }
-        if (
-          this.fieldState[field.name].data !== undefined &&
+      this.schema
+        .filter(field => this.displayComponent(field))
+        .forEach(field => {
+          if (this.fieldState[field.name].error) {
+            this.next.hasErrors = true;
+          }
+          // This simply check if a field has changed since it has been instantiated
+          if (
+            this.fieldState[field.name].data !== undefined &&
           detectFieldChange(field, this.next.data[field.name], this.fieldState[field.name].data)
-        ) {
-          changeFound = true;
-          this.next.data[field.name] = this.fieldState[field.name].data;
-        } else {
-          this.next.data[field.name] = this.modelValue.data[field.name];
-        }
-      });
+          ) {
+            changeFound = true;
+            this.next.data[field.name] = this.fieldState[field.name].data;
+          } else {
+            this.next.data[field.name] = this.modelValue.data[field.name];
+          }
+        });
       if (
         oldHasErrors !== this.next.hasErrors ||
         oldFieldState !== newFieldState
