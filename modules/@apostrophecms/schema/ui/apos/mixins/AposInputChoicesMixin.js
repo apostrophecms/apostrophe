@@ -35,6 +35,7 @@ export default {
 
   methods: {
     async getChoices() {
+      this.fieldReady = false;
       if (typeof this.field.choices === 'string') {
         const action = this.options.action;
         const response = await apos.http.post(
@@ -61,6 +62,7 @@ export default {
     },
     updateChoices(choices) {
       this.choices = choices;
+      this.fieldReady = true;
       if (this.field.type === 'select') {
         this.prependEmptyChoice();
       }
