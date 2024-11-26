@@ -64,6 +64,7 @@ export default {
       if (this.field.type === 'select') {
         this.prependEmptyChoice();
       }
+      this.validate(this.next);
     },
     prependEmptyChoice() {
       // Using `hasOwn` here, not simply checking if `field.def` is truthy
