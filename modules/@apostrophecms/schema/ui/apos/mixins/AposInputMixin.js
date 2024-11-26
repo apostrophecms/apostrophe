@@ -71,13 +71,13 @@ export default {
       uid: Math.random(),
       // Automatically updated for you, can be watched
       focus: false,
+      // Can be overriden at input component level to handle async field preparation
       fieldReady: true
     };
   },
   mounted () {
     this.$el.addEventListener('focusin', this.focusInListener);
     this.$el.addEventListener('focusout', this.focusOutListener);
-    this.setFieldReady();
   },
   unmounted () {
     this.$el.removeEventListener('focusin', this.focusInListener);
@@ -138,17 +138,19 @@ export default {
     // You must supply the validate method. It receives the
     // internal representation used for editing (a string, for instance)
     validateAndEmit () {
+      if (!this.fieldReady) {
+        return;
+      }
       // If the field is conditional and isn't shown, disregard any errors.
       // If field isn't ready we don't want to validate its value
-      const error = this.conditionMet === false || !this.fieldReady
+      const error = this.conditionMet === false
         ? false
         : this.validate(this.next);
 
       this.$emit('update:modelValue', {
         data: error ? this.next : this.convert(this.next),
         error,
-        ranValidation: this.conditionMet === false ? this.modelValue.ranValidation : true,
-        ready: this.fieldReady
+        ranValidation: this.conditionMet === false ? this.modelValue.ranValidation : true
       });
     },
     // Allows replacing the current component value externally, e.g. via
@@ -209,10 +211,6 @@ export default {
       }
 
       return fieldMeta;
-    },
-
-    setFieldReady() {
-      this.$emit('field-ready', this.field.name);
     }
   }
 };
