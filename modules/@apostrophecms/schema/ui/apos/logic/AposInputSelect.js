@@ -27,10 +27,6 @@ export default {
         return 'required';
       }
 
-      if (this.field.name === 'linkType') {
-        console.log('value', value);
-        console.log('this.choices', this.choices);
-      }
       if (value && !this.choices.find(choice => choice.value === value)) {
         return 'invalid';
       }
