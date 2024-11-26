@@ -2,7 +2,7 @@ import { klona } from 'klona';
 
 export default {
   // Implements v-model pattern
-  emits: [ 'update:modelValue', 'field-ready' ],
+  emits: [ 'update:modelValue' ],
   props: {
     // The value passed in from the parent component through the v-model
     // directive.
