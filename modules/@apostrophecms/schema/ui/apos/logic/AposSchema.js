@@ -164,15 +164,6 @@ export default {
     }
   },
   watch: {
-    // Deep watch update emit when fieldState changes, could we do without this?
-    // Check where fieldState is updated
-    // Try updating updateNextAndEmit to pass old and new values instead of storing twice fieldState
-    fieldState: {
-      deep: true,
-      handler() {
-        this.updateNextAndEmit();
-      }
-    },
     schema() {
       this.populateDocData();
     },
