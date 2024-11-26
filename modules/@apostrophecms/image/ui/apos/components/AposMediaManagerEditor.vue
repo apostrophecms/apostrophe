@@ -60,7 +60,6 @@
           />
         </li>
       </ul>
-      <!-- We shouldn't need this reset emit, that reset modified to false -->
       <AposSchema
         v-if="docFields.data.title !== undefined"
         ref="schema"
@@ -215,7 +214,6 @@ export default {
       return this.media?.archived;
     }
   },
-  // Again another watcher we might get rid of
   watch: {
     'docFields.data': {
       deep: true,
