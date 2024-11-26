@@ -99,7 +99,7 @@ export default {
   ],
   data() {
     return {
-      /* schemaReady: false, */
+      schemaReady: false,
       next: {
         hasErrors: false,
         data: {},
@@ -166,6 +166,7 @@ export default {
   watch: {
     // Deep watch update emit when fieldState changes, could we do without this?
     // Check where fieldState is updated
+    // Try updating updateNextAndEmit to pass old and new values instead of storing twice fieldState
     fieldState: {
       deep: true,
       handler() {
@@ -232,7 +233,7 @@ export default {
     },
     // This method instantiate default value to fieldState, might trigger watcher
     populateDocData() {
-      /* this.schemaReady = false; */
+      this.schemaReady = false;
       const next = {
         hasErrors: false,
         data: {}
@@ -266,15 +267,16 @@ export default {
       // updating. This is only really a concern in editors that can swap
       // the active doc/object without unmounting AposSchema.
       this.$nextTick(() => {
-        /* this.schemaReady = true; */
+        this.schemaReady = true;
         // Signal that the schema data is ready to be tracked.
         this.$emit('reset');
       });
     },
+    // Use Old and New values instead of storing fieldState twice.. (at root and inside next)
     updateNextAndEmit() {
-      /* if (!this.schemaReady) { */
-      /*   return; */
-      /* } */
+      if (!this.schemaReady) {
+        return;
+      }
       const oldHasErrors = this.next.hasErrors;
       // destructure these for non-linked comparison
       const oldFieldState = { ...this.next.fieldState };
