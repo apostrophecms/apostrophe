@@ -51,7 +51,6 @@
       />
       <AposButton
         type="primary"
-        data-apos-focus-priority
         :label="saveLabel"
         :disabled="errorCount > 0"
         @click="save"

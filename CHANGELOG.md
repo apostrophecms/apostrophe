@@ -4,6 +4,8 @@
 
 ### Fixes
 
+* Focus properly Widget Editor modals when opened. Keep the previous active focus on the modal when closing the widget editor.
+* a11y improvements for context menus.
 * Fixes broken widget preview URL when the image is overridden (module improve) and external build module is registered.
 
 ## 4.10.0 (2024-11-20)
@@ -15,7 +17,6 @@
 * Fix permission grid tooltip display.
 * Fixes a bug that crashes external frontend applications.
 * Fixes a false positive warning for module not in use for project level submodules (e.g. `widges/module.js`) and dot-folders (e.g. `.DS_Store`).
-* a11y improvements for context menus.
 * Bumped `express-bearer-token` dependency to address a low-severity `npm audit` warning regarding noncompliant cookie names and values. Apostrophe
 did not actually use any noncompliant cookie names or values, so there was no vulnerability in Apostrophe.
 * Rich text "Styles" toolbar now has visually focused state.
