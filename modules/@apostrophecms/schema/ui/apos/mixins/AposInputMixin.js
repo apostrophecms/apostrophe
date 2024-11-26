@@ -143,14 +143,15 @@ export default {
       }
       // If the field is conditional and isn't shown, disregard any errors.
       // If field isn't ready we don't want to validate its value
-      const error = this.conditionMet === false
-        ? false
-        : this.validate(this.next);
+      const shouldValidate = this.conditionMet !== false;
+      const error = shouldValidate
+        ? this.validate(this.next)
+        : false;
 
       this.$emit('update:modelValue', {
         data: error ? this.next : this.convert(this.next),
         error,
-        ranValidation: this.conditionMet === false ? this.modelValue.ranValidation : true
+        ranValidation: shouldValidate ? true : this.modelValue.ranValidation
       });
     },
     // Allows replacing the current component value externally, e.g. via
