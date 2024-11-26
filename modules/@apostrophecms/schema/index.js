@@ -634,10 +634,10 @@ module.exports = {
             } catch (error) {
               const isVisible = isParentVisible === false
                 ? false
-                : await self.isVisible(req, schema, destination, error.path);
+                : await self.isVisible(req, schema, destination, field.name);
 
               if (!isVisible) {
-                setDefaultValues(schema, field.name);
+                setDefaultToInvisibleField(destination, schema, field.name);
                 continue;
               }
 
@@ -645,10 +645,8 @@ module.exports = {
                 const invalid = self.apos.error('invalid', {
                   errors: error
                 });
-                invalid.path = field.name;
                 errors.push(invalid);
               } else {
-                error.path = field.name;
                 errors.push(error);
               }
             }
@@ -665,7 +663,7 @@ module.exports = {
           throw errors;
         }
 
-        function setDefaultValues(schema, fieldName) {
+        function setDefaultToInvisibleField(destination, schema, fieldName) {
           // It is not reasonable to enforce required,
           // min, max or anything else for fields
           // hidden via "if" as the user cannot correct it
