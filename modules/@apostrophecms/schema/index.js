@@ -612,43 +612,44 @@ module.exports = {
 
           const { convert } = self.fieldTypes[field.type];
 
-          if (convert) {
-            try {
-              const isAllParentsVisible = isParentVisible === false
-                ? false
-                : await self.isVisible(req, schema, destination, field.name);
-              const isRequired = await self.isFieldRequired(req, field, destination);
-              await convert(
-                req,
-                {
-                  ...field,
-                  required: isRequired
-                },
-                data,
-                destination,
-                {
-                  ...options,
-                  isParentVisible: isAllParentsVisible
-                }
-              );
-            } catch (error) {
-              const isVisible = isParentVisible === false
-                ? false
-                : await self.isVisible(req, schema, destination, field.name);
+          if (!convert) {
+            continue;
+          }
 
-              if (!isVisible) {
-                setDefaultToInvisibleField(destination, schema, field.name);
-                continue;
-              }
+          const isCurrentVisible = isParentVisible === false
+            ? false
+            : await self.isVisible(req, schema, data, field.name);
 
-              if (Array.isArray(error)) {
-                const invalid = self.apos.error('invalid', {
-                  errors: error
-                });
-                errors.push(invalid);
-              } else {
-                errors.push(error);
+          try {
+            const isRequired = await self.isFieldRequired(req, field, destination);
+            await convert(
+              req,
+              {
+                ...field,
+                required: isRequired
+              },
+              data,
+              destination,
+              {
+                ...options,
+                isParentVisible: isCurrentVisible
               }
+            );
+          } catch (error) {
+            if (!isCurrentVisible) {
+              setDefaultToInvisibleField(destination, schema, field.name);
+              continue;
+            }
+
+            if (Array.isArray(error)) {
+              const invalid = self.apos.error('invalid', {
+                errors: error
+              });
+              invalid.path = field.name;
+              errors.push(invalid);
+            } else {
+              error.path = field.name;
+              errors.push(error);
             }
           }
         }
