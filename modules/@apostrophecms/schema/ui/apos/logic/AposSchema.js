@@ -222,7 +222,6 @@ export default {
       }
       return options;
     },
-    // This method instantiate default value to fieldState, might trigger watcher
     populateDocData() {
       this.schemaReady = false;
       const next = {
@@ -263,7 +262,6 @@ export default {
         this.$emit('reset');
       });
     },
-    // Use Old and New values instead of storing fieldState twice.. (at root and inside next)
     updateNextAndEmit() {
       if (!this.schemaReady) {
         return;
