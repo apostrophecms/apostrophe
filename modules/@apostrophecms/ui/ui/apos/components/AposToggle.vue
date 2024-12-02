@@ -2,7 +2,7 @@
   <div class="apos-toggle__container">
     <div
       class="apos-toggle__slider"
-      :tabindex="noFocus ? null : '0'"
+      :tabindex="disableFocus ? null : '0'"
       :class="{'apos-toggle__slider--activated': !modelValue}"
       @click="$emit('toggle')"
       @keydown.stop.space="$emit('toggle')"
@@ -19,7 +19,7 @@ export default {
       type: Boolean,
       required: true
     },
-    noFocus: {
+    disableFocus: {
       type: Boolean,
       default: false
     }

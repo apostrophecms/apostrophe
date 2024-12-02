@@ -9,7 +9,7 @@
 ### Adds
 
 * Adds support for dynamic focus trap in Context menus (prop `dynamicFocus`). When set to `true`, the focusable elements are recalculated on each cycle step.
-* Adds option to disable `tabindex` on `AposToggle` component. A new prop `noFocus` can be set to `false` to disable the focus on the toggle button. It's enabled by default.
+* Adds option to disable `tabindex` on `AposToggle` component. A new prop `disableFocus` can be set to `false` to disable the focus on the toggle button. It's enabled by default.
 
 ## 4.10.0 (2024-11-20)
 
