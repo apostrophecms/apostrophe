@@ -24,7 +24,6 @@ module.exports = {
     alias: 'schema'
   },
   init(self) {
-
     self.fieldTypes = {};
     self.fieldsById = {};
     self.arrayManagers = {};
@@ -585,20 +584,22 @@ module.exports = {
         {
           fetchRelationships = true,
           ancestors = [],
-          isParentVisible = true
+          rootConvert = true,
+          ancestorSchemas = {},
+          ancestorPath = ''
         } = {}
       ) {
         const options = {
           fetchRelationships,
           ancestors,
-          isParentVisible
+          ancestorSchemas,
+          ancestorPath
         };
         if (Array.isArray(req)) {
           throw new Error('convert invoked without a req, do you have one in your context?');
         }
 
-        const errors = [];
-
+        const convertErrors = [];
         for (const field of schema) {
           if (field.readOnly) {
             continue;
@@ -611,15 +612,11 @@ module.exports = {
           }
 
           const { convert } = self.fieldTypes[field.type];
-
           if (!convert) {
             continue;
           }
 
-          const isCurrentVisible = isParentVisible === false
-            ? false
-            : await self.isVisible(req, schema, data, field.name);
-
+          const fieldPath = ancestorPath ? `${ancestorPath}/${field.name}` : field.name;
           try {
             const isRequired = await self.isFieldRequired(req, field, destination);
             await convert(
@@ -632,36 +629,72 @@ module.exports = {
               destination,
               {
                 ...options,
-                isParentVisible: isCurrentVisible
+                rootConvert: false,
+                ancestorPath: fieldPath
               }
             );
           } catch (error) {
-            if (!isCurrentVisible) {
-              setDefaultToInvisibleField(destination, schema, field.name);
-              continue;
-            }
-
-            if (Array.isArray(error)) {
-              const invalid = self.apos.error('invalid', {
-                errors: error
-              });
-              invalid.path = field.name;
-              errors.push(invalid);
-            } else {
-              error.path = field.name;
-              errors.push(error);
-            }
+            error.name = field.name;
+            error.path = fieldPath;
+            convertErrors.push(error);
           }
         }
 
-        for (const error of errors) {
-          if (!Array.isArray(error) && typeof error !== 'string') {
-            self.apos.util.error(error + '\n\n' + error.stack);
+        if (!rootConvert) {
+          if (convertErrors.length) {
+            throw self.apos.error('invalid', { errors: convertErrors });
+          }
+
+          return;
+        }
+
+        const nonVisibleFields = new Set();
+        const errors = [];
+        for (const error of convertErrors) {
+          if (!error.path) {
+            continue;
+          }
+
+          for (const err of error.data?.errors || [ error ]) {
+            let curPath = '';
+            const ancestors = error.path.split('/').reverse();
+            for (const ancestor of ancestors) {
+              curPath = curPath ? `${curPath}/${ancestor}` : ancestor;
+              if (nonVisibleFields.has(curPath)) {
+                continue;
+              }
+
+              const curSchema = self.getFieldSchema(schema, curPath);
+              // TODO: find schema lol
+
+              await handleError(req, err, error.schema, destination, errors);
+              nonVisibleFields.add(curPath);
+            }
+
           }
         }
 
         if (errors.length) {
           throw errors;
+        }
+
+        async function handleError(req, error, schema, destination, errors) {
+          const isVisible = await self.isVisible(
+            req,
+            schema,
+            destination,
+            error.path
+          );
+
+          if (!isVisible) {
+            setDefaultToInvisibleField(destination, schema, error.path);
+            return;
+          }
+
+          errors.push(error);
+          if (!Array.isArray(error) && typeof error !== 'string') {
+            self.apos.util.error(error + '\n\n' + error.stack);
+          }
         }
 
         function setDefaultToInvisibleField(destination, schema, fieldName) {
@@ -685,18 +718,45 @@ module.exports = {
         }
       },
 
+      getFieldSchema(schema, fieldPath) {
+        let curSchema = schema;
+        const parts = fieldPath.split('/');
+        for (const part of parts) {
+          const curField = curSchema.find(({ name }) => name === part);
+          curSchema = curField.schema;
+          if (!curSchema) {
+            return null;
+          }
+        }
+
+        return curSchema;
+      },
+
       // Determine whether the given field is visible
       // based on `if` conditions of all fields
-      async isVisible(req, schema, object, name) {
+      async isVisible(req, schema, destination, name) {
         const conditionalFields = {};
         const errors = {};
+
+        /* for (const [ ancestor, ancestorSchema ] of Object.entries(ancestorSchemas)) { */
+        /*   const ancestorVisible = await self.isVisible(req, ancestorSchema, destination, ancestor); */
+        /*   if (!ancestorVisible) { */
+        /*     return false; */
+        /*   } */
+        /* } */
 
         while (true) {
           let change = false;
           for (const field of schema) {
             if (field.if) {
               try {
-                const result = await self.evaluateCondition(req, field, field.if, object, conditionalFields);
+                const result = await self.evaluateCondition(
+                  req,
+                  field,
+                  field.if,
+                  destination,
+                  conditionalFields
+                );
                 const previous = conditionalFields[field.name];
                 if (previous !== result) {
                   change = true;
