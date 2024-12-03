@@ -751,7 +751,8 @@ module.exports = (self) => {
       {
         fetchRelationships = true,
         ancestors = [],
-        isParentVisible = true
+        rootConvert = true,
+        ancestorPath = ''
       } = {}
     ) {
       const schema = field.schema;
@@ -777,7 +778,8 @@ module.exports = (self) => {
           const options = {
             fetchRelationships,
             ancestors: [ ...ancestors, destination ],
-            isParentVisible
+            rootConvert,
+            ancestorPath
           };
           await self.convert(req, schema, datum, result, options);
         } catch (e) {
@@ -867,7 +869,8 @@ module.exports = (self) => {
       {
         fetchRelationships = true,
         ancestors = {},
-        isParentVisible = true,
+        rootConvert = true,
+        ancestorPath = '',
         doc = {}
       } = {}
     ) {
@@ -881,7 +884,8 @@ module.exports = (self) => {
       const options = {
         fetchRelationships,
         ancestors: [ ...ancestors, destination ],
-        isParentVisible
+        rootConvert,
+        ancestorPath
       };
       if (data == null || typeof data !== 'object' || Array.isArray(data)) {
         data = {};
@@ -978,12 +982,14 @@ module.exports = (self) => {
       destination,
       {
         fetchRelationships = true,
-        isParentVisible = true
+        rootConvert = true,
+        ancestorPath = ''
       } = {}
     ) {
       const options = {
         fetchRelationships,
-        isParentVisible
+        rootConvert,
+        ancestorPath
       };
       const manager = self.apos.doc.getManager(field.withType);
       if (!manager) {
