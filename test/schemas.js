@@ -3129,6 +3129,43 @@ describe('Schemas', function() {
       assert(!output.requiredProp);
     });
 
+    it.only('should not error nested required property if parent is not visible', async function() {
+      const req = apos.task.getReq();
+      const schema = apos.schema.compose({
+        addFields: [
+          {
+            name: 'object',
+            type: 'object',
+            if: {
+              showObject: true
+            },
+            schema: [
+              {
+                name: 'subfield',
+                type: 'string',
+                required: true
+              }
+            ]
+          },
+          {
+            name: 'showObject',
+            type: 'boolean'
+          }
+        ]
+      });
+      const output = {};
+
+      try {
+        await apos.schema.convert(req, schema, {
+          showObject: false
+        }, output);
+        assert(true);
+      } catch (err) {
+        console.log('err', err);
+        assert(!err);
+      }
+    });
+
     it('should error required property nested boolean', async function() {
       const schema = apos.schema.compose({
         addFields: [
