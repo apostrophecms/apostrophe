@@ -133,6 +133,14 @@ const props = defineProps({
   trapFocus: {
     type: Boolean,
     default: true
+  },
+  // When set to true, the elements to focus on will be re-queried
+  // on everu Tab key press. Use this with caution, as it's a performance
+  // hit. Only use this if you have a context menu with
+  // dynamically changing (e.g. AposToggle item enables another item) items.
+  dynamicFocus: {
+    type: Boolean,
+    default: false
   }
 });
 
@@ -159,7 +167,8 @@ const otherMenuOpened = ref(false);
 const {
   onTab, runTrap, hasRunningTrap, resetTrap
 } = useFocusTrap({
-  withPriority: true
+  withPriority: true,
+  refreshOnCycle: props.dynamicFocus
   // If enabled, the dropdown gets closed when the focus leaves
   // the context menu.
   // triggerRef: dropdownButton,

@@ -9,6 +9,8 @@ import {
  * Options:
  * - `retries`: Number of retries to focus (trap) the first element in the given
  *   container. Default is 3.
+ * - `refreshOnCycle`: If true, the elements to focus will be refreshed (query)
+ *   on each cycle. Default is false.
  * - `withPriority`: If true, 'data-apos-focus-priority' attribute will be used
  *   to find the first element to focus. Default is true.
  * - `triggerRef`: (optional) A ref to the element that will trigger the focus trap.
@@ -18,6 +20,7 @@ import {
  *
  * @param {{
  *  retries?: number;
+ *  refreshOnCycle?: boolean;
  *  withPriority?: boolean;
  *  triggerRef?: import('vue').Ref<HTMLElement | import('vue').ComponentPublicInstance>
  *    | HTMLElement | boolean;
@@ -33,6 +36,7 @@ import {
  */
 export function useFocusTrap({
   triggerRef,
+  refreshOnCycle = false,
   onExit = () => {},
   retries = 3,
   withPriority = true
@@ -47,6 +51,7 @@ export function useFocusTrap({
   const shouldRun = ref(false);
   const isRunning = ref(false);
   const currentRetries = ref(0);
+  const rootRef = ref(null);
   const elementsToFocus = ref([]);
   const hasRunningTrap = computed(() => {
     return isRunning.value;
@@ -113,6 +118,7 @@ export function useFocusTrap({
     if (shouldRun.value) {
       focusElement(findChecked(firstElementToFocus, elements));
       elementsToFocus.value = elements;
+      rootRef.value = unref(containerRef);
     }
   }
 
@@ -154,6 +160,10 @@ export function useFocusTrap({
    * @param {KeyboardEvent} event
    */
   function cycle(event) {
+    if (refreshOnCycle && rootRef.value) {
+      const elements = [ ...unref(rootRef).querySelectorAll(selector) ];
+      elementsToFocus.value = elements;
+    }
     const elements = unref(elementsToFocus);
     parentCycleElementsToFocus(event, elements, focus);
 
