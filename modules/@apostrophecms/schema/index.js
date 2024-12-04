@@ -634,8 +634,8 @@ module.exports = {
               }
             );
           } catch (error) {
-            error.name = field.name;
-            error.path = fieldPath;
+            error.path = field.name;
+            error.fieldPath = fieldPath;
             convertErrors.push(error);
           }
         }
@@ -648,29 +648,57 @@ module.exports = {
           return;
         }
 
-        const nonVisibleFields = new Set();
+        // Do we need this, not sure a field specific error can appears twice?
+        // TODO: Put it in function and use a reduce
+        const handledFieldErrors = new Map();
         const errors = [];
         for (const error of convertErrors) {
-          if (!error.path) {
+          if (!error.fieldPath) {
             continue;
           }
 
           for (const err of error.data?.errors || [ error ]) {
+            // We rebuild the path
             let curPath = '';
-            const ancestors = error.path.split('/').reverse();
+
+            const ancestors = err.fieldPath.split('/');
+            let ancestorsVisible = true;
+
             for (const ancestor of ancestors) {
+              // Gets schema of the direct parent or root
+              const curSchema = self.getFieldSchema(schema, curPath);
               curPath = curPath ? `${curPath}/${ancestor}` : ancestor;
-              if (nonVisibleFields.has(curPath)) {
+
+              // Case were field error has been handled already
+              const curFieldErrorHandled = handledFieldErrors.has(curPath);
+              if (curFieldErrorHandled) {
+                const curFieldVisible = handledFieldErrors.get(curPath);
+                if (!curFieldVisible) {
+                  ancestorsVisible = false;
+                }
                 continue;
               }
 
-              const curSchema = self.getFieldSchema(schema, curPath);
-              // TODO: find schema lol
+              // Case were this error field hasn't been treated
+              const isCurVisible = ancestorsVisible === false
+                ? false
+                : await self.isVisible(req, curSchema, destination, ancestor);
 
-              await handleError(req, err, error.schema, destination, errors);
-              nonVisibleFields.add(curPath);
+              console.log('curPath', curPath);
+              console.log('isCurVisible', isCurVisible);
+              console.log('curSchema', curSchema);
+              handledFieldErrors.set(curPath, isCurVisible);
+              if (!isCurVisible) {
+                setDefaultToInvisibleField(destination, curSchema, ancestor);
+                ancestorsVisible = false;
+                continue;
+              }
+
+              if (!Array.isArray(error) && typeof error !== 'string') {
+                self.apos.util.error(error + '\n\n' + error.stack);
+              }
+              errors.push(err);
             }
-
           }
         }
 
@@ -719,6 +747,9 @@ module.exports = {
       },
 
       getFieldSchema(schema, fieldPath) {
+        if (!fieldPath || fieldPath === '/') {
+          return schema;
+        }
         let curSchema = schema;
         const parts = fieldPath.split('/');
         for (const part of parts) {
@@ -737,13 +768,6 @@ module.exports = {
       async isVisible(req, schema, destination, name) {
         const conditionalFields = {};
         const errors = {};
-
-        /* for (const [ ancestor, ancestorSchema ] of Object.entries(ancestorSchemas)) { */
-        /*   const ancestorVisible = await self.isVisible(req, ancestorSchema, destination, ancestor); */
-        /*   if (!ancestorVisible) { */
-        /*     return false; */
-        /*   } */
-        /* } */
 
         while (true) {
           let change = false;
