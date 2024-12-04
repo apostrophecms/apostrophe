@@ -1,5 +1,9 @@
 <template>
-  <div class="apos-context-menu">
+  <section
+    ref="contextMenuRef"
+    class="apos-context-menu"
+    @keydown.tab="onTab"
+  >
     <slot name="prebutton" />
     <div
       ref="dropdown"
@@ -7,7 +11,7 @@
     >
       <AposButton
         v-bind="button"
-        ref="button"
+        ref="dropdownButton"
         class="apos-context-menu__btn"
         role="button"
         :data-apos-test="identifier"
@@ -25,6 +29,7 @@
         v-if="isOpen"
         ref="dropdownContent"
         v-click-outside-element="hide"
+        :data-apos-test="isRendered ? 'context-menu-content' : null"
         class="apos-context-menu__dropdown-content"
         :class="popoverClass"
         data-apos-menu
@@ -44,7 +49,7 @@
         </AposContextMenuDialog>
       </div>
     </div>
-  </div>
+  </section>
 </template>
 
 <script setup>
@@ -54,8 +59,10 @@ import {
 import {
   computePosition, offset, shift, flip, arrow
 } from '@floating-ui/dom';
-import { useAposTheme } from 'Modules/@apostrophecms/ui/composables/AposTheme';
 import { createId } from '@paralleldrive/cuid2';
+
+import { useAposTheme } from '../composables/AposTheme.js';
+import { useFocusTrap } from '../composables/AposFocusTrap.js';
 
 const props = defineProps({
   identifier: {
@@ -122,21 +129,51 @@ const props = defineProps({
   activeItem: {
     type: String,
     default: null
+  },
+  trapFocus: {
+    type: Boolean,
+    default: true
+  },
+  // When set to true, the elements to focus on will be re-queried
+  // on everu Tab key press. Use this with caution, as it's a performance
+  // hit. Only use this if you have a context menu with
+  // dynamically changing (e.g. AposToggle item enables another item) items.
+  dynamicFocus: {
+    type: Boolean,
+    default: false
   }
 });
 
 const emit = defineEmits([ 'open', 'close', 'item-clicked' ]);
 
 const isOpen = ref(false);
+const isRendered = ref(false);
 const placement = ref(props.menuPlacement);
 const event = ref(null);
+/** @type {import('vue').Ref<HTMLElement | null>}} */
+const contextMenuRef = ref(null);
+/** @type {import('vue').Ref<HTMLElement | null>}} */
 const dropdown = ref(null);
+/** @type {import('vue').Ref<import('vue').ComponentPublicInstance | null>} */
+const dropdownButton = ref(null);
+/** @type {import('vue').Ref<HTMLElement | null>} */
 const dropdownContent = ref(null);
 const dropdownContentStyle = ref({});
 const arrowEl = ref(null);
 const iconToCenterTo = ref(null);
 const menuOffset = getMenuOffset();
 const otherMenuOpened = ref(false);
+
+const {
+  onTab, runTrap, hasRunningTrap, resetTrap
+} = useFocusTrap({
+  withPriority: true,
+  refreshOnCycle: props.dynamicFocus
+  // If enabled, the dropdown gets closed when the focus leaves
+  // the context menu.
+  // triggerRef: dropdownButton,
+  // onExit: hide
+});
 
 defineExpose({
   hide,
@@ -170,19 +207,28 @@ const buttonState = computed(() => {
   return isOpen.value ? [ 'active' ] : null;
 });
 
-watch(isOpen, (newVal) => {
+watch(isOpen, async (newVal) => {
   emit(newVal ? 'open' : 'close', event.value);
   if (newVal) {
     setDropdownPosition();
     window.addEventListener('resize', setDropdownPosition);
     window.addEventListener('scroll', setDropdownPosition);
-    window.addEventListener('keydown', handleKeyboard);
-    dropdownContent.value.querySelector('[tabindex]')?.focus();
+    contextMenuRef.value?.addEventListener('keydown', handleKeyboard);
+    if (props.trapFocus && !hasRunningTrap.value) {
+      await runTrap(dropdownContent);
+    }
+    if (!props.trapFocus) {
+      dropdownContent.value.querySelector('[tabindex]')?.focus();
+    }
+    isRendered.value = true;
   } else {
+    if (props.trapFocus) {
+      resetTrap();
+    }
     window.removeEventListener('resize', setDropdownPosition);
     window.removeEventListener('scroll', setDropdownPosition);
-    window.removeEventListener('keydown', handleKeyboard);
-    if (!otherMenuOpened.value) {
+    contextMenuRef.value?.addEventListener('keydown', handleKeyboard);
+    if (!otherMenuOpened.value && !props.trapFocus) {
       dropdown.value.querySelector('[tabindex]').focus();
     }
   }
@@ -276,11 +322,51 @@ async function setDropdownPosition() {
   });
 }
 
+const ignoreInputTypes = [
+  'text',
+  'password',
+  'email',
+  'file',
+  'number',
+  'search',
+  'tel',
+  'url',
+  'date',
+  'time',
+  'datetime-local',
+  'month',
+  'search',
+  'week'
+];
+
+/**
+ * @param {KeyboardEvent} event
+ */
 function handleKeyboard(event) {
-  if (event.key === 'Escape') {
-    event.stopImmediatePropagation();
-    hide();
+  if (event.key !== 'Escape' || !isOpen.value) {
+    return;
   }
+  /** @type {HTMLElement} */
+  const target = event.target;
+
+  // If inside of an input or textarea, don't close the dropdown
+  // and don't allow other event listeners to close it either (e.g. modals)
+  if (
+    target?.nodeName?.toLowerCase() === 'textarea' ||
+    (target?.nodeName?.toLowerCase() === 'input' &&
+      ignoreInputTypes.includes(target.getAttribute('type'))
+    )
+  ) {
+    event.stopImmediatePropagation();
+    return;
+  }
+
+  dropdownButton.value?.focus
+    ? dropdownButton.value.focus()
+    : dropdownButton.value?.$el?.focus();
+
+  event.stopImmediatePropagation();
+  hide();
 }
 </script>
 

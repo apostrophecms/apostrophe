@@ -17,6 +17,7 @@
             :label="selectBoxMessageButton"
             class="apos-select-box__select-all"
             text-color="var(--a-primary)"
+            :disabled="!showSelectAll"
             @click="$emit('select-all')"
           />
           <AposButton
@@ -26,6 +27,7 @@
             label="apostrophe:clearSelection"
             class="apos-select-box__select-all"
             text-color="var(--a-primary)"
+            :disabled="!showSelectAll"
             @click="clearSelection"
           />
         </p>

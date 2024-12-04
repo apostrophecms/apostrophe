@@ -9,6 +9,7 @@
       v-bind="attrs"
       :is="href ? 'a' : 'button'"
       :id="attrs.id ? attrs.id : id"
+      ref="buttonTrigger"
       :target="target"
       :href="href"
       class="apos-button"
@@ -242,6 +243,9 @@ export default {
   methods: {
     click($event) {
       this.$emit('click', $event);
+    },
+    focus() {
+      (this.$refs.buttonTrigger?.$el ?? this.$refs.buttonTrigger)?.focus();
     }
   }
 };
