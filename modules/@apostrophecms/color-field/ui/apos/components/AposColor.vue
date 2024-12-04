@@ -19,10 +19,7 @@
       </div>
       <div class="apos-color__color-wrap">
         <div
-<<<<<<< HEAD
           :data-apos-active-color="activeColor"
-=======
->>>>>>> d3fd291ceac29969a464c5aa8bd66086e8902611
           :aria-label="`Current color is ${activeColor}`"
           class="apos-color__active-color"
           :style="{ background: activeColor }"
@@ -33,55 +30,35 @@
     <div v-if="!disableFields" class="apos-color__field">
       <!-- rgba -->
       <div class="apos-color__field--double">
-<<<<<<< HEAD
-        <EdIn
-=======
         <EditableContent
->>>>>>> d3fd291ceac29969a464c5aa8bd66086e8902611
           label="hex"
           :value="hex"
           @change="inputChange"
         />
       </div>
       <div class="apos-color__field--single">
-<<<<<<< HEAD
-        <EdIn
-=======
         <EditableContent
->>>>>>> d3fd291ceac29969a464c5aa8bd66086e8902611
           label="r"
           :value="colors.rgba.r"
           @change="inputChange"
         />
       </div>
       <div class="apos-color__field--single">
-<<<<<<< HEAD
-        <EdIn
-=======
         <EditableContent
->>>>>>> d3fd291ceac29969a464c5aa8bd66086e8902611
           label="g"
           :value="colors.rgba.g"
           @change="inputChange"
         />
       </div>
       <div class="apos-color__field--single">
-<<<<<<< HEAD
-        <EdIn
-=======
         <EditableContent
->>>>>>> d3fd291ceac29969a464c5aa8bd66086e8902611
           label="b"
           :value="colors.rgba.b"
           @change="inputChange"
         />
       </div>
       <div v-if="!disableAlpha" class="apos-color__field--single">
-<<<<<<< HEAD
-        <EdIn
-=======
         <EditableContent
->>>>>>> d3fd291ceac29969a464c5aa8bd66086e8902611
           label="a"
           :value="colors.a"
           :arrow-offset="0.01"
@@ -101,11 +78,7 @@
           :key="`!${c}`"
           class="apos-color__presets-color"
           :aria-label="`Color:${c}`"
-<<<<<<< HEAD
           :style="{ background: formatCssValue(c) }"
-=======
-          :style="{ background: c }"
->>>>>>> d3fd291ceac29969a464c5aa8bd66086e8902611
           @click="handlePreset(c)"
         />
         <div
@@ -143,11 +116,7 @@ export default {
     Saturation: saturation,
     Hue: hue,
     Alpha: alpha,
-<<<<<<< HEAD
-    EdIn: editableInput,
-=======
     EditableContent: editableInput,
->>>>>>> d3fd291ceac29969a464c5aa8bd66086e8902611
     Checkboard: checkboard
   },
   mixins: [ colorMixin ],
@@ -187,7 +156,6 @@ export default {
     formatCssValue(c) {
       let value = c;
       if (c.startsWith('--')) {
-        console.log('yeahh');
         value = `var(${value})`;
       }
       return value;
