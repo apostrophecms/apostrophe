@@ -73,7 +73,6 @@ export default {
       this.$emit('change', param);
     },
     handleMouseDown(e) {
-      // this.handleChange(e, true)
       window.addEventListener('mousemove', this.handleChange);
       window.addEventListener('mouseup', this.handleChange);
       window.addEventListener('mouseup', this.handleMouseUp);
@@ -116,6 +115,7 @@ export default {
   cursor: pointer;
   position: absolute;
 }
+
 .apos-color__saturation-circle {
   cursor: head;
   width: 4px;

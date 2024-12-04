@@ -75,7 +75,6 @@ export default {
       this.active = false;
     },
     update(value) {
-      console.log(value);
       this.tinyColorObj = new TinyColor(value.hsl);
       if (value._cssVariable) {
         this.next = value._cssVariable;
@@ -94,7 +93,6 @@ export default {
         return false;
       }
 
-      console.log('validate', value);
       const color = new TinyColor(value);
       if (!value.startsWith('--')) {
         return color.isValid ? false : 'Error';

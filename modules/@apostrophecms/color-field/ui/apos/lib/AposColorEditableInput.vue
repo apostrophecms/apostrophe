@@ -124,12 +124,21 @@ export default {
 }
 
 .apos-color__input {
-  width: 100%;
-  padding: 0;
-  border: 0;
+  width: 90%;
+  padding: 4px 0 3px 10%;
+  border: none;
+  font-size: var(--a-type-small);
   outline: none;
+  box-shadow: inset 0 0 0 1px var(--a-base-5);
 }
+
 .apos-color__label {
+  display: block;
+  padding-top: 3px;
+  padding-bottom: 4px;
+  color: var(--a-text-primary);
+  font-size: var(--a-type-smaller);
+  text-align: center;
   text-transform: capitalize;
 }
 </style>

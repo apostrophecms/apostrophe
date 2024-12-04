@@ -8,31 +8,21 @@ function _colorChange(data, oldHue) {
   const alpha = data && data.a;
   let color;
 
-  console.log('supp');
-
   // hsl is better than hex between conversions
   if (data && data.hsl) {
-    console.log('223r');
     color = tinycolor(data.hsl);
   } else if (data && data.hex && data.hex.length > 0) {
-    console.log('r2r2r');
     color = tinycolor(data.hex);
   } else if (data && data.hsv) {
-    console.log('wefwefe');
     color = tinycolor(data.hsv);
   } else if (data && data.rgba) {
-    console.log('ryjhtyj');
     color = tinycolor(data.rgba);
   } else if (data && data.rgb) {
-    console.log('43t');
     color = tinycolor(data.rgb);
   } else if (data && typeof data === 'string' && data.startsWith('--')) {
-    console.log('where i want to be');
     color = tinycolor(getComputedStyle(document.body).getPropertyValue(data));
     color._cssVariable = data;
-    console.log(color);
   } else {
-    console.log('how long gone?');
     color = tinycolor(data);
   }
 
