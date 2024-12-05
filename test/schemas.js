@@ -3166,8 +3166,7 @@ describe('Schemas', function() {
       }
     });
 
-    it.only('should not error complex nested required property if parents are not visible', async function() {
-      const req = apos.task.getReq();
+    it('should not error complex nested required property if parents are not visible', async function() {
       const schema = apos.schema.compose({
         addFields: [
           {
@@ -3211,28 +3210,64 @@ describe('Schemas', function() {
       });
       const output = {};
 
-      try {
-        await apos.schema.convert(req, schema, {
+      const [ success, error ] = await convert(schema, output);
+
+      const expected = {
+        success: true,
+        error: false,
+        output: {
           object: {
+            _id: output.object._id,
             objectString: 'toto',
             objectArray: [
               {
                 _id: 'tutu',
-                metaType: 'arrayItem'
+                metaType: 'arrayItem',
+                scopedArrayName: undefined,
+                objectArrayString: ''
               }
             ],
-            showObjectArray: false
+            showObjectArray: false,
+            metaType: 'objectItem',
+            scopedObjectName: undefined
           },
           showObject: true
-        }, output);
-        assert(true);
-      } catch (err) {
-        console.log('err', err);
-        assert(!err);
+        }
+      };
+
+      const actual = {
+        success,
+        error,
+        output
+      };
+
+      assert.deepEqual(expected, actual);
+
+      async function convert(schema, output) {
+        const req = apos.task.getReq();
+        try {
+          await apos.schema.convert(req, schema, {
+            object: {
+              objectString: 'toto',
+              objectArray: [
+                {
+                  _id: 'tutu',
+                  metaType: 'arrayItem'
+                }
+              ],
+              showObjectArray: false
+            },
+            showObject: true
+          }, output);
+          return [ true, false ];
+        } catch (err) {
+          return [ false, true ];
+        }
       }
     });
 
-    it.skip('should not error complex nested arrays required property if parents are not visible', async function() {
+    // TODO: green + relationship test
+    it.only('should not error complex nested arrays required property if parents are not visible', async function() {
       const req = apos.task.getReq();
       const schema = apos.schema.compose({
         addFields: [
