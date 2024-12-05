@@ -488,7 +488,15 @@ module.exports = {
           const destinationKey = _.get(destination, key);
 
           if (key === '$or') {
-            const results = await Promise.all(val.map(clause => self.evaluateCondition(req, field, clause, destination, conditionalFields)));
+            const results = await Promise.all(
+              val.map(clause => self.evaluateCondition(
+                req,
+                field,
+                clause,
+                destination,
+                conditionalFields)
+              )
+            );
             const testResults = _.isPlainObject(results?.[0])
               ? results.some(({ value }) => value)
               : results.some((value) => value);
@@ -636,7 +644,7 @@ module.exports = {
           } catch (err) {
             const error = Array.isArray(err)
               ? self.apos.error('invalid', { errors: err })
-              : [ err ];
+              : err;
 
             error.path = field.name;
             error.schemaPath = fieldPath;
@@ -652,12 +660,17 @@ module.exports = {
           return;
         }
 
-        const errors = await handleConvertErrors({
-          req,
-          schema,
-          convertErrors,
-          destination
-        });
+        let errors;
+        try {
+          errors = await handleConvertErrors({
+            req,
+            schema,
+            convertErrors,
+            destination
+          });
+
+        } catch (err) {
+        }
 
         // Do we need this, not sure a field specific error can appears twice?
         // TODO: Put it in function and use a reduce
@@ -668,68 +681,78 @@ module.exports = {
         async function handleConvertErrors({
           req,
           schema,
-          errors,
+          convertErrors,
           destination,
-          handledFieldErrors = new Map()
+          checkedAncestors = new Map()
         }) {
+          const validErrors = [];
           for (const error of convertErrors) {
-            if (!error.schemaPath) {
-              continue;
-            }
-            //
-            // We rebuild the path
-            let curPath = '';
+
             const ancestors = error.schemaPath.split('.');
             const errorField = ancestors.pop();
 
-            console.log('ancestors', ancestors);
-            console.log('errorField', errorField);
-            let ancestorsVisible = true;
+            const hasAncestorsVisible = await checkAncestorsVisible(
+              ancestors,
+              schema,
+              destination
+            );
 
-            for (const ancestor of ancestors) {
-              /* const isErrorField = ancestors.length === index + 1; */
-              // Gets schema of the direct parent or root
-              const curSchema = self.getFieldSchema(schema, curPath);
-              curPath = curPath ? `${curPath}.${ancestor}` : ancestor;
+            const errorSchema = self.getFieldSchema(schema, error.schemaPath) || schema;
+            // Case were this error field hasn't been treated
+            const isFieldVisible = hasAncestorsVisible === false
+              ? false
+              : await self.isVisible(req, errorSchema, destination, errorField);
 
-              // Case were field error has been handled already
-              const curFieldErrorHandled = handledFieldErrors.has(curPath);
-              if (curFieldErrorHandled) {
-                const curFieldVisible = handledFieldErrors.get(curPath);
-                if (!curFieldVisible) {
-                  ancestorsVisible = false;
-                }
-                continue;
-              }
-
-              // Case were this error field hasn't been treated
-              const isCurVisible = ancestorsVisible === false
-                ? false
-                : await self.isVisible(req, curSchema, destination, ancestor);
-
-              handledFieldErrors.set(curPath, isCurVisible);
-
-              if (!isCurVisible) {
-                // Should we run this on schema field like object / array, as well as on subfields?
-                // Also this should run on the error field only, not on all ancestors?
-                // We just want to check visibility for parents
-                setDefaultToInvisibleField(destination, curSchema, ancestor);
-                ancestorsVisible = false;
-                continue;
-              }
-
-              if (!Array.isArray(error) && typeof error !== 'string') {
-                self.apos.util.error(error + '\n\n' + error.stack);
-              }
-
-              // TODO: Handle recursion to know if we keep all sub errors, and even the current one
-              // Maybe we can pass the concerned destination part to allow setting default value without reworking
-              // `setDefaultToInvisibleField` function
-
-              errors.push(error);
+            // In this case do we need to check sub errors and set default values to them,
+            // we might not since we already set default value to parent to avoid errors?
+            if (!isFieldVisible) {
+              /* setDefaultToInvisibleField(destination, curSchema, ancestor); */
+              continue;
             }
 
+            if (!Array.isArray(error) && typeof error !== 'string') {
+              self.apos.util.error(error + '\n\n' + error.stack);
+            }
+
+            if (error.data?.errors) {
+              const subErrors = await handleConvertErrors({
+                req,
+                schema,
+                convertErrors: error.data.errors,
+                destination
+              });
+
+              if (!subErrors.length) {
+                continue;
+              }
+              error.data.errors = subErrors;
+            }
+
+            validErrors.push(error);
           }
+
+          return validErrors;
+        }
+
+        // TODO: Handle checkedAncestors
+        async function checkAncestorsVisible(ancestors, schema, destination, fieldPath = '') {
+          if (!ancestors.length) {
+            return true;
+          }
+
+          const ancestor = ancestors.shift();
+          const ancestorPath = fieldPath ? `${fieldPath}.${ancestor}` : ancestor;
+
+          /* if (checkedAncestors.has(ancestorPath)) */
+
+          const curSchema = self.getFieldSchema(schema, fieldPath);
+          const ancestorVisible = await self.isVisible(req, curSchema, destination, ancestor);
+
+          if (!ancestor.length || !ancestorVisible) {
+            return ancestorVisible;
+          }
+
+          return checkAncestorsVisible(ancestors, schema, destination, ancestorPath);
         }
 
         // TODO: function to get right destination level
@@ -755,17 +778,17 @@ module.exports = {
       },
 
       getFieldSchema(schema, fieldPath) {
-        if (!fieldPath || fieldPath === '/') {
+        if (!fieldPath || fieldPath === '.') {
           return schema;
         }
         let curSchema = schema;
-        const parts = fieldPath.split('/');
+        const parts = fieldPath.split('.');
         for (const part of parts) {
           const curField = curSchema.find(({ name }) => name === part);
-          curSchema = curField.schema;
-          if (!curSchema) {
-            return null;
+          if (!curField.schema) {
+            return curSchema;
           }
+          curSchema = curField.schema;
         }
 
         return curSchema;
