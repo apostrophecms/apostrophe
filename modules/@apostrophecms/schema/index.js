@@ -660,7 +660,7 @@ module.exports = {
           return;
         }
 
-        const nonVisibleFields = await setNonVisibleFields({
+        const nonVisibleFields = await getNonVisibleFields({
           req,
           schema,
           destination
@@ -682,7 +682,7 @@ module.exports = {
           throw errors;
         }
 
-        async function setNonVisibleFields({
+        async function getNonVisibleFields({
           req, schema, destination, nonVisibleFields = new Set(), fieldPath = ''
         }) {
           for (const field of schema) {
@@ -698,7 +698,7 @@ module.exports = {
 
             if (field.type === 'array') {
               for (const arrayItem of destination[field.name]) {
-                await setNonVisibleFields({
+                await getNonVisibleFields({
                   req,
                   schema: field.schema,
                   destination: arrayItem,
@@ -707,7 +707,7 @@ module.exports = {
                 });
               }
             } else if (field.type === 'object') {
-              await setNonVisibleFields({
+              await getNonVisibleFields({
                 req,
                 schema: field.schema,
                 destination: destination[field.name],
