@@ -3129,7 +3129,8 @@ describe('Schemas', function() {
       assert(!output.requiredProp);
     });
 
-    it.only('should not error nested required property if parent is not visible', async function() {
+    // HERE
+    it('should not error nested required property if parent is not visible', async function() {
       const req = apos.task.getReq();
       const schema = apos.schema.compose({
         addFields: [
@@ -3161,7 +3162,150 @@ describe('Schemas', function() {
         }, output);
         assert(true);
       } catch (err) {
+        assert(!err);
+      }
+    });
+
+    it.only('should not error complex nested required property if parents are not visible', async function() {
+      const req = apos.task.getReq();
+      const schema = apos.schema.compose({
+        addFields: [
+          {
+            name: 'object',
+            type: 'object',
+            if: {
+              showObject: true
+            },
+            schema: [
+              {
+                name: 'objectString',
+                type: 'string',
+                required: true
+              },
+              {
+                name: 'objectArray',
+                type: 'array',
+                required: true,
+                if: {
+                  showObjectArray: true
+                },
+                schema: [
+                  {
+                    name: 'objectArrayString',
+                    type: 'string',
+                    required: true
+                  }
+                ]
+              },
+              {
+                name: 'showObjectArray',
+                type: 'boolean'
+              }
+            ]
+          },
+          {
+            name: 'showObject',
+            type: 'boolean'
+          }
+        ]
+      });
+      const output = {};
+
+      try {
+        await apos.schema.convert(req, schema, {
+          object: {
+            objectString: 'toto',
+            objectArray: [
+              {
+                _id: 'tutu',
+                metaType: 'arrayItem'
+              }
+            ],
+            showObjectArray: false
+          },
+          showObject: true
+        }, output);
+        assert(true);
+      } catch (err) {
         console.log('err', err);
+        assert(!err);
+      }
+    });
+
+    it.skip('should not error complex nested arrays required property if parents are not visible', async function() {
+      const req = apos.task.getReq();
+      const schema = apos.schema.compose({
+        addFields: [
+          {
+            name: 'root',
+            type: 'array',
+            if: {
+              showRoot: true
+            },
+            schema: [
+              {
+                name: 'rootString',
+                type: 'string',
+                required: true,
+                if: {
+                  showrootArray: true
+                }
+              },
+              {
+                name: 'rootArray',
+                type: 'array',
+                required: true,
+                schema: [
+                  {
+                    name: 'rootArrayString',
+                    type: 'string',
+                    required: true,
+                    if: {
+                      showRootArray: true
+                    }
+                  },
+                  {
+                    name: 'showRootArray',
+                    type: 'boolean'
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            name: 'showRoot',
+            type: 'boolean'
+          }
+        ]
+      });
+      const output = {};
+
+      try {
+        await apos.schema.convert(req, schema, {
+          root: [
+            {
+              _id: 'root_id',
+              metaType: 'arrayItem',
+              rootString: 'toto',
+              rootArray: [
+                {
+                  _id: 'root_array_id',
+                  metaType: 'arrayItem',
+                  rootArrayBool: true
+                },
+                {
+                  _id: 'root_array_id2',
+                  metaType: 'arrayItem',
+                  rootArrayBool: true,
+                  showRootArray: true
+                }
+              ]
+            }
+          ],
+          showRoot: true
+        }, output);
+        assert(true);
+      } catch (err) {
         assert(!err);
       }
     });

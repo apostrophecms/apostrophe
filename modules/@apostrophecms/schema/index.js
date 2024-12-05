@@ -624,7 +624,7 @@ module.exports = {
             continue;
           }
 
-          const fieldPath = ancestorPath ? `${ancestorPath}.${field.name}` : field.name;
+          const fieldPath = ancestorPath ? `${ancestorPath}/${field.name}` : field.name;
           try {
             const isRequired = await self.isFieldRequired(req, field, destination);
             await convert(
@@ -692,7 +692,7 @@ module.exports = {
               nonVisibleFields.add(curPath);
               continue;
             }
-            if (field.schema) {
+            if (!field.schema) {
               continue;
             }
 
@@ -749,9 +749,9 @@ module.exports = {
             // Should check if path starts with, because parent can be invisible
             const nonVisibleField = hiddenAncestors || nonVisibleFields.has(errorPath);
 
+            // We set default values only on final error fields
             if (nonVisibleField && !error.data?.errors) {
               const curSchema = self.getFieldLevelSchema(schema, error.schemaPath);
-              // Only on final errors fields
               setDefaultToInvisibleField(curDestination, curSchema, error.path);
               continue;
             }
@@ -805,17 +805,14 @@ module.exports = {
       },
 
       getFieldLevelSchema(schema, fieldPath) {
-        if (!fieldPath || fieldPath === '.') {
+        if (!fieldPath || fieldPath === '/') {
           return schema;
         }
         let curSchema = schema;
-        const parts = fieldPath.split('.');
+        const parts = fieldPath.split('/');
         parts.pop();
         for (const part of parts) {
           const curField = curSchema.find(({ name }) => name === part);
-          /* if (!curField.schema) { */
-          /*   return curSchema; */
-          /* } */
           curSchema = curField.schema;
         }
 
