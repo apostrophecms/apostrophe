@@ -24,7 +24,6 @@ module.exports = {
     alias: 'schema'
   },
   init(self) {
-
     self.fieldTypes = {};
     self.fieldsById = {};
     self.arrayManagers = {};
@@ -489,7 +488,15 @@ module.exports = {
           const destinationKey = _.get(destination, key);
 
           if (key === '$or') {
-            const results = await Promise.all(val.map(clause => self.evaluateCondition(req, field, clause, destination, conditionalFields)));
+            const results = await Promise.all(
+              val.map(clause => self.evaluateCondition(
+                req,
+                field,
+                clause,
+                destination,
+                conditionalFields)
+              )
+            );
             const testResults = _.isPlainObject(results?.[0])
               ? results.some(({ value }) => value)
               : results.some((value) => value);
@@ -585,20 +592,22 @@ module.exports = {
         {
           fetchRelationships = true,
           ancestors = [],
-          isParentVisible = true
+          rootConvert = true,
+          ancestorSchemas = {},
+          ancestorPath = ''
         } = {}
       ) {
         const options = {
           fetchRelationships,
           ancestors,
-          isParentVisible
+          ancestorSchemas,
+          ancestorPath
         };
         if (Array.isArray(req)) {
           throw new Error('convert invoked without a req, do you have one in your context?');
         }
 
-        const errors = [];
-
+        const convertErrors = [];
         for (const field of schema) {
           if (field.readOnly) {
             continue;
@@ -611,92 +620,208 @@ module.exports = {
           }
 
           const { convert } = self.fieldTypes[field.type];
+          if (!convert) {
+            continue;
+          }
 
-          if (convert) {
-            try {
-              const isAllParentsVisible = isParentVisible === false
-                ? false
-                : await self.isVisible(req, schema, destination, field.name);
-              const isRequired = await self.isFieldRequired(req, field, destination);
-              await convert(
-                req,
-                {
-                  ...field,
-                  required: isRequired
-                },
-                data,
-                destination,
-                {
-                  ...options,
-                  isParentVisible: isAllParentsVisible
-                }
-              );
-            } catch (error) {
-              if (Array.isArray(error)) {
-                const invalid = self.apos.error('invalid', {
-                  errors: error
-                });
-                invalid.path = field.name;
-                errors.push(invalid);
-              } else {
-                error.path = field.name;
-                errors.push(error);
+          const fieldPath = ancestorPath ? `${ancestorPath}/${field.name}` : field.name;
+          try {
+            const isRequired = await self.isFieldRequired(req, field, destination);
+            await convert(
+              req,
+              {
+                ...field,
+                required: isRequired
+              },
+              data,
+              destination,
+              {
+                ...options,
+                rootConvert: false,
+                ancestorPath: fieldPath
               }
-            }
+            );
+          } catch (err) {
+            const error = Array.isArray(err)
+              ? self.apos.error('invalid', { errors: err })
+              : err;
+
+            error.path = field.name;
+            error.schemaPath = fieldPath;
+            convertErrors.push(error);
           }
         }
 
-        const errorsList = [];
+        if (!rootConvert) {
+          if (convertErrors.length) {
+            throw convertErrors;
+          }
 
-        for (const error of errors) {
-          if (error.path) {
-            // `self.isVisible` will only throw for required fields that have
-            // an external condition containing an unknown module or method:
-            const isVisible = isParentVisible === false
-              ? false
-              : await self.isVisible(req, schema, destination, error.path);
+          return;
+        }
 
+        const nonVisibleFields = await getNonVisibleFields({
+          req,
+          schema,
+          destination
+        });
+
+        console.log('nonVisibleFields', nonVisibleFields);
+
+        const errors = await handleConvertErrors({
+          req,
+          schema,
+          convertErrors,
+          destination,
+          nonVisibleFields
+        });
+
+        console.dir(destination, { depth: 5 });
+
+        if (errors.length) {
+          throw errors;
+        }
+
+        async function getNonVisibleFields({
+          req, schema, destination, nonVisibleFields = new Set(), fieldPath = ''
+        }) {
+          for (const field of schema) {
+            const curPath = fieldPath ? `${fieldPath}/${field.name}` : field.name;
+            const isVisible = await self.isVisible(req, schema, destination, field.name);
             if (!isVisible) {
-              // It is not reasonable to enforce required,
-              // min, max or anything else for fields
-              // hidden via "if" as the user cannot correct it
-              // and it will not be used. If the user changes
-              // the conditional field later then they won't
-              // be able to save until the erroneous field
-              // is corrected
-              const name = error.path;
-              const field = schema.find(field => field.name === name);
-              if (field) {
-                // To protect against security issues, an invalid value
-                // for a field that is not visible should be quietly discarded.
-                // We only worry about this if the value is not valid, as otherwise
-                // it's a kindness to save the work so the user can toggle back to it
-                destination[field.name] = klona((field.def !== undefined)
-                  ? field.def
-                  : self.fieldTypes[field.type]?.def);
-                continue;
-              }
-            }
-            if (isParentVisible === false) {
+              nonVisibleFields.add(curPath);
               continue;
             }
+            if (!field.schema) {
+              continue;
+            }
+
+            if (field.type === 'array') {
+              for (const arrayItem of destination[field.name]) {
+                await getNonVisibleFields({
+                  req,
+                  schema: field.schema,
+                  destination: arrayItem,
+                  nonVisibleFields,
+                  fieldPath: `${curPath}.${arrayItem._id}`
+                });
+              }
+            } else if (field.type === 'object') {
+              await getNonVisibleFields({
+                req,
+                schema: field.schema,
+                destination: destination[field.name],
+                nonVisibleFields,
+                fieldPath: curPath
+              });
+            } else if (field.type === 'relationship') {
+              // TODO
+            }
           }
 
-          if (!Array.isArray(error) && typeof error !== 'string') {
-            self.apos.util.error(error + '\n\n' + error.stack);
-          }
-          errorsList.push(error);
+          return nonVisibleFields;
         }
 
-        if (errorsList.length) {
-          throw errorsList;
+        async function handleConvertErrors({
+          req,
+          schema,
+          convertErrors,
+          nonVisibleFields,
+          destination,
+          destinationPath = '',
+          hiddenAncestors = false
+        }) {
+          const validErrors = [];
+          for (const error of convertErrors) {
+            const [ destId, destPath ] = error.path.includes('.')
+              ? error.path.split('.')
+              : [ null, error.path ];
+
+            const curDestination = destId
+              ? destination.find(({ _id }) => _id === destId)
+              : destination;
+
+            const errorPath = destinationPath
+              ? `${destinationPath}/${error.path}`
+              : error.path;
+
+            // Case were this error field hasn't been treated
+            // Should check if path starts with, because parent can be invisible
+            const nonVisibleField = hiddenAncestors || nonVisibleFields.has(errorPath);
+
+            // We set default values only on final error fields
+            if (nonVisibleField && !error.data?.errors) {
+              const curSchema = self.getFieldLevelSchema(schema, error.schemaPath);
+              setDefaultToInvisibleField(curDestination, curSchema, error.path);
+              continue;
+            }
+
+            if (error.data?.errors) {
+              const subErrors = await handleConvertErrors({
+                req,
+                schema,
+                convertErrors: error.data.errors,
+                nonVisibleFields,
+                destination: curDestination[destPath],
+                destinationPath: errorPath,
+                hiddenAncestors: nonVisibleField
+              });
+
+              // If invalid error has no sub error, this one can be removed
+              if (!subErrors.length) {
+                continue;
+              }
+              error.data.errors = subErrors;
+            }
+
+            if (typeof error !== 'string') {
+              self.apos.util.error(error + '\n\n' + error.stack);
+            }
+            validErrors.push(error);
+          }
+
+          return validErrors;
         }
+
+        function setDefaultToInvisibleField(destination, schema, fieldName) {
+          // It is not reasonable to enforce required,
+          // min, max or anything else for fields
+          // hidden via "if" as the user cannot correct it
+          // and it will not be used. If the user changes
+          // the conditional field later then they won't
+          // be able to save until the erroneous field
+          // is corrected
+          const field = schema.find(field => field.name === fieldName);
+          if (field) {
+            // To protect against security issues, an invalid value
+            // for a field that is not visible should be quietly discarded.
+            // We only worry about this if the value is not valid, as otherwise
+            // it's a kindness to save the work so the user can toggle back to it
+            destination[field.name] = klona((field.def !== undefined)
+              ? field.def
+              : self.fieldTypes[field.type]?.def);
+          }
+        }
+      },
+
+      getFieldLevelSchema(schema, fieldPath) {
+        if (!fieldPath || fieldPath === '/') {
+          return schema;
+        }
+        let curSchema = schema;
+        const parts = fieldPath.split('/');
+        parts.pop();
+        for (const part of parts) {
+          const curField = curSchema.find(({ name }) => name === part);
+          curSchema = curField.schema;
+        }
+
+        return curSchema;
       },
 
       // Determine whether the given field is visible
       // based on `if` conditions of all fields
-
-      async isVisible(req, schema, object, name) {
+      async isVisible(req, schema, destination, name) {
         const conditionalFields = {};
         const errors = {};
 
@@ -705,7 +830,13 @@ module.exports = {
           for (const field of schema) {
             if (field.if) {
               try {
-                const result = await self.evaluateCondition(req, field, field.if, object, conditionalFields);
+                const result = await self.evaluateCondition(
+                  req,
+                  field,
+                  field.if,
+                  destination,
+                  conditionalFields
+                );
                 const previous = conditionalFields[field.name];
                 if (previous !== result) {
                   change = true;
