@@ -2,6 +2,10 @@
 
 ## UNRELEASED
 
+### Adds
+
+* When validating an `area` field, warn the developer if `widgets` is not nested in `options`.
+
 ### Fixes
 
 * Focus properly Widget Editor modals when opened. Keep the previous active focus on the modal when closing the widget editor.
