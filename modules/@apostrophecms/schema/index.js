@@ -660,58 +660,100 @@ module.exports = {
           return;
         }
 
-        let errors;
-        try {
-          errors = await handleConvertErrors({
-            req,
-            schema,
-            convertErrors,
-            destination
-          });
+        const nonVisibleFields = await setNonVisibleFields({
+          req,
+          schema,
+          destination
+        });
 
-        } catch (err) {
-        }
+        console.log('nonVisibleFields', nonVisibleFields);
 
-        // Do we need this, not sure a field specific error can appears twice?
-        // TODO: Put it in function and use a reduce
+        const errors = await handleConvertErrors({
+          req,
+          schema,
+          convertErrors,
+          destination,
+          nonVisibleFields
+        });
+
+        console.dir(destination, { depth: 5 });
+
         if (errors.length) {
           throw errors;
+        }
+
+        async function setNonVisibleFields({
+          req, schema, destination, nonVisibleFields = new Set(), fieldPath = ''
+        }) {
+          for (const field of schema) {
+            const curPath = fieldPath ? `${fieldPath}/${field.name}` : field.name;
+            const isVisible = await self.isVisible(req, schema, destination, field.name);
+            if (!isVisible) {
+              nonVisibleFields.add(curPath);
+              continue;
+            }
+            if (field.schema) {
+              continue;
+            }
+
+            if (field.type === 'array') {
+              for (const arrayItem of destination[field.name]) {
+                await setNonVisibleFields({
+                  req,
+                  schema: field.schema,
+                  destination: arrayItem,
+                  nonVisibleFields,
+                  fieldPath: `${curPath}.${arrayItem._id}`
+                });
+              }
+            } else if (field.type === 'object') {
+              await setNonVisibleFields({
+                req,
+                schema: field.schema,
+                destination: destination[field.name],
+                nonVisibleFields,
+                fieldPath: curPath
+              });
+            } else if (field.type === 'relationship') {
+              // TODO
+            }
+          }
+
+          return nonVisibleFields;
         }
 
         async function handleConvertErrors({
           req,
           schema,
           convertErrors,
+          nonVisibleFields,
           destination,
-          checkedAncestors = new Map()
+          destinationPath = '',
+          hiddenAncestors = false
         }) {
           const validErrors = [];
           for (const error of convertErrors) {
+            const [ destId, destPath ] = error.path.includes('.')
+              ? error.path.split('.')
+              : [ null, error.path ];
 
-            const ancestors = error.schemaPath.split('.');
-            const errorField = ancestors.pop();
+            const curDestination = destId
+              ? destination.find(({ _id }) => _id === destId)
+              : destination;
 
-            const hasAncestorsVisible = await checkAncestorsVisible(
-              ancestors,
-              schema,
-              destination
-            );
+            const errorPath = destinationPath
+              ? `${destinationPath}/${error.path}`
+              : error.path;
 
-            const errorSchema = self.getFieldSchema(schema, error.schemaPath) || schema;
             // Case were this error field hasn't been treated
-            const isFieldVisible = hasAncestorsVisible === false
-              ? false
-              : await self.isVisible(req, errorSchema, destination, errorField);
+            // Should check if path starts with, because parent can be invisible
+            const nonVisibleField = hiddenAncestors || nonVisibleFields.has(errorPath);
 
-            // In this case do we need to check sub errors and set default values to them,
-            // we might not since we already set default value to parent to avoid errors?
-            if (!isFieldVisible) {
-              /* setDefaultToInvisibleField(destination, curSchema, ancestor); */
+            if (nonVisibleField && !error.data?.errors) {
+              const curSchema = self.getFieldLevelSchema(schema, error.schemaPath);
+              // Only on final errors fields
+              setDefaultToInvisibleField(curDestination, curSchema, error.path);
               continue;
-            }
-
-            if (!Array.isArray(error) && typeof error !== 'string') {
-              self.apos.util.error(error + '\n\n' + error.stack);
             }
 
             if (error.data?.errors) {
@@ -719,43 +761,28 @@ module.exports = {
                 req,
                 schema,
                 convertErrors: error.data.errors,
-                destination
+                nonVisibleFields,
+                destination: curDestination[destPath],
+                destinationPath: errorPath,
+                hiddenAncestors: nonVisibleField
               });
 
+              // If invalid error has no sub error, this one can be removed
               if (!subErrors.length) {
                 continue;
               }
               error.data.errors = subErrors;
             }
 
+            if (typeof error !== 'string') {
+              self.apos.util.error(error + '\n\n' + error.stack);
+            }
             validErrors.push(error);
           }
 
           return validErrors;
         }
 
-        // TODO: Handle checkedAncestors
-        async function checkAncestorsVisible(ancestors, schema, destination, fieldPath = '') {
-          if (!ancestors.length) {
-            return true;
-          }
-
-          const ancestor = ancestors.shift();
-          const ancestorPath = fieldPath ? `${fieldPath}.${ancestor}` : ancestor;
-
-          /* if (checkedAncestors.has(ancestorPath)) */
-
-          const curSchema = self.getFieldSchema(schema, fieldPath);
-          const ancestorVisible = await self.isVisible(req, curSchema, destination, ancestor);
-
-          if (!ancestor.length || !ancestorVisible) {
-            return ancestorVisible;
-          }
-
-          return checkAncestorsVisible(ancestors, schema, destination, ancestorPath);
-        }
-
-        // TODO: function to get right destination level
         function setDefaultToInvisibleField(destination, schema, fieldName) {
           // It is not reasonable to enforce required,
           // min, max or anything else for fields
@@ -777,17 +804,18 @@ module.exports = {
         }
       },
 
-      getFieldSchema(schema, fieldPath) {
+      getFieldLevelSchema(schema, fieldPath) {
         if (!fieldPath || fieldPath === '.') {
           return schema;
         }
         let curSchema = schema;
         const parts = fieldPath.split('.');
+        parts.pop();
         for (const part of parts) {
           const curField = curSchema.find(({ name }) => name === part);
-          if (!curField.schema) {
-            return curSchema;
-          }
+          /* if (!curField.schema) { */
+          /*   return curSchema; */
+          /* } */
           curSchema = curField.schema;
         }
 
