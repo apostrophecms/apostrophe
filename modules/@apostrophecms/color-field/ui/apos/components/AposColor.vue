@@ -19,6 +19,7 @@
       </div>
       <div class="apos-color__color-wrap">
         <div
+          :data-apos-active-color="activeColor"
           :aria-label="`Current color is ${activeColor}`"
           class="apos-color__active-color"
           :style="{ background: activeColor }"
@@ -77,7 +78,7 @@
           :key="`!${c}`"
           class="apos-color__presets-color"
           :aria-label="`Color:${c}`"
-          :style="{ background: c }"
+          :style="{ background: formatCssValue(c) }"
           @click="handlePreset(c)"
         />
         <div
@@ -152,6 +153,13 @@ export default {
     }
   },
   methods: {
+    formatCssValue(c) {
+      let value = c;
+      if (c.startsWith('--')) {
+        value = `var(${value})`;
+      }
+      return value;
+    },
     handlePreset(c) {
       this.colorChange(c);
     },

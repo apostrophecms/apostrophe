@@ -19,6 +19,9 @@ function _colorChange(data, oldHue) {
     color = tinycolor(data.rgba);
   } else if (data && data.rgb) {
     color = tinycolor(data.rgb);
+  } else if (data && typeof data === 'string' && data.startsWith('--')) {
+    color = tinycolor(getComputedStyle(document.body).getPropertyValue(data));
+    color._cssVariable = data;
   } else {
     color = tinycolor(data);
   }
@@ -50,6 +53,7 @@ function _colorChange(data, oldHue) {
   /* ------ */
 
   return {
+    _cssVariable: color._cssVariable,
     hsl,
     hex: color.toHexString().toUpperCase(),
     hex8: color.toHex8String().toUpperCase(),

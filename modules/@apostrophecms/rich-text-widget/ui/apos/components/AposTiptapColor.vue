@@ -177,9 +177,16 @@ export default defineComponent({
     };
 
     const update = (value) => {
-      tinyColorObj.value = new TinyColor(value.hsl);
-      next.value = tinyColorObj.value.toString(format.value);
-      props.editor.chain().focus().setColor(next.value).run();
+      let color;
+      if (value._cssVariable) {
+        next.value = value._cssVariable;
+        color = `var(${next.value})`;
+      } else {
+        tinyColorObj.value = new TinyColor(value.hsl);
+        next.value = tinyColorObj.value.toString(format.value);
+        color = next.value;
+      }
+      props.editor.chain().focus().setColor(color).run();
       indicatorColor.value = next.value;
     };
 

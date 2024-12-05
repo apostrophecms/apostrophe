@@ -617,7 +617,9 @@ module.exports = {
                 // HSL colors
                 /^hsl\(\s*\d{1,3}(?:deg)?\s*,\s*\d{1,3}%\s*,\s*\d{1,3}%\s*\)$/,
                 // HSLA colors
-                /^hsla\(\s*\d{1,3}(?:deg)?\s*,\s*\d{1,3}%\s*,\s*\d{1,3}%\s*,\s*(?:0?\.\d+|1(?:\.0)?)\s*\)$/
+                /^hsla\(\s*\d{1,3}(?:deg)?\s*,\s*\d{1,3}%\s*,\s*\d{1,3}%\s*,\s*(?:0?\.\d+|1(?:\.0)?)\s*\)$/,
+                // CSS Variable value
+                /^var\(--[a-zA-Z0-9-]+\)$/
               ]
             }
           }
