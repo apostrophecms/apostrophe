@@ -3166,185 +3166,6 @@ describe('Schemas', function() {
       }
     });
 
-    it('should not error complex nested required property if parents are not visible', async function() {
-      const schema = apos.schema.compose({
-        addFields: [
-          {
-            name: 'object',
-            type: 'object',
-            if: {
-              showObject: true
-            },
-            schema: [
-              {
-                name: 'objectString',
-                type: 'string',
-                required: true
-              },
-              {
-                name: 'objectArray',
-                type: 'array',
-                required: true,
-                if: {
-                  showObjectArray: true
-                },
-                schema: [
-                  {
-                    name: 'objectArrayString',
-                    type: 'string',
-                    required: true
-                  }
-                ]
-              },
-              {
-                name: 'showObjectArray',
-                type: 'boolean'
-              }
-            ]
-          },
-          {
-            name: 'showObject',
-            type: 'boolean'
-          }
-        ]
-      });
-      const output = {};
-
-      const [ success, error ] = await convert(schema, output);
-
-      const expected = {
-        success: true,
-        error: false,
-        output: {
-          object: {
-            _id: output.object._id,
-            objectString: 'toto',
-            objectArray: [
-              {
-                _id: 'tutu',
-                metaType: 'arrayItem',
-                scopedArrayName: undefined,
-                objectArrayString: ''
-              }
-            ],
-            showObjectArray: false,
-            metaType: 'objectItem',
-            scopedObjectName: undefined
-          },
-          showObject: true
-        }
-      };
-
-      const actual = {
-        success,
-        error,
-        output
-      };
-
-      assert.deepEqual(expected, actual);
-
-      async function convert(schema, output) {
-        const req = apos.task.getReq();
-        try {
-          await apos.schema.convert(req, schema, {
-            object: {
-              objectString: 'toto',
-              objectArray: [
-                {
-                  _id: 'tutu',
-                  metaType: 'arrayItem'
-                }
-              ],
-              showObjectArray: false
-            },
-            showObject: true
-          }, output);
-          return [ true, false ];
-        } catch (err) {
-          return [ false, true ];
-        }
-      }
-    });
-
-    // TODO: green + relationship test
-    it.only('should not error complex nested arrays required property if parents are not visible', async function() {
-      const req = apos.task.getReq();
-      const schema = apos.schema.compose({
-        addFields: [
-          {
-            name: 'root',
-            type: 'array',
-            if: {
-              showRoot: true
-            },
-            schema: [
-              {
-                name: 'rootString',
-                type: 'string',
-                required: true,
-                if: {
-                  showrootArray: true
-                }
-              },
-              {
-                name: 'rootArray',
-                type: 'array',
-                required: true,
-                schema: [
-                  {
-                    name: 'rootArrayString',
-                    type: 'string',
-                    required: true,
-                    if: {
-                      showRootArray: true
-                    }
-                  },
-                  {
-                    name: 'showRootArray',
-                    type: 'boolean'
-                  }
-                ]
-              }
-            ]
-          },
-          {
-            name: 'showRoot',
-            type: 'boolean'
-          }
-        ]
-      });
-      const output = {};
-
-      try {
-        await apos.schema.convert(req, schema, {
-          root: [
-            {
-              _id: 'root_id',
-              metaType: 'arrayItem',
-              rootString: 'toto',
-              rootArray: [
-                {
-                  _id: 'root_array_id',
-                  metaType: 'arrayItem',
-                  rootArrayBool: true
-                },
-                {
-                  _id: 'root_array_id2',
-                  metaType: 'arrayItem',
-                  rootArrayBool: true,
-                  showRootArray: true
-                }
-              ]
-            }
-          ],
-          showRoot: true
-        }, output);
-        assert(true);
-      } catch (err) {
-        assert(!err);
-      }
-    });
-
     it('should error required property nested boolean', async function() {
       const schema = apos.schema.compose({
         addFields: [
@@ -5162,7 +4983,322 @@ describe('Schemas', function() {
 
       await testSchemaError(schema, {}, 'age', 'required');
     });
+
+    it('should not error complex nested object required property if parents are not visible', async function() {
+      const schema = apos.schema.compose({
+        addFields: [
+          {
+            name: 'object',
+            type: 'object',
+            if: {
+              showObject: true
+            },
+            schema: [
+              {
+                name: 'objectString',
+                type: 'string',
+                required: true
+              },
+              {
+                name: 'objectArray',
+                type: 'array',
+                required: true,
+                if: {
+                  showObjectArray: true
+                },
+                schema: [
+                  {
+                    name: 'objectArrayString',
+                    type: 'string',
+                    required: true
+                  }
+                ]
+              },
+              {
+                name: 'showObjectArray',
+                type: 'boolean'
+              }
+            ]
+          },
+          {
+            name: 'showObject',
+            type: 'boolean'
+          }
+        ]
+      });
+
+      const data = {
+        object: {
+          objectString: 'toto',
+          objectArray: [
+            {
+              _id: 'tutu',
+              metaType: 'arrayItem'
+            }
+          ],
+          showObjectArray: false
+        },
+        showObject: true
+      };
+
+      const output = {};
+      const [ success, errors ] = await testConvert(apos, data, schema, output);
+
+      const expected = {
+        success: true,
+        errors: [],
+        output: {
+          object: {
+            _id: output.object._id,
+            objectString: 'toto',
+            objectArray: [
+              {
+                _id: 'tutu',
+                metaType: 'arrayItem',
+                scopedArrayName: undefined,
+                objectArrayString: ''
+              }
+            ],
+            showObjectArray: false,
+            metaType: 'objectItem',
+            scopedObjectName: undefined
+          },
+          showObject: true
+        }
+      };
+
+      const actual = {
+        success,
+        errors,
+        output
+      };
+
+      assert.deepEqual(expected, actual);
+
+    });
+
+    it('should not error complex nested arrays required property if parents are not visible', async function() {
+      const req = apos.task.getReq();
+      const schema = apos.schema.compose({
+        addFields: [
+          {
+            name: 'root',
+            type: 'array',
+            if: {
+              showRoot: true
+            },
+            schema: [
+              {
+                name: 'rootString',
+                type: 'string',
+                required: true
+              },
+              {
+                name: 'rootArray',
+                type: 'array',
+                required: true,
+                schema: [
+                  {
+                    name: 'rootArrayString',
+                    type: 'string',
+                    required: true,
+                    if: {
+                      showRootArrayString: true
+                    }
+                  },
+                  {
+                    name: 'showRootArrayString',
+                    type: 'boolean'
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            name: 'showRoot',
+            type: 'boolean'
+          }
+        ]
+      });
+
+      const data1 = {
+        root: [
+          {
+            _id: 'root_id',
+            metaType: 'arrayItem',
+            rootString: 'toto',
+            rootArray: [
+              {
+                _id: 'root_array_id',
+                metaType: 'arrayItem',
+                showRootArrayString: true
+              },
+              {
+                _id: 'root_array_id2',
+                metaType: 'arrayItem',
+                rootArrayBool: true,
+                showRootArrayString: false
+              }
+            ]
+          }
+        ],
+        showRoot: true
+      };
+
+      const output1 = {};
+      const [ success1, errors1 ] = await testConvert(apos, data1, schema, output1);
+      const foundError1 = findError(errors1, 'root_array_id.rootArrayString', 'required');
+
+      const data2 = {
+        root: [
+          {
+            _id: 'root_id',
+            metaType: 'arrayItem',
+            rootString: 'toto',
+            rootArray: [
+              {
+                _id: 'root_array_id',
+                metaType: 'arrayItem',
+                rootArrayString: 'Item 1',
+                showRootArrayString: true
+              },
+              {
+                _id: 'root_array_id2',
+                metaType: 'arrayItem',
+                rootArrayBool: true,
+                showRootArrayString: false
+              }
+            ]
+          }
+        ],
+        showRoot: true
+      };
+
+      const output2 = {};
+      const [ success2, errors2 ] = await testConvert(apos, data2, schema, output2);
+
+      const expected = {
+        success1: false,
+        foundError1: true,
+        success2: true,
+        errors2: [],
+        output2: {
+          root: [
+            {
+              _id: 'root_id',
+              metaType: 'arrayItem',
+              scopedArrayName: undefined,
+              rootString: 'toto',
+              rootArray: [
+                {
+                  _id: 'root_array_id',
+                  metaType: 'arrayItem',
+                  scopedArrayName: undefined,
+                  rootArrayString: 'Item 1',
+                  showRootArrayString: true
+                },
+                {
+                  _id: 'root_array_id2',
+                  metaType: 'arrayItem',
+                  scopedArrayName: undefined,
+                  rootArrayString: '',
+                  showRootArrayString: false
+                }
+              ]
+            }
+          ],
+          showRoot: true
+        }
+      };
+
+      const actual = {
+        success1,
+        foundError1,
+        success2,
+        errors2,
+        output2
+      };
+
+      assert.deepEqual(expected, actual);
+    });
+
+    // TODO: update this test when support for conditional fields is added to relationships schemas
+    it('should not error complex nested relationships required property if parents are not visible', async function() {
+      const req = apos.task.getReq({ mode: 'draft' });
+      const schema = apos.schema.compose({
+        addFields: [
+          {
+            name: 'title',
+            type: 'string',
+            required: true
+          },
+          {
+            name: '_rel',
+            type: 'relationship',
+            withType: 'article',
+            schema: [
+              {
+                name: 'relString',
+                type: 'string',
+                required: true,
+                if: {
+                  showRelString: true
+                }
+              },
+              {
+                name: 'showRelString',
+                type: 'boolean',
+              }
+            ]
+          }
+        ]
+      });
+
+      const article1 = await apos.article.insert(req, {
+        ...apos.article.newInstance(),
+        title: 'article 1'
+      })
+      const article2 = await apos.article.insert(req, {
+        ...apos.article.newInstance(),
+        title: 'article 2'
+      })
+
+      article1._fields = {
+        showRelString: false
+      }
+
+      article2._fields = {
+        relString: 'article 2 rel string',
+        showRelString: true
+      }
+
+      const data = {
+        title: 'toto',
+        _rel: [
+          article1,
+          article2
+        ]
+      };
+
+      const errPath = `_rel.${article1._id}.relString`
+      const output = {};
+      const [ success, errors ] = await testConvert(apos, data, schema, output);
+      const foundError = findError(errors, 'relString', 'required');
+
+      const expected = {
+        success: false,
+        foundError: true
+      }
+
+      const actual = {
+        success,
+        foundError,
+      };
+
+      assert.deepEqual(expected, actual);
+    });
   });
+
   async function testSchemaError(schema, input, path, name) {
     const req = apos.task.getReq();
     const result = {};
@@ -5181,3 +5317,34 @@ describe('Schemas', function() {
     }
   }
 });
+
+async function testConvert(
+  apos,
+  data,
+  schema,
+  output
+) {
+  const req = apos.task.getReq({mode: 'draft'});
+  try {
+    await apos.schema.convert(req, schema, data, output);
+    return [ true, [] ];
+  } catch (err) {
+    return [ false, err ];
+  }
+}
+
+function findError(errors, fieldPath, errorName) {
+  if (!Array.isArray(errors)) {
+    return false
+  }
+  return errors.some((err) => {
+    if (err.data?.errors) {
+      const deepFound = findError(err.data.errors, fieldPath, errorName);
+      if (deepFound) {
+        return deepFound;
+      }
+    }
+
+    return err.name === errorName && err.path === fieldPath;
+  });
+}
