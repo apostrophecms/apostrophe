@@ -1073,15 +1073,16 @@ module.exports = (self) => {
           if (result) {
             actualDocs.push(result);
           }
-        } else if ((item && ((typeof item._id) === 'string'))) {
+        } else if ((item && (typeof item._id === 'string'))) {
           const result = results.find(doc => (doc._id === item._id));
           if (result) {
             if (field.schema) {
+              const destItem = (Array.isArray(destination[field.name]) ? destination[field.name] : [])
+                .find((doc) => doc._id === item._id);
               result._fields = {
-                ...(destination[field.name]
-                  ?.find?.(doc => doc._id === item._id)
-                  ?._fields || {})
+                ...destItem?._fields || {}
               };
+
               if (item && ((typeof item._fields === 'object'))) {
                 await self.convert(req, field.schema, item._fields || {}, result._fields, options);
               }
