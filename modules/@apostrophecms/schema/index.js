@@ -666,8 +666,6 @@ module.exports = {
           destination
         });
 
-        console.log('nonVisibleFields', nonVisibleFields);
-
         const errors = await handleConvertErrors({
           req,
           schema,
@@ -675,8 +673,6 @@ module.exports = {
           destination,
           nonVisibleFields
         });
-
-        console.dir(destination, { depth: 5 });
 
         if (errors.length) {
           throw errors;
@@ -686,7 +682,7 @@ module.exports = {
           req, schema, destination, nonVisibleFields = new Set(), fieldPath = ''
         }) {
           for (const field of schema) {
-            const curPath = fieldPath ? `${fieldPath}/${field.name}` : field.name;
+            const curPath = fieldPath ? `${fieldPath}.${field.name}` : field.name;
             const isVisible = await self.isVisible(req, schema, destination, field.name);
             if (!isVisible) {
               nonVisibleFields.add(curPath);
@@ -742,7 +738,7 @@ module.exports = {
               : destination;
 
             const errorPath = destinationPath
-              ? `${destinationPath}/${error.path}`
+              ? `${destinationPath}.${error.path}`
               : error.path;
 
             // Case were this error field hasn't been treated
@@ -771,6 +767,7 @@ module.exports = {
               if (!subErrors.length) {
                 continue;
               }
+
               error.data.errors = subErrors;
             }
 
