@@ -692,8 +692,9 @@ module.exports = {
               continue;
             }
 
-            if (field.type === 'array') {
-              for (const arrayItem of destination[field.name]) {
+            // Relationship does not support conditional fields right now
+            if (['array' /*, 'relationship' */].includes(field.type) && field.schema) {
+              for (const arrayItem of destination[field.name] || []) {
                 await getNonVisibleFields({
                   req,
                   schema: field.schema,
@@ -710,8 +711,6 @@ module.exports = {
                 nonVisibleFields,
                 fieldPath: curPath
               });
-            } else if (field.type === 'relationship') {
-              // TODO
             }
           }
 
@@ -772,7 +771,7 @@ module.exports = {
             }
 
             if (typeof error !== 'string') {
-              self.apos.util.error(error + '\n\n' + error.stack);
+              self.apos.util.error(error.path + '\n' + error.stack);
             }
             validErrors.push(error);
           }
