@@ -11,7 +11,7 @@ export default {
   data() {
     return {
       choices: [],
-      enableValidate: false
+      fieldReady: false
     };
   },
 
@@ -20,6 +20,7 @@ export default {
       onSuccess: this.updateChoices
     });
     await this.debouncedUpdateChoices.skipDelay();
+    this.fieldReady = true;
   },
 
   watch: {
@@ -34,7 +35,7 @@ export default {
 
   methods: {
     async getChoices() {
-      this.enableValidate = false;
+      this.fieldReady = false;
       if (typeof this.field.choices === 'string') {
         const action = this.options.action;
         const response = await apos.http.post(
@@ -60,8 +61,8 @@ export default {
       }
     },
     updateChoices(choices) {
-      this.enableValidate = true;
       this.choices = choices;
+      this.fieldReady = true;
       if (this.field.type === 'select') {
         this.prependEmptyChoice();
       }

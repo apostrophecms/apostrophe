@@ -70,7 +70,9 @@ export default {
       // in the UI between id attributes
       uid: Math.random(),
       // Automatically updated for you, can be watched
-      focus: false
+      focus: false,
+      // Can be overriden at input component level to handle async field preparation
+      fieldReady: true
     };
   },
   mounted () {
@@ -136,16 +138,20 @@ export default {
     // You must supply the validate method. It receives the
     // internal representation used for editing (a string, for instance)
     validateAndEmit () {
-      if (this.enableValidate === false) {
+      if (!this.fieldReady) {
         return;
       }
       // If the field is conditional and isn't shown, disregard any errors.
-      const error = this.conditionMet === false ? false : this.validate(this.next);
+      // If field isn't ready we don't want to validate its value
+      const shouldValidate = this.conditionMet !== false;
+      const error = shouldValidate
+        ? this.validate(this.next)
+        : false;
 
       this.$emit('update:modelValue', {
         data: error ? this.next : this.convert(this.next),
         error,
-        ranValidation: this.conditionMet === false ? this.modelValue.ranValidation : true
+        ranValidation: shouldValidate ? true : this.modelValue.ranValidation
       });
     },
     // Allows replacing the current component value externally, e.g. via
