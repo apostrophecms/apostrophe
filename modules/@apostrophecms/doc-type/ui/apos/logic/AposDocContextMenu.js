@@ -87,6 +87,10 @@ export default {
     localeSwitched: {
       type: Boolean,
       default: false
+    },
+    additionalMenuItems: {
+      type: Array,
+      default: []
     }
   },
   emits: [ 'menu-open', 'menu-close', 'close' ],
@@ -168,6 +172,11 @@ export default {
           }
         ] : [])
       ];
+
+      for (const additionalMenuItem of this.additionalMenuItems) {
+        menu.push(additionalMenuItem);
+      }
+
       return menu;
     },
     customMenusByContext() {
@@ -394,6 +403,11 @@ export default {
         this.customAction(this.context, operation);
         return;
       }
+      const additionalItem = this.additionalMenuItem.find(item => item.action === action);
+      if (additionalItem?.emitEvent) {
+        this.emit(additionalItem.action);
+      }
+
       this[action](this.context);
     },
     async edit(doc) {
