@@ -5078,7 +5078,6 @@ describe('Schemas', function() {
     });
 
     it('should not error complex nested arrays required property if parents are not visible', async function() {
-      const req = apos.task.getReq();
       const schema = apos.schema.compose({
         addFields: [
           {
@@ -5247,7 +5246,7 @@ describe('Schemas', function() {
               },
               {
                 name: 'showRelString',
-                type: 'boolean',
+                type: 'boolean'
               }
             ]
           }
@@ -5257,20 +5256,20 @@ describe('Schemas', function() {
       const article1 = await apos.article.insert(req, {
         ...apos.article.newInstance(),
         title: 'article 1'
-      })
+      });
       const article2 = await apos.article.insert(req, {
         ...apos.article.newInstance(),
         title: 'article 2'
-      })
+      });
 
       article1._fields = {
         showRelString: false
-      }
+      };
 
       article2._fields = {
         relString: 'article 2 rel string',
         showRelString: true
-      }
+      };
 
       const data = {
         title: 'toto',
@@ -5280,7 +5279,6 @@ describe('Schemas', function() {
         ]
       };
 
-      const errPath = `_rel.${article1._id}.relString`
       const output = {};
       const [ success, errors ] = await testConvert(apos, data, schema, output);
       const foundError = findError(errors, 'relString', 'required');
@@ -5288,11 +5286,11 @@ describe('Schemas', function() {
       const expected = {
         success: false,
         foundError: true
-      }
+      };
 
       const actual = {
         success,
-        foundError,
+        foundError
       };
 
       assert.deepEqual(expected, actual);
@@ -5324,7 +5322,7 @@ async function testConvert(
   schema,
   output
 ) {
-  const req = apos.task.getReq({mode: 'draft'});
+  const req = apos.task.getReq({ mode: 'draft' });
   try {
     await apos.schema.convert(req, schema, data, output);
     return [ true, [] ];
@@ -5335,7 +5333,7 @@ async function testConvert(
 
 function findError(errors, fieldPath, errorName) {
   if (!Array.isArray(errors)) {
-    return false
+    return false;
   }
   return errors.some((err) => {
     if (err.data?.errors) {
