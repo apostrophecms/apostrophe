@@ -22,7 +22,6 @@
 * Adds option to disable `tabindex` on `AposToggle` component. A new prop `disableFocus` can be set to `false` to disable the focus on the toggle button. It's enabled by default.
 * Adds support for event on `addContextOperation`, an option `type` can now be passed and can be `modal` (default) or `event`, in this case it does not try to open a modal but emit a bus event using the action as name.
 
-
 ### Fixes
 
 * Focus properly Widget Editor modals when opened. Keep the previous active focus on the modal when closing the widget editor.
@@ -48,7 +47,6 @@ did not actually use any noncompliant cookie names or values, so there was no vu
 rendered output.
 * Search bar will perform the search even if the bar is empty allowing to reset a search.
 * Fixes Color picker being hidden in an inline array schema field, also fixes rgba inputs going off the modal.
-* Simplifies the `convert` method from schema module.
 
 ### Adds
 
