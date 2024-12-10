@@ -7,6 +7,8 @@
 * Focus properly Widget Editor modals when opened. Keep the previous active focus on the modal when closing the widget editor.
 * a11y improvements for context menus.
 * Fixes broken widget preview URL when the image is overridden (module improve) and external build module is registered.
+* In th schema convert method, we wait all sub convert to run, to have access to the final destination object in order to check if 
+fields (or their parents) are visible and so relates errors discarded.
 
 ### Adds
 
@@ -30,7 +32,6 @@ did not actually use any noncompliant cookie names or values, so there was no vu
 rendered output.
 * Search bar will perform the search even if the bar is empty allowing to reset a search.
 * Fixes Color picker being hidden in an inline array schema field, also fixes rgba inputs going off the modal.
-* Simplifies the `convert` method from schema module.
 
 ### Adds
 
