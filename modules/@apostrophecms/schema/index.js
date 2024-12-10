@@ -693,7 +693,7 @@ module.exports = {
             }
 
             // Relationship does not support conditional fields right now
-            if (['array' /*, 'relationship' */].includes(field.type) && field.schema) {
+            if ([ 'array' /*, 'relationship' */].includes(field.type) && field.schema) {
               for (const arrayItem of destination[field.name] || []) {
                 await getNonVisibleFields({
                   req,
