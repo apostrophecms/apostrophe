@@ -14,7 +14,7 @@
     }"
     @item-clicked="menuHandler"
     @open="$emit('menu-open')"
-    @close="$emit('menu-close')"
+    @close="$emit('menu-close', $event)"
   />
 </template>
 

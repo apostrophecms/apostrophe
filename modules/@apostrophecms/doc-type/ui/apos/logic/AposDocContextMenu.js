@@ -403,9 +403,10 @@ export default {
         this.customAction(this.context, operation);
         return;
       }
-      const additionalItem = this.additionalMenuItem.find(item => item.action === action);
+      const additionalItem = this.additionalMenuItems.find(item => item.action === action);
       if (additionalItem?.emitEvent) {
-        this.emit(additionalItem.action);
+        this.$emit('close', additionalItem.action);
+        return;
       }
 
       this[action](this.context);
