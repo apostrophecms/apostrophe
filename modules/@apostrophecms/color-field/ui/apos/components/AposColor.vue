@@ -203,7 +203,6 @@ export default {
       this.colorChange(c);
     },
     childChange(data) {
-      console.log('childChange');
       this.colorChange(data);
     },
     inputChange(data) {
