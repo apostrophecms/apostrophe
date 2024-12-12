@@ -10,6 +10,17 @@ module.exports = {
     self.name = self.options.name;
     self.addFieldType();
     self.enableBrowserData();
+    self.defaultOptions = {
+      format: 'hex8',
+      disableAlpha: false,
+      disableFields: false,
+      disableSpectrum: false,
+      presetColors: [
+        '#D0021B', '#F5A623', '#F8E71C', '#8B572A', '#7ED321',
+        '#417505', '#BD10E0', '#9013FE', '#4A90E2', '#50E3C2',
+        '#B8E986', '#000000', '#4A4A4A', '#9B9B9B', '#FFFFFF'
+      ]
+    };
   },
   methods(self) {
     return {
@@ -36,7 +47,8 @@ module.exports = {
       getBrowserData(req) {
         return {
           name: self.name,
-          action: self.action
+          action: self.action,
+          defaultOptions: self.defaultOptions
         };
       }
     };

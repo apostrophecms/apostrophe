@@ -3,14 +3,22 @@
     role="application"
     aria-label="Color picker"
     class="apos-color"
-    :class="[disableAlpha ? 'apos-color--disable-alpha' : '']"
+    :class="[
+      disableAlpha ? 'apos-color--disable-alpha' : null,
+      disableSpectrum ? 'apos-color--disable-spectrum' : null,
+      disableFields ? 'apos-color--disable-fields' : null,
+      !presetColors ? 'apos-color--disable-presets' : null
+    ]"
   >
-    <div class="apos-color__saturation-wrap">
+    <div v-if="!disableSpectrum" class="apos-color__saturation-wrap">
       <Saturation :value="colors" @change="childChange" />
     </div>
-    <div class="apos-color__controls">
+    <div
+      v-if="!(disableSpectrum && disableAlpha)"
+      class="apos-color__controls"
+    >
       <div class="apos-color__sliders">
-        <div class="apos-color__hue-wrap">
+        <div v-if="!disableSpectrum" class="apos-color__hue-wrap">
           <Hue :value="colors" @change="childChange" />
         </div>
         <div v-if="!disableAlpha" class="apos-color__alpha-wrap">
@@ -68,6 +76,7 @@
       </div>
     </div>
     <div
+      v-if="presetColors"
       class="apos-color__presets"
       role="group"
       aria-label="A color preset, pick one to set as current color"
@@ -103,12 +112,7 @@ import hue from '../lib/AposColorHue.vue';
 import alpha from '../lib/AposColorAlpha.vue';
 import checkboard from '../lib/AposColorCheckerboard.vue';
 
-const presetColors = [
-  '#D0021B', '#F5A623', '#F8E71C', '#8B572A', '#7ED321',
-  '#417505', '#BD10E0', '#9013FE', '#4A90E2', '#50E3C2',
-  '#B8E986', '#000000', '#4A4A4A', '#9B9B9B', '#FFFFFF',
-  'rgba(0,0,0,0)'
-];
+const defaultOptions = { ...apos.modules['@apostrophecms/color-field'].defaultOptions };
 
 export default {
   name: 'AposColor',
@@ -121,22 +125,57 @@ export default {
   },
   mixins: [ colorMixin ],
   props: {
-    presetColors: {
-      type: Array,
+    options: {
+      type: Object,
       default() {
-        return presetColors;
+        return defaultOptions;
       }
-    },
-    disableAlpha: {
-      type: Boolean,
-      default: false
-    },
-    disableFields: {
-      type: Boolean,
-      default: false
     }
   },
   computed: {
+    defaultOptions() {
+      return defaultOptions;
+    },
+    finalOptions() {
+      let final = { ...this.options };
+
+      // Handle BC `pickerOptions` sub object.
+      // Modern API wins out over BC conflicts
+      if (final.pickerOptions) {
+        final = {
+          ...final.pickerOptions,
+          ...final
+        };
+        delete final.pickerOptions;
+      }
+
+      // Normalize disabling presetColors
+      if (
+        Array.isArray(final.presetColors) &&
+        final.presetColors.length === 0
+      ) {
+        final.presetColors = false;
+      }
+
+      // If `true`, let defaults through
+      if (final.presetColors === true) {
+        delete final.presetColors;
+      }
+
+      return Object.assign({ ...this.defaultOptions }, final);
+    },
+    presetColors() {
+      return this.finalOptions.presetColors;
+    },
+    disableAlpha() {
+      return this.finalOptions.disableAlpha;
+    },
+    disableSpectrum() {
+      return this.finalOptions.disableSpectrum;
+    },
+    disableFields() {
+      return this.finalOptions.disableFields;
+    },
     hex() {
       let hex;
       if (this.colors.a < 1) {
@@ -164,6 +203,7 @@ export default {
       this.colorChange(c);
     },
     childChange(data) {
+      console.log('childChange');
       this.colorChange(data);
     },
     inputChange(data) {
@@ -199,6 +239,12 @@ export default {
   background: #fff;
   border-radius: 4px;
   box-shadow: 0 0 0 1px rgb(0 0 0 / 15%), 0 8px 16px rgb(0 0 0 / 15%);
+}
+
+.apos-color--disable-alpha.apos-color--disable-spectrum.apos-color--disable-fields {
+  .apos-color__presets {
+    border-top: none;
+  }
 }
 
 .apos-color__saturation-wrap {

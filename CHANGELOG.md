@@ -2,21 +2,26 @@
 
 ## UNRELEASED
 
-### Adds
-
-* When validating an `area` field, warn the developer if `widgets` is not nested in `options`.
-
 ### Fixes
 
 * Focus properly Widget Editor modals when opened. Keep the previous active focus on the modal when closing the widget editor.
 * a11y improvements for context menus.
 * Fixes broken widget preview URL when the image is overridden (module improve) and external build module is registered.
+* Fixes ability to change color hue by clicking the color hue bar rather than dragging the indicator
+* Prevents the rich text control bar from closing while using certain UI within the color picker
 
 ### Adds
 
+* When validating an `area` field, warn the developer if `widgets` is not nested in `options`.
+* Ability to disable the color spectrum UI of a color picker
 * Adds support for supplying CSS variable names to a color field's `presetColors` array as selectable values.
 * Adds support for dynamic focus trap in Context menus (prop `dynamicFocus`). When set to `true`, the focusable elements are recalculated on each cycle step.
 * Adds option to disable `tabindex` on `AposToggle` component. A new prop `disableFocus` can be set to `false` to disable the focus on the toggle button. It's enabled by default.
+
+### Changes
+
+* The `pickerOptions` sub property of a color field's configuration has been merged with it's parent `options` object.
+
 
 ## 4.10.0 (2024-11-20)
 

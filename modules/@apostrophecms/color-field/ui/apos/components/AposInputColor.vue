@@ -18,7 +18,7 @@
             @close="close"
           >
             <AposColor
-              v-bind="pickerOptions"
+              :options="options"
               :model-value="pickerValue"
               @update:model-value="update"
             />
