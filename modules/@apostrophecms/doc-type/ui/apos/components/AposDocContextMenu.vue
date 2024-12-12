@@ -14,7 +14,7 @@
     }"
     @item-clicked="menuHandler"
     @open="$emit('menu-open')"
-    @close="$emit('menu-close', $event)"
+    @close="$emit('menu-close')"
   />
 </template>
 
@@ -24,7 +24,6 @@ import AposDocContextMenuLogic from 'Modules/@apostrophecms/doc-type/logic/AposD
 export default {
   name: 'AposDocContextMenu',
   mixins: [ AposDocContextMenuLogic ],
-  // Satisfy linting.
   emits: [ 'menu-open', 'menu-close', 'close' ]
 };
 </script>

@@ -405,7 +405,7 @@ export default {
       }
       const additionalItem = this.additionalMenuItems.find(item => item.action === action);
       if (additionalItem?.emitEvent) {
-        this.$emit('close', additionalItem.action);
+        this.$emit('close', this.context, additionalItem.action);
         return;
       }
 
