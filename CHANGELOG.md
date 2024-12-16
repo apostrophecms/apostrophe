@@ -11,6 +11,7 @@
 * Focus properly Widget Editor modals when opened. Keep the previous active focus on the modal when closing the widget editor.
 * a11y improvements for context menus.
 * Fixes broken widget preview URL when the image is overridden (module improve) and external build module is registered.
+* Inject dynamic custom bundle CSS when using external build module with no CSS entry point.
 
 ### Adds
 

@@ -1,6 +1,12 @@
 const { stripIndent } = require('common-tags');
 
 module.exports = (self) => {
+  // FIXME: This entire function should be separated for external build modules.
+  // Use the next opportunity to clean up and let the legacy system be and
+  // introduce a new one for external build modules (e.g. `insertBundlesMarkupByManifest`).
+  // The only check for external build modules should be at the very top of
+  // `insertBundlesMarkup` function, resulting in a call to our new
+  // function.
   function insertBundlesMarkup({
     page = {},
     template = '',
@@ -30,7 +36,7 @@ module.exports = (self) => {
     });
 
     if (scene === 'apos') {
-      return loadAllBundles({
+      return loadAllBundles(self, {
         content,
         scriptsPlaceholder,
         stylesheetsPlaceholder,
@@ -75,6 +81,10 @@ module.exports = (self) => {
         };
       }, widgetsBundles);
 
+    const cssExtraBundles = self.apos.asset.hasBuildModule()
+      ? Array.from(new Set([ ...extraBundles.js, ...extraBundles.css ]))
+      : extraBundles.css;
+
     const { jsBundles, cssBundles } = Object.entries(configs)
       .reduce((acc, [ name, { templates } ]) => {
         if (templates && !templates.includes(templateType)) {
@@ -90,7 +100,7 @@ module.exports = (self) => {
           });
 
         const cssMarkup = stylesheetsPlaceholder &&
-          extraBundles.css.includes(name) &&
+          cssExtraBundles.includes(name) &&
           renderMarkup({
             fileName: name,
             ext: 'css'
@@ -175,7 +185,7 @@ function renderBundleMarkupByManifest(self, modulePreload) {
   };
 }
 
-function loadAllBundles({
+function loadAllBundles(self, {
   content,
   extraBundles,
   scriptsPlaceholder,
@@ -199,11 +209,15 @@ function loadAllBundles({
     `;
   };
 
+  const cssExtraBundles = self.apos.asset.hasBuildModule()
+    ? Array.from(new Set([ ...extraBundles.js, ...extraBundles.css ]))
+    : extraBundles.css;
+
   const jsBundles = extraBundles.js.reduce(
     (acc, bundle) => reduceToMarkup(acc, bundle, 'js'), jsMainBundle
   );
 
-  const cssBundles = extraBundles.css.reduce(
+  const cssBundles = cssExtraBundles.reduce(
     (acc, bundle) => reduceToMarkup(acc, bundle, 'css'), cssMainBundle
   );
 
