@@ -87,10 +87,6 @@ export default {
     localeSwitched: {
       type: Boolean,
       default: false
-    },
-    additionalMenuItems: {
-      type: Array,
-      default: []
     }
   },
   emits: [ 'menu-open', 'menu-close', 'close' ],
