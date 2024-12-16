@@ -173,10 +173,6 @@ export default {
         ] : [])
       ];
 
-      for (const additionalMenuItem of this.additionalMenuItems) {
-        menu.push(additionalMenuItem);
-      }
-
       return menu;
     },
     customMenusByContext() {
@@ -403,11 +399,6 @@ export default {
         this.customAction(this.context, operation);
         return;
       }
-      const additionalItem = this.additionalMenuItems.find(item => item.action === action);
-      if (additionalItem?.emitEvent) {
-        this.$emit('close', this.context, additionalItem.action);
-        return;
-      }
 
       this[action](this.context);
     },
@@ -464,6 +455,10 @@ export default {
         ...docProps(doc),
         ...operation.props
       };
+      if (operation.type === 'event') {
+        apos.bus.$emit(operation.action, props);
+        return;
+      }
       await apos.modal.execute(operation.modal, props);
       function docProps(doc) {
         return Object.fromEntries(Object.entries(operation.docProps || {}).map(([ key, value ]) => {
