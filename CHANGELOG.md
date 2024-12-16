@@ -9,6 +9,7 @@
 * Fixes broken widget preview URL when the image is overridden (module improve) and external build module is registered.
 * Fixes ability to change color hue by clicking the color hue bar rather than dragging the indicator
 * Prevents the rich text control bar from closing while using certain UI within the color picker
+* Inject dynamic custom bundle CSS when using external build module with no CSS entry point.
 
 ### Adds
 
@@ -21,7 +22,6 @@
 ### Changes
 
 * The `pickerOptions` sub property of a color field's configuration has been merged with it's parent `options` object.
-
 
 ## 4.10.0 (2024-11-20)
 

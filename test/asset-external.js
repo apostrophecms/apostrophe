@@ -11,12 +11,12 @@ describe('Asset - External Build', function () {
   this.timeout(t.timeout);
 
   after(async function () {
-    // await fs.remove(publicBuildPath);
+    await fs.remove(publicBuildPath);
     await t.destroy(apos);
   });
 
   beforeEach(async function () {
-    // await fs.remove(publicBuildPath);
+    await fs.remove(publicBuildPath);
   });
 
   it('should register external build module', async function () {
@@ -259,5 +259,186 @@ describe('Asset - External Build', function () {
       expected,
       '`build` configuration is not identical to the legacy `webpack` configuration'
     );
+  });
+
+  it('should inject custom bundles dynamic CSS (PRO-6904)', async function () {
+    await t.destroy(apos);
+
+    apos = await t.create({
+      root: module,
+      autoBuild: true,
+      modules: {
+        'asset-vite': {
+          before: '@apostrophecms/asset',
+          handlers(self) {
+            return {
+              '@apostrophecms/asset:afterInit': {
+                async registerExternalBuild() {
+                  self.apos.asset.configureBuildModule(self, {
+                    alias: 'vite',
+                    devServer: false,
+                    hmr: false
+                  });
+                }
+              }
+            };
+          },
+          methods(self) {
+            return {
+              async build() {
+                return {
+                  entrypoints: []
+                };
+              },
+              async watch() { },
+              async startDevServer() {
+                return {
+                  entrypoints: []
+                };
+              },
+              async entrypoints() {
+                return [];
+              }
+            };
+          }
+        }
+      }
+    });
+
+    // Mock the build manifest
+    apos.asset.currentBuildManifest = {
+      sourceMapsRoot: null,
+      devServerUrl: null,
+      hmrTypes: [],
+      entrypoints: [
+        {
+          name: 'src',
+          type: 'index',
+          scenes: [ 'apos', 'public' ],
+          outputs: [ 'css', 'js' ],
+          condition: 'module',
+          manifest: {
+            root: 'dist',
+            name: 'src',
+            devServer: false
+          },
+          bundles: [
+            'apos-src-module-bundle.js',
+            'apos-bundle.css',
+            'public-src-module-bundle.js',
+            'public-bundle.css'
+          ]
+        },
+        {
+          name: 'counter-react',
+          type: 'custom',
+          scenes: [ 'counter-react' ],
+          outputs: [ 'css', 'js' ],
+          condition: 'module',
+          prologue: '',
+          ignoreSources: [],
+          manifest: {
+            root: 'dist',
+            name: 'counter-react',
+            devServer: false
+          },
+          bundles: [ 'counter-react-module-bundle.js' ]
+        },
+        {
+          name: 'counter-svelte',
+          type: 'custom',
+          scenes: [ 'counter-svelte' ],
+          outputs: [ 'css', 'js' ],
+          condition: 'module',
+          manifest: {
+            root: 'dist',
+            name: 'counter-svelte',
+            devServer: false
+          },
+          bundles: [
+            'counter-svelte-module-bundle.js',
+            'counter-svelte-bundle.css'
+          ]
+        },
+        {
+          name: 'counter-vue',
+          type: 'custom',
+          scenes: [ 'counter-vue' ],
+          outputs: [ 'css', 'js' ],
+          condition: 'module',
+          manifest: {
+            root: 'dist',
+            name: 'counter-vue',
+            devServer: false
+          },
+          bundles: [ 'counter-vue-module-bundle.js', 'counter-vue-bundle.css' ]
+        },
+        {
+          name: 'apos',
+          type: 'apos',
+          scenes: [ 'apos' ],
+          outputs: [ 'js' ],
+          condition: 'module',
+          manifest: {
+            root: 'dist',
+            name: 'apos',
+            devServer: false
+          },
+          bundles: [ 'apos-module-bundle.js', 'apos-bundle.css' ]
+        }
+      ]
+    };
+
+    // `counter-svelte` has `ui/src/counter-svelte.scss`.
+    // `counter-vue` doesn't have any CSS but has dynamic CSS, extracted
+    // from Vue components.
+    apos.asset.extraBundles = {
+      js: [ 'counter-react', 'counter-svelte', 'counter-vue' ],
+      css: [ 'counter-svelte ' ]
+    };
+    apos.asset.rebundleModules = [];
+
+    const payload = {
+      page: {
+        type: '@apostrophecms/home-page'
+      },
+      scene: 'apos',
+      template: '@apostrophecms/home-page:page',
+      content: '[stylesheets-placeholder:1]\n[scripts-placeholder:1]',
+      scriptsPlaceholder: '[scripts-placeholder:1]',
+      stylesheetsPlaceholder: '[stylesheets-placeholder:1]',
+      widgetsBundles: { 'counter-vue': {} }
+    };
+
+    const injected = apos.template.insertBundlesMarkup(payload);
+
+    // All bundles are injected, including the dynamic CSS from `counter-vue`
+    const actual = injected.replace(/>\s+</g, '><');
+    const expected = '<link rel="stylesheet" href="/apos-frontend/default/apos-bundle.css">' +
+      '<link rel="stylesheet" href="/apos-frontend/default/counter-svelte-bundle.css">' +
+      '<link rel="stylesheet" href="/apos-frontend/default/counter-vue-bundle.css">' +
+      '<script type="module" src="/apos-frontend/default/apos-src-module-bundle.js"></script>' +
+      '<script type="module" src="/apos-frontend/default/apos-module-bundle.js"></script>' +
+      '<script type="module" src="/apos-frontend/default/counter-react-module-bundle.js"></script>' +
+      '<script type="module" src="/apos-frontend/default/counter-svelte-module-bundle.js"></script>' +
+      '<script type="module" src="/apos-frontend/default/counter-vue-module-bundle.js"></script>';
+
+    assert.equal(actual, expected, 'Bundles are not injected correctly');
+
+    const injectedPublic = apos.template.insertBundlesMarkup({
+      ...payload,
+      scene: 'public'
+    });
+
+    // Showcases that the only the dynamic Vue CSS is injected, because the widget
+    // owning the bundle counter-vue is present.
+    const actualPublic = injectedPublic.replace(/>\s+</g, '><');
+    const expectedPublic = '<link rel="stylesheet" href="/apos-frontend/default/public-bundle.css">' +
+      '<link rel="stylesheet" href="/apos-frontend/default/counter-vue-bundle.css">' +
+      '<script type="module" src="/apos-frontend/default/public-src-module-bundle.js"></script>' +
+      '<script type="module" src="/apos-frontend/default/counter-vue-module-bundle.js"></script>';
+
+    assert.equal(actualPublic, expectedPublic, 'Bundles are not injected correctly');
+
   });
 });
