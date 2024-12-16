@@ -32,7 +32,7 @@ export default {
     // The range spec defaults to a value of midway between the min and max
     // Example: a range with an unset value and a min of 0 and max of 100 will become 50
     // This does not allow ranges to go unset :(
-    if (!this.next) {
+    if (!this.next && this.next !== 0) {
       this.unset();
     }
   },
@@ -47,7 +47,7 @@ export default {
     },
     validate(value) {
       if (this.field.required) {
-        if (!value) {
+        if (!value && value !== 0) {
           return 'required';
         }
       }
