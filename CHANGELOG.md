@@ -18,6 +18,7 @@
 * Adds support for supplying CSS variable names to a color field's `presetColors` array as selectable values.
 * Adds support for dynamic focus trap in Context menus (prop `dynamicFocus`). When set to `true`, the focusable elements are recalculated on each cycle step.
 * Adds option to disable `tabindex` on `AposToggle` component. A new prop `disableFocus` can be set to `false` to disable the focus on the toggle button. It's enabled by default.
+* Adds support for event on `addContextOperation`, an option `type` can now be passed and can be `modal` (default) or `event`, in this case it does not try to open a modal but emit a bus event using the action as name.
 
 ## 4.10.0 (2024-11-20)
 

@@ -168,6 +168,7 @@ export default {
           }
         ] : [])
       ];
+
       return menu;
     },
     customMenusByContext() {
@@ -394,6 +395,7 @@ export default {
         this.customAction(this.context, operation);
         return;
       }
+
       this[action](this.context);
     },
     async edit(doc) {
@@ -449,6 +451,10 @@ export default {
         ...docProps(doc),
         ...operation.props
       };
+      if (operation.type === 'event') {
+        apos.bus.$emit(operation.action, props);
+        return;
+      }
       await apos.modal.execute(operation.modal, props);
       function docProps(doc) {
         return Object.fromEntries(Object.entries(operation.docProps || {}).map(([ key, value ]) => {
