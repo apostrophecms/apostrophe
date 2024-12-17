@@ -12,6 +12,7 @@
 * a11y improvements for context menus.
 * Fixes broken widget preview URL when the image is overridden (module improve) and external build module is registered.
 * Inject dynamic custom bundle CSS when using external build module with no CSS entry point.
+* Range field now correctly takes 0 into account.
 
 ### Adds
 
