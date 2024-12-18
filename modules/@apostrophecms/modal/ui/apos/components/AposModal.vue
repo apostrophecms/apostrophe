@@ -39,8 +39,9 @@
               <AposSpinner :weight="'heavy'" class="apos-busy__spinner" />
             </div>
           </template>
-          <div
-            v-show="!renderingElements && !modal.busy"
+          <!-- v-show="!renderingElements && !modal.busy" -->
+          <dialog
+            ref="dialogEl"
             class="apos-modal__content"
             data-apos-test="modal-content"
           >
@@ -92,7 +93,7 @@
                 <slot name="footer" />
               </div>
             </footer>
-          </div>
+          </dialog>
         </div>
       </transition>
     </section>
@@ -144,6 +145,7 @@ const store = useModalStore();
 const slots = useSlots();
 const emit = defineEmits([ 'inactive', 'esc', 'show-modal', 'no-modal', 'ready' ]);
 const modalEl = ref(null);
+const dialogEl = ref(null);
 const findPriorityFocusElementRetryMax = ref(3);
 const currentPriorityFocusElementRetry = ref(0);
 const renderingElements = ref(true);
@@ -221,16 +223,15 @@ const gridModifier = computed(() => {
 
 watch(triggerFocusRefresh, (newVal) => {
   if (shouldTrapFocus.value) {
-    nextTick(trapFocus);
+    // nextTick(trapFocus);
   }
 });
 
 onMounted(async () => {
   await nextTick();
-  if (shouldTrapFocus.value) {
-    await trapFocus();
-  } else {
-    renderingElements.value = false;
+  renderingElements.value = false;
+  if (!props.modal.busy) {
+    dialogEl.value?.showModal();
   }
   store.updateModalData(props.modalData.id, { modalEl: modalEl.value });
   window.addEventListener('keydown', onKeydown);
@@ -297,7 +298,7 @@ async function trapFocus() {
     if (!foundPriorityElement && findPriorityFocusElementRetryMax.value > currentPriorityFocusElementRetry.value) {
       await new Promise(resolve => setTimeout(resolve, 50));
       currentPriorityFocusElementRetry.value++;
-      await trapFocus();
+      // await trapFocus();
       return;
     }
     renderingElements.value = false;

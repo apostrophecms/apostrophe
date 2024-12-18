@@ -17,6 +17,7 @@
       />
       <AposButton
         v-else
+        :attrs="{ autofocus:true }"
         type="default"
         label="apostrophe:exit"
         @click="confirmAndCancel"
