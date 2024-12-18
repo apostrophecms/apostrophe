@@ -1,6 +1,6 @@
 # Changelog
 
-## UNRELEASED
+## 4.11.0 (2024-12-18)
 
 ### Adds
 
