@@ -1,5 +1,11 @@
 # Changelog
 
+## 4.11.1 (2024-12-18)
+
+### Fixes
+
+* Corrected a unit test that relies on the sitemap module, as it now makes explicit that the project level `baseUrl` must be set for a successful experience, and the module level `baseUrl` was set earlier. No other changes.
+
 ## 4.11.0 (2024-12-18)
 
 ### Adds
