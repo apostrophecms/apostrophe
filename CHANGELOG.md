@@ -1,5 +1,12 @@
 # Changelog
 
+## UNRELEASED
+
+### Fixes
+
+* In the schema convert method, we wait all sub convert to run, to have access to the final destination object in order to check if 
+fields (or their parents) are visible and so relates errors discarded.
+
 ## 4.11.1 (2024-12-18)
 
 ### Fixes
@@ -50,6 +57,7 @@ rendered output.
 * Adds `bundleMarkup` to the data sent to the external front-end, containing all markup for injecting Apostrophe UI in the front-end.
 * Warns users when two page types have the same field name, but a different field type. This may cause errors or other problems when an editor switches page types.
 * The piece and page `GET` REST APIs now support `?render-areas=inline`. When this parameter is used, an HTML rendering of each widget is added to that specific widget in each area's `items` array as a new `_rendered` property. The existing `?render-areas=1` parameter is still supported to render the entire area as a single `_rendered` property. Note that this older option also causes `items` to be omitted from the response.
+* Possibility to set a field not ready when performing async operations, when a field isn't ready, the validation and emit won't occur.
 
 ### Changes
 
