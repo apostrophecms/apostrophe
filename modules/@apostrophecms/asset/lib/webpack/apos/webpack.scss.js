@@ -1,14 +1,5 @@
-const postcssViewportToContainerToggle = require('postcss-viewport-to-container-toggle');
-
 module.exports = (options, apos) => {
   const postcssPlugins = [
-    ...apos.asset.options.breakpointPreviewMode?.enable === true ? [
-      postcssViewportToContainerToggle({
-        modifierAttr: 'data-breakpoint-preview-mode',
-        debug: apos.asset.options.breakpointPreviewMode?.debug === true,
-        transform: apos.asset.options.breakpointPreviewMode?.transform || null
-      })
-    ] : [],
     'autoprefixer',
     {}
   ];

@@ -24,7 +24,6 @@ import AposDocContextMenuLogic from 'Modules/@apostrophecms/doc-type/logic/AposD
 export default {
   name: 'AposDocContextMenu',
   mixins: [ AposDocContextMenuLogic ],
-  // Satisfy linting.
   emits: [ 'menu-open', 'menu-close', 'close' ]
 };
 </script>

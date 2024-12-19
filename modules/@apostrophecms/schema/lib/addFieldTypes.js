@@ -56,6 +56,13 @@ module.exports = (self) => {
       return _.isEqual(oneArea, twoArea);
     },
     validate: function (field, options, warn, fail) {
+      if (field.widgets) {
+        warn(stripIndents`
+          Remember to nest "widgets" inside "options" when configuring an area field.
+
+          Otherwise, "widgets" has no effect.
+        `);
+      }
       let widgets = (field.options && field.options.widgets) || {};
 
       if (field.options && field.options.groups) {

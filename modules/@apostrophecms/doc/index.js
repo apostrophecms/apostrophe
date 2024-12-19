@@ -1486,7 +1486,7 @@ module.exports = {
         ];
 
         function validate ({
-          action, context, label, modal, conditions, if: ifProps
+          action, context, type = 'modal', label, modal, conditions, if: ifProps
         }) {
           const allowedConditions = [
             'canPublish',
@@ -1503,8 +1503,12 @@ module.exports = {
             'canShareDraft'
           ];
 
-          if (!action || !context || !label || !modal) {
-            throw self.apos.error('invalid', 'addContextOperation requires action, context, label and modal properties.');
+          if (![ 'event', 'modal' ].includes(type)) {
+            throw self.apos.error('invalid', '`type` option must be `modal` (default) or `event`');
+          }
+
+          if (!action || !context || !label || (type === 'modal' && !modal)) {
+            throw self.apos.error('invalid', 'addContextOperation requires action, context, label and modal (if type is set to `modal` or unset) properties.');
           }
 
           if (
