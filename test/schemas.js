@@ -5295,6 +5295,14 @@ describe('Schemas', function() {
 
       assert.deepEqual(expected, actual);
     });
+
+    it('should add proper aposPath to all fields when validation schema', async function () {
+      // TODO
+    });
+
+    it('should set default value to invisible fields that triggered convert errors', async function () {
+      // TODO
+    });
   });
 
   async function testSchemaError(schema, input, path, name) {
