@@ -593,15 +593,13 @@ module.exports = {
           fetchRelationships = true,
           ancestors = [],
           rootConvert = true,
-          ancestorSchemas = {},
-          ancestorPath = ''
+          ancestorSchemas = {}
         } = {}
       ) {
         const options = {
           fetchRelationships,
           ancestors,
-          ancestorSchemas,
-          ancestorPath
+          ancestorSchemas
         };
         if (Array.isArray(req)) {
           throw new Error('convert invoked without a req, do you have one in your context?');
@@ -624,7 +622,6 @@ module.exports = {
             continue;
           }
 
-          const fieldPath = ancestorPath ? `${ancestorPath}/${field.name}` : field.name;
           try {
             const isRequired = await self.isFieldRequired(req, field, destination);
             await convert(
@@ -637,8 +634,7 @@ module.exports = {
               destination,
               {
                 ...options,
-                rootConvert: false,
-                ancestorPath: fieldPath
+                rootConvert: false
               }
             );
           } catch (err) {
@@ -647,7 +643,7 @@ module.exports = {
               : err;
 
             error.path = field.name;
-            error.schemaPath = fieldPath;
+            error.schemaPath = field.aposPath;
             convertErrors.push(error);
           }
         }
@@ -686,7 +682,6 @@ module.exports = {
             const isVisible = await self.isVisible(req, schema, destination, field.name);
             if (!isVisible) {
               nonVisibleFields.add(curPath);
-              continue;
             }
             if (!field.schema) {
               continue;
@@ -1472,6 +1467,10 @@ module.exports = {
 
       // Validates a single schema field. See `validate`.
       validateField(field, options, parent = null) {
+        field.aposPath = options.ancestorPath
+          ? `${options.ancestorPath}/${field.name}`
+          : field.name;
+
         const fieldType = self.fieldTypes[field.type];
         if (!fieldType) {
           fail('Unknown schema field type.');
@@ -1501,7 +1500,11 @@ module.exports = {
           warn(`editPermission or viewPermission must be defined on root fields only, provided on "${parent.name}.${field.name}"`);
         }
         if (fieldType.validate) {
-          fieldType.validate(field, options, warn, fail);
+          const opts = {
+            ...options,
+            ancestorPath: field.aposPath
+          };
+          fieldType.validate(field, opts, warn, fail);
         }
         // Ancestors hoisting should happen AFTER the validation recursion,
         // so that ancestors are processed as well.
