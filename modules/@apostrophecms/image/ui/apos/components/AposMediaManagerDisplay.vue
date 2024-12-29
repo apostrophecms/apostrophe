@@ -10,8 +10,8 @@
         @create-placeholder="$emit('create-placeholder', $event)"
       />
       <div
-        v-for="item in items"
-        :key="idFor(item)"
+        v-for="item in itemsWithKeys"
+        :key="item.__key"
         class="apos-media-manager-display__cell"
         :class="{'apos-is-selected': checked.includes(item._id)}"
         :style="getCellStyles(item)"
@@ -162,6 +162,12 @@ export default {
             : val
         );
       }
+    },
+    itemsWithKeys() {
+      return this.items.map((item) => ({
+        ...item,
+        __key: this.idFor(item)
+      }));
     }
   },
   watch: {
