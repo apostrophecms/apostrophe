@@ -1,5 +1,11 @@
 # Changelog
 
+## UNRELEASED
+
+### Fixes
+
+* Fixes a bug where images in Media manager are not selectable (click on an image does nothing) in both default and relationship mode.
+
 ## 4.11.1 (2024-12-18)
 
 ### Fixes
