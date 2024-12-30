@@ -751,7 +751,7 @@ module.exports = (self) => {
       {
         fetchRelationships = true,
         ancestors = [],
-        isParentVisible = true
+        rootConvert = true
       } = {}
     ) {
       const schema = field.schema;
@@ -777,7 +777,7 @@ module.exports = (self) => {
           const options = {
             fetchRelationships,
             ancestors: [ ...ancestors, destination ],
-            isParentVisible
+            rootConvert
           };
           await self.convert(req, schema, datum, result, options);
         } catch (e) {
@@ -867,7 +867,7 @@ module.exports = (self) => {
       {
         fetchRelationships = true,
         ancestors = {},
-        isParentVisible = true,
+        rootConvert = true,
         doc = {}
       } = {}
     ) {
@@ -881,7 +881,7 @@ module.exports = (self) => {
       const options = {
         fetchRelationships,
         ancestors: [ ...ancestors, destination ],
-        isParentVisible
+        rootConvert
       };
       if (data == null || typeof data !== 'object' || Array.isArray(data)) {
         data = {};
@@ -978,12 +978,12 @@ module.exports = (self) => {
       destination,
       {
         fetchRelationships = true,
-        isParentVisible = true
+        rootConvert = true
       } = {}
     ) {
       const options = {
         fetchRelationships,
-        isParentVisible
+        rootConvert
       };
       const manager = self.apos.doc.getManager(field.withType);
       if (!manager) {
@@ -1067,15 +1067,16 @@ module.exports = (self) => {
           if (result) {
             actualDocs.push(result);
           }
-        } else if ((item && ((typeof item._id) === 'string'))) {
+        } else if ((item && (typeof item._id === 'string'))) {
           const result = results.find(doc => (doc._id === item._id));
           if (result) {
             if (field.schema) {
+              const destItem = (Array.isArray(destination[field.name]) ? destination[field.name] : [])
+                .find((doc) => doc._id === item._id);
               result._fields = {
-                ...(destination[field.name]
-                  ?.find?.(doc => doc._id === item._id)
-                  ?._fields || {})
+                ...destItem?._fields || {}
               };
+
               if (item && ((typeof item._fields === 'object'))) {
                 await self.convert(req, field.schema, item._fields || {}, result._fields, options);
               }
@@ -1218,7 +1219,7 @@ module.exports = (self) => {
         self.validate(_field.schema, {
           type: 'relationship',
           subtype: _field.withType
-        });
+        }, _field);
         if (!_field.fieldsStorage) {
           _field.fieldsStorage = _field.name.replace(/^_/, '') + 'Fields';
         }

@@ -5,6 +5,12 @@
 ### Fixes
 
 * Fixes a bug where images in Media manager are not selectable (click on an image does nothing) in both default and relationship mode.
+* In the schema convert method, we wait all sub convert to run, to have access to the final destination object. In order to check if 
+fields (or their parents) are visible and so related errors are discarded.
+
+### Adds
+
+* Possibility to set a field not ready when performing async operations, when a field isn't ready, the validation and emit won't occur.
 
 ## 4.11.1 (2024-12-18)
 
@@ -21,7 +27,6 @@
 * Adds support for dynamic focus trap in Context menus (prop `dynamicFocus`). When set to `true`, the focusable elements are recalculated on each cycle step.
 * Adds option to disable `tabindex` on `AposToggle` component. A new prop `disableFocus` can be set to `false` to disable the focus on the toggle button. It's enabled by default.
 * Adds support for event on `addContextOperation`, an option `type` can now be passed and can be `modal` (default) or `event`, in this case it does not try to open a modal but emit a bus event using the action as name.
-
 
 ### Fixes
 
