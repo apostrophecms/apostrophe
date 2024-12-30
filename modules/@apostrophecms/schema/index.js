@@ -682,6 +682,7 @@ module.exports = {
             const isVisible = await self.isVisible(req, schema, destination, field.name);
             if (!isVisible) {
               nonVisibleFields.add(curPath);
+              continue;
             }
             if (!field.schema) {
               continue;
