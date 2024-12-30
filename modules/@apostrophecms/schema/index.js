@@ -592,14 +592,12 @@ module.exports = {
         {
           fetchRelationships = true,
           ancestors = [],
-          rootConvert = true,
-          ancestorSchemas = {}
+          rootConvert = true
         } = {}
       ) {
         const options = {
           fetchRelationships,
-          ancestors,
-          ancestorSchemas
+          ancestors
         };
         if (Array.isArray(req)) {
           throw new Error('convert invoked without a req, do you have one in your context?');
