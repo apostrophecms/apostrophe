@@ -5296,8 +5296,100 @@ describe('Schemas', function() {
       assert.deepEqual(expected, actual);
     });
 
-    it('should add proper aposPath to all fields when validation schema', async function () {
-      // TODO
+    it.only('should add proper aposPath to all fields when validation schema', async function () {
+      const schema = apos.schema.compose({
+        addFields: [
+          {
+            name: 'title',
+            type: 'string',
+            required: true
+          },
+          {
+            name: '_rel',
+            type: 'relationship',
+            withType: 'article',
+            schema: [
+              {
+                name: 'relString',
+                type: 'string'
+              }
+            ]
+          },
+          {
+            name: 'array',
+            type: 'array',
+            schema: [
+              {
+                name: 'arrayString',
+                type: 'string'
+              },
+              {
+                name: 'arrayObject',
+                type: 'object',
+                schema: [
+                  {
+                    name: 'arrayObjectString',
+                    type: 'string'
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            name: 'object',
+            type: 'object',
+            schema: [
+              {
+                name: 'objectString',
+                type: 'string'
+              },
+              {
+                name: 'objectArray',
+                type: 'array',
+                schema: [
+                  {
+                    name: 'objectArrayString',
+                    type: 'string'
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      });
+
+      apos.schema.validate(schema, 'article');
+
+      const [ titleField, relField, arrayField, objectField ] = schema;
+      const expected = {
+        title: 'title',
+        rel: '_rel',
+        relString: '_rel/relString',
+        array: 'array',
+        arrayString: 'array/arrayString',
+        arrayObject: 'array/arrayObject',
+        arrayObjectString: 'array/arrayObject/arrayObjectString',
+        object: 'object',
+        objectString: 'object/objectString',
+        objectArray: 'object/objectArray',
+        objectArrayString: 'object/objectArray/objectArrayString'
+      };
+
+      const actual = {
+        title: titleField.aposPath,
+        rel: relField.aposPath,
+        relString: relField.schema[0].aposPath,
+        array: arrayField.aposPath,
+        arrayString: arrayField.schema[0].aposPath,
+        arrayObject: arrayField.schema[1].aposPath,
+        arrayObjectString: arrayField.schema[1].schema[0].aposPath,
+        object: objectField.aposPath,
+        objectString: objectField.schema[0].aposPath,
+        objectArray: objectField.schema[1].aposPath,
+        objectArrayString: objectField.schema[1].schema[0].aposPath
+      };
+
+      assert.deepEqual(actual, expected);
     });
 
     it('should set default value to invisible fields that triggered convert errors', async function () {
