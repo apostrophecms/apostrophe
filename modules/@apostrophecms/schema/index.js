@@ -662,7 +662,7 @@ module.exports = {
           destination
         });
 
-        const errors = await handleConvertErrors({
+        const validErrors = await self.handleConvertErrors({
           req,
           schema,
           convertErrors,
@@ -670,8 +670,12 @@ module.exports = {
           nonVisibleFields
         });
 
-        if (errors.length) {
-          throw errors;
+        for (const error of validErrors) {
+          self.apos.util.error(error.stack);
+        }
+
+        if (validErrors.length) {
+          throw validErrors;
         }
 
         async function getNonVisibleFields({
@@ -713,91 +717,88 @@ module.exports = {
           return nonVisibleFields;
         }
 
-        async function handleConvertErrors({
-          req,
-          schema,
-          convertErrors,
-          nonVisibleFields,
-          destination,
-          destinationPath = '',
-          hiddenAncestors = false
-        }) {
-          const validErrors = [];
-          for (const error of convertErrors) {
-            const [ destId, destPath ] = error.path.includes('.')
-              ? error.path.split('.')
-              : [ null, error.path ];
+      },
 
-            const curDestination = destId
-              ? destination.find(({ _id }) => _id === destId)
-              : destination;
+      async handleConvertErrors({
+        req,
+        schema,
+        convertErrors,
+        nonVisibleFields,
+        destination,
+        destinationPath = '',
+        hiddenAncestors = false
+      }) {
+        const validErrors = [];
+        for (const error of convertErrors) {
+          const [ destId, destPath ] = error.path.includes('.')
+            ? error.path.split('.')
+            : [ null, error.path ];
 
-            const errorPath = destinationPath
-              ? `${destinationPath}.${error.path}`
-              : error.path;
+          const curDestination = destId
+            ? destination.find(({ _id }) => _id === destId)
+            : destination;
 
-            // Case were this error field hasn't been treated
-            // Should check if path starts with, because parent can be invisible
-            const nonVisibleField = hiddenAncestors || nonVisibleFields.has(errorPath);
+          const errorPath = destinationPath
+            ? `${destinationPath}.${error.path}`
+            : error.path;
 
-            // We set default values only on final error fields
-            if (nonVisibleField && !error.data?.errors) {
-              const curSchema = self.getFieldLevelSchema(schema, error.schemaPath);
-              setDefaultToInvisibleField(curDestination, curSchema, error.path);
+          // Case were this error field hasn't been treated
+          // Should check if path starts with, because parent can be invisible
+          const nonVisibleField = hiddenAncestors || nonVisibleFields.has(errorPath);
+
+          // We set default values only on final error fields
+          if (nonVisibleField && !error.data?.errors) {
+            const curSchema = self.getFieldLevelSchema(schema, error.schemaPath);
+            self.setDefaultToInvisibleField(curDestination, curSchema, error.path);
+            continue;
+          }
+
+          if (error.data?.errors) {
+            const subErrors = await self.handleConvertErrors({
+              req,
+              schema,
+              convertErrors: error.data.errors,
+              nonVisibleFields,
+              destination: curDestination[destPath],
+              destinationPath: errorPath,
+              hiddenAncestors: nonVisibleField
+            });
+
+            // If invalid error has no sub error, this one can be removed
+            if (!subErrors.length) {
               continue;
             }
 
-            if (error.data?.errors) {
-              const subErrors = await handleConvertErrors({
-                req,
-                schema,
-                convertErrors: error.data.errors,
-                nonVisibleFields,
-                destination: curDestination[destPath],
-                destinationPath: errorPath,
-                hiddenAncestors: nonVisibleField
-              });
-
-              // If invalid error has no sub error, this one can be removed
-              if (!subErrors.length) {
-                continue;
-              }
-
-              error.data.errors = subErrors;
-            }
-
-            if (typeof error !== 'string') {
-              self.apos.util.error(error.path + '\n' + error.stack);
-            }
-            validErrors.push(error);
+            error.data.errors = subErrors;
           }
-
-          return validErrors;
+          validErrors.push(error);
         }
 
-        function setDefaultToInvisibleField(destination, schema, fieldPath) {
-          // Field path might contain the ID of the object in which it is contained
-          // We just want the field name here
-          const [ _id, fieldName ] = fieldPath.includes('.')
-            ? fieldPath.split('.')
-            : [ null, fieldPath ];
-          // It is not reasonable to enforce required,
-          // min, max or anything else for fields
-          // hidden via "if" as the user cannot correct it
-          // and it will not be used. If the user changes
-          // the conditional field later then they won't
-          // be able to save until the erroneous field
-          // is corrected
-          const field = schema.find(field => field.name === fieldName);
-          if (field) {
-            // To protect against security issues, an invalid value
-            // for a field that is not visible should be quietly discarded.
-            // We only worry about this if the value is not valid, as otherwise
-            // it's a kindness to save the work so the user can toggle back to it
-            destination[field.name] = klona((field.def !== undefined)
-              ? field.def
-              : self.fieldTypes[field.type]?.def);
-          }
+        return validErrors;
+      },
+
+      setDefaultToInvisibleField(destination, schema, fieldPath) {
+        // Field path might contain the ID of the object in which it is contained
+        // We just want the field name here
+        const [ _id, fieldName ] = fieldPath.includes('.')
+          ? fieldPath.split('.')
+          : [ null, fieldPath ];
+        // It is not reasonable to enforce required,
+        // min, max or anything else for fields
+        // hidden via "if" as the user cannot correct it
+        // and it will not be used. If the user changes
+        // the conditional field later then they won't
+        // be able to save until the erroneous field
+        // is corrected
+        const field = schema.find(field => field.name === fieldName);
+        if (field) {
+          // To protect against security issues, an invalid value
+          // for a field that is not visible should be quietly discarded.
+          // We only worry about this if the value is not valid, as otherwise
+          // it's a kindness to save the work so the user can toggle back to it
+          destination[field.name] = klona((field.def !== undefined)
+            ? field.def
+            : self.fieldTypes[field.type]?.def);
         }
       },
 
