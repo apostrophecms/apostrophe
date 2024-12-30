@@ -5296,7 +5296,7 @@ describe('Schemas', function() {
       assert.deepEqual(expected, actual);
     });
 
-    it.only('should add proper aposPath to all fields when validation schema', async function () {
+    it('should add proper aposPath to all fields when validation schema', async function () {
       const schema = apos.schema.compose({
         addFields: [
           {
@@ -5393,7 +5393,71 @@ describe('Schemas', function() {
     });
 
     it('should set default value to invisible fields that triggered convert errors', async function () {
-      // TODO
+      const schema = apos.schema.compose({
+        addFields: [
+          {
+            name: 'array',
+            type: 'array',
+            if: {
+              showArray: true
+            },
+            schema: [
+              {
+                name: 'arrayString',
+                type: 'string',
+                pattern: '^cool-'
+              },
+              {
+                name: 'arrayMin',
+                type: 'integer',
+                min: 5
+              },
+              {
+                name: 'arrayMax',
+                type: 'integer',
+                max: 10
+              }
+            ]
+          },
+          {
+            name: 'showArray',
+            type: 'boolean'
+          }
+        ]
+      });
+      apos.schema.validate(schema, 'foo');
+
+      const input = {
+        showArray: false,
+        array: [
+          {
+            arrayString: 'bad string',
+            arrayMin: 2,
+            arrayMax: 13
+          }
+        ]
+      };
+
+      const req = apos.task.getReq();
+      const result = {};
+      await apos.schema.convert(req, schema, input, result);
+
+      const expected = {
+        arrayString: '',
+        arrayMin: 5,
+        arrayMax: 10
+      };
+
+      const {
+        arrayString, arrayMin, arrayMax
+      } = result.array[0];
+      const actual = {
+        arrayString,
+        arrayMin,
+        arrayMax
+      };
+
+      assert.deepEqual(actual, expected);
     });
   });
 
