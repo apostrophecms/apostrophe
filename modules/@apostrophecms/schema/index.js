@@ -654,7 +654,7 @@ module.exports = {
           return;
         }
 
-        const nonVisibleFields = await getNonVisibleFields({
+        const nonVisibleFields = await self.getNonVisibleFields({
           req,
           schema,
           destination
@@ -675,46 +675,45 @@ module.exports = {
         if (validErrors.length) {
           throw validErrors;
         }
+      },
 
-        async function getNonVisibleFields({
-          req, schema, destination, nonVisibleFields = new Set(), fieldPath = ''
-        }) {
-          for (const field of schema) {
-            const curPath = fieldPath ? `${fieldPath}.${field.name}` : field.name;
-            const isVisible = await self.isVisible(req, schema, destination, field.name);
-            if (!isVisible) {
-              nonVisibleFields.add(curPath);
-              continue;
-            }
-            if (!field.schema) {
-              continue;
-            }
-
-            // Relationship does not support conditional fields right now
-            if ([ 'array' /*, 'relationship' */].includes(field.type) && field.schema) {
-              for (const arrayItem of destination[field.name] || []) {
-                await getNonVisibleFields({
-                  req,
-                  schema: field.schema,
-                  destination: arrayItem,
-                  nonVisibleFields,
-                  fieldPath: `${curPath}.${arrayItem._id}`
-                });
-              }
-            } else if (field.type === 'object') {
-              await getNonVisibleFields({
-                req,
-                schema: field.schema,
-                destination: destination[field.name],
-                nonVisibleFields,
-                fieldPath: curPath
-              });
-            }
+      async getNonVisibleFields({
+        req, schema, destination, nonVisibleFields = new Set(), fieldPath = ''
+      }) {
+        for (const field of schema) {
+          const curPath = fieldPath ? `${fieldPath}.${field.name}` : field.name;
+          const isVisible = await self.isVisible(req, schema, destination, field.name);
+          if (!isVisible) {
+            nonVisibleFields.add(curPath);
+            continue;
+          }
+          if (!field.schema) {
+            continue;
           }
 
-          return nonVisibleFields;
+          // Relationship does not support conditional fields right now
+          if ([ 'array' /*, 'relationship' */].includes(field.type) && field.schema) {
+            for (const arrayItem of destination[field.name] || []) {
+              await self.getNonVisibleFields({
+                req,
+                schema: field.schema,
+                destination: arrayItem,
+                nonVisibleFields,
+                fieldPath: `${curPath}.${arrayItem._id}`
+              });
+            }
+          } else if (field.type === 'object') {
+            await self.getNonVisibleFields({
+              req,
+              schema: field.schema,
+              destination: destination[field.name],
+              nonVisibleFields,
+              fieldPath: curPath
+            });
+          }
         }
 
+        return nonVisibleFields;
       },
 
       async handleConvertErrors({
