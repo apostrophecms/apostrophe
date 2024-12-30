@@ -1455,21 +1455,21 @@ module.exports = {
       // reasonable values for certain properties, such as the `idsStorage` property
       // of a `relationship` field, or the `label` property of anything.
 
-      validate(schema, options) {
+      validate(schema, options, parent = null) {
         schema.forEach(field => {
           // Infinite recursion prevention
           const key = `${options.type}:${options.subtype}.${field.name}`;
           if (!self.validatedSchemas[key]) {
             self.validatedSchemas[key] = true;
-            self.validateField(field, options);
+            self.validateField(field, options, parent);
           }
         });
       },
 
       // Validates a single schema field. See `validate`.
       validateField(field, options, parent = null) {
-        field.aposPath = options.ancestorPath
-          ? `${options.ancestorPath}/${field.name}`
+        field.aposPath = parent
+          ? `${parent.aposPath}/${field.name}`
           : field.name;
 
         const fieldType = self.fieldTypes[field.type];
@@ -1501,11 +1501,7 @@ module.exports = {
           warn(`editPermission or viewPermission must be defined on root fields only, provided on "${parent.name}.${field.name}"`);
         }
         if (fieldType.validate) {
-          const opts = {
-            ...options,
-            ancestorPath: field.aposPath
-          };
-          fieldType.validate(field, opts, warn, fail);
+          fieldType.validate(field, options, warn, fail);
         }
         // Ancestors hoisting should happen AFTER the validation recursion,
         // so that ancestors are processed as well.

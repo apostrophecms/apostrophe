@@ -1219,7 +1219,7 @@ module.exports = (self) => {
         self.validate(_field.schema, {
           type: 'relationship',
           subtype: _field.withType
-        });
+        }, _field);
         if (!_field.fieldsStorage) {
           _field.fieldsStorage = _field.name.replace(/^_/, '') + 'Fields';
         }
