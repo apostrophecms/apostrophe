@@ -4,12 +4,9 @@
 
 ### Fixes
 
-<<<<<<< HEAD
 * Fixes a bug where images in Media manager are not selectable (click on an image does nothing) in both default and relationship mode.
-=======
 * In the schema convert method, we wait all sub convert to run, to have access to the final destination object. In order to check if 
 fields (or their parents) are visible and so related errors are discarded.
->>>>>>> e1fd5bd94 (changelog typo)
 
 ### Adds
 
