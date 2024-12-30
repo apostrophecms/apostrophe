@@ -775,7 +775,12 @@ module.exports = {
           return validErrors;
         }
 
-        function setDefaultToInvisibleField(destination, schema, fieldName) {
+        function setDefaultToInvisibleField(destination, schema, fieldPath) {
+          // Field path might contain the ID of the object in which it is contained
+          // We just want the field name here
+          const [ _id, fieldName ] = fieldPath.includes('.')
+            ? fieldPath.split('.')
+            : [ null, fieldPath ];
           // It is not reasonable to enforce required,
           // min, max or anything else for fields
           // hidden via "if" as the user cannot correct it
