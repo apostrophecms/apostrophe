@@ -241,6 +241,10 @@ describe('Schemas', function() {
 
   this.timeout(t.timeout);
 
+  beforeEach(async function () {
+    apos.schema.validatedSchemas = {};
+  });
+
   before(async function() {
     apos = await t.create({
       root: module,
