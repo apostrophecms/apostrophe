@@ -12,6 +12,10 @@ export default {
       type: Object,
       required: true
     },
+    type: {
+      type: String,
+      default: null
+    },
     // If editing in a modal, pass the current value object from the editor here
     // so that the visibility of options takes unsaved changes into account
     current: {
@@ -207,7 +211,8 @@ export default {
 
         ifProps = ifProps || {};
         moduleIf = moduleIf || {};
-        const canSeeOperation = checkIfConditions(this.doc, ifProps) && checkIfConditions(this.moduleOptions, moduleIf);
+        const canSeeOperation = checkIfConditions(this.doc, ifProps) &&
+            checkIfConditions(this.moduleOptions, moduleIf);
 
         if (!canSeeOperation) {
           return false;
@@ -217,11 +222,13 @@ export default {
       });
     },
     moduleName() {
+      if (this.type) {
+        return this.type;
+      }
       if (apos.modules[this.context.type].action === apos.modules['@apostrophecms/page'].action) {
         return '@apostrophecms/page';
-      } else {
-        return this.context.type;
       }
+      return this.context.type;
     },
     moduleOptions() {
       return apos.modules[this.moduleName];
