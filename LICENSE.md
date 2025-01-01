@@ -10,7 +10,7 @@ Portions derived from vue-color require the following statement:
 
 MIT License
 
-Copyright (c) 2021 chenkai0520
+Copyright (c) 2025 chenkai0520
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
