@@ -1,5 +1,11 @@
 # Changelog
 
+## UNRELEASED
+
+### Adds
+
+* Accessibility improvement for the rich text editor Typography toolbar item.
+
 ## 4.11.2 (2024-12-29)
 
 ### Fixes
