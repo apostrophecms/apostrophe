@@ -4,24 +4,48 @@
 
 ### Fixes
 
-* Focus properly Widget Editor modals when opened. Keep the previous active focus on the modal when closing the widget editor.
-* a11y improvements for context menus.
-* Fixes broken widget preview URL when the image is overridden (module improve) and external build module is registered.
 * Fixes ability to change color hue by clicking the color hue bar rather than dragging the indicator
 * Prevents the rich text control bar from closing while using certain UI within the color picker
-* Inject dynamic custom bundle CSS when using external build module with no CSS entry point.
 
 ### Adds
 
-* When validating an `area` field, warn the developer if `widgets` is not nested in `options`.
 * Ability to disable the color spectrum UI of a color picker
-* Adds support for supplying CSS variable names to a color field's `presetColors` array as selectable values.
-* Adds support for dynamic focus trap in Context menus (prop `dynamicFocus`). When set to `true`, the focusable elements are recalculated on each cycle step.
-* Adds option to disable `tabindex` on `AposToggle` component. A new prop `disableFocus` can be set to `false` to disable the focus on the toggle button. It's enabled by default.
 
 ### Changes
 
 * The `pickerOptions` sub property of a color field's configuration has been merged with it's parent `options` object.
+
+## 4.11.2 (2024-12-29)
+
+### Fixes
+
+* Fixes a bug where images in Media manager are not selectable (click on an image does nothing) in both default and relationship mode.
+
+## 4.11.1 (2024-12-18)
+
+### Fixes
+
+* Corrected a unit test that relies on the sitemap module, as it now makes explicit that the project level `baseUrl` must be set for a successful experience, and the module level `baseUrl` was set earlier. No other changes.
+
+## 4.11.0 (2024-12-18)
+
+### Adds
+
+* When validating an `area` field, warn the developer if `widgets` is not nested in `options`.
+* Adds support for supplying CSS variable names to a color field's `presetColors` array as selectable values.
+* Adds support for dynamic focus trap in Context menus (prop `dynamicFocus`). When set to `true`, the focusable elements are recalculated on each cycle step.
+* Adds option to disable `tabindex` on `AposToggle` component. A new prop `disableFocus` can be set to `false` to disable the focus on the toggle button. It's enabled by default.
+* Adds support for event on `addContextOperation`, an option `type` can now be passed and can be `modal` (default) or `event`, in this case it does not try to open a modal but emit a bus event using the action as name.
+
+
+### Fixes
+
+* Focus properly Widget Editor modals when opened. Keep the previous active focus on the modal when closing the widget editor.
+* a11y improvements for context menus.
+* Fixes broken widget preview URL when the image is overridden (module improve) and external build module is registered.
+* Inject dynamic custom bundle CSS when using external build module with no CSS entry point.
+* Range field now correctly takes 0 into account.
+* Apos style does not go through `postcss-viewport-to-container-toggle` plugin anymore to avoid UI bugs.
 
 ## 4.10.0 (2024-11-20)
 
