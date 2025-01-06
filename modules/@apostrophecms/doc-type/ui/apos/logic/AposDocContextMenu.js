@@ -12,10 +12,6 @@ export default {
       type: Object,
       required: true
     },
-    type: {
-      type: String,
-      default: null
-    },
     // If editing in a modal, pass the current value object from the editor here
     // so that the visibility of options takes unsaved changes into account
     current: {
@@ -91,6 +87,10 @@ export default {
     localeSwitched: {
       type: Boolean,
       default: false
+    },
+    moduleLabels: {
+      type: Object,
+      default: null
     }
   },
   emits: [ 'menu-open', 'menu-close', 'close' ],
@@ -222,9 +222,6 @@ export default {
       });
     },
     moduleName() {
-      if (this.type) {
-        return this.type;
-      }
       if (apos.modules[this.context.type].action === apos.modules['@apostrophecms/page'].action) {
         return '@apostrophecms/page';
       }
@@ -453,6 +450,7 @@ export default {
       }
       const props = {
         moduleName: operation.moduleName || this.moduleName,
+        moduleLabels: this.moduleLabels,
         // For backwards compatibility
         doc,
         ...docProps(doc),
