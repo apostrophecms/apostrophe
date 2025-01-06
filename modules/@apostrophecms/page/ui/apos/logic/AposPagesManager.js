@@ -118,7 +118,8 @@ export default {
       return this.moduleOptions.canCreate;
     },
     checkedTypes() {
-      return this.checkedDocs.map(doc => doc.type);
+      const types = this.checkedDocs.map(doc => doc.type);
+      return [ ...new Set(types) ];
     }
   },
   created() {
