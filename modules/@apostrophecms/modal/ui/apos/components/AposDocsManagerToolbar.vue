@@ -135,7 +135,7 @@ export default {
     },
     checkedTypes: {
       type: Array,
-      default: () => []
+      default: null
     },
     checkedCount: {
       type: Number,
