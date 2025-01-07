@@ -5,12 +5,11 @@
 ### Fixes
 
 * Fixes a bug where images in Media manager are not selectable (click on an image does nothing) in both default and relationship mode.
-* In the schema convert method, we wait all sub convert to run, to have access to the final destination object. In order to check if 
-fields (or their parents) are visible and so related errors are discarded.
+* Eliminated superfluous error messages. The convert method now waits for all recursive invocations to complete before attempting to determine if fields are visible.
 
 ### Adds
 
-* Possibility to set a field not ready when performing async operations, when a field isn't ready, the validation and emit won't occur.
+* Possibility to set a field not ready when performing async operations, when a field isn't ready, the validation and emit won't occur. 
 
 ## 4.11.1 (2024-12-18)
 
