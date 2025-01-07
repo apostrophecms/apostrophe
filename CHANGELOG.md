@@ -10,6 +10,7 @@
 ### Adds
 
 * Ability to disable the color spectrum UI of a color picker
+* Accessibility improvement for the rich text editor Typography toolbar item.
 
 ### Changes
 
