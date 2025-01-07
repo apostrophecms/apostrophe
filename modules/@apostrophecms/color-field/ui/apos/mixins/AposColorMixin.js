@@ -82,8 +82,15 @@ export default {
         return this.val;
       },
       set(newVal) {
+        let stringVal;
+        if (newVal._cssVariable) {
+          stringVal = newVal._cssVariable;
+        } else {
+          const colorObj = tinycolor(newVal.hsl);
+          stringVal = colorObj.toString(this.finalOptions.format);
+        }
         this.val = newVal;
-        this.$emit('update:modelValue', newVal);
+        this.$emit('update:modelValue', stringVal);
       }
     }
   },

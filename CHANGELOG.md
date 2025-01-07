@@ -2,9 +2,19 @@
 
 ## UNRELEASED
 
+### Fixes
+
+* Fixes ability to change color hue by clicking the color hue bar rather than dragging the indicator
+* Prevents the rich text control bar from closing while using certain UI within the color picker
+
 ### Adds
 
+* Ability to disable the color spectrum UI of a color picker
 * Accessibility improvement for the rich text editor Typography toolbar item.
+
+### Changes
+
+* The `pickerOptions` sub property of a color field's configuration has been merged with it's parent `options` object.
 
 ## 4.11.2 (2024-12-29)
 
