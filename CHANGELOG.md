@@ -11,6 +11,7 @@
 
 * Ability to disable the color spectrum UI of a color picker
 * Accessibility improvement for the rich text editor Typography toolbar item.
+* Adds `moduleLabels` prop to `AposDocContextMenu` to pass it to opened modals from custom operations (used by templates to define labels to display on the export modal).
 
 ### Changes
 
