@@ -164,12 +164,6 @@ export default {
     }
   },
   watch: {
-    fieldState: {
-      deep: true,
-      handler() {
-        this.updateNextAndEmit();
-      }
-    },
     schema() {
       this.populateDocData();
     },
@@ -282,20 +276,23 @@ export default {
       this.next.hasErrors = false;
       this.next.fieldState = { ...this.fieldState };
 
-      this.schema.filter(field => this.displayComponent(field)).forEach(field => {
-        if (this.fieldState[field.name].error) {
-          this.next.hasErrors = true;
-        }
-        if (
-          this.fieldState[field.name].data !== undefined &&
+      this.schema
+        .filter(field => this.displayComponent(field))
+        .forEach(field => {
+          if (this.fieldState[field.name].error) {
+            this.next.hasErrors = true;
+          }
+          // This simply check if a field has changed since it has been instantiated
+          if (
+            this.fieldState[field.name].data !== undefined &&
           detectFieldChange(field, this.next.data[field.name], this.fieldState[field.name].data)
-        ) {
-          changeFound = true;
-          this.next.data[field.name] = this.fieldState[field.name].data;
-        } else {
-          this.next.data[field.name] = this.modelValue.data[field.name];
-        }
-      });
+          ) {
+            changeFound = true;
+            this.next.data[field.name] = this.fieldState[field.name].data;
+          } else {
+            this.next.data[field.name] = this.modelValue.data[field.name];
+          }
+        });
       if (
         oldHasErrors !== this.next.hasErrors ||
         oldFieldState !== newFieldState
