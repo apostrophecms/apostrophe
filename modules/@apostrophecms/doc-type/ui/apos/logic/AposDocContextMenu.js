@@ -87,6 +87,10 @@ export default {
     localeSwitched: {
       type: Boolean,
       default: false
+    },
+    moduleLabels: {
+      type: Object,
+      default: null
     }
   },
   emits: [ 'menu-open', 'menu-close', 'close' ],
@@ -207,7 +211,8 @@ export default {
 
         ifProps = ifProps || {};
         moduleIf = moduleIf || {};
-        const canSeeOperation = checkIfConditions(this.doc, ifProps) && checkIfConditions(this.moduleOptions, moduleIf);
+        const canSeeOperation = checkIfConditions(this.doc, ifProps) &&
+            checkIfConditions(this.moduleOptions, moduleIf);
 
         if (!canSeeOperation) {
           return false;
@@ -219,9 +224,8 @@ export default {
     moduleName() {
       if (apos.modules[this.context.type].action === apos.modules['@apostrophecms/page'].action) {
         return '@apostrophecms/page';
-      } else {
-        return this.context.type;
       }
+      return this.context.type;
     },
     moduleOptions() {
       return apos.modules[this.moduleName];
@@ -446,6 +450,7 @@ export default {
       }
       const props = {
         moduleName: operation.moduleName || this.moduleName,
+        moduleLabels: this.moduleLabels,
         // For backwards compatibility
         doc,
         ...docProps(doc),
