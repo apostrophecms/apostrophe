@@ -274,6 +274,23 @@ module.exports = {
         } else {
           throw new Error('renderBody does not support the type ' + type);
         }
+
+        console.log('> end of renderBody');
+
+        // Horrible implementation that doesn't even try to be efficient for now as PoC, we
+        // can improve this to know when it's a good time to check and not use
+        // an interval -Tom
+        while (req.promiseTokenPrefix && result.includes(req.promiseTokenPrefix)) {
+          await yieldToScheduler();
+          for (const [ key, value ] of req.promiseResolutions.entries()) {
+            if (result.includes(key)) {
+              console.log(`REPLACING: ${key}`);
+              console.log(`VALUE: ${key !== value}`);
+              result = result.replace(key, value);
+              req.promiseResolutions.delete(key);
+            }
+          }
+        }
         return result;
       },
 
@@ -1129,3 +1146,7 @@ module.exports = {
     };
   }
 };
+
+function yieldToScheduler() {
+  return new Promise(resolve => process.nextTick(resolve));
+}
