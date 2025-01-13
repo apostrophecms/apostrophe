@@ -66,7 +66,7 @@ export default {
     margin-left: 15px;
 
     &--inline {
-      margin-right: 10px;
+      margin-right: 5px;
       margin-left: 0;
     }
   }
