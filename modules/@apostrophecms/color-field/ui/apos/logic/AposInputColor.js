@@ -16,6 +16,12 @@ export default {
     };
   },
   computed: {
+    isMicro() {
+      return this.modifiers.includes('micro');
+    },
+    isInline() {
+      return this.modifiers.includes('inline');
+    },
     pickerValue() {
       return this.next || this.defaultValue;
     },
@@ -48,6 +54,7 @@ export default {
     }
   },
   mounted() {
+    console.log('this.modifiers', this.modifiers);
     if (!this.next) {
       this.next = '';
     }
