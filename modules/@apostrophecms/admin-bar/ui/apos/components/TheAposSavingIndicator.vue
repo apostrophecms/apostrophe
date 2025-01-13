@@ -122,11 +122,13 @@ export default {
 .apos-admin-bar__status {
   @include type-help;
 
-  position: relative;
-  margin-left: 7.5px;
-  opacity: 1;
-  color: var(--a-base-2);
-  transition: opacity 200ms;
+  & {
+    position: relative;
+    margin-left: 7.5px;
+    opacity: 1;
+    color: var(--a-base-2);
+    transition: opacity 200ms;
+  }
 
   &.apos-is-hidden {
     opacity: 0;

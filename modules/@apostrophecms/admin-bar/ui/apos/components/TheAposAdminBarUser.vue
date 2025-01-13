@@ -3,6 +3,7 @@
     class="apos-admin-user"
     :button="button"
     :menu="items"
+    :center-on-icon="true"
     menu-placement="bottom-end"
     @item-clicked="emitEvent"
   >
@@ -57,7 +58,9 @@ export default {
   :deep(.apos-button) {
     @include type-base;
 
-    color: var(--a-text-primary);
+    & {
+      color: var(--a-text-primary);
+    }
   }
 
   :deep(.apos-context-menu__popup) {

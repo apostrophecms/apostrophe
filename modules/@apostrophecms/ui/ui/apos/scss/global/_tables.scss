@@ -19,7 +19,9 @@
 .apos-table__header-icon {
   @include apos-align-icon();
 
-  margin-right: 5px;
+  & {
+    margin-right: 5px;
+  }
 }
 
 .apos-table__header-label,

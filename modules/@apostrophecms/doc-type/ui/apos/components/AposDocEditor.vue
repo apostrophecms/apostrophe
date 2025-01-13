@@ -12,6 +12,7 @@
       <AposButton
         type="default"
         label="apostrophe:cancel"
+        :attrs="{'data-apos-focus-priority': isPriorityButton('cancel')}"
         @click="confirmAndCancel"
       />
     </template>
@@ -42,6 +43,7 @@
         :label="saveLabel"
         :disabled="saveDisabled"
         :tooltip="errorTooltip"
+        :attrs="{'data-apos-focus-priority': isPriorityButton('save')}"
         @click="onRestore"
       />
       <AposButtonSplit
@@ -51,6 +53,7 @@
         :disabled="saveDisabled"
         :tooltip="errorTooltip"
         :selected="savePreference"
+        :attrs="{'data-apos-focus-priority': isPriorityButton('splitSave')}"
         @click="saveHandler($event)"
       />
     </template>
@@ -513,7 +516,6 @@ export default {
         this.readOnly = canEdit === false;
         if (canEdit && !await this.lock(this.getOnePath, this.currentId)) {
           this.lockNotAvailable();
-          return;
         }
       } catch {
         await apos.notify('apostrophe:loadDocFailed', {
@@ -528,10 +530,7 @@ export default {
             this.docType = docData.type;
           }
           this.original = klona(docData);
-          this.docFields.data = {
-            ...this.getDefault(),
-            ...docData
-          };
+          this.docFields.data = docData;
           // TODO: Is this block even useful since published is fetched after loadDoc?
           if (this.published) {
             this.changed = detectDocChange(
@@ -545,21 +544,6 @@ export default {
           this.prepErrors();
         }
       }
-    },
-    getDefault() {
-      const doc = {};
-      this.schema.forEach(field => {
-        if (field.name.startsWith('_')) {
-          return;
-        }
-        // Using `hasOwn` here, not simply checking if `field.def` is truthy
-        // so that `false`, `null`, `''` or `0` are taken into account:
-        const hasDefaultValue = Object.hasOwn(field, 'def');
-        doc[field.name] = hasDefaultValue
-          ? klona(field.def)
-          : null;
-      });
-      return doc;
     },
     async preview() {
       if (!await this.confirmAndCancel()) {
@@ -610,18 +594,15 @@ export default {
     async onSaveDraft({ navigate = false } = {}) {
       await this.save({
         andPublish: false,
+        draft: true,
         navigate
-      });
-      await apos.notify('apostrophe:draftSaved', {
-        type: 'success',
-        dismiss: true,
-        icon: 'file-document-icon'
       });
     },
     async save({
       andPublish = false,
       navigate = false,
       andSubmit = false,
+      draft = false,
       keepOpen = false
     }) {
       const body = this.getRequestBody({ update: Boolean(this.currentId) });
@@ -667,6 +648,13 @@ export default {
       if (!keepOpen) {
         this.$emit('modal-result', doc);
         this.modal.showModal = false;
+      }
+      if (draft) {
+        await apos.notify('apostrophe:draftSaved', {
+          type: 'success',
+          dismiss: true,
+          icon: 'file-document-icon'
+        });
       }
       if (navigate) {
         if (doc._url) {
@@ -897,6 +885,23 @@ export default {
       }
 
       return body;
+    },
+    isPriorityButton(name) {
+      let priority;
+
+      if (this.restoreOnly) {
+        priority = 'save';
+      }
+
+      if (this.saveMenu) {
+        priority = 'splitSave';
+      }
+
+      if (this.saveDisabled) {
+        priority = 'cancel';
+      }
+
+      return name === priority ? true : null;
     }
   }
 };

@@ -298,7 +298,7 @@ module.exports = {
         texts.push({
           weight: field.weight || 15,
           text: (value && value.title) || '',
-          silent: silent
+          silent
         });
       },
       // When the field is registered in the schema,
@@ -414,7 +414,7 @@ module.exports = {
           createdAt: new Date(),
           name: self.apos.util.slugify(path.basename(file.name, path.extname(file.name))),
           title: self.apos.util.sortify(path.basename(file.name, path.extname(file.name))),
-          extension: extension,
+          extension,
           type: 'attachment',
           docIds: options.docIds ?? [],
           archivedDocIds: options.archivedDocIds ?? []
@@ -519,8 +519,15 @@ module.exports = {
         const writeFile = require('util').promisify(fs.writeFile);
         const window = new JSDOM('').window;
         const DOMPurify = createDOMPurify(window);
+        DOMPurify.addHook('afterSanitizeAttributes', node => {
+          if (node.hasAttribute('xlink:href') && !node.getAttribute('xlink:href').match(/^#/)) {
+            node.remove();
+          }
+        });
         const dirty = await readFile(path);
-        const clean = DOMPurify.sanitize(dirty);
+        const clean = DOMPurify.sanitize(dirty, {
+          ADD_TAGS: [ 'use' ]
+        });
         return writeFile(path, clean);
       },
       getFileGroup(extension) {
@@ -558,7 +565,7 @@ module.exports = {
 
         await Promise.promisify(self.uploadfs.copyOut)(originalFile, tempFile);
         await Promise.promisify(self.uploadfs.copyImageIn)(tempFile, croppedFile, {
-          crop: crop,
+          crop,
           sizes: self.imageSizes
         });
 
@@ -902,8 +909,8 @@ module.exports = {
         const x = attachment._focalPoint ? attachment._focalPoint.x : attachment.x;
         const y = attachment._focalPoint ? attachment._focalPoint.y : attachment.y;
         return {
-          x: x,
-          y: y
+          x,
+          y
         };
       },
       // Returns true if this type of attachment is croppable.
@@ -1133,7 +1140,7 @@ module.exports = {
               continue;
             }
             const path = self.url(attachment, {
-              crop: crop,
+              crop,
               uploadfsPath: true,
               size: size.name
             });

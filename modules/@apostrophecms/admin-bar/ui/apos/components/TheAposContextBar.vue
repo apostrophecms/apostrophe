@@ -1,24 +1,39 @@
 <template>
   <div :class="classes">
     <template v-if="contextBarActive">
-      <TheAposContextUndoRedo
-        :v-if="editMode"
-        :can-undo="canUndo"
-        :can-redo="canRedo"
-        :retrying="retrying"
-        :editing="editing"
-        :saving="saving"
-        :saved="saved"
-        @undo="undo"
-        @redo="redo"
-      />
+      <div class="apos-admin-bar__control-group">
+        <TheAposContextUndoRedo
+          :v-if="editMode"
+          :can-undo="canUndo"
+          :can-redo="canRedo"
+          @undo="undo"
+          @redo="redo"
+        />
+        <TheAposContextBreakpointPreviewMode
+          v-if="isBreakpointPreviewModeEnabled"
+          :screens="breakpointPreviewModeScreens"
+          :resizable="breakpointPreviewModeResizable"
+          @switch-breakpoint-preview-mode="addContextLabel"
+          @reset-breakpoint-preview-mode="removeContextLabel"
+        />
+        <TheAposSavingIndicator
+          :key="'status'"
+          :retrying="retrying"
+          :editing="editing"
+          :saving="saving"
+          :saved="saved"
+        />
+      </div>
+
       <TheAposContextTitle
         v-if="!hasCustomUi"
+        class="apos-admin-bar__control-group"
         :context="context"
         :draft-mode="draftMode"
         @switch-draft-mode="switchDraftMode"
       />
       <TheAposContextModeAndSettings
+        class="apos-admin-bar__control-group"
         :context="context"
         :published="published"
         :edit-mode="editMode"
@@ -132,6 +147,15 @@ export default {
     },
     autopublish() {
       return this.context.autopublish ?? this.moduleOptions.autopublish;
+    },
+    isBreakpointPreviewModeEnabled() {
+      return this.moduleOptions.breakpointPreviewMode.enable || false;
+    },
+    breakpointPreviewModeScreens() {
+      return this.moduleOptions.breakpointPreviewMode.screens || {};
+    },
+    breakpointPreviewModeResizable() {
+      return this.moduleOptions.breakpointPreviewMode.resizable || false;
     }
   },
   watch: {
@@ -615,7 +639,7 @@ export default {
           body: {},
           busy: true
         });
-        apos.notify('apostrophe:restoredPrevious', {
+        await apos.notify('apostrophe:restoredPrevious', {
           type: 'success',
           dismiss: true
         });
@@ -720,28 +744,36 @@ export default {
     async updateDraftIsEditable() {
       if (this.context.aposLocale && this.context.aposLocale.endsWith('published') && !this.context._edit) {
         // A contributor might be able to edit the draft
-        const draftContext = await apos.http.get(`${this.action}/${this.context._id}`, {
-          busy: true,
-          qs: {
-            aposMode: 'draft',
-            aposLocale: this.context.aposLocale.split(':')[0]
-          }
-        });
-        this.draftIsEditable = draftContext && draftContext._edit;
+        try {
+          const draftContext = await apos.http.get(`${this.action}/${this.context._id}`, {
+            busy: true,
+            qs: {
+              aposMode: 'draft',
+              aposLocale: this.context.aposLocale.split(':')[0]
+            }
+          });
+          this.draftIsEditable = draftContext && draftContext._edit;
+        } catch (e) {
+          console.error(e);
+        }
       }
     },
     async getPublished() {
-      const moduleOptions = window.apos.modules[this.context.type];
-      const manuallyPublished = moduleOptions.localized && !this.autopublish;
+      const moduleOptions = window.apos.modules?.[this.context.type];
+      const manuallyPublished = moduleOptions?.localized && !this.autopublish;
       if (manuallyPublished && this.context.lastPublishedAt) {
         const action = window.apos.modules[this.context.type].action;
-        const doc = await apos.http.get(`${action}/${this.context._id}`, {
-          busy: true,
-          qs: {
-            aposMode: 'published'
-          }
-        });
-        return doc;
+        try {
+          const doc = await apos.http.get(`${action}/${this.context._id}`, {
+            busy: true,
+            qs: {
+              aposMode: 'published'
+            }
+          });
+          return doc;
+        } catch (error) {
+          console.error(error);
+        }
       }
       return null;
     },
@@ -751,6 +783,15 @@ export default {
         draftMode: this.draftMode,
         editMode: this.editMode
       }));
+    },
+    addContextLabel({
+      label
+    }) {
+      document.querySelector('[data-apos-context-label]')
+        ?.replaceChildren(document.createTextNode(this.$t(label)));
+    },
+    removeContextLabel() {
+      document.querySelector('[data-apos-context-label]')?.replaceChildren();
     }
   }
 };
@@ -765,8 +806,19 @@ function depth(el) {
 }
 </script>
 <style lang="scss" scoped>
-.apos-admin-bar__row--utils {
+.apos-admin-bar__row--utils,
+.apos-admin-bar__control-group {
   display: flex;
   align-items: center;
+}
+
+.apos-admin-bar__control-group {
+  flex: 1;
+  height: 100%;
+
+  .apos-admin-bar__control-set {
+    align-items: center;
+    width: auto;
+  }
 }
 </style>

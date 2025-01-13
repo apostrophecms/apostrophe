@@ -276,7 +276,7 @@ module.exports = {
         return self.apos.notification.trigger(req, req.body.messages[stage], {
           interpolate: {
             count: options.count || (req.body._ids && req.body._ids.length),
-            type: req.body.type || req.t('apostrophe:document')
+            type: req.t(req.body.type) || req.t('apostrophe:document')
           },
           dismiss: options.dismiss,
           job: {
@@ -320,7 +320,7 @@ module.exports = {
         };
         const context = {
           _id: job._id,
-          options: options
+          options
         };
 
         await self.db.insertOne(job);
@@ -380,7 +380,7 @@ module.exports = {
       // No promise is returned as this method just updates
       // the job tracking information in the background.
       setTotal(job, total) {
-        self.db.updateOne({ _id: job._id }, { $set: { total: total } }, function (err) {
+        self.db.updateOne({ _id: job._id }, { $set: { total } }, function (err) {
           if (err) {
             self.apos.util.error(err);
           }
@@ -404,7 +404,7 @@ module.exports = {
           $set: {
             ended: true,
             status: success ? 'completed' : 'failed',
-            results: results
+            results
           }
         });
       },

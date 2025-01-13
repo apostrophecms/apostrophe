@@ -1,11 +1,29 @@
 <template>
-  <ul class="apos-primary-scrollbar apos-search">
+  <ul
+    v-show="list.length"
+    :id="ariaId"
+    :aria-hidden="!list.length"
+    role="listbox"
+    class="apos-primary-scrollbar apos-search"
+  >
     <li
-      v-for="item in list"
+      v-if="suggestion"
+      :class="getClasses(suggestion)"
+    >
+      <div v-if="suggestion.title" class="apos-search__item__title">
+        {{ suggestion.title }}
+      </div>
+      <div v-if="suggestion.help" class="apos-search__item__field">
+        {{ suggestion.help }}
+      </div>
+    </li>
+    <li
+      v-for="(item, index) in list"
       :key="item._id"
       v-apos-tooltip="getTooltip(item)"
-      :class="getClasses(item)"
-      @click="select(item, $event)"
+      aria-selected="false"
+      :class="getClasses(item, index)"
+      @click="select(item)"
     >
       <div
         v-if="item?.attachment?._urls?.['one-sixth']"
@@ -36,6 +54,24 @@
         class="apos-search__item__field"
       >
         {{ item[field] }}
+      </div>
+    </li>
+    <li
+      v-if="hint"
+      :class="getClasses(hint)"
+    >
+      <AposIndicator
+        v-if="hint.icon"
+        :icon="getIcon(hint).icon"
+        :icon-size="getIcon(hint).iconSize"
+        class="apos-button__icon"
+        fill-color="currentColor"
+      />
+      <div v-if="hint.title" class="apos-search__item__title">
+        {{ hint.title }}
+      </div>
+      <div v-if="hint.help" class="apos-search__item__field">
+        {{ hint.help }}
       </div>
     </li>
   </ul>
@@ -130,7 +166,7 @@ export default {
   }
 
   &:hover.apos-search__item {
-    background-color: var(--a-base-10);
+    background-color: var(--a-base-9);
     cursor: pointer;
 
     &.apos-search__item--disabled {
@@ -149,13 +185,17 @@ export default {
   &__title {
     @include type-base;
 
-    color: var(--a-text-primary);
+    & {
+      color: var(--a-text-primary);
+    }
   }
 
   &__field {
     @include type-base;
 
-    color: var(--a-base-2);
+    & {
+      color: var(--a-base-2);
+    }
   }
 
   &.apos-search__item--disabled {
@@ -168,6 +208,10 @@ export default {
 
   &.apos-search__item--hint {
     @include hint;
+  }
+
+  &.apos-search__item--is-focused {
+    background-color: var(--a-base-9);
   }
 
   .apos-search-image {

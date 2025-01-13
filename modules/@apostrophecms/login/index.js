@@ -304,9 +304,9 @@ module.exports = {
             parsed.searchParams.append('email', user.email);
             try {
               await self.email(req, 'passwordResetEmail', {
-                user: user,
+                user,
                 url: parsed.toString(),
-                site: site
+                site
               }, {
                 to: user.email,
                 subject: req.t('apostrophe:passwordResetRequest', { site })
@@ -491,7 +491,7 @@ module.exports = {
         const req = self.apos.task.getReq();
         const user = await self.apos.user.find(req, {
           $or: [
-            { username: username },
+            { username },
             { email: username }
           ],
           disabled: { $ne: true }
@@ -512,7 +512,7 @@ module.exports = {
           self.logInfo('correct-password', {
             username,
             ip,
-            attempts: attempts,
+            attempts,
             requestId
           });
           return user;
@@ -588,7 +588,7 @@ module.exports = {
         const adminReq = self.apos.task.getReq();
         const criteriaOr = [
           { username: email },
-          { email: email }
+          { email }
         ];
         const criteriaAnd = {};
         if (resetToken !== false) {

@@ -47,8 +47,10 @@ module.exports = {
     return {
       async inject(req, data) {
         const key = `${data.end}-${data.where}`;
+        const components = self.getInjectedComponents(key, data);
+
         return {
-          components: self.insertions[key]
+          components
         };
       }
     };
@@ -851,12 +853,34 @@ module.exports = {
       // This method is most often used when writing a module that adds new UI
       // to Apostrophe and allows you to add that markup without forcing
       // developers to customize their layout for your module to work.
+      //
+      // `conditions` argument can be an object with keys `when` and `bundler` to specify
+      // when the component should be injected. `bundler` is the alias of the currently
+      // registered asset external build module. For now only `when: hmr` and `bundler: xxx` are supported.
+      //
+      // A new single argument signature is also supported, where the first argument is an object.
+      // See `insert()` for more details.
+      // Usage:
+      // apos.template.prepend({
+      //   component: 'module-name:async-component-name',
+      //   where: 'head',
+      //   when: 'hmr', // or e.g. ['hmr', 'dev'], logical AND
+      //   bundler: 'vite',
+      // });
+      // OR
+      // apos.template.prepend('head', 'module-name:async-component-name', { when: 'hmr', bundler: 'vite' });
+      // Such calls will match the following inject:
+      // {% component '@apostrophecms/template:inject', 'head', 'prepend', { when: 'hmr', bundler: 'vite' } %}
+      // but only when the current asset bundler is 'vite'.
 
-      prepend(location, componentName) {
+      prepend(location, componentName, conditions) {
+        if (location && typeof location === 'object') {
+          componentName = location.component;
+        }
         if (typeof componentName !== 'string') {
           throw new Error('Do not pass a function to apos.template.prepend. Pass a fully qualified component name, i.e. module-name:async-component-name');
         }
-        return self.insert('prepend', location, componentName);
+        return self.insert('prepend', location, componentName, conditions);
       },
 
       // Use this method to provide an async component name that will be invoked at the point
@@ -874,20 +898,150 @@ module.exports = {
       // This method is most often used when writing a module that adds new UI
       // to Apostrophe and allows you to add that markup without forcing
       // developers to customize their layout for your module to work.
+      //
+      // `conditions` argument can be an object with keys `when` and `bundler` to specify
+      // when the component should be injected. `bundler` is the alias of the currently
+      // registered asset external build module. For now only `when: hmr` and `bundler: xxx` are supported.
+      //
+      // A new single argument signature is also supported, where the first and only argument is an object.
+      // See `insert()` for more details.
+      // Usage:
+      // apos.template.append({
+      //   component: 'module-name:async-component-name',
+      //   where: 'head',
+      //   when: 'hmr', // or e.g. ['hmr', 'dev'], logical AND
+      //   bundler: 'vite',
+      // });
+      // OR
+      // apos.template.append('head', 'module-name:async-component-name', { when: 'hmr', bundler: 'vite' });
+      // Such call will match the following inject:
+      // {% component '@apostrophecms/template:inject' with { where: 'head', end: 'append', when: 'hmr' } %}
+      // but only when the current asset bundler is 'vite'.
 
-      append(location, componentName) {
+      append(location, componentName, conditions) {
+        if (location && typeof location === 'object') {
+          componentName = location.component;
+        }
         if (typeof componentName !== 'string') {
           throw new Error('Do not pass a function to apos.template.prepend. Pass a fully qualified component name, i.e. module-name:async-component-name');
         }
-        return self.insert('append', location, componentName);
+        return self.insert('append', location, componentName, conditions);
       },
 
-      // Implementation detail of `apos.template.prepend` and `apos.template.append`.
+      // Implementation detail of `apos.template.prepend` and `apos.template.append`. `conditions` is an object
+      // (optional) that may have `when` and `bundler` keys. See below for more info. All conditions are evaluated
+      // at a runtime, when the component is injected.
+      //
+      // If `location` is an object, the following arguments are ignored. The object should have the following keys:
+      // - `component`: the component name (e.g. 'module-name:component-name')
+      // - `where`: the location (e.g. 'head')
+      // - `when`: (optional) string or array of strings, the conditions to be met to insert the component.
+      //   When an array, a logical AND is applied. One match against the injected `when` data is required.
+      //   Currently supported values are `hmr`, `dev`, `prod`. See `getInjectConditionHandlers()` for more info.
+      //   The `when` value can include an argument separated by `:`. E.g. `hmr:apos`, `hmr:public`. If the condition
+      //   handler does not support arguments, it's ignored.
+      // - `bundler`: (optional) string, the alias of the currently registered asset external build module.
+      //   The bundler condition is not parth of the actual inject data. It's evaluated just on the registration
+      //   data.
 
-      insert(end, location, componentName) {
+      insert(end, location, componentName, conditions) {
+        if (location && typeof location === 'object') {
+          const {
+            component, where, ...rest
+          } = location;
+          conditions = Object.keys(rest).length ? rest : null;
+          componentName = component;
+          location = where;
+        }
         const key = end + '-' + location;
         self.insertions[key] = self.insertions[key] || [];
-        self.insertions[key].push(componentName);
+        self.insertions[key].push({
+          component: componentName,
+          conditions
+        });
+      },
+
+      // Accepts the position and component key (e.g. `prepend-head`) and returns
+      // an array of components that should be injected at that position.
+      getInjectedComponents(key, data) {
+        const components = [];
+
+        self.insertions[key]?.forEach(({ component, conditions = {} }) => {
+          // BC
+          if (!conditions.bundler && !conditions.when && !data.when) {
+            components.push(component);
+            return;
+          }
+          // Normalize in place
+          if (!Array.isArray(conditions.when)) {
+            conditions.when = conditions.when ? [ conditions.when ] : [];
+          }
+          // Both sides `when` should match
+          if (data.when && !conditions.when.map(s => s.split(':')[0]).includes(data.when)) {
+            return;
+          }
+          if (!data.when && conditions.when.length) {
+            return;
+          }
+
+          // All `when` condition voters must agree.
+          const { when, bundler } = conditions;
+          const handlers = self.getInjectConditionHandlers();
+          // Optional support for logical OR might be implemented,
+          // just use `some`. A possible implementation with
+          // `when` being an object same as the schema `if`, supporting
+          // the same logical operators. But it's too much for now.
+          const conditionMet = when.every(val => {
+            const [ fn, arg ] = val.split(':');
+            if (!handlers[fn]) {
+              self.apos.util.error(`Invalid inject condition: ${when}`);
+              return false;
+            }
+            return handlers[fn](arg, data);
+          });
+
+          if (bundler) {
+            // Support for the internal webpack bundler
+            const currentBundler = self.apos.asset.hasBuildModule()
+              ? self.apos.asset.getBuildModuleAlias()
+              : 'webpack';
+            if (currentBundler !== bundler) {
+              return;
+            }
+          }
+
+          if (!conditionMet) {
+            return;
+          }
+
+          components.push(component);
+        });
+
+        return components;
+      },
+
+      // Simple conditions handling for `when` injects. It can be extended to support
+      // custom conditions in the future - registered by modules similar to
+      // `helpers`.
+      // Every condition function receives an argument if available and the nunjucks
+      // data object. For example `when: hmr:apos` will call `hmr('apos', data)`.
+      // The function should return a boolean.
+      getInjectConditionHandlers() {
+        return {
+          hmr(kind) {
+            if (kind) {
+              return self.apos.asset.hasHMR() &&
+                self.apos.asset.getBuildOptions().devServer === kind;
+            }
+            return self.apos.asset.hasHMR();
+          },
+          dev() {
+            return self.apos.asset.isDevMode();
+          },
+          prod() {
+            return self.apos.asset.isProductionMode();
+          }
+        };
       },
 
       async annotateDataForExternalFront(req, template, data, moduleName) {
@@ -900,6 +1054,24 @@ module.exports = {
         data.template = template;
         // For simple cases (not piece pages and the like)
         data.module = moduleName;
+
+        // Provide the `apos` scene bundles to the exsternal front-end
+        if (self.apos.asset.hasBuildModule()) {
+          const modulePreload = new Set();
+          data.bundleMarkup = {
+            js: self.apos.asset.getBundlePageMarkup({
+              scene: 'apos',
+              output: 'js',
+              modulePreload
+            }),
+            css: self.apos.asset.getBundlePageMarkup({
+              scene: 'apos',
+              output: 'css'
+            })
+          };
+          data.bundleMarkup.js.push(...Array.from(modulePreload));
+        }
+
         return data;
       },
 

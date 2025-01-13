@@ -92,8 +92,8 @@ export default {
 :deep(.apos-admin-bar__row) {
   display: flex;
   align-items: center;
-  height: 35px;
-  padding: 10px 20px;
+  height: 55px;
+  padding: 0 20px;
   line-height: var(--a-line-base);
   border-bottom: 1px solid var(--a-base-9);
 }
@@ -107,17 +107,15 @@ export default {
 :deep(.apos-admin-bar__control-set) {
   @include type-base;
 
-  display: flex;
-  width: 100%;
-  height: 100%;
+  & {
+    display: flex;
+    width: 100%;
+    height: 100%;
+  }
 }
 
 .apos-admin-bar__user {
   margin-left: auto;
-}
-
-:deep(.apos-context-menu__pane) {
-  min-width: 150px;
 }
 
 :deep(.flip-enter) { // to the ground

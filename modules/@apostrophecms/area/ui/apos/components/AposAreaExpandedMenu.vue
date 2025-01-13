@@ -26,6 +26,7 @@
               <button
                 v-for="(item, itemIndex) in group.widgets"
                 :key="itemIndex"
+                :data-apos-focus-priority="itemIndex === 0 ? true : null"
                 class="apos-widget"
                 @click="add(item)"
               >
@@ -256,10 +257,13 @@ export default {
 .apos-widget {
   @include type-base;
 
-  padding: 0;
-  border: none;
-  background: none;
-  text-align: inherit;
+  & {
+    padding: 0;
+    border: none;
+    border-radius: var(--a-border-radius);
+    background: none;
+    text-align: inherit;
+  }
 
   .apos-widget__preview {
     transition: opacity 250ms ease-in-out;
@@ -292,6 +296,12 @@ export default {
     }
   }
 
+  &:focus,
+  &:active {
+    outline: 2px solid var(--a-primary-light-40);
+    outline-offset: 4px;
+  }
+
   &:hover {
     cursor: pointer;
     // stylelint-disable max-nesting-depth
@@ -316,9 +326,11 @@ export default {
 .apos-widget__help {
   @include type-base;
 
-  margin-top: 0;
-  line-height: var(--a-line-tall);
-  text-align: left;
+  & {
+    margin-top: 0;
+    line-height: var(--a-line-tall);
+    text-align: left;
+  }
 }
 
 .apos-widget__help {

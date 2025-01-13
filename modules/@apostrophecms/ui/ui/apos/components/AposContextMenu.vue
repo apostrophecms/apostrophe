@@ -1,5 +1,9 @@
 <template>
-  <div class="apos-context-menu">
+  <section
+    ref="contextMenuRef"
+    class="apos-context-menu"
+    @keydown.tab="onTab"
+  >
     <slot name="prebutton" />
     <div
       ref="dropdown"
@@ -7,7 +11,7 @@
     >
       <AposButton
         v-bind="button"
-        ref="button"
+        ref="dropdownButton"
         class="apos-context-menu__btn"
         role="button"
         :data-apos-test="identifier"
@@ -18,12 +22,14 @@
           'aria-haspopup': 'menu',
           'aria-expanded': isOpen ? true : false
         }"
+        @icon="setIconToCenterTo"
         @click.stop="buttonClicked($event)"
       />
       <div
         v-if="isOpen"
         ref="dropdownContent"
         v-click-outside-element="hide"
+        :data-apos-test="isRendered ? 'context-menu-content' : null"
         class="apos-context-menu__dropdown-content"
         :class="popoverClass"
         data-apos-menu
@@ -34,6 +40,7 @@
           :menu-placement="placement"
           :class-list="classList"
           :menu="menu"
+          :active-item="activeItem"
           :is-open="isOpen"
           @item-clicked="menuItemClicked"
           @set-arrow="setArrow"
@@ -42,7 +49,7 @@
         </AposContextMenuDialog>
       </div>
     </div>
-  </div>
+  </section>
 </template>
 
 <script setup>
@@ -52,8 +59,10 @@ import {
 import {
   computePosition, offset, shift, flip, arrow
 } from '@floating-ui/dom';
-import { useAposTheme } from 'Modules/@apostrophecms/ui/composables/AposTheme';
 import { createId } from '@paralleldrive/cuid2';
+
+import { useAposTheme } from '../composables/AposTheme.js';
+import { useFocusTrap } from '../composables/AposFocusTrap.js';
 
 const props = defineProps({
   identifier: {
@@ -106,20 +115,65 @@ const props = defineProps({
     default() {
       return [];
     }
+  },
+  menuId: {
+    type: String,
+    default() {
+      return createId();
+    }
+  },
+  centerOnIcon: {
+    type: Boolean,
+    default: false
+  },
+  activeItem: {
+    type: String,
+    default: null
+  },
+  trapFocus: {
+    type: Boolean,
+    default: true
+  },
+  // When set to true, the elements to focus on will be re-queried
+  // on everu Tab key press. Use this with caution, as it's a performance
+  // hit. Only use this if you have a context menu with
+  // dynamically changing (e.g. AposToggle item enables another item) items.
+  dynamicFocus: {
+    type: Boolean,
+    default: false
   }
 });
 
 const emit = defineEmits([ 'open', 'close', 'item-clicked' ]);
 
-const menuId = ref(createId());
 const isOpen = ref(false);
+const isRendered = ref(false);
 const placement = ref(props.menuPlacement);
 const event = ref(null);
-const dropdown = ref();
-const dropdownContent = ref();
+/** @type {import('vue').Ref<HTMLElement | null>}} */
+const contextMenuRef = ref(null);
+/** @type {import('vue').Ref<HTMLElement | null>}} */
+const dropdown = ref(null);
+/** @type {import('vue').Ref<import('vue').ComponentPublicInstance | null>} */
+const dropdownButton = ref(null);
+/** @type {import('vue').Ref<HTMLElement | null>} */
+const dropdownContent = ref(null);
 const dropdownContentStyle = ref({});
-const arrowEl = ref();
+const arrowEl = ref(null);
+const iconToCenterTo = ref(null);
 const menuOffset = getMenuOffset();
+const otherMenuOpened = ref(false);
+
+const {
+  onTab, runTrap, hasRunningTrap, resetTrap
+} = useFocusTrap({
+  withPriority: true,
+  refreshOnCycle: props.dynamicFocus
+  // If enabled, the dropdown gets closed when the focus leaves
+  // the context menu.
+  // triggerRef: dropdownButton,
+  // onExit: hide
+});
 
 defineExpose({
   hide,
@@ -153,32 +207,44 @@ const buttonState = computed(() => {
   return isOpen.value ? [ 'active' ] : null;
 });
 
-watch(isOpen, (newVal) => {
+watch(isOpen, async (newVal) => {
   emit(newVal ? 'open' : 'close', event.value);
   if (newVal) {
+    setDropdownPosition();
     window.addEventListener('resize', setDropdownPosition);
     window.addEventListener('scroll', setDropdownPosition);
-    window.addEventListener('keydown', handleKeyboard);
-    setDropdownPosition();
-    dropdownContent.value.querySelector('[tabindex]')?.focus();
+    contextMenuRef.value?.addEventListener('keydown', handleKeyboard);
+    if (props.trapFocus && !hasRunningTrap.value) {
+      await runTrap(dropdownContent);
+    }
+    if (!props.trapFocus) {
+      dropdownContent.value.querySelector('[tabindex]')?.focus();
+    }
+    isRendered.value = true;
   } else {
+    if (props.trapFocus) {
+      resetTrap();
+    }
     window.removeEventListener('resize', setDropdownPosition);
     window.removeEventListener('scroll', setDropdownPosition);
-    window.removeEventListener('keydown', handleKeyboard);
-    dropdown.value.querySelector('[tabindex]').focus();
+    contextMenuRef.value?.addEventListener('keydown', handleKeyboard);
+    if (!otherMenuOpened.value && !props.trapFocus) {
+      dropdown.value.querySelector('[tabindex]').focus();
+    }
   }
+  otherMenuOpened.value = false;
 }, { flush: 'post' });
 
 const { themeClass } = useAposTheme();
 
 onMounted(() => {
-  apos.bus.$on('context-menu-opened', hideWhenOtherOpen);
-  apos.bus.$on('widget-focus', hide);
+  apos.bus.$on('context-menu-toggled', hideWhenOtherOpen);
+  apos.bus.$on('close-context-menus', hide);
 });
 
 onBeforeUnmount(() => {
-  apos.bus.$off('context-menu-opened', hideWhenOtherOpen);
-  apos.bus.$off('widget-focus', hide);
+  apos.bus.$off('context-menu-toggled', hideWhenOtherOpen);
+  apos.bus.$off('close-context-menus', hide);
 });
 
 function getMenuOffset() {
@@ -188,9 +254,16 @@ function getMenuOffset() {
   };
 }
 
-function hideWhenOtherOpen(id) {
-  if (menuId.value !== id) {
+function hideWhenOtherOpen({ menuId }) {
+  if (props.menuId !== menuId) {
+    otherMenuOpened.value = true;
     hide();
+  }
+}
+
+function setIconToCenterTo(el) {
+  if (el && props.centerOnIcon) {
+    iconToCenterTo.value = el;
   }
 }
 
@@ -199,8 +272,11 @@ function hide() {
 }
 
 function buttonClicked(e) {
-  apos.bus.$emit('context-menu-opened', menuId.value);
   isOpen.value = !isOpen.value;
+  apos.bus.$emit('context-menu-toggled', {
+    menuId: props.menuId,
+    isOpen: isOpen.value
+  });
   event.value = e;
 }
 
@@ -217,9 +293,10 @@ async function setDropdownPosition() {
   if (!dropdown.value || !dropdownContent.value) {
     return;
   }
+  const centerArrowEl = iconToCenterTo.value || dropdown.value;
   const {
     x, y, middlewareData, placement: dropdownPlacement
-  } = await computePosition(dropdown.value, dropdownContent.value, {
+  } = await computePosition(centerArrowEl, dropdownContent.value, {
     placement: props.menuPlacement,
     middleware: [
       offset(menuOffset),
@@ -245,10 +322,51 @@ async function setDropdownPosition() {
   });
 }
 
+const ignoreInputTypes = [
+  'text',
+  'password',
+  'email',
+  'file',
+  'number',
+  'search',
+  'tel',
+  'url',
+  'date',
+  'time',
+  'datetime-local',
+  'month',
+  'search',
+  'week'
+];
+
+/**
+ * @param {KeyboardEvent} event
+ */
 function handleKeyboard(event) {
-  if (event.key === 'Escape') {
-    hide();
+  if (event.key !== 'Escape' || !isOpen.value) {
+    return;
   }
+  /** @type {HTMLElement} */
+  const target = event.target;
+
+  // If inside of an input or textarea, don't close the dropdown
+  // and don't allow other event listeners to close it either (e.g. modals)
+  if (
+    target?.nodeName?.toLowerCase() === 'textarea' ||
+    (target?.nodeName?.toLowerCase() === 'input' &&
+      ignoreInputTypes.includes(target.getAttribute('type'))
+    )
+  ) {
+    event.stopImmediatePropagation();
+    return;
+  }
+
+  dropdownButton.value?.focus
+    ? dropdownButton.value.focus()
+    : dropdownButton.value?.$el?.focus();
+
+  event.stopImmediatePropagation();
+  hide();
 }
 </script>
 
@@ -295,11 +413,13 @@ function handleKeyboard(event) {
 .apos-context-menu__pane {
   @include type-base;
 
-  padding: 20px;
-  border: 1px solid var(--a-base-8);
-  border-radius: var(--a-border-radius);
-  box-shadow: var(--a-box-shadow);
-  background-color: var(--a-background-primary);
+  & {
+    padding: 20px;
+    border: 1px solid var(--a-base-8);
+    border-radius: var(--a-border-radius);
+    box-shadow: var(--a-box-shadow);
+    background-color: var(--a-background-primary);
+  }
 
   &:focus {
     outline: none;
@@ -309,11 +429,13 @@ function handleKeyboard(event) {
 .apos-context-menu__items {
   @include apos-list-reset();
 
-  display: inline-block;
-  list-style-type: none;
-  width: max-content;
-  margin: none;
-  margin-block: 0;
-  padding: 10px 0;
+  & {
+    display: inline-block;
+    list-style-type: none;
+    width: max-content;
+    margin: none;
+    margin-block: 0;
+    padding: 10px 0;
+  }
 }
 </style>

@@ -12,6 +12,7 @@
         placement: 'top',
         delay: 650
       }"
+      :aria-label="$t(tool.label)"
       :value="active"
       class="apos-tiptap-control apos-tiptap-control--select"
       :style="`width:${$t(nodeOptions[active].label).length * 6.5}px`"
@@ -157,9 +158,11 @@ export default {
     @include apos-button-reset();
     @include apos-transition();
 
-    height: 100%;
-    padding: 0 $spacing-half;
-    font-size: var(--a-type-smaller);
+    & {
+      height: 100%;
+      padding: 0 $spacing-half;
+      font-size: var(--a-type-smaller);
+    }
 
     &:focus, &:active {
       outline: none;
@@ -175,6 +178,7 @@ export default {
     border-radius: var(--a-border-radius);
     transition: all 500ms ease;
 
+    &:focus-within,
     &:hover {
       color: var(--a-text-primary);
       background-color: var(--a-base-9);

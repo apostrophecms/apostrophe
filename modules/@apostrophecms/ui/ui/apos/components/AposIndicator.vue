@@ -1,8 +1,10 @@
 <template>
   <span
+    ref="icon"
     v-apos-tooltip="tooltip"
     class="apos-indicator"
     :aria-hidden="decorative"
+    :tabindex="decorative ? '-1' : '0'"
   >
     <component
       :is="icon"
@@ -43,6 +45,10 @@ export default {
       type: Boolean,
       default: true
     }
+  },
+  emits: [ 'icon' ],
+  mounted() {
+    this.$emit('icon', this.$refs.icon);
   }
 };
 </script>

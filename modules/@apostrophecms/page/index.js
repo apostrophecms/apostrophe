@@ -5,7 +5,7 @@ const { SemanticAttributes } = require('@opentelemetry/semantic-conventions');
 const expressCacheOnDemand = require('express-cache-on-demand')();
 
 module.exports = {
-  cascades: [ 'batchOperations', 'utilityOperations' ],
+  cascades: [ 'filters', 'batchOperations', 'utilityOperations' ],
   options: {
     alias: 'page',
     types: [
@@ -37,22 +37,122 @@ module.exports = {
     redirectFailedUpperCaseUrls: true,
     relationshipSuggestionIcon: 'web-icon'
   },
+  filters: {
+    add: {
+      archived: {
+        label: 'apostrophe:archived',
+        inputType: 'radio',
+        choices: [
+          {
+            value: false,
+            label: 'apostrophe:live'
+          },
+          {
+            value: true,
+            label: 'apostrophe:archived'
+          }
+        ],
+        // TODO: Delete `allowedInChooser` if not used.
+        allowedInChooser: false,
+        def: false,
+        required: true
+      }
+    }
+  },
+  utilityOperations(self) {
+    return {
+      add: {
+        new: {
+          canCreate: true,
+          relationship: true,
+          label: {
+            key: 'apostrophe:newDocType',
+            type: '$t(apostrophe:page)'
+          },
+          eventOptions: {
+            event: 'edit',
+            type: self.__meta.name
+          }
+        }
+      }
+    };
+  },
   batchOperations: {
     add: {
-      archive: {
-        label: 'apostrophe:archive'
-      },
       publish: {
-        label: 'apostrophe:publish'
+        label: 'apostrophe:publish',
+        messages: {
+          progress: 'apostrophe:batchPublishProgress',
+          completed: 'apostrophe:batchPublishCompleted'
+        },
+        icon: 'earth-icon',
+        modalOptions: {
+          title: 'apostrophe:publishType',
+          description: 'apostrophe:publishingBatchConfirmation',
+          confirmationButton: 'apostrophe:publishingBatchConfirmationButton'
+        },
+        permission: 'publish'
       },
-      unpublish: {
-        label: 'apostrophe:unpublish'
+      archive: {
+        label: 'apostrophe:archive',
+        messages: {
+          progress: 'apostrophe:batchArchiveProgress',
+          completed: 'apostrophe:batchArchiveCompleted'
+        },
+        icon: 'archive-arrow-down-icon',
+        if: {
+          archived: false
+        },
+        modalOptions: {
+          title: 'apostrophe:archiveType',
+          description: 'apostrophe:archivingBatchConfirmation',
+          confirmationButton: 'apostrophe:archivingBatchConfirmationButton'
+        },
+        permission: 'delete'
+      },
+      restore: {
+        label: 'apostrophe:restore',
+        messages: {
+          progress: 'apostrophe:batchRestoreProgress',
+          completed: 'apostrophe:batchRestoreCompleted'
+        },
+        icon: 'archive-arrow-up-icon',
+        if: {
+          archived: true
+        },
+        modalOptions: {
+          title: 'apostrophe:restoreType',
+          description: 'apostrophe:restoreBatchConfirmation',
+          confirmationButton: 'apostrophe:restoreBatchConfirmationButton'
+        },
+        permission: 'edit'
+      }
+    },
+    group: {
+      more: {
+        icon: 'dots-vertical-icon',
+        operations: []
       }
     }
   },
   commands(self) {
     return {
       add: {
+        [`${self.__meta.name}:manager`]: {
+          type: 'item',
+          label: 'apostrophe:page',
+          action: {
+            type: 'admin-menu-click',
+            payload: {
+              itemName: `${self.__meta.name}:manager`
+            }
+          },
+          permission: {
+            action: 'edit',
+            type: self.__meta.name
+          },
+          shortcut: self.options.shortcut ?? `G,${self.apos.task.getReq().t('apostrophe:page').slice(0, 1)}`
+        },
         [`${self.__meta.name}:create-new`]: {
           type: 'item',
           label: 'apostrophe:commandMenuCreateNew',
@@ -65,6 +165,34 @@ module.exports = {
           },
           shortcut: 'C'
         },
+        [`${self.__meta.name}:search`]: {
+          type: 'item',
+          label: 'apostrophe:commandMenuSearch',
+          action: {
+            type: 'command-menu-manager-focus-search'
+          },
+          shortcut: 'Ctrl+F Meta+F'
+        },
+        [`${self.__meta.name}:select-all`]: {
+          type: 'item',
+          label: 'apostrophe:commandMenuSelectAll',
+          action: {
+            type: 'command-menu-manager-select-all'
+          },
+          shortcut: 'Ctrl+Shift+A Meta+Shift+A'
+        },
+        [`${self.__meta.name}:archive-selected`]: {
+          type: 'item',
+          label: 'apostrophe:commandMenuArchiveSelected',
+          action: {
+            type: 'command-menu-manager-archive-selected'
+          },
+          permission: {
+            action: 'delete',
+            type: self.__meta.name
+          },
+          shortcut: 'E'
+        },
         [`${self.__meta.name}:exit-manager`]: {
           type: 'item',
           label: 'apostrophe:commandMenuExitManager',
@@ -75,11 +203,22 @@ module.exports = {
         }
       },
       modal: {
+        default: {
+          '@apostrophecms/command-menu:manager': {
+            label: 'apostrophe:commandMenuManager',
+            commands: [
+              `${self.__meta.name}:manager`
+            ]
+          }
+        },
         [`${self.__meta.name}:manager`]: {
           '@apostrophecms/command-menu:manager': {
             label: 'apostrophe:commandMenuManager',
             commands: [
               `${self.__meta.name}:create-new`,
+              `${self.__meta.name}:search`,
+              `${self.__meta.name}:select-all`,
+              `${self.__meta.name}:archive-selected`,
               `${self.__meta.name}:exit-manager`
             ]
           }
@@ -104,6 +243,7 @@ module.exports = {
     self.apos.migration.add('deduplicateRanks2', self.deduplicateRanks2Migration);
     self.apos.migration.add('missingLastPublishedAt', self.missingLastPublishedAtMigration);
     await self.createIndexes();
+    self.composeFilters();
   },
   restApiRoutes(self) {
 
@@ -277,8 +417,12 @@ module.exports = {
           if (!result) {
             throw self.apos.error('notfound');
           }
-          if (self.apos.launder.boolean(req.query['render-areas']) === true) {
-            await self.apos.area.renderDocsAreas(req, [ result ]);
+          const renderAreas = req.query['render-areas'];
+          const inline = renderAreas === 'inline';
+          if (inline || self.apos.launder.boolean(renderAreas)) {
+            await self.apos.area.renderDocsAreas(req, [ result ], {
+              inline
+            });
           }
           // Attach `_url` and `_urls` properties
           self.apos.attachment.all(result, { annotate: true });
@@ -597,6 +741,91 @@ module.exports = {
             : await self.unshare(req, draft);
 
           return sharedDoc;
+        },
+        publish (req) {
+          if (!Array.isArray(req.body._ids)) {
+            throw self.apos.error('invalid');
+          }
+
+          req.body._ids = req.body._ids.map(_id => {
+            return self.inferIdLocaleAndMode(req, _id);
+          });
+
+          return self.apos.modules['@apostrophecms/job'].runBatch(
+            req,
+            req.body._ids,
+            async function(req, id) {
+              const piece = await self.findOneForEditing(req, { _id: id });
+              if (!piece) {
+                throw self.apos.error('notfound');
+              }
+
+              await self.publish(req, piece);
+            },
+            {
+              action: 'publish'
+            }
+          );
+        },
+        async archive(req) {
+          if (!Array.isArray(req.body._ids)) {
+            throw self.apos.error('invalid');
+          }
+
+          const ids = req.body._ids.map(_id => {
+            return self.inferIdLocaleAndMode(req, _id);
+          });
+
+          const patches = await self.getBatchArchivePatches(req, ids);
+
+          return self.apos.modules['@apostrophecms/job'].runBatch(
+            req,
+            patches.map(patch => patch._id),
+            async function(req, id) {
+              const patch = patches.find(patch => patch._id === id);
+
+              await self.patch(
+                req.clone({
+                  mode: 'draft',
+                  body: patch.body
+                }),
+                patch._id
+              );
+            },
+            {
+              action: 'archive'
+            }
+          );
+        },
+        async restore(req) {
+          if (!Array.isArray(req.body._ids)) {
+            throw self.apos.error('invalid');
+          }
+
+          const ids = req.body._ids.map(_id => {
+            return self.inferIdLocaleAndMode(req, _id);
+          });
+
+          const patches = await self.getBatchRestorePatches(req, ids);
+
+          return self.apos.modules['@apostrophecms/job'].runBatch(
+            req,
+            patches.map(patch => patch._id),
+            async function(req, id) {
+              const patch = patches.find(patch => patch._id === id);
+
+              await self.patch(
+                req.clone({
+                  mode: 'draft',
+                  body: patch.body
+                }),
+                patch._id
+              );
+            },
+            {
+              action: 'restore'
+            }
+          );
         }
       },
       get: {
@@ -621,6 +850,21 @@ module.exports = {
   },
   handlers(self) {
     return {
+      '@apostrophecms/page-type:beforeSave': {
+        handleParkedFieldsOverride(req, doc) {
+          if (!doc.parkedId) {
+            return;
+          }
+          const parked = self.parked.find(p => p.parkedId === doc.parkedId);
+          if (!parked) {
+            return;
+          }
+          const parkedFields = Object.keys(parked).filter(field => field !== '_defaults');
+          for (const parkedField of parkedFields) {
+            doc[parkedField] = parked[parkedField];
+          }
+        }
+      },
       beforeSend: {
         async addLevelAttributeToBody(req) {
           // Add level as a data attribute on the body tag
@@ -680,6 +924,37 @@ module.exports = {
             }
           }
         },
+        detectSchemaConflicts() {
+          for (const left of self.typeChoices) {
+            for (const right of self.typeChoices) {
+              const diff = compareSchema(left, right);
+              if (diff.size) {
+                self.apos.util.warnDev(`The page type "${left.name}" has a conflict with "${right.name}" (${formatDiff(diff)}). This may cause errors or other problems when an editor switches page types.`);
+              }
+            }
+          }
+          function compareSchema(left, right) {
+            const conflicts = new Map();
+            if (left.name === right.name) {
+              return conflicts;
+            }
+
+            const leftSchema = self.apos.modules[left.name].schema;
+            const rightSchema = self.apos.modules[right.name].schema;
+            for (const leftField of leftSchema) {
+              const rightField = rightSchema.find(field => field.name === leftField.name);
+              if (rightField && leftField.type !== rightField.type) {
+                conflicts.set(leftField.name, [ leftField.type, rightField.type ]);
+              }
+            }
+
+            return conflicts;
+          }
+          function formatDiff(diff) {
+            return Array.from(diff.entries())
+              .map(([ entry, [ left, right ] ]) => `${entry}:${left} vs ${entry}:${right}`);
+          }
+        },
         async manageOrphans() {
           const managed = self.apos.doc.getManaged();
 
@@ -716,6 +991,67 @@ database.`);
                 }
               };
             }
+          }
+        },
+        composeBatchOperations() {
+          const groupedOperations = Object.entries(self.batchOperations)
+            .reduce((acc, [ opName, properties ]) => {
+              // Check if there is a required schema field for this batch operation.
+              const requiredFieldNotFound = properties.requiredField && !self.schema
+                .some((field) => field.name === properties.requiredField);
+
+              if (requiredFieldNotFound) {
+                return acc;
+              }
+              // Find a group for the operation, if there is one.
+              const associatedGroup = getAssociatedGroup(opName);
+              const currentOperation = {
+                action: opName,
+                ...properties
+              };
+              const { action, ...props } = getOperationOrGroup(
+                currentOperation,
+                associatedGroup,
+                acc
+              );
+
+              return {
+                ...acc,
+                [action]: {
+                  ...props
+                }
+              };
+            }, {});
+
+          self.batchOperations = Object.entries(groupedOperations)
+            .map(([ action, properties ]) => ({
+              action,
+              ...properties
+            }));
+
+          function getOperationOrGroup (currentOp, [ groupName, groupProperties ], acc) {
+            if (!groupName) {
+              // Operation is not grouped. Return it as it is.
+              return currentOp;
+            }
+
+            // Return the operation group with the new operation added.
+            return {
+              action: groupName,
+              ...groupProperties,
+              operations: [
+                ...(acc[groupName] && acc[groupName].operations) || [],
+                currentOp
+              ]
+            };
+          }
+
+          // Returns the object entry, e.g., `[groupName, { ...groupProperties }]`
+          function getAssociatedGroup (operation) {
+            return Object.entries(self.batchOperationsGroups)
+              .find(([ _key, { operations } ]) => {
+                return operations.includes(operation);
+              }) || [];
           }
         },
         composeUtilityOperations() {
@@ -868,7 +1204,6 @@ database.`);
       },
       getBrowserData(req) {
         const browserOptions = _.pick(self, 'action', 'schema', 'types');
-        _.assign(browserOptions, _.pick(self.options, 'batchOperations'));
         _.defaults(browserOptions, {
           label: 'apostrophe:page',
           pluralLabel: 'apostrophe:pages',
@@ -883,6 +1218,7 @@ database.`);
           browserOptions.page = self.pruneCurrentPageForBrowser(req.data.bestPage);
         }
         browserOptions.name = self.__meta.name;
+        browserOptions.filters = self.filters;
         browserOptions.canPublish = self.apos.permission.can(req, 'publish', '@apostrophecms/any-page-type');
         browserOptions.canCreate = self.apos.permission.can(req, 'create', '@apostrophecms/any-page-type', 'draft');
         browserOptions.quickCreate = self.options.quickCreate && self.apos.permission.can(req, 'create', '@apostrophecms/any-page-type', 'draft');
@@ -896,6 +1232,7 @@ database.`);
           browserOptions.localized &&
           Object.keys(self.apos.i18n.locales).length > 1 &&
           Object.values(self.apos.i18n.locales).some(locale => locale._edit);
+        browserOptions.batchOperations = self.checkBatchOperationsPermissions(req);
         browserOptions.utilityOperations = self.utilityOperations;
         browserOptions.canDeleteDraft = self.apos.permission.can(req, 'delete', '@apostrophecms/any-page-type', 'draft');
 
@@ -1171,6 +1508,10 @@ database.`);
           const manager = self.apos.doc.getManager(moved.type);
           await manager.emit('beforeMove', req, moved, target, position);
           determineRankAndNewParent();
+          // Simple check to see if we are moving the page beneath itself
+          if (parent.path.split('/').includes(moved.aposDocId)) {
+            throw self.apos.error('forbidden', 'Cannot move a page under itself');
+          }
           if (!moved._edit) {
             throw self.apos.error('forbidden');
           }
@@ -1208,8 +1549,10 @@ database.`);
               visibility: null,
               archived: null,
               areas: false,
+              relationships: false,
               permission: false
-            }).toObject();
+            })
+              .toObject();
             if (!moved) {
               throw self.apos.error('invalid', 'No such page');
             }
@@ -1488,7 +1831,7 @@ database.`);
         }
         async function findPage() {
           // Also checks permissions
-          return self.find(req, { _id: _id }).permission('edit').ancestors({
+          return self.find(req, { _id }).permission('edit').ancestors({
             depth: 1,
             archived: null,
             areas: false
@@ -1975,10 +2318,6 @@ database.`);
           path: matchParentPathPrefix
         }).areas(false).relationships(false).toArray();
         for (const descendant of descendants) {
-          if (page.archived && !descendant.lastPublishedAt) {
-            await self.delete(req, descendant, { checkForChildren: false });
-            continue;
-          }
           let newSlug = descendant.slug.replace(matchParentSlugPrefix, page.slug + '/');
           if (page.archived && !descendant.archived) {
             // #385: we are moving this to the archive, force a new slug
@@ -2116,7 +2455,7 @@ database.`);
           throw new Error('Wrong number of arguments');
         }
         const slug = argv._[1];
-        const count = await self.apos.doc.db.updateOne({ slug: slug }, { $unset: { parked: 1 } });
+        const count = await self.apos.doc.db.updateOne({ slug }, { $unset: { parked: 1 } });
         if (!count) {
           throw 'No page with that slug was found.';
         }
@@ -2721,6 +3060,190 @@ database.`);
           lastTargetId: targetId,
           lastPosition: position
         };
+      },
+      checkBatchOperationsPermissions(req) {
+        return self.batchOperations.filter(batchOperation => {
+          if (batchOperation.permission) {
+            return self.apos.permission.can(req, batchOperation.permission, '@apostrophecms/any-page-type');
+          }
+
+          return true;
+        });
+      },
+      composeFilters() {
+        self.filters = Object.keys(self.filters)
+          .map(name => ({
+            name,
+            ...self.filters[name],
+            inputType: self.filters[name].inputType || 'select'
+          }));
+
+        // Add a null choice if not already added or set to `required`
+        self.filters.forEach((filter) => {
+          if (filter.choices) {
+            if (
+              !filter.required &&
+              filter.choices &&
+              !filter.choices.find((choice) => choice.value === null)
+            ) {
+              filter.def = null;
+              filter.choices.push({
+                value: null,
+                label: 'apostrophe:none'
+              });
+            }
+          } else {
+            // Dynamic choices from the REST API, but
+            // we need a label for "no opinion"
+            filter.nullLabel = 'apostrophe:filterMenuChooseOne';
+          }
+        });
+      },
+      async getBatchArchivePatches(req, ids) {
+        const batchReq = req.clone({
+          aposAncestors: true,
+          aposAncestorsApiProjection: {
+            _id: 1,
+            title: 1,
+            level: 1,
+            rank: 1
+          }
+        });
+        const pages = await self
+          .find(batchReq, { _id: { $in: ids } })
+          .areas(false)
+          .relationships(false)
+          .ancestors({
+            archived: null,
+            areas: false,
+            relationships: false
+          })
+          .children({
+            archived: null,
+            areas: false,
+            relationships: false
+          })
+          .archived(null)
+          .toArray();
+
+        const patches = pages.flatMap(page => {
+          const childrenPatches = page._children
+            .filter(child => !ids.includes(child._id))
+            .map(child => {
+              return {
+                _id: child._id,
+                title: child.title,
+                body: {
+                  archived: false,
+                  _targetId: page._id,
+                  _position: 'before'
+                }
+              };
+            });
+
+          const ancestors = page._ancestors.slice().reverse();
+
+          return childrenPatches
+            .concat(
+              ancestors.some(ancestor => ids.includes(ancestor._id))
+                ? {
+                  _id: page._id,
+                  title: page.title,
+                  body: {
+                    _targetId: ancestors.find(ancestor => ids.includes(ancestor._id))?._id || '_archive',
+                    _position: 'lastChild'
+                  }
+                }
+                : {
+                  _id: page._id,
+                  title: page.title,
+                  body: {
+                    archived: true,
+                    _targetId: '_archive',
+                    _position: 'lastChild'
+                  }
+                }
+            );
+        });
+
+        patches
+          .sort((left, right) => left.body.archived && !right.body.archived
+            ? 1
+            : !left.body.archived && right.body.archived
+              ? -1
+              : 0
+          );
+
+        return patches;
+      },
+      async getBatchRestorePatches(req, ids) {
+        const batchReq = req.clone({
+          aposAncestors: true,
+          aposAncestorsApiProjection: {
+            _id: 1,
+            title: 1,
+            level: 1,
+            rank: 1
+          }
+        });
+        const pages = await self
+          .find(batchReq, { _id: { $in: ids } })
+          .areas(false)
+          .relationships(false)
+          .ancestors({
+            archived: null,
+            areas: false,
+            relationships: false
+          })
+          .children({
+            archived: null,
+            areas: false,
+            relationships: false
+          })
+          .archived(null)
+          .toArray();
+
+        const patches = pages.flatMap(page => {
+          const childrenPatches = page._children
+            .filter(child => !ids.includes(child._id))
+            .map(child => {
+              return {
+                _id: child._id,
+                title: child.title,
+                body: {
+                  archived: true,
+                  _targetId: '_archive',
+                  _position: 'lastChild'
+                }
+              };
+            });
+
+          const ancestors = page._ancestors.slice().reverse();
+          const ancestorId = ancestors.find(ancestor => ids.includes(ancestor._id))?._id || '_home';
+
+          return childrenPatches
+            .concat(
+              {
+                _id: page._id,
+                title: page.title,
+                body: {
+                  archived: false,
+                  _targetId: ancestorId,
+                  _position: ancestorId === '_home' ? 'firstChild' : 'lastChild'
+                }
+              }
+            );
+        });
+
+        patches
+          .sort((left, right) => left.body.archived && !right.body.archived
+            ? -1
+            : !left.body.archived && right.body.archived
+              ? 1
+              : 0
+          );
+
+        return patches;
       }
     };
   },

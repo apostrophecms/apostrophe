@@ -9,6 +9,7 @@
       identifier="localePickerTrigger"
       :button="button"
       :unpadded="true"
+      :center-on-icon="true"
       menu-placement="bottom-end"
       @open="open"
       @close="isOpen = false"
@@ -163,15 +164,19 @@ async function switchLocale(locale) {
 .apos-doc-locales__label {
   @include type-base;
 
-  margin-right: 0.3rem;
-  font-weight: var(--a-weight-bold);
+  & {
+    margin-right: 0.3rem;
+    font-weight: var(--a-weight-bold);
+  }
 }
 
 .apos-doc-locales__switcher :deep(.apos-button__label) {
   @include type-base;
 
-  color: var(--a-primary);
-  font-weight: var(--a-weight-bold);
-  letter-spacing: 1px;
+  & {
+    color: var(--a-primary);
+    font-weight: var(--a-weight-bold);
+    letter-spacing: 1px;
+  }
 }
 </style>

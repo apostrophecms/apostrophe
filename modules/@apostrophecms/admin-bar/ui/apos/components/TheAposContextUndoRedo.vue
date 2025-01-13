@@ -35,13 +35,6 @@
         @click="redo"
       />
     </div>
-    <TheAposSavingIndicator
-      :key="'status'"
-      :retrying="retrying"
-      :editing="editing"
-      :saving="saving"
-      :saved="saved"
-    />
   </transition-group>
 </template>
 
@@ -51,11 +44,7 @@ export default {
   name: 'TheAposContextUndoRedo',
   props: {
     canUndo: Boolean,
-    canRedo: Boolean,
-    retrying: Boolean,
-    editing: Boolean,
-    saving: Boolean,
-    saved: Boolean
+    canRedo: Boolean
   },
   emits: [ 'undo', 'redo' ],
   computed: {
@@ -99,6 +88,10 @@ export default {
 };
 </script>
 <style lang="scss" scoped>
+  .apos-admin-bar__control-set--context-controls {
+    border-right: 1px solid var(--a-base-9);
+  }
+
   :deep(.apos-admin-bar__context-button.apos-button__wrapper) {
     display: flex;
   }

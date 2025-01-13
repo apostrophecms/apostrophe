@@ -9,9 +9,18 @@
       :data-apos-test-selected="selected"
       :data-apos-test-danger="danger"
       :data-apos-test-disabled="disabled"
-      @click="click"
+      v-on="disabled ? {} : { click: click }"
     >
-      {{ $t(label) }}
+      <AposIndicator
+        v-if="menuItem.icon"
+        class="apos-context-menu__icon"
+        :icon="menuItem.icon"
+        :icon-size="menuItem.iconSize"
+        :icon-color="menuItem.iconFill"
+      />
+      <span class="apos-context-menu__label">
+        {{ $t(label) }}
+      </span>
     </button>
   </li>
 </template>
@@ -24,7 +33,11 @@ export default {
       type: Object,
       required: true
     },
-    open: Boolean
+    open: Boolean,
+    isActive: {
+      type: Boolean,
+      default: false
+    }
   },
   emits: [ 'clicked' ],
   computed: {
@@ -38,14 +51,17 @@ export default {
       return this.menuItem.modifiers?.includes('danger');
     },
     disabled() {
-      return this.menuItem.modifiers?.includes('disabled');
+      return !!this.menuItem.modifiers?.includes('disabled');
     },
     modifiers() {
       const classes = [];
       if (this.menuItem.modifiers) {
-        this.menuItem.modifiers.forEach(modifier => {
+        this.menuItem.modifiers.forEach((modifier) => {
           classes.push(`apos-context-menu__button--${modifier}`);
         });
+      }
+      if (this.isActive) {
+        classes.push('apos-context-menu__active');
       }
       return classes.join(' ');
     },
@@ -69,67 +85,82 @@ export default {
 </script>
 
 <style lang="scss" scoped>
-  .apos-context-menu__item {
-    display: flex;
-  }
+.apos-context-menu__item {
+  display: flex;
 
-  .apos-context-menu__button {
-    @include type-base;
+}
 
-    display: inline-block;
+.apos-context-menu__button {
+  @include type-base;
+
+  & {
+    display: inline-flex;
     flex-grow: 1;
+    align-items: center;
     width: 100%;
-    padding: 10px 20px;
+    margin: 0 10px;
+    padding: 10px;
     border: none;
     color: var(--a-base-1);
     text-align: left;
+    border-radius: 3px;
     background-color: var(--a-background-primary);
+  }
+
+  &:hover {
+    cursor: pointer;
+    color: var(--a-text-primary);
+  }
+
+  &:focus {
+    outline: none;
+    color: var(--a-text-primary);
+  }
+
+  &:active {
+    color: var(--a-base-1);
+  }
+
+  &--danger {
+    color: var(--a-danger);
 
     &:hover {
-      cursor: pointer;
-      color: var(--a-text-primary);
+      color: var(--a-danger-button-hover);
     }
 
-    &:focus {
-      outline: none;
-      color: var(--a-text-primary);
-    }
-
+    &:focus,
     &:active {
-      color: var(--a-base-1);
-    }
-
-    &--danger {
-      color: var(--a-danger);
-
-      &:hover {
-        color: var(--a-danger-button-hover);
-      }
-
-      &:focus, &:active {
-        color: var(--a-danger-button-active);
-      }
-    }
-
-    &--primary {
-      color: var(--a-primary);
-
-      &:hover,
-      &:focus,
-      &:active {
-        color: var(--a-primary);
-      }
-    }
-
-    &--disabled {
-      color: var(--a-base-5);
-
-      &:hover,
-      &:focus,
-      &:active {
-        cursor: not-allowed;
-        color: var(--a-base-5);
-      }
+      color: var(--a-danger-button-active);
     }
   }
+
+  &--primary {
+    color: var(--a-primary);
+
+    &:hover,
+    &:focus,
+    &:active {
+      color: var(--a-primary);
+    }
+  }
+
+  &--disabled {
+    color: var(--a-base-5);
+
+    &:hover,
+    &:focus,
+    &:active {
+      cursor: not-allowed;
+      color: var(--a-base-5);
+    }
+  }
+
+  .apos-context-menu__icon {
+    margin-right: 7px;
+  }
+}
+
+.apos-context-menu__active {
+  background-color: var(--a-base-10)
+}
 </style>

@@ -12,6 +12,7 @@
           <header class="apos-modal__header">
             <div class="apos-modal__header__main">
               <AposButton
+                :attrs="{'data-apos-focus-priority': true}"
                 type="default"
                 :title="$t('apostrophe:commandMenuEsc')"
                 :icon-only="true"
@@ -110,10 +111,13 @@ export default {
       this.modal.showModal = false;
     },
     getLabel(label) {
-      if (label && label.key && label.type) {
+      if (typeof label === 'object' && label.key) {
+        const type = label.type ? this.$t(label.type) : '';
+
         return this.$t({
+          ...label,
           key: label.key,
-          type: this.$t(label.type)
+          type
         });
       }
 
@@ -124,23 +128,25 @@ export default {
 </script>
 
 <style lang="scss" scoped>
-:deep(.apos-modal__body) {
-  padding: 0;
-}
+.apos-command-menu-shortcut {
+  :deep(.apos-modal__body) {
+    padding: 0;
+  }
 
-:deep(.apos-modal__inner) {
-  inset: auto $spacing-quadruple $spacing-quadruple auto;
-  max-width: 700px;
-  height: auto;
-  border-radius: $spacing-base + $spacing-half;
-}
+  :deep(.apos-modal__inner) {
+    inset: auto $spacing-quadruple $spacing-quadruple auto;
+    max-width: 700px;
+    height: auto;
+    border-radius: $spacing-base + $spacing-half;
+  }
 
-:deep(.apos-modal__overlay) {
-  display: none;
-}
+  :deep(.apos-modal__overlay) {
+    display: none;
+  }
 
-:deep(.apos-modal__body-main) {
-  padding-bottom: 15px;
+  :deep(.apos-modal__body-main) {
+    padding-bottom: 15px;
+  }
 }
 
 .apos-modal__header {
@@ -173,10 +179,12 @@ export default {
 .apos-modal__heading {
   @include type-base;
 
-  display: inline-block;
-  margin: 0;
-  font-size: var(--a-type-large);
-  line-height: $spacing-double;
+  & {
+    display: inline-block;
+    margin: 0;
+    font-size: var(--a-type-large);
+    line-height: $spacing-double;
+  }
 }
 
 .apos-command-menu-key {
@@ -205,18 +213,22 @@ export default {
 .apos-command-menu-shortcut-group {
   @include type-base;
 
-  font-weight: 400;
+  & {
+    font-weight: 400;
+  }
 }
 
 .apos-command-menu-shortcut-group-title {
   @include type-base;
 
-  box-sizing: border-box;
-  height: 24px;
-  margin: 0;
-  padding: $spacing-half 0;
-  color: var(--a-base-3);
-  text-align: left;
+  & {
+    box-sizing: border-box;
+    height: 24px;
+    margin: 0;
+    padding: $spacing-half 0;
+    color: var(--a-base-3);
+    text-align: left;
+  }
 }
 
 .apos-command-menu-shortcut-command {

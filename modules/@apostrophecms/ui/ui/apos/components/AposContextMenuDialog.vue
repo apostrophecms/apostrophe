@@ -23,6 +23,7 @@
             :key="item.action"
             :data-apos-test-context-menu-item="item.action"
             :menu-item="item"
+            :is-active="item.name === activeItem"
             :open="isOpen"
             @clicked="menuItemClicked"
           />
@@ -63,6 +64,10 @@ const props = defineProps({
   hasTip: {
     type: Boolean,
     default: true
+  },
+  activeItem: {
+    type: String,
+    default: null
   }
 });
 
@@ -126,22 +131,26 @@ function emitSetArrow(arrowEl) {
 .apos-context-menu__pane {
   @include type-base;
 
-  padding: 20px;
-  border: 1px solid var(--a-base-8);
-  border-radius: var(--a-border-radius);
-  box-shadow: var(--a-box-shadow);
-  background-color: var(--a-background-primary);
+  & {
+    padding: 20px;
+    border: 1px solid var(--a-base-8);
+    border-radius: var(--a-border-radius);
+    box-shadow: var(--a-box-shadow);
+    background-color: var(--a-background-primary);
+  }
 }
 
 .apos-context-menu__items {
   @include apos-list-reset();
 
-  display: inline-block;
-  list-style-type: none;
-  width: max-content;
-  margin: none;
-  margin-block: 0;
-  padding: 10px 0;
+  & {
+    display: inline-block;
+    list-style-type: none;
+    width: max-content;
+    margin: none;
+    margin-block: 0;
+    padding: 10px 0;
+  }
 }
 
 .apos-context-menu__dialog :deep(.apos-schema .apos-field) {

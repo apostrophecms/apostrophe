@@ -32,6 +32,7 @@
         type="primary"
         :label="saveRelationshipLabel"
         :disabled="!!relationshipErrors"
+        :attrs="{'data-apos-focus-priority': 1}"
         @click="saveRelationship"
       />
       <AposButton
@@ -41,6 +42,7 @@
           type: $t(moduleOptions.label)
         }"
         type="primary"
+        :attrs="{'data-apos-focus-priority': 1}"
         @click="create"
       />
     </template>
@@ -84,7 +86,7 @@
               disableUnchecked: maxReached()
             }"
             @select-click="selectAll"
-            @search="onSearch"
+            @search="onSearchDebounced"
             @page-change="updatePage"
             @filter="filter"
             @batch="handleBatchAction"
@@ -129,7 +131,7 @@ import AposDocsManagerMixin from 'Modules/@apostrophecms/modal/mixins/AposDocsMa
 import AposModifiedMixin from 'Modules/@apostrophecms/ui/mixins/AposModifiedMixin';
 import AposPublishMixin from 'Modules/@apostrophecms/ui/mixins/AposPublishMixin';
 import { useModalStore } from 'Modules/@apostrophecms/ui/stores/modal';
-import { debounce } from 'Modules/@apostrophecms/ui/utils';
+import { debounceAsync } from 'Modules/@apostrophecms/ui/utils';
 
 export default {
   name: 'AposDocsManager',
@@ -229,7 +231,9 @@ export default {
   },
   created() {
     const DEBOUNCE_TIMEOUT = 500;
-    this.onSearch = debounce(this.search, DEBOUNCE_TIMEOUT);
+    this.onSearchDebounced = debounceAsync(this.onSearch, DEBOUNCE_TIMEOUT, {
+      onSuccess: this.search
+    });
 
     this.moduleOptions.filters.forEach(filter => {
       this.filterValues[filter.name] = filter.def;
@@ -244,13 +248,16 @@ export default {
     this.headers = this.computeHeaders();
     // Get the data. This will be more complex in actuality.
     this.modal.active = true;
-    await this.getPieces();
-    await this.getAllPiecesTotal();
+    await this.managePieces();
+    await this.manageAllPiecesTotal();
     this.modal.triggerFocusRefresh++;
 
     apos.bus.$on('content-changed', this.onContentChanged);
     apos.bus.$on('command-menu-manager-create-new', this.create);
     apos.bus.$on('command-menu-manager-close', this.confirmAndCancel);
+  },
+  onBeforeUnmount() {
+    this.onSearchDebounced.cancel();
   },
   unmounted() {
     this.destroyShortcuts();
@@ -262,7 +269,6 @@ export default {
     async create() {
       await this.edit(null);
     },
-
     // If pieceOrId is null, a new piece is created
     async edit(pieceOrId) {
       let piece;
@@ -294,9 +300,9 @@ export default {
       });
     },
     async finishSaved() {
-      await this.getPieces();
+      await this.managePieces();
     },
-    async request (mergeOptions) {
+    async request(mergeOptions) {
       const options = {
         ...this.filterValues,
         ...this.queryExtras,
@@ -325,7 +331,45 @@ export default {
         draft: true
       });
     },
-    async getPieces () {
+    async requestPieces(page = 1, mergeOptions = {}) {
+      const {
+        currentPage, pages, results, choices
+      } = await this.request({
+        ...mergeOptions,
+        ...(
+          this.moduleOptions.managerApiProjection &&
+          { project: this.moduleOptions.managerApiProjection }
+        ),
+        page
+      });
+
+      return {
+        currentPage,
+        pages,
+        results,
+        choices
+      };
+    },
+    async requestAllPiecesTotal() {
+      const { count: total } = await this.request({ count: 1 });
+      return total;
+    },
+    async requestData(page = 1, mergeOptions = {}) {
+      const pieces = await this.requestPieces(page, mergeOptions);
+      const total = await this.requestAllPiecesTotal();
+
+      return {
+        ...pieces,
+        total
+      };
+    },
+    setPieces(data) {
+      this.currentPage = data.currentPage;
+      this.totalPages = data.pages;
+      this.items = data.results;
+      this.filterChoices = data.choices;
+    },
+    async managePieces () {
       if (this.holdQueries) {
         return;
       }
@@ -334,22 +378,18 @@ export default {
 
       const {
         currentPage, pages, results, choices
-      } = await this.request({
-        ...(
-          this.moduleOptions.managerApiProjection &&
-          { project: this.moduleOptions.managerApiProjection }
-        ),
-        page: this.currentPage
-      });
+      } = await this.requestPieces(this.currentPage);
 
-      this.currentPage = currentPage;
-      this.totalPages = pages;
-      this.items = results;
-      this.filterChoices = choices;
+      this.setPieces({
+        currentPage,
+        pages,
+        results,
+        choices
+      });
       this.holdQueries = false;
     },
-    async getAllPiecesTotal () {
-      const { count: total } = await this.request({ count: 1 });
+    async manageAllPiecesTotal () {
+      const total = await this.requestAllPiecesTotal();
 
       this.setAllPiecesSelection({
         isSelected: false,
@@ -372,25 +412,42 @@ export default {
         docs
       });
     },
-    updatePage(num) {
+    async updatePage(num) {
       if (num) {
         this.currentPage = num;
-        this.getPieces();
+        await this.managePieces();
       }
     },
-    async search(query) {
+    // A stateless search handler, only requesting the data.
+    // It's meant to be debounced and used in conjunction with the search
+    // method that actually updates the state.
+    async onSearch(query) {
+      const queryExtras = { ...this.queryExtras };
       if (query) {
-        this.queryExtras.autocomplete = query;
+        queryExtras.autocomplete = query;
       } else if ('autocomplete' in this.queryExtras) {
-        delete this.queryExtras.autocomplete;
-      } else {
+        queryExtras.autocomplete = undefined;
+      }
+      const { total, ...pieces } = await this.requestData(1, queryExtras);
+
+      return {
+        pieces,
+        total
+      };
+    },
+    async search({ pieces, total }) {
+      // Most probably due to empty/invalid query.
+      if (!pieces) {
         return;
       }
 
       this.currentPage = 1;
 
-      await this.getPieces();
-      await this.getAllPiecesTotal();
+      this.setPieces(pieces);
+      this.setAllPiecesSelection({
+        isSelected: false,
+        total
+      });
     },
     async filter(filter, value) {
       if (this.filterValues[filter] === value) {
@@ -400,8 +457,8 @@ export default {
       this.filterValues[filter] = value;
       this.currentPage = 1;
 
-      await this.getPieces();
-      await this.getAllPiecesTotal();
+      await this.managePieces();
+      await this.manageAllPiecesTotal();
       this.headers = this.computeHeaders();
 
       this.setCheckedDocs([]);
@@ -471,14 +528,14 @@ export default {
             body: {
               ...requestOptions,
               _ids: this.checked,
-              messages: messages,
+              messages,
               type: this.checked.length === 1 ? this.moduleLabels.singular
                 : this.moduleLabels.plural
             }
           });
           if (action === 'archive') {
-            await this.getPieces();
-            this.getAllPiecesTotal();
+            await this.managePieces();
+            await this.manageAllPiecesTotal();
             this.checked = [];
           }
         } catch (error) {
@@ -496,15 +553,14 @@ export default {
         return item._id;
       });
     },
-
     async onContentChanged({ doc, action }) {
       if (
         !doc ||
         !doc.aposLocale ||
         doc.aposLocale.split(':')[0] === this.modalData.locale
       ) {
-        await this.getPieces();
-        this.getAllPiecesTotal();
+        await this.managePieces();
+        await this.manageAllPiecesTotal();
         if (action === 'archive') {
           this.checked = this.checked.filter(checkedId => doc._id !== checkedId);
         }

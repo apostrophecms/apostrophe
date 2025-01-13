@@ -9,12 +9,13 @@
       v-bind="attrs"
       :is="href ? 'a' : 'button'"
       :id="attrs.id ? attrs.id : id"
+      ref="buttonTrigger"
       :target="target"
       :href="href"
       class="apos-button"
       :class="modifierClass"
       :tabindex="tabindex"
-      :disabled="isDisabled"
+      :disabled="isDisabled ? isDisabled : null"
       :type="buttonType"
       :role="role"
       :style="{color: textColor}"
@@ -33,16 +34,24 @@
       <div class="apos-button__content">
         <AposIndicator
           v-if="icon"
+          class="apos-button__icon"
           :icon="icon"
           :icon-size="iconSize"
-          class="apos-button__icon"
           :icon-color="iconFill"
+          @icon="$emit('icon', $event)"
         />
         <slot name="label">
           <span class="apos-button__label" :class="{ 'apos-sr-only' : (iconOnly || type === 'color') }">
             {{ $t(label, interpolate) }}
           </span>
         </slot>
+        <AposIndicator
+          v-if="secondIcon"
+          class="apos-button__second-icon"
+          :icon="secondIcon"
+          :icon-size="iconSize"
+          :icon-color="iconFill"
+        />
       </div>
     </component>
   </span>
@@ -136,9 +145,13 @@ export default {
     target: {
       type: String,
       default: null
+    },
+    secondIcon: {
+      type: String,
+      default: null
     }
   },
-  emits: [ 'click' ],
+  emits: [ 'click', 'icon' ],
   data() {
     return {
       id: createId()
@@ -152,8 +165,15 @@ export default {
       if (this.type === 'color') {
         // if color exists, use it
         if (this.color) {
+
+          let color = this.color;
+
+          if (color.startsWith('--')) {
+            color = `var(${color})`;
+          }
+
           return {
-            backgroundColor: this.color
+            backgroundColor: color
           };
         // if not provide a default placeholder
         } else {
@@ -223,6 +243,9 @@ export default {
   methods: {
     click($event) {
       this.$emit('click', $event);
+    },
+    focus() {
+      (this.$refs.buttonTrigger?.$el ?? this.$refs.buttonTrigger)?.focus();
     }
   }
 };
@@ -231,16 +254,18 @@ export default {
   .apos-button {
     @include type-base;
 
-    position: relative;
-    display: inline-block;
-    overflow: hidden;
-    padding: 10px 20px;
-    border: 1px solid var(--a-base-5);
-    color: var(--a-text-primary);
-    border-radius: var(--a-border-radius);
-    background-color: var(--a-base-9);
-    transition: all 200ms ease;
-    text-decoration: none;
+    & {
+      position: relative;
+      display: inline-block;
+      overflow: hidden;
+      padding: 10px 20px;
+      border: 1px solid var(--a-base-5);
+      color: var(--a-text-primary);
+      border-radius: var(--a-border-radius);
+      background-color: var(--a-base-9);
+      transition: all 200ms ease;
+      text-decoration: none;
+    }
 
     &:hover {
       cursor: pointer;
@@ -461,6 +486,11 @@ export default {
       margin-right: 0;
       margin-left: 5px;
     }
+
+    .apos-button__second-icon {
+      margin-right: 5px;
+      margin-left: 0;
+    }
   }
 
   .apos-button--outline {
@@ -631,6 +661,10 @@ export default {
     margin-right: 5px;
   }
 
+  .apos-button__second-icon {
+    margin-left: 5px;
+  }
+
   .apos-button--danger-on-hover:hover {
     color: var(--a-danger);
   }
@@ -670,6 +704,7 @@ export default {
     &:hover:not([disabled]),
     &:focus:not([disabled]) {
       transform: none;
+      box-shadow: none;
     }
   }
 

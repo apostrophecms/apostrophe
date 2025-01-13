@@ -7,6 +7,22 @@ export default {
         return [];
       }
     },
+    hint: {
+      type: Object,
+      default() {
+        return null;
+      }
+    },
+    suggestion: {
+      type: Object,
+      default() {
+        return null;
+      }
+    },
+    ariaId: {
+      type: String,
+      default: null
+    },
     customFields: {
       type: Array,
       default() {
@@ -44,22 +60,22 @@ export default {
       default() {
         return [ 'slug' ];
       }
+    },
+    focusIndex: {
+      type: Number,
+      default: null
     }
   },
   emits: [ 'select' ],
   methods: {
-    select(item, $event) {
-      if (item.disabled) {
-        $event.stopPropagation();
-        return;
-      }
+    select(item) {
       const selectedItems = this.selectedItems;
       if (!selectedItems.some(selectedItem => selectedItem._id === item._id)) {
         // Never modify a prop
         this.$emit('select', [ ...selectedItems, item ]);
       }
     },
-    getClasses(item) {
+    getClasses(item, index) {
       const classes = {
         'apos-search__item': true
       };
@@ -71,6 +87,9 @@ export default {
       });
       if (item.attachment) {
         classes['apos-search__item--attachment'] = true;
+      }
+      if (index === this.focusIndex) {
+        classes['apos-search__item--is-focused'] = true;
       }
 
       return classes;

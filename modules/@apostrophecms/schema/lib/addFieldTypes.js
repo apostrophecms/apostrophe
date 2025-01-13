@@ -1,6 +1,5 @@
 const _ = require('lodash');
 const dayjs = require('dayjs');
-const tinycolor = require('tinycolor2');
 const { klona } = require('klona');
 const { stripIndents } = require('common-tags');
 const joinr = require('./joinr');
@@ -46,12 +45,24 @@ module.exports = (self) => {
       return self.apos.area.isEmpty({ area: value });
     },
     isEqual (req, field, one, two) {
-      if (self.apos.area.isEmpty({ area: one[field.name] }) && self.apos.area.isEmpty({ area: two[field.name] })) {
+      const oneArea = self.apos.util.clonePermanent(one[field.name] || {});
+      const twoArea = self.apos.util.clonePermanent(two[field.name] || {});
+      if (
+        self.apos.area.isEmpty({ area: oneArea }) &&
+        self.apos.area.isEmpty({ area: twoArea })
+      ) {
         return true;
       }
-      return _.isEqual(one[field.name], two[field.name]);
+      return _.isEqual(oneArea, twoArea);
     },
     validate: function (field, options, warn, fail) {
+      if (field.widgets) {
+        warn(stripIndents`
+          Remember to nest "widgets" inside "options" when configuring an area field.
+
+          Otherwise, "widgets" has no effect.
+        `);
+      }
       let widgets = (field.options && field.options.widgets) || {};
 
       if (field.options && field.options.groups) {
@@ -119,7 +130,7 @@ module.exports = (self) => {
       texts.push({
         weight: field.weight || 15,
         text: value,
-        silent: silent
+        silent
       });
     },
     isEmpty(field, value) {
@@ -255,29 +266,10 @@ module.exports = (self) => {
   });
 
   self.addFieldType({
-    name: 'color',
-    async convert(req, field, data, destination) {
-      destination[field.name] = self.apos.launder.string(data[field.name]);
-
-      if (field.required && (_.isUndefined(destination[field.name]) || !destination[field.name].toString().length)) {
-        throw self.apos.error('required');
-      }
-
-      const test = tinycolor(destination[field.name]);
-      if (!tinycolor(test).isValid()) {
-        destination[field.name] = null;
-      }
-    },
-    isEmpty: function (field, value) {
-      return !value.length;
-    }
-  });
-
-  self.addFieldType({
     name: 'checkboxes',
     dynamicChoices: true,
-    async convert(req, field, data, destination) {
-      const choices = await self.getChoices(req, field);
+    async convert(req, field, data, destination, { ancestors = [] } = {}) {
+      const choices = await self.getChoices(req, field, [ ...ancestors, destination ]);
       if (typeof data[field.name] === 'string') {
         data[field.name] = self.apos.launder.string(data[field.name]).split(',');
 
@@ -311,7 +303,7 @@ module.exports = (self) => {
       texts.push({
         weight: field.weight || 15,
         text: (value || []).join(' '),
-        silent: silent
+        silent
       });
     },
     addQueryBuilder(field, query) {
@@ -339,16 +331,7 @@ module.exports = (self) => {
           }
         },
         choices: async function () {
-          const values = await query.toDistinct(field.name);
-          const choices = _.map(values, function (value) {
-            const choice = _.find(field.choices, { value: value });
-            return {
-              value: value,
-              label: choice && (choice.label || value)
-            };
-          });
-          self.apos.util.insensitiveSortByProperty(choices, 'label');
-          return choices;
+          return self.getChoicesForQueryBuilder(field, query);
         }
       });
     },
@@ -365,8 +348,8 @@ module.exports = (self) => {
   self.addFieldType({
     name: 'select',
     dynamicChoices: true,
-    async convert(req, field, data, destination) {
-      const choices = await self.getChoices(req, field);
+    async convert(req, field, data, destination, { ancestors = [] } = {}) {
+      const choices = await self.getChoices(req, field, [ ...ancestors, destination ]);
       destination[field.name] = self.apos.launder.select(data[field.name], choices);
     },
     index: function (value, field, texts) {
@@ -374,7 +357,7 @@ module.exports = (self) => {
       texts.push({
         weight: field.weight || 15,
         text: value,
-        silent: silent
+        silent
       });
     },
     addQueryBuilder(field, query) {
@@ -408,23 +391,7 @@ module.exports = (self) => {
           }
         },
         choices: async function () {
-          let allChoices;
-          const values = await query.toDistinct(field.name);
-          if ((typeof field.choices) === 'string') {
-            const req = self.apos.task.getReq();
-            allChoices = await self.apos.modules[field.moduleName][field.choices](req);
-          } else {
-            allChoices = field.choices;
-          }
-          const choices = _.map(values, function (value) {
-            const choice = _.find(allChoices, { value: value });
-            return {
-              value: value,
-              label: choice && (choice.label || value)
-            };
-          });
-          self.apos.util.insensitiveSortByProperty(choices, 'label');
-          return choices;
+          return self.getChoicesForQueryBuilder(field, query);
         }
       });
     }
@@ -776,8 +743,17 @@ module.exports = (self) => {
 
   self.addFieldType({
     name: 'array',
-    async convert(req, field, data, destination, { fetchRelationships = true } = {}) {
-      const options = { fetchRelationships };
+    async convert(
+      req,
+      field,
+      data,
+      destination,
+      {
+        fetchRelationships = true,
+        ancestors = [],
+        rootConvert = true
+      } = {}
+    ) {
       const schema = field.schema;
       data = data[field.name];
       if (!Array.isArray(data)) {
@@ -798,6 +774,11 @@ module.exports = (self) => {
         result.metaType = 'arrayItem';
         result.scopedArrayName = field.scopedArrayName;
         try {
+          const options = {
+            fetchRelationships,
+            ancestors: [ ...ancestors, destination ],
+            rootConvert
+          };
           await self.convert(req, schema, datum, result, options);
         } catch (e) {
           if (Array.isArray(e)) {
@@ -878,14 +859,29 @@ module.exports = (self) => {
 
   self.addFieldType({
     name: 'object',
-    async convert(req, field, data, destination, { fetchRelationships = true } = {}) {
-      const options = { fetchRelationships };
+    async convert(
+      req,
+      field,
+      data,
+      destination,
+      {
+        fetchRelationships = true,
+        ancestors = {},
+        rootConvert = true,
+        doc = {}
+      } = {}
+    ) {
       data = data[field.name];
       const schema = field.schema;
       const errors = [];
       const result = {
         ...(destination[field.name] || {}),
         _id: self.apos.launder.id(data && data._id) || self.apos.util.generateId()
+      };
+      const options = {
+        fetchRelationships,
+        ancestors: [ ...ancestors, destination ],
+        rootConvert
       };
       if (data == null || typeof data !== 'object' || Array.isArray(data)) {
         data = {};
@@ -975,8 +971,20 @@ module.exports = (self) => {
     // properties is handled at a lower level in a beforeSave
     // handler of the doc-type module.
 
-    async convert(req, field, data, destination, { fetchRelationships = true } = {}) {
-      const options = { fetchRelationships };
+    async convert(
+      req,
+      field,
+      data,
+      destination,
+      {
+        fetchRelationships = true,
+        rootConvert = true
+      } = {}
+    ) {
+      const options = {
+        fetchRelationships,
+        rootConvert
+      };
       const manager = self.apos.doc.getManager(field.withType);
       if (!manager) {
         throw Error('relationship with type ' + field.withType + ' unrecognized');
@@ -1009,7 +1017,7 @@ module.exports = (self) => {
 
           const _fields = {};
           if (field.schema?.length) {
-            await self.convert(req, field.schema, relation.fields || {}, _fields, options);
+            await self.convert(req, field.schema, relation._fields || {}, _fields, options);
           }
 
           destination[field.name].push({
@@ -1059,15 +1067,16 @@ module.exports = (self) => {
           if (result) {
             actualDocs.push(result);
           }
-        } else if ((item && ((typeof item._id) === 'string'))) {
+        } else if ((item && (typeof item._id === 'string'))) {
           const result = results.find(doc => (doc._id === item._id));
           if (result) {
             if (field.schema) {
+              const destItem = (Array.isArray(destination[field.name]) ? destination[field.name] : [])
+                .find((doc) => doc._id === item._id);
               result._fields = {
-                ...(destination[field.name]
-                  ?.find?.(doc => doc._id === item._id)
-                  ?._fields || {})
+                ...destItem?._fields || {}
               };
+
               if (item && ((typeof item._fields === 'object'))) {
                 await self.convert(req, field.schema, item._fields || {}, result._fields, options);
               }
@@ -1081,9 +1090,21 @@ module.exports = (self) => {
 
     relate: async function (req, field, objects, options) {
       if ((!self.apos.doc?.replicateReached) && (!field.idsStorage)) {
-        self.apos.util.warnDevOnce('premature-relationship-query', 'Database queries for types with relationships may fail if made before the @apostrophecms/doc:beforeReplicate event');
+        self.apos.util.warnDevOnce(
+          'premature-relationship-query',
+          'Database queries for types with relationships may fail if made before the @apostrophecms/doc:beforeReplicate event'
+        );
       }
-      return self.relationshipDriver(req, joinr.byArray, false, objects, field.idsStorage, field.fieldsStorage, field.name, options);
+      return self.relationshipDriver(
+        req,
+        joinr.byArray,
+        false,
+        objects,
+        field.idsStorage,
+        field.fieldsStorage,
+        field.name,
+        options
+      );
     },
 
     addQueryBuilder(field, query) {
@@ -1198,7 +1219,7 @@ module.exports = (self) => {
         self.validate(_field.schema, {
           type: 'relationship',
           subtype: _field.withType
-        });
+        }, _field);
         if (!_field.fieldsStorage) {
           _field.fieldsStorage = _field.name.replace(/^_/, '') + 'Fields';
         }

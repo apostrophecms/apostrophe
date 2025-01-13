@@ -1,0 +1,41 @@
+[data-apos-context-label] {
+  @include type-help;
+
+  & {
+    position: relative;
+    top: $spacing-base * 5;
+    display: none;
+    text-align: center;
+  }
+}
+
+body[data-breakpoint-preview-mode] {
+  container-type: size;
+  background: var(--a-base-10);
+
+  [data-apos-context-label] {
+    display: block;
+  }
+
+  [data-apos-refreshable] {
+    position: relative;
+    container-type: size;
+    overflow: clip scroll;
+    flex-grow: unset;
+    margin: $spacing-base * 6 auto auto;
+    border: 1px solid var(--a-base-6);
+    box-shadow: 0 0 12px 0 var(--a-base-7);
+    background-color: var(--a-background-primary);
+
+    &[data-resizable="false"] {
+      transition:
+        width 400ms ease,
+        height 400ms ease;
+    }
+
+    &[data-resizable="true"] {
+      resize: both;
+      overflow: scroll;
+    }
+  }
+}

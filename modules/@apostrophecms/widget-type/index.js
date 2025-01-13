@@ -192,13 +192,13 @@ module.exports = {
 
         return self.render(req, self.template, {
           widget: effectiveWidget,
-          options: options,
+          options,
           manager: self,
           contextOptions: _with
         });
       },
 
-      getWidgetsBundles (widgetType) {
+      getWidgetsBundles(widgetType) {
         const widget = self.apos.modules[widgetType];
 
         if (!widget) {
@@ -212,8 +212,16 @@ module.exports = {
           return names.includes(entry.name);
         });
 
-        return Object.entries(widget.__meta.webpack || {})
+        const metadata = self.apos.asset.hasBuildModule()
+          ? widget.__meta.build
+          : widget.__meta.webpack;
+
+        return Object.entries(metadata || {})
           .reduce((acc, [ moduleName, config ]) => {
+            if (self.apos.asset.hasBuildModule()) {
+              config = config?.[self.apos.asset.getBuildModuleAlias()];
+            }
+
             if (!config || !config.bundles) {
               return acc;
             }
@@ -310,6 +318,11 @@ module.exports = {
       // this area, including any `defaultOptions` for the widget type.
       //
       // Returns a new, sanitized widget object.
+      //
+      // Intentionally does not accept `ancestors`, widgets must be independent
+      // of parent document properties to ensure they can be copied safely
+      // between documents as long as they accept that widget type, so they
+      // automatically establish a new context for `following`.
 
       async sanitize(req, input, options, { fetchRelationships = true } = {}) {
         const convertOptions = { fetchRelationships };
@@ -401,7 +414,7 @@ module.exports = {
           previewIcon: self.options.previewIcon,
           previewUrl: self.options.previewUrl,
           action: self.action,
-          schema: schema,
+          schema,
           contextual: self.options.contextual,
           placeholderClass: self.options.placeholderClass,
           className: self.options.className,

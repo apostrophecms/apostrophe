@@ -317,12 +317,14 @@ export default {
   .apos-apply-tag-menu__tags {
     @include apos-list-reset();
 
-    max-height: 160px;
-    overflow-y: auto;
-    margin-top: 15px;
-    // Negative margin/padding below is for the checkbox focus state.
-    margin-left: -10px;
-    padding-left: 10px;
+    & {
+      max-height: 160px;
+      overflow-y: auto;
+      margin-top: 15px;
+      // Negative margin/padding below is for the checkbox focus state.
+      margin-left: -10px;
+      padding-left: 10px;
+    }
   }
 
   .apos-apply-tag-menu__tag {
@@ -339,9 +341,11 @@ export default {
   .apos-apply-tag-menu__empty-message {
     @include type-base;
 
-    margin-bottom: 20px;
-    max-width: 240px;
-    text-align: center;
+    & {
+      margin-bottom: 20px;
+      max-width: 240px;
+      text-align: center;
+    }
   }
 
   .apos-apply-tag-menu__empty-icon {
@@ -353,7 +357,9 @@ export default {
     /* stylelint-disable-next-line scale-unlimited/declaration-strict-value */
     @include type-title;
 
-    margin: 0;
+    & {
+      margin: 0;
+    }
   }
 
   .fade-enter-active, .fade-leave-active {

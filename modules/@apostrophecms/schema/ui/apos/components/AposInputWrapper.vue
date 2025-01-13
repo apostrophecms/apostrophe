@@ -3,7 +3,7 @@
     class="apos-field__wrapper"
     :class="{
       [`apos-field__wrapper--${field.type}`]: true,
-      'apos-field__wrapper--full-width': modifiers.includes('full-width')
+      'apos-field__wrapper--full-width': modifiers.includes('full-width'),
     }"
   >
     <component :is="wrapEl" :class="classList">
@@ -14,7 +14,8 @@
           class="apos-field__label"
           :class="{
             'apos-sr-only': field.hideLabel,
-            'apos-field__label--meta-left': field.meta && field.meta.position === 'left',
+            'apos-field__label--meta-left':
+              field.meta && field.meta.position === 'left',
           }"
           :for="uid"
           :data-apos-test-name="field.name"
@@ -24,17 +25,21 @@
           <span class="apos-field_label-info">
             {{ $t(label) }}
             <span v-if="field.required" class="apos-field__required">
-              *
-            </span>
+              * </span>
             <AposLabel
               v-if="field.tag"
               class="apos-field__tag"
               :label="field.tag.value || field.tag"
-              :modifiers="[ `apos-is-${field.tag.type || 'success'}`, 'apos-is-filled' ]"
+              :modifiers="[
+                `apos-is-${field.tag.type || 'success'}`,
+                'apos-is-filled',
+              ]"
               data-apos-test="field-tag"
             />
             <span
-              v-if="(field.help || field.htmlHelp) && displayOptions.helpTooltip"
+              v-if="
+                (field.help || field.htmlHelp) && displayOptions.helpTooltip
+              "
               data-apos-test="field-help-tooltip"
               class="apos-field__help-tooltip"
             >
@@ -54,26 +59,31 @@
               <AposLabel
                 label="apostrophe:changed"
                 class="apos-field__changed__label"
-                :modifiers="[ 'apos-is-warning', 'apos-is-filled' ]"
+                :modifiers="['apos-is-warning', 'apos-is-filled']"
                 tooltip="apostrophe:fieldHasUnpublishedChanges"
               />
             </span>
           </span>
-          <span data-apos-test="field-meta-wrapper" class="apos-field__label-meta">
-            <component
-              :is="name"
-              v-for="{name, namespace, data} in metaComponents"
-              :key="name"
-              :field="field"
-              :items="items"
-              :namespace="namespace"
-              :meta="data"
-              :meta-raw="meta"
-              :data-apos-test-component="name"
-              :data-apos-test-namespace="namespace"
-              data-apos-test="field-meta"
-              @replace-field-value="replaceFieldValue"
-            />
+          <span
+            data-apos-test="field-meta-wrapper"
+            class="apos-field__label-meta"
+          >
+            <slot name="meta">
+              <component
+                :is="name"
+                v-for="{ name, namespace, data } in metaComponents"
+                :key="name"
+                :field="field"
+                :items="items"
+                :namespace="namespace"
+                :meta="data"
+                :meta-raw="meta"
+                :data-apos-test-component="name"
+                :data-apos-test-namespace="namespace"
+                data-apos-test="field-meta"
+                @replace-field-value="replaceFieldValue"
+              />
+            </slot>
           </span>
         </component>
         <!-- eslint-disable vue/no-v-html -->
@@ -131,7 +141,8 @@ export default {
   border-width: 0;
   padding: 0;
 
-  [disable]:hover, [disabled] ~ .apos-choice-label-text:hover {
+  [disable]:hover,
+  [disabled] ~ .apos-choice-label-text:hover {
     cursor: not-allowed;
   }
 }
@@ -143,14 +154,16 @@ export default {
 .apos-field__label {
   @include type-label;
 
-  display: flex;
-  flex-wrap: nowrap;
-  align-items: center;
-  justify-content: space-between;
-  margin: 0 0 $spacing-base;
-  padding: 0;
-  color: var(--a-text-primary);
-  gap: $spacing-double;
+  & {
+    display: flex;
+    flex-wrap: nowrap;
+    align-items: center;
+    justify-content: space-between;
+    margin: 0 0 $spacing-base;
+    padding: 0;
+    color: var(--a-text-primary);
+    gap: $spacing-double;
+  }
 
   &.apos-field__label--meta-left {
     justify-content: flex-start;
@@ -180,9 +193,11 @@ export default {
 .apos-field__help {
   @include type-base;
 
-  margin: 0 0 $spacing-base;
-  line-height: var(--a-line-tall);
-  color: var(--a-base-3);
+  & {
+    margin: 0 0 $spacing-base;
+    line-height: var(--a-line-tall);
+    color: var(--a-base-3);
+  }
 }
 
 .apos-field__help-tooltip__icon {
@@ -198,8 +213,10 @@ export default {
 .apos-field__error {
   @include type-help;
 
-  margin: $spacing-base 0;
-  color: var(--a-danger);
+  & {
+    margin: $spacing-base 0;
+    color: var(--a-danger);
+  }
 }
 
 .apos-field__required {
@@ -257,5 +274,4 @@ export default {
     }
   }
 }
-
 </style>

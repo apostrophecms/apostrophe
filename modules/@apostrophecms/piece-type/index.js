@@ -147,8 +147,8 @@ module.exports = {
       publish: {
         label: 'apostrophe:publish',
         messages: {
-          progress: 'Publishing {{ type }}...',
-          completed: 'Published {{ count }} {{ type }}.'
+          progress: 'apostrophe:batchPublishProgress',
+          completed: 'apostrophe:batchPublishCompleted'
         },
         icon: 'earth-icon',
         modalOptions: {
@@ -161,8 +161,8 @@ module.exports = {
       archive: {
         label: 'apostrophe:archive',
         messages: {
-          progress: 'Archiving {{ type }}...',
-          completed: 'Archived {{ count }} {{ type }}.'
+          progress: 'apostrophe:batchArchiveProgress',
+          completed: 'apostrophe:batchArchiveCompleted'
         },
         icon: 'archive-arrow-down-icon',
         if: {
@@ -178,8 +178,8 @@ module.exports = {
       restore: {
         label: 'apostrophe:restore',
         messages: {
-          progress: 'Restoring {{ type }}...',
-          completed: 'Restored {{ count }} {{ type }}.'
+          progress: 'apostrophe:batchRestoreProgress',
+          completed: 'apostrophe:batchRestoreCompleted'
         },
         icon: 'archive-arrow-up-icon',
         if: {
@@ -251,8 +251,12 @@ module.exports = {
           result.currentPage = query.get('page') || 1;
           result.results = (await query.toArray())
             .map(doc => self.removeForbiddenFields(req, doc));
-          if (self.apos.launder.boolean(req.query['render-areas']) === true) {
-            await self.apos.area.renderDocsAreas(req, result.results);
+          const renderAreas = req.query['render-areas'];
+          const inline = renderAreas === 'inline';
+          if (inline || self.apos.launder.boolean(renderAreas)) {
+            await self.apos.area.renderDocsAreas(req, result.results, {
+              inline
+            });
           }
           if (query.get('choicesResults')) {
             result.choices = query.get('choicesResults');
@@ -291,8 +295,12 @@ module.exports = {
           if (!doc) {
             throw self.apos.error('notfound');
           }
-          if (self.apos.launder.boolean(req.query['render-areas']) === true) {
-            await self.apos.area.renderDocsAreas(req, [ doc ]);
+          const renderAreas = req.query['render-areas'];
+          const inline = renderAreas === 'inline';
+          if (inline || self.apos.launder.boolean(renderAreas)) {
+            await self.apos.area.renderDocsAreas(req, [ doc ], {
+              inline
+            });
           }
           self.apos.attachment.all(doc, { annotate: true });
           return doc;
@@ -1079,8 +1087,8 @@ module.exports = {
           if (batchOperation.permission) {
             return self.apos.permission.can(req, batchOperation.permission, self.name);
           }
-          return true;
 
+          return true;
         });
       },
       getManagerApiProjection(req) {

@@ -1,6 +1,12 @@
 const { stripIndent } = require('common-tags');
 
 module.exports = (self) => {
+  // FIXME: This entire function should be separated for external build modules.
+  // Use the next opportunity to clean up and let the legacy system be and
+  // introduce a new one for external build modules (e.g. `insertBundlesMarkupByManifest`).
+  // The only check for external build modules should be at the very top of
+  // `insertBundlesMarkup` function, resulting in a call to our new
+  // function.
   function insertBundlesMarkup({
     page = {},
     template = '',
@@ -10,11 +16,8 @@ module.exports = (self) => {
     stylesheetsPlaceholder,
     widgetsBundles = {}
   }) {
-    const renderMarkup = renderBundleMarkup(
-      self.apos.template.safe,
-      self.apos.asset.getAssetBaseUrl()
-    );
-
+    const modulePreload = new Set();
+    const renderMarkup = renderBundleMarkup(self, modulePreload);
     if (!scriptsPlaceholder && !stylesheetsPlaceholder) {
       return content;
     }
@@ -33,13 +36,14 @@ module.exports = (self) => {
     });
 
     if (scene === 'apos') {
-      return loadAllBundles({
+      return loadAllBundles(self, {
         content,
         scriptsPlaceholder,
         stylesheetsPlaceholder,
         extraBundles,
         renderMarkup,
         jsMainBundle,
+        modulePreload,
         cssMainBundle,
         es5
       });
@@ -47,15 +51,23 @@ module.exports = (self) => {
 
     const templateType = template.substring(template.lastIndexOf(':') + 1);
     const pageModule = page.type && self.apos.modules[page.type];
-    const { webpack = {} } = pageModule ? pageModule.__meta : {};
+    const metadata = pageModule
+      ? (
+        self.apos.asset.hasBuildModule()
+          ? pageModule.__meta.build
+          : pageModule.__meta.webpack
+      ) : {};
 
     const rebundleConfigs = rebundleModules.filter(entry => {
       const names = pageModule?.__meta?.chain?.map(c => c.name) ?? [ page.type ];
       return names.includes(entry.name);
     });
 
-    const configs = Object.entries(webpack || {})
+    const configs = Object.entries(metadata || {})
       .reduce((acc, [ moduleName, config ]) => {
+        if (self.apos.asset.hasBuildModule()) {
+          config = config?.[self.apos.asset.getBuildModuleAlias()];
+        }
         if (!config || !config.bundles) {
           return acc;
         }
@@ -68,6 +80,10 @@ module.exports = (self) => {
           )
         };
       }, widgetsBundles);
+
+    const cssExtraBundles = self.apos.asset.hasBuildModule()
+      ? Array.from(new Set([ ...extraBundles.js, ...extraBundles.css ]))
+      : extraBundles.css;
 
     const { jsBundles, cssBundles } = Object.entries(configs)
       .reduce((acc, [ name, { templates } ]) => {
@@ -84,7 +100,7 @@ module.exports = (self) => {
           });
 
         const cssMarkup = stylesheetsPlaceholder &&
-          extraBundles.css.includes(name) &&
+          cssExtraBundles.includes(name) &&
           renderMarkup({
             fileName: name,
             ext: 'css'
@@ -105,15 +121,27 @@ module.exports = (self) => {
         cssBundles: cssMainBundle
       });
 
+    const jsFinal = stripIndent`
+        ${jsBundles}
+        ${Array.from(modulePreload).join('\n')}
+      `;
+
     return content
-      .replace(scriptsPlaceholder, jsBundles)
+      .replace(scriptsPlaceholder, jsFinal)
       .replace(stylesheetsPlaceholder, cssBundles);
   }
 
   return { insertBundlesMarkup };
 };
 
-function renderBundleMarkup (safe, base) {
+function renderBundleMarkup(self, modulePreload) {
+  // The new system only for external build modules
+  if (self.apos.asset.hasBuildModule()) {
+    return renderBundleMarkupByManifest(self, modulePreload);
+  }
+  const safe = self.apos.template.safe;
+  const base = self.apos.asset.getAssetBaseUrl();
+
   return ({
     fileName, ext = 'js', es5 = false
   }) => {
@@ -136,12 +164,34 @@ function renderBundleMarkup (safe, base) {
   };
 }
 
-function loadAllBundles({
+function renderBundleMarkupByManifest(self, modulePreload) {
+  const safe = self.apos.template.safe;
+
+  return ({
+    fileName, ext = 'js', es5 = false
+  }) => {
+    const entries = self.apos.asset.getBundlePageMarkup({
+      scene: fileName,
+      output: ext,
+      modulePreload,
+      es5
+    });
+
+    return safe(
+      stripIndent`
+      ${entries.join('\n')}
+      `
+    );
+  };
+}
+
+function loadAllBundles(self, {
   content,
   extraBundles,
   scriptsPlaceholder,
   stylesheetsPlaceholder,
   jsMainBundle,
+  modulePreload,
   cssMainBundle,
   renderMarkup,
   es5
@@ -159,15 +209,24 @@ function loadAllBundles({
     `;
   };
 
+  const cssExtraBundles = self.apos.asset.hasBuildModule()
+    ? Array.from(new Set([ ...extraBundles.js, ...extraBundles.css ]))
+    : extraBundles.css;
+
   const jsBundles = extraBundles.js.reduce(
     (acc, bundle) => reduceToMarkup(acc, bundle, 'js'), jsMainBundle
   );
 
-  const cssBundles = extraBundles.css.reduce(
+  const cssBundles = cssExtraBundles.reduce(
     (acc, bundle) => reduceToMarkup(acc, bundle, 'css'), cssMainBundle
   );
 
+  const jsFinal = stripIndent`
+    ${jsBundles}
+    ${Array.from(modulePreload).join('\n')}
+  `;
+
   return content
-    .replace(scriptsPlaceholder, jsBundles)
+    .replace(scriptsPlaceholder, jsFinal)
     .replace(stylesheetsPlaceholder, cssBundles);
 }

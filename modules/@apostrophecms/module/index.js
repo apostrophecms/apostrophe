@@ -818,7 +818,8 @@ module.exports = {
         let urlOption = self.options[`${name}Url`];
         const imageOption = self.options[`${name}Image`];
         if (!urlOption) {
-          if (imageOption) {
+          // Webpack and the legacy asset pipeline
+          if (imageOption && !self.apos.asset.hasBuildModule()) {
             const chain = [ ...self.__meta.chain ].reverse();
             for (const entry of chain) {
               const path = `${entry.dirname}/public/${name}.${imageOption}`;
@@ -827,6 +828,10 @@ module.exports = {
                 break;
               }
             }
+          }
+          // The new external module asset pipeline
+          if (imageOption && self.apos.asset.hasBuildModule()) {
+            urlOption = `/modules/${self.__meta.name}/${name}.${imageOption}`;
           }
         }
         if (urlOption && urlOption.startsWith('/modules')) {

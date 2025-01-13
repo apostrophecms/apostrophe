@@ -1,6 +1,7 @@
 // this should be loaded first
 const opentelemetry = require('./lib/opentelemetry');
 const path = require('path');
+const url = require('url');
 const _ = require('lodash');
 const argv = require('boring')({ end: true });
 const fs = require('fs');
@@ -10,6 +11,7 @@ const { cpus } = require('os');
 const process = require('process');
 const npmResolve = require('resolve');
 const glob = require('./lib/glob.js');
+const moogRequire = require('./lib/moog-require');
 let defaults = require('./defaults.js');
 
 // ## Top-level options
@@ -212,8 +214,8 @@ async function apostrophe(options, telemetry, rootSpan) {
   try {
     const matches = process.version.match(/^v(\d+)/);
     const version = parseInt(matches[1]);
-    if (version < 12) {
-      throw new Error('Apostrophe 3.x requires at least Node.js 12.x.');
+    if (version < 18) {
+      throw new Error('Apostrophe requires at least Node.js 18.x.');
     }
     // The core must have a reference to itself in order to use the
     // promise event emitter code
@@ -225,10 +227,27 @@ async function apostrophe(options, telemetry, rootSpan) {
     Object.assign(self, require('./modules/@apostrophecms/module/lib/events.js')(self));
 
     // Determine root module and root directory
-    self.root = options.root || getRoot();
-    self.rootDir = options.rootDir || path.dirname(self.root.filename);
-    self.npmRootDir = options.npmRootDir || self.rootDir;
-    self.selfDir = __dirname;
+
+    const {
+      root,
+      rootDir,
+      npmRootDir,
+      selfDir
+    } = buildRoot(options);
+    self.root = root;
+    self.rootDir = rootDir;
+    self.npmRootDir = npmRootDir;
+    self.selfDir = selfDir;
+    self.getNpmPath = (name) => {
+      try {
+        return getNpmPath(name, self.npmRootDir);
+      } catch (e) {
+        // Not found via npm. This does not mean it doesn't
+        // exist as a project-level thing
+        return null;
+      }
+    };
+
     // Signals to various (build related) places that we are running a pnpm installation.
     // The relevant option, if set, has a higher precedence over the automated check.
     self.isPnpm = options.pnpm ??
@@ -236,8 +255,8 @@ async function apostrophe(options, telemetry, rootSpan) {
 
     testModule();
 
-    self.options = mergeConfiguration(options, defaults);
-    autodetectBundles();
+    self.options = await mergeConfiguration(options, defaults);
+    await autodetectBundles();
     acceptGlobalOptions();
 
     // Module-based async events (self.on and self.emit of each module,
@@ -271,8 +290,8 @@ async function apostrophe(options, telemetry, rootSpan) {
     // your own piece types
 
     self.instancesOf = function(name) {
-      return _.filter(self.modules, function(module) {
-        return self.synth.instanceOf(module, name);
+      return _.filter(self.modules, function(apostropheModule) {
+        return self.synth.instanceOf(apostropheModule, name);
       });
     };
 
@@ -292,20 +311,20 @@ async function apostrophe(options, telemetry, rootSpan) {
     self.aliasEvent('modulesReady', 'modulesRegistered');
     self.aliasEvent('afterInit', 'ready');
 
-    defineModules();
+    await defineModules();
 
     await instantiateModules();
-    lintModules();
+    await lintModules();
     await self.emit('modulesRegistered'); // formerly modulesReady
     self.apos.schema.validateAllSchemas();
     self.apos.schema.registerAllSchemas();
     await self.apos.lock.withLock('@apostrophecms/migration:migrate', async () => {
-      await self.apos.migration.migrate(); // emits before and after events, inside the lock
+      await self.apos.migration.migrate(self.argv);
       // Inserts the global doc in the default locale if it does not exist; same for other
       // singleton piece types registered by other modules
-      for (const module of Object.values(self.modules)) {
-        if (self.instanceOf(module, '@apostrophecms/piece-type') && module.options.singletonAuto) {
-          await module.insertIfMissing();
+      for (const apostropheModule of Object.values(self.modules)) {
+        if (self.instanceOf(apostropheModule, '@apostrophecms/piece-type') && apostropheModule.options.singletonAuto) {
+          await apostropheModule.insertIfMissing();
         }
       }
       await self.apos.page.implementParkAllInDefaultLocale();
@@ -337,14 +356,14 @@ async function apostrophe(options, telemetry, rootSpan) {
   // SUPPORTING FUNCTIONS BEGIN HERE
 
   // Merge configuration from defaults, data/local.js and app.js
-  function mergeConfiguration(options, defaults) {
+  async function mergeConfiguration(options, defaults) {
     let config = {};
     let local = {};
     const localPath = options.__localPath || '/data/local.js';
     const reallyLocalPath = self.rootDir + localPath;
 
     if (fs.existsSync(reallyLocalPath)) {
-      local = require(reallyLocalPath);
+      local = await self.root.import(reallyLocalPath);
     }
 
     // Otherwise making a second apos instance
@@ -369,29 +388,14 @@ async function apostrophe(options, telemetry, rootSpan) {
     return config;
   }
 
-  function getRoot() {
-    let _module = module;
-    let m = _module;
-    while (m.parent && m.parent.filename) {
-      // The test file is the root as far as we are concerned,
-      // not mocha itself
-      if (m.parent.filename.match(/\/node_modules\/mocha\//)) {
-        return m;
-      }
-      m = m.parent;
-      _module = m;
-    }
-    return _module;
-  }
-
-  function nestedModuleSubdirs() {
+  async function nestedModuleSubdirs() {
     if (!options.nestedModuleSubdirs) {
       return;
     }
     const configs = glob(self.localModules + '/**/modules.js', { follow: true });
-    _.each(configs, function(config) {
+    for (const config of configs) {
       try {
-        _.merge(self.options.modules, require(config));
+        _.merge(self.options.modules, await self.root.import(config));
       } catch (e) {
         console.error(stripIndent`
           When nestedModuleSubdirs is active, any modules.js file beneath:
@@ -408,39 +412,37 @@ async function apostrophe(options, telemetry, rootSpan) {
         `);
         throw e;
       }
-    });
+    }
   }
 
-  function autodetectBundles() {
-    const modules = _.keys(self.options.modules);
-    _.each(modules, function(name) {
-      const path = getNpmPath(name);
-      if (!path) {
-        return;
+  async function autodetectBundles() {
+    const apostropheModules = Object.keys(self.options.modules);
+    for (const apostropheModuleName of apostropheModules) {
+      const npmPath = self.getNpmPath(apostropheModuleName);
+      if (!npmPath) {
+        continue;
       }
-      const module = require(path);
-      if (module.bundle) {
-        self.options.bundles = (self.options.bundles || []).concat(name);
-        _.each(module.bundle.modules, function(name) {
-          if (!_.has(self.options.modules, name)) {
-            const bundledModule = require(require('path').dirname(path) + '/' + module.bundle.directory + '/' + name);
+
+      const apostropheModule = await self.root.import(npmPath);
+      if (apostropheModule.bundle) {
+        self.options.bundles = (self.options.bundles || []).concat(apostropheModuleName);
+        const bundleModules = apostropheModule.bundle.modules;
+        for (const bundleModuleName of bundleModules) {
+          if (!apostropheModules.includes(bundleModuleName)) {
+            const bundledModule = await self.root.import(
+              path.resolve(
+                path.dirname(npmPath),
+                apostropheModule.bundle.directory,
+                bundleModuleName,
+                'index.js'
+              )
+            );
             if (bundledModule.improve) {
-              self.options.modules[name] = {};
+              self.options.modules[bundleModuleName] = {};
             }
           }
-        });
+        }
       }
-    });
-  }
-
-  function getNpmPath(name) {
-    const parentPath = path.resolve(self.npmRootDir);
-    try {
-      return npmResolve.sync(name, { basedir: parentPath });
-    } catch (e) {
-      // Not found via npm. This does not mean it doesn't
-      // exist as a project-level thing
-      return null;
     }
   }
 
@@ -499,9 +501,10 @@ async function apostrophe(options, telemetry, rootSpan) {
       port: 7900,
       secret: 'irrelevant'
     });
-    const m = findTestModule();
+    const m = self.root;
+    checkTestModule();
     // Allow tests to be in test/ or in tests/
-    const testDir = require('path').dirname(m.filename);
+    const testDir = path.dirname(m.filename);
     const moduleDir = testDir.replace(/\/tests?$/, '');
     if (testDir === moduleDir) {
       throw new Error('Test file must be in test/ or tests/ subdirectory of module');
@@ -518,33 +521,21 @@ async function apostrophe(options, telemetry, rootSpan) {
       fs.mkdirSync(testDir + '/node_modules' + pkgNamespace, { recursive: true });
       fs.symlinkSync(moduleDir, testDir + '/node_modules/' + pkgName, 'dir');
     }
-
-    // Not quite superfluous: it'll return self.root, but
-    // it also makes sure we encounter mocha along the way
+    // Makes sure we encounter mocha along the way
     // and throws an exception if we don't
-    function findTestModule() {
-      let m = module;
+    function checkTestModule() {
       const testFor = `node_modules${path.sep}mocha`;
       if (!require.main.filename.includes(testFor)) {
         throw new Error('mocha does not seem to be running, is this really a test?');
       }
-      while (m) {
-        if (m.parent && m.parent.filename.includes(testFor)) {
-          return m;
-        } else if (!m.parent) {
-          // Mocha v10 doesn't inject mocha paths inside `module`, therefore, we only detect the parent until the last parent. But we can get Mocha running using `require.main` - Amin
-          return m;
-        }
-        m = m.parent;
-      }
     }
   }
 
-  function defineModules() {
+  async function defineModules() {
     // Set moog-require up to create our module manager objects
 
     self.localModules = self.options.modulesSubdir || self.options.__testLocalModules || (self.rootDir + '/modules');
-    const synth = require('./lib/moog-require')({
+    const synth = await moogRequire({
       root: self.root,
       bundles: [ 'apostrophe' ].concat(self.options.bundles || []),
       localModules: self.localModules,
@@ -557,7 +548,9 @@ async function apostrophe(options, telemetry, rootSpan) {
         'icons',
         'i18n',
         'webpack',
-        'commands'
+        'build',
+        'commands',
+        'before'
       ]
     });
 
@@ -569,11 +562,11 @@ async function apostrophe(options, telemetry, rootSpan) {
     self.redefine = self.synth.redefine;
     self.create = self.synth.create;
 
-    nestedModuleSubdirs();
+    await nestedModuleSubdirs();
 
-    _.each(self.options.modules, function(options, name) {
-      synth.define(name, options);
-    });
+    for (const [ name, options ] of Object.entries(self.options.modules)) {
+      await synth.define(name, options);
+    }
 
     // Apostrophe prefers that any improvements to @apostrophecms/global
     // be applied before any project level version of @apostrophecms/global
@@ -582,12 +575,95 @@ async function apostrophe(options, telemetry, rootSpan) {
     return synth;
   }
 
+  // Reorder modules based on their `before` property.
+  async function sortModules(moduleNames) {
+    // The module names that have a `before` property
+    const beforeModules = [];
+    // The metadata quick access of all modules
+    const modules = {};
+    // Recursion guard
+    const recursionGuard = {};
+    // The sorted modules result
+    const sorted = [];
+
+    // The base module sort metadata
+    for (const name of moduleNames) {
+      const metadata = await self.synth.getMetadata(name);
+      const before = Object.values(metadata.before).reverse().find(name => typeof name === 'string');
+      if (before) {
+        beforeModules.push(name);
+      }
+      modules[name] = {
+        before,
+        beforeSelf: []
+      };
+    }
+
+    // Loop through the modules that have a `before` property,
+    // validate and fill the initial `beforeSelf` metadata (first pass).
+    for (const name of beforeModules) {
+      const m = modules[name];
+      const before = m.before;
+      if (m.before === name) {
+        throw new Error(`Module "${name}" has a 'before' property that references itself.`);
+      }
+      if (!modules[before]) {
+        throw new Error(`Module "${name}" has a 'before' property that references a non-existent module: "${before}".`);
+      }
+      // Add the current module name to the target's beforeSelf.
+      modules[before].beforeSelf.push(name);
+    }
+
+    // Loop through the modules that have a `before` properties
+    // now that we have the initial metadata (second pass).
+    // This takes care of edge cases like `before` that points to another module
+    // that has a `before` property itself, circular `before` references, etc.
+    // in a very predictable way.
+    for (const name of beforeModules) {
+      const m = modules[name];
+      const target = modules[m.before];
+      if (!target) {
+        continue;
+      }
+      // Add all the modules that want to be before this one to the target's beforeSelf.
+      // Do this recursively for every module from the beforeSelf array that has own `beforeSelf` members.
+      addBeforeSelfRecursive(name, m.beforeSelf, target.beforeSelf);
+    }
+
+    // Fill in the sorted array, first wins when uniquefy-ing.
+    for (const name of moduleNames) {
+      sorted.push(...modules[name].beforeSelf, name);
+    }
+
+    // A unique array of sorted module names.
+    return [ ...new Set(sorted) ];
+
+    function addBeforeSelfRecursive(moduleName, beforeSelf, target) {
+      if (beforeSelf.length === 0) {
+        return;
+      }
+      if (recursionGuard[moduleName]) {
+        return;
+      }
+      recursionGuard[moduleName] = true;
+
+      beforeSelf.forEach((name) => {
+        if (recursionGuard[name]) {
+          return;
+        }
+        target.unshift(name);
+        addBeforeSelfRecursive(name, modules[name].beforeSelf, target);
+      });
+    }
+  }
+
   async function instantiateModules() {
     self.modules = {};
-    for (const item of modulesToBeInstantiated()) {
+    const sorted = await sortModules(modulesToBeInstantiated());
+    for (const item of sorted) {
       // module registers itself in self.modules
-      const module = await self.synth.create(item, { apos: self });
-      await module.emit('moduleReady');
+      const apostropheModule = await self.synth.create(item, { apos: self });
+      await apostropheModule.emit('moduleReady');
     }
   }
 
@@ -598,10 +674,10 @@ async function apostrophe(options, telemetry, rootSpan) {
     });
   }
 
-  function lintModules() {
+  async function lintModules() {
     const validSteps = [];
-    for (const module of Object.values(self.modules)) {
-      for (const step of module.__meta.chain) {
+    for (const apostropheModule of Object.values(self.modules)) {
+      for (const step of apostropheModule.__meta.chain) {
         validSteps.push(step.name);
       }
     }
@@ -616,19 +692,26 @@ async function apostrophe(options, telemetry, rootSpan) {
         const nsDirs = fs.readdirSync(`${self.localModules}/${dir}`);
         for (let nsDir of nsDirs) {
           nsDir = `${dir}/${nsDir}`;
-          testDir(nsDir);
+          await testDir(nsDir);
         }
       } else {
         testDir(dir);
       }
     }
-    function testDir(name) {
+    async function testDir(name) {
+      if (name.startsWith('.')) {
+        return;
+      }
       // Projects that have different theme modules activated at different times
       // are a frequent source of false positives for this warning, so ignore
       // seemingly unused modules with "theme" in the name
       if (!validSteps.includes(name)) {
         try {
-          const submodule = require(require('path').resolve(`${self.localModules}/${name}`));
+          // It's a project level modules definition, skip it.
+          if (fs.existsSync(path.resolve(self.localModules, name, 'modules.js'))) {
+            return;
+          }
+          const submodule = await self.root.import(path.resolve(self.localModules, name, 'index.js'));
           if (submodule && submodule.options && submodule.options.ignoreUnusedFolderWarning) {
             return;
           }
@@ -666,7 +749,7 @@ async function apostrophe(options, telemetry, rootSpan) {
       }
     }
 
-    for (const [ name, module ] of Object.entries(self.modules)) {
+    for (const [ name, apostropheModule ] of Object.entries(self.modules)) {
       if (name.match(/^apostrophe-/)) {
         self.util.warnDevOnce(
           'namespace-apostrophe-modules',
@@ -691,17 +774,17 @@ async function apostrophe(options, telemetry, rootSpan) {
         );
       }
 
-      if (module.options.extends && ((typeof module.options.extends) === 'string')) {
+      if (apostropheModule.options.extends && ((typeof apostropheModule.options.extends) === 'string')) {
         lint(`The module ${name} contains an "extends" option. This is probably a\nmistake. In Apostrophe "extend" is used to extend other modules.`);
       }
-      if (module.options.singletonWarningIfNot && (name !== module.options.singletonWarningIfNot)) {
-        lint(`The module ${name} extends ${module.options.singletonWarningIfNot}, which is normally\na singleton (Apostrophe creates only one instance of it). Two competing\ninstances will lead to problems. If you are adding project-level code to it,\njust use modules/${module.options.singletonWarningIfNot}/index.js and do not use "extend".\nIf you are improving it via an npm module, use "improve" rather than "extend".\nIf neither situation applies you should probably just make a new module that does\nnot extend anything.\n\nIf you are sure you know what you are doing, you can set the\nsingletonWarningIfNot: false option for this module.`);
+      if (apostropheModule.options.singletonWarningIfNot && (name !== apostropheModule.options.singletonWarningIfNot)) {
+        lint(`The module ${name} extends ${apostropheModule.options.singletonWarningIfNot}, which is normally\na singleton (Apostrophe creates only one instance of it). Two competing\ninstances will lead to problems. If you are adding project-level code to it,\njust use modules/${apostropheModule.options.singletonWarningIfNot}/index.js and do not use "extend".\nIf you are improving it via an npm module, use "improve" rather than "extend".\nIf neither situation applies you should probably just make a new module that does\nnot extend anything.\n\nIf you are sure you know what you are doing, you can set the\nsingletonWarningIfNot: false option for this module.`);
       }
-      if (name.match(/-widget$/) && (!extending(module)) && (!module.options.ignoreNoExtendWarning)) {
+      if (name.match(/-widget$/) && (!extending(apostropheModule)) && (!apostropheModule.options.ignoreNoExtendWarning)) {
         lint(`The module ${name} does not extend anything.\n\nA -widget module usually extends @apostrophecms/widget-type or another widget type.\nOr possibly you forgot to npm install something.\n\nIf you are sure you are doing the right thing, set the\nignoreNoExtendWarning option to true for this module.`);
-      } else if (name.match(/-page$/) && (name !== '@apostrophecms/page') && (!extending(module)) && (!module.options.ignoreNoExtendWarning)) {
+      } else if (name.match(/-page$/) && (name !== '@apostrophecms/page') && (!extending(apostropheModule)) && (!apostropheModule.options.ignoreNoExtendWarning)) {
         lint(`The module ${name} does not extend anything.\n\nA -page module usually extends @apostrophecms/page-type or\n@apostrophecms/piece-page-type or another page type.\nOr possibly you forgot to npm install something.\n\nIf you are sure you are doing the right thing, set the\nignoreNoExtendWarning option to true for this module.`);
-      } else if ((!extending(module)) && (!hasCode(name)) && (!isBundle(name)) && (!module.options.ignoreNoCodeWarning)) {
+      } else if ((!extending(apostropheModule)) && (!hasCode(name)) && (!isBundle(name)) && (!apostropheModule.options.ignoreNoCodeWarning)) {
         lint(`The module ${name} does not extend anything and does not have any code.\n\nThis usually means that you:\n\n1. Forgot to "extend" another module\n2. Configured a module that comes from npm without npm installing it\n3. Simply haven't written your "index.js" yet\n\nIf you really want a module with no code, set the ignoreNoCodeWarning option\nto true for this module.`);
       }
     }
@@ -738,12 +821,12 @@ async function apostrophe(options, telemetry, rootSpan) {
       const d = self.synth.definitions[name];
       return d.bundle || (d.extend && d.extend.bundle);
     }
-    function extending(module) {
+    function extending(apostropheModule) {
       // If the module extends no other module, then it will
       // have up to four entries in its inheritance chain:
       // project level self, npm level self, `apostrophe-modules`
       // project-level and `apostrophe-modules` npm level.
-      return module.__meta.chain.length > 4;
+      return apostropheModule.__meta.chain.length > 4;
     }
 
     function lint(s) {
@@ -774,4 +857,78 @@ function clusterFork() {
 function respawn(worker) {
   console.error(`Respawning worker process ${worker.process.pid}`);
   clusterFork();
+}
+
+module.exports.buildRoot = buildRoot;
+
+function buildRoot(options) {
+  const root = getRoot(options);
+  const rootDir = options.rootDir || path.dirname(root.filename);
+  const npmRootDir = options.npmRootDir || rootDir;
+  const selfDir = __dirname;
+
+  return {
+    root,
+    rootDir,
+    npmRootDir,
+    selfDir
+  };
+}
+function getRoot(options) {
+  const root = options.root;
+  if (root?.filename && root?.require) {
+    return {
+      filename: root.filename,
+      import: async (id) => root.require(id),
+      require: (id) => root.require(id)
+    };
+  }
+
+  if (root?.url) {
+    // Apostrophe was started from an ESM project
+    const filename = url.fileURLToPath(root.url);
+    const dynamicImport = async (id) => {
+      const { default: defaultExport, ...rest } = await import(id);
+
+      return defaultExport || rest;
+    };
+
+    return {
+      filename,
+      import: dynamicImport,
+      require: (id) => {
+        console.warn(`self.apos.root.require is now async, please verify that you await the promise (${id})`);
+
+        return dynamicImport(id);
+      }
+    };
+  }
+
+  // Legacy commonjs logic
+  function getLegacyRoot() {
+    let _module = module;
+    let m = _module;
+    while (m.parent && m.parent.filename) {
+      // The test file is the root as far as we are concerned,
+      // not mocha itself
+      if (m.parent.filename.match(/\/node_modules\/mocha\//)) {
+        return m;
+      }
+      m = m.parent;
+      _module = m;
+    }
+    return _module;
+  }
+  const legacyRoot = getLegacyRoot();
+  return {
+    filename: legacyRoot.filename,
+    import: async (id) => legacyRoot.require(id),
+    require: (id) => legacyRoot.require(id)
+  };
+};
+
+module.exports.getNpmPath = getNpmPath;
+
+function getNpmPath(name, baseDir) {
+  return npmResolve.sync(name, { basedir: path.resolve(baseDir) });
 }

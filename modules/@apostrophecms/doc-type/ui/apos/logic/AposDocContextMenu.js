@@ -87,6 +87,10 @@ export default {
     localeSwitched: {
       type: Boolean,
       default: false
+    },
+    moduleLabels: {
+      type: Object,
+      default: null
     }
   },
   emits: [ 'menu-open', 'menu-close', 'close' ],
@@ -168,6 +172,7 @@ export default {
           }
         ] : [])
       ];
+
       return menu;
     },
     customMenusByContext() {
@@ -206,7 +211,8 @@ export default {
 
         ifProps = ifProps || {};
         moduleIf = moduleIf || {};
-        const canSeeOperation = checkIfConditions(this.doc, ifProps) && checkIfConditions(this.moduleOptions, moduleIf);
+        const canSeeOperation = checkIfConditions(this.doc, ifProps) &&
+            checkIfConditions(this.moduleOptions, moduleIf);
 
         if (!canSeeOperation) {
           return false;
@@ -218,9 +224,8 @@ export default {
     moduleName() {
       if (apos.modules[this.context.type].action === apos.modules['@apostrophecms/page'].action) {
         return '@apostrophecms/page';
-      } else {
-        return this.context.type;
       }
+      return this.context.type;
     },
     moduleOptions() {
       return apos.modules[this.moduleName];
@@ -288,6 +293,7 @@ export default {
         this.canEdit &&
         !this.context.parked &&
         this.moduleOptions.canPublish &&
+        !this.moduleOptions.singleton &&
         this.context.lastPublishedAt &&
         this.manuallyPublished
       );
@@ -393,6 +399,7 @@ export default {
         this.customAction(this.context, operation);
         return;
       }
+
       this[action](this.context);
     },
     async edit(doc) {
@@ -429,13 +436,30 @@ export default {
 
     },
     async customAction(doc, operation) {
+      if (operation.replaces) {
+        const confirm = await apos.confirm({
+          heading: 'apostrophe:replaceHeadingPrompt',
+          description: this.$t('apostrophe:replaceDescPrompt'),
+          affirmativeLabel: 'apostrophe:replace',
+          icon: false
+        });
+        if (!confirm) {
+          return;
+        }
+        this.$emit('close', doc);
+      }
       const props = {
         moduleName: operation.moduleName || this.moduleName,
+        moduleLabels: this.moduleLabels,
         // For backwards compatibility
         doc,
         ...docProps(doc),
         ...operation.props
       };
+      if (operation.type === 'event') {
+        apos.bus.$emit(operation.action, props);
+        return;
+      }
       await apos.modal.execute(operation.modal, props);
       function docProps(doc) {
         return Object.fromEntries(Object.entries(operation.docProps || {}).map(([ key, value ]) => {

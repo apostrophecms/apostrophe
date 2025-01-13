@@ -113,7 +113,7 @@ export default {
       html.appendChild(list);
 
       return {
-        content: html,
+        content: html.innerHTML,
         localize: false
       };
     },
@@ -133,9 +133,11 @@ export default {
   .apos-input__role__permission-grid {
     @include type-base;
 
-    display: grid;
-    margin-top: $spacing-triple;
-    grid-template-columns: repeat(auto-fit, minmax(50%, 1fr));
+    & {
+      display: grid;
+      margin-top: $spacing-triple;
+      grid-template-columns: repeat(auto-fit, minmax(50%, 1fr));
+    }
   }
 
   .apos-input__role__permission-grid__row {
@@ -158,8 +160,10 @@ export default {
   .apos-input__role__permission-grid__set-name {
     @include type-title;
 
-    display: inline-flex;
-    margin: 0 0 $spacing-double;
+    & {
+      display: inline-flex;
+      margin: 0 0 $spacing-double;
+    }
   }
 
   .apos-input__role__permission-grid__value {

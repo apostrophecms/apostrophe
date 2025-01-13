@@ -1,35 +1,27 @@
 
 import AposInputMixin from 'Modules/@apostrophecms/schema/mixins/AposInputMixin';
-import { Sketch as Picker } from '@ckpack/vue-color';
-import tinycolor from 'tinycolor2';
+import AposColor from '../components/AposColor.vue';
+import { TinyColor } from '@ctrl/tinycolor';
 
 export default {
   name: 'AposInputColor',
   components: {
-    Picker
+    AposColor
   },
   mixins: [ AposInputMixin ],
   data() {
     return {
       active: false,
-      tinyColorObj: null,
-      startsNull: false,
-      defaultFormat: 'hex8',
-      defaultPickerOptions: {
-        presetColors: [
-          '#D0021B', '#F5A623', '#F8E71C', '#8B572A', '#7ED321',
-          '#417505', '#BD10E0', '#9013FE', '#4A90E2', '#50E3C2',
-          '#B8E986', '#000000', '#4A4A4A', '#9B9B9B', '#FFFFFF'
-        ],
-        disableAlpha: false,
-        disableFields: false
-      }
+      tinyColorObj: null
     };
   },
   computed: {
-    // Color picker doesn't allow null or undefined values
     pickerValue() {
-      return this.next || '';
+      return this.next || this.defaultValue;
+    },
+    // Color picker doesn't allow null or undefined values
+    defaultValue() {
+      return this.field.def || '';
     },
     buttonOptions() {
       return {
@@ -38,16 +30,9 @@ export default {
         color: this.modelValue.data || ''
       };
     },
-    format() {
-      return this.field.options && this.field.options.format
-        ? this.field.options.format
-        : this.defaultFormat;
+    options() {
+      return this.field?.options || {};
     },
-    pickerOptions() {
-      const fieldOptions = this.field.options?.pickerOptions || {};
-      return Object.assign(this.defaultPickerOptions, fieldOptions);
-    },
-
     valueLabel() {
       if (this.next) {
         return this.next;
@@ -75,8 +60,7 @@ export default {
       this.active = false;
     },
     update(value) {
-      this.tinyColorObj = tinycolor(value.hsl);
-      this.next = this.tinyColorObj.toString(this.format);
+      this.next = value;
     },
     validate(value) {
       if (this.field.required) {
@@ -89,8 +73,10 @@ export default {
         return false;
       }
 
-      const color = tinycolor(value);
-      return color.isValid() ? false : 'Error';
+      const color = new TinyColor(value);
+      if (!value.startsWith('--')) {
+        return color.isValid ? false : 'Error';
+      }
     },
     clear() {
       this.next = '';

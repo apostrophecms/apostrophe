@@ -151,10 +151,12 @@ function getForbiddenTooltip(locale) {
 .apos-locale-picker__locale-display {
   @include apos-button-reset();
 
-  display: block;
-  box-sizing: border-box;
-  width: 100%;
-  padding: 12px 35px;
+  & {
+    display: block;
+    box-sizing: border-box;
+    width: 100%;
+    padding: 12px 35px;
+  }
 
   &:focus, &:active {
     outline: none;
@@ -175,15 +177,17 @@ function getForbiddenTooltip(locale) {
 .apos-locales-picker__filter {
   @include type-large;
 
-  box-sizing: border-box;
-  width: 100%;
-  padding: 20px 45px 20px 20px;
-  border-top: 0;
-  border-right: 0;
-  border-bottom: 1px solid var(--a-base-9);
-  border-left: 0;
-  border-top-right-radius: var(--a-border-radius);
-  border-top-left-radius: var(--a-border-radius);
+  & {
+    box-sizing: border-box;
+    width: 100%;
+    padding: 20px 45px 20px 20px;
+    border-top: 0;
+    border-right: 0;
+    border-bottom: 1px solid var(--a-base-9);
+    border-left: 0;
+    border-top-right-radius: var(--a-border-radius);
+    border-top-left-radius: var(--a-border-radius);
+  }
 
   &::placeholder {
     color: var(--a-base-4);

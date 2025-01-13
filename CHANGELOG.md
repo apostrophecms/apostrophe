@@ -4,21 +4,227 @@
 
 ### Fixes
 
-* Registering duplicate icon is no longer breaking the build.
 * Field inputs inside an array modal can now be focused/tabbed via keyboard
+* Fixes ability to change color hue by clicking the color hue bar rather than dragging the indicator
+* Prevents the rich text control bar from closing while using certain UI within the color picker
+
+### Adds
+
+* Ability to disable the color spectrum UI of a color picker
+* Accessibility improvement for the rich text editor Typography toolbar item.
+* Adds `moduleLabels` prop to `AposDocContextMenu` to pass it to opened modals from custom operations (used by templates to define labels to display on the export modal).
+
+### Changes
+
+* The `pickerOptions` sub property of a color field's configuration has been merged with it's parent `options` object.
+
+## 4.11.2 (2024-12-29)
+
+### Fixes
+
+* Fixes a bug where images in Media manager are not selectable (click on an image does nothing) in both default and relationship mode.
+* Eliminated superfluous error messages. The convert method now waits for all recursive invocations to complete before attempting to determine if fields are visible.
+
+### Adds
+
+* Possibility to set a field not ready when performing async operations, when a field isn't ready, the validation and emit won't occur. 
+
+## 4.11.1 (2024-12-18)
+
+### Fixes
+
+* Corrected a unit test that relies on the sitemap module, as it now makes explicit that the project level `baseUrl` must be set for a successful experience, and the module level `baseUrl` was set earlier. No other changes.
+
+## 4.11.0 (2024-12-18)
+
+### Adds
+
+* When validating an `area` field, warn the developer if `widgets` is not nested in `options`.
+* Adds support for supplying CSS variable names to a color field's `presetColors` array as selectable values.
+* Adds support for dynamic focus trap in Context menus (prop `dynamicFocus`). When set to `true`, the focusable elements are recalculated on each cycle step.
+* Adds option to disable `tabindex` on `AposToggle` component. A new prop `disableFocus` can be set to `false` to disable the focus on the toggle button. It's enabled by default.
+* Adds support for event on `addContextOperation`, an option `type` can now be passed and can be `modal` (default) or `event`, in this case it does not try to open a modal but emit a bus event using the action as name.
+
+### Fixes
+
+* Focus properly Widget Editor modals when opened. Keep the previous active focus on the modal when closing the widget editor.
+* a11y improvements for context menus.
+* Fixes broken widget preview URL when the image is overridden (module improve) and external build module is registered.
+* Inject dynamic custom bundle CSS when using external build module with no CSS entry point.
+* Range field now correctly takes 0 into account.
+* Apos style does not go through `postcss-viewport-to-container-toggle` plugin anymore to avoid UI bugs.
+
+## 4.10.0 (2024-11-20)
+
+### Fixes
+
+* Extra bundle detection when using external build module works properly now.
+* Widget players are now properly invoked when they arrive later in the page load process.
+* Fix permission grid tooltip display.
+* Fixes a bug that crashes external frontend applications.
+* Fixes a false positive warning for module not in use for project level submodules (e.g. `widges/module.js`) and dot-folders (e.g. `.DS_Store`).
+* Bumped `express-bearer-token` dependency to address a low-severity `npm audit` warning regarding noncompliant cookie names and values. Apostrophe
+did not actually use any noncompliant cookie names or values, so there was no vulnerability in Apostrophe.
+* Rich text "Styles" toolbar now has visually focused state.
+* The `renderPermalinks` and `renderImages` methods of the `@apostrophecms/rich-text` module now correctly resolve the final URLs of page links and inline images in rich text widgets, even when the user has editing privileges. Formerly this was mistakenly prevented by logic intended to preserve the editing experience. The editing experience never actually relied on the
+rendered output.
+* Search bar will perform the search even if the bar is empty allowing to reset a search.
+* Fixes Color picker being hidden in an inline array schema field, also fixes rgba inputs going off the modal.
+
+### Adds
+
+* It's possible now to target the HMR build when registering via `template.append` and `template.prepend`. Use `when: 'hmr:public'` or `when: 'hmr:apos'` that will be evaluated against the current asset `options.hmr` configuration.
+* Adds asset module option `options.modulePreloadPolyfill` (default `true`) to allow disabling the polyfill preload for e.g. external front-ends. 
+* Adds `bundleMarkup` to the data sent to the external front-end, containing all markup for injecting Apostrophe UI in the front-end.
+* Warns users when two page types have the same field name, but a different field type. This may cause errors or other problems when an editor switches page types.
+* The piece and page `GET` REST APIs now support `?render-areas=inline`. When this parameter is used, an HTML rendering of each widget is added to that specific widget in each area's `items` array as a new `_rendered` property. The existing `?render-areas=1` parameter is still supported to render the entire area as a single `_rendered` property. Note that this older option also causes `items` to be omitted from the response.
+
+### Changes
+
+* Removes postcss plugin and webpack loader used for breakpoint preview mode. Uses instead the new `postcss-viewport-to-container-toggle` plugin in the webpack config.
+* Implement `vue-color` directly in Apostrophe rather than as a dependency
+* Switch color handling library from `tinycolor2` to `@ctrl/tinycolor`
+* Removes error messages in server console for hidden fields. These messages should not have been printed out in the server console in the first place.
+* Removes invalid error messages on select fields appearing while opening an existing valid document.
+
+## 4.9.0 (2024-10-31)
+
+### Adds
+
+* Relationship inputs have aria accessibility tags and autocomplete suggestions can be controlled by keyboard.
+* Elements inside modals can have a `data-apos-focus-priority` attribute that prioritizes them inside the focusable elements list.
+* Modals will continute trying to find focusable elements until an element marked `data-apos-focus-priority` appears or the max retry threshold is reached.
+* Takes care of an edge case where Media Manager would duplicate search results.
+* Add support for ESM projects.
+* Modules can now have a `before: "module-name"` property in their configuration to initialize them before another module, bypassing the normal
+order implied by `defaults.js` and `app.js`.
+* `select` and `checkboxes` fields that implement dynamic choices can now take into account the value of other fields on the fly, by specifying
+a `following` property with an array of other field names. Array and object subfields can access properties of the parent document
+by adding a `<` prefix (or more than one) to field names in `following` to look upwards a level. Your custom method on the server side will
+now receive a `following` object as an additional argument. One limitation: for now, a field with dynamic choices cannot depend on another field
+with dynamic choices in this way.
+* Adds AI-generated missing translations
+* Adds the mobile preview dropdown for non visibles breakpoints. Uses the new `shortcut` property to display breakpoints out of the dropdown.
+* Adds possibility to have two icons in a button.
+* Breakpoint preview only targets `[data-apos-refreshable]`.
+* Adds a `isActive` state to context menu items. Also adds possibility to add icons to context menu items.
+* Add a postcss plugin to handle `vh` and `vw` values on breakpoint preview mode.
+* Adds inject component `when` condition with possible values `hmr`, `prod`, and `dev`. Modules should explicitely register their components with the same `when` value and the condition should be met to inject the component.
+* Adds inject `bundler` registration condition. It's in use only when registering a component and will be evaluated on runtime. The value should match the current build module (`webpack` or the external build module alias).
+* Adds new development task `@apostrophecms/asset:reset` to reset the asset build cache and all build artifacts.
+* Revamps the `@apostrophecms/asset` module to enable bundling via build modules.
+* Adds `apos.asset.devServerUrl()` nunjucks helper to get the (bundle) dev server URL when available.
+* The asset module has a new option, `options.hmr` that accepts `public` (default), `apos` or `false` to enable HMR for the public bundle or the admin UI bundle or disable it respectively. This configuration works only with external build modules that support HMR.
+* The asset module has a new option, `options.hmrPort` that accepts an integer (default `null`) to specify the HMR WS port. If not specified, the default express port is used. This configuration works only with external build modules that support HMR WS.
+* The asset module has a new option, `options.productionSourceMaps` that accepts a boolean (default `false`) to enable source maps in production. This configuration works only with external build modules that support source maps.
+
+### Changes
+
+* Silence deprecation warnings from Sass 1.80+ regarding the use of `@import`. The Sass team [has stated there will be a two-year transition period](https://sass-lang.com/documentation/breaking-changes/import/#transition-period) before the feature is actually removed. The use of `@import` is common practice in the Apostrophe codebase and in many project codebases. We will arrange for an orderly migration to the new `@use` directive before Sass 3.x appears.
+* Move saving indicator after breakpoint preview.
+* Internal methods `mergeConfiguration`, `autodetectBundles`, `lintModules`, `nestedModuleSubdirs` and `testDir` are now async.
+* `express.getSessionOptions` is now async.
+
+### Fixes
+
+* Modifies the `AposAreaMenu.vue` component to set the `disabled` attribute to `true` if the max number of widgets have been added in an area with `expanded: true`.
+* `pnpm: true` option in `app.js` is no longer breaking the application. 
+* Remove unused `vue-template-compiler` dependency.
+* Prevent un-publishing the `@apostrophecms/global` doc and more generally all singletons.
+* When opening a context menu while another is already opened, prevent from focusing the button of the first one instead of the newly opened menu.
+* Updates `isEqual` method of `area` field type to avoid comparing an area having temporary properties with one having none.
+* In a relationship field, when asking for sub relationships using `withRelationships` an dot notion. 
+If this is done in combination with a projection, this projection is updated to add the id storage fields of the needed relationships for the whole `withRelationships` path. 
+* The admin UI no longer fails to function when the HTML page is rendered with a direct `sendPage` call and there is no current "in context" page or piece.
+
+## 4.7.2 and 4.8.1 (2024-10-09)
+
+### Fixes
+
+* Correct a race condition that can cause a crash at startup when custom `uploadfs` options are present in some specific cloud environments e.g. when using Azure Blob Storage.
+
+## 4.8.0 (2024-10-03)
+
+### Adds
+
+* Adds a mobile preview feature to the admin UI. The feature can be enabled using the `@apostrophecms/asset` module's new `breakpointPreviewMode` option. Once enabled, the asset build process will duplicate existing media queries as container queries. There are some limitations in the equivalence between media queries and container queries. You can refer to the [CSS @container at-rule](https://developer.mozilla.org/en-US/docs/Web/CSS/@container) documentation for more information. You can also enable `breakpointPreviewMode.debug` to be notified in the console when the build encounters an unsupported media query.
+* Apostrophe now automatically adds the appropriate default values for new properties in the schema, even for existing documents in the database. This is done automatically during the migration phase of startup.
+* Adds focus states for media library's Uploader tile.
+* Adds focus states file attachment's input UI.
+* Simplified importing rich text widgets via the REST API. If you  you have HTML that contains `img` tags pointing to existing images, you can now import them all quickly. When supplying the rich text widget object, include an `import` property with an `html` subproperty, rather than the usual `content` property. You can optionally provide a `baseUrl` subproperty as well. Any images present in `html` will be imported automatically and the correct `figure` tags will be added to the new rich text widget, along with any other markup acceptable to the widget's configuration.
+
+### Changes
+
+* The various implementations of `newInstance` found in Apostrophe, e.g. for widgets, array items, relationship fields and documents themselves, have been consolidated in one implementation. The same code is now reused both on the front and the back end, ensuring the same result without the need to introduce additional back end API calls.
+
+### Fixes
+
+* Apostrophe's migration logic is no longer executed twice on every startup and three times in the migration task. It is executed exactly once, always at the same point in the startup process. This bug did not cause significant performance issues because migrations were always only executed once, but there is a small performance improvement due to not checking for them more than once.
+* The `@apostrophecms/page` module APIs no longer allow a page to become a child of itself. Thanks to [Maarten Marx](https://github.com/Pixelguymm) for reporting the issue.
+* Uploaded SVGs now permit `<use>` tags granted their `xlink:href` property is a local reference and begins with the `#` character. This improves SVG support while mitgating XSS vulnerabilities.
+* Default properties of object fields present in a widget now populate correctly even if never focused in the editor.
+* Fixed the "choices" query builder to correctly support dynamic choices, ensuring compatibility with the [`piecesFilters`](https://docs.apostrophecms.org/reference/modules/piece-page-type.html#piecesfilters) feature when using dynamic choices.
+* Fix a reordering issue for arrays when dragging and dropping items in the admin UI.
+* The inline array item extract the label now using `title` as `titleField` value by default (consistent with the Slat list).
+
+## 4.7.1 (2024-09-20)
+
+### Fixes
+
+* Ensure parked fields are not modified for parked pages when not configured in `_defaults`.
+
+## 4.7.0 (2024-09-05)
+
+### Changes
+
+* UI and UX of inline arrays and their table styles
 
 ### Adds
 
 * To aid debugging, when a file extension is unacceptable as an Apostrophe attachment the rejected extension is now printed as part of the error message.
 * The new `big-upload-client` module can now be used to upload very large files to any route that uses the new `big-upload-middleware`.
+* Add option `skipReplace` for `apos.doc.changeDocIds` method to skip the replacing of the "old" document in the database.
 * The `@apostrophecms/i18n` module now exposes a `locales` HTTP GET API to aid in implementation of native apps for localized sites.
+* Context menus can be supplied a `menuId` so that interested components can listen to their opening/closing.
+* Allow to set mode in `AposWidget` component through props.
+* Add batch operations to pages.
+* Add shortcuts to pages manager.
+* Add `replaces` (boolean, `false` by default) option to the context operation definition (registered via `apos.doc.addContextOperation()`) to allow the operation to require a replace confirmation before being executed. The user confirmation results in the Editor modal being closed and the operation being executed. The operation is not executed if the user cancels the confirmation.
+
+### Changes
+
+* Wait for notify before navigating to a new page.
+* Send also `checkedTypes` via the pages body toolbar operations (e.g. 'batch') to the modal.
+
+### Fixes
+
+* Fix link to pages in rich-text not showing UI to select page during edit.
+* Bumps `uploadfs` dependency to ensure `.tar.gz`, `.tgz` and `.gz` files uploaded to S3 download without double-gzipping.
+This resolves the issue for new uploads.
+* Registering duplicate icon is no longer breaking the build.
+* Fix widget focus state so that the in-context Add Content menu stays visible during animation
+* Fix UI of areas in schemas so that their context menus are layered overtop sibling schema fields UI
+* Fix unhandled promise rejections and guard against potential memory leaks, remove 3rd party `debounce-async` dependency
+* Adds an option to center the context menu arrow on the button icon. Sets this new option on some context menus in the admin UI.
+* Fixes the update function of `AposSlatLists` so that elements are properly reordered on drag
+
+## 4.6.1 (2024-08-26)
+
+### Fixes
+
+* Registering duplicate icon is no longer breaking the build.
+* Fix widget focus state so that the in-context Add Content menu stays visible during animation.
+* Fix UI of areas in schemas so that their context menus are layered overtop sibling schema fields UI.
+
+### Removes
+* Inline array option for `alwaysOpen` replaced with UI toggles
 
 ## 4.6.0 (2024-08-08)
 
 ### Adds
 
 * Add a locale switcher in pieces and pages editor modals. This is available for localized documents only, and allows you to switch between locales for the same document.
-  The locale can be switche at only one level, meaning that sub documents of a document that already switched locale will not be able to switch locale itself.
+  The locale can be switched at only one level, meaning that sub documents of a document that already switched locale will not be able to switch locale itself.
 * Adds visual focus states and keyboard handlers for engaging with areas and widgets in-context
 * Adds method `simulateRelationshipsFromStorage` method in schema module. 
 This method populates the relationship field with just enough information to allow convert to accept it. It does not fully fetch the related documents. It does the opposite of prepareForStorage.
@@ -28,6 +234,8 @@ The shape of the relationship field is still validated.
 
 ### Changes
 
+* Refactors Admin UI SASS to eliminate deprecation warnings from declarations coming after nested rules.
+* Bumps the sass-loader version and adds a webpack option to suppress mixed declaration deprecation warnings to be removed when all modules are updated.
 * Add `title` and `_url` to select all projection.
 * Display `Select all` message on all pages in the manager modal.
 * Refresh `checked` in manager modal after archive action.
@@ -38,6 +246,7 @@ The shape of the relationship field is still validated.
 
 ### Fixes
 
+* Fixes the rendering of conditional fields in arrays where the `inline: true` option is used.
 * Fixes the rich text link tool's detection and display of the Remove Link button for removing existing links
 * Fixes the rich text link tool's detection and display of Apostrophe Page relationship field.
 * Overriding standard Vue.js components with `editorModal` and `managerModal` are now applied all the time.

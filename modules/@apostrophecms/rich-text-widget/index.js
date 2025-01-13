@@ -3,6 +3,9 @@
 
 const sanitizeHtml = require('sanitize-html');
 const cheerio = require('cheerio');
+const { createWriteStream, unlinkSync } = require('fs');
+const { Readable, pipeline } = require('stream');
+const util = require('util');
 
 module.exports = {
   extend: '@apostrophecms/widget-type',
@@ -614,7 +617,9 @@ module.exports = {
                 // HSL colors
                 /^hsl\(\s*\d{1,3}(?:deg)?\s*,\s*\d{1,3}%\s*,\s*\d{1,3}%\s*\)$/,
                 // HSLA colors
-                /^hsla\(\s*\d{1,3}(?:deg)?\s*,\s*\d{1,3}%\s*,\s*\d{1,3}%\s*,\s*(?:0?\.\d+|1(?:\.0)?)\s*\)$/
+                /^hsla\(\s*\d{1,3}(?:deg)?\s*,\s*\d{1,3}%\s*,\s*\d{1,3}%\s*,\s*(?:0?\.\d+|1(?:\.0)?)\s*\)$/,
+                // CSS Variable value
+                /^var\(--[a-zA-Z0-9-]+\)$/
               ]
             }
           }
@@ -728,7 +733,8 @@ module.exports = {
       },
 
       // Quickly replaces rich text permalink placeholder URLs with
-      // actual, SEO-friendly URLs based on `widget._relatedDocs`
+      // actual, SEO-friendly URLs based on `widget._relatedDocs`.
+
       linkPermalinks(widget, content) {
         // "Why no regexps?" We need to do this as quickly as we can.
         // indexOf and lastIndexOf are much faster.
@@ -753,13 +759,11 @@ module.exports = {
             const left = content.lastIndexOf('<', i);
             const href = content.indexOf(' href="', left);
             const close = content.indexOf('"', href + 7);
-            if (!widget._edit) {
-              if ((left !== -1) && (href !== -1) && (close !== -1)) {
-                content = content.substring(0, href + 6) + doc._url + content.substring(close + 1);
-              } else {
-                // So we don't get stuck in an infinite loop
-                break;
-              }
+            if ((left !== -1) && (href !== -1) && (close !== -1)) {
+              content = content.substring(0, href + 6) + doc._url + content.substring(close + 1);
+            } else {
+              // So we don't get stuck in an infinite loop
+              break;
             }
             if (!updateTitle) {
               continue;
@@ -774,11 +778,8 @@ module.exports = {
         return content;
       },
       // Quickly replaces inline image placeholder URLs with
-      // actual, SEO-friendly URLs based on `widget._relatedDocs`
+      // actual, SEO-friendly URLs based on `widget._relatedDocs`.
       linkImages(widget, content) {
-        if (widget._edit) {
-          return content;
-        }
         // "Why no regexps?" We need to do this as quickly as we can.
         // indexOf and lastIndexOf are much faster.
         let i;
@@ -796,13 +797,11 @@ module.exports = {
             const left = content.lastIndexOf('<', i);
             const src = content.indexOf(' src="', left);
             const close = content.indexOf('"', src + 6);
-            if (!widget._edit) {
-              if ((left !== -1) && (src !== -1) && (close !== -1)) {
-                content = content.substring(0, src + 5) + doc.attachment._urls[self.apos.modules['@apostrophecms/image'].getLargestSize()] + content.substring(close + 1);
-              } else {
-                // So we don't get stuck in an infinite loop
-                break;
-              }
+            if ((left !== -1) && (src !== -1) && (close !== -1)) {
+              content = content.substring(0, src + 5) + doc.attachment._urls[self.apos.modules['@apostrophecms/image'].getLargestSize()] + content.substring(close + 1);
+            } else {
+              // So we don't get stuck in an infinite loop
+              break;
             }
           }
         }
@@ -868,6 +867,69 @@ module.exports = {
 
           const output = await _super(req, input, rteOptions);
           const finalOptions = self.optionsToSanitizeHtml(rteOptions);
+
+          if (input.import?.html) {
+            if ((typeof input.import.html) !== 'string') {
+              throw self.apos.error('invalid', 'import.html must be a string');
+            }
+            if (input.import.baseUrl && ((typeof input.import.html) !== 'string')) {
+              throw self.apos.error('invalid', 'If present, import.baseUrl must be a string');
+            }
+            const $ = cheerio.load(input.import.html);
+            const $images = $('img');
+            // Build an array of cheerio objects because
+            // we need to iterate while doing async work,
+            // which .each() can't do
+            const $$images = [];
+            $images.each((i, el) => {
+              const $image = $(el);
+              $$images.push($image);
+            });
+            for (const $image of $$images) {
+              const src = $image.attr('src');
+              const alt = $image.attr('alt') && self.apos.util.escapeHtml($image.attr('alt'));
+              const url = new URL(src, input.import.baseUrl || self.apos.baseUrl);
+              const res = await fetch(url);
+              if (res.status >= 400) {
+                self.apos.util.warn(`Error ${res.status} while importing ${src}, ignoring image`);
+                continue;
+              }
+              const id = self.apos.util.generateId();
+              const temp = self.apos.attachment.uploadfs.getTempPath() + `/${id}`;
+              const matches = src.match(/\/([^/]+\.\w+)$/);
+              if (!matches) {
+                self.apos.util.warn('img URL has no extension, skipping:', src);
+                continue;
+              }
+              const name = matches[1];
+              try {
+                await util.promisify(pipeline)(Readable.fromWeb(res.body), createWriteStream(temp));
+                const attachment = await self.apos.attachment.insert(req, {
+                  name,
+                  path: temp
+                });
+                const image = await self.apos.image.insert(req, {
+                  title: name,
+                  attachment
+                });
+                const newSrc = `${self.apos.image.action}/${image.aposDocId}/src`;
+                $image.replaceWith(
+                  `<figure>
+                    <img src="${newSrc}" ${alt && `alt="${alt}"`} />
+                    <figcaption></figcaption>
+                  </figure>
+                  `
+                );
+              } finally {
+                try {
+                  unlinkSync(temp);
+                } catch (e) {
+                  // It's OK if we never created it
+                }
+              }
+            }
+            input.content = $.html();
+          }
 
           output.content = self.sanitizeHtml(input.content, finalOptions);
 

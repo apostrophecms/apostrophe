@@ -67,7 +67,7 @@ module.exports = {
           }
           const slug = self.apos.launder.string(req.body.slug);
           const _id = self.apos.launder.id(req.body._id);
-          const criteria = { slug: slug };
+          const criteria = { slug };
           if (_id) {
             criteria._id = { $ne: _id };
           }
@@ -334,8 +334,12 @@ module.exports = {
       // new document's content wins in the event of a conflict.
       // If `keep` is not set, a `conflict` error is thrown in the
       // event of a conflict.
+      //
+      // If `skipReplace` is set to `true`, the method will not attempt to remove
+      // the old document, but will still update the new document. The new _id
+      // for each pair will be used for retrieving the "existing" document in this case.
 
-      async changeDocIds(pairs, { keep } = {}) {
+      async changeDocIds(pairs, { keep, skipReplace = false } = {}) {
         let renamed = 0;
         let kept = 0;
         // Get page paths up front so we can avoid multiple queries when working on path changes
@@ -347,13 +351,15 @@ module.exports = {
         }).toArray();
         for (const pair of pairs) {
           const [ from, to ] = pair;
-          const existing = await self.apos.doc.db.findOne({ _id: from });
+          const oldAposDocId = from.split(':')[0];
+          const existing = await self.apos.doc.db.findOne({ _id: skipReplace ? to : from });
           if (!existing) {
             throw self.apos.error('notfound');
           }
           const replacement = klona(existing);
-          await self.apos.doc.db.removeOne({ _id: from });
-          const oldAposDocId = existing.aposDocId;
+          if (!skipReplace) {
+            await self.apos.doc.db.removeOne({ _id: from });
+          }
           replacement._id = to;
           const parts = to.split(':');
           replacement.aposDocId = parts[0];
@@ -366,8 +372,10 @@ module.exports = {
             replacement.path = existing.path.replace(existing.aposDocId, replacement.aposDocId);
           }
           try {
-            await self.apos.doc.db.insertOne(replacement);
-            renamed++;
+            if (!skipReplace) {
+              await self.apos.doc.db.insertOne(replacement);
+              renamed++;
+            }
           } catch (e) {
             // First reinsert old doc to prevent content loss on new doc insert failure
             await self.apos.doc.db.insertOne(existing);
@@ -404,7 +412,7 @@ module.exports = {
               throw self.apos.error('conflict');
             }
           }
-          if (isPage) {
+          if (isPage && !skipReplace) {
             for (const page of pages) {
               if (page.path.includes(oldAposDocId)) {
                 await self.apos.doc.db.updateOne({
@@ -1478,7 +1486,7 @@ module.exports = {
         ];
 
         function validate ({
-          action, context, label, modal, conditions, if: ifProps
+          action, context, type = 'modal', label, modal, conditions, if: ifProps
         }) {
           const allowedConditions = [
             'canPublish',
@@ -1495,8 +1503,12 @@ module.exports = {
             'canShareDraft'
           ];
 
-          if (!action || !context || !label || !modal) {
-            throw self.apos.error('invalid', 'addContextOperation requires action, context, label and modal properties.');
+          if (![ 'event', 'modal' ].includes(type)) {
+            throw self.apos.error('invalid', '`type` option must be `modal` (default) or `event`');
+          }
+
+          if (!action || !context || !label || (type === 'modal' && !modal)) {
+            throw self.apos.error('invalid', 'addContextOperation requires action, context, label and modal (if type is set to `modal` or unset) properties.');
           }
 
           if (
@@ -1622,10 +1634,14 @@ module.exports = {
           });
           (page._children || []).forEach(pushParkedPageAndParkedChildren);
         }
-        const pieceModules = Object.values(self.apos.modules).filter(module => self.apos.instanceOf(module, '@apostrophecms/piece-type') && module.options.replicate);
-        for (const module of pieceModules) {
+        const pieceModules = Object.values(self.apos.modules)
+          .filter(pieceModule =>
+            self.apos.instanceOf(pieceModule, '@apostrophecms/piece-type') &&
+            pieceModule.options.replicate
+          );
+        for (const pieceModule of pieceModules) {
           criteria.push({
-            type: module.name
+            type: pieceModule.name
           });
         }
         self.replicateReached = true;
@@ -1662,9 +1678,9 @@ module.exports = {
               }).archived(null).toObject();
               for (const locale of localeNames) {
                 if (!existing.find(doc => doc.aposLocale === locale)) {
-                  const module = self.getManager(sourceDoc.type);
-                  const localized = await module.localize(req, sourceDoc, locale);
-                  await module.publish(req.clone({ locale }), localized);
+                  const manager = self.getManager(sourceDoc.type);
+                  const localized = await manager.localize(req, sourceDoc, locale);
+                  await manager.publish(req.clone({ locale }), localized);
                 }
               }
             }

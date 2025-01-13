@@ -36,8 +36,8 @@
           class="text-color-component"
           @mousedown="handleMouseDown"
         >
-          <Picker
-            v-bind="pickerOptions"
+          <AposColor
+            :options="userOptions"
             :model-value="pickerValue"
             @update:model-value="update"
             @focus="focus"
@@ -60,14 +60,9 @@
 import {
   ref, watch, computed, defineComponent
 } from 'vue';
-import { Sketch as Picker } from '@ckpack/vue-color';
-import tinycolor from 'tinycolor2';
 
 export default defineComponent({
   name: 'AposTiptapColor',
-  components: {
-    Picker
-  },
   props: {
     name: {
       type: String,
@@ -95,20 +90,7 @@ export default defineComponent({
   setup(props) {
     const active = ref(false);
     const next = ref('');
-    const tinyColorObj = ref(null);
-    const startsNull = ref(false);
     const indicatorColor = ref('#000000');
-
-    const defaultOptions = {
-      presetColors: [
-        '#D0021B', '#F5A623', '#F8E71C', '#8B572A', '#7ED321',
-        '#417505', '#BD10E0', '#9013FE', '#4A90E2', '#50E3C2',
-        '#B8E986', '#000000', '#4A4A4A', '#9B9B9B', '#FFFFFF'
-      ],
-      disableAlpha: false,
-      disableFields: false,
-      format: 'hex8'
-    };
 
     const projectOptions = computed(() => {
       return window.apos.modules['@apostrophecms/rich-text-widget'];
@@ -117,33 +99,11 @@ export default defineComponent({
     const areaOptions = props.options || {};
 
     const userOptions = computed(() => {
-      return {
+      const options = {
         ...projectOptions.value,
         ...areaOptions
       };
-    });
-
-    const mergedOptions = computed(() => {
-      return {
-        ...defaultOptions,
-        ...userOptions.value.color
-      };
-    });
-
-    const pickerOptions = computed(() => {
-      const {
-        presetColors, disableAlpha, disableFields
-      } = mergedOptions.value;
-
-      return {
-        presetColors,
-        disableAlpha,
-        disableFields
-      };
-    });
-
-    const format = computed(() => {
-      return mergedOptions.value.format;
+      return options.color;
     });
 
     const pickerValue = ref(next.value || '');
@@ -181,9 +141,8 @@ export default defineComponent({
     };
 
     const update = (value) => {
-      tinyColorObj.value = tinycolor(value.hsl);
-      next.value = tinyColorObj.value.toString(format.value);
-      props.editor.chain().focus().setColor(next.value).run();
+      next.value = value;
+      props.editor.chain().focus().setColor(value).run();
       indicatorColor.value = next.value;
     };
 
@@ -198,7 +157,11 @@ export default defineComponent({
 
     const handleMouseDown = (event) => {
       const target = event.target;
-      if (target.closest('.vc-sketch-saturation-wrap') || target.closest('.vc-sketch-presets')) {
+      if (
+        target.closest('.apos-color__saturation-wrap') ||
+        target.closest('.apos-color__presets') ||
+        target.closest('.apos-color__controls')
+      ) {
         event.preventDefault();
       } else {
         props.editor.view.dom.focus();
@@ -208,10 +171,9 @@ export default defineComponent({
     return {
       active,
       indicatorColor,
-      pickerOptions,
+      userOptions,
       pickerValue,
       hasSelection,
-      startsNull,
       open,
       close,
       update,

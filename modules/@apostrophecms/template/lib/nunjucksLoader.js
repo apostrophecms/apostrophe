@@ -114,7 +114,7 @@ module.exports = function(moduleName, searchPaths, noWatch, templates, options) 
             src = fs.readFileSync(fullpath, 'utf-8');
             lint(fullpath, src);
             return {
-              src: src,
+              src,
               path: name
             };
           }
@@ -131,7 +131,7 @@ module.exports = function(moduleName, searchPaths, noWatch, templates, options) 
           src = fs.readFileSync(fullpath, 'utf-8');
           lint(fullpath, src);
           return {
-            src: src,
+            src,
             path: name
           };
         }
