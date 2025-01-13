@@ -240,13 +240,8 @@ export default {
     margin-bottom: 0;
   }
 
-  .apos-field__info,
-  .apos-input-wrapper {
-    width: 48%;
-  }
-
   .apos-field__info {
-    margin-right: 4%;
+    margin-right: 30px;
   }
 
   &.apos-field--range {
