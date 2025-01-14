@@ -9,6 +9,9 @@ export default {
     };
   },
   computed: {
+    isMicro() {
+      return this.modifiers.includes('micro');
+    },
     minLabel() {
       return this.field.min + this.unit;
     },
