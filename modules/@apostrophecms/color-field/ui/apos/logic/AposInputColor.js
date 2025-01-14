@@ -54,7 +54,6 @@ export default {
     }
   },
   mounted() {
-    console.log('this.modifiers', this.modifiers);
     if (!this.next) {
       this.next = '';
     }
