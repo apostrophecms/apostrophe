@@ -155,7 +155,7 @@ export default {
   // adapted from http://danielstern.ca/range.css/#/
   .apos-range__input {
     width: 100%;
-    margin: 5px 0; // Question: Shoud we keep that margin? It creates more space than for other fields.
+    margin: 5px 0;
     background-color: transparent;
     /* stylelint-disable-next-line property-no-vendor-prefix */
     -webkit-appearance: none;
