@@ -138,6 +138,26 @@ export default {
     },
     currentDocMeta() {
       return this.meta[this.currentId]?.aposMeta || {};
+    },
+    isModified() {
+      if (this.currentId) {
+        const currentIndex = this.next.findIndex(item => item._id === this.currentId);
+        if (detectDocChange(this.schema, this.next[currentIndex], this.currentDoc.data)) {
+          return true;
+        }
+      }
+      if (this.next.length !== this.original.length) {
+        return true;
+      }
+      for (let i = 0; (i < this.next.length); i++) {
+        if (this.next[i]._id !== this.original[i]._id) {
+          return true;
+        }
+        if (detectDocChange(this.schema, this.next[i], this.original[i])) {
+          return true;
+        }
+      }
+      return false;
     }
   },
   async mounted() {
@@ -242,26 +262,7 @@ export default {
     getFieldValue(name) {
       return this.currentDoc.data[name];
     },
-    isModified() {
-      if (this.currentId) {
-        const currentIndex = this.next.findIndex(item => item._id === this.currentId);
-        if (detectDocChange(this.schema, this.next[currentIndex], this.currentDoc.data)) {
-          return true;
-        }
-      }
-      if (this.next.length !== this.original.length) {
-        return true;
-      }
-      for (let i = 0; (i < this.next.length); i++) {
-        if (this.next[i]._id !== this.original[i]._id) {
-          return true;
-        }
-        if (detectDocChange(this.schema, this.next[i], this.original[i])) {
-          return true;
-        }
-      }
-      return false;
-    },
+
     async validate(validateItem, validateLength) {
       if (validateItem && this.next.length > 0 && this.currentId) {
         this.triggerValidation = true;

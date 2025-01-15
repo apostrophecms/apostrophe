@@ -17,6 +17,7 @@
 ### Changes
 
 * The `pickerOptions` sub property of a color field's configuration has been merged with it's parent `options` object.
+* The array editor's `isModified` method is now a computed property for consistency.
 
 ## 4.11.2 (2024-12-29)
 
