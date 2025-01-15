@@ -115,6 +115,7 @@
   }
 
   .apos-field__label {
+    margin-bottom: 7px; // Does it makes sense to update label margin for micro fields (or it's just about style?) or maybe makes more sense to update in palette since we can mix styles
     font-size: var(--a-type-small);
     font-weight: 500;
   }
