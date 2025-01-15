@@ -241,6 +241,7 @@ export default {
 .apos-field--inline {
   display: flex;
   align-items: center;
+  justify-content: space-between;
 
   .apos-field__label {
     margin-bottom: 0;
@@ -248,6 +249,14 @@ export default {
 
   .apos-field__info {
     margin-right: 30px;
+  }
+
+  .apos-field__info {
+    flex-shrink: 1;
+  }
+
+  .apos-input-wrapper {
+    flex-grow: 1;
   }
 
   &.apos-field--range {
