@@ -4,8 +4,9 @@
 
 ### Fixes
 
-* Fixes ability to change color hue by clicking the color hue bar rather than dragging the indicator
-* Prevents the rich text control bar from closing while using certain UI within the color picker
+* Fixes ability to change color hue by clicking the color hue bar rather than dragging the indicator.
+* Prevents the rich text control bar from closing while using certain UI within the color picker.
+* Fixes the `AposButtonSplit` markup to follow the HTML5 specification, optimizes the component performance, visuals and testability.
 
 ### Adds
 
