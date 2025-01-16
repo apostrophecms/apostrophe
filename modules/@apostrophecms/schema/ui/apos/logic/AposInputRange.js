@@ -5,6 +5,7 @@ export default {
   mixins: [ AposInputMixin ],
   data() {
     return {
+      next: this.initNext(),
       unit: this.field.unit || ''
     };
   },
@@ -24,27 +25,26 @@ export default {
     isSet() {
       // Detect whether or not a range is currently unset
       // Use this flag to hide/show UI elements
-      if (this.next >= this.field.min) {
+      if (typeof this.next === 'number' && this.next >= this.field.min) {
         return true;
       } else {
         return false;
       }
     }
   },
-  mounted() {
-    // The range spec defaults to a value of midway between the min and max
-    // Example: a range with an unset value and a min of 0 and max of 100 will become 50
-    // This does not allow ranges to go unset :(
-    if (!this.next && this.next !== 0) {
-      this.unset();
-    }
-  },
   methods: {
-    // Default to a value outside the range when no def is defined,
-    // to be used as a flag.
-    // The value will be set to null later in validation
+    initNext() {
+      if (this.modelValue && typeof this.modelValue.data === 'number') {
+        return this.modelValue.data;
+      }
+
+      return this.getDefault();
+    },
     unset() {
-      this.next = typeof this.field.def === 'number'
+      this.next = this.getDefault();
+    },
+    getDefault() {
+      return typeof this.field.def === 'number'
         ? this.field.def
         : this.field.min - 1;
     },
@@ -55,9 +55,6 @@ export default {
         }
       }
       return false;
-    },
-    convert(value) {
-      return parseFloat(value);
     }
   }
 };

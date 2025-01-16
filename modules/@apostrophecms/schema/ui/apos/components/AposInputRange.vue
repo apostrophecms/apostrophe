@@ -29,7 +29,7 @@
         <div v-apos-tooltip="tooltip" class="apos-range">
           <input
             :id="uid"
-            v-model="next"
+            v-model.number="next"
             type="range"
             :min="field.min"
             :max="field.max"
