@@ -518,7 +518,7 @@ export default {
         }
       }
 
-      // Check that refresh hasn't been disbled for this page type
+      // Check that refresh hasn't been disabled for this page type
       const contextOptions = this.context
         ? apos.modules[this.context.type]
         : { contentChangedRefresh: true };
