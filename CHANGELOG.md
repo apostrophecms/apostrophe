@@ -6,6 +6,7 @@
 
 * Fixes ability to change color hue by clicking the color hue bar rather than dragging the indicator
 * Prevents the rich text control bar from closing while using certain UI within the color picker
+* Saving a document via the dialog box properly refreshes the main content area when on a "show page" (when the context document is a piece rather than a page)
 * Fixes a case where releationship button overlaps a context menu.
 
 ### Adds
