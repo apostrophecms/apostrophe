@@ -17,7 +17,7 @@
           icon="close-icon"
           @click="unset"
         />
-        <div class="apos-range__label">
+        <div class="apos-range__value-input">
           <span v-if="isSet">
             {{ valueLabel }}
           </span>
@@ -106,16 +106,16 @@ export default {
     }
   }
 
-  .apos-range__label {
-    padding: 5px;
+  .apos-range__value-input {
+    display: inline-flex;
+    align-items: center;
+    padding: 5px 0 5px 5px;
     border-radius: 5px;
-    border: 1px solid var(--a-base-8);
-
-    .apos-field--micro & {
-      min-width: 40px;
-      min-height: 25px;
-      box-sizing: border-box;
-    }
+    // TODO: Restaure when it becomes an input
+    /* border: 1px solid var(--a-base-8); */
+    min-width: 40px;
+    min-height: 25px;
+    box-sizing: border-box;
   }
 
   .apos-range__clear {
