@@ -108,14 +108,16 @@ export default {
 
   .apos-range__value-input {
     display: inline-flex;
+    box-sizing: border-box;
     align-items: center;
     padding: 5px 0 5px 5px;
     border-radius: 5px;
-    // TODO: Restaure when it becomes an input
+
+    /* TODO: Restaure when it becomes an input */
+
     /* border: 1px solid var(--a-base-8); */
     min-width: 40px;
     min-height: 25px;
-    box-sizing: border-box;
   }
 
   .apos-range__clear {
