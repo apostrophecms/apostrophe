@@ -21,8 +21,6 @@
       :disabled="disabled"
       menu-placement="bottom-end"
       data-apos-test-button-split-trigger
-      @open="menuOpen"
-      @close="menuClose"
     >
       <ul
         class="apos-button-split__menu__dialog"
