@@ -296,13 +296,18 @@ export default {
   name: 'AposI18nLocalize',
   props: {
     doc: {
-      required: true,
-      type: Object
+      required: false,
+      type: Object,
+      default: null
     },
     locale: {
       required: false,
       type: Object,
       default: null
+    },
+    moduleName: {
+      required: true,
+      type: String
     }
   },
   emits: [ 'modal-result' ],
@@ -401,7 +406,9 @@ export default {
         value: '',
         error: false
       },
-      toLocalizeChoices: [
+      // Configured based on the mode we are in (batch vs standalone)
+      toLocalizeChoices: [],
+      toLocalizeChoicesStandalone: [
         {
           value: 'thisDoc',
           label: 'apostrophe:thisDocument'
@@ -409,6 +416,20 @@ export default {
         {
           value: 'thisDocAndRelated',
           label: 'apostrophe:thisDocumentAndRelated'
+        },
+        {
+          value: 'relatedDocsOnly',
+          label: 'apostrophe:relatedDocsOnly'
+        }
+      ],
+      toLocalizeChoicesBatch: [
+        {
+          value: 'thisDoc',
+          label: 'apostrophe:theseDocuments'
+        },
+        {
+          value: 'thisDocAndRelated',
+          label: 'apostrophe:theseDocumentsAndRelated'
         },
         {
           value: 'relatedDocsOnly',
@@ -424,6 +445,26 @@ export default {
   computed: {
     moduleOptions() {
       return window.apos.i18n;
+    },
+    batchOptions() {
+      if (this.$attrs.action === 'localize') {
+        return {
+          enabled: true,
+          action: this.$attrs.action,
+          label: this.$attrs.label,
+          messages: this.$attrs.messages,
+          checked: this.$attrs.checked,
+          checkedTypes: this.$attrs.checkedTypes,
+          permission: this.$attrs.permission
+        };
+      }
+
+      return {
+        enabled: false
+      };
+    },
+    isBatchMode() {
+      return this.batchOptions.enabled;
     },
     action() {
       return this.doc.slug.startsWith('/')
@@ -448,6 +489,20 @@ export default {
     },
     relatedDocTypes() {
       const types = {};
+      if (this.isBatchMode) {
+        const allTypes = {};
+        const seen = new Set();
+        this.batchOptions.checkedTypes
+          .forEach(type =>
+            this.getRelatedTypesBySchema(
+              apos.modules[type].schema,
+              allTypes,
+              seen
+            )
+          );
+
+        return Object.values(allTypes);
+      }
       for (const doc of this.relatedDocs) {
         if (!types[doc.type]) {
           types[doc.type] = {
@@ -477,14 +532,15 @@ export default {
     },
     visibleSections() {
       const self = this;
-      const result = Object.entries(this.wizard.sections).filter(([ _, section ]) => {
-        return section.if ? section.if.bind(self)() : true;
-      }).map(([ name, section ]) => {
-        return {
-          name,
-          ...section
-        };
-      });
+      const result = Object.entries(this.wizard.sections)
+        .filter(([ , section ]) => {
+          return section.if ? section.if.bind(self)() : true;
+        }).map(([ name, section ]) => {
+          return {
+            name,
+            ...section
+          };
+        });
       return result;
     },
     visibleStepNames() {
@@ -507,16 +563,23 @@ export default {
     //   console.log('BUSY STATUS', newVal);
     // },
     'wizard.values.relatedDocSettings.data'() {
-      this.updateRelatedDocs();
+      if (!this.isBatchMode) {
+        this.updateRelatedDocs();
+      }
     },
     'wizard.values.toLocalize.data'() {
-      this.updateRelatedDocs();
+      if (!this.isBatchMode) {
+        this.updateRelatedDocs();
+      }
     },
     async 'wizard.values.translateContent.data'(value) {
+      // TODO - fix this as it depends on doc data.
       await this.checkAvailableTranslations(value);
     },
     selectedLocales() {
-      this.updateRelatedDocs();
+      if (!this.isBatchMode) {
+        this.updateRelatedDocs();
+      }
     },
     relatedDocs() {
       for (const doc of this.relatedDocs) {
@@ -532,32 +595,45 @@ export default {
   async mounted() {
     this.modal.active = true;
     this.wizard.busy = true;
-    try {
-      this.fullDoc = await apos.http.get(
-      `${this.action}/${this.doc._id}`,
-      {
-        busy: true
-      }
-      );
-
-      const docs = await apos.http.get(
-      `${this.action}/${this.fullDoc._id}/locales`,
-      {
-        busy: true
-      }
-      );
-      this.localized = Object.fromEntries(
-        docs.results
-          .filter(doc => doc.aposLocale.endsWith(':draft'))
-          .map(doc => [ doc.aposLocale.split(':')[0], doc ])
-      );
-      await this.updateRelatedDocs();
-    } finally {
+    this.normalizeConfig();
+    if (this.isBatchMode) {
       this.wizard.step = this.visibleStepNames[0];
       this.wizard.busy = false;
+    } else {
+      try {
+        this.fullDoc = await apos.http.get(
+          `${this.action}/${this.doc._id}`,
+          {
+            busy: true
+          }
+        );
+
+        const docs = await apos.http.get(
+          `${this.action}/${this.fullDoc._id}/locales`,
+          {
+            busy: true
+          }
+        );
+        this.localized = Object.fromEntries(
+          docs.results
+            .filter(doc => doc.aposLocale.endsWith(':draft'))
+            .map(doc => [ doc.aposLocale.split(':')[0], doc ])
+        );
+        await this.updateRelatedDocs();
+      } finally {
+        this.wizard.step = this.visibleStepNames[0];
+        this.wizard.busy = false;
+      }
     }
   },
   methods: {
+    normalizeConfig() {
+      if (this.isBatchMode) {
+        this.toLocalizeChoices = this.toLocalizeChoicesBatch;
+      } else {
+        this.toLocalizeChoices = this.toLocalizeChoicesStandalone;
+      }
+    },
     close() {
       if (!this.modal.busy) {
         this.modal.showModal = false;
@@ -689,6 +765,9 @@ export default {
       }
     },
     async submit() {
+      if (this.isBatchMode) {
+        return this.submitBatch();
+      }
       let docs = [];
       const notifications = [];
       this.wizard.busy = true;
@@ -801,6 +880,73 @@ export default {
         this.modal.busy = false;
         this.close();
       }, 250);
+    },
+    async submitBatch() {
+      const relatedTypes = this.wizard.values.toLocalize.data === 'thisDoc'
+        ? []
+        : this.batchOptions.checkedTypes;
+      const route = apos.modules[this.moduleName].action;
+
+      try {
+        await apos.http.post(`${route}/${this.batchOptions.action}`, {
+          busy: true,
+          qs: {
+            aposTranslateTargets: this.wizard.values.translateTargets.data,
+            aposTranslateProvider: this.wizard.values.translateProvider.data
+          },
+          body: {
+            _ids: this.batchOptions.checked,
+            relatedTypes,
+            toLocales: this.selectedLocales.map(locale => locale.name),
+            update: this.wizard.values.relatedDocSettings.data !== 'localizeNewRelated',
+            messages: this.batchOptions.messages
+          }
+        });
+      } catch (error) {
+        apos.notify('apostrophe:error', {
+          type: 'danger',
+          dismiss: true
+        });
+      } finally {
+        this.modal.busy = false;
+        this.close();
+      }
+    },
+    getRelatedTypesBySchema(schema, result = {}, seen = new Set()) {
+      for (const field of schema || []) {
+        if (seen.has(field._id)) {
+          continue;
+        }
+        seen.add(field._id);
+
+        switch (field.type) {
+          case 'array':
+          case 'object':
+            this.getRelatedTypesBySchema(field.schema, result);
+            break;
+
+          case 'area':
+            for (const widget of Object.keys(field.options?.widgets || {})) {
+              this.getRelatedTypesBySchema(apos.modules[`${widget}-widget`]?.schema, result);
+            }
+            break;
+
+          case 'relationship': {
+            result[field.withType] ||= {
+              value: field.withType,
+              count: 0
+            };
+            if (!result[field.withType].count) {
+              result[field.withType].label = this.plural(field.withType);
+            }
+            result[field.withType].count++;
+            break;
+          }
+
+          default:
+            break;
+        }
+      }
     },
     // Get all related documents
     async getRelatedDocs(doc) {
