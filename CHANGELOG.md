@@ -8,6 +8,7 @@
 * Prevents the rich text control bar from closing while using certain UI within the color picker.
 * Saving a document via the dialog box properly refreshes the main content area when on a "show page" (when the context document is a piece rather than a page)
 * Fixes the `AposButtonSplit` markup to follow the HTML5 specification, optimizes the component performance, visuals and testability.
+* Fixes a case where releationship button overlaps a context menu.
 
 ### Adds
 

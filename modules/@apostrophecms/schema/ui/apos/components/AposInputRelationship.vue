@@ -97,7 +97,9 @@ export default {
 
 <style lang="scss" scoped>
   .apos-input-relationship__input-wrapper {
-    z-index: $z-index-widget-focused-controls;
+    // Disable z-index because it breaks context menus that originate from
+    // a fixed position elements (AposModalLip).
+    // z-index: $z-index-widget-focused-controls;
     position: relative;
 
     .apos-input-relationship__button {
