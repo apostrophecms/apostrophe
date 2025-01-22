@@ -9,9 +9,9 @@
     <template #body>
       <div class="apos-input-color">
         <AposColorInfo
-          v-if="next && isInline"
+          v-if="isInline"
           class="apos-input-color__info apos-input-color__info--inline"
-          :label="valueLabel"
+          :value="next"
           :is-micro="isMicro"
           @clear="clear"
         />
@@ -32,9 +32,9 @@
           </AposContextMenu>
         </div>
         <AposColorInfo
-          v-if="next && !isInline"
+          v-if="!isInline"
           class="apos-input-color__info"
-          :label="valueLabel"
+          :value="next"
           :is-micro="isMicro"
           @clear="clear"
         />

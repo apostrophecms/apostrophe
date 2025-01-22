@@ -39,13 +39,6 @@ export default {
     options() {
       return this.field?.options || {};
     },
-    valueLabel() {
-      if (this.next) {
-        return this.next;
-      } else {
-        return 'None Selected';
-      }
-    },
     classList() {
       return [
         'apos-input-wrapper',

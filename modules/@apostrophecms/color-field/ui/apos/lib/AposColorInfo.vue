@@ -1,10 +1,10 @@
 <template>
   <div class="apos-color-info" data-apos-test="colorInfo">
-    <span v-if="!isMicro && label">
+    <span v-if="!isMicro">
       {{ label }}
     </span>
     <AposButton
-      v-if="!isMicro"
+      v-if="!isMicro && value"
       type="quiet"
       :label="'apostrophe:clear'"
       class="apos-color-info__clear-btn"
@@ -12,7 +12,7 @@
       @click="emit('clear')"
     />
     <AposIndicator
-      v-else
+      v-else-if="value"
       class="apos-color-info__clear-icon"
       icon="water-off-icon"
       @click="emit('clear')"
@@ -21,17 +21,20 @@
 </template>
 
 <script setup>
-defineProps({
+import { computed } from 'vue';
+
+const props = defineProps({
+  value: {
+    type: String,
+    default: null
+  },
   isMicro: {
     type: Boolean,
     default: false
-  },
-  label: {
-    type: String,
-    default: null
   }
 });
 
+const label = computed(() => props.value || 'None Selected');
 const emit = defineEmits([ 'clear' ]);
 </script>
 
