@@ -53,11 +53,17 @@ export default {
         return getConditionTypesObject();
       }
     },
+    // Modifiers applied to all fields
     modifiers: {
       type: Array,
       default() {
         return [];
       }
+    },
+    // Modifiers applied to specified field types
+    fieldModifiers: {
+      type: Object,
+      default: () => ({})
     },
     triggerValidation: Boolean,
     utilityRail: {
@@ -128,10 +134,7 @@ export default {
               data: this.modelValue.data[item.name]
             },
             serverError: this.serverErrors && this.serverErrors[item.name],
-            modifiers: [
-              ...(this.modifiers || []),
-              ...(item.modifiers || [])
-            ]
+            modifiers: this.computeModifiers(item)
           }
         };
       }, {});
@@ -339,6 +342,10 @@ export default {
     generateItemUniqueKey(field) {
       return `${field.name}:${field._id ?? ''}:${this.modelValue?.data?._id ?? ''}`;
 
+    },
+    computeModifiers(field) {
+      const fieldModifiers = this.fieldModifiers[field.type] || this.modifiers;
+      return [ ...new Set(fieldModifiers.concat(field.modifiers || [])) ];
     }
   }
 };

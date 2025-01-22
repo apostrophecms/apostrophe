@@ -6,12 +6,30 @@
     :uid="uid"
     :display-options="displayOptions"
   >
+    <template v-if="isMicro" #info>
+      <div
+        class="apos-range__value"
+        aria-hidden="true"
+      >
+        <AposIndicator
+          v-if="isSet"
+          class="apos-range__clear"
+          icon="close-icon"
+          @click="unset"
+        />
+        <div class="apos-range__value-input">
+          <span v-if="isSet">
+            {{ valueLabel }}
+          </span>
+        </div>
+      </div>
+    </template>
     <template #body>
       <div class="apos-input-wrapper">
         <div v-apos-tooltip="tooltip" class="apos-range">
           <input
             :id="uid"
-            v-model="next"
+            v-model.number="next"
             type="range"
             :min="field.min"
             :max="field.max"
@@ -19,7 +37,7 @@
             class="apos-range__input"
             :disabled="field.readOnly"
           >
-          <div class="apos-range__scale">
+          <div v-if="!isMicro" class="apos-range__scale">
             <span>
               <span class="apos-sr-only">
                 {{ $t('apostrophe:minLabel') }}
@@ -35,6 +53,7 @@
           </div>
         </div>
         <div
+          v-if="!isMicro"
           class="apos-range__value"
           aria-hidden="true"
           :class="{'apos-is-unset': !isSet}"
@@ -80,14 +99,39 @@ export default {
       pointer-events: none;
     }
 
-    .apos-range__clear {
-      margin-left: 5px;
+    .apos-field--micro & {
+      display: flex;
+      padding-top: 0;
+      min-width: auto;
+    }
+  }
+
+  .apos-range__value-input {
+    display: inline-flex;
+    box-sizing: border-box;
+    align-items: center;
+    padding: 5px 0 5px 5px;
+    border-radius: 5px;
+    min-height: 25px;
+  }
+
+  .apos-range__clear {
+    margin-left: 5px;
+
+    .apos-field--micro & {
+      cursor: pointer;
+      margin-right: 5px;
+      margin-left: 0;
     }
   }
 
   .apos-range {
     flex-grow: 1;
     margin-right: 20px;
+
+    .apos-field--micro & {
+      margin-right: 0;
+    }
   }
 
   .apos-range__scale {
@@ -120,6 +164,10 @@ export default {
       & + .apos-range__scale {
         color: var(--a-text-primary);
       }
+    }
+
+    .apos-field--micro {
+      margin: 0;
     }
   }
 
