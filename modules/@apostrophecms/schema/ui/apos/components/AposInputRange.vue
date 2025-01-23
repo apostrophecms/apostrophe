@@ -82,6 +82,9 @@ export default {
 </script>
 
 <style lang="scss" scoped>
+  $track-height: 5px;
+  $thumb-size: 15px;
+
   .apos-input-wrapper {
     @include type-base;
 
@@ -148,14 +151,11 @@ export default {
     }
   }
 
-  $trackHeight: 5px;
-  $thumbSize: 15px;
-
   // adapted from http://danielstern.ca/range.css/#/
   .apos-range__input {
     width: 100%;
+    height: $track-height;
     margin: 5px 0;
-    height: $trackHeight;
     background: var(--a-base-8);
     background-image: linear-gradient(var(--a-primary), var(--a-primary));
     background-size: 70% 100%;
@@ -184,22 +184,23 @@ export default {
 
   .apos-range__input::-webkit-slider-runnable-track {
     width: 100%;
-    height: $trackHeight;
+    height: $track-height;
+    border: none;
     background: transparent;
+    /* stylelint-disable-next-line property-no-vendor-prefix */
     -webkit-appearance: none;
     box-shadow: none;
-    border: none;
-    border-radius: $trackHeight;
+    border-radius: $track-height;
     cursor: pointer;
   }
 
   .apos-range__input::-webkit-slider-thumb {
-    width: $thumbSize;
-    height: $thumbSize;
+    width: $thumb-size;
+    height: $thumb-size;
     margin-top: -4.5px;
     border: 2px solid var(--a-base-7);
     background: var(--a-primary);
-    border-radius: $trackHeight * 2;
+    border-radius: $track-height * 2;
     cursor: ew-resize;
     /* stylelint-disable-next-line property-no-vendor-prefix */
     -webkit-appearance: none;
@@ -210,26 +211,26 @@ export default {
   }
 
   .apos-range__input::-moz-range-track {
-    border-radius: $trackHeight * 2;
+    border-radius: $track-height * 2;
     width: 100%;
-    height: $trackHeight;
+    height: $track-height;
     border: none;
     background: transparent;
     cursor: pointer;
   }
 
   .apos-range__input::-moz-range-thumb {
-    width: $thumbSize;
-    height: $thumbSize;
+    width: $thumb-size;
+    height: $thumb-size;
     border: 2px solid var(--a-base-7);
     background: var(--a-primary);
-    border-radius: $trackHeight * 2;
+    border-radius: $track-height * 2;
     cursor: pointer;
   }
 
   .apos-range__input::-ms-track {
     width: 100%;
-    height: $trackHeight;
+    height: $track-height;
     color: transparent;
     background: transparent;
     border-color: transparent;
@@ -245,8 +246,8 @@ export default {
   }
 
   .apos-range__input::-ms-thumb {
-    width: $thumbSize;
-    height: $thumbSize;
+    width: $thumb-size;
+    height: $thumb-size;
     margin-top: 0;
     border: 1px solid var(--a-base-7);
     background: var(--a-primary);
