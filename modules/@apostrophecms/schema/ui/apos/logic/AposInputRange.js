@@ -9,6 +9,10 @@ export default {
       unit: this.field.unit || ''
     };
   },
+  mounted() {
+    this.$refs.range.addEventListener('input', this.updateUI);
+    this.updateUI();
+  },
   computed: {
     isMicro() {
       return this.modifiers.includes('micro');
@@ -42,11 +46,18 @@ export default {
     },
     unset() {
       this.next = this.getDefault();
+      this.updateUI();
     },
     getDefault() {
       return typeof this.field.def === 'number'
         ? this.field.def
         : this.field.min - 1;
+    },
+    updateUI() {
+      const min = this.$refs.range.min;
+      const max = this.$refs.range.max;
+      const val = this.next < min ? min : this.next;
+      this.$refs.range.style.backgroundSize = (val - min) * 100 / (max - min) + '% 100%';
     },
     validate(value) {
       if (this.field.required) {
