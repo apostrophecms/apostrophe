@@ -18,6 +18,7 @@
 
 ### Changes
 
+* Range style updates.
 * The `pickerOptions` sub property of a color field's configuration has been merged with it's parent `options` object.
 * Reworks `inline` and `micro` UI of some fields (color, range, select). Improve global inline style.
 * Makes the range input being a number all the time instead of a string that we convert manually.
