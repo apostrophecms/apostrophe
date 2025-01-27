@@ -37,9 +37,7 @@
               data-apos-test="field-tag"
             />
             <span
-              v-if="
-                (field.help || field.htmlHelp) && displayOptions.helpTooltip
-              "
+              v-if="(field.help || field.htmlHelp) && displayOptions.helpTooltip"
               data-apos-test="field-help-tooltip"
               class="apos-field__help-tooltip"
             >
@@ -64,27 +62,32 @@
               />
             </span>
           </span>
-          <span
-            data-apos-test="field-meta-wrapper"
-            class="apos-field__label-meta"
-          >
-            <slot name="meta">
-              <component
-                :is="name"
-                v-for="{ name, namespace, data } in metaComponents"
-                :key="name"
-                :field="field"
-                :items="items"
-                :namespace="namespace"
-                :meta="data"
-                :meta-raw="meta"
-                :data-apos-test-component="name"
-                :data-apos-test-namespace="namespace"
-                data-apos-test="field-meta"
-                @replace-field-value="replaceFieldValue"
-              />
-            </slot>
-          </span>
+          <div>
+            <div v-if="hasExtraInfo" class="apos-field__label-extra-info">
+              <slot name="info" />
+            </div>
+            <span
+              data-apos-test="field-meta-wrapper"
+              class="apos-field__label-meta"
+            >
+              <slot name="meta">
+                <component
+                  :is="name"
+                  v-for="{ name, namespace, data } in metaComponents"
+                  :key="name"
+                  :field="field"
+                  :items="items"
+                  :namespace="namespace"
+                  :meta="data"
+                  :meta-raw="meta"
+                  :data-apos-test-component="name"
+                  :data-apos-test-namespace="namespace"
+                  data-apos-test="field-meta"
+                  @replace-field-value="replaceFieldValue"
+                />
+              </slot>
+            </span>
+          </div>
         </component>
         <!-- eslint-disable vue/no-v-html -->
         <p
@@ -92,7 +95,6 @@
           class="apos-field__help"
           v-html="$t(field.help || field.htmlHelp)"
         />
-        <!-- eslint-enable vue/no-v-html -->
         <slot name="additional" />
       </div>
       <slot name="body" />
@@ -104,7 +106,7 @@
         {{ getTranslatedErrorMessage(errorMessage) }}
       </div>
     </component>
-    <!-- CSS Escape hatch for additional interfaces like relatipnship managers -->
+    <!-- CSS Escape hatch for additional interfaces like relationship managers -->
     <slot name="secondary" />
   </div>
 </template>
@@ -190,6 +192,10 @@ export default {
   }
 }
 
+.apos-field__label-meta:empty {
+  display: none;
+}
+
 .apos-field__help {
   @include type-base;
 
@@ -235,18 +241,22 @@ export default {
 .apos-field--inline {
   display: flex;
   align-items: center;
+  justify-content: space-between;
 
   .apos-field__label {
     margin-bottom: 0;
   }
 
-  .apos-field__info,
-  .apos-input-wrapper {
-    width: 48%;
+  .apos-field__info {
+    margin-right: 30px;
   }
 
   .apos-field__info {
-    margin-right: 4%;
+    flex-shrink: 1;
+  }
+
+  .apos-input-wrapper {
+    flex-grow: 1;
   }
 
   &.apos-field--range {

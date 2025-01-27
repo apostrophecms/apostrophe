@@ -21,7 +21,7 @@
     // Some  browser styles set `textarea` to monospace.
     resize: none;
   }
-  
+
   &::placeholder {
     color: var(--a-base-4);
     font-style: italic;
@@ -106,7 +106,7 @@
 
 .apos-field.apos-field--micro {
   .apos-input {
-    padding: 10px;
+    padding: 7px;
     font-size: var(--a-type-small);
   }
 
@@ -115,6 +115,7 @@
   }
 
   .apos-field__label {
+    margin-bottom: 7px;
     font-size: var(--a-type-small);
     font-weight: 500;
   }

@@ -8,6 +8,13 @@
   >
     <template #body>
       <div class="apos-input-color">
+        <AposColorInfo
+          v-if="isInline"
+          class="apos-input-color__info apos-input-color__info--inline"
+          :value="next"
+          :is-micro="isMicro"
+          @clear="clear"
+        />
         <div class="apos-input-color__ui">
           <AposContextMenu
             :button="buttonOptions"
@@ -24,17 +31,13 @@
             />
           </AposContextMenu>
         </div>
-        <div class="apos-input-color__info" data-apos-test="colorInfo">
-          {{ valueLabel }}
-          <AposButton
-            v-if="next"
-            type="quiet"
-            label="apostrophe:clear"
-            class="apos-input-color__clear"
-            :modifiers="['no-motion']"
-            @click="clear"
-          />
-        </div>
+        <AposColorInfo
+          v-if="!isInline"
+          class="apos-input-color__info"
+          :value="next"
+          :is-micro="isMicro"
+          @clear="clear"
+        />
       </div>
     </template>
   </AposInputWrapper>
@@ -42,8 +45,13 @@
 
 <script>
 import AposInputColorLogic from '../logic/AposInputColor';
+import AposColorInfo from '../lib/AposColorInfo.vue';
+
 export default {
   name: 'AposInputColor',
+  components: {
+    AposColorInfo
+  },
   mixins: [ AposInputColorLogic ]
 };
 </script>
@@ -54,16 +62,13 @@ export default {
     align-items: center;
   }
 
-  .apos-input-color__clear {
-    margin-left: 10px;
-  }
-
   .apos-input-color__info {
-    @include type-base;
+    margin-left: 15px;
 
-    & {
-      margin-left: 15px;
-      color: var(--a-text-primary);
+    &--inline {
+      margin-right: 5px;
+      margin-left: 0;
     }
   }
+
 </style>

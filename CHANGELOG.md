@@ -8,6 +8,7 @@
 * Prevents the rich text control bar from closing while using certain UI within the color picker.
 * Saving a document via the dialog box properly refreshes the main content area when on a "show page" (when the context document is a piece rather than a page)
 * Fixes the `AposButtonSplit` markup to follow the HTML5 specification, optimizes the component performance, visuals and testability.
+* Fixes a case where releationship button overlaps a context menu.
 * Fixes `group.operations` (batch configuration) merging between modules in the same way that `group.fields` are merged.
 
 ### Adds
@@ -19,7 +20,10 @@
 
 ### Changes
 
+* Range style updates.
 * The `pickerOptions` sub property of a color field's configuration has been merged with it's parent `options` object.
+* Reworks `inline` and `micro` UI of some fields (color, range, select). Improve global inline style.
+* Makes the range input being a number all the time instead of a string that we convert manually.
 
 ## 4.11.2 (2024-12-29)
 
