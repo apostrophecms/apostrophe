@@ -22,6 +22,7 @@
 * The `pickerOptions` sub property of a color field's configuration has been merged with it's parent `options` object.
 * Reworks `inline` and `micro` UI of some fields (color, range, select). Improve global inline style.
 * Makes the range input being a number all the time instead of a string that we convert manually.
+* Command line tasks can run before the first frontend asset build without error messages.
 
 ## 4.11.2 (2024-12-29)
 
