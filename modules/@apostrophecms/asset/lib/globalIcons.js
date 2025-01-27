@@ -100,6 +100,7 @@ module.exports = {
   'minus-box-icon': 'MinusBox',
   'minus-icon': 'Minus',
   'monitor-icon': 'Monitor',
+  'palette-icon': 'Palette',
   'paperclip-icon': 'Paperclip',
   'pencil-icon': 'Pencil',
   'phone-icon': 'Phone',
