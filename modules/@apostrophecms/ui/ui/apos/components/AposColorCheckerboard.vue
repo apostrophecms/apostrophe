@@ -10,7 +10,10 @@ export default {
 
 <style>
 .apos-color__checkerboard {
-  background-image: repeating-conic-gradient(#d3d3d3 0% 25%, #fff 0% 50%);
+  background-image: repeating-conic-gradient(
+    var(--a-checker-board-gray) 0% 25%,
+    var(--a-checker-board-white) 0% 50%
+  );
   background-size: 8px 8px;
   height: 100%;
 }
