@@ -134,6 +134,9 @@ module.exports = {
           completed: 'apostrophe:localizedBatch',
           resultsEventName: 'apos-localize-results'
         },
+        if: {
+          archived: false
+        },
         modal: 'AposI18nLocalize',
         permission: 'edit'
       }
@@ -841,53 +844,15 @@ module.exports = {
           if (!Array.isArray(req.body._ids)) {
             throw self.apos.error('invalid');
           }
-
-          req.body._ids = req.body._ids.map(_id => {
-            return self.inferIdLocaleAndMode(req, _id);
-          });
-          // Add the pages label to req.body for notifications
-          // just before starting the job.
+          if (!Array.isArray(req.body.toLocales)) {
+            throw self.apos.error('invalid');
+          }
           req.body.type = 'apostrophe:pages';
 
-          // FIXME - this is a stub. We need the fronte-end logic
-          // applied here. We would need to keep a global track
-          // of related documents that are being localized and
-          // ensure that they are localized only once. The job handler should
-          // also take in considiration the editing permissions for every related
-          // document and silently skip it if needed.
-          return self.apos.modules['@apostrophecms/job'].runBatch(
+          return self.apos.modules['@apostrophecms/job'].run(
             req,
-            req.body._ids,
-            async function(req, id) {
-              const draft = await self.findOneForLocalizing(req.clone({
-                mode: 'draft'
-              }), {
-                aposDocId: id.split(':')[0]
-              });
-              if (!draft) {
-                throw self.apos.error('notfound');
-              }
-              if (!draft.aposLocale) {
-                // Not subject to draft/publish workflow
-                throw self.apos.error('invalid');
-              }
-              for (const _toLocale of req.body.toLocales || []) {
-                const toLocale = self.apos.i18n.sanitizeLocaleName(_toLocale);
-                const update = self.apos.launder.boolean(req.body.update);
-                if ((!toLocale) || (toLocale === req.locale)) {
-                  throw self.apos.error('invalid');
-                }
-                // await self.localize(req, draft, toLocale, {
-                //   update
-                // });
-                await new Promise((resolve) => setTimeout(resolve, 2000));
-
-                console.log('localize', draft.title, toLocale, update);
-              }
-            },
-            {
-              action: 'localize'
-            }
+            (req, reporting) => self.apos.modules['@apostrophecms/i18n']
+              .localizeBatch(req, self, reporting)
           );
         }
       },

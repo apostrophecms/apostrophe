@@ -268,7 +268,7 @@
   "localizeNewRelated": "Localize new related documents",
   "localizeNotYetLocalized": "Not Yet Localized",
   "localized": "Localized the {{ type }} {{ title }} to {{ locale }}",
-  "localizedBatch": "Localized {{ count }} {{ type }}",
+  "localizedBatch": "Processed {{ count }} {{ type }}",
   "localizingBatch": "Localizing {{ type }}...",
   "localizingBusy": "Localizing Content",
   "logOut": "Log Out",

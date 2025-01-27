@@ -454,7 +454,7 @@ export default {
           label: this.$attrs.label,
           messages: this.$attrs.messages,
           checked: this.$attrs.checked,
-          checkedTypes: this.$attrs.checkedTypes,
+          checkedTypes: this.$attrs.checkedTypes || [ this.moduleName ],
           permission: this.$attrs.permission
         };
       }
@@ -465,6 +465,9 @@ export default {
     },
     isBatchMode() {
       return this.batchOptions.enabled;
+    },
+    currentLocale() {
+      return window.apos.i18n.locale;
     },
     action() {
       return this.doc.slug.startsWith('/')
@@ -488,21 +491,11 @@ export default {
       return this.selectedLocales.length === this.locales.filter(locale => !this.isCurrentLocale(locale) && this.canEditLocale(locale)).length;
     },
     relatedDocTypes() {
-      const types = {};
       if (this.isBatchMode) {
-        const allTypes = {};
-        const seen = new Set();
-        this.batchOptions.checkedTypes
-          .forEach(type =>
-            this.getRelatedTypesBySchema(
-              apos.modules[type].schema,
-              allTypes,
-              seen
-            )
-          );
-
-        return Object.values(allTypes);
+        return this.getRelatedSchemaTypes(this.batchOptions.checkedTypes);
       }
+
+      const types = {};
       for (const doc of this.relatedDocs) {
         if (!types[doc.type]) {
           types[doc.type] = {
@@ -588,6 +581,17 @@ export default {
           if (apos.modules[doc.type].relatedDocument) {
             this.wizard.values.relatedDocTypesToLocalize.data.push(doc.type);
           }
+        }
+      }
+    },
+    relatedDocTypes(newVal) {
+      if (!this.isBatchMode) {
+        return;
+      }
+      for (const item of newVal) {
+        if (!this.docTypesSeen.includes(item.value)) {
+          this.docTypesSeen.push(item.value);
+          this.wizard.values.relatedDocTypesToLocalize.data.push(item.value);
         }
       }
     }
@@ -884,7 +888,7 @@ export default {
     async submitBatch() {
       const relatedTypes = this.wizard.values.toLocalize.data === 'thisDoc'
         ? []
-        : this.batchOptions.checkedTypes;
+        : Object.values(this.relatedDocTypes).map(({ value }) => value);
       const route = apos.modules[this.moduleName].action;
 
       try {
@@ -899,6 +903,7 @@ export default {
             relatedTypes,
             toLocales: this.selectedLocales.map(locale => locale.name),
             update: this.wizard.values.relatedDocSettings.data !== 'localizeNewRelated',
+            relatedOnly: this.wizard.values.toLocalize.data === 'relatedDocsOnly',
             messages: this.batchOptions.messages
           }
         });
@@ -912,40 +917,73 @@ export default {
         this.close();
       }
     },
-    getRelatedTypesBySchema(schema, result = {}, seen = new Set()) {
-      for (const field of schema || []) {
-        if (seen.has(field._id)) {
-          continue;
-        }
-        seen.add(field._id);
+    getRelatedSchemaTypes(types) {
+      const self = this;
+      const allTypes = {};
+      const seen = new Set();
+      types.forEach(type =>
+        getRelatedTypesBySchema(
+          apos.modules[type].schema,
+          allTypes,
+          seen
+        )
+      );
 
-        switch (field.type) {
-          case 'array':
-          case 'object':
-            this.getRelatedTypesBySchema(field.schema, result);
-            break;
+      return Object.values(allTypes)
+        .filter(type => canLocalize(type.value));
 
-          case 'area':
-            for (const widget of Object.keys(field.options?.widgets || {})) {
-              this.getRelatedTypesBySchema(apos.modules[`${widget}-widget`]?.schema, result);
-            }
-            break;
-
-          case 'relationship': {
-            result[field.withType] ||= {
-              value: field.withType,
-              count: 0
-            };
-            if (!result[field.withType].count) {
-              result[field.withType].label = this.plural(field.withType);
-            }
-            result[field.withType].count++;
-            break;
+      function getRelatedTypesBySchema(schema, result = {}, seen = new Set()) {
+        for (const field of schema || []) {
+          if (seen.has(field._id)) {
+            continue;
           }
+          seen.add(field._id);
 
-          default:
-            break;
+          switch (field.type) {
+            case 'array':
+            case 'object':
+              getRelatedTypesBySchema(field.schema, result);
+              break;
+
+            case 'area': {
+              for (const widget of Object.keys(field.options?.widgets || {})) {
+                getRelatedTypesBySchema(apos.modules[`${widget}-widget`]?.schema, result);
+              }
+              break;
+            }
+
+            case 'relationship': {
+              result[field.withType] ||= {
+                value: field.withType,
+                count: 0
+              };
+              if (!result[field.withType].count) {
+                result[field.withType].label = self.plural(field.withType);
+              }
+              result[field.withType].count++;
+              break;
+            }
+
+            default:
+              break;
+          }
         }
+      };
+
+      function canLocalize(type) {
+        // Explicitly opt out of localization for pages as related docs.
+        // This is needed only in batch mode, because we don't have the
+        // full doc to check for `relatedDocument` property.
+        // Without this, the "Pages" type would be shown in the UI, but filtered out
+        // on the backend. The downside: if a page type explicitly opts in
+        // for localization (`options.relatedDocument = true`),
+        // it won't be respected in batch mode. Removing the below condition
+        // is an option in the future.
+        if ([ '@apostrophecms/page', '@apostrophecms/any-page-type' ].includes(type)) {
+          return false;
+        }
+        return window.apos.modules[type].relatedDocument !== false &&
+            window.apos.modules[type].localized !== false;
       }
     },
     // Get all related documents
@@ -1066,7 +1104,7 @@ export default {
         this.wizard.values.translateTargets.data = [];
         return;
       }
-      const [ sourceLocale ] = this.doc.aposLocale.split(':');
+      const sourceLocale = this.currentLocale;
       const targets = this.wizard.values.toLocales.data;
 
       let response;
