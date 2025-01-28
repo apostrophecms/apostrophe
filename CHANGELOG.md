@@ -1,5 +1,9 @@
 # Changelog
 
+### Fixes
+
+* Fixes admin bar overlapping widget area add menu.
+
 ## 4.12.0 (2025-01-27)
 
 ### Fixes
