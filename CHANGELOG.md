@@ -4,7 +4,12 @@
 
 ### Fixes
 
+* Field inputs inside an array modal can now be focused/tabbed via keyboard
 * Fixed the checkered background for gauging color transparency.
+
+### Changes
+
+* The array editor's `isModified` method is now a computed property for consistency.
 
 ## 4.12.0 (2025-01-27)
 
