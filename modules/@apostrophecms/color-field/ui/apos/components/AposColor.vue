@@ -32,7 +32,7 @@
           class="apos-color__active-color"
           :style="{ background: activeColor }"
         />
-        <Checkboard />
+        <AposColorCheckerboard />
       </div>
     </div>
     <div v-if="!disableFields" class="apos-color__field">
@@ -97,7 +97,7 @@
           class="apos-color__presets-color"
           @click="handlePreset(c)"
         >
-          <Checkboard />
+          <AposColorCheckerboard />
         </div>
       </template>
     </div>
@@ -110,7 +110,6 @@ import editableInput from '../lib/AposColorEditableInput.vue';
 import saturation from '../lib/AposColorSaturation.vue';
 import hue from '../lib/AposColorHue.vue';
 import alpha from '../lib/AposColorAlpha.vue';
-import checkboard from '../lib/AposColorCheckerboard.vue';
 
 const defaultOptions = { ...apos.modules['@apostrophecms/color-field'].defaultOptions };
 
@@ -120,8 +119,7 @@ export default {
     Saturation: saturation,
     Hue: hue,
     Alpha: alpha,
-    EditableContent: editableInput,
-    Checkboard: checkboard
+    EditableContent: editableInput
   },
   mixins: [ colorMixin ],
   props: {
@@ -296,10 +294,6 @@ export default {
   box-shadow: inset 0 0 0 1px rgb(0 0 0 / 15%), inset 0 0 4px rgb(0 0 0 / 25%);
 }
 
-.apos-color__color-wrap .apos-color__checkerboard {
-  background-size: auto;
-}
-
 .apos-color__field {
   display: flex;
   padding-top: 4px;
@@ -353,7 +347,7 @@ export default {
   box-shadow: inset 0 0 0 1px rgb(0 0 0 / 15%);
 }
 
-.apos-color__presets-color .apos-color__checkerboard {
+.apos-color__presets-color {
   box-shadow: inset 0 0 0 1px rgb(0 0 0 / 15%);
   border-radius: 3px;
 }

@@ -29,7 +29,9 @@
         class="apos-button__color-preview"
       >
         <span :style="colorStyle" class="apos-button__color-preview__swatch" />
-        <span class="apos-button__color-preview__checkerboard" />
+        <div class="apos-button__color-preview__checkerboard">
+          <AposColorCheckerboard />
+        </div>
       </span>
       <div class="apos-button__content">
         <AposIndicator
@@ -358,7 +360,6 @@ export default {
 
   .apos-button__color-preview__checkerboard {
     z-index: $z-index-base;
-    background-image: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAMElEQVQ4T2N89uzZfwY8QFJSEp80A+OoAcMiDP7//483HTx//hx/Ohg1gIFx6IcBALl+VXknOCvFAAAAAElFTkSuQmCC');
   }
 
   .apos-button--small {

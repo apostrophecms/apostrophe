@@ -1,5 +1,11 @@
 # Changelog
 
+## UNRELEASED
+
+### Fixes
+
+* Fixed the checkered background for gauging color transparency.
+
 ## 4.12.0 (2025-01-27)
 
 ### Fixes
