@@ -61,8 +61,8 @@ module.exports = {
   'format-list-numbered-icon': 'FormatListNumbered',
   'format-quote-close-icon': 'FormatQuoteClose',
   'format-strikethrough-variant-icon': 'FormatStrikethroughVariant',
-  'format-superscript-icon': 'FormatSuperscript',
   'format-subscript-icon': 'FormatSubscript',
+  'format-superscript-icon': 'FormatSuperscript',
   'format-text-icon': 'FormatText',
   'format-underline-icon': 'FormatUnderline',
   'help-circle-icon': 'HelpCircle',
@@ -122,5 +122,6 @@ module.exports = {
   'unfold-more-horizontal-icon': 'UnfoldMoreHorizontal',
   'video-icon': 'Video',
   'view-column-icon': 'ViewColumn',
+  'water-off-icon': 'WaterOff',
   'web-icon': 'Web'
 };

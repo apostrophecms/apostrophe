@@ -1,11 +1,16 @@
 <template>
-  <div class="apos-button-split" :class="modifiers">
+  <div
+    class="apos-button-split"
+    :class="modifiers"
+    :data-apos-test-button-split-type="type"
+  >
     <AposButton
       class="apos-button-split__button"
       v-bind="button"
       :label="label"
       :disabled="disabled"
       :tooltip="tooltip"
+      data-apos-test-button-split-submit
       @click="emit('click', action)"
     />
     <AposContextMenu
@@ -15,26 +20,33 @@
       :button="contextMenuButton"
       :disabled="disabled"
       menu-placement="bottom-end"
-      @open="menuOpen"
-      @close="menuClose"
+      data-apos-test-button-split-trigger
     >
-      <dl
+      <ul
         class="apos-button-split__menu__dialog"
         role="menu"
         :aria-label="menuLabel"
+        data-apos-test-button-split-menu
       >
-        <button
+        <li
           v-for="item in menu"
           :key="item.action"
-          ref="choices"
           class="apos-button-split__menu__dialog-item"
           :class="{ 'apos-is-selected': item.action === action }"
           :aria-checked="item.action === action ? 'true' : 'false'"
+          :data-apos-test-button-split-item="item.action"
           role="menuitemradio"
-          :value="item.action"
-          @click="selectionHandler(item.action)"
-          @keydown="cycleElementsToFocus"
         >
+          <button
+            class="apos-button-split__menu__dialog-button"
+            :value="item.action"
+            :data-apos-test-button-split-item-trigger="item.action"
+            @click="selectionHandler(item.action)"
+          >
+            <span style="display: none;">
+              {{ $t(item.label) }}
+            </span>
+          </button>
           <AposIndicator
             v-if="action === item.action"
             class="apos-button-split__menu__dialog-check"
@@ -42,30 +54,22 @@
             :icon-size="18"
             icon-color="var(--a-primary)"
           />
-          <dt class="apos-button-split__menu__dialog-label">
+          <span class="apos-button-split__menu__dialog-label">
             {{ $t(item.label) }}
-          </dt>
-          <dd v-if="item.description" class="apos-button-split__menu__dialog-description">
+          </span>
+          <span v-if="item.description" class="apos-button-split__menu__dialog-description">
             {{ $t(item.description) }}
-          </dd>
-        </button>
-      </dl>
+          </span>
+        </li>
+      </ul>
     </AposContextMenu>
   </div>
 </template>
 
 <script setup>
 import {
-  ref, computed, watch, nextTick
+  ref, computed, watch
 } from 'vue';
-import { useAposFocus } from 'Modules/@apostrophecms/modal/composables/AposFocus';
-
-const {
-  elementsToFocus,
-  cycleElementsToFocus,
-  focusElement,
-  focusLastModalFocusedElement
-} = useAposFocus();
 
 const props = defineProps({
   menu: {
@@ -111,7 +115,6 @@ const button = ref({
   attrs: props.attrs
 });
 const contextMenu = ref();
-const choices = ref([]);
 const contextMenuButton = ref({
   iconOnly: true,
   icon: 'chevron-down-icon',
@@ -151,27 +154,6 @@ function initialize() {
   setButton(initial);
 }
 
-function trapFocus() {
-  const selectedElementIndex = props.menu.findIndex(i => i.action === action.value) || 0;
-
-  // use map to keep items order:
-  elementsToFocus.value = props.menu.map(
-    ({ action }) => choices.value.find(choice => {
-      return choice.value === action;
-    })
-  );
-
-  focusElement(elementsToFocus.value[selectedElementIndex]);
-}
-function menuOpen() {
-  nextTick(() => {
-    trapFocus();
-  });
-}
-
-function menuClose() {
-  focusLastModalFocusedElement();
-}
 </script>
 <style lang="scss" scoped>
   .apos-button-split {
@@ -182,33 +164,47 @@ function menuClose() {
     display: flex;
     flex-direction: column;
     margin: 0;
+    padding: 0;
     min-width: 300px;
+    list-style: none;
   }
 
   .apos-button-split__menu__dialog-item {
-    @include apos-button-reset();
     @include apos-transition();
 
     & {
+      position: relative;
       padding: $spacing-base + $spacing-half $spacing-double $spacing-base + $spacing-half $spacing-quadruple;
       border-bottom: 1px solid var(--a-base-9);
     }
 
-    &:hover,
-    &:focus,
-    &:active,
+    &:has(.apos-button-split__menu__dialog-button:hover),
+    &:focus-within,
+    &:has(.apos-button-split__menu__dialog-button:active),
     &.apos-is-selected {
       background-color: var(--a-base-9);
     }
 
-    &:focus,
-    &:active {
-      outline: 1px solid var(--a-primary);
+    &:focus-within,
+    &:has(.apos-button-split__menu__dialog-button:active) {
+      box-shadow: inset 0 0 0 1px var(--a-primary);
     }
 
     &:last-child {
       margin-bottom: 0;
       border-bottom: 0;
+    }
+  }
+
+  .apos-button-split__menu__dialog-button {
+    @include apos-button-reset();
+
+    & {
+      position: absolute;
+      outline: none;
+      background: transparent;
+      inset: 0;
+      cursor: pointer;
     }
   }
 
@@ -221,6 +217,7 @@ function menuClose() {
     @include type-large;
 
     & {
+      display: block;
       margin-bottom: $spacing-half;
     }
   }

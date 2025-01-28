@@ -5,8 +5,22 @@
 ### Fixes
 
 * Field inputs inside an array modal can now be focused/tabbed via keyboard
+
+### Changes
+
+* The array editor's `isModified` method is now a computed property for consistency.
+
+## 4.12.0 (2025-01-27)
+
+### Fixes
+
 * Fixes ability to change color hue by clicking the color hue bar rather than dragging the indicator
 * Prevents the rich text control bar from closing while using certain UI within the color picker
+* Fixes ability to change color hue by clicking the color hue bar rather than dragging the indicator.
+* Prevents the rich text control bar from closing while using certain UI within the color picker.
+* Saving a document via the dialog box properly refreshes the main content area when on a "show page" (when the context document is a piece rather than a page)
+* Fixes the `AposButtonSplit` markup to follow the HTML5 specification, optimizes the component performance, visuals and testability.
+* Fixes a case where releationship button overlaps a context menu.
 
 ### Adds
 
@@ -16,8 +30,11 @@
 
 ### Changes
 
+* Range style updates.
 * The `pickerOptions` sub property of a color field's configuration has been merged with it's parent `options` object.
-* The array editor's `isModified` method is now a computed property for consistency.
+* Reworks `inline` and `micro` UI of some fields (color, range, select). Improve global inline style.
+* Makes the range input being a number all the time instead of a string that we convert manually.
+* Command line tasks can run before the first frontend asset build without error messages.
 
 ## 4.11.2 (2024-12-29)
 

@@ -248,6 +248,7 @@ module.exports = {
         usage: 'Build Apostrophe frontend CSS and JS bundles',
         afterModuleInit: true,
         async task(argv = {}) {
+          self.inBuildTask = true;
           if (self.hasBuildModule()) {
             return self.build(argv);
           }
@@ -645,9 +646,14 @@ module.exports = {
         const buildOptions = self.getBuildOptions();
         const entrypoints = await self.getBuildModule().entrypoints(buildOptions);
 
+        // Command line tasks other than the asset build task do not display a warning
+        // if there is no manifest from a previous build attempt as they do not depend
+        // on the manifest to succeed
+        const silent = self.apos.isTask() && !self.inBuildTask;
         const {
           manifest = [], devServerUrl, hmrTypes
-        } = await self.loadSavedBuildManifest();
+        } = await self.loadSavedBuildManifest(silent);
+
         self.currentBuildManifest.devServerUrl = devServerUrl;
         self.currentBuildManifest.hmrTypes = hmrTypes ?? [];
 

@@ -143,6 +143,9 @@ export default {
             data: meta[namespace] || {}
           };
         });
+    },
+    hasExtraInfo() {
+      return this.$slots.info;
     }
   },
   mounted: function () {
