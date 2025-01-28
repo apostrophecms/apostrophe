@@ -1,5 +1,11 @@
 # Changelog
 
+## UNRELEASED
+
+### Fixes
+
+* Fixed the checkered background for gauging color transparency.
+
 ## 4.12.0 (2025-01-27)
 
 ### Fixes
@@ -9,7 +15,6 @@
 * Saving a document via the dialog box properly refreshes the main content area when on a "show page" (when the context document is a piece rather than a page)
 * Fixes the `AposButtonSplit` markup to follow the HTML5 specification, optimizes the component performance, visuals and testability.
 * Fixes a case where releationship button overlaps a context menu.
-* Fixed the checkered background for gauging color transparency.
 
 ### Adds
 
