@@ -17,6 +17,7 @@
       @click="click"
     >
       <template #label>
+        <AposColorCheckerboard class="apos-color-control__checkerboard" />
         <AposIndicator icon="chevron-down-icon" />
       </template>
     </AposButton>
@@ -243,5 +244,16 @@ export default defineComponent({
   display: flex;
   justify-content: flex-end;
   margin-top: 10px;
+}
+
+.apos-color-control__checkerboard {
+  z-index: $z-index-under;
+  position: absolute;
+  top: 1.5px;
+  left: 1.5px;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  pointer-events: none;
 }
 </style>
