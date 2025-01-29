@@ -80,6 +80,7 @@ export default {
 
       if (modal) {
         await apos.modal.execute(modal, {
+          moduleName: this.moduleOptions.name,
           moduleAction: this.moduleOptions.action,
           action,
           labels: this.moduleLabels,
