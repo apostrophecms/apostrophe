@@ -24,6 +24,7 @@ module.exports = {
     searchable: false,
     slugPrefix: 'image-',
     autopublish: true,
+    documentVersions: true,
     editRole: 'editor',
     publishRole: 'editor',
     showPermissions: true,
