@@ -9,12 +9,14 @@
 * Saving a document via the dialog box properly refreshes the main content area when on a "show page" (when the context document is a piece rather than a page)
 * Fixes the `AposButtonSplit` markup to follow the HTML5 specification, optimizes the component performance, visuals and testability.
 * Fixes a case where releationship button overlaps a context menu.
+* Fixes `group.operations` (batch configuration) merging between modules in the same way that `group.fields` are merged.
 
 ### Adds
 
 * Ability to disable the color spectrum UI of a color picker
 * Accessibility improvement for the rich text editor Typography toolbar item.
 * Adds `moduleLabels` prop to `AposDocContextMenu` to pass it to opened modals from custom operations (used by templates to define labels to display on the export modal).
+* The `modal` configuration property for batch operations without a group is now accepted and works as expected in the same way as for grouped operations.
 
 ### Changes
 

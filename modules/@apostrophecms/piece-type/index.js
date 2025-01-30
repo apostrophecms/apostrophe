@@ -191,12 +191,25 @@ module.exports = {
           confirmationButton: 'apostrophe:restoreBatchConfirmationButton'
         },
         permission: 'edit'
+      },
+      localize: {
+        label: 'apostrophe:localize',
+        messages: {
+          progress: 'apostrophe:localizingBatch',
+          completed: 'apostrophe:localizedBatch',
+          resultsEventName: 'apos-localize-results'
+        },
+        if: {
+          archived: false
+        },
+        modal: 'AposI18nLocalize',
+        permission: 'edit'
       }
     },
     group: {
       more: {
         icon: 'dots-vertical-icon',
-        operations: []
+        operations: [ 'localize' ]
       }
     }
   },
@@ -445,6 +458,23 @@ module.exports = {
             }, {
               action: 'restore'
             }
+          );
+        },
+        localize(req) {
+          if (!Array.isArray(req.body._ids)) {
+            throw self.apos.error('invalid');
+          }
+          if (!Array.isArray(req.body.toLocales)) {
+            throw self.apos.error('invalid');
+          }
+          req.body.type = req.body._ids.length === 1
+            ? self.options.label
+            : self.options.pluralLabel;
+
+          return self.apos.modules['@apostrophecms/job'].run(
+            req,
+            (req, reporting) => self.apos.modules['@apostrophecms/i18n']
+              .localizeBatch(req, self, reporting)
           );
         },
         ':_id/localize': async (req) => {
