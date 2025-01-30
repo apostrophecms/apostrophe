@@ -841,12 +841,6 @@ module.exports = {
           );
         },
         localize(req) {
-          if (!Array.isArray(req.body._ids)) {
-            throw self.apos.error('invalid');
-          }
-          if (!Array.isArray(req.body.toLocales)) {
-            throw self.apos.error('invalid');
-          }
           req.body.type = 'apostrophe:pages';
 
           return self.apos.modules['@apostrophecms/job'].run(
