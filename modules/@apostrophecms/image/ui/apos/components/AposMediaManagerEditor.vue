@@ -113,6 +113,7 @@ import dayjs from 'dayjs';
 import { isEqual } from 'lodash';
 import advancedFormat from 'dayjs/plugin/advancedFormat';
 import { createId } from '@paralleldrive/cuid2';
+import checkIfConditions from 'apostrophe/lib/check-if-conditions';
 
 dayjs.extend(advancedFormat);
 
@@ -139,7 +140,7 @@ export default {
       }
     }
   },
-  emits: [ 'back', 'modified' ],
+  emits: [ 'back', 'modified', 'close' ],
   data() {
     return {
       // Primarily use `activeMedia` to support hot-swapping image docs.
@@ -150,7 +151,8 @@ export default {
       original: klona(this.media),
       lipKey: '',
       triggerValidation: false,
-      showReplace: false
+      showReplace: false,
+      customOperations: apos.modules['@apostrophecms/doc'].contextOperations
     };
   },
   computed: {
@@ -160,11 +162,97 @@ export default {
     canLocalize() {
       return this.moduleOptions.canLocalize && this.activeMedia._id;
     },
+    canPublish() {
+      if (this.activeMedia._id) {
+        console.log('this.activeMedia._publish', this.activeMedia._publish);
+        return this.activeMedia._publish;
+      } else {
+        return this.moduleOptions.canPublish;
+      }
+    },
+    canEdit() {
+      if (this.activeMedia._id) {
+        console.log('this.activeMedia._edit', this.activeMedia._edit);
+        return this.activeMedia._edit;
+      }
+      return this.moduleOptions.canEdit;
+    },
+    customMenusByContext() {
+      if (!this.canEdit) {
+        return [];
+      }
+
+      const menus = this.customOperationsByContext
+        .map(op => ({
+          label: op.label,
+          action: op.action,
+          modifiers: op.modifiers || []
+        }));
+      menus.sort((a, b) => a.modifiers.length - b.modifiers.length);
+      return menus;
+    },
+    customOperationsByContext() {
+      console.log(this.customOperations);
+      return this.customOperations.filter(({
+        manuallyPublished, hasUrl, conditions, context, if: ifProps, moduleIf
+      }) => {
+        if (typeof manuallyPublished === 'boolean' && manuallyPublished !== this.manuallyPublished) {
+          return false;
+        }
+
+        if (typeof hasUrl === 'boolean' && hasUrl !== this.hasUrl) {
+          return false;
+        }
+
+        if (conditions) {
+          const notAllowed = conditions.some((action) => !this[action]);
+
+          if (notAllowed) {
+            return false;
+          }
+        }
+
+        ifProps = ifProps || {};
+        moduleIf = moduleIf || {};
+        const canSeeOperation = checkIfConditions(this.activeMedia, ifProps) &&
+            checkIfConditions(this.moduleOptions, moduleIf);
+        console.log(this.moduleName, canSeeOperation);
+
+        if (!canSeeOperation) {
+          return false;
+        }
+
+        return context === 'update' && this.isUpdateOperation;
+      });
+    },
+    moduleName() {
+      console.log('this.activeMedia.type', this.activeMedia.type);
+      return this.activeMedia.type;
+    },
+    isUpdateOperation() {
+      console.log('this.activeMedia._id', this.activeMedia._id);
+      return !!this.activeMedia._id;
+    },
+    hasUrl() {
+      console.log('this.activeMedia._url', this.activeMedia._url);
+      return !!this.activeMedia._url;
+    },
+    manuallyPublished() {
+      return this.moduleOptions.localized && !this.autopublish;
+    },
+    autopublish() {
+      return this.activeMedia._aposAutopublish ?? this.moduleOptions.autopublish;
+    },
     moreMenu() {
-      const menu = [ {
-        label: 'apostrophe:discardChanges',
-        action: 'cancel'
-      } ];
+      console.log(this.customMenusByContext);
+      const menu = [
+        {
+          label: 'apostrophe:discardChanges',
+          action: 'cancel'
+        },
+        ...this.customMenusByContext
+      ];
+
       if (this.canLocalize) {
         menu.push({
           label: 'apostrophe:localize',
@@ -248,7 +336,45 @@ export default {
   },
   methods: {
     moreMenuHandler(action) {
+      const operation = this.customOperations.find(op => op.action === action);
+      if (operation) {
+        this.customAction(this.activeMedia, operation);
+        return;
+      }
+
       this[action]();
+    },
+    async customAction(doc, operation) {
+      if (operation.replaces) {
+        const confirm = await apos.confirm({
+          heading: 'apostrophe:replaceHeadingPrompt',
+          description: this.$t('apostrophe:replaceDescPrompt'),
+          affirmativeLabel: 'apostrophe:replace',
+          icon: false
+        });
+        if (!confirm) {
+          return;
+        }
+        this.$emit('close', doc);
+      }
+      const props = {
+        moduleName: operation.moduleName || this.moduleName,
+        moduleLabels: this.moduleLabels,
+        // For backwards compatibility
+        doc,
+        ...docProps(doc),
+        ...operation.props
+      };
+      if (operation.type === 'event') {
+        apos.bus.$emit(operation.action, props);
+        return;
+      }
+      await apos.modal.execute(operation.modal, props);
+      function docProps(doc) {
+        return Object.fromEntries(Object.entries(operation.docProps || {}).map(([ key, value ]) => {
+          return [ key, doc[value] ];
+        }));
+      }
     },
     async updateActiveDoc(newMedia) {
       newMedia = newMedia || {};
