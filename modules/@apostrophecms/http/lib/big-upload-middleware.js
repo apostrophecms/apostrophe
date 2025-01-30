@@ -92,7 +92,6 @@ module.exports = (self) => ({
           if ((typeof info.chunks) !== 'number') {
             throw invalid('chunks');
           }
-          console.log('info here', info);
           return [ param, {
             name: info.name,
             size: info.size,
@@ -165,7 +164,9 @@ module.exports = (self) => ({
       }
       let n = 0;
       req.files = {};
-      for (const [ param, { name, chunks } ] of Object.entries(bigUpload.files)) {
+      for (const [ param, {
+        name, type, chunks
+      } ] of Object.entries(bigUpload.files)) {
         const extname = require('path').extname(name);
         const ext = extname ? extname.substring(1) : 'tmp';
         const tmp = `${ufs.getTempPath()}/${id}-${n}.${ext}`;
@@ -189,7 +190,8 @@ module.exports = (self) => ({
         n++;
         req.files[param] = {
           name,
-          path: tmp
+          path: tmp,
+          type
         };
       }
       return next();
