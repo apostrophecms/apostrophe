@@ -18,7 +18,7 @@ module.exports = {
     insertViaUpload: true,
     slugPrefix: 'file-',
     autopublish: true,
-    documentVersions: true,
+    versions: true,
     editRole: 'editor',
     publishRole: 'editor',
     showPermissions: true,
