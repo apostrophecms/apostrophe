@@ -857,6 +857,12 @@ module.exports = {
         if (!req.user) {
           throw self.apos.error('forbidden');
         }
+        if (!Array.isArray(req.body._ids)) {
+          throw self.apos.error('invalid');
+        }
+        if (!Array.isArray(req.body.toLocales)) {
+          throw self.apos.error('invalid');
+        }
 
         const ids = self.apos.launder.ids(req.body._ids)
           .map(id => self.inferIdLocaleAndMode(req, id));
@@ -955,9 +961,6 @@ module.exports = {
 
         // Check if the document can be localized, retrieve related documents
         // if necessary, and localize the documents to the specified locales.
-        // FIXME - related doc gets lost when more than one docs are localized,
-        // but works fine when only one doc is localized. In the test case, the
-        // problem is shown when the last doc has a related doc.
         async function localizeDoc(req, reporting, {
           doc,
           relatedTypes,
