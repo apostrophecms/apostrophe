@@ -4,8 +4,7 @@ const fs = require('fs');
 const qs = require('qs');
 
 const t = require('../test-lib/test.js');
-const bigUpload = require('../lib/big-upload-client.js');
-
+const getBigUpload = async () => import('../modules/@apostrophecms/http/ui/apos/big-upload-client.js');
 const buffer = fs.readFileSync(path.resolve(__dirname, 'data/upload_tests/crop_image.png'));
 
 describe('Big Upload', function() {
@@ -19,7 +18,7 @@ describe('Big Upload', function() {
 
   this.timeout(t.timeout);
 
-  it('init apos', async function() {
+  before(async function() {
     apos = await t.create({
       root: module,
       modules: {
@@ -96,7 +95,7 @@ describe('Big Upload', function() {
         return result.json();
       }
     };
-
+    const { default: bigUpload } = await getBigUpload();
     const result = await bigUpload('/api/v1/test/big-upload-test', {
       files: {
         file
