@@ -259,6 +259,7 @@ module.exports = {
               name: response.name,
               status: response.code,
               stack: (error.stack || '').split('\n').slice(1).map(line => line.trim()),
+              cause: error.cause,
               errorPath: response.path,
               data: response.data
             });

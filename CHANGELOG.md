@@ -12,6 +12,10 @@
 
 * The array editor's `isModified` method is now a computed property for consistency.
 
+### Adds
+
+* If `error.cause` is prevent, log the property.
+
 ## 4.12.0 (2025-01-27)
 
 ### Fixes
