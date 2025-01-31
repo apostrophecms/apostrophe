@@ -1,7 +1,7 @@
 <template>
   <div class="apos-color__alpha">
     <div class="apos-color__alpha-checkboard-wrap">
-      <Checkboard />
+      <AposColorCheckerboard />
     </div>
     <div class="apos-color__alpha-gradient" :style="{ background: gradientColor }" />
     <div
@@ -19,13 +19,8 @@
 </template>
 
 <script>
-import checkboard from './AposColorCheckerboard.vue';
-
 export default {
   name: 'AposColorAlpha',
-  components: {
-    Checkboard: checkboard
-  },
   props: {
     value: {
       type: Object,
