@@ -132,7 +132,7 @@ module.exports = {
         messages: {
           progress: 'apostrophe:localizingBatch',
           completed: 'apostrophe:localizedBatch',
-          resultsEventName: 'apos-localize-results'
+          resultsEventName: 'apos-localize-batch-results'
         },
         if: {
           archived: false
