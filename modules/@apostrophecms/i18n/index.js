@@ -853,6 +853,7 @@ module.exports = {
       // - `error`: a boolean or string `reason` indicating whether an error
       //   occurred during localization. If `error` is a string, it will contain
       //   the error name. See `@apostrophecms/error` and `@apostrophecms/http` modules.
+      // - `detail`: optional string (i18n key) explaining the error.
       async localizeBatch(req, manager, reporting = null) {
         if (!req.user) {
           throw self.apos.error('forbidden');
@@ -1060,8 +1061,22 @@ module.exports = {
               } catch (e) {
                 hasError = true;
                 payload.error = e.name ?? true;
+                // This is the only detail that we know of.
+                // XXX A better way to handle data sent to the UI as a
+                // human-readable message is a standard error payload property.
+                // For example `error.data.detail`.
+                if (e.data?.parentNotLocalized) {
+                  payload.detail = 'apostrophe:parentNotLocalized';
+                } else {
+                  payload.detail = e.data?.detail;
+                }
                 log.push(payload);
-                self.logError(req, 'localize-batch-doc-error', {
+                // Do not flood the logs with errors that are expected
+                const fn = e.name === 'conflict' ? 'logDebug' : 'logError';
+                const id = e.name === 'conflict'
+                  ? 'localize-batch-doc-conflict'
+                  : 'localize-batch-doc-error';
+                self[fn](req, id, {
                   ...payload,
                   error: e.message,
                   reason: e.name,
