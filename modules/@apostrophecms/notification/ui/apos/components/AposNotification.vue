@@ -21,19 +21,19 @@
         {{ localize(button.label) }}
       </button>
     </span>
-    <div v-if="job && job.total" class="apos-notification__progress">
+    <div v-if="progress" class="apos-notification__progress">
       <div class="apos-notification__progress-bar">
         <div
           class="apos-notification__progress-now"
           role="progressbar"
-          :aria-valuenow="job.processed || 0"
-          :style="`width: ${job.percentage + '%'}`"
+          :aria-valuenow="progress.processed || 0"
+          :style="`width: ${progress.percentage + '%'}`"
           aria-valuemin="0"
-          :aria-valuemax="job.total"
+          :aria-valuemax="progress.total"
         />
       </div>
-      <span class="apos-notification__progress-value">
-        {{ Math.floor(job.percentage) + '%' }}
+      <span class="apos-progress__progress-value">
+        {{ Math.floor(progress.percentage) + '%' }}
       </span>
     </div>
     <button
@@ -67,11 +67,13 @@ export default {
     return {
       job: this.notification.job && this.notification.job._id ? {
         route: `${apos.modules['@apostrophecms/job'].action}/${this.notification.job._id}`,
+        action: this.notification.job.action
+      } : null,
+      progress: (this.notification.job || this.type === 'progress') && {
         processed: 0,
         total: 1,
-        percentage: 0,
-        action: this.notification.job.action
-      } : null
+        percentage: 0
+      }
     };
   },
   computed: {
@@ -130,10 +132,11 @@ export default {
           percentage
         } = await apos.http.get(this.job.route, {});
 
-        this.job.total = total;
-        this.job.processed = processed || 0;
-        this.job.percentage = percentage;
-        this.job.ids = this.notification.job.ids || [];
+        // TODO: Store progress stuff in data
+        this.progress.total = total;
+        this.progress.processed = processed || 0;
+        this.progress.percentage = percentage;
+        this.progress.ids = this.notification.job.ids || [];
 
         await this.pollJob();
       } catch (error) {
