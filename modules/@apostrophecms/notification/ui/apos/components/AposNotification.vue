@@ -115,6 +115,7 @@ export default {
         this.$emit('close', this.notification._id);
       }, 1000 * this.notification.dismiss);
     }
+    // TODO: Use normal click event
     this.$refs.label.addEventListener('click', (e) => {
       if (e.target.hasAttribute('data-apos-bus-event')) {
         this.close();
