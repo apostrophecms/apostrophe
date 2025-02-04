@@ -37,7 +37,7 @@
       </span>
     </div>
     <button
-      v-if="!job"
+      v-if="!progress"
       class="apos-notification__button"
       @click="close"
     >
@@ -67,16 +67,23 @@ export default {
     return {
       job: this.notification.job && this.notification.job._id ? {
         route: `${apos.modules['@apostrophecms/job'].action}/${this.notification.job._id}`,
-        action: this.notification.job.action
-      } : null,
-      progress: (this.notification.job || this.type === 'progress') && {
-        processed: 0,
-        total: 1,
-        percentage: 0
-      }
+        action: this.notification.job.action,
+        progress: {
+          processed: 0,
+          total: 1,
+          percentage: 0
+        }
+      } : null
     };
   },
   computed: {
+    progress() {
+      if (!this.job || this.notification.progress) {
+        return false;
+      }
+
+      return this.job?.progress || this.notification.progress;
+    },
     classList() {
       const classes = [ 'apos-notification' ];
 
@@ -132,11 +139,10 @@ export default {
           percentage
         } = await apos.http.get(this.job.route, {});
 
-        // TODO: Store progress stuff in data
-        this.progress.total = total;
-        this.progress.processed = processed || 0;
-        this.progress.percentage = percentage;
-        this.progress.ids = this.notification.job.ids || [];
+        this.job.total = total;
+        this.job.processed = processed || 0;
+        this.job.percentage = percentage;
+        this.job.ids = this.notification.job.ids || [];
 
         await this.pollJob();
       } catch (error) {
