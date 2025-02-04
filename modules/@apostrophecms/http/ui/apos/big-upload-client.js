@@ -38,7 +38,6 @@ const defaultChunkSize = 1024 * 1024 * 4;
 export default async (url, options) => {
   const chunkSize = options.chunkSize || defaultChunkSize;
   const http = options.http || window.apos?.http;
-  const progress = options.progress || (n => {});
   const files = options.files || {};
   const info = {};
   let totalBytes = 0;
@@ -82,7 +81,9 @@ export default async (url, options) => {
         body: formData
       });
       sentBytes += thisChunkSize;
-      progress(sentBytes / totalBytes);
+      if (typeof options.progress === 'function') {
+        options.progress(sentBytes, totalBytes);
+      }
       chunk++;
     }
     n++;
