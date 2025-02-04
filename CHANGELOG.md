@@ -7,10 +7,16 @@
 * Field inputs inside an array modal can now be focused/tabbed via keyboard
 * Fixes admin bar overlapping widget area add menu.
 * Fixed the checkered background for gauging color transparency.
+* Fixes `group.operations` (batch configuration) merging between modules in the same way that `group.fields` are merged.
+
+### Adds
+
+* Add support for batch localization of pieces and pages.
 
 ### Changes
 
 * The array editor's `isModified` method is now a computed property for consistency.
+* The `modal` configuration property for batch operations without a group is now accepted and works as expected in the same way as for grouped operations.
 
 ## 4.12.0 (2025-01-27)
 
@@ -21,14 +27,12 @@
 * Saving a document via the dialog box properly refreshes the main content area when on a "show page" (when the context document is a piece rather than a page)
 * Fixes the `AposButtonSplit` markup to follow the HTML5 specification, optimizes the component performance, visuals and testability.
 * Fixes a case where releationship button overlaps a context menu.
-* Fixes `group.operations` (batch configuration) merging between modules in the same way that `group.fields` are merged.
 
 ### Adds
 
 * Ability to disable the color spectrum UI of a color picker
 * Accessibility improvement for the rich text editor Typography toolbar item.
 * Adds `moduleLabels` prop to `AposDocContextMenu` to pass it to opened modals from custom operations (used by templates to define labels to display on the export modal).
-* The `modal` configuration property for batch operations without a group is now accepted and works as expected in the same way as for grouped operations.
 
 ### Changes
 
