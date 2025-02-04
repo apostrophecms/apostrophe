@@ -888,7 +888,7 @@ export default {
     async submitBatch() {
       const relatedTypes = this.wizard.values.toLocalize.data === 'thisDoc'
         ? []
-        : Object.values(this.relatedDocTypes).map(({ value }) => value);
+        : this.wizard.values.relatedDocTypesToLocalize.data;
       const route = apos.modules[this.moduleName].action;
 
       try {
