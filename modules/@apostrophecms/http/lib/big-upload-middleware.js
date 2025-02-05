@@ -72,34 +72,37 @@ module.exports = (self) => ({
     await self.bigUploadCleanup();
     try {
       const id = self.apos.util.generateId();
-      files = Object.fromEntries(Object.entries(files).map(([ param, info ]) => {
-        if ((typeof param) !== 'string') {
-          throw invalid('param');
-        }
-        if (((typeof info) !== 'object') || (info == null)) {
-          throw invalid('info');
-        }
-        if ((typeof info.name) !== 'string') {
-          throw invalid('name');
-        }
-        if (!info.name.length) {
-          throw invalid('name empty');
-        }
-        if ((typeof info.size) !== 'number') {
-          throw invalid('size');
-        }
-        if ((typeof info.chunks) !== 'number') {
-          throw invalid('chunks');
-        }
-        return [ param, {
-          name: info.name,
-          size: info.size,
-          chunks: info.chunks
-        } ];
-      }));
+      const formattedFiles = Object.fromEntries(
+        Object.entries(files).map(([ param, info ]) => {
+          if ((typeof param) !== 'string') {
+            throw invalid('param');
+          }
+          if (((typeof info) !== 'object') || (info == null)) {
+            throw invalid('info');
+          }
+          if ((typeof info.name) !== 'string') {
+            throw invalid('name');
+          }
+          if (!info.name.length) {
+            throw invalid('name empty');
+          }
+          if ((typeof info.size) !== 'number') {
+            throw invalid('size');
+          }
+          if ((typeof info.chunks) !== 'number') {
+            throw invalid('chunks');
+          }
+          return [ param, {
+            name: info.name,
+            size: info.size,
+            type: info.type,
+            chunks: info.chunks
+          } ];
+        })
+      );
       await self.bigUploads.insert({
         _id: id,
-        files,
+        files: formattedFiles,
         start: Date.now()
       });
       return req.res.send({
@@ -162,14 +165,10 @@ module.exports = (self) => ({
       let n = 0;
       req.files = {};
       for (const [ param, {
-        name, chunks
+        name, type, chunks
       } ] of Object.entries(bigUpload.files)) {
-        let ext = require('path').extname(name);
-        if (ext) {
-          ext = ext.substring(1);
-        } else {
-          ext = 'tmp';
-        }
+        const extname = require('path').extname(name);
+        const ext = extname ? extname.substring(1) : 'tmp';
         const tmp = `${ufs.getTempPath()}/${id}-${n}.${ext}`;
         const out = await open(tmp, 'w');
         for (let i = 0; (i < chunks); i++) {
@@ -191,7 +190,8 @@ module.exports = (self) => ({
         n++;
         req.files[param] = {
           name,
-          path: tmp
+          path: tmp,
+          type
         };
       }
       return next();
