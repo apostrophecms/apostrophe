@@ -7,6 +7,7 @@
 * Field inputs inside an array modal can now be focused/tabbed via keyboard
 * Fixes admin bar overlapping widget area add menu.
 * Fixed the checkered background for gauging color transparency.
+* Adds type for each file uploaded by big-upload. Moves big-upload-client to `apos/ui` folder and makes it esm. 
 
 ### Changes
 
