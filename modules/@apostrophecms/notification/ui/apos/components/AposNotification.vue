@@ -56,6 +56,7 @@ import {
   ref, computed, inject, onMounted
 } from 'vue';
 import Close from '@apostrophecms/vue-material-design-icons/Close.vue';
+import { useNotificationStore } from 'Modules/@apostrophecms/ui/stores/notification.js';
 
 const props = defineProps({
   notification: {
@@ -66,6 +67,7 @@ const props = defineProps({
 
 const $t = inject('i18n');
 const emit = defineEmits([ 'close' ]);
+const store = useNotificationStore();
 
 const hasJob = props.notification.job && props.notification.job._id;
 const job = ref(
@@ -76,6 +78,7 @@ const job = ref(
     }
     : null
 );
+const processId = ref(null);
 
 const progress = computed(() => {
   if (!job.value || props.notification.progress) {
@@ -127,10 +130,13 @@ onMounted(async () => {
     }, 1000 * props.notification.dismiss);
   }
 
-  // Instantiate job using store
-  /* if (this.job) { */
-  /*   this.pollJob; */
-  /* } */
+  if (hasJob || props.notification.type === 'progress') {
+    store.startProcess(props.notification._id);
+  }
+
+  if (hasJob) {
+    store.pollJob(props.notification._id, job.value.route);
+  }
 
   if (job.value) {
     try {
@@ -157,7 +163,7 @@ onMounted(async () => {
   if (props.notification.event?.name) {
     try {
       // Clear the event to make sure it's only emitted once across browsers.
-      const safe = await clearEvent(props.notification._id);
+      const safe = await store.clearEvent(props.notification._id);
 
       if (safe) {
         // The notification doc will only still have the event in one instance.
@@ -178,14 +184,6 @@ function localize(s) {
   return props.notification.localize !== false
     ? $t(s, props.notification.interpolate || {})
     : s;
-}
-
-// `clearEvent` returns true if the event was found and cleared. Otherwise
-// returns `false`
-async function clearEvent(id) {
-  return await apos.http.post(`${apos.notification.action}/${id}/clear-event`, {
-    body: {}
-  });
 }
 </script>
 
