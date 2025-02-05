@@ -13,6 +13,7 @@
 ### Adds
 
 * Add support for batch localization of pieces and pages.
+* Adds type for each file uploaded by big-upload. Moves big-upload-client to `apos/ui` folder and makes it esm. 
 
 ### Changes
 

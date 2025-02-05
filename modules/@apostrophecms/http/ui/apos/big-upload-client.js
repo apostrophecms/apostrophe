@@ -35,11 +35,11 @@ const defaultChunkSize = 1024 * 1024 * 4;
 // may be specified otherwise the standard Apostrophe `apos.http` object
 // and the browser's `FormData` are used.
 
-module.exports = async (url, options) => {
+export default async (url, options) => {
   const chunkSize = options.chunkSize || defaultChunkSize;
   const http = options.http || window.apos?.http;
   const progress = options.progress || (n => {});
-  const files = options.files || [];
+  const files = options.files || {};
   const info = {};
   let totalBytes = 0;
   let sentBytes = 0;
@@ -48,6 +48,7 @@ module.exports = async (url, options) => {
     info[param] = {
       name: file.name,
       size: file.size,
+      type: file.type,
       chunks: Math.ceil(file.size / chunkSize)
     };
   }
