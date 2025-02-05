@@ -880,19 +880,29 @@ module.exports = {
         normalizeTypes(relatedTypes);
         const relatedOnly = self.apos.launder.boolean(req.body.relatedOnly);
 
-        const docs = await getDocs(req, manager, {
-          ids
-        });
-
         // Result log used for batch reporting
         const log = [];
         // Global set to avoid duplicate processing
         const seen = new Set();
 
         for (const id of ids) {
-          const doc = docs.find(doc => doc._id === id);
-          if (!doc) {
+          let doc;
+          try {
+            [ doc ] = await getDocs(req, manager, {
+              ids: [ id ]
+            });
+          } catch (e) {
             logMissing(id, log, reporting);
+            self.logError(
+              req,
+              'localize-batch-doc-error',
+              'Error finding document',
+              {
+                id,
+                error: e.message,
+                stack: e.stack.split('\n').slice(1).map(line => line.trim())
+              }
+            );
             continue;
           }
           await localizeDoc(
@@ -939,7 +949,7 @@ module.exports = {
             type: null,
             title: null,
             relationship: false,
-            error: true
+            error: 'apostrophe:notFound'
           });
           if (reporting) {
             reporting.failure();

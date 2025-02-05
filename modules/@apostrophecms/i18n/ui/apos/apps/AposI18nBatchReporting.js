@@ -11,9 +11,6 @@ export default () => {
   });
 
   async function reportResults({ log, ids }) {
-    // eslint-disable-next-line no-console
-    console.log('Batch localization results:', log, ids);
-
     // Find all error logs that are not 409 (conflict). The latter are
     // existing documents we opted not to overwrite.
     const errors = log.filter(
