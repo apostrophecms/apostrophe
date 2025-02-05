@@ -467,7 +467,11 @@ export default {
       return this.batchOptions.enabled;
     },
     currentLocale() {
-      return window.apos.i18n.locale;
+      // We need to grab the locale from the modal data, because it can change
+      // while in modal (switch locale in editor modal).
+      // Exposing `modalData` property breaks the internally used AposModal
+      // component for some unknown reason, so we need to use the attrs.
+      return this.$attrs['modal-data']?.locale ?? this.moduleOptions.locale;
     },
     action() {
       return this.doc.slug.startsWith('/')
@@ -669,7 +673,7 @@ export default {
       return this.wizard.step === name;
     },
     isCurrentLocale(locale) {
-      return window.apos.i18n.locale === locale.name;
+      return this.currentLocale === locale.name;
     },
     canEditLocale(locale) {
       return !!locale._edit;
@@ -819,7 +823,7 @@ export default {
             if (this.locale) {
               // Ask for the redirect URL, this way it still works if we
               // need to carry a session across hostnames
-              const result = await apos.http.post(`${apos.i18n.action}/locale`, {
+              const result = await apos.http.post(`${this.moduleOptions.action}/locale`, {
                 body: {
                   contextDocId: apos.adminBar.context && apos.adminBar.context._id,
                   locale: locale.name

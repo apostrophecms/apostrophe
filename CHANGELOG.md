@@ -8,6 +8,7 @@
 * Fixes admin bar overlapping widget area add menu.
 * Fixed the checkered background for gauging color transparency.
 * Fixes `group.operations` (batch configuration) merging between modules in the same way that `group.fields` are merged.
+* The i18n manager detects the current locale correctly in some edge cases, like when the locale is changed per document (Editor Modal) and the localization manager is opened from a relationship manager via a document context menu. 
 
 ### Adds
 
