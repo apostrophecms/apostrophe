@@ -238,7 +238,8 @@ function localize(s) {
   color: var(--a-warning);
 }
 
-.apos-notification--success .apos-notification__indicator {
+.apos-notification--success .apos-notification__indicator,
+.apos-notification--progress .apos-notification__indicator {
   background-color: var(--a-success-fade);
   color: var(--a-success);
 }

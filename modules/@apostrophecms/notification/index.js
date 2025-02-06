@@ -95,7 +95,8 @@ module.exports = {
         'error',
         'warning',
         'success',
-        'info'
+        'info',
+        'progress'
       ], 'info');
       const icon = self.apos.launder.string(req.body.icon);
       const message = self.apos.launder.string(req.body.message);
@@ -124,7 +125,8 @@ module.exports = {
         dismiss,
         icon,
         type,
-        buttons
+        buttons,
+        return: true
       });
 
       function launderInterpolate(input) {
