@@ -19,6 +19,7 @@
 
 * The array editor's `isModified` method is now a computed property for consistency.
 * The `modal` configuration property for batch operations without a group is now accepted and works as expected in the same way as for grouped operations.
+* Explicitly enable document versions for `@apostrophecms/file-tag`, `@apostrophecms/file`, `@apostrophecms/image-tag` and `@apostrophecms/image` piece types.
 
 ## 4.12.0 (2025-01-27)
 
