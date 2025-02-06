@@ -126,12 +126,25 @@ module.exports = {
           confirmationButton: 'apostrophe:restoreBatchConfirmationButton'
         },
         permission: 'edit'
+      },
+      localize: {
+        label: 'apostrophe:localize',
+        messages: {
+          progress: 'apostrophe:localizingBatch',
+          completed: 'apostrophe:localizedBatch',
+          resultsEventName: 'apos-localize-batch-results'
+        },
+        if: {
+          archived: false
+        },
+        modal: 'AposI18nLocalize',
+        permission: 'edit'
       }
     },
     group: {
       more: {
         icon: 'dots-vertical-icon',
-        operations: []
+        operations: [ 'localize' ]
       }
     }
   },
@@ -825,6 +838,15 @@ module.exports = {
             {
               action: 'restore'
             }
+          );
+        },
+        localize(req) {
+          req.body.type = 'apostrophe:pages';
+
+          return self.apos.modules['@apostrophecms/job'].run(
+            req,
+            (req, reporting) => self.apos.modules['@apostrophecms/i18n']
+              .localizeBatch(req, self, reporting)
           );
         }
       },

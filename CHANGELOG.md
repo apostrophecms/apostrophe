@@ -7,10 +7,18 @@
 * Field inputs inside an array modal can now be focused/tabbed via keyboard
 * Fixes admin bar overlapping widget area add menu.
 * Fixed the checkered background for gauging color transparency.
+* Fixes `group.operations` (batch configuration) merging between modules in the same way that `group.fields` are merged.
+* The i18n manager detects the current locale correctly in some edge cases, like when the locale is changed per document (Editor Modal) and the localization manager is opened from a relationship manager via a document context menu. 
+
+### Adds
+
+* Add support for batch localization of pieces and pages.
+* Adds type for each file uploaded by big-upload. Moves big-upload-client to `apos/ui` folder and makes it esm. 
 
 ### Changes
 
 * The array editor's `isModified` method is now a computed property for consistency.
+* The `modal` configuration property for batch operations without a group is now accepted and works as expected in the same way as for grouped operations.
 * Explicitly enable document versions for `@apostrophecms/file-tag`, `@apostrophecms/file`, `@apostrophecms/image-tag` and `@apostrophecms/image` piece types.
 
 ## 4.12.0 (2025-01-27)
