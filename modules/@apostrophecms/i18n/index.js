@@ -818,6 +818,403 @@ module.exports = {
           renamed,
           kept
         };
+      },
+      // Localize a batch of documents.
+      //
+      // The `req.body` object must have properties
+      // - `_ids`: an array of document `_id` values.
+      // - `relatedTypes`: an array of related doc types to be localized in case
+      //    they are found in the batch of documents to localize.
+      // - `toLocales`: an array of locales to localize the documents to.
+      // - `update`: a boolean indicating whether to localize existing related documents.
+      // - `relatedOnly`: a boolean indicating whether to only localize related documents
+      //    and skip the parent documents (`_ids`).
+      //
+      // Automatic translation instructions may be included in the `req.query` object:
+      // - `aposTranslateProvider`: the unique name of the translation provider.
+      // - `aposLocale`: the locale to translate from.
+      // Note that without these instructions, the signal to the automatic translation
+      // service will not be sent.
+      //
+      // `manager` is the `self` object of the module that is localizing the documents.
+      // If the batch is a set of pages, `manager` should be an instance of
+      // `@apostrophecms/page`. For pieces, `manager` should be an instance of
+      // the piece type module.
+      // `reporting` is an optional object that can be used to report progress. See
+      // the `@apostrophecms/job` module for more information.
+      //
+      // The handler will return a log, array of objects with the following properties:
+      // - `id`: the document `_id` value
+      // - `aposId`: the document `aposDocId` value
+      // - `type`: the document type, can be `null` if the document is not found
+      // - `title`: the document title, can be `null` if the document is not found
+      // - `relationship`: the `aposDocId` of the parent document,
+      //    or `false` if the document is the parent.
+      // - `error`: a boolean or string `reason` indicating whether an error
+      //   occurred during localization. If `error` is a string, it will contain
+      //   the error name. See `@apostrophecms/error` and `@apostrophecms/http` modules.
+      // - `detail`: optional string (i18n key) explaining the error.
+      async localizeBatch(req, manager, reporting = null) {
+        if (!req.user) {
+          throw self.apos.error('forbidden');
+        }
+        if (!Array.isArray(req.body._ids)) {
+          throw self.apos.error('invalid');
+        }
+        if (!Array.isArray(req.body.toLocales)) {
+          throw self.apos.error('invalid');
+        }
+
+        const ids = self.apos.launder.ids(req.body._ids)
+          .map(id => self.inferIdLocaleAndMode(req, id));
+        if (reporting) {
+          reporting.setTotal(ids.length);
+        }
+
+        const toLocales = self.apos.launder.strings(req.body.toLocales)
+          .filter(toLocale => !!self.sanitizeLocaleName(toLocale));
+        const update = self.apos.launder.boolean(req.body.update);
+        const relatedTypes = new Set(
+          self.apos.launder.strings(req.body.relatedTypes)
+        );
+        normalizeTypes(relatedTypes);
+        const relatedOnly = self.apos.launder.boolean(req.body.relatedOnly);
+
+        // Result log used for batch reporting
+        const log = [];
+        // Global set to avoid duplicate processing
+        const seen = new Set();
+
+        for (const id of ids) {
+          let doc;
+          try {
+            [ doc ] = await getDocs(req, manager, {
+              ids: [ id ]
+            });
+          } catch (e) {
+            logMissing(id, log, reporting);
+            self.logError(
+              req,
+              'localize-batch-doc-error',
+              'Error finding document',
+              {
+                id,
+                error: e.message,
+                stack: e.stack.split('\n').slice(1).map(line => line.trim())
+              }
+            );
+            continue;
+          }
+          await localizeDoc(
+            req,
+            reporting,
+            {
+              doc,
+              relatedTypes,
+              toLocales,
+              update,
+              relatedOnly,
+              log,
+              seen
+            }
+          );
+        }
+        if (reporting) {
+          reporting.setResults({
+            log,
+            ids
+          });
+        }
+        self.logDebug(req, 'localize-batch-result', 'Batch localization complete', {
+          log,
+          ids
+        });
+        return log;
+
+        // Convert the "any page types" to actual page types
+        async function normalizeTypes(types) {
+          if (types.has('@apostrophecms/page') || types.has('@apostrphecms/any-page-type')) {
+            self.apos.instancesOf('@apostrophecms/page-type')
+              .map(module => module.__meta.name)
+              .forEach(type => types.add(type));
+            types.delete('@apostrophecms/page');
+            types.delete('@apostrophecms/any-page-type');
+          }
+        }
+
+        function logMissing(id, log, reporting) {
+          log.push({
+            _id: id,
+            aposDocId: id.split(':')[0],
+            type: null,
+            title: null,
+            relationship: false,
+            error: 'apostrophe:notFound'
+          });
+          if (reporting) {
+            reporting.failure();
+          }
+        }
+
+        // Get documents for localization
+        async function getDocs(req, manager, { ids }) {
+          if (!ids.length) {
+            return [];
+          }
+          const docs = await manager
+            .findForEditing(req.clone({ mode: 'draft' }), {
+              _id: { $in: ids }
+            })
+            .toArray();
+
+          return docs;
+        }
+
+        // Check if the document can be localized, retrieve related documents
+        // if necessary, and localize the documents to the specified locales.
+        async function localizeDoc(req, reporting, {
+          doc,
+          relatedTypes,
+          toLocales,
+          update,
+          relatedOnly,
+          log = [],
+          seen = new Set()
+        }) {
+          const docs = [];
+          if (seen.has(doc.aposDocId)) {
+            return log;
+          }
+          seen.add(doc.aposDocId);
+          if (!canLocalize(req, doc, false)) {
+            log.push({
+              _id: doc._id,
+              aposDocId: doc.aposDocId,
+              type: doc.type,
+              title: doc.title,
+              relationship: false,
+              error: true
+            });
+            self.logError(
+              req,
+              'localize-batch-can-localize-error',
+              'The document type can\'t be localized or insufficient permissions',
+              {
+                id: doc._id,
+                type: doc.type,
+                title: doc.title,
+                relationship: false
+              }
+            );
+            if (reporting) {
+              reporting.failure();
+            }
+            return log;
+          }
+          if (!relatedOnly) {
+            docs.push(doc);
+          }
+
+          if (relatedTypes.size > 0) {
+            try {
+              await findRelatedDocs(req.clone({ mode: 'draft' }), {
+                doc,
+                schema: self.apos.modules[doc.type].schema,
+                relatedTypes,
+                memo: docs,
+                seen
+              });
+            } catch (e) {
+              self.logError(
+                req,
+                'localize-batch-related-error',
+                'Error finding related documents',
+                {
+                  id: doc._id,
+                  type: doc.type,
+                  title: doc.title,
+                  error: e.message,
+                  stack: e.stack.split('\n').slice(1).map(line => line.trim())
+                }
+              );
+              if (reporting) {
+                reporting.failure();
+              }
+              return log;
+            }
+          }
+
+          let hasError = false;
+          for (const item of docs) {
+            const manager = self.apos.doc.getManager(item.type);
+            // Not using Promise.allSettled because of potential
+            // rate limit issues with external services when i.e.
+            // automatically translating content.
+            // Related info:
+            // https://cookbook.openai.com/examples/how_to_handle_rate_limits
+            for (const locale of toLocales) {
+              const payload = {
+                _id: item._id,
+                aposDocId: item.aposDocId,
+                locale,
+                type: item.type,
+                title: item.title,
+                relationship: item.aposDocId !== doc.aposDocId ? doc.aposDocId : false,
+                error: false
+              };
+              try {
+                await manager.localize(req, item, locale, {
+                  update: !payload.relationship ? true : update,
+                  batch: true
+                });
+                log.push(payload);
+              } catch (e) {
+                hasError = true;
+                payload.error = e.name ?? true;
+                // This is the only detail that we know of.
+                // XXX A better way to handle data sent to the UI as a
+                // human-readable message is a standard error payload property.
+                // For example `error.data.detail`.
+                if (e.data?.parentNotLocalized) {
+                  payload.detail = 'apostrophe:parentNotLocalized';
+                } else {
+                  payload.detail = e.data?.detail;
+                }
+                log.push(payload);
+                // Do not flood the logs with errors that are expected
+                const fn = e.name === 'conflict' ? 'logDebug' : 'logError';
+                const id = e.name === 'conflict'
+                  ? 'localize-batch-doc-conflict'
+                  : 'localize-batch-doc-error';
+                self[fn](req, id, {
+                  ...payload,
+                  error: e.message,
+                  reason: e.name,
+                  stack: e.stack.split('\n').slice(1).map(line => line.trim())
+                });
+              }
+            }
+          }
+
+          // Advance the progress bar so that if the main document fails,
+          // the batch progress will report the correct number of failures.
+          // The detailed result should be printed in a custom notification.
+          if (reporting) {
+            const status = hasError
+              ? 'failure'
+              : 'success';
+            reporting[status]();
+          }
+
+          return log;
+        }
+
+        // Find related documents for localization
+        async function findRelatedDocs(req, {
+          doc, schema, relatedTypes, memo, seen
+        }) {
+          if (!schema) {
+            return;
+          }
+
+          const partialDocs = getRelatedBySchema(req, doc, schema, seen)
+            .filter(doc => relatedTypes.has(doc.type))
+            .filter(doc => canLocalize(req, doc, true));
+
+          const idsByType = partialDocs
+            .reduce((acc, doc) => {
+              acc[doc.type] ||= [];
+              acc[doc.type].push(doc._id);
+              return acc;
+            }, {});
+          const promises = Object.entries(idsByType)
+            .map(([ type, ids ]) => {
+              return getDocs(req, self.apos.doc.getManager(type), {
+                ids
+              });
+            });
+          const results = await Promise.allSettled(promises);
+          return results.filter(result => result.status === 'fulfilled')
+            .map(result => {
+              memo.push(...result.value);
+              return result.value;
+            })
+            .flat();
+        }
+
+        // Get related documents by schema
+        function getRelatedBySchema(req, object, schema, seen) {
+          const related = [];
+          for (const field of schema || []) {
+            switch (field.type) {
+              case 'array': {
+                for (const value of (object[field.name] || [])) {
+                  related.push(...getRelatedBySchema(req, value, field.schema, seen));
+                }
+                break;
+              }
+
+              case 'object': {
+                if (object[field.name]) {
+                  related.push(
+                    ...getRelatedBySchema(req, object[field.name], field.schema, seen)
+                  );
+                }
+                break;
+              }
+
+              case 'area': {
+                for (const widget of (object[field.name]?.items || [])) {
+                  related.push(
+                    ...getRelatedBySchema(
+                      req,
+                      widget,
+                      self.apos.modules[`${widget?.type}-widget`]?.schema || [],
+                      seen
+                    )
+                  );
+                }
+                break;
+              }
+
+              case 'relationship': {
+                for (const item of (object[field.name] || [])) {
+                  const id = item._id?.split(':')[0];
+                  if (!id || seen.has(id)) {
+                    continue;
+                  }
+                  related.push(item);
+                  seen.add(id);
+                }
+                break;
+              }
+
+              default:
+                // No-op
+                break;
+            }
+          }
+
+          return related;
+        }
+
+        // Filter out related doc types that opt out completely (pages should
+        // never be considered "related" to other pages simply because
+        // of navigation links, the feature is meant for pieces that feel more like
+        // part of the document being localized)
+        // We also remove non localized content like users and check for permissions.
+        function canLocalize(req, doc, related) {
+          if (!self.apos.modules[doc.type]) {
+            return false;
+          }
+          if (self.apos.modules[doc.type].options?.localized === false) {
+            return false;
+          }
+          if (related && self.apos.modules[doc.type].options?.relatedDocument === false) {
+            return false;
+          }
+          return self.apos.permission.can(req, 'edit', doc.type);
+        }
       }
     };
   },

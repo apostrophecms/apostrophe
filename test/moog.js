@@ -284,6 +284,53 @@ describe('moog', function() {
       assert(myObject.fieldsGroups.basics.fields.includes('five'));
     });
 
+    it('should support operations alias of group fields', async function() {
+      const moog = require('../lib/moog.js')({});
+
+      await moog.define('myObject', {
+        cascades: [ 'batchOperations' ],
+        batchOperations: {
+          add: {
+            one: { label: 'One' },
+            two: { label: 'Two' },
+            three: { label: 'Three' }
+          },
+          group: {
+            more: {
+              operations: [ 'one', 'two', 'three' ]
+            }
+          }
+        }
+      });
+
+      await moog.define('myObject', {
+        batchOperations: {
+          add: {
+            four: { label: 'Four' },
+            five: { label: 'Five' }
+          },
+          group: {
+            more: {
+              operations: [ 'four', 'five' ]
+            },
+            other: {
+              operations: [ 'one' ]
+            }
+          }
+        }
+      });
+
+      const myObject = await moog.create('myObject', {});
+      assert(myObject);
+      assert(myObject.batchOperationsGroups);
+      assert(!myObject.batchOperationsGroups.more.operations.includes('one'));
+      assert(myObject.batchOperationsGroups.other.operations.includes('one'));
+      assert(myObject.batchOperationsGroups.more.operations.includes('two'));
+      assert(myObject.batchOperationsGroups.more.operations.includes('three'));
+      assert(myObject.batchOperationsGroups.more.operations.includes('four'));
+      assert(myObject.batchOperationsGroups.more.operations.includes('five'));
+    });
+
     it('should order fields with the last option unless the order array overrides', async function() {
       const moog = require('../lib/moog.js')({});
 
