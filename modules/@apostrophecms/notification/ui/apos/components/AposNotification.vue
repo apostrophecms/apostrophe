@@ -22,23 +22,23 @@
         {{ localize(button.label) }}
       </button>
     </span>
-    <div v-if="progress" class="apos-notification__progress">
+    <div v-if="process" class="apos-notification__progress">
       <div class="apos-notification__progress-bar">
         <div
           class="apos-notification__progress-now"
           role="progressbar"
-          :aria-valuenow="progress.processed || 0"
-          :style="`width: ${progress.percentage + '%'}`"
+          :aria-valuenow="process.processed || 0"
+          :style="`width: ${process.percent + '%'}`"
           aria-valuemin="0"
-          :aria-valuemax="progress.total"
+          :aria-valuemax="process.total"
         />
       </div>
-      <span class="apos-progress__progress-value">
-        {{ Math.floor(progress.percentage) + '%' }}
+      <span class="apos-notification__progress-value">
+        {{ Math.floor(process.percent) + '%' }}
       </span>
     </div>
     <button
-      v-if="!progress"
+      v-if="!process"
       class="apos-notification__button"
       @click="close"
     >
@@ -74,18 +74,14 @@ const job = ref(
   hasJob
     ? {
       route: `${apos.modules['@apostrophecms/job'].action}/${props.notification.job._id}`,
-      action: props.notification.job.action
+      action: props.notification.job.action,
+      ids: props.notification.job.ids
     }
     : null
 );
-const processId = ref(null);
 
-const progress = computed(() => {
-  if (!job.value || props.notification.progress) {
-    return false;
-  }
-
-  return job.value?.progress || props.notification.progress;
+const process = computed(() => {
+  return store.processes[props.notification._id] || null;
 });
 
 const classList = computed(() => {
@@ -135,30 +131,12 @@ onMounted(async () => {
   }
 
   if (hasJob) {
-    store.pollJob(props.notification._id, job.value.route);
+    store.pollJob(
+      props.notification._id,
+      job
+    );
   }
 
-  if (job.value) {
-    try {
-      const {
-        total,
-        processed,
-        percentage
-      } = await apos.http.get(job.value.route, {});
-
-      job.value.progress = {
-        total,
-        processed: processed || 0,
-        percentage
-      };
-      job.value.ids = props.notification.job.ids || [];
-
-      /* await this.pollJob(); */
-    } catch (error) {
-      console.error('Unable to find notification job:', this.notification.job._id);
-      job.value = null;
-    }
-  }
   // Notifications may include events to emit.
   if (props.notification.event?.name) {
     try {
@@ -173,7 +151,6 @@ onMounted(async () => {
       console.error($t('apostrophe:notificationClearEventError'));
     }
   }
-
 });
 
 function close() {

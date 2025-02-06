@@ -16,7 +16,7 @@ export const useNotificationStore = defineStore('notification', () => {
    * @param {array} options.buttons - Notification buttons
    * @param {boolean} options.localize - Should the message be localized
    * @param {object} options.progress - Instantiate progress state
-   * @returns null|string When clientOnly is passed we return the ID of the notification
+   * @returns string - Returns ID of the created notification
    */
   async function notify(message, options = {}) {
     if (options.dismiss === true) {
@@ -30,30 +30,12 @@ export const useNotificationStore = defineStore('notification', () => {
       icon: options.icon,
       dismiss: options.dismiss,
       buttons: options.buttons,
-      localize: options.localize,
-      progress: options.progress
+      localize: options.localize
     };
 
     // Send it to the server, which will send it back to us via polling
-    if (!options.clientOnly) {
-      await apos.http.post(apos.notification.action, { body: notif });
-      return;
-    }
-
-    const _id = createId();
-    const clientNotif = {
-      _id,
-      progress: options.progress || {},
-      updatedAt: new Date(),
-      ...notif
-    };
-
-    notifications.value = [
-      clientNotif,
-      ...notifications.value
-    ];
-
-    return _id;
+    const { noteId } = await apos.http.post(apos.notification.action, { body: notif });
+    return noteId;
   }
 
   async function dismiss(notifId) {
@@ -65,23 +47,9 @@ export const useNotificationStore = defineStore('notification', () => {
     notifications.value = notifications.value.filter(
       ({ _id }) => notifId !== _id
     );
-  }
-
-  /**
-   * @param {string} notifId - Notification ID
-   * @param {object} data - Notification Data to update
-   */
-  function updateClientNotif(notifId, data) {
-    notifications.value = notifications.value.map((notif) => {
-      if (notif._id === notifId) {
-        return {
-          ...notif,
-          ...data,
-          updatedAt: new Date()
-        };
-      }
-      return notif;
-    });
+    if (processes.value[notifId]) {
+      delete processes.value[notifId];
+    }
   }
 
   async function poll() {
@@ -142,51 +110,47 @@ export const useNotificationStore = defineStore('notification', () => {
     return id;
   }
 
-  function dimissProcess(id) {
-    delete processes.value[id];
-  }
-
   function updateProcess(id, processed, _total = null) {
-    let process = processes.value[id];
-    if (!process) {
+    if (!processes.value[id]) {
       return;
     }
 
-    const total = _total || process.total;
-    process = {
-      processed,
-      total: process.total,
-      percent: (processed / total * 100).toFixed(2)
+    const total = _total || processes[id].value.total;
+    processes.value = {
+      ...processes.value,
+      [id]: {
+        processed,
+        total,
+        percent: (processed / total * 100).toFixed(2)
+      }
     };
   }
 
   // TODO: Responsible to update create and update associated process
-  async function pollJob(notifId, jobRoute) {
+  async function pollJob(notifId, jobInfo) {
     const process = processes.value[notifId];
     if (!process) {
       return;
     }
 
-    // TODO: Needed? Not sure
-    /* if (!this.job?.progress.total) { */
-    /*   return; */
-    /* } */
+    try {
+      const job = await apos.http.get(jobInfo.value.route, {});
+      updateProcess(notifId, job.processed, job.total);
 
-    const job = await apos.http.get(jobRoute, {});
-    // TODO: Removed backend computation
-    /* this.job.progress.percentage = job.percentage; */
-    updateProcess(notifId, job.processed, job.total);
+      if (job.processed < job.total && !job.ended) {
+        setTimeout(() => pollJob(notifId, jobInfo), 500);
+        return;
+      }
 
-    if (job.processed < job.total && !job.ended) {
-      setTimeout(() => pollJob(notifId, jobRoute), 500);
-      return;
-    }
-
-    if (this.job.ids) {
-      apos.bus.$emit('content-changed', {
-        docIds: this.job.ids,
-        action: this.job.action || 'batch-update'
-      });
+      if (jobInfo.value.ids) {
+        apos.bus.$emit('content-changed', {
+          docIds: jobInfo.value.ids,
+          action: jobInfo.value.action || 'batch-update'
+        });
+      }
+    } catch (err) {
+      console.error(err);
+      dismiss(notifId);
     }
   }
 
@@ -200,9 +164,10 @@ export const useNotificationStore = defineStore('notification', () => {
 
   return {
     notifications,
+    processes,
     startProcess,
+    updateProcess,
     notify,
-    updateClientNotif,
     poll,
     pollJob,
     dismiss,
