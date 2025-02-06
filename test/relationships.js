@@ -27,18 +27,21 @@ describe('Relationships', function() {
     const subPage = homePage.main.items[0]._pages[0];
     const subArticle = subPage._articles[0];
     const subTopic = subArticle._topics[0];
+    const reverseArticle = subTopic._articles[0];
 
     const expected = {
       subArticleTitle: 'article 1',
       subTopicTitle: 'topic 1',
+      reverseArticleTitle: 'article 1',
       hasArticlesFields: true,
-      hasTopcicsFields: true
+      hasTopicsFields: true
     };
     const actual = {
       subArticleTitle: subArticle.title,
       subTopicTitle: subTopic.title,
+      reverseArticleTitle: reverseArticle.title,
       hasArticlesFields: Boolean(subPage.articlesFields),
-      hasTopcicsFields: Boolean(subArticle.topicsFields)
+      hasTopicsFields: Boolean(subArticle.topicsFields)
     };
 
     assert.deepEqual(actual, expected);
@@ -145,7 +148,8 @@ function getModules() {
             label: 'Rel page',
             type: 'relationship',
             withType: 'default-page',
-            withRelationships: [ '_articles._topics' ],
+            // Intentionally revisits the articles in order to test reverse relationships
+            withRelationships: [ '_articles._topics._articles' ],
             builders: {
               project: {
                 title: 1
@@ -218,6 +222,20 @@ function getModules() {
       extend: '@apostrophecms/piece-type',
       options: {
         alias: 'topic'
+      },
+      fields: {
+        add: {
+          _articles: {
+            label: 'Articles',
+            type: 'relationshipReverse',
+            builders: {
+              project: {
+                _url: 1,
+                title: 1
+              }
+            }
+          }
+        }
       }
     }
   };

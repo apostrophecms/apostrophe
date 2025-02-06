@@ -1120,6 +1120,19 @@ module.exports = {
             _.extend(options.builders, relationship.builders);
           }
 
+          // If there is a projection for a reverse relationship, make sure it includes
+          // the idsStorage and fieldsStorage for the relationship, otherwise no related
+          // documents will be returned. Make sure the projection is positive, not negative,
+          // before attempting to add more positive assertions to it
+          if ((relationship.type === 'relationshipReverse') && options.builders.project && Object.values(options.builders.project).some(v => !!v)) {
+            if (relationship.idsStorage) {
+              options.builders.project[relationship.idsStorage] = 1;
+            }
+            if (relationship.fieldsStorage) {
+              options.builders.project[relationship.fieldsStorage] = 1;
+            }
+          }
+
           // Allow options to the getter to be specified in the schema
           await self.apos.util.recursionGuard(req, `${relationship.type}:${relationship.withType}`, () => {
             return self.fieldTypes[relationship.type].relate(req, relationship, _objects, options);

@@ -14,6 +14,7 @@
 
 * Add support for batch localization of pieces and pages.
 * Adds type for each file uploaded by big-upload. Moves big-upload-client to `apos/ui` folder and makes it esm. 
+* When present, projections for reverse relationships now automatically include the special id and field storage properties for the relationship in question, allowing the related documents to be successfully returned.
 
 ### Changes
 
