@@ -1751,7 +1751,9 @@ module.exports = {
             const add = [];
             const remove = [];
 
-            // Add type in projection by default
+            // Add fundamentals by default to allow Apostrophe's core
+            // operations to find what they expect (determining document type,
+            // distinguishing documents from widgets)
             const hasExclusion = Object.values(projection).some(value => !value);
             if (!_.isEmpty(projection) && !hasExclusion) {
               add.push('type');

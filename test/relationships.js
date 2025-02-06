@@ -28,9 +28,6 @@ describe('Relationships', function() {
     const subArticle = subPage._articles[0];
     const subTopic = subArticle._topics[0];
     const reverseArticle = subTopic._articles[0];
-    console.log('ARTICLE:', subArticle);
-    console.log('TOPIC:', subTopic);
-    console.log('REVERSE ARTICLE:', reverseArticle);
 
     const expected = {
       subArticleTitle: 'article 1',
