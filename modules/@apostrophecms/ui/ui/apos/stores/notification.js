@@ -1,6 +1,5 @@
 import { defineStore } from 'pinia';
 import { ref } from 'vue';
-import { createId } from '@paralleldrive/cuid2';
 
 export const useNotificationStore = defineStore('notification', () => {
   const notifications = ref([]);
@@ -15,7 +14,6 @@ export const useNotificationStore = defineStore('notification', () => {
    * @param {boolean|number} options.dismiss - Notification dismiss behavior
    * @param {array} options.buttons - Notification buttons
    * @param {boolean} options.localize - Should the message be localized
-   * @param {object} options.progress - Instantiate progress state
    * @returns string - Returns ID of the created notification
    */
   async function notify(message, options = {}) {
@@ -38,6 +36,9 @@ export const useNotificationStore = defineStore('notification', () => {
     return noteId;
   }
 
+  /**
+   * @param {string} notifId - Notification ID
+   */
   async function dismiss(notifId) {
     await apos.http.patch(`${apos.notification.action}/${notifId}`, {
       body: {
@@ -100,16 +101,22 @@ export const useNotificationStore = defineStore('notification', () => {
     }
   }
 
-  function startProcess(_id = null) {
-    const id = _id || createId();
+  /**
+   * @param {number} id - Notification ID
+   */
+  function startProcess(id) {
     processes.value[id] = {
       processed: 0,
       percent: 0,
       total: 1
     };
-    return id;
   }
 
+  /**
+   * @param {string} id - Notification ID
+   * @param {number} processed - Processed items by process
+   * @param {number|null} _total - Total to items to process
+   */
   function updateProcess(id, processed, _total = null) {
     if (!processes.value[id]) {
       return;
@@ -126,7 +133,12 @@ export const useNotificationStore = defineStore('notification', () => {
     };
   }
 
-  // TODO: Responsible to update create and update associated process
+  /**
+   * @param {string} notifId - Notification ID
+   * @param {string} jobInfo.route - Job route to get updates
+   * @param {string} jobInfo.action - Job action
+   * @param {array} jobInfo.ids - Job IDS
+   */
   async function pollJob(notifId, jobInfo) {
     const process = processes.value[notifId];
     if (!process) {
@@ -154,8 +166,9 @@ export const useNotificationStore = defineStore('notification', () => {
     }
   }
 
-  // `clearEvent` returns true if the event was found and cleared. Otherwise
-  // returns `false`
+  /**
+   * @param {string} id - Notification ID
+   */
   async function clearEvent(id) {
     return await apos.http.post(`${apos.notification.action}/${id}/clear-event`, {
       body: {}
