@@ -62,7 +62,6 @@ module.exports = {
           throw self.apos.error('notfound');
         }
 
-        // TODO: Not used anymore, should we keep it for BC?
         job.percentage = !job.total ? 0 : (job.processed / job.total * 100).toFixed(2);
 
         return job;
