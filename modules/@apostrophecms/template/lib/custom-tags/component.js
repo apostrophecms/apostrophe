@@ -25,6 +25,8 @@ module.exports = function(self) {
     },
     // Do the actual work
     async run(context, name, data) {
+      const start = Date.now();
+      console.log(`executing the ${name} component`);
       const req = context.ctx.__req;
       if (!data) {
         data = {};
@@ -34,7 +36,6 @@ module.exports = function(self) {
       const spanName = `component:${name}`;
       return telemetry.startActiveSpan(spanName, async (span) => {
         span.setAttribute(telemetry.Attributes.TEMPLATE, name);
-
         try {
           const parsed = name.match(/^([^:]+):(.+)$/);
           if (!parsed) {
@@ -51,19 +52,53 @@ module.exports = function(self) {
           if (!(module.components && module.components[componentName])) {
             throw new Error(`{% component %} was invoked with the name of a component that does not exist.\nModule name: ${moduleName} Component name: ${componentName}`);
           }
-          const result = await self.apos.util.recursionGuard(req, `component:${moduleName}:${componentName}`, async () => {
-            const input = await module.components[componentName](req, data);
-            return module.render(req, componentName, input);
+          req.promiseTokens ||= new Map();
+          req.promiseResolutions ||= new Map();
+          const p = render();
+          req.promiseTokenPrefix ||= self.apos.util.generateId();
+          req.promiseTokenNext ||= 0;
+          const promiseToken = `${req.promiseTokenPrefix}:${req.promiseTokenNext}`;
+          console.log(`NEW TOKEN: ${promiseToken}`);
+          req.promiseTokenNext++;
+          const result = promiseToken;
+          console.log(promiseToken);
+          req.promiseTokens.set(promiseToken, p);
+          console.log(p.then);
+          console.log('HERE WE GO');
+          p.then(v => {
+            console.log('resolving');
+            resolve(v);
           });
+          p.catch(e => {
+            console.log('resolving with error');
+            // hack for now
+            console.error(e);
+            resolve('ERROR');
+          });
+          function resolve(v) {
+            console.log('in resolve');
+            req.promiseResolutions.set(promiseToken, v);
+            req.promiseTokens.delete(promiseToken);
+          }
           span.setStatus({ code: telemetry.api.SpanStatusCode.OK });
-
+          const end = Date.now();
+          console.log(`${name} took ${end - start}ms`);
           if (result === undefined) {
             // Recursion guard stopped it, nunjucks expects a string
             return '';
           } else {
             return result;
           }
+          async function render() {
+            console.log('calling fn');
+            const input = await module.components[componentName](req, data);
+            console.log('calling render');
+            const result = await module.render(req, componentName, input);
+            console.log('RENDERED');
+            return result;
+          }
         } catch (err) {
+          console.error('IN ERROR HANDLER:', err);
           telemetry.handleError(span, err);
           throw err;
         } finally {
