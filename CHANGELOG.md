@@ -21,6 +21,10 @@
 * The array editor's `isModified` method is now a computed property for consistency.
 * The `modal` configuration property for batch operations without a group is now accepted and works as expected in the same way as for grouped operations.
 
+### Adds
+
+* If `error.cause` is prevent, log the property.
+
 ## 4.12.0 (2025-01-27)
 
 ### Fixes
