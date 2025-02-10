@@ -82,7 +82,7 @@ export default async (url, options) => {
       });
       sentBytes += thisChunkSize;
       if (typeof options.progress === 'function') {
-        options.progress(sentBytes, totalBytes);
+        progressInterface(options.progress, sentBytes, totalBytes);
       }
       chunk++;
     }
@@ -100,3 +100,14 @@ export default async (url, options) => {
   });
   return result;
 };
+
+function progressInterface(fn, sent, total) {
+  if (typeof fn !== 'function') {
+    return;
+  }
+  if (fn.length === 1) {
+    fn(sent / total);
+  }
+
+  fn(sent, total);
+}
