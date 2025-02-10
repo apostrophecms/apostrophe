@@ -120,6 +120,18 @@ export const useModalStore = defineStore('modal', () => {
     });
   }
 
+  async function report(content, options = {}) {
+    const {
+      items, headers, ...rest
+    } = content;
+    return execute(apos.modal.components.report, {
+      items,
+      headers,
+      content: rest,
+      options
+    });
+  }
+
   // Returns true if el1 is "on top of" el2 in the
   // modal stack, as viewed by the user. If el1 is a
   // modal that appears later in the stack than el2
@@ -184,6 +196,7 @@ export const useModalStore = defineStore('modal', () => {
     setModalResult,
     confirm,
     alert,
+    report,
     onTopOf
   };
 });

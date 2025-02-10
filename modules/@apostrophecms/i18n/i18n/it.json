@@ -538,7 +538,6 @@
   "takeControlFromOther": "{{ who }} sta modificando quel documento. Vuoi prendere il controllo?",
   "takeControlFromSelf": "Stai modificando quel documento in un'altra scheda o finestra. Vuoi prendere il controllo in questa scheda?",
   "thereAreActiveChanges": "Ci sono modifiche attive a questo documento.",
-  "thereWasAnIssueLocalizing": "Si è verificato un problema nella localizzazione di alcuni contenuti:",
   "thisDocument": "Questo documento",
   "thisDocumentAndRelated": "Questo documento e i documenti correlati",
   "title": "Titolo",

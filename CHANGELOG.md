@@ -14,6 +14,7 @@
 
 * Add support for batch localization of pieces and pages.
 * Adds type for each file uploaded by big-upload. Moves big-upload-client to `apos/ui` folder and makes it esm. 
+* Introduce `AposModalReport` component for displaying table reports. It's accessible via `apos.report(content, options)` method and it's now used in the `@apostrophecms/i18n` module for detailed reporting after a batch localization operation.
 
 ### Changes
 
