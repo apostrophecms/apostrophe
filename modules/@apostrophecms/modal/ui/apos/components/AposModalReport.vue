@@ -2,11 +2,12 @@
   <AposModal
     class="apos-report"
     :modal="modal"
+    data-apos-test="reportModal"
     @inactive="modal.active = false"
     @show-modal="modal.showModal = true"
   >
     <template #main>
-      <AposModalBody>
+      <AposModalBody data-apos-test="reportContent">
         <template #bodyMain>
           <div class="apos-report__body">
             <div>
@@ -35,11 +36,13 @@
               <AposButton
                 type="quiet"
                 label="JSON"
+                data-apos-test="exportJson"
                 @click="exportJson"
               />
               <AposButton
                 type="quiet"
                 label="CSV"
+                data-apos-test="exportCsv"
                 @click="exportCsv"
               />
             </div>

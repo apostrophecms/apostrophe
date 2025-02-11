@@ -29,6 +29,7 @@
                 :is="header.icon"
                 v-if="header.icon"
                 :size="header.iconSize || 15"
+                :data-apos-test-icon="header.icon"
                 class="apos-table__header-icon"
                 fill-color="currentColor"
               />
@@ -38,10 +39,11 @@
         </th>
       </tr>
       <tr
-        v-for="item in items"
+        v-for="(item, index) in items"
         :key="item._id"
         class="apos-table__row"
         data-apos-test="tableRow"
+        :data-apos-test-row-count="index + 1"
       >
         <td
           v-for="header in tableHeaders"
@@ -49,6 +51,9 @@
           class="apos-table__cell"
           :class="`apos-table__cell--${header.css}`"
           data-apos-test="tableCell"
+          :data-apos-test-cell-name="header.name"
+          :data-apos-test-cell-label="$t(header.label)"
+          :data-apos-test-cell-row-count="index + 1"
           @click="onCellClick(item, header)"
         >
           <slot
