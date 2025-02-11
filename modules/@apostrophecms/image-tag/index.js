@@ -5,6 +5,7 @@ module.exports = {
     pluralLabel: 'apostrophe:imageTags',
     quickCreate: false,
     autopublish: true,
+    versions: true,
     editRole: 'editor',
     publishRole: 'editor',
     shortcut: 'G,Shift+I',
