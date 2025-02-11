@@ -279,8 +279,6 @@
   "localizingNotificationDanger_plural": "{{ count }} documents unable to be localized",
   "localizingNotificationWarning": "{{ count }} document successfully localized, {{ skipCount }} skipped",
   "localizingNotificationWarning_plural": "{{ count }} documents successfully localized, {{ skipCount }} skipped",
-  "localizingReportError": "{{ count }} document was skipped during localization",
-  "localizingReportError_plural": "{{ count }} documents were skipped during localization",
   "localizingReportDesc": "Some documents could not be localized. You can review and export the list of the skipped documents.",
   "localizingReportHeading": "{{ count }} document could not be localized",
   "localizingReportHeading_plural": "{{ count }} documents could not be localized",
