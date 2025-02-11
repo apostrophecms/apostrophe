@@ -107,6 +107,7 @@ function progressInterface(fn, sent, total) {
   }
   if (fn.length === 1) {
     fn(sent / total);
+    return;
   }
 
   fn(sent, total);
