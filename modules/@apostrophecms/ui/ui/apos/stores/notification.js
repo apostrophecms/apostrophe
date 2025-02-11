@@ -140,11 +140,6 @@ export const useNotificationStore = defineStore('notification', () => {
    * @param {array} jobInfo.ids - Job IDS
    */
   async function pollJob(notifId, jobInfo) {
-    const process = processes.value[notifId];
-    if (!process) {
-      return;
-    }
-
     try {
       const job = await apos.http.get(jobInfo.value.route, {});
       updateProcess(notifId, job.processed, job.total);
@@ -154,12 +149,10 @@ export const useNotificationStore = defineStore('notification', () => {
         return;
       }
 
-      if (jobInfo.value.ids) {
-        apos.bus.$emit('content-changed', {
-          docIds: jobInfo.value.ids,
-          action: jobInfo.value.action || 'batch-update'
-        });
-      }
+      apos.bus.$emit('content-changed', {
+        docIds: jobInfo.value.ids || [],
+        action: jobInfo.value.action || 'batch-update'
+      });
     } catch (err) {
       console.error(err);
       dismiss(notifId);
