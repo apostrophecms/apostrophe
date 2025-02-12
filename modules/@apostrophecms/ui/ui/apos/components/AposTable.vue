@@ -313,10 +313,12 @@ export default {
 }
 
 .apos-table__header {
-  border-bottom: 1px solid var(--a-base-10);
+  border-bottom: 1px solid var(--a-base-8);
+  background-color: var(--a-base-10);
 }
 
 .apos-table__cell {
+  padding: 10px 15px;
   white-space: unset;
 }
 

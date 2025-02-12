@@ -151,7 +151,7 @@ export default {
       },
       // fixed table width so that the table can perform ellipsis on long text
       // and avoid horizontal scrolling
-      tableWidth: '620px',
+      tableWidth: '750px',
       currentSort: {
         column: null,
         direction: 'asc'
@@ -335,7 +335,7 @@ export default {
 
   :deep(.apos-modal__inner) {
     inset: auto;
-    max-width: 700px;
+    max-width: 800px;
     height: calc(100vh / 2);
 
     /* stylelint-disable-next-line media-feature-name-allowed-list */
@@ -349,7 +349,7 @@ export default {
   display: grid;
   grid-template-rows: auto 1fr auto;
   height: calc((100vh / 2) - 2 * #{$spacing-double});
-  gap: $spacing-double;
+  gap: $spacing-half + $spacing-base;
 
   /* stylelint-disable-next-line media-feature-name-allowed-list */
   @media screen and (height <= 720px) {
@@ -370,9 +370,8 @@ export default {
   @include type-base;
 
   & {
-    max-width: 370px;
     line-height: var(--a-line-tallest);
-    margin: $spacing-base 0;
+    margin: $spacing-base 0 0;
   }
 }
 
@@ -381,7 +380,7 @@ export default {
 }
 
 .apos-report__table--bordered {
-  border: 1px solid var(--a-base-10);
+  border: 1px solid var(--a-base-8);
   border-radius: var(--a-border-radius);
 }
 
