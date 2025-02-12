@@ -19,11 +19,17 @@
 
 * Add support for batch localization of pieces and pages.
 * Adds type for each file uploaded by big-upload. Moves big-upload-client to `apos/ui` folder and makes it esm. 
+* When present, projections for reverse relationships now automatically include the special id and field storage properties for the relationship in question, allowing the related documents to be successfully returned.
 
 ### Changes
 
 * The array editor's `isModified` method is now a computed property for consistency.
 * The `modal` configuration property for batch operations without a group is now accepted and works as expected in the same way as for grouped operations.
+* Explicitly enable document versions for `@apostrophecms/file-tag`, `@apostrophecms/file`, `@apostrophecms/image-tag` and `@apostrophecms/image` piece types.
+
+### Adds
+
+* If `error.cause` is prevent, log the property.
 
 ## 4.12.0 (2025-01-27)
 

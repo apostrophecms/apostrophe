@@ -48,6 +48,7 @@ module.exports = {
     searchable: false,
     slugPrefix: 'user-',
     localized: false,
+    versions: false,
     editRole: 'admin',
     publishRole: 'admin',
     viewRole: 'admin',
