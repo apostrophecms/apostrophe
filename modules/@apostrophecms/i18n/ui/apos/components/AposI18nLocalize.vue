@@ -980,12 +980,12 @@ export default {
           switch (field.type) {
             case 'array':
             case 'object':
-              getRelatedTypesBySchema(field.schema, result);
+              getRelatedTypesBySchema(field.schema, result, seen);
               break;
 
             case 'area': {
               for (const widget of Object.keys(field.options?.widgets || {})) {
-                getRelatedTypesBySchema(apos.modules[`${widget}-widget`]?.schema, result);
+                getRelatedTypesBySchema(apos.modules[`${widget}-widget`]?.schema, result, seen);
               }
               break;
             }
