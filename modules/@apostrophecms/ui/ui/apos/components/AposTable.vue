@@ -8,14 +8,14 @@
     }"
   >
     <tbody>
-      <tr>
+      <tr data-apos-test="tableHeader">
         <th
           v-for="header in tableHeaders"
           :key="header.id"
           scope="col"
           class="apos-table__header"
           :class="`apos-table__header--${header.css}`"
-          data-apos-test="tableHeader"
+          data-apos-test="tableHeaderCell"
           :style="headerStyles(header)"
         >
           <slot :name="`header-${header.name}`" :header="header">
@@ -188,34 +188,10 @@ export default {
     isTableFixed() {
       return this.isFixedValue(this.tableWidth);
     },
-    // Calculate the max width of the cells that don't have a fixed width.
     maxCellWidth() {
       if (this.options.maxCellWidth) {
         return this.options.maxCellWidth;
       }
-      const shouldSkip = !this.isTableFixed || this.headers.some(header => {
-        return header.width && !this.isFixedValue(header.width);
-      });
-      if (shouldSkip) {
-        return 'auto';
-      }
-
-      let tableWidth = parseInt(this.tableWidth, 10);
-      let cols = this.headers.length;
-      for (const header of this.tableHeaders) {
-        if (header.width) {
-          tableWidth -= parseInt(header.width, 10);
-          cols -= 1;
-        }
-      }
-      if (tableWidth > 0) {
-        // Subtract 30px for the padding per cell.
-        const colWidth = Math.floor(tableWidth / cols) - 30;
-        return colWidth > 0
-          ? `${colWidth}px`
-          : 'auto';
-      }
-
       return 'auto';
     },
     cssTableLayout() {
@@ -333,7 +309,7 @@ export default {
 .apos-table {
   box-sizing: border-box;
   table-layout: var(--table-layout);
-  width: var(--table-width);
+  max-width: var(--table-width);
 }
 
 .apos-table__header {
@@ -341,15 +317,9 @@ export default {
 }
 
 .apos-table__cell {
-  // WARNING: This comes from a global style that affects all tables.
-  // We need x-padding here to stay forever 15px because it's part
-  // of the cell width calculation.
-  padding: 5px 15px;
   white-space: unset;
 }
 
-// It would work only when `width` property is provided
-// and it's a pixel value.
 .apos-table__cell-field-fixed {
   white-space: nowrap;
   overflow: hidden;

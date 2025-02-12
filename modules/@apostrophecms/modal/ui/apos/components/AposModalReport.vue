@@ -150,6 +150,7 @@ export default {
         showModal: false
       },
       // fixed table width so that the table can perform ellipsis on long text
+      // and avoid horizontal scrolling
       tableWidth: '620px',
       currentSort: {
         column: null,
@@ -336,6 +337,11 @@ export default {
     inset: auto;
     max-width: 700px;
     height: calc(100vh / 2);
+
+    /* stylelint-disable-next-line media-feature-name-allowed-list */
+    @media screen and (height <= 720px) {
+      height: 80vh;
+    }
   }
 }
 
@@ -344,6 +350,11 @@ export default {
   grid-template-rows: auto 1fr auto;
   height: calc((100vh / 2) - 2 * #{$spacing-double});
   gap: $spacing-double;
+
+  /* stylelint-disable-next-line media-feature-name-allowed-list */
+  @media screen and (height <= 720px) {
+    height: calc(80vh - 2 * #{$spacing-double});
+  }
 }
 
 .apos-report__heading {
