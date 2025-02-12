@@ -1076,9 +1076,9 @@ module.exports = {
                 // human-readable message is a standard error payload property.
                 // For example `error.data.detail`.
                 if (e.data?.parentNotLocalized) {
-                  payload.detail = 'apostrophe:parentNotLocalized';
+                  payload.detail = req.t('apostrophe:parentNotLocalized');
                 } else {
-                  payload.detail = e.data?.detail;
+                  payload.detail = e.data?.detail ? req.t(e.data.detail) : null;
                 }
                 log.push(payload);
                 // Do not flood the logs with errors that are expected

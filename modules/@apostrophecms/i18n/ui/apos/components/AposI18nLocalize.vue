@@ -841,8 +841,8 @@ export default {
             // we opted not to overwrite
             if (e.status !== 409) {
               const detail = e?.body?.data?.parentNotLocalized
-                ? 'apostrophe:parentNotLocalized'
-                : e?.body?.data?.detail;
+                ? this.$t('apostrophe:parentNotLocalized')
+                : e?.body?.data?.detail ? this.$t(e.body.data.detail) : null;
               notifications.push({
                 type: 'error',
                 locale,
