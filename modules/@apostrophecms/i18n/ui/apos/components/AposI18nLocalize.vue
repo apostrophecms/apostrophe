@@ -817,7 +817,9 @@ export default {
             notifications.push({
               type: 'success',
               locale,
-              doc
+              docTypeLabel: this.singular(doc.type),
+              doc,
+              relationship: doc._id === this.fullDoc._id
             });
 
             if (this.locale) {
@@ -838,12 +840,16 @@ export default {
             // Status code 409 (conflict) means an existing document
             // we opted not to overwrite
             if (e.status !== 409) {
+              const detail = e?.body?.data?.parentNotLocalized
+                ? this.$t('apostrophe:parentNotLocalized')
+                : e?.body?.data?.detail ? this.$t(e.body.data.detail) : null;
               notifications.push({
                 type: 'error',
                 locale,
+                docTypeLabel: this.singular(doc.type),
                 doc,
-                detail: e?.body?.data?.parentNotLocalized &&
-                  'apostrophe:parentNotLocalized'
+                relationship: doc._id === this.fullDoc._id,
+                detail
               });
             }
           }
@@ -854,21 +860,49 @@ export default {
         this.modal.busy = false;
         this.close();
 
-        await apos.alert(
+        await apos.report(
           {
-            icon: false,
-            heading: 'apostrophe:localizingBusy',
-            description: 'apostrophe:thereWasAnIssueLocalizing',
-            body: {
-              component: 'AposI18nLocalizeErrors',
-              props: {
-                notifications
+            heading: 'apostrophe:localizingReportHeading',
+            description: 'apostrophe:localizingReportDesc',
+            footerMessageDanger: 'apostrophe:localizingReportHeading',
+            items: notifications,
+            headers: [
+              {
+                name: 'doc.aposDocId',
+                label: '_id',
+                format: 'last:5'
+              },
+              {
+                name: 'docTypeLabel',
+                label: 'apostrophe:type',
+                sortable: true
+              },
+              {
+                name: 'locale.label',
+                label: 'apostrophe:locale',
+                sortable: true
+              },
+              {
+                name: 'relationship',
+                label: 'apostrophe:relationship',
+                format: 'yesno',
+                visibility: 'export',
+                sortable: true
+              },
+              {
+                name: 'doc.title',
+                label: 'apostrophe:title',
+                width: '20%',
+                sortable: true
+              },
+              {
+                name: 'detail',
+                label: 'apostrophe:details',
+                width: '20%'
               }
-            },
-            affirmativeLabel: 'apostrophe:close'
+            ]
           }
         );
-
       } else {
         for (const item of notifications) {
           await apos.notify('apostrophe:localized', {
@@ -946,12 +980,12 @@ export default {
           switch (field.type) {
             case 'array':
             case 'object':
-              getRelatedTypesBySchema(field.schema, result);
+              getRelatedTypesBySchema(field.schema, result, seen);
               break;
 
             case 'area': {
               for (const widget of Object.keys(field.options?.widgets || {})) {
-                getRelatedTypesBySchema(apos.modules[`${widget}-widget`]?.schema, result);
+                getRelatedTypesBySchema(apos.modules[`${widget}-widget`]?.schema, result, seen);
               }
               break;
             }

@@ -20,4 +20,5 @@ export default function() {
   apos.modal.getActiveLocale = modalStore.getActiveLocale;
   apos.confirm = modalStore.confirm;
   apos.alert = modalStore.alert;
+  apos.report = modalStore.report;
 }

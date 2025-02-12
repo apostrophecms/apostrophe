@@ -538,7 +538,6 @@
   "takeControlFromOther": "{{ who }} bearbeitet dieses Dokument. Willst du die Kontrolle übernehmen?",
   "takeControlFromSelf": "Du bearbeitest dieses Dokument in einer anderen Registerkarte oder einem anderen Fenster. Möchtest du die Kontrolle in dieser Registerkarte übernehmen?",
   "thereAreActiveChanges": "Es gibt Änderungen an diesem Dokument.",
-  "thereWasAnIssueLocalizing": "Es ist ein Fehler beim Übersetzen des Inhalts aufgetreten:",
   "thisDocument": "Dieses Dokument",
   "thisDocumentAndRelated": "Dieses und alle zugehörigen Dokumente",
   "title": "Titel",

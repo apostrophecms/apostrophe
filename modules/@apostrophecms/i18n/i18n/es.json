@@ -538,7 +538,6 @@
   "takeControlFromOther": "{{ who }} está editando ese documento. ¿Quiere tomar el control?",
   "takeControlFromSelf": "Está editando ese documento en otra pestaña o ventana. ¿Quiere tomar control en esta pestaña?",
   "thereAreActiveChanges": "Este documento tiene cambios en curso.",
-  "thereWasAnIssueLocalizing": "Hubo un problema al traducir cierto contenido:",
   "thisDocument": "Este documento",
   "thisDocumentAndRelated": "Este documento y documentos relacionados",
   "title": "Título",

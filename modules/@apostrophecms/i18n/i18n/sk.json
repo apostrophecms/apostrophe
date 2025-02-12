@@ -538,7 +538,6 @@
   "takeControlFromOther": "{{ who }} upravuje tento dokument. Chcete prevziať kontrolu?",
   "takeControlFromSelf": "Tento dokument upravujete na inej karte alebo v inom okne. Chcete na tejto karte prevziať kontrolu?",
   "thereAreActiveChanges": "V tomto dokumente sú aktívne zmeny.",
-  "thereWasAnIssueLocalizing": "Pri preklade obsahu sa vyskytol problém:",
   "thisDocument": "Tento dokument",
   "thisDocumentAndRelated": "Tento dokument a súvisiace dokumenty",
   "title": "Názov",

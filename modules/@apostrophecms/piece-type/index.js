@@ -195,6 +195,7 @@ module.exports = {
       localize: {
         label: 'apostrophe:localize',
         messages: {
+          icon: 'translate-icon',
           progress: 'apostrophe:localizingBatch',
           completed: 'apostrophe:localizedBatch',
           resultsEventName: 'apos-localize-batch-results'

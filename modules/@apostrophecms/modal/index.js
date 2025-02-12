@@ -27,7 +27,8 @@ module.exports = {
           modals: self.modals,
           components: {
             the: self.options.components.the || 'TheAposModals',
-            confirm: self.options.components.confirm || 'AposModalConfirm'
+            confirm: self.options.components.confirm || 'AposModalConfirm',
+            report: self.options.components.report || 'AposModalReport'
           }
         };
       }
