@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia';
 import { ref } from 'vue';
+import { createId } from '@paralleldrive/cuid2';
 
 export const useNotificationStore = defineStore('notification', () => {
   const notifications = ref([]);
@@ -31,9 +32,23 @@ export const useNotificationStore = defineStore('notification', () => {
       localize: options.localize
     };
 
-    // Send it to the server, which will send it back to us via polling
-    const { noteId } = await apos.http.post(apos.notification.action, { body: notif });
-    return noteId;
+    if (!options.clientOnly) {
+      // Send it to the server, which will send it back to us via polling
+      const { noteId } = await apos.http.post(apos.notification.action, { body: notif });
+      return noteId;
+    }
+
+    const clientNotif = {
+      _id: createId(),
+      updatedAt: new Date(),
+      ...notif
+    };
+    notifications.value = [
+      clientNotif,
+      ...notifications.value
+    ];
+
+    return clientNotif._id;
   }
 
   /**
