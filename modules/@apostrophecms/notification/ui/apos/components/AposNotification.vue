@@ -17,27 +17,28 @@
           name: button.name,
           data: button.data
         })"
+        @click="close"
       >
         {{ localize(button.label) }}
       </button>
     </span>
-    <div v-if="job && job.total" class="apos-notification__progress">
+    <div v-if="process" class="apos-notification__progress">
       <div class="apos-notification__progress-bar">
         <div
           class="apos-notification__progress-now"
           role="progressbar"
-          :aria-valuenow="job.processed || 0"
-          :style="`width: ${job.percentage + '%'}`"
+          :aria-valuenow="process.processed || 0"
+          :style="`width: ${process.percent + '%'}`"
           aria-valuemin="0"
-          :aria-valuemax="job.total"
+          :aria-valuemax="process.total"
         />
       </div>
       <span class="apos-notification__progress-value">
-        {{ Math.floor(job.percentage) + '%' }}
+        {{ Math.floor(process.percent) + '%' }}
       </span>
     </div>
     <button
-      v-if="!job"
+      v-if="!process"
       class="apos-notification__button"
       @click="close"
     >
@@ -50,157 +51,117 @@
   </div>
 </template>
 
-<script>
+<script setup>
+import {
+  ref, computed, inject, onMounted
+} from 'vue';
 import Close from '@apostrophecms/vue-material-design-icons/Close.vue';
+import { useNotificationStore } from 'Modules/@apostrophecms/ui/stores/notification.js';
 
-export default {
-  name: 'AposNotification',
-  components: { Close },
-  props: {
-    notification: {
-      type: Object,
-      required: true
+const props = defineProps({
+  notification: {
+    type: Object,
+    required: true
+  }
+});
+
+const $t = inject('i18n');
+const emit = defineEmits([ 'close' ]);
+const store = useNotificationStore();
+
+const hasJob = props.notification.job && props.notification.job._id;
+const job = ref(
+  hasJob
+    ? {
+      route: `${apos.modules['@apostrophecms/job'].action}/${props.notification.job._id}`,
+      action: props.notification.job.action,
+      ids: props.notification.job.ids
     }
-  },
-  emits: [ 'close' ],
-  data() {
-    return {
-      job: this.notification.job && this.notification.job._id ? {
-        route: `${apos.modules['@apostrophecms/job'].action}/${this.notification.job._id}`,
-        processed: 0,
-        total: 1,
-        percentage: 0,
-        action: this.notification.job.action
-      } : null
-    };
-  },
-  computed: {
-    classList() {
-      const classes = [ 'apos-notification' ];
+    : null
+);
 
-      if (Array.isArray(this.notification.classes) && this.notification.classes.length) {
-        classes.push(...this.notification.classes);
-      }
+const process = computed(() => {
+  return store.processes[props.notification._id] || null;
+});
 
-      if (this.notification.type && this.notification.type !== 'none') {
-        classes.push(`apos-notification--${this.notification.type}`);
-      }
+const classList = computed(() => {
+  const classes = [ 'apos-notification' ];
 
-      if (this.job) {
-        classes.push('apos-notification--progress');
-      }
+  if (Array.isArray(props.notification.classes) && props.notification.classes.length) {
+    classes.push(...props.notification.classes);
+  }
 
-      // long notifications look funky, but reading the label's length doesn't account for html.
-      // Throw the string into a fake element to get its text content
-      const div = document.createElement('div');
-      div.innerHTML = this.localize(this.notification.message);
-      const textContent = div.textContent || div.innerText || '';
-      if (textContent.length > 160) {
-        classes.push('apos-notification--long');
-      }
+  if (props.notification.type && props.notification.type !== 'none') {
+    classes.push(`apos-notification--${props.notification.type}`);
+  }
 
-      return classes.join(' ');
-    },
-    iconComponent() {
-      if (this.notification.icon) {
-        return this.notification.icon;
-      } else {
-        return 'circle-icon';
-      }
-    }
-  },
-  async mounted() {
-    if (this.notification.dismiss) {
-      setTimeout(() => {
-        this.$emit('close', this.notification._id);
-      }, 1000 * this.notification.dismiss);
-    }
-    this.$refs.label.addEventListener('click', (e) => {
-      if (e.target.hasAttribute('data-apos-bus-event')) {
-        this.close();
-      }
-    });
+  if (job.value) {
+    classes.push('apos-notification--progress');
+  }
 
-    if (this.job) {
-      try {
-        const {
-          total,
-          processed,
-          percentage
-        } = await apos.http.get(this.job.route, {});
+  // long notifications look funky, but reading the label's length doesn't account for html.
+  // Throw the string into a fake element to get its text content
+  const div = document.createElement('div');
+  div.innerHTML = localize(props.notification.message);
+  const textContent = div.textContent || div.innerText || '';
+  if (textContent.length > 160) {
+    classes.push('apos-notification--long');
+  }
 
-        this.job.total = total;
-        this.job.processed = processed || 0;
-        this.job.percentage = percentage;
-        this.job.ids = this.notification.job.ids || [];
+  return classes.join(' ');
+});
 
-        await this.pollJob();
-      } catch (error) {
-        console.error('Unable to find notification job:', this.notification.job._id);
-        this.job = null;
-      }
-    }
-    // Notifications may include events to emit.
-    if (this.notification.event?.name) {
-      try {
-        // Clear the event to make sure it's only emitted once across browsers.
-        const safe = await this.clearEvent(this.notification._id);
+const iconComponent = computed(() => {
+  if (props.notification.icon) {
+    return props.notification.icon;
+  } else {
+    return 'circle-icon';
+  }
+});
 
-        if (safe) {
-          // The notification doc will only still have the event in one instance.
-          apos.bus.$emit(this.notification.event.name, this.notification.event.data);
-        }
-      } catch (error) {
-        console.error(this.$t('apostrophe:notificationClearEventError'));
-      }
-    }
-  },
-  methods: {
-    close() {
-      this.$emit('close', this.notification._id);
-    },
-    localize(s) {
-      let result;
-      if (this.notification.localize !== false) {
-        result = this.$t(s, this.notification.interpolate || {});
-      } else {
-        // Any interpolation was done before insertion
-        result = s;
-      }
-      return result;
-    },
-    async pollJob() {
-      if (!this.job?.total) {
-        return;
-      }
-      const job = await apos.http.get(this.job.route, {});
-      this.job.processed = job.processed;
-      this.job.percentage = job.percentage;
+onMounted(async () => {
+  if (props.notification.dismiss) {
+    setTimeout(() => {
+      emit('close', props.notification._id);
+    }, 1000 * props.notification.dismiss);
+  }
 
-      if (this.job.processed < this.job.total && !job.ended) {
-        await new Promise(resolve => {
-          setTimeout(resolve, 500);
-        });
+  if (hasJob || props.notification.type === 'progress') {
+    store.startProcess(props.notification._id);
+  }
 
-        await this.pollJob();
-      } else {
-        if (this.job.ids) {
-          apos.bus.$emit('content-changed', {
-            docIds: this.job.ids,
-            action: this.job.action || 'batch-update'
-          });
-        }
+  if (hasJob) {
+    store.pollJob(
+      props.notification._id,
+      job
+    );
+  }
+
+  // Notifications may include events to emit.
+  if (props.notification.event?.name) {
+    try {
+      // Clear the event to make sure it's only emitted once across browsers.
+      const safe = await store.clearEvent(props.notification._id);
+
+      if (safe) {
+        // The notification doc will only still have the event in one instance.
+        apos.bus.$emit(props.notification.event.name, props.notification.event.data);
       }
-    },
-    // `clearEvent` returns true if the event was found and cleared. Otherwise
-    // returns `false`
-    async clearEvent(id) {
-      return await apos.http.post(`${apos.notification.action}/${id}/clear-event`, {
-        body: {}
-      });
+    } catch (error) {
+      console.error($t('apostrophe:notificationClearEventError'));
     }
   }
-};
+});
+
+function close() {
+  emit('close', props.notification._id);
+}
+
+function localize(s) {
+  return props.notification.localize !== false
+    ? $t(s, props.notification.interpolate || {})
+    : s;
+}
 </script>
 
 <style lang="scss" scoped>
@@ -254,7 +215,8 @@ export default {
   color: var(--a-warning);
 }
 
-.apos-notification--success .apos-notification__indicator {
+.apos-notification--success .apos-notification__indicator,
+.apos-notification--progress .apos-notification__indicator {
   background-color: var(--a-success-fade);
   color: var(--a-success);
 }

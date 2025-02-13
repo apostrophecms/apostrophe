@@ -1,4 +1,5 @@
 import createApp from 'Modules/@apostrophecms/ui/lib/vue';
+import { useNotificationStore } from 'Modules/@apostrophecms/ui/stores/notification';
 
 export default function() {
   const component = apos.vueComponents.TheAposNotifications;
@@ -10,4 +11,8 @@ export default function() {
   }
   const app = createApp(component);
   app.mount(el);
+
+  const notifStore = useNotificationStore();
+  apos.notify = notifStore.notify;
+  notifStore.poll();
 };

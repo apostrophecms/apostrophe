@@ -2,6 +2,11 @@
 
 ## UNRELEASED
 
+### Adds
+
+* Supports progress notification type, can be used when no job are involved. Manage progress state into the new `processes` entity. 
+* Moves global notification logic into Pinia store as well as job polling that updates processes.
+
 ### Fixes
 
 * Field inputs inside an array modal can now be focused/tabbed via keyboard
