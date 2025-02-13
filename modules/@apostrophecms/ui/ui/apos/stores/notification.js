@@ -50,8 +50,8 @@ export const useNotificationStore = defineStore('notification', () => {
       ...notif
     };
     clientNotifs.value = [
-      clientNotif,
-      ...clientNotifs.value
+      ...clientNotifs.value,
+      clientNotif
     ];
 
     return clientNotif._id;
