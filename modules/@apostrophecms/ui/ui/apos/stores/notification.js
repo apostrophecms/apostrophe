@@ -1,11 +1,17 @@
 import { defineStore } from 'pinia';
-import { ref } from 'vue';
+import { ref, computed } from 'vue';
 import { createId } from '@paralleldrive/cuid2';
 
 export const useNotificationStore = defineStore('notification', () => {
-  const notifications = ref([]);
+  const backendNotifs = ref([]);
+  const clientNotifs = ref([]);
   const dismissed = ref([]);
   const processes = ref({});
+
+  const notifications = computed(() => {
+    return [ ...clientNotifs.value, ...backendNotifs.value ]
+      .sort((a, b) => a.updatedAt > b.updatedAt ? 1 : -1);
+  });
 
   /**
    * @param {string} message - Notification message
@@ -43,9 +49,9 @@ export const useNotificationStore = defineStore('notification', () => {
       updatedAt: new Date(),
       ...notif
     };
-    notifications.value = [
+    clientNotifs.value = [
       clientNotif,
-      ...notifications.value
+      ...clientNotifs.value
     ];
 
     return clientNotif._id;
@@ -60,7 +66,10 @@ export const useNotificationStore = defineStore('notification', () => {
         dismissed: true
       }
     });
-    notifications.value = notifications.value.filter(
+    backendNotifs.value = backendNotifs.value.filter(
+      ({ _id }) => notifId !== _id
+    );
+    clientNotifs.value = clientNotifs.value.filter(
       ({ _id }) => notifId !== _id
     );
     if (processes.value[notifId]) {
@@ -74,11 +83,9 @@ export const useNotificationStore = defineStore('notification', () => {
         // Wait for tab to become visible
         setTimeout(poll, 5000);
       } else {
-        const allNotifications = [ ...notifications.value, ...dismissed.value ];
+        const allNotifications = [ ...backendNotifs.value, ...dismissed.value ];
         const latestTimestamp = allNotifications
-          .map((notification) => {
-            return notification.updatedAt;
-          })
+          .map(({ updatedAt }) => updatedAt)
           .sort()
           .at(-1);
 
@@ -95,13 +102,13 @@ export const useNotificationStore = defineStore('notification', () => {
           })
         });
 
-        notifications.value = [
-          ...notifications.value,
+        backendNotifs.value = [
+          ...backendNotifs.value,
           ...(res.notifications || [])
         ];
         dismissed.value = [ ...dismissed.value, ...(res.dismissed || []) ];
         if (res.dismissed.length) {
-          notifications.value = notifications.value.filter((notif) => {
+          backendNotifs.value = backendNotifs.value.filter((notif) => {
             return !res.dismissed.some((element) => notif._id === element._id);
           });
         }
