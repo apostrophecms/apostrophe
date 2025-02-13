@@ -125,8 +125,7 @@ module.exports = {
         dismiss,
         icon,
         type,
-        buttons,
-        return: true
+        buttons
       });
 
       function launderInterpolate(input) {
@@ -260,8 +259,6 @@ module.exports = {
       // the application, as in a command line task.
 
       async trigger(req, message, options = {}, interpolate = {}) {
-        const { return: returnId, ...copiedOptions } = options;
-
         if (typeof req === 'string') {
           // String was passed, assume it is a user _id
           req = { user: { _id: req } };
@@ -290,11 +287,11 @@ module.exports = {
           classes: options.classes || null
         };
 
-        if (copiedOptions.dismiss === true) {
-          copiedOptions.dismiss = 5;
+        if (options.dismiss === true) {
+          options.dismiss = 5;
         }
 
-        Object.assign(notification, copiedOptions);
+        Object.assign(notification, options);
 
         await self.emit('beforeSave', req, notification);
 
@@ -312,13 +309,9 @@ module.exports = {
           }
         );
 
-        if (returnId) {
-          return {
-            noteId: notification._id
-          };
-        }
-
-        return {};
+        return {
+          noteId: notification._id
+        };
       },
 
       // The dismiss method accepts the following arguments:

@@ -287,8 +287,7 @@ module.exports = {
           event,
           classes: options.classes,
           icon: req.body.messages.icon || 'database-export-icon',
-          type: options.type || 'success',
-          return: true
+          type: options.type || 'success'
         });
       },
       // Start tracking a long-running job. Called by routes
