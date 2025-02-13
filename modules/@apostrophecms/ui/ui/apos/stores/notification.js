@@ -65,7 +65,7 @@ export const useNotificationStore = defineStore('notification', () => {
             return notification.updatedAt;
           })
           .sort()
-          .reverse()[0];
+          .at(-1);
 
         const seenIds = allNotifications
           .filter((notification) => notification.updatedAt === latestTimestamp)
@@ -75,7 +75,7 @@ export const useNotificationStore = defineStore('notification', () => {
           ...(latestTimestamp && {
             qs: {
               modifiedOnOrSince: latestTimestamp,
-              seenIds // Useless, should change $gte to $gt backend side
+              seenIds // TODO: can be skipped if we replace $gte to $gt backend side
             }
           })
         });
