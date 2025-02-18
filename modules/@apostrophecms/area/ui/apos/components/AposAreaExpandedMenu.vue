@@ -264,6 +264,8 @@ export default {
   @include type-base;
 
   & {
+    display: flex;
+    flex-direction: column;
     padding: 0;
     border: none;
     border-radius: var(--a-border-radius);
