@@ -298,6 +298,11 @@ module.exports = {
         component: 'AposTiptapColor',
         label: 'apostrophe:richTextColor',
         command: 'setColor'
+      },
+      import: {
+        component: 'AposTiptapImportData',
+        icon: 'cloud-upload-icon',
+        label: 'Import CSV files' // TODO: i18n
       }
     },
     editorInsertMenu: {
