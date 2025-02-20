@@ -247,10 +247,6 @@ function localize(s) {
   }
 }
 
-.apos-notification__close-icon {
-  height: 12px;
-}
-
 .apos-notification__label,
 .apos-notification__progress-value {
   @include type-base;
