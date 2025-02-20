@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="{% block locale %}en{% endblock %}" {% block extraHtml %}{% endblock %}>
+<html lang="{% block locale %}{{ data.locale }}{% endblock %}" {% block extraHtml %}{% endblock %}>
   <head>
     {% block startHead %}
     {% endblock %}
