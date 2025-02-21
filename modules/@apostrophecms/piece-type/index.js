@@ -10,7 +10,7 @@ module.exports = {
     'utilityOperations'
   ],
   options: {
-    perPage: 10,
+    perPage: 50,
     quickCreate: true,
     previewDraft: true,
     showCreate: true,

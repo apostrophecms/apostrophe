@@ -2,6 +2,10 @@
 
 ## UNRELEASED
 
+### Changes
+
+* Bumps the `perPage` option for piece-types from 10 to 50
+
 ### Fixes
 
 * The `lang` attribute of the `<html>` tag now respects localization.
