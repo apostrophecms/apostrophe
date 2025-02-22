@@ -92,6 +92,7 @@
  *  width?: string | number,
  *  action?: boolean | string,
  *  format?: string | (value: any) => string | number | boolean,
+ *  translate?: boolean,
  *  visibility?: 'always' | 'never' | 'table' | 'export'
  * }} TableHeader
  *
@@ -109,6 +110,7 @@ export default {
      * Array of headers to display in the table.
      * The `name` property is used to determine the value to display
      * for each cell in the table.
+     * `translate` is optional and if true, the value will be translated.
      * `css` is the class suffix to apply to the cell. If missing, `name` is used.
      * `id` is optional unique identifier for the header. If missing, `name` is used.
      * It's only used for internal purposes (loop keys).
@@ -215,6 +217,9 @@ export default {
         }
       } catch (e) {
         return null;
+      }
+      if (header.translate === true) {
+        value = this.$t(value);
       }
       if (format) {
         return header.format(value);
