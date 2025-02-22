@@ -646,7 +646,7 @@ export default {
   }
 
   .apos-area-widget-controls {
-    z-index: $z-index-widget-controls;
+    z-index: $z-index-area-schema-ui;
     position: absolute;
     opacity: 0;
     pointer-events: none;
