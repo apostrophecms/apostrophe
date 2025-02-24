@@ -28,7 +28,6 @@
 
 <script setup>
 import { ref } from 'vue';
-import { generateHTML } from '@tiptap/core';
 
 const props = defineProps({
   tool: {
@@ -54,10 +53,8 @@ async function uploadFile({ target }) {
     const table = await apos.http.post('/api/v1/@apostrophecms/rich-text-widget/generate-csv-table', {
       body: formData
     });
-    const html = generateHTML(table, props.editor.extensionManager.extensions);
-    props.editor.commands.insertContent(html);
+    props.editor.commands.insertContent(table);
   } catch (err) {
-    console.log('err', err);
     apos.notify('apostrophe:error', { type: 'error' });
   }
 }

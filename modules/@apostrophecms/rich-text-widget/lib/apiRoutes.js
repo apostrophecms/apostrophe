@@ -42,9 +42,7 @@ module.exports = self => {
             })
           );
 
-          const table = generateTable(data);
-          console.dir(table, { depth: 8 });
-          return table;
+          return generateTable(data);
         }
       ]
     }
@@ -54,29 +52,36 @@ module.exports = self => {
 function generateTable({ header, rows }) {
   return {
     type: 'table',
+    withHeaderRow: true,
     content: [
       {
         type: 'tableRow',
-        attrs: { tableHeader: true },
-        content: header.map(header => ({
-          type: 'tableCell',
+        content: header.map((head) => ({
+          type: 'tableHeader',
           content: [ {
-            type: 'text',
-            text: header
+            type: 'paragraph',
+            content: head ? [ {
+              type: 'text',
+              text: head
+            } ] : []
           } ]
         }))
       },
-      ...rows.map(row => ({
+      ...rows.map((row) => ({
         type: 'tableRow',
-        content: row.map(cell => ({
+        content: row.map((cell) => ({
           type: 'tableCell',
-          content: [ {
-            type: 'text',
-            text: cell
-          } ]
+          content: [
+            {
+              type: 'paragraph',
+              content: cell ? [ {
+                type: 'text',
+                text: cell
+              } ] : []
+            }
+          ]
         }))
       }))
     ]
   };
-
 }
