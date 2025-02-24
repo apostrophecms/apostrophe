@@ -44,7 +44,7 @@ const props = defineProps({
 const emit = defineEmits([ 'done', 'before-commands' ]);
 
 const insertMode = computed(() => {
-  return !props.tools;
+  return !props.tool;
 });
 
 onMounted(() => {
