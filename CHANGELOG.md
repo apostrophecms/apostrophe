@@ -1,5 +1,11 @@
 # Changelog
 
+## UNRELEASED
+
+### Adds
+
+* Adds feature to generate a table from an imported CSV file inside the rich-text-widget.
+
 ## 4.13.0 (2025-02-19)
 
 ### Adds
