@@ -1,5 +1,6 @@
 const t = require('../test-lib/test.js');
 const assert = require('assert');
+const cheerio = require('cheerio');
 
 describe('static i18n', function() {
   this.timeout(t.timeout);
@@ -20,6 +21,7 @@ describe('static i18n', function() {
             }
           }
         },
+        'i18n-test-page': {},
         example: {
           options: {
             i18n: {}
@@ -54,6 +56,30 @@ describe('static i18n', function() {
   it('should should exist on the apos object', async function() {
     assert(apos.i18n);
     assert(apos.i18n.i18next);
+  });
+
+  it('should set the lang attribute to "en" by default', async function() {
+    const req = apos.task.getReq();
+    const result = await apos.modules['i18n-test-page'].renderPage(req, 'page');
+
+    const $ = cheerio.load(result);
+    const $html = $('html');
+    const lang = $html.attr('lang');
+
+    assert.equal(lang, 'en');
+  });
+
+  it('should set the lang attribute to the current locale', async function() {
+    const req = apos.task.getReq({
+      locale: 'fr'
+    });
+    const result = await apos.modules['i18n-test-page'].renderPage(req, 'page');
+
+    const $ = cheerio.load(result);
+    const $html = $('html');
+    const lang = $html.attr('lang');
+
+    assert.equal(lang, 'fr');
   });
 
   it('should localize apostrophe namespace phrases in the default locale', function() {

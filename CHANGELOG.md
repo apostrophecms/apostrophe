@@ -6,6 +6,14 @@
 
 * Adds feature to generate a table from an imported CSV file inside the rich-text-widget.
 
+### Changes
+
+* Bumps the `perPage` option for piece-types from 10 to 50
+
+### Fixes
+
+* The `lang` attribute of the `<html>` tag now respects localization.
+
 ## 4.13.0 (2025-02-19)
 
 ### Adds
