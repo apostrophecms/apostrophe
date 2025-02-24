@@ -1,8 +1,8 @@
 <template>
-  <div class="apos-import-control">
+  <div class="apos-import-control" :class="{'apos-import-control__hidden': insertMode}">
     <AposButton
+      v-if="tool"
       type="rich-text"
-      :class="{ 'apos-is-active': buttonActive }"
       :label="tool.label"
       :icon-only="!!tool.icon"
       :icon="tool.icon || false"
@@ -21,31 +21,46 @@
       class="apos-sr-only"
       type="file"
       accept=".csv"
-      @input="uploadFile"
+      @input="generateTable"
     >
   </div>
 </template>
 
 <script setup>
-import { ref } from 'vue';
+import {
+  ref, onMounted, computed
+} from 'vue';
 
 const props = defineProps({
   tool: {
     type: Object,
-    required: true
+    default: null
   },
   editor: {
     type: Object,
     required: true
   }
 });
+const emit = defineEmits([ 'done' ]);
+
+const insertMode = computed(() => {
+  return !props.tools;
+});
+
+onMounted(() => {
+  // When opened from the insert menu we want to open the file manager directly
+  if (insertMode.value) {
+    openFileManager();
+  }
+});
+
 const aposTiptapUpload = ref(null);
 
 function openFileManager() {
   aposTiptapUpload.value.click();
 }
 
-async function uploadFile({ target }) {
+async function generateTable({ target }) {
   const [ file ] = target.files;
   const formData = new FormData();
   formData.append('file', file);
@@ -57,9 +72,15 @@ async function uploadFile({ target }) {
   } catch (err) {
     apos.notify('apostrophe:error', { type: 'error' });
   }
+
+  if (insertMode.value) {
+    emit('done');
+  }
 }
 </script>
 
 <style lang="scss">
-
+.apos-import-control__hidden {
+  visibility: hidden;
+}
 </style>
