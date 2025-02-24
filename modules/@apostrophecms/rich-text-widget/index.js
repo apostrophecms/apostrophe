@@ -300,10 +300,10 @@ module.exports = {
         label: 'apostrophe:richTextColor',
         command: 'setColor'
       },
-      import: {
-        component: 'AposTiptapImportData',
+      importTable: {
+        component: 'AposTiptapImportTable',
         icon: 'cloud-upload-icon',
-        label: 'Import CSV file' // TODO: i18n
+        label: 'apostrophe:richTextUploadCsvTable'
       }
     },
     editorInsertMenu: {
@@ -323,6 +323,11 @@ module.exports = {
         icon: 'minus-icon',
         label: 'apostrophe:richTextHorizontalRule',
         action: 'setHorizontalRule'
+      },
+      importTable: {
+        component: 'AposTiptapImportTable',
+        label: 'apostrophe:tableImport',
+        icon: 'cloud-upload-icon'
       }
     },
     // Additional properties used in executing tiptap commands
