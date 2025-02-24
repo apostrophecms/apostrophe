@@ -305,11 +305,11 @@ export default {
       // Per Stu's original logic we have to deal with an edge case when the page is
       // first loading by displaying the initial placeholder then too (showPlaceholder
       // state not yet computed)
+      const hasPlaceholder = this.placeholderText && this.moduleOptions.placeholder;
       if (
-        ((this.placeholderText &&
-          this.moduleOptions.placeholder) || this.insert.length) &&
-          this.isFocused &&
-          (this.showPlaceholder !== false)
+        (hasPlaceholder || this.insert.length) &&
+        this.isFocused &&
+        this.showPlaceholder !== false
       ) {
         classes.push('apos-show-initial-placeholder');
       }
@@ -322,7 +322,9 @@ export default {
       return this.moduleOptions.tiptapTypes;
     },
     placeholderText() {
-      return this.insert.length > 0 ? this.moduleOptions.placeholderTextWithInsertMenu : (this.moduleOptions.placeholderText || '');
+      return this.insert.length > 0
+        ? this.moduleOptions.placeholderTextWithInsertMenu
+        : (this.moduleOptions.placeholderText || '');
     }
   },
   watch: {
@@ -822,7 +824,7 @@ function traverseNextNode(node) {
   .apos-rich-text-toolbar__inner {
     display: flex;
     flex-wrap: wrap;
-    align-items: center;
+    align-items: stretch;
     max-width: 100%;
     height: auto;
     gap: 6px;
