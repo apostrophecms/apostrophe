@@ -64,7 +64,7 @@
           data-insert-menu-item
           @click="activateInsertMenuItem(item, insertMenu[item])"
         >
-          <div class="apos-rich-text-insert-menu-icon">
+          <div v-if="insertMenu[item].icon" class="apos-rich-text-insert-menu-icon">
             <AposIndicator
               :icon="insertMenu[item].icon"
               :icon-size="24"
@@ -633,13 +633,13 @@ export default {
       return false;
     },
     activateInsertMenuItem(name, info) {
-      // Select the / and remove it
       if (info.component) {
         this.activeInsertMenuComponent = {
           name,
           ...info
         };
       } else {
+        // Select the / and remove it
         this.removeSlash();
         this.editor.commands[info.action || name]();
         this.editor.commands.focus();

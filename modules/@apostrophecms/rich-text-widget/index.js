@@ -325,9 +325,10 @@ module.exports = {
         action: 'setHorizontalRule'
       },
       importTable: {
-        component: 'AposTiptapImportTable',
+        icon: 'cloud-upload-icon',
         label: 'apostrophe:tableImport',
-        icon: 'cloud-upload-icon'
+        description: 'apostrophe:richTextUploadCsvTable',
+        component: 'AposTiptapImportTable'
       }
     },
     // Additional properties used in executing tiptap commands

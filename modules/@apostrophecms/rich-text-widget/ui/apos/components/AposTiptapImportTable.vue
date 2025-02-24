@@ -41,7 +41,7 @@ const props = defineProps({
     required: true
   }
 });
-const emit = defineEmits([ 'done' ]);
+const emit = defineEmits([ 'done', 'before-commands' ]);
 
 const insertMode = computed(() => {
   return !props.tools;
@@ -61,6 +61,7 @@ function openFileManager() {
 }
 
 async function generateTable({ target }) {
+  emit('before-commands');
   const [ file ] = target.files;
   const formData = new FormData();
   formData.append('file', file);
