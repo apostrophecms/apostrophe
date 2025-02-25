@@ -217,7 +217,6 @@ export default {
     z-index: $z-index-modal;
     position: absolute;
     top: calc(100% + 5px);
-    left: -15px;
     width: 250px;
     opacity: 0;
     pointer-events: none;

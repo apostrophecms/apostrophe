@@ -233,7 +233,6 @@ function getOptions() {
     z-index: $z-index-modal;
     position: absolute;
     top: calc(100% + 5px);
-    left: -15px;
     opacity: 0;
     pointer-events: none;
   }
