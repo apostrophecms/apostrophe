@@ -69,7 +69,7 @@ module.exports = {
       lockoutMinutes: 1
     },
     minimumWhoamiFields: [ '_id', 'username', 'title', 'email' ],
-    whoamiFields: [ 'role' ]
+    whoamiFields: []
   },
   async init(self) {
     self.passport = new Passport();
@@ -353,7 +353,10 @@ module.exports = {
             throw self.apos.error('notfound');
           }
 
-          const fields = new Set([ ...self.options.minimumWhoamiFields, ...self.options.whoamiFields ]);
+          // The query will contain comma separated additional field names
+          const requestedFields = req.query.additionalFields ? req.query.additionalFields.split(',') : [];
+
+          const fields = new Set([ ...self.options.minimumWhoamiFields, ...self.options.whoamiFields, ...requestedFields ]);
           const user = {};
 
           for (const field of fields) {
