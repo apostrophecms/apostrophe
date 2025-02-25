@@ -867,4 +867,43 @@ describe('Login', function() {
       }
     );
   });
+
+  it('should return an error with code 404 at GET login/whoami when user is not logged in', async function() {
+    try {
+      await apos.http.get('/api/v1/@apostrophecms/login/whoami');
+      assert.fail('Expected error but got success');
+    } catch (err) {
+      assert.strictEqual(err.status, 404);
+      assert(err.message.includes('notfound'));
+    }
+  });
+
+  it('should return user data at GET login/whoami when user is logged in', async function() {
+
+    const jar = apos.http.jar();
+
+    await apos.http.post(
+      '/api/v1/@apostrophecms/login/login',
+      {
+        method: 'POST',
+        body: {
+          username: 'HarryPutter',
+          password: 'crookshanks',
+          session: true
+        },
+        jar
+      }
+    );
+
+    const whoamiResponse = await apos.http.get('/api/v1/@apostrophecms/login/whoami', { jar });
+    assert.ok(whoamiResponse._id);
+    assert.strictEqual(whoamiResponse.username, 'HarryPutter');
+    assert.strictEqual(whoamiResponse.title, 'Harry Putter');
+    assert.strictEqual(whoamiResponse.email, 'hputter@aol.com');
+
+    if (whoamiResponse.role !== undefined) {
+      assert.strictEqual(whoamiResponse.role, 'admin');
+    }
+  });
+
 });

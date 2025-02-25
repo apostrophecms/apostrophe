@@ -68,8 +68,8 @@ module.exports = {
       perMinutes: 1,
       lockoutMinutes: 1
     },
-    minimumWhoamiFields: ['_id', 'username', 'title', 'email'],
-    whoamiFields: []
+    minimumWhoamiFields: [ '_id', 'username', 'title', 'email' ],
+    whoamiFields: [ 'role' ]
   },
   async init(self) {
     self.passport = new Passport();
@@ -349,20 +349,20 @@ module.exports = {
         // may differ by individual user session and should not
         // be cached
         async whoami (req) {
-          if(!req.user){
-            throw self.apos.error('notfound')
+          if (!req.user) {
+            throw self.apos.error('notfound');
           }
 
-          const fields = new Set([...self.options.minimumWhoamiFields, ...self.options.whoamiFields])
-          const user = {}
+          const fields = new Set([ ...self.options.minimumWhoamiFields, ...self.options.whoamiFields ]);
+          const user = {};
 
-          for (const field of fields){
-            if(req.user[field] !== undefined){
-              user[field] = req.user[field]
+          for (const field of fields) {
+            if (req.user[field] !== undefined) {
+              user[field] = req.user[field];
             }
           }
 
-          return user
+          return user;
         },
         async context(req) {
           return self.getContext(req);
@@ -379,7 +379,7 @@ module.exports = {
             self.apos.util.error(e);
             throw self.apos.error('invalid', req.t('apostrophe:loginResetInvalid'));
           }
-        },
+        }
       }
     };
   },
