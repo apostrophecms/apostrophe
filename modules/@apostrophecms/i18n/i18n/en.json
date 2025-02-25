@@ -46,6 +46,7 @@
   "assetBuildCacheCleared": "Build cache cleared.",
   "assetWebpackConfigWarning": "⚠️ In the module {{ module }}, your webpack config is incorrect. It must be an object and should contain only the properties: {{ properties }}.",
   "at": "at",
+  "attachment": "Attachment",
   "automaticTranslationCheckbox": "Translate text content",
   "automaticTranslationErrMsg": "An error happened while getting available languages for translation. Translation will be skipped.",
   "automaticTranslationErrorNoProvider": "Translation provider not found. Page \"{{ title }}\" was not translated.",
