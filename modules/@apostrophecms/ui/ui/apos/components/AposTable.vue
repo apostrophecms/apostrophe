@@ -110,7 +110,7 @@ export default {
      * Array of headers to display in the table.
      * The `name` property is used to determine the value to display
      * for each cell in the table.
-     * `translate` is optional and if true, the value will be translated.
+     * `translate` is optional and if true, the relevant items values will be translated.
      * `css` is the class suffix to apply to the cell. If missing, `name` is used.
      * `id` is optional unique identifier for the header. If missing, `name` is used.
      * It's only used for internal purposes (loop keys).

@@ -2,6 +2,11 @@
 
 ## UNRELEASED
 
+### Adds
+
+* Add a label for the `@apostrophecms/attachment` module (error reporting reasons).
+* Add `translate` boolean option for report modal header configuration to force translation of the relevant items value (table cells).
+
 ### Fixes
 
 * The `lang` attribute of the `<html>` tag now respects localization.
