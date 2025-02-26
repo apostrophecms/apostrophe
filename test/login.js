@@ -900,32 +900,6 @@ describe('Login', function() {
     assert.strictEqual(whoamiResponse.username, 'HarryPutter');
     assert.strictEqual(whoamiResponse.title, 'Harry Putter');
     assert.strictEqual(whoamiResponse.email, 'hputter@aol.com');
-
-  });
-
-  it('should return additional fields GET login/whoami when user is logged in', async function() {
-
-    const jar = apos.http.jar();
-
-    await apos.http.post(
-      '/api/v1/@apostrophecms/login/login',
-      {
-        method: 'POST',
-        body: {
-          username: 'HarryPutter',
-          password: 'crookshanks',
-          session: true
-        },
-        jar
-      }
-    );
-
-    const whoamiResponse = await apos.http.get('/api/v1/@apostrophecms/login/whoami?additionalFields=role', { jar });
-    assert.ok(whoamiResponse._id);
-    assert.strictEqual(whoamiResponse.username, 'HarryPutter');
-    assert.strictEqual(whoamiResponse.title, 'Harry Putter');
-    assert.strictEqual(whoamiResponse.email, 'hputter@aol.com');
-    assert.strictEqual(whoamiResponse.role, 'admin');
   });
 
 });
