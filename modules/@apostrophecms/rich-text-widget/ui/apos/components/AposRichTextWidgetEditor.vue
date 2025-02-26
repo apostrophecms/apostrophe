@@ -64,7 +64,7 @@
           data-insert-menu-item
           @click="activateInsertMenuItem(item, insertMenu[item])"
         >
-          <div class="apos-rich-text-insert-menu-icon">
+          <div v-if="insertMenu[item].icon" class="apos-rich-text-insert-menu-icon">
             <AposIndicator
               :icon="insertMenu[item].icon"
               :icon-size="24"
@@ -305,7 +305,12 @@ export default {
       // Per Stu's original logic we have to deal with an edge case when the page is
       // first loading by displaying the initial placeholder then too (showPlaceholder
       // state not yet computed)
-      if (((this.placeholderText && this.moduleOptions.placeholder) || this.insert.length) && this.isFocused && (this.showPlaceholder !== false)) {
+      const hasPlaceholder = this.placeholderText && this.moduleOptions.placeholder;
+      if (
+        (hasPlaceholder || this.insert.length) &&
+        this.isFocused &&
+        this.showPlaceholder !== false
+      ) {
         classes.push('apos-show-initial-placeholder');
       }
       return classes;
@@ -317,7 +322,9 @@ export default {
       return this.moduleOptions.tiptapTypes;
     },
     placeholderText() {
-      return this.insert.length > 0 ? this.moduleOptions.placeholderTextWithInsertMenu : (this.moduleOptions.placeholderText || '');
+      return this.insert.length > 0
+        ? this.moduleOptions.placeholderTextWithInsertMenu
+        : (this.moduleOptions.placeholderText || '');
     }
   },
   watch: {
@@ -626,13 +633,13 @@ export default {
       return false;
     },
     activateInsertMenuItem(name, info) {
-      // Select the / and remove it
       if (info.component) {
         this.activeInsertMenuComponent = {
           name,
           ...info
         };
       } else {
+        // Select the / and remove it
         this.removeSlash();
         this.editor.commands[info.action || name]();
         this.editor.commands.focus();
