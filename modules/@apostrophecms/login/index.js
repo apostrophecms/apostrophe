@@ -353,8 +353,11 @@ module.exports = {
             throw self.apos.error('notfound');
           }
 
+          const allowedFields = new Set([ 'role' ]);
+
           // The query will contain comma separated additional field names
-          const requestedFields = req.query.additionalFields ? req.query.additionalFields.split(',') : [];
+          const requestedFields = req.query.additionalFields
+            ? req.query.additionalFields.split(',').map(field => field.trim()).filter(field => allowedFields.has(field)) : [];
 
           const fields = new Set([ ...self.options.minimumWhoamiFields, ...self.options.whoamiFields, ...requestedFields ]);
           const user = {};
