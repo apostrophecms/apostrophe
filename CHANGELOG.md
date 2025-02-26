@@ -7,6 +7,10 @@
 * Add a label for the `@apostrophecms/attachment` module (error reporting reasons).
 * Add `translate` boolean option for report modal header configuration to force translation of the relevant items value (table cells).
 
+### Changes
+
+* Bumps the `perPage` option for piece-types from 10 to 50
+
 ### Fixes
 
 * The `lang` attribute of the `<html>` tag now respects localization.
