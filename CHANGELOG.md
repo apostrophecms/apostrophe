@@ -2,6 +2,8 @@
 
 ## UNRELEASED
 
+* Implemented GET /api/v1/@apostrophecms/login/whoami route such that it returns the details of the currently logged in user; added the route to the login module.
+
 ### Changes
 
 * Bumps the `perPage` option for piece-types from 10 to 50
