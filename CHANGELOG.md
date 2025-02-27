@@ -15,7 +15,7 @@
 ### Fixes
 
 * The `lang` attribute of the `<html>` tag now respects localization.
-* The focus styling on AposTable headers.
+* Fixes the focus styling on AposTable headers.
 
 ## 4.13.0 (2025-02-19)
 
