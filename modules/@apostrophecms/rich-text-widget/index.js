@@ -5,6 +5,7 @@ const sanitizeHtml = require('sanitize-html');
 const cheerio = require('cheerio');
 const { createWriteStream, unlinkSync } = require('fs');
 const { Readable, pipeline } = require('stream');
+const apiRoutes = require('./lib/apiRoutes');
 const util = require('util');
 
 module.exports = {
@@ -298,6 +299,11 @@ module.exports = {
         component: 'AposTiptapColor',
         label: 'apostrophe:richTextColor',
         command: 'setColor'
+      },
+      importTable: {
+        component: 'AposTiptapImportTable',
+        icon: 'cloud-upload-icon',
+        label: 'apostrophe:richTextUploadCsvTable'
       }
     },
     editorInsertMenu: {
@@ -317,6 +323,12 @@ module.exports = {
         icon: 'minus-icon',
         label: 'apostrophe:richTextHorizontalRule',
         action: 'setHorizontalRule'
+      },
+      importTable: {
+        icon: 'cloud-upload-icon',
+        label: 'apostrophe:tableImport',
+        description: 'apostrophe:richTextUploadCsvTable',
+        component: 'AposTiptapImportTable'
       }
     },
     // Additional properties used in executing tiptap commands
@@ -377,6 +389,7 @@ module.exports = {
       }
     };
   },
+  apiRoutes,
   methods(self) {
     return {
       // Return just the rich text of the widget, which may be undefined or null if it has not yet been edited
