@@ -341,6 +341,14 @@ export default {
   width: 100%;
 }
 
+.apos-table__header:focus-within {
+  box-shadow: inset 0 0 0 1px var(--a-base-5);
+}
+
+.apos-table__header-label:focus {
+  outline: none;
+}
+
 // Unset the default global styles for the table title cell.
 .apos-table__cell--title {
   white-space: unset;
