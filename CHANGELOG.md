@@ -1,5 +1,9 @@
 # Changelog
 
+## UNRELEASED
+
+* Improve docs locking system messages.
+
 ## 2.227.9 (2024-08-19)
 
 * Update CKEDITOR combo styles to target all combos in the toolbar.
