@@ -3,6 +3,7 @@
 ## UNRELEASED
 
 * Improve docs locking system messages.
+* Refresh stale docs locks that have the current context ID.
 
 ## 2.227.9 (2024-08-19)
 
