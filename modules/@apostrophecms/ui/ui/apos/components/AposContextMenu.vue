@@ -27,14 +27,13 @@
       />
       <div
         v-if="isOpen"
+        v-bind="menuAttrs"
         ref="dropdownContent"
         v-click-outside-element="hide"
-        :data-apos-test="isRendered ? 'context-menu-content' : null"
+        :style="dropdownContentStyle"
+        dropdownContentStyle,
         class="apos-context-menu__dropdown-content"
         :class="popoverClass"
-        data-apos-menu
-        :style="dropdownContentStyle"
-        :aria-hidden="!isOpen"
       >
         <AposContextMenuDialog
           :menu-placement="placement"
@@ -141,6 +140,10 @@ const props = defineProps({
   dynamicFocus: {
     type: Boolean,
     default: false
+  },
+  tolerateModals: {
+    type: Boolean,
+    default: false
   }
 });
 
@@ -205,6 +208,14 @@ const classList = computed(() => {
 
 const buttonState = computed(() => {
   return isOpen.value ? [ 'active' ] : null;
+});
+
+const menuAttrs = computed(() => {
+  return {
+    'data-apos-test': isRendered.value ? 'context-menu-content' : null,
+    ...props.tolerateModals ? {} : { 'data-apos-menu': '' },
+    'aria-hidden': !isOpen.value
+  };
 });
 
 watch(isOpen, async (newVal) => {
