@@ -169,7 +169,13 @@ export default {
       }
 
       for (const item of Object.keys(config.widgets)) {
-        group.widgets.push(apos.modules[`${item}-widget`]);
+        const widgetName = `${item}-widget`;
+        const widgetModule = apos.modules[widgetName];
+        if (!widgetModule) {
+          console.error(`${widgetName} is not available in this project, please verify its configuration`);
+        } else {
+          group.widgets.push(widgetModule);
+        }
       }
 
       return group;
@@ -258,6 +264,8 @@ export default {
   @include type-base;
 
   & {
+    display: flex;
+    flex-direction: column;
     padding: 0;
     border: none;
     border-radius: var(--a-border-radius);
@@ -266,6 +274,7 @@ export default {
   }
 
   .apos-widget__preview {
+    margin-bottom: 10px;
     transition: opacity 250ms ease-in-out;
 
     .apos-icon--add {
