@@ -5,7 +5,6 @@
       menu-placement="bottom-end"
       :button="button"
       :keep-open-under-modals="true"
-      :close-menu="closeMenu"
       @close="reset"
     >
       <AposImageControlDialog
@@ -75,10 +74,7 @@ export default {
   },
   methods: {
     close() {
-      this.closeMenu = true;
-    },
-    reset() {
-      this.closeMenu = false;
+      this.editor.chain().focus();
     }
   }
 };
