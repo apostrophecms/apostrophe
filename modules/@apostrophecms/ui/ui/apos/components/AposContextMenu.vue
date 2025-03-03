@@ -31,7 +31,6 @@
         ref="dropdownContent"
         v-click-outside-element="hide"
         :style="dropdownContentStyle"
-        dropdownContentStyle,
         class="apos-context-menu__dropdown-content"
         :class="popoverClass"
       >
@@ -141,7 +140,11 @@ const props = defineProps({
     type: Boolean,
     default: false
   },
-  tolerateModals: {
+  keepOpenUnderModals: {
+    type: Boolean,
+    default: false
+  },
+  closeMenu: {
     type: Boolean,
     default: false
   }
@@ -213,7 +216,7 @@ const buttonState = computed(() => {
 const menuAttrs = computed(() => {
   return {
     'data-apos-test': isRendered.value ? 'context-menu-content' : null,
-    ...props.tolerateModals ? {} : { 'data-apos-menu': '' },
+    ...props.keepOpenUnderModals ? {} : { 'data-apos-menu': '' },
     'aria-hidden': !isOpen.value
   };
 });
@@ -245,6 +248,12 @@ watch(isOpen, async (newVal) => {
   }
   otherMenuOpened.value = false;
 }, { flush: 'post' });
+
+watch(() => props.closeMenu, (val) => {
+  if (val) {
+    hide();
+  }
+});
 
 const { themeClass } = useAposTheme();
 

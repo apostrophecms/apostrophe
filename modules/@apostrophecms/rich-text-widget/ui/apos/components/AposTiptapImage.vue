@@ -2,9 +2,11 @@
   <div class="apos-image-control">
     <AposContextMenu
       class="apos-admin-bar__sub"
+      menu-placement="bottom-end"
       :button="button"
-      :close-state="closeState"
-      role="menuitem"
+      :keep-open-under-modals="true"
+      :close-menu="closeMenu"
+      @close="reset"
     >
       <AposImageControlDialog
         :editor="editor"
@@ -30,19 +32,16 @@ export default {
   },
   data() {
     return {
-      active: false
+      closeMenu: false
     };
   },
   computed: {
-    closeState() {
-      return 1;
-    },
     button() {
       return {
         ...this.buttonActive ? { class: 'apos-is-active' } : {},
         type: 'rich-text',
         label: this.tool.label,
-        'icon-only': !!this.tool.icon,
+        'icon-only': Boolean(this.tool.icon),
         icon: this.tool.icon || false,
         'icon-size': this.tool.iconSize || 16,
         modifiers: [ 'no-border', 'no-motion' ],
@@ -71,21 +70,15 @@ export default {
       const { content = [] } = selection.content().content;
       const [ { type } = {} ] = content;
 
-      const hasSelection = text !== '' || type?.name === 'image';
-      console.log('hasSelection', hasSelection);
-      return hasSelection;
-    }
-  },
-  watch: {
-    hasSelection(newVal, oldVal) {
-      if (!newVal) {
-        this.close();
-      }
+      return text !== '' || type?.name === 'image';
     }
   },
   methods: {
     close() {
-      this.active = false;
+      this.closeMenu = true;
+    },
+    reset() {
+      this.closeMenu = false;
     }
   }
 };

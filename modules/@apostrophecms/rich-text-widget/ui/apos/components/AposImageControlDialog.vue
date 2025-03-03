@@ -45,8 +45,7 @@ export default {
     },
     hasSelection: {
       type: Boolean,
-      required: true,
-      default: false
+      required: true
     }
   },
   emits: [ 'before-commands', 'close' ],
