@@ -5,11 +5,11 @@
       menu-placement="bottom-end"
       :button="button"
       :keep-open-under-modals="true"
-      @close="reset"
     >
       <div
         class="apos-link-control__dialog"
         :class="{ 'apos-has-selection': hasSelection }"
+        @keydown.enter.prevent="pressKeyEnter"
       >
         <div v-if="hasLinkOnOpen" class="apos-link-control__remove">
           <AposButton
@@ -70,6 +70,7 @@ export default {
     }
   },
   data() {
+    const moduleOptions = apos.modules['@apostrophecms/rich-text-widget'];
 
     return {
       generation: 1,
@@ -81,7 +82,7 @@ export default {
         data: {}
       },
       formModifiers: [ 'small', 'margin-micro' ],
-      originalSchema: getOptions().linkSchema
+      schema: moduleOptions.linkSchema
     };
   },
   computed: {
@@ -118,9 +119,6 @@ export default {
       const text = state.doc.textBetween(from, to, '');
       return text !== '';
     },
-    schema() {
-      return this.originalSchema;
-    },
     schemaHtmlAttributes() {
       return this.schema.filter(item => !!item.htmlAttribute);
     }
@@ -142,9 +140,9 @@ export default {
     }
   },
   async mounted() {
+    await this.populateFields();
     await this.evaluateExternalConditions();
     this.evaluateConditions();
-    this.populateFields();
   },
   methods: {
     removeLink() {
@@ -152,7 +150,6 @@ export default {
       this.editor.commands.unsetLink();
       this.close();
     },
-    // TODO: test
     close() {
       this.editor.chain().focus();
     },
@@ -189,18 +186,10 @@ export default {
 
       this.close();
     },
-    keyboardHandler(e) {
-      if (e.key === 'Escape') {
+    pressKeyEnter(e) {
+      if (this.docFields.data.href || e.metaKey) {
+        this.save();
         this.close();
-      }
-      if (e.key === 'Enter') {
-        if (this.docFields.data.href || e.metaKey) {
-          this.save();
-          this.close();
-          e.preventDefault();
-        } else {
-          e.preventDefault();
-        }
       }
     },
     async populateFields() {
@@ -253,16 +242,9 @@ export default {
         this.generation++;
       }
       this.evaluateConditions();
-    },
-    reset() {
-      // TODO
     }
   }
 };
-
-function getOptions() {
-  return apos.modules['@apostrophecms/rich-text-widget'];
-}
 </script>
 
 <style lang="scss" scoped>
