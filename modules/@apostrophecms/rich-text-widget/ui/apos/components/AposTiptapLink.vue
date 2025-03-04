@@ -86,7 +86,6 @@ export default {
   },
   computed: {
     button() {
-      console.log('this.tool.label', this.tool.label);
       return {
         ...this.buttonActive ? { class: 'apos-is-active' } : {},
         type: 'rich-text',
@@ -139,8 +138,8 @@ export default {
     }
   },
   async mounted() {
-    await this.populateFields();
     await this.evaluateExternalConditions();
+    await this.populateFields();
     this.evaluateConditions();
   },
   methods: {
