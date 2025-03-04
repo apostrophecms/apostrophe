@@ -4,11 +4,12 @@
       menu-placement="bottom-end"
       :button="button"
       :keep-open-under-modals="true"
+      @open="openModal"
+      @close="closeModal"
     >
       <div
         class="apos-link-control__dialog"
         :class="{ 'apos-has-selection': hasSelection }"
-        @keydown.enter.prevent="pressKeyEnter"
       >
         <div v-if="hasLinkOnOpen" class="apos-link-control__remove">
           <AposButton
@@ -184,10 +185,13 @@ export default {
 
       this.close();
     },
-    pressKeyEnter(e) {
-      if (this.docFields.data.href || e.metaKey) {
-        this.save();
-        this.close();
+    keyboardHandler(e) {
+      if (e.key === 'Enter') {
+        if (this.docFields.data.href || e.metaKey) {
+          this.save();
+          this.close();
+        }
+        e.preventDefault();
       }
     },
     async populateFields() {
@@ -240,6 +244,15 @@ export default {
         this.generation++;
       }
       this.evaluateConditions();
+    },
+    async openModal() {
+      this.hasLinkOnOpen = Boolean(this.attributes.href);
+      window.addEventListener('keydown', this.keyboardHandler);
+      await this.populateFields();
+      this.evaluateConditions();
+    },
+    closeModal() {
+      window.removeEventListener('keydown', this.keyboardHandler);
     }
   }
 };
