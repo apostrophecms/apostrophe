@@ -1,7 +1,6 @@
 <template>
   <div class="apos-image-control">
     <AposContextMenu
-      class="apos-admin-bar__sub"
       menu-placement="bottom-end"
       :button="button"
       :keep-open-under-modals="true"
@@ -27,11 +26,6 @@ export default {
       type: Object,
       required: true
     }
-  },
-  data() {
-    return {
-      closeMenu: false
-    };
   },
   computed: {
     button() {
