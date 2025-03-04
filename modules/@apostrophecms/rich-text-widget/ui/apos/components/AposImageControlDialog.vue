@@ -2,7 +2,6 @@
   <div
     class="apos-popover apos-image-control__dialog"
     :class="{ 'apos-has-selection': hasSelection }"
-    @keydown.esc="close"
   >
     <AposSchema
       :key="lastSelectionTime"
@@ -117,8 +116,10 @@ export default {
     this.populateFields();
     await this.evaluateExternalConditions();
     this.evaluateConditions();
+    window.addEventListener('keydown', this.keyboardHandler);
   },
   beforeUnmount() {
+    window.removeEventListener('keydown', this.keyboardHandler);
   },
   methods: {
     close() {
@@ -143,18 +144,9 @@ export default {
         this.close();
       });
     },
-    pressEnter(e) {
-      console.log('this.docFields.data.href', this.docFields.data.href);
-      if (this.docFields.data.href || e.metaKey) {
-        this.save();
-        this.close();
-      }
-    },
-    // TODO: rework using attached events
     keyboardHandler(e) {
-      console.log('e.keyCode', e.keyCode);
-      if (e.keyCode === 13) {
-        if (this.docFields.data.href || e.metaKey) {
+      if (e.key === 'Enter') {
+        if (this.docFields.data._image?.length || e.metaKey) {
           this.save();
           this.close();
         }
