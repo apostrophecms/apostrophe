@@ -5,7 +5,6 @@
       menu-placement="bottom-end"
       :button="button"
       :keep-open-under-modals="true"
-      @close="reset"
     >
       <AposImageControlDialog
         :editor="editor"

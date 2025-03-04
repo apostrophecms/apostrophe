@@ -52,7 +52,7 @@
 
 <script setup>
 import {
-  ref, computed, watch, onMounted, onBeforeUnmount
+  ref, computed, watch, onMounted, onBeforeUnmount, nextTick
 } from 'vue';
 import {
   computePosition, offset, shift, flip, arrow
@@ -143,10 +143,6 @@ const props = defineProps({
   keepOpenUnderModals: {
     type: Boolean,
     default: false
-  },
-  closeMenu: {
-    type: Boolean,
-    default: false
   }
 });
 
@@ -155,7 +151,6 @@ const emit = defineEmits([ 'open', 'close', 'item-clicked' ]);
 const isOpen = ref(false);
 const isRendered = ref(false);
 const placement = ref(props.menuPlacement);
-const event = ref(null);
 /** @type {import('vue').Ref<HTMLElement | null>}} */
 const contextMenuRef = ref(null);
 /** @type {import('vue').Ref<HTMLElement | null>}} */
@@ -179,6 +174,12 @@ const {
   // the context menu.
   // triggerRef: dropdownButton,
   // onExit: hide
+});
+
+const menuResizeObserver = new ResizeObserver((entries) => {
+  for (const _entry of entries) {
+    setDropdownPosition();
+  }
 });
 
 defineExpose({
@@ -221,40 +222,6 @@ const menuAttrs = computed(() => {
   };
 });
 
-watch(isOpen, async (newVal) => {
-  emit(newVal ? 'open' : 'close', event.value);
-  if (newVal) {
-    setDropdownPosition();
-    window.addEventListener('resize', setDropdownPosition);
-    window.addEventListener('scroll', setDropdownPosition);
-    contextMenuRef.value?.addEventListener('keydown', handleKeyboard);
-    if (props.trapFocus && !hasRunningTrap.value) {
-      await runTrap(dropdownContent);
-    }
-    if (!props.trapFocus) {
-      dropdownContent.value.querySelector('[tabindex]')?.focus();
-    }
-    isRendered.value = true;
-  } else {
-    if (props.trapFocus) {
-      resetTrap();
-    }
-    window.removeEventListener('resize', setDropdownPosition);
-    window.removeEventListener('scroll', setDropdownPosition);
-    contextMenuRef.value?.addEventListener('keydown', handleKeyboard);
-    if (!otherMenuOpened.value && !props.trapFocus) {
-      dropdown.value.querySelector('[tabindex]').focus();
-    }
-  }
-  otherMenuOpened.value = false;
-}, { flush: 'post' });
-
-watch(() => props.closeMenu, (val) => {
-  if (val) {
-    hide();
-  }
-});
-
 const { themeClass } = useAposTheme();
 
 onMounted(() => {
@@ -287,17 +254,54 @@ function setIconToCenterTo(el) {
   }
 }
 
-function hide() {
+async function hide(e) {
+  if (!isOpen.value) {
+    return;
+  }
+  menuResizeObserver.unobserve(dropdownContent.value);
   isOpen.value = false;
+  await nextTick();
+  emit('close', e);
+  if (props.trapFocus) {
+    resetTrap();
+  }
+  window.removeEventListener('resize', setDropdownPosition);
+  window.removeEventListener('scroll', setDropdownPosition);
+  contextMenuRef.value?.addEventListener('keydown', handleKeyboard);
+  if (!otherMenuOpened.value && !props.trapFocus) {
+    dropdown.value.querySelector('[tabindex]').focus();
+  }
+}
+
+async function show(e) {
+  isOpen.value = true;
+  await nextTick();
+  emit('open', e);
+  setDropdownPosition();
+  menuResizeObserver.observe(dropdownContent.value);
+  window.addEventListener('resize', setDropdownPosition);
+  window.addEventListener('scroll', setDropdownPosition);
+  contextMenuRef.value?.addEventListener('keydown', handleKeyboard);
+  if (props.trapFocus && !hasRunningTrap.value) {
+    await runTrap(dropdownContent);
+  }
+  if (!props.trapFocus) {
+    dropdownContent.value.querySelector('[tabindex]')?.focus();
+  }
+  isRendered.value = true;
 }
 
 function buttonClicked(e) {
-  isOpen.value = !isOpen.value;
+  if (isOpen.value) {
+    hide(e);
+  } else {
+    show(e);
+  }
+  otherMenuOpened.value = false;
   apos.bus.$emit('context-menu-toggled', {
     menuId: props.menuId,
     isOpen: isOpen.value
   });
-  event.value = e;
 }
 
 function setArrow(el) {
