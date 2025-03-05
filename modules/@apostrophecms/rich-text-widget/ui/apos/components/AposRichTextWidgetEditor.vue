@@ -63,12 +63,9 @@
           <AposTiptapInsertItem
             :name="item"
             :menu-item="insertMenu[item]"
-            :active-menu-component="activeInsertMenuComponent"
             :editor="editor"
             :editor-options="editorOptions"
-            @cancel="cancelInsertMenuItem"
-            @done="closeInsertMenuItem"
-            @close="closeInsertMenuItem"
+            @done="doSuppressInsertMenu"
             @set-active-insert-menu="setActiveInsertMenu"
           />
         </li>
@@ -609,9 +606,6 @@ export default {
       this.isShowingInsert = false;
       return false;
     },
-    cancelInsertMenuItem() {
-      this.doSuppressInsertMenu();
-    },
     closeInsertMenu(e) {
       if (
         [ 'ArrowUp', 'ArrowDown', 'Enter', ' ' ].includes(e.key) ||
@@ -642,7 +636,6 @@ export default {
       buttons[index || targetIndex]?.focus();
     },
     setActiveInsertMenu(isActive = true) {
-      console.log('isActive', isActive);
       this.activeInsertMenuComponent = isActive;
     }
   }

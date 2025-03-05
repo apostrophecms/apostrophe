@@ -9,12 +9,11 @@
       ref="dropdown"
       class="apos-popover__btn apos-context-menu__dropdown"
     >
-      <div
+      <slot
         v-if="slots.button"
-        @click.stop="buttonClicked($event)"
-      >
-        <slot name="button" />
-      </div>
+        name="button"
+        :on-click="buttonClicked"
+      />
       <AposButton
         v-else
         v-bind="button"

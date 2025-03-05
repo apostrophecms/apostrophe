@@ -1,19 +1,20 @@
 <template>
   <AposContextMenu
-    v-if="props.menuItem.modal"
+    v-if="menuItem.modal"
     menu-placement="bottom-end"
     :keep-open-under-modals="true"
     @open="openModal"
     @close="closeModal"
   >
-    <template #button>
+    <template #button="btnProps">
       <AposTiptapInsertBtn
-        :name="props.name"
-        :menu-item="props.menuItem"
+        :name="name"
+        :menu-item="menuItem"
+        @click="btnProps.onClick"
       />
     </template>
     <component
-      :is="menuItem.component"
+      :is="menuItem.modal"
       :editor="editor"
       :options="editorOptions"
       @done="closeInsertMenuItem"
@@ -40,10 +41,6 @@
   />
 </template>
 
-      <!-- @cancel="cancelInsertMenuItem" -->
-      <!-- @done="closeInsertMenuItem" -->
-      <!-- @close="closeInsertMenuItem" -->
-
 <script setup>
 import { ref, computed } from 'vue';
 const props = defineProps({
@@ -54,10 +51,6 @@ const props = defineProps({
   menuItem: {
     type: Object,
     required: true
-  },
-  activeMenuComponent: {
-    type: Object,
-    default: null
   },
   editor: {
     type: Object,
@@ -73,8 +66,7 @@ const emit = defineEmits([ 'cancel', 'done', 'close', 'set-active-insert-menu' ]
 
 const isComponentActive = ref(false);
 const isComponentShowed = computed(() => {
-  return !props.menuItem.modal &&
-    props.menuItem.component &&
+  return props.menuItem.component &&
     isComponentActive.value;
 });
 
@@ -82,12 +74,13 @@ function activate() {
   if (props.menuItem.component) {
     emit('set-active-insert-menu', true);
     isComponentActive.value = true;
-  } else {
-  // Select the / and remove it
-    removeSlash();
-    props.editor.commands[props.menuItem.action || props.name]();
-    props.editor.commands.focus();
+    return;
   }
+
+  // Select the / and remove it
+  removeSlash();
+  props.editor.commands[props.menuItem.action || props.name]();
+  props.editor.commands.focus();
 }
 
 function removeSlash() {
