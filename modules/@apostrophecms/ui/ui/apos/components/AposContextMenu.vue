@@ -9,7 +9,14 @@
       ref="dropdown"
       class="apos-popover__btn apos-context-menu__dropdown"
     >
+      <div
+        v-if="slots.button"
+        @click.stop="buttonClicked($event)"
+      >
+        <slot name="button" />
+      </div>
       <AposButton
+        v-else
         v-bind="button"
         ref="dropdownButton"
         class="apos-context-menu__btn"
@@ -52,7 +59,7 @@
 
 <script setup>
 import {
-  ref, computed, watch, onMounted, onBeforeUnmount, nextTick
+  ref, computed, onMounted, onBeforeUnmount, nextTick, useSlots
 } from 'vue';
 import {
   computePosition, offset, shift, flip, arrow
@@ -147,6 +154,7 @@ const props = defineProps({
 });
 
 const emit = defineEmits([ 'open', 'close', 'item-clicked' ]);
+const slots = useSlots();
 
 const isOpen = ref(false);
 const isRendered = ref(false);
