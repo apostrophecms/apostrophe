@@ -2,13 +2,19 @@
 
 ## UNRELEASED
 
+### Adds
+
+* Adds feature to generate a table from an imported CSV file inside the rich-text-widget.
+
 ### Changes
 
 * Bumps the `perPage` option for piece-types from 10 to 50
+* Bumps z-index of widget controls to get above the admin bar.
 
 ### Fixes
 
 * The `lang` attribute of the `<html>` tag now respects localization.
+* Proper errors when widgets are badly configured in expanded mode.
 
 ## 4.13.0 (2025-02-19)
 
