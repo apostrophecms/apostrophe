@@ -18,6 +18,7 @@
       :options="editorOptions"
       @done="closeInsertMenuItem"
       @close="closeInsertMenuItem"
+      @before-commands="removeSlash"
     />
   </AposContextMenu>
 
@@ -35,10 +36,10 @@
     :options="editorOptions"
     @done="closeInsertMenuItem"
     @close="closeInsertMenuItem"
+    @before-commands="removeSlash"
   />
 </template>
 
-      <!-- @before-commands="emit('before-commands')" -->
       <!-- @cancel="cancelInsertMenuItem" -->
       <!-- @done="closeInsertMenuItem" -->
       <!-- @close="closeInsertMenuItem" -->
