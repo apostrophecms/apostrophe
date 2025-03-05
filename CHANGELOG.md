@@ -4,6 +4,8 @@
 
 ### Adds
 
+* Add a label for the `@apostrophecms/attachment` module (error reporting reasons).
+* Add `translate` boolean option for report modal header configuration to force translation of the relevant items value (table cells).
 * Adds feature to generate a table from an imported CSV file inside the rich-text-widget.
 
 ### Changes
@@ -14,6 +16,7 @@
 ### Fixes
 
 * The `lang` attribute of the `<html>` tag now respects localization.
+* Fixes the focus styling on AposTable headers.
 * Proper errors when widgets are badly configured in expanded mode.
 
 ## 4.13.0 (2025-02-19)
