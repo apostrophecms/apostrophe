@@ -50,52 +50,29 @@
       <div class="apos-rich-text-insert-menu-heading">
         {{ $t('apostrophe:richTextInsertMenuHeading') }}
       </div>
-      <div
+      <ul
         class="apos-rich-text-insert-menu-wrapper"
         @keydown.prevent.arrow-up="focusInsertMenuItem(true)"
         @keydown.prevent.arrow-down="focusInsertMenuItem()"
         @keydown="closeInsertMenu"
       >
-        <button
+        <li
           v-for="(item, index) in insert"
           :key="`${item}-${index}`"
-          class="apos-rich-text-insert-menu-item"
-          role="option"
-          data-insert-menu-item
-          @click="activateInsertMenuItem(item, insertMenu[item])"
         >
-          <div class="apos-rich-text-insert-menu-icon">
-            <AposIndicator
-              :icon="insertMenu[item].icon"
-              :icon-size="24"
-              class="apos-button__icon"
-              fill-color="currentColor"
-            />
-          </div>
-          <div class="apos-rich-text-insert-menu-label">
-            <h4>{{ $t(insertMenu[item].label) }}</h4>
-            <p>{{ $t(insertMenu[item].description) }}</p>
-          </div>
-        </button>
-        <div class="apos-rich-text-insert-menu-components">
-          <div
-            v-for="(item, index) in insert"
-            :key="`${item}-${index}-component`"
-          >
-            <component
-              :is="activeInsertMenuComponent.component"
-              v-if="item === activeInsertMenuComponent?.name"
-              :active="true"
-              :editor="editor"
-              :options="editorOptions"
-              @before-commands="removeSlash"
-              @cancel="cancelInsertMenuItem"
-              @done="closeInsertMenuItem"
-              @close="closeInsertMenuItem"
-            />
-          </div>
-        </div>
-      </div>
+          <AposTiptapInsertItem
+            :name="item"
+            :menu-item="insertMenu[item]"
+            :active-menu-component="activeInsertMenuComponent"
+            :editor="editor"
+            :editor-options="editorOptions"
+            @cancel="cancelInsertMenuItem"
+            @done="closeInsertMenuItem"
+            @close="closeInsertMenuItem"
+            @set-active-insert-menu="setActiveInsertMenu"
+          />
+        </li>
+      </ul>
     </floating-menu>
     <div class="apos-rich-text-editor__editor" :class="editorModifiers">
       <editor-content :editor="editor" :class="editorOptions.className" />
@@ -203,7 +180,7 @@ export default {
       isFocused: null,
       isShowingInsert: false,
       showPlaceholder: null,
-      activeInsertMenuComponent: null,
+      activeInsertMenuComponent: false,
       suppressInsertMenu: false,
       insertMenuKey: null
     };
@@ -427,7 +404,7 @@ export default {
     },
     doSuppressInsertMenu() {
       this.suppressInsertMenu = true;
-      this.activeInsertMenuComponent = null;
+      this.activeInsertMenuComponent = false;
       this.insertMenuKey = this.generateKey();
       this.editor.commands.focus();
     },
@@ -625,39 +602,6 @@ export default {
       this.isShowingInsert = false;
       return false;
     },
-    activateInsertMenuItem(name, info) {
-      // Select the / and remove it
-      if (info.component) {
-        this.activeInsertMenuComponent = {
-          name,
-          ...info
-        };
-      } else {
-        this.removeSlash();
-        this.editor.commands[info.action || name]();
-        this.editor.commands.focus();
-      }
-    },
-    removeSlash() {
-      const state = this.editor.state;
-      const { $to } = state.selection;
-      if (state.selection.empty && $to?.nodeBefore?.text) {
-        const text = $to.nodeBefore.text;
-        if (text.slice(-1) === '/') {
-          const pos = this.editor.view.state.selection.$anchor.pos;
-          // Select the slash so an insert operation can replace it
-          this.editor.commands.setTextSelection({
-            from: pos - 1,
-            to: pos
-          });
-          this.editor.commands.deleteSelection();
-        }
-      }
-    },
-    closeInsertMenuItem() {
-      this.removeSlash();
-      this.activeInsertMenuComponent = null;
-    },
     cancelInsertMenuItem() {
       this.doSuppressInsertMenu();
     },
@@ -669,7 +613,7 @@ export default {
         return;
       }
       this.editor.commands.focus();
-      this.activeInsertMenuComponent = null;
+      this.activeInsertMenuComponent = false;
       // Only insert character keys
       if (e.key.length === 1) {
         this.editor.commands.insertContent(e.key);
@@ -689,6 +633,10 @@ export default {
         targetIndex = buttons.length - 1;
       }
       buttons[index || targetIndex]?.focus();
+    },
+    setActiveInsertMenu(isActive = true) {
+      console.log('isActive', isActive);
+      this.activeInsertMenuComponent = isActive;
     }
   }
 };
@@ -740,10 +688,6 @@ function traverseNextNode(node) {
 
     .apos-is-active .apos-button--rich-text:hover::after {
       background-color: var(--a-primary-transparent-15);
-    }
-
-    .apos-button--rich-text .apos-button__icon {
-      transition: all 300ms var(--a-transition-timing-bounce);
     }
 
     .apos-button--rich-text {
@@ -952,66 +896,9 @@ function traverseNextNode(node) {
   .apos-rich-text-insert-menu-wrapper {
     display: flex;
     flex-direction: column;
-  }
-
-  .apos-rich-text-insert-menu-item {
-    @include apos-transition();
-
-    & {
-      all: unset;
-      display: flex;
-      flex-direction: row;
-      align-items: center;
-      gap: 12px;
-      padding: 14px 16px;
-      border-bottom: 1px solid var(--a-base-9);
-    }
-
-    &:last-of-type {
-      border-bottom: none;
-    }
-
-    &:hover {
-      background-color: var(--a-primary-transparent-10);
-    }
-
-    &:active, &:focus {
-      background-color: var(--a-primary);
-      color: var(--a-white);
-    }
-  }
-
-  .apos-rich-text-insert-menu-label {
-    display: flex;
-    flex-direction: column;
-    gap: 5px;
-
-    h4, p {
-      margin: 0;
-      font-family: var(--a-family-default);
-    }
-
-    h4 {
-      font-weight: 500;
-      font-size: var(--a-type-large);
-    }
-
-    p {
-      font-size: var(--a-type-label);
-    }
-  }
-
-  .apos-rich-text-insert-menu-icon {
-    position: relative;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 40px;
-    height: 40px;
-    border: 1px solid var(--a-base-8);
-    color: var(--a-text-primary);
-    background-color: var(--a-white);
-    border-radius: var(--a-border-radius);
+    list-style: none;
+    margin: 0;
+    padding: 0;
   }
 
   .apos-rich-text-insert-menu-heading {

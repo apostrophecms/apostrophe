@@ -311,7 +311,8 @@ module.exports = {
         icon: 'image-icon',
         label: 'apostrophe:image',
         description: 'apostrophe:imageDescription',
-        component: 'AposImageControlDialog'
+        component: 'AposImageControlDialog',
+        modal: true
       },
       horizontalRule: {
         icon: 'minus-icon',
