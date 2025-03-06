@@ -23,7 +23,7 @@
         :data-apos-test="identifier"
         :state="buttonState"
         :disabled="disabled"
-        :tooltip="tooltip"
+        :tooltip="btnTooltip"
         :attrs="{
           'aria-haspopup': 'menu',
           'aria-expanded': isOpen ? true : false
@@ -111,7 +111,7 @@ const props = defineProps({
     default: false
   },
   tooltip: {
-    type: [ String, Boolean ],
+    type: [ String, Boolean, Object ],
     default: false
   },
   popoverModifiers: {
@@ -219,6 +219,10 @@ const classList = computed(() => {
 
 const buttonState = computed(() => {
   return isOpen.value ? [ 'active' ] : null;
+});
+
+const btnTooltip = computed(() => {
+  return props.tooltip || props.button?.tooltip || false;
 });
 
 const menuAttrs = computed(() => {
