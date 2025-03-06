@@ -3,7 +3,7 @@
     <div
       v-show="loaded"
       class="apos-login apos-theme-dark"
-      data-apos-test="loginForm"
+      data-apos-test="loginPage"
       :class="themeClass"
     >
       <transition name="fade-outer">
@@ -48,7 +48,7 @@
       <transition name="fade-outer">
         <div v-show="loaded" class="apos-login__footer">
           <AposLogo class="apos-login__logo" />
-          <label class="apos-login__project-version">
+          <label data-apos-test="projectVersion" class="apos-login__project-version">
             Version {{ context.version }}
           </label>
         </div>
