@@ -9,6 +9,7 @@
         <slot name="bodyHeader" />
       </div>
       <div
+        ref="bodyMain"
         class="apos-modal__body-main"
       >
         <slot name="bodyMain" />
@@ -37,6 +38,9 @@ export default {
   methods: {
     hasSlot(name) {
       return !!this.$slots[name];
+    },
+    getBodyMainRef() {
+      return this.$refs.bodyMain;
     }
   }
 };
