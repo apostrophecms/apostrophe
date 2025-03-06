@@ -1,9 +1,10 @@
 <template>
   <div class="apos-marks-control">
     <AposContextMenu
-      menu-placement="bottom-end"
+      menu-placement="bottom-start"
       :button="button"
       :keep-open-under-modals="true"
+      :center-on-icon="true"
     >
       <div class="apos-popover apos-marks-control__dialog">
         <div class="apos-marks-control__content-wrapper">
@@ -62,12 +63,10 @@ export default {
   },
   computed: {
     button() {
-      console.log('this.tool.label', this.tool.label);
       return {
         ...this.buttonActive ? { class: 'apos-is-active' } : {},
         type: 'rich-text',
-        label: this.tool.label,
-        'icon-only': Boolean(this.tool.icon),
+        label: this.buttonLabel,
         icon: this.tool.icon || false,
         'icon-size': this.tool.iconSize || 16,
         modifiers: [ 'no-border', 'no-motion' ],
@@ -147,6 +146,10 @@ export default {
 <style lang="scss" scoped>
   .apos-marks-control {
     position: relative;
+
+    &:deep(.apos-context-menu__pane) {
+      padding: 0;
+    }
   }
 
   .apos-marks-control__button:deep(.apos-button--rich-text) {
@@ -213,6 +216,7 @@ export default {
 
       & {
         display: block;
+        box-sizing: border-box;
         width: 100%;
         padding: $spacing-base;
       }
