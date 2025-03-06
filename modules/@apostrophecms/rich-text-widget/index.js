@@ -317,7 +317,7 @@ module.exports = {
         icon: 'image-icon',
         label: 'apostrophe:image',
         description: 'apostrophe:imageDescription',
-        modal: 'AposImageControlDialog'
+        component: 'AposImageControlDialog'
       },
       horizontalRule: {
         icon: 'minus-icon',
@@ -328,7 +328,8 @@ module.exports = {
         icon: 'cloud-upload-icon',
         label: 'apostrophe:tableImport',
         description: 'apostrophe:richTextUploadCsvTable',
-        component: 'AposTiptapImportTable'
+        component: 'AposTiptapImportTable',
+        noPopover: true
       }
     },
     // Additional properties used in executing tiptap commands

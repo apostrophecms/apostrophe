@@ -1,6 +1,6 @@
 <template>
   <AposContextMenu
-    v-if="menuItem.modal"
+    v-if="menuItem.component && !menuItem.noPopover"
     menu-placement="bottom-end"
     :keep-open-under-modals="true"
     @open="openModal"
@@ -14,7 +14,7 @@
       />
     </template>
     <component
-      :is="menuItem.modal"
+      :is="menuItem.component"
       :editor="editor"
       :options="editorOptions"
       @done="closeInsertMenuItem"
@@ -25,13 +25,13 @@
 
   <AposTiptapInsertBtn
     v-else
-    :name="props.name"
-    :menu-item="props.menuItem"
+    :name="name"
+    :menu-item="menuItem"
     @click="activate()"
   />
   <component
     :is="menuItem.component"
-    v-if="isComponentShowed"
+    v-if="isInlineComponentShowed"
     :active="true"
     :editor="editor"
     :options="editorOptions"
@@ -62,18 +62,19 @@ const props = defineProps({
     required: true
   }
 });
-const emit = defineEmits([ 'cancel', 'done', 'close', 'set-active-insert-menu' ]);
+const emit = defineEmits([ 'set-active-insert-menu', 'done' ]);
 
-const isComponentActive = ref(false);
-const isComponentShowed = computed(() => {
-  return props.menuItem.component &&
-    isComponentActive.value;
+const isInlineComponentActive = ref(false);
+const isInlineComponentShowed = computed(() => {
+  return Boolean(props.menuItem.noPopover &&
+    props.menuItem.component &&
+    isInlineComponentActive.value);
 });
 
 function activate() {
   if (props.menuItem.component) {
     emit('set-active-insert-menu', true);
-    isComponentActive.value = true;
+    isInlineComponentActive.value = true;
     return;
   }
 
@@ -103,7 +104,7 @@ function removeSlash() {
 function closeInsertMenuItem() {
   removeSlash();
   emit('set-active-insert-menu', false);
-  isComponentActive.value = false;
+  isInlineComponentActive.value = false;
 }
 
 function openModal() {
