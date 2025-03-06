@@ -64,7 +64,6 @@ export default {
   computed: {
     button() {
       return {
-        ...this.buttonActive ? { class: 'apos-is-active' } : {},
         type: 'rich-text',
         label: this.buttonLabel,
         icon: this.tool.icon || false,

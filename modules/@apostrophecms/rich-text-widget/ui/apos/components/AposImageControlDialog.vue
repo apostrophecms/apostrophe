@@ -45,7 +45,7 @@ export default {
     },
     hasSelection: {
       type: Boolean,
-      required: true
+      default: false
     }
   },
   emits: [ 'before-commands', 'close' ],
@@ -145,6 +145,9 @@ export default {
       });
     },
     keyboardHandler(e) {
+      if (e.key === 'Escape') {
+        this.close();
+      }
       if (e.key === 'Enter') {
         if (this.docFields.data._image?.length || e.metaKey) {
           this.save();

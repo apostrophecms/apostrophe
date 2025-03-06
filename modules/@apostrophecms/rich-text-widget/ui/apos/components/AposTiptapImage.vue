@@ -1,6 +1,7 @@
 <template>
   <div class="apos-image-control">
     <AposContextMenu
+      ref="contextMenu"
       menu-placement="bottom-end"
       :button="button"
       :keep-open-under-modals="true"
@@ -67,6 +68,7 @@ export default {
   },
   methods: {
     close() {
+      this.$refs.contextMenu.hide();
       this.editor.chain().focus();
     }
   }
