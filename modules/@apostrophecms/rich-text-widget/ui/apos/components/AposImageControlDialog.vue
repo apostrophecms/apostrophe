@@ -103,6 +103,15 @@ export default {
     }
   },
   watch: {
+    'attributes.imageId': {
+      handler(newVal, oldVal) {
+        if (newVal === oldVal) {
+          return;
+        }
+
+        this.close();
+      }
+    },
     lastSelectionTime(newVal, oldVal) {
       if (newVal === oldVal) {
         return;
