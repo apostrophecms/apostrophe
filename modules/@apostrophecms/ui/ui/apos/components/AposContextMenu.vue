@@ -281,6 +281,9 @@ async function hide(e) {
 }
 
 async function show(e) {
+  if (isOpen.value) {
+    return;
+  }
   isOpen.value = true;
   await nextTick();
   emit('open', e);

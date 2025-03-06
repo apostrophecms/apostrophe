@@ -1,6 +1,7 @@
 <template>
   <div class="apos-link-control">
     <AposContextMenu
+      ref="contextMenu"
       menu-placement="bottom-end"
       :button="button"
       :keep-open-under-modals="true"
@@ -150,6 +151,7 @@ export default {
       this.close();
     },
     close() {
+      this.$refs.contextMenu.hide();
       this.editor.chain().focus();
     },
     async save() {
@@ -186,6 +188,9 @@ export default {
       this.close();
     },
     keyboardHandler(e) {
+      if (e.key === 'Escape') {
+        this.close();
+      }
       if (e.key === 'Enter') {
         if (this.docFields.data.href || e.metaKey) {
           this.save();

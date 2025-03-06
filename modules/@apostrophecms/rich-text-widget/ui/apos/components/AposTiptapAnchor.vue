@@ -1,10 +1,11 @@
 <template>
   <div class="apos-anchor-control">
     <AposContextMenu
+      ref="contextMenu"
       menu-placement="bottom-end"
       :button="button"
-      :keep-open-under-modals="true"
       @open="openModal"
+      @close="closeModal"
     >
       <div
         class="apos-popover apos-anchor-control__dialog"
@@ -134,22 +135,16 @@ export default {
   },
   async mounted() {
     await this.evaluateExternalConditions();
-    this.populateFields();
-    this.evaluateConditions();
   },
   methods: {
-    openModal() {
-      this.hasAnchorOnOpen = Boolean(this.docFields.data.anchor);
-      window.addEventListener('keydown', this.keyboardHandler);
-    },
     removeAnchor() {
       this.docFields.data = {};
       this.editor.commands.unsetAnchor();
       this.close();
     },
     close() {
+      this.$refs.contextMenu.hide();
       this.editor.chain().focus();
-      window.removeEventListener('keydown', this.keyboardHandler);
     },
     async save() {
       this.triggerValidation = true;
@@ -163,17 +158,11 @@ export default {
       });
       this.close();
     },
-    pressEnter() {
-      if (this.docFields.data.anchor) {
-        this.save();
-        this.close();
-      }
-    },
     keyboardHandler(e) {
-      if (e.keyCode === 27) {
+      if (e.key === 'Escape') {
         this.close();
       }
-      if (e.keyCode === 13) {
+      if (e.key === 'Enter') {
         if (this.docFields.data.anchor) {
           this.save();
           this.close();
@@ -193,6 +182,15 @@ export default {
       } finally {
         this.generation++;
       }
+    },
+    async openModal() {
+      await this.populateFields();
+      this.evaluateConditions();
+      this.hasAnchorOnOpen = Boolean(this.docFields.data.anchor);
+      window.addEventListener('keydown', this.keyboardHandler);
+    },
+    closeModal() {
+      window.removeEventListener('keydown', this.keyboardHandler);
     }
   }
 };
