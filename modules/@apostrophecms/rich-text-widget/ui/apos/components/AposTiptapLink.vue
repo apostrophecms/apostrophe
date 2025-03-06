@@ -143,8 +143,6 @@ export default {
   },
   async mounted() {
     await this.evaluateExternalConditions();
-    await this.populateFields();
-    this.evaluateConditions();
   },
   methods: {
     removeLink() {
