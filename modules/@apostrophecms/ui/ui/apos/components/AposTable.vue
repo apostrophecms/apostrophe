@@ -92,6 +92,7 @@
  *  width?: string | number,
  *  action?: boolean | string,
  *  format?: string | (value: any) => string | number | boolean,
+ *  translate?: boolean,
  *  visibility?: 'always' | 'never' | 'table' | 'export'
  * }} TableHeader
  *
@@ -109,6 +110,7 @@ export default {
      * Array of headers to display in the table.
      * The `name` property is used to determine the value to display
      * for each cell in the table.
+     * `translate` is optional and if true, the relevant items values will be translated.
      * `css` is the class suffix to apply to the cell. If missing, `name` is used.
      * `id` is optional unique identifier for the header. If missing, `name` is used.
      * It's only used for internal purposes (loop keys).
@@ -215,6 +217,9 @@ export default {
         }
       } catch (e) {
         return null;
+      }
+      if (header.translate === true) {
+        value = this.$t(value);
       }
       if (format) {
         return header.format(value);
@@ -334,6 +339,14 @@ export default {
 
 .apos-table__header-label {
   width: 100%;
+}
+
+.apos-table__header:focus-within {
+  box-shadow: inset 0 0 0 1px var(--a-base-5);
+}
+
+.apos-table__header-label:focus {
+  outline: none;
 }
 
 // Unset the default global styles for the table title cell.
