@@ -72,7 +72,6 @@ export default {
   },
   data() {
     const moduleOptions = apos.modules['@apostrophecms/rich-text-widget'];
-
     return {
       generation: 1,
       href: null,
@@ -83,7 +82,7 @@ export default {
         data: {}
       },
       formModifiers: [ 'small', 'margin-micro' ],
-      schema: moduleOptions.linkSchema
+      originalSchema: moduleOptions.linkSchema
     };
   },
   computed: {
@@ -118,6 +117,9 @@ export default {
       const { from, to } = selection;
       const text = state.doc.textBetween(from, to, '');
       return text !== '';
+    },
+    schema() {
+      return this.originalSchema;
     },
     schemaHtmlAttributes() {
       return this.schema.filter(item => !!item.htmlAttribute);
