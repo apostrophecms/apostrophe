@@ -6,7 +6,10 @@ const createDOMPurify = require('dompurify');
 const { JSDOM } = require('jsdom');
 
 module.exports = {
-  options: { alias: 'attachment' },
+  options: {
+    alias: 'attachment',
+    label: 'apostrophe:attachment'
+  },
   cascades: [ 'imageSizes' ],
   imageSizes: {
     add: {
@@ -1164,6 +1167,7 @@ module.exports = {
           action: self.action,
           fileGroups: self.fileGroups,
           name: self.name,
+          label: self.options.label,
           // for bc
           uploadsUrl: self.uploadfs.getUrl(),
           croppable: self.croppable,
