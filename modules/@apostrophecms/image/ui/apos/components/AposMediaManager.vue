@@ -455,7 +455,10 @@ export default {
       this.checked = [];
     },
     async updateEditing(id) {
-      const item = this.items.find(item => item._id === id);
+      let item = this.items.find(item => item._id === id);
+      if (!item) {
+        item = this.checkedDocs.find(item => item._id === id);
+      }
       // We only care about the current doc for this prompt,
       // we are not in danger of discarding a selection when
       // we switch images

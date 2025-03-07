@@ -20,6 +20,7 @@
 * Fixes the focus styling on AposTable headers.
 * Proper errors when widgets are badly configured in expanded mode.
 * More reliable Media Manager infinite scroll pagination.
+* Fixes Edit in Media Manager when the image is not in the currently loaded images. This may happen when the the Media Manager is in a relationship mode. 
 
 ## 4.13.0 (2025-02-19)
 
