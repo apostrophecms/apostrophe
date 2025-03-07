@@ -328,7 +328,8 @@ module.exports = {
         icon: 'cloud-upload-icon',
         label: 'apostrophe:tableImport',
         description: 'apostrophe:richTextUploadCsvTable',
-        component: 'AposTiptapImportTable'
+        component: 'AposTiptapImportTable',
+        noPopover: true
       }
     },
     // Additional properties used in executing tiptap commands

@@ -9,7 +9,13 @@
       ref="dropdown"
       class="apos-popover__btn apos-context-menu__dropdown"
     >
+      <slot
+        v-if="slots.button"
+        name="button"
+        :on-click="buttonClicked"
+      />
       <AposButton
+        v-else
         v-bind="button"
         ref="dropdownButton"
         class="apos-context-menu__btn"
@@ -17,7 +23,7 @@
         :data-apos-test="identifier"
         :state="buttonState"
         :disabled="disabled"
-        :tooltip="tooltip"
+        :tooltip="btnTooltip"
         :attrs="{
           'aria-haspopup': 'menu',
           'aria-expanded': isOpen ? true : false
@@ -27,14 +33,12 @@
       />
       <div
         v-if="isOpen"
+        v-bind="menuAttrs"
         ref="dropdownContent"
         v-click-outside-element="hide"
-        :data-apos-test="isRendered ? 'context-menu-content' : null"
+        :style="dropdownContentStyle"
         class="apos-context-menu__dropdown-content"
         :class="popoverClass"
-        data-apos-menu
-        :style="dropdownContentStyle"
-        :aria-hidden="!isOpen"
       >
         <AposContextMenuDialog
           :menu-placement="placement"
@@ -54,7 +58,7 @@
 
 <script setup>
 import {
-  ref, computed, watch, onMounted, onBeforeUnmount
+  ref, computed, onMounted, onBeforeUnmount, nextTick, useSlots
 } from 'vue';
 import {
   computePosition, offset, shift, flip, arrow
@@ -107,7 +111,7 @@ const props = defineProps({
     default: false
   },
   tooltip: {
-    type: [ String, Boolean ],
+    type: [ String, Boolean, Object ],
     default: false
   },
   popoverModifiers: {
@@ -141,15 +145,19 @@ const props = defineProps({
   dynamicFocus: {
     type: Boolean,
     default: false
+  },
+  keepOpenUnderModals: {
+    type: Boolean,
+    default: false
   }
 });
 
 const emit = defineEmits([ 'open', 'close', 'item-clicked' ]);
+const slots = useSlots();
 
 const isOpen = ref(false);
 const isRendered = ref(false);
 const placement = ref(props.menuPlacement);
-const event = ref(null);
 /** @type {import('vue').Ref<HTMLElement | null>}} */
 const contextMenuRef = ref(null);
 /** @type {import('vue').Ref<HTMLElement | null>}} */
@@ -173,6 +181,12 @@ const {
   // the context menu.
   // triggerRef: dropdownButton,
   // onExit: hide
+});
+
+const menuResizeObserver = new ResizeObserver((entries) => {
+  for (const _entry of entries) {
+    setDropdownPosition();
+  }
 });
 
 defineExpose({
@@ -207,33 +221,17 @@ const buttonState = computed(() => {
   return isOpen.value ? [ 'active' ] : null;
 });
 
-watch(isOpen, async (newVal) => {
-  emit(newVal ? 'open' : 'close', event.value);
-  if (newVal) {
-    setDropdownPosition();
-    window.addEventListener('resize', setDropdownPosition);
-    window.addEventListener('scroll', setDropdownPosition);
-    contextMenuRef.value?.addEventListener('keydown', handleKeyboard);
-    if (props.trapFocus && !hasRunningTrap.value) {
-      await runTrap(dropdownContent);
-    }
-    if (!props.trapFocus) {
-      dropdownContent.value.querySelector('[tabindex]')?.focus();
-    }
-    isRendered.value = true;
-  } else {
-    if (props.trapFocus) {
-      resetTrap();
-    }
-    window.removeEventListener('resize', setDropdownPosition);
-    window.removeEventListener('scroll', setDropdownPosition);
-    contextMenuRef.value?.addEventListener('keydown', handleKeyboard);
-    if (!otherMenuOpened.value && !props.trapFocus) {
-      dropdown.value.querySelector('[tabindex]').focus();
-    }
-  }
-  otherMenuOpened.value = false;
-}, { flush: 'post' });
+const btnTooltip = computed(() => {
+  return props.tooltip || props.button?.tooltip || false;
+});
+
+const menuAttrs = computed(() => {
+  return {
+    'data-apos-test': isRendered.value ? 'context-menu-content' : null,
+    ...props.keepOpenUnderModals ? {} : { 'data-apos-menu': '' },
+    'aria-hidden': !isOpen.value
+  };
+});
 
 const { themeClass } = useAposTheme();
 
@@ -267,17 +265,57 @@ function setIconToCenterTo(el) {
   }
 }
 
-function hide() {
+async function hide(e) {
+  if (!isOpen.value) {
+    return;
+  }
+  menuResizeObserver.unobserve(dropdownContent.value);
   isOpen.value = false;
+  await nextTick();
+  emit('close', e);
+  if (props.trapFocus) {
+    resetTrap();
+  }
+  window.removeEventListener('resize', setDropdownPosition);
+  window.removeEventListener('scroll', setDropdownPosition);
+  contextMenuRef.value?.addEventListener('keydown', handleKeyboard);
+  if (!otherMenuOpened.value && !props.trapFocus) {
+    dropdown.value.querySelector('[tabindex]').focus();
+  }
+}
+
+async function show(e) {
+  if (isOpen.value) {
+    return;
+  }
+  isOpen.value = true;
+  await nextTick();
+  emit('open', e);
+  setDropdownPosition();
+  menuResizeObserver.observe(dropdownContent.value);
+  window.addEventListener('resize', setDropdownPosition);
+  window.addEventListener('scroll', setDropdownPosition);
+  contextMenuRef.value?.addEventListener('keydown', handleKeyboard);
+  if (props.trapFocus && !hasRunningTrap.value) {
+    await runTrap(dropdownContent);
+  }
+  if (!props.trapFocus) {
+    dropdownContent.value.querySelector('[tabindex]')?.focus();
+  }
+  isRendered.value = true;
 }
 
 function buttonClicked(e) {
-  isOpen.value = !isOpen.value;
+  if (isOpen.value) {
+    hide(e);
+  } else {
+    show(e);
+  }
+  otherMenuOpened.value = false;
   apos.bus.$emit('context-menu-toggled', {
     menuId: props.menuId,
     isOpen: isOpen.value
   });
-  event.value = e;
 }
 
 function setArrow(el) {
