@@ -3,12 +3,12 @@
     <AposContextMenu
       ref="contextMenu"
       menu-placement="bottom-end"
+      :center-tip-el="centerTipEl"
     >
       <template #button="btnProps">
         <AposButton
           type="rich-text"
-          class="apos-rich-text-editor__control"
-          :class="['apos-color-button', { 'apos-is-active': active }]"
+          class="apos-color-button apos-rich-text-editor__control"
           :icon-only="false"
           icon="circle-icon"
           :icon-fill="indicatorColor"
@@ -23,7 +23,7 @@
         >
           <template #label>
             <AposColorCheckerboard class="apos-color-control__checkerboard" />
-            <AposIndicator icon="chevron-down-icon" />
+            <AposIndicator ref="centerTipEl" icon="chevron-down-icon" />
           </template>
         </AposButton>
       </template>
@@ -77,10 +77,10 @@ const props = defineProps({
 
 const moduleOptions = window.apos.modules['@apostrophecms/rich-text-widget'];
 
-const active = ref(false);
 const next = ref('');
 const indicatorColor = ref('#000000');
 const contextMenu = ref(null);
+const centerTipEl = ref(null);
 
 const userOptions = computed(() => {
   const options = {

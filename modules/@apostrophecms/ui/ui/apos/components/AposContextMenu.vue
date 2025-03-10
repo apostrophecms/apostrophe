@@ -126,10 +126,6 @@ const props = defineProps({
       return createId();
     }
   },
-  centerOnIcon: {
-    type: Boolean,
-    default: false
-  },
   activeItem: {
     type: String,
     default: null
@@ -149,6 +145,19 @@ const props = defineProps({
   keepOpenUnderModals: {
     type: Boolean,
     default: false
+  },
+  // Tell the context menu to center the tip on the button icon
+  // and not the the entire button
+  centerOnIcon: {
+    type: Boolean,
+    default: false
+  },
+  // Can pass an element ref center the menu tip on this element
+  // allows to perform the same thing than centerOnIcon when the button
+  // is rendered through a slot
+  centerTipEl: {
+    type: Object,
+    default: null
   }
 });
 
@@ -238,6 +247,7 @@ const { themeClass } = useAposTheme();
 onMounted(() => {
   apos.bus.$on('context-menu-toggled', hideWhenOtherOpen);
   apos.bus.$on('close-context-menus', hide);
+  console.log('props.centerTipEl', props.centerTipEl);
 });
 
 onBeforeUnmount(() => {
@@ -260,7 +270,7 @@ function hideWhenOtherOpen({ menuId }) {
 }
 
 function setIconToCenterTo(el) {
-  if (el && props.centerOnIcon) {
+  if (el && (props.centerOnIcon || props.centerTipEl)) {
     iconToCenterTo.value = el;
   }
 }
@@ -303,6 +313,10 @@ async function show(e) {
     dropdownContent.value.querySelector('[tabindex]')?.focus();
   }
   isRendered.value = true;
+  if (props.centerTipEl.$el) {
+    console.log('=====> center <=====');
+    setIconToCenterTo(props.centerTipEl.$el);
+  }
 }
 
 function buttonClicked(e) {
