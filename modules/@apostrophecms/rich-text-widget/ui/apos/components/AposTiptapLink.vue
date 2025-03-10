@@ -5,8 +5,8 @@
       menu-placement="bottom-end"
       :button="button"
       :keep-open-under-modals="true"
-      @open="openModal"
-      @close="closeModal"
+      @open="openPopover"
+      @close="closePopover"
     >
       <div
         class="apos-link-control__dialog"
@@ -250,13 +250,13 @@ export default {
       }
       this.evaluateConditions();
     },
-    async openModal() {
+    async openPopover() {
       this.hasLinkOnOpen = Boolean(this.attributes.href);
       window.addEventListener('keydown', this.keyboardHandler);
       await this.populateFields();
       this.evaluateConditions();
     },
-    closeModal() {
+    closePopover() {
       window.removeEventListener('keydown', this.keyboardHandler);
     }
   }

@@ -3,8 +3,8 @@
     v-if="menuItem.component && !menuItem.noPopover"
     menu-placement="bottom-end"
     :keep-open-under-modals="true"
-    @open="openModal"
-    @close="closeModal"
+    @open="openPopover"
+    @close="closePopover"
   >
     <template #button="btnProps">
       <AposTiptapInsertBtn
@@ -107,10 +107,10 @@ function closeInsertMenuItem() {
   isInlineComponentActive.value = false;
 }
 
-function openModal() {
+function openPopover() {
   emit('set-active-insert-menu', true);
 }
-function closeModal() {
+function closePopover() {
   emit('set-active-insert-menu', false);
 }
 </script>

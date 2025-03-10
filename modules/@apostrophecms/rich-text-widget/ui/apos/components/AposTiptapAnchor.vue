@@ -4,8 +4,8 @@
       ref="contextMenu"
       menu-placement="bottom-end"
       :button="button"
-      @open="openModal"
-      @close="closeModal"
+      @open="openPopover"
+      @close="closePopover"
     >
       <div
         class="apos-popover apos-anchor-control__dialog"
@@ -183,13 +183,13 @@ export default {
         this.generation++;
       }
     },
-    async openModal() {
+    async openPopover() {
       await this.populateFields();
       this.evaluateConditions();
       this.hasAnchorOnOpen = Boolean(this.docFields.data.anchor);
       window.addEventListener('keydown', this.keyboardHandler);
     },
-    closeModal() {
+    closePopover() {
       window.removeEventListener('keydown', this.keyboardHandler);
     }
   }
