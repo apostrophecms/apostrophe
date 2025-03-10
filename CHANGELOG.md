@@ -20,6 +20,7 @@
 * Fixes the focus styling on AposTable headers.
 * Proper errors when widgets are badly configured in expanded mode.
 * More reliable Media Manager infinite scroll pagination.
+* Fixes margin collapse in nested areas by switching to `padding` instead of `margin`
 
 ## 4.13.0 (2025-02-19)
 
