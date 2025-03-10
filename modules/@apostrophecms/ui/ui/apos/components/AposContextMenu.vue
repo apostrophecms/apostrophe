@@ -247,7 +247,6 @@ const { themeClass } = useAposTheme();
 onMounted(() => {
   apos.bus.$on('context-menu-toggled', hideWhenOtherOpen);
   apos.bus.$on('close-context-menus', hide);
-  console.log('props.centerTipEl', props.centerTipEl);
 });
 
 onBeforeUnmount(() => {
@@ -314,7 +313,6 @@ async function show(e) {
   }
   isRendered.value = true;
   if (props.centerTipEl.$el) {
-    console.log('=====> center <=====');
     setIconToCenterTo(props.centerTipEl.$el);
   }
 }
