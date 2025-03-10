@@ -108,7 +108,7 @@ module.exports = {
           following: 'title'
         },
         email: {
-          type: 'string',
+          type: 'email',
           label: 'apostrophe:email'
         },
         password: {
