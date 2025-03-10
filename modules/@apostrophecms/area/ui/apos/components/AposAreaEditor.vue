@@ -1,6 +1,5 @@
 <template>
   <div
-    zuppa
     :data-apos-area="areaId"
     class="apos-area"
     :class="themeClass"
