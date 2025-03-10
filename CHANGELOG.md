@@ -13,6 +13,7 @@
 
 * Bumps the `perPage` option for piece-types from 10 to 50
 * Bumps z-index of widget controls to get above the admin bar.
+* Change user's email field type to `email`.
 
 ### Fixes
 
