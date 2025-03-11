@@ -312,7 +312,7 @@ async function show(e) {
     dropdownContent.value.querySelector('[tabindex]')?.focus();
   }
   isRendered.value = true;
-  if (props.centerTipEl.$el) {
+  if (props.centerTipEl) {
     setIconToCenterTo(props.centerTipEl.$el);
   }
 }
