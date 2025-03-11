@@ -4,6 +4,7 @@
       ref="contextMenu"
       menu-placement="bottom-end"
       :center-tip-el="centerTipEl"
+      :rich-text-menu="true"
       @open="openPopover"
       @close="closePopover"
     >
@@ -33,10 +34,7 @@
         class="apos-popover apos-color-control__dialog"
         :class="{ 'apos-has-selection': hasSelection }"
       >
-        <div
-          class="text-color-component"
-          @mousedown="handleMouseDown"
-        >
+        <div class="text-color-component">
           <AposColor
             :options="userOptions"
             :model-value="next"
@@ -125,25 +123,23 @@ function keyboardHandler(e) {
     close();
   }
 }
+
 function close() {
   if (contextMenu.value) {
     contextMenu.value.hide();
   }
 };
+
 function update(value) {
   next.value = value;
   indicatorColor.value = next.value;
-  props.editor.chain().setColor(value).run();
-};
-
-const handleMouseDown = (event) => {
-  const target = event.target;
-  if (
-    target.closest('.apos-color__saturation-wrap') ||
-    target.closest('.apos-color__presets') ||
-    target.closest('.apos-color__controls')
-  ) {
-    event.preventDefault();
+  // Might be a temporary solution, but since it would require refacto
+  // to pass an additional param saying if we're editing colors from an input or no.
+  // mainly because we use a computed with getter and setter, so we just can't pass params.
+  if (document.activeElement.tagName === 'INPUT') {
+    props.editor.chain().setColor(value).run();
+  } else {
+    props.editor.chain().focus().setColor(value).run();
   }
 };
 </script>
