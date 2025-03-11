@@ -2,7 +2,8 @@ export {
   debounceAsync,
   // BC alias
   debounceAsync as debounce,
-  throttle
+  throttle,
+  asyncTaskQueue
 };
 
 // Debounce the async function "fn". For synchronous functions, use "lodash/debounce", not this function.
@@ -37,7 +38,7 @@ export {
 //
 // If "onSuccess" is provided then all invocations of the debounced function resolve with "null".
 // If a rejection due to cancelation is detected ("e.name === 'debounce.canceled'") then
-// it will be "muted" internally. Howeever, if any other type of error occurs, it will be passed through,
+// it will be "muted" internally. However, if any other type of error occurs, it will be passed through,
 // resulting in a rejection of the debounced function.
 
 function debounceAsync(fn, delay, options = {}) {
@@ -138,5 +139,75 @@ function throttle(fn, delay) {
         }, delay);
       }
     });
+  };
+}
+
+/**
+ * @class Queue
+ * @description A simple serial task queue
+ */
+class Queue {
+  constructor() {
+    this.queue = [];
+    this.running = false;
+  }
+
+  add(task) {
+    return new Promise((resolve, reject) => {
+      this.queue.push({
+        task,
+        resolve,
+        reject
+      });
+      this.run();
+    });
+  }
+
+  async run() {
+    if (this.running) {
+      return;
+    }
+    const item = this.queue.shift();
+    if (!item) {
+      return false;
+    }
+
+    try {
+      this.running = true;
+      const result = await item.task();
+      this.running = false;
+      item.resolve(result);
+    } catch (e) {
+      this.running = false;
+      item.reject(e);
+    } finally {
+      this.run();
+    }
+
+    return true;
+  }
+}
+
+/**
+ * A factory function for creating a serial task queue.
+ * @example
+ * ```js
+ * const queue = asyncTaskQueue();
+ * queue.add(async () => {
+ *   await asyncTask1();
+ * }
+ * // Will wait for asyncTask1 to finish before starting asyncTask2
+ * queue.add(async () => {
+ *   await asyncTask2();
+ * }
+ * ```
+ * @returns {{
+ *  add: <T>(task: () => Promise<T>) => Promise<T>
+ * }}
+ */
+function asyncTaskQueue() {
+  const queue = new Queue();
+  return {
+    add: (task) => queue.add(task)
   };
 }

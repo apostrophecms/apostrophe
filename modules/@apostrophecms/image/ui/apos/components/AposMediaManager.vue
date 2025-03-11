@@ -52,7 +52,7 @@
     </template>
     <template #main>
       <AposLoadingBlock v-if="isFirstLoading" />
-      <AposModalBody v-else>
+      <AposModalBody v-else ref="modalBody">
         <template #bodyHeader>
           <AposDocsManagerToolbar
             :selected-state="selectAllState"
@@ -127,7 +127,7 @@
 
 <script>
 import { createId } from '@paralleldrive/cuid2';
-import { debounceAsync } from 'Modules/@apostrophecms/ui/utils';
+import { debounceAsync, asyncTaskQueue } from 'Modules/@apostrophecms/ui/utils';
 import AposModifiedMixin from 'Modules/@apostrophecms/ui/mixins/AposModifiedMixin';
 import AposDocsManagerMixin from 'Modules/@apostrophecms/modal/mixins/AposDocsManagerMixin';
 
@@ -148,6 +148,8 @@ export default {
       isFirstLoading: true,
       isLoading: false,
       isScrollLoading: false,
+      skipLoadObserver: false,
+      lock: 0,
       loadRef: null,
       totalPages: 1,
       currentPage: 1,
@@ -170,6 +172,7 @@ export default {
       debouncedGetMedia: debounceAsync(this.getMedia, DEBOUNCE_TIMEOUT, {
         onSuccess: this.appendMedia
       }),
+      scrollQueue: asyncTaskQueue(),
       loadObserver: new IntersectionObserver(
         this.handleIntersect,
         {
@@ -284,8 +287,13 @@ export default {
     // Do these before any async work or they might get added after they are "removed"
     apos.bus.$on('content-changed', this.onContentChanged);
     apos.bus.$on('command-menu-manager-close', this.confirmAndCancel);
-    await this.debouncedGetMedia.skipDelay({ tags: true });
-    this.isFirstLoading = false;
+
+    // Load the first page of media, no debounce.
+    await this.scrollQueue.add(async () => {
+      const result = await this.getMedia({ tags: true });
+      await this.appendMedia(result);
+      this.isFirstLoading = false;
+    });
   },
 
   beforeUnmount() {
@@ -295,6 +303,11 @@ export default {
   },
 
   methods: {
+    hasScroll() {
+      const gridHeight = this.$refs.display?.$el?.offsetHeight;
+      const containerHeight = this.$refs.modalBody?.getBodyMainRef()?.offsetHeight;
+      return gridHeight > containerHeight;
+    },
     setDefaultFilters() {
       this.moduleOptions.filters.forEach(filter => {
         this.filterValues[filter.name] = filter.def;
@@ -360,6 +373,7 @@ export default {
         }
       }
 
+      result.options = options;
       result.currentPage = apiResponse.currentPage;
       result.totalPages = apiResponse.pages;
       result.items = [];
@@ -369,16 +383,23 @@ export default {
       return result;
     },
     async appendMedia({
-      tagList, currentPage, totalPages, items
+      tagList, currentPage, totalPages, items, options = {}
     }) {
+      if (typeof options.lock === 'number' && options.lock !== this.lock) {
+        return;
+      }
       if (Array.isArray(tagList)) {
         this.tagList = tagList;
       }
-      this.items = [];
       this.currentPage = currentPage;
       this.totalPages = totalPages;
       for (const item of items) {
         this.items.push(item);
+      }
+      if (options.loadMore) {
+        this.isLoading = false;
+        await this.$nextTick();
+        await this.loadUntilScroll(options.lock);
       }
     },
     async refetchMedia(opts) {
@@ -434,7 +455,10 @@ export default {
       this.checked = [];
     },
     async updateEditing(id) {
-      const item = this.items.find(item => item._id === id);
+      let item = this.items.find(item => item._id === id);
+      if (!item) {
+        item = this.checkedDocs.find(item => item._id === id);
+      }
       // We only care about the current doc for this prompt,
       // we are not in danger of discarding a selection when
       // we switch images
@@ -509,12 +533,18 @@ export default {
     },
 
     async search(value) {
+      this.lock++;
+      this.skipLoadObserver = true;
       this.filterValues.autocomplete = value;
       this.currentPage = 1;
       this.items = [];
       this.isLoading = true;
-      await this.debouncedGetMedia();
+      await this.debouncedGetMedia({
+        loadMore: true,
+        lock: this.lock
+      });
       this.isLoading = false;
+      this.skipLoadObserver = false;
     },
 
     async onContentChanged({ action, doc }) {
@@ -561,39 +591,67 @@ export default {
       }
     },
 
+    async loadUntilScroll(lock) {
+      let attempts = 0;
+      let shouldLoad = true;
+      while (!this.hasScroll() && shouldLoad && attempts < 20) {
+        shouldLoad = await this.loadWhenIntersecting(lock);
+        attempts++;
+        await this.$nextTick();
+      }
+    },
     async handleIntersect(entries) {
       for (const entry of entries) {
         if (
           entry.isIntersecting &&
-          this.currentPage < this.totalPages &&
           !this.isFirstLoading &&
-          this.items.length
+          !this.skipLoadObserver
         ) {
-          this.currentPage++;
-          this.isScrollLoading = true;
-          await this.$nextTick();
-          this.loadRef.scrollIntoView({
-            behavior: 'smooth'
-          });
-          await this.debouncedGetMedia.skipDelay();
-          this.isScrollLoading = false;
+          this.scrollQueue.add(async () => {
+            await this.loadWhenIntersecting();
+            await this.$nextTick();
+            await this.loadUntilScroll();
+          }).catch(console.error);
         }
       }
     },
+    async loadWhenIntersecting(lock) {
+      if (
+        this.currentPage < this.totalPages &&
+        this.items.length
+      ) {
+        this.currentPage++;
+        this.isScrollLoading = true;
+        const result = await this.getMedia({ lock });
+        // Not efficient, the currentPage is already incremented.
+        // We can't revert it because we don't know what happened meanwhile.
+        // This is an architectural issue and a source of racing conditions.
+        // It can be fixed only by mass refactoring at the right time in
+        // the future.
+        if (typeof lock === 'number' && lock !== this.lock) {
+          this.isScrollLoading = false;
+          return false;
+        }
+        await this.appendMedia(result);
+        this.isScrollLoading = false;
+
+        return true;
+      }
+
+      return false;
+    },
     observeLoadRef() {
-      if (this.totalPages < 2) {
+      if (this.totalPages < 2 || !this.loadRef) {
         return;
       }
 
       this.loadObserver.observe(this.loadRef);
     },
-
     disconnectObserver() {
       if (this.loadObserver) {
         this.loadObserver.disconnect();
       }
     },
-
     setLoadRef(ref) {
       this.loadRef = ref;
       this.disconnectObserver();
