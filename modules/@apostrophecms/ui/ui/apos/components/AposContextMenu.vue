@@ -69,6 +69,10 @@ import { useAposTheme } from '../composables/AposTheme.js';
 import { useFocusTrap } from '../composables/AposFocusTrap.js';
 
 const props = defineProps({
+  richTextMenu: {
+    type: Boolean,
+    default: false
+  },
   identifier: {
     type: String,
     default: 'contextMenuTrigger'
@@ -139,10 +143,6 @@ const props = defineProps({
   // hit. Only use this if you have a context menu with
   // dynamically changing (e.g. AposToggle item enables another item) items.
   dynamicFocus: {
-    type: Boolean,
-    default: false
-  },
-  keepOpenUnderModals: {
     type: Boolean,
     default: false
   },
@@ -237,7 +237,7 @@ const btnTooltip = computed(() => {
 const menuAttrs = computed(() => {
   return {
     'data-apos-test': isRendered.value ? 'context-menu-content' : null,
-    ...props.keepOpenUnderModals ? {} : { 'data-apos-menu': '' },
+    ...!props.richTextMenu && { 'data-apos-menu': '' },
     'aria-hidden': !isOpen.value
   };
 });
@@ -246,12 +246,12 @@ const { themeClass } = useAposTheme();
 
 onMounted(() => {
   apos.bus.$on('context-menu-toggled', hideWhenOtherOpen);
-  apos.bus.$on('close-context-menus', hide);
+  apos.bus.$on('close-context-menus', hideContextMenu);
 });
 
 onBeforeUnmount(() => {
   apos.bus.$off('context-menu-toggled', hideWhenOtherOpen);
-  apos.bus.$off('close-context-menus', hide);
+  apos.bus.$off('close-context-menus', hideContextMenu);
 });
 
 function getMenuOffset() {
@@ -271,6 +271,15 @@ function hideWhenOtherOpen({ menuId }) {
 function setIconToCenterTo(el) {
   if (el && (props.centerOnIcon || props.centerTipEl)) {
     iconToCenterTo.value = el;
+  }
+}
+
+function hideContextMenu(type = 'contextMenu') {
+  if (type === 'richText' && props.richTextMenu) {
+    hide();
+  }
+  if (type === 'contextMenu' && !props.richTextMenu) {
+    hide();
   }
 }
 

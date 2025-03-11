@@ -4,7 +4,7 @@
       ref="contextMenu"
       menu-placement="bottom-end"
       :button="button"
-      :keep-open-under-modals="true"
+      :rich-text-menu="true"
       @open="openPopover"
       @close="closePopover"
     >

@@ -4,6 +4,7 @@
       ref="contextMenu"
       menu-placement="bottom-end"
       :button="button"
+      :rich-text-menu="true"
       @open="openPopover"
       @close="closePopover"
     >

@@ -13,7 +13,8 @@
         animation: 'fade',
         inertia: true,
         placement: 'bottom',
-        hideOnClick: false
+        hideOnClick: false,
+        onHide: onBubbleHide
       }"
       :editor="editor"
     >
@@ -396,6 +397,9 @@ export default {
     apos.bus.$off('apos-refreshing', this.onAposRefreshing);
   },
   methods: {
+    onBubbleHide() {
+      apos.bus.$emit('close-context-menus', 'richText');
+    },
     generateKey() {
       return Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
     },

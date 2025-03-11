@@ -3,7 +3,7 @@
     <AposContextMenu
       menu-placement="bottom-start"
       :button="button"
-      :keep-open-under-modals="true"
+      :rich-text-menu="true"
       :center-on-icon="true"
     >
       <div class="apos-popover apos-marks-control__dialog">
