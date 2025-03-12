@@ -120,7 +120,8 @@ module.exports = {
             // can't show progress.
             jobId: total && job._id,
             ids,
-            action: options.action
+            action: options.action,
+            moduleType: options.moduleType
           });
 
           return {
@@ -282,7 +283,8 @@ module.exports = {
           job: {
             _id: options.jobId,
             action: options.action,
-            ids: options.ids
+            ids: options.ids,
+            moduleType: options.moduleType
           },
           event,
           classes: options.classes,

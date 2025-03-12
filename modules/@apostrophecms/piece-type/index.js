@@ -405,7 +405,8 @@ module.exports = {
 
               await self.publish(req, piece);
             }, {
-              action: 'publish'
+              action: 'publish',
+              moduleType: self.__meta.name
             }
           );
         },
@@ -431,7 +432,8 @@ module.exports = {
               piece.archived = true;
               await self.update(req, piece);
             }, {
-              action: 'archive'
+              action: 'archive',
+              moduleType: self.__meta.name
             }
           );
         },
@@ -457,7 +459,9 @@ module.exports = {
               piece.archived = false;
               await self.update(req, piece);
             }, {
-              action: 'restore'
+              action: 'restore',
+              moduleType: self.__meta.name
+
             }
           );
         },
@@ -475,7 +479,8 @@ module.exports = {
           return self.apos.modules['@apostrophecms/job'].run(
             req,
             (req, reporting) => self.apos.modules['@apostrophecms/i18n']
-              .localizeBatch(req, self, reporting)
+              .localizeBatch(req, self, reporting),
+            { moduleType: self.__meta.name }
           );
         },
         ':_id/localize': async (req) => {

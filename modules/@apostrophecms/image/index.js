@@ -689,7 +689,6 @@ module.exports = {
       getBrowserData(_super, req) {
         const data = _super(req);
         data.components.managerModal = 'AposMediaManager';
-        console.log('data', data);
         return data;
       }
     };

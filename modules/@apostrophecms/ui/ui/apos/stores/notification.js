@@ -159,6 +159,7 @@ export const useNotificationStore = defineStore('notification', () => {
    * @param {string} notifId - Notification ID
    * @param {string} jobInfo.route - Job route to get updates
    * @param {string} jobInfo.action - Job action
+   * @param {string} jobInfo.moduleType - Module type the job has been created from
    * @param {array} jobInfo.ids - Job IDS
    */
   async function pollJob(notifId, jobInfo) {
@@ -173,7 +174,8 @@ export const useNotificationStore = defineStore('notification', () => {
 
       apos.bus.$emit('content-changed', {
         docIds: jobInfo.value.ids || [],
-        action: jobInfo.value.action || 'batch-update'
+        action: jobInfo.value.action || 'batch-update',
+        moduleType: jobInfo.value.moduleType
       });
     } catch (err) {
       console.error(err);
