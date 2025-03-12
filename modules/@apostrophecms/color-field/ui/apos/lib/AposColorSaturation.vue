@@ -3,7 +3,7 @@
     ref="container"
     class="apos-color__saturation"
     :style="{ background: bgColor }"
-    @mousedown="handleMouseDown"
+    @mousedown.prevent="handleMouseDown"
     @touchmove="handleChange"
     @touchstart="handleChange"
   >

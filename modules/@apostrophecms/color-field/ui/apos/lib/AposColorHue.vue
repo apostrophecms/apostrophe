@@ -7,7 +7,7 @@
       :aria-valuenow="colors.hsl.h"
       aria-valuemin="0"
       aria-valuemax="360"
-      @mousedown="handleMouseDown"
+      @mousedown.prevent="handleMouseDown"
       @touchmove="handleChange"
       @touchstart="handleChange"
     >

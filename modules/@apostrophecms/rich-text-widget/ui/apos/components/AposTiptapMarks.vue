@@ -1,36 +1,21 @@
 <template>
   <div class="apos-marks-control">
-    <AposButton
-      type="rich-text"
-      class="apos-marks-control__button"
-      :label="buttonLabel"
-      :icon="tool.icon"
-      :icon-size="16"
-      :modifiers="['no-border', 'no-motion']"
-      :tooltip="{
-        content: $t(tool.label),
-        placement: 'top',
-        delay: 650
-      }"
-      @click="click"
-    />
-    <div
-      v-if="open"
-      v-click-outside-element="close"
-      class="apos-popover apos-marks-control__dialog"
-      x-placement="bottom"
+    <AposContextMenu
+      menu-placement="bottom-start"
+      :button="button"
+      :rich-text-menu="true"
+      :center-on-icon="true"
     >
-      <AposContextMenuDialog
-        menu-placement="bottom-start"
-        class-list="apos-context-menu__dialog--unpadded"
-      >
+      <div class="apos-popover apos-marks-control__dialog">
         <div class="apos-marks-control__content-wrapper">
           <ul class="apos-marks-control__items">
             <li
               v-for="mark in options.marks"
               :key="mark.class"
               class="apos-marks-control__item"
-              :class="{ 'apos-marks-control__item--is-active': activeClasses.includes(mark.class) }"
+              :class="{
+                'apos-marks-control__item--is-active': activeClasses.includes(mark.class)
+              }"
             >
               <button class="apos-marks-control__button" @click="toggleStyle(mark)">
                 <span class="apos-marks-control__label" :class="mark.class">
@@ -40,8 +25,8 @@
             </li>
           </ul>
         </div>
-      </AposContextMenuDialog>
-    </div>
+      </div>
+    </AposContextMenu>
   </div>
 </template>
 
@@ -73,12 +58,24 @@ export default {
   },
   data() {
     return {
-      active: false,
-      open: false,
       classes: this.options.marks.map(m => m.class)
     };
   },
   computed: {
+    button() {
+      return {
+        type: 'rich-text',
+        label: this.buttonLabel,
+        icon: this.tool.icon || false,
+        'icon-size': this.tool.iconSize || 16,
+        modifiers: [ 'no-border', 'no-motion' ],
+        tooltip: {
+          content: this.tool.label,
+          placement: 'top',
+          delay: 650
+        }
+      };
+    },
     activeClasses() {
       let activeClasses = [];
       const { selection } = this.editor.state;
@@ -137,10 +134,9 @@ export default {
       this.toggleOpen();
     },
     toggleOpen() {
-      this.open = !this.open;
     },
     close() {
-      this.open = false;
+      this.editor.chain().focus();
     }
   }
 };
@@ -149,6 +145,10 @@ export default {
 <style lang="scss" scoped>
   .apos-marks-control {
     position: relative;
+
+    &:deep(.apos-context-menu__pane) {
+      padding: 0;
+    }
   }
 
   .apos-marks-control__button:deep(.apos-button--rich-text) {
@@ -167,12 +167,6 @@ export default {
   .apos-marks-control__content-wrapper {
     max-height: 200px;
     overflow-y: scroll;
-  }
-
-  .apos-marks-control__dialog {
-    position: absolute;
-    top: calc(100% + $spacing-base);
-    left: 0;
   }
 
   .apos-marks-control__items {
@@ -221,6 +215,7 @@ export default {
 
       & {
         display: block;
+        box-sizing: border-box;
         width: 100%;
         padding: $spacing-base;
       }

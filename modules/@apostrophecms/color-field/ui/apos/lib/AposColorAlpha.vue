@@ -7,7 +7,7 @@
     <div
       ref="container"
       class="apos-color__alpha-container"
-      @mousedown="handleMouseDown"
+      @mousedown.prevent="handleMouseDown"
       @touchmove="handleChange"
       @touchstart="handleChange"
     >
