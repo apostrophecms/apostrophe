@@ -71,6 +71,7 @@
             @select-click="selectClick"
             @search="search"
             @filter="filter"
+            @batch="handleBatchAction"
           />
         </template>
         <template #bodyMain>
@@ -548,7 +549,9 @@ export default {
       this.skipLoadObserver = false;
     },
 
-    async onContentChanged({ action, doc }) {
+    async onContentChanged({
+      action, doc, docIds, moduleType
+    }) {
       if (doc.type !== '@apostrophecms/image' || ![ 'archive', 'update' ].includes(action)) {
         return;
       }
@@ -658,6 +661,34 @@ export default {
       this.disconnectObserver();
       if (ref) {
         this.observeLoadRef();
+      }
+    },
+    async handleBatchAction({
+      label, action, requestOptions = {}, messages
+    }) {
+      if (action) {
+        try {
+          await apos.http.post(`${this.moduleOptions.action}/${action}`, {
+            body: {
+              ...requestOptions,
+              _ids: this.checked,
+              messages,
+              type: this.checked.length === 1 ? this.moduleLabels.singular
+                : this.moduleLabels.plural
+            }
+          });
+          if (action === 'archive') {
+            /* await this.managePieces(); */
+            /* await this.manageAllPiecesTotal(); */
+            this.checked = [];
+          }
+        } catch (error) {
+          apos.notify('apostrophe:errorBatchOperationNoti', {
+            interpolate: { operation: this.$t(label) },
+            type: 'danger'
+          });
+          console.error(error);
+        }
       }
     }
   }
