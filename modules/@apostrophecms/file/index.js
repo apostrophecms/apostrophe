@@ -82,7 +82,12 @@ module.exports = {
     }
   },
   filters: {
-    remove: [ 'visibility' ]
+    remove: [ 'visibility' ],
+    add: {
+      _tags: {
+        label: 'apostrophe:tags'
+      }
+    }
   },
   methods(self) {
     return {
