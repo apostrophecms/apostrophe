@@ -67,6 +67,7 @@
             :checked-count="checked.length"
             :module-name="moduleName"
             :options="{noPager: true}"
+            :batch-operations="moduleOptions.batchOperations"
             @select-click="selectClick"
             @search="search"
             @filter="filter"
