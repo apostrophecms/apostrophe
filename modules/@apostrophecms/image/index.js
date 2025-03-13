@@ -63,64 +63,6 @@ module.exports = {
   utilityOperations: {
     remove: [ 'new' ]
   },
-  batchOperations: {
-    add: {
-      archive: {
-        label: 'apostrophe:archive',
-        messages: {
-          progress: 'apostrophe:batchArchiveProgress',
-          completed: 'apostrophe:batchArchiveCompleted'
-        },
-        icon: 'archive-arrow-down-icon',
-        if: {
-          archived: false
-        },
-        modalOptions: {
-          title: 'apostrophe:archiveType',
-          description: 'apostrophe:archivingBatchConfirmation',
-          confirmationButton: 'apostrophe:archivingBatchConfirmationButton'
-        },
-        permission: 'delete'
-      },
-      restore: {
-        label: 'apostrophe:restore',
-        messages: {
-          progress: 'apostrophe:batchRestoreProgress',
-          completed: 'apostrophe:batchRestoreCompleted'
-        },
-        icon: 'archive-arrow-up-icon',
-        if: {
-          archived: true
-        },
-        modalOptions: {
-          title: 'apostrophe:restoreType',
-          description: 'apostrophe:restoreBatchConfirmation',
-          confirmationButton: 'apostrophe:restoreBatchConfirmationButton'
-        },
-        permission: 'edit'
-      },
-      localize: {
-        label: 'apostrophe:localize',
-        messages: {
-          icon: 'translate-icon',
-          progress: 'apostrophe:localizingBatch',
-          completed: 'apostrophe:localizedBatch',
-          resultsEventName: 'apos-localize-batch-results'
-        },
-        if: {
-          archived: false
-        },
-        modal: 'AposI18nLocalize',
-        permission: 'edit'
-      }
-    },
-    group: {
-      more: {
-        icon: 'dots-vertical-icon',
-        operations: [ 'localize' ]
-      }
-    }
-  },
   fields: {
     remove: [ 'visibility' ],
     add: {
