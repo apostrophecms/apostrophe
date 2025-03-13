@@ -248,7 +248,9 @@ export default {
       }
     },
     isLastPage() {
-      return this.totalPages > 1 && this.currentPage === this.totalPages;
+      return this.totalPages > 1 &&
+        this.currentPage === this.totalPages &&
+        !this.isScrollLoading;
     }
   },
 
