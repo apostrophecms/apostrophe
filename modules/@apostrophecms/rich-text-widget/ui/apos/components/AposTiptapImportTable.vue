@@ -22,6 +22,7 @@
       type="file"
       accept=".csv"
       @input="generateTable"
+      @cancel="close"
     >
   </div>
 </template>
@@ -41,7 +42,7 @@ const props = defineProps({
     required: true
   }
 });
-const emit = defineEmits([ 'done', 'before-commands' ]);
+const emit = defineEmits([ 'done', 'close', 'before-commands' ]);
 
 const insertMode = computed(() => {
   return !props.tool;
@@ -77,6 +78,10 @@ async function generateTable({ target }) {
   if (insertMode.value) {
     emit('done');
   }
+}
+
+function close() {
+  emit('close');
 }
 </script>
 

@@ -1,44 +1,34 @@
 <template>
   <div
-    v-if="active"
-    v-click-outside-element="close"
     class="apos-popover apos-image-control__dialog"
-    x-placement="bottom"
-    :class="{
-      'apos-is-triggered': active,
-      'apos-has-selection': hasSelection
-    }"
+    :class="{ 'apos-has-selection': hasSelection }"
   >
-    <AposContextMenuDialog
-      menu-placement="bottom-start"
-    >
-      <AposSchema
-        :key="lastSelectionTime"
-        v-model="docFields"
-        :schema="schema"
-        :trigger-validation="triggerValidation"
+    <AposSchema
+      :key="lastSelectionTime"
+      v-model="docFields"
+      :schema="schema"
+      :trigger-validation="triggerValidation"
+      :modifiers="formModifiers"
+      :generation="generation"
+      :following-values="followingValues()"
+      :conditional-fields="conditionalFields"
+      @update:model-value="evaluateConditions()"
+    />
+    <footer class="apos-image-control__footer">
+      <AposButton
+        type="default"
+        label="apostrophe:cancel"
         :modifiers="formModifiers"
-        :generation="generation"
-        :following-values="followingValues()"
-        :conditional-fields="conditionalFields"
-        @update:model-value="evaluateConditions()"
+        @click="close"
       />
-      <footer class="apos-image-control__footer">
-        <AposButton
-          type="default"
-          label="apostrophe:cancel"
-          :modifiers="formModifiers"
-          @click="close"
-        />
-        <AposButton
-          type="primary"
-          label="apostrophe:save"
-          :modifiers="formModifiers"
-          :disabled="docFields.hasErrors"
-          @click="save"
-        />
-      </footer>
-    </AposContextMenuDialog>
+      <AposButton
+        type="primary"
+        label="apostrophe:save"
+        :modifiers="formModifiers"
+        :disabled="docFields.hasErrors"
+        @click="save"
+      />
+    </footer>
   </div>
 </template>
 
@@ -53,19 +43,16 @@ export default {
       type: Object,
       required: true
     },
-    active: {
-      type: Boolean,
-      required: true
-    },
     hasSelection: {
       type: Boolean,
-      required: true,
       default: false
     }
   },
   emits: [ 'before-commands', 'close' ],
   data() {
+    const moduleOptions = apos.modules['@apostrophecms/rich-text-widget'];
     return {
+      moduleOptions,
       generation: 1,
       triggerValidation: false,
       docFields: {
@@ -84,13 +71,13 @@ export default {
           // stack interchangeably with tiptap's
           browse: true
         },
-        ...(getOptions().imageStyles ? [
+        ...(moduleOptions.imageStyles ? [
           {
             name: 'style',
             label: this.$t('apostrophe:style'),
             type: 'select',
-            choices: getOptions().imageStyles,
-            def: getOptions().imageStyles?.[0].value,
+            choices: moduleOptions.imageStyles,
+            def: moduleOptions.imageStyles?.[0].value,
             required: true
           }
         ] : []
@@ -125,18 +112,6 @@ export default {
         this.close();
       }
     },
-    active(newVal, oldVal) {
-      if (newVal) {
-        window.addEventListener('keydown', this.keyboardHandler);
-      } else {
-        window.removeEventListener('keydown', this.keyboardHandler);
-      }
-
-      if (newVal !== oldVal && this.hasSelection) {
-        this.populateFields();
-        this.evaluateConditions();
-      }
-    },
     lastSelectionTime(newVal, oldVal) {
       if (newVal === oldVal) {
         return;
@@ -147,8 +122,13 @@ export default {
     }
   },
   async mounted() {
+    this.populateFields();
     await this.evaluateExternalConditions();
     this.evaluateConditions();
+    window.addEventListener('keydown', this.keyboardHandler);
+  },
+  beforeUnmount() {
+    window.removeEventListener('keydown', this.keyboardHandler);
   },
   methods: {
     close() {
@@ -174,11 +154,11 @@ export default {
       });
     },
     keyboardHandler(e) {
-      if (e.keyCode === 27) {
+      if (e.key === 'Escape') {
         this.close();
       }
-      if (e.keyCode === 13) {
-        if (this.docFields.data.href || e.metaKey) {
+      if (e.key === 'Enter') {
+        if (this.docFields.data._image?.length || e.metaKey) {
           this.save();
           this.close();
         }
@@ -192,7 +172,7 @@ export default {
         this.schema.forEach((item) => {
           this.docFields.data[item.name] = attrs[item.name] || '';
         });
-        const defaultStyle = getOptions().imageStyles?.[0]?.value;
+        const defaultStyle = this.moduleOptions.imageStyles?.[0]?.value;
         if (defaultStyle && !this.docFields.data.style) {
           this.docFields.data.style = defaultStyle;
         }
@@ -217,34 +197,11 @@ export default {
     }
   }
 };
-
-function getOptions() {
-  return apos.modules['@apostrophecms/rich-text-widget'];
-}
 </script>
 
 <style lang="scss" scoped>
-  .apos-image-control {
-    position: relative;
-    display: inline-block;
-  }
-
   .apos-image-control__dialog {
-    z-index: $z-index-modal;
-    position: absolute;
-    top: calc(100% + 5px);
-    left: -15px;
-    opacity: 0;
-    pointer-events: none;
-  }
-
-  .apos-context-menu__dialog {
-    width: 500px;
-  }
-
-  .apos-image-control__dialog.apos-is-triggered {
-    opacity: 1;
-    pointer-events: auto;
+    width: 400px;
   }
 
   .apos-is-active {
