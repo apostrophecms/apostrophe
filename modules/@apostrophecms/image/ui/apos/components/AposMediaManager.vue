@@ -413,7 +413,7 @@ export default {
       await this.debouncedGetMedia.skipDelay(opts);
       this.isLoading = false;
       this.modified = false;
-      this.updateEditing(null);
+      this.clearSelected();
     },
     async filter(name, value) {
       this.filterValues[name] = value;
