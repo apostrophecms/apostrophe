@@ -15,6 +15,8 @@
 * Bumps the `perPage` option for piece-types from 10 to 50
 * Bumps z-index of widget controls to get above the admin bar.
 * Reworks rich text popovers to use `AposContextMenu`, for toolbar components as well as insert menu items.
+* Improve the Page Manager experience when dragging and dropping pages - the updates happen in background and the UI is not blocked anymore.
+* Allow scrolling while dragging a page in the Page Manager.
 
 ### Fixes
 
