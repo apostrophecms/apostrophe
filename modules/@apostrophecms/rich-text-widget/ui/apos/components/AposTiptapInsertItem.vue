@@ -2,6 +2,7 @@
   <AposContextMenu
     v-if="menuItem.component && !menuItem.noPopover"
     menu-placement="bottom-end"
+    :rich-text-menu="true"
     @open="openPopover"
     @close="closePopover"
   >
