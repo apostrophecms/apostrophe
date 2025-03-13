@@ -322,7 +322,7 @@ export default {
         });
         apos.bus.$emit('content-changed', {
           doc,
-          action: 'update'
+          action: this.restoreOnly ? 'restore' : 'update'
         });
         this.original = klona(this.docFields.data);
       } catch (e) {
