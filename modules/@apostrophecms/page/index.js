@@ -1570,7 +1570,7 @@ database.`);
           // Do not report the additional changes to the event - BC.
           // Concatenate all changes to one unique array.
           changed = Object.values(
-            [ ...movedChange, ...peersChange, changed ]
+            [ movedChange, ...peersChange, changed ]
               .reduce((acc, change) => {
                 acc[change._id] = {
                   ...acc[change._id] || {},
