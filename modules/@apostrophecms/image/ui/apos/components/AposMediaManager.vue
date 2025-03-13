@@ -552,15 +552,16 @@ export default {
     },
 
     async onContentChanged({
-      action, doc, docIds, moduleType
+      action, doc, moduleType
     }) {
-      if (doc.type !== '@apostrophecms/image' || ![ 'archive', 'update' ].includes(action)) {
+      const type = doc ? doc.type : moduleType;
+      const nonSupportedAction = ![ 'archive', 'restore', 'update' ].includes(action);
+      if (type !== '@apostrophecms/image' || nonSupportedAction) {
         return;
       }
-
       this.modified = false;
-      if (action === 'archive') {
-        this.removeStateDoc(doc);
+      if ([ 'archive', 'restore' ].includes(action)) {
+        this.refetchMedia();
       }
       if (action === 'update') {
         this.updateStateDoc(doc);
@@ -581,6 +582,8 @@ export default {
       }
     },
 
+    // Keep it for later when we will be able to udpate the UI without refreshing existing
+    // because it would break pagination.
     removeStateDoc(doc) {
       const index = this.items.findIndex(item => item._id === doc._id);
       const checkedIndex = this.checked.findIndex(checkedId => checkedId === doc._id);
