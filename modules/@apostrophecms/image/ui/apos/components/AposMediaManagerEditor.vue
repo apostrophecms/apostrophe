@@ -54,7 +54,7 @@
           <AposButton
             type="quiet"
             label="apostrophe:download"
-            :href="!isArchived ? activeMedia.attachment._urls.original : false"
+            :href="!isArchived ? activeMedia.attachment._urls.original : null"
             :disabled="isArchived"
             download
           />
