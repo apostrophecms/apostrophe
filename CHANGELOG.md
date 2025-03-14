@@ -26,6 +26,7 @@
 * More reliable Media Manager infinite scroll pagination.
 * Fixes margin collapse in nested areas by switching to `padding` instead of `margin`
 * Fixes Edit in Media Manager when the image is not in the currently loaded images. This may happen when the the Media Manager is in a relationship mode. 
+* Fixes an edge case where reordering a page in the Page Manager might affect another locale.
 
 ## 4.13.0 (2025-02-19)
 

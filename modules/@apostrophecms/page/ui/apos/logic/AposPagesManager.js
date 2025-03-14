@@ -254,7 +254,7 @@ export default {
         await this.getPages();
       }
 
-      if (this.items.find(page => {
+      if (this.items.some(page => {
         return (page.aposDocId === window.apos.page.page?.aposDocId) && page.archived;
       })) {
         // With the current page gone, we need to move to safe ground

@@ -1641,8 +1641,10 @@ database.`);
             parent = target._ancestors[0];
           }
           async function nudgeNewPeers() {
+            const locale = moved.aposLocale.split(':')[0];
             const criteria = {
               path: self.matchDescendants(parent),
+              aposLocale: { $in: [ `${locale}:draft`, `${locale}:published` ] },
               level: parent.level + 1,
               rank: { $gte: rank }
             };
@@ -1650,10 +1652,8 @@ database.`);
             await self.apos.doc.db.updateMany(criteria, {
               $inc: { rank: 1 }
             });
-            const locale = moved.aposLocale.split(':')[0];
             const modified = await self.apos.doc.db.find({
               ...criteria,
-              aposLocale: { $in: [ `${locale}:draft`, `${locale}:published` ] },
               aposDocId: { $ne: moved.aposDocId }
             })
               .project({
