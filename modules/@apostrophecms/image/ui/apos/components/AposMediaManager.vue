@@ -555,8 +555,8 @@ export default {
       action, doc, moduleType
     }) {
       const type = doc ? doc.type : moduleType;
-      const nonSupportedAction = ![ 'archive', 'restore', 'update' ].includes(action);
-      if (type !== '@apostrophecms/image' || nonSupportedAction) {
+      const actionNotSupported = ![ 'archive', 'restore', 'update' ].includes(action);
+      if (type !== '@apostrophecms/image' || actionNotSupported) {
         return;
       }
       this.modified = false;
@@ -566,7 +566,6 @@ export default {
       if (action === 'update') {
         this.updateStateDoc(doc);
       }
-
       await this.updateEditing(null);
     },
 
