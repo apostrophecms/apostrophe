@@ -682,11 +682,6 @@ export default {
                 : this.moduleLabels.plural
             }
           });
-          if (action === 'archive') {
-            /* await this.managePieces(); */
-            /* await this.manageAllPiecesTotal(); */
-            this.checked = [];
-          }
         } catch (error) {
           apos.notify('apostrophe:errorBatchOperationNoti', {
             interpolate: { operation: this.$t(label) },
