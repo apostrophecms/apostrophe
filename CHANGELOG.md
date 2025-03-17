@@ -8,6 +8,7 @@
 * Add `translate` boolean option for report modal header configuration to force translation of the relevant items value (table cells).
 * Adds feature to generate a table from an imported CSV file inside the rich-text-widget.
 * Add data-test attributes to the login page.
+* Adds AI-generated missing translations
 * Adds the missing "Tags" filter to the chooser/manager view of files.
 
 ### Changes
