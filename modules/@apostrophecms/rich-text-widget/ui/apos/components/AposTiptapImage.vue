@@ -1,26 +1,17 @@
 <template>
   <div class="apos-image-control">
-    <AposButton
-      type="rich-text"
-      :class="{ 'apos-is-active': buttonActive }"
-      :label="tool.label"
-      :icon-only="!!tool.icon"
-      :icon="tool.icon || false"
-      :icon-size="tool.iconSize || 16"
-      :modifiers="['no-border', 'no-motion']"
-      :tooltip="{
-        content: tool.label,
-        placement: 'top',
-        delay: 650
-      }"
-      @click="click"
-    />
-    <AposImageControlDialog
-      :active="active"
-      :editor="editor"
-      :has-selection="hasSelection"
-      @close="close"
-    />
+    <AposContextMenu
+      ref="contextMenu"
+      menu-placement="bottom-end"
+      :button="button"
+      :rich-text-menu="true"
+    >
+      <AposImageControlDialog
+        :editor="editor"
+        :has-selection="hasSelection"
+        @close="close"
+      />
+    </AposContextMenu>
   </div>
 </template>
 
@@ -37,17 +28,28 @@ export default {
       required: true
     }
   },
-  data() {
-    return {
-      active: false
-    };
-  },
   computed: {
+    button() {
+      return {
+        ...this.buttonActive ? { class: 'apos-is-active' } : {},
+        type: 'rich-text',
+        label: this.tool.label,
+        'icon-only': Boolean(this.tool.icon),
+        icon: this.tool.icon || false,
+        'icon-size': this.tool.iconSize || 16,
+        modifiers: [ 'no-border', 'no-motion' ],
+        tooltip: {
+          content: this.tool.label,
+          placement: 'top',
+          delay: 650
+        }
+      };
+    },
     attributes() {
       return this.editor.getAttributes('image');
     },
     buttonActive() {
-      return this.attributes.imageId || this.active;
+      return this.attributes.imageId;
     },
     hasSelection() {
       const { state } = this.editor;
@@ -64,23 +66,10 @@ export default {
       return text !== '' || type?.name === 'image';
     }
   },
-  watch: {
-    hasSelection(newVal, oldVal) {
-      if (!newVal) {
-        this.close();
-      }
-    }
-  },
   methods: {
-    click() {
-      if (this.hasSelection) {
-        this.active = !this.active;
-      }
-    },
     close() {
-      if (this.active) {
-        this.active = false;
-      }
+      this.$refs.contextMenu.hide();
+      this.editor.chain().focus();
     }
   }
 };
