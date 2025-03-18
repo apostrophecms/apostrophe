@@ -809,21 +809,24 @@ export default {
     setSavePreference(pref) {
       window.localStorage.setItem(this.savePreferenceName, pref);
     },
-    onContentChanged(e) {
-      if (!e.doc || this.original?._id !== e.doc._id) {
+    // TODO: handle refresh on batch operations?
+    onContentChanged({
+      doc, action, docIds, moduleName
+    }) {
+      if (!doc || this.original?._id !== doc._id) {
         return;
       }
-      if (e.doc.type !== this.docType) {
-        this.docType = e.doc.type;
+      if (doc.type !== this.docType) {
+        this.docType = doc.type;
       }
-      this.docFields.data = e.doc;
+      this.docFields.data = doc;
       this.generation++;
 
       if (
-        e.action === 'archive' ||
-        e.action === 'unpublish' ||
-        e.action === 'delete' ||
-        e.action === 'revert-draft-to-published'
+        action === 'archive' ||
+        action === 'unpublish' ||
+        action === 'delete' ||
+        action === 'revert-draft-to-published'
       ) {
         this.modal.showModal = false;
       }
