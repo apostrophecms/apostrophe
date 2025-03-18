@@ -546,14 +546,16 @@ module.exports = {
           schema: self.getSchema(),
           action: self.action,
           passwordResetEnabled: self.isPasswordResetEnabled(),
-          ...(req.user ? {
-            user: {
-              _id: req.user._id,
-              title: req.user.title,
-              username: req.user.username,
-              email: req.user.email
+          ...(req.user
+            ? {
+              user: {
+                _id: req.user._id,
+                title: req.user.title,
+                username: req.user.username,
+                email: req.user.email
+              }
             }
-          } : {}),
+            : {}),
           requirements: Object.fromEntries(
             Object.entries(self.requirements).map(([ name, requirement ]) => {
               const browserRequirement = {

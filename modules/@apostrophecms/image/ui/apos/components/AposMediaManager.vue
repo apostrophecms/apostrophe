@@ -13,14 +13,20 @@
     @show-modal="modal.showModal = true"
     @esc="confirmAndCancel"
   >
-    <template v-if="relationshipField" #secondaryControls>
+    <template
+      v-if="relationshipField"
+      #secondaryControls
+    >
       <AposButton
         type="default"
         label="apostrophe:cancel"
         @click="confirmAndCancel"
       />
     </template>
-    <template v-else #secondaryControls>
+    <template
+      v-else
+      #secondaryControls
+    >
       <AposButton
         type="default"
         label="apostrophe:exit"
@@ -52,7 +58,10 @@
     </template>
     <template #main>
       <AposLoadingBlock v-if="isFirstLoading" />
-      <AposModalBody v-else ref="modalBody">
+      <AposModalBody
+        v-else
+        ref="modalBody"
+      >
         <template #bodyHeader>
           <AposDocsManagerToolbar
             :selected-state="selectAllState"

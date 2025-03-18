@@ -119,58 +119,74 @@ export default {
             action: 'edit'
           }
         ] : []),
-        ...((this.showPreview && this.canPreview) ? [
-          {
-            label: 'apostrophe:preview',
-            action: 'preview'
-          }
-        ] : []),
-        ...((this.showDismissSubmission && this.canDismissSubmission) ? [
-          {
-            label: 'apostrophe:dismissSubmission',
-            action: 'dismissSubmission'
-          }
-        ] : []),
-        ...(this.showCopy && this.canCopy ? [
-          {
-            label: 'apostrophe:duplicate',
-            action: 'copy'
-          }
-        ] : []),
-        ...(this.canLocalize ? [
-          {
-            label: 'apostrophe:localize',
-            action: 'localize'
-          }
-        ] : []),
+        ...((this.showPreview && this.canPreview)
+          ? [
+            {
+              label: 'apostrophe:preview',
+              action: 'preview'
+            }
+          ]
+          : []),
+        ...((this.showDismissSubmission && this.canDismissSubmission)
+          ? [
+            {
+              label: 'apostrophe:dismissSubmission',
+              action: 'dismissSubmission'
+            }
+          ]
+          : []),
+        ...(this.showCopy && this.canCopy
+          ? [
+            {
+              label: 'apostrophe:duplicate',
+              action: 'copy'
+            }
+          ]
+          : []),
+        ...(this.canLocalize
+          ? [
+            {
+              label: 'apostrophe:localize',
+              action: 'localize'
+            }
+          ]
+          : []),
         ...this.customMenusByContext,
-        ...((this.showDiscardDraft && this.canDiscardDraft) ? [
-          {
-            label: this.context.lastPublishedAt ? 'apostrophe:discardDraft' : 'apostrophe:deleteDraft',
-            action: 'discardDraft',
-            modifiers: [ 'danger' ]
-          }
-        ] : []),
-        ...(this.showArchive && this.canArchive ? [
-          {
-            label: 'apostrophe:archive',
-            action: 'archive',
-            modifiers: [ 'danger' ]
-          }
-        ] : []),
-        ...(this.canUnpublish ? [
-          {
-            label: 'apostrophe:unpublish',
-            action: 'unpublish',
-            modifiers: [ 'danger' ]
-          }
-        ] : []),
-        ...(this.showRestore && this.canRestore ? [
-          {
-            label: 'apostrophe:restore',
-            action: 'restore'
-          }
-        ] : [])
+        ...((this.showDiscardDraft && this.canDiscardDraft)
+          ? [
+            {
+              label: this.context.lastPublishedAt ? 'apostrophe:discardDraft' : 'apostrophe:deleteDraft',
+              action: 'discardDraft',
+              modifiers: [ 'danger' ]
+            }
+          ]
+          : []),
+        ...(this.showArchive && this.canArchive
+          ? [
+            {
+              label: 'apostrophe:archive',
+              action: 'archive',
+              modifiers: [ 'danger' ]
+            }
+          ]
+          : []),
+        ...(this.canUnpublish
+          ? [
+            {
+              label: 'apostrophe:unpublish',
+              action: 'unpublish',
+              modifiers: [ 'danger' ]
+            }
+          ]
+          : []),
+        ...(this.showRestore && this.canRestore
+          ? [
+            {
+              label: 'apostrophe:restore',
+              action: 'restore'
+            }
+          ]
+          : [])
       ];
 
       return menu;

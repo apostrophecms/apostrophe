@@ -1,5 +1,8 @@
 <template>
-  <div class="apos-spinner" :class="className">
+  <div
+    class="apos-spinner"
+    :class="className"
+  >
     <!-- Disabling since the SVG is mostly not active vue template code. -->
     <!-- eslint-disable vue/max-attributes-per-line -->
     <svg

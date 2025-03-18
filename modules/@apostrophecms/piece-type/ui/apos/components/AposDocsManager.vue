@@ -46,7 +46,10 @@
         @click="create"
       />
     </template>
-    <template v-if="relationshipField" #leftRail>
+    <template
+      v-if="relationshipField"
+      #leftRail
+    >
       <AposModalRail>
         <div class="apos-pieces-manager__relationship__rail">
           <div class="apos-pieces-manager__relationship__counts">
@@ -116,7 +119,10 @@
             }"
             @open="edit"
           />
-          <div v-else class="apos-pieces-manager__empty">
+          <div
+            v-else
+            class="apos-pieces-manager__empty"
+          >
             <AposEmptyState :empty-state="emptyDisplay" />
           </div>
         </template>
@@ -529,7 +535,8 @@ export default {
               ...requestOptions,
               _ids: this.checked,
               messages,
-              type: this.checked.length === 1 ? this.moduleLabels.singular
+              type: this.checked.length === 1
+                ? this.moduleLabels.singular
                 : this.moduleLabels.plural
             }
           });

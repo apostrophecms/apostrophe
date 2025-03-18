@@ -72,8 +72,14 @@
         </li>
       </ul>
     </floating-menu>
-    <div class="apos-rich-text-editor__editor" :class="editorModifiers">
-      <editor-content :editor="editor" :class="editorOptions.className" />
+    <div
+      class="apos-rich-text-editor__editor"
+      :class="editorModifiers"
+    >
+      <editor-content
+        :editor="editor"
+        :class="editorOptions.className"
+      />
     </div>
     <div
       v-if="showPlaceholder !== null && (!placeholderText || !isFocused)"
@@ -210,12 +216,14 @@ export default {
       Object.keys(this.defaultOptions).forEach((option) => {
         if (option !== 'styles') {
           activeOptions[option] = (activeOptions[option] !== undefined)
-            ? activeOptions[option] : this.defaultOptions[option];
+            ? activeOptions[option]
+            : this.defaultOptions[option];
         }
       });
 
       activeOptions.className = (activeOptions.className !== undefined)
-        ? activeOptions.className : this.moduleOptions.className;
+        ? activeOptions.className
+        : this.moduleOptions.className;
 
       if (activeOptions.toolbar.includes('styles')) {
         activeOptions.toolbar = activeOptions.toolbar.filter(t => t !== 'styles');

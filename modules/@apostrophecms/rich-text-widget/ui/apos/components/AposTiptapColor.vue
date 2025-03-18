@@ -26,7 +26,10 @@
         >
           <template #label>
             <AposColorCheckerboard class="apos-color-control__checkerboard" />
-            <AposIndicator ref="centerTipEl" icon="chevron-down-icon" />
+            <AposIndicator
+              ref="centerTipEl"
+              icon="chevron-down-icon"
+            />
           </template>
         </AposButton>
       </template>

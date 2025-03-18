@@ -10,7 +10,8 @@ export default {
       // Next should consistently be an object or null (an attachment field with
       // no value yet is null, per server side).
       next: (this.modelValue && (typeof this.modelValue.data === 'object'))
-        ? this.modelValue.data : (this.field.def || null),
+        ? this.modelValue.data
+        : (this.field.def || null),
       disabled: false,
       uploading: false
     };

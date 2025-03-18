@@ -18,7 +18,10 @@
           :disabled="field.readOnly"
           @change="setValue(true)"
         >
-        <label :for="`${uid}-true`" class="apos-boolean__label apos-input">
+        <label
+          :for="`${uid}-true`"
+          class="apos-boolean__label apos-input"
+        >
           <circle-icon
             v-show="!field.toggle"
             :size="12"
@@ -37,7 +40,10 @@
           :disabled="field.readOnly"
           @change="setValue(false)"
         >
-        <label :for="`${uid}-false`" class="apos-boolean__label apos-input">
+        <label
+          :for="`${uid}-false`"
+          class="apos-boolean__label apos-input"
+        >
           <circle-icon
             v-show="!field.toggle"
             :size="12"

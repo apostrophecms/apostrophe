@@ -414,7 +414,8 @@ module.exports = (self) => ({
               ${(components && components.registerCode) || ''}
               ${(tiptap && tiptap.registerCode) || ''}
               ` +
-              (app ? stripIndent`
+              (app
+                ? stripIndent`
               if (document.readyState !== 'loading') {
                 setTimeout(invoke, 0);
               } else {
@@ -423,12 +424,15 @@ module.exports = (self) => ({
               function invoke() {
                 ${app.invokeCode}
               }
-              ` : '') +
+              `
+                : '') +
               // No delay on these, they expect to run early like ui/public code
               // and the first ones invoked set up expected stuff like apos.http
-              (indexJs ? stripIndent`
+              (indexJs
+                ? stripIndent`
                 ${indexJs.invokeCode}
-              ` : '')
+              `
+                : '')
       );
     }
 

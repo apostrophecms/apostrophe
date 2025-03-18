@@ -11,7 +11,10 @@
     />
 
     <div class="apos-login-form__body">
-      <form data-apos-test="loginForm" @submit.prevent="submit">
+      <form
+        data-apos-test="loginForm"
+        @submit.prevent="submit"
+      >
         <AposSchema
           v-model="doc"
           :schema="schema"

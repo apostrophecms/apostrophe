@@ -28,10 +28,16 @@
             v-else-if="content.icon !== false"
             class="apos-confirm__logo"
           />
-          <h2 v-if="content.heading" class="apos-confirm__heading">
+          <h2
+            v-if="content.heading"
+            class="apos-confirm__heading"
+          >
             {{ localize(content.heading) }}
           </h2>
-          <p v-if="content.description" class="apos-confirm__description">
+          <p
+            v-if="content.description"
+            class="apos-confirm__description"
+          >
             {{ localize(content.description) }}
           </p>
           <Component
@@ -39,7 +45,10 @@
             v-if="content.body"
             v-bind="content.body.props"
           />
-          <div v-if="content.form" class="apos-confirm__schema">
+          <div
+            v-if="content.form"
+            class="apos-confirm__schema"
+          >
             <AposSchema
               v-if="formValues"
               v-model="formValues"
@@ -65,7 +74,10 @@
               @click="confirm"
             />
           </div>
-          <p v-if="content.note" class="apos-confirm__note">
+          <p
+            v-if="content.note"
+            class="apos-confirm__note"
+          >
             {{ localize(content.note) }}
           </p>
         </template>

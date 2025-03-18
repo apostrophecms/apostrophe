@@ -1,5 +1,8 @@
 <template>
-  <nav :class="['apos-breadcrumb', classObj]" aria-label="breadcrumb">
+  <nav
+    :class="['apos-breadcrumb', classObj]"
+    aria-label="breadcrumb"
+  >
     <ol class="apos-breadcrumb__items">
       <li
         v-for="(item, index) in items"

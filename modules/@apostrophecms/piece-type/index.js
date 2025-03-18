@@ -52,12 +52,14 @@ module.exports = {
           required: true
         }
       },
-      remove: self.options.singletonAuto ? [
-        'title',
-        'slug',
-        'archived',
-        'visibility'
-      ] : []
+      remove: self.options.singletonAuto
+        ? [
+          'title',
+          'slug',
+          'archived',
+          'visibility'
+        ]
+        : []
     };
   },
   columns(self) {

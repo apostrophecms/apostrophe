@@ -103,12 +103,14 @@ export default {
       const checkLen = this.checked.length;
       const rowLen = this.items.length;
 
-      return checkLen > 0 && checkLen !== rowLen ? {
-        value: 'checked',
-        indeterminate: true
-      } : {
-        value: 'checked'
-      };
+      return checkLen > 0 && checkLen !== rowLen
+        ? {
+          value: 'checked',
+          indeterminate: true
+        }
+        : {
+          value: 'checked'
+        };
     },
     canCreate() {
       const page = this.items.find(page => page.aposDocId === this.moduleOptions.page.aposDocId);
@@ -366,7 +368,8 @@ export default {
               ...requestOptions,
               _ids: this.checked,
               messages,
-              type: this.checked.length === 1 ? this.moduleLabels.singular
+              type: this.checked.length === 1
+                ? this.moduleLabels.singular
                 : this.moduleLabels.plural
             }
           });

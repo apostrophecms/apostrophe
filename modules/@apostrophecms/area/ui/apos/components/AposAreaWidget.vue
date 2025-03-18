@@ -27,7 +27,10 @@
       >
         <ol class="apos-area-widget__breadcrumbs">
           <li class="apos-area-widget__breadcrumb apos-area-widget__breadcrumb--widget-icon">
-            <AposIndicator :icon="widgetIcon" :icon-size="13" />
+            <AposIndicator
+              :icon="widgetIcon"
+              :icon-size="13"
+            />
           </li>
           <li
             v-for="(item, index) in breadcrumbs.list"
@@ -45,7 +48,10 @@
               @click="getFocus($event, item.id)"
             />
           </li>
-          <li class="apos-area-widget__breadcrumb" data-apos-widget-breadcrumb="0">
+          <li
+            class="apos-area-widget__breadcrumb"
+            data-apos-widget-breadcrumb="0"
+          >
             <AposButton
               type="quiet"
               :label="foreign ? {

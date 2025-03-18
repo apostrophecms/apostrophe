@@ -10,7 +10,10 @@
       :help="help"
       :error="$t(error)"
     />
-    <div class="apos-login-form__body" data-apos-test="pwdResetRequestForm">
+    <div
+      class="apos-login-form__body"
+      data-apos-test="pwdResetRequestForm"
+    >
       <AposButton
         v-if="done"
         data-apos-test="loginBack"
@@ -21,7 +24,10 @@
         :modifiers="['block']"
         @click="$emit('set-stage', 'login')"
       />
-      <form v-else @submit.prevent="submit">
+      <form
+        v-else
+        @submit.prevent="submit"
+      >
         <AposSchema
           v-model="doc"
           :schema="schema"

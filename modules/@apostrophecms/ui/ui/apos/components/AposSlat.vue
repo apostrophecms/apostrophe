@@ -78,8 +78,14 @@
             class="apos-slat__media"
           >
         </div>
-        <div v-else-if="item.extension" class="apos-slat__extension-wrapper">
-          <span class="apos-slat__extension" :class="[`apos-slat__extension--${item.extension}`]">
+        <div
+          v-else-if="item.extension"
+          class="apos-slat__extension-wrapper"
+        >
+          <span
+            class="apos-slat__extension"
+            :class="[`apos-slat__extension--${item.extension}`]"
+          >
             {{ item.extension }}
           </span>
         </div>
@@ -88,7 +94,10 @@
         </div>
       </div>
       <div class="apos-slat__secondary">
-        <div v-if="item.length && item.length.size" class="apos-slat__size">
+        <div
+          v-if="item.length && item.length.size"
+          class="apos-slat__size"
+        >
           {{ itemSize }}
         </div>
         <AposButton
@@ -166,10 +175,12 @@ export default {
           type: 'inline'
         },
         menu: [
-          ...!this.editorIcon ? [ {
-            label: 'apostrophe:editRelationship',
-            action: 'edit-relationship'
-          } ] : []
+          ...!this.editorIcon
+            ? [ {
+              label: 'apostrophe:editRelationship',
+              action: 'edit-relationship'
+            } ]
+            : []
         ]
       }
     };

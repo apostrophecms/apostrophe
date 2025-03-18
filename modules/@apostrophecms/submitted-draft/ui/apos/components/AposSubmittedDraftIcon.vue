@@ -9,7 +9,10 @@
     @click="open"
   >
     <template #label>
-      <span v-if="canPublish && count > 0" class="apos-submitted-drafts__counter">
+      <span
+        v-if="canPublish && count > 0"
+        class="apos-submitted-drafts__counter"
+      >
         {{ count }}
       </span>
     </template>

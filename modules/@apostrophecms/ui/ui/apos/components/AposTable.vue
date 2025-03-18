@@ -18,7 +18,10 @@
           data-apos-test="tableHeaderCell"
           :style="headerStyles(header)"
         >
-          <slot :name="`header-${header.name}`" :header="header">
+          <slot
+            :name="`header-${header.name}`"
+            :header="header"
+          >
             <component
               :is="header.component"
               class="apos-table__header-label"
