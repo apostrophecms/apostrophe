@@ -121,7 +121,7 @@ module.exports = {
             jobId: total && job._id,
             ids,
             action: options.action,
-            moduleType: options.moduleType
+            moduleName: options.moduleName
           });
 
           return {
@@ -284,7 +284,7 @@ module.exports = {
             _id: options.jobId,
             action: options.action,
             ids: options.ids,
-            moduleType: options.moduleType
+            moduleName: options.moduleName
           },
           event,
           classes: options.classes,

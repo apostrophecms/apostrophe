@@ -778,7 +778,7 @@ module.exports = {
             },
             {
               action: 'publish',
-              moduleType: '@apostrophecms/page'
+              moduleName: '@apostrophecms/page'
             }
           );
         },
@@ -809,7 +809,7 @@ module.exports = {
             },
             {
               action: 'archive',
-              moduleType: '@apostrophecms/page'
+              moduleName: '@apostrophecms/page'
             }
           );
         },
@@ -840,7 +840,7 @@ module.exports = {
             },
             {
               action: 'restore',
-              moduleType: '@apostrophecms/page'
+              moduleName: '@apostrophecms/page'
             }
           );
         },
@@ -851,7 +851,7 @@ module.exports = {
             req,
             (req, reporting) => self.apos.modules['@apostrophecms/i18n']
               .localizeBatch(req, self, reporting),
-            { moduleType: '@apostrophecms/page' }
+            { moduleName: '@apostrophecms/page' }
           );
         }
       },

@@ -406,7 +406,7 @@ module.exports = {
               await self.publish(req, piece);
             }, {
               action: 'publish',
-              moduleType: self.__meta.name
+              moduleName: self.__meta.name
             }
           );
         },
@@ -433,7 +433,7 @@ module.exports = {
               await self.update(req, piece);
             }, {
               action: 'archive',
-              moduleType: self.__meta.name
+              moduleName: self.__meta.name
             }
           );
         },
@@ -460,7 +460,7 @@ module.exports = {
               await self.update(req, piece);
             }, {
               action: 'restore',
-              moduleType: self.__meta.name
+              moduleName: self.__meta.name
 
             }
           );
@@ -480,7 +480,7 @@ module.exports = {
             req,
             (req, reporting) => self.apos.modules['@apostrophecms/i18n']
               .localizeBatch(req, self, reporting),
-            { moduleType: self.__meta.name }
+            { moduleName: self.__meta.name }
           );
         },
         ':_id/localize': async (req) => {

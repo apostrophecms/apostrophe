@@ -552,11 +552,11 @@ export default {
     },
 
     async onContentChanged({
-      action, doc, moduleType
+      action, doc, moduleName
     }) {
-      const type = doc ? doc.type : moduleType;
+      const type = doc ? doc.type : moduleName;
       const actionNotSupported = ![ 'archive', 'restore', 'update' ].includes(action);
-      if (type !== '@apostrophecms/image' || actionNotSupported) {
+      if (type !== this.moduleName || actionNotSupported) {
         return;
       }
       this.modified = false;
