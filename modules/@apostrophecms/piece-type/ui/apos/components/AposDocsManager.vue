@@ -549,10 +549,7 @@ export default {
     async onContentChanged({
       doc, action, moduleName, docIds
     }) {
-      console.log('docIds', docIds);
       const type = doc ? doc.type : moduleName;
-      console.log('type', type);
-      console.log('this.moduleName', this.moduleName);
       if (type !== this.moduleName) {
         return;
       }
