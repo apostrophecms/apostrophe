@@ -552,19 +552,17 @@ export default {
     },
 
     async onContentChanged({
-      action, doc, moduleName
+      action, doc, docTypes
     }) {
-      const type = doc ? doc.type : moduleName;
-      const actionNotSupported = ![ 'archive', 'restore', 'update' ].includes(action);
-      if (type !== this.moduleName || actionNotSupported) {
+      const types = doc ? [ doc.type ] : docTypes;
+      if (!types.includes(this.moduleName)) {
         return;
       }
       this.modified = false;
-      if ([ 'archive', 'restore' ].includes(action)) {
-        this.refetchMedia();
-      }
       if (action === 'update') {
         this.updateStateDoc(doc);
+      } else {
+        this.refetchMedia();
       }
       await this.updateEditing(null);
     },

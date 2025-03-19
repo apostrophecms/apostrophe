@@ -121,7 +121,7 @@ module.exports = {
             jobId: total && job._id,
             ids,
             action: options.action,
-            moduleName: options.moduleName
+            docTypes: options.docTypes
           });
 
           return {
@@ -199,7 +199,7 @@ module.exports = {
             jobId: job._id,
             ids: req.body._ids,
             action: options.action,
-            moduleName: options.moduleName
+            docTypes: options.docTypes
           });
 
           run({ notificationId: notification.noteId });
@@ -287,7 +287,7 @@ module.exports = {
             _id: options.jobId,
             action: options.action,
             ids: options.ids,
-            moduleName: options.moduleName
+            docTypes: options.docTypes
           },
           event,
           classes: options.classes,

@@ -176,7 +176,7 @@ export const useNotificationStore = defineStore('notification', () => {
       apos.bus.$emit('content-changed', {
         docIds: jobInfo.value.ids || [],
         action: jobInfo.value.action || 'batch-update',
-        moduleName: jobInfo.value.moduleName
+        docTypes: jobInfo.value.docTypes
       });
     } catch (err) {
       console.error(err);

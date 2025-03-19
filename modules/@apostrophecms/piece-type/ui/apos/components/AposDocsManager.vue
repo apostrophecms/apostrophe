@@ -547,10 +547,10 @@ export default {
       });
     },
     async onContentChanged({
-      doc, action, moduleName, docIds
+      doc, action, docTypes, docIds
     }) {
-      const type = doc ? doc.type : moduleName;
-      if (type !== this.moduleName) {
+      const types = doc ? [ doc.type ] : docTypes;
+      if (!types.includes(this.moduleName)) {
         return;
       }
       if (

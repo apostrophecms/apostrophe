@@ -406,7 +406,7 @@ module.exports = {
               await self.publish(req, piece);
             }, {
               action: 'publish',
-              moduleName: self.__meta.name
+              docTypes: [ self.__meta.name ]
             }
           );
         },
@@ -433,7 +433,7 @@ module.exports = {
               await self.update(req, piece);
             }, {
               action: 'archive',
-              moduleName: self.__meta.name
+              docTypes: [ self.__meta.name ]
             }
           );
         },
@@ -460,8 +460,7 @@ module.exports = {
               await self.update(req, piece);
             }, {
               action: 'restore',
-              moduleName: self.__meta.name
-
+              docTypes: [ self.__meta.name ]
             }
           );
         },
@@ -482,7 +481,7 @@ module.exports = {
               .localizeBatch(req, self, reporting),
             {
               action: 'localize',
-              moduleName: self.__meta.name
+              docTypes: [ self.__meta.name ]
             }
           );
         },
