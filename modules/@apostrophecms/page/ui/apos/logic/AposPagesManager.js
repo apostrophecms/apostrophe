@@ -390,10 +390,17 @@ export default {
         return item._id;
       });
     },
+    isPageOperation(doc, moduleName) {
+      if (doc) {
+        return doc.slug && doc.slug.match(/^\//);
+      }
+
+      return this.moduleName === moduleName;
+    },
     async onContentChanged({
       doc, action, docIds, moduleName
     }) {
-      if (moduleName !== this.moduleName) {
+      if (!this.isPageOperation(doc, moduleName)) {
         return;
       }
       if (
