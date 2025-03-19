@@ -480,7 +480,10 @@ module.exports = {
             req,
             (req, reporting) => self.apos.modules['@apostrophecms/i18n']
               .localizeBatch(req, self, reporting),
-            { moduleName: self.__meta.name }
+            {
+              action: 'localize',
+              moduleName: self.__meta.name
+            }
           );
         },
         ':_id/localize': async (req) => {

@@ -851,7 +851,10 @@ module.exports = {
             req,
             (req, reporting) => self.apos.modules['@apostrophecms/i18n']
               .localizeBatch(req, self, reporting),
-            { moduleName: '@apostrophecms/page' }
+            {
+              action: 'localize',
+              moduleName: '@apostrophecms/page'
+            }
           );
         }
       },
