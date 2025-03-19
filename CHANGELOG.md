@@ -1,5 +1,10 @@
 # Changelog
 
+## 2.227.10 (2025-03-19)
+
+* Improve docs locking system messages.
+* Refresh stale docs locks that have the current context ID.
+
 ## 2.227.10-beta.1 (2025-02-28)
 
 * Improve docs locking system messages.
