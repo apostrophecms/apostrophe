@@ -809,10 +809,7 @@ export default {
     setSavePreference(pref) {
       window.localStorage.setItem(this.savePreferenceName, pref);
     },
-    // TODO: handle refresh on batch operations?
-    onContentChanged({
-      doc, action, docIds, moduleName
-    }) {
+    onContentChanged({ doc, action }) {
       if (!doc || this.original?._id !== doc._id) {
         return;
       }
