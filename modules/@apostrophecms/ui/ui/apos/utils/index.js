@@ -152,6 +152,14 @@ class Queue {
     this.running = false;
   }
 
+  hasTasks() {
+    return this.queue.length > 0 || this.running;
+  }
+
+  count() {
+    return this.queue.length;
+  }
+
   add(task) {
     return new Promise((resolve, reject) => {
       this.queue.push({
@@ -202,12 +210,16 @@ class Queue {
  * }
  * ```
  * @returns {{
- *  add: <T>(task: () => Promise<T>) => Promise<T>
+ *  add: <T>(task: () => Promise<T>) => Promise<T>,
+ *  count: () => number,
+ *  hasTasks: () => boolean
  * }}
  */
 function asyncTaskQueue() {
   const queue = new Queue();
   return {
-    add: (task) => queue.add(task)
+    add: (task) => queue.add(task),
+    count: () => queue.count(),
+    hasTasks: () => queue.hasTasks()
   };
 }

@@ -1,5 +1,12 @@
 # Changelog
 
+## UNRELEASED
+
+### Changes
+
+* Improve the Page Manager experience when dragging and dropping pages - the updates happen in background and the UI is not blocked anymore.
+* Allow scrolling while dragging a page in the Page Manager.
+
 ## 4.14.0 (2025-03-19)
 
 ### Adds
@@ -24,6 +31,7 @@
 * More reliable Media Manager infinite scroll pagination.
 * Fixes margin collapse in nested areas by switching to `padding` instead of `margin`
 * Fixes Edit in Media Manager when the image is not in the currently loaded images. This may happen when the the Media Manager is in a relationship mode. 
+* Fixes an edge case where reordering a page in the Page Manager might affect another locale.
 
 ## 4.13.0 (2025-02-19)
 
