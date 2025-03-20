@@ -139,13 +139,13 @@
     "eslint-plugin-n": "^15.2.1",
     "eslint-plugin-node": "^11.1.0",
     "eslint-plugin-promise": "^6.6.0",
-    "eslint-plugin-vue": "^7.9.0",
+    "eslint-plugin-vue": "^10.0.0",
     "mocha": "^10.7.3",
     "nyc": "^15.1.0",
     "replace-in-file": "^6.1.0",
     "stylelint": "^16.5.0",
     "stylelint-config-apostrophe": "^4.2.0",
-    "vue-eslint-parser": "^7.1.1"
+    "vue-eslint-parser": "^10.1.1"
   },
   "browserslist": [
     "ie >= 10"
