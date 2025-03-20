@@ -376,13 +376,7 @@ export default {
         this.menuHandler('discardDraft');
       }
     },
-    async onContentChanged({
-      doc, docIds, moduleName
-    }) {
-      const type = doc ? doc.type : moduleName;
-      if (type !== this.context?.type) {
-        return;
-      }
+    async onContentChanged({ doc, docIds }) {
       if (doc && (doc._id === this.context._id)) {
         this.context = doc;
       } else if (docIds && docIds.includes(this.context._id)) {
