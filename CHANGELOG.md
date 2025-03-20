@@ -1,5 +1,12 @@
 # Changelog
 
+## UNRELEASED
+
+### Changes
+
+* Improve the Page Manager experience when dragging and dropping pages - the updates happen in background and the UI is not blocked anymore.
+* Allow scrolling while dragging a page in the Page Manager.
+
 ## 4.14.0 (2025-03-19)
 
 ### Adds
@@ -15,8 +22,6 @@
 
 * Bumps the `perPage` option for piece-types from 10 to 50
 * Reworks rich text popovers to use `AposContextMenu`, for toolbar components as well as insert menu items.
-* Improve the Page Manager experience when dragging and dropping pages - the updates happen in background and the UI is not blocked anymore.
-* Allow scrolling while dragging a page in the Page Manager.
 
 ### Fixes
 
