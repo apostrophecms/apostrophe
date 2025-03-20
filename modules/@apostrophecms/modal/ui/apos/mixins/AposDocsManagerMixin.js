@@ -283,7 +283,12 @@ export default {
     getContentChangedTypes(doc, types) {
       const submitDraftType = '@apostrophecms/submitted-draft';
       if (doc) {
-        return [ this.getDocModuleName(doc), submitDraftType ];
+        const moduleName = this.getDocModuleName(doc);
+        return [
+          moduleName,
+          submitDraftType,
+          ...moduleName !== doc.type ? [ doc.type ] : []
+        ];
       }
       if (!types) {
         return [ this.moduleName, submitDraftType ];
