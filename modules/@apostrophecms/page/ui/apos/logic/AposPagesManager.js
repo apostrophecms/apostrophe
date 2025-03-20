@@ -390,13 +390,6 @@ export default {
         return item._id;
       });
     },
-    isPageOperation(doc, docTypes) {
-      if (doc) {
-        return doc.slug && doc.slug.match(/^\//);
-      }
-
-      return docTypes.includes(this.moduleName);
-    },
     async onContentChanged({
       doc, action, docIds, docTypes
     }) {
