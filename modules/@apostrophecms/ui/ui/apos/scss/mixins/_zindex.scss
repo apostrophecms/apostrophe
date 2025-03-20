@@ -10,9 +10,9 @@ $z-index-manager-display: 2;
 // base stacking context are the controls (including the label).
 $z-index-widget-label: 2;
 $z-index-manager-toolbar: 3;
+$z-index-widget-controls: 3;
 $z-index-widget-focused-controls: 4;
 $z-index-admin-bar: 1000;
-$z-index-widget-controls: 1005;
 $z-index-area-schema-ui: 1005;
 $z-index-modal: 2000;
 $z-index-notifications: 2003;
