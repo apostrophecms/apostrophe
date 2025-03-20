@@ -54,7 +54,7 @@
           <AposButton
             type="quiet"
             label="apostrophe:download"
-            :href="!isArchived ? activeMedia.attachment._urls.original : false"
+            :href="!isArchived ? activeMedia.attachment._urls.original : null"
             :disabled="isArchived"
             download
           />
@@ -322,7 +322,7 @@ export default {
         });
         apos.bus.$emit('content-changed', {
           doc,
-          action: 'update'
+          action: this.restoreOnly ? 'restore' : 'update'
         });
         this.original = klona(this.docFields.data);
       } catch (e) {

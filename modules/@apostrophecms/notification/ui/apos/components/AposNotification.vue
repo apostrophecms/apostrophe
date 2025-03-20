@@ -75,7 +75,8 @@ const job = ref(
     ? {
       route: `${apos.modules['@apostrophecms/job'].action}/${props.notification.job._id}`,
       action: props.notification.job.action,
-      ids: props.notification.job.ids
+      ids: props.notification.job.ids,
+      docTypes: props.notification.job.docTypes
     }
     : null
 );
