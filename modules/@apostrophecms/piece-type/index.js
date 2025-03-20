@@ -27,7 +27,8 @@ module.exports = {
     //   title: 1,
     //   _url: 1,
     // },
-    // By default the manager modal will get all the pieces fields below + all manager columns
+    // By default the manager modal will get all the pieces fields below +
+    // all manager columns
     // you can enable a projection using
     // managerApiProjection: {
     //   _id: 1,
@@ -281,7 +282,11 @@ module.exports = {
             result.counts = query.get('countsResults');
           }
 
-          if (self.options.cache && self.options.cache.api && self.options.cache.api.maxAge) {
+          if (
+            self.options.cache &&
+            self.options.cache.api &&
+            self.options.cache.api.maxAge
+          ) {
             self.setMaxAge(req, self.options.cache.api.maxAge);
           }
 
@@ -298,7 +303,11 @@ module.exports = {
             await self.getRestQuery(req).and({ _id }).toObject()
           );
 
-          if (self.options.cache && self.options.cache.api && self.options.cache.api.maxAge) {
+          if (
+            self.options.cache &&
+            self.options.cache.api &&
+            self.options.cache.api.maxAge
+          ) {
             const { maxAge } = self.options.cache.api;
 
             if (!self.options.cache.api.etags) {
@@ -330,7 +339,8 @@ module.exports = {
             ...self.newInstance(),
             ...body
           };
-          newInstance._previewable = self.addUrlsViaModule && (await self.addUrlsViaModule.readyToAddUrlsToPieces(req, self.name));
+          newInstance._previewable = self.addUrlsViaModule &&
+            (await self.addUrlsViaModule.readyToAddUrlsToPieces(req, self.name));
           delete newInstance._url;
           return newInstance;
         }
@@ -878,24 +888,28 @@ module.exports = {
         );
       },
 
-      // Similar to `convertInsertAndRefresh`. Update the piece with the given _id, based on the
-      // `input` object (which may be untrusted input such as req.body). Fetch the updated piece to
-      // populate all relationships and return it.
+      // Similar to `convertInsertAndRefresh`. Update the piece with the given _id,
+      // based on the `input` object (which may be untrusted input such as req.body).
+      // Fetch the updated piece to populate all relationships and return it.
       //
-      // Any fields not present in `input` are regarded as empty, if permitted (REST PUT semantics).
-      // For partial updates use convertPatchAndRefresh. Employs a lock to avoid overwriting the work of
-      // concurrent PUT and PATCH calls or getting into race conditions with their side effects.
+      // Any fields not present in `input` are regarded as empty, if permitted
+      // (REST PUT semantics). For partial updates use convertPatchAndRefresh.
+      // Employs a lock to avoid overwriting the work of concurrent PUT and PATCH calls
+      // or getting into race conditions with their side effects.
       //
-      // If `_advisoryLock: { tabId: 'xyz', lock: true }` is passed, the operation will begin by obtaining an advisory
-      // lock on the document for the given context id, and no other items in the patch will be addressed
-      // unless that succeeds. The client must then refresh the lock frequently (by default, at least
-      // every 30 seconds) with repeated PATCH requests of the `_advisoryLock` property with the same
-      // context id. If `_advisoryLock: { tabId: 'xyz', lock: false }` is passed, the advisory lock will be
-      // released *after* addressing other items in the same patch. If `force: true` is added to
-      // the `_advisoryLock` object it will always remove any competing advisory lock.
+      // If `_advisoryLock: { tabId: 'xyz', lock: true }` is passed, the operation will
+      // begin by obtaining an advisory lock on the document for the given context id,
+      // and no other items in the patch will be addressed unless that succeeds.
+      // The client must then refresh the lock frequently
+      // (by default, at least every 30 seconds) with repeated PATCH requests of
+      // the `_advisoryLock` property with the same
+      // context id. If `_advisoryLock: { tabId: 'xyz', lock: false }` is passed,
+      // the advisory lock will be released *after* addressing other items in
+      // the same patch. If `force: true` is added to the `_advisoryLock` object it
+      // will always remove any competing advisory lock.
       //
-      // `_advisoryLock` is only relevant if you want to ask others not to edit the document while you are
-      // editing it in a modal or similar.
+      // `_advisoryLock` is only relevant if you want to ask others not to edit
+      // the document while you are editing it in a modal or similar.
 
       async convertUpdateAndRefresh(req, input, _id) {
         return self.apos.lock.withLock(`@apostrophecms/${_id}`, async () => {
@@ -929,23 +943,28 @@ module.exports = {
         });
       },
 
-      // Similar to `convertUpdateAndRefresh`. Patch the piece with the given _id, based on the
-      // `input` object (which may be untrusted input such as req.body). Fetch the updated piece to
-      // populate all relationships and return it. Employs a lock to avoid overwriting the work of
-      // simultaneous PUT and PATCH calls or getting into race conditions with their side effects.
-      // However if you plan to submit many patches over a period of time while editing you may also
-      // want to use the advisory lock mechanism.
+      // Similar to `convertUpdateAndRefresh`. Patch the piece with the given _id,
+      // based on the `input` object (which may be untrusted input such as req.body).
+      // Fetch the updated piece to populate all relationships and return it.
+      // Employs a lock to avoid overwriting the work of simultaneous PUT and PATCH
+      // calls or getting into race conditions with their side effects.
+      // However if you plan to submit many patches over a period of time while
+      // editing you may also want to use the advisory lock mechanism.
       //
-      // If `_advisoryLock: { tabId: 'xyz', lock: true }` is passed, the operation will begin by obtaining an advisory
-      // lock on the document for the given context id, and no other items in the patch will be addressed
-      // unless that succeeds. The client must then refresh the lock frequently (by default, at least
-      // every 30 seconds) with repeated PATCH requests of the `_advisoryLock` property with the same
-      // context id. If `_advisoryLock: { tabId: 'xyz', lock: false }` is passed, the advisory lock will be
-      // released *after* addressing other items in the same patch. If `force: true` is added to
-      // the `_advisoryLock` object it will always remove any competing advisory lock.
+      // If `_advisoryLock: { tabId: 'xyz', lock: true }` is passed, the operation
+      // will begin by obtaining an advisory lock on the document for the given
+      // context id, and no other items in the patch will be addressed unless
+      // that succeeds. The client must then refresh the lock frequently
+      // (by default, at least every 30 seconds) with repeated PATCH requests of the
+      // `_advisoryLock` property with the same context id.
+      // If `_advisoryLock: { tabId: 'xyz', lock: false }` is passed,
+      // the advisory lock will be released *after* addressing other items in the same
+      // patch. If `force: true` is added to the `_advisoryLock` object it will always
+      // remove any competing advisory lock.
       //
-      // `_advisoryLock` is only relevant if you plan to make ongoing edits over a period of time
-      // and wish to avoid conflict with other users. You do not need it for one-time patches.
+      // `_advisoryLock` is only relevant if you plan to make ongoing edits over
+      // a period of time and wish to avoid conflict with other users. You do not need
+      // it for one-time patches.
       //
       // If `input._patches` is an array of patches to the same document, this method
       // will iterate over those patches as if each were `input`, applying all of them
@@ -953,8 +972,9 @@ module.exports = {
       // improves the performance of saving all changes to a document at once after
       // accumulating a number of changes in patch form on the front end.
       //
-      // If `input._publish` launders to a truthy boolean and the type is subject to draft/publish
-      // workflow, it is automatically published at the end of the patch operation.
+      // If `input._publish` launders to a truthy boolean and the type is
+      // subject to draft/publish workflow, it is automatically published at the
+      // end of the patch operation.
       //
       // As an optimization, and to prevent unnecessary updates of `updatedAt`, no calls
       // to `self.update()` are made when only `_advisoryLock` is present in `input` or
@@ -1032,8 +1052,9 @@ module.exports = {
           return result;
         });
       },
-      // Apply a single patch to the given piece without saving. An implementation detail of
-      // convertPatchAndRefresh, also used by the undo mechanism to simulate patches.
+      // Apply a single patch to the given piece without saving.
+      // An implementation detail of convertPatchAndRefresh,
+      // also used by the undo mechanism to simulate patches.
       async applyPatch(req, piece, input) {
         self.apos.schema.implementPatchOperators(input, piece);
         const schema = self.apos.schema.subsetSchemaForPatch(
@@ -1075,9 +1096,10 @@ module.exports = {
       },
       // Throws a `notfound` exception if a public API projection is
       // not specified and the user does not have the `view-draft` permission,
-      // which all roles capable of editing the site at all will have. This is needed because
-      // although all API calls check permissions specifically where appropriate,
-      // we also want to flunk all public access to REST APIs if not specifically configured.
+      // which all roles capable of editing the site at all will have.
+      // This is needed because although all API calls check permissions
+      // specifically where appropriate, we also want to flunk all public access
+      // to REST APIs if not specifically configured.
       publicApiCheck(req) {
         if (!self.options.publicApiProjection) {
           if (!self.canAccessApi(req)) {
@@ -1177,14 +1199,22 @@ module.exports = {
         browserOptions.batchOperations = self.checkBatchOperationsPermissions(req);
         browserOptions.utilityOperations = self.utilityOperations;
         browserOptions.insertViaUpload = self.options.insertViaUpload;
-        browserOptions.quickCreate = !self.options.singleton && self.options.quickCreate && browserOptions.canCreate;
+        browserOptions.quickCreate = !self.options.singleton &&
+          self.options.quickCreate &&
+          browserOptions.canCreate;
         browserOptions.singleton = self.options.singleton;
         browserOptions.showCreate = !self.options.singleton && self.options.showCreate;
         browserOptions.showDismissSubmission = self.options.showDismissSubmission;
         browserOptions.showArchive = self.options.showArchive;
         browserOptions.showDiscardDraft = self.options.showDiscardDraft;
-        browserOptions.canDeleteDraft = self.apos.permission.can(req, 'delete', self.name, 'draft');
-        browserOptions.contentChangedRefresh = self.options.contentChangedRefresh !== false;
+        browserOptions.canDeleteDraft = self.apos.permission.can(
+          req,
+          'delete',
+          self.name,
+          'draft'
+        );
+        browserOptions.contentChangedRefresh = self.options
+          .contentChangedRefresh !== false;
         _.defaults(browserOptions, {
           components: {}
         });
@@ -1197,13 +1227,15 @@ module.exports = {
         return browserOptions;
       },
       find(_super, req, criteria, options) {
-        return _super(req, criteria, options).defaultSort(self.options.sort || { updatedAt: -1 });
+        return _super(req, criteria, options)
+          .defaultSort(self.options.sort || { updatedAt: -1 });
       },
       newInstance(_super) {
         if (!self.options.singletonAuto) {
           return _super();
         }
-        const slug = self.apos.util.slugify(self.options.singletonAuto?.slug || self.name);
+        const slug = self.apos.util
+          .slugify(self.options.singletonAuto?.slug || self.name);
         return {
           ..._super(),
           // These fields are removed from the editable schema of singletons,
@@ -1217,170 +1249,172 @@ module.exports = {
     };
   },
   tasks(self) {
-    return (self.options.editRole === 'admin') ? {} : {
-      generate: {
-        usage: 'Invoke this task to generate sample docs of this type. Use the --total option to control how many are added to the database.\nYou can remove them all later with the --remove option.',
-        async task(argv) {
-          if (argv.remove) {
-            return remove();
-          } else {
-            return generate();
-          }
-          async function generate() {
-            const total = argv.total || 10;
-            const req = self.apos.task.getReq();
-            for (let i = 0; i < total; i++) {
-              const piece = self.generate(i);
-              piece.aposSampleData = true;
-              await self.insert(req, piece);
+    return (self.options.editRole === 'admin')
+      ? {}
+      : {
+        generate: {
+          usage: 'Invoke this task to generate sample docs of this type. Use the --total option to control how many are added to the database.\nYou can remove them all later with the --remove option.',
+          async task(argv) {
+            if (argv.remove) {
+              return remove();
+            } else {
+              return generate();
             }
-          }
-          async function remove() {
-            return self.apos.doc.db.deleteMany({
-              type: self.name,
-              aposSampleData: true
-            });
-          }
-        }
-      },
-
-      localize: {
-        usage: 'Add draft version documents for each locale when a module has the "localized" option.' +
-        '\nExample: node app [moduleName]:localize',
-        async task() {
-          if (!self.options.localized) {
-            throw new Error('Localized option not set to true, so the module cannot be localized.');
-          }
-
-          console.log('Adding drafts and locales to documents');
-
-          const locales = Object.keys(self.apos.i18n.locales);
-          const lastPublishedAt = new Date();
-          const inserts = [];
-          const deletes = [];
-
-          await self.apos.migration.eachDoc({ type: self.name }, async doc => {
-            if (doc.aposDocId && !doc._id.endsWith('published') && !doc._id.endsWith('draft')) {
-              deletes.push(doc._id);
-
-              for (const locale of locales) {
-                const newDraft = {
-                  ...doc,
-                  aposLocale: `${locale}:draft`,
-                  aposMode: 'draft',
-                  aposDocId: doc._id,
-                  _id: `${doc.aposDocId}:${locale}:draft`
-                };
-                const newPublished = {
-                  ...doc,
-                  aposLocale: `${locale}:published`,
-                  aposMode: 'published',
-                  aposDocId: doc._id,
-                  _id: `${doc.aposDocId}:${locale}:published`,
-                  lastPublishedAt
-                };
-                inserts.push(newDraft);
-                inserts.push(newPublished);
-
-                await self.flushInsertsAndDeletes(inserts, deletes);
+            async function generate() {
+              const total = argv.total || 10;
+              const req = self.apos.task.getReq();
+              for (let i = 0; i < total; i++) {
+                const piece = self.generate(i);
+                piece.aposSampleData = true;
+                await self.insert(req, piece);
               }
             }
-          });
+            async function remove() {
+              return self.apos.doc.db.deleteMany({
+                type: self.name,
+                aposSampleData: true
+              });
+            }
+          }
+        },
 
-          await self.flushInsertsAndDeletes(inserts, deletes, { force: true });
-          await self.apos.attachment.recomputeAllDocReferences();
+        localize: {
+          usage: 'Add draft version documents for each locale when a module has the "localized" option.' +
+        '\nExample: node app [moduleName]:localize',
+          async task() {
+            if (!self.options.localized) {
+              throw new Error('Localized option not set to true, so the module cannot be localized.');
+            }
 
-          console.log(`Done localizing module ${self.name}`);
-        }
-      },
+            console.log('Adding drafts and locales to documents');
 
-      unlocalize: {
-        usage: 'Remove duplicate documents when a module has not "localized" and "autopublish" anymore.' +
+            const locales = Object.keys(self.apos.i18n.locales);
+            const lastPublishedAt = new Date();
+            const inserts = [];
+            const deletes = [];
+
+            await self.apos.migration.eachDoc({ type: self.name }, async doc => {
+              if (doc.aposDocId && !doc._id.endsWith('published') && !doc._id.endsWith('draft')) {
+                deletes.push(doc._id);
+
+                for (const locale of locales) {
+                  const newDraft = {
+                    ...doc,
+                    aposLocale: `${locale}:draft`,
+                    aposMode: 'draft',
+                    aposDocId: doc._id,
+                    _id: `${doc.aposDocId}:${locale}:draft`
+                  };
+                  const newPublished = {
+                    ...doc,
+                    aposLocale: `${locale}:published`,
+                    aposMode: 'published',
+                    aposDocId: doc._id,
+                    _id: `${doc.aposDocId}:${locale}:published`,
+                    lastPublishedAt
+                  };
+                  inserts.push(newDraft);
+                  inserts.push(newPublished);
+
+                  await self.flushInsertsAndDeletes(inserts, deletes);
+                }
+              }
+            });
+
+            await self.flushInsertsAndDeletes(inserts, deletes, { force: true });
+            await self.apos.attachment.recomputeAllDocReferences();
+
+            console.log(`Done localizing module ${self.name}`);
+          }
+        },
+
+        unlocalize: {
+          usage: 'Remove duplicate documents when a module has not "localized" and "autopublish" anymore.' +
         '\nOptions are:' +
         '\n- locale: if not set, it is the project\'s default locale' +
         '\n- mode: by default, published' +
         '\nExample: node app [moduleName]:unlocalize --mode=published --locale=en',
-        async task(argv) {
-          if (self.options.localized) {
-            throw new Error('Localized option not set to false, so the module cannot be unlocalized.');
-          }
-
-          const locale = argv.locale || self.apos.i18n.defaultLocale;
-          const mode = argv.mode || 'published';
-          const inserts = [];
-          const deletes = [];
-
-          console.log(`Removing duplicated documents and updating ${mode} ones`);
-
-          await self.apos.migration.eachDoc({ type: self.name }, async doc => {
-            deletes.push(doc._id);
-
-            if (doc.aposDocId && doc.aposLocale === `${locale}:${mode}` && doc.aposMode === mode) {
-              const newDoc = {
-                ...doc,
-                aposLocale: undefined,
-                aposMode: undefined,
-                _id: doc.aposDocId
-              };
-              inserts.push(newDoc);
-
-              await self.flushInsertsAndDeletes(inserts, deletes);
+          async task(argv) {
+            if (self.options.localized) {
+              throw new Error('Localized option not set to false, so the module cannot be unlocalized.');
             }
-          });
 
-          await self.flushInsertsAndDeletes(inserts, deletes, { force: true });
-          await self.apos.attachment.recomputeAllDocReferences();
+            const locale = argv.locale || self.apos.i18n.defaultLocale;
+            const mode = argv.mode || 'published';
+            const inserts = [];
+            const deletes = [];
 
-          console.log(`Done unlocalizing module ${self.name}`);
-        }
-      },
+            console.log(`Removing duplicated documents and updating ${mode} ones`);
 
-      touch: {
-        usage: 'Invoke this task to touch (update without any change) all docs of this type.',
-        async task(argv) {
-          const req = self.apos.task.getAdminReq();
-          let errCount = 0;
-          let count = 0;
-          let cursor;
-          const criteria = self.options.autopublish
-            ? { aposMode: 'draft' }
-            : {};
+            await self.apos.migration.eachDoc({ type: self.name }, async doc => {
+              deletes.push(doc._id);
 
-          try {
+              if (doc.aposDocId && doc.aposLocale === `${locale}:${mode}` && doc.aposMode === mode) {
+                const newDoc = {
+                  ...doc,
+                  aposLocale: undefined,
+                  aposMode: undefined,
+                  _id: doc.aposDocId
+                };
+                inserts.push(newDoc);
+
+                await self.flushInsertsAndDeletes(inserts, deletes);
+              }
+            });
+
+            await self.flushInsertsAndDeletes(inserts, deletes, { force: true });
+            await self.apos.attachment.recomputeAllDocReferences();
+
+            console.log(`Done unlocalizing module ${self.name}`);
+          }
+        },
+
+        touch: {
+          usage: 'Invoke this task to touch (update without any change) all docs of this type.',
+          async task(argv) {
+            const req = self.apos.task.getAdminReq();
+            let errCount = 0;
+            let count = 0;
+            let cursor;
+            const criteria = self.options.autopublish
+              ? { aposMode: 'draft' }
+              : {};
+
+            try {
             // We have 30 minutes (by default) for each iteration.
             // https://www.mongodb.com/docs/manual/reference/method/cursor.noCursorTimeout/#session-idle-timeout-overrides-nocursortimeout
-            cursor = (await self.find(req, criteria)
-              .locale(null)
-              .limit(0)
-              .toMongo())
-              .addCursorFlag('noCursorTimeout', true);
+              cursor = (await self.find(req, criteria)
+                .locale(null)
+                .limit(0)
+                .toMongo())
+                .addCursorFlag('noCursorTimeout', true);
 
-            for await (const doc of cursor) {
-              try {
-                await self.update(req, doc);
-                count++;
-              } catch (e) {
-                errCount++;
-                self.apos.util.error(e);
+              for await (const doc of cursor) {
+                try {
+                  await self.update(req, doc);
+                  count++;
+                } catch (e) {
+                  errCount++;
+                  self.apos.util.error(e);
+                }
+              }
+            } catch (error) {
+              self.apos.util.error(error);
+            } finally {
+              if (cursor) {
+                await cursor.close();
               }
             }
-          } catch (error) {
-            self.apos.util.error(error);
-          } finally {
-            if (cursor) {
-              await cursor.close();
-            }
-          }
-          console.log(`Touched ${count} doc(s) with ${errCount} error(s)`);
+            console.log(`Touched ${count} doc(s) with ${errCount} error(s)`);
 
-          // Return, useful for tests and internal API's
-          // It's in effect only when invoked via apos.task.invoke().
-          return {
-            touched: count,
-            errors: errCount
-          };
+            // Return, useful for tests and internal API's
+            // It's in effect only when invoked via apos.task.invoke().
+            return {
+              touched: count,
+              errors: errCount
+            };
+          }
         }
-      }
-    };
+      };
   }
 };

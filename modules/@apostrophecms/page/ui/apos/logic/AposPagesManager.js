@@ -113,7 +113,8 @@ export default {
         };
     },
     canCreate() {
-      const page = this.items.find(page => page.aposDocId === this.moduleOptions.page.aposDocId);
+      const page = this.items
+        .find(page => page.aposDocId === this.moduleOptions.page.aposDocId);
       if (page) {
         return page._create;
       }
@@ -196,10 +197,11 @@ export default {
 
       await this.getPages();
       if (this.items.find(page => {
-        return (page.aposDocId === (window.apos.page.page && window.apos.page.page.aposDocId)) && page.archived;
+        return (page.aposDocId === (apos.page.page && apos.page.page.aposDocId)) &&
+          page.archived;
       })) {
         // With the current page gone, we need to move to safe ground
-        location.assign(`${window.apos.prefix}/`);
+        location.assign(`${apos.prefix}/`);
       }
     },
 
@@ -383,6 +385,7 @@ export default {
             interpolate: { operation: label },
             type: 'danger'
           });
+          // eslint-disable-next-line no-console
           console.error(error);
         }
       }

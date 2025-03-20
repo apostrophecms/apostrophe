@@ -64,7 +64,7 @@
             :item="item"
             :header="header"
             :classes="header.cellClasses"
-            :valueFormatted="getValue(item, header)"
+            :value-formatted="getValue(item, header)"
             :value="getValue(item, header, false)"
           >
             <p

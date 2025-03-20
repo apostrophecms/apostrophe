@@ -1,9 +1,3 @@
-<!--
-  AposMediaManager will be in charge of all media-related state logic
-  this includes doing the selecting and deselecting of items, deciding the editor/selection view,
-  emitting batch action events, etc. All sub views will recieve `media` as a prop
--->
-
 <template>
   <AposModal
     :modal="modal"
@@ -493,7 +487,10 @@ export default {
     select(id) {
       if (this.checked.includes(id)) {
         this.updateEditing(id);
-      } else if (this.relationshipField && (this.relationshipField.max > 1 || !this.relationshipField.max)) {
+      } else if (
+        this.relationshipField &&
+        (this.relationshipField.max > 1 || !this.relationshipField.max)
+      ) {
         this.selectAnother(id);
       } else {
         this.checked = [ id ];
