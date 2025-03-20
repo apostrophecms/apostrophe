@@ -552,7 +552,7 @@ export default {
     },
 
     async onContentChanged({
-      action, doc, docTypes
+      action, doc, docTypes = [ this.moduleName ]
     }) {
       const types = doc ? [ doc.type ] : docTypes;
       if (!types.includes(this.moduleName)) {

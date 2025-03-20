@@ -547,7 +547,7 @@ export default {
       });
     },
     async onContentChanged({
-      doc, action, docTypes, docIds
+      doc, action, docIds, docTypes = [ this.moduleName ]
     }) {
       const types = doc ? [ doc.type ] : docTypes;
       if (!types.includes(this.moduleName)) {
