@@ -2,18 +2,26 @@
 
 ## UNRELEASED
 
+### Changes
+
+* Change user's email field type to `email`.
+
+## 4.14.0 (2025-03-19)
+
 ### Adds
 
 * Add a label for the `@apostrophecms/attachment` module (error reporting reasons).
 * Add `translate` boolean option for report modal header configuration to force translation of the relevant items value (table cells).
 * Adds feature to generate a table from an imported CSV file inside the rich-text-widget.
 * Add data-test attributes to the login page.
+* Adds AI-generated missing translations
+* Adds the missing "Tags" filter to the chooser/manager view of files.
 
 ### Changes
 
 * Bumps the `perPage` option for piece-types from 10 to 50
 * Bumps z-index of widget controls to get above the admin bar.
-* Change user's email field type to `email`.
+* Reworks rich text popovers to use `AposContextMenu`, for toolbar components as well as insert menu items.
 
 ### Fixes
 
@@ -21,6 +29,8 @@
 * Fixes the focus styling on AposTable headers.
 * Proper errors when widgets are badly configured in expanded mode.
 * More reliable Media Manager infinite scroll pagination.
+* Fixes margin collapse in nested areas by switching to `padding` instead of `margin`
+* Fixes Edit in Media Manager when the image is not in the currently loaded images. This may happen when the the Media Manager is in a relationship mode. 
 
 ## 4.13.0 (2025-02-19)
 
