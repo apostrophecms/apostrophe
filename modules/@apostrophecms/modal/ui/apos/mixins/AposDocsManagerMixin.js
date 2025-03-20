@@ -270,6 +270,25 @@ export default {
         this.allPiecesSelection.isSelected = this.checked.length === this.allPiecesSelection.total ||
           (this.checked.length && this.maxReached());
       }
+    },
+    getDocModuleName(doc) {
+      // Don't assume the piece has the type of the module,
+      // this could be a virtual piece type such as "submitted-draft"
+      // that manages docs of many types
+      if (doc) {
+        return doc.slug.startsWith('/') ? '@apostrophecms/page' : doc.type;
+      }
+      return this.moduleName;
+    },
+    getContentChangedTypes(doc, types) {
+      const submitDraftType = '@apostrophecms/submitted-draft';
+      if (doc) {
+        return [ this.getDocModuleName(doc), submitDraftType ];
+      }
+      if (!types) {
+        return [ this.moduleName, submitDraftType ];
+      }
+      return [ ...types, submitDraftType ];
     }
   }
 };

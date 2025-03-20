@@ -550,11 +550,10 @@ export default {
       this.isLoading = false;
       this.skipLoadObserver = false;
     },
-
     async onContentChanged({
-      action, doc, docTypes = [ this.moduleName ]
+      action, doc, docTypes
     }) {
-      const types = doc ? [ doc.type ] : docTypes;
+      const types = this.getContentChangedTypes(doc, docTypes);
       if (!types.includes(this.moduleName)) {
         return;
       }

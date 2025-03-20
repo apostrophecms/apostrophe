@@ -398,9 +398,10 @@ export default {
       return docTypes.includes(this.moduleName);
     },
     async onContentChanged({
-      doc, action, docIds, docTypes = [ this.moduleName ]
+      doc, action, docIds, docTypes
     }) {
-      if (!this.isPageOperation(doc, docTypes)) {
+      const types = this.getContentChangedTypes(doc, docTypes);
+      if (!types.includes(this.moduleName)) {
         return;
       }
       if (

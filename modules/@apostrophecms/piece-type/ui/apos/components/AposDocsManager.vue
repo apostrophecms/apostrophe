@@ -277,20 +277,8 @@ export default {
       } else if (pieceOrId) {
         piece = this.items.find(item => item._id === pieceOrId);
       }
-      let moduleName;
-      // Don't assume the piece has the type of the module,
-      // this could be a virtual piece type such as "submitted-draft"
-      // that manages docs of many types
-      if (piece) {
-        if (piece.slug.startsWith('/')) {
-          moduleName = '@apostrophecms/page';
-        } else {
-          moduleName = piece.type;
-        }
-      } else {
-        moduleName = this.moduleName;
-      }
 
+      const moduleName = this.getDocModuleName(piece);
       await apos.modal.execute(apos.modules[moduleName].components.editorModal, {
         moduleName,
         docId: piece && piece._id,
@@ -547,9 +535,9 @@ export default {
       });
     },
     async onContentChanged({
-      doc, action, docIds, docTypes = [ this.moduleName ]
+      doc, action, docIds, docTypes
     }) {
-      const types = doc ? [ doc.type ] : docTypes;
+      const types = this.getContentChangedTypes(doc, docTypes);
       if (!types.includes(this.moduleName)) {
         return;
       }
