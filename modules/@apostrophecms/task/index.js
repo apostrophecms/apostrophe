@@ -242,12 +242,14 @@ module.exports = {
         options = options || {};
         options.role = options.role || 'admin';
         const req = {
-          ...(options.role === 'anon' ? {} : {
-            user: {
-              title: 'System Task',
-              role: options.role
-            }
-          }),
+          ...(options.role === 'anon'
+            ? {}
+            : {
+              user: {
+                title: 'System Task',
+                role: options.role
+              }
+            }),
           res: {
             redirect(url) {
               req.res.redirectedTo = url;

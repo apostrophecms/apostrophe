@@ -6,7 +6,10 @@
       'apos-field__wrapper--full-width': modifiers.includes('full-width'),
     }"
   >
-    <component :is="wrapEl" :class="classList">
+    <component
+      :is="wrapEl"
+      :class="classList"
+    >
       <div class="apos-field__info">
         <component
           :is="labelEl"
@@ -24,7 +27,10 @@
         >
           <span class="apos-field_label-info">
             {{ $t(label) }}
-            <span v-if="field.required" class="apos-field__required">
+            <span
+              v-if="field.required"
+              class="apos-field__required"
+            >
               * </span>
             <AposLabel
               v-if="field.tag"
@@ -63,7 +69,10 @@
             </span>
           </span>
           <div>
-            <div v-if="hasExtraInfo" class="apos-field__label-extra-info">
+            <div
+              v-if="hasExtraInfo"
+              class="apos-field__label-extra-info"
+            >
               <slot name="info" />
             </div>
             <span

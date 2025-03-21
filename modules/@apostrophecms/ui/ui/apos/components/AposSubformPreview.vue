@@ -3,7 +3,10 @@
     <div class="apos-subform-preview__label">
       {{ $t(subform.label || subform.schema?.[0].label || 'n/a') }}
     </div>
-    <div class="apos-subform-preview__value" :class="{ 'is-help': !!subform.help }">
+    <div
+      class="apos-subform-preview__value"
+      :class="{ 'is-help': !!subform.help }"
+    >
       <component
         :is="subform.previewComponent"
         v-if="subform.previewComponent"
@@ -11,7 +14,10 @@
         :subform="subform"
         :values="values"
       />
-      <span v-else class="apos-subform-preview__value-block">
+      <span
+        v-else
+        class="apos-subform-preview__value-block"
+      >
         {{ previewValue }}
       </span>
     </div>

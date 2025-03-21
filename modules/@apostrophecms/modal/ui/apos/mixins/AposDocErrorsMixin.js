@@ -14,7 +14,8 @@ export default {
         ? {
           key: 'apostrophe:errorCount',
           count: this.errorCount
-        } : null;
+        }
+        : null;
     }
   },
   methods: {

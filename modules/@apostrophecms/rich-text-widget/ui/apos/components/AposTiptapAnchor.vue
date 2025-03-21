@@ -12,7 +12,10 @@
         class="apos-popover apos-anchor-control__dialog"
         :class="{ 'apos-has-selection': hasSelection }"
       >
-        <div v-if="hasAnchorOnOpen" class="apos-anchor-control__remove">
+        <div
+          v-if="hasAnchorOnOpen"
+          class="apos-anchor-control__remove"
+        >
           <AposButton
             type="quiet"
             label="apostrophe:removeRichTextAnchor"

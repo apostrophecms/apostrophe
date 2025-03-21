@@ -56,7 +56,8 @@ module.exports = (self) => {
         self.apos.asset.hasBuildModule()
           ? pageModule.__meta.build
           : pageModule.__meta.webpack
-      ) : {};
+      )
+      : {};
 
     const rebundleConfigs = rebundleModules.filter(entry => {
       const names = pageModule?.__meta?.chain?.map(c => c.name) ?? [ page.type ];

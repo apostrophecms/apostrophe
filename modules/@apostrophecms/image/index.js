@@ -263,7 +263,8 @@ module.exports = {
           }).toObject();
         }
         function closeEnough(image) {
-          const testRatio = image._fields ? (image._fields.width / image._fields.height)
+          const testRatio = image._fields
+            ? (image._fields.width / image._fields.height)
             : (image.attachment.width / image.attachment.height);
           const configuredRatio = widgetOptions.aspectRatio[0] / widgetOptions.aspectRatio[1];
           return withinOnePercent(testRatio, configuredRatio);

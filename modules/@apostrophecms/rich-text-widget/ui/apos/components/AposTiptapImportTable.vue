@@ -1,5 +1,8 @@
 <template>
-  <div class="apos-import-control" :class="{'apos-import-control__hidden': insertMode}">
+  <div
+    class="apos-import-control"
+    :class="{'apos-import-control__hidden': insertMode}"
+  >
     <AposButton
       v-if="tool"
       type="rich-text"

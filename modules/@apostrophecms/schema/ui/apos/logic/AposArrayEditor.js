@@ -127,13 +127,14 @@ export default {
     },
     currentDocServerErrors() {
       let serverErrors = null;
-      ((this.serverError && this.serverError.data && this.serverError.data.errors) || []).forEach(error => {
-        const [ _id, fieldName ] = error.path.split('.');
-        if (_id === this.currentId) {
-          serverErrors = serverErrors || {};
-          serverErrors[fieldName] = error;
-        }
-      });
+      ((this.serverError && this.serverError.data && this.serverError.data.errors) || [])
+        .forEach(error => {
+          const [ _id, fieldName ] = error.path.split('.');
+          if (_id === this.currentId) {
+            serverErrors = serverErrors || {};
+            serverErrors[fieldName] = error;
+          }
+        });
       return serverErrors;
     },
     currentDocMeta() {
@@ -298,7 +299,8 @@ export default {
         // If the titleField references a select input, use the
         // select label as the slat label, rather than the value.
         if (this.titleFieldChoices) {
-          const choice = this.titleFieldChoices.find(choice => choice.value === candidate);
+          const choice = this.titleFieldChoices
+            .find(choice => choice.value === candidate);
           if (choice && choice.label) {
             candidate = choice.label;
           }
@@ -350,6 +352,7 @@ export default {
               choices = result.choices;
             }
           } catch (e) {
+            // eslint-disable-next-line no-console
             console.error(this.$t('apostrophe:errorFetchingTitleFieldChoicesByMethod', { name: titleField.name }));
           }
 

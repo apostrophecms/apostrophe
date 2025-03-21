@@ -103,15 +103,18 @@ export default {
       const checkLen = this.checked.length;
       const rowLen = this.items.length;
 
-      return checkLen > 0 && checkLen !== rowLen ? {
-        value: 'checked',
-        indeterminate: true
-      } : {
-        value: 'checked'
-      };
+      return checkLen > 0 && checkLen !== rowLen
+        ? {
+          value: 'checked',
+          indeterminate: true
+        }
+        : {
+          value: 'checked'
+        };
     },
     canCreate() {
-      const page = this.items.find(page => page.aposDocId === this.moduleOptions.page.aposDocId);
+      const page = this.items
+        .find(page => page.aposDocId === this.moduleOptions.page.aposDocId);
       if (page) {
         return page._create;
       }
@@ -194,10 +197,11 @@ export default {
 
       await this.getPages();
       if (this.items.find(page => {
-        return (page.aposDocId === (window.apos.page.page && window.apos.page.page.aposDocId)) && page.archived;
+        return (page.aposDocId === (apos.page.page && apos.page.page.aposDocId)) &&
+          page.archived;
       })) {
         // With the current page gone, we need to move to safe ground
-        location.assign(`${window.apos.prefix}/`);
+        location.assign(`${apos.prefix}/`);
       }
     },
 
@@ -366,7 +370,8 @@ export default {
               ...requestOptions,
               _ids: this.checked,
               messages,
-              type: this.checked.length === 1 ? this.moduleLabels.singular
+              type: this.checked.length === 1
+                ? this.moduleLabels.singular
                 : this.moduleLabels.plural
             }
           });
@@ -380,6 +385,7 @@ export default {
             interpolate: { operation: label },
             type: 'danger'
           });
+          // eslint-disable-next-line no-console
           console.error(error);
         }
       }

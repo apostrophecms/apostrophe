@@ -49,7 +49,8 @@ export default {
   data () {
     return {
       next: (this.modelValue && this.modelValue.data)
-        ? { ...this.modelValue.data } : {},
+        ? { ...this.modelValue.data }
+        : {},
       oembedResult: {},
       dynamicRatio: '',
       oembedError: null,
@@ -96,9 +97,11 @@ export default {
       ) {
         return { message: this.$t('apostrophe:oembedTypeNotSupported') };
       } else if (this.oembedError) {
-        return this.oembedError.message ? {
-          message: this.oembedError.message
-        } : 'invalid';
+        return this.oembedError.message
+          ? {
+            message: this.oembedError.message
+          }
+          : 'invalid';
       }
 
       if (this.field.required) {

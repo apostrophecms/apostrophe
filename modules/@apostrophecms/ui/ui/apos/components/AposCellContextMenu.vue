@@ -1,6 +1,9 @@
 <template>
   <div class="apos-table__cell-field apos-table__cell-field--context-menu">
-    <span class="apos-table__cell-field--context-menu__content" :class="classes">
+    <span
+      class="apos-table__cell-field--context-menu__content"
+      :class="classes"
+    >
       <AposDocContextMenu
         :disabled="disabled"
         :doc="draft"

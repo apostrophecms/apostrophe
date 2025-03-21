@@ -1,5 +1,8 @@
 <template>
-  <div class="apos-input-wrapper" :class="wrapperClasses">
+  <div
+    class="apos-input-wrapper"
+    :class="wrapperClasses"
+  >
     <select
       class="apos-input apos-input--select"
       :class="classes"

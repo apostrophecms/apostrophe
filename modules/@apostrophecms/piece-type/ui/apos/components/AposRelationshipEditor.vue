@@ -99,7 +99,8 @@ export default {
       original: this.modelValue,
       docFields: {
         data: {
-          ...((this.modelValue != null) ? this.modelValue
+          ...((this.modelValue != null)
+            ? this.modelValue
             : newInstance(this.schema)
           )
         },

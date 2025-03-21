@@ -23,7 +23,10 @@
       </div>
       <transition name="fade">
         <div>
-          <ol v-if="searchTags.length && !creating" class="apos-apply-tag-menu__tags">
+          <ol
+            v-if="searchTags.length && !creating"
+            class="apos-apply-tag-menu__tags"
+          >
             <li
               v-for="tag in searchTags"
               :key="`${keyPrefix}-${tag.slug}`"
@@ -40,7 +43,10 @@
               />
             </li>
           </ol>
-          <div v-if="(!searchTags.length && myTags.length) && !creating" class="apos-apply-tag-menu__empty">
+          <div
+            v-if="(!searchTags.length && myTags.length) && !creating"
+            class="apos-apply-tag-menu__empty"
+          >
             <p class="apos-apply-tag-menu__empty-message">
               {{ $t('apostrophe:tagNoTagsFoundPerhaps') }}
               <AposButton

@@ -8,7 +8,10 @@
     @esc="confirmAndCancel"
   >
     <template #breadcrumbs>
-      <AposModalBreadcrumbs v-if="breadcrumbs && breadcrumbs.length" :items="breadcrumbs" />
+      <AposModalBreadcrumbs
+        v-if="breadcrumbs && breadcrumbs.length"
+        :items="breadcrumbs"
+      />
       <AposWidgetModalTabs
         v-if="tabs.length && tabs[0].name !== 'ungrouped'"
         :key="tabKey"

@@ -18,9 +18,15 @@
         </template>
         <AposSpinner v-else-if="uploading" />
         <template v-else>
-          <paperclip-icon :size="14" class="apos-file-icon" />
+          <paperclip-icon
+            :size="14"
+            class="apos-file-icon"
+          />
           {{ messages.primary }}&nbsp;
-          <span v-if="messages.highlighted" class="apos-file-highlight">
+          <span
+            v-if="messages.highlighted"
+            class="apos-file-highlight"
+          >
             {{ messages.highlighted }}
           </span>
         </template>
@@ -35,7 +41,10 @@
         @input="uploadFile"
       >
     </label>
-    <div v-if="fileOrAttachment" class="apos-file-files">
+    <div
+      v-if="fileOrAttachment"
+      class="apos-file-files"
+    >
       <AposSlatList
         :model-value="[fileOrAttachment]"
         :disabled="attachmentDisabled"

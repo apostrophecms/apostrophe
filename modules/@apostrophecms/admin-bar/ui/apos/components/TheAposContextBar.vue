@@ -82,9 +82,11 @@ export default {
       saved: false,
       savingTimeout: null,
       published: null,
-      context: window.apos.adminBar.context ? {
-        ...window.apos.adminBar.context
-      } : {},
+      context: window.apos.adminBar.context
+        ? {
+          ...window.apos.adminBar.context
+        }
+        : {},
       contextStack: [],
       // If a published context doc itself is not editable this will contain a hint
       // that the draft version is editable, when appropriate. It should only be
@@ -582,9 +584,11 @@ export default {
         ...apos.http.parseQuery(window.location.search),
         aposRefresh: '1',
         aposMode: this.draftMode,
-        ...(this.editMode ? {
-          aposEdit: '1'
-        } : {})
+        ...(this.editMode
+          ? {
+            aposEdit: '1'
+          }
+          : {})
       };
 
       if (doc._url) {

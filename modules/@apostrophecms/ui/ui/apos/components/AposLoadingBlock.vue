@@ -5,7 +5,10 @@
   >
     <div class="apos-loading-block__content">
       <AposLoading class="apos-loading-block__loader" />
-      <span v-if="label" class="apos-loading-block__text">
+      <span
+        v-if="label"
+        class="apos-loading-block__text"
+      >
         {{ $t(label) }}
       </span>
     </div>

@@ -10,9 +10,15 @@
     :meta="arrayMeta"
   >
     <template #additional>
-      <AposMinMaxCount :field="field" :model-value="next" />
+      <AposMinMaxCount
+        :field="field"
+        :model-value="next"
+      />
     </template>
-    <template v-if="isInlineStandard" #meta>
+    <template
+      v-if="isInlineStandard"
+      #meta
+    >
       <div class="apos-input-array-inline-all-controls">
         <AposButton
           class="apos-input-array-inline-all-control apos-input-array-inline-all-control--expand"
@@ -46,10 +52,16 @@
 
       <!-- INLINE TABLE -->
       <div v-if="isInlineTable">
-        <table v-if="items.length" class="apos-input-array-inline-table">
+        <table
+          v-if="items.length"
+          class="apos-input-array-inline-table"
+        >
           <thead class="apos-input-array-inline-table-header">
             <tr>
-              <th v-if="isDraggable" class="apos-input-array-inline-table-header-cell" />
+              <th
+                v-if="isDraggable"
+                class="apos-input-array-inline-table-header-cell"
+              />
               <th
                 v-for="subfield in visibleSchema()"
                 :key="subfield._id"
@@ -249,8 +261,14 @@
                   />
                 </div>
               </div>
-              <transition name="collapse" :duration="400">
-                <div v-show="item.open" class="apos-input-array-inline-body">
+              <transition
+                name="collapse"
+                :duration="400"
+              >
+                <div
+                  v-show="item.open"
+                  class="apos-input-array-inline-body"
+                >
                   <AposSchema
                     :key="item._id"
                     v-model="item.schemaInput"
@@ -282,7 +300,10 @@
         </draggable>
       </div>
 
-      <div v-else class="apos-input-array">
+      <div
+        v-else
+        class="apos-input-array"
+      >
         <label class="apos-input-wrapper">
           <AposButton
             :label="editLabel"

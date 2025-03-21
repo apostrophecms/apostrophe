@@ -138,7 +138,8 @@ async function switchLocale(locale) {
     }, {
       hasCloseButton: true,
       tiny: true
-    }) : false;
+    })
+    : false;
 
   if (save === null) {
     return;

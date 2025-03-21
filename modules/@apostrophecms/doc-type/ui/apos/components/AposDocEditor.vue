@@ -16,7 +16,10 @@
         @click="confirmAndCancel"
       />
     </template>
-    <template v-if="showLocalePicker" #localeDisplay>
+    <template
+      v-if="showLocalePicker"
+      #localeDisplay
+    >
       <AposDocLocalePicker
         :locale="modalData.locale"
         :doc-id="referenceDocId"
@@ -72,7 +75,10 @@
     <template #main>
       <AposModalBody>
         <template #bodyMain>
-          <div v-if="docReady" class="apos-doc-editor__body">
+          <div
+            v-if="docReady"
+            class="apos-doc-editor__body"
+          >
             <AposSchema
               v-for="tab in tabs"
               v-show="tab.name === currentTab"
@@ -741,7 +747,8 @@ export default {
           action: 'onSave',
           description: {
             ...description,
-            key: isSingleton ? 'apostrophe:updateSingleton'
+            key: isSingleton
+              ? 'apostrophe:updateSingleton'
               : (isNew ? 'apostrophe:insertAndReturn' : 'apostrophe:updateAndReturn')
           },
           def: true

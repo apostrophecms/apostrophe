@@ -13,7 +13,8 @@
 // `passwordReset`
 //
 // If set to `true`, the user is given the option to reset their password,
-// provided they can receive a confirmation email. Not available if `localLogin` is `false`.
+// provided they can receive a confirmation email.
+// Not available if `localLogin` is `false`.
 //
 // `passwordResetHours`
 //
@@ -145,7 +146,8 @@ module.exports = {
           if (req.session) {
             const destroySession = () => {
               return require('util').promisify(function(callback) {
-                // Be thorough, nothing in the session potentially related to the login should survive logout
+                // Be thorough, nothing in the session potentially
+                // related to the login should survive logout
                 return req.session.destroy(callback);
               })();
             };
@@ -169,7 +171,10 @@ module.exports = {
         // requirement. The return value of the function, which should
         // be an object, is delivered as the API response
         async requirementProps(req) {
-          const { user } = await self.findIncompleteTokenAndUser(req, req.body.incompleteToken);
+          const { user } = await self.findIncompleteTokenAndUser(
+            req,
+            req.body.incompleteToken
+          );
 
           const name = self.apos.launder.string(req.body.name);
 
@@ -252,7 +257,7 @@ module.exports = {
         async context(req) {
           return self.getContext(req);
         },
-        ...(self.isPasswordResetEnabled() ? {
+        ...self.isPasswordResetEnabled() && {
           async resetRequest(req) {
             const wait = (t = 2000) => Promise.delay(t);
             const site = (req.headers.host || '').replace(/:\d+$/, '');
@@ -339,7 +344,7 @@ module.exports = {
             user.password = password;
             await self.apos.user.update(req, user, { permissions: false });
           }
-        } : {})
+        }
       },
       get: {
         // For bc this route is still available via GET, however
@@ -484,8 +489,8 @@ module.exports = {
       //
       // If the user's login SUCCEEDS, the return value is
       // the `user` object.
-      // `attempts`,  `ip` and `requestId` are optional, sent for only logging needs. They won't
-      // be available with passport.
+      // `attempts`,  `ip` and `requestId` are optional, sent for only logging needs.
+      // They won't be available with passport.
 
       async verifyLogin(username, password, attempts = 0, ip, requestId) {
         const req = self.apos.task.getReq();
@@ -546,14 +551,16 @@ module.exports = {
           schema: self.getSchema(),
           action: self.action,
           passwordResetEnabled: self.isPasswordResetEnabled(),
-          ...(req.user ? {
-            user: {
-              _id: req.user._id,
-              title: req.user.title,
-              username: req.user.username,
-              email: req.user.email
+          ...(req.user
+            ? {
+              user: {
+                _id: req.user._id,
+                title: req.user.title,
+                username: req.user.username,
+                email: req.user.email
+              }
             }
-          } : {}),
+            : {}),
           requirements: Object.fromEntries(
             Object.entries(self.requirements).map(([ name, requirement ]) => {
               const browserRequirement = {
@@ -617,7 +624,11 @@ module.exports = {
 
       async checkForUserAndAlert() {
         const adminReq = self.apos.task.getReq();
-        const user = await self.apos.user.find(adminReq, {}).relationships(false).limit(1).toObject();
+        const user = await self.apos.user
+          .find(adminReq, {})
+          .relationships(false)
+          .limit(1)
+          .toObject();
 
         if (!user && !self.apos.options.test) {
           self.apos.util.warnDev('There are no users created for this installation of ApostropheCMS yet.');
@@ -630,7 +641,8 @@ module.exports = {
       },
 
       // Finalize an incomplete login based on the provided incompleteToken
-      // and various `requirements` subproperties. Implementation detail of the login route
+      // and various `requirements` subproperties.
+      // Implementation detail of the login route
       async finalizeIncompleteLogin(req) {
         const session = self.apos.launder.boolean(req.body.session);
         // Completing a previous incomplete login
@@ -721,7 +733,10 @@ module.exports = {
       async verifyRequirements(req, requirements) {
         for (const [ name, requirement ] of Object.entries(requirements)) {
           try {
-            await requirement.verify(req, req.body.requirements && req.body.requirements[name]);
+            await requirement.verify(
+              req,
+              req.body.requirements && req.body.requirements[name]
+            );
           } catch (e) {
             e.data = e.data || {};
             e.data.requirement = name;
@@ -731,7 +746,8 @@ module.exports = {
       },
 
       // Implementation detail of the login route. Log in the user, or if there are
-      // `requirements` that require password verification occur first, return an incomplete token.
+      // `requirements` that require password verification occur first,
+      // return an incomplete token.
       async initialLogin(req) {
         const username = self.apos.launder.string(req.body.username);
         const password = self.apos.launder.string(req.body.password);
@@ -782,7 +798,9 @@ module.exports = {
               requirementsToVerify,
               // Default lifetime of 1 hour is generous to permit situations like
               // installing a TOTP app for the first time
-              expires: new Date(new Date().getTime() + (self.options.incompleteLifetime || 60 * 60 * 1000))
+              expires: new Date(
+                new Date().getTime() + (self.options.incompleteLifetime || 60 * 60 * 1000)
+              )
             });
 
             await self.clearLoginAttempts(user.username);
@@ -806,7 +824,10 @@ module.exports = {
             await self.bearerTokens.insertOne({
               _id: token,
               userId: user._id,
-              expires: new Date(new Date().getTime() + (self.options.bearerTokens.lifetime || (86400 * 7 * 2)) * 1000)
+              expires: new Date(
+                new Date().getTime() +
+                  (self.options.bearerTokens.lifetime || (86400 * 7 * 2)) * 1000
+              )
             });
 
             await self.clearLoginAttempts(user.username);
@@ -999,7 +1020,12 @@ module.exports = {
       honorLoginInvalidBefore: {
         before: '@apostrophecms/i18n',
         middleware(req, res, next) {
-          if (req.user && req.user._viaSession && req.user.loginInvalidBefore && ((!req.session.loginAt) || (req.session.loginAt < req.user.loginInvalidBefore))) {
+          if (
+            req.user &&
+            req.user._viaSession &&
+            req.user.loginInvalidBefore &&
+            (!req.session.loginAt || (req.session.loginAt < req.user.loginInvalidBefore))
+          ) {
             req.session.destroy();
             delete req.user;
           }

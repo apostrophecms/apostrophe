@@ -1,5 +1,8 @@
 <template>
-  <div class="apos-color-info" data-apos-test="colorInfo">
+  <div
+    class="apos-color-info"
+    data-apos-test="colorInfo"
+  >
     <span v-if="!isMicro">
       {{ label }}
     </span>

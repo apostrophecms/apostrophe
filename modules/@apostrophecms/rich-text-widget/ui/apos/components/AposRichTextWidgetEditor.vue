@@ -72,8 +72,14 @@
         </li>
       </ul>
     </floating-menu>
-    <div class="apos-rich-text-editor__editor" :class="editorModifiers">
-      <editor-content :editor="editor" :class="editorOptions.className" />
+    <div
+      class="apos-rich-text-editor__editor"
+      :class="editorModifiers"
+    >
+      <editor-content
+        :editor="editor"
+        :class="editorOptions.className"
+      />
     </div>
     <div
       v-if="showPlaceholder !== null && (!placeholderText || !isFocused)"
@@ -210,12 +216,14 @@ export default {
       Object.keys(this.defaultOptions).forEach((option) => {
         if (option !== 'styles') {
           activeOptions[option] = (activeOptions[option] !== undefined)
-            ? activeOptions[option] : this.defaultOptions[option];
+            ? activeOptions[option]
+            : this.defaultOptions[option];
         }
       });
 
       activeOptions.className = (activeOptions.className !== undefined)
-        ? activeOptions.className : this.moduleOptions.className;
+        ? activeOptions.className
+        : this.moduleOptions.className;
 
       if (activeOptions.toolbar.includes('styles')) {
         activeOptions.toolbar = activeOptions.toolbar.filter(t => t !== 'styles');
@@ -401,7 +409,8 @@ export default {
       apos.bus.$emit('close-context-menus', 'richText');
     },
     generateKey() {
-      return Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+      return Math.random().toString(36).substring(2, 15) +
+        Math.random().toString(36).substring(2, 15);
     },
     handleUIKeydown(e) {
       if (e.key === 'Escape') {
@@ -583,7 +592,8 @@ export default {
     showFloatingMenu({
       state, oldState
     }) {
-      const hasChanges = JSON.stringify(state?.doc.toJSON()) !== JSON.stringify(oldState?.doc.toJSON());
+      const hasChanges = JSON.stringify(state?.doc.toJSON()) !==
+        JSON.stringify(oldState?.doc.toJSON());
       const { $to } = state.selection;
 
       if (
@@ -771,19 +781,23 @@ function traverseNextNode(node) {
     gap: 6px;
   }
 
-  .apos-rich-text-editor__editor :deep(.ProseMirror) { /* stylelint-disable-line selector-class-pattern */
+/* stylelint-disable-next-line selector-class-pattern */
+  .apos-rich-text-editor__editor :deep(.ProseMirror) {
     @include apos-transition();
   }
 
-  .apos-rich-text-editor__editor :deep(.ProseMirror:focus) { /* stylelint-disable-line selector-class-pattern */
+/* stylelint-disable-next-line selector-class-pattern */
+  .apos-rich-text-editor__editor :deep(.ProseMirror:focus) {
     outline: none;
   }
 
-  .apos-rich-text-editor__editor :deep(.ProseMirror) { /* stylelint-disable-line selector-class-pattern */
+/* stylelint-disable-next-line selector-class-pattern */
+  .apos-rich-text-editor__editor :deep(.ProseMirror) {
     padding: 10px 0;
   }
 
-  .apos-rich-text-editor__editor :deep(.ProseMirror:focus p.apos-is-empty::after) { /* stylelint-disable-line selector-class-pattern, selector-no-qualifying-type */
+/* stylelint-disable-next-line selector-class-pattern, selector-no-qualifying-type */
+  .apos-rich-text-editor__editor :deep(.ProseMirror:focus p.apos-is-empty::after) {
     display: block;
     margin: 5px 0 10px;
     padding-top: 5px;
@@ -811,7 +825,9 @@ function traverseNextNode(node) {
     transition: transform 400ms var(--a-transition-timing-bounce) 100ms;
   }
 
-  .apos-rich-text-editor__editor :deep(.tippy-box[data-animation='fade'][data-state='hidden']) {
+  .apos-rich-text-editor__editor :deep(
+    .tippy-box[data-animation='fade'][data-state='hidden']
+  ) {
     opacity: 0;
     transform: scale(0.9);
   }
@@ -871,12 +887,13 @@ function traverseNextNode(node) {
 
   // So editors can identify the cells that would take part
   // in a merge operation
-  .apos-rich-text-editor__editor :deep(.selectedCell) { /* stylelint-disable-line selector-class-pattern */
+  /* stylelint-disable-next-line selector-class-pattern */
+  .apos-rich-text-editor__editor :deep(.selectedCell) {
     // Should be visible on any background, light mode or dark mode
     backdrop-filter: invert(0.1);
   }
-
-  .apos-rich-text-editor__editor :deep(figure.ProseMirror-selectednode) { /* stylelint-disable-line selector-no-qualifying-type, selector-class-pattern */
+/* stylelint-disable-next-line selector-no-qualifying-type, selector-class-pattern */
+  .apos-rich-text-editor__editor :deep(figure.ProseMirror-selectednode) {
     opacity: 0.5;
   }
 

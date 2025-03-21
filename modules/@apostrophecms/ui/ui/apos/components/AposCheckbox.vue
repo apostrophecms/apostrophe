@@ -18,7 +18,10 @@
       :is-indeterminate="choice.indeterminate === true ? 'true' : 'false'"
       @change="update"
     >
-    <span class="apos-input-indicator" aria-hidden="true">
+    <span
+      class="apos-input-indicator"
+      aria-hidden="true"
+    >
       <component
         :is="`${
           choice.indeterminate ? 'minus-icon' : 'check-bold-icon'
