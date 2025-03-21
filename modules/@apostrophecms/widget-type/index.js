@@ -58,6 +58,11 @@
 // that information will not be available yet in any asynchronous node.js code.
 // It is the last thing to happen before the actual page template rendering.
 //
+// ### `preview`
+//
+// If true, the image widget is automatically previewed live following changes in the editor modal.
+// Should not be combined with `contextual`.
+//
 // ## Fields
 //
 // You will need to configure the schema fields for your widget using
@@ -420,7 +425,8 @@ module.exports = {
           className: self.options.className,
           components: self.options.components,
           width: self.options.width,
-          origin: self.options.origin
+          origin: self.options.origin,
+          preview: self.options.preview
         });
         return result;
       }

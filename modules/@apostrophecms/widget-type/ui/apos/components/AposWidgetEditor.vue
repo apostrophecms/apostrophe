@@ -107,6 +107,11 @@ export default {
     parentFollowingValues: {
       type: Object,
       default: null
+    },
+    preview: {
+      required: false,
+      type: Object
+      // if present, has "area", "index" and "create" properties
     }
   },
   emits: [ 'modal-result' ],
@@ -192,6 +197,10 @@ export default {
 
     this.original = klona(defaults);
     this.docFields.data = defaults;
+    if (!this.id) {
+      this.newId = createId();
+    }
+    this.initPreview();
   },
   methods: {
     updateDocFields(value) {
@@ -201,11 +210,39 @@ export default {
         ...value.data
       };
       this.evaluateConditions();
+      this.updatePreview();
+    },
+    initPreview() {
+      console.log('in initPreview');
+      if (!this.preview) {
+        return;
+      }
+      console.log('initializing preview');
+      const widget = this.getWidgetObject();
+      if (this.preview.create) {
+        console.log('Inserting...');
+        this.preview.area.insert({
+          index: this.preview.index,
+          widget
+        });
+      } else {
+        console.log('Updating...');
+        this.preview.area.update({
+          index: this.preview.index,
+          widget
+        });
+      }
+    },
+    updatePreview() {
+      if (this.preview) {
+        console.log('updating preview');
+        this.preview.area.update(this.getWidgetObject());
+      }
     },
     async save() {
       this.triggerValidation = true;
       this.$nextTick(async () => {
-        const widget = klona(this.docFields.data);
+        const widget = this.getWidgetObject();
         if (this.errorCount > 0) {
           this.triggerValidation = false;
           await apos.notify('apostrophe:resolveErrorsBeforeSaving', {
@@ -224,15 +261,15 @@ export default {
           });
           return;
         }
-        if (!widget.type) {
-          widget.type = this.type;
-        }
-        if (!this.id) {
-          widget._id = createId();
-        }
         this.$emit('modal-result', widget);
         this.modal.showModal = false;
       });
+    },
+    getWidgetObject() {
+      const widget = klona(this.docFields.data);
+      widget._id = this.id || this.newId;
+      widget.type = this.type;
+      return widget;
     },
     getDefault() {
       return newInstance(this.schema);
