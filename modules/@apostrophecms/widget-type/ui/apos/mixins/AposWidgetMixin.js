@@ -62,7 +62,8 @@ export default {
         if (this.rendering && (isEqual(this.rendering.parameters, parameters))) {
           this.rendered = this.rendering.html;
         } else {
-          this.rendered = '...';
+          // Don't use a placeholder here, it is better to display the old until we display the new,
+          // we have "busy" for clarity
           this.rendered = await apos.http.post(`${apos.area.action}/render-widget?aposEdit=1&aposMode=${this.mode}`, {
             busy: true,
             body: parameters

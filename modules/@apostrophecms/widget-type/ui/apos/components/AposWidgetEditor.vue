@@ -6,6 +6,7 @@
     @inactive="modal.active = false"
     @show-modal="modal.showModal = true"
     @esc="confirmAndCancel"
+    @no-modal="removePreview"
   >
     <template #breadcrumbs>
       <AposModalBreadcrumbs v-if="breadcrumbs && breadcrumbs.length" :items="breadcrumbs" />
@@ -192,11 +193,10 @@ export default {
         ...defaults,
         ...this.modelValue
       };
-      return;
+    } else {
+      this.original = klona(defaults);
+      this.docFields.data = defaults;
     }
-
-    this.original = klona(defaults);
-    this.docFields.data = defaults;
     if (!this.id) {
       this.newId = createId();
     }
@@ -217,29 +217,60 @@ export default {
       if (!this.preview) {
         return;
       }
+      this.preview.area.update(this.getPreviewWidgetObject(), { autosave: false });
+
       console.log('initializing preview');
-      const widget = this.getWidgetObject();
       if (this.preview.create) {
         console.log('Inserting...');
         this.preview.area.insert({
           index: this.preview.index,
-          widget
+          widget: this.getPreviewWidgetObject(),
+          autosave: false
         });
       } else {
         console.log('Updating...');
-        this.preview.area.update({
-          index: this.preview.index,
-          widget
-        });
+        // So we can restore it if we cancel
+        this.previewSnapshot = this.getWidgetObject();
+        console.log('snapshot:', JSON.stringify(this.previewSnapshot));
       }
     },
     updatePreview() {
-      if (this.preview) {
-        console.log('updating preview');
-        this.preview.area.update(this.getWidgetObject());
+      if (!this.preview) {
+        return;
+      }
+      const now = Date.now();
+      const body = () => {
+        this.lastPreview = now;
+        this.preview.area.update(this.getPreviewWidgetObject(), { autosave: false });
+      }
+      if (this.updatePreviewTimeout) {
+        clearTimeout(this.updatePreviewTimeout);
+      }
+      if (!this.lastPreview || (now - this.lastPreview > 250)) {
+        // If we're still dragging the slider around, refresh every once in a while,
+        // no matter what
+        body();
+      } else {
+        this.updatePreviewTimeout = setTimeout(body, 250);
+      }
+    },
+    removePreview() {
+      if (!this.preview) {
+        return;
+      }
+      if (this.updatePreviewTimeout) {
+        clearTimeout(this.updatePreviewTimeout);
+      }
+      if (this.preview.create) {
+        this.preview.area.remove(this.getPreviewWidgetObject(), { autosave: false });
+      } else if (!this.saving) {
+        this.preview.area.update(this.previewSnapshot, { autosave: false });
       }
     },
     async save() {
+      if (this.updatePreviewTimeout) {
+        clearTimeout(this.updatePreviewTimeout);
+      }
       this.triggerValidation = true;
       this.$nextTick(async () => {
         const widget = this.getWidgetObject();
@@ -261,15 +292,33 @@ export default {
           });
           return;
         }
+        this.saving = true;
         this.$emit('modal-result', widget);
         this.modal.showModal = false;
       });
     },
-    getWidgetObject() {
+    getWidgetObject(props = {}) {
       const widget = klona(this.docFields.data);
       widget._id = this.id || this.newId;
       widget.type = this.type;
-      return widget;
+      return {
+        ...widget,
+        ...props
+      };
+    },
+    getPreviewWidgetObject() {
+      if (!this.previewWidgetId) {
+        if (this.preview.create) {
+          // Deliberately different from the final widget's id, which will
+          // be added separately and cleanly
+          this.previewWidgetId = createId();
+        } else {
+          this.previewWidgetId = this.id;
+        }
+      }
+      return this.getWidgetObject({
+        _id: this.previewWidgetId
+      });
     },
     getDefault() {
       return newInstance(this.schema);

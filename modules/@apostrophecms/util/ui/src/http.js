@@ -30,6 +30,10 @@ export default () => {
   // You do NOT have to pass a callback unless you must support IE11
   // and do not want to include a promise polyfill in your build.
   apos.http.patch = function(url, options, callback) {
+    if ((Object.keys(options.body).length > 1) || !options.body._advisoryLock) {
+      console.trace('PATCHING');
+      console.log(JSON.stringify(options, null, '  '));
+    }
     return apos.http.remote('PATCH', url, options, callback);
   };
 

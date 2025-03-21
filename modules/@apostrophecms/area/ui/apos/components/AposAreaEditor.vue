@@ -304,8 +304,8 @@ export default {
         ...this.next.slice(i + 2)
       ];
     },
-    async remove(i) {
-      if (this.docId === window.apos.adminBar.contextId) {
+    async remove(i, { autosave = true } = {}) {
+      if (autosave && (this.docId === window.apos.adminBar.contextId)) {
         apos.bus.$emit('context-edited', {
           $pullAllById: {
             [`@${this.id}.items`]: [ this.next[i]._id ]
@@ -383,7 +383,6 @@ export default {
         apos.area.activeEditor = this;
         apos.bus.$on('apos-refreshing', cancelRefresh);
         const preview = this.widgetPreview(widget.type, i, false);
-        const snapshot = preview && klona(widget);
         const result = await apos.modal.execute(componentName, {
           modelValue: widget,
           options: this.widgetOptionsByType(widget.type),
@@ -397,9 +396,6 @@ export default {
         apos.bus.$off('apos-refreshing', cancelRefresh);
         if (result) {
           return this.update(result);
-        } else if (preview) {
-          // Undo any changes made by the previewing
-          return this.update(snapshot, { autosave: false });
         }
       }
     },
