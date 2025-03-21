@@ -1,5 +1,11 @@
 # Changelog
 
+## UNRELEASED
+
+### Changes
+
+* Change user's email field type to `email`.
+
 ## 4.14.0 (2025-03-19)
 
 ### Adds
