@@ -213,25 +213,18 @@ export default {
       this.updatePreview();
     },
     initPreview() {
-      console.log('in initPreview');
       if (!this.preview) {
         return;
       }
-      this.preview.area.update(this.getPreviewWidgetObject(), { autosave: false });
-
-      console.log('initializing preview');
       if (this.preview.create) {
-        console.log('Inserting...');
         this.preview.area.insert({
           index: this.preview.index,
           widget: this.getPreviewWidgetObject(),
           autosave: false
         });
       } else {
-        console.log('Updating...');
         // So we can restore it if we cancel
         this.previewSnapshot = this.getWidgetObject();
-        console.log('snapshot:', JSON.stringify(this.previewSnapshot));
       }
     },
     updatePreview() {
@@ -262,7 +255,8 @@ export default {
         clearTimeout(this.updatePreviewTimeout);
       }
       if (this.preview.create) {
-        this.preview.area.remove(this.getPreviewWidgetObject(), { autosave: false });
+        const index = this.getPreviewWidgetIndex();
+        this.preview.area.remove(this.getPreviewWidgetIndex(), { autosave: false });
       } else if (!this.saving) {
         this.preview.area.update(this.previewSnapshot, { autosave: false });
       }
@@ -318,6 +312,11 @@ export default {
       }
       return this.getWidgetObject({
         _id: this.previewWidgetId
+      });
+    },
+    getPreviewWidgetIndex() {
+      return this.preview.area.next.findIndex(item => {
+        return item._id === this.previewWidgetId;
       });
     },
     getDefault() {

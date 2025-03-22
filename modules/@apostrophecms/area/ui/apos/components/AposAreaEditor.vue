@@ -485,7 +485,7 @@ export default {
       } else {
         const componentName = this.widgetEditorComponent(name);
         apos.area.activeEditor = this;
-        const preview = this.widgetPreview(widget.type, index, true);
+        const preview = this.widgetPreview(name, index, true);
         const widget = await apos.modal.execute(componentName, {
           modelValue: null,
           options: this.widgetOptionsByType(name),
@@ -525,13 +525,13 @@ export default {
       if (!widget.metaType) {
         widget.metaType = 'widget';
       }
-      const push = {
-        $each: [ widget ]
-      };
-      if (index < this.next.length) {
-        push.$before = this.next[index]._id;
-      }
       if (autosave && (this.docId === window.apos.adminBar.contextId)) {
+        const push = {
+          $each: [ widget ]
+        };
+        if (index < this.next.length) {
+          push.$before = this.next[index]._id;
+        }
         apos.bus.$emit('context-edited', {
           $push: {
             [`@${this.id}.items`]: push
