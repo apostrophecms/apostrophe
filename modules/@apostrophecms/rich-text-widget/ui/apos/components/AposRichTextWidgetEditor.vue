@@ -3,13 +3,30 @@
     :aria-controls="`insert-menu-${modelValue._id}`"
     @keydown="handleUIKeydown"
   >
+    <floating-menu
+      v-if="editor"
+      :should-show="showTableControls"
+      :tippy-options="{
+        zIndex: 999,
+        placement: 'top',
+        offset: [0, 25],
+        moveTransition: 'transform 0s ease-out'
+      }"
+      :editor="editor"
+      role="listbox"
+      tabindex="0"
+    >
+      <AposTiptapTableControls
+        :editor="editor"
+      />
+    </floating-menu>
     <bubble-menu
       v-if="editor"
       class="bubble-menu"
       :tippy-options="{
         maxWidth: 'none',
         duration: 300,
-        zIndex: 2000,
+        zIndex: 999,
         animation: 'fade',
         inertia: true,
         placement: 'bottom',
@@ -42,7 +59,7 @@
       ref="insertMenu"
       :key="insertMenuKey"
       class="apos-rich-text-insert-menu"
-      :tippy-options="{ duration: 100, zIndex: 2000, placement: 'bottom-start' }"
+      :tippy-options="{ duration: 100, zIndex: 999, placement: 'bottom-start' }"
       :should-show="showFloatingMenu"
       :editor="editor"
       role="listbox"
@@ -92,6 +109,7 @@ import {
   BubbleMenu,
   FloatingMenu
 } from '@tiptap/vue-3';
+import AposTiptapTableControls from './AposTiptapTableControls.vue';
 // Starter Kit extensions
 import BlockQuote from '@tiptap/extension-blockquote';
 import Bold from '@tiptap/extension-bold';
@@ -127,7 +145,8 @@ export default {
   components: {
     EditorContent,
     BubbleMenu,
-    FloatingMenu
+    FloatingMenu,
+    AposTiptapTableControls
   },
   props: {
     type: {
@@ -180,7 +199,10 @@ export default {
       showPlaceholder: null,
       activeInsertMenuComponent: false,
       suppressInsertMenu: false,
-      insertMenuKey: null
+      insertMenuKey: null,
+      tableToolbar: {
+
+      }
     };
   },
   computed: {
@@ -268,9 +290,15 @@ export default {
       return this.moduleOptions.insertMenu;
     },
     isVisuallyEmpty () {
-      const div = document.createElement('div');
-      div.innerHTML = this.modelValue.content;
-      return !div.textContent;
+      if (this.editor) {
+        const div = document.createElement('div');
+        const editorJSON = this.editor.getJSON();
+        const hasTable = !!editorJSON?.content.filter(c => c.type === 'table').length;
+        div.innerHTML = this.modelValue.content;
+        return (!div.textContent && hasTable);
+      } else {
+        return false;
+      }
     },
     editorModifiers () {
       const classes = [];
@@ -345,7 +373,12 @@ export default {
       Underline,
       Superscript,
       Subscript,
-      Table,
+      Table.configure({
+        resizable: true,
+        handleWidth: 10,
+        cellMinWidth: 100,
+        lastColumnResizable: false
+      }),
       TableCell,
       TableHeader,
       TableRow,
@@ -385,6 +418,7 @@ export default {
       onBlur: () => {
         this.isFocused = false;
         this.$nextTick(() => {
+          console.log(!!this.editor.getJSON()?.content.filter(c => c.type === 'table').length);
           this.showPlaceholder = true;
         });
       }
@@ -397,6 +431,9 @@ export default {
     apos.bus.$off('apos-refreshing', this.onAposRefreshing);
   },
   methods: {
+    showTableControls() {
+      return this.editor?.isActive('table') ?? false;
+    },
     onBubbleHide() {
       apos.bus.$emit('close-context-menus', 'richText');
     },
@@ -404,6 +441,7 @@ export default {
       return Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
     },
     handleUIKeydown(e) {
+      console.log(this.editor.getAttributes('table').style);
       if (e.key === 'Escape') {
         this.doSuppressInsertMenu();
       } else {
@@ -865,10 +903,6 @@ function traverseNextNode(node) {
     min-height: 200px;
   }
 
-  .apos-rich-text-editor__editor :deep(th), .apos-rich-text-editor__editor :deep(td) {
-    outline: dotted;
-  }
-
   // So editors can identify the cells that would take part
   // in a merge operation
   .apos-rich-text-editor__editor :deep(.selectedCell) { /* stylelint-disable-line selector-class-pattern */
@@ -933,4 +967,66 @@ function traverseNextNode(node) {
       border-left: 1px solid #000;
     }
   }
+
+:deep(.ProseMirror) { /* stylelint-disable-line selector-class-pattern */
+  /* Table-specific styling */
+  table {
+    border-collapse: collapse;
+    margin: 0;
+    overflow: hidden;
+    table-layout: fixed;
+    width: 100%;
+
+    td,
+    th {
+      border: 1px solid var(--a-base-4);
+      box-sizing: border-box;
+      min-width: 1em;
+      padding: 6px 8px;
+      position: relative;
+      vertical-align: top;
+
+      > * {
+        margin-bottom: 0;
+      }
+    }
+
+    th {
+      background-color: var(--a-base-8);
+      font-weight: bold;
+      text-align: left;
+    }
+
+    .selectedCell {
+        &:after {
+        background: var(--a-base-3);
+        opacity: 0.25;
+        content: "";
+        left: 0; right: 0; top: 0; bottom: 0;
+        pointer-events: none;
+        position: absolute;
+        z-index: 2;
+      }
+    }
+    .column-resize-handle {
+      background-color: var(--a-primary-transparent-50);
+      bottom: -2px;
+      pointer-events: none;
+      position: absolute;
+      right: -2px;
+      top: 0;
+      width: 4px;
+    }
+  }
+
+  .tableWrapper {
+    margin: 1.5rem 0;
+    overflow-x: auto;
+  }
+
+  &.resize-cursor {
+    cursor: ew-resize;
+    cursor: col-resize;
+  }
+}
 </style>

@@ -156,10 +156,6 @@ module.exports = {
         label: 'apostrophe:richTextMarkStyles',
         icon: 'palette-swatch-icon'
       },
-      table: {
-        component: 'AposTiptapTable',
-        label: 'apostrophe:table'
-      },
       '|': { component: 'AposTiptapDivider' },
       bold: {
         component: 'AposTiptapButton',
@@ -199,7 +195,6 @@ module.exports = {
         icon: 'format-subscript-icon',
         command: 'toggleSubscript'
       },
-
       horizontalRule: {
         component: 'AposTiptapButton',
         label: 'apostrophe:richTextHorizontalRule',
@@ -376,7 +371,18 @@ module.exports = {
     'format-text-icon': 'FormatText',
     'format-color-highlight-icon': 'FormatColorHighlight',
     'table-icon': 'Table',
-    'palette-swatch-icon': 'PaletteSwatch'
+    'palette-swatch-icon': 'PaletteSwatch',
+    'table-row-plus-after-icon': 'TableRowPlusAfter',
+    'table-column-plus-after-icon': 'TableColumnPlusAfter',
+    'table-column-remove-icon': 'TableColumnRemove',
+    'table-row-remove-icon': 'TableRowRemove',
+    'table-plus-icon': 'TablePlus',
+    'table-minus-icon': 'TableMinus',
+    'table-column-icon': 'TableColumn',
+    'table-row-icon': 'TableRow',
+    'table-split-cell-icon': 'TableSplitCell',
+    'table-merge-cells-icon': 'TableMergeCells'
+
   },
   handlers(self) {
     return {
@@ -497,7 +503,7 @@ module.exports = {
           anchor: [ 'span' ],
           superscript: [ 'sup' ],
           subscript: [ 'sub' ],
-          table: [ 'table', 'tr', 'td', 'th' ],
+          table: [ 'table', 'tr', 'td', 'th', 'colgroup', 'col' ],
           image: [ 'figure', 'img', 'figcaption' ],
           div: [ 'div' ],
           color: [ 'span' ]
@@ -553,12 +559,16 @@ module.exports = {
           },
           table: [
             {
+              tag: 'table',
+              attributes: [ 'style' ]
+            },
+            {
               tag: 'td',
-              attributes: [ 'colspan', 'rowspan' ]
+              attributes: [ 'colspan', 'rowspan', 'colwidth' ]
             },
             {
               tag: 'th',
-              attributes: [ 'colspan', 'rowspan' ]
+              attributes: [ 'colspan', 'rowspan', 'colwidth' ]
             }
           ],
           image: [
