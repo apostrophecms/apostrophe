@@ -21,14 +21,20 @@
     >
       <div class="apos-input-array-inline-all-controls">
         <AposButton
-          class="apos-input-array-inline-all-control apos-input-array-inline-all-control--expand"
+          class="
+            apos-input-array-inline-all-control
+            apos-input-array-inline-all-control--expand
+          "
           label="apostrophe:expandAll"
           type="subtle"
           :modifiers="['inline', 'no-motion']"
           @click="toggleAll(true)"
         />
         <AposButton
-          class="apos-input-array-inline-all-control apos-input-array-inline-all-control--collapse"
+          class="
+            apos-input-array-inline-all-control
+            apos-input-array-inline-all-control--collapse
+          "
           label="apostrophe:collapseAll"
           type="subtle"
           :modifiers="['inline', 'no-motion']"
@@ -66,7 +72,10 @@
                 v-for="subfield in visibleSchema()"
                 :key="subfield._id"
                 class="apos-input-array-inline-table-header-cell"
-                :class="getTableHeaderClass(subfield, 'apos-input-array-inline-table-header-cell')"
+                :class="getTableHeaderClass(
+                  subfield,
+                  'apos-input-array-inline-table-header-cell'
+                )"
                 :style="subfield.columnStyle || {}"
               >
                 {{ $t(subfield.label) }}
@@ -109,20 +118,34 @@
                 field-style="table"
                 @update:model-value="setItemsConditionalFields(item._id)"
                 @validate="emitValidate()"
-                @keydown.space="isDraggable ? toggleEngage($event, { exact: true, prevent: true }) : {}"
-                @keydown.enter="isDraggable ? toggleEngage($event, { exact: true, prevent: true }) : {}"
-                @keydown.arrow-up="isDraggable ? moveEngaged($event, item._id, -1, { prevent: true }) : {}"
-                @keydown.arrow-down="isDraggable ? moveEngaged($event, item._id, 1, { prevent: true }) : {}"
+                @keydown.space="isDraggable
+                  ? toggleEngage($event, { exact: true, prevent: true })
+                  : {}"
+                @keydown.enter="isDraggable
+                  ? toggleEngage($event, { exact: true, prevent: true })
+                  : {}"
+                @keydown.arrow-up="isDraggable
+                  ? moveEngaged($event, item._id, -1, { prevent: true })
+                  : {}"
+                @keydown.arrow-down="isDraggable
+                  ? moveEngaged($event, item._id, 1, { prevent: true })
+                  : {}"
               >
                 <template #before>
                   <td
                     v-if="isDraggable"
-                    class="apos-input-array-inline-table-cell apos-input-array-inline-table-cell--controls"
+                    class="
+                      apos-input-array-inline-table-cell
+                      apos-input-array-inline-table-cell--controls
+                    "
                     :style="field.columnStyle"
                   >
                     <AposIndicator
                       icon="drag-icon"
-                      class="apos-input-array-inline-table-cell-drag-handle apos-drag-handle"
+                      class="
+                        apos-input-array-inline-table-cell-drag-handle
+                        apos-drag-handle
+                      "
                       :decorative="false"
                       @keydown.prevent.space="toggleEngage($event, item._id)"
                       @keydown.prevent.enter="toggleEngage($event, item._id)"
@@ -130,7 +153,13 @@
                   </td>
                 </template>
                 <template #after>
-                  <td class="apos-input-array-inline-table-cell apos-input-array-inline-table-cell--controls apos-input-array-inline-table-cell--controls--menu">
+                  <td
+                    class="
+                      apos-input-array-inline-table-cell
+                      apos-input-array-inline-table-cell--controls
+                      apos-input-array-inline-table-cell--controls--menu
+                    "
+                  >
                     <AposContextMenu
                       v-if="getInlineMenuItems(index).length > 1"
                       ref="menu"
@@ -198,18 +227,31 @@
                 'apos-input-array-inline-item--engaged': item.engaged,
                 'apos-input-array-inline-item--drag-disabled': !isDraggable,
               }"
-              @keydown.prevent.exact.space="isDraggable ? toggleOpenInlineItem($event) : {}"
-              @keydown.prevent.shift.space="isDraggable ? toggleEngage($event, item._id) : {}"
-              @keydown.prevent.enter="isDraggable ? toggleEngage($event, item._id) : {}"
-              @keydown.prevent.arrow-up="isDraggable ? moveEngaged($event, item._id, -1) : {}"
-              @keydown.prevent.arrow-down="isDraggable ? moveEngaged($event, item._id, 1) : {}"
+              @keydown.prevent.exact.space="isDraggable
+                ? toggleOpenInlineItem($event)
+                : {}"
+              @keydown.prevent.shift.space="isDraggable
+                ? toggleEngage($event, item._id)
+                : {}"
+              @keydown.prevent.enter="isDraggable
+                ? toggleEngage($event, item._id)
+                : {}"
+              @keydown.prevent.arrow-up="isDraggable
+                ? moveEngaged($event, item._id, -1)
+                : {}"
+              @keydown.prevent.arrow-down="isDraggable
+                ? moveEngaged($event, item._id, 1)
+                : {}"
             >
               <div
                 class="apos-input-array-inline-header"
                 @dblclick="toggleOpenInlineItem($event)"
               >
                 <div
-                  class="apos-input-array-inline-header-ui apos-input-array-inline-header-ui--left"
+                  class="
+                    apos-input-array-inline-header-ui
+                    apos-input-array-inline-header-ui--left
+                  "
                 >
                   <AposIndicator
                     v-if="isDraggable"
@@ -221,10 +263,16 @@
                   </div>
                 </div>
                 <div
-                  class="apos-input-array-inline-header-ui apos-input-array-inline-header-ui--right"
+                  class="
+                    apos-input-array-inline-header-ui
+                    apos-input-array-inline-header-ui--right
+                  "
                 >
                   <AposButton
-                    class="apos-input-array-inline-header-ui-element apos-input-array-inline-collapse"
+                    class="
+                      apos-input-array-inline-header-ui-element
+                      apos-input-array-inline-collapse
+                    "
                     :icon-size="16"
                     label="apostrophe:close"
                     :tooltip="item.open ? 'Collapse item' : 'Expand item'"
