@@ -125,7 +125,6 @@ export default {
       },
       fieldErrors: {},
       modal: {
-        title: this.editLabel,
         active: false,
         type: 'slide',
         width: moduleOptions.width,
@@ -163,7 +162,8 @@ export default {
       }
     },
     schema() {
-      return (this.moduleOptions.schema || []).filter(field => apos.schema.components.fields[field.type]);
+      return (this.moduleOptions.schema || [])
+        .filter(field => apos.schema.components.fields[field.type]);
     },
     isModified() {
       return detectDocChange(this.schema, this.original, this.docFields.data);
