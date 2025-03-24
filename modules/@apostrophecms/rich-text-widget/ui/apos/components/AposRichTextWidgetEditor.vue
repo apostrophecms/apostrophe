@@ -9,7 +9,7 @@
       :tippy-options="{
         zIndex: 999,
         placement: 'top',
-        offset: [0, 25],
+        offset: [0, 35],
         moveTransition: 'transform 0s ease-out'
       }"
       :editor="editor"
@@ -199,10 +199,7 @@ export default {
       showPlaceholder: null,
       activeInsertMenuComponent: false,
       suppressInsertMenu: false,
-      insertMenuKey: null,
-      tableToolbar: {
-
-      }
+      insertMenuKey: null
     };
   },
   computed: {
@@ -290,15 +287,14 @@ export default {
       return this.moduleOptions.insertMenu;
     },
     isVisuallyEmpty () {
+      const div = document.createElement('div');
+      let hasTable = false;
+      div.innerHTML = this.modelValue.content;
       if (this.editor) {
-        const div = document.createElement('div');
         const editorJSON = this.editor.getJSON();
-        const hasTable = !!editorJSON?.content.filter(c => c.type === 'table').length;
-        div.innerHTML = this.modelValue.content;
-        return (!div.textContent && hasTable);
-      } else {
-        return false;
+        hasTable = !!editorJSON?.content.filter(c => c.type === 'table').length;
       }
+      return (!div.textContent && !hasTable);
     },
     editorModifiers () {
       const classes = [];

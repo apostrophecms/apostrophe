@@ -10,6 +10,7 @@
 * Add data-test attributes to the login page.
 * Adds AI-generated missing translations
 * Adds the missing "Tags" filter to the chooser/manager view of files.
+* Adds separate control bar for editing tables in rich text
 
 ### Changes
 
@@ -24,6 +25,10 @@
 * More reliable Media Manager infinite scroll pagination.
 * Fixes margin collapse in nested areas by switching to `padding` instead of `margin`
 * Fixes Edit in Media Manager when the image is not in the currently loaded images. This may happen when the the Media Manager is in a relationship mode. 
+
+### Removes
+
+* Table controls from the default rich text control bar
 
 ## 4.13.0 (2025-02-19)
 

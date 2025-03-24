@@ -31,63 +31,67 @@ export default {
   computed: {
     actions() {
       return [
-        ...([
-          {
-            command: 'addRowAfter',
-            label: 'apostrophe:addRowAfter',
-            icon: 'table-row-plus-after-icon'
-          },
-          {
-            command: 'addColumnAfter',
-            label: 'apostrophe:addColumnAfter',
-            icon: 'table-column-plus-after-icon'
-          },
-          {
-            command: 'deleteRow',
-            label: 'apostrophe:deleteRow',
-            icon: 'table-row-remove-icon'
-          },
-          {
-            command: 'deleteColumn',
-            label: 'apostrophe:deleteColumn',
-            icon: 'table-column-remove-icon'
-          },
-          {
-            command: 'mergeCells',
-            label: 'apostrophe:mergeCells',
-            icon: 'table-merge-cells-icon'
-          },
-          {
-            command: 'splitCell',
-            label: 'apostrophe:splitCell',
-            icon: 'table-split-cell-icon'
-          },
-          {
-            command: 'toggleHeaderColumn',
-            label: 'apostrophe:toggleHeaderColumn',
-            icon: 'table-column-icon'
-          },
-          {
-            command: 'toggleHeaderRow',
-            label: 'apostrophe:toggleHeaderRow',
-            icon: 'table-row-icon'
-          },
-          {
-            command: 'insertTable',
-            label: 'apostrophe:insertTable',
-            icon: 'table-plus-icon'
-          },
-          {
-            command: 'deleteTable',
-            label: 'apostrophe:deleteTable',
-            icon: 'table-minus-icon'
-          }
-        ].filter(action => this.editor.can()[action.command]())
-          .map(action => {
-            action.iconSize = 20;
-            return action;
-          }))
-      ];
+        {
+          command: 'addRowAfter',
+          label: 'apostrophe:addRowAfter',
+          icon: 'table-row-plus-after-icon',
+          iconSize: 20
+        },
+        {
+          command: 'addColumnAfter',
+          label: 'apostrophe:addColumnAfter',
+          icon: 'table-column-plus-after-icon',
+          iconSize: 20
+        },
+        {
+          command: 'deleteRow',
+          label: 'apostrophe:deleteRow',
+          icon: 'table-row-remove-icon',
+          iconSize: 20
+        },
+        {
+          command: 'deleteColumn',
+          label: 'apostrophe:deleteColumn',
+          icon: 'table-column-remove-icon',
+          iconSize: 20
+        },
+        {
+          command: 'mergeCells',
+          label: 'apostrophe:mergeCells',
+          icon: 'table-merge-cells-icon',
+          iconSize: 20
+        },
+        {
+          command: 'splitCell',
+          label: 'apostrophe:splitCell',
+          icon: 'table-split-cell-icon',
+          iconSize: 20
+        },
+        {
+          command: 'toggleHeaderColumn',
+          label: 'apostrophe:toggleHeaderColumn',
+          icon: 'table-column-icon',
+          iconSize: 20
+        },
+        {
+          command: 'toggleHeaderRow',
+          label: 'apostrophe:toggleHeaderRow',
+          icon: 'table-row-icon',
+          iconSize: 20
+        },
+        {
+          command: 'insertTable',
+          label: 'apostrophe:insertTable',
+          icon: 'table-plus-icon',
+          iconSize: 20
+        },
+        {
+          command: 'deleteTable',
+          label: 'apostrophe:deleteTable',
+          icon: 'table-minus-icon',
+          iconSize: 20
+        }
+      ].filter(action => this.editor.can()[action.command]());
     }
   }
 };
