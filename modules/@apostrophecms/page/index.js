@@ -853,6 +853,7 @@ module.exports = {
               .localizeBatch(req, self, reporting),
             {
               action: 'localize',
+              ids: req.body._ids,
               docTypes: [ self.__meta.name, '@apostrophecms/page' ]
             }
           );

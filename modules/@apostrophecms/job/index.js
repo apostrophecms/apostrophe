@@ -197,7 +197,7 @@ module.exports = {
 
           const notification = await self.triggerNotification(req, 'progress', {
             jobId: job._id,
-            ids: req.body._ids,
+            ids: options.ids,
             action: options.action,
             docTypes: options.docTypes
           });
