@@ -120,7 +120,8 @@ module.exports = {
             // can't show progress.
             jobId: total && job._id,
             ids,
-            action: options.action
+            action: options.action,
+            docTypes: options.docTypes
           });
 
           return {
@@ -195,7 +196,10 @@ module.exports = {
           job = await self.start(options);
 
           const notification = await self.triggerNotification(req, 'progress', {
-            jobId: job._id
+            jobId: job._id,
+            ids: options.ids,
+            action: options.action,
+            docTypes: options.docTypes
           });
 
           run({ notificationId: notification.noteId });
@@ -282,7 +286,8 @@ module.exports = {
           job: {
             _id: options.jobId,
             action: options.action,
-            ids: options.ids
+            ids: options.ids,
+            docTypes: options.docTypes
           },
           event,
           classes: options.classes,

@@ -67,9 +67,11 @@
             :checked-count="checked.length"
             :module-name="moduleName"
             :options="{noPager: true}"
+            :batch-operations="moduleOptions.batchOperations"
             @select-click="selectClick"
             @search="search"
             @filter="filter"
+            @batch="handleBatchAction"
           />
         </template>
         <template #bodyMain>
@@ -246,7 +248,9 @@ export default {
       }
     },
     isLastPage() {
-      return this.totalPages > 1 && this.currentPage === this.totalPages;
+      return this.totalPages > 1 &&
+        this.currentPage === this.totalPages &&
+        !this.isScrollLoading;
     }
   },
 
@@ -409,7 +413,7 @@ export default {
       await this.debouncedGetMedia.skipDelay(opts);
       this.isLoading = false;
       this.modified = false;
-      this.updateEditing(null);
+      this.clearSelected();
     },
     async filter(name, value) {
       this.filterValues[name] = value;
@@ -546,20 +550,19 @@ export default {
       this.isLoading = false;
       this.skipLoadObserver = false;
     },
-
-    async onContentChanged({ action, doc }) {
-      if (doc.type !== '@apostrophecms/image' || ![ 'archive', 'update' ].includes(action)) {
+    async onContentChanged({
+      action, doc, docTypes
+    }) {
+      const types = this.getContentChangedTypes(doc, docTypes);
+      if (!types.includes(this.moduleName)) {
         return;
       }
-
       this.modified = false;
-      if (action === 'archive') {
-        this.removeStateDoc(doc);
-      }
       if (action === 'update') {
         this.updateStateDoc(doc);
+      } else {
+        this.refetchMedia();
       }
-
       await this.updateEditing(null);
     },
 
@@ -575,6 +578,8 @@ export default {
       }
     },
 
+    // Keep it for later when we will be able to udpate the UI without refreshing existing
+    // because it would break pagination.
     removeStateDoc(doc) {
       const index = this.items.findIndex(item => item._id === doc._id);
       const checkedIndex = this.checked.findIndex(checkedId => checkedId === doc._id);
@@ -657,6 +662,29 @@ export default {
       this.disconnectObserver();
       if (ref) {
         this.observeLoadRef();
+      }
+    },
+    async handleBatchAction({
+      label, action, requestOptions = {}, messages
+    }) {
+      if (action) {
+        try {
+          await apos.http.post(`${this.moduleOptions.action}/${action}`, {
+            body: {
+              ...requestOptions,
+              _ids: this.checked,
+              messages,
+              type: this.checked.length === 1 ? this.moduleLabels.singular
+                : this.moduleLabels.plural
+            }
+          });
+        } catch (error) {
+          apos.notify('apostrophe:errorBatchOperationNoti', {
+            interpolate: { operation: this.$t(label) },
+            type: 'danger'
+          });
+          console.error(error);
+        }
       }
     }
   }
