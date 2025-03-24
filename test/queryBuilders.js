@@ -206,16 +206,18 @@ function getPersons(instance, withSeniors = false) {
       title: 'Marie',
       age: 50
     },
-    ...withSeniors ? [
-      {
-        title: 'Jules',
-        age: 72
-      },
-      {
-        title: 'Renée',
-        age: 80
-      }
-    ] : []
+    ...withSeniors
+      ? [
+        {
+          title: 'Jules',
+          age: 72
+        },
+        {
+          title: 'Renée',
+          age: 80
+        }
+      ]
+      : []
   ].map((p, i) => ({
     _id: `${moduleName}${i}`,
     ...instance.newInstance(),

@@ -17,8 +17,14 @@
                 'apos-marks-control__item--is-active': activeClasses.includes(mark.class)
               }"
             >
-              <button class="apos-marks-control__button" @click="toggleStyle(mark)">
-                <span class="apos-marks-control__label" :class="mark.class">
+              <button
+                class="apos-marks-control__button"
+                @click="toggleStyle(mark)"
+              >
+                <span
+                  class="apos-marks-control__label"
+                  :class="mark.class"
+                >
                   {{ $t(mark.label) }}
                 </span>
               </button>

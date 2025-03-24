@@ -1,6 +1,9 @@
 <template>
   <div class="apos-tag">
-    <button class="apos-tag__button" @click="click">
+    <button
+      class="apos-tag__button"
+      @click="click"
+    >
       <close-icon
         class="apos-tag__remove"
         title="Remove Tag"

@@ -118,6 +118,7 @@ export const useNotificationStore = defineStore('notification', () => {
         setTimeout(poll, 50);
       }
     } catch (err) {
+      // eslint-disable-next-line no-console
       console.error(err);
       setTimeout(poll, 5000);
     }
@@ -176,6 +177,7 @@ export const useNotificationStore = defineStore('notification', () => {
         action: jobInfo.value.action || 'batch-update'
       });
     } catch (err) {
+      // eslint-disable-next-line no-console
       console.error(err);
       dismiss(notifId);
     }

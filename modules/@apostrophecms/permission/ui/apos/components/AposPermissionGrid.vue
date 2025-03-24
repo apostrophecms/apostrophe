@@ -27,10 +27,16 @@
               :icon="permission.value ? 'check-bold-icon' : 'close-icon'"
               :icon-color="permission.value ? 'var(--a-success)' : 'var(--a-base-5)'"
             />
-            <span v-if="permission.value" class="apos-sr-only">
+            <span
+              v-if="permission.value"
+              class="apos-sr-only"
+            >
               {{ $t('apostrophe:enabled') }}
             </span>
-            <span v-else class="apos-sr-only">
+            <span
+              v-else
+              class="apos-sr-only"
+            >
               {{ $t('apostrophe:disabled') }}
             </span>
           </dd>

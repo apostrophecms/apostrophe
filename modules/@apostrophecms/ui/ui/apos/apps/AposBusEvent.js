@@ -19,6 +19,7 @@ export default function() {
       if (name) {
         apos.bus.$emit(name, json.data || null);
       } else {
+        // eslint-disable-next-line no-console
         console.error('Apostrophe bus events require a name');
         apos.notify('apostrophe:error', { type: 'error' });
       }

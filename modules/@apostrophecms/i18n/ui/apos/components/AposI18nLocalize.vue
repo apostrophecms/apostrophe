@@ -42,7 +42,10 @@
             </h2>
           </header>
 
-          <form class="apos-wizard__form" @submit.prevent>
+          <form
+            class="apos-wizard__form"
+            @submit.prevent
+          >
             <fieldset
               v-if="isStep('selectContent')"
               class="apos-wizard__step apos-wizard__step-select-content"
@@ -205,7 +208,10 @@
                   v-model="wizard.values.relatedDocTypesToLocalize"
                   :field="relatedDocTypesField"
                 />
-                <p v-else class="apos-wizard__help-text">
+                <p
+                  v-else
+                  class="apos-wizard__help-text"
+                >
                   <AposIndicator
                     class="apos-wizard__help-text__icon"
                     icon="lightbulb-on-icon"
@@ -215,7 +221,10 @@
                   {{ $t('apostrophe:noNewRelatedDocuments') }}
                 </p>
               </div>
-              <div v-if="translationEnabled" class="apos-wizard__translation">
+              <div
+                v-if="translationEnabled"
+                class="apos-wizard__translation"
+              >
                 <p class="apos-wizard__translation-title">
                   <AposTranslationIndicator :size="18" />
                   <span class="apos-wizard__translation-title-text">

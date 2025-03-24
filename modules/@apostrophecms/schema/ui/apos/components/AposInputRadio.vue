@@ -25,7 +25,10 @@
           :disabled="field.readOnly"
           @change="change($event.target.value)"
         >
-        <span class="apos-input-indicator" aria-hidden="true">
+        <span
+          class="apos-input-indicator"
+          aria-hidden="true"
+        >
           <component
             :is="`${next === value ? 'check-bold-icon' : 'span'}`"
             v-if="next === value"

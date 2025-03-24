@@ -12,7 +12,10 @@
       @update="update"
     >
       <template #item="{element: item}">
-        <transition-group type="transition" name="apos-flip-list">
+        <transition-group
+          type="transition"
+          name="apos-flip-list"
+        >
           <AposSlat
             :key="item._id"
             class="apos-slat-list__item"

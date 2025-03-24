@@ -1,5 +1,8 @@
 <template>
-  <div role="alert" :class="classList">
+  <div
+    role="alert"
+    :class="classList"
+  >
     <span class="apos-notification__indicator">
       <AposIndicator
         :icon="iconComponent"
@@ -7,7 +10,10 @@
         :icon-size="notification.icon ? 16 : 12"
       />
     </span>
-    <span ref="label" class="apos-notification__label">
+    <span
+      ref="label"
+      class="apos-notification__label"
+    >
       {{ localize(notification.message) }}
       <!-- OK to use index as key because buttons are constant for the lifetime of the notification -->
       <button
@@ -22,7 +28,10 @@
         {{ localize(button.label) }}
       </button>
     </span>
-    <div v-if="process" class="apos-notification__progress">
+    <div
+      v-if="process"
+      class="apos-notification__progress"
+    >
       <div class="apos-notification__progress-bar">
         <div
           class="apos-notification__progress-now"

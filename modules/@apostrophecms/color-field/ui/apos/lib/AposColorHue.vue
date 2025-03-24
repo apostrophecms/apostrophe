@@ -1,5 +1,8 @@
 <template>
-  <div class="apos-color__hue" :class="[directionClass]">
+  <div
+    class="apos-color__hue"
+    :class="[directionClass]"
+  >
     <div
       ref="container"
       class="apos-color__hue-container"

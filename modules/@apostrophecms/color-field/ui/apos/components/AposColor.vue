@@ -10,19 +10,37 @@
       !presetColors ? 'apos-color--disable-presets' : null
     ]"
   >
-    <div v-if="!disableSpectrum" class="apos-color__saturation-wrap">
-      <Saturation :value="colors" @change="childChange" />
+    <div
+      v-if="!disableSpectrum"
+      class="apos-color__saturation-wrap"
+    >
+      <Saturation
+        :value="colors"
+        @change="childChange"
+      />
     </div>
     <div
       v-if="!(disableSpectrum && disableAlpha)"
       class="apos-color__controls"
     >
       <div class="apos-color__sliders">
-        <div v-if="!disableSpectrum" class="apos-color__hue-wrap">
-          <Hue :value="colors" @change="childChange" />
+        <div
+          v-if="!disableSpectrum"
+          class="apos-color__hue-wrap"
+        >
+          <Hue
+            :value="colors"
+            @change="childChange"
+          />
         </div>
-        <div v-if="!disableAlpha" class="apos-color__alpha-wrap">
-          <Alpha :value="colors" @change="childChange" />
+        <div
+          v-if="!disableAlpha"
+          class="apos-color__alpha-wrap"
+        >
+          <Alpha
+            :value="colors"
+            @change="childChange"
+          />
         </div>
       </div>
       <div class="apos-color__color-wrap">
@@ -35,7 +53,10 @@
         <AposColorCheckerboard />
       </div>
     </div>
-    <div v-if="!disableFields" class="apos-color__field">
+    <div
+      v-if="!disableFields"
+      class="apos-color__field"
+    >
       <!-- rgba -->
       <div class="apos-color__field--double">
         <EditableContent
@@ -65,7 +86,10 @@
           @change="inputChange"
         />
       </div>
-      <div v-if="!disableAlpha" class="apos-color__field--single">
+      <div
+        v-if="!disableAlpha"
+        class="apos-color__field--single"
+      >
         <EditableContent
           label="a"
           :value="colors.a"

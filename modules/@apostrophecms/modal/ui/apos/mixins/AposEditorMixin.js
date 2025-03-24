@@ -42,7 +42,8 @@ export default {
 
   computed: {
     schema() {
-      let schema = (this.moduleOptions.schema || []).filter(field => apos.schema.components.fields[field.type]);
+      let schema = (this.moduleOptions.schema || [])
+        .filter(field => apos.schema.components.fields[field.type]);
       if (this.restoreOnly || this.readOnly) {
         schema = klona(schema);
         for (const field of schema) {
@@ -99,7 +100,9 @@ export default {
 
       for (const field of fields) {
         if (field.following) {
-          const following = Array.isArray(field.following) ? field.following : [ field.following ];
+          const following = Array.isArray(field.following)
+            ? field.following
+            : [ field.following ];
           followingValues[field.name] = {};
           for (const name of following) {
             if (name.startsWith('<')) {
@@ -166,6 +169,7 @@ export default {
     // in the schema. fallback is a fallback error message, if none is provided
     // by the server.
     async handleSaveError(e, { fallback }) {
+      // eslint-disable-next-line no-console
       console.error(e);
       if (e.body && e.body.data && e.body.data.errors) {
         const serverErrors = {};
@@ -219,7 +223,8 @@ export default {
           body: {
             relationship: relationship.value,
             // Pass the options of the widget currently being edited, some
-            // postprocessors need these (e.g. autocropping cares about widget aspectRatio)
+            // postprocessors need these
+            // (e.g. autocropping cares about widget aspectRatio)
             widgetOptions: apos.area.widgetOptions[0]
           },
           busy: true
@@ -236,10 +241,16 @@ export default {
             });
           } else if (field.type === 'array') {
             for (const value of (object[field.name] || [])) {
-              relationships = [ ...relationships, findRelationships(field.schema, value) ];
+              relationships = [
+                ...relationships,
+                findRelationships(field.schema, value)
+              ];
             }
           } else if (field.type === 'object') {
-            relationships = [ ...relationships, findRelationships(field.schema, object[field.name] || {}) ];
+            relationships = [
+              ...relationships,
+              findRelationships(field.schema, object[field.name] || {})
+            ];
           }
         }
         return relationships;

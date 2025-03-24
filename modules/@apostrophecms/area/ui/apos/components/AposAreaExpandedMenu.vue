@@ -15,7 +15,12 @@
             :key="groupIndex"
             class="apos-widget-group"
           >
-            <h2 v-if="group.label" class="apos-widget-group__label">{{ $t(group.label) }}</h2>
+            <h2
+              v-if="group.label"
+              class="apos-widget-group__label"
+            >
+              {{ $t(group.label) }}
+            </h2>
             <div
               :class="[
                 `apos-widget-group--${group.columns}-column${
@@ -52,7 +57,10 @@
                 <p class="apos-widget__label">
                   {{ $t(item.label) }}
                 </p>
-                <p v-if="item.description" class="apos-widget__help">
+                <p
+                  v-if="item.description"
+                  class="apos-widget__help"
+                >
                   {{ $t(item.description) }}
                 </p>
               </button>

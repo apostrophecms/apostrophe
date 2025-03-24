@@ -1,5 +1,8 @@
 <template>
-  <AposContextMenu :button="button" menu-placement="bottom">
+  <AposContextMenu
+    :button="button"
+    menu-placement="bottom"
+  >
     <div class="apos-filters-menu">
       <div
         v-for="set in filterSets"

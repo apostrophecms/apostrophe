@@ -11,7 +11,9 @@ module.exports = (self) => {
     name: 'area',
     async convert(req, field, data, destination, { fetchRelationships = true } = {}) {
       const options = { fetchRelationships };
-      const _id = self.apos.launder.id(data[field.name] && data[field.name]._id) || self.apos.util.generateId();
+      const _id = self.apos.launder.id(
+        data[field.name] && data[field.name]._id
+      ) || self.apos.util.generateId();
       if (typeof data[field.name] === 'string') {
         destination[field.name] = self.apos.area.fromPlaintext(data[field.name]);
         return;
@@ -109,11 +111,18 @@ module.exports = (self) => {
     name: 'string',
     convert(req, field, data, destination) {
       destination[field.name] = self.apos.launder.string(data[field.name]);
-      destination[field.name] = checkStringLength(destination[field.name], field.min, field.max);
+      destination[field.name] = checkStringLength(
+        destination[field.name],
+        field.min,
+        field.max
+      );
       // If field is required but empty (and client side didn't catch that)
       // This is new and until now if JS client side failed, then it would
       // allow the save with empty values -Lars
-      if (field.required && (_.isUndefined(data[field.name]) || !data[field.name].toString().length)) {
+      if (
+        field.required &&
+        (_.isUndefined(data[field.name]) || !data[field.name].toString().length)
+      ) {
         throw self.apos.error('required');
       }
 
@@ -177,7 +186,10 @@ module.exports = (self) => {
     convert (req, field, data, destination) {
       const options = self.getSlugFieldOptions(field, data);
 
-      destination[field.name] = self.apos.util.slugify(self.apos.launder.string(data[field.name]), options);
+      destination[field.name] = self.apos.util.slugify(
+        self.apos.launder.string(data[field.name]),
+        options
+      );
 
       if (field.page) {
         if (!(destination[field.name].charAt(0) === '/')) {
@@ -200,7 +212,12 @@ module.exports = (self) => {
             if (field.page) {
               slugifyOptions = { allow: '/' };
             }
-            criteria[field.name] = new RegExp(self.apos.util.regExpQuote(self.apos.util.slugify(query.get(field.name), slugifyOptions)));
+            criteria[field.name] = new RegExp(
+              self.apos.util.regExpQuote(
+                self.apos.util.slugify(query.get(field.name),
+                  slugifyOptions)
+              )
+            );
             query.and(criteria);
           }
         },
@@ -312,7 +329,8 @@ module.exports = (self) => {
           if (self.queryBuilderInterested(query, field.name)) {
             const criteria = {};
             let v = query.get(field.name);
-            // Allow programmers to pass just one value too (sanitize doesn't apply to them)
+            // Allow programmers to pass just one value too
+            // (sanitize doesn't apply to them)
             if (!Array.isArray(v)) {
               v = [ v ];
             }
@@ -366,7 +384,8 @@ module.exports = (self) => {
           if (self.queryBuilderInterested(query, field.name)) {
             const criteria = {};
             let v = query.get(field.name);
-            // Allow programmers to pass just one value too (sanitize doesn't apply to them)
+            // Allow programmers to pass just one value too
+            // (sanitize doesn't apply to them)
             if (!Array.isArray(v)) {
               v = [ v ];
             }
@@ -406,15 +425,24 @@ module.exports = (self) => {
     name: 'integer',
     vueComponent: 'AposInputString',
     async convert(req, field, data, destination) {
-      destination[field.name] = self.apos.launder.integer(data[field.name], undefined, field.min, field.max);
-      if (field.required && ((data[field.name] == null) || !data[field.name].toString().length)) {
+      destination[field.name] = self.apos.launder.integer(
+        data[field.name],
+        undefined,
+        field.min,
+        field.max
+      );
+      if (
+        field.required &&
+        ((data[field.name] == null) || !data[field.name].toString().length)
+      ) {
         throw self.apos.error('required');
       }
       if (data[field.name] && isNaN(parseFloat(data[field.name]))) {
         throw self.apos.error('invalid');
       }
-      // This makes it possible to have a field that is not required, but min / max defined.
-      // This allows the form to be saved and sets the value to null if no value was given by
+      // This makes it possible to have a field that is not required,
+      // but min / max defined. This allows the form to be saved and
+      // sets the value to null if no value was given by
       // the user.
       if (!data[field.name] && data[field.name] !== 0) {
         destination[field.name] = null;
@@ -460,8 +488,16 @@ module.exports = (self) => {
     name: 'float',
     vueComponent: 'AposInputString',
     async convert(req, field, data, destination) {
-      destination[field.name] = self.apos.launder.float(data[field.name], undefined, field.min, field.max);
-      if (field.required && (_.isUndefined(data[field.name]) || !data[field.name].toString().length)) {
+      destination[field.name] = self.apos.launder.float(
+        data[field.name],
+        undefined,
+        field.min,
+        field.max
+      );
+      if (
+        field.required &&
+        (_.isUndefined(data[field.name]) || !data[field.name].toString().length)
+      ) {
         throw self.apos.error('required');
       }
       if (data[field.name] && isNaN(parseFloat(data[field.name]))) {
@@ -533,7 +569,10 @@ module.exports = (self) => {
     async convert(req, field, data, destination) {
       destination[field.name] = self.apos.launder.url(data[field.name], undefined, true);
 
-      if (field.required && (data[field.name] == null || !data[field.name].toString().length)) {
+      if (
+        field.required &&
+        (data[field.name] == null || !data[field.name].toString().length)
+      ) {
         throw self.apos.error('required');
       }
 
@@ -688,7 +727,11 @@ module.exports = (self) => {
       if (data[field.name]) {
         destination[field.name] = self.apos.launder.string(data[field.name]);
 
-        destination[field.name] = checkStringLength(destination[field.name], field.min, field.max);
+        destination[field.name] = checkStringLength(
+          destination[field.name],
+          field.min,
+          field.max
+        );
       }
     },
     def: ''
@@ -702,15 +745,23 @@ module.exports = (self) => {
     name: 'range',
     vueComponent: 'AposInputRange',
     async convert(req, field, data, destination) {
-      destination[field.name] = self.apos.launder.float(data[field.name], undefined, field.min, field.max);
-      if (field.required && (_.isUndefined(data[field.name]) || !data[field.name].toString().length)) {
+      destination[field.name] = self.apos.launder.float(
+        data[field.name],
+        undefined,
+        field.min,
+        field.max
+      );
+      if (
+        field.required &&
+        (_.isUndefined(data[field.name]) || !data[field.name].toString().length)
+      ) {
         throw self.apos.error('required');
       }
       if (data[field.name] && isNaN(parseFloat(data[field.name]))) {
         throw self.apos.error('invalid');
       }
-      // Allow for ranges to go unset
-      // `min` here does not imply requirement, it is the minimum value the range UI will represent
+      // Allow for ranges to go unset `min` here does not imply requirement,
+      // it is the minimum value the range UI will represent
       if (
         typeof destination[field.name] !== 'number' ||
         data[field.name] < field.min ||
@@ -766,7 +817,8 @@ module.exports = (self) => {
       const errors = [];
       for (const datum of data) {
         const _id = self.apos.launder.id(datum._id) || self.apos.util.generateId();
-        const [ found ] = destination[field.name]?.filter?.(item => item._id === _id) || [];
+        const [ found ] = destination[field.name]
+          ?.filter?.(item => item._id === _id) || [];
         const result = {
           ...(found || {}),
           _id
@@ -803,7 +855,8 @@ module.exports = (self) => {
         throw self.apos.error('max');
       }
       if (data.length && field.schema && field.schema.length) {
-        const { name: uniqueFieldName, label: uniqueFieldLabel } = field.schema.find(subfield => subfield.unique) || [];
+        const { name: uniqueFieldName, label: uniqueFieldLabel } = field.schema
+          .find(subfield => subfield.unique) || [];
         if (uniqueFieldName) {
           const duplicates = data
             .map(item => (Array.isArray(item[uniqueFieldName])
@@ -1017,7 +1070,13 @@ module.exports = (self) => {
 
           const _fields = {};
           if (field.schema?.length) {
-            await self.convert(req, field.schema, relation._fields || {}, _fields, options);
+            await self.convert(
+              req,
+              field.schema,
+              relation._fields || {},
+              _fields,
+              options
+            );
           }
 
           destination[field.name].push({
@@ -1058,12 +1117,16 @@ module.exports = (self) => {
         destination[field.name] = [];
         return;
       }
-      const results = await manager.find(req, { $or: clauses }).relationships(false).toArray();
+      const results = await manager
+        .find(req, { $or: clauses })
+        .relationships(false)
+        .toArray();
       // Must maintain input order. Also discard things not actually found in the db
       const actualDocs = [];
       for (const item of input) {
         if ((typeof item) === 'string') {
-          const result = results.find(result => (result.title === item) || (result._id === item));
+          const result = results
+            .find(result => (result.title === item) || (result._id === item));
           if (result) {
             actualDocs.push(result);
           }
@@ -1071,14 +1134,22 @@ module.exports = (self) => {
           const result = results.find(doc => (doc._id === item._id));
           if (result) {
             if (field.schema) {
-              const destItem = (Array.isArray(destination[field.name]) ? destination[field.name] : [])
-                .find((doc) => doc._id === item._id);
+              const destArray = Array.isArray(destination[field.name])
+                ? destination[field.name]
+                : [];
+              const destItem = destArray.find((doc) => doc._id === item._id);
               result._fields = {
                 ...destItem?._fields || {}
               };
 
               if (item && ((typeof item._fields === 'object'))) {
-                await self.convert(req, field.schema, item._fields || {}, result._fields, options);
+                await self.convert(
+                  req,
+                  field.schema,
+                  item._fields || {},
+                  result._fields,
+                  options
+                );
               }
             }
             actualDocs.push(result);
@@ -1159,8 +1230,8 @@ module.exports = (self) => {
         field.idsStorage = field.name.replace(/^_/, '') + 'Ids';
       }
       if (!field.withType) {
-        // Try to supply reasonable value based on relationship name. Relationship name will be plural,
-        // so consider that too
+        // Try to supply reasonable value based on relationship name.
+        // Relationship name will be plural, so consider that too
         const withType = field.name.replace(/^_/, '').replace(/s$/, '');
         if (!_.find(self.apos.doc.managers, { name: withType })) {
           fail('withType property is missing. Hint: it must match the name of a doc type module. Or omit it and give your relationship the same name as the other type, with a leading _ and optional trailing s.');
@@ -1178,15 +1249,24 @@ module.exports = (self) => {
         lintType(field.withType);
         const withTypeManager = self.apos.doc.getManager(field.withType);
         field.editor = field.editor || withTypeManager.options.relationshipEditor;
-        field.postprocessor = field.postprocessor || withTypeManager.options.relationshipPostprocessor;
-        field.editorLabel = field.editorLabel || withTypeManager.options.relationshipEditorLabel;
-        field.editorIcon = field.editorIcon || withTypeManager.options.relationshipEditorIcon;
-        field.suggestionLabel = field.suggestionLabel || withTypeManager.options.relationshipSuggestionLabel;
-        field.suggestionHelp = field.suggestionHelp || withTypeManager.options.relationshipSuggestionHelp;
-        field.suggestionLimit = field.suggestionLimit || withTypeManager.options.relationshipSuggestionLimit;
-        field.suggestionSort = field.suggestionSort || withTypeManager.options.relationshipSuggestionSort;
-        field.suggestionIcon = field.suggestionIcon || withTypeManager.options.relationshipSuggestionIcon;
-        field.suggestionFields = field.suggestionFields || withTypeManager.options.relationshipSuggestionFields;
+        field.postprocessor = field.postprocessor ||
+          withTypeManager.options.relationshipPostprocessor;
+        field.editorLabel = field.editorLabel ||
+          withTypeManager.options.relationshipEditorLabel;
+        field.editorIcon = field.editorIcon ||
+          withTypeManager.options.relationshipEditorIcon;
+        field.suggestionLabel = field.suggestionLabel ||
+          withTypeManager.options.relationshipSuggestionLabel;
+        field.suggestionHelp = field.suggestionHelp ||
+          withTypeManager.options.relationshipSuggestionHelp;
+        field.suggestionLimit = field.suggestionLimit ||
+          withTypeManager.options.relationshipSuggestionLimit;
+        field.suggestionSort = field.suggestionSort ||
+          withTypeManager.options.relationshipSuggestionSort;
+        field.suggestionIcon = field.suggestionIcon ||
+          withTypeManager.options.relationshipSuggestionIcon;
+        field.suggestionFields = field.suggestionFields ||
+          withTypeManager.options.relationshipSuggestionFields;
 
         if (!field.schema && !Array.isArray(field.withType)) {
           const fieldsOption = withTypeManager.options.relationshipFields;
@@ -1247,9 +1327,21 @@ module.exports = (self) => {
     vueComponent: false,
     relate: async function (req, field, objects, options) {
       if ((!self.apos.doc?.replicateReached) && (!field.idsStorage)) {
-        self.apos.util.warnDevOnce('premature-relationship-query', 'Database queries for types with relationships may fail if made before the @apostrophecms/doc:beforeReplicate event');
+        self.apos.util.warnDevOnce(
+          'premature-relationship-query',
+          'Database queries for types with relationships may fail if made before the @apostrophecms/doc:beforeReplicate event'
+        );
       }
-      return self.relationshipDriver(req, joinr.byArrayReverse, true, objects, field.idsStorage, field.fieldsStorage, field.name, options);
+      return self.relationshipDriver(
+        req,
+        joinr.byArrayReverse,
+        true,
+        objects,
+        field.idsStorage,
+        field.fieldsStorage,
+        field.name,
+        options
+      );
     },
     validate: function (field, options, warn, fail) {
       let forwardRelationship;
@@ -1264,7 +1356,10 @@ module.exports = (self) => {
         }
         field.withType = withType;
       }
-      const otherModule = _.find(self.apos.doc.managers, { name: self.apos.doc.normalizeType(field.withType) });
+      const otherModule = _.find(
+        self.apos.doc.managers,
+        { name: self.apos.doc.normalizeType(field.withType) }
+      );
       if (!otherModule) {
         fail('withType property, ' + field.withType + ', does not match the name of a piece or page type module.');
       }

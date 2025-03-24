@@ -15,7 +15,7 @@
       // No requests when tab is not active
       setTimeout(check, 5000);
     } else {
-      apos.http.post(document.querySelector('[data-apos-refresh-on-restart]').getAttribute('data-apos-refresh-on-restart'), {
+      window.apos.http.post(document.querySelector('[data-apos-refresh-on-restart]').getAttribute('data-apos-refresh-on-restart'), {
         qs: {
           fast
         }

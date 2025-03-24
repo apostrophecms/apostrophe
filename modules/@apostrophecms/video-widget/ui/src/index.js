@@ -81,6 +81,7 @@ export default () => {
       function fail(err) {
         apos.util.removeClass(el, 'apos-oembed-busy');
         apos.util.addClass(el, 'apos-oembed-invalid');
+        // eslint-disable-next-line no-console
         console.error(err);
         if (err !== 'undefined') {
           el.innerHTML = '<p>Error loading video</p>';

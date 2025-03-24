@@ -281,7 +281,8 @@ module.exports = {
           interpolate: interpolate || options.interpolate || {},
           // Defaults to true, otherwise launder as boolean
           localize: has(req.body, 'localize')
-            ? self.apos.launder.boolean(req.body.localize) : true,
+            ? self.apos.launder.boolean(req.body.localize)
+            : true,
           job: options.job || null,
           event: options.event,
           classes: options.classes || null

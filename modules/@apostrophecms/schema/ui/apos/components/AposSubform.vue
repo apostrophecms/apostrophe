@@ -1,9 +1,18 @@
 <template>
-  <div class="apos-subform" :class="{ 'apos-separator': separator }">
+  <div
+    class="apos-subform"
+    :class="{ 'apos-separator': separator }"
+  >
     <!-- Schema -->
     <transition name="slide-fade">
-      <div v-if="expanded" class="apos-subform__schema">
-        <span v-if="subform.label" class="apos-subform__schema-label">
+      <div
+        v-if="expanded"
+        class="apos-subform__schema"
+      >
+        <span
+          v-if="subform.label"
+          class="apos-subform__schema-label"
+        >
           {{ $t(subform.label) }}
         </span>
         <AposSchema
@@ -40,7 +49,10 @@
       </div>
     </transition>
     <!-- Preview mode -->
-    <div v-if="!expanded" class="apos-subform__preview">
+    <div
+      v-if="!expanded"
+      class="apos-subform__preview"
+    >
       <div class="apos-subform__preview-grid">
         <AposSubformPreview
           :subform="subform"

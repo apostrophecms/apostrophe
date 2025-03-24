@@ -63,20 +63,24 @@ export default {
     },
     inlineContextMenu() {
       return [
-        ...(this.isDraggable ? [
-          {
-            label: this.$t('apostrophe:moveUp'),
-            action: 'move-up'
-          },
-          {
-            label: this.$t('apostrophe:moveDown'),
-            action: 'move-down'
-          }
-        ] : []),
-        ...(this.field.duplicate !== false ? [ {
-          label: this.$t('apostrophe:duplicate'),
-          action: 'duplicate'
-        } ] : []),
+        ...(this.isDraggable
+          ? [
+            {
+              label: this.$t('apostrophe:moveUp'),
+              action: 'move-up'
+            },
+            {
+              label: this.$t('apostrophe:moveDown'),
+              action: 'move-down'
+            }
+          ]
+          : []),
+        ...(this.field.duplicate !== false
+          ? [ {
+            label: this.$t('apostrophe:duplicate'),
+            action: 'duplicate'
+          } ]
+          : []),
         {
           label: this.$t('apostrophe:remove'),
           action: 'remove',

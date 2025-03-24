@@ -4,7 +4,10 @@
     class="apos-admin-bar-wrapper"
     :class="themeClass"
   >
-    <div ref="spacer" class="apos-admin-bar-spacer" />
+    <div
+      ref="spacer"
+      class="apos-admin-bar-spacer"
+    />
     <nav
       ref="adminBar"
       class="apos-admin-bar"

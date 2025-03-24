@@ -1,5 +1,8 @@
 <template>
-  <div class="apos-modal__rail" :class="`apos-modal__rail--${type}`">
+  <div
+    class="apos-modal__rail"
+    :class="`apos-modal__rail--${type}`"
+  >
     <slot />
   </div>
 </template>

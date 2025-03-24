@@ -21,45 +21,49 @@
           @click="create"
         />
       </div>
-      <transition name="fade">
-        <div>
-          <ol v-if="searchTags.length && !creating" class="apos-apply-tag-menu__tags">
-            <li
-              v-for="tag in searchTags"
-              :key="`${keyPrefix}-${tag.slug}`"
-              class="apos-apply-tag-menu__tag"
-            >
-              <AposCheckbox
-                v-if="checkboxes[tag.slug]"
-                v-model="checked"
-                :field="checkboxes[tag.slug].field"
-                :status="checkboxes[tag.slug].status"
-                :choice="checkboxes[tag.slug].choice"
-                :disable-focus="!open"
-                @updated="updateTag"
-              />
-            </li>
-          </ol>
-          <div v-if="(!searchTags.length && myTags.length) && !creating" class="apos-apply-tag-menu__empty">
-            <p class="apos-apply-tag-menu__empty-message">
-              {{ $t('apostrophe:tagNoTagsFoundPerhaps') }}
-              <AposButton
-                :label="{
-                  key: 'apostrophe:tagNoTagsFoundCreateOne',
-                  tag: searchInputValue
-                }"
-                type="quiet"
-                :disabled="disabledCreate"
-                :disable-focus="!open"
-                @click="create"
-              />
-            </p>
-            <span class="apos-apply-tag-menu__empty-icon">
-              🌾
-            </span>
-          </div>
+      <div>
+        <ol
+          v-if="searchTags.length && !creating"
+          class="apos-apply-tag-menu__tags"
+        >
+          <li
+            v-for="tag in searchTags"
+            :key="`${keyPrefix}-${tag.slug}`"
+            class="apos-apply-tag-menu__tag"
+          >
+            <AposCheckbox
+              v-if="checkboxes[tag.slug]"
+              v-model="checked"
+              :field="checkboxes[tag.slug].field"
+              :status="checkboxes[tag.slug].status"
+              :choice="checkboxes[tag.slug].choice"
+              :disable-focus="!open"
+              @updated="updateTag"
+            />
+          </li>
+        </ol>
+        <div
+          v-if="(!searchTags.length && myTags.length) && !creating"
+          class="apos-apply-tag-menu__empty"
+        >
+          <p class="apos-apply-tag-menu__empty-message">
+            {{ $t('apostrophe:tagNoTagsFoundPerhaps') }}
+            <AposButton
+              :label="{
+                key: 'apostrophe:tagNoTagsFoundCreateOne',
+                tag: searchInputValue
+              }"
+              type="quiet"
+              :disabled="disabledCreate"
+              :disable-focus="!open"
+              @click="create"
+            />
+          </p>
+          <span class="apos-apply-tag-menu__empty-icon">
+            🌾
+          </span>
         </div>
-      </transition>
+      </div>
     </div>
   </AposContextMenu>
 </template>
