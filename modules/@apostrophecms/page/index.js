@@ -777,7 +777,8 @@ module.exports = {
               await self.publish(req, piece);
             },
             {
-              action: 'publish'
+              action: 'publish',
+              docTypes: [ self.__meta.name, '@apostrophecms/page' ]
             }
           );
         },
@@ -807,7 +808,8 @@ module.exports = {
               );
             },
             {
-              action: 'archive'
+              action: 'archive',
+              docTypes: [ self.__meta.name, '@apostrophecms/page' ]
             }
           );
         },
@@ -837,7 +839,8 @@ module.exports = {
               );
             },
             {
-              action: 'restore'
+              action: 'restore',
+              docTypes: [ self.__meta.name, '@apostrophecms/page' ]
             }
           );
         },
@@ -847,7 +850,12 @@ module.exports = {
           return self.apos.modules['@apostrophecms/job'].run(
             req,
             (req, reporting) => self.apos.modules['@apostrophecms/i18n']
-              .localizeBatch(req, self, reporting)
+              .localizeBatch(req, self, reporting),
+            {
+              action: 'localize',
+              ids: req.body._ids,
+              docTypes: [ self.__meta.name, '@apostrophecms/page' ]
+            }
           );
         }
       },

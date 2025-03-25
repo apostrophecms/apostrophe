@@ -532,9 +532,15 @@ export default {
         return item._id;
       });
     },
-    async onContentChanged({ doc, action }) {
+    async onContentChanged({
+      doc, action, docIds, docTypes
+    }) {
+      const types = this.getContentChangedTypes(doc, docTypes);
+      if (!types.includes(this.moduleName)) {
+        return;
+      }
       if (
-        !doc ||
+        docIds ||
         !doc.aposLocale ||
         doc.aposLocale.split(':')[0] === this.modalData.locale
       ) {
