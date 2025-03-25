@@ -414,7 +414,6 @@ export default {
       onBlur: () => {
         this.isFocused = false;
         this.$nextTick(() => {
-          console.log(!!this.editor.getJSON()?.content.filter(c => c.type === 'table').length);
           this.showPlaceholder = true;
         });
       }
@@ -437,7 +436,6 @@ export default {
       return Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
     },
     handleUIKeydown(e) {
-      console.log(this.editor.getAttributes('table').style);
       if (e.key === 'Escape') {
         this.doSuppressInsertMenu();
       } else {
@@ -967,61 +965,60 @@ function traverseNextNode(node) {
 :deep(.ProseMirror) { /* stylelint-disable-line selector-class-pattern */
   /* Table-specific styling */
   table {
-    border-collapse: collapse;
-    margin: 0;
     overflow: hidden;
-    table-layout: fixed;
     width: 100%;
+    margin: 0;
+    border-collapse: collapse;
+    table-layout: fixed;
 
     td,
     th {
-      border: 1px solid var(--a-base-4);
-      box-sizing: border-box;
-      min-width: 1em;
-      padding: 6px 8px;
       position: relative;
+      box-sizing: border-box;
+      padding: 6px 8px;
+      border: 1px solid var(--a-base-4);
+      min-width: 1em;
       vertical-align: top;
 
-      > * {
+      > * { /* stylelint-disable-line max-nesting-depth */
         margin-bottom: 0;
       }
     }
 
     th {
       background-color: var(--a-base-8);
-      font-weight: bold;
+      font-weight: 700;
       text-align: left;
     }
 
-    .selectedCell {
-        &:after {
+    .selectedCell { /* stylelint-disable-line selector-class-pattern */
+        &::after { /* stylelint-disable-line max-nesting-depth */
+        z-index: $z-index-manager-display;
+        position: absolute; inset: 0;
         background: var(--a-base-3);
         opacity: 0.25;
         content: "";
-        left: 0; right: 0; top: 0; bottom: 0;
         pointer-events: none;
-        position: absolute;
-        z-index: 2;
       }
     }
+
     .column-resize-handle {
-      background-color: var(--a-primary-transparent-50);
-      bottom: -2px;
-      pointer-events: none;
       position: absolute;
-      right: -2px;
       top: 0;
+      right: -2px;
+      bottom: -2px;
       width: 4px;
+      background-color: var(--a-primary-transparent-50);
+      pointer-events: none;
     }
   }
 
-  .tableWrapper {
+  .tableWrapper { /* stylelint-disable-line selector-class-pattern */
     margin: 1.5rem 0;
     overflow-x: auto;
   }
 
   &.resize-cursor {
-    cursor: ew-resize;
     cursor: col-resize;
   }
 }

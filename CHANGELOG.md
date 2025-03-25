@@ -19,6 +19,7 @@
 * Adds batch operations to the media manager.
 * Passes `moduleName` to the event `content-changed` for batch operations, to know if data should be refreshed or not.
 * Adds separate control bar for editing tables in rich text
+* Adds ability to drag-resize rich text table columns
 
 ### Changes
 

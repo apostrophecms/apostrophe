@@ -1,10 +1,8 @@
 {
   "addColumnAfter": "Aggiungi colonna dopo",
-  "addColumnBefore": "Aggiungi colonna prima",
   "addContent": "Aggiungi contenuto",
   "addItem": "Aggiungi elemento",
   "addRowAfter": "Aggiungi riga dopo",
-  "addRowBefore": "Aggiungi riga prima",
   "addType": "Aggiungi {{ type }}",
   "addWidgetType": "Aggiungi {{ label }}",
   "admin": "Amministratore",
@@ -562,7 +560,6 @@
   "thisDocumentAndRelated": "Questo documento e i documenti correlati",
   "title": "Titolo",
   "toggleEditMode": "Attiva/Disattiva modalità di modifica",
-  "toggleHeaderCell": "Attiva/Disattiva intestazione (Cella)",
   "toggleHeaderColumn": "Attiva/Disattiva intestazione (Colonna)",
   "toggleHeaderRow": "Attiva/Disattiva intestazione (Riga)",
   "toggleSection": "Attiva/Disattiva sezione",

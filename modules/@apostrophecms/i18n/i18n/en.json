@@ -1,10 +1,8 @@
 {
   "addColumnAfter": "Add Column After",
-  "addColumnBefore": "Add Column Before",
   "addContent": "Add Content",
   "addItem": "Add Item",
   "addRowAfter": "Add Row After",
-  "addRowBefore": "Add Row Before",
   "addType": "Add {{ type }}",
   "addWidgetType": "Add {{ label }}",
   "admin": "Admin",
@@ -562,7 +560,6 @@
   "thisDocumentAndRelated": "This document and related documents",
   "title": "Title",
   "toggleEditMode": "Toggle Edit Mode",
-  "toggleHeaderCell": "Toggle Header (Cell)",
   "toggleHeaderColumn": "Toggle Header (Column)",
   "toggleHeaderRow": "Toggle Header (Row)",
   "toggleSection": "Toggle section",

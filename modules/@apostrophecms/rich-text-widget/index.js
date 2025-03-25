@@ -11,6 +11,9 @@ const util = require('util');
 module.exports = {
   extend: '@apostrophecms/widget-type',
   cascades: [ 'linkFields' ],
+  init(self) {
+    console.log(self);
+  },
   linkFields(self, options) {
     const linkWithType = (Array.isArray(options.linkWithType)
       ? options.linkWithType

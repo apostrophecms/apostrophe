@@ -102,6 +102,7 @@ export default {
     gap: 8px;
     display: flex
   }
+
   .apos-rich-text-toolbar :deep(.apos-button--rich-text.apos-button--icon-only) {
     width: 30px;
   }

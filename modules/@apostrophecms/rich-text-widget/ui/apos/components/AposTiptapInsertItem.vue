@@ -80,8 +80,6 @@ function activate() {
 
   // Select the / and remove it
   removeSlash();
-  console.log('activate');
-  console.log(props?.menuItem?.options ? props.menuItem.options : {});
   props.editor.commands[props.menuItem.action || props.name](props?.menuItem?.options ? props.menuItem.options : {});
   props.editor.commands.focus();
 }
