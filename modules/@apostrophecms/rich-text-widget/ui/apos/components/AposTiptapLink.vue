@@ -73,6 +73,7 @@ export default {
       required: true
     }
   },
+  emits: [ 'close' ],
   data() {
     const moduleOptions = apos.modules['@apostrophecms/rich-text-widget'];
     return {
@@ -155,7 +156,6 @@ export default {
     },
     close() {
       this.$refs.contextMenu.hide();
-      this.editor.chain().focus();
     },
     async save() {
       this.triggerValidation = true;
@@ -260,6 +260,8 @@ export default {
       this.evaluateConditions();
     },
     closePopover() {
+      console.log('=====> focus commands <=====');
+      this.editor.commands.focus();
       window.removeEventListener('keydown', this.keyboardHandler);
     }
   }
