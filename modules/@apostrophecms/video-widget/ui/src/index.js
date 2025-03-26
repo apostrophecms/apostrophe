@@ -1,4 +1,5 @@
 export default () => {
+  apos.oembedCache ||= {};
   apos.util.widgetPlayers['@apostrophecms/video'] = {
     selector: '[data-apos-video-widget]',
     player: function(el) {
@@ -30,15 +31,26 @@ export default () => {
       }
 
       function query(options, callback) {
+        if (Object.hasOwn(apos.oembedCache, options.url)) {
+          return callback(null, apos.oembedCache[options.url]);
+        }
         const opts = {
           qs: {
             url: options.url
           }
         };
-        return apos.http.get('/api/v1/@apostrophecms/oembed/query', opts, callback);
+        return apos.http.get('/api/v1/@apostrophecms/oembed/query', opts, function(err, result) {
+          if (err) {
+            return callback(err);
+          }
+          apos.oembedCache[options.url] = result;
+          return callback(null, result);
+        });
       }
 
       function play(el, result) {
+        // TODO use aspect-ratio to eliminate the need for any timeout at all,
+        // maybe even do purely server side rendering
         const shaker = document.createElement('div');
         shaker.innerHTML = result.html;
         const inner = shaker.firstChild;

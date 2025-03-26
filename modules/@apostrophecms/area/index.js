@@ -52,6 +52,7 @@ module.exports = {
             throw self.apos.error('invalid');
           }
           widget = await sanitize(widget);
+          console.log('widget is:', widget);
           widget._edit = true;
           widget._docId = _docId;
           // So that carrying out relationship loading again can yield results
