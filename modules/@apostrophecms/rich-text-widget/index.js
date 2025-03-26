@@ -972,13 +972,13 @@ module.exports = {
             input.content = $.html();
           }
 
-          console.log('pre san')
+          console.log('pre san');
           console.log(input.content);
-          console.log('/pre san')
+          console.log('/pre san');
           output.content = self.sanitizeHtml(input.content, finalOptions);
-          console.log('post san')
+          console.log('post san');
           console.log(output.content);
-          console.log('/post san')
+          console.log('/post san');
 
           const permalinkAnchors = output.content.match(/"#apostrophe-permalink-[^"?]*?\?/g);
           output.permalinkIds = (permalinkAnchors && permalinkAnchors.map(anchor => {
