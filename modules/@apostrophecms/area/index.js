@@ -646,7 +646,7 @@ module.exports = {
           widgetEditors[name] = (browserData && browserData.components && browserData.components.widgetEditor) || 'AposWidgetEditor';
           widgetManagers[name] = manager.__meta.name;
           widgetIsContextual[name] = manager.options.contextual;
-          widgetPreview[name] = manager.options.preview;;
+          widgetPreview[name] = manager.options.preview;
           widgetHasPlaceholder[name] = manager.options.placeholder;
           widgetHasInitialModal[name] = !manager.options.placeholder && manager.options.initialModal !== false;
           contextualWidgetDefaultData[name] = manager.options.defaultData || {};
