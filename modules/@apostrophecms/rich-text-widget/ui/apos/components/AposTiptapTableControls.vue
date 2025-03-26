@@ -1,21 +1,20 @@
 <template>
-  <div>
-    <AposContextMenuDialog
-      menu-placement="top"
-      class-list="apos-rich-text-toolbar"
-      :has-tip="false"
-    >
-      <div class="apos-rich-text-toolbar__inner">
-        <AposTiptapButton
-          v-for="(item, index) in actions"
-          :key="item.label + '-' + index"
-          :name="item.label"
-          :tool="item"
-          :editor="editor"
-        />
-      </div>
-    </AposContextMenuDialog>
-  </div>
+  <AposContextMenuDialog
+    menu-placement="top"
+    class-list="apos-rich-text-toolbar"
+    :has-tip="false"
+  >
+    <div class="apos-rich-text-toolbar__inner">
+      <button>hi</button>
+      <AposTiptapButton
+        v-for="(item, index) in actions"
+        :key="item.label + '-' + index"
+        :name="item.label"
+        :tool="item"
+        :editor="editor"
+      />
+    </div>
+  </AposContextMenuDialog>
 </template>
 
 <script>

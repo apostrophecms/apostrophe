@@ -3,23 +3,7 @@
     :aria-controls="`insert-menu-${modelValue._id}`"
     @keydown="handleUIKeydown"
   >
-    <floating-menu
-      v-if="editor"
-      :should-show="showTableControls"
-      :tippy-options="{
-        zIndex: 999,
-        placement: 'top',
-        offset: [0, 35],
-        moveTransition: 'transform 0s ease-out'
-      }"
-      :editor="editor"
-      role="listbox"
-      tabindex="0"
-    >
-      <AposTiptapTableControls
-        :editor="editor"
-      />
-    </floating-menu>
+    <button @click="test">click me</button>
     <bubble-menu
       v-if="editor"
       class="bubble-menu"
@@ -98,6 +82,25 @@
       :class="editorModifiers"
     >
       {{ $t('apostrophe:emptyRichTextWidget') }}
+    </div>
+    <div>
+      <floating-menu
+        v-if="editor"
+        :should-show="showTableControls"
+        :tippy-options="{
+          zIndex: 999,
+          placement: 'top',
+          offset: [0, 35],
+          moveTransition: 'transform 0s ease-out'
+        }"
+        :editor="editor"
+        role="listbox"
+        tabindex="0"
+      >
+        <AposTiptapTableControls
+          :editor="editor"
+        />
+      </floating-menu>
     </div>
   </div>
 </template>
@@ -244,6 +247,18 @@ export default {
         if (activeOptions.nodes.length) {
           activeOptions.toolbar = [ 'nodes', ...activeOptions.toolbar ];
         }
+      }
+
+      // The table tool is no longer part of the toolbar but will
+      // automatically appear when interacting with a table element,
+      // no configuration needed. If:
+      // 1. The table is configured for the toolbar but not insert, move it
+      // 2. remove the table tool from the toolbar
+      if (activeOptions.toolbar.some(tool => tool === 'table')) {
+        if (!activeOptions.insert.some(tool => tool === 'table')) {
+          activeOptions.insert.push('table');
+        }
+        activeOptions.toolbar = activeOptions.toolbar.filter(tool => tool !== 'table');
       }
       return activeOptions;
     },
@@ -426,6 +441,10 @@ export default {
     apos.bus.$off('apos-refreshing', this.onAposRefreshing);
   },
   methods: {
+    test() {
+      console.log(this.editor.getJSON());
+      console.log(this.editor.getHTML());
+    },
     showTableControls() {
       return this.editor?.isActive('table') ?? false;
     },
@@ -478,6 +497,7 @@ export default {
         this.pending = null;
       }
       const content = this.editor.getHTML();
+      console.log('content', content);
       const widget = this.docFields.data;
       widget.content = content;
       // ... removes need for deep watching in parent
@@ -962,64 +982,8 @@ function traverseNextNode(node) {
     }
   }
 
-:deep(.ProseMirror) { /* stylelint-disable-line selector-class-pattern */
-  /* Table-specific styling */
-  table {
-    overflow: hidden;
-    width: 100%;
-    margin: 0;
-    border-collapse: collapse;
-    table-layout: fixed;
+// :deep() { /* stylelint-disable-line selector-class-pattern */
+//   /* Table-specific styling */
 
-    td,
-    th {
-      position: relative;
-      box-sizing: border-box;
-      padding: 6px 8px;
-      border: 1px solid var(--a-base-4);
-      min-width: 1em;
-      vertical-align: top;
-
-      > * { /* stylelint-disable-line max-nesting-depth */
-        margin-bottom: 0;
-      }
-    }
-
-    th {
-      background-color: var(--a-base-8);
-      font-weight: 700;
-      text-align: left;
-    }
-
-    .selectedCell { /* stylelint-disable-line selector-class-pattern */
-        &::after { /* stylelint-disable-line max-nesting-depth */
-        z-index: $z-index-manager-display;
-        position: absolute; inset: 0;
-        background: var(--a-base-3);
-        opacity: 0.25;
-        content: "";
-        pointer-events: none;
-      }
-    }
-
-    .column-resize-handle {
-      position: absolute;
-      top: 0;
-      right: -2px;
-      bottom: -2px;
-      width: 4px;
-      background-color: var(--a-primary-transparent-50);
-      pointer-events: none;
-    }
-  }
-
-  .tableWrapper { /* stylelint-disable-line selector-class-pattern */
-    margin: 1.5rem 0;
-    overflow-x: auto;
-  }
-
-  &.resize-cursor {
-    cursor: col-resize;
-  }
-}
+// }
 </style>

@@ -11,9 +11,6 @@ const util = require('util');
 module.exports = {
   extend: '@apostrophecms/widget-type',
   cascades: [ 'linkFields' ],
-  init(self) {
-    console.log(self);
-  },
   linkFields(self, options) {
     const linkWithType = (Array.isArray(options.linkWithType)
       ? options.linkWithType
@@ -560,9 +557,17 @@ module.exports = {
             tag: 'span',
             attributes: [ 'id' ]
           },
+          // table: {
+          //   tag: 'table',
+          //   attributes: [ 'style' ]
+          // },
           table: [
             {
               tag: 'table',
+              attributes: [ 'style' ]
+            },
+            {
+              tag: 'col',
               attributes: [ 'style' ]
             },
             {
@@ -572,6 +577,12 @@ module.exports = {
             {
               tag: 'th',
               attributes: [ 'colspan', 'rowspan', 'colwidth' ]
+            }
+          ],
+          colgroup: [
+            {
+              tag: 'col',
+              attributes: [ 'style' ]
             }
           ],
           image: [
@@ -892,8 +903,11 @@ module.exports = {
             ...options
           };
 
+          console.log(rteOptions);
+
           const output = await _super(req, input, rteOptions);
           const finalOptions = self.optionsToSanitizeHtml(rteOptions);
+          console.log(finalOptions);
 
           if (input.import?.html) {
             if ((typeof input.import.html) !== 'string') {
@@ -958,7 +972,13 @@ module.exports = {
             input.content = $.html();
           }
 
+          console.log('pre san')
+          console.log(input.content);
+          console.log('/pre san')
           output.content = self.sanitizeHtml(input.content, finalOptions);
+          console.log('post san')
+          console.log(output.content);
+          console.log('/post san')
 
           const permalinkAnchors = output.content.match(/"#apostrophe-permalink-[^"?]*?\?/g);
           output.permalinkIds = (permalinkAnchors && permalinkAnchors.map(anchor => {
