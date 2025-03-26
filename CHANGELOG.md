@@ -4,7 +4,13 @@
 
 ### Changes
 
+* Improve the Page Manager experience when dragging and dropping pages - the updates happen in background and the UI is not blocked anymore.
+* Allow scrolling while dragging a page in the Page Manager.
 * Change user's email field type to `email`.
+
+### Fixes
+
+* Fixes an edge case where reordering a page in the Page Manager might affect another locale.
 
 ## 4.14.0 (2025-03-19)
 
