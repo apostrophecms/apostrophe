@@ -118,7 +118,6 @@ export default {
   emits: [ 'modal-result' ],
   data() {
     const moduleOptions = window.apos.modules[apos.area.widgetManagers[this.type]];
-
     return {
       id: this.modelValue && this.modelValue._id,
       original: null,
@@ -132,7 +131,7 @@ export default {
         active: false,
         type: 'slide',
         width: moduleOptions.width,
-        origin: moduleOptions.origin,
+        origin: this.preview ? guessOrigin(this.preview.area) : moduleOptions.origin,
         showModal: false
       },
       triggerValidation: false
@@ -327,4 +326,16 @@ export default {
     }
   }
 };
+
+function guessOrigin(area) {
+  // When we are in live preview mode, use the bounding box of the area to figure out which
+  // side of the screen will least obscure the widget
+  const rect = area.$el.getBoundingClientRect();
+  const cx = (rect.right - rect.left) / 2 + rect.left;
+  if (cx >= (window.innerWidth / 2)) {
+    return 'left';
+  } else {
+    return 'right';
+  }
+}
 </script>
