@@ -1,78 +1,37 @@
+// This player is much simpler now because oembed responses are
+// manipulated with cheerio on the server side, which allows us
+// to eliminate a round trip in cases where the response is
+// already cached
+
 export default () => {
-  apos.oembedCache ||= {};
   apos.util.widgetPlayers['@apostrophecms/video'] = {
     selector: '[data-apos-video-widget]',
-    player: function(el) {
+    player: async (el) => {
       const videoUrl = el.getAttribute('data-apos-video-url');
-      let queryResult;
 
       if (!videoUrl) {
         return;
       }
 
-      queryAndPlay(el, {
-        url: videoUrl
-      });
+      if (el.firstElementChild) {
+        // The server had the oembed response cached,
+        // so the adjusted response has already been inlined
+        return;
+      }
 
-      function queryAndPlay(el, options) {
-        apos.util.removeClass(el, 'apos-oembed-invalid');
+      try {
         apos.util.addClass(el, 'apos-oembed-busy');
-        if (!options.url) {
-          return fail('undefined');
-        }
-        return query(options, function(err, result) {
-          queryResult = result;
-          if (err || (options.type && (result.type !== options.type))) {
-            return fail(err || 'inappropriate');
-          }
-          apos.util.removeClass(el, 'apos-oembed-busy');
-          return play(el, result);
-        });
-      }
-
-      function query(options, callback) {
-        if (Object.hasOwn(apos.oembedCache, options.url)) {
-          return callback(null, apos.oembedCache[options.url]);
-        }
-        const opts = {
+        const result = await apos.http.get('/api/v1/@apostrophecms/video-widget/render', {
           qs: {
-            url: options.url
+            url: videoUrl
           }
-        };
-        return apos.http.get('/api/v1/@apostrophecms/oembed/query', opts, function(err, result) {
-          if (err) {
-            return callback(err);
-          }
-          apos.oembedCache[options.url] = result;
-          return callback(null, result);
         });
-      }
-
-      function play(el, result) {
-        // Use aspect-ratio to eliminate the need for any timeout at all,
-        // TODO maybe even do purely server side rendering
-        const shaker = document.createElement('div');
-        shaker.innerHTML = result.html;
-        const inner = shaker.firstChild;
-        inner.setAttribute('data-apos-video-canvas', '');
-        el.innerHTML = '';
-        if (!inner) {
-          return;
-        }
-        inner.removeAttribute('width');
-        inner.removeAttribute('height');
-        if (result.width && result.height) {
-          inner.style.width = '100%';
-          inner.style.aspectRatio = `${queryResult.width} / ${queryResult.height}`;
-        }
-        el.append(inner);
-      }
-
-      function fail(err) {
+        el.innerHTML = result;
+      } catch (e) {
         apos.util.removeClass(el, 'apos-oembed-busy');
         apos.util.addClass(el, 'apos-oembed-invalid');
-        console.error(err);
-        if (err !== 'undefined') {
+        console.error(e);
+        if (e !== 'undefined') {
           el.innerHTML = '<p>Error loading video</p>';
         } else {
           el.innerHTML = '';

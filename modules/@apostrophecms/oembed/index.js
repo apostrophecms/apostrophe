@@ -21,10 +21,12 @@ const cheerio = require('cheerio');
 // Your `endpoints` option is concatenated with `oembetter`'s standard
 // endpoints list.
 
+console.error('TODO remove the cacheLifetime test hack');
+
 module.exports = {
   options: {
     alias: 'oembed',
-    cacheLifetime: 60 * 60
+    cacheLifetime: 60 * 60 * 1000
   },
   init(self) {
     self.createOembetter();
