@@ -2,6 +2,8 @@
 
 ## UNRELEASED
 
+* Implemented GET /api/v1/@apostrophecms/login/whoami route such that it returns the details of the currently logged in user; added the route to the login module.
+
 ### Changes
 
 * Improve the Page Manager experience when dragging and dropping pages - the updates happen in background and the UI is not blocked anymore.
