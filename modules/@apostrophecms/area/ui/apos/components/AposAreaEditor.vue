@@ -197,6 +197,10 @@ export default {
     }
   },
   watch: {
+    // Note: please don't make this a deep watcher as that could cause
+    // issues with live widget preview and also performance, the top level
+    // array will change in situations where a patch API call is actually
+    // needed at this level
     next() {
       if (!this.docId) {
         // For the benefit of AposInputArea which is the

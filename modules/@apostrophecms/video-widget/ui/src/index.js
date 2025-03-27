@@ -49,8 +49,8 @@ export default () => {
       }
 
       function play(el, result) {
-        // TODO use aspect-ratio to eliminate the need for any timeout at all,
-        // maybe even do purely server side rendering
+        // Use aspect-ratio to eliminate the need for any timeout at all,
+        // TODO maybe even do purely server side rendering
         const shaker = document.createElement('div');
         shaker.innerHTML = result.html;
         const inner = shaker.firstChild;
@@ -61,33 +61,11 @@ export default () => {
         }
         inner.removeAttribute('width');
         inner.removeAttribute('height');
-        el.append(inner);
-        // wait for CSS width to be known
-        setTimeout(function() {
-          // If oembed results include width and height we can get the
-          // video aspect ratio right
-          if (result.width && result.height) {
-            inner.style.width = '100%';
-            resizeVideo(inner);
-            // If we need to initially size the video, also resize it on window
-            // resize.
-            window.addEventListener('resize', resizeHandler);
-          } else {
-            // No, so assume the oembed HTML code is responsive.
-          }
-        }, 0);
-      }
-
-      function resizeVideo(canvasEl) {
-        canvasEl.style.height = ((queryResult.height / queryResult.width) * canvasEl.offsetWidth) + 'px';
-      };
-
-      function resizeHandler() {
-        if (document.contains(el)) {
-          resizeVideo(el.querySelector('[data-apos-video-canvas]'));
-        } else {
-          window.removeEventListener('resize', resizeHandler);
+        if (result.width && result.height) {
+          inner.style.width = '100%';
+          inner.style.aspectRatio = `${queryResult.width} / ${queryResult.height}`;
         }
+        el.append(inner);
       }
 
       function fail(err) {
