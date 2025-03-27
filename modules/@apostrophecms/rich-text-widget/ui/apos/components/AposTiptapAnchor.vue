@@ -69,6 +69,7 @@ export default {
       required: true
     }
   },
+  emits: [ 'close' ],
   data () {
     return {
       generation: 1,
@@ -145,7 +146,6 @@ export default {
     },
     close() {
       this.$refs.contextMenu.hide();
-      this.editor.chain().focus();
     },
     async save() {
       this.triggerValidation = true;
@@ -192,6 +192,7 @@ export default {
     },
     closePopover() {
       window.removeEventListener('keydown', this.keyboardHandler);
+      this.$emit('close');
     }
   }
 };
