@@ -31,8 +31,24 @@ export default {
   },
   watch: {
     modelValue: {
-      handler() {
-        this.renderContent();
+      handler(newVal, oldVal) {
+        let needsFullRender;
+        if (this.moduleOptions.preview) {
+          needsFullRender = false;
+          for (const field of this.moduleOptions.schema) {
+            if (!isEqual(newVal[field.name], oldVal[field.name])) {
+              if (field.boxRule || field.boxClass) {
+                continue;
+              }
+              needsFullRender = true;
+            }
+          }
+        }
+        if (needsFullRender) {
+          this.renderContent();
+        } else {
+          this.renderBoxCss();
+        }
       }
     }
   },
@@ -80,6 +96,28 @@ export default {
         this.rendered = '<p>Unable to render this widget.</p>';
         console.error('Unable to render widget. Possibly the schema has been changed and the existing widget does not pass validation.', e);
       }
+    },
+    renderBoxCss() {
+      const box = this.$refs.rendered.querySelector('[data-apos-widget-box]');
+      const classes = [ 'apos-widget-box' ];
+      const rules = [];
+      for (const field of this.moduleOptions.fields) {
+        if (field.if) {
+          // Box fields must be top level and support one level of basic "if" conditions
+          if (Object.entries(field.if).some(([ key, val ]) => this.modelValue[key] !== val)) {
+            continue;
+          }
+        }
+        const value = this.modelValue[field.name];
+        if (field.cssRule) {
+          rules.push(field.cssRule.replaceAll('VALUE', value));
+        }
+        if (field.cssClass) {
+          classes.push(field.cssClass.replaceAll('VALUE', value));
+        }
+      }
+      box.attr('class', classes.join(' '));
+      box.attr('style', rules.join(' '));
     },
     getClasses() {
       const { placeholderClass } = this.moduleOptions;

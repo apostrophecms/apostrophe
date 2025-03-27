@@ -3,6 +3,7 @@
   <div
     :class="getClasses()"
     v-html="rendered"
+    ref="rendered"
   />
 </template>
 
