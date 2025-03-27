@@ -1,6 +1,7 @@
 <template>
   <AposContextMenu
     v-if="menuItem.component && !menuItem.noPopover"
+    ref="contextMenu"
     menu-placement="bottom-end"
     :rich-text-menu="true"
     @open="openPopover"
@@ -65,6 +66,7 @@ const props = defineProps({
 const emit = defineEmits([ 'set-active-insert-menu', 'done' ]);
 
 const isInlineComponentActive = ref(false);
+const contextMenu = ref(null);
 const isInlineComponentShowed = computed(() => {
   return Boolean(props.menuItem.noPopover &&
     props.menuItem.component &&
@@ -105,6 +107,9 @@ function closeInsertMenuItem() {
   removeSlash();
   emit('set-active-insert-menu', false);
   isInlineComponentActive.value = false;
+  if (contextMenu.value) {
+    contextMenu.value.hide();
+  }
 }
 
 function openPopover() {
