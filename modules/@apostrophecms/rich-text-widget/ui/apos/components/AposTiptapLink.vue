@@ -260,9 +260,8 @@ export default {
       this.evaluateConditions();
     },
     closePopover() {
-      console.log('=====> focus commands <=====');
-      this.editor.commands.focus();
       window.removeEventListener('keydown', this.keyboardHandler);
+      this.$emit('close');
     }
   }
 };

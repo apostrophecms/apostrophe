@@ -32,7 +32,7 @@
             :tool="tools[item]"
             :options="editorOptions"
             :editor="editor"
-            @close="onCloseToolbarPopover"
+            @close="closeToolbar"
           />
         </div>
       </AposContextMenuDialog>
@@ -187,8 +187,7 @@ export default {
       showPlaceholder: null,
       activeInsertMenuComponent: false,
       suppressInsertMenu: false,
-      insertMenuKey: null,
-      closeBubbleMenu: false
+      insertMenuKey: null
     };
   },
   computed: {
@@ -407,26 +406,6 @@ export default {
     apos.bus.$off('apos-refreshing', this.onAposRefreshing);
   },
   methods: {
-    shouldShowBubbleMenu({
-      editor, view, state, oldState, from, to
-    }) {
-      console.log('docuemnt.activeElement', document.activeElement);
-      // only show the bubble menu for images and links
-      const { selection } = state;
-      const { empty } = selection;
-
-      if (this.shouldCloseBubbleMenu) {
-        this.shouldCloseBubbleMenu = false;
-        return false;
-      }
-      if (this.isFocused && !empty) {
-        return true;
-      }
-      return false;
-    },
-    onCloseToolbarPopover() {
-      this.shouldCloseBubbleMenu = true;
-    },
     onBubbleHide() {
       this.shouldCloseBubbleMenu = false;
       apos.bus.$emit('close-context-menus', 'richText');
@@ -674,6 +653,11 @@ export default {
     },
     setActiveInsertMenu(isActive = true) {
       this.activeInsertMenuComponent = isActive;
+    },
+    closeToolbar() {
+      this.editor.chain().focus().run();
+      this.editor.commands.focus();
+      /* this.editor.commands.blur(); */ // Do we keep?
     }
   }
 };

@@ -1,10 +1,12 @@
 <template>
   <div class="apos-marks-control">
     <AposContextMenu
+      ref="contextMenu"
       menu-placement="bottom-start"
       :button="button"
       :rich-text-menu="true"
       :center-on-icon="true"
+      @close="closePopover"
     >
       <div class="apos-popover apos-marks-control__dialog">
         <div class="apos-marks-control__content-wrapper">
@@ -62,6 +64,7 @@ export default {
       }
     }
   },
+  emits: [ 'close' ],
   data() {
     return {
       classes: this.options.marks.map(m => m.class)
@@ -139,10 +142,11 @@ export default {
     click() {
       this.toggleOpen();
     },
-    toggleOpen() {
-    },
     close() {
-      this.editor.chain().focus();
+      this.$refs.contextMenu.hide();
+    },
+    closePopover() {
+      this.$emit('close');
     }
   }
 };
