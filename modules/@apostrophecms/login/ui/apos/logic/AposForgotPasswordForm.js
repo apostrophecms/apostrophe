@@ -17,7 +17,7 @@ export default {
           name: 'email',
           label: 'apostrophe:email',
           placeholder: 'apostrophe:loginEnterEmail',
-          type: 'string',
+          type: 'email',
           required: true
         }
       ]

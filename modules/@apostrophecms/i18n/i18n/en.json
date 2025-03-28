@@ -305,7 +305,6 @@
   "loginResetPasswordRequest": "Enter your account's email address and we'll send you a password reset link.",
   "loginResetPasswordRequired": "A new password is required.",
   "loginResetRequestDone": "If the email address you've entered matches our records we'll send a reset link to \"{{ email }}\".\n\nFollow the link in the email to reset your password.",
-  "loginSendEmail": "Send Email",
   "manageDocType": "Manage {{ type }}",
   "manageDraftSubmissions": "Manage Draft Submissions",
   "managePages": "Manage Pages",

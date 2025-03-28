@@ -7,6 +7,7 @@
 * Improve the Page Manager experience when dragging and dropping pages - the updates happen in background and the UI is not blocked anymore.
 * Allow scrolling while dragging a page in the Page Manager.
 * Change user's email field type to `email`.
+* Change reset password form button label to `Reset Password`.
 
 ### Fixes
 

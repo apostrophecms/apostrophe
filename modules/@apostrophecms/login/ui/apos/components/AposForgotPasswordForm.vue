@@ -31,7 +31,7 @@
           :busy="busy"
           :disabled="disabled"
           type="primary"
-          label="apostrophe:loginSendEmail"
+          label="apostrophe:loginResetPassword"
           button-type="submit"
           class="apos-login-form__submit"
           :modifiers="['gradient-on-hover', 'block']"
