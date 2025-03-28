@@ -49,8 +49,7 @@ export default () => {
       }
 
       function play(el, result) {
-        // Use aspect-ratio to eliminate the need for any timeout at all,
-        // TODO maybe even do purely server side rendering
+        // Use aspect-ratio to eliminate the need for any timeout at all
         const shaker = document.createElement('div');
         shaker.innerHTML = result.html;
         const inner = shaker.firstChild;
