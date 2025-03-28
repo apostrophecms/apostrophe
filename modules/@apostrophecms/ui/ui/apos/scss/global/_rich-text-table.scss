@@ -1,4 +1,5 @@
-[data-rich-text], .tableWrapper {
+[data-rich-text],
+.tableWrapper { /* stylelint-disable-line selector-class-pattern */
   table {
     overflow: hidden;
     width: 100%;
