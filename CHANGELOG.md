@@ -6,6 +6,16 @@
 
 * To display a live preview on the page as changes are made to widgets, set the `preview: true` option on any widget module. To turn it on for all widgets, you can set it on the `@apostrophecms/widget-type` module, the base class of all widget modules. This works especially well when `range` fields are used to achieve visual effects.
 
+### Changes
+
+* Improve the Page Manager experience when dragging and dropping pages - the updates happen in background and the UI is not blocked anymore.
+* Allow scrolling while dragging a page in the Page Manager.
+* Change user's email field type to `email`.
+
+### Fixes
+
+* Fixes an edge case where reordering a page in the Page Manager might affect another locale.
+
 ## 4.14.0 (2025-03-19)
 
 ### Adds
@@ -16,6 +26,8 @@
 * Add data-test attributes to the login page.
 * Adds AI-generated missing translations
 * Adds the missing "Tags" filter to the chooser/manager view of files.
+* Adds batch operations to the media manager.
+* Passes `moduleName` to the event `content-changed` for batch operations, to know if data should be refreshed or not.
 
 ### Changes
 
@@ -30,6 +42,9 @@
 * More reliable Media Manager infinite scroll pagination.
 * Fixes margin collapse in nested areas by switching to `padding` instead of `margin`
 * Fixes Edit in Media Manager when the image is not in the currently loaded images. This may happen when the the Media Manager is in a relationship mode. 
+* Removes `publish` batch operation for `autopublished` pieces.
+* Fixes `restore` batch operation having the action `update`.
+* Fixes `localize` batch operation having no `action` and no `docIds`.
 
 ## 4.13.0 (2025-02-19)
 
