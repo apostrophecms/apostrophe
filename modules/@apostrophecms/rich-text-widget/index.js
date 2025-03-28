@@ -382,7 +382,6 @@ module.exports = {
     'table-row-icon': 'TableRow',
     'table-split-cell-icon': 'TableSplitCell',
     'table-merge-cells-icon': 'TableMergeCells'
-
   },
   handlers(self) {
     return {

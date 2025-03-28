@@ -1,6 +1,5 @@
 <template>
   <div
-    ref="editorContainer"
     :aria-controls="`insert-menu-${modelValue._id}`"
     @keydown="handleUIKeydown"
   >
@@ -980,9 +979,4 @@ function traverseNextNode(node) {
       border-left: 1px solid #000;
     }
   }
-
-// :deep() { /* stylelint-disable-line selector-class-pattern */
-//   /* Table-specific styling */
-
-// }
 </style>
