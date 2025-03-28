@@ -1,11 +1,12 @@
 <template>
   <div
+    ref="editorContainer"
     :aria-controls="`insert-menu-${modelValue._id}`"
     @keydown="handleUIKeydown"
   >
-    <button @click="test">click me</button>
     <bubble-menu
       v-if="editor"
+      plugin-key="richTextMenu"
       class="bubble-menu"
       :tippy-options="{
         maxWidth: 'none',
@@ -42,6 +43,7 @@
       :id="`insert-menu-${modelValue._id}`"
       ref="insertMenu"
       :key="insertMenuKey"
+      plugin-key="insertMenu"
       class="apos-rich-text-insert-menu"
       :tippy-options="{ duration: 100, zIndex: 999, placement: 'bottom-start' }"
       :should-show="showFloatingMenu"
@@ -83,25 +85,27 @@
     >
       {{ $t('apostrophe:emptyRichTextWidget') }}
     </div>
-    <div>
-      <floating-menu
-        v-if="editor"
-        :should-show="showTableControls"
-        :tippy-options="{
-          zIndex: 999,
-          placement: 'top',
-          offset: [0, 35],
-          moveTransition: 'transform 0s ease-out'
-        }"
+    <floating-menu
+      v-if="editor"
+      :should-show="showTableControls"
+      :tippy-options="{
+        zIndex: 999,
+        placement: 'top',
+        offset: [ 0, 35 ],
+        moveTransition: 'transform 0s ease-out',
+        popperOptions: {
+          strategy: 'absolute'
+        }
+      }"
+      :editor="editor"
+      plugin-key="tableMenu"
+      role="listbox"
+      tabindex="0"
+    >
+      <AposTiptapTableControls
         :editor="editor"
-        role="listbox"
-        tabindex="0"
-      >
-        <AposTiptapTableControls
-          :editor="editor"
-        />
-      </floating-menu>
-    </div>
+      />
+    </floating-menu>
   </div>
 </template>
 
@@ -441,10 +445,6 @@ export default {
     apos.bus.$off('apos-refreshing', this.onAposRefreshing);
   },
   methods: {
-    test() {
-      console.log(this.editor.getJSON());
-      console.log(this.editor.getHTML());
-    },
     showTableControls() {
       return this.editor?.isActive('table') ?? false;
     },
@@ -497,7 +497,6 @@ export default {
         this.pending = null;
       }
       const content = this.editor.getHTML();
-      console.log('content', content);
       const widget = this.docFields.data;
       widget.content = content;
       // ... removes need for deep watching in parent

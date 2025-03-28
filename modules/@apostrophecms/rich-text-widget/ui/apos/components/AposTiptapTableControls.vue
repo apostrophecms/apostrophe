@@ -5,7 +5,6 @@
     :has-tip="false"
   >
     <div class="apos-rich-text-toolbar__inner">
-      <button>hi</button>
       <AposTiptapButton
         v-for="(item, index) in actions"
         :key="item.label + '-' + index"

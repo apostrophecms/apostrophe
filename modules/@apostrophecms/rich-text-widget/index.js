@@ -557,10 +557,6 @@ module.exports = {
             tag: 'span',
             attributes: [ 'id' ]
           },
-          // table: {
-          //   tag: 'table',
-          //   attributes: [ 'style' ]
-          // },
           table: [
             {
               tag: 'table',
@@ -659,6 +655,14 @@ module.exports = {
                 // CSS Variable value
                 /^var\(--[a-zA-Z0-9-]+\)$/
               ]
+            }
+          },
+          table: {
+            selector: '*',
+            properties: {
+              'min-width': [ /[0-9]{1,4}(px|em|%)/i ],
+              'max-width': [ /[0-9]{1,4}(px|em|%)/i ],
+              width: [ /[0-9]{1,4}(px|em|%)/i ]
             }
           }
         };
@@ -903,11 +907,8 @@ module.exports = {
             ...options
           };
 
-          console.log(rteOptions);
-
           const output = await _super(req, input, rteOptions);
           const finalOptions = self.optionsToSanitizeHtml(rteOptions);
-          console.log(finalOptions);
 
           if (input.import?.html) {
             if ((typeof input.import.html) !== 'string') {
@@ -972,13 +973,7 @@ module.exports = {
             input.content = $.html();
           }
 
-          console.log('pre san');
-          console.log(input.content);
-          console.log('/pre san');
           output.content = self.sanitizeHtml(input.content, finalOptions);
-          console.log('post san');
-          console.log(output.content);
-          console.log('/post san');
 
           const permalinkAnchors = output.content.match(/"#apostrophe-permalink-[^"?]*?\?/g);
           output.permalinkIds = (permalinkAnchors && permalinkAnchors.map(anchor => {
