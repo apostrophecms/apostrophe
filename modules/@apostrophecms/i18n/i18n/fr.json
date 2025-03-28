@@ -305,7 +305,6 @@
   "loginResetPasswordRequest": "Entrez l'adresse e-mail de votre compte et nous vous enverrons un lien de réinitialisation du mot de passe.",
   "loginResetPasswordRequired": "Un nouveau mot de passe est requis.",
   "loginResetRequestDone": "Si l'adresse e-mail que vous avez saisie correspond à nos enregistrements, nous vous enverrons un lien de réinitialisation à \"{{ email }}\".\n\nSuivez le lien dans l'email pour réinitialiser votre mot de passe.",
-  "loginSendEmail": "Envoyer l'email",
   "manageDocType": "Gérer {{ type }}",
   "manageDraftSubmissions": "Gérer les soumissions de brouillon",
   "managePages": "Gérer les pages",

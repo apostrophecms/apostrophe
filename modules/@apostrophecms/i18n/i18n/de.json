@@ -305,7 +305,6 @@
   "loginResetPasswordRequest": "Gib die E-Mail-Adresse deines Kontos an und wir senden dir einen Link um dein Passwort zurückzusetzen.",
   "loginResetPasswordRequired": "Du musst ein neues Passwort angeben.",
   "loginResetRequestDone": "Falls die von dir angegeben E-Mail-Adresse mit unseren Daten übereinstimmt, werden wir einen Link zum Zurücksetzen deines Passworts an \"{{ email }}\" senden.\n\nFolge dem Link in der E-Mail um dein Passwort zurückzusetzen.",
-  "loginSendEmail": "E-Mail senden",
   "manageDocType": "{{ type }} verwalten",
   "manageDraftSubmissions": "Entwürfe verwalten",
   "managePages": "Seiten verwalten",
