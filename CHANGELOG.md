@@ -4,7 +4,7 @@
 
 ### Fixes
 
-* Update `uploadfs`.
+* Update `uploadfs` to `1.24.3`.
 
 ## 4.14.0 (2025-03-19)
 
