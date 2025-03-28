@@ -1,10 +1,8 @@
 {
   "addColumnAfter": "Agregar columna después",
-  "addColumnBefore": "Agregar columna antes",
   "addContent": "Añadir Contenido",
   "addItem": "Añadir Elemento",
   "addRowAfter": "Agregar fila después",
-  "addRowBefore": "Agregar fila antes",
   "addType": "Agregar {{ type }}",
   "addWidgetType": "Añadir {{ label }}",
   "admin": "Administrador",
@@ -562,7 +560,6 @@
   "thisDocumentAndRelated": "Este documento y documentos relacionados",
   "title": "Título",
   "toggleEditMode": "Activar o Desactivar Modo Editar",
-  "toggleHeaderCell": "Alternar encabezado (celda)",
   "toggleHeaderColumn": "Alternar encabezado (columna)",
   "toggleHeaderRow": "Alternar encabezado (fila)",
   "toggleSection": "Activar o desactivar sección",
