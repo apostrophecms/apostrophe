@@ -18,6 +18,7 @@
         onHide: onBubbleHide
       }"
       :editor="editor"
+      :update-delay="0"
     >
       <AposContextMenuDialog
         menu-placement="top"
@@ -87,15 +88,7 @@
     <floating-menu
       v-if="editor"
       :should-show="showTableControls"
-      :tippy-options="{
-        zIndex: 999,
-        placement: 'top',
-        offset: [ 0, 35 ],
-        moveTransition: 'transform 0s ease-out',
-        popperOptions: {
-          strategy: 'absolute'
-        }
-      }"
+      :tippy-options="tableTippyOptions"
       :editor="editor"
       plugin-key="tableMenu"
       role="listbox"
@@ -209,6 +202,18 @@ export default {
     };
   },
   computed: {
+    canShowTableControls() {
+      return this.editor?.isActive('table') ?? false;
+    },
+    tableTippyOptions() {
+      return {
+        zIndex: 999,
+        placement: 'top',
+        offset: [ 0, 35 ],
+        moveTransition: 'transform 0s ease-out',
+        appendTo: document.body
+      };
+    },
     moduleOptions() {
       return apos.modules[apos.area.widgetManagers[this.type]];
     },
