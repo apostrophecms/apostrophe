@@ -417,7 +417,8 @@ module.exports = {
 
               await self.publish(req, piece);
             }, {
-              action: 'publish'
+              action: 'publish',
+              docTypes: [ self.__meta.name ]
             }
           );
         },
@@ -443,7 +444,8 @@ module.exports = {
               piece.archived = true;
               await self.update(req, piece);
             }, {
-              action: 'archive'
+              action: 'archive',
+              docTypes: [ self.__meta.name ]
             }
           );
         },
@@ -469,7 +471,8 @@ module.exports = {
               piece.archived = false;
               await self.update(req, piece);
             }, {
-              action: 'restore'
+              action: 'restore',
+              docTypes: [ self.__meta.name ]
             }
           );
         },
@@ -487,7 +490,12 @@ module.exports = {
           return self.apos.modules['@apostrophecms/job'].run(
             req,
             (req, reporting) => self.apos.modules['@apostrophecms/i18n']
-              .localizeBatch(req, self, reporting)
+              .localizeBatch(req, self, reporting),
+            {
+              action: 'localize',
+              ids: req.body._ids,
+              docTypes: [ self.__meta.name ]
+            }
           );
         },
         ':_id/localize': async (req) => {
@@ -628,13 +636,12 @@ module.exports = {
         composeBatchOperations() {
           const groupedOperations = Object.entries(self.batchOperations)
             .reduce((acc, [ opName, properties ]) => {
-              // Check if there is a required schema field for this batch operation.
-              const requiredFieldNotFound = properties.requiredField && !self.schema
-                .some((field) => field.name === properties.requiredField);
 
-              if (requiredFieldNotFound) {
+              const disableOperation = self.disableBatchOperation(opName, properties);
+              if (disableOperation) {
                 return acc;
               }
+
               // Find a group for the operation, if there is one.
               const associatedGroup = getAssociatedGroup(opName);
               const currentOperation = {
@@ -1186,6 +1193,21 @@ module.exports = {
           };
           await self.insert(req, _new);
         }
+      },
+      disableBatchOperation(name, properties) {
+        const shouldDisablePublish = name === 'publish' && self.options.autopublish;
+        if (shouldDisablePublish) {
+          return true;
+        }
+
+        // Check if there is a required schema field for this batch operation.
+        const requiredFieldNotFound = properties.requiredField &&
+                !self.schema.some((field) => field.name === properties.requiredField);
+        if (requiredFieldNotFound) {
+          return true;
+        }
+
+        return false;
       }
     };
   },

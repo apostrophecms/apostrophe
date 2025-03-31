@@ -278,28 +278,14 @@ export default {
     },
     // If pieceOrId is null, a new piece is created
     async edit(pieceOrId) {
-      let piece;
+      let piece = null;
       if ((typeof pieceOrId) === 'object') {
         piece = pieceOrId;
       } else if (pieceOrId) {
         piece = this.items.find(item => item._id === pieceOrId);
-      } else {
-        piece = null;
-      }
-      let moduleName;
-      // Don't assume the piece has the type of the module,
-      // this could be a virtual piece type such as "submitted-draft"
-      // that manages docs of many types
-      if (piece) {
-        if (piece.slug.startsWith('/')) {
-          moduleName = '@apostrophecms/page';
-        } else {
-          moduleName = piece.type;
-        }
-      } else {
-        moduleName = this.moduleName;
       }
 
+      const moduleName = this.getDocModuleName(piece);
       await apos.modal.execute(apos.modules[moduleName].components.editorModal, {
         moduleName,
         docId: piece && piece._id,
@@ -541,11 +527,6 @@ export default {
                 : this.moduleLabels.plural
             }
           });
-          if (action === 'archive') {
-            await this.managePieces();
-            await this.manageAllPiecesTotal();
-            this.checked = [];
-          }
         } catch (error) {
           apos.notify('apostrophe:errorBatchOperationNoti', {
             interpolate: { operation: label },
@@ -562,16 +543,23 @@ export default {
         return item._id;
       });
     },
-    async onContentChanged({ doc, action }) {
+    async onContentChanged({
+      doc, action, docIds, docTypes
+    }) {
+      const types = this.getContentChangedTypes(doc, docTypes);
+      if (!types.includes(this.moduleName)) {
+        return;
+      }
       if (
-        !doc ||
+        docIds ||
         !doc.aposLocale ||
         doc.aposLocale.split(':')[0] === this.modalData.locale
       ) {
         await this.managePieces();
         await this.manageAllPiecesTotal();
-        if (action === 'archive') {
-          this.checked = this.checked.filter(checkedId => doc._id !== checkedId);
+        if ([ 'archive', 'restore' ].includes(action)) {
+          const ids = docIds || [ doc._id ];
+          this.checked = this.checked.filter(checkedId => !ids.includes(checkedId));
         }
       }
     }

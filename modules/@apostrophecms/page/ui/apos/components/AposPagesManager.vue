@@ -114,7 +114,7 @@
             :icons="icons"
             :options="treeOptions"
             :module-options="moduleOptions"
-            @update="update"
+            @update="onUpdate"
           />
         </template>
       </AposModalBody>

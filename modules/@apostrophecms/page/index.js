@@ -777,7 +777,8 @@ module.exports = {
               await self.publish(req, piece);
             },
             {
-              action: 'publish'
+              action: 'publish',
+              docTypes: [ self.__meta.name, '@apostrophecms/page' ]
             }
           );
         },
@@ -807,7 +808,8 @@ module.exports = {
               );
             },
             {
-              action: 'archive'
+              action: 'archive',
+              docTypes: [ self.__meta.name, '@apostrophecms/page' ]
             }
           );
         },
@@ -837,7 +839,8 @@ module.exports = {
               );
             },
             {
-              action: 'restore'
+              action: 'restore',
+              docTypes: [ self.__meta.name, '@apostrophecms/page' ]
             }
           );
         },
@@ -847,7 +850,12 @@ module.exports = {
           return self.apos.modules['@apostrophecms/job'].run(
             req,
             (req, reporting) => self.apos.modules['@apostrophecms/i18n']
-              .localizeBatch(req, self, reporting)
+              .localizeBatch(req, self, reporting),
+            {
+              action: 'localize',
+              ids: req.body._ids,
+              docTypes: [ self.__meta.name, '@apostrophecms/page' ]
+            }
           );
         }
       },
@@ -1187,12 +1195,16 @@ database.`);
             if (i === (patches.length - 1)) {
               if (possiblePatchedFields) {
                 await self.update(req, page);
+                let modified;
                 if (input._targetId) {
                   const targetId = self.apos.launder.string(input._targetId);
                   const position = self.apos.launder.string(input._position);
-                  await self.move(req, page._id, targetId, position);
+                  modified = await self.move(req, page._id, targetId, position);
                 }
-                result = self.findOneForEditing(req, { _id }, { attachments: true });
+                result = await self.findOneForEditing(req, { _id }, { attachments: true });
+                if (modified) {
+                  result.__changed = modified.changed;
+                }
               }
             }
             if (tabId && !lock) {
@@ -1557,8 +1569,8 @@ database.`);
           if (moved.lastPublishedAt && !parent.lastPublishedAt) {
             throw self.apos.error('forbidden', 'Publish the parent page first.');
           }
-          await nudgeNewPeers();
-          await moveSelf();
+          const peersChange = await nudgeNewPeers();
+          const movedChange = await moveSelf();
           await updateDescendants();
           await manager.emit('afterMove', req, moved, {
             originalSlug,
@@ -1567,6 +1579,18 @@ database.`);
             target,
             position
           });
+          // Do not report the additional changes to the event - BC.
+          // Concatenate all changes to one unique array.
+          changed = Object.values(
+            [ movedChange, ...peersChange, changed ]
+              .reduce((acc, change) => {
+                acc[change._id] = {
+                  ...acc[change._id] || {},
+                  ...change
+                };
+                return acc;
+              }, {})
+          );
           return {
             changed
           };
@@ -1629,14 +1653,27 @@ database.`);
             parent = target._ancestors[0];
           }
           async function nudgeNewPeers() {
-            // Nudge down the pages that should now follow us
-            await self.apos.doc.db.updateMany({
+            const locale = moved.aposLocale.split(':')[0];
+            const criteria = {
               path: self.matchDescendants(parent),
+              aposLocale: { $in: [ `${locale}:draft`, `${locale}:published` ] },
               level: parent.level + 1,
               rank: { $gte: rank }
-            }, {
+            };
+            // Nudge down the pages that should now follow us
+            await self.apos.doc.db.updateMany(criteria, {
               $inc: { rank: 1 }
             });
+            const modified = await self.apos.doc.db.find({
+              ...criteria,
+              aposDocId: { $ne: moved.aposDocId }
+            })
+              .project({
+                _id: 1,
+                rank: 1
+              })
+              .toArray();
+            return modified;
           }
           async function moveSelf() {
             originalPath = moved.path;
@@ -1679,6 +1716,15 @@ database.`);
               delete moved.archived;
             }
             await self.update(req, moved);
+            return {
+              _id: moved._id,
+              slug: moved.slug,
+              path: moved.path,
+              rank: moved.rank,
+              level: moved.level,
+              archived: moved.archived ?? null,
+              updatedAt: moved.updatedAt
+            };
           }
           async function updateDescendants() {
             changed = changed.concat(await self.updateDescendantsAfterMove(req, moved, originalPath, originalSlug));
@@ -2354,10 +2400,6 @@ database.`);
               newSlug = page.slug + '/' + path.basename(descendant.slug);
             }
           }
-          changed.push({
-            _id: descendant._id,
-            slug: newSlug
-          });
           // Allow for the possibility that the slug becomes
           // a duplicate of something already nested under
           // the new parent at this point
@@ -2366,6 +2408,14 @@ database.`);
           descendant.level = descendant.level + (page.level - oldLevel);
           descendant.archived = page.archived;
           await self.apos.doc.retryUntilUnique(req, descendant, () => self.update(req, descendant));
+          changed.push({
+            _id: descendant._id,
+            slug: descendant.slug,
+            path: descendant.path,
+            level: descendant.level,
+            rank: descendant.rank,
+            archived: descendant.archived
+          });
         }
         return changed;
       },

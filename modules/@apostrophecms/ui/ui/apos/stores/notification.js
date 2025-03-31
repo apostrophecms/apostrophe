@@ -160,9 +160,11 @@ export const useNotificationStore = defineStore('notification', () => {
    * @param {string} notifId - Notification ID
    * @param {string} jobInfo.route - Job route to get updates
    * @param {string} jobInfo.action - Job action
+   * @param {string} jobInfo.moduleName - Module name the job has been created from
    * @param {array} jobInfo.ids - Job IDS
    */
   async function pollJob(notifId, jobInfo) {
+
     try {
       const job = await apos.http.get(jobInfo.value.route, {});
       updateProcess(notifId, job.processed, job.total);
@@ -174,7 +176,8 @@ export const useNotificationStore = defineStore('notification', () => {
 
       apos.bus.$emit('content-changed', {
         docIds: jobInfo.value.ids || [],
-        action: jobInfo.value.action || 'batch-update'
+        action: jobInfo.value.action || 'batch-update',
+        docTypes: jobInfo.value.docTypes
       });
     } catch (err) {
       // eslint-disable-next-line no-console
