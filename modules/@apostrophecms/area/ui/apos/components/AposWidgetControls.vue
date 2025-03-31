@@ -3,16 +3,14 @@
     <AposButtonGroup
       :modifiers="[ 'vertical' ]"
     >
-      <AposButton
-        v-if="!foreign"
-        v-bind="upButton"
-        :disabled="first || disabled"
-        :tooltip="{
-          content: (!disabled && !first) ? 'apostrophe:nudgeUp' : null,
-          placement: 'left'
-        }"
-        @click="$emit('up')"
-      />
+      <template v-if="!foreign">
+        <AposButton
+          v-for="widgetControl in widgetControls"
+          :key="widgetControl.action"
+          v-bind="widgetControl"
+          @click="handleClick(widgetControl.action)"
+        />
+      </template>
       <AposButton
         v-if="!foreign && !options.contextual"
         v-bind="editButton"
@@ -61,16 +59,6 @@
         }"
         @click="$emit('remove')"
       />
-      <AposButton
-        v-if="!foreign"
-        v-bind="downButton"
-        :disabled="last || disabled"
-        :tooltip="{
-          content: (!disabled && !last) ? 'apostrophe:nudgeDown' : null,
-          placement: 'left'
-        }"
-        @click="$emit('down')"
-      />
     </AposButtonGroup>
   </div>
 </template>
@@ -111,8 +99,14 @@ export default {
     }
   },
   emits: [ 'remove', 'edit', 'cut', 'copy', 'clone', 'up', 'down' ],
+  data() {
+    const { widgetOperations } = apos.modules['@apostrophecms/area'];
+    console.log(widgetOperations);
+
+    return {};
+  },
   computed: {
-    buttonDefaults() {
+    widgetControlsDefaults() {
       return {
         iconOnly: true,
         icon: 'plus-icon',
@@ -124,19 +118,31 @@ export default {
         disableFocus: !this.tabbable
       };
     },
-    upButton() {
-      return {
-        ...this.buttonDefaults,
-        label: 'apostrophe:nudgeUp',
-        icon: 'arrow-up-icon'
-      };
-    },
-    downButton() {
-      return {
-        ...this.buttonDefaults,
-        label: 'apostrophe:nudgeDown',
-        icon: 'arrow-down-icon'
-      };
+    widgetControls() {
+      return [
+        {
+          ...this.widgetControlsDefaults,
+          label: 'apostrophe:nudgeUp',
+          icon: 'arrow-up-icon',
+          disabled: this.first || this.disabled,
+          tooltip: {
+            content: this.first || this.disabled ? null : 'apostrophe:nudgeUp',
+            placement: 'left'
+          },
+          action: 'up'
+        },
+        {
+          ...this.widgetControlsDefaults,
+          label: 'apostrophe:nudgeDown',
+          icon: 'arrow-down-icon',
+          disabled: this.last || this.disabled,
+          tooltip: {
+            content: this.last || this.disabled ? null : 'apostrophe:nudgeDown',
+            placement: 'left'
+          },
+          action: 'down'
+        }
+      ];
     },
     cloneButton() {
       return {
@@ -172,6 +178,12 @@ export default {
         label: 'apostrophe:copy',
         icon: 'clipboard-plus-outline-icon'
       };
+    }
+  },
+  methods: {
+    handleClick(action) {
+      console.log('action', action);
+      this.$emit(action);
     }
   }
 };
