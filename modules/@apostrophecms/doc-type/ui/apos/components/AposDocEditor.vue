@@ -420,6 +420,7 @@ export default {
         }
       } catch (e) {
         if (e.name !== 'notfound') {
+          // eslint-disable-next-line no-console
           console.error(e);
           await apos.notify('apostrophe:fetchPublishedVersionFailed', {
             type: 'warning',
@@ -689,6 +690,7 @@ export default {
           dismiss: true
         });
 
+        // eslint-disable-next-line no-console
         console.error(`Error while creating new, empty content. Review your configuration for ${this.docType} (including \`type\` options in \`@apostrophecms/page\` if it's a page type).`);
 
         this.modal.showModal = false;
@@ -727,14 +729,15 @@ export default {
     },
     computeSaveMenu () {
       // Powers the dropdown Save menu
-      // all actions expected to be methods of this component
-      // Needs to be manually computed because this.saveLabel doesn't stay reactive when part of an object
+      // all actions expected to be methods of this component Needs to be manually
+      // computed because this.saveLabel doesn't stay reactive when part of an object
       const typeLabel = this.$t(this.moduleOptions
         ? this.moduleOptions.label
         : 'document');
       const isNew = !this.currentId;
       // this.original takes a moment to populate, don't crash
-      const canPreview = this.original && (this.original._id ? this.original._url : this.original._previewable);
+      const canPreview = this.original &&
+        (this.original._id ? this.original._url : this.original._previewable);
       const canNew = this.moduleOptions.showCreate;
       const isSingleton = this.moduleOptions.singleton;
       const description = {

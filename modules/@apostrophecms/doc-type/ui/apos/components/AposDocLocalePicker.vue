@@ -94,6 +94,7 @@ async function open() {
 
     await checkCreatePermission();
   } catch (err) {
+    // eslint-disable-next-line no-console
     console.err(err);
   }
 };

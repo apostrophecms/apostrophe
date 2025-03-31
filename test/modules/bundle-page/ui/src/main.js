@@ -1,3 +1,3 @@
 export default () => {
-  console.log('BUNDLE_MAIN_PAGE');
+  return 'BUNDLE_MAIN_PAGE';
 };

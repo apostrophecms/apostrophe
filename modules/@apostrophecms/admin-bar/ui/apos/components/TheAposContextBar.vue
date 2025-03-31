@@ -96,7 +96,8 @@ export default {
   },
   computed: {
     contextBarActive() {
-      return window.apos.adminBar.contextBar && (this.canEdit || this.moduleOptions.canLocalize);
+      return window.apos.adminBar.contextBar &&
+        (this.canEdit || this.moduleOptions.canLocalize);
     },
     canEdit() {
       return this.context._edit || ((this.context.aposLocale && this.context.aposLocale.endsWith(':published')) &&
@@ -706,6 +707,7 @@ export default {
           });
         }
       } catch (e) {
+        // eslint-disable-next-line no-console
         console.error(e);
         apos.notify(errorMessageKey, { type: 'error' });
       } finally {
@@ -758,6 +760,7 @@ export default {
           });
           this.draftIsEditable = draftContext && draftContext._edit;
         } catch (e) {
+          // eslint-disable-next-line no-console
           console.error(e);
         }
       }
@@ -776,6 +779,7 @@ export default {
           });
           return doc;
         } catch (error) {
+          // eslint-disable-next-line no-console
           console.error(error);
         }
       }

@@ -1,3 +1,3 @@
 export default () => {
-  console.log('BUNDLE_OVERRIDE_COMPANY');
+  return 'BUNDLE_OVERRIDE_COMPANY';
 };

@@ -1,3 +1,3 @@
 export default () => {
-  console.log('BUNDLE_WIDGET_EXTRA2');
+  return 'BUNDLE_WIDGET_EXTRA2';
 };

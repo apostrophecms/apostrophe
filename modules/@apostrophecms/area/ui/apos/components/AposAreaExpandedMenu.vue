@@ -104,6 +104,7 @@ export default {
     if (this.options.groups) {
       for (const item of Object.keys(this.options.groups)) {
         if (!this.isValidColumn(item.columns)) {
+          // eslint-disable-next-line no-console
           console.warn(
             `apos.expanded-menu: The specified number of columns for the group ${item.label} is not between the allowed range of 1-4.`
           );
@@ -114,6 +115,7 @@ export default {
       }
     } else if (this.options.widgets) {
       if (!this.isValidColumn(this.options.columns)) {
+        // eslint-disable-next-line no-console
         console.warn(
           'apos.expanded-menu: The specified number of columns for the area is not between the allowed range of 1-4.'
         );
@@ -122,6 +124,7 @@ export default {
       const group = this.createGroup(this.options);
       this.groups.push(group);
     } else {
+      // eslint-disable-next-line no-console
       console.warn(
         'apos.expanded-menu: No groups or widgets defined. Please, either add a groups or widgets property to your area configuration.'
       );
@@ -180,7 +183,8 @@ export default {
         const widgetName = `${item}-widget`;
         const widgetModule = apos.modules[widgetName];
         if (!widgetModule) {
-          console.error(`${widgetName} is not available in this project, please verify its configuration`);
+          // eslint-disable-next-line no-console
+          console.warn(`${widgetName} is not available in this project, please verify its configuration`);
         } else {
           group.widgets.push(widgetModule);
         }

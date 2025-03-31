@@ -222,7 +222,8 @@ export default {
       };
     },
     disableUnpublished() {
-      return this.relationshipField && apos.modules[this.relationshipField.withType].localized;
+      return this.relationshipField &&
+        apos.modules[this.relationshipField.withType].localized;
     },
     selectAllChoice() {
       const checkCount = this.checked.length;
@@ -550,6 +551,7 @@ export default {
             interpolate: { operation: label },
             type: 'danger'
           });
+          // eslint-disable-next-line no-console
           console.error(error);
         }
       }

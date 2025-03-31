@@ -617,6 +617,7 @@ export default {
             await this.loadWhenIntersecting();
             await this.$nextTick();
             await this.loadUntilScroll();
+          // eslint-disable-next-line no-console
           }).catch(console.error);
         }
       }

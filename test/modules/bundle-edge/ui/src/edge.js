@@ -1,3 +1,3 @@
 export default () => {
-  console.log('BUNDLE_EDGE');
+  return 'BUNDLE_EDGE';
 };
