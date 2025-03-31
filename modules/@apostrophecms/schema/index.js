@@ -1223,12 +1223,12 @@ module.exports = {
 
       prepareForStorage(req, doc, options = {}) {
         const can = (field) => {
-          const canEdit = self.apos.permission.can(
+          const canEdit = () => self.apos.permission.can(
             req,
             field.editPermission.action,
             field.editPermission.type
           );
-          const canView = self.apos.permission.can(
+          const canView = () => self.apos.permission.can(
             req,
             field.viewPermission.action,
             field.viewPermission.type
@@ -1236,8 +1236,8 @@ module.exports = {
           return options.permissions === false ||
             (!field.withType && !field.editPermission && !field.viewPermission) ||
             (field.withType && self.apos.permission.can(req, 'view', field.withType)) ||
-            (field.editPermission && canEdit) ||
-            (field.viewPermission && canView) ||
+            (field.editPermission && canEdit()) ||
+            (field.viewPermission && canView()) ||
             false;
         };
 
