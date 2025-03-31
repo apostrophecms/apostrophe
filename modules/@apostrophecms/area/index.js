@@ -25,6 +25,8 @@ module.exports = {
     self.widgetManagers = {};
     self.richTextWidgetTypes = [];
     self.widgetManagers = {};
+    self.widgetOperations = [];
+    self.addWidgetOperations();
     self.enableBrowserData();
     self.addDeduplicateWidgetIdsMigration();
   },
@@ -636,6 +638,65 @@ module.exports = {
           }
         });
       },
+      addWidgetOperations() {
+        self.widgetOperations = [
+          ...self.widgetOperations,
+        ];
+      },
+      addWidgetOperation(operation) {
+        validate(operation);
+        self.contextOperations = [
+          ...self.contextOperations
+            .filter(op => op.action !== operation.action),
+          operation
+        ];
+
+        function validate ({
+          action, context, type = 'modal', label, modal, conditions, if: ifProps
+        }) {
+          const allowedConditions = [
+            'canPublish',
+            'canEdit',
+            'canDismissSubmission',
+            'canDiscardDraft',
+            'canLocalize',
+            'canArchive',
+            'canUnpublish',
+            'canCopy',
+            'canRestore',
+            'canCreate',
+            'canPreview',
+            'canShareDraft'
+          ];
+
+          if (![ 'event', 'modal' ].includes(type)) {
+            throw self.apos.error('invalid', '`type` option must be `modal` (default) or `event`');
+          }
+
+          if (!action || !context || !label || (type === 'modal' && !modal)) {
+            throw self.apos.error('invalid', 'addContextOperation requires action, context, label and modal (if type is set to `modal` or unset) properties.');
+          }
+
+          if (
+            conditions &&
+            (!Array.isArray(conditions) ||
+            conditions.some((perm) => !allowedConditions.includes(perm)))
+          ) {
+            throw self.apos.error(
+              'invalid', `The conditions property in addContextOperation must be an array containing one or multiple of these values:\n\t${allowedConditions.join('\n\t')}.`
+            );
+          }
+
+          if (
+            ifProps &&
+            (typeof ifProps !== 'object' || Array.isArray(ifProps))
+          ) {
+            throw self.apos.error(
+              'invalid', 'The if property in addContextOperation must be an object containing properties and values that will be checked against the current document in order to show or not the context operation.'
+            );
+          }
+        }
+      },
       getBrowserData(req) {
         const widgets = {};
         const widgetEditors = {};
@@ -671,7 +732,8 @@ module.exports = {
           widgetPreview,
           contextualWidgetDefaultData,
           widgetManagers,
-          action: self.action
+          action: self.action,
+          widgetOperations: self.widgetOperations
         };
       },
       async addDeduplicateWidgetIdsMigration() {
