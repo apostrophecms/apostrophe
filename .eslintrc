@@ -1,6 +1,1 @@
-{
-  "extends": [
-    "plugin:vue/recommended",
-    "apostrophe"
-  ]
-}
+{ "extends": ["apostrophe"] }
