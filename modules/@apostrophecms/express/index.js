@@ -156,6 +156,7 @@ const qs = require('qs');
 const expressBearerToken = require('express-bearer-token');
 const cors = require('cors');
 const Promise = require('bluebird');
+const expressCacheOnDemand = require('express-cache-on-demand');
 
 module.exports = {
   async init(self) {
@@ -170,6 +171,7 @@ module.exports = {
       self.apos.util.error('Set it as a global option (a property of the main object passed to apostrophe).');
       self.apos.util.error('When you do so other modules will also pick up on it and make URLs absolute.');
     }
+    self.createCacheOnDemand();
   },
   tasks(self) {
     return {
@@ -773,8 +775,14 @@ module.exports = {
             }
           }
         }
-
         self.finalModuleMiddlewareAndRoutes = labeledList.map(item => (item.prepending || []).concat(item.middleware || item.routes)).flat();
+      },
+      createCacheOnDemand() {
+        const { enableCacheOnDemand = true } = self.options;
+        if (enableCacheOnDemand) {
+          // Instantiate independently for this instance of ApostropheCMS
+          self.apos.expressCacheOnDemand = expressCacheOnDemand();
+        }
       }
     };
   }
