@@ -1,3 +1,4 @@
+/* eslint-disable no-console */
 export default () => {
-  return 'BUNDLE_EDGE';
+  console.log('BUNDLE_EDGE');
 };

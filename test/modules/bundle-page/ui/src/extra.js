@@ -1,3 +1,4 @@
+/* eslint-disable no-console */
 export default () => {
-  return 'BUNDLE_EXTRA_PAGE';
+  console.log('BUNDLE_EXTRA_PAGE');
 };

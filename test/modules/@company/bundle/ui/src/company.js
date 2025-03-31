@@ -1,3 +1,4 @@
+/* eslint-disable no-console */
 export default () => {
-  return 'BUNDLE_OVERRIDE_COMPANY';
+  console.log('BUNDLE_OVERRIDE_COMPANY');
 };

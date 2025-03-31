@@ -1,3 +1,4 @@
+/* eslint-disable no-console */
 export default () => {
-  return 'BUNDLE_ANOTHER_PAGE_TYPE';
+  console.log('BUNDLE_ANOTHER_PAGE_TYPE');
 };

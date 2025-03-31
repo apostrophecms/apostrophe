@@ -1,3 +1,4 @@
+/* eslint-disable no-console */
 export default () => {
-  return 'BUNDLE_WIDGET_EXTRA2';
+  console.log('BUNDLE_WIDGET_EXTRA2');
 };
