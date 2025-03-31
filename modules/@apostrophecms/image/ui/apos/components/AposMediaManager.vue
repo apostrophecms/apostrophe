@@ -681,7 +681,8 @@ export default {
               ...requestOptions,
               _ids: this.checked,
               messages,
-              type: this.checked.length === 1 ? this.moduleLabels.singular
+              type: this.checked.length === 1
+                ? this.moduleLabels.singular
                 : this.moduleLabels.plural
             }
           });
@@ -690,7 +691,6 @@ export default {
             interpolate: { operation: this.$t(label) },
             type: 'danger'
           });
-          console.error(error);
         }
       }
     }
