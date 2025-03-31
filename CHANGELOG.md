@@ -1,11 +1,10 @@
 # Changelog
 
-## UNRELEASED
+## 3.67.3 (2025-03-31)
 
 ### Fixes
 
-* Registering duplicate icon is no longer breaking the build.
-* `pnpm: true` option in `app.js` is no longer breaking the application.
+* Hotfix: fixes a bug in which the same on-demand cache was used across multiple sites in the presence of `@apostrophecms/multisite`. In rare cases, this bug could cause the home page of site "A" to be displayed on a request for site "B," but only if requests were simultaneous. This bug did not impact single-site projects.
 
 ## 3.67.2 (2024-08-08)
 
