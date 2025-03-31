@@ -2048,17 +2048,13 @@ describe('Pages', function() {
         ids.map(({ _id }) => _id)
       );
       for (const patch of patches) {
-        try {
-          await apos.page.patch(
-            req.clone({
-              mode: 'draft',
-              body: patch.body
-            }),
-            patch._id
-          );
-        } catch (error) {
-          assert(false);
-        }
+        await apos.page.patch(
+          req.clone({
+            mode: 'draft',
+            body: patch.body
+          }),
+          patch._id
+        );
       }
 
       const home = await apos.page.find(req, { slug: '/' }).ancestors(false).children(true).toObject();
@@ -2221,17 +2217,13 @@ describe('Pages', function() {
         ids.map(({ _id }) => _id)
       );
       for (const patch of archivePatches) {
-        try {
-          await apos.page.patch(
-            req.clone({
-              mode: 'draft',
-              body: patch.body
-            }),
-            patch._id
-          );
-        } catch (error) {
-          assert(false);
-        }
+        await apos.page.patch(
+          req.clone({
+            mode: 'draft',
+            body: patch.body
+          }),
+          patch._id
+        );
       }
 
       const restorePatches = await apos.page.getBatchRestorePatches(
@@ -2241,17 +2233,13 @@ describe('Pages', function() {
           .map(({ _id }) => _id)
       );
       for (const patch of restorePatches) {
-        try {
-          await apos.page.patch(
-            req.clone({
-              mode: 'draft',
-              body: patch.body
-            }),
-            patch._id
-          );
-        } catch (error) {
-          assert(false);
-        }
+        await apos.page.patch(
+          req.clone({
+            mode: 'draft',
+            body: patch.body
+          }),
+          patch._id
+        );
       }
 
       const home = await apos.page.find(req, { slug: '/' }).ancestors(false).children(true).toObject();
