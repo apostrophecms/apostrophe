@@ -1,4 +1,3 @@
-
 <template>
   <li
     class="apos-slat"
@@ -382,14 +381,6 @@ export default {
 
   .apos-slat__control--remove:hover {
     cursor: pointer;
-  }
-
-  .fade-enter-active, .fade-leave-active {
-    transition: opacity 500ms;
-  }
-
-  .fade-enter, .fade-leave-to {
-    opacity: 0;
   }
 
   .apos-slat__secondary {
