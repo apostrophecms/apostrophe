@@ -18,7 +18,6 @@
         onHide: onBubbleHide
       }"
       :editor="editor"
-      :update-delay="0"
     >
       <AposContextMenuDialog
         menu-placement="top"
@@ -202,9 +201,6 @@ export default {
     };
   },
   computed: {
-    canShowTableControls() {
-      return this.editor?.isActive('table') ?? false;
-    },
     tableTippyOptions() {
       return {
         zIndex: 999,
