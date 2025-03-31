@@ -1,9 +1,15 @@
 <template>
-  <div :class="className" class="apos-toolbar">
+  <div
+    :class="className"
+    class="apos-toolbar"
+  >
     <div class="apos-toolbar__group apos-toolbar__group--left">
       <slot name="leftControls" />
     </div>
-    <div v-if="hasRightControls" class="apos-toolbar__group apos-toolbar__group--right">
+    <div
+      v-if="hasRightControls"
+      class="apos-toolbar__group apos-toolbar__group--right"
+    >
       <slot name="rightControls" />
     </div>
   </div>

@@ -10,10 +10,16 @@
       v-if="suggestion"
       :class="getClasses(suggestion)"
     >
-      <div v-if="suggestion.title" class="apos-search__item__title">
+      <div
+        v-if="suggestion.title"
+        class="apos-search__item__title"
+      >
         {{ suggestion.title }}
       </div>
-      <div v-if="suggestion.help" class="apos-search__item__field">
+      <div
+        v-if="suggestion.help"
+        class="apos-search__item__field"
+      >
         {{ suggestion.help }}
       </div>
     </li>
@@ -67,10 +73,16 @@
         class="apos-button__icon"
         fill-color="currentColor"
       />
-      <div v-if="hint.title" class="apos-search__item__title">
+      <div
+        v-if="hint.title"
+        class="apos-search__item__title"
+      >
         {{ hint.title }}
       </div>
-      <div v-if="hint.help" class="apos-search__item__field">
+      <div
+        v-if="hint.help"
+        class="apos-search__item__field"
+      >
         {{ hint.help }}
       </div>
     </li>

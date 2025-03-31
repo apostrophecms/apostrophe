@@ -1,12 +1,21 @@
 <template>
   <div class="apos-empty-state">
-    <p v-if="emptyState.title" class="apos-title">
+    <p
+      v-if="emptyState.title"
+      class="apos-title"
+    >
       {{ $t(emptyState.title) }}
     </p>
-    <p v-if="emptyState.message" class="apos-hint">
+    <p
+      v-if="emptyState.message"
+      class="apos-hint"
+    >
       {{ $t(emptyState.message) }}
     </p>
-    <div v-if="emptyState.emoji" class="apos-emoji">
+    <div
+      v-if="emptyState.emoji"
+      class="apos-emoji"
+    >
       {{ emptyState.emoji }}
     </div>
   </div>

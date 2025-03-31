@@ -178,7 +178,7 @@ const dropdownContent = ref(null);
 const dropdownContentStyle = ref({});
 const arrowEl = ref(null);
 const iconToCenterTo = ref(null);
-const menuOffset = getMenuOffset();
+const mOffset = getMenuOffset();
 const otherMenuOpened = ref(false);
 
 const {
@@ -358,7 +358,7 @@ async function setDropdownPosition() {
   } = await computePosition(centerArrowEl, dropdownContent.value, {
     placement: props.menuPlacement,
     middleware: [
-      offset(menuOffset),
+      offset(mOffset),
       shift({ padding: 5 }),
       flip(),
       arrow({

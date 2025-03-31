@@ -136,9 +136,11 @@ module.exports = {
       self.i18next.use(apostropheI18nDebugPlugin);
     }
 
-    const i18nextOptions = self.show ? {
-      postProcess: 'apostropheI18nDebugPlugin'
-    } : {};
+    const i18nextOptions = self.show
+      ? {
+        postProcess: 'apostropheI18nDebugPlugin'
+      }
+      : {};
 
     await self.i18next.init(i18nextOptions);
     self.addInitialResources();
@@ -578,7 +580,8 @@ module.exports = {
         let best = false;
         for (const [ name, options ] of Object.entries(locales)) {
           const matchedHostname = options.hostname
-            ? (hostname === options.hostname.split(':')[0]) : null;
+            ? (hostname === options.hostname.split(':')[0])
+            : null;
           const matchedPrefix = options.prefix
             ? ((req.path === options.prefix) || req.path.startsWith(options.prefix + '/'))
             : null;

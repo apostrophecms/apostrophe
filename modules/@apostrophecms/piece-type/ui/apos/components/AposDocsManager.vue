@@ -46,7 +46,10 @@
         @click="create"
       />
     </template>
-    <template v-if="relationshipField" #leftRail>
+    <template
+      v-if="relationshipField"
+      #leftRail
+    >
       <AposModalRail>
         <div class="apos-pieces-manager__relationship__rail">
           <div class="apos-pieces-manager__relationship__counts">
@@ -116,7 +119,10 @@
             }"
             @open="edit"
           />
-          <div v-else class="apos-pieces-manager__empty">
+          <div
+            v-else
+            class="apos-pieces-manager__empty"
+          >
             <AposEmptyState :empty-state="emptyDisplay" />
           </div>
         </template>
@@ -216,7 +222,8 @@ export default {
       };
     },
     disableUnpublished() {
-      return this.relationshipField && apos.modules[this.relationshipField.withType].localized;
+      return this.relationshipField &&
+        apos.modules[this.relationshipField.withType].localized;
     },
     selectAllChoice() {
       const checkCount = this.checked.length;
@@ -515,7 +522,8 @@ export default {
               ...requestOptions,
               _ids: this.checked,
               messages,
-              type: this.checked.length === 1 ? this.moduleLabels.singular
+              type: this.checked.length === 1
+                ? this.moduleLabels.singular
                 : this.moduleLabels.plural
             }
           });
@@ -524,6 +532,7 @@ export default {
             interpolate: { operation: label },
             type: 'danger'
           });
+          // eslint-disable-next-line no-console
           console.error(error);
         }
       }

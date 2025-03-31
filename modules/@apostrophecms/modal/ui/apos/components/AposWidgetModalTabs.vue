@@ -1,6 +1,12 @@
 <template>
-  <div class="apos-modal-tabs" :class="{ 'apos-modal-tabs--horizontal': orientation === 'horizontal' }">
-    <ul class="apos-modal-tabs__tabs" data-apos-test="widget-tabs">
+  <div
+    class="apos-modal-tabs"
+    :class="{ 'apos-modal-tabs--horizontal': orientation === 'horizontal' }"
+  >
+    <ul
+      class="apos-modal-tabs__tabs"
+      data-apos-test="widget-tabs"
+    >
       <li
         v-for="tab in visibleTabs"
         v-show="tab.isVisible !== false"

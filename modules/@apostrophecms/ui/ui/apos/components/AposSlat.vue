@@ -1,110 +1,116 @@
-
 <template>
-  <transition name="fade">
-    <li
-      class="apos-slat"
-      :data-id="item._id"
-      :tabindex="slatCount > 1 ? '0' : '-1'"
-      :class="{
-        'apos-is-engaged': engaged,
-        'apos-is-only-child': slatCount === 1,
-        'apos-is-selected': selected,
-        'apos-is-disabled': disabled,
-      }"
-      :aria-pressed="engaged"
-      role="listitem"
-      :aria-labelledby="parent"
-      @keydown.space="toggleEngage"
-      @keydown.enter="toggleEngage"
-      @keydown.escape="disengage"
-      @keydown.arrow-down="move(1)"
-      @keydown.arrow-up="move(-1)"
-      @keydown.backspace="remove($event, true)"
-      @click="click"
-    >
-      <div class="apos-slat__main">
-        <drag-icon
-          v-if="slatCount > 1"
-          class="apos-slat__control apos-slat__control--drag"
-          :size="13"
-        />
-        <AposContextMenu
-          v-if="hasRelationshipFields && more.menu.length"
-          :button="more.button"
-          :menu="more.menu"
-          menu-placement="bottom-start"
-          :disabled="disabled"
-          @item-clicked="$emit('item-clicked', item)"
-        />
-        <AposButton
-          v-if="editorIcon && hasRelationshipEditor"
-          class="apos-slat__editor-btn"
-          role="button"
-          :tooltip="{
-            content: editorLabel,
-            placement: 'bottom'
-          }"
-          :icon="editorIcon"
-          :icon-only="true"
-          :modifiers="['inline']"
-          :disabled="disabled"
-          @click="$emit('item-clicked', item)"
-          @keydown.prevent.enter="nativeClick"
-          @keydown.prevent.space="nativeClick"
-        />
-        <AposButton
-          v-if="item._url || item._urls"
-          class="apos-slat__control apos-slat__control--view"
-          icon="eye-icon"
-          :icon-only="true"
-          :modifiers="['inline']"
-          label="apostrophe:preview"
-          :href="item._url || item._urls.original"
-          target="_blank"
-          @keydown.prevent.enter="nativeClick"
-          @keydown.prevent.space="nativeClick"
-        />
-        <div
-          v-if="item.attachment &&
-            item.attachment.group === 'images' &&
-            item.attachment._urls"
-          class="apos-slat__media-preview"
+  <li
+    class="apos-slat"
+    :data-id="item._id"
+    :tabindex="slatCount > 1 ? '0' : '-1'"
+    :class="{
+      'apos-is-engaged': engaged,
+      'apos-is-only-child': slatCount === 1,
+      'apos-is-selected': selected,
+      'apos-is-disabled': disabled,
+    }"
+    :aria-pressed="engaged"
+    role="listitem"
+    :aria-labelledby="parent"
+    @keydown.space="toggleEngage"
+    @keydown.enter="toggleEngage"
+    @keydown.escape="disengage"
+    @keydown.arrow-down="move(1)"
+    @keydown.arrow-up="move(-1)"
+    @keydown.backspace="remove($event, true)"
+    @click="click"
+  >
+    <div class="apos-slat__main">
+      <drag-icon
+        v-if="slatCount > 1"
+        class="apos-slat__control apos-slat__control--drag"
+        :size="13"
+      />
+      <AposContextMenu
+        v-if="hasRelationshipFields && more.menu.length"
+        :button="more.button"
+        :menu="more.menu"
+        menu-placement="bottom-start"
+        :disabled="disabled"
+        @item-clicked="$emit('item-clicked', item)"
+      />
+      <AposButton
+        v-if="editorIcon && hasRelationshipEditor"
+        class="apos-slat__editor-btn"
+        role="button"
+        :tooltip="{
+          content: editorLabel,
+          placement: 'bottom'
+        }"
+        :icon="editorIcon"
+        :icon-only="true"
+        :modifiers="['inline']"
+        :disabled="disabled"
+        @click="$emit('item-clicked', item)"
+        @keydown.prevent.enter="nativeClick"
+        @keydown.prevent.space="nativeClick"
+      />
+      <AposButton
+        v-if="item._url || item._urls"
+        class="apos-slat__control apos-slat__control--view"
+        icon="eye-icon"
+        :icon-only="true"
+        :modifiers="['inline']"
+        label="apostrophe:preview"
+        :href="item._url || item._urls.original"
+        target="_blank"
+        @keydown.prevent.enter="nativeClick"
+        @keydown.prevent.space="nativeClick"
+      />
+      <div
+        v-if="item.attachment &&
+          item.attachment.group === 'images' &&
+          item.attachment._urls"
+        class="apos-slat__media-preview"
+      >
+        <img
+          :src="item.attachment._urls.uncropped
+            ? item.attachment._urls.uncropped['one-sixth']
+            : item.attachment._urls['one-sixth']"
+          :alt="item.description || item.title"
+          class="apos-slat__media"
         >
-          <img
-            :src="item.attachment._urls.uncropped
-              ? item.attachment._urls.uncropped['one-sixth']
-              : item.attachment._urls['one-sixth']"
-            :alt="item.description || item.title"
-            class="apos-slat__media"
-          >
-        </div>
-        <div v-else-if="item.extension" class="apos-slat__extension-wrapper">
-          <span class="apos-slat__extension" :class="[`apos-slat__extension--${item.extension}`]">
-            {{ item.extension }}
-          </span>
-        </div>
-        <div class="apos-slat__label">
-          {{ item.title }}
-        </div>
       </div>
-      <div class="apos-slat__secondary">
-        <div v-if="item.length && item.length.size" class="apos-slat__size">
-          {{ itemSize }}
-        </div>
-        <AposButton
-          v-if="removable"
-          class="apos-slat__control apos-slat__control--remove"
-          icon="close-icon"
-          :icon-only="true"
-          :modifiers="['inline']"
-          label="apostrophe:removeItem"
-          :disabled="disabled"
-          @click="remove($event)"
-          @keydown.prevent.space="remove($event)"
-        />
+      <div
+        v-else-if="item.extension"
+        class="apos-slat__extension-wrapper"
+      >
+        <span
+          class="apos-slat__extension"
+          :class="[`apos-slat__extension--${item.extension}`]"
+        >
+          {{ item.extension }}
+        </span>
       </div>
-    </li>
-  </transition>
+      <div class="apos-slat__label">
+        {{ item.title }}
+      </div>
+    </div>
+    <div class="apos-slat__secondary">
+      <div
+        v-if="item.length && item.length.size"
+        class="apos-slat__size"
+      >
+        {{ itemSize }}
+      </div>
+      <AposButton
+        v-if="removable"
+        class="apos-slat__control apos-slat__control--remove"
+        icon="close-icon"
+        :icon-only="true"
+        :modifiers="['inline']"
+        label="apostrophe:removeItem"
+        :disabled="disabled"
+        @click="remove($event)"
+        @keydown.prevent.space="remove($event)"
+      />
+    </div>
+  </li>
 </template>
 
 <script>
@@ -166,10 +172,12 @@ export default {
           type: 'inline'
         },
         menu: [
-          ...!this.editorIcon ? [ {
-            label: 'apostrophe:editRelationship',
-            action: 'edit-relationship'
-          } ] : []
+          ...!this.editorIcon
+            ? [ {
+              label: 'apostrophe:editRelationship',
+              action: 'edit-relationship'
+            } ]
+            : []
         ]
       }
     };
@@ -342,7 +350,8 @@ export default {
     max-width: 75%;
 
     &:deep(.trigger) {
-      /* This gets inline positioned and has doesn't provide an extra class to beef up, sorry */
+      // This gets inline positioned and has doesn't provide an extra
+      // class to beef up, sorry
       /* stylelint-disable-next-line declaration-no-important */
       display: flex !important;
     }
@@ -372,14 +381,6 @@ export default {
 
   .apos-slat__control--remove:hover {
     cursor: pointer;
-  }
-
-  .fade-enter-active, .fade-leave-active {
-    transition: opacity 500ms;
-  }
-
-  .fade-enter, .fade-leave-to {
-    opacity: 0;
   }
 
   .apos-slat__secondary {

@@ -11,10 +11,16 @@
         <template #bodyMain>
           <div class="apos-report__body">
             <div>
-              <h2 v-if="contentHeadingText" class="apos-report__heading">
+              <h2
+                v-if="contentHeadingText"
+                class="apos-report__heading"
+              >
                 {{ contentHeadingText }}
               </h2>
-              <p v-if="contentDescriptionText" class="apos-report__description">
+              <p
+                v-if="contentDescriptionText"
+                class="apos-report__description"
+              >
                 {{ contentDescriptionText }}
               </p>
             </div>
