@@ -1,5 +1,11 @@
 # Changelog
 
+## 4.14.1 (2025-03-31)
+
+### Fixes
+
+* Hotfix: fixes a bug in which the same on-demand cache was used across multiple sites in the presence of `@apostrophecms/multisite`. In rare cases, this bug could cause the home page of site "A" to be displayed on a request for site "B," but only if requests were simultaneous. This bug did not impact single-site projects.
+
 ## 4.14.0 (2025-03-19)
 
 ### Adds
