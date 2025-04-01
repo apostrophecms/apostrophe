@@ -44,6 +44,8 @@
 </template>
 
 <script>
+import { createId } from '@paralleldrive/cuid2';
+
 export default {
   name: 'AposMediaUploader',
   props: {
@@ -128,17 +130,15 @@ export default {
         });
 
         // Send up placeholders
-        for (const file of files) {
-          this.createPlaceholder(file);
-        }
+        [ ...files ].forEach(() => this.createPlaceholder(emptyDoc));
 
-        const imageIds = [];
+        const images = [];
         // Actually upload the images and send them up once all done.
         for (const file of files) {
           try {
-            const img = await this.insertImage(file, emptyDoc);
+            const img = await this.insertImage(file, { ...emptyDoc });
             if (img?._id) {
-              imageIds.push(img._id);
+              images.push(img);
             }
           } catch (e) {
             const msg = e.body && e.body.message ? e.body.message : this.$t('apostrophe:uploadError');
@@ -161,7 +161,7 @@ export default {
         });
 
         // When complete, refresh the image grid, with the new images at top.
-        this.$emit('upload-complete', imageIds);
+        this.$emit('upload-complete', images);
       } finally {
         apos.bus.$emit('busy', {
           name: 'busy',
@@ -170,20 +170,11 @@ export default {
         this.$refs.upload.value = '';
       }
     },
-    createPlaceholder(file) {
-      const img = new Image();
-      const dimensions = {};
-      const objectUrl = window.URL.createObjectURL(file);
-      const self = this;
-
-      img.onload = function () {
-        dimensions.width = this.width;
-        dimensions.height = this.height;
-        window.URL.revokeObjectURL(objectUrl);
-
-        self.$emit('create-placeholder', dimensions);
-      };
-      img.src = objectUrl;
+    createPlaceholder(piece) {
+      this.$emit('create-placeholder', {
+        ...piece,
+        __placeholder: createId()
+      });
     },
     async insertImage(file, emptyDoc) {
       const formData = new window.FormData();
