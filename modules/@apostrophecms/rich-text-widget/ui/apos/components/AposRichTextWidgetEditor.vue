@@ -407,7 +407,6 @@ export default {
   },
   methods: {
     onBubbleHide() {
-      this.shouldCloseBubbleMenu = false;
       apos.bus.$emit('close-context-menus', 'richText');
     },
     generateKey() {
@@ -655,9 +654,11 @@ export default {
       this.activeInsertMenuComponent = isActive;
     },
     closeToolbar() {
-      this.editor.chain().focus().run();
+      // This is a workaround to force the toolbar to close on blur
+      // Related issue: https://github.com/ueberdosis/tiptap/issues/6210
       this.editor.commands.focus();
-      /* this.editor.commands.blur(); */ // Do we keep?
+      this.editor.commands.blur();
+      this.editor.chain().focus().run();
     }
   }
 };
