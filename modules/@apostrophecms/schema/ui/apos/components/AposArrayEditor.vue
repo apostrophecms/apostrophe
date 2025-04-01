@@ -30,10 +30,16 @@
               <span v-if="countLabel">
                 {{ countLabel }}
               </span>
-              <span v-if="minLabel" :class="minError ? 'apos-modal-array-min-error' : ''">
+              <span
+                v-if="minLabel"
+                :class="minError ? 'apos-modal-array-min-error' : ''"
+              >
                 {{ minLabel }}
               </span>
-              <span v-if="maxLabel" :class="maxError ? 'apos-modal-array-max-error' : ''">
+              <span
+                v-if="maxLabel"
+                :class="maxError ? 'apos-modal-array-max-error' : ''"
+              >
                 {{ maxLabel }}
               </span>
             </div>

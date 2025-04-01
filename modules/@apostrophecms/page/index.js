@@ -1113,14 +1113,18 @@ database.`);
         return self.apos.modules['@apostrophecms/any-page-type'].find(req, criteria, options);
       },
       getIdCriteria(_id) {
-        return (_id === '_home') ? {
-          level: 0
-        } : (_id === '_archive') ? {
-          level: 1,
-          archived: true
-        } : {
-          _id
-        };
+        return (_id === '_home')
+          ? {
+            level: 0
+          }
+          : (_id === '_archive')
+            ? {
+              level: 1,
+              archived: true
+            }
+            : {
+              _id
+            };
       },
       // Implementation of the PATCH route. Factored as a method to allow
       // it to be called from the universal @apostrophecms/doc PATCH route

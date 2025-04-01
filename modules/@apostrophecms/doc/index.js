@@ -218,13 +218,15 @@ module.exports = {
             const date = new Date();
             doc.updatedAt = date;
             doc.cacheInvalidatedAt = date;
-            doc.updatedBy = req.user ? {
-              _id: req.user._id,
-              title: req.user.title || null,
-              username: req.user.username
-            } : {
-              username: 'ApostropheCMS'
-            };
+            doc.updatedBy = req.user
+              ? {
+                _id: req.user._id,
+                title: req.user.title || null,
+                username: req.user.username
+              }
+              : {
+                username: 'ApostropheCMS'
+              };
           }
         },
         deduplicateWidgetIds(req, doc, options) {

@@ -57,7 +57,10 @@
           <span class="apos-button-split__menu__dialog-label">
             {{ $t(item.label) }}
           </span>
-          <span v-if="item.description" class="apos-button-split__menu__dialog-description">
+          <span
+            v-if="item.description"
+            class="apos-button-split__menu__dialog-description"
+          >
             {{ $t(item.description) }}
           </span>
         </li>

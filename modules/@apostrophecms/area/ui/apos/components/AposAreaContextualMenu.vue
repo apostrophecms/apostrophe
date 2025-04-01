@@ -1,5 +1,8 @@
 <template>
-  <div class="apos-area-menu" :class="{'apos-is-focused': groupIsFocused}">
+  <div
+    class="apos-area-menu"
+    :class="{'apos-is-focused': groupIsFocused}"
+  >
     <AposContextMenu
       v-bind="extendedContextMenuOptions"
       ref="contextMenu"
@@ -16,7 +19,10 @@
           class="apos-area-menu__item"
           :class="{'apos-has-group': item.items}"
         >
-          <dl v-if="item.items" class="apos-area-menu__group">
+          <dl
+            v-if="item.items"
+            class="apos-area-menu__group"
+          >
             <dt>
               <button
                 v-if="item.items"
@@ -44,7 +50,10 @@
                 />
               </button>
             </dt>
-            <dd class="apos-area-menu__group-list" role="region">
+            <dd
+              class="apos-area-menu__group-list"
+              role="region"
+            >
               <ul
                 :id="`${menuId}-group-${itemIndex}`"
                 class="apos-area-menu__items apos-area-menu__items--accordion"

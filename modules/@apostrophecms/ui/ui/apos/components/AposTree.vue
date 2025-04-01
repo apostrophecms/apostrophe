@@ -1,5 +1,8 @@
 <template>
-  <div class="apos-tree" :class="{ 'apos-tree--nested': nested }">
+  <div
+    class="apos-tree"
+    :class="{ 'apos-tree--nested': nested }"
+  >
     <AposTreeHeader
       :headers="spacingRow"
       :icons="icons"

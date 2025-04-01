@@ -10,8 +10,10 @@
 // If a function it accepts `apos` and returns an object with
 // at least `info`, `debug`, `warn` and `error` methods. If a `destroy` method
 // is present it will be invoked and awaited (Promise) when Apostrophe is shut down.
-// The object, or the returned object, must have `info`, `debug`, `warn` and `error` methods.
-// If `destroy` is present it will be invoked and awaited (Promise) when Apostrophe is shut down.
+// The object, or the returned object, must have `info`, `debug`, `warn` and `error`
+// methods.
+// If `destroy` is present it will be invoked and awaited (Promise) when Apostrophe
+// is shut down.
 // If this option is not supplied, logs are simply written to the Node.js `console`.
 // Calls to `apos.utils.info`, `apos.utils.error`, etc. or module level `self.logInfo`,
 // `self.logError`, etc are routed through this object by Apostrophe.
@@ -90,6 +92,7 @@
 // Example:
 // ```sh
 // # same as the `filter` example above
+// eslint-disable-next-line max-len
 // export APOS_FILTER_LOGS='*:severity:warn,error;@apostrophecms/login:events:incorrect-username,incorrect-password'
 // # log everything, analogous to `{ filter: { '*': true }}`
 // export APOS_FILTER_LOGS='*'

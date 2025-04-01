@@ -8,11 +8,6 @@ describe('Malformed Pieces', function () {
     let throwsError = true;
     const mochaProcess = spawn('node', [ './test/pieces-children/pieces-malformed-child.js' ]);
 
-    mochaProcess.stdout.on('data', (data) => {
-      console.log(`Mocha output: ${data}`);
-
-    });
-
     mochaProcess.stderr.on('data', (data) => {
       const errorMsg = data.toString();
       const errorMatch = errorMsg.match(/(?<error>Error:.*\n)/);

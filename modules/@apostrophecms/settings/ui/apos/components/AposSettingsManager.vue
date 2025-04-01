@@ -39,7 +39,10 @@
       </AposModalBody>
     </template>
     <template #main>
-      <AposModalBody v-if="docReady" class="apos-settings__content">
+      <AposModalBody
+        v-if="docReady"
+        class="apos-settings__content"
+      >
         <template #bodyMain>
           <div
             v-for="(group, name) in groups"

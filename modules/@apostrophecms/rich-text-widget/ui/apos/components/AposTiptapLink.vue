@@ -12,7 +12,10 @@
         class="apos-link-control__dialog"
         :class="{ 'apos-has-selection': hasSelection }"
       >
-        <div v-if="hasLinkOnOpen" class="apos-link-control__remove">
+        <div
+          v-if="hasLinkOnOpen"
+          class="apos-link-control__remove"
+        >
           <AposButton
             type="quiet"
             label="apostrophe:removeLink"

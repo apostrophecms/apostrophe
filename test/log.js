@@ -1,3 +1,4 @@
+/* eslint-disable no-console */
 const t = require('../test-lib/test.js');
 const assert = require('assert/strict');
 

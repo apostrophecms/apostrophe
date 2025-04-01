@@ -305,7 +305,6 @@
   "loginResetPasswordRequest": "Inserisci l'indirizzo email del tuo account e ti invieremo un link per il ripristino della password.",
   "loginResetPasswordRequired": "È richiesta una nuova password.",
   "loginResetRequestDone": "Se l'indirizzo email che hai inserito corrisponde ai nostri dati, ti invieremo un link di ripristino a \"{{ email }}\".\n\nSegui il link nell'email per reimpostare la tua password.",
-  "loginSendEmail": "Invia email",
   "manageDocType": "Gestisci {{ type }}",
   "manageDraftSubmissions": "Gestisci proposte in bozza",
   "managePages": "Gestisci pagine",

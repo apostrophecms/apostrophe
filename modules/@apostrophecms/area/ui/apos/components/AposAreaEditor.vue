@@ -400,7 +400,10 @@ export default {
     clone(index) {
       const widget = klona(this.next[index]);
       delete widget._id;
-      this.regenerateIds(apos.modules[apos.area.widgetManagers[widget.type]].schema, widget);
+      this.regenerateIds(
+        apos.modules[apos.area.widgetManagers[widget.type]].schema,
+        widget
+      );
       this.insert({
         widget,
         index
@@ -457,7 +460,10 @@ export default {
       if (clipboard) {
         // clear clipboard after paste
         apos.area.widgetClipboard.set(null);
-        this.regenerateIds(apos.modules[apos.area.widgetManagers[clipboard.type]].schema, clipboard);
+        this.regenerateIds(
+          apos.modules[apos.area.widgetManagers[clipboard.type]].schema,
+          clipboard
+        );
         return this.insert({
           widget: clipboard,
           index
@@ -588,6 +594,7 @@ export default {
     getValidItems() {
       return this.items.filter(item => {
         if (!window.apos.modules[`${item.type}-widget`]) {
+          // eslint-disable-next-line no-console
           console.warn(`The widget type ${item.type} exists in the content but is not configured.`);
         }
         return window.apos.modules[`${item.type}-widget`];

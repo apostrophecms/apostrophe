@@ -26,8 +26,16 @@
         :class="labelsClasses"
       >
         <ol class="apos-area-widget__breadcrumbs">
-          <li class="apos-area-widget__breadcrumb apos-area-widget__breadcrumb--widget-icon">
-            <AposIndicator :icon="widgetIcon" :icon-size="13" />
+          <li
+            class="
+              apos-area-widget__breadcrumb
+              apos-area-widget__breadcrumb--widget-icon
+            "
+          >
+            <AposIndicator
+              :icon="widgetIcon"
+              :icon-size="13"
+            />
           </li>
           <li
             v-for="(item, index) in breadcrumbs.list"
@@ -45,7 +53,10 @@
               @click="getFocus($event, item.id)"
             />
           </li>
-          <li class="apos-area-widget__breadcrumb" data-apos-widget-breadcrumb="0">
+          <li
+            class="apos-area-widget__breadcrumb"
+            data-apos-widget-breadcrumb="0"
+          >
             <AposButton
               type="quiet"
               :label="foreign ? {
@@ -63,7 +74,11 @@
         </ol>
       </div>
       <div
-        class="apos-area-widget-controls apos-area-widget-controls--add apos-area-widget-controls--add--top"
+        class="
+          apos-area-widget-controls
+          apos-area-widget-controls--add--top
+          apos-area-widget-controls--add
+        "
         :class="addClasses"
       >
         <AposAreaMenu
@@ -138,7 +153,10 @@
         @edit="$emit('edit', i);"
       />
       <div
-        class="apos-area-widget-controls apos-area-widget-controls--add apos-area-widget-controls--add--bottom"
+        class="
+          apos-area-widget-controls apos-area-widget-controls--add
+          apos-area-widget-controls--add--bottom
+        "
         :class="addClasses"
       >
         <AposAreaMenu
@@ -294,7 +312,8 @@ export default {
       const moduleName = `${this.widget.type}-widget`;
       const module = window.apos.modules[moduleName];
       if (!module) {
-        console.error(`No ${moduleName} module found for widget type ${this.widget.type}`);
+        // eslint-disable-next-line no-console
+        console.warn(`No ${moduleName} module found for widget type ${this.widget.type}`);
       }
       return module.label;
     },

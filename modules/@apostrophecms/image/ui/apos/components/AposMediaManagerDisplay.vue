@@ -79,7 +79,10 @@
         class="apos-loading"
       />
     </div>
-    <div v-else class="apos-media-manager-display__end-reached">
+    <div
+      v-else
+      class="apos-media-manager-display__end-reached"
+    >
       <p>{{ $t('apostrophe:mediaLibraryEndReached') }}</p>
     </div>
   </div>

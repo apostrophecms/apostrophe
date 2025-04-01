@@ -26,7 +26,10 @@
     <template #leftRail>
       <AposModalRail>
         <div class="apos-schema">
-          <div class="apos-field" data-apos-field="aspectRatio">
+          <div
+            class="apos-field"
+            data-apos-field="aspectRatio"
+          >
             <label class="apos-field__label">
               {{ $t('apostrophe:aspectRatio') }}
               <AposIndicator
@@ -60,7 +63,10 @@
             }}
           </div>
           <div class="apos-schema__aligned-fields">
-            <div class="apos-field" data-apos-field="width">
+            <div
+              class="apos-field"
+              data-apos-field="width"
+            >
               <label class="apos-field__label apos-field__label--aligned">
                 W
               </label>
@@ -74,7 +80,10 @@
                 @blur="blurInput"
               >
             </div>
-            <div class="apos-field" data-apos-field="height">
+            <div
+              class="apos-field"
+              data-apos-field="height"
+            >
               <label class="apos-field__label apos-field__label--aligned">
                 H
               </label>
@@ -93,7 +102,10 @@
       </AposModalRail>
     </template>
     <template #main>
-      <div ref="cropperContainer" class="apos-image-cropper__container">
+      <div
+        ref="cropperContainer"
+        class="apos-image-cropper__container"
+      >
         <AposImageCropper
           :attachment="item.attachment"
           :doc-fields="docFields"
@@ -390,7 +402,8 @@ export default {
         ? {
           aspectRatio: widgetOptions.aspectRatio[0] / widgetOptions.aspectRatio[1],
           disableAspectRatio: true
-        } : {
+        }
+        : {
           aspectRatio: null,
           disableAspectRatio: false
         };
@@ -423,7 +436,7 @@ export default {
 };
 </script>
 
-<style scoped lang="scss" >
+<style scoped lang="scss">
 .apos-schema {
   margin: 30px 15px 0;
 

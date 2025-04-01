@@ -9,11 +9,6 @@ describe('Malformed Widgets', function () {
     let throwsError = true;
     const mochaProcess = spawn('node', [ './test/widgets-children/widgets-malformed-child.js' ]);
 
-    mochaProcess.stdout.on('data', (data) => {
-      console.log(`Mocha output: ${data}`);
-
-    });
-
     mochaProcess.stderr.on('data', (data) => {
       const errorMsg = data.toString();
       const errorMatch = errorMsg.match(/(?<error>Error:.*\n)/);

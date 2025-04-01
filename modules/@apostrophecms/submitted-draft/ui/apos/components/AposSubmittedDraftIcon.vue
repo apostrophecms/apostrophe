@@ -9,7 +9,10 @@
     @click="open"
   >
     <template #label>
-      <span v-if="canPublish && count > 0" class="apos-submitted-drafts__counter">
+      <span
+        v-if="canPublish && count > 0"
+        class="apos-submitted-drafts__counter"
+      >
         {{ count }}
       </span>
     </template>
@@ -59,6 +62,7 @@ export default {
           })).count;
         }
       } catch (e) {
+        // eslint-disable-next-line no-console
         console.error(e);
       } finally {
         // Not declared in data() because it is not reactive
