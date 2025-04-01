@@ -23,11 +23,23 @@ module.exports = {
       'rank',
       'level'
     ];
-    self.widgetManagers = {};
     self.richTextWidgetTypes = [];
     self.widgetManagers = {};
     self.widgetOperations = [];
-    self.addWidgetOperations();
+
+    // TODO: remove following
+    self.addWidgetOperation({
+      name: 'createSection',
+      // modal: 'AposSectionEditor',
+      modal: 'AposSettingsManager',
+      label: 'Create Section',
+      icon: 'group-icon',
+      nested: true,
+      permission: {
+        action: 'create',
+        type: '@apostrophecms-pro/section-template-library'
+      }
+    });
     self.enableBrowserData();
     self.addDeduplicateWidgetIdsMigration();
   },
@@ -656,19 +668,18 @@ module.exports = {
           }
         });
       },
-      addWidgetOperations() {
-        self.widgetOperations = [
-          ...self.widgetOperations,
-        ];
-      },
       addWidgetOperation(operation) {
-        validate(operation);
-        self.contextOperations = [
-          ...self.contextOperations
-            .filter(op => op.action !== operation.action),
-          operation
-        ];
+        console.log('operation', operation);
+        // validate(operation);
 
+        self.widgetOperations = self.widgetOperations.filter(widgetOperation =>
+          widgetOperation.action !== operation.action &&
+          widgetOperation.modal !== operation.modal
+        );
+
+        self.widgetOperations.push(operation);
+
+        console.log('self.widgetOperations', self.widgetOperations);
         function validate ({
           action, context, type = 'modal', label, modal, conditions, if: ifProps
         }) {

@@ -7,7 +7,7 @@
         v-for="control in widgetPrimaryControlsBefore"
         :key="control.action"
         v-bind="control"
-        @click="handleClick(control.action)"
+        @click="handleClick(control)"
       />
 
       <!-- <AposContextMenu -->
@@ -32,7 +32,7 @@
         v-for="control in widgetPrimaryControlsAfter"
         :key="control.action"
         v-bind="control"
-        @click="handleClick(control.action)"
+        @click="handleClick(control)"
       />
 
       <!-- <AposContextMenuDialog -->
@@ -148,6 +148,16 @@ export default {
         });
       }
 
+      // Custom widget operations
+      if (widgetOperations.length) {
+        controls.push(
+          ...widgetOperations.map(operation => ({
+            ...this.widgetDefaultControl,
+            ...operation
+          }))
+        );
+      }
+
       /* // Cut */
       /* controls.push({ */
       /*   ...this.widgetDefaultControl, */
@@ -211,9 +221,17 @@ export default {
     }
   },
   methods: {
-    handleClick(action) {
+    handleClick({ action, modal }) {
       console.log('action', action);
-      this.$emit(action);
+      console.log('modal', modal);
+
+      if (modal) {
+        apos.modal.execute(modal);
+      }
+
+      if (action) {
+        this.$emit(action);
+      }
     }
   }
 };
