@@ -44,6 +44,7 @@ module.exports = {
   'content-cut-icon': 'ContentCut',
   'cursor-default-click-icon': 'CursorDefaultClick',
   'delete-icon': 'Delete',
+  'dots-horizontal-icon': 'DotsHorizontal',
   'dots-vertical-icon': 'DotsVertical',
   'drag-icon': 'Apps',
   'eye-icon': 'Eye',
