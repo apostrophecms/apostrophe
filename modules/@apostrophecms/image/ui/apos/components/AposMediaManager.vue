@@ -434,6 +434,8 @@ export default {
         // This ensures that the inifinite scroll will work as expected.
         await this.loadWhenIntersecting(options.lock);
       }
+
+      return skipped;
     },
     async refetchMedia(opts) {
       this.isLoading = true;
