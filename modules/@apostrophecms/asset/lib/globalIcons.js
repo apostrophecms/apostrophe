@@ -104,6 +104,7 @@ module.exports = {
   'pencil-icon': 'Pencil',
   'phone-icon': 'Phone',
   'play-box-icon': 'PlayBox',
+  'playlist-edit-icon': 'PlaylistEdit',
   'plus-icon': 'Plus',
   'redo-icon': 'RedoVariant',
   'refresh-icon': 'Refresh',

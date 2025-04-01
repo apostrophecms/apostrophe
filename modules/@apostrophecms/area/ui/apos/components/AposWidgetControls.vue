@@ -3,61 +3,11 @@
     <AposButtonGroup
       :modifiers="[ 'vertical' ]"
     >
-      <template v-if="!foreign">
-        <AposButton
-          v-for="widgetControl in widgetControls"
-          :key="widgetControl.action"
-          v-bind="widgetControl"
-          @click="handleClick(widgetControl.action)"
-        />
-      </template>
       <AposButton
-        v-if="!foreign && !options.contextual"
-        v-bind="editButton"
-        :disabled="disabled"
-        :tooltip="{
-          content: 'apostrophe:editWidget',
-          placement: 'left'
-        }"
-        @click="$emit('edit')"
-      />
-      <AposButton
-        v-if="!foreign"
-        v-bind="cutButton"
-        :tooltip="{
-          content: 'apostrophe:cut',
-          placement: 'left'
-        }"
-        @click="$emit('cut')"
-      />
-      <AposButton
-        v-if="!foreign"
-        v-bind="copyButton"
-        :tooltip="{
-          content: 'apostrophe:copy',
-          placement: 'left'
-        }"
-        @click="$emit('copy')"
-      />
-      <AposButton
-        v-if="!foreign"
-        v-bind="cloneButton"
-        :disabled="disabled || maxReached"
-        :tooltip="{
-          content: 'apostrophe:duplicate',
-          placement: 'left'
-        }"
-        @click="$emit('clone')"
-      />
-      <AposButton
-        v-if="!foreign"
-        v-bind="removeButton"
-        :disabled="disabled"
-        :tooltip="{
-          content: 'apostrophe:delete',
-          placement: 'left'
-        }"
-        @click="$emit('remove')"
+        v-for="widgetControl in widgetControls"
+        :key="widgetControl.action"
+        v-bind="widgetControl"
+        @click="handleClick(widgetControl.action)"
       />
     </AposButtonGroup>
   </div>
@@ -99,15 +49,16 @@ export default {
     }
   },
   emits: [ 'remove', 'edit', 'cut', 'copy', 'clone', 'up', 'down' ],
-  data() {
-    const { widgetOperations } = apos.modules['@apostrophecms/area'];
-    console.log(widgetOperations);
-
-    return {};
-  },
   computed: {
-    widgetControlsDefaults() {
-      return {
+    widgetControls() {
+      if (this.foreign) {
+        return [];
+      }
+
+      const { widgetOperations } = apos.modules['@apostrophecms/area'];
+      console.log('widgetOperations', widgetOperations);
+
+      const defaultControl = {
         iconOnly: true,
         icon: 'plus-icon',
         type: 'group',
@@ -117,68 +68,101 @@ export default {
         iconSize: 16,
         disableFocus: !this.tabbable
       };
-    },
-    widgetControls() {
-      return [
-        {
-          ...this.widgetControlsDefaults,
-          label: 'apostrophe:nudgeUp',
-          icon: 'arrow-up-icon',
-          disabled: this.first || this.disabled,
-          tooltip: {
-            content: this.first || this.disabled ? null : 'apostrophe:nudgeUp',
-            placement: 'left'
-          },
-          action: 'up'
+      const controls = [];
+
+      // Move up
+      controls.push({
+        ...defaultControl,
+        label: 'apostrophe:nudgeUp',
+        icon: 'arrow-up-icon',
+        disabled: this.first || this.disabled,
+        tooltip: {
+          content: this.first || this.disabled ? null : 'apostrophe:nudgeUp',
+          placement: 'left'
         },
-        {
-          ...this.widgetControlsDefaults,
-          label: 'apostrophe:nudgeDown',
-          icon: 'arrow-down-icon',
-          disabled: this.last || this.disabled,
+        action: 'up'
+      });
+
+      // Move down
+      controls.push({
+        ...defaultControl,
+        label: 'apostrophe:nudgeDown',
+        icon: 'arrow-down-icon',
+        disabled: this.last || this.disabled,
+        tooltip: {
+          content: this.last || this.disabled ? null : 'apostrophe:nudgeDown',
+          placement: 'left'
+        },
+        action: 'down'
+      });
+
+      // Edit
+      if (!this.options.contextual) {
+        controls.push({
+          ...defaultControl,
+          label: 'apostrophe:edit',
+          icon: 'playlist-edit-icon',
+          disabled: this.disabled,
           tooltip: {
-            content: this.last || this.disabled ? null : 'apostrophe:nudgeDown',
+            content: 'apostrophe:editWidget',
             placement: 'left'
           },
-          action: 'down'
-        }
-      ];
-    },
-    cloneButton() {
-      return {
-        ...this.buttonDefaults,
-        label: 'apostrophe:clone',
-        icon: 'content-copy-icon'
-      };
-    },
-    removeButton() {
-      return {
-        ...this.buttonDefaults,
-        label: 'apostrophe:remove',
-        icon: 'trash-can-outline-icon'
-      };
-    },
-    editButton() {
-      return {
-        ...this.buttonDefaults,
-        label: 'apostrophe:edit',
-        icon: 'pencil-icon'
-      };
-    },
-    cutButton() {
-      return {
-        ...this.buttonDefaults,
+          action: 'edit'
+        });
+      }
+
+      // Cut
+      controls.push({
+        ...defaultControl,
         label: 'apostrophe:cut',
-        icon: 'content-cut-icon'
-      };
-    },
-    copyButton() {
-      return {
-        ...this.buttonDefaults,
+        icon: 'content-cut-icon',
+        tooltip: {
+          content: 'apostrophe:cut',
+          placement: 'left'
+        },
+        action: 'cut'
+      });
+
+      // Copy
+      controls.push({
+        ...defaultControl,
         label: 'apostrophe:copy',
-        icon: 'clipboard-plus-outline-icon'
-      };
-    }
+        icon: 'clipboard-plus-outline-icon',
+        tooltip: {
+          content: 'apostrophe:copy',
+          placement: 'left'
+        },
+        action: 'copy'
+      });
+
+      // Clone
+      controls.push({
+        ...defaultControl,
+        label: 'apostrophe:clone',
+        icon: 'content-copy-icon',
+        disabled: this.disabled || this.maxReached,
+        tooltip: {
+          content: 'apostrophe:duplicate',
+          placement: 'left'
+        },
+        action: 'clone'
+      });
+
+      // Remove
+      controls.push({
+        ...defaultControl,
+        label: 'apostrophe:remove',
+        icon: 'trash-can-outline-icon',
+        disabled: this.disabled,
+        tooltip: {
+          content: 'apostrophe:delete',
+          placement: 'left'
+        },
+        action: 'remove'
+      });
+
+      return controls;
+    },
   },
   methods: {
     handleClick(action) {
