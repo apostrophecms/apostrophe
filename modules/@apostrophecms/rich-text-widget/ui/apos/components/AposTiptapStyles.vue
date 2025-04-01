@@ -17,7 +17,6 @@
       class="apos-tiptap-control apos-tiptap-control--select"
       :style="`width:${$t(nodeOptions[active].label).length * 6.5}px`"
       @change="setStyle"
-      @close="$emit('close')"
     >
       <option
         v-for="(style, i) in nodeOptions"
@@ -148,6 +147,8 @@ export default {
     setStyle($event) {
       const style = this.nodeOptions[$event.target.value];
       this.editor.commands[style.command](style.type, style.options || {});
+      this.editor.chain().focus().run();
+      this.editor.chain().blur().run();
       this.$emit('close');
     }
   }

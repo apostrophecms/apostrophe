@@ -73,7 +73,7 @@ export default {
       required: true
     }
   },
-  emits: [ 'close' ],
+  emits: [ 'open-popover', 'close' ],
   data() {
     const moduleOptions = apos.modules['@apostrophecms/rich-text-widget'];
     return {
@@ -258,6 +258,7 @@ export default {
       window.addEventListener('keydown', this.keyboardHandler);
       await this.populateFields();
       this.evaluateConditions();
+      this.$emit('open-popover');
     },
     closePopover() {
       window.removeEventListener('keydown', this.keyboardHandler);

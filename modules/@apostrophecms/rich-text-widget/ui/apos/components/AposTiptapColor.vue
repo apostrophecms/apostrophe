@@ -49,7 +49,7 @@
             type="primary"
             label="apostrophe:close"
             :modifiers="['small', 'margin-micro']"
-            @click="close"
+            @click.stop="close"
           />
         </footer>
       </div>
@@ -80,7 +80,7 @@ const props = defineProps({
     default: () => ({})
   }
 });
-const emit = defineEmits([ 'close' ]);
+const emit = defineEmits([ 'open-popover', 'close' ]);
 
 const moduleOptions = window.apos.modules['@apostrophecms/rich-text-widget'];
 
@@ -118,6 +118,7 @@ watch(
 
 function openPopover() {
   addEventListener('keydown', keyboardHandler);
+  emit('open-popover');
 }
 function closePopover() {
   removeEventListener('keydown', keyboardHandler);
@@ -131,6 +132,8 @@ function keyboardHandler(e) {
 
 function close() {
   if (contextMenu.value) {
+    props.editor.chain().focus().run();
+    props.editor.chain().blur().run();
     contextMenu.value.hide();
   }
 };

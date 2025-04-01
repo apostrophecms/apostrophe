@@ -5,7 +5,6 @@
       v-model="current"
       class="apos-tiptap-control apos-tiptap-control--select"
       @change="takeAction"
-      @blur="$emit('close')"
     >
       <option
         v-for="action in actions"
