@@ -17,6 +17,7 @@
       class="apos-tiptap-control apos-tiptap-control--select"
       :style="`width:${$t(nodeOptions[active].label).length * 6.5}px`"
       @change="setStyle"
+      @close="$emit('close')"
     >
       <option
         v-for="(style, i) in nodeOptions"
@@ -59,6 +60,7 @@ export default {
       }
     }
   },
+  emits: [ 'close' ],
   data() {
     return {
       multipleSelected: false
@@ -145,15 +147,16 @@ export default {
   methods: {
     setStyle($event) {
       const style = this.nodeOptions[$event.target.value];
-      this.editor.commands.focus();
       this.editor.commands[style.command](style.type, style.options || {});
+      this.$emit('close');
     }
   }
 };
 </script>
 
 <style lang="scss" scoped>
-  // If another select el is needed for the rich-text toolbar these styles should be made global
+  // If another select el is needed for the rich-text toolbar
+  // these styles should be made global
   .apos-tiptap-control--select {
     @include apos-button-reset();
     @include apos-transition();
