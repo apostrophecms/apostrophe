@@ -305,7 +305,6 @@
   "loginResetPasswordRequest": "Zadajte emailovú adresu vášho účtu a pošleme vám odkaz na resetovanie hesla.",
   "loginResetPasswordRequired": "Nové heslo je povinné.",
   "loginResetRequestDone": "Ak emailová adresa, ktorú ste zadali, zodpovedá našim záznamom, pošleme odkaz na resetovanie na \"{{ email }}\".\n\nPostupujte podľa odkazu v emaily na resetovanie vášho hesla.",
-  "loginSendEmail": "Odoslať email",
   "manageDocType": "Spravovať {{ type }}",
   "manageDraftSubmissions": "Spravujte návrhy príspevkov",
   "managePages": "Spravovať stránky",
