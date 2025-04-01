@@ -49,7 +49,7 @@
             type="primary"
             label="apostrophe:close"
             :modifiers="['small', 'margin-micro']"
-            @click.stop="close"
+            @click="close"
           />
         </footer>
       </div>

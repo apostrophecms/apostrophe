@@ -318,9 +318,6 @@ export default {
     }
   },
   watch: {
-    /* openedPopover(val) { */
-    /*   console.log('opened popover: ', val); */
-    /* }, */
     isFocused(newVal) {
       if (!newVal) {
         if (this.pending) {
