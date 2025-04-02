@@ -1161,8 +1161,8 @@ describe('Pieces', function() {
     assert(response._products[0]._id === draftRelatedProductId);
   });
 
-  it('can GET results plus filter choices', async function() {
-    const response = await apos.http.get('/api/v1/product?choices=title,visibility,_articles,articles', {
+  it('can GET results plus filter choices and ignore bogus filter names in choices', async function() {
+    const response = await apos.http.get('/api/v1/product?choices=title,visibility,_articles,articles,bogus', {
       jar
     });
     assert(response);
@@ -1182,8 +1182,8 @@ describe('Pieces', function() {
     assert(response.choices.articles[0].value === 'first-article');
   });
 
-  it('can GET results plus filter counts', async function() {
-    const response = await apos.http.get('/api/v1/product?_edit=1&counts=title,visibility,_articles,articles', {
+  it('can GET results plus filter counts, ignoring bogus filter names', async function() {
+    const response = await apos.http.get('/api/v1/product?_edit=1&counts=title,visibility,_articles,articles,bogus', {
       jar
     });
     assert(response);
