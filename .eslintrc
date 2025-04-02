@@ -1,1 +1,1 @@
-{ "extends": ["apostrophe"] }
+{ "extends": "apostrophe" }

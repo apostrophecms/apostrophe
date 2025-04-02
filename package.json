@@ -132,8 +132,6 @@
     "xregexp": "^2.0.0"
   },
   "devDependencies": {
-    "@babel/eslint-parser": "^7.17.0",
-    "eslint": "^8.57.1",
     "eslint-config-apostrophe": "^5.0.0",
     "mocha": "^10.7.3",
     "nyc": "^15.1.0",
