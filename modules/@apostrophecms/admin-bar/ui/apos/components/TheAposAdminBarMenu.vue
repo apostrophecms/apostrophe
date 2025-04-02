@@ -13,7 +13,7 @@
         class="apos-admin-bar__btn"
         :modifiers="['no-motion']"
         role="menuitem"
-        @click="emitEvent('@apostrophecms/page:manager')"
+        @click="emitEvent({ action: '@apostrophecms/page:manager' })"
       />
     </li>
     <li
@@ -148,20 +148,15 @@ export default {
   },
   methods: {
     emitEvent(item) {
-      apos.bus.$emit('admin-menu-click', item.action || item);
-
-      console.log('item.action', item.action);
-      console.log('item', item);
+      apos.bus.$emit('admin-menu-click', item.action);
 
       // Maintain a knowledge of which tray item toggles are active
-      const name = item.itemName || item.name || item;
-      const trayItem = this.trayItems.find(item => item.name === name);
-      //   console.log('trayItem', trayItem);
+      const trayItem = this.trayItems.find(trayItem => trayItem.name === item.action);
 
       if (trayItem && trayItem.options.toggle) {
         this.trayItemState = {
           ...this.trayItemState,
-          [name]: !this.trayItemState[name]
+          [item.action]: !this.trayItemState[item.action]
         };
       }
     },
