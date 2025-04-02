@@ -137,8 +137,7 @@ export default {
   methods: {
     toggleStyle(mark) {
       this.editor.commands[mark.command](mark.type, mark.options || {});
-      this.editor.chain().focus().run();
-      this.editor.chain().blur().run();
+      this.editor.chain().focus().blur().run();
       this.close();
     },
     click() {

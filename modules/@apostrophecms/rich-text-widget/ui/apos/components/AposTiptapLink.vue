@@ -152,6 +152,7 @@ export default {
     removeLink() {
       this.docFields.data = {};
       this.editor.commands.unsetLink();
+      this.editor.chain().focus().blur().run();
       this.close();
     },
     close() {
@@ -188,6 +189,7 @@ export default {
       attrs.href = this.docFields.data.href;
       this.editor.commands.setLink(attrs);
 
+      this.editor.chain().focus().blur().run();
       this.close();
     },
     keyboardHandler(e) {
@@ -208,7 +210,9 @@ export default {
         this.docFields.data = {};
         this.schema.forEach((item) => {
           if (item.htmlAttribute && item.type === 'checkboxes') {
-            this.docFields.data[item.name] = attrs[item.htmlAttribute] ? [ attrs[item.htmlAttribute] ] : [];
+            this.docFields.data[item.name] = attrs[item.htmlAttribute]
+              ? [ attrs[item.htmlAttribute] ]
+              : [];
             return;
           }
           if (item.htmlAttribute && item.type === 'boolean') {

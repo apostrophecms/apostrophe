@@ -145,6 +145,7 @@ export default {
     removeAnchor() {
       this.docFields.data = {};
       this.editor.commands.unsetAnchor();
+      this.editor.chain().focus().blur().run();
       this.close();
     },
     close() {
@@ -160,6 +161,7 @@ export default {
       this.editor.commands.setAnchor({
         id: this.docFields.data.anchor
       });
+      this.editor.chain().focus().blur().run();
       this.close();
     },
     keyboardHandler(e) {

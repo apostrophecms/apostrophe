@@ -132,8 +132,7 @@ function keyboardHandler(e) {
 
 function close() {
   if (contextMenu.value) {
-    props.editor.chain().focus().run();
-    props.editor.chain().blur().run();
+    props.editor.chain().focus().blur().run();
     contextMenu.value.hide();
   }
 };

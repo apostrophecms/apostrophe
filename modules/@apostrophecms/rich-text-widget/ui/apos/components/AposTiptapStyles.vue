@@ -147,8 +147,7 @@ export default {
     setStyle($event) {
       const style = this.nodeOptions[$event.target.value];
       this.editor.commands[style.command](style.type, style.options || {});
-      this.editor.chain().focus().run();
-      this.editor.chain().blur().run();
+      this.editor.chain().focus().blur().run();
       this.$emit('close');
     }
   }
