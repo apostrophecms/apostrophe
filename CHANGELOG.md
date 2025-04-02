@@ -9,6 +9,7 @@
 * Change user's email field type to `email`.
 * Improve media manager experience after uploading images. No additional server requests are made, no broken UI on error.
 * Change reset password form button label to `Reset Password`.
+* Bumps eslint-config-apostrophe, fix errors and a bunch of warnings.
 
 ### Fixes
 
