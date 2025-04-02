@@ -42,6 +42,7 @@ module.exports = {
   'cog-icon': 'Cog',
   'content-copy-icon': 'ContentCopy',
   'content-cut-icon': 'ContentCut',
+  'content-duplicate-icon': 'ContentDuplicate',
   'cursor-default-click-icon': 'CursorDefaultClick',
   'delete-icon': 'Delete',
   'dots-horizontal-icon': 'DotsHorizontal',
