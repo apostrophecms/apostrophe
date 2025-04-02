@@ -1,5 +1,13 @@
 # Changelog
 
+## UNRELEASED
+
+## 4.14.2 (2025-04-02)
+
+### Fixes
+
+* Hotfix: the `choices` query parameter of the REST API no longer results in a 500 error if an invalid filter name is part of the list. Such filters are now properly ignored in `choices`. This issue could also have resulted in invocation of query methods that are not builders, however since all such methods are read-only operations, no arguments could be passed and no information was returned, there are no security implications.
+
 ## 4.14.1 (2025-03-31)
 
 ### Fixes
