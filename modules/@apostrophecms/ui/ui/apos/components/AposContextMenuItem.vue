@@ -78,7 +78,9 @@ export default {
   },
   methods: {
     click() {
+      console.log('AposContextMenuItem this.menuItem', { ...this.menuItem });
       this.$emit('clicked', this.menuItem);
+      // this.$emit('clicked', this.menuItem.action);
     }
   }
 };

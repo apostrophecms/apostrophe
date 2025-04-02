@@ -40,6 +40,7 @@ module.exports = {
         type: '@apostrophecms-pro/section-template-library'
       }
     });
+
     self.enableBrowserData();
     self.addDeduplicateWidgetIdsMigration();
   },

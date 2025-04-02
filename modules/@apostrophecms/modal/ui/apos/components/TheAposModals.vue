@@ -29,6 +29,7 @@ export default {
       // property is merged with the props supplied by the server-side configuration.
 
       apos.bus.$on('admin-menu-click', async (itemName) => {
+        console.log('itemName', itemName);
         let item;
         if (itemName === '@apostrophecms/global:singleton-editor') {
           // Special case: the global doc is a singleton, and we know its
