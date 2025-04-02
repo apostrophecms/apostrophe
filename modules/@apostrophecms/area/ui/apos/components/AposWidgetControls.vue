@@ -8,7 +8,7 @@
         v-for="control in widgetPrimaryControls"
         :key="control.action"
         v-bind="control"
-        @click="handlePrimaryControlClick(control)"
+        @click="handleClick(control)"
       />
 
       <AposContextMenu
@@ -25,12 +25,12 @@
           type: 'subtle',
           modifiers: ['small', 'no-motion']
         }"
-        @item-clicked="handleSecondaryControlClick"
+        @item-clicked="handleClick"
       />
 
       <AposButton
         v-bind="widgetPrimaryControlsRemove"
-        @click="handlePrimaryControlClick({ action: 'remove' })"
+        @click="handleClick({ action: 'remove' })"
       />
     </AposButtonGroup>
   </div>
@@ -40,6 +40,10 @@
 
 export default {
   props: {
+    modelValue: {
+      type: Object,
+      required: true
+    },
     first: {
       type: Boolean,
       required: true
@@ -71,15 +75,7 @@ export default {
       default: false
     }
   },
-  emits: [
-    'remove',
-    'edit',
-    'cut',
-    'copy',
-    'clone',
-    'up',
-    'down'
-  ],
+  emits: [ 'remove', 'edit', 'cut', 'copy', 'clone', 'up', 'down' ],
   data() {
     const { widgetOperations = [] } = apos.modules['@apostrophecms/area'];
 
@@ -148,12 +144,14 @@ export default {
       }
 
       // Custom widget operations displayed in the primary controls
-      const customWidgetPrimaryControls = this.widgetPrimaryOperations
-        .map(operation => ({
+      if (this.widgetPrimaryOperations.length) {
+        const customWidgetControls = this.widgetPrimaryOperations.map(operation => ({
           ...this.widgetDefaultControl,
           ...operation
         }));
-      controls.push(...customWidgetPrimaryControls);
+
+        controls.push(...customWidgetControls);
+      }
 
       return controls;
     },
@@ -197,13 +195,15 @@ export default {
         action: 'clone'
       });
 
-      // Custom widget operations displayed in the primary controls
-      const customWidgetSecondaryControls = this.widgetPrimaryOperations
-        .map(operation => ({
+      // Custom widget operations displayed in the secondary controls
+      if (this.widgetSecondaryOperations.length) {
+        const customWidgetControls = this.widgetSecondaryOperations.map(operation => ({
           ...this.widgetDefaultControl,
           ...operation
         }));
-      controls.push(...customWidgetSecondaryControls);
+
+        controls.push(...customWidgetControls);
+      }
 
       return controls;
     },
@@ -222,17 +222,15 @@ export default {
     }
   },
   methods: {
-    handlePrimaryControlClick({ action, modal }) {
-      if (modal) {
-        apos.modal.execute(modal);
-      }
-
+    handleClick({ action, modal }) {
       if (action) {
         this.$emit(action);
       }
-    },
-    handleSecondaryControlClick(action) {
-      this.$emit(action);
+      if (modal) {
+        apos.modal.execute(modal, {
+          modelValue: this.modelValue
+        });
+      }
     }
   }
 };
