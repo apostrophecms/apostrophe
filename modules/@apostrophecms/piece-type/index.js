@@ -1,5 +1,4 @@
 const _ = require('lodash');
-const expressCacheOnDemand = require('express-cache-on-demand')();
 
 module.exports = {
   extend: '@apostrophecms/doc-type',
@@ -242,12 +241,9 @@ module.exports = {
     self.addEditorModal();
   },
   restApiRoutes(self) {
-    const { enableCacheOnDemand = true } = self.apos
-      .modules['@apostrophecms/express'].options;
-
     return {
       getAll: [
-        ...enableCacheOnDemand ? [ expressCacheOnDemand ] : [],
+        ...self.apos.expressCacheOnDemand ? [ self.apos.expressCacheOnDemand ] : [],
         async (req) => {
           await self.publicApiCheckAsync(req);
           const query = self.getRestQuery(req);
@@ -294,7 +290,7 @@ module.exports = {
         }
       ],
       getOne: [
-        ...enableCacheOnDemand ? [ expressCacheOnDemand ] : [],
+        ...self.apos.expressCacheOnDemand ? [ self.apos.expressCacheOnDemand ] : [],
         async (req, _id) => {
           _id = self.inferIdLocaleAndMode(req, _id);
           await self.publicApiCheckAsync(req);
