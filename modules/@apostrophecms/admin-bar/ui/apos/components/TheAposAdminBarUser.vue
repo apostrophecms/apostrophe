@@ -43,9 +43,8 @@ export default {
     }
   },
   methods: {
-    emitEvent(name) {
-      console.log('admin-menu-click', name);
-      apos.bus.$emit('admin-menu-click', name);
+    emitEvent(item) {
+      apos.bus.$emit('admin-menu-click', item.action);
     }
   }
 };

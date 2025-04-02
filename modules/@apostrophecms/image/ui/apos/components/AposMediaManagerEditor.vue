@@ -96,6 +96,8 @@
       <div
         class="apos-media-editor__lip"
       >
+        <!-- TODO: here, search for all "<AposContextMenu" and "@item-clicked",
+              and adapt event handle to make it receive { action } -->
         <AposContextMenu
           v-if="!restoreOnly"
           :button="{
