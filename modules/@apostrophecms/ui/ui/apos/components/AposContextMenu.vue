@@ -46,6 +46,7 @@
           :menu="menu"
           :active-item="activeItem"
           :is-open="isOpen"
+          :has-tip="hasTip"
           @item-clicked="menuItemClicked"
           @set-arrow="setArrow"
         >
@@ -158,6 +159,10 @@ const props = defineProps({
   centerTipEl: {
     type: Object,
     default: null
+  },
+  hasTip: {
+    type: Boolean,
+    default: true
   }
 });
 
@@ -373,6 +378,10 @@ async function setDropdownPosition() {
     left: `${x}px`,
     top: `${y}px`
   };
+
+  if (!arrowEl.value) {
+    return;
+  }
 
   const { x: arrowX, y: arrowY } = middlewareData.arrow;
   Object.assign(arrowEl.value.style, {

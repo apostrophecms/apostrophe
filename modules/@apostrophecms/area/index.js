@@ -34,7 +34,7 @@ module.exports = {
       modal: 'AposSettingsManager',
       label: 'Create Section',
       icon: 'group-icon',
-      nested: true,
+      secondaryLevel: true,
       permission: {
         action: 'create',
         type: '@apostrophecms-pro/section-template-library'
