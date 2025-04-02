@@ -2,18 +2,6 @@
 
 ## UNRELEASED
 
-### Changes
-
-* Improve the Page Manager experience when dragging and dropping pages - the updates happen in background and the UI is not blocked anymore.
-* Allow scrolling while dragging a page in the Page Manager.
-* Change user's email field type to `email`.
-* Improve media manager experience after uploading images. No additional server requests are made, no broken UI on error.
-* Change reset password form button label to `Reset Password`.
-
-### Fixes
-
-* Fixes an edge case where reordering a page in the Page Manager might affect another locale.
-
 ## 4.14.2 (2025-04-02)
 
 ### Fixes
