@@ -790,14 +790,10 @@ module.exports = {
             }
           }
         }
-<<<<<<< HEAD
 
         self.finalModuleMiddlewareAndRoutes = labeledList
           .map(item => (item.prepending || []).concat(item.middleware || item.routes))
           .flat();
-=======
-        self.finalModuleMiddlewareAndRoutes = labeledList.map(item => (item.prepending || []).concat(item.middleware || item.routes)).flat();
->>>>>>> 4.14.2
       },
       createCacheOnDemand() {
         const { enableCacheOnDemand = true } = self.options;
