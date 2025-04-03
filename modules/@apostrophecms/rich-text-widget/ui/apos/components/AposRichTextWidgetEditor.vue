@@ -203,11 +203,11 @@ export default {
   computed: {
     tableOptions() {
       const options = this.moduleOptions.tableOptions || {};
-      if (!options.resizable) {
-        options.HTMLAttributes = {
-          class: 'apos-rich-text-table'
-        };
-      }
+      // If a developer disables `resizable` there will be no wrappers to style
+      // the table. Provide a table class, unless that is also overridden
+      // if (!options.resizable && !options?.HTMLAttributes?.class) {
+      //   options.;
+      // }
       return options;
     },
     tableTippyOptions() {
@@ -501,7 +501,6 @@ export default {
         this.pending = null;
       }
       const content = this.editor.getHTML();
-      console.log(content);
       const widget = this.docFields.data;
       widget.content = content;
       // ... removes need for deep watching in parent

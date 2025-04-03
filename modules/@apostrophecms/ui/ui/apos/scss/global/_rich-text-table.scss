@@ -1,4 +1,5 @@
-[data-rich-text] table,
+[data-rich-text] table:not([class]),
+.tiptap table:not([class]),
 .tableWrapper table,
 .apos-rich-text-table {
   overflow: hidden;
