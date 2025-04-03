@@ -103,9 +103,7 @@ module.exports = {
       handleWidth: 10,
       cellMinWidth: 100,
       lastColumnResizable: false,
-      HTMLAttributes: {
-        class: 'apos-rich-text-table'
-      }
+      class: 'apos-rich-text-table'
     },
     // For permalinks and images. For efficiency we make
     // one query
@@ -729,8 +727,8 @@ module.exports = {
           };
 
           // If custom class applied to table
-          if (self.options.tableOptions.HTMLAttributes?.class) {
-            allowedClasses.table[self.options.tableOptions.HTMLAttributes.class] = true;
+          if (self.options.tableOptions.class) {
+            allowedClasses.table[self.options.tableOptions.class] = true;
           }
         }
 

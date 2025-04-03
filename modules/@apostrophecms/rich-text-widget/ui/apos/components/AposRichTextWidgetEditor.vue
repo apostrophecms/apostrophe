@@ -215,7 +215,14 @@ export default {
   },
   computed: {
     tableOptions() {
-      return this.moduleOptions.tableOptions || {};
+      const options = this.moduleOptions.tableOptions || {};
+
+      if (options.class) {
+        options.HTMLAttributes = { class: options.class };
+        delete options.class;
+      }
+
+      return options;
     },
     tableTippyOptions() {
       return {
