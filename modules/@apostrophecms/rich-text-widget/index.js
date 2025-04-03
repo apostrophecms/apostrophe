@@ -98,6 +98,12 @@ module.exports = {
     defaultData: { content: '' },
     className: false,
     linkWithType: [ '@apostrophecms/any-page-type' ],
+    tableOptions: {
+      resizable: true,
+      handleWidth: 10,
+      cellMinWidth: 100,
+      lastColumnResizable: false
+    },
     // For permalinks and images. For efficiency we make
     // one query
     project: {
@@ -502,7 +508,7 @@ module.exports = {
           anchor: [ 'span' ],
           superscript: [ 'sup' ],
           subscript: [ 'sub' ],
-          table: [ 'table', 'tr', 'td', 'th', 'colgroup', 'col' ],
+          table: [ 'table', 'tr', 'td', 'th', 'colgroup', 'col', 'div' ],
           image: [ 'figure', 'img', 'figcaption' ],
           div: [ 'div' ],
           color: [ 'span' ]
@@ -558,8 +564,12 @@ module.exports = {
           },
           table: [
             {
+              tag: 'div',
+              attributes: [ 'class' ]
+            },
+            {
               tag: 'table',
-              attributes: [ 'style' ]
+              attributes: [ 'style', 'class' ]
             },
             {
               tag: 'col',
@@ -700,9 +710,24 @@ module.exports = {
             }
           }
         }
+
+        console.log('options', options);
+
+        if (options.toolbar.includes('table') || options.insert.includes('table')) {
+          allowedClasses.div = {
+            ...(allowedClasses.div || {}),
+            tableWrapper: true
+          };
+          allowedClasses.table = {
+            ...(allowedClasses.table || {}),
+            'apos-rich-text-table': true
+          };
+        }
+
         for (const tag of Object.keys(allowedClasses)) {
           allowedClasses[tag] = Object.keys(allowedClasses[tag]);
         }
+        // console.log(allowedClasses);
         return allowedClasses;
       },
 
@@ -972,6 +997,8 @@ module.exports = {
             input.content = $.html();
           }
 
+          console.log(finalOptions);
+
           output.content = self.sanitizeHtml(input.content, finalOptions);
 
           const permalinkAnchors = output.content.match(/"#apostrophe-permalink-[^"?]*?\?/g);
@@ -1022,7 +1049,8 @@ module.exports = {
           linkWithType: Array.isArray(self.options.linkWithType) ? self.options.linkWithType : [ self.options.linkWithType ],
           linkSchema: self.linkSchema,
           imageStyles: self.options.imageStyles,
-          color: self.options.color
+          color: self.options.color,
+          tableOptions: self.options.tableOptions
         };
         return finalData;
       }

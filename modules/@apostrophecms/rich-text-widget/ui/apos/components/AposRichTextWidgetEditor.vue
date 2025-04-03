@@ -201,6 +201,15 @@ export default {
     };
   },
   computed: {
+    tableOptions() {
+      const options = this.moduleOptions.tableOptions || {};
+      if (!options.resizable) {
+        options.HTMLAttributes = {
+          class: 'apos-rich-text-table'
+        };
+      }
+      return options;
+    },
     tableTippyOptions() {
       return {
         zIndex: 999,
@@ -388,12 +397,7 @@ export default {
       Underline,
       Superscript,
       Subscript,
-      Table.configure({
-        resizable: true,
-        handleWidth: 10,
-        cellMinWidth: 100,
-        lastColumnResizable: false
-      }),
+      Table.configure(this.tableOptions),
       TableCell,
       TableHeader,
       TableRow,
@@ -497,6 +501,7 @@ export default {
         this.pending = null;
       }
       const content = this.editor.getHTML();
+      console.log(content);
       const widget = this.docFields.data;
       widget.content = content;
       // ... removes need for deep watching in parent
