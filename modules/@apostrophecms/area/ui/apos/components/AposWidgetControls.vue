@@ -133,7 +133,7 @@ export default {
         controls.push({
           ...this.widgetDefaultControl,
           label: 'apostrophe:edit',
-          icon: 'pencil-icon',
+          icon: 'playlist-edit-icon',
           disabled: this.disabled,
           tooltip: {
             content: 'apostrophe:editWidget',
