@@ -5,6 +5,8 @@
       menu-placement="bottom-end"
       :button="button"
       :rich-text-menu="true"
+      @open="$emit('open-popover')"
+      @close="$emit('close')"
     >
       <AposImageControlDialog
         :editor="editor"
@@ -28,6 +30,7 @@ export default {
       required: true
     }
   },
+  emits: [ 'open-popover', 'close' ],
   computed: {
     button() {
       return {
@@ -69,7 +72,6 @@ export default {
   methods: {
     close() {
       this.$refs.contextMenu.hide();
-      this.editor.chain().focus();
     }
   }
 };

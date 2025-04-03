@@ -9,10 +9,14 @@
 * Change user's email field type to `email`.
 * Improve media manager experience after uploading images. No additional server requests are made, no broken UI on error.
 * Change reset password form button label to `Reset Password`.
+* Bumps eslint-config-apostrophe, fix errors and a bunch of warnings.
 
 ### Fixes
 
 * Fixes an edge case where reordering a page in the Page Manager might affect another locale.
+* Fixes chrome bug when pages manager checkboxes need a double click when coming from the rich text editor (because some text is selected).
+* Fixes the rich text insert menu image menu not being properly closed.
+* Fixes the rich text toolbar not closing sometimes when unfocusing the editor.
 
 ## 4.14.2 (2025-04-02)
 

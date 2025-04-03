@@ -23,7 +23,10 @@
         class-list="apos-rich-text-toolbar"
         :has-tip="false"
       >
-        <div class="apos-rich-text-toolbar__inner">
+        <div
+          ref="toolbar"
+          class="apos-rich-text-toolbar__inner"
+        >
           <component
             :is="(tools[item] && tools[item].component) || 'AposTiptapUndefined'"
             v-for="(item, index) in toolbar"
@@ -32,6 +35,9 @@
             :tool="tools[item]"
             :options="editorOptions"
             :editor="editor"
+            @open-popover="openPopover"
+            @close="closeToolbar"
+            @focusout="onBtnBlur"
           />
         </div>
       </AposContextMenuDialog>
@@ -186,7 +192,8 @@ export default {
       showPlaceholder: null,
       activeInsertMenuComponent: false,
       suppressInsertMenu: false,
-      insertMenuKey: null
+      insertMenuKey: null,
+      openedPopover: false
     };
   },
   computed: {
@@ -405,6 +412,18 @@ export default {
     apos.bus.$off('apos-refreshing', this.onAposRefreshing);
   },
   methods: {
+    openPopover() {
+      this.openedPopover = true;
+    },
+    onBtnBlur(e) {
+      if (this.openedPopover) {
+        return;
+      }
+      if (this.$refs.toolbar?.contains(e.relatedTarget)) {
+        return;
+      }
+      this.closeToolbar();
+    },
     onBubbleHide() {
       apos.bus.$emit('close-context-menus', 'richText');
     },
@@ -651,6 +670,10 @@ export default {
     },
     setActiveInsertMenu(isActive = true) {
       this.activeInsertMenuComponent = isActive;
+    },
+    closeToolbar() {
+      this.openedPopover = false;
+      this.editor.chain().focus().run();
     }
   }
 };

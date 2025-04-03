@@ -80,6 +80,7 @@ const props = defineProps({
     default: () => ({})
   }
 });
+const emit = defineEmits([ 'open-popover', 'close' ]);
 
 const moduleOptions = window.apos.modules['@apostrophecms/rich-text-widget'];
 
@@ -117,9 +118,11 @@ watch(
 
 function openPopover() {
   addEventListener('keydown', keyboardHandler);
+  emit('open-popover');
 }
 function closePopover() {
   removeEventListener('keydown', keyboardHandler);
+  emit('close');
 }
 function keyboardHandler(e) {
   if ([ 'Escape', 'Enter' ].includes(e.key)) {
@@ -129,6 +132,7 @@ function keyboardHandler(e) {
 
 function close() {
   if (contextMenu.value) {
+    props.editor.chain().focus().blur().run();
     contextMenu.value.hide();
   }
 };
