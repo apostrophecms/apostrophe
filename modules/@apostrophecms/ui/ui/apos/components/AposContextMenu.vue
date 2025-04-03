@@ -349,7 +349,6 @@ function setArrow(el) {
 }
 
 function menuItemClicked(item) {
-  console.log('AposContextMenu menuItemClicked item', item);
   emit('item-clicked', item);
   hide();
 }

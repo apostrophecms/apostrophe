@@ -94,7 +94,6 @@ const classes = computed(() => {
 });
 
 function menuItemClicked(menuItem) {
-  console.log('AposContextMenuDialog menuItem', { ...menuItem });
   emit('item-clicked', menuItem);
 }
 
