@@ -29,7 +29,7 @@
       />
 
       <AposButton
-        v-bind="widgetPrimaryControlsRemove"
+        v-bind="widgetRemoveControl"
         @click="handleClick({ action: 'remove' })"
       />
     </AposButtonGroup>
@@ -207,7 +207,7 @@ export default {
 
       return controls;
     },
-    widgetPrimaryControlsRemove() {
+    widgetRemoveControl() {
       return {
         ...this.widgetDefaultControl,
         label: 'apostrophe:remove',
