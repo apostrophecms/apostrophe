@@ -144,14 +144,12 @@ export default {
       }
 
       // Custom widget operations displayed in the primary controls
-      if (this.widgetPrimaryOperations.length) {
-        const customWidgetControls = this.widgetPrimaryOperations.map(operation => ({
+      controls.push(
+        ...this.widgetPrimaryOperations.map(operation => ({
           ...this.widgetDefaultControl,
           ...operation
-        }));
-
-        controls.push(...customWidgetControls);
-      }
+        }))
+      );
 
       return controls;
     },
@@ -176,19 +174,12 @@ export default {
       controls.push({
         label: 'apostrophe:duplicate',
         icon: 'content-duplicate-icon',
-        disabled: this.disabled || this.maxReached,
-        action: 'clone'
+        action: 'clone',
+        ...(this.disabled || this.maxReached) && { modifiers: [ 'disabled' ] }
       });
 
       // Custom widget operations displayed in the secondary controls
-      if (this.widgetSecondaryOperations.length) {
-        const customWidgetControls = this.widgetSecondaryOperations.map(operation => ({
-          ...this.widgetDefaultControl,
-          ...operation
-        }));
-
-        controls.push(...customWidgetControls);
-      }
+      controls.push(...this.widgetSecondaryOperations);
 
       return controls;
     },
