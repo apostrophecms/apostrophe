@@ -265,8 +265,8 @@ export default {
     this.$emit('modified', false);
   },
   methods: {
-    moreMenuHandler(action) {
-      this[action]();
+    moreMenuHandler(item) {
+      this[item.action]();
     },
     async updateActiveDoc(newMedia) {
       newMedia = newMedia || {};
