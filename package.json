@@ -33,7 +33,7 @@
   "license": "MIT",
   "dependencies": {
     "@apostrophecms/emulate-mongo-3-driver": "^1.0.6",
-    "@apostrophecms/vue-material-design-icons": "github:apostrophecms/vue-material-design-icons#pro-7247-widget-operations",
+    "@apostrophecms/vue-material-design-icons": "^1.0.0",
     "@ctrl/tinycolor": "^4.1.0",
     "@floating-ui/dom": "^1.5.3",
     "@opentelemetry/api": "^1.0.4",
