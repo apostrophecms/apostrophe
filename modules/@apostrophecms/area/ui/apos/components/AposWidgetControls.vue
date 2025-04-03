@@ -175,7 +175,10 @@ export default {
         label: 'apostrophe:duplicate',
         icon: 'content-duplicate-icon',
         action: 'clone',
-        ...(this.disabled || this.maxReached) && { modifiers: [ 'disabled' ] }
+        modifiers: [
+          'separator',
+          ...(this.disabled || this.maxReached) ? [ 'disabled' ] : []
+        ]
       });
 
       // Custom widget operations displayed in the secondary controls
