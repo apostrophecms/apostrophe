@@ -42,7 +42,10 @@
             </h2>
           </header>
 
-          <form class="apos-wizard__form" @submit.prevent>
+          <form
+            class="apos-wizard__form"
+            @submit.prevent
+          >
             <fieldset
               v-if="isStep('selectContent')"
               class="apos-wizard__step apos-wizard__step-select-content"
@@ -205,7 +208,10 @@
                   v-model="wizard.values.relatedDocTypesToLocalize"
                   :field="relatedDocTypesField"
                 />
-                <p v-else class="apos-wizard__help-text">
+                <p
+                  v-else
+                  class="apos-wizard__help-text"
+                >
                   <AposIndicator
                     class="apos-wizard__help-text__icon"
                     icon="lightbulb-on-icon"
@@ -215,7 +221,10 @@
                   {{ $t('apostrophe:noNewRelatedDocuments') }}
                 </p>
               </div>
-              <div v-if="translationEnabled" class="apos-wizard__translation">
+              <div
+                v-if="translationEnabled"
+                class="apos-wizard__translation"
+              >
                 <p class="apos-wizard__translation-title">
                   <AposTranslationIndicator :size="18" />
                   <span class="apos-wizard__translation-title-text">
@@ -374,7 +383,8 @@ export default {
                 relatedDocTypesToLocalize
               } = this.wizard.values;
 
-              // If they choose related docs only, they must check at least one related doc type to continue
+              // If they choose related docs only, they must check at
+              // least one related doc type to continue
               return (toLocalize.data !== 'relatedDocsOnly') ||
                 this.relatedDocTypes
                   .find(({ value }) => relatedDocTypesToLocalize.data.includes(value));
@@ -492,7 +502,9 @@ export default {
       return this.wizard.values.toLocales.data;
     },
     allSelected() {
-      return this.selectedLocales.length === this.locales.filter(locale => !this.isCurrentLocale(locale) && this.canEditLocale(locale)).length;
+      return this.selectedLocales.length === this.locales
+        .filter(locale => !this.isCurrentLocale(locale) && this.canEditLocale(locale))
+        .length;
     },
     relatedDocTypes() {
       if (this.isBatchMode) {
@@ -1155,6 +1167,7 @@ export default {
           }
         });
       } catch (err) {
+        // eslint-disable-next-line no-console
         console.error('An error happened while getting available languages: ', err);
         this.wizard.values.translateTargets.data = [];
         this.translationErrMsg = this.$t('apostrophe:automaticTranslationErrMsg');

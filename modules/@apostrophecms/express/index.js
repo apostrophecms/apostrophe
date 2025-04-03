@@ -107,9 +107,11 @@
 // ### `csrf`
 //
 // By default, Apostrophe implements [CSRF protection](https://en.wikipedia.org/wiki/Cross-site_request_forgery)
-// by setting a cookie with the value `csrf`, which all legitimate requests originating fromt he page will send
+// by setting a cookie with the value `csrf`,
+// which all legitimate requests originating fromt he page will send
 // back (see the [same-origin policy](https://developer.mozilla.org/en-US/docs/Web/Security/Same-origin_policy)).
-// All modern browsers will refuse to allow a CSRF attacker, such as a malicious `POST`-method `form` tag on a third
+// All modern browsers will refuse to allow a CSRF attacker,
+// such as a malicious `POST`-method `form` tag on a third
 // party site pointing to an Apostrophe site, to send cookies to the Apostrophe site.
 //
 // All non-safe HTTP requests (not `GET`, `HEAD`, `OPTIONS` or `TRACE`)
@@ -156,13 +158,15 @@ const qs = require('qs');
 const expressBearerToken = require('express-bearer-token');
 const cors = require('cors');
 const Promise = require('bluebird');
+const expressCacheOnDemand = require('express-cache-on-demand');
 
 module.exports = {
   async init(self) {
     self.createApp();
     self.prefix();
     self.trustProxy();
-    self.options.externalFrontKey = process.env.APOS_EXTERNAL_FRONT_KEY || self.options.externalFrontKey;
+    self.options.externalFrontKey = process.env.APOS_EXTERNAL_FRONT_KEY ||
+      self.options.externalFrontKey;
 
     await self.getSessionOptions();
     if (self.options.baseUrl && !self.apos.baseUrl) {
@@ -170,6 +174,7 @@ module.exports = {
       self.apos.util.error('Set it as a global option (a property of the main object passed to apostrophe).');
       self.apos.util.error('When you do so other modules will also pick up on it and make URLs absolute.');
     }
+    self.createCacheOnDemand();
   },
   tasks(self) {
     return {
@@ -331,7 +336,9 @@ module.exports = {
           return matches[1];
         }
       },
-      expressBearerTokenMiddleware: expressBearerToken(self.options.expressBearerToken || {}),
+      expressBearerTokenMiddleware: expressBearerToken(
+        self.options.expressBearerToken || {}
+      ),
       async bearerTokens(req, res, next) {
         if (!req.token) {
           return next();
@@ -375,25 +382,28 @@ module.exports = {
           return self.apos.login.deserializeUser(userId);
         }
       },
-      ...((self.options.csrf === false) ? {} : {
-        // Angular-compatible CSRF protection middleware. On safe requests (GET, HEAD, OPTIONS, TRACE),
-        // set the csrf cookie if missing.
-        //
-        // This works because requests not meeting the expectations of the same-origin policy
-        // won't be able to send cookies to the origin at all, even though the value is
-        // well-known.
-        csrf(req, res, next) {
-          if (req.csrfExempt) {
-            return next();
+      ...((self.options.csrf === false)
+        ? {}
+        : {
+          // Angular-compatible CSRF protection middleware.
+          // On safe requests (GET, HEAD, OPTIONS, TRACE),
+          // set the csrf cookie if missing.
+          //
+          // This works because requests not meeting the expectations
+          // of the same-origin policy won't be able to send cookies to
+          // the origin at all, even though the value is well-known.
+          csrf(req, res, next) {
+            if (req.csrfExempt) {
+              return next();
+            }
+            if (_.find(self.csrfExceptions || [], function (e) {
+              return req.url.match(e);
+            })) {
+              return next();
+            }
+            return self.csrfWithoutExceptions(req, res, next);
           }
-          if (_.find(self.csrfExceptions || [], function (e) {
-            return req.url.match(e);
-          })) {
-            return next();
-          }
-          return self.csrfWithoutExceptions(req, res, next);
-        }
-      }),
+        }),
       bodyParserUrlencoded: bodyParser.urlencoded({
         extended: true,
         ...(self.options.bodyParser && self.options.bodyParser.urlencoded)
@@ -551,7 +561,8 @@ module.exports = {
           if (!name || name.match(/^connect-mongo/)) {
             if (!sessionOptions.store.options.client) {
               sessionOptions.store.options.client = self.apos.dbClient;
-              sessionOptions.store.options.dbName = sessionOptions.store.options.dbName || self.apos.db.databaseName;
+              sessionOptions.store.options.dbName = sessionOptions.store.options.dbName ||
+                self.apos.db.databaseName;
             }
           }
           if (!sessionOptions.store.name) {
@@ -560,7 +571,9 @@ module.exports = {
             sessionOptions.store = MongoStore.create(sessionOptions.store.options);
           } else {
             // require from project's dependencies
-            Store = await self.apos.root.import(sessionOptions.store.name)(expressSession);
+            Store = await self.apos.root.import(
+              sessionOptions.store.name
+            )(expressSession);
             sessionOptions.store = new Store(sessionOptions.store.options);
           }
         }
@@ -578,14 +591,16 @@ module.exports = {
         self.compileCsrfExceptions();
       },
 
-      // Compile CSRF exceptions configured via the `addCsrfExceptions` option of each module
-      // that has one.
+      // Compile CSRF exceptions configured via the
+      // `addCsrfExceptions` option of each module that has one.
 
       compileCsrfExceptions() {
         let list = [];
         for (const module of Object.values(self.apos.modules)) {
           if (module.options.csrfExceptions) {
-            list = list.concat(module.options.csrfExceptions.map(path => module.getRouteUrl(path)));
+            list = list.concat(
+              module.options.csrfExceptions.map(path => module.getRouteUrl(path))
+            );
           }
         }
         self.csrfExceptions = list.map(function (e) {
@@ -723,7 +738,9 @@ module.exports = {
       async findModuleMiddlewareAndRoutes() {
         await self.emit('compileRoutes');
         const labeledList = [];
-        const moduleNames = Array.from(new Set([ self.__meta.name, ...Object.keys(self.apos.modules) ]));
+        const moduleNames = Array.from(
+          new Set([ self.__meta.name, ...Object.keys(self.apos.modules) ])
+        );
         for (const name of moduleNames) {
           const middleware = self.apos.modules[name].middleware || {};
           if (process.env.APOS_LOG_ALL_ROUTES) {
@@ -774,7 +791,16 @@ module.exports = {
           }
         }
 
-        self.finalModuleMiddlewareAndRoutes = labeledList.map(item => (item.prepending || []).concat(item.middleware || item.routes)).flat();
+        self.finalModuleMiddlewareAndRoutes = labeledList
+          .map(item => (item.prepending || []).concat(item.middleware || item.routes))
+          .flat();
+      },
+      createCacheOnDemand() {
+        const { enableCacheOnDemand = true } = self.options;
+        if (enableCacheOnDemand) {
+          // Instantiate independently for this instance of ApostropheCMS
+          self.apos.expressCacheOnDemand = expressCacheOnDemand();
+        }
       }
     };
   }

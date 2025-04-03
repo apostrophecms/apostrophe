@@ -94,6 +94,7 @@ async function open() {
 
     await checkCreatePermission();
   } catch (err) {
+    // eslint-disable-next-line no-console
     console.err(err);
   }
 };
@@ -138,7 +139,8 @@ async function switchLocale(locale) {
     }, {
       hasCloseButton: true,
       tiny: true
-    }) : false;
+    })
+    : false;
 
   if (save === null) {
     return;

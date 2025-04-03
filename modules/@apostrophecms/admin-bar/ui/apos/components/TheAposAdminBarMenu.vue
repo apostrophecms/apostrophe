@@ -1,6 +1,12 @@
 <template>
-  <ol class="apos-admin-bar__items" role="menu">
-    <li v-if="pageTree" class="apos-admin-bar__item">
+  <ol
+    class="apos-admin-bar__items"
+    role="menu"
+  >
+    <li
+      v-if="pageTree"
+      class="apos-admin-bar__item"
+    >
       <AposButton
         type="subtle"
         label="apostrophe:pages"
@@ -39,7 +45,10 @@
         @click="emitEvent(item.action)"
       />
     </li>
-    <li v-if="createMenu.length > 0" class="apos-admin-bar__item">
+    <li
+      v-if="createMenu.length > 0"
+      class="apos-admin-bar__item"
+    >
       <AposContextMenu
         class="apos-admin-bar__create"
         :menu="createMenu"

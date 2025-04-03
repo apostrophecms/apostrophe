@@ -82,9 +82,11 @@ export default {
       saved: false,
       savingTimeout: null,
       published: null,
-      context: window.apos.adminBar.context ? {
-        ...window.apos.adminBar.context
-      } : {},
+      context: window.apos.adminBar.context
+        ? {
+          ...window.apos.adminBar.context
+        }
+        : {},
       contextStack: [],
       // If a published context doc itself is not editable this will contain a hint
       // that the draft version is editable, when appropriate. It should only be
@@ -94,7 +96,8 @@ export default {
   },
   computed: {
     contextBarActive() {
-      return window.apos.adminBar.contextBar && (this.canEdit || this.moduleOptions.canLocalize);
+      return window.apos.adminBar.contextBar &&
+        (this.canEdit || this.moduleOptions.canLocalize);
     },
     canEdit() {
       return this.context._edit || ((this.context.aposLocale && this.context.aposLocale.endsWith(':published')) &&
@@ -582,9 +585,11 @@ export default {
         ...apos.http.parseQuery(window.location.search),
         aposRefresh: '1',
         aposMode: this.draftMode,
-        ...(this.editMode ? {
-          aposEdit: '1'
-        } : {})
+        ...(this.editMode
+          ? {
+            aposEdit: '1'
+          }
+          : {})
       };
 
       if (doc._url) {
@@ -702,6 +707,7 @@ export default {
           });
         }
       } catch (e) {
+        // eslint-disable-next-line no-console
         console.error(e);
         apos.notify(errorMessageKey, { type: 'error' });
       } finally {
@@ -754,6 +760,7 @@ export default {
           });
           this.draftIsEditable = draftContext && draftContext._edit;
         } catch (e) {
+          // eslint-disable-next-line no-console
           console.error(e);
         }
       }
@@ -772,6 +779,7 @@ export default {
           });
           return doc;
         } catch (error) {
+          // eslint-disable-next-line no-console
           console.error(error);
         }
       }

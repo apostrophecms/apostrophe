@@ -78,6 +78,7 @@ export default {
         }, 0);
       } catch (e) {
         this.rendered = '<p>Unable to render this widget.</p>';
+        // eslint-disable-next-line no-console
         console.error('Unable to render widget. Possibly the schema has been changed and the existing widget does not pass validation.', e);
       }
     },

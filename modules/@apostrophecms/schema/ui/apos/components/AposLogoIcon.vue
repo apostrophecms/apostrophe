@@ -9,9 +9,18 @@
         y2="141.17"
         gradientUnits="userSpaceOnUse"
       >
-        <stop offset="0" stop-color="#cc9300" />
-        <stop offset="0.47" stop-color="#ea433a" />
-        <stop offset="1" stop-color="#b327bf" />
+        <stop
+          offset="0"
+          stop-color="#cc9300"
+        />
+        <stop
+          offset="0.47"
+          stop-color="#ea433a"
+        />
+        <stop
+          offset="1"
+          stop-color="#b327bf"
+        />
       </linearGradient>
       <linearGradient
         id="square"
@@ -21,11 +30,26 @@
         y2="110.85"
         gradientUnits="userSpaceOnUse"
       >
-        <stop offset="0" stop-color="#cc9300" />
-        <stop offset="0.26" stop-color="#ea433a" />
-        <stop offset="0.47" stop-color="#b327bf" />
-        <stop offset="0.76" stop-color="#66f" />
-        <stop offset="1" stop-color="#00bf9a" />
+        <stop
+          offset="0"
+          stop-color="#cc9300"
+        />
+        <stop
+          offset="0.26"
+          stop-color="#ea433a"
+        />
+        <stop
+          offset="0.47"
+          stop-color="#b327bf"
+        />
+        <stop
+          offset="0.76"
+          stop-color="#66f"
+        />
+        <stop
+          offset="1"
+          stop-color="#00bf9a"
+        />
       </linearGradient>
       <linearGradient
         id="triangle"
@@ -35,9 +59,18 @@
         y2="143.64"
         gradientUnits="userSpaceOnUse"
       >
-        <stop offset="0" stop-color="#b327bf" />
-        <stop offset="0.47" stop-color="#66f" />
-        <stop offset="1" stop-color="#00c09a" />
+        <stop
+          offset="0"
+          stop-color="#b327bf"
+        />
+        <stop
+          offset="0.47"
+          stop-color="#66f"
+        />
+        <stop
+          offset="1"
+          stop-color="#00c09a"
+        />
       </linearGradient>
     </defs>
     <path

@@ -67,7 +67,7 @@ describe('Soft Redirects', function() {
 });
 
 describe('Soft Redirects - with `statusCode` option', function() {
-
+  let apos;
   this.timeout(t.timeout);
 
   after(async function() {
@@ -136,5 +136,4 @@ describe('Soft Redirects - with `statusCode` option', function() {
     // Are we going to be redirected to our page?
     assert.strictEqual(response.headers.location, `${apos.http.getBase()}/child-moved`);
   });
-
 });

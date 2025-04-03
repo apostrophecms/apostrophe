@@ -11,10 +11,24 @@
 * Improve the Page Manager experience when dragging and dropping pages - the updates happen in background and the UI is not blocked anymore.
 * Allow scrolling while dragging a page in the Page Manager.
 * Change user's email field type to `email`.
+* Improve media manager experience after uploading images. No additional server requests are made, no broken UI on error.
+* Change reset password form button label to `Reset Password`.
 
 ### Fixes
 
 * Fixes an edge case where reordering a page in the Page Manager might affect another locale.
+
+## 4.14.2 (2025-04-02)
+
+### Fixes
+
+* Hotfix: the `choices` query parameter of the REST API no longer results in a 500 error if an invalid filter name is part of the list. Such filters are now properly ignored in `choices`. This issue could also have resulted in invocation of query methods that are not builders, however since all such methods are read-only operations, no arguments could be passed and no information was returned, there are no security implications.
+
+## 4.14.1 (2025-03-31)
+
+### Fixes
+
+* Hotfix: fixes a bug in which the same on-demand cache was used across multiple sites in the presence of `@apostrophecms/multisite`. In rare cases, this bug could cause the home page of site "A" to be displayed on a request for site "B," but only if requests were simultaneous. This bug did not impact single-site projects.
 
 ## 4.14.0 (2025-03-19)
 

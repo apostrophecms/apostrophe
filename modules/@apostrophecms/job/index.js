@@ -97,7 +97,8 @@ module.exports = {
       // simpler wrapper for this method if you are implementing a batch operation
       // on a single type of piece.
       //
-      // Notification messages should be included on a `req.body.messages` object. See `triggerNotification for details`.
+      // Notification messages should be included on a `req.body.messages` object.
+      // See `triggerNotification for details`.
       async runBatch(req, ids, change, options = {}) {
         let job;
         let notification;
@@ -186,7 +187,8 @@ module.exports = {
       // background afterwards. You can pass `jobId` to the `progress` API route
       // of this module as `_id` on the request body to get job status info.
       //
-      // Notification messages should be included on a `req.body.messages` object. See `triggerNotification for details`.
+      // Notification messages should be included on a `req.body.messages` object.
+      // See `triggerNotification for details`.
       async run(req, doTheWork, options = {}) {
         const res = req.res;
         let job;

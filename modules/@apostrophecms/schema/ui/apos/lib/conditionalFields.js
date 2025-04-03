@@ -77,7 +77,8 @@ export async function evaluateExternalCondition(conditionKey, fieldId, docId) {
 
   return [ conditionKey, result ];
 }
-// Checking if key ends with a closing parenthesis here to throw later if any argument is passed.
+// Checking if key ends with a closing parenthesis here
+// to throw later if any argument is passed.
 export function isExternalCondition(conditionKey, conditionType) {
   if (!conditionKey.endsWith(')')) {
     return false;
@@ -86,6 +87,7 @@ export function isExternalCondition(conditionKey, conditionType) {
   const [ methodDefinition ] = conditionKey.split('(');
 
   if (!conditionKey.endsWith('()')) {
+    // eslint-disable-next-line no-console
     console.warn(`Warning in \`${conditionType}\` definition: "${methodDefinition}()" should not be passed any argument.`);
   }
 

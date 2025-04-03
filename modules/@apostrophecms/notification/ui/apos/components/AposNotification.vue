@@ -1,5 +1,8 @@
 <template>
-  <div role="alert" :class="classList">
+  <div
+    role="alert"
+    :class="classList"
+  >
     <span class="apos-notification__indicator">
       <AposIndicator
         :icon="iconComponent"
@@ -7,9 +10,11 @@
         :icon-size="notification.icon ? 16 : 12"
       />
     </span>
-    <span ref="label" class="apos-notification__label">
+    <span
+      ref="label"
+      class="apos-notification__label"
+    >
       {{ localize(notification.message) }}
-      <!-- OK to use index as key because buttons are constant for the lifetime of the notification -->
       <button
         v-for="(button, i) in notification.buttons"
         :key="i"
@@ -22,7 +27,10 @@
         {{ localize(button.label) }}
       </button>
     </span>
-    <div v-if="process" class="apos-notification__progress">
+    <div
+      v-if="process"
+      class="apos-notification__progress"
+    >
       <div class="apos-notification__progress-bar">
         <div
           class="apos-notification__progress-now"
@@ -100,8 +108,8 @@ const classList = computed(() => {
     classes.push('apos-notification--progress');
   }
 
-  // long notifications look funky, but reading the label's length doesn't account for html.
-  // Throw the string into a fake element to get its text content
+  // long notifications look funky, but reading the label's length doesn't account for
+  // html. Throw the string into a fake element to get its text content
   const div = document.createElement('div');
   div.innerHTML = localize(props.notification.message);
   const textContent = div.textContent || div.innerText || '';
@@ -149,6 +157,7 @@ onMounted(async () => {
         apos.bus.$emit(props.notification.event.name, props.notification.event.data);
       }
     } catch (error) {
+      // eslint-disable-next-line no-console
       console.error($t('apostrophe:notificationClearEventError'));
     }
   }
@@ -286,7 +295,14 @@ function localize(s) {
 .apos-notification__progress-now {
   height: 100%;
   background-color: var(--a-brand-green);
-  background-image: linear-gradient(46deg, var(--a-brand-gold) 0%, var(--a-brand-red) 26%, var(--a-brand-magenta) 47%, var(--a-brand-blue) 76%, var(--a-brand-green) 100%);
+  background-image: linear-gradient(
+    46deg,
+    var(--a-brand-gold) 0%,
+    var(--a-brand-red) 26%,
+    var(--a-brand-magenta) 47%,
+    var(--a-brand-blue) 76%,
+    var(--a-brand-green) 100%
+  );
   transition: width 500ms ease-out;
 }
 

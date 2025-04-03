@@ -86,10 +86,12 @@ export const useModalStore = defineStore('modal', () => {
 
   function updateModalData(id, data) {
     stack.value = stack.value.map((modal) => {
-      return modal.id === id ? {
-        ...modal,
-        ...data
-      } : modal;
+      return modal.id === id
+        ? {
+          ...modal,
+          ...data
+        }
+        : modal;
     });
   }
 

@@ -25,7 +25,10 @@
             {{ $t(header.label) }}
           </component>
         </th>
-        <th key="contextMenu" class="apos-table__header">
+        <th
+          key="contextMenu"
+          class="apos-table__header"
+        >
           <component
             :is="getEl({})"
             class="apos-table__header-label apos-is-hidden"

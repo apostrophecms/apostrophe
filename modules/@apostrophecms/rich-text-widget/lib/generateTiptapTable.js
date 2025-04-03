@@ -9,10 +9,12 @@ module.exports = ({ header, rows }) => {
           type: 'tableHeader',
           content: [ {
             type: 'paragraph',
-            content: head ? [ {
-              type: 'text',
-              text: head
-            } ] : []
+            content: head
+              ? [ {
+                type: 'text',
+                text: head
+              } ]
+              : []
           } ]
         }))
       },
@@ -23,10 +25,12 @@ module.exports = ({ header, rows }) => {
           content: [
             {
               type: 'paragraph',
-              content: cell ? [ {
-                type: 'text',
-                text: cell
-              } ] : []
+              content: cell
+                ? [ {
+                  type: 'text',
+                  text: cell
+                } ]
+                : []
             }
           ]
         }))

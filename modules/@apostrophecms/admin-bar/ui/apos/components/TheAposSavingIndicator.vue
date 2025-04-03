@@ -10,7 +10,10 @@
         v-bind="savingIndicator.options"
         class="apos-admin-bar__status__icon"
       />
-      <div ref="statusLabel" class="apos-admin-bar__status__label">
+      <div
+        ref="statusLabel"
+        class="apos-admin-bar__status__label"
+      >
         {{ $t(savingLabel) }}
       </div>
     </span>
