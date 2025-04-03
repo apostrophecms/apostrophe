@@ -241,6 +241,10 @@ $z-index-button-background: 1;
 $z-index-button-foreground: 2;
 
 .apos-area-modify-controls {
+  :deep(.apos-context-menu__items) .apos-context-menu__item:nth-child(3) {
+    border-bottom: 1px solid var(--a-base-9);
+  }
+
   :deep(.apos-button__content) {
     z-index: $z-index-button-foreground;
     position: relative;
