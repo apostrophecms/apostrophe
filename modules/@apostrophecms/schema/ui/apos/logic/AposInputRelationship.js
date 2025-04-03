@@ -8,7 +8,8 @@ export default {
   emits: [ 'input' ],
   data () {
     const next = (this.modelValue && Array.isArray(this.modelValue.data))
-      ? klona(this.modelValue.data) : (klona(this.field.def) || []);
+      ? klona(this.modelValue.data)
+      : (klona(this.field.def) || []);
 
     // Remember relationship subfield values even if a document
     // is temporarily deselected, easing the user's pain if they
@@ -279,10 +280,12 @@ export default {
         const index = this.next.findIndex(_item => _item._id === item._id);
 
         this.next = this.next.map((item, i) => {
-          return i === index ? {
-            ...item,
-            _fields: result
-          } : item;
+          return i === index
+            ? {
+              ...item,
+              _fields: result
+            }
+            : item;
         });
       }
     },

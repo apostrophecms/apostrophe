@@ -1563,7 +1563,6 @@ describe('Pages REST', function() {
       });
       assert(rendered.match(/Sing to me, Oh Muse\./));
     } catch (error) {
-      console.error(error);
       assert(false);
     }
   });

@@ -21,7 +21,10 @@
         data-apos-test="localeItem"
         @click="switchLocale(locale)"
       >
-        <button :tabindex="isOpen ? '0' : '-1'" class="apos-locale-picker__locale-display">
+        <button
+          :tabindex="isOpen ? '0' : '-1'"
+          class="apos-locale-picker__locale-display"
+        >
           <AposIndicator
             v-if="isForbidden(locale)"
             icon="lock-icon"

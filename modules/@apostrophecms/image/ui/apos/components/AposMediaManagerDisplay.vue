@@ -35,7 +35,7 @@
           />
         </div>
         <button
-          :id="`btn-${item._id.replaceAll(':', '-')}`"
+          :id="`btn-${(item._id || item.__placeholder || '').replaceAll(':', '-')}`"
           :disabled="
             item._id === 'placeholder' || canSelect(item._id) === false
           "
@@ -45,17 +45,16 @@
           @click.meta="$emit('select-another', item._id)"
           @click.ctrl="$emit('select-another', item._id)"
         >
-          <div
-            v-if="item.dimensions"
-            class="apos-media-manager-display__placeholder"
-            :style="getPlaceholderStyles(item)"
-          />
           <img
-            v-else
+            v-if="item.attachment?._urls"
             class="apos-media-manager-display__media"
             :src="item.attachment._urls['one-sixth']"
             :alt="item.description || item.title"
           >
+          <div
+            v-else
+            class="apos-media-manager-display__placeholder"
+          />
         </button>
       </div>
       <div
@@ -80,7 +79,10 @@
         class="apos-loading"
       />
     </div>
-    <div v-else class="apos-media-manager-display__end-reached">
+    <div
+      v-else
+      class="apos-media-manager-display__end-reached"
+    >
       <p>{{ $t('apostrophe:mediaLibraryEndReached') }}</p>
     </div>
   </div>
@@ -179,7 +181,7 @@ export default {
       if (newVal.length) {
         await this.$nextTick();
         const target = newVal[newVal.length - 1];
-        this.$el.querySelector(`#btn-${target.replaceAll(':', '-')}`).focus();
+        this.$el.querySelector(`#btn-${target.replaceAll(':', '-')}`)?.focus();
       }
     }
   },
@@ -187,35 +189,6 @@ export default {
     this.$emit('set-load-ref', this.$refs.scrollLoad);
   },
   methods: {
-    getPlaceholderStyles(item) {
-      // Account for whether the refs have been set by the v-for or if on the
-      // placeholder.
-      /* const btn = Array.isArray(this.$refs.btns) ? this.$refs.btns[0] : this.$refs.btns; */
-      const btn = this.items.length && this.$el.querySelector(`#btn-${this.items[0]._id}`);
-      if (!btn) {
-        return {};
-      }
-      const {
-        width: parentWidth,
-        height: parentHeight
-      } = btn.getBoundingClientRect();
-
-      const parentRatio = parentWidth / parentHeight;
-      const itemRatio = item.dimensions.width / item.dimensions.height;
-
-      if ((parentRatio < itemRatio) || this.largePreview) {
-        return {
-          width: `${item.dimensions.width}px`,
-          paddingTop: `${(item.dimensions.height / item.dimensions.width) * 100}%`
-        };
-      } else {
-        return {
-          height: `${parentHeight}px`,
-          width: `${parentHeight * itemRatio}px`
-        };
-      }
-
-    },
     getCellStyles(item) {
       if (this.largePreview && item.dimensions) {
         return {

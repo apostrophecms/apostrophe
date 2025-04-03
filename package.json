@@ -1,6 +1,6 @@
 {
   "name": "apostrophe",
-  "version": "4.14.0",
+  "version": "4.14.2",
   "description": "The Apostrophe Content Management System.",
   "main": "index.js",
   "scripts": {
@@ -134,18 +134,12 @@
   "devDependencies": {
     "@babel/eslint-parser": "^7.17.0",
     "eslint": "^8.57.1",
-    "eslint-config-apostrophe": "^4.3.0",
-    "eslint-config-standard": "^17.1.0",
-    "eslint-plugin-n": "^15.2.1",
-    "eslint-plugin-node": "^11.1.0",
-    "eslint-plugin-promise": "^6.6.0",
-    "eslint-plugin-vue": "^7.9.0",
+    "eslint-config-apostrophe": "^5.0.0",
     "mocha": "^10.7.3",
     "nyc": "^15.1.0",
     "replace-in-file": "^6.1.0",
     "stylelint": "^16.5.0",
-    "stylelint-config-apostrophe": "^4.2.0",
-    "vue-eslint-parser": "^7.1.1"
+    "stylelint-config-apostrophe": "^4.2.0"
   },
   "browserslist": [
     "ie >= 10"

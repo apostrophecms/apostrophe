@@ -30,7 +30,10 @@
                 data-apos-focus-priority
                 @toggle="toggle"
               />
-              <p class="apos-share-draft__toggle-label" @click="toggle">
+              <p
+                class="apos-share-draft__toggle-label"
+                @click="toggle"
+              >
                 {{ $t('apostrophe:shareDraftEnable') }}
               </p>
             </div>

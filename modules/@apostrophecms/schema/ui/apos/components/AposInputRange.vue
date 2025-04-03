@@ -6,7 +6,10 @@
     :uid="uid"
     :display-options="displayOptions"
   >
-    <template v-if="isMicro" #info>
+    <template
+      v-if="isMicro"
+      #info
+    >
       <div
         class="apos-range__value"
         aria-hidden="true"
@@ -26,7 +29,10 @@
     </template>
     <template #body>
       <div class="apos-input-wrapper">
-        <div v-apos-tooltip="tooltip" class="apos-range">
+        <div
+          v-apos-tooltip="tooltip"
+          class="apos-range"
+        >
           <input
             :id="uid"
             ref="range"
@@ -38,7 +44,10 @@
             class="apos-range__input"
             :disabled="field.readOnly"
           >
-          <div v-if="!isMicro" class="apos-range__scale">
+          <div
+            v-if="!isMicro"
+            class="apos-range__scale"
+          >
             <span>
               <span class="apos-sr-only">
                 {{ $t('apostrophe:minLabel') }}

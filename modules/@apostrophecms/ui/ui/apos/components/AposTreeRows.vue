@@ -89,7 +89,10 @@
                 class="apos-tree__cell__icon"
                 :icon-size="getEffectiveIconSize(col, row)"
               />
-              <span v-if="getEffectiveCellLabel(col, row)" class="apos-tree__cell__label">
+              <span
+                v-if="getEffectiveCellLabel(col, row)"
+                class="apos-tree__cell__label"
+              >
                 {{ getEffectiveCellLabel(col, row) }}
               </span>
             </span>

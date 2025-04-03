@@ -147,6 +147,7 @@ export default {
       this.values.data = newValues;
     },
     async handleSaveError(e, { fallback }) {
+      // eslint-disable-next-line no-console
       console.error(e);
       if (e.body && e.body.data && e.body.data.errors) {
         const serverErrors = {};

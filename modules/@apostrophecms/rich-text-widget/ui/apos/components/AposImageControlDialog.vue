@@ -71,16 +71,18 @@ export default {
           // stack interchangeably with tiptap's
           browse: true
         },
-        ...(moduleOptions.imageStyles ? [
-          {
-            name: 'style',
-            label: this.$t('apostrophe:style'),
-            type: 'select',
-            choices: moduleOptions.imageStyles,
-            def: moduleOptions.imageStyles?.[0].value,
-            required: true
-          }
-        ] : []
+        ...(moduleOptions.imageStyles
+          ? [
+            {
+              name: 'style',
+              label: this.$t('apostrophe:style'),
+              type: 'select',
+              choices: moduleOptions.imageStyles,
+              def: moduleOptions.imageStyles?.[0].value,
+              required: true
+            }
+          ]
+          : []
         ),
         {
           name: 'caption',

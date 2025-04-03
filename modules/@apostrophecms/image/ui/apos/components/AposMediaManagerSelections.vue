@@ -41,7 +41,10 @@
         </li>
       </ol>
     </div>
-    <div v-else class="apos-media-manager-selection__empty">
+    <div
+      v-else
+      class="apos-media-manager-selection__empty"
+    >
       <AposEmptyState :empty-state="emptyState" />
     </div>
   </div>

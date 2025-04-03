@@ -25,7 +25,10 @@
           {{ $t('apostrophe:pageNumber', { number: num }) }}
         </option>
       </select>
-      <menu-swap-icon :size="18" class="apos-input-icon" />
+      <menu-swap-icon
+        :size="18"
+        class="apos-input-icon"
+      />
     </div>
     <AposButton
       :disabled="currentPage >= totalPages"

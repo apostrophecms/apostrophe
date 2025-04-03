@@ -303,7 +303,6 @@
   "loginResetPasswordRequest": "Digite o endereço de email da sua conta e enviaremos um link para redefinição de senha.",
   "loginResetPasswordRequired": "Uma nova senha é necessária.",
   "loginResetRequestDone": "Se o endereço de email que você inseriu corresponder aos nossos registros, enviaremos um link de redefinição para \"{{ email }}\".\n\nSiga o link no email para redefinir sua senha.",
-  "loginSendEmail": "Enviar Email",
   "manageDocType": "Gerenciar {{ type }}",
   "manageDraftSubmissions": "Gerenciar envios de rascunho",
   "managePages": "Gerenciar Páginas",

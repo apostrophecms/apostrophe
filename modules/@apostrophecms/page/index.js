@@ -2,7 +2,6 @@ const _ = require('lodash');
 const path = require('path');
 const { klona } = require('klona');
 const { SemanticAttributes } = require('@opentelemetry/semantic-conventions');
-const expressCacheOnDemand = require('express-cache-on-demand')();
 
 module.exports = {
   cascades: [ 'filters', 'batchOperations', 'utilityOperations' ],
@@ -241,9 +240,6 @@ module.exports = {
     };
   },
   async init(self) {
-    const { enableCacheOnDemand = true } = self.apos
-      .modules['@apostrophecms/express'].options;
-    self.enableCacheOnDemand = enableCacheOnDemand;
     self.typeChoices = self.options.types || [];
     // If "park" redeclares something with a parkedId present in "minimumPark",
     // the later one should win
@@ -284,7 +280,7 @@ module.exports = {
       // `_publishedDoc` property to each draft that also exists in a published form.
 
       getAll: [
-        ...self.enableCacheOnDemand ? [ expressCacheOnDemand ] : [],
+        ...self.apos.expressCacheOnDemand ? [ self.apos.expressCacheOnDemand ] : [],
         async (req) => {
           await self.publicApiCheckAsync(req);
           const all = self.apos.launder.boolean(req.query.all);
@@ -410,7 +406,7 @@ module.exports = {
       // `_home` or `_archive`
 
       getOne: [
-        ...self.enableCacheOnDemand ? [ expressCacheOnDemand ] : [],
+        ...self.apos.expressCacheOnDemand ? [ self.apos.expressCacheOnDemand ] : [],
         async (req, _id) => {
           _id = self.inferIdLocaleAndMode(req, _id);
           // Edit access to draft is sufficient to fetch either
@@ -1097,8 +1093,8 @@ database.`);
         addServeRoute() {
           self.apos.app.get('*',
             (req, res, next) => {
-              return self.enableCacheOnDemand
-                ? expressCacheOnDemand(req, res, next)
+              return self.apos.expressCacheOnDemand
+                ? self.apos.expressCacheOnDemand(req, res, next)
                 : next();
             },
             self.serve
@@ -1113,14 +1109,18 @@ database.`);
         return self.apos.modules['@apostrophecms/any-page-type'].find(req, criteria, options);
       },
       getIdCriteria(_id) {
-        return (_id === '_home') ? {
-          level: 0
-        } : (_id === '_archive') ? {
-          level: 1,
-          archived: true
-        } : {
-          _id
-        };
+        return (_id === '_home')
+          ? {
+            level: 0
+          }
+          : (_id === '_archive')
+            ? {
+              level: 1,
+              archived: true
+            }
+            : {
+              _id
+            };
       },
       // Implementation of the PATCH route. Factored as a method to allow
       // it to be called from the universal @apostrophecms/doc PATCH route

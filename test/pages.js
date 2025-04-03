@@ -516,8 +516,10 @@ describe('Pages', function() {
         'lastChild'
       );
 
-      const movedPage = await apos.page.find(apos.task.getAnonReq(), { _id: barPage._id }).toObject();
-      const movedChildPage = await apos.page.find(apos.task.getAnonReq(), { _id: childPage._id }).toObject();
+      const movedPage = await apos.page
+        .find(apos.task.getAnonReq(), { _id: barPage._id }).toObject();
+      const movedChildPage = await apos.page
+        .find(apos.task.getAnonReq(), { _id: childPage._id }).toObject();
 
       const actual = {
         bar: {
@@ -589,8 +591,10 @@ describe('Pages', function() {
         'lastChild'
       );
 
-      const movedPage = await apos.page.find(apos.task.getAnonReq(), { _id: barPage._id }).toObject();
-      const movedChildPage = await apos.page.find(apos.task.getAnonReq(), { _id: childPage._id }).toObject();
+      const movedPage = await apos.page
+        .find(apos.task.getAnonReq(), { _id: barPage._id }).toObject();
+      const movedChildPage = await apos.page
+        .find(apos.task.getAnonReq(), { _id: childPage._id }).toObject();
 
       const actual = {
         bar: {
@@ -662,8 +666,10 @@ describe('Pages', function() {
         'lastChild'
       );
 
-      const movedPage = await apos.page.find(apos.task.getAnonReq(), { _id: foobarPage._id }).toObject();
-      const movedChildPage = await apos.page.find(apos.task.getAnonReq(), { _id: childPage._id }).toObject();
+      const movedPage = await apos.page
+        .find(apos.task.getAnonReq(), { _id: foobarPage._id }).toObject();
+      const movedChildPage = await apos.page
+        .find(apos.task.getAnonReq(), { _id: childPage._id }).toObject();
 
       const actual = {
         foobar: {
@@ -701,10 +707,13 @@ describe('Pages', function() {
       if (page.level === 0) {
         continue;
       }
-      const { lastTargetId, lastPosition } = await apos.page.inferLastTargetIdAndPosition(page);
+      const { lastTargetId, lastPosition } = await apos.page
+        .inferLastTargetIdAndPosition(page);
       const parentPath = page.path.split('/').slice(0, page.path.split('/').length - 1).join('/');
       assert(pages.find(p => p.path === parentPath));
-      const peers = pages.filter(p => p.path.match(apos.page.matchDescendants(parentPath)) && (p.level === page.level));
+      const peers = pages.filter(p => p.path.match(
+        apos.page.matchDescendants(parentPath)) && (p.level === page.level)
+      );
       if (peers.length === 1) {
         const parent = pages.find(p => p._id === lastTargetId);
         assert(parent);
@@ -1061,7 +1070,9 @@ describe('Pages', function() {
     const eTagParts = response.headers.etag.split(':');
 
     assert(eTagParts[0] === apos.asset.getReleaseId());
-    assert(eTagParts[1] === (new Date(response.body.cacheInvalidatedAt)).getTime().toString());
+    assert(eTagParts[1] === (new Date(response.body.cacheInvalidatedAt))
+      .getTime()
+      .toString());
     assert(eTagParts[2]);
 
     delete apos.page.options.cache;
@@ -1130,7 +1141,8 @@ describe('Pages', function() {
     assert(response2.status === 200);
     assert(response2.body);
 
-    // New ETag has been generated, with the new value of the edited homepage's `cacheInvalidatedAt` field...
+    // New ETag has been generated, with the new value of
+    // the edited homepage's `cacheInvalidatedAt` field...
     assert(eTag2Parts[1] === pageUpdateResponse.cacheInvalidatedAt.getTime().toString());
     // ...and a new timestamp
     assert(eTag2Parts[2] !== eTag1Parts[2]);
@@ -1150,7 +1162,8 @@ describe('Pages', function() {
 
     const eTagParts = response1.headers.etag.split(':');
     const outOfDateETagParts = [ ...eTagParts ];
-    outOfDateETagParts[2] = Number(outOfDateETagParts[2]) - (4444 + 1) * 1000; // 1s outdated
+    outOfDateETagParts[2] = Number(outOfDateETagParts[2]) -
+      (4444 + 1) * 1000; // 1s outdated
 
     const response2 = await apos.http.get(`/api/v1/@apostrophecms/page/${homeId}`, {
       fullResponse: true,
@@ -1255,7 +1268,8 @@ describe('Pages', function() {
     assert(response2.status === 200);
     assert(response2.body);
 
-    // New ETag has been generated, with the new value of the edited homepage's `cacheInvalidatedAt` field...
+    // New ETag has been generated, with the new value of
+    // the edited homepage's `cacheInvalidatedAt` field...
     assert(eTag2Parts[1] === pageUpdateResponse.cacheInvalidatedAt.getTime().toString());
     // ...and a new timestamp
     assert(eTag2Parts[2] !== eTag1Parts[2]);
@@ -1311,7 +1325,8 @@ describe('Pages', function() {
 
     const eTagParts = response1.headers.etag.split(':');
     const outOfDateETagParts = [ ...eTagParts ];
-    outOfDateETagParts[2] = Number(outOfDateETagParts[2]) - (4444 + 1) * 1000; // 1s outdated
+    outOfDateETagParts[2] = Number(outOfDateETagParts[2]) -
+      (4444 + 1) * 1000; // 1s outdated
 
     const response2 = await apos.http.get('/', {
       fullResponse: true,
@@ -1362,7 +1377,8 @@ describe('Pages', function() {
     const eTagParts = response.headers.etag.split(':');
 
     assert(eTagParts[0] !== apos.asset.getReleaseId());
-    assert(eTagParts[1] !== (new Date(response.body.cacheInvalidatedAt)).getTime().toString());
+    assert(eTagParts[1] !== (new Date(response.body.cacheInvalidatedAt))
+      .getTime().toString());
 
     delete apos.page.options.cache;
   });
@@ -1380,7 +1396,8 @@ describe('Pages', function() {
     const eTagParts = response.headers.etag.split(':');
 
     assert(eTagParts[0] !== apos.asset.getReleaseId());
-    assert(eTagParts[1] !== (new Date(response.body.cacheInvalidatedAt)).getTime().toString());
+    assert(eTagParts[1] !== (new Date(response.body.cacheInvalidatedAt))
+      .getTime().toString());
 
     delete apos.page.options.cache;
   });
@@ -2026,19 +2043,18 @@ describe('Pages', function() {
           }
         )
         .toArray();
-      const patches = await apos.page.getBatchArchivePatches(req, ids.map(({ _id }) => _id));
+      const patches = await apos.page.getBatchArchivePatches(
+        req,
+        ids.map(({ _id }) => _id)
+      );
       for (const patch of patches) {
-        try {
-          await apos.page.patch(
-            req.clone({
-              mode: 'draft',
-              body: patch.body
-            }),
-            patch._id
-          );
-        } catch (error) {
-          console.error(error);
-        }
+        await apos.page.patch(
+          req.clone({
+            mode: 'draft',
+            body: patch.body
+          }),
+          patch._id
+        );
       }
 
       const home = await apos.page.find(req, { slug: '/' }).ancestors(false).children(true).toObject();
@@ -2196,19 +2212,18 @@ describe('Pages', function() {
           }
         )
         .toArray();
-      const archivePatches = await apos.page.getBatchArchivePatches(req, ids.map(({ _id }) => _id));
+      const archivePatches = await apos.page.getBatchArchivePatches(
+        req,
+        ids.map(({ _id }) => _id)
+      );
       for (const patch of archivePatches) {
-        try {
-          await apos.page.patch(
-            req.clone({
-              mode: 'draft',
-              body: patch.body
-            }),
-            patch._id
-          );
-        } catch (error) {
-          console.error(error);
-        }
+        await apos.page.patch(
+          req.clone({
+            mode: 'draft',
+            body: patch.body
+          }),
+          patch._id
+        );
       }
 
       const restorePatches = await apos.page.getBatchRestorePatches(
@@ -2218,17 +2233,13 @@ describe('Pages', function() {
           .map(({ _id }) => _id)
       );
       for (const patch of restorePatches) {
-        try {
-          await apos.page.patch(
-            req.clone({
-              mode: 'draft',
-              body: patch.body
-            }),
-            patch._id
-          );
-        } catch (error) {
-          console.error(error);
-        }
+        await apos.page.patch(
+          req.clone({
+            mode: 'draft',
+            body: patch.body
+          }),
+          patch._id
+        );
       }
 
       const home = await apos.page.find(req, { slug: '/' }).ancestors(false).children(true).toObject();
