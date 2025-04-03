@@ -160,38 +160,23 @@ export default {
 
       // Cut
       controls.push({
-        ...this.widgetDefaultControl,
         label: 'apostrophe:cut',
         icon: 'content-cut-icon',
-        tooltip: {
-          content: 'apostrophe:cut',
-          placement: 'left'
-        },
         action: 'cut'
       });
 
       // Copy
       controls.push({
-        ...this.widgetDefaultControl,
         label: 'apostrophe:copy',
         icon: 'content-copy-icon',
-        tooltip: {
-          content: 'apostrophe:copy',
-          placement: 'left'
-        },
         action: 'copy'
       });
 
       // Clone
       controls.push({
-        ...this.widgetDefaultControl,
         label: 'apostrophe:duplicate',
         icon: 'content-duplicate-icon',
         disabled: this.disabled || this.maxReached,
-        tooltip: {
-          content: 'apostrophe:duplicate',
-          placement: 'left'
-        },
         action: 'clone'
       });
 
