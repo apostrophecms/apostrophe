@@ -81,6 +81,7 @@
                 readOnly: maxReached && !checked.includes(row._id)
               }"
               :choice="{ value: row._id }"
+              @pointerdown="pointerEvent"
             />
             <span class="apos-tree__cell__value">
               <AposIndicator
@@ -255,6 +256,11 @@ export default {
     });
   },
   methods: {
+    // Fix for chrome when some text is selected (needed double click to check the box)
+    // Comes from sortablejs, so we avoid the event to propagate to sortablejs listener
+    pointerEvent(event) {
+      event.stopPropagation();
+    },
     setHeights() {
       this.treeBranches.forEach(branch => {
         // Add padding to the max-height to avoid needing a `resize`
