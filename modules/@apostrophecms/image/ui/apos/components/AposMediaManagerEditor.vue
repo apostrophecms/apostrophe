@@ -96,8 +96,6 @@
       <div
         class="apos-media-editor__lip"
       >
-        <!-- TODO: here, search for all "<AposContextMenu" and "@item-clicked",
-              and adapt event handle to make it receive { action } -->
         <AposContextMenu
           v-if="!restoreOnly"
           :button="{
@@ -262,8 +260,8 @@ export default {
     this.$emit('modified', false);
   },
   methods: {
-    moreMenuHandler(action) {
-      this[action]();
+    moreMenuHandler(item) {
+      this[item.action]();
     },
     async updateActiveDoc(newMedia) {
       newMedia = newMedia || {};
