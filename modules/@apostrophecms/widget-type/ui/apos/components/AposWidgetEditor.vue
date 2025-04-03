@@ -237,7 +237,7 @@ export default {
       const body = () => {
         this.lastPreview = now;
         this.preview.area.update(this.getPreviewWidgetObject(), { autosave: false });
-      }
+      };
       if (this.updatePreviewTimeout) {
         clearTimeout(this.updatePreviewTimeout);
       }
@@ -257,7 +257,6 @@ export default {
         clearTimeout(this.updatePreviewTimeout);
       }
       if (this.preview.create) {
-        const index = this.getPreviewWidgetIndex();
         this.preview.area.remove(this.getPreviewWidgetIndex(), { autosave: false });
       } else if (!this.saving) {
         this.preview.area.update(this.previewSnapshot, { autosave: false });

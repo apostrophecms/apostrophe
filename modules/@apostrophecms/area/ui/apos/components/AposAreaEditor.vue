@@ -528,7 +528,9 @@ export default {
     contextualWidgetDefaultData(type) {
       return this.moduleOptions.contextualWidgetDefaultData[type];
     },
-    async insert({ index, widget, autosave = true } = {}) {
+    async insert({
+      index, widget, autosave = true
+    } = {}) {
       if (!widget._id) {
         widget._id = createId();
       }
@@ -570,11 +572,13 @@ export default {
       return this.moduleOptions.components.widgetEditors[type];
     },
     widgetPreview(type, index, create) {
-      return this.moduleOptions.widgetPreview[type] ? {
-        area: this,
-        index,
-        create
-      } : null
+      return this.moduleOptions.widgetPreview[type]
+        ? {
+          area: this,
+          index,
+          create
+        }
+        : null;
     },
     // Recursively seek `subObject` within `object`, based on whether
     // its _id matches that of a sub-object of `object`. If found,
