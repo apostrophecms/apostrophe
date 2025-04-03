@@ -208,13 +208,7 @@ export default {
   },
   computed: {
     tableOptions() {
-      const options = this.moduleOptions.tableOptions || {};
-      // If a developer disables `resizable` there will be no wrappers to style
-      // the table. Provide a table class, unless that is also overridden
-      // if (!options.resizable && !options?.HTMLAttributes?.class) {
-      //   options.;
-      // }
-      return options;
+      return this.moduleOptions.tableOptions || {};
     },
     tableTippyOptions() {
       return {
