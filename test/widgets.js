@@ -276,6 +276,7 @@ describe('Widgets', function() {
       image: {
         placeholderUrlOverride: '/modules/@apostrophecms/my-image-widget/placeholder.webp',
         assertAposPlaceholderTrue(document) {
+          console.log('>>>', document.documentElement.outerHTML);
           const imgNodes = document.querySelectorAll('img');
           console.log('>>', imgNodes);
           assert(imgNodes.length === 1);
