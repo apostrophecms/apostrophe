@@ -1,0 +1,60 @@
+[data-rich-text] table:not([class]),
+.tiptap table:not([class]),
+.tableWrapper table, /* stylelint-disable-line selector-class-pattern */
+.apos-rich-text-table {
+  overflow: hidden;
+  width: 100%;
+  margin: 0;
+  border-collapse: collapse;
+  table-layout: fixed;
+
+  td,
+  th {
+    position: relative;
+    box-sizing: border-box;
+    padding: 6px 8px;
+    border: 1px solid var(--a-base-4);
+    min-width: 1em;
+    vertical-align: top;
+
+    > * { /* stylelint-disable-line max-nesting-depth */
+      margin-bottom: 0;
+    }
+  }
+
+  th {
+    background-color: var(--a-base-8);
+    font-weight: 700;
+    text-align: left;
+  }
+
+  .selectedCell { /* stylelint-disable-line selector-class-pattern */
+      &::after { /* stylelint-disable-line max-nesting-depth */
+      z-index: $z-index-manager-display;
+      position: absolute; inset: 0;
+      background: var(--a-base-3);
+      opacity: 0.25;
+      content: "";
+      pointer-events: none;
+    }
+  }
+
+  .column-resize-handle {
+    position: absolute;
+    top: 0;
+    right: -2px;
+    bottom: -2px;
+    width: 4px;
+    background-color: var(--a-primary-transparent-50);
+    pointer-events: none;
+  }
+
+  .resize-cursor {
+    cursor: col-resize;
+  }
+}
+
+.tableWrapper { /* stylelint-disable-line selector-class-pattern */
+  margin: 1.5rem 0;
+  overflow-x: auto;
+}
