@@ -334,7 +334,7 @@ describe('Widgets', function() {
         assertAposPlaceholderTrue,
         assertPreviewMode,
         assertFalsyPlaceholderUrl,
-        assertPlaceholderUrlOverride,
+        assertPlaceholderUrlOverride
       }
     ]) => {
       describe(`${type} widget`, function() {
