@@ -2,6 +2,10 @@
 
 ## UNRELEASED
 
+### Adds
+
+* To display a live preview on the page as changes are made to widgets, set the `preview: true` option on any widget module. To turn it on for all widgets, you can set it on the `@apostrophecms/widget-type` module, the base class of all widget modules. This works especially well when `range` fields are used to achieve visual effects.
+
 ### Changes
 
 * Improve the Page Manager experience when dragging and dropping pages - the updates happen in background and the UI is not blocked anymore.
