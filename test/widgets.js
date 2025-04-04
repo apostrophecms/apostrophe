@@ -277,7 +277,7 @@ describe('Widgets', function() {
         placeholderUrlOverride: '/modules/@apostrophecms/my-image-widget/placeholder.webp',
         assertAposPlaceholderTrue(document) {
           const imgNodes = document.querySelectorAll('img');
-
+          console.log('>>', imgNodes);
           assert(imgNodes.length === 1);
           assert(imgNodes[0].classList.contains('image-widget-placeholder'));
           assert(imgNodes[0].alt === 'Image placeholder');
@@ -335,7 +335,7 @@ describe('Widgets', function() {
         assertAposPlaceholderTrue,
         assertPreviewMode,
         assertFalsyPlaceholderUrl,
-        assertPlaceholderUrlOverride
+        assertPlaceholderUrlOverride,
       }
     ]) => {
       describe(`${type} widget`, function() {
@@ -366,8 +366,9 @@ describe('Widgets', function() {
         before(async function() {
           await insertPage(apos, homePath, widgets);
           page = await apos.page.find(req, { slug: '/placeholder-page' }).toObject();
-
+          simulateImageWidgetRelationships(page);
           const args = getRenderArgs(req, page);
+          console.log(JSON.stringify(page, null, '  '));
           result = await apos.modules['placeholder-page'].render(req, 'page', args);
         });
 
@@ -490,4 +491,27 @@ describe('Widgets', function() {
       });
     });
   });
+
+  function simulateImageWidgetRelationships(page) {
+    apos.area.walk(page, area => {
+      for (const item of area.items) {
+        if (item.type === '@apostrophecms/image') {
+          // We need a more credible mock now because with preview; true
+          // image widgets will also display their placeholder in the absence of
+          // an image
+          item._image = [
+            {
+              _id: 'mock',
+              type: '@apostrophecms/image',
+              attachment: {
+                _id: 'mock'
+              }
+            }
+          ];
+          console.log('* PATCHED');
+        }
+      }
+    });
+  }
+
 });

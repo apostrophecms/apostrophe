@@ -233,15 +233,14 @@ describe('Areas', function() {
   it('renders an area passed to the `renderArea` method', async function () {
     const req = apos.task.getReq();
     firstRendered = await apos.area.renderArea(req, rteArea, areaDocs[0]);
-
     assert(firstRendered);
-    assert.equal(firstRendered, `
+    assert.equal(firstRendered.trim(), `
 <div class="apos-area">
 <div data-rich-text>
   <p>Perhaps its fate that today is the 4th of July, and you will once again be fighting for our freedom, not from tyranny, oppression, or persecution -- but from annihilation.</p><p>We're fighting for our right to live, to exist.</p>
 </div>
 </div>
-`);
+`.trim());
   });
 
   it('returns rendered HTML from the `renderArea` method for a mixed widget area', async function() {
