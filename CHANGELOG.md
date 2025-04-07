@@ -14,10 +14,15 @@
 * Improve media manager experience after uploading images. No additional server requests are made, no broken UI on error.
 * Change reset password form button label to `Reset Password`.
 * Removed overly verbose logging of schema errors in the schema module itself. These are already logged appropriately if they become the actual result of an API call. With this change it becomes possible to catch and discard or mitigate these in some situations without excessive log output.
+* Bumps eslint-config-apostrophe, fix errors and a bunch of warnings.
 
 ### Fixes
 
+* Update `uploadfs` to `1.24.3`.
 * Fixes an edge case where reordering a page in the Page Manager might affect another locale.
+* Fixes chrome bug when pages manager checkboxes need a double click when coming from the rich text editor (because some text is selected).
+* Fixes the rich text insert menu image menu not being properly closed.
+* Fixes the rich text toolbar not closing sometimes when unfocusing the editor.
 
 ## 4.14.2 (2025-04-02)
 
@@ -56,7 +61,7 @@
 * Proper errors when widgets are badly configured in expanded mode.
 * More reliable Media Manager infinite scroll pagination.
 * Fixes margin collapse in nested areas by switching to `padding` instead of `margin`
-* Fixes Edit in Media Manager when the image is not in the currently loaded images. This may happen when the the Media Manager is in a relationship mode. 
+* Fixes Edit in Media Manager when the image is not in the currently loaded images. This may happen when the the Media Manager is in a relationship mode.
 * Removes `publish` batch operation for `autopublished` pieces.
 * Fixes `restore` batch operation having the action `update`.
 * Fixes `localize` batch operation having no `action` and no `docIds`.
@@ -65,7 +70,7 @@
 
 ### Adds
 
-* Supports progress notification type, can be used when no job are involved. Manage progress state into the new `processes` entity. 
+* Supports progress notification type, can be used when no job are involved. Manage progress state into the new `processes` entity.
 * Moves global notification logic into Pinia store as well as job polling that updates processes.
 
 ### Fixes
@@ -74,12 +79,12 @@
 * Fixes admin bar overlapping widget area add menu.
 * Fixed the checkered background for gauging color transparency.
 * Fixes `group.operations` (batch configuration) merging between modules in the same way that `group.fields` are merged.
-* The i18n manager detects the current locale correctly in some edge cases, like when the locale is changed per document (Editor Modal) and the localization manager is opened from a relationship manager via a document context menu. 
+* The i18n manager detects the current locale correctly in some edge cases, like when the locale is changed per document (Editor Modal) and the localization manager is opened from a relationship manager via a document context menu.
 
 ### Adds
 
 * Add support for batch localization of pieces and pages.
-* Adds type for each file uploaded by big-upload. Moves big-upload-client to `apos/ui` folder and makes it esm. 
+* Adds type for each file uploaded by big-upload. Moves big-upload-client to `apos/ui` folder and makes it esm.
 * When present, projections for reverse relationships now automatically include the special id and field storage properties for the relationship in question, allowing the related documents to be successfully returned.
 * Introduce `AposModalReport` component for displaying table reports. It's accessible via `apos.report(content, options)` method and it's now used in the `@apostrophecms/i18n` module for detailed reporting after a batch localization operation.
 
@@ -126,7 +131,7 @@
 
 ### Adds
 
-* Possibility to set a field not ready when performing async operations, when a field isn't ready, the validation and emit won't occur. 
+* Possibility to set a field not ready when performing async operations, when a field isn't ready, the validation and emit won't occur.
 
 ## 4.11.1 (2024-12-18)
 
@@ -173,7 +178,7 @@ rendered output.
 ### Adds
 
 * It's possible now to target the HMR build when registering via `template.append` and `template.prepend`. Use `when: 'hmr:public'` or `when: 'hmr:apos'` that will be evaluated against the current asset `options.hmr` configuration.
-* Adds asset module option `options.modulePreloadPolyfill` (default `true`) to allow disabling the polyfill preload for e.g. external front-ends. 
+* Adds asset module option `options.modulePreloadPolyfill` (default `true`) to allow disabling the polyfill preload for e.g. external front-ends.
 * Adds `bundleMarkup` to the data sent to the external front-end, containing all markup for injecting Apostrophe UI in the front-end.
 * Warns users when two page types have the same field name, but a different field type. This may cause errors or other problems when an editor switches page types.
 * The piece and page `GET` REST APIs now support `?render-areas=inline`. When this parameter is used, an HTML rendering of each widget is added to that specific widget in each area's `items` array as a new `_rendered` property. The existing `?render-areas=1` parameter is still supported to render the entire area as a single `_rendered` property. Note that this older option also causes `items` to be omitted from the response.
@@ -227,13 +232,13 @@ with dynamic choices in this way.
 ### Fixes
 
 * Modifies the `AposAreaMenu.vue` component to set the `disabled` attribute to `true` if the max number of widgets have been added in an area with `expanded: true`.
-* `pnpm: true` option in `app.js` is no longer breaking the application. 
+* `pnpm: true` option in `app.js` is no longer breaking the application.
 * Remove unused `vue-template-compiler` dependency.
 * Prevent un-publishing the `@apostrophecms/global` doc and more generally all singletons.
 * When opening a context menu while another is already opened, prevent from focusing the button of the first one instead of the newly opened menu.
 * Updates `isEqual` method of `area` field type to avoid comparing an area having temporary properties with one having none.
-* In a relationship field, when asking for sub relationships using `withRelationships` an dot notion. 
-If this is done in combination with a projection, this projection is updated to add the id storage fields of the needed relationships for the whole `withRelationships` path. 
+* In a relationship field, when asking for sub relationships using `withRelationships` an dot notion.
+If this is done in combination with a projection, this projection is updated to add the id storage fields of the needed relationships for the whole `withRelationships` path.
 * The admin UI no longer fails to function when the HTML page is rendered with a direct `sendPage` call and there is no current "in context" page or piece.
 
 ## 4.7.2 and 4.8.1 (2024-10-09)
@@ -316,6 +321,7 @@ This resolves the issue for new uploads.
 * Fix UI of areas in schemas so that their context menus are layered overtop sibling schema fields UI.
 
 ### Removes
+
 * Inline array option for `alwaysOpen` replaced with UI toggles
 
 ## 4.6.0 (2024-08-08)
@@ -325,10 +331,10 @@ This resolves the issue for new uploads.
 * Add a locale switcher in pieces and pages editor modals. This is available for localized documents only, and allows you to switch between locales for the same document.
   The locale can be switched at only one level, meaning that sub documents of a document that already switched locale will not be able to switch locale itself.
 * Adds visual focus states and keyboard handlers for engaging with areas and widgets in-context
-* Adds method `simulateRelationshipsFromStorage` method in schema module. 
+* Adds method `simulateRelationshipsFromStorage` method in schema module.
 This method populates the relationship field with just enough information to allow convert to accept it. It does not fully fetch the related documents. It does the opposite of prepareForStorage.
-* A new options object has been added to the convert method. 
-Setting the `fetchRelationships` option to false will prevent convert from actually fetching relationships to check which related documents currently exist. 
+* A new options object has been added to the convert method.
+Setting the `fetchRelationships` option to false will prevent convert from actually fetching relationships to check which related documents currently exist.
 The shape of the relationship field is still validated.
 
 ### Changes
@@ -405,7 +411,7 @@ The shape of the relationship field is still validated.
 and its derivatives. This resolves bugs in which the unexpected `null` caused problems during validation. This bug
 was old, but was masked in some situations until the release of version `4.4.3`.
 * Identify and mark server validation errors in the admin UI. This helps editors identify already existing data fields, having validation errors when schema changes (e.g. optional field becomes required).
-* Removes `menu-offset` props that were causing `AposContextMenu` to not display properly. 
+* Removes `menu-offset` props that were causing `AposContextMenu` to not display properly.
 * Allows to pass a number or an array to `AposContextMenu` to set the offset of the context menu (main and cross axis see `floating-ui` documentation).
 * Fixes the relationship fields not having the data when coming from the relationship modal.
 * Fixes watch on `checkedDocs` passed to `AposSlatList` not being reactive and not seeing updated relationship fields.
@@ -418,7 +424,7 @@ was old, but was masked in some situations until the release of version `4.4.3`.
 ### Changes
 
 * Update `Choose Images` selection behavior. When choosing images as part of a relationship, you click on the image or checkbox to add the image to the selection.
-If a max is set to allow only one image, clicking on the selected image will remove it from the selection. Clicking on another image will update the selection with the newly clicked image. 
+If a max is set to allow only one image, clicking on the selected image will remove it from the selection. Clicking on another image will update the selection with the newly clicked image.
 If a max is set to allow multiple images, you can remove images from the selection by using the checkbox. Clicking on the image will bring the image schema in the right panel.
 You can upload images even if the max has been reached. We will append the uploaded images to the existing selection up to the max if any.
 * Update `@apostrophecms/emulate-mongo-3-driver` dependency to keep supporting `mongodb@3.x` queries while using `mongodb@6.x`.
@@ -432,7 +438,6 @@ If you wish a field to be mandatory use `required: true`.
 * As a convenience, using `POST` for pieces and pages with `_newInstance: true` keeps any additional `req.body` properties in the API response.
 This feature unofficially existed before, it is now supported.
 * Rollbacks watcher on `checked` array. Fixes, checked docs not being properly updated.
-
 
 ## 4.4.2 (2024-06-14)
 
@@ -453,7 +458,7 @@ introduced in version 4.4.0.
 
 ### Adds
 
-* Adds a pinia store to handle modals logic. 
+* Adds a pinia store to handle modals logic.
 * Methods from the store are registered on `apos.modal` instead of methods from `TheAposModals` component.
 * No more need to emit `safe-close` when defining an `AposModal`, modal is automatically resolved when closed.
 * Adds field components access to the reactive document value.
@@ -491,7 +496,7 @@ We will now end up with page B slug as `/peer/page` and not `/peer/peer/page` as
 * Allow `G,Shift+I` shortcut style.
 * Detect shortcut conflicts when using multiple shortcuts.
 * Updating schema fields as read-only no longer reset the value when updating the document.
-* Fixes stylelint config file, uses config from our shared configuration, fixes all lint errors. 
+* Fixes stylelint config file, uses config from our shared configuration, fixes all lint errors.
 * Fixes `TheAposCommandMenu` modals not computing shortcuts from the current opened modal.
 * Fixes select boxes of relationships, we can now check manually published relationships, and `AposSlatList` renders properly checked relationships.
 * Fixes issues in `AposInputArray` on production build to be able to add, remove and edit array items after `required` error.
@@ -503,10 +508,10 @@ We will now end up with page B slug as `/peer/page` and not `/peer/peer/page` as
 ### Fixes
 
 * Removes `$nextTick` use to re render schema in `AposArrayEditor` because it was triggering weird vue error in production.
-Instead, makes the AposSchema for loop keys more unique using `modelValue.data._id`, 
+Instead, makes the AposSchema for loop keys more unique using `modelValue.data._id`,
 if document changes it re-renders schema fields.
 * In media manager image checkboxes are disabled when max is reached.
-* Fixes tiptap bubble menu jumping on Firefox when clicking on buttons. Also fixes the fact that 
+* Fixes tiptap bubble menu jumping on Firefox when clicking on buttons. Also fixes the fact that
 double clicking on bubble menu out of buttons would prevent it from closing when unfocusing the rich text area.
 * In media manager images checkboxes are disabled when max is reached.
 * Makes the final fields accessible in the media manager right rail.
@@ -555,7 +560,6 @@ Thanks to Michelin for contributing this feature.
 * Adds the `copyOfId` property to be passed to the `apos.doc.edit()` method, while still allowing the entire `copyOf` object for backwards compatibility.
 
 ### Fixes
-
 
 ## 4.2.1 (2024-04-29)
 
@@ -625,6 +629,7 @@ actually exists before calling `attachment.url` still lies with the developer.
 ## 4.0.0 (2024-03-12)
 
 ### Adds
+
 * Add Marks tool to the Rich Text widget for handling toggling marks.
 * Add translation keys used by the multisite assembly module.
 * Add side by side comparison support in AposSchema component.
@@ -858,8 +863,10 @@ exclusion on field in inclusion projection` error.
 ## 3.57.0 2023-09-27
 
 ### Changes
+
 * Removes a 25px gap used to prevent in-context widget UI from overlapping with the admin bar
 * Simplifies the way in-context widget state is rendered via modifier classes
+
 ### Adds
 
 * Widgets detect whether or not their in-context editing UI will collide with the admin bar and adjust it appropriately.
@@ -1143,7 +1150,7 @@ exist under the former name of the default locale and there are no other locales
 the need to explicitly pass it in almost all contexts.
 * Mark `apos.modules['doc-type']` methods `getAutocompleteTitle`, `getAutocompleteProjection` and `autocomplete` as
     deprecated. Our admin UI does not use them, it uses the `autocomplete('...')` query builder.
-    More info at https://v3.docs.apostrophecms.org/reference/query-builders.html#autocomplete'.
+    More info at <https://v3.docs.apostrophecms.org/reference/query-builders.html#autocomplete>'.
 * Print a warning with a clear explanation if a module's `index.js` file contains
 no `module.exports` object (often due to a typo), or it is empty.
 
@@ -1249,6 +1256,7 @@ those writing mocha tests of Apostrophe modules.
 * `batchOperations` permissions: if a `permission` property is added to any entry in the `batchOperations` cascade of a piece-type module, this permission will be checked for every user. See `batchOperations` configuration in `modules/@apostrophecms/piece-type/index.js`. The check function `checkBatchOperationsPermissions` can be extended. Please note that this permission is checked only to determine whether to offer the operation.
 
 ### Fixes
+
 * Fix child page slug when title is deleted
 
 ## 3.43.0 (2023-03-29)
@@ -1350,6 +1358,7 @@ This can be useful for displaying fields according to the result of an external 
 ## 3.39.2 (2023-02-03)
 
 ### Fixes
+
 * Hotfix for a backwards compatibility break in webpack that triggered a tiptap bug. The admin UI build will now succeed as expected.
 
 ## 3.39.1 (2023-02-02)
@@ -1455,7 +1464,6 @@ node app @apostrophecms/i18n:rename-locale --old=de-DE --new=de-de --keep=de-de
 * Replace [`credential`](https://www.npmjs.com/package/credential) package with [`credentials`](https://www.npmjs.com/package/credentials) to fix the [`mout` Prototype Pollution vulnerability](https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2020-7792). There was no actual vulnerability in Apostrophe or credential due to the way the module was actually used, and this was done to address vulnerability scan reports.
 * Added a basic implementation of the missing "Paste from Clipboard" option to Expanded Widget Previews.
 
-
 ## 3.34.0 (2022-12-12)
 
 ### Fixes
@@ -1468,6 +1476,7 @@ node app @apostrophecms/i18n:rename-locale --old=de-DE --new=de-de --keep=de-de
 * Relationships load more quickly.
 * Parked page checks at startup are faster.
 * Tasks to localize and unlocalize piece type content (see `node app help [yourModuleName]:localize` and `node app help [yourModuleName]:unlocalize`).
+
 ## 3.33.0 (2022-11-28)
 
 ### Adds
@@ -1527,7 +1536,6 @@ node app @apostrophecms/i18n:rename-locale --old=de-DE --new=de-de --keep=de-de
 
 * Hotfix to restore Node 14 support. Of course Node 16 is also supported.
 
-
 ## 3.29.0 (2022-10-03)
 
 ### Adds
@@ -1577,6 +1585,7 @@ node app @apostrophecms/i18n:rename-locale --old=de-DE --new=de-de --keep=de-de
 ### Fixes
 
 Hotfix: always waits for the DOM to be ready before initializing the Apostrophe Admin UI. `setTimeout` alone might not guarantee that every time. This issue has apparently become more frequent in the latest versions of Chrome.
+
 * Modifies the `login` module to return an empty object in the API session cookie response body to avoid potential invalid JSON error if `response.json()` is retrieved.
 
 ## 3.26.0 (2022-08-03)
@@ -1835,7 +1844,7 @@ The cache of an index page corresponding to the type of a piece that was just sa
 * Fixes a bug where changing the page type immediately after clicking "New Page" would produce a console error. In general, areas and checkboxes now correctly handle their value being changed to `null` by the parent schema after initial startup of the `AposInputArea` or `AposInputCheckboxes` component.
 * It is now best practice to deliver namespaced i18n strings as JSON files in module-level subdirectories of `i18n/` named to match the namespace, e.g. `i18n/ourTeam` if the namespace is `ourTeam`. This allows base class modules to deliver phrases to any namespace without conflicting with those introduced at project level. The `i18n` option is now deprecated in favor of the new `i18n` module format section, which is only needed if `browser: true` must be specified for a namespace.
 * Removes the `@apostrophecms/util` module template helper `indexBy`, which was using a lodash method not included in lodash v4.
-* Removes an unimplemented `csrfExceptions` module section cascade. Use the `csrfExceptions` *option* of any module to set an array of URLs excluded from CSRF protection. More information is forthcoming in the documentation.
+* Removes an unimplemented `csrfExceptions` module section cascade. Use the `csrfExceptions` _option_ of any module to set an array of URLs excluded from CSRF protection. More information is forthcoming in the documentation.
 * Fix `[Object Object]` in the console when warning `A permission.can() call was made with a type that has no manager` is printed.
 
 ### Changes
@@ -1936,6 +1945,7 @@ The cache of an index page corresponding to the type of a piece that was just sa
 * Widget players are now prevented from being played twice by the implementing vue component.
 
 ### Changes
+
 * Removes Apostrophe 2 documentation and UI configuration from the `@apostrophecms/job` module. These options were not yet in use for A3.
 * Renames methods and removes unsupported routes in the `@apostrophecms/job` module that were not yet in use. This was not done lightly, but specifically because of the minimal likelihood that they were in use in project code given the lack of UI support.
   * The deprecated `cancel` route was removed and will likely be replaced at a later date.
@@ -2099,7 +2109,7 @@ No changes. Publishing to correctly mark the latest 3.x release as "latest" in n
 * In the admin UI, `v-tooltip` has been extended as `v-apos-tooltip`, which passes phrases through `i18next`.
 * Developers can link to alternate locales by iterating over `data.localizations` in any page template. Each element always has `locale`, `label` and `homePageUrl` properties. Each element also has an `available` property (if true, the current context document is available in that locale), `title` and a small number of other document properties are populated, and `_url` redirects to the context document in that locale. The current locale is marked with `current: true`.
 * To facilitate adding interpolated values to phrases that are passed as a single value through many layers of code, the `this.$t` helper provided in Vue also accepts an object argument with a `key` property. Additional properties may be used for interpolation.
-* `i18next` localization JSON files can be added to the `i18n` subdirectory of *any* module, as long as its `i18n` option is set. The `i18n` object may specify `ns` to give an `i18next` namespace, otherwise phrases are in the default namespace, used when no namespace is specified with a `:` in an `i18next` call. The default namespace is yours for use at project level. Multiple modules may contribute to the same namespace.
+* `i18next` localization JSON files can be added to the `i18n` subdirectory of _any_ module, as long as its `i18n` option is set. The `i18n` object may specify `ns` to give an `i18next` namespace, otherwise phrases are in the default namespace, used when no namespace is specified with a `:` in an `i18next` call. The default namespace is yours for use at project level. Multiple modules may contribute to the same namespace.
 * If `APOS_DEBUG_I18N=1` is set in the environment, the `i18next` debug flag is activated. For server-side translations, i.e. `req.t()` and `__t()`, debugging output will appear on the server console. For browser-side translations in the Vue admin UI, debugging output will appear in the browser console.
 * If `APOS_SHOW_I18N=1` is set in the environment, all phrases passed through `i18next` are visually marked, to make it easier to find those that didn't go through `i18next`. This does not mean translations actually exist in the JSON files. For that, review the output of `APOS_DEBUG_I18N=1`.
 * There is a locale switcher for editors.
@@ -2128,10 +2138,12 @@ No changes. Publishing to correctly mark the latest 3.x release as "latest" in n
 * Unit tests pass in MongoDB 5.x.
 
 ### Adds
+
 * Adds Cut and Paste to area controls. You can now Cut a widget to a virtual clipboard and paste it in suitable areas. If an area
 can include the widget on the clipboard, a special Clipboard widget will appear in area's Add UI. This works across pages as well.
 
 ### Changes
+
 * Apostrophe's Global's UI (the @apostrophecms/global singleton has moved from the admin bar's content controls to the admin utility tray under a cog icon.
 * The context bar's document Edit button, which was a cog icon, has been rolled into the doc's context menu.
 
@@ -2189,24 +2201,24 @@ can include the widget on the clipboard, a special Clipboard widget will appear 
 ### Changes
 
 * Relationship ids are now stored as aposDocIds (without the locale and mode part). The appropriate locale and mode are known from the request. This allows easy comparison and copying of these properties across locales and fixes a bug with reverse relationships when publishing documents. A migration has been added to take care of this conversion on first startup.
-- The `attachment` field type now correctly limits file uploads by file type when using the `fileGroup` field option.
-- Uploading SVG files is permitted in the Media Library by default.
+* The `attachment` field type now correctly limits file uploads by file type when using the `fileGroup` field option.
+* Uploading SVG files is permitted in the Media Library by default.
 
 ### Adds
 
-- Apostrophe now enables you to ship frontend JavaScript and Sass (using the SCSS syntax) without your own webpack configuration.
-- Any module may contain modern JavaScript in a `ui/src/index.js` file, which may use `import` to bring in other files in the standard way. Note that **`ui/src/index.js must export a function`**. These functions are called for you in the order modules are initialized.
-- Any module may contain a Sass (SCSS) stylesheet in a `ui/src/index.scss` file, which may also import other Sass (SCSS) files.
-- Any project that requires IE11 support for `ui/src` JavaScript code can enable it by setting the `es5: true` option to the `@apostrophecms/asset` module. Apostrophe produces separate builds for IE11 and modern browsers, so there is no loss of performance in modern browsers. Code is automatically compiled for IE11 using `babel` and missing language features are polyfilled using `core-js` so you can use promises, `async/await` and other standard modern JavaScript features.
-- `ui/public` is still available for raw JavaScript and CSS files that should be pushed *as-is* to the browser. The best use of this feature is to deliver the output of your own custom webpack build, if you have one.
-- Adds browser-side `editMode` flag that tracks the state of the current view (edit or preview), located at `window.apos.adminBar.editMode`.
-- Support for automatic inline style attribute sanitization for Rich Text widgets.
-- Adds text align controls for Rich Text widgets. The following tools are now supported as part of a rich text widget's `toolbar` property:
+* Apostrophe now enables you to ship frontend JavaScript and Sass (using the SCSS syntax) without your own webpack configuration.
+* Any module may contain modern JavaScript in a `ui/src/index.js` file, which may use `import` to bring in other files in the standard way. Note that **`ui/src/index.js must export a function`**. These functions are called for you in the order modules are initialized.
+* Any module may contain a Sass (SCSS) stylesheet in a `ui/src/index.scss` file, which may also import other Sass (SCSS) files.
+* Any project that requires IE11 support for `ui/src` JavaScript code can enable it by setting the `es5: true` option to the `@apostrophecms/asset` module. Apostrophe produces separate builds for IE11 and modern browsers, so there is no loss of performance in modern browsers. Code is automatically compiled for IE11 using `babel` and missing language features are polyfilled using `core-js` so you can use promises, `async/await` and other standard modern JavaScript features.
+* `ui/public` is still available for raw JavaScript and CSS files that should be pushed _as-is_ to the browser. The best use of this feature is to deliver the output of your own custom webpack build, if you have one.
+* Adds browser-side `editMode` flag that tracks the state of the current view (edit or preview), located at `window.apos.adminBar.editMode`.
+* Support for automatic inline style attribute sanitization for Rich Text widgets.
+* Adds text align controls for Rich Text widgets. The following tools are now supported as part of a rich text widget's `toolbar` property:
 -- `alignLeft`
 -- `alignRight`
 -- `alignCenter`
 -- `alignJustify`
-- `@apostrophecms/express` module now supports the `trustProxy: true` option, allowing your reverse proxy server (such as nginx) to pass on the original hostname, protocol and client IP address.
+* `@apostrophecms/express` module now supports the `trustProxy: true` option, allowing your reverse proxy server (such as nginx) to pass on the original hostname, protocol and client IP address.
 
 ### Fixes
 
@@ -2224,6 +2236,7 @@ can include the widget on the clipboard, a special Clipboard widget will appear 
 * Relationship subfields are restored if you deselect a document and then reselect it within a single editing experience, i.e. accidentally deselect and immediately reselect, for instance.
 * A console warning when editing subfields for a new relationship was fixed.
 * Field type `color`'s `format` option moved out of the UI options and into the general options object. Supported formats are "rgb", "prgb", "hex6", "hex3", "hex8", "name", "hsl", "hsv". Pass the `format` string like:
+
 ```js
 myColorField: {
   type: 'color',
@@ -2233,6 +2246,7 @@ myColorField: {
   }
 }
 ```
+
 * Restored Vue dependency to using semantic versioning now that Vue 2.6.14 has been released with a fix for the bug that required us to pin 2.6.12.
 * Nunjucks template loader is fully compatible with Linux in a development environment.
 * Improved template performance by reusing template loaders.
@@ -2247,7 +2261,7 @@ myColorField: {
 ## 3.0.0-beta.3.1 - 2021-06-07
 
 ### Breaks
-- This backwards compatibility break actually occurred in 3.0.0-beta.3 and was not documented at that time, but it is important to know that the following Rich Text tool names have been updated to match Tiptap2's convention:
+* This backwards compatibility break actually occurred in 3.0.0-beta.3 and was not documented at that time, but it is important to know that the following Rich Text tool names have been updated to match Tiptap2's convention:
 -- `bullet_list` -> `bulletList`
 -- `ordered_list` -> `orderedList`
 -- `code_block` -> `codeBlock`
@@ -2255,8 +2269,8 @@ myColorField: {
 
 ### Fixes
 
-- Rich Text default tool names updated, no longer broken. Bug introduced in 3.0.0-beta.3.
-- Fixed Rich Text's tool cascade to properly account for core defaults, project level defaults, and area-specific options.
+* Rich Text default tool names updated, no longer broken. Bug introduced in 3.0.0-beta.3.
+* Fixed Rich Text's tool cascade to properly account for core defaults, project level defaults, and area-specific options.
 
 ## 3.0.0-beta.3 - 2021-06-03
 
@@ -2266,154 +2280,154 @@ The `nlbr` and `nlp` Nunjucks filters marked their output as safe to preserve th
 
 ### Adds
 
-- Added the `ignoreUnusedFolderWarning` option for modules that intentionally might not be activated or inherited from in a particular startup.
-- Better explanation of how to replace macros with fragments, in particular how to call the fragments with `{% render fragmentName(args) %}`.
+* Added the `ignoreUnusedFolderWarning` option for modules that intentionally might not be activated or inherited from in a particular startup.
+* Better explanation of how to replace macros with fragments, in particular how to call the fragments with `{% render fragmentName(args) %}`.
 
 ### Fixes
 
-- Temporarily pinned to Vue 2.6.12 to fix an issue where the "New" button in the piece manager modals disappeared. We think this is a bug in the newly released Vue 2.6.13 but we are continuing to research it.
-- Updated dependencies on `sanitize-html` and `nodemailer` to new major versions, causing no bc breaks at the ApostropheCMS level. This resolved two critical vulnerabilities according to `npm audit`.
-- Removed many unused dependencies.
-- The data retained for "Undo Publish" no longer causes slug conflicts in certain situations.
-- Custom piece types using `localized: false` or `autopublish: true,` as well as singleton types, now display the correct options on the "Save" dropdown.
-- The "Save and View," "Publish and View" and/or "Save Draft and Preview" options now appear only if an appropriate piece page actually exists for the piece type.
-- Duplicating a widget now properly assigns new IDs to all copied sub-widgets, sub-areas and array items as well.
+* Temporarily pinned to Vue 2.6.12 to fix an issue where the "New" button in the piece manager modals disappeared. We think this is a bug in the newly released Vue 2.6.13 but we are continuing to research it.
+* Updated dependencies on `sanitize-html` and `nodemailer` to new major versions, causing no bc breaks at the ApostropheCMS level. This resolved two critical vulnerabilities according to `npm audit`.
+* Removed many unused dependencies.
+* The data retained for "Undo Publish" no longer causes slug conflicts in certain situations.
+* Custom piece types using `localized: false` or `autopublish: true,` as well as singleton types, now display the correct options on the "Save" dropdown.
+* The "Save and View," "Publish and View" and/or "Save Draft and Preview" options now appear only if an appropriate piece page actually exists for the piece type.
+* Duplicating a widget now properly assigns new IDs to all copied sub-widgets, sub-areas and array items as well.
 
-- Added the `ignoreUnusedFolderWarning` option for modules that intentionally might not be activated or inherited from in a particular startup.
-- If you refresh the page while previewing or editing, you will be returned to that same state.
+* Added the `ignoreUnusedFolderWarning` option for modules that intentionally might not be activated or inherited from in a particular startup.
+* If you refresh the page while previewing or editing, you will be returned to that same state.
 
 ### Notices
 
-- Numerous `npm audit` vulnerability warnings relating to `postcss` 7.x were examined, however it was determined that these are based on the idea of a malicious SASS coder attempting to cause a denial of service. Apostrophe developers would in any case be able to contribute JavaScript as well and so are already expected to be trusted parties. This issue must be resolved upstream in packages including both `stylelint` and `vue-loader` which have considerable work to do before supporting `postcss` 8.x, and in any case public access to write SASS is not part of the attack surface of Apostrophe.
+* Numerous `npm audit` vulnerability warnings relating to `postcss` 7.x were examined, however it was determined that these are based on the idea of a malicious SASS coder attempting to cause a denial of service. Apostrophe developers would in any case be able to contribute JavaScript as well and so are already expected to be trusted parties. This issue must be resolved upstream in packages including both `stylelint` and `vue-loader` which have considerable work to do before supporting `postcss` 8.x, and in any case public access to write SASS is not part of the attack surface of Apostrophe.
 
 ### Changes
 
-- When logging out on a page that only exists in draft form, or a page with access controls, you are redirected to the home page rather than seeing a 404 message.
+* When logging out on a page that only exists in draft form, or a page with access controls, you are redirected to the home page rather than seeing a 404 message.
 
-- Rich text editor upgraded to [tiptap 2.x beta](https://www.tiptap.dev) :tada:. On the surface not a lot has changed with the upgrade, but tiptap 2 has big improvements in terms of speed, composability, and extension support. [See the technical differences of tiptap 1 and 2 here](https://www.tiptap.dev/overview/upgrade-guide#reasons-to-upgrade-to-tiptap-2x)
+* Rich text editor upgraded to [tiptap 2.x beta](https://www.tiptap.dev) :tada:. On the surface not a lot has changed with the upgrade, but tiptap 2 has big improvements in terms of speed, composability, and extension support. [See the technical differences of tiptap 1 and 2 here](https://www.tiptap.dev/overview/upgrade-guide#reasons-to-upgrade-to-tiptap-2x)
 
 ## 3.0.0-beta.2 - 2021-05-21
 
 ### **Breaks**
 
-- The `updateModified: false` option, formerly supported only by `apos.doc.update`, has been renamed to `setModified: false` and is now supported by `apos.doc.insert` as well. If explicitly set to false, the insert and update methods will leave the `modified` property alone, rather than trying to detect or infer whether a change has been made to the draft relative to the published version.
-- The `permission` module no longer takes an `interestingTypes` option. Instead, doc type managers may set their `showPermissions` option to `true` to always be broken out separately in the permissions explorer, or explicitly set it to `false` to never be mentioned at all, even on a list of typical piece types that have the same permissions. This allows module creators to ship the right options with their modules rather than requiring the developer to hand-configure `interestingTypes`.
-- When editing users, the permissions explorer no longer lists "submitted draft" as a piece type.
-- Removed `apos.adminBar.group` method, which is unlikely to be needed in 3.x. One can group admin bar items into dropdowns via the `groups` option.
-- Raw HTML is no longer permitted in an `apos.notify` message parameter. Instead, `options.buttons` is available. If present, it must be an array of objects with `type` and `label` properties. If `type` is `'event'` then that button object must have `name` and `data` properties, and when clicked the button will trigger an apos bus event of the given `name` with the provided `data` object. Currently `'event'` is the only supported value for `type`.
+* The `updateModified: false` option, formerly supported only by `apos.doc.update`, has been renamed to `setModified: false` and is now supported by `apos.doc.insert` as well. If explicitly set to false, the insert and update methods will leave the `modified` property alone, rather than trying to detect or infer whether a change has been made to the draft relative to the published version.
+* The `permission` module no longer takes an `interestingTypes` option. Instead, doc type managers may set their `showPermissions` option to `true` to always be broken out separately in the permissions explorer, or explicitly set it to `false` to never be mentioned at all, even on a list of typical piece types that have the same permissions. This allows module creators to ship the right options with their modules rather than requiring the developer to hand-configure `interestingTypes`.
+* When editing users, the permissions explorer no longer lists "submitted draft" as a piece type.
+* Removed `apos.adminBar.group` method, which is unlikely to be needed in 3.x. One can group admin bar items into dropdowns via the `groups` option.
+* Raw HTML is no longer permitted in an `apos.notify` message parameter. Instead, `options.buttons` is available. If present, it must be an array of objects with `type` and `label` properties. If `type` is `'event'` then that button object must have `name` and `data` properties, and when clicked the button will trigger an apos bus event of the given `name` with the provided `data` object. Currently `'event'` is the only supported value for `type`.
 
 ### Adds
 
-- The name `@apostrophecms/any-page-type` is now accepted for relationships that should match any page. With this change, the doc type manager module name and the type name are now identical for all types in 3.x. However, for backwards compatibility `@apostrophecms/page` is still accepted. `apos.doc.getManager` will accept either name.
-- Sets the project root-level `views` directory as the default fallback views directory. This is no longer a necessary configuration in projects unless they want to change it on the `@apostrophecms/template` option `viewsFolderFallback`.
-- The new `afterAposScripts` nunjucks block allows for pushing markup after Apostrophe's asset bundle script tag, at the end of the body. This is a useful way to add a script tag for Webpack's hot reload capabilities in development while still ensuring that Apostrophe's utility methods are available first, like they are in production.
-- An `uploadfs` option may be passed to the `@apostrophecms/asset` module, in order to pass options configuring a separate instance of `uploadfs` specifically for the static assets. The `@apostrophecms/uploadfs` module now exports a method to instantiate an uploadfs instance. The default behavior, in which user-uploaded attachments and static assets share a single instance of uploadfs, is unchanged. Note that asset builds never use uploadfs unless `APOS_UPLOADFS_ASSETS=1` is set in the environment.
-- `AposButtonSplit` is a new UI component that combines a button with a context menu. Users can act on a primary action or change the button's function via menu button to the right of the button itself.
-- Developers can now pass options to the `color` schema field by passing a `pickerOptions` object through your field. This allows for modifying/removing the default color palette, changing the resulting color format, and disabling various UI. For full set of options [see this example](https://github.com/xiaokaike/vue-color/blob/master/src/components/Sketch.vue)
-- `AposModal` now emits a `ready` event when it is fully painted and can be interacted with by users or code.
-- The video widget is now compatible with vimeo private videos when the domain is on the allowlist in vimeo.
+* The name `@apostrophecms/any-page-type` is now accepted for relationships that should match any page. With this change, the doc type manager module name and the type name are now identical for all types in 3.x. However, for backwards compatibility `@apostrophecms/page` is still accepted. `apos.doc.getManager` will accept either name.
+* Sets the project root-level `views` directory as the default fallback views directory. This is no longer a necessary configuration in projects unless they want to change it on the `@apostrophecms/template` option `viewsFolderFallback`.
+* The new `afterAposScripts` nunjucks block allows for pushing markup after Apostrophe's asset bundle script tag, at the end of the body. This is a useful way to add a script tag for Webpack's hot reload capabilities in development while still ensuring that Apostrophe's utility methods are available first, like they are in production.
+* An `uploadfs` option may be passed to the `@apostrophecms/asset` module, in order to pass options configuring a separate instance of `uploadfs` specifically for the static assets. The `@apostrophecms/uploadfs` module now exports a method to instantiate an uploadfs instance. The default behavior, in which user-uploaded attachments and static assets share a single instance of uploadfs, is unchanged. Note that asset builds never use uploadfs unless `APOS_UPLOADFS_ASSETS=1` is set in the environment.
+* `AposButtonSplit` is a new UI component that combines a button with a context menu. Users can act on a primary action or change the button's function via menu button to the right of the button itself.
+* Developers can now pass options to the `color` schema field by passing a `pickerOptions` object through your field. This allows for modifying/removing the default color palette, changing the resulting color format, and disabling various UI. For full set of options [see this example](https://github.com/xiaokaike/vue-color/blob/master/src/components/Sketch.vue)
+* `AposModal` now emits a `ready` event when it is fully painted and can be interacted with by users or code.
+* The video widget is now compatible with vimeo private videos when the domain is on the allowlist in vimeo.
 
 ### Changes
 
-- You can now override the parked page definition for the home page without copying the entirety of `minimumPark` from the source code. Specifically, you will not lose the root archive page if you park the home page without explicitly parking the archive page as well. This makes it easier to choose your own type for the home page, in lieu of `@apostrophecms/home-page`.
+* You can now override the parked page definition for the home page without copying the entirety of `minimumPark` from the source code. Specifically, you will not lose the root archive page if you park the home page without explicitly parking the archive page as well. This makes it easier to choose your own type for the home page, in lieu of `@apostrophecms/home-page`.
 
 ### Fixes
 
-- Piece types like users that have a slug prefix no longer trigger a false positive as being "modified" when you first click the "New" button.
-- The `name` option to widget modules, which never worked in 3.x, has been officially removed. The name of the widget type is always the name of the module, with the `-widget` suffix removed.
-- The home page and other parked pages should not immediately show as "pending changes."
-- In-context editing works properly when the current browser URL has a hash (portion beginning with `#`), enabling the use of the hash for project-specific work. Thanks to [https://stepanjakl.com/](Štěpán Jákl) for reporting the issue.
-- When present, the `apos.http.addQueryToUrl` method preserves the hash of the URL intact.
-- The home page and other parked pages should not immediately show as "pending changes."
-- The browser-side `apos.http.parseQuery` function now handles objects and arrays properly again.
-- The in-context menu for documents has been refactored as a smart component that carries out actions on its own, eliminating a great deal of redundant code, props and events.
-- Added additional retries when binding to the port in a dev environment.
-- The "Submit" button in the admin bar updates properly to "Submitted" if the submission happens in the page settings modal.
-- Skipping positional arguments in fragments now works as expected.
-- The rich text editor now supports specifying a `styles` array with no `p` tags properly. A newly added rich text widget initially contains an element with the first style, rather than always a paragraph. If no styles are configured, a `p` tag is assumed. Thanks to Stepan Jakl for reporting the issue.
+* Piece types like users that have a slug prefix no longer trigger a false positive as being "modified" when you first click the "New" button.
+* The `name` option to widget modules, which never worked in 3.x, has been officially removed. The name of the widget type is always the name of the module, with the `-widget` suffix removed.
+* The home page and other parked pages should not immediately show as "pending changes."
+* In-context editing works properly when the current browser URL has a hash (portion beginning with `#`), enabling the use of the hash for project-specific work. Thanks to [https://stepanjakl.com/](Štěpán Jákl) for reporting the issue.
+* When present, the `apos.http.addQueryToUrl` method preserves the hash of the URL intact.
+* The home page and other parked pages should not immediately show as "pending changes."
+* The browser-side `apos.http.parseQuery` function now handles objects and arrays properly again.
+* The in-context menu for documents has been refactored as a smart component that carries out actions on its own, eliminating a great deal of redundant code, props and events.
+* Added additional retries when binding to the port in a dev environment.
+* The "Submit" button in the admin bar updates properly to "Submitted" if the submission happens in the page settings modal.
+* Skipping positional arguments in fragments now works as expected.
+* The rich text editor now supports specifying a `styles` array with no `p` tags properly. A newly added rich text widget initially contains an element with the first style, rather than always a paragraph. If no styles are configured, a `p` tag is assumed. Thanks to Stepan Jakl for reporting the issue.
 
 ### Changes
-- Editor modal's Save button (publish / save draft / submit) now updated to use the `AposSplitButton` component. Editors can choose from several follow-up actions that occur after save, including creating another piece of content of the same type, being taken to the in-context version of the document, or being returned to the manager. Editor's selection is saved in localstorage, creating a remembered preference per content type.
+* Editor modal's Save button (publish / save draft / submit) now updated to use the `AposSplitButton` component. Editors can choose from several follow-up actions that occur after save, including creating another piece of content of the same type, being taken to the in-context version of the document, or being returned to the manager. Editor's selection is saved in localstorage, creating a remembered preference per content type.
 
 ## 3.0.0-beta.1.1 - 2021-05-07
 
 ### Fixes
 
-- A hotfix for an issue spotted in beta 1 in our demo: all previously published pages of sites migrated from early alpha releases had a "Draft" label until published again.
+* A hotfix for an issue spotted in beta 1 in our demo: all previously published pages of sites migrated from early alpha releases had a "Draft" label until published again.
 
 ## 3.0.0-beta.1 - 2021-05-06
 
 ### **Breaks**
 
-- Removes the `firstName` and `lastName` fields in user pieces.
-- The query parameters `apos-refresh`, `apos-edit`, `apos-mode` and `apos-locale` are now `aposRefresh`, `aposEdit`, `aposMode`and `aposLocale`. Going forward all query parameters will be camelCase for consistency with query builders.
+* Removes the `firstName` and `lastName` fields in user pieces.
+* The query parameters `apos-refresh`, `apos-edit`, `apos-mode` and `apos-locale` are now `aposRefresh`, `aposEdit`, `aposMode`and `aposLocale`. Going forward all query parameters will be camelCase for consistency with query builders.
 
 ### Changes
 
-- Archiving a page or piece deletes any outstanding draft in favor of archiving the last published version. Previously the behavior was effectively the opposite.
-- "Publish Changes" button label has been changes to "Update".
-- Draft mode is no longer the default view for published documents.
-- The page and piece manager views now display the title, etc. of the published version of a document, unless that document only exists in draft form. However a label is also provided indicating if a newer draft is in progress.
-- Notifications have been updated with a new visual display and animation style.
+* Archiving a page or piece deletes any outstanding draft in favor of archiving the last published version. Previously the behavior was effectively the opposite.
+* "Publish Changes" button label has been changes to "Update".
+* Draft mode is no longer the default view for published documents.
+* The page and piece manager views now display the title, etc. of the published version of a document, unless that document only exists in draft form. However a label is also provided indicating if a newer draft is in progress.
+* Notifications have been updated with a new visual display and animation style.
 
 ### **Adds**
 
-- Four permissions roles are supported and enforced: guest, contributor, editor and admin. See the documentation for details. Pre-existing alpha users are automatically migrated to the admin role.
-- Documents in managers now have context sensitive action menus that allow actions like edit, discard draft, archive, restore, etc.
-- A fragment call may now have a body using `rendercall`, just like a macro call can have a body using `call`. In addition, fragments can now have named arguments, just like macros. Many thanks to Miro Yovchev for contributing this implementation.
-- Major performance improvement to the `nestedModuleSubdirs` option.
-- Updates URL fields and oEmbed URL requests to use the `httpsFix` option in launder's `url()` method.
-- Documents receive a state label based on their document state (draft, pending, pending updates)
-- Contributors can submit drafts for review ("Submit" versus "Submit Updates").
-- Editors and admins can manage submitted drafts.
-- Editors and admins can easily see the number of proposed changes awaiting their attention.
-- Support for virtual piece types, such as submitted drafts, which in actuality manage more than one type of doc.
-- Confirm modals now support a schema which can be assessed after confirmation.
-- When archiving and restoring pages, editors can chose whether the action affects only this document or this document + children
-- Routes support the `before` syntax, allowing routes that are added to Express prior to the routes or middleware of another module. The syntax `before: 'middleware:moduleName'` must be used to add the route prior to the middleware of `moduleName`. If `middleware:` is not used, the route is added before the routes of `moduleName`. Note that normally all middleware is added before all routes.
-- A `url` property can now optionally be specified when adding middleware. By default all middleware is global.
-- The pieces REST GET API now supports returning only a count of all matching pieces, using the `?count=1` query parameter.
-- Admin bar menu items can now specify a custom Vue component to be used in place of `AposButton`.
-- Sets `username` fields to follow the user `title` field to remove an extra step in user creation.
-- Adds default data to the `outerLayoutBase.html` `<title>` tag: `data.piece.title or data.page.title`.
-- Moves the core UI build task into the start up process. The UI build runs automatically when `NODE_ENV` is *not* 'production' and when:
+* Four permissions roles are supported and enforced: guest, contributor, editor and admin. See the documentation for details. Pre-existing alpha users are automatically migrated to the admin role.
+* Documents in managers now have context sensitive action menus that allow actions like edit, discard draft, archive, restore, etc.
+* A fragment call may now have a body using `rendercall`, just like a macro call can have a body using `call`. In addition, fragments can now have named arguments, just like macros. Many thanks to Miro Yovchev for contributing this implementation.
+* Major performance improvement to the `nestedModuleSubdirs` option.
+* Updates URL fields and oEmbed URL requests to use the `httpsFix` option in launder's `url()` method.
+* Documents receive a state label based on their document state (draft, pending, pending updates)
+* Contributors can submit drafts for review ("Submit" versus "Submit Updates").
+* Editors and admins can manage submitted drafts.
+* Editors and admins can easily see the number of proposed changes awaiting their attention.
+* Support for virtual piece types, such as submitted drafts, which in actuality manage more than one type of doc.
+* Confirm modals now support a schema which can be assessed after confirmation.
+* When archiving and restoring pages, editors can chose whether the action affects only this document or this document + children
+* Routes support the `before` syntax, allowing routes that are added to Express prior to the routes or middleware of another module. The syntax `before: 'middleware:moduleName'` must be used to add the route prior to the middleware of `moduleName`. If `middleware:` is not used, the route is added before the routes of `moduleName`. Note that normally all middleware is added before all routes.
+* A `url` property can now optionally be specified when adding middleware. By default all middleware is global.
+* The pieces REST GET API now supports returning only a count of all matching pieces, using the `?count=1` query parameter.
+* Admin bar menu items can now specify a custom Vue component to be used in place of `AposButton`.
+* Sets `username` fields to follow the user `title` field to remove an extra step in user creation.
+* Adds default data to the `outerLayoutBase.html` `<title>` tag: `data.piece.title or data.page.title`.
+* Moves the core UI build task into the start up process. The UI build runs automatically when `NODE_ENV` is _not_ 'production' and when:
     1. The build folder does not yet exist.
     2. The package.json file is newer than the existing UI build.
     3. You explicitly tell it to by setting the environment variable `CORE_DEV=1`
-- The new `._ids(_idOrArrayOfIds)` query builder replaces `explicitOrder` and accepts an array of document `_id`s or a single one. `_id` can be used as a multivalued query parameter. Documents are returned in the order you specify, and just like with single-document REST GET requests, the locale of the `_id`s is overridden by the `aposMode` query parameter if present.
-- The `.withPublished(true)` query builder adds a `_publishedDoc` property to each returned draft document that has a published equivalent. `withPublished=1` can be used as a query parameter. Note this is not the way to fetch only published documents. For that, use `.locale('en:published')` or similar.
-- The server-side implementation of `apos.http.post` now supports passing a `FormData` object created with the `[form-data](https://www.npmjs.com/package/form-data)` npm module. This keeps the API parallel with the browser-side implementation and allows for unit testing the attachments feature, as well as uploading files to internal and external APIs from the server.
-- `manuallyPublished` computed property moved to the `AposPublishMixin` for the use cases where that mixin is otherwise warranted.
-- `columns` specified for a piece type's manage view can have a name that uses "dot notation" to access a subproperty. Also, for types that are localized, the column name can begin with `draft:` or `published:` to specifically display a property of the draft or published version of the document rather than the best available. When a prefix is not used, the property comes from the published version of the document if available, otherwise from the draft.
-- For page queries, the `children` query builder is now supported in query strings, including the `depth` subproperty. For instance you could fetch `/api/v1/@apostrophecms/page/id-of-page?children=1` or `/api/v1/@apostrophecms/page/id-of-page?children[depth]=3`.
-- Setting `APOS_LOG_ALL_QUERIES=1` now logs the projection, skip, limit and sort in addition to the criteria, which were previously logged.
+* The new `._ids(_idOrArrayOfIds)` query builder replaces `explicitOrder` and accepts an array of document `_id`s or a single one. `_id` can be used as a multivalued query parameter. Documents are returned in the order you specify, and just like with single-document REST GET requests, the locale of the `_id`s is overridden by the `aposMode` query parameter if present.
+* The `.withPublished(true)` query builder adds a `_publishedDoc` property to each returned draft document that has a published equivalent. `withPublished=1` can be used as a query parameter. Note this is not the way to fetch only published documents. For that, use `.locale('en:published')` or similar.
+* The server-side implementation of `apos.http.post` now supports passing a `FormData` object created with the `[form-data](https://www.npmjs.com/package/form-data)` npm module. This keeps the API parallel with the browser-side implementation and allows for unit testing the attachments feature, as well as uploading files to internal and external APIs from the server.
+* `manuallyPublished` computed property moved to the `AposPublishMixin` for the use cases where that mixin is otherwise warranted.
+* `columns` specified for a piece type's manage view can have a name that uses "dot notation" to access a subproperty. Also, for types that are localized, the column name can begin with `draft:` or `published:` to specifically display a property of the draft or published version of the document rather than the best available. When a prefix is not used, the property comes from the published version of the document if available, otherwise from the draft.
+* For page queries, the `children` query builder is now supported in query strings, including the `depth` subproperty. For instance you could fetch `/api/v1/@apostrophecms/page/id-of-page?children=1` or `/api/v1/@apostrophecms/page/id-of-page?children[depth]=3`.
+* Setting `APOS_LOG_ALL_QUERIES=1` now logs the projection, skip, limit and sort in addition to the criteria, which were previously logged.
 
 ### **Fixes**
 
-- Fragments can now call other fragments, both those declared in the same file and those imported, just like macros calling other macros. Thanks to Miro Yovchev for reporting the issue.
-- There was a bug that allowed parked properties, such as the slug of the home page, to be edited. Note that if you don't want a property of a parked page to be locked down forever you can use the `_defaults` feature of parked pages.
-- A required field error no longer appears immediately when you first start creating a user.
-- Vue warning in the pieces manager due to use of value rather than name of column as a Vue key. Thanks to Miro Yovchev for spotting the issue.
-- "Save Draft" is not an appropriate operation to offer when editing users.
-- Pager links no longer break due to `aposRefresh=1` when in edit mode. Also removed superfluous `append` query parameter from these.
-- You may now intentionally clear the username and slug fields in preparation to type a new value. They do not instantly repopulate based on the title field when you clear them.
-- Language of buttons, labels, filters, and other UI updated and normalized throughout.
-- A contributor who enters the page tree dialog box, opens the editor, and selects "delete draft" from within the editor of an individual page now sees the page tree reflect that change right away.
-- The page manager listens for content change events in general and its refresh mechanism is robust in possible situations where both an explicit refresh call and a content change event occur.
-- Automatically retries once if unable to bind to the port in a dev environment. This helps with occasional `EADDRINUSE` errors during nodemon restarts.
-- Update the current page's context bar properly when appropriate after actions such as "Discard Draft."
-- The main archive page cannot be restored, etc. via the context menu in the page tree.
-- The context menu and "Preview Draft" are both disabled while errors are present in the editor dialog box.
-- "Duplicate" should lead to a "Publish" button, not an "Update" button, "Submit" rather than "Submit Update," etc.
-- When you "Duplicate" the home page you should be able to set a slug for the new page (parked properties of parked pages should be editable when making a duplicate).
-- When duplicating the home page, the suggested slug should not be `/` as only one page can have that slug at a time.
-- Attention is properly called to a slug conflict if it exists immediately when the document is opened (such as making a copy where the suggested slug has already been used for another copy).
-- "Preview Draft" never appears for types that do not use drafts.
-- The toggle state of admin bar utility items should only be mapped to an `is-active` class if, like palette, they opt in with `toggle: true`
-- Fixed unique key errors in the migrate task by moving the parking of parked pages to a new `@apostrophecms/migrate:after` event handler, which runs only after migrations, whether that is at startup (in dev) or at the end of the migration task (in production).
-- UI does not offer "Archive" for the home page, or other archived pages.
-- Notification checks and other polling requests now occur only when the tab is in the foreground, resolving a number of problems that masqueraded as other bugs when the browser hit its connection limit for multiple tabs on the same site.
-- Parked pages are now parked immediately after database migrations are checked and/or run. In dev this still happens at each startup. In production this happens when the database is brand new and when the migration task is manually run.
+* Fragments can now call other fragments, both those declared in the same file and those imported, just like macros calling other macros. Thanks to Miro Yovchev for reporting the issue.
+* There was a bug that allowed parked properties, such as the slug of the home page, to be edited. Note that if you don't want a property of a parked page to be locked down forever you can use the `_defaults` feature of parked pages.
+* A required field error no longer appears immediately when you first start creating a user.
+* Vue warning in the pieces manager due to use of value rather than name of column as a Vue key. Thanks to Miro Yovchev for spotting the issue.
+* "Save Draft" is not an appropriate operation to offer when editing users.
+* Pager links no longer break due to `aposRefresh=1` when in edit mode. Also removed superfluous `append` query parameter from these.
+* You may now intentionally clear the username and slug fields in preparation to type a new value. They do not instantly repopulate based on the title field when you clear them.
+* Language of buttons, labels, filters, and other UI updated and normalized throughout.
+* A contributor who enters the page tree dialog box, opens the editor, and selects "delete draft" from within the editor of an individual page now sees the page tree reflect that change right away.
+* The page manager listens for content change events in general and its refresh mechanism is robust in possible situations where both an explicit refresh call and a content change event occur.
+* Automatically retries once if unable to bind to the port in a dev environment. This helps with occasional `EADDRINUSE` errors during nodemon restarts.
+* Update the current page's context bar properly when appropriate after actions such as "Discard Draft."
+* The main archive page cannot be restored, etc. via the context menu in the page tree.
+* The context menu and "Preview Draft" are both disabled while errors are present in the editor dialog box.
+* "Duplicate" should lead to a "Publish" button, not an "Update" button, "Submit" rather than "Submit Update," etc.
+* When you "Duplicate" the home page you should be able to set a slug for the new page (parked properties of parked pages should be editable when making a duplicate).
+* When duplicating the home page, the suggested slug should not be `/` as only one page can have that slug at a time.
+* Attention is properly called to a slug conflict if it exists immediately when the document is opened (such as making a copy where the suggested slug has already been used for another copy).
+* "Preview Draft" never appears for types that do not use drafts.
+* The toggle state of admin bar utility items should only be mapped to an `is-active` class if, like palette, they opt in with `toggle: true`
+* Fixed unique key errors in the migrate task by moving the parking of parked pages to a new `@apostrophecms/migrate:after` event handler, which runs only after migrations, whether that is at startup (in dev) or at the end of the migration task (in production).
+* UI does not offer "Archive" for the home page, or other archived pages.
+* Notification checks and other polling requests now occur only when the tab is in the foreground, resolving a number of problems that masqueraded as other bugs when the browser hit its connection limit for multiple tabs on the same site.
+* Parked pages are now parked immediately after database migrations are checked and/or run. In dev this still happens at each startup. In production this happens when the database is brand new and when the migration task is manually run.
 
 ## 3.0.0-alpha.7 - 2021-04-07
 
@@ -2458,6 +2472,7 @@ The `nlbr` and `nlp` Nunjucks filters marked their output as safe to preserve th
 ## 3.0.0-alpha.6 - 2021-03-24
 
 ### Adds
+
 * You can "copy" a page or a piece via the ⠇ menu.
 * When moving the current page or piece to the trash, you are taken to the home page.
 * `permissions: false` is supported for piece and page insert operations.
@@ -2468,6 +2483,7 @@ The `nlbr` and `nlp` Nunjucks filters marked their output as safe to preserve th
 * Additional improvements.
 
 ### Fixes
+
 * Fixes error from missing `select` method in `AposPiecesManager` component.
 * No more migration messages at startup for brand-new sites.
 * `max` is now properly implemented for relationships when using the manager dialog box as a chooser.
@@ -2498,6 +2514,7 @@ The `nlbr` and `nlp` Nunjucks filters marked their output as safe to preserve th
 * Many bug fixes.
 
 ### Breaks
+
 * Changes the `piecesModuleName` option to `pieceModuleName` (no "s") in the `@apostrophecms/piece-page-type` module. This feature is used only when you have two or more piece page types for the same piece type.
 
 ## 3.0.0-alpha.4.2 - 2021-01-27

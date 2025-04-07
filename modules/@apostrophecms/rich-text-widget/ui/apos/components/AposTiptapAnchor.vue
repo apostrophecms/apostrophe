@@ -72,6 +72,7 @@ export default {
       required: true
     }
   },
+  emits: [ 'close' ],
   data () {
     return {
       generation: 1,
@@ -144,11 +145,11 @@ export default {
     removeAnchor() {
       this.docFields.data = {};
       this.editor.commands.unsetAnchor();
+      this.editor.chain().focus().blur().run();
       this.close();
     },
     close() {
       this.$refs.contextMenu.hide();
-      this.editor.chain().focus();
     },
     async save() {
       this.triggerValidation = true;
@@ -160,6 +161,7 @@ export default {
       this.editor.commands.setAnchor({
         id: this.docFields.data.anchor
       });
+      this.editor.chain().focus().blur().run();
       this.close();
     },
     keyboardHandler(e) {
@@ -195,6 +197,7 @@ export default {
     },
     closePopover() {
       window.removeEventListener('keydown', this.keyboardHandler);
+      this.$emit('close');
     }
   }
 };
