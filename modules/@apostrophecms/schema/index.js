@@ -684,10 +684,6 @@ module.exports = {
           nonVisibleFields
         });
 
-        for (const error of validErrors) {
-          self.apos.util.error(error.stack);
-        }
-
         if (validErrors.length) {
           throw validErrors;
         }

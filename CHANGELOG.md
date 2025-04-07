@@ -13,6 +13,7 @@
 * Change user's email field type to `email`.
 * Improve media manager experience after uploading images. No additional server requests are made, no broken UI on error.
 * Change reset password form button label to `Reset Password`.
+* Removed overly verbose logging of schema errors in the schema module itself. These are already logged appropriately if they become the actual result of an API call. With this change it becomes possible to catch and discard or mitigate these in some situations without excessive log output.
 
 ### Fixes
 

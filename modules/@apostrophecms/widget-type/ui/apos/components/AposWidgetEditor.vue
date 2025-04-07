@@ -311,9 +311,12 @@ export default {
           this.previewWidgetId = this.id;
         }
       }
-      return this.getWidgetObject({
-        _id: this.previewWidgetId
-      });
+      return {
+        ...this.getWidgetObject({
+          _id: this.previewWidgetId
+        }),
+        aposLivePreview: true
+      };
     },
     getPreviewWidgetIndex() {
       return this.preview.area.next.findIndex(item => {

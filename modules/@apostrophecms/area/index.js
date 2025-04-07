@@ -37,7 +37,7 @@ module.exports = {
           const type = self.apos.launder.string(req.body.type);
           const _docId = self.apos.launder.id(req.body._docId);
           const field = self.apos.schema.getFieldById(areaFieldId);
-
+          const livePreview = self.apos.launder.boolean(req.body.livePreview);
           if (!field) {
             throw self.apos.error('invalid');
           }
@@ -51,7 +51,14 @@ module.exports = {
             self.warnMissingWidgetType(type);
             throw self.apos.error('invalid');
           }
-          widget = await sanitize(widget);
+          try {
+            widget = await sanitize(widget);
+          } catch (e) {
+            if (livePreview) {
+              return 'aposLivePreviewSchemaNotYetValid';
+            }
+            throw e;
+          }
           widget._edit = true;
           widget._docId = _docId;
           // So that carrying out relationship loading again can yield results
