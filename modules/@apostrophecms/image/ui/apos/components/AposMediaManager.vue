@@ -197,12 +197,12 @@ export default {
       if (this.relationshipField) {
         result = {
           key: 'apostrophe:chooseDocType',
-          type: this.$t(this.moduleLabels.pluralLabel)
+          type: this.$t(this.moduleLabels.plural)
         };
       } else {
         result = {
           key: 'apostrophe:manageDocType',
-          type: this.$t(this.moduleLabels.pluralLabel)
+          type: this.$t(this.moduleLabels.plural)
         };
       }
       return result;
@@ -225,8 +225,8 @@ export default {
         return null;
       }
       return {
-        label: this.moduleOptions.label,
-        pluralLabel: this.moduleOptions.pluralLabel
+        singular: this.moduleOptions.label,
+        plural: this.moduleOptions.pluralLabel
       };
     },
     accept() {
@@ -244,12 +244,12 @@ export default {
       if (this.relationshipField && (this.relationshipField.max === 1)) {
         return {
           key: 'apostrophe:selectOneLabel',
-          typeLabel: this.$t(this.moduleLabels.label)
+          typeLabel: this.$t(this.moduleLabels.singular)
         };
       } else {
         return {
           key: 'apostrophe:selectManyLabel',
-          typeLabel: this.$t(this.moduleLabels.pluralLabel)
+          typeLabel: this.$t(this.moduleLabels.plural)
         };
       }
     },

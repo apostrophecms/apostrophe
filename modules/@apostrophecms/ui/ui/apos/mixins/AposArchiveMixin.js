@@ -34,6 +34,7 @@ export default {
 
         const sentences = [];
 
+        console.log('plainType', plainType);
         sentences.push(this.$t('apostrophe:confirmArchive', {
           type: plainType,
           title: doc.title
