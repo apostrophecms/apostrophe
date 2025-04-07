@@ -46,6 +46,7 @@ export default {
       }
     }
   },
+  emits: [ 'close' ],
   data() {
     return {
       current: ''
@@ -124,26 +125,26 @@ export default {
   methods: {
     takeAction() {
       const action = this.current;
-      this.editor.commands.focus();
       if (action === 'insertTable') {
         // Reach into prosemirror for current selection,
         // then turn it into a cursor position only so we don't
         // delete the existing selection which would mean
         // you can only create a table by deleting some work
-        this.editor.commands.setTextSelection(this.editor.view.state.selection.$anchor.pos);
+        this.editor.commands.setTextSelection(
+          this.editor.view.state.selection.$anchor.pos
+        );
       }
       this.editor.commands[action]();
-      // We are using the select as a menu of one-time actions, it's not really a persisted value
+      // We are using the select as a menu of one-time actions,
+      // it's not really a persisted value
       this.current = '';
+      this.$emit('close');
     }
   }
 };
 </script>
 
 <style lang="scss" scoped>
-  // "If another select el is needed for the rich-text toolbar these styles should be made global."
-  // ... And here we are, but first let's see if we decide to rebuild this UI without the menu. -Tom
-
   .apos-tiptap-control--select {
     @include apos-button-reset();
     @include type-small;
