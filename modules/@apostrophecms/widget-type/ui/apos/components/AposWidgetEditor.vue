@@ -114,7 +114,8 @@ export default {
     },
     preview: {
       required: false,
-      type: Object
+      type: Object,
+      default: null
       // if present, has "area", "index" and "create" properties
     }
   },
