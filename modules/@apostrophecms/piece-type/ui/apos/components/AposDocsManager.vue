@@ -195,12 +195,12 @@ export default {
       if (this.relationshipField && (this.relationshipField.max === 1)) {
         return {
           key: 'apostrophe:selectOneLabel',
-          typeLabel: this.$t(this.moduleLabels.label)
+          typeLabel: this.$t(this.moduleLabels.singular)
         };
       } else {
         return {
           key: 'apostrophe:selectManyLabel',
-          typeLabel: this.$t(this.moduleLabels.pluralLabel)
+          typeLabel: this.$t(this.moduleLabels.plural)
         };
       }
     },

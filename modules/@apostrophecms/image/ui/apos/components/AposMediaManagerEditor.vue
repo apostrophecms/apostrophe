@@ -149,12 +149,7 @@ export default {
     },
     moduleLabels: {
       type: Object,
-      default() {
-        return {
-          label: 'Image',
-          pluralLabel: 'Images'
-        };
-      }
+      required: true
     }
   },
   emits: [ 'back', 'modified' ],
@@ -353,7 +348,7 @@ export default {
             : this.$t('apostrophe:mediaManagerErrorSaving');
 
           await this.handleSaveError(e, {
-            fallback: `${errorMessage} ${this.moduleLabels.label}`
+            fallback: `${errorMessage} ${this.moduleLabels.singular}`
           });
         }
       } finally {
