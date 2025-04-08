@@ -37,7 +37,7 @@ module.exports = {
           const type = self.apos.launder.string(req.body.type);
           const _docId = self.apos.launder.id(req.body._docId);
           const field = self.apos.schema.getFieldById(areaFieldId);
-
+          const livePreview = self.apos.launder.boolean(req.body.livePreview);
           if (!field) {
             throw self.apos.error('invalid');
           }
@@ -51,7 +51,14 @@ module.exports = {
             self.warnMissingWidgetType(type);
             throw self.apos.error('invalid');
           }
-          widget = await sanitize(widget);
+          try {
+            widget = await sanitize(widget);
+          } catch (e) {
+            if (livePreview) {
+              return 'aposLivePreviewSchemaNotYetValid';
+            }
+            throw e;
+          }
           widget._edit = true;
           widget._docId = _docId;
           // So that carrying out relationship loading again can yield results
@@ -634,6 +641,7 @@ module.exports = {
         const widgetEditors = {};
         const widgetManagers = {};
         const widgetIsContextual = {};
+        const widgetPreview = {};
         const widgetHasPlaceholder = {};
         const widgetHasInitialModal = {};
         const contextualWidgetDefaultData = {};
@@ -645,6 +653,7 @@ module.exports = {
           widgetEditors[name] = (browserData && browserData.components && browserData.components.widgetEditor) || 'AposWidgetEditor';
           widgetManagers[name] = manager.__meta.name;
           widgetIsContextual[name] = manager.options.contextual;
+          widgetPreview[name] = manager.options.preview;
           widgetHasPlaceholder[name] = manager.options.placeholder;
           widgetHasInitialModal[name] = !manager.options.placeholder && manager.options.initialModal !== false;
           contextualWidgetDefaultData[name] = manager.options.defaultData || {};
@@ -659,6 +668,7 @@ module.exports = {
           widgetIsContextual,
           widgetHasPlaceholder,
           widgetHasInitialModal,
+          widgetPreview,
           contextualWidgetDefaultData,
           widgetManagers,
           action: self.action

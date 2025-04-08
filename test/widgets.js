@@ -277,7 +277,6 @@ describe('Widgets', function() {
         placeholderUrlOverride: '/modules/@apostrophecms/my-image-widget/placeholder.webp',
         assertAposPlaceholderTrue(document) {
           const imgNodes = document.querySelectorAll('img');
-
           assert(imgNodes.length === 1);
           assert(imgNodes[0].classList.contains('image-widget-placeholder'));
           assert(imgNodes[0].alt === 'Image placeholder');
@@ -366,7 +365,6 @@ describe('Widgets', function() {
         before(async function() {
           await insertPage(apos, homePath, widgets);
           page = await apos.page.find(req, { slug: '/placeholder-page' }).toObject();
-
           const args = getRenderArgs(req, page);
           result = await apos.modules['placeholder-page'].render(req, 'page', args);
         });
@@ -490,4 +488,5 @@ describe('Widgets', function() {
       });
     });
   });
+
 });

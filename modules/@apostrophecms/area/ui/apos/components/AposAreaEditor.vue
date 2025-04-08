@@ -197,6 +197,10 @@ export default {
     }
   },
   watch: {
+    // Note: please don't make this a deep watcher as that could cause
+    // issues with live widget preview and also performance, the top level
+    // array will change in situations where a patch API call is actually
+    // needed at this level
     next() {
       if (!this.docId) {
         // For the benefit of AposInputArea which is the
@@ -304,8 +308,8 @@ export default {
         ...this.next.slice(i + 2)
       ];
     },
-    async remove(i) {
-      if (this.docId === window.apos.adminBar.contextId) {
+    async remove(i, { autosave = true } = {}) {
+      if (autosave && (this.docId === window.apos.adminBar.contextId)) {
         apos.bus.$emit('context-edited', {
           $pullAllById: {
             [`@${this.id}.items`]: [ this.next[i]._id ]
@@ -382,13 +386,15 @@ export default {
         const componentName = this.widgetEditorComponent(widget.type);
         apos.area.activeEditor = this;
         apos.bus.$on('apos-refreshing', cancelRefresh);
+        const preview = this.widgetPreview(widget.type, i, false);
         const result = await apos.modal.execute(componentName, {
           modelValue: widget,
           options: this.widgetOptionsByType(widget.type),
           type: widget.type,
           docId: this.docId,
           parentFollowingValues: this.followingValues,
-          meta: this.meta[widget._id]?.aposMeta
+          meta: this.meta[widget._id]?.aposMeta,
+          preview
         });
         apos.area.activeEditor = null;
         apos.bus.$off('apos-refreshing', cancelRefresh);
@@ -433,12 +439,12 @@ export default {
         // actual files, and the reference count will update automatically
       }
     },
-    async update(widget) {
+    async update(widget, { autosave = true } = {}) {
       widget.aposPlaceholder = false;
       if (!widget.metaType) {
         widget.metaType = 'widget';
       }
-      if (this.docId === window.apos.adminBar.contextId) {
+      if (autosave && (this.docId === window.apos.adminBar.contextId)) {
         apos.bus.$emit('context-edited', {
           [`@${widget._id}`]: widget
         });
@@ -489,12 +495,14 @@ export default {
       } else {
         const componentName = this.widgetEditorComponent(name);
         apos.area.activeEditor = this;
+        const preview = this.widgetPreview(name, index, true);
         const widget = await apos.modal.execute(componentName, {
           modelValue: null,
           options: this.widgetOptionsByType(name),
           type: name,
           docId: this.docId,
-          parentFollowingValues: this.followingValues
+          parentFollowingValues: this.followingValues,
+          preview
         });
         apos.area.activeEditor = null;
         if (widget) {
@@ -520,20 +528,22 @@ export default {
     contextualWidgetDefaultData(type) {
       return this.moduleOptions.contextualWidgetDefaultData[type];
     },
-    async insert({ index, widget }) {
+    async insert({
+      index, widget, autosave = true
+    } = {}) {
       if (!widget._id) {
         widget._id = createId();
       }
       if (!widget.metaType) {
         widget.metaType = 'widget';
       }
-      const push = {
-        $each: [ widget ]
-      };
-      if (index < this.next.length) {
-        push.$before = this.next[index]._id;
-      }
-      if (this.docId === window.apos.adminBar.contextId) {
+      if (autosave && (this.docId === window.apos.adminBar.contextId)) {
+        const push = {
+          $each: [ widget ]
+        };
+        if (index < this.next.length) {
+          push.$before = this.next[index]._id;
+        }
         apos.bus.$emit('context-edited', {
           $push: {
             [`@${this.id}.items`]: push
@@ -560,6 +570,15 @@ export default {
     },
     widgetEditorComponent(type) {
       return this.moduleOptions.components.widgetEditors[type];
+    },
+    widgetPreview(type, index, create) {
+      return this.moduleOptions.widgetPreview[type]
+        ? {
+          area: this,
+          index,
+          create
+        }
+        : null;
     },
     // Recursively seek `subObject` within `object`, based on whether
     // its _id matches that of a sub-object of `object`. If found,

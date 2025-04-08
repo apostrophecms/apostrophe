@@ -1,3 +1,5 @@
+{% set attachment = apos.image.first(data.widget._image) %}
+
 {% if data.widget.aposPlaceholder and data.manager.options.placeholderUrl %}
   <img
     src="{{ data.manager.options.placeholderUrl }}"
@@ -10,7 +12,6 @@
   {% set loadingType = data.options.loadingType or data.manager.options.loadingType %}
   {% set size = data.options.size or data.manager.options.size or 'full' %}
 
-  {% set attachment = apos.image.first(data.widget._image) %}
 
   {% if attachment %}
     <img {% if className %} class="{{ className }}"{% endif %}
