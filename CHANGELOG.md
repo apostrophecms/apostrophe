@@ -18,6 +18,7 @@
 * Fixes chrome bug when pages manager checkboxes need a double click when coming from the rich text editor (because some text is selected).
 * Fixes the rich text insert menu image menu not being properly closed.
 * Fixes the rich text toolbar not closing sometimes when unfocusing the editor.
+* Fixes missing wording on images batch operations.
 
 ## 4.14.2 (2025-04-02)
 
