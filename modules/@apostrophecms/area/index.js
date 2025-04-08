@@ -718,7 +718,6 @@ module.exports = {
 
         const widgetOperations = self.widgetOperations.filter(({ permission }) => {
           if (permission?.action && permission?.type) {
-            console.log('can', self.apos.permission.can(req, permission.action, permission.type, permission.mode || 'draft'));
             return self.apos.permission.can(req, permission.action, permission.type, permission.mode || 'draft');
           }
           return true;
