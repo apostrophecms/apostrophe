@@ -30,14 +30,13 @@ module.exports = {
     // TODO: remove following
     self.addWidgetOperation({
       name: 'createSection',
-      // modal: 'AposSectionEditor',
       modal: 'AposSettingsManager',
       label: 'Create Section',
       icon: 'group-icon',
       secondaryLevel: true,
       permission: {
         action: 'create',
-        type: '@apostrophecms-pro/section-template-library'
+        type: '@apostrophecms-pro/doc-template-library'
       }
     });
 
