@@ -1,10 +1,8 @@
 {
   "addColumnAfter": "Spalte nachfügen",
-  "addColumnBefore": "Spalte davor hinzufügen",
   "addContent": "Inhalt hinzufügen",
   "addItem": "Element hinzufügen",
   "addRowAfter": "Zeile nachfügen",
-  "addRowBefore": "Zeile davor hinzufügen",
   "addType": "Hinzufügen {{ type }}",
   "addWidgetType": "{{ label }} hinzufügen",
   "admin": "Administrator",
@@ -561,7 +559,6 @@
   "thisDocumentAndRelated": "Dieses und alle zugehörigen Dokumente",
   "title": "Titel",
   "toggleEditMode": "Editiermodus aktivieren/deaktivieren",
-  "toggleHeaderCell": "Kopfzeile (Zelle) umschalten",
   "toggleHeaderColumn": "Kopfzeile (Spalte) umschalten",
   "toggleHeaderRow": "Kopfzeile (Zeile) umschalten",
   "toggleSection": "Abschnitt aktivieren/deaktivieren",

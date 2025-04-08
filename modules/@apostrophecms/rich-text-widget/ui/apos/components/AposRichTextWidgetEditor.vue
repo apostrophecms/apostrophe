@@ -5,11 +5,12 @@
   >
     <bubble-menu
       v-if="editor"
+      plugin-key="richTextMenu"
       class="bubble-menu"
       :tippy-options="{
         maxWidth: 'none',
         duration: 300,
-        zIndex: 2000,
+        zIndex: 999,
         animation: 'fade',
         inertia: true,
         placement: 'bottom',
@@ -47,8 +48,9 @@
       :id="`insert-menu-${modelValue._id}`"
       ref="insertMenu"
       :key="insertMenuKey"
+      plugin-key="insertMenu"
       class="apos-rich-text-insert-menu"
-      :tippy-options="{ duration: 100, zIndex: 2000, placement: 'bottom-start' }"
+      :tippy-options="{ duration: 100, zIndex: 999, placement: 'bottom-start' }"
       :should-show="showFloatingMenu"
       :editor="editor"
       role="listbox"
@@ -94,6 +96,19 @@
     >
       {{ $t('apostrophe:emptyRichTextWidget') }}
     </div>
+    <floating-menu
+      v-if="editor"
+      :should-show="showTableControls"
+      :tippy-options="tableTippyOptions"
+      :editor="editor"
+      plugin-key="tableMenu"
+      role="listbox"
+      tabindex="0"
+    >
+      <AposTiptapTableControls
+        :editor="editor"
+      />
+    </floating-menu>
   </div>
 </template>
 
@@ -104,6 +119,7 @@ import {
   BubbleMenu,
   FloatingMenu
 } from '@tiptap/vue-3';
+import AposTiptapTableControls from './AposTiptapTableControls.vue';
 // Starter Kit extensions
 import BlockQuote from '@tiptap/extension-blockquote';
 import Bold from '@tiptap/extension-bold';
@@ -139,7 +155,8 @@ export default {
   components: {
     EditorContent,
     BubbleMenu,
-    FloatingMenu
+    FloatingMenu,
+    AposTiptapTableControls
   },
   props: {
     type: {
@@ -197,6 +214,25 @@ export default {
     };
   },
   computed: {
+    tableOptions() {
+      const options = this.moduleOptions.tableOptions || {};
+
+      if (options.class) {
+        options.HTMLAttributes = { class: options.class };
+        delete options.class;
+      }
+
+      return options;
+    },
+    tableTippyOptions() {
+      return {
+        zIndex: 999,
+        placement: 'top',
+        offset: [ 0, 35 ],
+        moveTransition: 'transform 0s ease-out',
+        appendTo: document.body
+      };
+    },
     moduleOptions() {
       return apos.modules[apos.area.widgetManagers[this.type]];
     },
@@ -241,6 +277,18 @@ export default {
           activeOptions.toolbar = [ 'nodes', ...activeOptions.toolbar ];
         }
       }
+
+      // The table tool is no longer part of the toolbar but will
+      // automatically appear when interacting with a table element,
+      // no configuration needed. If:
+      // 1. The table is configured for the toolbar but not insert, move it
+      // 2. remove the table tool from the toolbar
+      if (activeOptions.toolbar.some(tool => tool === 'table')) {
+        if (!activeOptions.insert.some(tool => tool === 'table')) {
+          activeOptions.insert.push('table');
+        }
+        activeOptions.toolbar = activeOptions.toolbar.filter(tool => tool !== 'table');
+      }
       return activeOptions;
     },
     autofocus() {
@@ -284,8 +332,13 @@ export default {
     },
     isVisuallyEmpty () {
       const div = document.createElement('div');
+      let hasTable = false;
       div.innerHTML = this.modelValue.content;
-      return !div.textContent;
+      if (this.editor) {
+        const editorJSON = this.editor.getJSON();
+        hasTable = !!editorJSON?.content.filter(c => c.type === 'table').length;
+      }
+      return (!div.textContent && !hasTable);
     },
     editorModifiers () {
       const classes = [];
@@ -360,7 +413,7 @@ export default {
       Underline,
       Superscript,
       Subscript,
-      Table,
+      Table.configure(this.tableOptions),
       TableCell,
       TableHeader,
       TableRow,
@@ -412,6 +465,9 @@ export default {
     apos.bus.$off('apos-refreshing', this.onAposRefreshing);
   },
   methods: {
+    showTableControls() {
+      return this.editor?.isActive('table') ?? false;
+    },
     openPopover() {
       this.openedPopover = true;
     },
@@ -902,10 +958,6 @@ function traverseNextNode(node) {
   .apos-rich-text-editor__editor :deep(table) {
     min-width: 100%;
     min-height: 200px;
-  }
-
-  .apos-rich-text-editor__editor :deep(th), .apos-rich-text-editor__editor :deep(td) {
-    outline: dotted;
   }
 
   // So editors can identify the cells that would take part

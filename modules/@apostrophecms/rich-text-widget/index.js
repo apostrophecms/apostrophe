@@ -98,6 +98,13 @@ module.exports = {
     defaultData: { content: '' },
     className: false,
     linkWithType: [ '@apostrophecms/any-page-type' ],
+    tableOptions: {
+      resizable: true,
+      handleWidth: 10,
+      cellMinWidth: 100,
+      lastColumnResizable: false,
+      class: 'apos-rich-text-table'
+    },
     // For permalinks and images. For efficiency we make
     // one query
     project: {
@@ -156,10 +163,6 @@ module.exports = {
         label: 'apostrophe:richTextMarkStyles',
         icon: 'palette-swatch-icon'
       },
-      table: {
-        component: 'AposTiptapTable',
-        label: 'apostrophe:table'
-      },
       '|': { component: 'AposTiptapDivider' },
       bold: {
         component: 'AposTiptapButton',
@@ -199,7 +202,6 @@ module.exports = {
         icon: 'format-subscript-icon',
         command: 'toggleSubscript'
       },
-
       horizontalRule: {
         component: 'AposTiptapButton',
         label: 'apostrophe:richTextHorizontalRule',
@@ -376,7 +378,17 @@ module.exports = {
     'format-text-icon': 'FormatText',
     'format-color-highlight-icon': 'FormatColorHighlight',
     'table-icon': 'Table',
-    'palette-swatch-icon': 'PaletteSwatch'
+    'palette-swatch-icon': 'PaletteSwatch',
+    'table-row-plus-after-icon': 'TableRowPlusAfter',
+    'table-column-plus-after-icon': 'TableColumnPlusAfter',
+    'table-column-remove-icon': 'TableColumnRemove',
+    'table-row-remove-icon': 'TableRowRemove',
+    'table-plus-icon': 'TablePlus',
+    'table-minus-icon': 'TableMinus',
+    'table-column-icon': 'TableColumn',
+    'table-row-icon': 'TableRow',
+    'table-split-cell-icon': 'TableSplitCell',
+    'table-merge-cells-icon': 'TableMergeCells'
   },
   handlers(self) {
     return {
@@ -497,7 +509,7 @@ module.exports = {
           anchor: [ 'span' ],
           superscript: [ 'sup' ],
           subscript: [ 'sub' ],
-          table: [ 'table', 'tr', 'td', 'th' ],
+          table: [ 'table', 'tr', 'td', 'th', 'colgroup', 'col', 'div' ],
           image: [ 'figure', 'img', 'figcaption' ],
           div: [ 'div' ],
           color: [ 'span' ]
@@ -553,12 +565,30 @@ module.exports = {
           },
           table: [
             {
+              tag: 'div',
+              attributes: [ 'class' ]
+            },
+            {
+              tag: 'table',
+              attributes: [ 'style', 'class' ]
+            },
+            {
+              tag: 'col',
+              attributes: [ 'style' ]
+            },
+            {
               tag: 'td',
-              attributes: [ 'colspan', 'rowspan' ]
+              attributes: [ 'colspan', 'rowspan', 'colwidth' ]
             },
             {
               tag: 'th',
-              attributes: [ 'colspan', 'rowspan' ]
+              attributes: [ 'colspan', 'rowspan', 'colwidth' ]
+            }
+          ],
+          colgroup: [
+            {
+              tag: 'col',
+              attributes: [ 'style' ]
             }
           ],
           image: [
@@ -636,6 +666,14 @@ module.exports = {
                 /^var\(--[a-zA-Z0-9-]+\)$/
               ]
             }
+          },
+          table: {
+            selector: '*',
+            properties: {
+              'min-width': [ /[0-9]{1,4}(px|em|%)/i ],
+              'max-width': [ /[0-9]{1,4}(px|em|%)/i ],
+              width: [ /[0-9]{1,4}(px|em|%)/i ]
+            }
           }
         };
         for (const item of self.combinedItems(options)) {
@@ -673,9 +711,31 @@ module.exports = {
             }
           }
         }
+
+        if (options.toolbar?.includes('table') || options.insert?.includes('table')) {
+          allowedClasses.div = {
+            ...(allowedClasses.div || {})
+          };
+
+          // If `resizable`, allow the prosemirror wrapper through
+          if (self.options.tableOptions?.resizable) {
+            allowedClasses.div.tableWrapper = true;
+          }
+
+          allowedClasses.table = {
+            ...(allowedClasses.table || {})
+          };
+
+          // If custom class applied to table
+          if (self.options.tableOptions?.class) {
+            allowedClasses.table[self.options.tableOptions.class] = true;
+          }
+        }
+
         for (const tag of Object.keys(allowedClasses)) {
           allowedClasses[tag] = Object.keys(allowedClasses[tag]);
         }
+
         return allowedClasses;
       },
 
@@ -995,7 +1055,8 @@ module.exports = {
           linkWithType: Array.isArray(self.options.linkWithType) ? self.options.linkWithType : [ self.options.linkWithType ],
           linkSchema: self.linkSchema,
           imageStyles: self.options.imageStyles,
-          color: self.options.color
+          color: self.options.color,
+          tableOptions: self.options.tableOptions
         };
         return finalData;
       }

@@ -49,6 +49,8 @@
 * Adds the missing "Tags" filter to the chooser/manager view of files.
 * Adds batch operations to the media manager.
 * Passes `moduleName` to the event `content-changed` for batch operations, to know if data should be refreshed or not.
+* Adds separate control bar for editing tables in rich text
+* Adds ability to drag-resize rich text table columns
 
 ### Changes
 
@@ -66,6 +68,10 @@
 * Removes `publish` batch operation for `autopublished` pieces.
 * Fixes `restore` batch operation having the action `update`.
 * Fixes `localize` batch operation having no `action` and no `docIds`.
+
+### Removes
+
+* Table controls from the default rich text control bar
 
 ## 4.13.0 (2025-02-19)
 

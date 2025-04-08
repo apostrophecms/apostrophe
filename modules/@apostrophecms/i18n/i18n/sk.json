@@ -1,10 +1,8 @@
 {
   "addColumnAfter": "Pridať stĺpec po",
-  "addColumnBefore": "Pridať stĺpec pred",
   "addContent": "Pridať obsah",
   "addItem": "Pridať položku",
   "addRowAfter": "Pridať riadok po",
-  "addRowBefore": "Pridať riadok pred",
   "addType": "Pridať {{ type }}",
   "addWidgetType": "Pridať {{ label }}",
   "admin": "Admin",
@@ -561,7 +559,6 @@
   "thisDocumentAndRelated": "Tento dokument a súvisiace dokumenty",
   "title": "Názov",
   "toggleEditMode": "Prepnúť režim úprav",
-  "toggleHeaderCell": "Prepnúť hlavičku (bunkový)",
   "toggleHeaderColumn": "Prepnúť hlavičku (stĺpec)",
   "toggleHeaderRow": "Prepnúť hlavičku (riadok)",
   "toggleSection": "Prepnúť sekciu",
