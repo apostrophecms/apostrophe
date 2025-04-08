@@ -13,8 +13,12 @@
       />
     </div>
     <div class="apos-rich-text-insert-menu-label">
-      <h4>{{ $t(props.menuItem.label) }}</h4>
-      <p>{{ $t(props.menuItem.description) }}</p>
+      <h4 class="apos-rich-text-insert-menu-label__title">
+        {{ $t(props.menuItem.label) }}
+      </h4>
+      <p class="apos-rich-text-insert-menu-label__desc">
+        {{ $t(props.menuItem.description) }}
+      </p>
     </div>
   </button>
 </template>
@@ -59,7 +63,11 @@ const props = defineProps({
 
     &:active, &:focus {
       background-color: var(--a-primary);
-      color: var(--a-white);
+
+      .apos-rich-text-insert-menu-label__title,
+      .apos-rich-text-insert-menu-label__desc {
+        color: var(--a-white);
+      }
     }
   }
 
