@@ -44,6 +44,10 @@ export default {
       type: Object,
       required: true
     },
+    areaField: {
+      type: Object,
+      default: null
+    },
     first: {
       type: Boolean,
       required: true
@@ -206,8 +210,10 @@ export default {
         this.$emit(action);
       }
       if (modal) {
+        // FIXME: why is areaField empty?
         apos.modal.execute(modal, {
-          modelValue: this.modelValue
+          widget: this.modelValue,
+          field: this.areaField
         });
       }
     }
