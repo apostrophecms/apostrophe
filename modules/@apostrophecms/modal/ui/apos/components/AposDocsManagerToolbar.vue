@@ -304,10 +304,6 @@ export default {
         ? (operations.find((op) => op.action === action)).modalOptions
         : modalOptions;
 
-      console.log('this.labels', this.labels);
-      console.log('this.checkedCount', this.checkedCount);
-      const plural = this.$t(this.labels.plural);
-      console.log('plural', plural);
       const interpolations = {
         count: this.checkedCount,
         type: this.checkedCount === 1
@@ -315,7 +311,6 @@ export default {
           : this.$t(this.labels.plural)
       };
 
-      console.log('description', description);
       const confirmed = await apos.confirm({
         heading: this.$t(title, interpolations),
         description: this.$t(description, interpolations),
