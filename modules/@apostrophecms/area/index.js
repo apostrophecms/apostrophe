@@ -29,7 +29,7 @@ module.exports = {
 
     // TODO: remove following
     self.addWidgetOperation({
-      name: 'createSection',
+      type: 'modal',
       modal: 'AposSettingsManager',
       label: 'Create Section',
       icon: 'group-icon',
@@ -668,63 +668,29 @@ module.exports = {
           }
         });
       },
-      addWidgetOperation(operation) {
-        console.log('operation', operation);
-        // validate(operation);
 
-        self.widgetOperations = self.widgetOperations.filter(widgetOperation =>
-          widgetOperation.action !== operation.action &&
-          widgetOperation.modal !== operation.modal
+      // Usage example:
+      //
+      // self.addWidgetOperation({
+      //   modal: 'AposSomeModal',
+      //   label: 'Some label',
+      //   icon: 'some-icon',
+      //   secondaryLevel: true,
+      //   permission: {
+      //     action: 'create',
+      //     type: 'article'
+      //   }
+      // });
+      addWidgetOperation(operation) {
+        if (!operation.label || !operation.modal) {
+          throw self.apos.error('invalid', 'addWidgetOperation requires label and modal properties.');
+        }
+
+        self.widgetOperations = self.widgetOperations.filter(
+          ({ modal }) => modal !== operation.modal
         );
 
         self.widgetOperations.push(operation);
-
-        console.log('self.widgetOperations', self.widgetOperations);
-        function validate ({
-          action, context, type = 'modal', label, modal, conditions, if: ifProps
-        }) {
-          const allowedConditions = [
-            'canPublish',
-            'canEdit',
-            'canDismissSubmission',
-            'canDiscardDraft',
-            'canLocalize',
-            'canArchive',
-            'canUnpublish',
-            'canCopy',
-            'canRestore',
-            'canCreate',
-            'canPreview',
-            'canShareDraft'
-          ];
-
-          if (![ 'event', 'modal' ].includes(type)) {
-            throw self.apos.error('invalid', '`type` option must be `modal` (default) or `event`');
-          }
-
-          if (!action || !context || !label || (type === 'modal' && !modal)) {
-            throw self.apos.error('invalid', 'addContextOperation requires action, context, label and modal (if type is set to `modal` or unset) properties.');
-          }
-
-          if (
-            conditions &&
-            (!Array.isArray(conditions) ||
-            conditions.some((perm) => !allowedConditions.includes(perm)))
-          ) {
-            throw self.apos.error(
-              'invalid', `The conditions property in addContextOperation must be an array containing one or multiple of these values:\n\t${allowedConditions.join('\n\t')}.`
-            );
-          }
-
-          if (
-            ifProps &&
-            (typeof ifProps !== 'object' || Array.isArray(ifProps))
-          ) {
-            throw self.apos.error(
-              'invalid', 'The if property in addContextOperation must be an object containing properties and values that will be checked against the current document in order to show or not the context operation.'
-            );
-          }
-        }
       },
       getBrowserData(req) {
         const widgets = {};
@@ -750,6 +716,14 @@ module.exports = {
           contextualWidgetDefaultData[name] = manager.options.defaultData || {};
         });
 
+        const widgetOperations = self.widgetOperations.filter(({ permission }) => {
+          if (permission?.action && permission?.type) {
+            console.log('can', self.apos.permission.can(req, permission.action, permission.type, permission.mode || 'draft'));
+            return self.apos.permission.can(req, permission.action, permission.type, permission.mode || 'draft');
+          }
+          return true;
+        });
+
         return {
           components: {
             editor: 'AposAreaEditor',
@@ -763,7 +737,7 @@ module.exports = {
           contextualWidgetDefaultData,
           widgetManagers,
           action: self.action,
-          widgetOperations: self.widgetOperations
+          widgetOperations
         };
       },
       async addDeduplicateWidgetIdsMigration() {
