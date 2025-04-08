@@ -712,13 +712,13 @@ module.exports = {
           }
         }
 
-        if (options.toolbar.includes('table') || options.insert.includes('table')) {
+        if (options.toolbar?.includes('table') || options.insert?.includes('table')) {
           allowedClasses.div = {
             ...(allowedClasses.div || {})
           };
 
           // If `resizable`, allow the prosemirror wrapper through
-          if (self.options.tableOptions.resizable) {
+          if (self.options.tableOptions?.resizable) {
             allowedClasses.div.tableWrapper = true;
           }
 
@@ -727,7 +727,7 @@ module.exports = {
           };
 
           // If custom class applied to table
-          if (self.options.tableOptions.class) {
+          if (self.options.tableOptions?.class) {
             allowedClasses.table[self.options.tableOptions.class] = true;
           }
         }
