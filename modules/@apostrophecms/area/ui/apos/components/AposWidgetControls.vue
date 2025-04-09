@@ -151,7 +151,12 @@ export default {
       controls.push(
         ...this.widgetPrimaryOperations.map(operation => ({
           ...this.widgetDefaultControl,
-          ...operation
+          ...operation,
+          disabled: this.disabled,
+          tooltip: {
+            content: operation.label,
+            placement: 'left'
+          }
         }))
       );
 
