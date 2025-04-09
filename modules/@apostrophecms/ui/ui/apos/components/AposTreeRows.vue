@@ -7,6 +7,8 @@
     :options="dragOptions"
     @start="startDrag"
     @end="endDrag"
+    @add="add"
+    @remove="remove"
   >
     <template #item="{element: row}">
       <li
@@ -22,7 +24,7 @@
       >
         <div class="apos-tree__row-data">
           <button
-            v-if="row._children && row._children.length > 0"
+            v-if="row.__count > 0"
             class="apos-tree__row__toggle"
             data-apos-tree-toggle
             :aria-label="$t('apostrophe:toggleSection')"
@@ -48,7 +50,11 @@
             :data-col="col.property"
             :style="getCellStyles(col.property, index)"
             :options="moduleOptions"
-            @click="((getEffectiveType(col, row) === 'button') && col.action) ? $emit(col.action, row._id) : null"
+            @click="
+              ((getEffectiveType(col, row) === 'button') && col.action)
+                ? $emit(col.action, row._id)
+                : null
+            "
           >
             <AposIndicator
               v-if="options.draggable && index === 0 && !row.parked"
@@ -56,7 +62,8 @@
               class="apos-tree__row__icon apos-tree__row__icon--handle"
             />
             <AposIndicator
-              v-if="index === 0 && row.parked && row.type !== '@apostrophecms/archive-page'"
+              v-if="index === 0 && row.parked &&
+                row.type !== '@apostrophecms/archive-page'"
               icon="lock-icon"
               class="apos-tree__row__icon apos-tree__row__icon--parked"
               tooltip="apostrophe:pageIsParked"
@@ -204,7 +211,8 @@ export default {
   emits: [ 'update', 'update:checked', 'change', 'toggle' ],
   data() {
     return {
-      treeBranches: []
+      treeBranches: [],
+      countModifier: {}
     };
   },
   computed: {
@@ -212,6 +220,7 @@ export default {
       return this.rows.map(row => {
         return {
           ...row,
+          __count: (this.countModifier[row._id] || 0) + (row._children?.length || 0),
           __expanded: this.isExpanded(row._id),
           __key: `${row._id}-${row.level}-${row.rank}`
         };
@@ -229,9 +238,11 @@ export default {
     dragOptions() {
       return {
         scroll: true,
-        scrollSensitivity: 100, // px, how near the mouse must be to an edge to start scrolling.
+        // px, how near the mouse must be to an edge to start scrolling.
+        scrollSensitivity: 100,
         scrollSpeed: 1000, // px, speed of the scrolling
-        bubbleScroll: true, // apply autoscroll to all parent elements, allowing for easier movement
+        // apply autoscroll to all parent elements, allowing for easier movement
+        bubbleScroll: true,
         group: this.treeId,
         fallbackOnBody: true,
         swapThreshold: 0.65,
@@ -247,6 +258,8 @@ export default {
     }
   },
   mounted() {
+    apos.bus.$on('apos-tree-child:added', this.onChildAdd);
+    apos.bus.$on('apos-tree-child:removed', this.onChildRemove);
     // Use $nextTick to make sure attributes like `clientHeight` are settled.
     this.$nextTick(() => {
       if (!this.$refs['tree-branches']) {
@@ -254,6 +267,10 @@ export default {
       }
       this.setHeights();
     });
+  },
+  beforeUnmount() {
+    apos.bus.$off('apos-tree-child:added', this.onChildAdd);
+    apos.bus.$off('apos-tree-child:removed', this.onChildRemove);
   },
   methods: {
     // Fix for chrome when some text is selected (needed double click to check the box)
@@ -269,6 +286,27 @@ export default {
         branch.$el.setAttribute('data-apos-branch-height', `${height}px`);
         branch.$el.style.maxHeight = `${height}px`;
       });
+    },
+    // Send a global signal to the tree that a child has been added or removed.
+    add(event) {
+      // The ID of the new parent, or 'root' if top-level.
+      apos.bus.$emit('apos-tree-child:added', event.to.dataset.listRow);
+    },
+    remove(event) {
+      // The ID of the original parent, or 'root' if top-level.
+      apos.bus.$emit('apos-tree-child:removed', event.from.dataset.listRow);
+    },
+    // Listen for the global signal that a child has been added or removed.
+    // Record children count corrections if we have a matching row.
+    onChildAdd(event) {
+      if (this.rows.some(row => row._id === event)) {
+        this.countModifier[event] = (this.countModifier[event] || 0) + 1;
+      }
+    },
+    onChildRemove(event) {
+      if (this.rows.some(row => row._id === event)) {
+        this.countModifier[event] = (this.countModifier[event] || 0) - 1;
+      }
     },
     startDrag() {},
     endDrag(event) {
@@ -417,7 +455,10 @@ export default {
 
       // Original default of just printing the row property value
       const publishedDoc = row._publishedDoc;
-      const value = (publishedDoc && (publishedDoc[col.cellValue] !== undefined) && publishedDoc[col.cellValue]) || row[col.cellValue];
+      const value = (publishedDoc &&
+        (publishedDoc[col.cellValue] !== undefined) &&
+        publishedDoc[col.cellValue]) ||
+        row[col.cellValue];
       if (value) {
         return value;
       }
