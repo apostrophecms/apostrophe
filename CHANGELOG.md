@@ -5,6 +5,7 @@
 ### Adds
 
 * To display a live preview on the page as changes are made to widgets, set the `preview: true` option on any widget module. To turn it on for all widgets, you can set it on the `@apostrophecms/widget-type` module, the base class of all widget modules. This works especially well when `range` fields are used to achieve visual effects.
+* Add `apos.area.addWidgetOperation` to display custom widget operations at the primary level or secondary, via a 3-dots menu.
 
 ### Changes
 

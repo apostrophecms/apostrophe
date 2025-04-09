@@ -78,7 +78,7 @@ export default {
   },
   methods: {
     click() {
-      this.$emit('clicked', this.menuItem.action);
+      this.$emit('clicked', this.menuItem);
     }
   }
 };

@@ -124,7 +124,8 @@ export default {
       return window.apos.adminBar;
     },
     isAutopublished() {
-      return this.context._aposAutopublish ?? (window.apos.modules[this.context.type].autopublish || false);
+      return this.context._aposAutopublish ??
+        (window.apos.modules[this.context.type].autopublish || false);
     }
   },
   mounted() {
@@ -137,11 +138,11 @@ export default {
     togglePublishDraftMode() {
       if (this.canTogglePublishDraftMode) {
         const mode = this.draftMode === 'draft' ? 'published' : 'draft';
-        this.switchDraftMode(mode);
+        this.$emit('switch-draft-mode', mode);
       }
     },
-    switchDraftMode(mode) {
-      this.$emit('switch-draft-mode', mode);
+    switchDraftMode(item) {
+      this.$emit('switch-draft-mode', item.action);
     }
   }
 };

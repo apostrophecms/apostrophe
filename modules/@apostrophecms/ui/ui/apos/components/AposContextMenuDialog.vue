@@ -93,8 +93,8 @@ const classes = computed(() => {
   return classes.join(' ');
 });
 
-function menuItemClicked(action) {
-  emit('item-clicked', action);
+function menuItemClicked(menuItem) {
+  emit('item-clicked', menuItem);
 }
 
 function emitSetArrow(arrowEl) {
