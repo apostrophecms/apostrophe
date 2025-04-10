@@ -157,7 +157,9 @@ export default {
           await apos.notify('apostrophe:uploadedError', {
             type: 'danger',
             icon: 'alert-circle-icon',
-            dismiss: true,
+            // Let it stick, we have too many server side notifications now
+            // (1 per failure).
+            dismiss: false,
             interpolate: {
               count: errorCount
             }
