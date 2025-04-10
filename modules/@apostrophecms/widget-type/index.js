@@ -109,7 +109,8 @@ module.exports = {
     // two-thirds, half or full:
     width: '',
     // left or right:
-    origin: 'right'
+    origin: 'right',
+    preview: true
   },
   init(self) {
     const badFieldName = Object.keys(self.fields).indexOf('type') !== -1;
