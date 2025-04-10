@@ -226,7 +226,7 @@ export default {
     },
     tableTippyOptions() {
       return {
-        zIndex: 999,
+        zIndex: 2001,
         placement: 'top',
         offset: [ 0, 35 ],
         moveTransition: 'transform 0s ease-out',
