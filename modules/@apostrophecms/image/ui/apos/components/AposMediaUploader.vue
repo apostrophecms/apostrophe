@@ -153,7 +153,7 @@ export default {
           }
         }
 
-        if (errorCount) {
+        if (errorCount > 0) {
           await apos.notify('apostrophe:uploadedError', {
             type: 'danger',
             icon: 'alert-circle-icon',
