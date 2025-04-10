@@ -110,6 +110,7 @@ export default {
 
   .apos-input--select {
     background-color: transparent;
+    line-height: normal;
     height: 32px;
     padding: 0 $spacing-double 0 $spacing-base;
   }

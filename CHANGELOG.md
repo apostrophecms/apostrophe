@@ -28,6 +28,7 @@
 * Fixes missing wording on images batch operations.
 * Fixes rich text toolbar width being limited to parent width.
 * Fixes rich text insert menu focused item text color easily overridable.
+* Fixes clipped text in the pager and in the relationship filters of piece manager.
 
 ## 4.14.2 (2025-04-02)
 
