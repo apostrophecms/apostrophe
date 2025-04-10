@@ -593,6 +593,8 @@
   "uploaded": "Successfully uploaded a file",
   "uploadedMediaPlaceholder": "Uploaded media will appear here",
   "uploaded_plural": "Successfully uploaded {{ count }} files",
+  "uploadedError": "{{ count }} file failed to upload",
+  "uploadedError_plural": "{{ count }} files failed to upload",
   "uploading": "Uploading {{ name }}",
   "url": "URL",
   "user": "User",
