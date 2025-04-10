@@ -83,7 +83,7 @@ export default {
         // in the DOM before hinting that it might be time to prepare
         // sub-area editors and run players
         setTimeout(function() {
-          apos.bus.$emit('widget-rendered');
+          apos.bus.$emit('widget-rendered', { edit: !aposLivePreview });
         }, 0);
       } catch (e) {
         this.rendered = '<p>Unable to render this widget.</p>';
