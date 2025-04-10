@@ -67,7 +67,6 @@ module.exports = {
   'format-superscript-icon': 'FormatSuperscript',
   'format-text-icon': 'FormatText',
   'format-underline-icon': 'FormatUnderline',
-  'group-icon': 'Group', // TODO: remove
   'help-circle-icon': 'HelpCircle',
   'image-edit-outline': 'ImageEditOutline',
   'image-icon': 'Image',

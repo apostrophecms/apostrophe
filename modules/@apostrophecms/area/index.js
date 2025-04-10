@@ -27,19 +27,6 @@ module.exports = {
     self.widgetManagers = {};
     self.widgetOperations = [];
 
-    // TODO: remove following
-    self.addWidgetOperation({
-      type: 'modal',
-      modal: 'AposSettingsManager',
-      label: 'Create Section',
-      icon: 'group-icon',
-      secondaryLevel: true,
-      permission: {
-        action: 'create',
-        type: '@apostrophecms-pro/doc-template-library'
-      }
-    });
-
     self.enableBrowserData();
     self.addDeduplicateWidgetIdsMigration();
   },
@@ -668,19 +655,6 @@ module.exports = {
           }
         });
       },
-
-      // Usage example:
-      //
-      // self.addWidgetOperation({
-      //   modal: 'AposSomeModal',
-      //   label: 'Some label',
-      //   icon: 'some-icon',
-      //   secondaryLevel: true,
-      //   permission: {
-      //     action: 'create',
-      //     type: 'article'
-      //   }
-      // });
       addWidgetOperation(operation) {
         if (!operation.label || !operation.modal) {
           throw self.apos.error('invalid', 'addWidgetOperation requires label and modal properties.');

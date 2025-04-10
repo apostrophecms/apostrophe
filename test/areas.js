@@ -6,15 +6,7 @@ describe('Areas', function() {
 
   this.timeout(t.timeout);
 
-  after(async function() {
-    return t.destroy(apos);
-  });
-
-  /// ///
-  // EXISTENCE
-  /// ///
-
-  it('should initialize', async function() {
+  before(async function() {
     apos = await t.create({
       root: module,
 
@@ -74,6 +66,10 @@ describe('Areas', function() {
     // so override that in order to get apostrophe to
     // listen normally and not try to run a task. -Tom
     apos.argv._ = [];
+  });
+
+  after(async function() {
+    return t.destroy(apos);
   });
 
   it('can get widgets from groups', function() {
@@ -425,6 +421,103 @@ describe('Areas', function() {
         name: 'test'
       }, 0)
     );
+  });
+
+  it('should support custom widget operations', function() {
+    const initialOperations = [ ...apos.area.widgetOperations ];
+
+    const operation = {
+      modal: 'AposSomeModal',
+      label: 'Some label',
+      icon: 'some-icon',
+      secondaryLevel: true,
+      permission: {
+        action: 'create',
+        type: 'article'
+      }
+    };
+
+    apos.area.widgetOperations = [];
+    apos.area.addWidgetOperation(operation);
+
+    assert.strictEqual(apos.area.widgetOperations.length, 1);
+    assert.deepStrictEqual(apos.area.widgetOperations, [ { ...operation } ]);
+
+    apos.area.widgetOperations = initialOperations;
+  });
+
+  it('should throw an error when adding a widget operation that lacks required properties', function() {
+    const message = /requires label and modal/;
+
+    assert.throws(
+      () => {
+        apos.area.addWidgetOperation({
+          label: 'Some label',
+          icon: 'some-icon'
+        });
+      },
+      { message }
+    );
+
+    assert.throws(
+      () => {
+        apos.area.addWidgetOperation({
+          modal: 'AposSomeModal',
+          icon: 'some-icon'
+        });
+      },
+      { message }
+    );
+  });
+
+  it('should replace an existing widget operation', function() {
+    const initialOperations = [ ...apos.area.widgetOperations ];
+    const operation = {
+      modal: 'AposSomeModal',
+      label: 'New label',
+      icon: 'new-icon'
+    };
+
+    apos.area.widgetOperations = [
+      {
+        modal: 'AposSomeModal',
+        label: 'Some label',
+        icon: 'sone-icon'
+      }
+    ];
+    apos.area.addWidgetOperation(operation);
+
+    assert.strictEqual(apos.area.widgetOperations.length, 1);
+    assert.deepStrictEqual(apos.area.widgetOperations, [ { ...operation } ]);
+
+    apos.area.widgetOperations = initialOperations;
+  });
+
+  it('should handle widget operations with custom permissions', function() {
+    const initialOperations = [ ...apos.area.widgetOperations ];
+    const operation = {
+      modal: 'AposSomeModal',
+      label: 'Some label',
+      icon: 'sone-icon',
+      permission: {
+        action: 'delete',
+        type: 'article'
+      }
+    };
+
+    apos.area.widgetOperations = [ operation ];
+
+    {
+      const browserData = apos.area.getBrowserData(apos.task.getReq());
+      assert.deepStrictEqual(browserData.widgetOperations, [ { ...operation } ]);
+    }
+
+    {
+      const browserData = apos.area.getBrowserData(apos.task.getContributorReq());
+      assert.deepStrictEqual(browserData.widgetOperations, []);
+    }
+
+    apos.area.widgetOperations = initialOperations;
   });
 });
 

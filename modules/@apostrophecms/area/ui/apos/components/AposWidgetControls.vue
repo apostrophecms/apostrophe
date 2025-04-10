@@ -150,7 +150,12 @@ export default {
       controls.push(
         ...this.widgetPrimaryOperations.map(operation => ({
           ...this.widgetDefaultControl,
-          ...operation
+          ...operation,
+          disabled: this.disabled,
+          tooltip: {
+            content: operation.label,
+            placement: 'left'
+          }
         }))
       );
 
@@ -214,7 +219,6 @@ export default {
         this.$emit(action);
       }
       if (modal) {
-        // FIXME: why is areaField empty?
         apos.modal.execute(modal, {
           widget: this.modelValue,
           field: this.areaField
