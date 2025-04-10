@@ -338,7 +338,9 @@ function guessOrigin(area) {
   // side of the screen will least obscure the widget
   const rect = area.$el.getBoundingClientRect();
   const cx = (rect.right - rect.left) / 2 + rect.left;
-  if (cx >= (window.innerWidth / 2)) {
+  // Favor the right hand side slightly because rich text
+  // subwidgets in centered areas are more intuitive that way
+  if (cx >= (window.innerWidth * 0.55)) {
     return 'left';
   } else {
     return 'right';
