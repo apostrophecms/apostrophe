@@ -480,11 +480,12 @@ function handleKeyboard(event) {
 
 .apos-context-menu__pane {
   @include type-base;
+  font-size: var(--a-type-menu);
 
   & {
-    padding: 20px;
-    border: 1px solid var(--a-base-8);
-    border-radius: var(--a-border-radius);
+    padding: 5px 0;
+    border: 1px solid var(--a-base-9);
+    border-radius: var(--a-border-radius-large);
     box-shadow: var(--a-box-shadow);
     background-color: var(--a-background-primary);
   }
@@ -503,7 +504,8 @@ function handleKeyboard(event) {
     width: max-content;
     margin: none;
     margin-block: 0;
-    padding: 10px 0;
+    margin: 5px 0;
+    // padding: 10px 0;
   }
 }
 </style>

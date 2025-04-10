@@ -1,6 +1,11 @@
 <template>
-  <li class="apos-context-menu__item">
+  <li
+    class="apos-context-menu__item"
+    :class="menuItem.separator ? 'apos-context-menu__item--separator' : null"
+  >
+    <hr v-if="menuItem.separator" class="apos-context-menu__separator" />
     <button
+      v-else
       class="apos-context-menu__button"
       :class="modifiers"
       :tabindex="tabindex"
@@ -87,29 +92,49 @@ export default {
 <style lang="scss" scoped>
 .apos-context-menu__item {
   display: flex;
+  align-items: center;
 
+  &--separator {
+    // height: 1px;
+  }
+}
+
+.apos-context-menu__item:not(.apos-context-menu__item--separator) {
+  min-height: 36px;
+}
+
+.apos-context-menu__separator {
+  box-sizing: border-box;
+  margin: 5px 0;
+  padding: 0;
+  width: 100%;
+  border-color: var(--a-base-10);
+  border-style: solid;
 }
 
 .apos-context-menu__button {
   @include type-base;
-
+  
   & {
     display: inline-flex;
     flex-grow: 1;
     align-items: center;
     width: 100%;
-    margin: 0 10px;
+    margin: 0 5px;
     padding: 10px;
     border: none;
-    color: var(--a-base-1);
+    font-size: var(--a-type-menu);
+    font-weight: var(--a-weight-base);
+    // color: var(--a-base-1);
     text-align: left;
-    border-radius: 3px;
+    border-radius: 5px;
     background-color: var(--a-background-primary);
   }
 
   &:hover {
     cursor: pointer;
     color: var(--a-text-primary);
+    background-color: var(--a-primary-transparent-05);
   }
 
   &:focus {
