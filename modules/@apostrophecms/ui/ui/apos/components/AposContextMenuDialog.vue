@@ -131,7 +131,7 @@ function emitSetArrow(arrowEl) {
   font-size: var(--a-type-menu);
 
   & {
-    padding: 5px 0;
+    padding: 7.5px 0;
     border: 1px solid var(--a-base-9);
     border-radius: var(--a-border-radius-large);
     box-shadow: var(--a-box-shadow);
@@ -148,7 +148,7 @@ function emitSetArrow(arrowEl) {
     width: max-content;
     margin: none;
     margin-block: 0;
-    margin: 5px 0;
+    margin: 7.5px 0;
     // padding: 10px 0;
   }
 }

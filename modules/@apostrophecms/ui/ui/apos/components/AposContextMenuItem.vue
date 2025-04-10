@@ -120,12 +120,11 @@ export default {
     flex-grow: 1;
     align-items: center;
     width: 100%;
-    margin: 0 5px;
+    margin: 0 7.5px;
     padding: 10px;
     border: none;
     font-size: var(--a-type-menu);
-    font-weight: var(--a-weight-base);
-    // color: var(--a-base-1);
+    font-weight: 300;
     text-align: left;
     border-radius: 5px;
     background-color: var(--a-background-primary);
@@ -133,17 +132,13 @@ export default {
 
   &:hover {
     cursor: pointer;
-    color: var(--a-text-primary);
     background-color: var(--a-primary-transparent-05);
   }
 
-  &:focus {
-    outline: none;
-    color: var(--a-text-primary);
-  }
-
+  &:focus,
   &:active {
-    color: var(--a-base-1);
+    outline: 1px solid var(--a-primary-transparent-25);
+    background-color: var(--a-primary-transparent-05);
   }
 
   &--danger {
@@ -155,7 +150,9 @@ export default {
 
     &:focus,
     &:active {
+      outline: 1px solid var(--a-danger);
       color: var(--a-danger-button-active);
+      background-color: var(--a-danger-button-background);
     }
   }
 
@@ -170,13 +167,19 @@ export default {
   }
 
   &--disabled {
-    color: var(--a-base-5);
+    color: var(--a-base-3);
+
+    &:focus,
+    &:active {
+      outline: 1px solid var(--a-base-8);
+    }
 
     &:hover,
     &:focus,
     &:active {
       cursor: not-allowed;
       color: var(--a-base-5);
+      background-color: var(--a-base-9);
     }
   }
 
