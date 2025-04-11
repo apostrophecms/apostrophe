@@ -191,7 +191,7 @@ export default {
       if (this.widgetSecondaryOperations.length) {
         controls.push({
           separator: true
-        })
+        });
       }
 
       // Custom widget operations displayed in the secondary controls

@@ -110,7 +110,7 @@ export default {
 
 .apos-context-menu__button {
   @include type-base;
-  
+
   & {
     display: inline-flex;
     flex-grow: 1;
@@ -146,7 +146,7 @@ export default {
 
     &:hover,
     &:focus,
-    &:active { 
+    &:active {
       background-color: var(--a-danger-button-background);
     }
 
@@ -196,6 +196,6 @@ export default {
 }
 
 .apos-context-menu__active {
-  background-color: var(--a-base-10)
+  background-color: var(--a-base-10);
 }
 </style>
