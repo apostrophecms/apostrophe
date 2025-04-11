@@ -160,10 +160,10 @@ export default {
 }
 
 .apos-filters-menu__set {
-  margin: 10px 15px 25px;
+  margin: 0 0 25px;
 
   &:last-child {
-    margin-bottom: 15px;
+    margin-bottom: 0;
   }
 }
 </style>

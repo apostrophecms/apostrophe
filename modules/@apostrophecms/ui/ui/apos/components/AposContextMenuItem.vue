@@ -148,11 +148,16 @@ export default {
       color: var(--a-danger-button-hover);
     }
 
+    &:hover,
+    &:focus,
+    &:active { 
+      background-color: var(--a-danger-button-background);
+    }
+
     &:focus,
     &:active {
       outline: 1px solid var(--a-danger);
       color: var(--a-danger-button-active);
-      background-color: var(--a-danger-button-background);
     }
   }
 
@@ -163,6 +168,12 @@ export default {
     &:focus,
     &:active {
       color: var(--a-primary);
+      background-color: var(--a-primary-transparent-15);
+    }
+
+    &:focus,
+    &:active {
+      outline: 1px solid var(--a-primary-transparent-25);
     }
   }
 
