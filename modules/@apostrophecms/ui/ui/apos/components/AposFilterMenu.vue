@@ -138,29 +138,29 @@ export default {
   min-width: 140px;
 
   :deep(.apos-input--select) {
-    padding-top: 10px;
-    padding-bottom: 10px;
+    padding-top: $spacing-base;
+    padding-bottom: $spacing-base;
     background-color: var(--a-base-10);
     font-style: italic;
   }
 
   :deep(.apos-choice-label) {
-    padding-right: 5px;
-    padding-left: 5px;
+    padding-right: $spacing-half;
+    padding-left: $spacing-half;
   }
 }
 
 .apos-filters-menu :deep(.apos-field__label) {
   display: block;
   width: 100%;
-  margin-bottom: 15px;
-  padding-bottom: 5px;
+  margin-bottom: $spacing-base + $spacing-half;
+  padding-bottom: $spacing-half;
   border-bottom: 1px solid var(--a-base-9);
   color: var(--a-base-2);
 }
 
 .apos-filters-menu__set {
-  margin: 0 0 25px;
+  margin: 0 0 $spacing-double + $spacing-half;
 
   &:last-child {
     margin-bottom: 0;

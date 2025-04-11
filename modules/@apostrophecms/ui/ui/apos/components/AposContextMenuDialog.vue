@@ -148,27 +148,26 @@ function emitSetArrow(arrowEl) {
     width: max-content;
     margin: none;
     margin-block: 0;
-    margin: 7.5px 0;
-    // padding: 10px 0;
+    margin: $spacing-three-quarters 0;
   }
 }
 
 .apos-context-menu__dialog :deep(.apos-schema .apos-field) {
-  margin-bottom: 20px;
+  margin-bottom: $spacing-double;
 
   .apos-field__help {
-    margin-top: 5px;
+    margin-top: $spacing-half;
   }
 }
 
 .apos-context-menu__tip[x-placement^='bottom'] {
-  top: -10px;
+  top: -$spacing-base;
   bottom: auto;
 }
 
 .apos-context-menu__tip[x-placement^='top'] {
   top: auto;
-  bottom: -10px;
+  bottom: -$spacing-base;
   transform: rotate(180deg);
 }
 </style>

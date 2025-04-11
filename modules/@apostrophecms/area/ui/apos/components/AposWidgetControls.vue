@@ -234,11 +234,6 @@ $z-index-button-background: 1;
 $z-index-button-foreground: 2;
 
 .apos-area-modify-controls {
-  :deep(.apos-context-menu__items) .apos-context-menu__item {
-    &:has(.apos-context-menu__button--separator):not(:last-child) {
-      border-bottom: 1px solid var(--a-base-9);
-    }
-  }
 
   :deep(.apos-button__content) {
     z-index: $z-index-button-foreground;

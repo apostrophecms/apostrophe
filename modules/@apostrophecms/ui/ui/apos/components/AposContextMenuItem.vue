@@ -93,10 +93,6 @@ export default {
 .apos-context-menu__item {
   display: flex;
   align-items: center;
-
-  &--separator {
-    // height: 1px;
-  }
 }
 
 .apos-context-menu__item:not(.apos-context-menu__item--separator) {
@@ -105,7 +101,7 @@ export default {
 
 .apos-context-menu__separator {
   box-sizing: border-box;
-  margin: 5px 0;
+  margin: $spacing-half 0;
   padding: 0;
   width: 100%;
   border-color: var(--a-base-10);
@@ -120,13 +116,13 @@ export default {
     flex-grow: 1;
     align-items: center;
     width: 100%;
-    margin: 0 7.5px;
-    padding: 10px;
+    margin: 0 $spacing-three-quarters;
+    padding: $spacing-base;
     border: none;
     font-size: var(--a-type-menu);
     font-weight: 300;
     text-align: left;
-    border-radius: 5px;
+    border-radius: $spacing-half;
     background-color: var(--a-background-primary);
   }
 

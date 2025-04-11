@@ -461,8 +461,8 @@ function handleKeyboard(event) {
 }
 
 .apos-context-menu__popup--tb-padded .apos-context-menu__pane{
-  padding-top: 20px;
-  padding-bottom: 20px;
+  padding-top: $spacing-double;
+  padding-bottom: $spacing-double;
 }
 
 .apos-context-menu__popup {
@@ -483,7 +483,7 @@ function handleKeyboard(event) {
   font-size: var(--a-type-menu);
 
   & {
-    padding: 5px 0;
+    padding: $spacing-half 0;
     border: 1px solid var(--a-base-9);
     border-radius: var(--a-border-radius-large);
     box-shadow: var(--a-box-shadow);
@@ -504,8 +504,7 @@ function handleKeyboard(event) {
     width: max-content;
     margin: none;
     margin-block: 0;
-    margin: 5px 0;
-    // padding: 10px 0;
+    margin: $spacing-half 0;
   }
 }
 </style>
