@@ -234,7 +234,6 @@ $z-index-button-background: 1;
 $z-index-button-foreground: 2;
 
 .apos-area-modify-controls {
-
   :deep(.apos-button__content) {
     z-index: $z-index-button-foreground;
     position: relative;

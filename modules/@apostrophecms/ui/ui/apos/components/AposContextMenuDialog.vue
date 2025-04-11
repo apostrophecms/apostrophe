@@ -128,11 +128,11 @@ function emitSetArrow(arrowEl) {
 
 .apos-context-menu__pane {
   @include type-base;
-  font-size: var(--a-type-menu);
 
   & {
     padding: 20px;
     border: 1px solid var(--a-base-9);
+    font-size: var(--a-type-menu);
     border-radius: var(--a-border-radius-large);
     box-shadow: var(--a-box-shadow);
     background-color: var(--a-background-primary);
@@ -146,7 +146,6 @@ function emitSetArrow(arrowEl) {
     display: inline-block;
     list-style-type: none;
     width: max-content;
-    margin: none;
     margin-block: 0;
     margin: $spacing-three-quarters 0;
   }

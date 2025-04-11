@@ -101,9 +101,9 @@ export default {
 
 .apos-context-menu__separator {
   box-sizing: border-box;
+  width: 100%;
   margin: $spacing-half 0;
   padding: 0;
-  width: 100%;
   border-color: var(--a-base-10);
   border-style: solid;
 }

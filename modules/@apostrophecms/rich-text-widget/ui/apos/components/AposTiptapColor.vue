@@ -187,7 +187,6 @@ function update(value) {
 }
 
 .apos-color-control__dialog {
-
   &.apos-is-triggered.apos-has-selection {
     opacity: 1;
     pointer-events: auto;
