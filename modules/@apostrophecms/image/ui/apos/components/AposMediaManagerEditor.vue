@@ -287,19 +287,32 @@ export default {
         return;
       }
       const route = `${this.moduleOptions.action}/${this.activeMedia._id}`;
-      const patched = await apos.http.patch(route, {
-        busy: true,
-        body: {
-          archived: true
-        },
-        draft: true
-        // Autopublish will take care of the published side
-      });
-      apos.bus.$emit('content-changed', {
-        doc: patched,
-        action: 'archive'
-      });
-      await this.cancel();
+      try {
+        const patched = await apos.http.patch(route, {
+          busy: true,
+          body: {
+            archived: true
+          },
+          draft: true
+          // Autopublish will take care of the published side
+        });
+        apos.bus.$emit('content-changed', {
+          doc: patched,
+          action: 'archive'
+        });
+        await apos.notify('apostrophe:contentArchived', {
+          type: 'success',
+          icon: 'archive-arrow-down-icon',
+          dismiss: true
+        });
+        await this.cancel();
+      } catch (e) {
+        await apos.notify('apostrophe:errorWhileArchiving', {
+          type: 'danger',
+          icon: 'alert-circle-icon',
+          dismiss: true
+        });
+      }
     },
     async save() {
       this.triggerValidation = true;
@@ -338,6 +351,13 @@ export default {
           action: this.restoreOnly ? 'restore' : 'update'
         });
         this.original = klona(this.docFields.data);
+        const successEvent = this.restoreOnly
+          ? 'apostrophe:contentRestored'
+          : 'apostrophe:updated';
+        apos.notify(successEvent, {
+          type: 'success',
+          dismiss: true
+        });
       } catch (e) {
         if (this.isLockedError(e)) {
           await this.showLockedError(e);
@@ -353,7 +373,6 @@ export default {
         }
       } finally {
         this.showReplace = false;
-
       }
     },
     generateLipKey() {

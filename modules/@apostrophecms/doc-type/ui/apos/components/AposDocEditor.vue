@@ -644,13 +644,12 @@ export default {
         if (this.isLockedError(e)) {
           await this.showLockedError(e);
           this.modal.showModal = false;
-          return;
         } else {
           await this.handleSaveError(e, {
             fallback: 'An error occurred saving the document.'
           });
-          return;
         }
+        return;
       }
       if (!keepOpen) {
         this.$emit('modal-result', doc);
@@ -658,6 +657,12 @@ export default {
       }
       if (draft) {
         await apos.notify('apostrophe:draftSaved', {
+          type: 'success',
+          dismiss: true,
+          icon: 'file-document-icon'
+        });
+      } else if (!andPublish && this.moduleOptions.autopublish) {
+        await apos.notify('apostrophe:changesPublished', {
           type: 'success',
           dismiss: true,
           icon: 'file-document-icon'
