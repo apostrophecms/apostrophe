@@ -244,10 +244,16 @@ module.exports = {
           if (!req.aposParentPageCache) {
             req.aposParentPageCache = {};
           }
-          req.aposParentPageCache[pieceName] = pages;
+          if (pages?.length) {
+            req.aposParentPageCache[pieceName] = pages;
+          }
         }
         results.forEach(function (piece) {
-          const parentPage = self.chooseParentPage(req.aposParentPageCache[pieceName], piece);
+          const parentPage = self.chooseParentPage(
+            req.aposParentPageCache[pieceName] || [],
+            piece
+          );
+
           if (parentPage) {
             piece._url = self.buildUrl(req, parentPage, piece);
             piece._parent = self.pruneParent(parentPage);

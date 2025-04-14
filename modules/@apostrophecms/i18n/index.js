@@ -415,14 +415,11 @@ module.exports = {
             locale: sanitizedLocale
           });
           if (_id) {
-            doc = await self.apos.doc.find(localeReq, {
-              aposDocId: _id.split(':')[0]
-            }).toObject();
-            if (!doc) {
-              const publishedLocaleReq = localeReq.clone({ mode: 'draft' });
-              doc = await self.apos.doc.find(publishedLocaleReq, {
-                aposDocId: _id.split(':')[0]
-              }).toObject();
+            const aposDocId = _id.split(':')[0];
+            doc = await self.apos.doc.find(localeReq, { aposDocId }).toObject();
+            if (!doc._url) {
+              const draftLocaleReq = localeReq.clone({ mode: 'draft' });
+              doc = await self.apos.doc.find(draftLocaleReq, { aposDocId }).toObject();
             }
           }
           if (!sanitizedLocale) {
