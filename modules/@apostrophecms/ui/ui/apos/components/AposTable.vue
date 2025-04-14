@@ -16,7 +16,7 @@
           class="apos-table__header"
           :class="`apos-table__header--${header.css}`"
           data-apos-test="tableHeaderCell"
-          :style="headerStyles(header)"
+          :style="header.headerStyles"
         >
           <slot
             :name="`header-${header.name}`"
@@ -24,8 +24,8 @@
           >
             <component
               :is="header.component"
-              class="apos-table__header-label"
-              :class="{ 'apos-table__header--pointer': header.action }"
+              :class="header.headerClasses"
+              :title="$t(header.label)"
               @click="onColClick(header)"
             >
               <component
@@ -99,7 +99,13 @@
  *  visibility?: 'always' | 'never' | 'table' | 'export'
  * }} TableHeader
  *
- * @typedef {Required<TableHeader> & { component: string; cellClasses: string[] }} FinalTableHeader
+ * @typedef {
+ * Required<TableHeader> & {
+ *  component: string;
+ *  cellClasses: string[];
+ *  headerClasses: string[];
+ *  headerStyles: { width: string };
+ * }} FinalTableHeader
  *
  * @typedef {{
  *  _id: string;
@@ -178,7 +184,9 @@ export default {
           iconSize: header.iconSize ?? 10,
           css: header.css ?? header.name,
           format: this.getFormatFactory(header),
-          cellClasses: this.cellCss(header)
+          cellClasses: this.cellCss(header),
+          headerClasses: this.headerCss(header),
+          headerStyles: this.headerStyles(header)
         };
       });
     },
@@ -274,6 +282,18 @@ export default {
         width: this.maxCellWidth
       };
     },
+    headerCss(header) {
+      const classes = [
+        'apos-table__header-label'
+      ];
+      if (this.isTableFixed) {
+        classes.push('apos-table__cell-field-fixed');
+      }
+      if (header.action) {
+        classes.push('apos-table__header--pointer');
+      }
+      return classes;
+    },
     cellCss(header) {
       const classes = [
         'apos-table__cell-field',
@@ -341,7 +361,15 @@ export default {
 }
 
 .apos-table__header-label {
+  display: inline-block;
+  overflow: hidden;
   width: 100%;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.apos-table__header-icon {
+  display: inline-block;
 }
 
 .apos-table__header:focus-within {
