@@ -88,9 +88,6 @@
             :module-options="moduleOptions"
             :max-reached="maxReached()"
             :is-last-page="isLastPage"
-            :options="{
-              hideCheckboxes: !relationshipField
-            }"
             :relationship-field="relationshipField"
             :is-scroll-loading="isScrollLoading"
             @edit="updateEditing"

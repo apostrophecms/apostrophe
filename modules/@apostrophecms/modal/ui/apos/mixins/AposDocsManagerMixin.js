@@ -44,10 +44,16 @@ export default {
         // Treated as min for consistency with AposMinMaxCount
         return 'min';
       }
-      if (this.relationshipField.min && this.checked.length < this.relationshipField.min) {
+      if (
+        this.relationshipField.min &&
+        this.checked.length < this.relationshipField.min
+      ) {
         return 'min';
       }
-      if (this.relationshipField.max && this.checked.length > this.relationshipField.max) {
+      if (
+        this.relationshipField.max &&
+        this.checked.length > this.relationshipField.max
+      ) {
         return 'max';
       }
 
