@@ -18,7 +18,6 @@
         menu-placement="left"
         :has-tip="false"
         :button="{
-          tooltip: { content: 'apostrophe:moreOptions', placement: 'left' },
           label: 'apostrophe:moreOptions',
           icon: 'dots-horizontal-icon',
           iconOnly: true,
@@ -185,10 +184,15 @@ export default {
         icon: 'content-duplicate-icon',
         action: 'clone',
         modifiers: [
-          'separator',
           ...(this.disabled || this.maxReached) ? [ 'disabled' ] : []
         ]
       });
+
+      if (this.widgetSecondaryOperations.length) {
+        controls.push({
+          separator: true
+        });
+      }
 
       // Custom widget operations displayed in the secondary controls
       controls.push(...this.widgetSecondaryOperations);
@@ -230,15 +234,13 @@ $z-index-button-background: 1;
 $z-index-button-foreground: 2;
 
 .apos-area-modify-controls {
-  :deep(.apos-context-menu__items) .apos-context-menu__item {
-    &:has(.apos-context-menu__button--separator):not(:last-child) {
-      border-bottom: 1px solid var(--a-base-9);
-    }
-  }
-
   :deep(.apos-button__content) {
     z-index: $z-index-button-foreground;
     position: relative;
+  }
+
+  :deep(.apos-context-menu__items) {
+    min-width: 250px;
   }
 
   :deep(.apos-button__icon) {
