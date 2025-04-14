@@ -402,7 +402,7 @@ export default {
   methods: {
     customDiscardDraft() {
       if (this.showDiscardDraft && this.canDiscardDraft) {
-        this.menuHandler('discardDraft');
+        this.menuHandler({ action: 'discardDraft' });
       }
     },
     async onContentChanged({ doc, docIds }) {
