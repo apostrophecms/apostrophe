@@ -656,12 +656,12 @@ module.exports = {
         });
       },
       addWidgetOperation(operation) {
-        if (!operation.label || !operation.modal) {
-          throw self.apos.error('invalid', 'addWidgetOperation requires label and modal properties.');
+        if (!operation.name || !operation.label || !operation.modal) {
+          throw self.apos.error('invalid', 'addWidgetOperation requires name, label and modal properties.');
         }
 
         self.widgetOperations = self.widgetOperations.filter(
-          ({ modal }) => modal !== operation.modal
+          ({ name }) => name !== operation.name
         );
 
         self.widgetOperations.push(operation);

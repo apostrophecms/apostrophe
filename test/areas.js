@@ -427,6 +427,7 @@ describe('Areas', function() {
     const initialOperations = [ ...apos.area.widgetOperations ];
 
     const operation = {
+      name: 'someAction',
       modal: 'AposSomeModal',
       label: 'Some label',
       icon: 'some-icon',
@@ -447,13 +448,13 @@ describe('Areas', function() {
   });
 
   it('should throw an error when adding a widget operation that lacks required properties', function() {
-    const message = /requires label and modal/;
+    const message = /requires name, label and modal/;
 
     assert.throws(
       () => {
         apos.area.addWidgetOperation({
           label: 'Some label',
-          icon: 'some-icon'
+          modal: 'AposSomeModal'
         });
       },
       { message }
@@ -462,33 +463,64 @@ describe('Areas', function() {
     assert.throws(
       () => {
         apos.area.addWidgetOperation({
-          modal: 'AposSomeModal',
-          icon: 'some-icon'
+          name: 'someAction',
+          modal: 'AposSomeModal'
+        });
+      },
+      { message }
+    );
+
+    assert.throws(
+      () => {
+        apos.area.addWidgetOperation({
+          name: 'someAction',
+          label: 'Some label'
         });
       },
       { message }
     );
   });
 
-  it('should replace an existing widget operation', function() {
+  it('should replace an existing widget operation based on the name', function() {
     const initialOperations = [ ...apos.area.widgetOperations ];
     const operation = {
-      modal: 'AposSomeModal',
-      label: 'New label',
-      icon: 'new-icon'
+      name: 'nameA',
+      modal: 'modalA-2',
+      label: 'Label A-2',
+      icon: 'icon-a-2'
     };
 
     apos.area.widgetOperations = [
       {
-        modal: 'AposSomeModal',
-        label: 'Some label',
-        icon: 'sone-icon'
+        name: 'nameA',
+        modal: 'modalA-1',
+        label: 'Label A-1',
+        icon: 'icon-a-1'
+      },
+      {
+        name: 'nameB',
+        modal: 'modalB',
+        label: 'Label B',
+        icon: 'icon-b'
       }
     ];
     apos.area.addWidgetOperation(operation);
 
-    assert.strictEqual(apos.area.widgetOperations.length, 1);
-    assert.deepStrictEqual(apos.area.widgetOperations, [ { ...operation } ]);
+    assert.strictEqual(apos.area.widgetOperations.length, 2);
+    assert.deepStrictEqual(apos.area.widgetOperations, [
+      {
+        name: 'nameB',
+        modal: 'modalB',
+        label: 'Label B',
+        icon: 'icon-b'
+      },
+      {
+        name: 'nameA',
+        modal: 'modalA-2',
+        label: 'Label A-2',
+        icon: 'icon-a-2'
+      }
+    ]);
 
     apos.area.widgetOperations = initialOperations;
   });
@@ -496,6 +528,7 @@ describe('Areas', function() {
   it('should handle widget operations with custom permissions', function() {
     const initialOperations = [ ...apos.area.widgetOperations ];
     const operation = {
+      name: 'someAction',
       modal: 'AposSomeModal',
       label: 'Some label',
       icon: 'sone-icon',
