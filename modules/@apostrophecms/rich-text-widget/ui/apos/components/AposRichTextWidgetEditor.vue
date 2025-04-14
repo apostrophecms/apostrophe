@@ -226,7 +226,7 @@ export default {
     },
     tableTippyOptions() {
       return {
-        zIndex: 999,
+        zIndex: 2001,
         placement: 'top',
         offset: [ 0, 35 ],
         moveTransition: 'transform 0s ease-out',
@@ -752,6 +752,11 @@ function traverseNextNode(node) {
 
   $z-index-button-background: 1;
   $z-index-button-foreground: 2;
+
+  .bubble-menu {
+    width: max-content;
+    max-width: 95vw;
+  }
 
   .apos-rich-text-toolbar.editor-menu-bubble {
     z-index: $z-index-manager-toolbar;

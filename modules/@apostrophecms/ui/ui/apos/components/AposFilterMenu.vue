@@ -138,8 +138,8 @@ export default {
   min-width: 140px;
 
   :deep(.apos-input--select) {
-    padding-top: $spacing-base;
-    padding-bottom: $spacing-base;
+    padding-top: 0;
+    padding-bottom: 0;
     background-color: var(--a-base-10);
     font-style: italic;
   }

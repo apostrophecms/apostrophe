@@ -5,6 +5,8 @@
 ### Adds
 
 * To display a live preview on the page as changes are made to widgets, set the `preview: true` option on any widget module. To turn it on for all widgets, you can set it on the `@apostrophecms/widget-type` module, the base class of all widget modules. This works especially well when `range` fields are used to achieve visual effects.
+* Adds separate control bar for editing tables in rich text
+* Adds ability to drag-resize rich text table columns
 * Add `apos.area.addWidgetOperation` to display custom widget operations at the primary level or secondary, via a 3-dots menu.
 
 ### Changes
@@ -16,6 +18,7 @@
 * Change reset password form button label to `Reset Password`.
 * Removed overly verbose logging of schema errors in the schema module itself. These are already logged appropriately if they become the actual result of an API call. With this change it becomes possible to catch and discard or mitigate these in some situations without excessive log output.
 * Bumps eslint-config-apostrophe, fix errors and a bunch of warnings.
+* Gets back checkboxes in the media manager.
 
 ### Fixes
 
@@ -25,6 +28,11 @@
 * Fixes the rich text insert menu image menu not being properly closed.
 * Fixes the rich text toolbar not closing sometimes when unfocusing the editor.
 * Fixes missing wording on images batch operations.
+* Fixes rich text toolbar width being limited to parent width.
+* Fixes rich text insert menu focused item text color easily overridable.
+* Fixes long overlapping text in the header of the Report modal.
+* Fixes clipped text in the pager and in the relationship filters of piece manager.
+* Fixes an error when pressing Enter in a relationship input without a focused suggestion.
 
 ## 4.14.2 (2025-04-02)
 
@@ -50,8 +58,6 @@
 * Adds the missing "Tags" filter to the chooser/manager view of files.
 * Adds batch operations to the media manager.
 * Passes `moduleName` to the event `content-changed` for batch operations, to know if data should be refreshed or not.
-* Adds separate control bar for editing tables in rich text
-* Adds ability to drag-resize rich text table columns
 
 ### Changes
 

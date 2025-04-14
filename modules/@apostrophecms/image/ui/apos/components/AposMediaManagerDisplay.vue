@@ -115,7 +115,9 @@ export default {
     options: {
       type: Object,
       default() {
-        return {};
+        return {
+          hideCheckboxes: false
+        };
       }
     },
     accept: {
@@ -265,7 +267,8 @@ export default {
   }
 
   .apos-media-manager-display__cell:hover .apos-media-manager-display__checkbox,
-  .apos-media-manager-display__cell.apos-is-selected .apos-media-manager-display__checkbox {
+  .apos-media-manager-display__cell.apos-is-selected
+  .apos-media-manager-display__checkbox {
     opacity: 1;
   }
 

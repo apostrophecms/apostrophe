@@ -145,7 +145,8 @@ export default {
         });
       });
       // Place that largest value on that key of the spacingRow object.
-      // Put that array in the DOM, and generate styles to be passed down based on its layout. Give the first column any leftover space.
+      // Put that array in the DOM, and generate styles to be passed down based
+      // on its layout. Give the first column any leftover space.
       const finalRow = [];
       this.headers.forEach(col => {
         let obj;
