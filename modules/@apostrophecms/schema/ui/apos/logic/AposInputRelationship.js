@@ -19,7 +19,8 @@ export default {
         .map(doc => [ doc._id, doc._fields ])
     );
 
-    const suggestionFields = this.field.suggestionFields || apos.modules[this.field.withType]?.relationshipSuggestionFields;
+    const suggestionFields = this.field.suggestionFields ||
+      apos.modules[this.field.withType]?.relationshipSuggestionFields;
 
     return {
       searchTerm: '',
@@ -240,9 +241,11 @@ export default {
           }
           break;
         case 'Enter':
-          this.updateSelected([ ...this.next, this.searchList[this.searchFocusIndex] ]);
-          this.handleFocusOut();
-          this.input();
+          if (this.searchFocusIndex !== null && this.searchList[this.searchFocusIndex]) {
+            this.updateSelected([ ...this.next, this.searchList[this.searchFocusIndex] ]);
+            this.handleFocusOut();
+            this.input();
+          }
           break;
         case 'Escape':
           this.handleFocusOut();
