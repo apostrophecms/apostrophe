@@ -429,7 +429,7 @@ export default {
       );
     },
     inlineMenuHandler(event, { index, id }) {
-      switch (event) {
+      switch (event.action) {
         case 'move-up':
           this.moveUpdate({
             oldIndex: index,
