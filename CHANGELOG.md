@@ -28,6 +28,7 @@
 * Fixes missing wording on images batch operations.
 * Fixes rich text toolbar width being limited to parent width.
 * Fixes rich text insert menu focused item text color easily overridable.
+* Fixes long overlapping text in the header of the Report modal.
 * Fixes clipped text in the pager and in the relationship filters of piece manager.
 * Fixes an error when pressing Enter in a relationship input without a focused suggestion.
 
