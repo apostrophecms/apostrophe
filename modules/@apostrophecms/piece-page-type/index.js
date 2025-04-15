@@ -238,7 +238,7 @@ module.exports = {
       // Aliased as the `addUrls` method of [@apostrophecms/piece-type](../@apostrophecms/piece-type/index.html).
 
       async addUrlsToPieces(req, results) {
-        const pieceName = self.pieces.name;
+        const pieceName = `${self.pieces.name}:${req.mode}`;
         if (!(req.aposParentPageCache && req.aposParentPageCache[pieceName])) {
           const pages = await self.findForAddUrlsToPieces(req).toArray();
           if (!req.aposParentPageCache) {
@@ -247,7 +247,11 @@ module.exports = {
           req.aposParentPageCache[pieceName] = pages;
         }
         results.forEach(function (piece) {
-          const parentPage = self.chooseParentPage(req.aposParentPageCache[pieceName], piece);
+          const parentPage = self.chooseParentPage(
+            req.aposParentPageCache[pieceName] || [],
+            piece
+          );
+
           if (parentPage) {
             piece._url = self.buildUrl(req, parentPage, piece);
             piece._parent = self.pruneParent(parentPage);
