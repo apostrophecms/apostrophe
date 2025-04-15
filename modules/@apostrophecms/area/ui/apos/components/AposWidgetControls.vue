@@ -23,6 +23,12 @@
         @click="$emit('edit')"
       />
       <AposButton
+        v-if="isImage"
+        v-bind="adjustImageButton"
+        :disabled="disabled"
+        @click="$emit('adjust-image')"
+      />
+      <AposButton
         v-bind="cutButton"
         :tooltip="{
           content: 'apostrophe:cut',
@@ -98,9 +104,13 @@ export default {
     tabbable: {
       type: Boolean,
       default: false
+    },
+    isImage: {
+      type: Boolean,
+      default: false
     }
   },
-  emits: [ 'remove', 'edit', 'cut', 'copy', 'clone', 'up', 'down' ],
+  emits: [ 'remove', 'edit', 'cut', 'copy', 'clone', 'up', 'down', 'adjust-image' ],
   computed: {
     buttonDefaults() {
       return {
@@ -147,6 +157,17 @@ export default {
         ...this.buttonDefaults,
         label: 'apostrophe:edit',
         icon: 'pencil-icon'
+      };
+    },
+    adjustImageButton() {
+      return {
+        ...this.buttonDefaults,
+        label: 'apostrophe:adjustImage',
+        icon: 'image-edit-outline',
+        tooltip: {
+          content: 'apostrophe:editImageAdjustments',
+          placement: 'left'
+        }
       };
     },
     cutButton() {
