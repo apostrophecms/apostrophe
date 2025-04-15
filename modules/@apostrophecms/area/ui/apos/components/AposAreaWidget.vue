@@ -111,6 +111,7 @@
           :disabled="disabled"
           :max-reached="maxReached"
           :tabbable="isFocused"
+          :is-image="widget.type === '@apostrophecms/image'"
           @up="$emit('up', i);"
           @remove="$emit('remove', i);"
           @edit="$emit('edit', i);"
@@ -118,6 +119,7 @@
           @copy="$emit('copy', i);"
           @clone="$emit('clone', i);"
           @down="$emit('down', i);"
+          @adjust-image="$emit('adjust-image');"
         />
       </div>
       <!-- Still used for contextual editing components -->
@@ -267,7 +269,19 @@ export default {
       }
     }
   },
-  emits: [ 'clone', 'up', 'down', 'remove', 'edit', 'cut', 'copy', 'update', 'add', 'changed' ],
+  emits: [
+    'clone',
+    'up',
+    'down',
+    'remove',
+    'edit',
+    'cut',
+    'copy',
+    'update',
+    'add',
+    'changed',
+    'adjust-image'
+  ],
   data() {
     return {
       mounted: false, // hack around needing DOM to be rendered for computed classes
@@ -555,7 +569,6 @@ export default {
     widgetEditorComponent(type) {
       return this.moduleOptions.components.widgetEditors[type];
     }
-
   }
 };
 </script>

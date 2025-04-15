@@ -66,6 +66,7 @@
         @clone="clone"
         @update="update"
         @add="add"
+        @adjust-image="adjustImage(widget)"
       />
     </div>
   </div>
@@ -628,6 +629,41 @@ export default {
         type
       };
       return widget;
+    },
+    async adjustImage(widget) {
+      if (!widget._image?.length) {
+        return;
+      }
+      const schema = apos.modules[widget.type].schema;
+      const [ item ] = widget._image;
+      const result = await apos.modal.execute('AposImageRelationshipEditor', {
+        schema,
+        item,
+        title: item.title,
+        'model-value': item._fields
+      });
+
+      if (result) {
+        this.next = this.next.map((_item) => {
+          return _item._id === widget._id
+            ? {
+              ..._item,
+              imageFields: {
+                ..._item.imageFields,
+                [item.aposDocId]: result
+              }
+            }
+            : _item;
+        });
+
+        console.log('this.next', this.next);
+
+        const res = await apos.http.post(`${apos.area.action}/render-widget?aposEdit=1&aposMode=${this.mode}`, {
+          busy: true,
+          body: parameters
+        });
+        this.edited[widget._id] = true;
+      }
     }
   }
 };
