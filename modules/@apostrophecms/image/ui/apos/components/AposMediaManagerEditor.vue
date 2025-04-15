@@ -353,7 +353,7 @@ export default {
         this.original = klona(this.docFields.data);
         const successEvent = this.restoreOnly
           ? 'apostrophe:contentRestored'
-          : 'apostrophe:updated';
+          : 'apostrophe:changesPublished';
         apos.notify(successEvent, {
           type: 'success',
           dismiss: true
