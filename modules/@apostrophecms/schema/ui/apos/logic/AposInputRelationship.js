@@ -292,11 +292,6 @@ export default {
         });
       }
     },
-    getEditRelationshipLabel () {
-      if (this.field.editor === 'AposImageRelationshipEditor') {
-        return 'apostrophe:editImageAdjustments';
-      }
-    },
     getDefault() {
       return newInstance(this.field.schema);
     }
