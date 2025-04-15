@@ -108,7 +108,6 @@
           :first="i === 0"
           :last="i === next.length - 1"
           :options="{ contextual: isContextual }"
-          :foreign="foreign"
           :disabled="disabled"
           :max-reached="maxReached"
           :tabbable="isFocused"
