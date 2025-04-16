@@ -108,10 +108,10 @@
           :first="i === 0"
           :last="i === next.length - 1"
           :options="{ contextual: isContextual }"
-          :foreign="foreign"
           :disabled="disabled"
           :max-reached="maxReached"
           :tabbable="isFocused"
+          :is-image="widget.type === '@apostrophecms/image'"
           @up="$emit('up', i);"
           @remove="$emit('remove', i);"
           @edit="$emit('edit', i);"
@@ -119,6 +119,7 @@
           @copy="$emit('copy', i);"
           @clone="$emit('clone', i);"
           @down="$emit('down', i);"
+          @adjust-image="$emit('adjust-image');"
         />
       </div>
       <!-- Still used for contextual editing components -->
@@ -268,7 +269,19 @@ export default {
       }
     }
   },
-  emits: [ 'clone', 'up', 'down', 'remove', 'edit', 'cut', 'copy', 'update', 'add', 'changed' ],
+  emits: [
+    'clone',
+    'up',
+    'down',
+    'remove',
+    'edit',
+    'cut',
+    'copy',
+    'update',
+    'add',
+    'changed',
+    'adjust-image'
+  ],
   data() {
     return {
       mounted: false, // hack around needing DOM to be rendered for computed classes
@@ -438,7 +451,8 @@ export default {
       }
     },
 
-    // Determine whether or not we should adjust the label based on its position to the admin bar
+    // Determine whether or not we should adjust the label based on its position to
+    // the admin bar
     adjustUi() {
       const { height: labelHeight } = this.$refs.label.getBoundingClientRect();
       const { top: widgetTop } = this.$refs.widget.getBoundingClientRect();
@@ -530,7 +544,8 @@ export default {
     },
 
     // Hacky way to get the parents tree of a widget
-    // would be easier of areas/widgets were recursively calling each other and able to pass data all the way down
+    // would be easier of areas/widgets were recursively calling each other and able
+    // to pass data all the way down
     getBreadcrumbs() {
       if (this.breadcrumbs.$lastEl) {
         const $parent = apos.util.closest(this.breadcrumbs.$lastEl.parentNode, '[data-area-widget]');
@@ -554,7 +569,6 @@ export default {
     widgetEditorComponent(type) {
       return this.moduleOptions.components.widgetEditors[type];
     }
-
   }
 };
 </script>
@@ -769,7 +783,13 @@ export default {
       justify-content: center;
       padding: 5px;
       transition: all 200ms var(--a-transition-timing-bounce);
-      background-image: linear-gradient( 45deg, var(--a-primary), var(--a-primary-dark-15), var(--a-primary-light-40), var(--a-primary) );
+      background-image: linear-gradient(
+        45deg,
+        var(--a-primary),
+        var(--a-primary-dark-15),
+        var(--a-primary-light-40),
+        var(--a-primary)
+      );
       background-size: 200% 100%;
       border-radius: 12px;
     }
@@ -828,9 +848,10 @@ export default {
   }
 
   .apos-area-widget__breadcrumbs:hover .apos-area-widget__breadcrumb,
-  .apos-area-widget__breadcrumbs:hover .apos-area-widget__breadcrumb :deep(.apos-button__content) {
-    color: var(--a-text-primary);
-  }
+  .apos-area-widget__breadcrumbs:hover .apos-area-widget__breadcrumb
+    :deep(.apos-button__content) {
+      color: var(--a-text-primary);
+    }
 
   .apos-area-widget__breadcrumb--widget-icon {
     margin-right: 2px;

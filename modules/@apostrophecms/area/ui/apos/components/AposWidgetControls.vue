@@ -4,7 +4,6 @@
       :modifiers="[ 'vertical' ]"
     >
       <AposButton
-        v-if="!foreign"
         v-bind="upButton"
         :disabled="first || disabled"
         :tooltip="{
@@ -14,7 +13,7 @@
         @click="$emit('up')"
       />
       <AposButton
-        v-if="!foreign && !options.contextual"
+        v-if="!options.contextual"
         v-bind="editButton"
         :disabled="disabled"
         :tooltip="{
@@ -24,7 +23,12 @@
         @click="$emit('edit')"
       />
       <AposButton
-        v-if="!foreign"
+        v-if="isImage"
+        v-bind="adjustImageButton"
+        :disabled="disabled"
+        @click="$emit('adjust-image')"
+      />
+      <AposButton
         v-bind="cutButton"
         :tooltip="{
           content: 'apostrophe:cut',
@@ -33,7 +37,6 @@
         @click="$emit('cut')"
       />
       <AposButton
-        v-if="!foreign"
         v-bind="copyButton"
         :tooltip="{
           content: 'apostrophe:copy',
@@ -42,7 +45,6 @@
         @click="$emit('copy')"
       />
       <AposButton
-        v-if="!foreign"
         v-bind="cloneButton"
         :disabled="disabled || maxReached"
         :tooltip="{
@@ -52,7 +54,6 @@
         @click="$emit('clone')"
       />
       <AposButton
-        v-if="!foreign"
         v-bind="removeButton"
         :disabled="disabled"
         :tooltip="{
@@ -62,7 +63,6 @@
         @click="$emit('remove')"
       />
       <AposButton
-        v-if="!foreign"
         v-bind="downButton"
         :disabled="last || disabled"
         :tooltip="{
@@ -93,10 +93,6 @@ export default {
         return {};
       }
     },
-    foreign: {
-      type: Boolean,
-      required: true
-    },
     disabled: {
       type: Boolean,
       default: false
@@ -108,9 +104,13 @@ export default {
     tabbable: {
       type: Boolean,
       default: false
+    },
+    isImage: {
+      type: Boolean,
+      default: false
     }
   },
-  emits: [ 'remove', 'edit', 'cut', 'copy', 'clone', 'up', 'down' ],
+  emits: [ 'remove', 'edit', 'cut', 'copy', 'clone', 'up', 'down', 'adjust-image' ],
   computed: {
     buttonDefaults() {
       return {
@@ -157,6 +157,17 @@ export default {
         ...this.buttonDefaults,
         label: 'apostrophe:edit',
         icon: 'pencil-icon'
+      };
+    },
+    adjustImageButton() {
+      return {
+        ...this.buttonDefaults,
+        label: 'apostrophe:adjustImage',
+        icon: 'image-edit-outline',
+        tooltip: {
+          content: 'apostrophe:editImageAdjustments',
+          placement: 'left'
+        }
       };
     },
     cutButton() {
