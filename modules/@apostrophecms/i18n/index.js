@@ -417,7 +417,7 @@ module.exports = {
           if (_id) {
             const aposDocId = _id.split(':')[0];
             doc = await self.apos.doc.find(localeReq, { aposDocId }).toObject();
-            if (!doc._url) {
+            if (!doc?._url) {
               const draftLocaleReq = localeReq.clone({ mode: 'draft' });
               doc = await self.apos.doc.find(draftLocaleReq, { aposDocId }).toObject();
             }
