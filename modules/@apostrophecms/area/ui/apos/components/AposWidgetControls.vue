@@ -16,6 +16,7 @@
         :menu="widgetSecondaryControls"
         :disabled="disabled || (widgetSecondaryControls.length === 0)"
         menu-placement="left"
+        identifier="secondary-controls"
         :has-tip="false"
         :button="{
           label: 'apostrophe:moreOptions',
