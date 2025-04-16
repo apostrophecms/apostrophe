@@ -660,6 +660,10 @@ module.exports = {
           throw self.apos.error('invalid', 'addWidgetOperation requires name, label and modal properties.');
         }
 
+        if (operation.secondaryLevel !== true && !operation.icon) {
+          throw self.apos.error('invalid', 'addWidgetOperation requires the icon property at primary level.');
+        }
+
         self.widgetOperations = self.widgetOperations.filter(
           ({ name }) => name !== operation.name
         );

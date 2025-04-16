@@ -72,6 +72,10 @@ describe('Areas', function() {
     return t.destroy(apos);
   });
 
+  beforeEach(function() {
+    apos.area.widgetOperations = [];
+  });
+
   it('can get widgets from groups', function() {
     const options = {
       groups: {
@@ -424,8 +428,6 @@ describe('Areas', function() {
   });
 
   it('should support custom widget operations', function() {
-    const initialOperations = [ ...apos.area.widgetOperations ];
-
     const operation = {
       name: 'someAction',
       modal: 'AposSomeModal',
@@ -443,8 +445,6 @@ describe('Areas', function() {
 
     assert.strictEqual(apos.area.widgetOperations.length, 1);
     assert.deepStrictEqual(apos.area.widgetOperations, [ { ...operation } ]);
-
-    apos.area.widgetOperations = initialOperations;
   });
 
   it('should throw an error when adding a widget operation that lacks required properties', function() {
@@ -454,7 +454,8 @@ describe('Areas', function() {
       () => {
         apos.area.addWidgetOperation({
           label: 'Some label',
-          modal: 'AposSomeModal'
+          modal: 'AposSomeModal',
+          icon: 'some-icon'
         });
       },
       { message }
@@ -464,7 +465,8 @@ describe('Areas', function() {
       () => {
         apos.area.addWidgetOperation({
           name: 'someAction',
-          modal: 'AposSomeModal'
+          modal: 'AposSomeModal',
+          icon: 'some-icon'
         });
       },
       { message }
@@ -474,15 +476,34 @@ describe('Areas', function() {
       () => {
         apos.area.addWidgetOperation({
           name: 'someAction',
-          label: 'Some label'
+          label: 'Some label',
+          icon: 'some-icon'
         });
       },
       { message }
     );
+
+    assert.throws(
+      () => {
+        apos.area.addWidgetOperation({
+          name: 'someAction',
+          label: 'Some label',
+          modal: 'AposSomeModal'
+        });
+      },
+      { message: /requires the icon property at primary level/ }
+    );
+
+    // This ensures that the icon is not required at secondary level:
+    apos.area.addWidgetOperation({
+      name: 'someAction',
+      label: 'Some label',
+      modal: 'AposSomeModal',
+      secondaryLevel: true
+    });
   });
 
   it('should replace an existing widget operation based on the name', function() {
-    const initialOperations = [ ...apos.area.widgetOperations ];
     const operation = {
       name: 'nameA',
       modal: 'modalA-2',
@@ -521,12 +542,9 @@ describe('Areas', function() {
         icon: 'icon-a-2'
       }
     ]);
-
-    apos.area.widgetOperations = initialOperations;
   });
 
   it('should handle widget operations with custom permissions', function() {
-    const initialOperations = [ ...apos.area.widgetOperations ];
     const operation = {
       name: 'someAction',
       modal: 'AposSomeModal',
@@ -549,8 +567,6 @@ describe('Areas', function() {
       const browserData = apos.area.getBrowserData(apos.task.getContributorReq());
       assert.deepStrictEqual(browserData.widgetOperations, []);
     }
-
-    apos.area.widgetOperations = initialOperations;
   });
 });
 
