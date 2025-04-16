@@ -497,6 +497,8 @@ export default {
     },
     onContextEdited(patch) {
       patch = klona(patch);
+      console.log('patch', patch);
+      console.log('this.saving', this.saving);
       this.patchesSinceLoaded.push(patch);
       this.patchesSinceSave.push(patch);
       this.undone = [];

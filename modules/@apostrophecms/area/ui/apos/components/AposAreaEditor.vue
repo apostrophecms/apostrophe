@@ -440,23 +440,23 @@ export default {
         // actual files, and the reference count will update automatically
       }
     },
-    async update(widget, { autosave = true } = {}) {
-      widget.aposPlaceholder = false;
-      if (!widget.metaType) {
-        widget.metaType = 'widget';
+    async update(updated, { autosave = true } = {}) {
+      updated.aposPlaceholder = false;
+      if (!updated.metaType) {
+        updated.metaType = 'widget';
       }
       if (autosave && (this.docId === window.apos.adminBar.contextId)) {
         apos.bus.$emit('context-edited', {
-          [`@${widget._id}`]: widget
+          [`@${updated._id}`]: updated
         });
       }
-      const index = this.next.findIndex(w => w._id === widget._id);
-      this.next = [
-        ...this.next.slice(0, index),
-        widget,
-        ...this.next.slice(index + 1)
-      ];
-      this.edited[widget._id] = true;
+      this.next = this.next.map((widget) => {
+        if (widget._id === updated._id) {
+          return updated;
+        }
+        return widget;
+      });
+      this.edited[updated._id] = true;
     },
     // Add a widget into an area.
     async add({
@@ -644,25 +644,19 @@ export default {
       });
 
       if (result) {
-        this.next = this.next.map((_item) => {
-          return _item._id === widget._id
-            ? {
-              ..._item,
-              imageFields: {
-                ..._item.imageFields,
-                [item.aposDocId]: result
-              }
-            }
-            : _item;
-        });
+        const updated = {
+          ...widget,
+          imageFields: {
+            ...widget.imageFields,
+            [item.aposDocId]: result
+          }
+        };
+        this.update(updated);
 
-        console.log('this.next', this.next);
-
-        const res = await apos.http.post(`${apos.area.action}/render-widget?aposEdit=1&aposMode=${this.mode}`, {
-          busy: true,
-          body: parameters
-        });
-        this.edited[widget._id] = true;
+        /* const res = await apos.http.post(`${apos.area.action}/render-widget?aposEdit=1&aposMode=${this.mode}`, { */
+        /*   busy: true, */
+        /*   body: parameters */
+        /* }); */
       }
     }
   }

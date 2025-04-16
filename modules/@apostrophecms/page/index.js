@@ -1171,6 +1171,7 @@ database.`);
             throw self.apos.error('forbidden');
           }
           const patches = Array.isArray(input._patches) ? input._patches : [ input ];
+
           // Conventional for loop so we can handle the last one specially
           for (let i = 0; (i < patches.length); i++) {
             const input = patches[i];
@@ -1189,8 +1190,11 @@ database.`);
             }
             self.enforceParkedProperties(req, page, input);
             if (possiblePatchedFields) {
+              console.log('input fields', input['@xxan23pleltod83m7697b6cx'].imageFields);
               await self.applyPatch(req, page, input);
             }
+            console.log('=====> Page main <=====');
+            console.dir(page.main, { depth: 6 });
             if (i === (patches.length - 1)) {
               if (possiblePatchedFields) {
                 await self.update(req, page);
@@ -1200,7 +1204,11 @@ database.`);
                   const position = self.apos.launder.string(input._position);
                   modified = await self.move(req, page._id, targetId, position);
                 }
-                result = await self.findOneForEditing(req, { _id }, { attachments: true });
+                result = await self.findOneForEditing(
+                  req,
+                  { _id },
+                  { attachments: true }
+                );
                 if (modified) {
                   result.__changed = modified.changed;
                 }
