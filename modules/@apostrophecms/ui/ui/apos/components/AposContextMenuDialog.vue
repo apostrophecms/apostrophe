@@ -21,7 +21,7 @@
           <AposContextMenuItem
             v-for="item in menu"
             :key="item.action"
-            :data-apos-test-context-menu-item="item.action"
+            :data-apos-test-context-menu-item="item.action || item.modal"
             :menu-item="item"
             :is-active="item.name === activeItem"
             :open="isOpen"
