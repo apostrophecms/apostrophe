@@ -644,19 +644,17 @@ export default {
       });
 
       if (result) {
-        const updated = {
-          ...widget,
-          imageFields: {
-            ...widget.imageFields,
-            [item.aposDocId]: result
-          }
+        const updatedImg = {
+          ...item,
+          _fields: result
         };
-        this.update(updated);
 
-        /* const res = await apos.http.post(`${apos.area.action}/render-widget?aposEdit=1&aposMode=${this.mode}`, { */
-        /*   busy: true, */
-        /*   body: parameters */
-        /* }); */
+        const updatedWidget = {
+          ...widget,
+          _image: [ updatedImg ]
+        };
+
+        this.update(updatedWidget);
       }
     }
   }

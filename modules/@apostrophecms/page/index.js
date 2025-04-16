@@ -1190,11 +1190,8 @@ database.`);
             }
             self.enforceParkedProperties(req, page, input);
             if (possiblePatchedFields) {
-              console.log('input fields', input['@xxan23pleltod83m7697b6cx'].imageFields);
               await self.applyPatch(req, page, input);
             }
-            console.log('=====> Page main <=====');
-            console.dir(page.main, { depth: 6 });
             if (i === (patches.length - 1)) {
               if (possiblePatchedFields) {
                 await self.update(req, page);
