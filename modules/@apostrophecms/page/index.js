@@ -1126,19 +1126,22 @@ database.`);
       // it to be called from the universal @apostrophecms/doc PATCH route
       // as well.
       //
-      // However if you plan to submit many patches over a period of time while editing you may also
-      // want to use the advisory lock mechanism.
+      // However if you plan to submit many patches over a period of time while editing
+      // you may also want to use the advisory lock mechanism.
       //
-      // If `_advisoryLock: { tabId: 'xyz', lock: true }` is passed, the operation will begin by obtaining an advisory
-      // lock on the document for the given context id, and no other items in the patch will be addressed
-      // unless that succeeds. The client must then refresh the lock frequently (by default, at least
-      // every 30 seconds) with repeated PATCH requests of the `_advisoryLock` property with the same
-      // context id. If `_advisoryLock: { tabId: 'xyz', lock: false }` is passed, the advisory lock will be
-      // released *after* addressing other items in the same patch. If `force: true` is added to
-      // the `_advisoryLock` object it will always remove any competing advisory lock.
+      // If `_advisoryLock: { tabId: 'xyz', lock: true }` is passed, the operation will
+      // begin by obtaining an advisory lock on the document for the given context id,
+      // and no other items in the patch will be addressed unless that succeeds.
+      // The client must then refresh the lock frequently (by default, at least every 30
+      // seconds) with repeated PATCH requests of the `_advisoryLock` property with the
+      // same context id. If `_advisoryLock: { tabId: 'xyz', lock: false }` is passed,
+      // the advisory lock will be released *after* addressing other items in the same
+      // patch. If `force: true` is added to the `_advisoryLock` object it will always
+      // remove any competing advisory lock.
       //
-      // `_advisoryLock` is only relevant if you plan to make ongoing edits over a period of time
-      // and wish to avoid conflict with other users. You do not need it for one-time patches.
+      // `_advisoryLock` is only relevant if you plan to make ongoing edits over a
+      // period of time and wish to avoid conflict with other users. You do not need it
+      // for one-time patches.
       //
       // If `input._patches` is an array of patches to the same document, this method
       // will iterate over those patches as if each were `input`, applying all of them
@@ -1215,16 +1218,19 @@ database.`);
           return result;
         });
       },
-      // Apply a single patch to the given page without saving. An implementation detail of the
-      // patch method, also used by the undo mechanism to simulate patches.
+      // Apply a single patch to the given page without saving. An implementation detail
+      // of the patch method, also used by the undo mechanism to simulate patches.
       // Does not handle _targetId, that is implemented in the patch method.
       async applyPatch(req, page, input) {
-        const manager = self.apos.doc.getManager(self.apos.launder.string(input.type) || page.type);
+        const manager = self.apos.doc.getManager(
+          self.apos.launder.string(input.type) || page.type
+        );
         if (!manager) {
           throw self.apos.error('invalid');
         }
         self.apos.schema.implementPatchOperators(input, page);
-        const parentPage = page._ancestors.length && page._ancestors[page._ancestors.length - 1];
+        const parentPage = page._ancestors.length &&
+          page._ancestors[page._ancestors.length - 1];
         const schema = self.apos.schema.subsetSchemaForPatch(manager.allowedSchema(req, {
           ...page,
           type: manager.name
