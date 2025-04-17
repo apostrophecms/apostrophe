@@ -82,11 +82,14 @@ export default {
   emits: [ 'remove', 'edit', 'cut', 'copy', 'clone', 'up', 'down' ],
   data() {
     const { widgetOperations = [] } = apos.modules['@apostrophecms/area'];
+    const filteredOperations = widgetOperations.filter(operation => {
+      return !operation.type || operation.type === `${this.modelValue.type}-widget`;
+    });
 
     return {
-      widgetPrimaryOperations: widgetOperations
+      widgetPrimaryOperations: filteredOperations
         .filter(operation => !operation.secondaryLevel),
-      widgetSecondaryOperations: widgetOperations
+      widgetSecondaryOperations: filteredOperations
         .filter(operation => operation.secondaryLevel)
     };
   },
@@ -215,6 +218,9 @@ export default {
     }
   },
   methods: {
+    filterByWidgetType(operation) {
+      return !operation.type || operation.type === this.modelValue.type;
+    },
     handleClick({ action, modal }) {
       if (action) {
         this.$emit(action);
