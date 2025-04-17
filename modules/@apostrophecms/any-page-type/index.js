@@ -1,7 +1,7 @@
-// This module provides a special doc type manager, `@apostrophecms/any-page-type`, a virtual
-// type which actually refers to any page in the tree, regardless of type. This
-// allows you to create [@apostrophecms/schema](Apostrophe schema relationships) that can link to
-// any page in the page tree, rather than one specific page type.
+// This module provides a special doc type manager, `@apostrophecms/any-page-type`, a
+// virtual type which actually refers to any page in the tree, regardless of type.
+// This allows you to create [@apostrophecms/schema](Apostrophe schema relationships)
+// that can link to any page in the page tree, rather than one specific page type.
 
 const _ = require('lodash');
 
@@ -92,8 +92,8 @@ module.exports = {
           }
         },
 
-        // `.ancestors(true)` retrieves the ancestors of each returned page and assigns them
-        // to the `._ancestors` property. The home page is `._ancestors[0]`. The
+        // `.ancestors(true)` retrieves the ancestors of each returned page and assigns
+        // them to the `._ancestors` property. The home page is `._ancestors[0]`. The
         // page itself is not included in its own `._ancestors` array.
         //
         // If the argument is an object, do all of the above, and also call the
@@ -214,7 +214,11 @@ module.exports = {
               return;
             }
 
-            const subquery = self.apos.page.find(query.req).areas(false).relationships(false).orphan(false);
+            const subquery = self.apos.page
+              .find(query.req)
+              .areas(false)
+              .relationships(false)
+              .orphan(false);
 
             const parameters = applySubqueryOptions(subquery, value, [ 'depth' ]);
 

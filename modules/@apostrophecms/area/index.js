@@ -4,7 +4,8 @@ const { stripIndent } = require('common-tags');
 // An area is a series of zero or more widgets, in which users can add
 // and remove widgets and drag them to reorder them. This module implements
 // areas, with the help of a query builder in the doc module. This module also
-// provides browser-side support for invoking the players of widgets in an area and for editing areas.
+// provides browser-side support for invoking the players of widgets in an area and
+// for editing areas.
 
 module.exports = {
   options: { alias: 'area' },
@@ -229,7 +230,12 @@ module.exports = {
         }
         if (inline) {
           for (const item of area.items) {
-            item._rendered = await self.renderWidget(req, item.type, item, widgets[item.type]);
+            item._rendered = await self.renderWidget(
+              req,
+              item.type,
+              item,
+              widgets[item.type]
+            );
           }
           return null;
         }
@@ -297,7 +303,12 @@ module.exports = {
         async function render(area, path, context, opts) {
           const preppedArea = self.prepForRender(area, context, path);
 
-          const areaRendered = await self.apos.area.renderArea(req, preppedArea, context, { inline });
+          const areaRendered = await self.apos.area.renderArea(
+            req,
+            preppedArea,
+            context,
+            { inline }
+          );
           if (inline) {
             return;
           }
@@ -433,7 +444,11 @@ module.exports = {
           }
           const existingArea = _.get(doc, dotPath);
           const existingItems = existingArea && (existingArea.items || []);
-          if (_.isEqual(self.apos.util.clonePermanent(items), self.apos.util.clonePermanent(existingItems))) {
+          const isEqual = _.isEqual(
+            self.apos.util.clonePermanent(items),
+            self.apos.util.clonePermanent(existingItems)
+          );
+          if (isEqual) {
             // No real change — don't waste a version and clutter the database.
             // Sometimes only the server-side sanitizers can tell accurately that
             // nothing has changed. -Tom
@@ -537,8 +552,8 @@ module.exports = {
       // you wish a different delimiter or the empty string.
       //
       // Whitespace is trimmed off the leading and trailing edges of the string, and
-      // consecutive newlines are condensed to one, to better match reasonable expectations
-      // re: text that began as HTML.
+      // consecutive newlines are condensed to one, to better match reasonable
+      // expectations. re: text that began as HTML.
       //
       // Pass `options.limit` to limit the number of characters. This method will
       // return fewer characters in order to avoid cutting off in mid-word.
@@ -565,9 +580,9 @@ module.exports = {
         }
         return self.apos.util.truncatePlaintext(plaintext, options.limit, ellipsis);
       },
-      // Very handy for imports of all kinds: convert plaintext to an area with
-      // one `@apostrophecms/rich-text` widget if it is not blank, otherwise an empty area. null and
-      // undefined are tolerated and converted to empty areas.
+      // Very handy for imports of all kinds: convert plaintext to an area with one
+      // `@apostrophecms/rich-text` widget if it is not blank, otherwise an empty area.
+      // null and undefined are tolerated and converted to empty areas.
       fromPlaintext(plaintext) {
         return self.fromRichText(self.apos.util.escapeHtml(plaintext, true));
       },
@@ -655,7 +670,8 @@ module.exports = {
           widgetIsContextual[name] = manager.options.contextual;
           widgetPreview[name] = manager.options.preview;
           widgetHasPlaceholder[name] = manager.options.placeholder;
-          widgetHasInitialModal[name] = !manager.options.placeholder && manager.options.initialModal !== false;
+          widgetHasInitialModal[name] = !manager.options.placeholder &&
+            manager.options.initialModal !== false;
           contextualWidgetDefaultData[name] = manager.options.defaultData || {};
         });
 
@@ -703,10 +719,11 @@ module.exports = {
   helpers(self) {
     return {
       // Returns the rich text markup of all `@apostrophecms/rich-text` widgets
-      // within the provided doc or area, concatenated as a single string. In future this method
-      // may improve to return the content of other widgets that consider themselves primarily
-      // providers of rich text, such as subclasses of `@apostrophecms/rich-text`,
-      // which will **not** be regarded as a bc break. However it will never return images, videos, etc.
+      // within the provided doc or area, concatenated as a single string. In future
+      // this method may improve to return the content of other widgets that consider
+      // themselves primarily providers of rich text, such as subclasses of
+      // `@apostrophecms/rich-text`, which will **not** be regarded as a bc break.
+      // However it will never return images, videos, etc.
       //
       // By default the rich text contents of the widgets are joined with
       // a newline between. You may pass your own `options.delimiter` string if

@@ -328,8 +328,8 @@ module.exports = {
 
       // External build modules can register themselves here. This should happen on the
       // special asset module event `afterInit` (see `handlers`). This module will also
-      // detect if a system watcher should be disabled depending on the asset module configuration and
-      // the external build module capabilities.
+      // detect if a system watcher should be disabled depending on the asset module
+      // configuration and the external build module capabilities.
       //
       // options:
       // - alias (required): the alias string to use in the webpack configuration.
@@ -343,15 +343,17 @@ module.exports = {
       //   ...
       // };
       //
-      // The external build module must implement various methods to be used by the Apostrophe core
+      // The external build module must implement various methods to be used by
+      // the Apostrophe core
       //
       //  ** `async build(options)`: the build method to be called by Apostrophe.
       //
       // Accepts build `options`, see `getBuildOptions()` for more information.
       // Returns an object with properties:
-      // * `entrypoints`(required, array of objects), containing all entrypoints that are processed by the build module.
-      //    If a build is performed, `bundles` (`Set`) property will be added by the core asset module to each
-      //    processed entrypoint. It contains the bundle files that are created by the post-build system.
+      // * `entrypoints`(required, array of objects), containing all entrypoints that
+      // are processed by the build module. If a build is performed, `bundles` (`Set`)
+      // property will be added by the core asset module to each processed entrypoint.
+      // It contains the bundle files that are created by the post-build system.
       //    Beside the standard entrypoint shape (see `getBuildEntrypoints()`),
       //    each entrypoint should also contain a `manifest` object.
       //

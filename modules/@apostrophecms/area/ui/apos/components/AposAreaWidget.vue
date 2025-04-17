@@ -438,7 +438,8 @@ export default {
       }
     },
 
-    // Determine whether or not we should adjust the label based on its position to the admin bar
+    // Determine whether or not we should adjust the label based on its position to
+    // the admin bar
     adjustUi() {
       const { height: labelHeight } = this.$refs.label.getBoundingClientRect();
       const { top: widgetTop } = this.$refs.widget.getBoundingClientRect();
