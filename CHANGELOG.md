@@ -1,5 +1,11 @@
 # Changelog
 
+## UNRELEASED
+
+### Fixes
+
+* Fixes all eslint warnings.
+
 ## 4.15.0 (2025-04-16)
 
 ### Adds
