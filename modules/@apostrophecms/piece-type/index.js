@@ -681,7 +681,8 @@ module.exports = {
             };
           }
 
-          // Returns the object entry, e.g., `[groupName, { ...groupProperties }]`
+          // Returns the object entry, e.g., `[groupName, { ...groupProperties
+          // }]`
           function getAssociatedGroup (operation) {
             return Object.entries(self.batchOperationsGroups)
               .find(([ _key, { operations } ]) => {
@@ -859,17 +860,19 @@ module.exports = {
       // relationships, and returns the result (note it is an async function).
       //
       // If `input._copyingId` is present, fetches that
-      // piece and, if we have permission to view it, copies any schema properties
-      // not defined in `input`. `_copyingId` becomes the `copyOfId` property of
-      // the doc, which may be watched for in event handlers to detect copies.
+      // piece and, if we have permission to view it, copies any schema
+      // properties not defined in `input`. `_copyingId` becomes the `copyOfId`
+      // property of the doc, which may be watched for in event handlers to
+      // detect copies.
       //
       // Only fields that are not undefined in `input` are
       // considered. The rest respect their defaults. To intentionally
       // erase a field's contents use `null` for that input field or another
-      // representation appropriate to the type, i.e. an empty string for a string.
+      // representation appropriate to the type, i.e. an empty string for a
+      // string.
       //
-      // The module emits the `afterConvert` async event with `(req, input, piece)`
-      // before inserting the piece.
+      // The module emits the `afterConvert` async event with `(req, input,
+      // piece)` before inserting the piece.
 
       async convertInsertAndRefresh(req, input, options) {
         const piece = self.newInstance();
@@ -891,25 +894,26 @@ module.exports = {
         );
       },
 
-      // Similar to `convertInsertAndRefresh`. Update the piece with the given _id,
-      // based on the `input` object (which may be untrusted input such as req.body).
-      // Fetch the updated piece to populate all relationships and return it.
+      // Similar to `convertInsertAndRefresh`. Update the piece with the given
+      // _id, based on the `input` object (which may be untrusted input such as
+      // req.body). Fetch the updated piece to populate all relationships and
+      // return it.
       //
       // Any fields not present in `input` are regarded as empty, if permitted
       // (REST PUT semantics). For partial updates use convertPatchAndRefresh.
-      // Employs a lock to avoid overwriting the work of concurrent PUT and PATCH calls
-      // or getting into race conditions with their side effects.
+      // Employs a lock to avoid overwriting the work of concurrent PUT and
+      // PATCH calls or getting into race conditions with their side effects.
       //
-      // If `_advisoryLock: { tabId: 'xyz', lock: true }` is passed, the operation will
-      // begin by obtaining an advisory lock on the document for the given context id,
-      // and no other items in the patch will be addressed unless that succeeds.
-      // The client must then refresh the lock frequently
+      // If `_advisoryLock: { tabId: 'xyz', lock: true }` is passed, the
+      // operation will begin by obtaining an advisory lock on the document for
+      // the given context id, and no other items in the patch will be addressed
+      // unless that succeeds. The client must then refresh the lock frequently
       // (by default, at least every 30 seconds) with repeated PATCH requests of
-      // the `_advisoryLock` property with the same
-      // context id. If `_advisoryLock: { tabId: 'xyz', lock: false }` is passed,
-      // the advisory lock will be released *after* addressing other items in
-      // the same patch. If `force: true` is added to the `_advisoryLock` object it
-      // will always remove any competing advisory lock.
+      // the `_advisoryLock` property with the same context id. If
+      // `_advisoryLock: { tabId: 'xyz', lock: false }` is passed, the advisory
+      // lock will be released *after* addressing other items in the same patch.
+      // If `force: true` is added to the `_advisoryLock` object it will always
+      // remove any competing advisory lock.
       //
       // `_advisoryLock` is only relevant if you want to ask others not to edit
       // the document while you are editing it in a modal or similar.
@@ -946,42 +950,44 @@ module.exports = {
         });
       },
 
-      // Similar to `convertUpdateAndRefresh`. Patch the piece with the given _id,
-      // based on the `input` object (which may be untrusted input such as req.body).
-      // Fetch the updated piece to populate all relationships and return it.
-      // Employs a lock to avoid overwriting the work of simultaneous PUT and PATCH
-      // calls or getting into race conditions with their side effects.
-      // However if you plan to submit many patches over a period of time while
-      // editing you may also want to use the advisory lock mechanism.
+      // Similar to `convertUpdateAndRefresh`. Patch the piece with the given
+      // _id, based on the `input` object (which may be untrusted input such as
+      // req.body). Fetch the updated piece to populate all relationships and
+      // return it. Employs a lock to avoid overwriting the work of simultaneous
+      // PUT and PATCH calls or getting into race conditions with their side
+      // effects. However if you plan to submit many patches over a period of
+      // time while editing you may also want to use the advisory lock
+      // mechanism.
       //
-      // If `_advisoryLock: { tabId: 'xyz', lock: true }` is passed, the operation
-      // will begin by obtaining an advisory lock on the document for the given
-      // context id, and no other items in the patch will be addressed unless
-      // that succeeds. The client must then refresh the lock frequently
-      // (by default, at least every 30 seconds) with repeated PATCH requests of the
-      // `_advisoryLock` property with the same context id.
-      // If `_advisoryLock: { tabId: 'xyz', lock: false }` is passed,
-      // the advisory lock will be released *after* addressing other items in the same
-      // patch. If `force: true` is added to the `_advisoryLock` object it will always
+      // If `_advisoryLock: { tabId: 'xyz', lock: true }` is passed, the
+      // operation will begin by obtaining an advisory lock on the document for
+      // the given context id, and no other items in the patch will be addressed
+      // unless that succeeds. The client must then refresh the lock frequently
+      // (by default, at least every 30 seconds) with repeated PATCH requests of
+      // the `_advisoryLock` property with the same context id. If
+      // `_advisoryLock: { tabId: 'xyz', lock: false }` is passed, the advisory
+      // lock will be released *after* addressing other items in the same patch.
+      // If `force: true` is added to the `_advisoryLock` object it will always
       // remove any competing advisory lock.
       //
       // `_advisoryLock` is only relevant if you plan to make ongoing edits over
-      // a period of time and wish to avoid conflict with other users. You do not need
-      // it for one-time patches.
+      // a period of time and wish to avoid conflict with other users. You do
+      // not need it for one-time patches.
       //
-      // If `input._patches` is an array of patches to the same document, this method
-      // will iterate over those patches as if each were `input`, applying all of them
-      // within a single lock and without redundant network operations. This greatly
-      // improves the performance of saving all changes to a document at once after
-      // accumulating a number of changes in patch form on the front end.
+      // If `input._patches` is an array of patches to the same document, this
+      // method will iterate over those patches as if each were `input`,
+      // applying all of them within a single lock and without redundant network
+      // operations. This greatly improves the performance of saving all changes
+      // to a document at once after accumulating a number of changes in patch
+      // form on the front end.
       //
       // If `input._publish` launders to a truthy boolean and the type is
       // subject to draft/publish workflow, it is automatically published at the
       // end of the patch operation.
       //
-      // As an optimization, and to prevent unnecessary updates of `updatedAt`, no calls
-      // to `self.update()` are made when only `_advisoryLock` is present in `input` or
-      // it contains no properties at all.
+      // As an optimization, and to prevent unnecessary updates of `updatedAt`,
+      // no calls to `self.update()` are made when only `_advisoryLock` is
+      // present in `input` or it contains no properties at all.
 
       async convertPatchAndRefresh(req, input, _id) {
         const keys = Object.keys(input);

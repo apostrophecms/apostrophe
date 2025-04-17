@@ -9,8 +9,8 @@ module.exports = function(self) {
         args.addChild(primary);
         args.children = args.children.map(child => {
           if (child instanceof nodes.KeywordArgs) {
-            // Keep the KeywordsArgs nodelist in order to enable keyword arguments support
-            // https://mozilla.github.io/nunjucks/templating.html#keyword-arguments
+            // Keep the KeywordsArgs nodelist in order to enable keyword
+            // arguments support https://mozilla.github.io/nunjucks/templating.html#keyword-arguments
             return child;
           }
           return new nodes.Literal(child.lineno, child.colno, child.value);
@@ -39,7 +39,8 @@ module.exports = function(self) {
         }
         // the length of the block end
         parser.tokens.backN(2);
-        // fake symboltok to fool advanceAfterBlockEnd name detection in parseRaw
+        // fake symboltok to fool advanceAfterBlockEnd name detection in
+        // parseRaw
         parser.peeked = symbolToken;
         // we are right up to the edge of end-block, so we are "in_code"
         parser.tokens.in_code = true;

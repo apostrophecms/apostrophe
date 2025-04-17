@@ -27,7 +27,8 @@
             class="apos-modal-tabs__label apos-modal-tabs__label--error"
             data-apos-test="widget-tabs-error"
           >
-            {{ tabErrors[tab.name].length }}&nbsp;{{ generateErrorLabel(tabErrors[tab.name].length) }}
+            {{ tabErrors[tab.name].length }}&nbsp;{{
+              generateErrorLabel(tabErrors[tab.name].length) }}
           </span>
         </button>
       </li>
@@ -198,7 +199,9 @@ export default {
       background-color: var(--a-base-10);
     }
 
-    &[aria-selected='true'], &[aria-selected='true']:hover, &[aria-selected='true']:focus {
+    &[aria-selected='true'],
+    &[aria-selected='true']:hover,
+    &[aria-selected='true']:focus {
       border-bottom: 3px solid var(--a-primary);
       color: var(--a-primary);
       background-color: var(--a-base-10);

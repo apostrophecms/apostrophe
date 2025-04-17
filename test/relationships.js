@@ -148,7 +148,8 @@ function getModules() {
             label: 'Rel page',
             type: 'relationship',
             withType: 'default-page',
-            // Intentionally revisits the articles in order to test reverse relationships
+            // Intentionally revisits the articles in order to test reverse
+            // relationships
             withRelationships: [ '_articles._topics._articles' ],
             builders: {
               project: {

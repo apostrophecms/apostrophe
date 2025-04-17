@@ -185,7 +185,9 @@ describe('Pieces Public API', function() {
     const eTagParts = response.headers.etag.split(':');
 
     assert(eTagParts[0] === apos.asset.getReleaseId());
-    assert(eTagParts[1] === (new Date(response.body.cacheInvalidatedAt)).getTime().toString());
+    assert(
+      eTagParts[1] === (new Date(response.body.cacheInvalidatedAt)).getTime().toString()
+    );
     assert(eTagParts[2]);
 
     delete apos.thing.options.cache;

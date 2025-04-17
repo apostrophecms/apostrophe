@@ -9,6 +9,10 @@ A wrapper is available in the `@apostrophecms/widget-type` module to register op
 For example, calling `self.addWidgetOperation` in the ``@apostrophecms/image-widget`` module will apply the operation exclusively to image widgets.
 A `secondaryLevel: true` option is available to add operations to the widget's controls context menu.
 
+### Fixes
+
+* Fixes all eslint warnings.
+
 ## 4.15.0 (2025-04-16)
 
 ### Adds

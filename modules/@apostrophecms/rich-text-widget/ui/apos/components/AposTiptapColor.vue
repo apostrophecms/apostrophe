@@ -141,9 +141,9 @@ function update(value) {
   next.value = value;
   indicatorColor.value = next.value;
   // Might be a temporary solution, but since it would require refacto
-  // to pass an additional param saying if we're editing colors from an input or no.
-  // mainly because we use a computed with getter and setter,
-  // so we just can't pass params.
+  // to pass an additional param saying if we're editing colors from an input
+  // or no. mainly because we use a computed with getter and setter, so we just
+  // can't pass params.
   if (document.activeElement.tagName === 'INPUT') {
     props.editor.chain().setColor(value).run();
   } else {

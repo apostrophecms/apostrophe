@@ -44,24 +44,25 @@ let defaults = require('./defaults.js');
 //
 // `openTelemetryProvider`
 //
-// If set, Apostrophe will register it as a global OpenTelemetry tracer provider.
-// The expected value is an object, an instance of TracerProvider.
-// If the Node SDK is used in the application instead of manual configuration,
-// the provider instance is only available as a
-// private property: `sdkInstance._tracerProvider`. An issue can be opened
-// to discuss the exposure of a public getter with the OpenTelemetry developers.
+// If set, Apostrophe will register it as a global OpenTelemetry tracer
+// provider. The expected value is an object, an instance of TracerProvider. If
+// the Node SDK is used in the application instead of manual configuration, the
+// provider instance is only available as a private property:
+// `sdkInstance._tracerProvider`. An issue can be opened to discuss the exposure
+// of a public getter with the OpenTelemetry developers.
 //
 // `beforeExit`
 //
 // If set, Apostrophe will invoke it (await) before invoking process.exit.
-// `beforeExit` may be an async function, will be awaited, and takes no arguments.
+// `beforeExit` may be an async function, will be awaited, and takes no
+// arguments.
 //
 // `pnpm`
 // A boolean to force on or off the pnpm related build routines. If not set,
 // an automated check will be performed to determine if pnpm is in use. We offer
 // an option, because automated check is not 100% reliable. Monorepo tools are
-// often hiding package management specifics (lock files, node_module structure, etc.)
-// in a centralized store.
+// often hiding package management specifics (lock files, node_module
+// structure, etc.) in a centralized store.
 //
 // ## Awaiting the Apostrophe function
 //
@@ -147,7 +148,8 @@ module.exports = async function(options) {
         return null;
       });
     } else {
-      // continue as a worker operation, the pid should be recorded by the auto instrumentation
+      // continue as a worker operation, the pid should be recorded
+      // by the auto instrumentation
       spanName += ':worker';
       console.log(`Cluster worker ${process.pid} started`);
     }
@@ -248,8 +250,9 @@ async function apostrophe(options, telemetry, rootSpan) {
       }
     };
 
-    // Signals to various (build related) places that we are running a pnpm installation.
-    // The relevant option, if set, has a higher precedence over the automated check.
+    // Signals to various (build related) places that we are running a pnpm
+    // installation. The relevant option, if set, has a higher precedence over
+    // the automated check.
     self.isPnpm = options.pnpm ??
       fs.existsSync(path.join(self.npmRootDir, 'pnpm-lock.yaml'));
 
@@ -320,8 +323,8 @@ async function apostrophe(options, telemetry, rootSpan) {
     self.apos.schema.registerAllSchemas();
     await self.apos.lock.withLock('@apostrophecms/migration:migrate', async () => {
       await self.apos.migration.migrate(self.argv);
-      // Inserts the global doc in the default locale if it does not exist; same for other
-      // singleton piece types registered by other modules
+      // Inserts the global doc in the default locale if it does not exist;
+      // same for other singleton piece types registered by other modules
       for (const apostropheModule of Object.values(self.modules)) {
         if (self.instanceOf(apostropheModule, '@apostrophecms/piece-type') && apostropheModule.options.singletonAuto) {
           await apostropheModule.insertIfMissing();
@@ -329,8 +332,8 @@ async function apostrophe(options, telemetry, rootSpan) {
       }
       await self.apos.page.implementParkAllInDefaultLocale();
       await self.apos.doc.replicate(); // emits beforeReplicate and afterReplicate events
-      // Replicate will have created the parked pages across locales if needed, but we may
-      // still need to reset parked properties
+      // Replicate will have created the parked pages across locales if needed,
+      // but we may still need to reset parked properties
       await self.apos.page.implementParkAllInOtherLocales();
     });
     await self.emit('ready'); // formerly afterInit
@@ -625,8 +628,9 @@ async function apostrophe(options, telemetry, rootSpan) {
       if (!target) {
         continue;
       }
-      // Add all the modules that want to be before this one to the target's beforeSelf.
-      // Do this recursively for every module from the beforeSelf array that has own `beforeSelf` members.
+      // Add all the modules that want to be before this one to the target's
+      // beforeSelf. Do this recursively for every module from the beforeSelf
+      // array that has own `beforeSelf` members.
       addBeforeSelfRecursive(name, m.beforeSelf, target.beforeSelf);
     }
 
@@ -670,7 +674,8 @@ async function apostrophe(options, telemetry, rootSpan) {
   function modulesToBeInstantiated() {
     return Object.keys(self.options.modules).filter(name => {
       const improvement = self.synth.isImprovement(name);
-      return !(self.options.modules[name] && (improvement || self.options.modules[name].instantiate === false));
+      return !(self.options.modules[name] &&
+        (improvement || self.options.modules[name].instantiate === false));
     });
   }
 
@@ -712,7 +717,11 @@ async function apostrophe(options, telemetry, rootSpan) {
             return;
           }
           const submodule = await self.root.import(path.resolve(self.localModules, name, 'index.js'));
-          if (submodule && submodule.options && submodule.options.ignoreUnusedFolderWarning) {
+          if (
+            submodule &&
+            submodule.options &&
+            submodule.options.ignoreUnusedFolderWarning
+          ) {
             return;
           }
         } catch (e) {
@@ -777,14 +786,22 @@ async function apostrophe(options, telemetry, rootSpan) {
       if (apostropheModule.options.extends && ((typeof apostropheModule.options.extends) === 'string')) {
         lint(`The module ${name} contains an "extends" option. This is probably a\nmistake. In Apostrophe "extend" is used to extend other modules.`);
       }
-      if (apostropheModule.options.singletonWarningIfNot && (name !== apostropheModule.options.singletonWarningIfNot)) {
+      if (
+        apostropheModule.options.singletonWarningIfNot &&
+        (name !== apostropheModule.options.singletonWarningIfNot)
+      ) {
         lint(`The module ${name} extends ${apostropheModule.options.singletonWarningIfNot}, which is normally\na singleton (Apostrophe creates only one instance of it). Two competing\ninstances will lead to problems. If you are adding project-level code to it,\njust use modules/${apostropheModule.options.singletonWarningIfNot}/index.js and do not use "extend".\nIf you are improving it via an npm module, use "improve" rather than "extend".\nIf neither situation applies you should probably just make a new module that does\nnot extend anything.\n\nIf you are sure you know what you are doing, you can set the\nsingletonWarningIfNot: false option for this module.`);
       }
       if (name.match(/-widget$/) && (!extending(apostropheModule)) && (!apostropheModule.options.ignoreNoExtendWarning)) {
         lint(`The module ${name} does not extend anything.\n\nA -widget module usually extends @apostrophecms/widget-type or another widget type.\nOr possibly you forgot to npm install something.\n\nIf you are sure you are doing the right thing, set the\nignoreNoExtendWarning option to true for this module.`);
       } else if (name.match(/-page$/) && (name !== '@apostrophecms/page') && (!extending(apostropheModule)) && (!apostropheModule.options.ignoreNoExtendWarning)) {
         lint(`The module ${name} does not extend anything.\n\nA -page module usually extends @apostrophecms/page-type or\n@apostrophecms/piece-page-type or another page type.\nOr possibly you forgot to npm install something.\n\nIf you are sure you are doing the right thing, set the\nignoreNoExtendWarning option to true for this module.`);
-      } else if ((!extending(apostropheModule)) && (!hasCode(name)) && (!isBundle(name)) && (!apostropheModule.options.ignoreNoCodeWarning)) {
+      } else if (
+        !extending(apostropheModule) &&
+        !hasCode(name) &&
+        !isBundle(name) &&
+        !apostropheModule.options.ignoreNoCodeWarning
+      ) {
         lint(`The module ${name} does not extend anything and does not have any code.\n\nThis usually means that you:\n\n1. Forgot to "extend" another module\n2. Configured a module that comes from npm without npm installing it\n3. Simply haven't written your "index.js" yet\n\nIf you really want a module with no code, set the ignoreNoCodeWarning option\nto true for this module.`);
       }
     }

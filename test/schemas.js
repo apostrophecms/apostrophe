@@ -2055,7 +2055,13 @@ describe('Schemas', function() {
     const fieldModuleName = 'external-condition';
     const docId = 'some-doc-id';
 
-    const result = await apos.schema.evaluateMethod(req, conditionKey, fieldName, fieldModuleName, docId);
+    const result = await apos.schema.evaluateMethod(
+      req,
+      conditionKey,
+      fieldName,
+      fieldModuleName,
+      docId
+    );
 
     assert(result === 'yes');
   });
@@ -2070,7 +2076,13 @@ describe('Schemas', function() {
     const fieldModuleName = 'external-condition';
     const docId = 'some-doc-id';
 
-    const result = await apos.schema.evaluateMethod(req, conditionKey, fieldName, fieldModuleName, docId);
+    const result = await apos.schema.evaluateMethod(
+      req,
+      conditionKey,
+      fieldName,
+      fieldModuleName,
+      docId
+    );
 
     assert(result === `yes - ${someReqAttr} - ${docId}`);
   });
@@ -2082,7 +2094,13 @@ describe('Schemas', function() {
     const fieldModuleName = 'external-condition';
     const docId = 'some-doc-id';
 
-    const result = await apos.schema.evaluateMethod(req, conditionKey, fieldName, fieldModuleName, docId);
+    const result = await apos.schema.evaluateMethod(
+      req,
+      conditionKey,
+      fieldName,
+      fieldModuleName,
+      docId
+    );
 
     assert(warnMessages.pop() === 'The method "external-condition:externalCondition" defined in the "someField" field should be written without argument: "external-condition:externalCondition()".');
     assert(result === 'yes');
@@ -2096,7 +2114,13 @@ describe('Schemas', function() {
     const docId = 'some-doc-id';
 
     try {
-      await apos.schema.evaluateMethod(req, conditionKey, fieldName, fieldModuleName, docId);
+      await apos.schema.evaluateMethod(
+        req,
+        conditionKey,
+        fieldName,
+        fieldModuleName,
+        docId
+      );
     } catch (error) {
       assert(error.message === 'The method "external-condition:externalCondition" defined in the "someField" field should be written with parenthesis: "external-condition:externalCondition()".');
       return;
@@ -2112,7 +2136,14 @@ describe('Schemas', function() {
     const docId = 'some-doc-id';
     const optionalParenthesis = true;
 
-    const result = await apos.schema.evaluateMethod(req, conditionKey, fieldName, fieldModuleName, docId, optionalParenthesis);
+    const result = await apos.schema.evaluateMethod(
+      req,
+      conditionKey,
+      fieldName,
+      fieldModuleName,
+      docId,
+      optionalParenthesis
+    );
     assert(result === 'yes');
   });
 
@@ -2124,7 +2155,13 @@ describe('Schemas', function() {
     const docId = 'some-doc-id';
 
     try {
-      await apos.schema.evaluateMethod(req, conditionKey, fieldName, fieldModuleName, docId);
+      await apos.schema.evaluateMethod(
+        req,
+        conditionKey,
+        fieldName,
+        fieldModuleName,
+        docId
+      );
     } catch (error) {
       assert(error.message === 'The "unknown-module" module defined in the "someField" field does not exist.');
       return;
@@ -2140,7 +2177,13 @@ describe('Schemas', function() {
     const docId = 'some-doc-id';
 
     try {
-      await apos.schema.evaluateMethod(req, conditionKey, fieldName, fieldModuleName, docId);
+      await apos.schema.evaluateMethod(
+        req,
+        conditionKey,
+        fieldName,
+        fieldModuleName,
+        docId
+      );
     } catch (error) {
       assert(error.message === 'The "unknownMethod" method from "external-condition" module defined in the "someField" field does not exist.');
       return;
@@ -5225,7 +5268,8 @@ describe('Schemas', function() {
       assert.deepEqual(expected, actual);
     });
 
-    // TODO: update this test when support for conditional fields is added to relationships schemas
+    // TODO: update this test when support for conditional fields is added to
+    // relationships schemas
     it('should not error complex nested relationships required property if parents are not visible', async function() {
       const req = apos.task.getReq({ mode: 'draft' });
       const schema = apos.schema.compose({

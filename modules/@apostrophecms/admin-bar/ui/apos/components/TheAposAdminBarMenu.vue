@@ -164,8 +164,7 @@ export default {
       if (item.options.toggle) {
         if (
           this.trayItemState[item.name] &&
-            item.options.tooltip &&
-            item.options.tooltip.deactivate
+          item.options.tooltip?.deactivate
         ) {
           return {
             content: item.options.tooltip.deactivate,

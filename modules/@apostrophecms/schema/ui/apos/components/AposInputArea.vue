@@ -9,8 +9,6 @@
     :meta="areaMeta"
   >
     <template #body>
-      <!-- data-apos-schema-area lets all the child areas know that this area is in a schema (which is in a modal)
-       and that we should position the z-index of context menus appropriately high -->
       <div
         class="apos-input-wrapper"
         :class="!next.items.length ? 'apos-is-empty' : null"

@@ -237,7 +237,8 @@ export default {
         return;
       }
 
-      // If ratio wants a square, we simply take the higher min size of the image
+      // If ratio wants a square, we simply take the higher min size of the
+      // image
       if (this.aspectRatio === 1) {
         const higherValue = minWidth > minHeight ? minWidth : minHeight;
         this.minWidth = higherValue;

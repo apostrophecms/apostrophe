@@ -134,8 +134,8 @@ module.exports = {
             dataObject = dataObjects[j];
             if (dataObject[key] !== undefined) {
               value = dataObject[key];
-              // If we hit an empty value we need to stop all path processing to avoid
-              // ambiguous URLs
+              // If we hit an empty value we need to stop all path processing
+              // to avoid ambiguous URLs
               if (value === undefined || value === null || value === '') {
                 done[key] = true;
                 stop = true;

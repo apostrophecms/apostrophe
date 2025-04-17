@@ -1,7 +1,7 @@
 // This is the business logic of the TheAposLogin Vue component.
 // It is in a separate file so that you can override the component's templates
-// and styles just by copying the .vue file to your project, and leave the business logic
-// unchanged.
+// and styles just by copying the .vue file to your project, and leave the
+// business logic unchanged.
 
 import AposThemeMixin from 'Modules/@apostrophecms/ui/mixins/AposThemeMixin';
 
@@ -34,8 +34,9 @@ export default {
       return `${apos.prefix}/`;
     }
   },
-  // We need it here and not in the login form because the version used in the footer.
-  // The context will be passed to every form, might be a good thing in the future.
+  // We need it here and not in the login form because the version used in the
+  // footer. The context will be passed to every form, might be a good thing in
+  // the future.
   async beforeCreate() {
     const stateChange = parseInt(window.sessionStorage.getItem('aposStateChange'));
     const seen = JSON.parse(window.sessionStorage.getItem('aposStateChangeSeen') || '{}');

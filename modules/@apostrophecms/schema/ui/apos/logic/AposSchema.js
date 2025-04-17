@@ -285,10 +285,15 @@ export default {
           if (this.fieldState[field.name].error) {
             this.next.hasErrors = true;
           }
-          // This simply check if a field has changed since it has been instantiated
+          // This simply check if a field has changed since it has been
+          // instantiated
           if (
             this.fieldState[field.name].data !== undefined &&
-          detectFieldChange(field, this.next.data[field.name], this.fieldState[field.name].data)
+            detectFieldChange(
+              field,
+              this.next.data[field.name],
+              this.fieldState[field.name].data
+            )
           ) {
             changeFound = true;
             this.next.data[field.name] = this.fieldState[field.name].data;

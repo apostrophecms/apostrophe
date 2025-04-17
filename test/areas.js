@@ -268,14 +268,11 @@ describe('Areas', function() {
       assert(doc.main._rendered);
       assert(!doc.main.items);
 
-      // TODO the approach in this test can't cover array or object area rendering
-      // properly without a further overhaul (not a new problem).
-      // if (doc.moreAreas) {
-      //   doc.moreAreas.forEach(area => {
-      //     assert(area.someWidgets._rendered);
-      //     assert(!area.someWidgets.items);
-      //   });
-      // }
+      // TODO the approach in this test can't cover array or object area
+      // rendering properly without a further overhaul (not a new problem). if
+      // (doc.moreAreas) { doc.moreAreas.forEach(area => {
+      // assert(area.someWidgets._rendered); assert(!area.someWidgets.items);
+      // }); }
     });
 
     assert.equal(areaDocs[0].main._rendered, firstRendered);

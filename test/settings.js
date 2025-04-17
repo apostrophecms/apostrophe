@@ -62,8 +62,8 @@ describe('user settings', function () {
     }
   });
 
-  // It should process settings schema and register the subset of the user schema that
-  // is relevant to the configured subforms.
+  // It should process settings schema and register the subset of the user
+  // schema that is relevant to the configured subforms.
   it('should init subforms', async function () {
     apos = await t.create({
       root: module,

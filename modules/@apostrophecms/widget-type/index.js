@@ -1,11 +1,14 @@
 // The base class for all modules that implement a widget, such as
-// [@apostrophecms/rich-text-widget](../@apostrophecms/rich-text-widget/index.html) and
-// [@apostrophecms/video-widget](../@apostrophecms/video-widget/index.html).
+// [@apostrophecms/rich-text-widget](../@apostrophecms/rich-text-widget/index.html)
+// and [@apostrophecms/video-widget](../@apostrophecms/video-widget/index.html).
 //
-// All widgets have a [schema](../../tutorials/getting-started/schema-guide.html).
-// Many project-specific modules that extend this module consist entirely of `fields` configuration and a `views/widget.html` file.
+// All widgets have a
+// [schema](../../tutorials/getting-started/schema-guide.html). Many
+// project-specific modules that extend this module consist entirely of `fields`
+// configuration and a `views/widget.html` file.
 //
-// For more information see the [custom widgets tutorial](../../tutorials/getting-started/custom-widget.html).
+// For more information see the [custom widgets
+// tutorial](../../tutorials/getting-started/custom-widget.html).
 //
 // ## Options
 //
@@ -32,45 +35,52 @@
 // If your widget wishes to use Apostrophe features like schemas
 // when interacting with *logged-out* users — for instance, to implement
 // forms conveniently — you can set the `scene` option to `user`. Any
-// page that contains the widget will then load the full javascript and stylesheet
-// assets normally reserved for logged-in users. Note that if a page
+// page that contains the widget will then load the full javascript and
+// stylesheet assets normally reserved for logged-in users. Note that if a page
 // relies on AJAX calls to load more content later, the assets will not be
 // upgraded. So you may wish to set the `scene` option of the appropriate
-// subclass of `@apostrophecms/page-type` or `@apostrophecms/piece-page-type`, as well.
+// subclass of `@apostrophecms/page-type` or `@apostrophecms/piece-page-type`,
+// as well.
 //
 // ### `defer`
 //
-// If you set `defer: true` for a widget module, like @apostrophecms/image-widget, the relationship to
-// actually fetch the images is deferred until the last possible minute, right before the
-// template is rendered. This can eliminate some queries and speed up your site when there
-// are many separate relationships happening on a page that ultimately result in loading images.
+// If you set `defer: true` for a widget module, like
+// @apostrophecms/image-widget, the relationship to actually fetch the images is
+// deferred until the last possible minute, right before the template is
+// rendered. This can eliminate some queries and speed up your site when there
+// are many separate relationships happening on a page that ultimately result in
+// loading images.
 //
-// If you wish this technique to also be applied to images loaded by content on the global doc,
-// you can also set `deferWidgetLoading: true` for the `@apostrophecms/global` module. To avoid chicken
-// and egg problems, there is still a separate query for all the images from the global doc and all
-// the images from everything else, but you won't get more than one of each type.
+// If you wish this technique to also be applied to images loaded by content on
+// the global doc, you can also set `deferWidgetLoading: true` for the
+// `@apostrophecms/global` module. To avoid chicken and egg problems, there is
+// still a separate query for all the images from the global doc and all the
+// images from everything else, but you won't get more than one of each type.
 //
-// Setting `defer` to `true` may help performance for any frequently used widget type
-// that depends on relationships and has a `load` method that can efficiently handle multiple widgets.
+// Setting `defer` to `true` may help performance for any frequently used
+// widget type that depends on relationships and has a `load` method that can
+// efficiently handle multiple widgets.
 //
-// If you need access to the results of the relationship in server-side JavaScript code, outside of page
-// templates, do not use this feature. Since it defers the relationships to the last minute,
-// that information will not be available yet in any asynchronous node.js code.
-// It is the last thing to happen before the actual page template rendering.
+// If you need access to the results of the relationship in server-side
+// JavaScript code, outside of page templates, do not use this feature. Since it
+// defers the relationships to the last minute, that information will not be
+// available yet in any asynchronous node.js code. It is the last thing to
+// happen before the actual page template rendering.
 //
 // ### `preview`
 //
-// If true, the image widget is automatically previewed live following changes in the editor modal.
-// Should not be combined with `contextual`.
+// If true, the image widget is automatically previewed live following changes
+// in the editor modal. Should not be combined with `contextual`.
 //
 // ## Fields
 //
 // You will need to configure the schema fields for your widget using
 // the `fields` section.
 //
-// The standard options for building [schemas](../../tutorials/getting-started/schema-guide.html)
-// are accepted. The widget will present a modal dialog box allowing the user to edit
-// these fields. They are then available inside `widget.html` as properties of
+// The standard options for building
+// [schemas](../../tutorials/getting-started/schema-guide.html) are accepted.
+// The widget will present a modal dialog box allowing the user to edit these
+// fields. They are then available inside `widget.html` as properties of
 // `data.widget`.
 //
 // ## Important templates
@@ -92,9 +102,9 @@
 // ```
 // node app your-widget-module-name-here:list
 // ```
-// Lists all of the places where this widget is used on the site. This is very useful if
-// you are debugging a change and need to test all of the different ways a widget has
-// been used, or are wondering if you can safely remove one.
+// Lists all of the places where this widget is used on the site. This is very
+// useful if you are debugging a change and need to test all of the different
+// ways a widget has been used, or are wondering if you can safely remove one.
 
 const { stripIndent } = require('common-tags');
 const _ = require('lodash');
@@ -292,21 +302,22 @@ module.exports = {
 
       async load(req, widgets) {
         await self.apos.schema.relate(req, self.schema, widgets, undefined);
-        // If this is a virtual widget (a widget being edited or previewed in the
-        // editor), any nested areas, etc. inside it haven't already been loaded as
-        // part of loading a doc. Do that now by creating a query and then feeding
-        // it our widgets as if they were docs.
+        // If this is a virtual widget (a widget being edited or previewed in
+        // the editor), any nested areas, etc. inside it haven't already been
+        // loaded as part of loading a doc. Do that now by creating a query and
+        // then feeding it our widgets as if they were docs.
 
         if (!(widgets.length && widgets[0]._virtual)) {
           return;
         }
 
-        // Get a doc query so that we can interpose the widgets as our docs and have the
-        // normal things happen after the docs have been "loaded," such as calling loaders
-        // of widgets in areas.
+        // Get a doc query so that we can interpose the widgets as our docs and
+        // have the normal things happen after the docs have been "loaded," such
+        // as calling loaders of widgets in areas.
 
-        // Shut off relationships because we already did them and the query would try to do them
-        // again based on `type`, which isn't really a doc type.
+        // Shut off relationships because we already did them and the query
+        // would try to do them again based on `type`, which isn't really a doc
+        // type.
         const query = self.apos.doc.find(req).relationships(false);
         // Do everything we'd do if the query had fetched the widgets
         // as docs
@@ -316,8 +327,8 @@ module.exports = {
 
       // Sanitize the widget. Invoked when the user has edited a widget on the
       // browser side. By default, the `input` object is sanitized via the
-      // `convert` method of `@apostrophecms/schema`, creating a new `output` object
-      // so that no information in `input` is blindly trusted.
+      // `convert` method of `@apostrophecms/schema`, creating a new `output`
+      // object so that no information in `input` is blindly trusted.
       //
       // `options` will receive the widget-level options passed in
       // this area, including any `defaultOptions` for the widget type.
@@ -351,13 +362,24 @@ module.exports = {
 
       // Return a new schema containing only fields for which the
       // current user has the permission specified by the `editPermission`
-      // property of the schema field, or there is no `editPermission`|`viewPermission` property for the field.
+      // property of the schema field, or there is no
+      // `editPermission`|`viewPermission` property for the field.
 
       allowedSchema(req) {
         return _.filter(self.schema, function (field) {
+          const canEdit = () => self.apos.permission.can(
+            req,
+            field.editPermission.action,
+            field.editPermission.type
+          );
+          const canView = () => self.apos.permission.can(
+            req,
+            field.viewPermission.action,
+            field.viewPermission.type
+          );
           return (!field.editPermission && !field.viewPermission) ||
-            (field.editPermission && self.apos.permission.can(req, field.editPermission.action, field.editPermission.type)) ||
-            (field.viewPermission && self.apos.permission.can(req, field.viewPermission.action, field.viewPermission.type)) ||
+            (field.editPermission && canEdit()) ||
+            (field.viewPermission && canView()) ||
             false;
         });
       },
@@ -406,14 +428,15 @@ module.exports = {
   },
   extendMethods(self) {
     return {
-      // Set the options to be passed to the browser-side singleton corresponding
-      // to this module. By default they do not depend on `req`, but the availability
-      // of that parameter allows subclasses to make distinctions based on permissions,
-      // etc.
+      // Set the options to be passed to the browser-side singleton
+      // corresponding to this module. By default they do not depend on `req`,
+      // but the availability of that parameter allows subclasses to make
+      // distinctions based on permissions, etc.
       //
-      // If a `browser` option was configured for the module its properties take precedence
-      // over the default values passed on here for `name`, `label`, `action`
-      // (the base URL of the module), `schema` and `contextualOnly`.
+      // If a `browser` option was configured for the module its properties
+      // take precedence over the default values passed on here for `name`,
+      // `label`, `action` (the base URL of the module), `schema` and
+      // `contextualOnly`.
 
       getBrowserData(_super, req) {
         const result = _super(req);

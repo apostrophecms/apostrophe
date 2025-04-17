@@ -40,15 +40,17 @@ module.exports = function(moduleName, searchPaths, noWatch, templates, options) 
           try {
             const watcher = chokidar.watch(p);
             watcher.on('change', (path, stats) => {
-              // Just blow the whole cache if anything is modified. Much simpler,
-              // avoids several false negatives, and works well for a CMS in dev. -Tom
+              // Just blow the whole cache if anything is modified. Much
+              // simpler, avoids several false negatives, and works well for a
+              // CMS in dev. -Tom
               self.cache = {};
             });
             self.watches.push(watcher);
           } catch (e) {
             if (!self.firstWatchFailure) {
-              // Don't crash in broken environments (not sure if any are left thanks
-              // to chokidar, but still a useful warning to have if it comes up)
+              // Don't crash in broken environments (not sure if any are left
+              // thanks to chokidar, but still a useful warning to have if it
+              // comes up)
               self.firstWatchFailure = true;
               self.templates.apos.util.warn('WARNING: fs.watch does not work on this system. That is OK but you\n' +
                 'will have to restart to see any template changes take effect.');

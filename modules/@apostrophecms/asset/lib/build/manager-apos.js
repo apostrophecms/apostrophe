@@ -41,7 +41,8 @@ module.exports = (self, entrypoint) => {
   }
 
   return {
-    // Get the source files for the admin UI. `meta.input` is ignored for this entrypoint type.
+    // Get the source files for the admin UI. `meta.input` is ignored for this
+    // entrypoint type.
     getSourceFiles,
     async getOutput(sourceFiles, { modules }) {
       const icons = await self.apos.asset.getAposIconsOutput(modules);

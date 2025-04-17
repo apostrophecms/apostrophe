@@ -20,10 +20,11 @@ module.exports = (self, entrypoint) => {
         }
       );
     },
-    // Get the output data for an entrypoint. `sourceFiles` is in format compatible
-    // with the output of `getSourceFiles()`. The return value is an object with the
-    // same keys as `sourceFiles`, and the values are the output of getImportFileOutput().
-    // Additionally, the return value has a `prologue` key that contains the prologue for the entrypoint.
+    // Get the output data for an entrypoint. `sourceFiles` is in format
+    // compatible with the output of `getSourceFiles()`. The return value is an
+    // object with the same keys as `sourceFiles`, and the values are the output
+    // of getImportFileOutput(). Additionally, the return value has a `prologue`
+    // key that contains the prologue for the entrypoint.
     async getOutput(sourceFiles, { suppressErrors }) {
       const output = (Object.entries(sourceFiles))
         .reduce((acc, [ type, files ]) => {

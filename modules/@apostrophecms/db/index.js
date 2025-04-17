@@ -8,11 +8,11 @@
 //
 // ### `connect`
 //
-// If present, this object is passed on as options to MongoDB's "connect" method,
-// along with the uri. See the [MongoDB connect settings documentation](http://mongodb.github.io/node-mongodb-native/2.2/reference/connecting/connection-settings/).
+// If present, this object is passed on as options to MongoDB's "connect"
+// method, along with the uri. See the [MongoDB connect settings documentation](http://mongodb.github.io/node-mongodb-native/2.2/reference/connecting/connection-settings/).
 //
-// By default, Apostrophe sets options to retry lost connections forever, however
-// you can override this via the `connect` object if you want to.
+// By default, Apostrophe sets options to retry lost connections forever,
+// however you can override this via the `connect` object if you want to.
 //
 // ### `user`, `host`, `port`, `name`, `password`
 //
@@ -27,8 +27,8 @@
 //
 // If `true`, check to make sure the database does not belong to an
 // older, incompatible major release release of Apostrophe and exit if it does.
-// Defaults to `true`. You can set this to `false` to avoid an extra query at startup
-// time.
+// Defaults to `true`. You can set this to `false` to avoid an extra query at
+// startup time.
 //
 // ## Command line tasks
 //

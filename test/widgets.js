@@ -399,7 +399,8 @@ describe('Widgets', function() {
           let _result;
 
           before(async function() {
-            // Recreate local apos instance with falsy `placeholderUrl` option set to widget module
+            // Recreate local apos instance with falsy `placeholderUrl` option
+            // set to widget module
             _apos = await t.create({
               root: module,
               modules: {
@@ -446,7 +447,8 @@ describe('Widgets', function() {
           let _result;
 
           before(async function() {
-            // Recreate local apos instance with falsy `placeholderUrl` option set to widget module
+            // Recreate local apos instance with falsy `placeholderUrl` option
+            // set to widget module
             _apos = await t.create({
               root: module,
               modules: {

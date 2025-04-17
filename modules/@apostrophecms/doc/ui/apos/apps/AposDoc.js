@@ -10,11 +10,11 @@ export default () => {
   // `_id` should be the `_id` of the existing document to edit; leave
   // blank to create a new document.
   //
-  // `copyOfId` is an optional `_id` of an existing document from which properties
-  // should be copied.
+  // `copyOfId` is an optional `_id` of an existing document from which
+  // properties should be copied.
   //
-  // `copyOf` is an optional, existing document from which properties should be copied.
-  // It is present for BC.
+  // `copyOf` is an optional, existing document from which properties should be
+  // copied. It is present for BC.
   //
   // On success, returns the new or updated document. If the modal is cancelled,
   // `undefined` is returned. Be sure to `await` the result.

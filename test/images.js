@@ -235,7 +235,8 @@ describe('Images', function() {
     const fields = output._fields;
     assert(fields);
     // Useful for visual verification
-    // require('child_process').execSync(`open test/public${output.attachment._urls.full} &`);
+    // require('child_process').execSync(`open
+    // test/public${output.attachment._urls.full} &`);
 
     assert.strictEqual(fields.top, 0);
     assert.strictEqual(fields.left, 75);
@@ -260,7 +261,8 @@ describe('Images', function() {
     const fields = output._fields;
     assert(fields);
     // Useful for visual verification
-    // require('child_process').execSync(`open test/public${output.attachment._urls.full} &`);
+    // require('child_process').execSync(`open
+    // test/public${output.attachment._urls.full} &`);
     assert.strictEqual(fields.top, 187);
     assert.strictEqual(fields.left, 0);
     assert.strictEqual(fields.width, 450);
@@ -303,7 +305,8 @@ describe('Images', function() {
       role: 'admin'
     });
 
-    // Upload an image (landscape), crop it, insert a piece with the cropped image
+    // Upload an image (landscape), crop it, insert a piece with the cropped
+    // image
     jar = await login('admin');
     const formData = new FormData();
     const stream = fs.createReadStream(
@@ -368,7 +371,8 @@ describe('Images', function() {
       )
     );
 
-    // Replace the image with portrait orientation, verify that the aspect ratio is preserved
+    // Replace the image with portrait orientation, verify that the aspect
+    // ratio is preserved
     const formDataPortrait = new FormData();
     const streamPortrait = fs.createReadStream(path.join(apos.rootDir, '/public/test-image.jpg'));
     formDataPortrait.append('file', streamPortrait);

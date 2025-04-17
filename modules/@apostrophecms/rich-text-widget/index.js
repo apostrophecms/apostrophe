@@ -405,7 +405,8 @@ module.exports = {
   apiRoutes,
   methods(self) {
     return {
-      // Return just the rich text of the widget, which may be undefined or null if it has not yet been edited
+      // Return just the rich text of the widget, which may be undefined or
+      // null if it has not yet been edited
 
       getRichText(widget) {
         return widget.content;
@@ -613,7 +614,9 @@ module.exports = {
               for (const attribute of entry.attributes) {
                 allowedAttributes[entry.tag] = allowedAttributes[entry.tag] || [];
                 allowedAttributes[entry.tag].push(attribute);
-                allowedAttributes[entry.tag] = [ ...new Set(allowedAttributes[entry.tag]) ];
+                allowedAttributes[entry.tag] = [
+                  ...new Set(allowedAttributes[entry.tag])
+                ];
               }
             }
           }
@@ -739,8 +742,8 @@ module.exports = {
         return allowedClasses;
       },
 
-      // Returns a combined array of toolbar and insert menu items from the given
-      // set of rich text widget options
+      // Returns a combined array of toolbar and insert menu items from the
+      // given set of rich text widget options
       combinedItems(options) {
         return [ ...(options.toolbar || []), ...(options.insert || []) ];
       },
@@ -780,9 +783,9 @@ module.exports = {
           if (!self.validateAnchor(anchor)) {
             return;
           }
-          // tiptap will apply data-anchor to every tag involved in the selection
-          // at any depth. For ids and anchors this doesn't really make sense.
-          // Save the id to the first, rootmost tag involved
+          // tiptap will apply data-anchor to every tag involved in the
+          // selection at any depth. For ids and anchors this doesn't really
+          // make sense. Save the id to the first, rootmost tag involved
           if (!seen.has(anchor)) {
             $el.attr('id', anchor);
             seen.add(anchor);
@@ -834,7 +837,9 @@ module.exports = {
             const href = content.indexOf(' href="', left);
             const close = content.indexOf('"', href + 7);
             if ((left !== -1) && (href !== -1) && (close !== -1)) {
-              content = content.substring(0, href + 6) + doc._url + content.substring(close + 1);
+              content = content.substring(0, href + 6) +
+                doc._url +
+                content.substring(close + 1);
             } else {
               // So we don't get stuck in an infinite loop
               break;
@@ -845,7 +850,9 @@ module.exports = {
             const right = content.indexOf('>', left);
             const nextLeft = content.indexOf('<', right);
             if ((right !== -1) && (nextLeft !== -1)) {
-              content = content.substring(0, right + 1) + self.apos.util.escapeHtml(doc.title) + content.substring(nextLeft);
+              content = content.substring(0, right + 1) +
+                self.apos.util.escapeHtml(doc.title) +
+                content.substring(nextLeft);
             }
           }
         }
@@ -977,7 +984,10 @@ module.exports = {
               }
               const name = matches[1];
               try {
-                await util.promisify(pipeline)(Readable.fromWeb(res.body), createWriteStream(temp));
+                await util.promisify(pipeline)(
+                  Readable.fromWeb(res.body),
+                  createWriteStream(temp)
+                );
                 const attachment = await self.apos.attachment.insert(req, {
                   name,
                   path: temp
@@ -1050,9 +1060,12 @@ module.exports = {
           tiptapTextCommands: self.options.tiptapTextCommands,
           tiptapTypes: self.options.tiptapTypes,
           placeholderText: self.options.placeholder && self.options.placeholderText,
-          // Not optional in presence of an insert menu, it's not acceptable UX without it
+          // Not optional in presence of an insert menu, it's not acceptable UX
+          // without it
           placeholderTextWithInsertMenu: self.options.placeholderTextWithInsertMenu,
-          linkWithType: Array.isArray(self.options.linkWithType) ? self.options.linkWithType : [ self.options.linkWithType ],
+          linkWithType: Array.isArray(self.options.linkWithType)
+            ? self.options.linkWithType
+            : [ self.options.linkWithType ],
           linkSchema: self.linkSchema,
           imageStyles: self.options.imageStyles,
           color: self.options.color,

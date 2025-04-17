@@ -8,10 +8,9 @@
 // `subform` prop is the schema for the subform, which is an object.
 // `errors` prop is an array or object as expected by the Editor Mixin.
 // `busy` prop is a boolean indicating whether the subform (edit mode) is busy.
-// `expanded` prop is a boolean indicating whether the subform is in preview (false)
-// or edit (true) mode.
-// `updateIndicator` prop is a boolean indicating whether the subform should
-// display an updated indicator in preview mode.
+// `expanded` prop is a boolean indicating whether the subform is in preview
+// (false) or edit (true) mode. `updateIndicator` prop is a boolean indicating
+// whether the subform should display an updated indicator in preview mode.
 
 import { klona } from 'klona';
 import AposEditorMixin from 'Modules/@apostrophecms/modal/mixins/AposEditorMixin';

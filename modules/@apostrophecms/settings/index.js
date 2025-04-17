@@ -6,8 +6,8 @@
 //
 // An object with subform configurations. The key is the subform name, the value
 // is the subform configuration described below. Subforms rendered on the client
-// side have two modes - preview and edit. The initial mode is preview. The configuration
-// provides the necessary information for both modes.
+// side have two modes - preview and edit. The initial mode is preview. The
+// configuration provides the necessary information for both modes.
 //
 // ```js
 // subforms: {
@@ -24,15 +24,15 @@
 //     // Optional subform help text. It is rendered instead
 //     // of the subform preview value in preview mode only.
 //     help: 'Your full name',
-//     // The subform value rendered in preview mode, but only if `help` option is not provided.
-//     // A string or i18n key / template can be specified.
+//     // The subform value rendered in preview mode, but only if `help` option is not
+//     // provided. A string or i18n key / template can be specified.
 //     // If not specified, the UI will attempt to generate a
 //     // preview value based on the subform schema and field values (space separated).
 //     preview: '{{ firstName }} {{ lastName }}',
-//     // In effect ONLY if `preview` and `help` options are not present. Provide a custom,
-//     // already registered (admin UI) component to render the subform preview value.
-//     // The subform config object and current field values will be passed as props.
-//     previewComponent: 'MyComponent',
+//     // In effect ONLY if `preview` and `help` options are not present.
+//     // Provide a custom, already registered (admin UI) component to render the subform
+//     // preview value. The subform config object and current field values will be
+//     // passed as props. previewComponent: 'MyComponent',
 //     // Optional protection type. Currently allowed values are `password`
 //     // and `true` (alias of `password`). If specified, the subform will be
 //     // protected by the user current password.
@@ -47,8 +47,9 @@
 //
 // An object with group configurations. The key is the group name, the value
 // is the group configuration, described below. Groups are used to organize
-// subforms in the settings modal (tabs). If no groups are configured, a single group
-// named "ungrouped" will be created. The order of the groups is respected.
+// subforms in the settings modal (tabs). If no groups are configured, a single
+// group named "ungrouped" will be created. The order of the groups is
+// respected.
 //
 // ```js
 // groups: {
@@ -129,10 +130,10 @@ module.exports = {
   },
 
   init(self) {
-    // List of all allowed protection types and their aliases (`subform.protection: type`).
-    // The key is the type or alias, the value is the actual type (always a string).
-    // All subforms `protection` prop will be converted to the actual type.
-    // Invalid protection type will panic.
+    // List of all allowed protection types and their aliases
+    // (`subform.protection: type`). The key is the type or alias, the value is
+    // the actual type (always a string). All subforms `protection` prop will be
+    // converted to the actual type. Invalid protection type will panic.
     self.protectionTypes = {
       // Protection type to be used if protected is simply set to `true`.
       true: 'password',
@@ -140,14 +141,15 @@ module.exports = {
       // TODO phase 3
       // email: 'email'
     };
-    // Collection of fieldName: protectionType objects for system forced protected fields.
-    // The order is important, the first match is used (first have higher priority).
-    // If there are multiple fields in the subform, having a system protected field,
-    // the first match from this list wins. If there is specifically `password` field
-    // in the subform, the schema will be completely replaced with the auto-generated
-    // password schema.
-    // Do not modify this object directly, use
-    // `self.apos.settings.addProtectedField(fieldName, protectionType)` instead.
+    // Collection of fieldName: protectionType objects for system forced
+    // protected fields. The order is important, the first match is used (first
+    // have higher priority). If there are multiple fields in the subform,
+    // having a system protected field, the first match from this list wins. If
+    // there is specifically `password` field in the subform, the schema will be
+    // completely replaced with the auto-generated password schema. Do not
+    // modify this object directly, use
+    // `self.apos.settings.addProtectedField(fieldName, protectionType)`
+    // instead.
     self.systemProtectedFields = {
       password: self.protectionTypes.password
       // TODO phase 3
@@ -297,7 +299,8 @@ module.exports = {
             subforms: group.subforms || []
           });
         }
-        // Push and Sort subfields to the newSubforms, add group to every subform.
+        // Push and Sort subfields to the newSubforms, add group to every
+        // subform.
         for (const group of groups) {
           if (!group.subforms.length) {
             continue;
@@ -338,7 +341,8 @@ module.exports = {
           ...new Set(
             Object.keys(subforms)
               .reduce((acc, subform) => {
-                // Do not allow password field alongside other fields in a subform
+                // Do not allow password field alongside other fields in a
+                // subform
                 if (subforms[subform].fields.includes('password')) {
                   subforms[subform].fields = [ 'password' ];
                 }
@@ -376,7 +380,8 @@ module.exports = {
       // This method requires initialized self.subforms.
       enhanceSubforms() {
         // 1. Add protection flag to subforms for system protected fields.
-        for (const [ fieldName, protectionType ] of Object.entries(self.systemProtectedFields)) {
+        const fields = Object.entries(self.systemProtectedFields);
+        for (const [ fieldName, protectionType ] of fields) {
           self.subforms = self.subforms.map(subform => {
             if (subform.fields.includes(fieldName)) {
               subform.protection = protectionType || true;
@@ -438,8 +443,9 @@ module.exports = {
       enhanceProtectedSubform(subform) {
         switch (subform.protection) {
           case self.protectionTypes.password: {
-            // Last field so that it doesn't mess up with the "first field label"
-            // detection on the client side (when form label is not specified).
+            // Last field so that it doesn't mess up with the "first field
+            // label" detection on the client side (when form label is not
+            // specified).
             subform.schema.push({
               ...self.getPasswordTemplateField(),
               label: 'apostrophe:passwordCurrent',
@@ -497,7 +503,8 @@ module.exports = {
           }
           // TODO `self.protectionTypes.email' in phase 3
 
-          // Should not happen as we validate the protected type in the init phase.
+          // Should not happen as we validate the protected type in the init
+          // phase.
           default: {
             throw self.apos.error('invalid', `Not supported protected type "${subform.protection}".`);
           }
@@ -630,7 +637,8 @@ module.exports = {
           // Remove the auto-generated fields from the schema
           subform = klona(subform);
           subform.schema = subform.schema
-            .filter(field => self.userSchema.some(userField => userField.name === field.name));
+            .filter(field => self.userSchema
+              .some(userField => userField.name === field.name));
 
           const user = await self.apos.user
             .find(req, { _id: req.user._id })

@@ -57,7 +57,8 @@ module.exports = (options, apos, srcBuildNames) => {
     },
     plugins: [
       new MiniCssExtractPlugin({
-        // Should be automatic but we wind up with main.css if we try to go with that
+        // Should be automatic but we wind up with main.css if we try to go
+        // with that
         filename: ({ chunk }) => {
           return srcBuildNames.includes(chunk.name)
             ? '[name].css'

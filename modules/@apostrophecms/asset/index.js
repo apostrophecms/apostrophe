@@ -88,19 +88,18 @@ module.exports = {
     // available when an external build module is registered (it doesn't
     // with the internal webpack build).
     productionSourceMaps: false,
-    // The configuration to control the development server and HMR when supported.
-    // The value can be:
-    // - boolen `false`: disable the dev server and HMR.
-    // - boolean `true`: same as `public` (default).
-    // - string `public`: serve only the source files from the `ui/src` folder.
-    // - string `apos`: serve only the admin UI files from the `ui/apos` folder.
+    // The configuration to control the development server and HMR when
+    // supported. The value can be: - boolean `false`: disable the dev server and
+    // HMR. - boolean `true`: same as `public` (default). - string `public`:
+    // serve only the source files from the `ui/src` folder. - string `apos`:
+    // serve only the admin UI files from the `ui/apos` folder.
     hmr: 'public',
     // Force the HMR WS port when it operates on the same process as Apostrophe.
     // Most of the time you won't need to change this.
     hmrPort: null,
     // Let the external build module inject a pollyfill for the module preload,
-    // adding the `modulepreload` support for the browsers that don't support it.
-    // Can be disabled in e.g. external front-ends.
+    // adding the `modulepreload` support for the browsers that don't support
+    // it. Can be disabled in e.g. external front-ends.
     modulePreloadPolyfill: true,
     // Completely disable the asset runtime auto-build system.
     // When an external build module is registered, only manifest data
@@ -110,8 +109,8 @@ module.exports = {
 
   async init(self) {
     // Cache the environment variables, because Node.js doesn't makes
-    // system calls to get them every time. We don't expect them to change during
-    // the runtime.
+    // system calls to get them every time. We don't expect them to change
+    // during the runtime.
     self.isDebugModeCached = process.env.APOS_ASSET_DEBUG === '1';
     self.isDevModeCached = process.env.NODE_ENV !== 'production';
     self.isProductionModeCached = process.env.NODE_ENV === 'production';
@@ -136,7 +135,8 @@ module.exports = {
 
     self.enableBrowserData();
 
-    // The namespace filled by `setWebpackExtensions()` (`webpack` property processing).
+    // The namespace filled by `setWebpackExtensions()` (`webpack` property
+    // processing).
     self.extraBundles = {};
     self.webpackExtensions = {};
     self.webpackExtensionOptions = {};
@@ -145,7 +145,8 @@ module.exports = {
     await self.setWebpackExtensions();
 
     // The namespace filled by `setBuildExtensions()` (`build` property).
-    // The properties above set by `setWebpackExtensions()` will be also overridden.
+    // The properties above set by `setWebpackExtensions()` will be also
+    // overridden.
     self.moduleBuildExtensions = {};
     await self.setBuildExtensions();
     // Set only if the external build module is registered. Contains
@@ -153,9 +154,9 @@ module.exports = {
     self.moduleBuildEntrypoints = [];
     // Set after a successful build. It contains only the processed entrypoints
     // with attached `bundles` property containing the bundle files. This can be
-    // later called by the systems that are injecting the scripts and stylesheets
-    // in the browser. We also need this as a separate property for possible
-    // server side hot module replacement scenarios.
+    // later called by the systems that are injecting the scripts and
+    // stylesheets in the browser. We also need this as a separate property for
+    // possible server side hot module replacement scenarios.
     self.currentBuildManifest = {
       sourceMapsRoot: null,
       devServerUrl: null,
@@ -189,8 +190,8 @@ module.exports = {
         async runUiBuildTask() {
           const ran = await self.autorunUiBuildTask();
 
-          // When the build is not executed, make the minimum required computations
-          // to ensure we can inject the assets in the browser.
+          // When the build is not executed, make the minimum required
+          // computations to ensure we can inject the assets in the browser.
           if (!ran) {
             await self.runWithoutBuild();
           }
@@ -326,16 +327,18 @@ module.exports = {
         return self.isProductionModeCached;
       },
 
-      // External build modules can register themselves here. This should happen on the
-      // special asset module event `afterInit` (see `handlers`). This module will also
-      // detect if a system watcher should be disabled depending on the asset module configuration and
-      // the external build module capabilities.
+      // External build modules can register themselves here. This should
+      // happen on the special asset module event `afterInit` (see `handlers`).
+      // This module will also detect if a system watcher should be disabled
+      // depending on the asset module configuration and the external build
+      // module capabilities.
       //
       // options:
-      // - alias (required): the alias string to use in the webpack configuration.
-      //   This usually matches the bundler name, e.g. 'vite', 'webpack', etc.
-      // - devServer (optional): whether the build module supports a dev server.
-      // - hmr (optional): whether the build module supports a hot module replacement.
+      // - alias (required): the alias string to use in the webpack
+      // configuration. This usually matches the bundler name, e.g. 'vite',
+      // 'webpack', etc. - devServer (optional): whether the build module
+      // supports a dev server. - hmr (optional): whether the build module
+      // supports a hot module replacement.
       //
       // The external build module should initialize before the asset module:
       // module.exports = {
@@ -343,71 +346,88 @@ module.exports = {
       //   ...
       // };
       //
-      // The external build module must implement various methods to be used by the Apostrophe core
+      // The external build module must implement various methods to be used by
+      // the Apostrophe core
       //
-      //  ** `async build(options)`: the build method to be called by Apostrophe.
+      // ** `async build(options)`: the build method to be called by
+      // Apostrophe.
       //
       // Accepts build `options`, see `getBuildOptions()` for more information.
       // Returns an object with properties:
-      // * `entrypoints`(required, array of objects), containing all entrypoints that are processed by the build module.
-      //    If a build is performed, `bundles` (`Set`) property will be added by the core asset module to each
-      //    processed entrypoint. It contains the bundle files that are created by the post-build system.
-      //    Beside the standard entrypoint shape (see `getBuildEntrypoints()`),
-      //    each entrypoint should also contain a `manifest` object.
+      // * `entrypoints`(required, array of objects), containing all
+      // entrypoints that are processed by the build module. If a build is
+      // performed, `bundles` (`Set`) property will be added by the core asset
+      // module to each processed entrypoint. It contains the bundle files that
+      // are created by the post-build system. Beside the standard entrypoint
+      // shape (see `getBuildEntrypoints()`), each entrypoint should also
+      // contain a `manifest` object.
       //
       //    `manifest` properties:
-      //    - `root` - the relative to `apos.asset.getBuildRootDir()` path to the folder containing
-      //    all files described in the manifest.
-      //    - `files` - object which properties are:
-      //      - `js` - an array of paths to the JS files. The only JS files that are getting bundled by scene.
-      //        It's usually the main entrypoint file. It's an array to allow additional files for bundling.
-      //      - `css` - an array of paths to the CSS files. Available only when the build manifest is available.
-      //        They are bundled by scene.
-      //      - `imports` - an array of paths to the statically imported (shared) JS files.
-      //        These are copied to the bundle folder and released.
-      //        They will be inserted into the HTML with `rel="modulepreload"` attribute.
-      //      - `dynamicImports` - an array of paths to the dynamically imported JS files.
-      //        These are copied to the bundle folder and released, but not inserted into the HTML.
-      //      - `assets` - an array of paths to the assets (images, fonts, etc.) used by the entrypoint.
-      //        These should be copied to the bundle folder and released and are not inserted into the HTML.
-      //    - `src` - an object with keys corresponding to the input extension and values array of relative
-      //      URL path to the entry source file that should be served by the dev server. Currently only `js`
-      //      key is supported. Can be null (e.g. for `ui/public`). Usually contains the main entrypoint file.
-      //    - `devServer` - boolean if the entrypoint should be served by the dev server.
-      // * `sourceMapsRoot` (optional, string or null) the absolute path to the location when source maps are stored.
-      //    They will be copied to the bundle folder with the folder same structure.
+      // - `root` - the relative to `apos.asset.getBuildRootDir()` path to the
+      // folder containing all files described in the manifest. - `files` -
+      // object which properties are: - `js` - an array of paths to the JS
+      // files. The only JS files that are getting bundled by scene. It's
+      // usually the main entrypoint file. It's an array to allow additional
+      // files for bundling. - `css` - an array of paths to the CSS files.
+      // Available only when the build manifest is available. They are bundled
+      // by scene. - `imports` - an array of paths to the statically imported
+      // (shared) JS files. These are copied to the bundle folder and released.
+      // They will be inserted into the HTML with `rel="modulepreload"`
+      // attribute. - `dynamicImports` - an array of paths to the dynamically
+      // imported JS files. These are copied to the bundle folder and released,
+      // but not inserted into the HTML. - `assets` - an array of paths to the
+      // assets (images, fonts, etc.) used by the entrypoint. These should be
+      // copied to the bundle folder and released and are not inserted into the
+      // HTML. - `src` - an object with keys corresponding to the input
+      // extension and values array of relative URL path to the entry source
+      // file that should be served by the dev server. Currently only `js` key
+      // is supported. Can be null (e.g. for `ui/public`). Usually contains the
+      // main entrypoint file. - `devServer` - boolean if the entrypoint should
+      // be served by the dev server. * `sourceMapsRoot` (optional, string or
+      // null) the absolute path to the location when source maps are stored.
+      // They will be copied to the bundle folder with the folder same
+      // structure.
       //
-      //  ** `async startDevServer(options)`: the method to start the dev server.
+      // ** `async startDevServer(options)`: the method to start the dev
+      // server.
       //
-      // It's called only if the module supports dev server and HMR, `hmr` is enabled and
-      // if it's apporpriate to start the dev server (development mode, not a task, etc.).
-      // Accepts the same options as the `build` method.
-      // Returns the same object as the `build` method with additional development related properties:
-      // * `devServerUrl` (optional, string or null) the base server URL for the dev server when available.
-      // * `hmrTypes` (optional, array of strings) the entrypoint types that are currently served with HMR.
-      // * `ts` (optional, number) the timestamp ms of the last `apos` build. This number will be written to the
-      //    `.manifest.json` file to allow the external build module to optimize the build time based on the
-      //    last build change. The module can retrieve both `getSystemLastChangeMs()` and `loadSavedBuildManifest()`
-      //    methods to perform a cache check.
+      // It's called only if the module supports dev server and HMR, `hmr` is
+      // enabled and if it's appropriate to start the dev server (development
+      // mode, not a task, etc.). Accepts the same options as the `build`
+      // method. Returns the same object as the `build` method with additional
+      // development related properties: * `devServerUrl` (optional, string or
+      // null) the base server URL for the dev server when available. *
+      // `hmrTypes` (optional, array of strings) the entrypoint types that are
+      // currently served with HMR. * `ts` (optional, number) the timestamp ms
+      // of the last `apos` build. This number will be written to the
+      // `.manifest.json` file to allow the external build module to optimize
+      // the build time based on the last build change. The module can retrieve
+      // both `getSystemLastChangeMs()` and `loadSavedBuildManifest()` methods
+      // to perform a cache check.
       //
-      //  ** `async watch(watcher, options)`: the method to attach the watcher to the external build module.
+      // ** `async watch(watcher, options)`: the method to attach the watcher
+      // to the external build module.
       //
       // It's called only if the module supports hmr, `hmr` is enabled and
-      // if it's apporpriate to start the watcher (development mode, not a task, watch enabled etc.). The watcher
-      // is a chokidar instance that watches the original module source files. The method should attach
-      // the necessary listeners to the watcher. Returns void.
+      // if it's appropriate to start the watcher (development mode, not a
+      // task, watch enabled etc.). The watcher is a chokidar instance that
+      // watches the original module source files. The method should attach the
+      // necessary listeners to the watcher. Returns void.
       //
-      //  ** `async entrypoints(options)`: the method to retrieve the entrypoints configuration.
+      // ** `async entrypoints(options)`: the method to retrieve the
+      // entrypoints configuration.
       //
-      // It's called only if no build is executed and the external build module is registered. The method should
-      // return the enhanced entrypoints in the same format as the `build` method returns. The module is allowed
+      // It's called only if no build is executed and the external build module
+      // is registered. The method should return the enhanced entrypoints in the
+      // same format as the `build` method returns. The module is allowed
       //
       // ** `async clearCache()`: clear the internal bundler cache.
       //
-      // This method is called when the `@apostrophecms/asset:clear-cache` task is executed.
-      // IMPORTANT: The directory that the module uses for bundler caching (usually in `data/temp`)
-      // should include the current namespace (`apos.asset.getNamespace()`) and build module alias
-      // to avoid conflicts with other modules and multisite environments.
+      // This method is called when the `@apostrophecms/asset:clear-cache` task
+      // is executed. IMPORTANT: The directory that the module uses for bundler
+      // caching (usually in `data/temp`) should include the current namespace
+      // (`apos.asset.getNamespace()`) and build module alias to avoid conflicts
+      // with other modules and multisite environments.
       //
       // ** `async reset()`: Clear all build artifacts (including manifest).
       //
@@ -443,7 +463,8 @@ module.exports = {
         }
       },
       // Available after external build module is registered.
-      // The internal module property should never be used directly nor modified after the initialization.
+      // The internal module property should never be used directly nor
+      // modified after the initialization.
       getBuildModuleConfig() {
         return self.externalBuildModuleConfig;
       },
@@ -468,28 +489,31 @@ module.exports = {
           !!self.getBuildModuleConfig().hmr;
       },
       // `argv` is the arguments passed to the original build task
-      // - `check-apos-build` is a boolean flag (or undefined) that indicates if build checks should be performed.
-      //   `false` means that the build should be executed as a task (no checks are performed). `true` means that
-      //   the build should be executed with a cached mechanisms for `apos`.
-      // - `changes` is an array of changed files. This is reserved for the legacy build system and should
-      //   never appear in the external build module.
+      // - `check-apos-build` is a boolean flag (or undefined) that indicates
+      // if build checks should be performed. `false` means that the build
+      // should be executed as a task (no checks are performed). `true` means
+      // that the build should be executed with a cached mechanisms for `apos`.
+      // - `changes` is an array of changed files. This is reserved for the
+      // legacy build system and should never appear in the external build
+      // module.
       //
       // Returns an object:
       // - `isTask`: if `true`, the build is executed as a task. If false
-      //   optimization can be applied (e.g. build apostrophe admin UI only once).
-      // - `hmr`: if `true`, the hot module replacement is enabled.
-      // - `hmrPort`: the port for the HMR WS server. If not set, the default port is used.
-      // - `devServer`: if `false`, the dev server is disabled. Otherwise, it's a string
-      //   (enum) `public` or `apos`. Note that if `hmr` is disabled, the dev server will be always
-      //   `false`.
-      // - `modulePreloadPolyfill`: if `true`, a module preload polyfill is injected.
-      // - `types`: optional array, if present it represents the only entrypoint types (entrypoint.type)
-      //   that should be built.
-      // - `sourcemaps`: if `true`, the source maps are generated in production.
-      // - `postcssViewportToContainerToggle`: the configuration for the breakpoint preview plugin.
+      // optimization can be applied (e.g. build apostrophe admin UI only
+      // once). - `hmr`: if `true`, the hot module replacement is enabled. -
+      // `hmrPort`: the port for the HMR WS server. If not set, the default port
+      // is used. - `devServer`: if `false`, the dev server is disabled.
+      // Otherwise, it's a string (enum) `public` or `apos`. Note that if `hmr`
+      // is disabled, the dev server will be always `false`. -
+      // `modulePreloadPolyfill`: if `true`, a module preload polyfill is
+      // injected. - `types`: optional array, if present it represents the only
+      // entrypoint types (entrypoint.type) that should be built. -
+      // `sourcemaps`: if `true`, the source maps are generated in production. -
+      // `postcssViewportToContainerToggle`: the configuration for the
+      // breakpoint preview plugin.
       //
-      // Note that this getter depends on the current build task arguments. You shouldn't
-      // use that directly.
+      // Note that this getter depends on the current build task arguments. You
+      // shouldn't use that directly.
       getBuildOptions(argv) {
         if (!argv) {
           // assuming not a task, legacy stuff
@@ -522,8 +546,8 @@ module.exports = {
         return options;
       },
       // Build the assets using the external build module.
-      // The `argv` object is the `argv` object passed to the original build task.
-      // See getBuildOptions() for more information.
+      // The `argv` object is the `argv` object passed to the original build
+      // task. See getBuildOptions() for more information.
       async build(argv) {
         const buildOptions = self.getBuildOptions(argv);
         self.currentBuildOptions = buildOptions;
@@ -543,9 +567,11 @@ module.exports = {
             .build(buildOptions);
         }
 
-        // Create and copy bundles (`-bundle.xxx` files) per scene into the bundle root.
+        // Create and copy bundles (`-bundle.xxx` files) per scene into the
+        // bundle root.
         const bundles = await self.computeBuildScenes(self.currentBuildManifest);
-        // Retrieve `/modules` public assets from the bundle root for deployment.
+        // Retrieve `/modules` public assets from the bundle root for
+        // deployment.
         const publicAssets = await glob('modules/**/*', {
           cwd: self.getBundleRootDir(),
           nodir: true,
@@ -553,7 +579,9 @@ module.exports = {
           absolute: false
         });
         // Copy the static & dynamic imports and file assets to the bundle root.
-        const deployableArtefacts = await self.copyBuildArtefacts(self.currentBuildManifest);
+        const deployableArtefacts = await self.copyBuildArtefacts(
+          self.currentBuildManifest
+        );
         // Copy the source maps to the bundle root.
         const sourceMaps = await self.copyBuildSourceMaps(self.currentBuildManifest);
         // Save the build manifest in the bundle root.
@@ -585,16 +613,16 @@ module.exports = {
         self.currentBuildManifest = await self.getBuildModule()
           .startDevServer(buildOptions);
       },
-      // A before hook for the new `watch` and the legacy `watchUiAndRebuild` methods.
-      // Extend to apply custom logic before the watch system is started.
-      // It is called after a custom watcher is (optionally) registered and before
-      // an internal watcher is instantiated (when appropriate).
+      // A before hook for the new `watch` and the legacy `watchUiAndRebuild`
+      // methods. Extend to apply custom logic before the watch system is
+      // started. It is called after a custom watcher is (optionally) registered
+      // and before an internal watcher is instantiated (when appropriate).
       async beforeWatch() {
         // Do nothing by default.
       },
-      // The new watch system, works only when an external build module is registered.
-      // This method is invoked only when appropriate.
-      // The watcher will trigger changes with paths relative to the `apos.npmRootDir`.
+      // The new watch system, works only when an external build module is
+      // registered. This method is invoked only when appropriate. The watcher
+      // will trigger changes with paths relative to the `apos.npmRootDir`.
       async watch() {
         await self.beforeWatch();
 
@@ -626,16 +654,16 @@ module.exports = {
         await self.getBuildModule().watch(self.buildWatcher, self.getBuildOptions());
       },
       // https://github.com/paulmillr/chokidar?tab=readme-ov-file#path-filtering
-      // Override to ignore files/folders from the watch. The method is called twice:
-      // - once with only the `file` parameter
-      // - once with both `file` and `fsStats` parameters
-      // The `file` is the relative to the `apos.rootDir` path to the file or folder.
-      // The `fsStats` is the `fs.Stats` object.
-      // Return `true` to ignore the file/folder.
+      // Override to ignore files/folders from the watch. The method is called
+      // twice: - once with only the `file` parameter - once with both `file`
+      // and `fsStats` parameters The `file` is the relative to the
+      // `apos.rootDir` path to the file or folder. The `fsStats` is the
+      // `fs.Stats` object. Return `true` to ignore the file/folder.
       ignoreWatchLocation(file, fsStats) {
         return false;
       },
-      // Run the minimal required computations to ensure manifest data is available.
+      // Run the minimal required computations to ensure manifest data is
+      // available.
       async runWithoutBuild() {
         if (!self.hasBuildModule()) {
           return;
@@ -646,9 +674,9 @@ module.exports = {
         const buildOptions = self.getBuildOptions();
         const entrypoints = await self.getBuildModule().entrypoints(buildOptions);
 
-        // Command line tasks other than the asset build task do not display a warning
-        // if there is no manifest from a previous build attempt as they do not depend
-        // on the manifest to succeed
+        // Command line tasks other than the asset build task do not display a
+        // warning if there is no manifest from a previous build attempt as they
+        // do not depend on the manifest to succeed
         const silent = self.apos.isTask() && !self.inBuildTask;
         const {
           manifest = [], devServerUrl, hmrTypes
@@ -754,20 +782,22 @@ module.exports = {
       // Returns a unique identifier for the current version of the
       // codebase (the current release). Checks for a release-id file
       // (ideal for webpack which can create such a file in a build step),
-      // HEROKU_RELEASE_VERSION (for Heroku), PLATFORM_TREE_ID (for platform.sh),
-      // APOS_RELEASE_ID (for custom cases), a directory component containing at
-      // least YYYY-MM-DD (for stagecoach), and finally the git hash, if the project
-      // root is a git checkout (useful when debugging production builds locally,
-      // and some people do deploy this way).
+      // HEROKU_RELEASE_VERSION (for Heroku), PLATFORM_TREE_ID (for
+      // platform.sh), APOS_RELEASE_ID (for custom cases), a directory component
+      // containing at least YYYY-MM-DD (for stagecoach), and finally the git
+      // hash, if the project root is a git checkout (useful when debugging
+      // production builds locally, and some people do deploy this way).
       //
-      // If none of these are found, throws an error demanding that APOS_RELEASE_ID
-      // or release-id be set up.
+      // If none of these are found, throws an error demanding that
+      // APOS_RELEASE_ID or release-id be set up.
       //
-      // TODO: auto-detect more cases, such as Azure app service. In the meantime
-      // you can set APOS_RELEASE_ID from whatever you have before running Apostrophe.
+      // TODO: auto-detect more cases, such as Azure app service. In the
+      // meantime you can set APOS_RELEASE_ID from whatever you have before
+      // running Apostrophe.
       //
-      // The identifier should be reasonably short and must be URL-friendly. It must
-      // be available both when running the asset build task and when running the site.
+      // The identifier should be reasonably short and must be URL-friendly. It
+      // must be available both when running the asset build task and when
+      // running the site.
       getReleaseId() {
         const viaEnv = process.env.APOS_RELEASE_ID ||
           process.env.HEROKU_RELEASE_VERSION ||
@@ -781,7 +811,8 @@ module.exports = {
           // OK, consider fallbacks instead
         }
         const realPath = fs.realpathSync(self.apos.rootDir);
-        // Stagecoach and similar: find a release timestamp in the path and use that
+        // Stagecoach and similar: find a release timestamp in the path and use
+        // that
         const matches = realPath.match(/\/(\d\d\d\d-\d\d-\d\d[^/]+)/);
         if (matches) {
           return matches[1];
@@ -849,11 +880,11 @@ module.exports = {
       // If `changes` is not provided (falsy value), a boolean will be returned,
       // indicating if the build task has been invoked or not.
       // IMPORTANT: Be cautious when changing the return type behavior.
-      // The build watcher initialization (event triggered) depends on a Boolean value,
-      // and the rebuild handler (triggered by the build watcher on
-      // detected change) depends on an Array value.
-      // Returns boolean if `changes` is not provided, otherwise an array of builds
-      // that were triggered by the changes.
+      // The build watcher initialization (event triggered) depends on a
+      // Boolean value, and the rebuild handler (triggered by the build watcher
+      // on detected change) depends on an Array value. Returns boolean if
+      // `changes` is not provided, otherwise an array of builds that were
+      // triggered by the changes.
       async autorunUiBuildTask(changes) {
         let result = changes ? [] : false;
         let _changes;
@@ -1064,7 +1095,8 @@ module.exports = {
             prologue: self.srcPrologue,
             // The new `type` option used in the entrypoint configuration
             type: 'index',
-            // The new optional configuration option for the allowed input file extensions
+            // The new optional configuration option for the allowed input file
+            // extensions
             inputs: [ 'js', 'scss' ]
           },
           apos: {
@@ -1072,9 +1104,10 @@ module.exports = {
             outputs: [ 'js' ],
             webpack: true,
             label: 'apostrophe:apostropheAdminUi',
-            // Only rebuilt on npm updates unless APOS_DEV is set in the environment
-            // to indicate that the dev writes project level or npm linked admin UI
-            // code of their own which might be newer than package-lock.json
+            // Only rebuilt on npm updates unless APOS_DEV is set in the
+            // environment to indicate that the dev writes project level or npm
+            // linked admin UI code of their own which might be newer than
+            // package-lock.json
             apos: true,
             prologue: stripIndent`
               import 'Modules/@apostrophecms/ui/scss/global/import-all.scss';
@@ -1089,8 +1122,8 @@ module.exports = {
             condition: 'module',
             type: 'apos'
           }
-          // We could add an apos-ie11 bundle that just pushes a "sorry charlie" prologue,
-          // if we chose
+          // We could add an apos-ie11 bundle that just pushes a "sorry
+          // charlie" prologue, if we chose
         };
         if (self.options.publicBundle) {
           self.builds.public = {
@@ -1155,8 +1188,8 @@ module.exports = {
           `src="${self.action}/refresh-on-restart"></script>`
         );
       },
-      // Return the URL of the release asset with the given path, taking into account
-      // the release id, uploadfs, etc.
+      // Return the URL of the release asset with the given path, taking into
+      // account the release id, uploadfs, etc.
       url(path) {
         return self.url(path);
       },

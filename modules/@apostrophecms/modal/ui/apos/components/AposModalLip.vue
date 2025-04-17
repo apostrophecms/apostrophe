@@ -1,33 +1,106 @@
 <template>
   <!-- Disabling since the SVG is mostly not active vue template code. -->
-  <!-- eslint-disable vue/max-attributes-per-line -->
-  <div ref="lip" class="apos-modal-lip">
+  <div
+    ref="lip"
+    class="apos-modal-lip"
+  >
     <div class="apos-modal-lip__shadow">
-      <svg width="406px" height="56px" viewBox="0 0 406 56" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+      <svg
+        width="406px"
+        height="56px"
+        viewBox="0 0 406 56"
+        version="1.1"
+        xmlns="http://www.w3.org/2000/svg"
+        xmlns:xlink="http://www.w3.org/1999/xlink"
+      >
         <title>Shadow</title>
         <defs>
-          <rect id="shadow-path-1" x="0" y="0" width="406" height="56" />
-          <rect id="shadow-path-3" x="-13" y="20" width="432" height="83" />
-          <filter id="shadow-filter-4" x="-6.2%" y="-28.9%" width="112.5%" height="165.1%" filterUnits="objectBoundingBox">
-            <feMorphology radius="3" operator="dilate" in="SourceAlpha" result="shadowSpreadOuter1" />
-            <feOffset dx="0" dy="0" in="shadowSpreadOuter1" result="shadowOffsetOuter1" />
-            <feGaussianBlur stdDeviation="6.5" in="shadowOffsetOuter1" result="shadowBlurOuter1" />
-            <feComposite in="shadowBlurOuter1" in2="SourceAlpha" operator="out" result="shadowBlurOuter1" />
+          <rect
+            id="shadow-path-1"
+            x="0"
+            y="0"
+            width="406"
+            height="56"
+          />
+          <rect
+            id="shadow-path-3"
+            x="-13"
+            y="20"
+            width="432"
+            height="83"
+          />
+          <filter
+            id="shadow-filter-4"
+            x="-6.2%"
+            y="-28.9%"
+            width="112.5%"
+            height="165.1%"
+            filterUnits="objectBoundingBox"
+          >
+            <feMorphology
+              radius="3"
+              operator="dilate"
+              in="SourceAlpha"
+              result="shadowSpreadOuter1"
+            />
+            <feOffset
+              dx="0"
+              dy="0"
+              in="shadowSpreadOuter1"
+              result="shadowOffsetOuter1"
+            />
+            <feGaussianBlur
+              stdDeviation="6.5"
+              in="shadowOffsetOuter1"
+              result="shadowBlurOuter1"
+            />
+            <feComposite
+              in="shadowBlurOuter1"
+              in2="SourceAlpha"
+              operator="out"
+              result="shadowBlurOuter1"
+            />
             <feColorMatrix
               :values="shadow"
-              type="matrix" in="shadowBlurOuter1"
+              type="matrix"
+              in="shadowBlurOuter1"
             />
           </filter>
         </defs>
-        <g stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <g
+          stroke="none"
+          stroke-width="1"
+          fill="none"
+          fill-rule="evenodd"
+        >
           <g transform="translate(0.000000, -1.000000)">
-            <mask id="shadow-mask-2" fill="white">
+            <mask
+              id="shadow-mask-2"
+              fill="white"
+            >
               <use xlink:href="#shadow-path-1" />
             </mask>
             <g id="Mask" />
-            <g fill-rule="nonzero" mask="url(#mask-2)">
-              <use fill="black" fill-opacity="1" filter="url(#shadow-filter-4)" xlink:href="#shadow-path-3" />
-              <rect stroke-width="1" stroke-linejoin="square" fill="transparent" fill-rule="evenodd" x="-12.5" y="20.5" width="431" height="82" />
+            <g
+              fill-rule="nonzero"
+              mask="url(#mask-2)"
+            >
+              <use
+                fill="black"
+                fill-opacity="1"
+                filter="url(#shadow-filter-4)"
+                xlink:href="#shadow-path-3"
+              />
+              <rect
+                stroke-width="1"
+                stroke-linejoin="square"
+                fill="transparent"
+                fill-rule="evenodd"
+                x="-12.5"
+                y="20.5"
+                width="431"
+                height="82"
+              />
             </g>
           </g>
         </g>
