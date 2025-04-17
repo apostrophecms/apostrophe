@@ -43,7 +43,7 @@
           }"
           :disabled="!checkedCount"
           :menu="operations"
-          @item-clicked="(a) => beginGroupedOperation(a, operations)"
+          @item-clicked="(item) => beginGroupedOperation(item, operations)"
         />
       </div>
     </template>
@@ -275,8 +275,8 @@ export default {
 
       return this.confirmOperation(operation);
     },
-    async beginGroupedOperation(action, operations) {
-      const operation = operations.find(o => o.action === action);
+    async beginGroupedOperation(item, operations) {
+      const operation = operations.find(o => o.action === item.action);
 
       operation.modal
         ? await this.modalOperation(operation)

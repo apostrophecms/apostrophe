@@ -112,6 +112,8 @@
           :disabled="disabled"
           :max-reached="maxReached"
           :tabbable="isFocused"
+          :model-value="widget"
+          :area-field="field"
           @up="$emit('up', i);"
           @remove="$emit('remove', i);"
           @edit="$emit('edit', i);"
@@ -119,6 +121,7 @@
           @copy="$emit('copy', i);"
           @clone="$emit('clone', i);"
           @down="$emit('down', i);"
+          @update="$emit('update')"
         />
       </div>
       <!-- Still used for contextual editing components -->

@@ -24,6 +24,7 @@ $input-color-disabled: var(--a-base-4);
   --a-primary-transparent-50: #{color.adjust($color, $alpha: -0.5)};
   --a-primary-transparent-15: #{color.adjust($color, $alpha: -0.85)};
   --a-primary-transparent-10: #{color.adjust($color, $alpha: -0.9)};
+  --a-primary-transparent-05: #{color.adjust($color, $alpha: -0.95)};
   --a-primary-dark-10: #{color.mix(#000, $color, 10%)};
   --a-primary-dark-15: #{color.mix(#000, $color, 15%)};
   --a-primary-light-40: #{color.mix(#fff, $color, 40%)};

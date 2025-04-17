@@ -23,9 +23,10 @@ module.exports = {
       'rank',
       'level'
     ];
-    self.widgetManagers = {};
     self.richTextWidgetTypes = [];
     self.widgetManagers = {};
+    self.widgetOperations = [];
+
     self.enableBrowserData();
     self.addDeduplicateWidgetIdsMigration();
   },
@@ -658,6 +659,21 @@ module.exports = {
           }
         });
       },
+      addWidgetOperation(operation) {
+        if (!operation.name || !operation.label || !operation.modal) {
+          throw self.apos.error('invalid', 'addWidgetOperation requires name, label and modal properties.');
+        }
+
+        if (operation.secondaryLevel !== true && !operation.icon) {
+          throw self.apos.error('invalid', 'addWidgetOperation requires the icon property at primary level.');
+        }
+
+        self.widgetOperations = self.widgetOperations.filter(
+          ({ name }) => name !== operation.name
+        );
+
+        self.widgetOperations.push(operation);
+      },
       getBrowserData(req) {
         const widgets = {};
         const widgetEditors = {};
@@ -682,6 +698,13 @@ module.exports = {
           contextualWidgetDefaultData[name] = manager.options.defaultData || {};
         });
 
+        const widgetOperations = self.widgetOperations.filter(({ permission }) => {
+          if (permission?.action && permission?.type) {
+            return self.apos.permission.can(req, permission.action, permission.type, permission.mode || 'draft');
+          }
+          return true;
+        });
+
         return {
           components: {
             editor: 'AposAreaEditor',
@@ -694,7 +717,8 @@ module.exports = {
           widgetPreview,
           contextualWidgetDefaultData,
           widgetManagers,
-          action: self.action
+          action: self.action,
+          widgetOperations
         };
       },
       async addDeduplicateWidgetIdsMigration() {

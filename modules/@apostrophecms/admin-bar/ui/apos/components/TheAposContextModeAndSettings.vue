@@ -6,9 +6,10 @@
   >
     <!--
       TODO: Each div at this level serves as a discrete context menu state
-      Modules should be able to provide their own menus here to complete tasks specific
-      to them. It might also be worth breaking up the core menus into their own vue
-      components to further illustrate this concept.
+      Modules should be able to provide their own menus here to complete
+      tasks specific to them.
+      It might also be worth breaking up the core menus into their own vue components to
+      further illustrate this concept.
     -->
     <div
       v-if="!editMode"
@@ -200,9 +201,6 @@ export default {
         this.hasBeenPublishedButNotUpdated = false;
       }
       this.$emit('publish');
-    },
-    emitEvent(name) {
-      apos.bus.$emit('admin-menu-click', name);
     }
   }
 };
