@@ -123,7 +123,9 @@ module.exports = {
         } else {
           template = _.str.rtrim(template.slice(0, template.length - 1));
         }
-        return (template + pruneStr).length > str.length ? str : str.slice(0, template.length) + pruneStr;
+        return (template + pruneStr).length > str.length
+          ? str
+          : str.slice(0, template.length) + pruneStr;
       },
       // Escape a plaintext string correctly for use in HTML.
       // If `{ pretty: true }` is in the options object,
@@ -502,7 +504,12 @@ module.exports = {
       //
       // Ignore the `_dotPath` argument to this method; it is used for
       // recursion.
-      findNestedObjectAndDotPathById(object, id, { ignoreDynamicProperties = false } = {}, _dotPath) {
+      findNestedObjectAndDotPathById(
+        object,
+        id,
+        { ignoreDynamicProperties = false } = {},
+        _dotPath
+      ) {
         let key;
         let val;
         let result;
@@ -521,7 +528,12 @@ module.exports = {
                 dotPath: subPath.join('.')
               };
             }
-            result = self.findNestedObjectAndDotPathById(val, id, { ignoreDynamicProperties }, subPath);
+            result = self.findNestedObjectAndDotPathById(
+              val,
+              id,
+              { ignoreDynamicProperties },
+              subPath
+            );
             if (result) {
               return result;
             }
@@ -739,7 +751,8 @@ module.exports = {
       resolveAtReference(o, path) {
         path = path.split('.');
         if (path[0] && (path[0].charAt(0) === '@')) {
-          const info = self.apos.util.findNestedObjectAndDotPathById(o, path[0].substring(1));
+          const info = self.apos.util
+            .findNestedObjectAndDotPathById(o, path[0].substring(1));
           if (!info) {
             return path.join('.');
           }
@@ -773,7 +786,11 @@ module.exports = {
           if (!matches) {
             throw new Error(`@ syntax used without an id: ${path}`);
           }
-          const found = self.apos.util.findNestedObjectAndDotPathById(o, matches[1], { ignoreDynamicProperties: true });
+          const found = self.apos.util.findNestedObjectAndDotPathById(
+            o,
+            matches[1],
+            { ignoreDynamicProperties: true }
+          );
           if (found) {
             if (matches[2].length) {
               o = found.object;
@@ -840,7 +857,9 @@ module.exports = {
         // access to things like `req.get`. Solution: ask `Object.create` to
         // create a new object with the same prototype as `req`, then copy the
         // own properties of `req` into the new object.
-        const result = Object.assign(Object.create(Object.getPrototypeOf(req)), req, properties);
+        const result = Object.assign(
+          Object.create(Object.getPrototypeOf(req)), req, properties
+        );
         self.apos.i18n.setPrefixUrls(result);
         // Must have its own clone function or we can't clone two levels deep
         result.clone = (properties = {}) => {
@@ -848,7 +867,8 @@ module.exports = {
         };
         return result;
       },
-      pipe: (...functions) => (initial) => functions.reduce((accumulator, current) => current(accumulator), initial),
+      pipe: (...functions) => (initial) => functions
+        .reduce((accumulator, current) => current(accumulator), initial),
       merge(...objects) {
         const concatArrays = (objValue, srcValue) => {
           if (Array.isArray(objValue)) {

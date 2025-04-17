@@ -50,7 +50,12 @@ describe('Users', function() {
 
     assert(user.type === '@apostrophecms/user');
     assert(apos.user.insert);
-    const getReqMethods = [ apos.task.getAnonReq, apos.task.getGuestReq, apos.task.getContributorReq, apos.task.getEditorReq ];
+    const getReqMethods = [
+      apos.task.getAnonReq,
+      apos.task.getGuestReq,
+      apos.task.getContributorReq,
+      apos.task.getEditorReq
+    ];
     let caught = 0;
     for (const getReqMethod of getReqMethods) {
       const req = getReqMethod();
@@ -181,7 +186,10 @@ describe('Users', function() {
   });
 
   it('should be able to rescue the first user from the archive and the username should revert, but the email should not because it is in use by a newer account', async function() {
-    const user = await apos.user.find(apos.task.getReq(), { _id: janeId }).archived(true).toObject();
+    const user = await apos.user
+      .find(apos.task.getReq(), { _id: janeId })
+      .archived(true)
+      .toObject();
     user.archived = false;
     await apos.user.update(apos.task.getReq(), user);
     const doc = await apos.doc.db.findOne({
@@ -224,7 +232,10 @@ describe('Users', function() {
   });
 
   it('should be able to rescue the first user from the archive and the email and username should be deduplicated', async function() {
-    const user = await apos.user.find(apos.task.getReq(), { _id: janeId }).archived(true).toObject();
+    const user = await apos.user
+      .find(apos.task.getReq(), { _id: janeId })
+      .archived(true)
+      .toObject();
     user.archived = false;
     await apos.user.update(apos.task.getReq(), user);
     const doc = await apos.doc.db.findOne({

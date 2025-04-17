@@ -579,7 +579,9 @@ module.exports = {
           absolute: false
         });
         // Copy the static & dynamic imports and file assets to the bundle root.
-        const deployableArtefacts = await self.copyBuildArtefacts(self.currentBuildManifest);
+        const deployableArtefacts = await self.copyBuildArtefacts(
+          self.currentBuildManifest
+        );
         // Copy the source maps to the bundle root.
         const sourceMaps = await self.copyBuildSourceMaps(self.currentBuildManifest);
         // Save the build manifest in the bundle root.

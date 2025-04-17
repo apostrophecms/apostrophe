@@ -300,7 +300,10 @@ module.exports = {
               throw self.apos.error('forbidden');
             }
 
-            const query = self.getRestQuery(req).permission(false).limit(10).relationships(false)
+            const query = self.getRestQuery(req)
+              .permission(false)
+              .limit(10)
+              .relationships(false)
               .areas(false);
             if (type.length) {
               query.type(type);
@@ -346,18 +349,25 @@ module.exports = {
             if (!self.apos.permission.can(req, 'view', '@apostrophecms/any-page-type')) {
               throw self.apos.error('forbidden');
             }
-            const page = await self.getRestQuery(req).permission(false).and({ level: 0 }).children({
-              depth: 1000,
-              archived,
-              orphan: null,
-              relationships: false,
-              areas: false,
-              permission: false,
-              withPublished: self.apos.launder.boolean(req.query.withPublished),
-              project: self.getAllProjection()
-            }).toObject();
+            const page = await self.getRestQuery(req)
+              .permission(false)
+              .and({ level: 0 })
+              .children({
+                depth: 1000,
+                archived,
+                orphan: null,
+                relationships: false,
+                areas: false,
+                permission: false,
+                withPublished: self.apos.launder.boolean(req.query.withPublished),
+                project: self.getAllProjection()
+              }).toObject();
 
-            if (self.options.cache && self.options.cache.api && self.options.cache.api.maxAge) {
+            if (
+              self.options.cache &&
+              self.options.cache.api &&
+              self.options.cache.api.maxAge
+            ) {
               self.setMaxAge(req, self.options.cache.api.maxAge);
             }
 
@@ -380,7 +390,11 @@ module.exports = {
           } else {
             const result = await self.getRestQuery(req).and({ level: 0 }).toObject();
 
-            if (self.options.cache && self.options.cache.api && self.options.cache.api.maxAge) {
+            if (
+              self.options.cache &&
+              self.options.cache.api &&
+              self.options.cache.api.maxAge
+            ) {
               self.setMaxAge(req, self.options.cache.api.maxAge);
             }
 
@@ -414,9 +428,13 @@ module.exports = {
           // Edit access to draft is sufficient to fetch either
           await self.publicApiCheckAsync(req);
           const criteria = self.getIdCriteria(_id);
-          const result = await self.getRestQuery(req).permission(false).and(criteria).toObject();
+          const result = await self
+            .getRestQuery(req)
+            .permission(false)
+            .and(criteria)
+            .toObject();
 
-          if (self.options.cache && self.options.cache.api && self.options.cache.api.maxAge) {
+          if (self.options.cache?.api?.maxAge) {
             const { maxAge } = self.options.cache.api;
 
             if (!self.options.cache.api.etags) {
@@ -463,7 +481,12 @@ module.exports = {
         // Here we have to normalize before calling insert because we
         // need the parent page to call newChild(). insert calls again but
         // sees there's no work to be done, so no performance hit
-        const normalized = await self.getTargetIdAndPosition(req, null, targetId, position);
+        const normalized = await self.getTargetIdAndPosition(
+          req,
+          null,
+          targetId,
+          position
+        );
         targetId = normalized.targetId || '_home';
         position = normalized.position;
         const copyingId = self.apos.launder.id(req.body._copyingId);
@@ -565,7 +588,9 @@ module.exports = {
             throw self.apos.error('forbidden');
           }
           const input = req.body;
-          const manager = self.apos.doc.getManager(self.apos.launder.string(input.type) || page.type);
+          const manager = self.apos.doc.getManager(
+            self.apos.launder.string(input.type) || page.type
+          );
           if (!manager) {
             throw self.apos.error('invalid');
           }
@@ -1214,7 +1239,8 @@ database.`);
                   const position = self.apos.launder.string(input._position);
                   modified = await self.move(req, page._id, targetId, position);
                 }
-                result = await self.findOneForEditing(req, { _id }, { attachments: true });
+                result = await self
+                  .findOneForEditing(req, { _id }, { attachments: true });
                 if (modified) {
                   result.__changed = modified.changed;
                 }
@@ -1237,12 +1263,14 @@ database.`);
       // mechanism to simulate patches. Does not handle _targetId, that is
       // implemented in the patch method.
       async applyPatch(req, page, input) {
-        const manager = self.apos.doc.getManager(self.apos.launder.string(input.type) || page.type);
+        const manager = self.apos.doc
+          .getManager(self.apos.launder.string(input.type) || page.type);
         if (!manager) {
           throw self.apos.error('invalid');
         }
         self.apos.schema.implementPatchOperators(input, page);
-        const parentPage = page._ancestors.length && page._ancestors[page._ancestors.length - 1];
+        const parentPage = page._ancestors.length &&
+          page._ancestors[page._ancestors.length - 1];
         const schema = self.apos.schema.subsetSchemaForPatch(manager.allowedSchema(req, {
           ...page,
           type: manager.name
@@ -1318,7 +1346,12 @@ database.`);
       // are bypassed.
       async insert(req, targetId, position, page, options = {}) {
         // Handle numeric positions
-        const normalized = await self.getTargetIdAndPosition(req, null, targetId, position);
+        const normalized = await self.getTargetIdAndPosition(
+          req,
+          null,
+          targetId,
+          position
+        );
         targetId = normalized.targetId;
         position = normalized.position;
         return self.withLock(req, async () => {
@@ -1531,7 +1564,12 @@ database.`);
       // is emitted with `req, moved, target, position`.
       async move(req, movedId, targetId, position) {
         // Handle numeric positions
-        const normalized = await self.getTargetIdAndPosition(req, movedId, targetId, position);
+        const normalized = await self.getTargetIdAndPosition(
+          req,
+          movedId,
+          targetId,
+          position
+        );
         targetId = normalized.targetId;
         position = normalized.position;
         return self.withLock(req, body);
@@ -1610,14 +1648,17 @@ database.`);
             changed
           };
           async function getMoved() {
-            const moved = await self.findForEditing(req, { _id: movedId }).permission(false).ancestors({
-              depth: 1,
-              visibility: null,
-              archived: null,
-              areas: false,
-              relationships: false,
-              permission: false
-            })
+            const moved = await self
+              .findForEditing(req, { _id: movedId })
+              .permission(false)
+              .ancestors({
+                depth: 1,
+                visibility: null,
+                archived: null,
+                areas: false,
+                relationships: false,
+                permission: false
+              })
               .toObject();
             if (!moved) {
               throw self.apos.error('invalid', 'No such page');
@@ -1694,7 +1735,8 @@ database.`);
             originalPath = moved.path;
             originalSlug = moved.slug;
             const level = parent.level + 1;
-            const newPath = self.apos.util.addSlashIfNeeded(parent.path) + path.basename(moved.path);
+            const newPath = self.apos.util.addSlashIfNeeded(parent.path) +
+              path.basename(moved.path);
             // We're going to use update with $set, but we also want to update
             // the object so that moveDescendants can see what we did
             moved.path = newPath;
@@ -1710,7 +1752,10 @@ database.`);
 
                 moved.slug = parent.slug.endsWith(movedSlugCandidate)
                   ? parent.slug.replace(movedSlugCandidate, '').concat(moved.slug)
-                  : moved.slug.replace(matchOldParentSlugPrefix, self.apos.util.addSlashIfNeeded(parent.slug));
+                  : moved.slug.replace(
+                    matchOldParentSlugPrefix,
+                    self.apos.util.addSlashIfNeeded(parent.slug)
+                  );
                 changed.push({
                   _id: moved._id,
                   slug: moved.slug
@@ -1742,7 +1787,13 @@ database.`);
             };
           }
           async function updateDescendants() {
-            changed = changed.concat(await self.updateDescendantsAfterMove(req, moved, originalPath, originalSlug));
+            const descendants = await self.updateDescendantsAfterMove(
+              req,
+              moved,
+              originalPath,
+              originalSlug
+            );
+            changed = changed.concat(descendants);
           }
         }
       },
@@ -1880,7 +1931,10 @@ database.`);
               if (self.apos.doc.isUniqueError(err)) {
                 // The slug is now in conflict for this subpage.
                 // Try again with path only
-                self.apos.doc.db.updateOne({ _id: descendant._id }, { $set: { path: descendant.path } });
+                self.apos.doc.db.updateOne(
+                  { _id: descendant._id },
+                  { $set: { path: descendant.path } }
+                );
               } else {
                 throw err;
               }
@@ -2033,7 +2087,7 @@ database.`);
           return await self.serve500Error(req, err);
         }
 
-        if (self.options.cache && self.options.cache.page && self.options.cache.page.maxAge) {
+        if (self.options.cache?.page?.maxAge) {
           const { maxAge } = self.options.cache.page;
 
           if (!self.options.cache.page.etags) {
@@ -2275,7 +2329,10 @@ database.`);
       // A request is "found" if it should not be
       // treated as a "404 not found" situation
       isFound(req) {
-        return req.loginRequired || req.insufficient || req.redirect || (req.data.page && !req.notFound);
+        return req.loginRequired ||
+          req.insufficient ||
+          req.redirect ||
+          (req.data.page && !req.notFound);
       },
       // Returns the query builders to be invoked when fetching a
       // page, by default. These add information about ancestor and child
@@ -2426,7 +2483,11 @@ database.`);
           descendant.slug = newSlug;
           descendant.level = descendant.level + (page.level - oldLevel);
           descendant.archived = page.archived;
-          await self.apos.doc.retryUntilUnique(req, descendant, () => self.update(req, descendant));
+          await self.apos.doc.retryUntilUnique(
+            req,
+            descendant,
+            () => self.update(req, descendant)
+          );
           changed.push({
             _id: descendant._id,
             slug: descendant.slug,
@@ -2444,7 +2505,10 @@ database.`);
         if (!item.parkedId) {
           throw new Error('Parked pages must have a unique parkedId property');
         }
-        if (!((item.type || (item._defaults && item._defaults.type)) && (item.slug || item._defaults.slug))) {
+        if (
+          !((item.type || (item._defaults && item._defaults.type)) &&
+          (item.slug || item._defaults.slug))
+        ) {
           throw new Error('Parked pages must have type and slug properties, they may be fixed or part of _defaults:\n' + JSON.stringify(item, null, '  '));
         }
         item = klona(item);
@@ -2484,7 +2548,10 @@ database.`);
         async function updateExisting() {
           // Enforce all permanent properties on existing
           // pages too
-          await self.apos.doc.db.updateOne({ _id: existing._id }, { $set: self.apos.util.clonePermanent(item) });
+          await self.apos.doc.db.updateOne(
+            { _id: existing._id },
+            { $set: self.apos.util.clonePermanent(item) }
+          );
         }
         async function insert() {
           const parkedDefaults = { ...(item._defaults || {}) };
@@ -2551,7 +2618,8 @@ database.`);
           throw new Error('Wrong number of arguments');
         }
         const slug = argv._[1];
-        const count = await self.apos.doc.db.updateOne({ slug }, { $unset: { parked: 1 } });
+        const count = await self.apos.doc.db
+          .updateOne({ slug }, { $unset: { parked: 1 } });
         if (!count) {
           throw 'No page with that slug was found.';
         }
@@ -2592,7 +2660,11 @@ database.`);
               path: self.matchDescendants(home),
               aposLocale: req.locale,
               level: home.level + 1
-            }).project({ rank: 1 }).sort({ rank: 1 }).toArray()).reduce((memo, page) => Math.max(memo, page.rank), 0) + 1;
+            })
+              .project({ rank: 1 })
+              .sort({ rank: 1 })
+              .toArray())
+              .reduce((memo, page) => Math.max(memo, page.rank), 0) + 1;
             page.path = `${home.path}/${page.aposDocId}`;
             page.rank = rank;
             const $set = {
@@ -2705,7 +2777,9 @@ database.`);
           let types = [];
           _.each(parked, function (page) {
             if (page._children) {
-              types = types.concat(_.map(page._children, getType)).concat(getChildTypes(page._children));
+              types = types
+                .concat(_.map(page._children, getType))
+                .concat(getChildTypes(page._children));
             }
           });
           return _.uniq(types);
@@ -2957,7 +3031,10 @@ database.`);
               $ne: null
             }
           }).toArray();
-          const locales = [ self.apos.i18n.defaultLocale, ...Object.keys(self.apos.i18n.locales) ];
+          const locales = [
+            self.apos.i18n.defaultLocale,
+            ...Object.keys(self.apos.i18n.locales)
+          ];
           const parkedIds = [ ...new Set(parkedPages.map(page => page.parkedId)) ];
           for (const parkedId of parkedIds) {
             let aposDocId;
@@ -3033,7 +3110,9 @@ database.`);
             const matches = parkedPages.filter(page => page.parkedId === parkedId);
             for (const match of matches) {
               if (match.aposDocId !== aposDocId) {
-                idChanges.push([ match._id, match._id.replace(match.aposDocId, aposDocId) ]);
+                idChanges.push(
+                  [ match._id, match._id.replace(match.aposDocId, aposDocId) ]
+                );
               }
             }
           }

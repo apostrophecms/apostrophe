@@ -172,7 +172,8 @@ module.exports = {
             permission: false
           });
           if (published && (doc.level > 0)) {
-            const { lastTargetId, lastPosition } = await self.apos.page.inferLastTargetIdAndPosition(doc);
+            const { lastTargetId, lastPosition } = await self.apos.page
+              .inferLastTargetIdAndPosition(doc);
             return self.apos.page.move(
               req.clone({
                 mode: 'published'
@@ -256,7 +257,8 @@ module.exports = {
             // chance we need to "replay" such a move
             return;
           }
-          const { lastTargetId, lastPosition } = await self.apos.page.inferLastTargetIdAndPosition(result.published);
+          const { lastTargetId, lastPosition } = await self.apos.page
+            .inferLastTargetIdAndPosition(result.published);
           await self.apos.page.move(
             publishedReq,
             result.published._id,
@@ -386,7 +388,8 @@ module.exports = {
           setModified: false
         };
         if (doc.level > 0) {
-          const { lastTargetId, lastPosition } = await self.apos.page.inferLastTargetIdAndPosition(doc);
+          const { lastTargetId, lastPosition } = await self.apos.page
+            .inferLastTargetIdAndPosition(doc);
           // Replay the high level positioning used to place it in the
           // published locale
           return self.apos.page.insert(
@@ -413,7 +416,8 @@ module.exports = {
           mode: 'published'
         });
         if (doc.level > 0) {
-          const { lastTargetId, lastPosition } = await self.apos.page.inferLastTargetIdAndPosition(doc);
+          const { lastTargetId, lastPosition } = await self.apos.page
+            .inferLastTargetIdAndPosition(doc);
           // Replay the high level positioning used to place it in the draft
           // locale
           return self.apos.page.insert(

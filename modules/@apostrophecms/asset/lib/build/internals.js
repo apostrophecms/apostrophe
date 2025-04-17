@@ -446,7 +446,8 @@ module.exports = (self) => {
           );
       } else {
         entrypoints = self.apos.asset.getCurrentBuildEntrypoints()
-          .filter(e => !!e.manifest && e.scenes.includes(scene) && e.outputs?.includes(output));
+          .filter((e) =>
+            !!e.manifest && e.scenes.includes(scene) && e.outputs?.includes(output));
       }
 
       const markup = [];

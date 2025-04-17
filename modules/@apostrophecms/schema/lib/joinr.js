@@ -60,7 +60,14 @@ const joinr = module.exports = {
   //   return groupsCollection.find({ groupIds: { $in: ids } }).toArray();
   // });
 
-  byArray: async function(items, idsStorage, fieldsStorage, objectsField, getter, idMapper) {
+  byArray: async function(
+    items,
+    idsStorage,
+    fieldsStorage,
+    objectsField,
+    getter,
+    idMapper
+  ) {
     let otherIds = [];
     const othersById = {};
     for (const item of items) {
@@ -152,7 +159,14 @@ const joinr = module.exports = {
   //   return usersCollection.find({ placeIds: { $in: ids } }).toArray();
   // });
 
-  byArrayReverse: async function(items, idsStorage, fieldsStorage, objectsField, getter, idMapper) {
+  byArrayReverse: async function(
+    items,
+    idsStorage,
+    fieldsStorage,
+    objectsField,
+    getter,
+    idMapper
+  ) {
     const itemIds = items.map(item => idMapper(item._id));
     for (const item of items) {
       if (!item[objectsField]) {

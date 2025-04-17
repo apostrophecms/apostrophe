@@ -55,7 +55,8 @@ module.exports = {
         }
         const start = Date.now();
         try {
-          modifiedOnOrSince = req.query.modifiedOnOrSince && new Date(req.query.modifiedOnOrSince);
+          modifiedOnOrSince = req.query.modifiedOnOrSince &&
+            new Date(req.query.modifiedOnOrSince);
         } catch (e) {
           throw self.apos.error('invalid');
         }

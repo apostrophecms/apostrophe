@@ -26,7 +26,11 @@
             </div>
             <div
               v-if="finalItems.length"
-              class="apos-primary-scrollbar apos-report__table apos-report__table--bordered"
+              class="
+                apos-primary-scrollbar
+                apos-report__table
+                apos-report__table--bordered
+              "
             >
               <AposTable
                 ref="table"

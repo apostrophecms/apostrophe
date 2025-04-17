@@ -595,9 +595,19 @@ module.exports = {
         let disabled;
         let type;
         const schema = _.filter(self.schema, function (field) {
+          const canEdit = () => self.apos.permission.can(
+            req,
+            field.editPermission.action,
+            field.editPermission.type
+          );
+          const canView = () => self.apos.permission.can(
+            req,
+            field.viewPermission.action,
+            field.viewPermission.type
+          );
           return (!field.editPermission && !field.viewPermission) ||
-            (field.editPermission && self.apos.permission.can(req, field.editPermission.action, field.editPermission.type)) ||
-            (field.viewPermission && self.apos.permission.can(req, field.viewPermission.action, field.viewPermission.type)) ||
+            (field.editPermission && canEdit()) ||
+            (field.viewPermission && canView()) ||
             false;
         });
         const typeIndex = _.findIndex(schema, { name: 'type' });
@@ -745,7 +755,11 @@ module.exports = {
         if (!self.name) {
           return;
         }
-        return self.apos.migration.addSortify(self.__meta.name, { type: self.name }, field);
+        return self.apos.migration.addSortify(
+          self.__meta.name,
+          { type: self.name },
+          field
+        );
       },
       // Convert the untrusted data supplied in `input` via the schema and
       // update the doc object accordingly.
@@ -902,7 +916,9 @@ module.exports = {
         const publishedId = `${draft.aposDocId}:${publishedLocale}`;
         let previousPublished;
         // pages can change type, so don't use a doc-type-specific find method
-        const find = self.apos.page.isPage(draft) ? self.apos.page.findOneForEditing : self.findOneForEditing;
+        const find = self.apos.page.isPage(draft)
+          ? self.apos.page.findOneForEditing
+          : self.findOneForEditing;
         let published = await find(req, {
           _id: publishedId
         }, {
@@ -943,7 +959,10 @@ module.exports = {
             previousPublished._id = previousPublished._id.replace(':published', ':previous');
             previousPublished.aposLocale = previousPublished.aposLocale.replace(':published', ':previous');
             previousPublished.aposMode = 'previous';
-            Object.assign(previousPublished, await self.getDeduplicationSet(req, previousPublished));
+            Object.assign(
+              previousPublished,
+              await self.getDeduplicationSet(req, previousPublished)
+            );
             await self.apos.doc.db.replaceOne({
               _id: previousPublished._id
             }, previousPublished, {
@@ -1120,7 +1139,8 @@ module.exports = {
             } else {
               // A page that is not the home page, being replicated for the
               // first time
-              let { lastTargetId, lastPosition } = await self.apos.page.inferLastTargetIdAndPosition(draft);
+              let { lastTargetId, lastPosition } = await self.apos.page
+                .inferLastTargetIdAndPosition(draft);
               let localizedTargetId = lastTargetId.replace(`:${draft.aposLocale}`, `:${toLocale}:draft`);
               // When fetching the target (parent or peer), always use
               // findForEditing so we don't miss doc templates and other edge
@@ -1463,7 +1483,9 @@ module.exports = {
           }
           $set[name] = doc[name].replace(suffix, '');
         });
-        for (const field of self.deduplicatePrefixFields.concat(self.deduplicateSuffixFields)) {
+        const deduplicated = self.deduplicatePrefixFields
+          .concat(self.deduplicateSuffixFields);
+        for (const field of deduplicated) {
           await checkOne(field);
         }
         return $set;
@@ -1545,7 +1567,12 @@ module.exports = {
 
         const forbiddenSchemaFields = Object.values(self.schema)
           .filter(field => {
-            return field.viewPermission && !self.apos.permission.can(req, field.viewPermission.action, field.viewPermission.type);
+            return field.viewPermission &&
+              !self.apos.permission.can(
+                req,
+                field.viewPermission.action,
+                field.viewPermission.type
+              );
           });
 
         if (doc.aposMeta && !self.apos.permission.can(req, 'edit', doc)) {
@@ -1628,7 +1655,8 @@ module.exports = {
         browserOptions.previewDraft = self.isLocalized() &&
           !browserOptions.autopublish &&
           self.options.previewDraft;
-        browserOptions.relationshipSuggestionFields = self.options.relationshipSuggestionFields;
+        browserOptions.relationshipSuggestionFields = self.options
+          .relationshipSuggestionFields;
 
         return browserOptions;
       }
@@ -2239,7 +2267,8 @@ module.exports = {
               })).project(query.get('project')).toArray();
 
             for (const doc of results) {
-              const publishedDoc = publishedDocs.find(publishedDoc => doc.aposDocId === publishedDoc.aposDocId);
+              const publishedDoc = publishedDocs
+                .find(publishedDoc => doc.aposDocId === publishedDoc.aposDocId);
               doc._publishedDoc = publishedDoc;
             }
           }
@@ -2469,7 +2498,8 @@ module.exports = {
                   self.apos.area.warnMissingWidgetType(type);
                 } else if (manager.options.defer) {
                   req.deferredWidgets = req.deferredWidgets || {};
-                  req.deferredWidgets[type] = (req.deferredWidgets[type] || []).concat(widgetsByType[type]);
+                  req.deferredWidgets[type] = (req.deferredWidgets[type] || [])
+                    .concat(widgetsByType[type]);
                   delete widgetsByType[type];
                 }
               }

@@ -123,7 +123,9 @@ export default {
   cursor: head;
   width: 4px;
   height: 4px;
-  box-shadow: 0 0 0 1.5px #fff, inset 0 0 1px 1px rgb(0 0 0 / 30%), 0 0 1px 2px rgb(0 0 0 / 40%);
+  box-shadow: 0 0 0 1.5px #fff,
+    inset 0 0 1px 1px rgb(0 0 0 / 30%),
+    0 0 1px 2px rgb(0 0 0 / 40%);
   border-radius: 50%;
   transform: translate(-2px, -2px);
 }

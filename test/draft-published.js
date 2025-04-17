@@ -509,7 +509,7 @@ describe('Draft / Published', function() {
     }), {
       _id: sibling._id
     }).children(true).toObject();
-    assert(sibling && sibling._children && sibling._children[0] && sibling._children[0]._id === grandchild._id);
+    assert(sibling?._children?.[0]?._id === grandchild._id);
     grandchild = await apos.page.find(apos.task.getReq({
       mode: 'draft'
     }), {
@@ -525,7 +525,7 @@ describe('Draft / Published', function() {
     }), {
       aposDocId: sibling.aposDocId
     }).children(true).toObject();
-    assert(sibling && sibling._children && sibling._children[0] && sibling._children[0].aposDocId === grandchild.aposDocId);
+    assert(sibling?._children?.[0]?.aposDocId === grandchild.aposDocId);
   });
 
   it('should be able to publish the grandchild page again to re-execute the move in the published locale', async function() {

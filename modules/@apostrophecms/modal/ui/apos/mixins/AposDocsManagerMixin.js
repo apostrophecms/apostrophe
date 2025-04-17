@@ -273,7 +273,8 @@ export default {
         }
       });
       if (this.allPiecesSelection) {
-        this.allPiecesSelection.isSelected = this.checked.length === this.allPiecesSelection.total ||
+        const totalChecked = this.checked.length === this.allPiecesSelection.total;
+        this.allPiecesSelection.isSelected = totalChecked ||
           (this.checked.length && this.maxReached());
       }
     },

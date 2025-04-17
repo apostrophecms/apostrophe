@@ -60,7 +60,8 @@ export default {
       return true;
     },
     isAddDisabled() {
-      return this.field.readOnly || (this.field.max && (this.items.length >= this.field.max));
+      return this.field.readOnly ||
+        (this.field.max && (this.items.length >= this.field.max));
     },
     inlineContextMenu() {
       return [
@@ -243,12 +244,16 @@ export default {
     },
     setItemsConditionalFields(itemId) {
       if (itemId) {
-        this.itemsConditionalFields[itemId] = this.getConditionalFields(this.getItemsSchema(itemId));
+        this.itemsConditionalFields[itemId] = this.getConditionalFields(
+          this.getItemsSchema(itemId)
+        );
         return;
       }
 
       for (const _id of Object.keys(this.itemsConditionalFields)) {
-        this.itemsConditionalFields[_id] = this.getConditionalFields(this.getItemsSchema(_id));
+        this.itemsConditionalFields[_id] = this.getConditionalFields(
+          this.getItemsSchema(_id)
+        );
       }
     },
     emitValidate() {
@@ -268,7 +273,9 @@ export default {
         return 'max';
       }
       if (value.length && this.field.fields && this.field.fields.add) {
-        const [ uniqueFieldName, uniqueFieldSchema ] = Object.entries(this.field.fields.add).find(([ , subfield ]) => subfield.unique) || [];
+        const [ uniqueFieldName, uniqueFieldSchema ] = Object
+          .entries(this.field.fields.add)
+          .find(([ , subfield ]) => subfield.unique) || [];
         if (uniqueFieldName) {
           const duplicates = this.next
             .map(item =>
@@ -281,10 +288,12 @@ export default {
             duplicates.forEach(duplicate => {
               this.items.forEach(item => {
                 uniqueFieldSchema.type === 'relationship'
-                  ? item.schemaInput.data[uniqueFieldName] && item.schemaInput.data[uniqueFieldName].forEach(datum => {
-                    item.schemaInput.fieldState[uniqueFieldName].duplicate = duplicate.split('|').find(i => i === datum._id);
+                  ? item.schemaInput.data[uniqueFieldName]?.forEach(datum => {
+                    item.schemaInput.fieldState[uniqueFieldName].duplicate = duplicate
+                      .split('|').find(i => i === datum._id);
                   })
-                  : item.schemaInput.fieldState[uniqueFieldName].duplicate = item.schemaInput.data[uniqueFieldName] === duplicate;
+                  : item.schemaInput.fieldState[uniqueFieldName].duplicate = item
+                    .schemaInput.data[uniqueFieldName] === duplicate;
               });
             });
 

@@ -455,7 +455,8 @@ function invoke() {
     // const sources = self.apos.asset.findSourceFiles(
     //   meta,
     //   {
-    //     js: (file, entry) => file.startsWith(`${entry.name}/components/`) && file.endsWith('.vue')
+    //     js: (file, entry) => file.startsWith(`${entry.name}/components/`) &&
+    //      file.endsWith('.vue')
     //   },
     //   {
     //     componentOverrides: true

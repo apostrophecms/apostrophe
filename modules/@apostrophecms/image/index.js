@@ -269,7 +269,8 @@ module.exports = {
           const testRatio = image._fields
             ? (image._fields.width / image._fields.height)
             : (image.attachment.width / image.attachment.height);
-          const configuredRatio = widgetOptions.aspectRatio[0] / widgetOptions.aspectRatio[1];
+          const configuredRatio = widgetOptions.aspectRatio[0] /
+            widgetOptions.aspectRatio[1];
           return withinOnePercent(testRatio, configuredRatio);
         }
         async function autocrop(image, widgetOptions) {
@@ -309,7 +310,9 @@ module.exports = {
             if (!image) {
               return res.status(404).send('notfound');
             }
-            const url = image.attachment && image.attachment._urls && image.attachment._urls[size];
+            const url = image.attachment &&
+              image.attachment._urls &&
+              image.attachment._urls[size];
             if (url) {
               return res.redirect(image.attachment._urls[size]);
             }
@@ -516,7 +519,11 @@ module.exports = {
         const changeSets = dbDocs.flatMap(doc => getDocRelations(doc, piece));
         for (const changeSet of changeSets) {
           try {
-            const cropFields = await autocrop(changeSet.image, changeSet.cropFields, croppedIndex);
+            const cropFields = await autocrop(
+              changeSet.image,
+              changeSet.cropFields,
+              croppedIndex
+            );
             const $set = {
               [changeSet.docDotPath]: cropFields
             };
@@ -653,7 +660,9 @@ module.exports = {
             if (!minSize) {
               return;
             }
-            const $nin = Object.keys(self.apos.attachment.sized).filter(key => self.apos.attachment.sized[key]);
+            const $nin = Object
+              .keys(self.apos.attachment.sized)
+              .filter(key => self.apos.attachment.sized[key]);
             const criteria = {
               $or: [
                 {

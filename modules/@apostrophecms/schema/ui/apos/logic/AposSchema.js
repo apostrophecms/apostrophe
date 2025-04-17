@@ -289,7 +289,11 @@ export default {
           // instantiated
           if (
             this.fieldState[field.name].data !== undefined &&
-          detectFieldChange(field, this.next.data[field.name], this.fieldState[field.name].data)
+            detectFieldChange(
+              field,
+              this.next.data[field.name],
+              this.fieldState[field.name].data
+            )
           ) {
             changeFound = true;
             this.next.data[field.name] = this.fieldState[field.name].data;

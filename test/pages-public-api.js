@@ -140,7 +140,9 @@ describe('Pages Public API', function() {
     const eTagParts = response2.headers.etag.split(':');
 
     assert(eTagParts[0] === apos.asset.getReleaseId());
-    assert(eTagParts[1] === (new Date(response2.body.cacheInvalidatedAt)).getTime().toString());
+    assert(
+      eTagParts[1] === (new Date(response2.body.cacheInvalidatedAt)).getTime().toString()
+    );
     assert(eTagParts[2]);
 
     delete apos.page.options.cache;

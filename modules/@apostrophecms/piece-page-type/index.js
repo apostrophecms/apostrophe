@@ -47,7 +47,10 @@ module.exports = {
       // query builders by default.
 
       indexQuery(req) {
-        const query = self.pieces.find(req, {}).applyBuildersSafely(req.query).perPage(self.perPage);
+        const query = self.pieces
+          .find(req, {})
+          .applyBuildersSafely(req.query)
+          .perPage(self.perPage);
         self.filterByIndexPage(query, req.data.page);
         return query;
       },
@@ -219,7 +222,10 @@ module.exports = {
         // extension to make it smart enough to presumably do something
         // intelligent in that situation. Don't complain though if this is just
         // a call to _super
-        if ((self.originalChooseParentPage === self.chooseParentPage) && (pages.length > 1)) {
+        if (
+          (self.originalChooseParentPage === self.chooseParentPage) &&
+          (pages.length > 1)
+        ) {
           self.apos.util.warnDevOnce(`${self.__meta.name}/chooseParentPage`, `Your site has more than one ${self.name} page, but does not extend the chooseParentPage\nmethod in ${self.__meta.name} to choose the right one for individual ${self.pieces.name}. You should also extend filterByIndexPage.\nOtherwise URLs for each ${self.pieces.name} will point to an arbitrarily chosen page.`);
         }
         return pages[0];

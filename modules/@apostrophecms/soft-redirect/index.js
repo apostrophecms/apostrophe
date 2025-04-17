@@ -76,7 +76,10 @@ module.exports = {
             }
           });
           for (const doc of docs) {
-            await self.apos.doc.db.updateOne({ _id: doc._id }, { $addToSet: { historicUrls: self.local(doc._url) } });
+            await self.apos.doc.db.updateOne(
+              { _id: doc._id },
+              { $addToSet: { historicUrls: self.local(doc._url) } }
+            );
           }
         }
       }

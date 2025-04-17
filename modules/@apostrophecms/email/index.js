@@ -61,7 +61,9 @@ module.exports = {
             // Custom heading formatter, based on the core heading but
             // no uppercase inside "[ ]" blocks.
             customHeading: function (elem, walk, builder, formatOptions) {
-              builder.openBlock({ leadingLineBreaks: formatOptions.leadingLineBreaks || 2 });
+              builder.openBlock(
+                { leadingLineBreaks: formatOptions.leadingLineBreaks || 2 }
+              );
               if (formatOptions.uppercase !== false) {
                 // Keep track of [ and ] (no nested support)
                 let ignoreUpper = false;
@@ -80,7 +82,9 @@ module.exports = {
               } else {
                 walk(elem.children, builder);
               }
-              builder.closeBlock({ trailingLineBreaks: formatOptions.trailingLineBreaks || 2 });
+              builder.closeBlock(
+                { trailingLineBreaks: formatOptions.trailingLineBreaks || 2 }
+              );
             }
           }
         });

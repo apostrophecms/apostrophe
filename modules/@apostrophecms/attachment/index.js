@@ -326,7 +326,8 @@ module.exports = {
           extensions = [ ...extensions, ...group.extensions ];
         });
         if (field.extensions) {
-          extensions = extensions.filter(extension => field.extensions.includes(extension));
+          extensions = extensions
+            .filter(extension => field.extensions.includes(extension));
         }
         if (field.extension) {
           extensions = extensions.filter(extension => extension === field.extension);
@@ -408,7 +409,10 @@ module.exports = {
           }));
         }
 
-        if (options.attachmentId && await self.apos.attachment.db.findOne({ _id: options.attachmentId })) {
+        if (
+          options.attachmentId &&
+          await self.apos.attachment.db.findOne({ _id: options.attachmentId })
+        ) {
           throw self.apos.error('invalid', 'duplicate');
         }
 
@@ -417,7 +421,9 @@ module.exports = {
           group: group.name,
           createdAt: new Date(),
           name: self.apos.util.slugify(path.basename(file.name, path.extname(file.name))),
-          title: self.apos.util.sortify(path.basename(file.name, path.extname(file.name))),
+          title: self.apos.util.sortify(
+            path.basename(file.name, path.extname(file.name))
+          ),
           extension,
           type: 'attachment',
           docIds: options.docIds ?? [],
@@ -752,7 +758,9 @@ module.exports = {
             }
           }
           if (options.extensions) {
-            if (!_.contains(options.extensions, self.resolveExtension(attachment.extension))) {
+            if (
+              !_.contains(options.extensions, self.resolveExtension(attachment.extension))
+            ) {
               return false;
             }
           }
@@ -1276,9 +1284,13 @@ module.exports = {
 
       addFileGroup(newGroup) {
         if (self.fileGroups.some(existingGroup => existingGroup.name === newGroup.name)) {
-          const existingGroup = self.fileGroups.find(existingGroup => existingGroup.name === newGroup.name);
+          const existingGroup = self.fileGroups
+            .find(existingGroup => existingGroup.name === newGroup.name);
           if (newGroup.extensions) {
-            existingGroup.extensions = [ ...existingGroup.extensions, ...newGroup.extensions ];
+            existingGroup.extensions = [
+              ...existingGroup.extensions,
+              ...newGroup.extensions
+            ];
           };
           if (newGroup.extensionMaps) {
             existingGroup.extensionMaps = {

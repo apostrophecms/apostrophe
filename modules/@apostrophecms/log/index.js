@@ -80,7 +80,8 @@
 // # same as the `filter` example above
 // eslint-disable-next-line max-len
 // export
-// APOS_FILTER_LOGS='*:severity:warn,error;@apostrophecms/login:events:incorrect-username,incorrect-password'
+// APOS_FILTER_LOGS='*:severity:warn,error;@apostrophecms/login:events:incorrect-username,
+// incorrect-password'
 // # log everything, analogous to `{ filter: { '*': true }}` export
 // APOS_FILTER_LOGS='*' ```
 //

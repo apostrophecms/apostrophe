@@ -167,10 +167,14 @@ module.exports = {
       },
 
       suggest(req, q) {
-        return self.apos.doc.find(req).limit(self.options.suggestions && (self.options.suggestions.limit || 10)).search(q).project({
-          _url: 1,
-          title: 1
-        }).toArray();
+        return self.apos.doc
+          .find(req)
+          .limit(self.options.suggestions && (self.options.suggestions.limit || 10))
+          .search(q)
+          .project({
+            _url: 1,
+            title: 1
+          }).toArray();
       },
 
       // This method implements the search results page. It populates
@@ -190,7 +194,10 @@ module.exports = {
 
         let defaultingToAll = false;
 
-        const query = self.apos.doc.find(req, {}).applyBuildersSafely(req.query).perPage(self.perPage);
+        const query = self.apos.doc
+          .find(req, {})
+          .applyBuildersSafely(req.query)
+          .perPage(self.perPage);
         if (self.filters) {
           const filterTypes = _.filter(_.map(self.filters, 'name'), function (name) {
             return name !== '__else';

@@ -24,15 +24,15 @@
 //     // Optional subform help text. It is rendered instead
 //     // of the subform preview value in preview mode only.
 //     help: 'Your full name',
-//     // The subform value rendered in preview mode, but only if `help` option is not provided.
-//     // A string or i18n key / template can be specified.
+//     // The subform value rendered in preview mode, but only if `help` option is not
+//     // provided. A string or i18n key / template can be specified.
 //     // If not specified, the UI will attempt to generate a
 //     // preview value based on the subform schema and field values (space separated).
 //     preview: '{{ firstName }} {{ lastName }}',
-//     // In effect ONLY if `preview` and `help` options are not present. Provide a custom,
-//     // already registered (admin UI) component to render the subform preview value.
-//     // The subform config object and current field values will be passed as props.
-//     previewComponent: 'MyComponent',
+//     // In effect ONLY if `preview` and `help` options are not present.
+//     // Provide a custom, already registered (admin UI) component to render the subform
+//     // preview value. The subform config object and current field values will be
+//     // passed as props. previewComponent: 'MyComponent',
 //     // Optional protection type. Currently allowed values are `password`
 //     // and `true` (alias of `password`). If specified, the subform will be
 //     // protected by the user current password.
@@ -380,7 +380,8 @@ module.exports = {
       // This method requires initialized self.subforms.
       enhanceSubforms() {
         // 1. Add protection flag to subforms for system protected fields.
-        for (const [ fieldName, protectionType ] of Object.entries(self.systemProtectedFields)) {
+        const fields = Object.entries(self.systemProtectedFields);
+        for (const [ fieldName, protectionType ] of fields) {
           self.subforms = self.subforms.map(subform => {
             if (subform.fields.includes(fieldName)) {
               subform.protection = protectionType || true;
@@ -636,7 +637,8 @@ module.exports = {
           // Remove the auto-generated fields from the schema
           subform = klona(subform);
           subform.schema = subform.schema
-            .filter(field => self.userSchema.some(userField => userField.name === field.name));
+            .filter(field => self.userSchema
+              .some(userField => userField.name === field.name));
 
           const user = await self.apos.user
             .find(req, { _id: req.user._id })

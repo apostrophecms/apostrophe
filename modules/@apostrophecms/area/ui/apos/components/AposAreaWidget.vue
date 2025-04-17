@@ -771,7 +771,13 @@ export default {
       justify-content: center;
       padding: 5px;
       transition: all 200ms var(--a-transition-timing-bounce);
-      background-image: linear-gradient( 45deg, var(--a-primary), var(--a-primary-dark-15), var(--a-primary-light-40), var(--a-primary) );
+      background-image: linear-gradient(
+        45deg,
+        var(--a-primary),
+        var(--a-primary-dark-15),
+        var(--a-primary-light-40),
+        var(--a-primary)
+      );
       background-size: 200% 100%;
       border-radius: 12px;
     }
@@ -830,7 +836,8 @@ export default {
   }
 
   .apos-area-widget__breadcrumbs:hover .apos-area-widget__breadcrumb,
-  .apos-area-widget__breadcrumbs:hover .apos-area-widget__breadcrumb :deep(.apos-button__content) {
+  .apos-area-widget__breadcrumbs:hover .apos-area-widget__breadcrumb
+    :deep(.apos-button__content) {
     color: var(--a-text-primary);
   }
 

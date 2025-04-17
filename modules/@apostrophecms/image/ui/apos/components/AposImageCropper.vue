@@ -115,9 +115,18 @@ export default {
     const DEBOUNCE_TIMEOUT = 500;
 
     this.onScreenResizeDebounced = debounce(this.onScreenResize, DEBOUNCE_TIMEOUT);
-    this.handleCropperChangeDebounced = debounce(this.handleCropperChange, DEBOUNCE_TIMEOUT);
-    this.setCropperCoordinatesDebounced = debounce(this.setCropperCoordinates, DEBOUNCE_TIMEOUT);
-    this.updateFocalPointCoordinatesDebounced = debounce(this.updateFocalPointCoordinates, DEBOUNCE_TIMEOUT);
+    this.handleCropperChangeDebounced = debounce(
+      this.handleCropperChange,
+      DEBOUNCE_TIMEOUT
+    );
+    this.setCropperCoordinatesDebounced = debounce(
+      this.setCropperCoordinates,
+      DEBOUNCE_TIMEOUT
+    );
+    this.updateFocalPointCoordinatesDebounced = debounce(
+      this.updateFocalPointCoordinates,
+      DEBOUNCE_TIMEOUT
+    );
 
     this.defaultSize = {
       width: this.docFields.data.width,
@@ -201,8 +210,10 @@ export default {
 
       const focalPointSize = this.getFocalPointSize();
 
-      const left = focalPoint.offsetLeft - this.focalPointDragCoordinates.clientX + event.clientX;
-      const top = focalPoint.offsetTop - this.focalPointDragCoordinates.clientY + event.clientY;
+      const left = focalPoint.offsetLeft -
+        this.focalPointDragCoordinates.clientX + event.clientX;
+      const top = focalPoint.offsetTop -
+        this.focalPointDragCoordinates.clientY + event.clientY;
 
       this.focalPointDragCoordinates.clientX = event.clientX;
       this.focalPointDragCoordinates.clientY = event.clientY;
@@ -216,11 +227,18 @@ export default {
       const limits = {
         left: -focalPointSize.halfWidth + MARGIN_OF_ERROR,
         top: -focalPointSize.halfHeight + MARGIN_OF_ERROR,
-        right: focalPoint.offsetParent.clientWidth - focalPointSize.halfWidth - MARGIN_OF_ERROR,
-        bottom: focalPoint.offsetParent.clientHeight - focalPointSize.halfHeight - MARGIN_OF_ERROR
+        right: focalPoint.offsetParent.clientWidth -
+          focalPointSize.halfWidth - MARGIN_OF_ERROR,
+        bottom: focalPoint.offsetParent.clientHeight -
+          focalPointSize.halfHeight - MARGIN_OF_ERROR
       };
 
-      if (left < limits.left || top < limits.top || left > limits.right || top > limits.bottom) {
+      if (
+        left < limits.left ||
+        top < limits.top ||
+        left > limits.right ||
+        top > limits.bottom
+      ) {
         return;
       };
 

@@ -60,8 +60,14 @@ export function useAposFocus() {
     // the active one per stack.
     const firstElementRadioStack = getInputRadioStack(firstElementToFocus, elems);
     const lastElementRadioStack = getInputRadioStack(lastElementToFocus, elems);
-    firstElementToFocus = getInputCheckedOrCurrent(firstElementToFocus, firstElementRadioStack);
-    lastElementToFocus = getInputCheckedOrCurrent(lastElementToFocus, lastElementRadioStack);
+    firstElementToFocus = getInputCheckedOrCurrent(
+      firstElementToFocus,
+      firstElementRadioStack
+    );
+    lastElementToFocus = getInputCheckedOrCurrent(
+      lastElementToFocus,
+      lastElementRadioStack
+    );
 
     const focus = fnFocus || ((ev, el) => {
       el.focus();

@@ -367,9 +367,19 @@ module.exports = {
 
       allowedSchema(req) {
         return _.filter(self.schema, function (field) {
+          const canEdit = () => self.apos.permission.can(
+            req,
+            field.editPermission.action,
+            field.editPermission.type
+          );
+          const canView = () => self.apos.permission.can(
+            req,
+            field.viewPermission.action,
+            field.viewPermission.type
+          );
           return (!field.editPermission && !field.viewPermission) ||
-            (field.editPermission && self.apos.permission.can(req, field.editPermission.action, field.editPermission.type)) ||
-            (field.viewPermission && self.apos.permission.can(req, field.viewPermission.action, field.viewPermission.type)) ||
+            (field.editPermission && canEdit()) ||
+            (field.viewPermission && canView()) ||
             false;
         });
       },

@@ -96,7 +96,9 @@ module.exports = (self) => {
         if ((doc[field.name] === undefined) ||
           ((field.type === 'object') && !doc[field.name])) {
           // Only undefined should fall back here
-          const def = klona((field.def === undefined) ? self.apos.schema.fieldTypes[field.type]?.def : field.def);
+          const def = klona((field.def === undefined)
+            ? self.apos.schema.fieldTypes[field.type]?.def
+            : field.def);
           if (def !== undefined) {
             if (!Object.hasOwn(changes, dotPath)) {
               changes[newDotPath] = def;
@@ -121,7 +123,12 @@ module.exports = (self) => {
             self.addMissingSchemaFieldsFor(widget, widgetSchema, widgetPath, changes);
           }
         } else if (field.type === 'object') {
-          self.addMissingSchemaFieldsFor(doc[field.name], field.schema, newDotPath, changes);
+          self.addMissingSchemaFieldsFor(
+            doc[field.name],
+            field.schema,
+            newDotPath,
+            changes
+          );
         } else if (field.type === 'array') {
           for (let i = 0; (i < (doc[field.name] || []).length); i++) {
             const itemPath = `${newDotPath}.${i}`;

@@ -178,7 +178,9 @@ module.exports = {
         function wrapId(route) {
           if (Array.isArray(route)) {
             // Allow middleware, last fn is route
-            return route.slice(0, route.length - 1).concat([ wrapId(route[route.length - 1]) ]);
+            return route
+              .slice(0, route.length - 1)
+              .concat([ wrapId(route[route.length - 1]) ]);
           }
           return async req => route(req, req.params._id);
         }
@@ -435,8 +437,18 @@ module.exports = {
         await self.apos.area.loadDeferredWidgets(req);
         if (req.aposExternalFront) {
           data = self.apos.template.getRenderDataArgs(req, data, self);
-          await self.apos.template.annotateDataForExternalFront(req, template, data, self.__meta.name);
-          self.apos.template.pruneDataForExternalFront(req, template, data, self.__meta.name);
+          await self.apos.template.annotateDataForExternalFront(
+            req,
+            template,
+            data,
+            self.__meta.name
+          );
+          self.apos.template.pruneDataForExternalFront(
+            req,
+            template,
+            data,
+            self.__meta.name
+          );
           // Reply with JSON
           return data;
         }
@@ -543,7 +555,9 @@ module.exports = {
         }
 
         const releaseId = self.apos.asset.getReleaseId();
-        const cacheInvalidatedAtTimestamp = (new Date(context.cacheInvalidatedAt)).getTime().toString();
+        const cacheInvalidatedAtTimestamp = (new Date(context.cacheInvalidatedAt))
+          .getTime()
+          .toString();
 
         return [ releaseId, cacheInvalidatedAtTimestamp ];
       },
@@ -560,7 +574,8 @@ module.exports = {
         }
 
         const clientETagParts = req.headers['if-none-match'] ? req.headers['if-none-match'].split(':') : [];
-        const doesETagMatch = clientETagParts[0] === eTagParts[0] && clientETagParts[1] === eTagParts[1];
+        const doesETagMatch = clientETagParts[0] === eTagParts[0] &&
+          clientETagParts[1] === eTagParts[1];
 
         const now = Date.now();
         const clientETagAge = (now - clientETagParts[2]) / 1000;
@@ -766,7 +781,9 @@ module.exports = {
                 async (span) => {
                   span.setAttribute(SemanticAttributes.CODE_FUNCTION, 'executeAfterModuleInitTask');
                   span.setAttribute(SemanticAttributes.CODE_NAMESPACE, '@apostrophecms/module');
-                  span.setAttribute(telemetry.Attributes.TARGET_NAMESPACE, self.__meta.name);
+                  span.setAttribute(
+                    telemetry.Attributes.TARGET_NAMESPACE, self.__meta.name
+                  );
                   span.setAttribute(telemetry.Attributes.TARGET_FUNCTION, name);
                   try {
                     await info.task(self.apos.argv);

@@ -42,12 +42,17 @@ module.exports = {
         // Don't permit oembed of untrusted sites, which could
         // lead to XSS attacks
 
-        self.oembetter.allowlist(self.oembetter.suggestedAllowlist.concat(self.options.allowlist || [], [
-          'wufoo.com',
-          'infogr.am',
-          'slideshare.net'
-        ]));
-        self.oembetter.endpoints(self.oembetter.suggestedEndpoints.concat(self.options.endpoints || []));
+        self.oembetter.allowlist(self.oembetter.suggestedAllowlist.concat(
+          self.options.allowlist || [],
+          [
+            'wufoo.com',
+            'infogr.am',
+            'slideshare.net'
+          ])
+        );
+        self.oembetter.endpoints(
+          self.oembetter.suggestedEndpoints.concat(self.options.endpoints || [])
+        );
       },
 
       // Enhances oembetter to support services better or to support services
