@@ -27,6 +27,7 @@
 
 ### Fixes
 
+* Adds missing notifications and error handling in media manager and save notification for auto-published pieces.
 * Update `uploadfs` to `1.24.3`.
 * Fixes an edge case where reordering a page in the Page Manager might affect another locale.
 * Fixes chrome bug when pages manager checkboxes need a double click when coming from the rich text editor (because some text is selected).
