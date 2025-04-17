@@ -1,6 +1,6 @@
 # Changelog
 
-## UNRELEASED
+## 4.15.0 (2025-04-16)
 
 ### Adds
 
@@ -36,6 +36,7 @@ A `secondaryLevel: true` option is available to add operations to the widget's c
 * Fixes long overlapping text in the header of the Report modal.
 * Fixes clipped text in the pager and in the relationship filters of piece manager.
 * Fixes an error when pressing Enter in a relationship input without a focused suggestion.
+* Fixes locale switcher not allowing to switch the page of an article when its parent page is draft only.
 
 ## 4.14.2 (2025-04-02)
 

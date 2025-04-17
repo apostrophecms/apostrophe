@@ -9,8 +9,8 @@ const { klona } = require('klona');
 // The `getManager` method should be used to obtain a reference to the module
 // that manages a particular doc type, so that you can benefit from behavior
 // specific to that module. One method of this module that you may sometimes use directly
-// is `apos.doc.find()`, which returns a query[query](server-@apostrophecms/query.html) for
-// fetching documents of all types. This is useful when implementing something
+// is `apos.doc.find()`, which returns a query[query](server-@apostrophecms/query.html)
+// for fetching documents of all types. This is useful when implementing something
 // like the [@apostrophecms/search](../@apostrophecms/search/index.html) module.
 //
 // ## Options
@@ -71,7 +71,12 @@ module.exports = {
           if (_id) {
             criteria._id = { $ne: _id };
           }
-          const doc = await self.find(req, criteria).permission(false).archived(null).project({ slug: 1 }).toObject();
+          const doc = await self
+            .find(req, criteria)
+            .permission(false)
+            .archived(null)
+            .project({ slug: 1 })
+            .toObject();
           if (doc) {
             throw self.apos.error('conflict');
           } else {
@@ -344,7 +349,8 @@ module.exports = {
       async changeDocIds(pairs, { keep, skipReplace = false } = {}) {
         let renamed = 0;
         let kept = 0;
-        // Get page paths up front so we can avoid multiple queries when working on path changes
+        // Get page paths up front so we can avoid multiple queries when working
+        // on path changes
         const pages = await self.apos.doc.db.find({
           path: { $exists: 1 },
           slug: /^\//
@@ -354,7 +360,8 @@ module.exports = {
         for (const pair of pairs) {
           const [ from, to ] = pair;
           const oldAposDocId = from.split(':')[0];
-          const existing = await self.apos.doc.db.findOne({ _id: skipReplace ? to : from });
+          const existing = await self.apos.doc.db
+            .findOne({ _id: skipReplace ? to : from });
           if (!existing) {
             throw self.apos.error('notfound');
           }
@@ -371,7 +378,10 @@ module.exports = {
           }
           const isPage = self.apos.page.isPage(existing);
           if (isPage) {
-            replacement.path = existing.path.replace(existing.aposDocId, replacement.aposDocId);
+            replacement.path = existing.path.replace(
+              existing.aposDocId,
+              replacement.aposDocId
+            );
           }
           try {
             if (!skipReplace) {
@@ -385,7 +395,8 @@ module.exports = {
               // We cannot fix this error
               throw e;
             }
-            const existingReplacement = await self.apos.doc.db.findOne({ _id: replacement._id });
+            const existingReplacement = await self.apos.doc.db
+              .findOne({ _id: replacement._id });
             if (!existingReplacement) {
               // We don't know the cause of this error
               throw e;
@@ -582,7 +593,8 @@ module.exports = {
       // await apos.doc.find(req, { type: 'foobar' }).toArray()
 
       find(req, criteria = {}, options = {}) {
-        return self.apos.modules['@apostrophecms/any-doc-type'].find(req, criteria, options);
+        return self.apos.modules['@apostrophecms/any-doc-type']
+          .find(req, criteria, options);
       },
 
       // **Most often you will insert or update docs via the
@@ -632,7 +644,9 @@ module.exports = {
 
             await telemetry.startActiveSpan(`db:${doc.type}:insert`, async (spanInsert) => {
               spanInsert.setAttribute(SemanticAttributes.CODE_FUNCTION, 'insertBody');
-              spanInsert.setAttribute(SemanticAttributes.CODE_NAMESPACE, self.__meta.name);
+              spanInsert.setAttribute(
+                SemanticAttributes.CODE_NAMESPACE, self.__meta.name
+              );
               spanInsert.setAttribute(telemetry.Attributes.TARGET_NAMESPACE, doc.type);
               spanInsert.setAttribute(telemetry.Attributes.TARGET_FUNCTION, 'insert');
               try {
@@ -701,7 +715,9 @@ module.exports = {
 
             await telemetry.startActiveSpan(`db:${doc.type}:update`, async (spanUpdate) => {
               spanUpdate.setAttribute(SemanticAttributes.CODE_FUNCTION, 'updateBody');
-              spanUpdate.setAttribute(SemanticAttributes.CODE_NAMESPACE, self.__meta.name);
+              spanUpdate.setAttribute(
+                SemanticAttributes.CODE_NAMESPACE, self.__meta.name
+              );
               spanUpdate.setAttribute(telemetry.Attributes.TARGET_NAMESPACE, doc.type);
               spanUpdate.setAttribute(telemetry.Attributes.TARGET_FUNCTION, 'update');
               try {
@@ -876,8 +892,8 @@ module.exports = {
           }
         }
       },
-      // Called by an `@apostrophecms/doc-type:insert` event handler to confirm that the user
-      // has the appropriate permissions for the doc's type and content.
+      // Called by an `@apostrophecms/doc-type:insert` event handler to confirm that
+      // the user has the appropriate permissions for the doc's type and content.
       testInsertPermissions(req, doc, options) {
         if (options.permissions !== false) {
           if (!self.apos.permission.can(req, 'create', doc)) {
@@ -999,9 +1015,17 @@ module.exports = {
       //
       // - Set value of a top-level meta property of an object field (can be
       //   further nested):
-      // `apos.doc.setMeta(doc, 'my-module', 'address', 'city', 'myMetaKey', 'myMetaValue');`
+      // `apos.doc.setMeta(
+      // doc,
+      // 'my-module',
+      // 'address',
+      // 'city',
+      // 'myMetaKey',
+      // 'myMetaValue'
+      // );`
       //
       // - Set value of a meta property of a field inside of an array field type:
+      // eslint-disable-next-line max-len
       // `apos.doc.setMeta(doc, 'my-module', arrayItemObject, 'city', 'myMetaKey', 'myMetaValue');`
       //
       // - Set value of a meta property of a rich text widget
@@ -1009,7 +1033,9 @@ module.exports = {
       //
       // - Dots in the `key` are treated as part of the key, dots in `pathComponents`
       //   are treated as dot-path and are not altered:
+      // eslint-disable-next-line max-len
       // `apos.doc.setMeta(doc, 'my-module', 'address', 'city.name', 'myMetaKey.with.dots', 'myMetaValue');`
+      // eslint-disable-next-line max-len
       //  will set `doc.aposMeta.address.aposMeta.city.name['my-module:myMetaKey.with.dots']: 'myMetaValue'`.
       setMeta(doc, namespace, ...pathArgsWithKeyAndValue) {
         if (!_.isPlainObject(doc) || !namespace) {
@@ -1150,7 +1176,8 @@ module.exports = {
       // Get the meta path for a given field.
       // Signature:
       // `apos.doc.getMetaPath([subobject,] ...pathComponents);`
-      // See `setMeta` for more information about `subobject` and `pathComponents` arguments.
+      // See `setMeta` for more information about `subobject` and
+      // `pathComponents` arguments.
       //
       // Returns the path to the meta property withouth the namespace and key.
       // The returned path can be directly used to access or modify the meta property.
@@ -1231,7 +1258,10 @@ module.exports = {
         if (!err) {
           return false;
         }
-        return err.code === 13596 || err.code === 13596 || err.code === 11000 || err.code === 11001;
+        return err.code === 13596 ||
+          err.code === 13596 ||
+          err.code === 11000 ||
+          err.code === 11001;
       },
       // Set the manager object corresponding
       // to a given doc type. Typically `manager`
@@ -1451,8 +1481,8 @@ module.exports = {
       // it will be inferred from the `type` of the document in context, with all page
       // types using the page module (not their type-specific module). This is almost
       // always correct, therefore it only makes sense to pass an explicit
-      // `moduleName` option here if the action API should be invoked on a different module
-      // than expected.
+      // `moduleName` option here if the action API should be invoked on a different
+      // module than expected.
       //
       // An additional optional `modifiers` property is supported - button modifiers
       // as supported by `AposContextMenu` (e.g. modifiers: [ 'danger' ]).
@@ -1461,7 +1491,8 @@ module.exports = {
       // the menu will be shown only for docs which have `autopublish: false` and
       // `localized: true` options.
       //
-      // `conditions` defines the circumstances under which the opetion should be displayed.
+      // `conditions` defines the circumstances under which the opetion should be
+      // displayed.
       // If all `conditions` are not met, the item is not displayed for this particular
       // document.
       //
@@ -1578,9 +1609,13 @@ module.exports = {
                 forSchema(field.schema, value);
               }
             } else if (field.type === 'relationship') {
-              doc[field.idsStorage] = (doc[field.idsStorage] || []).map(self.apos.doc.toAposDocId);
+              doc[field.idsStorage] = (doc[field.idsStorage] || [])
+                .map(self.apos.doc.toAposDocId);
               if (field.fieldsStorage) {
-                doc[field.fieldsStorage] = Object.fromEntries(Object.entries(doc[field.fieldsStorage] || {}).map(([ key, value ]) => [ self.apos.doc.toAposDocId(key), value ]));
+                doc[field.fieldsStorage] = Object.fromEntries(
+                  Object.entries(doc[field.fieldsStorage] || {})
+                    .map(([ key, value ]) => [ self.apos.doc.toAposDocId(key), value ])
+                );
               }
               needed = true;
             }
@@ -1647,7 +1682,8 @@ module.exports = {
           });
         }
         self.replicateReached = true;
-        // Include the criteria array in the event so that more entries can be pushed to it
+        // Include the criteria array in the event so that more entries
+        // can be pushed to it
         await self.emit('beforeReplicate', criteria);
         // We can skip the core work of this method if there is only one locale,
         // but the events should always be emitted as the guarantee is still there
@@ -1779,7 +1815,8 @@ module.exports = {
       },
 
       async bestAposDocId(criteria) {
-        const existing = await self.apos.doc.db.findOne(criteria, { projection: { aposDocId: 1 } });
+        const existing = await self.apos.doc.db
+          .findOne(criteria, { projection: { aposDocId: 1 } });
         return existing?.aposDocId || self.apos.util.generateId();
       },
 

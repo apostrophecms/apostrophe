@@ -1,9 +1,11 @@
 // This module makes an instance of the [i18next](https://npmjs.org/package/i18next) npm module available
-// in Nunjucks templates via the `__t()` helper function. That function is also available on `req` objects
-// as `req.t()`. Any options passed to this module are passed on to `i18next`.
+// in Nunjucks templates via the `__t()` helper function. That function is also
+// available on `req` objects as `req.t()`. Any options passed to this module are passed
+// on to `i18next`.
 //
-// `apos.i18n.i18next` can be used to directly access the `i18next` npm module instance if necessary.
-// It usually is not necessary. Use `req.t` if you need to localize in a route.
+// `apos.i18n.i18next` can be used to directly access the `i18next` npm module instance
+// if necessary. It usually is not necessary. Use `req.t` if you need to localize
+// in a route.
 //
 // ## Options
 //
@@ -110,7 +112,11 @@ module.exports = {
     if (self.defaultAdminLocale && typeof self.defaultAdminLocale !== 'string') {
       throw self.apos.error('invalid', 'The "defaultAdminLocale" option must be a string.');
     }
-    if (self.defaultAdminLocale && self.adminLocales.length && !self.adminLocales.some(al => al.value === self.defaultAdminLocale)) {
+    if (
+      self.defaultAdminLocale &&
+      self.adminLocales.length &&
+      !self.adminLocales.some(al => al.value === self.defaultAdminLocale)
+    ) {
       throw self.apos.error('invalid', `The value of "defaultAdminLocale" "${self.defaultAdminLocale}" doesn't match any of the existing "adminLocales" values.`);
     }
     const fallbackLng = [ self.defaultLocale ];
@@ -244,8 +250,12 @@ module.exports = {
         // from the Apostrophe Express module to ensure that user
         // defined cookie settings are respected.
         const aposExpressModule = self.apos.modules['@apostrophecms/express'];
-        req.session.cookie = new ExpressSessionCookie(aposExpressModule.sessionOptions.cookie);
-        return res.redirect(self.apos.url.build(req.url, { aposCrossDomainSessionToken: null }));
+        req.session.cookie = new ExpressSessionCookie(
+          aposExpressModule.sessionOptions.cookie
+        );
+        return res.redirect(
+          self.apos.url.build(req.url, { aposCrossDomainSessionToken: null })
+        );
       },
       // If the `redirectToFirstLocale` option is enabled
       // and the homepage is requested,
@@ -283,7 +293,8 @@ module.exports = {
           return next();
         }
 
-        // Add / for home page and to avoid being redirected again in the `locale` middleware:
+        // Add / for home page and to avoid being redirected again in
+        // the `locale` middleware:
         const redirectUrl = `${localesToCheck[0].prefix}/`;
 
         return res.redirect(redirectUrl);
@@ -404,14 +415,11 @@ module.exports = {
             locale: sanitizedLocale
           });
           if (_id) {
-            doc = await self.apos.doc.find(localeReq, {
-              aposDocId: _id.split(':')[0]
-            }).toObject();
-            if (!doc) {
-              const publishedLocaleReq = localeReq.clone({ mode: 'draft' });
-              doc = await self.apos.doc.find(publishedLocaleReq, {
-                aposDocId: _id.split(':')[0]
-              }).toObject();
+            const aposDocId = _id.split(':')[0];
+            doc = await self.apos.doc.find(localeReq, { aposDocId }).toObject();
+            if (!doc?._url) {
+              const draftLocaleReq = localeReq.clone({ mode: 'draft' });
+              doc = await self.apos.doc.find(draftLocaleReq, { aposDocId }).toObject();
             }
           }
           if (!sanitizedLocale) {
@@ -425,7 +433,10 @@ module.exports = {
             // with the appropriate prefix
             result.redirectTo = localeReq.prefix;
           };
-          if (self.locales[localeReq.locale].hostname !== self.locales[req.locale].hostname) {
+          if (
+            self.locales[localeReq.locale].hostname !==
+            self.locales[req.locale].hostname
+          ) {
             const crossDomainSessionToken = self.apos.util.generateId();
             const session = {
               ...req.session,
@@ -489,15 +500,17 @@ module.exports = {
         self.addDefaultResourcesForModule(module);
         self.addNamespacedResourcesForModule(module);
       },
-      // Automatically adds any localizations found in .json files in the main `i18n` subdirectory
-      // of a module.
+      // Automatically adds any localizations found in .json files in
+      // the main `i18n` subdirectory of a module.
       //
-      // These are added to the `default` namespace, unless the legacy `i18n.ns` option is set
-      // for the module (not the preferred way, use namespace subdirectories in new projects).
+      // These are added to the `default` namespace, unless the legacy `i18n.ns` option
+      // is set for the module (not the preferred way, use namespace subdirectories in
+      // new projects).
       addDefaultResourcesForModule(module) {
         const ns = (module.options.i18n && module.options.i18n.ns) || 'default';
         self.namespaces[ns] = self.namespaces[ns] || {};
-        self.namespaces[ns].browser = self.namespaces[ns].browser || (module.options.i18n && module.options.i18n.browser);
+        self.namespaces[ns].browser = self.namespaces[ns].browser ||
+          (module.options.i18n && module.options.i18n.browser);
         for (const entry of module.__meta.chain) {
           const localizationsDir = path.join(entry.dirname, 'i18n');
           if (!self.defaultLocalizationsDirsAdded.has(localizationsDir)) {
@@ -510,7 +523,9 @@ module.exports = {
                 // Likely a namespace subdirectory
                 continue;
               }
-              const data = JSON.parse(fs.readFileSync(path.join(localizationsDir, localizationFile)));
+              const data = JSON.parse(
+                fs.readFileSync(path.join(localizationsDir, localizationFile))
+              );
               const locale = localizationFile.replace('.json', '');
               self.i18next.addResourceBundle(locale, ns, data, true, true);
             }
@@ -544,7 +559,8 @@ module.exports = {
               }
               for (const localizationFile of fs.readdirSync(namespaceDir)) {
                 if (!localizationFile.endsWith('.json')) {
-                  // Exclude parsing of non-JSON files, like hidden files, in the namespace directory
+                  // Exclude parsing of non-JSON files, like hidden files,
+                  // in the namespace directory
                   continue;
                 }
                 const fullLocalizationFile = path.join(namespaceDir, localizationFile);
@@ -737,7 +753,8 @@ module.exports = {
         const host = (process.env.NODE_ENV === 'production') ? req.hostname : req.get('Host');
         const fallbackBaseUrl = `${req.protocol}://${host}`;
         if (self.hostnamesInUse) {
-          req.baseUrl = (self.apos.page && self.apos.page.getBaseUrl(req)) || fallbackBaseUrl;
+          req.baseUrl = (self.apos.page && self.apos.page.getBaseUrl(req)) ||
+            fallbackBaseUrl;
         } else {
           req.baseUrl = self.apos.page && self.apos.page.getBaseUrl(req);
         }
