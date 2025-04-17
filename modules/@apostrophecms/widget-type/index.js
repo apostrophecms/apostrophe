@@ -393,6 +393,13 @@ module.exports = {
           The getWidgetClasses method is deprecated and will be removed in the next major
           version. The method in 3.x simply returns an empty array.`);
         return [];
+      },
+
+      addWidgetOperation(operation) {
+        self.apos.area.addWidgetOperation({
+          ...operation,
+          type: self.__meta.name
+        });
       }
 
     };

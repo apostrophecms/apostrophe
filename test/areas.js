@@ -440,11 +440,32 @@ describe('Areas', function() {
       }
     };
 
-    apos.area.widgetOperations = [];
     apos.area.addWidgetOperation(operation);
 
     assert.strictEqual(apos.area.widgetOperations.length, 1);
     assert.deepStrictEqual(apos.area.widgetOperations, [ { ...operation } ]);
+  });
+
+  it('should support custom widget operations added via a widget module', function() {
+    const operation = {
+      name: 'someAction',
+      modal: 'AposSomeModal',
+      label: 'Some label',
+      icon: 'some-icon',
+      secondaryLevel: true,
+      permission: {
+        action: 'create',
+        type: 'article'
+      }
+    };
+
+    apos.modules['@apostrophecms/image-widget'].addWidgetOperation(operation);
+
+    assert.strictEqual(apos.area.widgetOperations.length, 1);
+    assert.deepStrictEqual(apos.area.widgetOperations, [ {
+      ...operation,
+      type: '@apostrophecms/image-widget'
+    } ]);
   });
 
   it('should throw an error when adding a widget operation that lacks required properties', function() {
