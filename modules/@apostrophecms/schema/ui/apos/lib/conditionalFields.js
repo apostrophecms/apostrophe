@@ -1,5 +1,6 @@
 // Supported field conditional types,
-// you can add a condition type to this array to make it available to the frontend
+// you can add a condition type to this array to make it available to the
+// frontend
 const conditionTypes = [ 'if', 'requiredIf' ];
 export const getConditionTypesObject = () => Object
   .fromEntries(conditionTypes.map((key) => ([ key, {} ])));

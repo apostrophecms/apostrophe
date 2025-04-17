@@ -232,7 +232,8 @@ export default {
       deep: true,
       handler(newData, oldData) {
         this.$nextTick(() => {
-          // If either old or new state are an empty object, it's not "modified."
+          // If either old or new state are an empty object, it's not
+          // "modified."
           if (!(Object.keys(oldData).length > 0 && Object.keys(newData).length > 0)) {
             this.$emit('modified', false);
           } else {

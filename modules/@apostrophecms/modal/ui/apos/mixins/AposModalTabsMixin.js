@@ -46,7 +46,8 @@ export default {
       const tabs = [];
       for (const key in this.groups) {
         if (key !== 'utility') {
-          // AposRelationshipEditor does not implement AposEditorMixin with the function getConditionalFields
+          // AposRelationshipEditor does not implement AposEditorMixin with the
+          // function getConditionalFields
           const fields = this.groups[key].fields;
           tabs.push({
             name: key,
@@ -62,7 +63,8 @@ export default {
       return tabs;
     },
     firstVisibleTabName() {
-      const { name = null } = this.tabs.find(tab => tab.isVisible === true) || this.tabs[0] || {};
+      const { name = null } = this.tabs
+        .find(tab => tab.isVisible === true) || this.tabs[0] || {};
 
       return name;
     }

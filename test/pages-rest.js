@@ -290,7 +290,8 @@ describe('Pages REST', function() {
     assert(draftItems.result.ok === 1);
     assert(draftItems.insertedCount === 7);
 
-    // Change the rank of the archive pages to preserve the constraint that it comes last
+    // Change the rank of the archive pages to preserve the constraint that it
+    // comes last
     await apos.doc.db.updateMany({
       type: '@apostrophecms/archive-page'
     }, {

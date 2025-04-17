@@ -187,8 +187,8 @@ module.exports = {
         ],
         // Crop a previously uploaded image, based on the `id` POST parameter
         // and the `crop` POST parameter. `id` should refer to an existing
-        // file in /attachments. `crop` should contain top, left, width and height
-        // properties.
+        // file in /attachments. `crop` should contain top, left, width and
+        // height properties.
         //
         // This route uploads a new, cropped version of
         // the existing image to uploadfs, named:
@@ -280,7 +280,8 @@ module.exports = {
 
         if (correctedExtensions) {
           const message = req.t('apostrophe:fileTypeNotAccepted', {
-            // i18next has no built-in support for interpolating an array argument
+            // i18next has no built-in support for interpolating an array
+            // argument
             extensions: correctedExtensions.join(req.t('apostrophe:listJoiner')),
             extension: dbInfo.extension
           });
@@ -325,7 +326,8 @@ module.exports = {
           extensions = [ ...extensions, ...group.extensions ];
         });
         if (field.extensions) {
-          extensions = extensions.filter(extension => field.extensions.includes(extension));
+          extensions = extensions
+            .filter(extension => field.extensions.includes(extension));
         }
         if (field.extension) {
           extensions = extensions.filter(extension => extension === field.extension);
@@ -407,7 +409,10 @@ module.exports = {
           }));
         }
 
-        if (options.attachmentId && await self.apos.attachment.db.findOne({ _id: options.attachmentId })) {
+        if (
+          options.attachmentId &&
+          await self.apos.attachment.db.findOne({ _id: options.attachmentId })
+        ) {
           throw self.apos.error('invalid', 'duplicate');
         }
 
@@ -416,7 +421,9 @@ module.exports = {
           group: group.name,
           createdAt: new Date(),
           name: self.apos.util.slugify(path.basename(file.name, path.extname(file.name))),
-          title: self.apos.util.sortify(path.basename(file.name, path.extname(file.name))),
+          title: self.apos.util.sortify(
+            path.basename(file.name, path.extname(file.name))
+          ),
           extension,
           type: 'attachment',
           docIds: options.docIds ?? [],
@@ -433,14 +440,15 @@ module.exports = {
           try {
             await self.sanitizeSvg(file.path);
           } catch (e) {
-            // Currently DOMPurify passes invalid SVG content without comment as long
-            // as it's not an SVG XSS attack vector, but make provision to report
-            // a relevant error if that changes
+            // Currently DOMPurify passes invalid SVG content without comment
+            // as long as it's not an SVG XSS attack vector, but make provision
+            // to report a relevant error if that changes
             throw self.apos.error('invalid', req.t('apostrophe:fileInvalid'));
           }
         }
         if (self.isSized(extension)) {
-          // For images we correct automatically for common file extension mistakes
+          // For images we correct automatically for common file extension
+          // mistakes
           const result = await Promise.promisify(self.uploadfs.copyImageIn)(
             file.path,
             '/attachments/' + info._id + '-' + info.name,
@@ -604,7 +612,8 @@ module.exports = {
       getMissingAttachmentUrl() {
         const defaultIconUrl = '/modules/@apostrophecms/attachment/img/missing-icon.svg';
         self.apos.util.warn('Template warning: Impossible to retrieve the attachment url since it is missing, a default icon has been set. Please fix this ASAP!');
-        // Convert static asset path to full URL, which matters when static assets are in uploadfs
+        // Convert static asset path to full URL, which matters when static
+        // assets are in uploadfs
         return self.apos.asset.url(defaultIconUrl);
       },
       // This method is available as a template helper: apos.attachment.url
@@ -627,9 +636,9 @@ module.exports = {
         if (!options.uploadfsPath) {
           path = self.uploadfs.getUrl() + path;
         }
-        // Attachments can have "one true crop," or a crop can be passed with the options.
-        // For convenience, be tolerant if options.crop is passed but doesn't
-        // actually have valid cropping properties
+        // Attachments can have "one true crop," or a crop can be passed with
+        // the options. For convenience, be tolerant if options.crop is passed
+        // but doesn't actually have valid cropping properties
         let c;
         if (options.crop !== false) {
           c = options.crop || attachment._crop || attachment.crop;
@@ -653,9 +662,9 @@ module.exports = {
       // Find the first attachment referenced within any object with
       // attachments as possible properties or sub-properties.
       //
-      // For best performance be reasonably specific; don't pass an entire page or piece
-      // object if you can pass page.thumbnail to avoid an exhaustive search, especially
-      // if the page has many relationships.
+      // For best performance be reasonably specific; don't pass an entire page
+      // or piece object if you can pass page.thumbnail to avoid an exhaustive
+      // search, especially if the page has many relationships.
       //
       // Returns the first attachment matching the criteria.
       //
@@ -749,7 +758,9 @@ module.exports = {
             }
           }
           if (options.extensions) {
-            if (!_.contains(options.extensions, self.resolveExtension(attachment.extension))) {
+            if (
+              !_.contains(options.extensions, self.resolveExtension(attachment.extension))
+            ) {
               return false;
             }
           }
@@ -777,8 +788,8 @@ module.exports = {
 
             // If one of our ancestors has a relationship to the piece that
             // immediately contains us, provide that as the crop. This ensures
-            // that cropping coordinates stored in an @apostrophecms/image widget
-            // are passed through when we make a simple call to
+            // that cropping coordinates stored in an @apostrophecms/image
+            // widget are passed through when we make a simple call to
             // apos.attachment.url with the returned object
             for (let i = ancestors.length - 1; i >= 0; i--) {
               const ancestor = ancestors[i];
@@ -832,8 +843,9 @@ module.exports = {
       //
       // If only 2 arguments are given the limit defaults to 1.
       //
-      // For use only in command line tasks, migrations and other batch operations
-      // in which permissions are a complete nonissue. NEVER use on the front end.
+      // For use only in command line tasks, migrations and other batch
+      // operations in which permissions are a complete nonissue. NEVER use on
+      // the front end.
       //
       // This method will `await` when calling your `each` function,
       // which must return a promise (i.e. just use an `async` function).
@@ -848,8 +860,9 @@ module.exports = {
         }
         // "Why do we fetch a bucket of attachments at a time?" File operations
         // can be very slow. This can lead to MongoDB cursor timeouts in
-        // tasks like @apostrophecms/attachment:rescale. We need a robust solution that
-        // does not require keeping a MongoDB cursor open too long. -Tom
+        // tasks like @apostrophecms/attachment:rescale. We need a robust
+        // solution that does not require keeping a MongoDB cursor open too
+        // long. -Tom
         const batchSize = 100;
         let lastId = '';
         while (true) {
@@ -877,7 +890,8 @@ module.exports = {
         if (!attachment) {
           return false;
         }
-        // Specified directly on the attachment (it's not a relationship situation)
+        // Specified directly on the attachment (it's not a relationship
+        // situation)
         if (typeof attachment.x === 'number') {
           return true;
         }
@@ -954,7 +968,8 @@ module.exports = {
       // This method is invoked after any doc is inserted, updated, archived
       // or restored.
       //
-      // If a document is truly deleted, call with the `{ deleted: true}` option.
+      // If a document is truly deleted, call with the `{ deleted: true}`
+      // option.
       async updateDocReferences(doc, options = {
         deleted: false
       }) {
@@ -1081,11 +1096,12 @@ module.exports = {
           }
         }
       },
-      // Enable access, disable access, or truly remove the given attachment via uploadfs,
-      // based on whether `action` is `enable`, `disable`, or `remove`. If the attachment
-      // is an image, access to the size indicated by the `sizeAvailableInArchive` option
-      // (usually `one-sixth`) remains available except when removing. This operation is carried
-      // out across all sizes and crops.
+      // Enable access, disable access, or truly remove the given attachment
+      // via uploadfs, based on whether `action` is `enable`, `disable`, or
+      // `remove`. If the attachment is an image, access to the size indicated
+      // by the `sizeAvailableInArchive` option (usually `one-sixth`) remains
+      // available except when removing. This operation is carried out across
+      // all sizes and crops.
       async alterAttachment(attachment, action) {
         let method = self.uploadfs[action];
         method = Promise.promisify(method);
@@ -1174,7 +1190,8 @@ module.exports = {
           sized: self.sized
         };
       },
-      // Middleware method used when only those with attachment privileges should be allowed to do something
+      // Middleware method used when only those with attachment privileges
+      // should be allowed to do something
       canUpload(req, res, next) {
         if (!self.apos.permission.can(req, 'upload-attachment')) {
           res.statusCode = 403;
@@ -1257,8 +1274,8 @@ module.exports = {
               });
             } catch (e) {
               console.error(e);
-              // This condition shouldn't occur, but do warn the operator if it does
-              // (possibly on input that is not really an SVG file at all)
+              // This condition shouldn't occur, but do warn the operator if it
+              // does (possibly on input that is not really an SVG file at all)
               self.apos.util.error(`Warning: unable to sanitize SVG file ${uploadfsPath}`);
             }
           });
@@ -1267,9 +1284,13 @@ module.exports = {
 
       addFileGroup(newGroup) {
         if (self.fileGroups.some(existingGroup => existingGroup.name === newGroup.name)) {
-          const existingGroup = self.fileGroups.find(existingGroup => existingGroup.name === newGroup.name);
+          const existingGroup = self.fileGroups
+            .find(existingGroup => existingGroup.name === newGroup.name);
           if (newGroup.extensions) {
-            existingGroup.extensions = [ ...existingGroup.extensions, ...newGroup.extensions ];
+            existingGroup.extensions = [
+              ...existingGroup.extensions,
+              ...newGroup.extensions
+            ];
           };
           if (newGroup.extensionMaps) {
             existingGroup.extensionMaps = {

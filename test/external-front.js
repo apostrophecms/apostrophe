@@ -4,7 +4,8 @@ const assert = require('assert');
 describe('External Front', function() {
 
   let apos;
-  // Set env var so these tests work even if you have a dev key in your bashrc etc.
+  // Set env var so these tests work even if you have a dev key in your bashrc
+  // etc.
   process.env.APOS_EXTERNAL_FRONT_KEY = 'this is a test external front key';
 
   this.timeout(t.timeout);

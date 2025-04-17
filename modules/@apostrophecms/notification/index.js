@@ -55,7 +55,8 @@ module.exports = {
         }
         const start = Date.now();
         try {
-          modifiedOnOrSince = req.query.modifiedOnOrSince && new Date(req.query.modifiedOnOrSince);
+          modifiedOnOrSince = req.query.modifiedOnOrSince &&
+            new Date(req.query.modifiedOnOrSince);
         } catch (e) {
           throw self.apos.error('invalid');
         }
@@ -211,26 +212,30 @@ module.exports = {
         };
       },
       // When used server-side, call with `req` as the first argument,
-      // or if you do not have a `req` it is acceptable to pass a user `_id` string
-      // in place of `req`. Someone must be the recipient.
+      // or if you do not have a `req` it is acceptable to pass a user `_id`
+      // string in place of `req`. Someone must be the recipient.
       //
-      // When called client-side, there is no req argument because the recipient is always the current user.
+      // When called client-side, there is no req argument because the
+      // recipient is always the current user.
       //
-      // The `message` argument should be a key that exists in a localization file.
-      // If it does not, it will be displayed directly as a fallback.
+      // The `message` argument should be a key that exists in a localization
+      // file. If it does not, it will be displayed directly as a fallback.
       //
-      // The `options.type` styles the notification and may be set to `error`, `danger`,
-      // `warning`, `info` or `success`. If not set, a "plain" default style is used.
+      // The `options.type` styles the notification and may be set to `error`,
+      // `danger`, `warning`, `info` or `success`. If not set, a "plain" default
+      // style is used.
       //
-      // If `options.dismiss` is set to `true`, the message will auto-dismiss after 5 seconds.
-      // If it is set to a number of seconds, it will dismiss after that number of seconds.
-      // Otherwise it will not dismiss unless clicked.
+      // If `options.dismiss` is set to `true`, the message will auto-dismiss
+      // after 5 seconds. If it is set to a number of seconds, it will dismiss
+      // after that number of seconds. Otherwise it will not dismiss unless
+      // clicked.
       //
       // If `options.buttons` is present, it must be an array of objects
-      // with `type` and `label` properties. If `type` is `'event'` then the object must have
-      // `name` and `data` properties, and when clicked the button will trigger an
-      // apos bus event of the given `name` with the provided `data` object. Currently
-      // `'event'` is the only supported value for `type`.
+      // with `type` and `label` properties. If `type` is `'event'` then the
+      // object must have `name` and `data` properties, and when clicked the
+      // button will trigger an apos bus event of the given `name` with the
+      // provided `data` object. Currently `'event'` is the only supported value
+      // for `type`.
       //
       // `options.return` will return the notification object. This is not
       // done otherwise to minimize risk of leaking MongoDB metadata to the

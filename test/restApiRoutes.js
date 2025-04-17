@@ -66,8 +66,8 @@ describe('REST API routing', function() {
       // Establish CSRF cookie in jar
       jar
     });
-    // We're just testing the routing, we don't actually get back a list of things,
-    // we'll test that with pieces
+    // We're just testing the routing, we don't actually get back a list of
+    // things, we'll test that with pieces
     assert(body.action === 'getAll');
   });
   it('should respond properly to post', async function() {

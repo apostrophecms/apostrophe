@@ -108,8 +108,9 @@ const classList = computed(() => {
     classes.push('apos-notification--progress');
   }
 
-  // long notifications look funky, but reading the label's length doesn't account for
-  // html. Throw the string into a fake element to get its text content
+  // long notifications look funky, but reading the label's length doesn't
+  // account for html. Throw the string into a fake element to get its text
+  // content
   const div = document.createElement('div');
   div.innerHTML = localize(props.notification.message);
   const textContent = div.textContent || div.innerText || '';

@@ -46,14 +46,18 @@ module.exports = (self) => {
       });
     },
 
-    // Add the "cacheInvalidatedAt" field to the documents that do not have it yet,
-    // and set it to equal doc.updatedAt.
+    // Add the "cacheInvalidatedAt" field to the documents that do not have it
+    // yet, and set it to equal doc.updatedAt.
     setCacheField() {
-      return self.apos.migration.eachDoc({ cacheInvalidatedAt: { $exists: 0 } }, 5, async doc => {
-        await self.apos.doc.db.updateOne({ _id: doc._id }, {
-          $set: { cacheInvalidatedAt: doc.updatedAt }
-        });
-      });
+      return self.apos.migration.eachDoc(
+        { cacheInvalidatedAt: { $exists: 0 } },
+        5,
+        async doc => {
+          await self.apos.doc.db.updateOne({ _id: doc._id }, {
+            $set: { cacheInvalidatedAt: doc.updatedAt }
+          });
+        }
+      );
     }
   };
 };

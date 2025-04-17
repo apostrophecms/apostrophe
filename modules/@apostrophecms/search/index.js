@@ -34,8 +34,9 @@
 // in search results. If not present, this is determined programmatically.
 // In the latter case, the `searchDetermineTypes` callAll method and the
 // `determineTypes` promise event are fired. Implementations of these
-// take an array argument and push new type names on it. `@apostrophecms/piece-type` modules
-// monitor this and add their `name`, or do not, based on their `searchable` option.
+// take an array argument and push new type names on it.
+// `@apostrophecms/piece-type` modules monitor this and add their `name`, or do
+// not, based on their `searchable` option.
 //
 // `filters`: an array of filters to be offered to the user, each of which
 // is an object with a `name` property and a `label` property. If no
@@ -158,29 +159,34 @@ module.exports = {
       },
 
       addIndexFixMigration() {
-        // Search index lacked most text fields, correct that with a one-time migration
+        // Search index lacked most text fields, correct that with a one-time
+        // migration
         self.apos.migration.add('search-index-fix', async () => {
           return self.indexTask();
         });
       },
 
       suggest(req, q) {
-        return self.apos.doc.find(req).limit(self.options.suggestions && (self.options.suggestions.limit || 10)).search(q).project({
-          _url: 1,
-          title: 1
-        }).toArray();
+        return self.apos.doc
+          .find(req)
+          .limit(self.options.suggestions && (self.options.suggestions.limit || 10))
+          .search(q)
+          .project({
+            _url: 1,
+            title: 1
+          }).toArray();
       },
 
-      // This method implements the search results page. It populates `req.data.docs`
-      // and provides pagination via `req.data.currentPage` and `req.data.totalPages`,
-      // not to be confused with `req.data.totalDocs` which is the total number of
-      // documents matching the search. The filters configured for the module are
-      // respected.
+      // This method implements the search results page. It populates
+      // `req.data.docs` and provides pagination via `req.data.currentPage` and
+      // `req.data.totalPages`, not to be confused with `req.data.totalDocs`
+      // which is the total number of documents matching the search. The filters
+      // configured for the module are respected.
 
       async indexPage(req) {
 
-        // Finesse so we can use applyBuildersSafely but we still support q, which is
-        // a common expectation/preference
+        // Finesse so we can use applyBuildersSafely but we still support q,
+        // which is a common expectation/preference
         req.query.search = req.query.search || req.query.q;
 
         // Cope with filters
@@ -188,7 +194,10 @@ module.exports = {
 
         let defaultingToAll = false;
 
-        const query = self.apos.doc.find(req, {}).applyBuildersSafely(req.query).perPage(self.perPage);
+        const query = self.apos.doc
+          .find(req, {})
+          .applyBuildersSafely(req.query)
+          .perPage(self.perPage);
         if (self.filters) {
           const filterTypes = _.filter(_.map(self.filters, 'name'), function (name) {
             return name !== '__else';
@@ -258,8 +267,8 @@ module.exports = {
             await getDocsOfType(type);
           }
           // Restore the intended order ($in doesn't respect it and neither does
-          // fetching them all by type). ACHTUNG: without this search quality goes
-          // right out the window. -Tom
+          // fetching them all by type). ACHTUNG: without this search quality
+          // goes right out the window. -Tom
           return self.apos.util.orderById(_.map(idsAndTypes, '_id'), docs);
 
           async function getDocsOfType(type) {
@@ -370,8 +379,9 @@ module.exports = {
         return texts;
       },
 
-      // Reduces array of texts to a single space-separated string, passes the result
-      // through apos.util.sortify to eliminate unwanted characters and case differences
+      // Reduces array of texts to a single space-separated string, passes the
+      // result through apos.util.sortify to eliminate unwanted characters and
+      // case differences
 
       boilTexts(texts) {
         let text = _.reduce(texts, function (memo, text) {

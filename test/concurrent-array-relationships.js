@@ -67,8 +67,8 @@ describe('Concurrent Array Joins', function() {
           {
             name: `Hobby ${i}`,
             _friends: [
-              // Deep clone to avoid infinite recursion during the save operation
-              // as 4 points to 5 and vice versa
+              // Deep clone to avoid infinite recursion during the save
+              // operation as 4 points to 5 and vice versa
               klona(hobbyists[9 - i])
             ]
           }

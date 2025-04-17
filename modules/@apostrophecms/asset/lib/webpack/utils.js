@@ -60,7 +60,8 @@ module.exports = {
     getMetadata, modulesToInstantiate, rebundleModulesConfig = {}
   }) {
     const modulesMeta = [];
-    // NOTE: this is important, it must be sequential due to getMetadata side effects
+    // NOTE: this is important, it must be sequential due to getMetadata side
+    // effects
     for (const name of modulesToInstantiate) {
       modulesMeta.push(await getMetadata(name));
     }
@@ -282,9 +283,10 @@ async function verifyBundlesEntryPoints (bundles) {
       // - catch all to "main" or new bundle name,
       // already verified it's unique for the given module
       if (!remapping.source) {
-        // Bundle name for "main" "doesn't matter - it will be ignored and never built,
-        // we want to achieve a free from colision name. What matters is main = true.
-        // Target is 'main' by convention: `main.bundleName`
+        // Bundle name for "main" "doesn't matter - it will be ignored and
+        // never built, we want to achieve a free from colision name. What
+        // matters is main = true. Target is 'main' by convention:
+        // `main.bundleName`
         bundleName = `${remapping.target}.${bundleName}`;
         if (!remapping.main) {
           // move "ui/src/index.*" to the bundle,
@@ -393,9 +395,9 @@ async function verifyBundlesEntryPoints (bundles) {
 // - from { moduleName: bundleName }
 //    to [{ main: false, name: 'moduleName', target: bundleName }]
 // - from { 'moduleName:sourceBundle': 'main' }
-//    to [{ main: true, name: 'moduleName', source: 'sourceBundle', target: 'main' }]
-// - from { 'moduleName:sourceBundle': targetBundle }
-//    to [{ main: false, name: 'moduleName', source: 'sourceBundle', target: targetBundle }]
+// to [{ main: true, name: 'moduleName', source: 'sourceBundle', target: 'main'
+// }] - from { 'moduleName:sourceBundle': targetBundle } to [{ main: false,
+// name: 'moduleName', source: 'sourceBundle', target: targetBundle }]
 function formatRebundleConfig(mappingConfig = {}) {
   const result = Object.keys(mappingConfig).reduce((transformed, key) => {
     const main = mappingConfig[key] === 'main';
@@ -415,13 +417,13 @@ function formatRebundleConfig(mappingConfig = {}) {
   return result;
 }
 
-// This function is used to detect re-bundled and moved to the main build bundles.
-// It returns filtered configuration containing the proper bundle names.
-// See usage in `template/lib/bundlesLoader.js` and `widget-type/index.js`.
-// Expected arguments:
-// - moduleName: the module owning the bundleConfig
-// - bundleConfig: the bundle configuration ({ bundles: {...} })
-// - rebundleConfigs: the normalized output of `formatRebundleConfig(asset.options.rebundleModules)`
+// This function is used to detect re-bundled and moved to the main build
+// bundles. It returns filtered configuration containing the proper bundle
+// names. See usage in `template/lib/bundlesLoader.js` and
+// `widget-type/index.js`. Expected arguments: - moduleName: the module owning
+// the bundleConfig - bundleConfig: the bundle configuration ({ bundles: {...}
+// }) - rebundleConfigs: the normalized output of
+// `formatRebundleConfig(asset.options.rebundleModules)`
 function transformRebundledFor(moduleName, bundleConfigs, rebundleConfigs) {
   const rebundle = rebundleConfigs
     .filter(entry => entry.name === moduleName);

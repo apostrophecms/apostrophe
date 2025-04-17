@@ -60,7 +60,8 @@ export default {
   .apos-input--date,
   .apos-input--time {
     // lame magic number ..
-    // height of date/time input is slightly larger than others due to the browser spinner ui
+    // height of date/time input is slightly larger than others due to
+    // the browser spinner ui
     height: 46px;
     padding-right: 40px;
   }

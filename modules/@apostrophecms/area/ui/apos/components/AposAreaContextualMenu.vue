@@ -201,15 +201,17 @@ export default {
     }
   },
   mounted() {
-    // if this area is not in-context then it is assumed in a schema's modal and we need to bump
-    // the z-index of menus above them
+    // if this area is not in-context then it is assumed in a schema's modal and
+    // we need to bump the z-index of menus above them
     this.inContext = !apos.util.closest(this.$el, '[data-apos-schema-area]');
   },
   methods: {
     async add(item) {
-      // Potential TODO: If we find ourselves manually flipping these bits in other AposContextMenu overrides
-      // we should consider refactoring contextmenus to be able to self close when any click takes place within their el
-      // as it is often the logical experience (not always, see tag menus and filters)
+      // Potential TODO: If we find ourselves manually flipping these bits in
+      // other AposContextMenu overrides we should consider refactoring
+      // contextmenus to be able to self close when any click takes place within
+      // their el as it is often the logical experience (not always, see tag
+      // menus and filters)
       this.$refs.contextMenu.hide();
       this.$emit('add', {
         ...item,

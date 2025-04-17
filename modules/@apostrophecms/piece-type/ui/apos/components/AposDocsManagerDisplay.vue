@@ -51,7 +51,9 @@
           <AposCheckbox
             v-if="item._id"
             v-model="checkProxy"
-            v-apos-tooltip="options.disableUnpublished && !item.lastPublishedAt ? 'apostrophe:publishBeforeUsingTooltip' : null"
+            v-apos-tooltip="options.disableUnpublished && !item.lastPublishedAt
+              ? 'apostrophe:publishBeforeUsingTooltip'
+              : null"
             :field="{
               name: item._id,
               hideLabel: true,

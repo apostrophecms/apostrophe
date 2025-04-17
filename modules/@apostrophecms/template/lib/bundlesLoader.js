@@ -3,10 +3,10 @@ const { stripIndent } = require('common-tags');
 module.exports = (self) => {
   // FIXME: This entire function should be separated for external build modules.
   // Use the next opportunity to clean up and let the legacy system be and
-  // introduce a new one for external build modules (e.g. `insertBundlesMarkupByManifest`).
-  // The only check for external build modules should be at the very top of
-  // `insertBundlesMarkup` function, resulting in a call to our new
-  // function.
+  // introduce a new one for external build modules (e.g.
+  // `insertBundlesMarkupByManifest`). The only check for external build modules
+  // should be at the very top of `insertBundlesMarkup` function, resulting in a
+  // call to our new function.
   function insertBundlesMarkup({
     page = {},
     template = '',

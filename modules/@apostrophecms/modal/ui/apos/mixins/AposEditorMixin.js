@@ -83,10 +83,10 @@ export default {
       );
     },
 
-    // followedByCategory may be falsy (all fields), "other" or "utility". The returned
-    // object contains properties named for each field in that category that
-    // follows other fields. For instance if followedBy is "utility" then in our
-    // default configuration `followingValues` will be:
+    // followedByCategory may be falsy (all fields), "other" or "utility". The
+    // returned object contains properties named for each field in that category
+    // that follows other fields. For instance if followedBy is "utility" then
+    // in our default configuration `followingValues` will be:
     //
     // `{ slug: { title: 'latest title here' } }`
     followingValues(followedByCategory) {

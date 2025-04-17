@@ -1,50 +1,36 @@
 // Structured logging for Apostrophe.
 //
-// This module is generic, low level implementation. For logging inside of a module,
-// see `logInfo`, `logError`, etc. methods available in every module
-// via the base class, @apostrophecms/module.
+// This module is generic, low level implementation. For logging inside of a
+// module, see `logInfo`, `logError`, etc. methods available in every module via
+// the base class, @apostrophecms/module.
 //
 // ### `logger`
 //
 // Optional. It can be an object or a function.
 // If a function it accepts `apos` and returns an object with
 // at least `info`, `debug`, `warn` and `error` methods. If a `destroy` method
-// is present it will be invoked and awaited (Promise) when Apostrophe is shut down.
-// The object, or the returned object, must have `info`, `debug`, `warn` and `error`
-// methods.
-// If `destroy` is present it will be invoked and awaited (Promise) when Apostrophe
-// is shut down.
-// If this option is not supplied, logs are simply written to the Node.js `console`.
-// Calls to `apos.utils.info`, `apos.utils.error`, etc. or module level `self.logInfo`,
-// `self.logError`, etc are routed through this object by Apostrophe.
-// This provides compatibility out of the box with many popular
-// logging modules, including`pino`, `winston`, etc.
+// is present it will be invoked and awaited (Promise) when Apostrophe is shut
+// down. The object, or the returned object, must have `info`, `debug`, `warn`
+// and `error` methods. If `destroy` is present it will be invoked and awaited
+// (Promise) when Apostrophe is shut down. If this option is not supplied, logs
+// are simply written to the Node.js `console`. Calls to `apos.utils.info`,
+// `apos.utils.error`, etc. or module level `self.logInfo`, `self.logError`, etc
+// are routed through this object by Apostrophe. This provides compatibility out
+// of the box with many popular logging modules, including`pino`, `winston`,
+// etc.
 //
 // ## Options
 //
 // ### `messageAs`
 //
-// When the messageAs option is set, the message argument to apos.util.info, etc.
-// is bundled into the second, object - based argument as a property of the name
-// given, and only the object argument is passed to the `logger`, which is useful
-// if using Pino.
-// If there is no object-based argument an object is created.
-// Example:
-// ```js
-// {
-//   options: {
-//     messageAs: 'msg'
-//   }
-// }
-// ```
-// The resulting util log call will be:
-// ```js
-// self.apos.util.error({
-//   msg: '@apostrophecms/login: incorrect-username: User admin failed to log in',
-//   type: 'incorrect-username'
-//   module: '@apostrophecms/login'
-// });
-// ```
+// When the messageAs option is set, the message argument to apos.util.info,
+// etc. is bundled into the second, object - based argument as a property of the
+// name given, and only the object argument is passed to the `logger`, which is
+// useful if using Pino. If there is no object-based argument an object is
+// created. Example: ```js { options: { messageAs: 'msg' } } ``` The resulting
+// util log call will be: ```js self.apos.util.error({ msg:
+// '@apostrophecms/login: incorrect-username: User admin failed to log in',
+// type: 'incorrect-username' module: '@apostrophecms/login' }); ```
 //
 // ### `filter`
 //
@@ -93,10 +79,11 @@
 // ```sh
 // # same as the `filter` example above
 // eslint-disable-next-line max-len
-// export APOS_FILTER_LOGS='*:severity:warn,error;@apostrophecms/login:events:incorrect-username,incorrect-password'
-// # log everything, analogous to `{ filter: { '*': true }}`
-// export APOS_FILTER_LOGS='*'
-// ```
+// export
+// APOS_FILTER_LOGS='*:severity:warn,error;@apostrophecms/login:events:incorrect-username,
+// incorrect-password'
+// # log everything, analogous to `{ filter: { '*': true }}` export
+// APOS_FILTER_LOGS='*' ```
 //
 
 const _ = require('lodash');
@@ -132,9 +119,10 @@ module.exports = {
 
     return {
       // Stringify object arguments. If `NODE_ENV` is not `production`,
-      // pretty print the objects and add a new line at the end of string arguments.
-      // This method is meant to be used from the methods of a custom `logger`.
-      // See the default logger implementation in `util/lib/logger.js` for an example.
+      // pretty print the objects and add a new line at the end of string
+      // arguments. This method is meant to be used from the methods of a custom
+      // `logger`. See the default logger implementation in `util/lib/logger.js`
+      // for an example.
       formatLogByEnv(args) {
         return args.map((arg) => {
           if (typeof arg === 'string') {
@@ -152,8 +140,8 @@ module.exports = {
       // Convert severity wildcards to arrays of (all) severity levels. This
       // speeds up the severity detection (no wildcards match).
       // Convert eventType wildcards to `[ '*' ]` array.
-      // Override the configuration with the `APOS_FILTER_LOGS` environment variable
-      // if set.
+      // Override the configuration with the `APOS_FILTER_LOGS` environment
+      // variable if set.
       initFilters() {
         self.filters = self.options.filter || {};
         if (process.env.APOS_FILTER_LOGS) {
@@ -240,18 +228,14 @@ module.exports = {
           : [ 'debug', 'info', 'warn', 'error' ];
       },
 
-      // Internal method, do not use it directly. See `@apostrophecms/module` for
-      // module level logging methods - logInfo, logError, etc.
-      // `moduleSelf` is the module `self` object.
-      // The allowed `severity` levels are `debug`, `info`, `warn` and `error`.
-      // `severity` is required.
-      // `req` (optional) is an apos request object.
-      // The implementor will suport the following signature:
-      // - (eventType)
-      // - (eventType, data)
-      // - (eventType, message)
-      // - (eventType, message, data)
-      // - (req, eventType[, message, data]) where message and data are optional
+      // Internal method, do not use it directly. See `@apostrophecms/module`
+      // for module level logging methods - logInfo, logError, etc. `moduleSelf`
+      // is the module `self` object. The allowed `severity` levels are `debug`,
+      // `info`, `warn` and `error`. `severity` is required. `req` (optional) is
+      // an apos request object. The implementor will suport the following
+      // signature: - (eventType) - (eventType, data) - (eventType, message) -
+      // (eventType, message, data) - (req, eventType[, message, data]) where
+      // message and data are optional
       logEntry(moduleSelf, severity, req, eventType, message, data) {
         if (!self.shouldKeepEntry(moduleSelf, severity, req, eventType)) {
           return;
@@ -268,32 +252,34 @@ module.exports = {
       },
       // An internal method, do not use it directly.
       // Do a minimal computation and validation of the arguments - logs should
-      // be fast. The function exepects 4 or 5 arguments (without counting the first optional `moduleSelf` argument),
-      // but all of the below will work:
-      // processLogArgs(moduleSelf, severity = 'info', eventType = 'event-type');
-      // processLogArgs(moduleSelf, severity = 'info', eventType = 'event-type', data = { module: 'my-module' });
-      // processLogArgs(moduleSelf, severity = 'info', eventType = 'event-type', message = 'message', data = { module: 'my-module' });
-      // processLogArgs(moduleSelf, severity = 'info', req, eventType = 'event-type', [...messageAndOrData]);
+      // be fast. The function exepects 4 or 5 arguments (without counting the
+      // first optional `moduleSelf` argument), but all of the below will work:
+      // processLogArgs(moduleSelf, severity = 'info', eventType =
+      // 'event-type'); processLogArgs(moduleSelf, severity = 'info', eventType
+      // = 'event-type', data = { module: 'my-module' });
+      // processLogArgs(moduleSelf, severity = 'info', eventType = 'event-type',
+      // message = 'message', data = { module: 'my-module' });
+      // processLogArgs(moduleSelf, severity = 'info', req, eventType =
+      // 'event-type', [...messageAndOrData]);
       //
       // If `moduleSelf` is provided, it is used to extract the module name from
       // the `__meta` property.
       // `severity` and `eventType` are required.
       // `req`, `message` and `data` are optional.
-      // `req` is an apos request object. If provided, the `data` argument will be
-      // enriched with additional information from the request.
-      // `data.module` is recognized as a special property and is used to refortmat
-      // the message.
-      // `data.severity` is always set to the value of the `severity` argument.
-      // `data.type` is always set to the value of the `eventType` argument.
-      // message is optional, if not provided it is generated from the eventType and data.module.
-      // Optional message values:
-      // - `module: eventType: message`
-      // - `eventType: message`: (missing module)
-      // - `module: eventType`: (missing message)
-      // - `eventType`: (missing module and message)
+      // `req` is an apos request object. If provided, the `data` argument will
+      // be enriched with additional information from the request. `data.module`
+      // is recognized as a special property and is used to refortmat the
+      // message. `data.severity` is always set to the value of the `severity`
+      // argument. `data.type` is always set to the value of the `eventType`
+      // argument. message is optional, if not provided it is generated from the
+      // eventType and data.module. Optional message values: - `module:
+      // eventType: message` - `eventType: message`: (missing module) - `module:
+      // eventType`: (missing message) - `eventType`: (missing module and
+      // message)
       //
       // Returns [ data ] or [ message, data ] depending on option.messageAs.
-      // `data` is always an object containing at least a `type` and `severity` properties.
+      // `data` is always an object containing at least a `type` and `severity`
+      // properties.
       processLoggerArgs(moduleSelf, severity, ...args) {
         let req;
         let eventType;
@@ -301,8 +287,8 @@ module.exports = {
         let obj;
         const data = {};
 
-        // Detect `req` argument with a simple duck type check - apos `req` object
-        // has always a translate `t` function.
+        // Detect `req` argument with a simple duck type check - apos `req`
+        // object has always a translate `t` function.
         if (args[0] && typeof args[0].t === 'function') {
           [ req, eventType, message, obj ] = args;
         } else {
@@ -350,7 +336,8 @@ module.exports = {
         return self.options.messageAs ? [ data ] : [ message, data ];
       },
 
-      // Enrich the `data` argument with additional information from the request.
+      // Enrich the `data` argument with additional information from the
+      // request.
       processRequestData(req, data) {
         if (!req) {
           return data;
@@ -370,8 +357,8 @@ module.exports = {
         return req.ip;
       },
 
-      // Helper to get unique request id. It will be generated (once) if not present.
-      // Can be refatored to express level in the future.
+      // Helper to get unique request id. It will be generated (once) if not
+      // present. Can be refatored to express level in the future.
       getRequestId(req) {
         if (!req.requestId) {
           req.requestId = self.apos.util.generateId();

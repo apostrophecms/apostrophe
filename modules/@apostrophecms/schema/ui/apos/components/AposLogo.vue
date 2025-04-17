@@ -1,3 +1,4 @@
+<!-- eslint-disable max-len -->
 <template>
   <svg viewBox="0 0 959.64 230.39">
     <defs>

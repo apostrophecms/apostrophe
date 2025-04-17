@@ -17,8 +17,8 @@ const setupPackages = ({ folder = 'test' }) => {
   // whether packages in node_modules are project level or not
 
   const packageJson = path.join(__dirname, '../', folder, 'package.json');
-  // Remove it first, in case it's the old-style symlink to the main package.json,
-  // which would break
+  // Remove it first, in case it's the old-style symlink to the main
+  // package.json, which would break
   fs.removeSync(packageJson);
   const packageJsonInfo = {
     name: folder,

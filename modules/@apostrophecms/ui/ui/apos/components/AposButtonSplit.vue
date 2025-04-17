@@ -177,7 +177,9 @@ function initialize() {
 
     & {
       position: relative;
-      padding: $spacing-base + $spacing-half $spacing-double $spacing-base + $spacing-half $spacing-quadruple;
+      padding: $spacing-base +
+        $spacing-half $spacing-double $spacing-base +
+        $spacing-half $spacing-quadruple;
       border-bottom: 1px solid var(--a-base-9);
     }
 

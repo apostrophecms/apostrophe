@@ -1,7 +1,7 @@
 // This is the business logic of the AposLoginForm Vue component.
 // It is in a separate file so that you can override the component's templates
-// and styles just by copying the .vue file to your project, and leave the business logic
-// unchanged.
+// and styles just by copying the .vue file to your project, and leave the
+// business logic unchanged.
 
 import AposLoginFormMixin from 'Modules/@apostrophecms/login/mixins/AposLoginFormMixin';
 
@@ -79,19 +79,23 @@ export default {
           return;
         }
 
-        const isUponSubmitRequirementsPending = newVal.some(requirement => requirement.done === null);
+        const isUponSubmitRequirementsPending = newVal
+          .some(requirement => requirement.done === null);
         if (isUponSubmitRequirementsPending) {
           return;
         }
 
-        const isUponSubmitRequirementsDone = newVal.every(requirement => requirement.done === true) || this.uponSubmitRequirements.length === 0;
+        const isUponSubmitRequirementsDone = newVal.every(
+          requirement => requirement.done === true
+        ) || this.uponSubmitRequirements.length === 0;
         if (isUponSubmitRequirementsDone) {
           await this.postSubmit();
 
           return;
         }
 
-        const isUponSubmitRequirementsBlocked = newVal.some(requirement => requirement.done === false);
+        const isUponSubmitRequirementsBlocked = newVal
+          .some(requirement => requirement.done === false);
         if (isUponSubmitRequirementsBlocked) {
           for (const requirement of this.uponSubmitRequirements) {
             requirement.done = null;
@@ -183,8 +187,8 @@ export default {
       ])));
     },
     redirectAfterLogin() {
-      // TODO handle situation where user should be sent somewhere other than homepage.
-      // Redisplay homepage with editing interface
+      // TODO handle situation where user should be sent somewhere other than
+      // homepage. Redisplay homepage with editing interface
       this.$emit('redirect', `${apos.prefix}/`);
     },
     async requirementBlock(requirementBlock) {
@@ -249,17 +253,19 @@ export default {
 };
 
 function getRequirements() {
-  const requirements = Object.entries(apos.login.requirements).map(([ name, requirement ]) => {
-    return {
-      name,
-      component: requirement.component || name,
-      ...requirement,
-      done: null,
-      value: null,
-      success: null,
-      error: null
-    };
-  });
+  const requirements = Object
+    .entries(apos.login.requirements)
+    .map(([ name, requirement ]) => {
+      return {
+        name,
+        component: requirement.component || name,
+        ...requirement,
+        done: null,
+        value: null,
+        success: null,
+        error: null
+      };
+    });
   return [
     ...requirements.filter(r => r.phase === 'beforeSubmit'),
     ...requirements.filter(r => r.phase === 'uponSubmit'),

@@ -125,7 +125,8 @@ export default {
     apos.bus.$on('admin-menu-click', this.onAdminMenuClick);
 
     const itemsSet = klona(this.items);
-    this.menuItems = itemsSet.filter(item => !(item.options && item.options.contextUtility))
+    this.menuItems = itemsSet
+      .filter(item => !(item.options && item.options.contextUtility))
       .map(item => {
         if (item.items) {
           item.items.forEach(subitem => {
@@ -153,7 +154,10 @@ export default {
     },
     trayItemTooltip(item) {
       if (item.options.toggle) {
-        if (this.trayItemState[item.name] && item.options.tooltip && item.options.tooltip.deactivate) {
+        if (
+          this.trayItemState[item.name] &&
+          item.options.tooltip?.deactivate
+        ) {
           return {
             content: item.options.tooltip.deactivate,
             placement: 'bottom'

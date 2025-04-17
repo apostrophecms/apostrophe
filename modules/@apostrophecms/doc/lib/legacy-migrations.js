@@ -1,5 +1,5 @@
-// Migrations relevant only to those who used early alpha and beta versions of 3.x
-// are kept here for tidiness
+// Migrations relevant only to those who used early alpha and beta versions of
+// 3.x are kept here for tidiness
 
 module.exports = (self) => {
   return {

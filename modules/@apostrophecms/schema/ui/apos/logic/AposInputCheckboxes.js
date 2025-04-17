@@ -6,7 +6,9 @@ export default {
   name: 'AposInputCheckboxes',
   mixins: [ AposInputMixin, AposInputChoicesMixin ],
   beforeMount () {
-    this.modelValue.data = Array.isArray(this.modelValue.data) ? this.modelValue.data : [];
+    this.modelValue.data = Array.isArray(this.modelValue.data)
+      ? this.modelValue.data
+      : [];
   },
   methods: {
     getChoiceId(uid, value) {

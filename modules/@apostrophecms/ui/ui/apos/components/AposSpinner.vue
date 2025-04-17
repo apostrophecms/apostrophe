@@ -1,10 +1,10 @@
+<!-- eslint-disable max-len -->
 <template>
   <div
     class="apos-spinner"
     :class="className"
   >
     <!-- Disabling since the SVG is mostly not active vue template code. -->
-    <!-- eslint-disable vue/max-attributes-per-line -->
     <svg
       v-if="weight === 'heavy'"
       xmlns="http://www.w3.org/2000/svg"
@@ -13,17 +13,53 @@
       :style="style"
     >
       <defs>
-        <linearGradient id="linear-gradient" x1="-280.32" y1="390.11" x2="-279.82" y2="390.9" gradientTransform="matrix(22.2, 0, 0, -22.2, 6233.2, 8673.92)" gradientUnits="userSpaceOnUse">
-          <stop offset="0" :stop-color="stopColorLight" />
-          <stop offset="1" :stop-color="stopColorDark" />
+        <linearGradient
+          id="linear-gradient"
+          x1="-280.32"
+          y1="390.11"
+          x2="-279.82"
+          y2="390.9"
+          gradientTransform="matrix(22.2, 0, 0, -22.2, 6233.2, 8673.92)"
+          gradientUnits="userSpaceOnUse"
+        >
+          <stop
+            offset="0"
+            :stop-color="stopColorLight"
+          />
+          <stop
+            offset="1"
+            :stop-color="stopColorDark"
+          />
         </linearGradient>
-        <linearGradient id="linear-gradient-2" x1="-276.41" y1="379.82" x2="-276.72" y2="379.33" gradientTransform="matrix(17.69, 0, 0, -13.7, 4908.02, 5205.92)" gradientUnits="userSpaceOnUse">
-          <stop offset="0" :stop-color="stopColorLight" />
-          <stop offset="1" :stop-color="stopColorDark" />
+        <linearGradient
+          id="linear-gradient-2"
+          x1="-276.41"
+          y1="379.82"
+          x2="-276.72"
+          y2="379.33"
+          gradientTransform="matrix(17.69, 0, 0, -13.7, 4908.02, 5205.92)"
+          gradientUnits="userSpaceOnUse"
+        >
+          <stop
+            offset="0"
+            :stop-color="stopColorLight"
+          />
+          <stop
+            offset="1"
+            :stop-color="stopColorDark"
+          />
         </linearGradient>
       </defs>
-      <path class="apos-spinner__svg-track" d="M11.5.32a11.1,11.1,0,1,0,11.1,11.1A11.1,11.1,0,0,0,11.5.32Zm0,5.2a5.9,5.9,0,1,1-5.9,5.9A5.9,5.9,0,0,1,11.5,5.52Z" fill="url(#linear-gradient)" />
-      <path class="apos-spinner__svg-spinner" d="M11.5.32a11.1,11.1,0,0,1,11.1,11.1,2.6,2.6,0,0,1-5.19.17v-.17a5.9,5.9,0,0,0-5.9-5.9A5.83,5.83,0,0,0,9,6.07l-.29.14A2.6,2.6,0,1,1,6.29,1.62,11,11,0,0,1,11.5.32Z" fill="url(#linear-gradient-2)" />
+      <path
+        class="apos-spinner__svg-track"
+        d="M11.5.32a11.1,11.1,0,1,0,11.1,11.1A11.1,11.1,0,0,0,11.5.32Zm0,5.2a5.9,5.9,0,1,1-5.9,5.9A5.9,5.9,0,0,1,11.5,5.52Z"
+        fill="url(#linear-gradient)"
+      />
+      <path
+        class="apos-spinner__svg-spinner"
+        d="M11.5.32a11.1,11.1,0,0,1,11.1,11.1,2.6,2.6,0,0,1-5.19.17v-.17a5.9,5.9,0,0,0-5.9-5.9A5.83,5.83,0,0,0,9,6.07l-.29.14A2.6,2.6,0,1,1,6.29,1.62,11,11,0,0,1,11.5.32Z"
+        fill="url(#linear-gradient-2)"
+      />
     </svg>
     <svg
       v-else
@@ -35,19 +71,65 @@
       :style="style"
     >
       <defs>
-        <linearGradient id="a" x1="8.042%" y1="0%" x2="65.682%" y2="23.865%">
-          <stop stop-color="currentColor" stop-opacity="0" offset="0%" />
-          <stop stop-color="currentColor" stop-opacity=".631" offset="63.146%" />
-          <stop stop-color="currentColor" offset="100%" />
+        <linearGradient
+          id="a"
+          x1="8.042%"
+          y1="0%"
+          x2="65.682%"
+          y2="23.865%"
+        >
+          <stop
+            stop-color="currentColor"
+            stop-opacity="0"
+            offset="0%"
+          />
+          <stop
+            stop-color="currentColor"
+            stop-opacity=".631"
+            offset="63.146%"
+          />
+          <stop
+            stop-color="currentColor"
+            offset="100%"
+          />
         </linearGradient>
       </defs>
-      <g fill="none" fill-rule="evenodd">
+      <g
+        fill="none"
+        fill-rule="evenodd"
+      >
         <g transform="translate(1 1)">
-          <path id="Oval-2" d="M36 18c0-9.94-8.06-18-18-18" stroke="url(#a)" stroke-width="2" transform="rotate(266.312 18 18)">
-            <animateTransform attributeName="transform" type="rotate" from="0 18 18" to="360 18 18" dur="0.9s" repeatCount="indefinite" />
+          <path
+            id="Oval-2"
+            d="M36 18c0-9.94-8.06-18-18-18"
+            stroke="url(#a)"
+            stroke-width="2"
+            transform="rotate(266.312 18 18)"
+          >
+            <animateTransform
+              attributeName="transform"
+              type="rotate"
+              from="0 18 18"
+              to="360 18 18"
+              dur="0.9s"
+              repeatCount="indefinite"
+            />
           </path>
-          <circle fill="currentColor" cx="36" cy="18" r="1" transform="rotate(266.312 18 18)">
-            <animateTransform attributeName="transform" type="rotate" from="0 18 18" to="360 18 18" dur="0.9s" repeatCount="indefinite" />
+          <circle
+            fill="currentColor"
+            cx="36"
+            cy="18"
+            r="1"
+            transform="rotate(266.312 18 18)"
+          >
+            <animateTransform
+              attributeName="transform"
+              type="rotate"
+              from="0 18 18"
+              to="360 18 18"
+              dur="0.9s"
+              repeatCount="indefinite"
+            />
           </circle>
         </g>
       </g>

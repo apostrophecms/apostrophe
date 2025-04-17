@@ -68,8 +68,8 @@ describe('Big Upload', function() {
     // Emulate the browser-side apos.http object just barely well enough to test
     // big-upload-client server-side.
     //
-    // self.apos.http won't work for this task because it is based on node-fetch 2
-    // which doesn't have a 100% browser-compatible API for blobs
+    // self.apos.http won't work for this task because it is based on
+    // node-fetch 2 which doesn't have a 100% browser-compatible API for blobs
 
     const http = {
       async post(url, options) {

@@ -61,33 +61,38 @@ module.exports = (self) => {
 
     // Get entrypoints configuration for the build module.
     // Provide recompute `true` to force the recomputation of the entrypoints.
-    // This is useful in HMR mode, where after a "create" file event, the verified bundles
-    // can change and the entrypoints configuration should be updated. Usually the
-    // the core asset module will take care of this.
+    // This is useful in HMR mode, where after a "create" file event, the
+    // verified bundles can change and the entrypoints configuration should be
+    // updated. Usually the the core asset module will take care of this.
     // Optional `types` array can be provided to filter the entrypoints by type.
     //
     // Returns an array of objects with the following properties:
     // - `name`: the entrypoint name. It's usually the relative to `ui` folder
     //   name(`src`, `apos`, `public`) or an extra bundle name.
-    // - `label`: the human-readable label for the entrypoint, used to print CLI messages.
-    // - `type`: (enum) the entrypoint type. It can be `index`, `apos`, `custom` (e.g. extra bundles) or
-    // - `ignoreSources`: an array of sources that shouldn't be processed when creating the entrypoint.
-    // - `sources`: an object with `js` and `scss` arrays of extra sources to be included in the entrypoint.
-    //    These sources are not affected by the `ignoreSources` configuration.
-    // - `extensions`: an optional object with the additional configuration for the entrypoint, gathered from the
-    //    `build.extensions` modules property.
-    // - `prologue`: a string with the prologue to be added to the entrypoint.
-    // - `condition`: the JS `module` or `nomodule` condition. Undefined for no specific condition.
-    // - `outputs`: an array of output extensions for the entrypoint (currently not fully utilized)
-    // - `inputs`: an array of input extensions for the entrypoint (currently not fully utilized)
-    // - `scenes`: an array of scenes to be in the final post-bundle step. The scenes are instructions
-    //   for the Apostrophe core to combine the builds and release them. Currently supported scenes are
-    //   `apos` and `public` and custom scene names equal to extra bundle (only those who should be
-    //   loaded separately in the browser).
+    // - `label`: the human-readable label for the entrypoint, used to print
+    // CLI messages. - `type`: (enum) the entrypoint type. It can be `index`,
+    // `apos`, `custom` (e.g. extra bundles) or - `ignoreSources`: an array of
+    // sources that shouldn't be processed when creating the entrypoint. -
+    // `sources`: an object with `js` and `scss` arrays of extra sources to be
+    // included in the entrypoint. These sources are not affected by the
+    // `ignoreSources` configuration. - `extensions`: an optional object with
+    // the additional configuration for the entrypoint, gathered from the
+    // `build.extensions` modules property. - `prologue`: a string with the
+    // prologue to be added to the entrypoint. - `condition`: the JS `module` or
+    // `nomodule` condition. Undefined for no specific condition. - `outputs`:
+    // an array of output extensions for the entrypoint (currently not fully
+    // utilized) - `inputs`: an array of input extensions for the entrypoint
+    // (currently not fully utilized) - `scenes`: an array of scenes to be in
+    // the final post-bundle step. The scenes are instructions for the
+    // Apostrophe core to combine the builds and release them. Currently
+    // supported scenes are `apos` and `public` and custom scene names equal to
+    // extra bundle (only those who should be loaded separately in the browser).
     //
-    // Additonal properties added after entrypoints are processed by the core and the external build module:
-    // - `manifest`: object, see the manifest section of `configureBuildModule()` docs for more information.
-    // - `bundles`: a `Set` containing the bundle names that this entrypoint is part of (both css and js).
+    // Additional properties added after entrypoints are processed by the core
+    // and the external build module: - `manifest`: object, see the manifest
+    // section of `configureBuildModule()` docs for more information. -
+    // `bundles`: a `Set` containing the bundle names that this entrypoint is
+    // part of (both css and js).
     getBuildEntrypoints(types, recompute = false) {
       if (!self.hasBuildModule()) {
         return self.builds;
@@ -111,18 +116,22 @@ module.exports = (self) => {
     // The entrypoint parameter is an item from the entrypoints configuration.
     // See `getBuildEntrypoints()` for the entrypoint configuration schema.
     // the following methods:
-    // - getSourceFiles(meta, { composePath? }): get the source files for the entrypoint.
-    //   The `composePath` is an optional function to compose the path to the source file.
-    //   It accepts `file` (a relative to `ui/{folderToSearch}` file path) and `metaEntry`
-    //   (the module metadata entry, see `computeSourceMeta()`).
-    // - async getOutput(sourceFiles, { modules, suppressErrors }): get the output data for the entrypoint.
-    //   The `sourceFiles` is in format compatible with the output of `manager.getSourceFiles()`.
-    //   The `modules` option is the list of all modules, usually the cached result
-    //   of `self.getRegisteredModules()`. `suppressErrors` is an optional boolean to suppress
-    //   the errors in the output generation (useful in the development environment and HMR).
-    // - match(relPath, rootPath): vote on whether a given source file is part of this entrypoint. The `relPath`
-    //   is a relative to the `ui` folder path (e.g. `src/index.js`). The `rootPath` is the absolute path to the
-    //   `ui` folder. The method should return boolean `true` if the file is part of the entrypoint.
+    // - getSourceFiles(meta, { composePath? }): get the source files for the
+    // entrypoint. The `composePath` is an optional function to compose the path
+    // to the source file. It accepts `file` (a relative to
+    // `ui/{folderToSearch}` file path) and `metaEntry` (the module metadata
+    // entry, see `computeSourceMeta()`). - async getOutput(sourceFiles, {
+    // modules, suppressErrors }): get the output data for the entrypoint. The
+    // `sourceFiles` is in format compatible with the output of
+    // `manager.getSourceFiles()`. The `modules` option is the list of all
+    // modules, usually the cached result of `self.getRegisteredModules()`.
+    // `suppressErrors` is an optional boolean to suppress the errors in the
+    // output generation (useful in the development environment and HMR). -
+    // match(relPath, rootPath): vote on whether a given source file is part of
+    // this entrypoint. The `relPath` is a relative to the `ui` folder path
+    // (e.g. `src/index.js`). The `rootPath` is the absolute path to the `ui`
+    // folder. The method should return boolean `true` if the file is part of
+    // the entrypoint.
     getEntrypointManger(entrypoint) {
       return getBuildManager(entrypoint);
     },
@@ -132,26 +141,22 @@ module.exports = (self) => {
       return self.modulesToBeInstantiated;
     },
 
-    // A high level public helper for writing entrypoint files based on the generated
-    // by an entrypoint manager output.
-    // Write the entrypoint file in the build source folder. The possible
-    // argument properties:
-    // - importFile: The absolute path to the entrypoint file. No file is written
-    //   if the property is not provided.
-    // - prologue: The prologue string to prepend to the file.
-    // - icons: The admin UI icon import code. Should be in a format compatible to
-    //   the `getImportFileOutput()` output.
-    // - components: The admin UI component import code. Should be in a format compatible to
-    //   the `getImportFileOutput()` output.
-    // - tiptap: The admin UI tiptap import code. Should be in a format compatible to
-    //   the `getImportFileOutput()` output.
-    // - apps: The admin UI app import code. Should be in a format compatible to
-    //   the `getImportFileOutput()` output.
-    // - js: A generic JS import code. Should be in a format compatible to
-    //   the `getImportFileOutput()` output.
-    // - scss: A generic Sass import code. Should be in a format compatible to
-    //   the `getImportFileOutput()` output.
-    // - raw: string raw content to write to the file.
+    // A high level public helper for writing entrypoint files based on the
+    // generated by an entrypoint manager output. Write the entrypoint file in
+    // the build source folder. The possible argument properties: - importFile:
+    // The absolute path to the entrypoint file. No file is written if the
+    // property is not provided. - prologue: The prologue string to prepend to
+    // the file. - icons: The admin UI icon import code. Should be in a format
+    // compatible to the `getImportFileOutput()` output. - components: The admin
+    // UI component import code. Should be in a format compatible to the
+    // `getImportFileOutput()` output. - tiptap: The admin UI tiptap import
+    // code. Should be in a format compatible to the `getImportFileOutput()`
+    // output. - apps: The admin UI app import code. Should be in a format
+    // compatible to the `getImportFileOutput()` output. - js: A generic JS
+    // import code. Should be in a format compatible to the
+    // `getImportFileOutput()` output. - scss: A generic Sass import code.
+    // Should be in a format compatible to the `getImportFileOutput()` output. -
+    // raw: string raw content to write to the file.
     //
     // Only the `importFile` property is required. The rest will be used
     // to generate the entrypoint file content only when available.
@@ -204,9 +209,9 @@ function invoke() {
       return output;
     },
 
-    // Helper function for external build modules to find the last package change timestamp
-    // in milliseconds. Works with Node.js and npm, yarn, and pnpm package managers.
-    // Might be extended if a need arises.
+    // Helper function for external build modules to find the last package
+    // change timestamp in milliseconds. Works with Node.js and npm, yarn, and
+    // pnpm package managers. Might be extended if a need arises.
     async getSystemLastChangeMs() {
       const packageLock = await findPackageLock();
       if (!packageLock) {
@@ -232,9 +237,9 @@ function invoke() {
     },
 
     // Retrieve saved during build core metadata. The metadata is saved in the
-    // `.manifest.json` file in the bundle root directory. The manifest format is
-    // independent, internal standard (see `saveBuildManifest()` method docs).
-    // Additional property `bundles` (Set). See the manifest section in
+    // `.manifest.json` file in the bundle root directory. The manifest format
+    // is independent, internal standard (see `saveBuildManifest()` method
+    // docs). Additional property `bundles` (Set). See the manifest section in
     // `configureBuildModule()` method docs for more information.
     async loadSavedBuildManifest(silent = false) {
       const manifestPath = path.join(self.getBundleRootDir(), '.manifest.json');
@@ -254,23 +259,24 @@ function invoke() {
       self.restartId = self.apos.util.generateId();
     },
 
-    // A low-level helper to compute the source metadata for the external modules.
-    // Compute UI source and public files metadata of all modules.The result array
-    // order follows the following rules:
-    // - process modules in the order they are passed
-    // - process each module chain starting from the base parent instance and ending with the
-    //   the final extension
-    // This complies with a "last wins" strategy for sources overrides - the last module in the chain should
-    // win. Handling override scenarios is NOT the responsibility of this method, it only provides the
-    // metadata in the right order.
+    // A low-level helper to compute the source metadata for the external
+    // modules. Compute UI source and public files metadata of all modules.The
+    // result array order follows the following rules: - process modules in the
+    // order they are passed - process each module chain starting from the base
+    // parent instance and ending with the the final extension This complies
+    // with a "last wins" strategy for sources overrides - the last module in
+    // the chain should win. Handling override scenarios is NOT the
+    // responsibility of this method, it only provides the metadata in the right
+    // order.
     //
     // If the `asyncHandler` is an optional async function, it will be called
     // for each module entry. This is useful for external build modules to
     // e.g. copy files to the build directory during the traversal.
     //
-    // The `modules` option is usually the result of `self.getRegisteredModules()`.
-    // It's not resolved internally to avoid overhead (it's not cheap). The caller
-    // is responsible for resolving and caching the modules list.
+    // The `modules` option is usually the result of
+    // `self.getRegisteredModules()`. It's not resolved internally to avoid
+    // overhead (it's not cheap). The caller is responsible for resolving and
+    // caching the modules list.
     //
     // Returns an array of objects with the following properties:
     //   - dirname - absolute module path with `/ui` appended.
@@ -285,8 +291,8 @@ function invoke() {
     //   - `npm`: a boolean indicating if the module is a npm module
     //   - `files`: an array of paths paths relative to the module `ui/` folder,
     //   - `exists`: a boolean indicating if the `dirname` exists.
-    //   - `symlink`: a boolean indicating if the npm module is a symlink. Non-npm
-    //     modules are always considered as non-symlinks.
+    // - `symlink`: a boolean indicating if the npm module is a symlink.
+    // Non-npm modules are always considered as non-symlinks.
     async computeSourceMeta({
       modules,
       stats = true,
@@ -419,55 +425,38 @@ function invoke() {
     // }
     //
     // If the `skipPredicates` option is set to `true`, the function will skip
-    // the predicates and only validate and include the extra sources if provided.
-    // In this case, the `predicates` object values (the functions) will be ignored and can be
-    // set to `null`.
-    // Example:
-    // const sources = self.apos.asset.findSourceFiles(
-    //   meta,
-    //   self.myComposeSourceImportPath,
-    //   {
-    //     js: null,
-    //     scss: null
-    //   },
-    //   {
-    //     skipPredicates: true,
-    //     extraSources: {
-    //       js: [
-    //         '/path/to/module-name/file.js'
-    //       ],
-    //       scss: [
-    //         '/path/to/module-name/file.scss'
-    //       ]
-    //     }
-    //   }
-    // );
+    // the predicates and only validate and include the extra sources if
+    // provided. In this case, the `predicates` object values (the functions)
+    // will be ignored and can be set to `null`. Example: const sources =
+    // self.apos.asset.findSourceFiles( meta, self.myComposeSourceImportPath, {
+    // js: null, scss: null }, { skipPredicates: true, extraSources: { js: [
+    // '/path/to/module-name/file.js' ], scss: [
+    // '/path/to/module-name/file.scss' ] } } );
     //
     // The `options` object can be used to customize the filtering.
     // The following options are available:
     // - extraSources: An object with the same structure as the `predicates`
     //   object. The object values should be arrays of absolute paths to the
     //   source files. The files will be validated against the metadata and
-    //   included in the output regardless of the predicates and the `ignoreSources`
-    //   option.
-    // - componentOverrides: If `true`, the function will filter out earlier
-    //   versions of a component if a later version exists. If an array of
-    //   predicate names is passed, the function will only filter the components
-    //   for the given predicates. For example, passing `['js']` will only
-    //   apply the override algorithm to the result of the `js` predicate.
-    // - ignoreSources: An array of source files to ignore. The files should
-    //   be absolute paths.
-    // - skipPredicates: If `true`, the function will skip the predicates and
-    //   only include the extra sources if provided. This option makes no sense
-    //   if the `extraSources` option is not provided.
-    // - pathComposer: A function to compose the path to the source file. See
-    //   above for more information.
+    // included in the output regardless of the predicates and the
+    // `ignoreSources` option. - componentOverrides: If `true`, the function
+    // will filter out earlier versions of a component if a later version
+    // exists. If an array of predicate names is passed, the function will only
+    // filter the components for the given predicates. For example, passing
+    // `['js']` will only apply the override algorithm to the result of the `js`
+    // predicate. - ignoreSources: An array of source files to ignore. The files
+    // should be absolute paths. - skipPredicates: If `true`, the function will
+    // skip the predicates and only include the extra sources if provided. This
+    // option makes no sense if the `extraSources` option is not provided. -
+    // pathComposer: A function to compose the path to the source file. See
+    // above for more information.
     //
     // Usage:
     // const sources = self.apos.asset.findSourceFiles(
     //   meta,
     //   {
-    //     js: (file, entry) => file.startsWith(`${entry.name}/components/`) && file.endsWith('.vue')
+    //     js: (file, entry) => file.startsWith(`${entry.name}/components/`) &&
+    //      file.endsWith('.vue')
     //   },
     //   {
     //     componentOverrides: true
@@ -604,8 +593,8 @@ function invoke() {
     // The components array should contain objects with `component` and `path`
     // properties (usually the output of `findSourceFiles()` method).
     // The `component` property is the relative path to the file
-    // from within the apos-build folder, and the `path` property is the absolute
-    // path to the original file.
+    // from within the apos-build folder, and the `path` property is the
+    // absolute path to the original file.
     //
     // The `options` object can be used to customize the output.
     // The following options are available:
@@ -620,11 +609,11 @@ function invoke() {
     //   components as functions.
     // - importSuffix: A string that will be appended to the import name.
     // - importName: If false, the function will not generate an import name.
-    // - enumerateImports: If true, the function will enumerate the import names.
-    // - suppressErrors: If true, the function will not throw an error and will attempt
-    //   to generate a correct output. Use with caution. This option is meant to be used
-    //   in the development environment (HMR) where the build should not e.g. empty
-    //   file (when creating a new file).
+    // - enumerateImports: If true, the function will enumerate the import
+    // names. - suppressErrors: If true, the function will not throw an error
+    // and will attempt to generate a correct output. Use with caution. This
+    // option is meant to be used in the development environment (HMR) where the
+    // build should not e.g. empty file (when creating a new file).
     //
     // The function returns an object with `importCode`, `registerCode`, and
     // `invokeCode` string properties.
@@ -697,8 +686,9 @@ function invoke() {
     // Generate the import code for all registered icons (`icons` module prop).
     // The function returns an object with `importCode`, `registerCode`,
     // and `invokeCode` string properties.
-    // Modules is the cached list of modules, usually the result of `self.getRegisteredModules()`.
-    // See `getRegisteredModules()` method for more information.
+    // Modules is the cached list of modules, usually the result of
+    // `self.getRegisteredModules()`. See `getRegisteredModules()` method for
+    // more information.
     async getAposIconsOutput(modules) {
       for (const name of modules) {
         const metadata = await self.apos.synth.getMetadata(name);

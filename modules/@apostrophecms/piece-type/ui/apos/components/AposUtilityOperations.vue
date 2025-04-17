@@ -94,8 +94,8 @@ export default {
       } else if (event) {
         apos.bus.$emit(event, payload);
       } else {
-        // For backwards compatibility, because it did nothing before we should not
-        // throw a hard error here
+        // For backwards compatibility, because it did nothing before we should
+        // not throw a hard error here
         // eslint-disable-next-line no-console
         console.error('utility operation has no modalOptions.modal or eventOptions.event property');
       }

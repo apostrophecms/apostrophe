@@ -1,3 +1,4 @@
+<!-- eslint-disable max-len -->
 <template>
   <div class="apos-loading">
     <!-- Disabling since the SVG is mostly not active vue template code. -->
@@ -50,7 +51,6 @@
         </circle>
       </g>
     </svg>
-    <!-- eslint-enable vue/max-attributes-per-line -->
   </div>
 </template>
 

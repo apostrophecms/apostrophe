@@ -1,3 +1,4 @@
+<!-- eslint-disable max-len -->
 <template>
   <svg
     :ref="(el) => emit('set-arrow', el)"

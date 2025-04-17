@@ -273,8 +273,9 @@ export default {
     apos.bus.$off('apos-tree-child:removed', this.onChildRemove);
   },
   methods: {
-    // Fix for chrome when some text is selected (needed double click to check the box)
-    // Comes from sortablejs, so we avoid the event to propagate to sortablejs listener
+    // Fix for chrome when some text is selected (needed double click to check
+    // the box) Comes from sortablejs, so we avoid the event to propagate to
+    // sortablejs listener
     pointerEvent(event) {
       event.stopPropagation();
     },

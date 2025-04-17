@@ -19,9 +19,9 @@
 // may have an `ns` property. If so those translations are considered to
 // be part of the given namespace, otherwise they are considered to be
 // part of the default namespace. npm modules should always declare a
-// namespace, and use it via the `:` i18next syntax when localizing their phrases.
-// Multiple modules may contribute phrases to the same namespace. If the
-// object has a `browser: true` property, then the phrases will also be
+// namespace, and use it via the `:` i18next syntax when localizing their
+// phrases. Multiple modules may contribute phrases to the same namespace. If
+// the object has a `browser: true` property, then the phrases will also be
 // available in the browser for use in the Vue-based admin UI when a user is
 // logged in.
 
@@ -110,8 +110,8 @@ module.exports = {
             } else {
               route = config;
             }
-            // TODO we must set up this array based on the new route middleware section
-            // at some point
+            // TODO we must set up this array based on the new route middleware
+            // section at some point
             const url = self.getRouteUrl(name);
             if (Array.isArray(route)) {
               let routeFn = route[route.length - 1];
@@ -178,7 +178,9 @@ module.exports = {
         function wrapId(route) {
           if (Array.isArray(route)) {
             // Allow middleware, last fn is route
-            return route.slice(0, route.length - 1).concat([ wrapId(route[route.length - 1]) ]);
+            return route
+              .slice(0, route.length - 1)
+              .concat([ wrapId(route[route.length - 1]) ]);
           }
           return async req => route(req, req.params._id);
         }
@@ -213,13 +215,13 @@ module.exports = {
           };
         }
         // There is no htmlRoute because in 3.x, even data-oriented apiRoutes
-        // use standard status codes and respond simply without a wrapper object.
-        // So they are suited for both markup fragments and JSON data.
+        // use standard status codes and respond simply without a wrapper
+        // object. So they are suited for both markup fragments and JSON data.
       },
 
-      // Part of the implementation of `apiRoutes` and `renderRoutes`, this method is also handy if
-      // you wish to send an error the way `apiRoute` would upon catching an
-      // exception in middleware, etc.
+      // Part of the implementation of `apiRoutes` and `renderRoutes`, this
+      // method is also handy if you wish to send an error the way `apiRoute`
+      // would upon catching an exception in middleware, etc.
 
       routeSendError(req, err) {
         if (!(req && req.res)) {
@@ -313,13 +315,15 @@ module.exports = {
         }
       },
 
-      // Automatically called for you to add the helpers in the "helpers" section of your module.
+      // Automatically called for you to add the helpers in the "helpers"
+      // section of your module.
 
       addHelpers(object) {
         Object.assign(self.__helpers, object);
       },
 
-      // Automatically called for you to add the event handlers in the "handlers" section of your module.
+      // Automatically called for you to add the event handlers in the
+      // "handlers" section of your module.
 
       addHandlers(object) {
         Object.keys(object).forEach(eventName => {
@@ -380,8 +384,8 @@ module.exports = {
         return self.apos.template.renderStringForModule(req, s, data, self);
       },
 
-      // TIP: more often you will want `self.sendPage`, which also sends the response
-      // to the browser.
+      // TIP: more often you will want `self.sendPage`, which also sends the
+      // response to the browser.
       //
       // This method generates a complete HTML page for transmission to the
       // browser. Returns HTML markup ready to send (but `self.sendPage` is
@@ -433,8 +437,18 @@ module.exports = {
         await self.apos.area.loadDeferredWidgets(req);
         if (req.aposExternalFront) {
           data = self.apos.template.getRenderDataArgs(req, data, self);
-          await self.apos.template.annotateDataForExternalFront(req, template, data, self.__meta.name);
-          self.apos.template.pruneDataForExternalFront(req, template, data, self.__meta.name);
+          await self.apos.template.annotateDataForExternalFront(
+            req,
+            template,
+            data,
+            self.__meta.name
+          );
+          self.apos.template.pruneDataForExternalFront(
+            req,
+            template,
+            data,
+            self.__meta.name
+          );
           // Reply with JSON
           return data;
         }
@@ -474,11 +488,12 @@ module.exports = {
       // `data.query` (req.query)
       // `data.calls` (javascript markup to insert all global and
       //   request-specific calls pushed by server-side code)
-      // `data.home` (basic information about the home page, usually with ._children)
+      // `data.home` (basic information about the home page, usually with
+      // ._children)
       //
-      // First, the `@apostrophecms/page` module emits a `beforeSend` event. Handlers receive `req`,
-      // allowing them to modify `req.data`, set `req.redirect` to a URL, set
-      // `req.statusCode`, etc.
+      // First, the `@apostrophecms/page` module emits a `beforeSend` event.
+      // Handlers receive `req`, allowing them to modify `req.data`, set
+      // `req.redirect` to a URL, set `req.statusCode`, etc.
       //
       // This method is async and may be awaited although you should bear
       // in mind that a response has already been sent to the browser at
@@ -505,10 +520,10 @@ module.exports = {
         });
       },
 
-      // A cookie in session doesn't mean we can't cache, nor an empty flash or passport object.
-      // Other session properties must be assumed to be specific to the user, with a possible
-      // impact on the response, and thus mean this request must not be cached.
-      // Same rule as in [express-cache-on-demand](https://github.com/apostrophecms/express-cache-on-demand/blob/master/index.js#L102)
+      // A cookie in session doesn't mean we can't cache, nor an empty flash or
+      // passport object. Other session properties must be assumed to be
+      // specific to the user, with a possible impact on the response, and thus
+      // mean this request must not be cached. Same rule as in [express-cache-on-demand](https://github.com/apostrophecms/express-cache-on-demand/blob/master/index.js#L102)
       isSafeToCache(req) {
         if (req.user) {
           return false;
@@ -540,7 +555,9 @@ module.exports = {
         }
 
         const releaseId = self.apos.asset.getReleaseId();
-        const cacheInvalidatedAtTimestamp = (new Date(context.cacheInvalidatedAt)).getTime().toString();
+        const cacheInvalidatedAtTimestamp = (new Date(context.cacheInvalidatedAt))
+          .getTime()
+          .toString();
 
         return [ releaseId, cacheInvalidatedAtTimestamp ];
       },
@@ -557,7 +574,8 @@ module.exports = {
         }
 
         const clientETagParts = req.headers['if-none-match'] ? req.headers['if-none-match'].split(':') : [];
-        const doesETagMatch = clientETagParts[0] === eTagParts[0] && clientETagParts[1] === eTagParts[1];
+        const doesETagMatch = clientETagParts[0] === eTagParts[0] &&
+          clientETagParts[1] === eTagParts[1];
 
         const now = Date.now();
         const clientETagAge = (now - clientETagParts[2]) / 1000;
@@ -571,14 +589,14 @@ module.exports = {
         return true;
       },
 
-      // Call from init once if this module implements the `getBrowserData` method.
-      // The data returned by `getBrowserData(req)` will then be available on
-      // `apos.modules['your-module-name']` in the browser.
+      // Call from init once if this module implements the `getBrowserData`
+      // method. The data returned by `getBrowserData(req)` will then be
+      // available on `apos.modules['your-module-name']` in the browser.
       //
       // By default browser data is pushed only for the `apos` scene, so public
       // site pages will not be cluttered with it, except on the /login page and
-      // other pages that opt into the `apos` scene. If `scene` is set to `public`
-      // then the data is available all the time.
+      // other pages that opt into the `apos` scene. If `scene` is set to
+      // `public` then the data is available all the time.
       //
       // Be sure to use `extendMethods` when implementing `getBrowserData`
       // as your base class may also implement `getBrowserData`.
@@ -589,31 +607,34 @@ module.exports = {
 
       // Extend this method to return the appropriate browser data for
       // your module. If you want browser data for the given req, return
-      // an object. That object is assigned to `apos.modules['your-module-name']`
-      // in the browser. Do not return huge data structures, as this will impact
-      // page load time and performance.
+      // an object. That object is assigned to
+      // `apos.modules['your-module-name']` in the browser. Do not return huge
+      // data structures, as this will impact page load time and performance.
       //
       // If your module has an alias the data will also be accessible
       // via `apos.yourAlias`.
       //
       // Modules derived from pieces, etc. already implement this method,
-      // so be sure to follow the super pattern if you want to add additional data.
+      // so be sure to follow the super pattern if you want to add additional
+      // data.
       //
-      // For performance, this method will only be invoked if `enableBrowserData`
-      // was called. See also `enableBrowserData` for more restrictions on when
-      // this method is called; if you want data for anonymous site visitors
-      // you must explicitly opt in.
+      // For performance, this method will only be invoked if
+      // `enableBrowserData` was called. See also `enableBrowserData` for more
+      // restrictions on when this method is called; if you want data for
+      // anonymous site visitors you must explicitly opt in.
 
       getBrowserData(req) {
         return {};
       },
 
-      // Transform a route name into a route URL. If the name begins with `/` it is understood to
-      // already be a site-relative URL. Otherwise, if it contains : or *, it is considered to be
-      // module-relative but still already in URL format because the developer will have used a "/"
-      // to separate these parameters from the route name. If neither of these rules applies,
-      // the name is converted to "kebab case" and then treated as a module-relative URL, allowing
-      // method syntax to be used for most routes.
+      // Transform a route name into a route URL. If the name begins with `/`
+      // it is understood to already be a site-relative URL. Otherwise, if it
+      // contains : or *, it is considered to be module-relative but still
+      // already in URL format because the developer will have used a "/" to
+      // separate these parameters from the route name. If neither of these
+      // rules applies, the name is converted to "kebab case" and then treated
+      // as a module-relative URL, allowing method syntax to be used for most
+      // routes.
 
       getRouteUrl(name) {
         let url;
@@ -760,7 +781,9 @@ module.exports = {
                 async (span) => {
                   span.setAttribute(SemanticAttributes.CODE_FUNCTION, 'executeAfterModuleInitTask');
                   span.setAttribute(SemanticAttributes.CODE_NAMESPACE, '@apostrophecms/module');
-                  span.setAttribute(telemetry.Attributes.TARGET_NAMESPACE, self.__meta.name);
+                  span.setAttribute(
+                    telemetry.Attributes.TARGET_NAMESPACE, self.__meta.name
+                  );
                   span.setAttribute(telemetry.Attributes.TARGET_FUNCTION, name);
                   try {
                     await info.task(self.apos.argv);
@@ -877,9 +900,9 @@ module.exports = {
       },
       '@apostrophecms/express:compileRoutes': {
         compileAllRoutes() {
-          // Sections like `routes` don't populate `self.routes` until after init
-          // resolves. Call methods that bring those sections
-          // fully to life here
+          // Sections like `routes` don't populate `self.routes` until after
+          // init resolves. Call methods that bring those sections fully to life
+          // here
           self.compileRestApiRoutesToApiRoutes();
           self.compileSectionRoutes('routes');
           self.compileSectionRoutes('renderRoutes');
