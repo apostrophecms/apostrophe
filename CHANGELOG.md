@@ -1,5 +1,14 @@
 # Changelog
 
+## UNRELEASED
+
+### Adds
+
+* The new `apos.area.addWidgetOperation` method can be used to display custom operations for widgets.
+A wrapper is available in the `@apostrophecms/widget-type` module to register operations only for widgets that match the type of the module where the wrapper is invoked.
+For example, calling `self.addWidgetOperation` in the ``@apostrophecms/image-widget`` module will apply the operation exclusively to image widgets.
+A `secondaryLevel: true` option is available to add operations to the widget's controls context menu.
+
 ## 4.15.0 (2025-04-16)
 
 ### Adds
@@ -7,10 +16,6 @@
 * To display a live preview on the page as changes are made to widgets, set the `preview: true` option on any widget module. To turn it on for all widgets, you can set it on the `@apostrophecms/widget-type` module, the base class of all widget modules. This works especially well when `range` fields are used to achieve visual effects.
 * Adds separate control bar for editing tables in rich text
 * Adds ability to drag-resize rich text table columns
-* The new `apos.area.addWidgetOperation` method can be used to display custom operations for widgets.
-A wrapper is available in the `@apostrophecms/widget-type` module to register operations only for widgets that match the type of the module where the wrapper is invoked.
-For example, calling `self.addWidgetOperation` in the ``@apostrophecms/image-widget`` module will apply the operation exclusively to image widgets.
-A `secondaryLevel: true` option is available to add operations to the widget's controls context menu.
 
 ### Changes
 
