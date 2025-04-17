@@ -124,7 +124,8 @@ describe('Users', function() {
       username: 'olduser'
     })).passwordHash);
     assert.strictEqual(newHash.hashMethod, 'scrypt');
-    // Confirm the modernized end result is still verifiable with the old password
+    // Confirm the modernized end result is still verifiable with the old
+    // password
     await apos.user.verifyPassword(user, 'passwordThatWentThroughOldCredentialPackageHashing');
     try {
       // ... And not with a bogus one

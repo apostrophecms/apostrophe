@@ -60,7 +60,8 @@
 export default {
   name: 'TheAposContextBreakpointPreviewMode',
   props: {
-    // { screenName: { label: string, width: string, height: string, icon: string } }
+    // { screenName: { label: string, width: string, height: string, icon:
+    // string } }
     screens: {
       type: Object,
       validator(value, props) {

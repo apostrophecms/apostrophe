@@ -1,11 +1,13 @@
-// Provides reusable UI methods relating to the archiving and restoring documents
+// Provides reusable UI methods relating to the archiving and restoring
+// documents
 import AposAdvisoryLockMixin from 'Modules/@apostrophecms/ui/mixins/AposAdvisoryLockMixin';
 
 export default {
   methods: {
-    // A UI method to archive a document. `action` must be the base action URL of the
-    // module whose API should be invoked. If errors occur they are displayed to the user
-    // appropriately, not returned or thrown to the caller.
+    // A UI method to archive a document. `action` must be the base action URL
+    // of the module whose API should be invoked. If errors occur they are
+    // displayed to the user appropriately, not returned or thrown to the
+    // caller.
     //
     // Returns `true` if the document was ultimately archived.
 
@@ -110,8 +112,8 @@ export default {
 
             if (confirm.data && confirm.data.choice === 'this') {
               // Editor wants to archive one page but not it's children
-              // Before archiving the page in question, move the children up a level,
-              // preserving their current order
+              // Before archiving the page in question, move the children up a
+              // level, preserving their current order
               for (const child of doc._children) {
                 await apos.http.patch(`${action}/${child._id}`, {
                   body: {
@@ -228,7 +230,8 @@ export default {
           });
         }
 
-        // If restoring a page and the editor wants to leave the children in the archive
+        // If restoring a page and the editor wants to leave the children in
+        // the archive
         if (confirm && confirm.data.choice === 'this') {
           for (const child of doc._children) {
             await apos.http.patch(`${action}/${child._id}`, {

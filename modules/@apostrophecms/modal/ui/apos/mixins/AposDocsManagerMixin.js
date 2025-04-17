@@ -239,11 +239,11 @@ export default {
         // For now we add it to a set of ids to be selected on the next refresh
         // of the items array, which works well for newly inserted documents.
         // In the future this will be replaced with logic that can deal with
-        // selecting any document, but we should implement the "Really Select All,
-        // Not Just This Page" action first.
+        // selecting any document, but we should implement the "Really Select
+        // All, Not Just This Page" action first.
         //
-        // We know we always work with drafts in the media manager, so let's adapt
-        // a published doc _id without a fuss
+        // We know we always work with drafts in the media manager, so let's
+        // adapt a published doc _id without a fuss
         this.selectPending.add(doc._id.replace(':published', ':draft'));
       }
       if (action === 'archive') {

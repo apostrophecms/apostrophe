@@ -1,11 +1,11 @@
 // Bug report that motivated these tests:
 //
-// If products are related to salespeople, and salespeople have a reverse relationship
-// back to products allowing that relationship to be viewed from the other end, everything
-// works.
+// If products are related to salespeople, and salespeople have a reverse
+// relationship back to products allowing that relationship to be viewed from
+// the other end, everything works.
 //
-// But if products are also related to locations, the reverse relationship back from
-// salespeople stops working.
+// But if products are also related to locations, the reverse relationship back
+// from salespeople stops working.
 
 const t = require('../test-lib/test.js');
 const assert = require('assert');

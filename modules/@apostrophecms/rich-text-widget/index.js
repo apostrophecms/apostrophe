@@ -405,7 +405,8 @@ module.exports = {
   apiRoutes,
   methods(self) {
     return {
-      // Return just the rich text of the widget, which may be undefined or null if it has not yet been edited
+      // Return just the rich text of the widget, which may be undefined or
+      // null if it has not yet been edited
 
       getRichText(widget) {
         return widget.content;
@@ -739,8 +740,8 @@ module.exports = {
         return allowedClasses;
       },
 
-      // Returns a combined array of toolbar and insert menu items from the given
-      // set of rich text widget options
+      // Returns a combined array of toolbar and insert menu items from the
+      // given set of rich text widget options
       combinedItems(options) {
         return [ ...(options.toolbar || []), ...(options.insert || []) ];
       },
@@ -780,9 +781,9 @@ module.exports = {
           if (!self.validateAnchor(anchor)) {
             return;
           }
-          // tiptap will apply data-anchor to every tag involved in the selection
-          // at any depth. For ids and anchors this doesn't really make sense.
-          // Save the id to the first, rootmost tag involved
+          // tiptap will apply data-anchor to every tag involved in the
+          // selection at any depth. For ids and anchors this doesn't really
+          // make sense. Save the id to the first, rootmost tag involved
           if (!seen.has(anchor)) {
             $el.attr('id', anchor);
             seen.add(anchor);
@@ -1050,7 +1051,8 @@ module.exports = {
           tiptapTextCommands: self.options.tiptapTextCommands,
           tiptapTypes: self.options.tiptapTypes,
           placeholderText: self.options.placeholder && self.options.placeholderText,
-          // Not optional in presence of an insert menu, it's not acceptable UX without it
+          // Not optional in presence of an insert menu, it's not acceptable UX
+          // without it
           placeholderTextWithInsertMenu: self.options.placeholderTextWithInsertMenu,
           linkWithType: Array.isArray(self.options.linkWithType) ? self.options.linkWithType : [ self.options.linkWithType ],
           linkSchema: self.linkSchema,

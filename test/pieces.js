@@ -464,14 +464,16 @@ describe('Pieces', function() {
 
   it('should be able to retrieve the next piece from the database per sort order', async function() {
     const req = apos.task.getReq();
-    // The default sort order is reverse chronological, so "next" is older, not newer
+    // The default sort order is reverse chronological, so "next" is older, not
+    // newer
     const next = await apos.modules.thing.find(req).next(insertedTwo).toObject();
     assert(next.title === 'hello');
   });
 
   it('should be able to retrieve the previous piece from the database', async function() {
     const req = apos.task.getReq();
-    // The default sort order is reverse chronological, so "previous" is newer, not older
+    // The default sort order is reverse chronological, so "previous" is newer,
+    // not older
     const previous = await apos.modules.thing.find(req).previous(insertedOne).toObject();
     assert(previous.title === 'hello #2');
   });
@@ -1852,7 +1854,8 @@ describe('Pieces', function() {
     assert(response2.status === 200);
     assert(response2.body);
 
-    // New ETag has been generated, with the new value of the edited piece's `cacheInvalidatedAt` field...
+    // New ETag has been generated, with the new value of the edited piece's
+    // `cacheInvalidatedAt` field...
     assert(eTag2Parts[1] === pieceUpdateResponse.cacheInvalidatedAt.getTime().toString());
     // ...and a new timestamp
     assert(eTag2Parts[2] !== eTag1Parts[2]);

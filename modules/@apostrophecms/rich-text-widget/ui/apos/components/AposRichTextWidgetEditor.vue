@@ -345,9 +345,9 @@ export default {
       if (this.isVisuallyEmpty) {
         classes.push('apos-is-visually-empty');
       }
-      // Per Stu's original logic we have to deal with an edge case when the page is
-      // first loading by displaying the initial placeholder then too (showPlaceholder
-      // state not yet computed)
+      // Per Stu's original logic we have to deal with an edge case when the
+      // page is first loading by displaying the initial placeholder then too
+      // (showPlaceholder state not yet computed)
       const hasPlaceholder = this.placeholderText && this.moduleOptions.placeholder;
       if (
         (hasPlaceholder || this.insert.length) &&

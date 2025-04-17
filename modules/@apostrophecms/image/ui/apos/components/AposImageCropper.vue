@@ -140,8 +140,9 @@ export default {
     getCropperHeight() {
       const { width, height } = this.attachment;
 
-      // If the image is landscape, we don't set any height (properly managed by the lib)
-      // Otherwise we want to avoid the cropper to exceed the max height
+      // If the image is landscape, we don't set any height (properly managed
+      // by the lib) Otherwise we want to avoid the cropper to exceed the max
+      // height
       return width > height || height <= this.containerHeight
         ? 'auto'
         : '100%';
@@ -206,10 +207,10 @@ export default {
       this.focalPointDragCoordinates.clientX = event.clientX;
       this.focalPointDragCoordinates.clientY = event.clientY;
 
-      // For some reason, positioning the focal point at the very top of the image
-      // results in having a negative `top` value.
-      // Let's apply a margin of error for every edge to prevent having `null`
-      // focal point values when placing it at the image borders.
+      // For some reason, positioning the focal point at the very top of the
+      // image results in having a negative `top` value. Let's apply a margin of
+      // error for every edge to prevent having `null` focal point values when
+      // placing it at the image borders.
       const MARGIN_OF_ERROR = 1;
 
       const limits = {

@@ -55,7 +55,8 @@ module.exports = function(self) {
           if (handlers) {
             for (const handler of handlers) {
 
-              // Create an active "inner" span for each handler using the parent as a context
+              // Create an active "inner" span for each handler using the
+              // parent as a context
               const spanHandlerName = spanEmitName + `:handler:${handler.moduleName}:${handler.handlerName}`;
               await telemetry.startActiveSpan(spanHandlerName, async (spanHandler) => {
                 spanHandler.setAttribute(SemanticAttributes.CODE_FUNCTION, handler.handlerName);

@@ -1,6 +1,7 @@
 module.exports = {
   init(self) {
-    // Actual error method is aliased for brevity, encouraging use of the mechanism
+    // Actual error method is aliased for brevity, encouraging use of the
+    // mechanism
     self.apos.error = self.error;
   },
   methods(self) {
@@ -14,11 +15,11 @@ module.exports = {
       //
       // Certain values of `name` match to certain HTTP status codes; see
       // the `http` module. If the error is caught by Apostrophe's `apiRoute`
-      // or `restApiRoute` mechanism, and `name` matches to a status code, an appropriate
-      // HTTP error is sent, and `data` is sent as a JSON object, with `message`
-      // as an additional property if present. If it doesn't match, a plain 500 error
-      // is sent to avoid disclosing inappropriate information and the error is only
-      // logged by Apostrophe server-side.
+      // or `restApiRoute` mechanism, and `name` matches to a status code, an
+      // appropriate HTTP error is sent, and `data` is sent as a JSON object,
+      // with `message` as an additional property if present. If it doesn't
+      // match, a plain 500 error is sent to avoid disclosing inappropriate
+      // information and the error is only logged by Apostrophe server-side.
       //
       // For brevity, this method is aliased as `apos.error`.
       error(name, message = null, data = {}) {

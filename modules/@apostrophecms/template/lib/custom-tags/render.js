@@ -89,7 +89,8 @@ module.exports = (self) => {
       // A `noop` function for `rendercaller`
       let rendercaller = () => '';
       if (hasBody) {
-        // wait for the body to be parsed to a string and let caller return safe string
+        // wait for the body to be parsed to a string and let caller return
+        // safe string
         const renderBody = await util.promisify(rest.pop())();
         rendercaller = () => self.safe(renderBody);
       }

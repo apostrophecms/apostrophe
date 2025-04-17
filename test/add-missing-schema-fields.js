@@ -258,7 +258,8 @@ describe('add missing schema fields', function() {
                     },
                     vanilla: {
                       type: 'boolean',
-                      // Verify change of default does NOT mess up an existing property
+                      // Verify change of default does NOT mess up an existing
+                      // property
                       def: true
                     },
                     strawberry: {
@@ -312,8 +313,8 @@ describe('add missing schema fields', function() {
       assert.strictEqual(product.addresses[0].city, 'Philadelphia');
     }
 
-    // Direct invocation to make sure an additional invocation with the same schemas
-    // does no new work
+    // Direct invocation to make sure an additional invocation with the same
+    // schemas does no new work
 
     const { scans, updates } = await apos.migration.addMissingSchemaFields();
     assert.strictEqual(scans, 0);

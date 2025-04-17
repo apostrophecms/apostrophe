@@ -104,7 +104,8 @@ module.exports = {
       //
       // Examples (assume `products` extends `@apostrophecms/piece-type`):
       //
-      // `await self.apos.task.invoke('@apostrophecms/user:add', [ 'admin', 'admin' ])`
+      // `await self.apos.task.invoke('@apostrophecms/user:add', [ 'admin',
+      // 'admin' ])`
       //
       // `await self.apos.task.invoke('products:generate', { total: 20 })`
       //
@@ -208,7 +209,8 @@ module.exports = {
       },
 
       // Register error (if any) and close the current telemetry span;
-      // send a signal back to the bootstrap to exit the process with a given code.
+      // send a signal back to the bootstrap to exit the process with a given
+      // code.
 
       exit(after, code, span, err) {
         after.exit = code;

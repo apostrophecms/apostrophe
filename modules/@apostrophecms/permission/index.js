@@ -273,8 +273,9 @@ module.exports = {
         });
       },
       // Returns an object with properties describing the permissions associated
-      // with the given module, which should be a piece type or the `@apostrophecms/any-page-type`
-      // module. Used to populate the permission grid on the front end
+      // with the given module, which should be a piece type or the
+      // `@apostrophecms/any-page-type` module. Used to populate the permission
+      // grid on the front end
       describePermissionSet(req, apostropheModule, options = {}) {
         const permissionSet = {
           label: apostropheModule.options.permissionsLabel || apostropheModule.options.pluralLabel || apostropheModule.options.label,

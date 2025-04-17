@@ -117,11 +117,10 @@ export default {
     },
     // Meta components receive the original data (key `_original`) and
     // the "pure" keys (no namespace prefix) and values from their namespace.
-    // The `_original` key is useful for analyzing e.g. `area`, `array`, etc fields
-    // inside the metadata components.
-    // All registered metadata components will be rendered. It's the external
-    // component responsibility to not render itself when no matching conditions
-    // from its namespace are met.
+    // The `_original` key is useful for analyzing e.g. `area`, `array`, etc
+    // fields inside the metadata components. All registered metadata components
+    // will be rendered. It's the external component responsibility to not
+    // render itself when no matching conditions from its namespace are met.
     metaComponents() {
       const meta = {};
       for (const metaKey of Object.keys(this.meta)) {

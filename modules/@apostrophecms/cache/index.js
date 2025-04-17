@@ -1,9 +1,9 @@
 // A general purpose cache implementation for improved performance in all areas
-// where results can be retained and reused temporarily. Any number of distinct cache
-// objects can be created, identified by distinct names. The standard implementation
-// is powered by a MongoDB collection, however it is straightforward to extend this
-// module with a different implementation for some or all caches by overriding
-// its `get` method.
+// where results can be retained and reused temporarily. Any number of distinct
+// cache objects can be created, identified by distinct names. The standard
+// implementation is powered by a MongoDB collection, however it is
+// straightforward to extend this module with a different implementation for
+// some or all caches by overriding its `get` method.
 //
 // **Read the documentation for the `get` method before proceeding.**
 // The `get` method gives you a cache to store your data in.
@@ -18,8 +18,9 @@ module.exports = {
   methods(self) {
     return {
 
-      // Get the cached value associated with the specified key from the specified
-      // namespace. Returns undefined if not found. Be sure to use `await`.
+      // Get the cached value associated with the specified key from the
+      // specified namespace. Returns undefined if not found. Be sure to use
+      // `await`.
 
       async get(namespace, key) {
         const item = await self.cacheCollection.findOne({

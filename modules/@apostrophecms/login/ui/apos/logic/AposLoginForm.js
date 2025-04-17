@@ -1,7 +1,7 @@
 // This is the business logic of the AposLoginForm Vue component.
 // It is in a separate file so that you can override the component's templates
-// and styles just by copying the .vue file to your project, and leave the business logic
-// unchanged.
+// and styles just by copying the .vue file to your project, and leave the
+// business logic unchanged.
 
 import AposLoginFormMixin from 'Modules/@apostrophecms/login/mixins/AposLoginFormMixin';
 
@@ -183,8 +183,8 @@ export default {
       ])));
     },
     redirectAfterLogin() {
-      // TODO handle situation where user should be sent somewhere other than homepage.
-      // Redisplay homepage with editing interface
+      // TODO handle situation where user should be sent somewhere other than
+      // homepage. Redisplay homepage with editing interface
       this.$emit('redirect', `${apos.prefix}/`);
     },
     async requirementBlock(requirementBlock) {

@@ -438,8 +438,8 @@ export default {
       }
     },
 
-    // Determine whether or not we should adjust the label based on its position to
-    // the admin bar
+    // Determine whether or not we should adjust the label based on its
+    // position to the admin bar
     adjustUi() {
       const { height: labelHeight } = this.$refs.label.getBoundingClientRect();
       const { top: widgetTop } = this.$refs.widget.getBoundingClientRect();
@@ -531,7 +531,8 @@ export default {
     },
 
     // Hacky way to get the parents tree of a widget
-    // would be easier of areas/widgets were recursively calling each other and able to pass data all the way down
+    // would be easier of areas/widgets were recursively calling each other and
+    // able to pass data all the way down
     getBreadcrumbs() {
       if (this.breadcrumbs.$lastEl) {
         const $parent = apos.util.closest(this.breadcrumbs.$lastEl.parentNode, '[data-area-widget]');

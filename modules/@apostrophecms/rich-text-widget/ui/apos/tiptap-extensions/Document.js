@@ -4,7 +4,8 @@ export default (options) => {
   const def = options.nodes.filter(style => style.def)[0];
   let content = 'block+'; // one or more block nodes (default Document setting)
   if (def) {
-    // one/more defaultNodes (created in ./Default) or one/more other block nodes
+    // one/more defaultNodes (created in ./Default) or one/more other block
+    // nodes
     content = '(defaultNode|block)+';
   }
   return Node.create({

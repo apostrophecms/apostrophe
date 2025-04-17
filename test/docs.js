@@ -646,7 +646,8 @@ describe('Docs', function() {
       aposLocale: 'en:published'
     });
 
-    // update carl, now john (related reverse friend) should have its `cacheInvalidatedAt` field updated as well
+    // update carl, now john (related reverse friend) should have its
+    // `cacheInvalidatedAt` field updated as well
     const response = await apos.doc.update(apos.task.getReq(), {
       ...carlDoc,
       alive: false
@@ -762,7 +763,8 @@ describe('Docs', function() {
       slug: 'carl'
     }).toObject();
     await archiveDoc(apos, carlDoc);
-    // Look for the archived doc with the `deduplicate-` + its `_id` + its `name` properties.
+    // Look for the archived doc with the `deduplicate-` + its `_id` + its
+    // `name` properties.
     const doc = await apos.doc.find(req, {
       slug: 'deduplicate-carl-carl'
     }).archived(true).toObject();

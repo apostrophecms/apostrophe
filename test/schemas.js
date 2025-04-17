@@ -5225,7 +5225,8 @@ describe('Schemas', function() {
       assert.deepEqual(expected, actual);
     });
 
-    // TODO: update this test when support for conditional fields is added to relationships schemas
+    // TODO: update this test when support for conditional fields is added to
+    // relationships schemas
     it('should not error complex nested relationships required property if parents are not visible', async function() {
       const req = apos.task.getReq({ mode: 'draft' });
       const schema = apos.schema.compose({

@@ -113,8 +113,8 @@ export default {
       type: Boolean,
       default: false
     },
-    // When true, indicates that the values and selected items are arrays of objects,
-    // array of primitive values otherwise.
+    // When true, indicates that the values and selected items are arrays of
+    // objects, array of primitive values otherwise.
     objectValues: {
       type: Boolean,
       default: false

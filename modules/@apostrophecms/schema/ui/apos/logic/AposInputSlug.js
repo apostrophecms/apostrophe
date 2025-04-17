@@ -170,8 +170,8 @@ export default {
 
       let preserveDash = false;
       // When you are typing a slug it feels wrong for hyphens you typed
-      // to disappear as you go, so if the last character is not valid in a slug,
-      // restore it after we call sluggo for the full string
+      // to disappear as you go, so if the last character is not valid in a
+      // slug, restore it after we call sluggo for the full string
       if (this.focus && s.length && (sluggo(s.charAt(s.length - 1), options) === '')) {
         preserveDash = true;
       }

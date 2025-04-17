@@ -4,8 +4,8 @@ const { stripIndent } = require('common-tags');
 // An area is a series of zero or more widgets, in which users can add
 // and remove widgets and drag them to reorder them. This module implements
 // areas, with the help of a query builder in the doc module. This module also
-// provides browser-side support for invoking the players of widgets in an area and
-// for editing areas.
+// provides browser-side support for invoking the players of widgets in an area
+// and for editing areas.
 
 module.exports = {
   options: { alias: 'area' },
@@ -129,8 +129,8 @@ module.exports = {
     return {
       // Set the manager object for the given widget type name. The manager is
       // expected to provide `sanitize`, `output` and `load` methods. Normally
-      // this method is called for you when you extend the `@apostrophecms/widget-type`
-      // module, which is recommended.
+      // this method is called for you when you extend the
+      // `@apostrophecms/widget-type` module, which is recommended.
       setWidgetManager(name, manager) {
         self.widgetManagers[name] = manager;
       },
@@ -156,7 +156,8 @@ module.exports = {
       getWidgetManager(name) {
         return self.widgetManagers[name];
       },
-      // Print warning message about a missing widget type — only once per run per type.
+      // Print warning message about a missing widget type — only once per run
+      // per type.
       warnMissingWidgetType(name) {
         if (!self.missingWidgetTypes) {
           self.missingWidgetTypes = {};
@@ -177,8 +178,9 @@ module.exports = {
         area._edit = context._edit;
         return area;
       },
-      // Render the given `area` object via `area.html`, with the given `context`
-      // which may be omitted. Called for you by the `{% area %} custom tag.
+      // Render the given `area` object via `area.html`, with the given
+      // `context` which may be omitted. Called for you by the `{% area %}
+      // custom tag.
       //
       // If `inline` is true then the rendering of each widget is attached
       // to the widget as a `_rendered` property, bypassing normal full-area
@@ -450,8 +452,8 @@ module.exports = {
           );
           if (isEqual) {
             // No real change — don't waste a version and clutter the database.
-            // Sometimes only the server-side sanitizers can tell accurately that
-            // nothing has changed. -Tom
+            // Sometimes only the server-side sanitizers can tell accurately
+            // that nothing has changed. -Tom
             return;
           }
           _.set(doc, dotPath, {
@@ -492,7 +494,8 @@ module.exports = {
           // a widget or something else that isn't a top level doc type, or
           // the projection did not include type.
           //
-          // TODO: a better solution to the entire option-forwarding problem? -Tom
+          // TODO: a better solution to the entire option-forwarding problem?
+          // -Tom
           return {};
         }
         const schema = manager.schema;
@@ -512,7 +515,8 @@ module.exports = {
       // one in a `<div>...</div>` block. Of course, there may already be a div
       // in the rich txt (but then again there may not).
       //
-      // Also available as a helper via `apos.area.richText(area, options)` in templates.
+      // Also available as a helper via `apos.area.richText(area, options)` in
+      // templates.
       //
       // Content will be retrieved from any widget type that supplies a
       // `getRichText` method.
@@ -547,22 +551,23 @@ module.exports = {
       // Returns the plaintext contents  of all rich text widgets
       // within the provided doc or area, concatenated as a single string.
       //
-      // By default the rich text contents of the various widgets are joined with
-      // a newline between. You may pass your own `options.delimiter` string if
-      // you wish a different delimiter or the empty string.
+      // By default the rich text contents of the various widgets are joined
+      // with a newline between. You may pass your own `options.delimiter`
+      // string if you wish a different delimiter or the empty string.
       //
-      // Whitespace is trimmed off the leading and trailing edges of the string, and
-      // consecutive newlines are condensed to one, to better match reasonable
-      // expectations. re: text that began as HTML.
+      // Whitespace is trimmed off the leading and trailing edges of the
+      // string, and consecutive newlines are condensed to one, to better match
+      // reasonable expectations. re: text that began as HTML.
       //
-      // Pass `options.limit` to limit the number of characters. This method will
-      // return fewer characters in order to avoid cutting off in mid-word.
+      // Pass `options.limit` to limit the number of characters. This method
+      // will return fewer characters in order to avoid cutting off in mid-word.
       //
-      // By default, three periods (`...`) follow a truncated string. If you prefer,
-      // set `options.ellipsis` to a different suffix, which may be the empty string
-      // if you wish.
+      // By default, three periods (`...`) follow a truncated string. If you
+      // prefer, set `options.ellipsis` to a different suffix, which may be the
+      // empty string if you wish.
       //
-      // Also available as a helper via `apos.area.plaintext(area, options)` in templates.
+      // Also available as a helper via `apos.area.plaintext(area, options)` in
+      // templates.
       //
       // Content will be retrieved from any widget type that supplies a
       // `getRichText` method.
@@ -580,14 +585,16 @@ module.exports = {
         }
         return self.apos.util.truncatePlaintext(plaintext, options.limit, ellipsis);
       },
-      // Very handy for imports of all kinds: convert plaintext to an area with one
-      // `@apostrophecms/rich-text` widget if it is not blank, otherwise an empty area.
-      // null and undefined are tolerated and converted to empty areas.
+      // Very handy for imports of all kinds: convert plaintext to an area with
+      // one `@apostrophecms/rich-text` widget if it is not blank, otherwise an
+      // empty area. null and undefined are tolerated and converted to empty
+      // areas.
       fromPlaintext(plaintext) {
         return self.fromRichText(self.apos.util.escapeHtml(plaintext, true));
       },
-      // Convert HTML to an area with one '@apostrophecms/rich-text' widget, otherwise
-      // an empty area. null and undefined are tolerated and converted to empty areas.
+      // Convert HTML to an area with one '@apostrophecms/rich-text' widget,
+      // otherwise an empty area. null and undefined are tolerated and converted
+      // to empty areas.
       fromRichText(html) {
         const area = {
           metaType: 'area',
@@ -719,11 +726,12 @@ module.exports = {
   helpers(self) {
     return {
       // Returns the rich text markup of all `@apostrophecms/rich-text` widgets
-      // within the provided doc or area, concatenated as a single string. In future
-      // this method may improve to return the content of other widgets that consider
-      // themselves primarily providers of rich text, such as subclasses of
-      // `@apostrophecms/rich-text`, which will **not** be regarded as a bc break.
-      // However it will never return images, videos, etc.
+      // within the provided doc or area, concatenated as a single string. In
+      // future this method may improve to return the content of other widgets
+      // that consider themselves primarily providers of rich text, such as
+      // subclasses of `@apostrophecms/rich-text`, which will **not** be
+      // regarded as a bc break. However it will never return images, videos,
+      // etc.
       //
       // By default the rich text contents of the widgets are joined with
       // a newline between. You may pass your own `options.delimiter` string if
@@ -735,22 +743,23 @@ module.exports = {
       // Content will be retrieved from any widget type that supplies a
       // `getRichText` method.
       richText: function (within, options) {
-        // Use the safe filter so that the markup doesn't get double-escaped by nunjucks
+        // Use the safe filter so that the markup doesn't get double-escaped by
+        // nunjucks
         return self.apos.template.safe(self.richText(within, options));
       },
       // Returns the plaintext contents  of all rich text widgets
       // within the provided doc or area, concatenated as a single string.
       //
-      // By default the rich text contents of the various widgets are joined with
-      // a newline between. You may pass your own `options.delimiter` string if
-      // you wish a different delimiter or the empty string.
+      // By default the rich text contents of the various widgets are joined
+      // with a newline between. You may pass your own `options.delimiter`
+      // string if you wish a different delimiter or the empty string.
       //
-      // Pass `options.limit` to limit the number of characters. This method will
-      // return fewer characters in order to avoid cutting off in mid-word.
+      // Pass `options.limit` to limit the number of characters. This method
+      // will return fewer characters in order to avoid cutting off in mid-word.
       //
-      // By default, three periods (`...`) follow a truncated string. If you prefer,
-      // set `options.ellipsis` to a different suffix, which may be the empty string
-      // if you wish.
+      // By default, three periods (`...`) follow a truncated string. If you
+      // prefer, set `options.ellipsis` to a different suffix, which may be the
+      // empty string if you wish.
       //
       // Content will be retrieved from any widget type that supplies a
       // `getRichText` method.

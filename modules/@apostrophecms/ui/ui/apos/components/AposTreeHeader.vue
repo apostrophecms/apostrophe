@@ -87,7 +87,8 @@ export default {
   methods: {
     calculateWidths() {
       // TODO: widths should be calculated from a full-table perspective so that
-      // every cell's content has the opportunity to inform the overall column width.
+      // every cell's content has the opportunity to inform the overall column
+      // width.
       const colWidths = {};
 
       this.headers.forEach(col => {

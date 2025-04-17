@@ -297,7 +297,8 @@ export default {
 
   async mounted() {
     this.modal.active = true;
-    // Do these before any async work or they might get added after they are "removed"
+    // Do these before any async work or they might get added after they are
+    // "removed"
     apos.bus.$on('content-changed', this.onContentChanged);
     apos.bus.$on('command-menu-manager-close', this.confirmAndCancel);
 
@@ -368,9 +369,9 @@ export default {
 
       if (options.tags) {
         if (filtered) {
-          // We never filter the tag list because they are presented like folders,
-          // and folders don't disappear when empty. So we need to make a
-          // separate query for distinct tags if our first query was filtered
+          // We never filter the tag list because they are presented like
+          // folders, and folders don't disappear when empty. So we need to make
+          // a separate query for distinct tags if our first query was filtered
           const apiResponse = (await apos.http.get(
             this.moduleOptions.action, {
               busy: true,
@@ -634,8 +635,8 @@ export default {
       }
     },
 
-    // Keep it for later when we will be able to udpate the UI without refreshing existing
-    // because it would break pagination.
+    // Keep it for later when we will be able to udpate the UI without
+    // refreshing existing because it would break pagination.
     removeStateDoc(doc) {
       const index = this.items.findIndex(item => item._id === doc._id);
       const checkedIndex = this.checked.findIndex(checkedId => checkedId === doc._id);

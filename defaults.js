@@ -31,8 +31,8 @@ module.exports = {
     '@apostrophecms/oembed': {},
     '@apostrophecms/pager': {},
     '@apostrophecms/any-doc-type': {},
-    // global comes first so it can register a doc type manager and clean things up before
-    // pages claims any orphan page types
+    // global comes first so it can register a doc type manager and clean
+    // things up before pages claims any orphan page types
     '@apostrophecms/global': {},
     '@apostrophecms/polymorphic-type': {},
     '@apostrophecms/page': {},

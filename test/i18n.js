@@ -35,7 +35,8 @@ describe('static i18n', function() {
             }
           }
         },
-        // A base class that contributes some namespaced phrases in the new style way (subdirs)
+        // A base class that contributes some namespaced phrases in the new
+        // style way (subdirs)
         'base-type': {
           instantiate: false
         },
@@ -95,7 +96,8 @@ describe('static i18n', function() {
   });
 
   it('should merge translations in different languages of the same phrases from @apostrophecms/i18n and a different module (fr)', function() {
-    // je suis désolé re: Google Translate-powered French test, feel free to PR better example
+    // je suis désolé re: Google Translate-powered French test, feel free to PR
+    // better example
     assert.strictEqual(apos.task.getReq({ locale: 'fr' }).t('apostrophe:richTextAlignCenter'), 'Aligner Le Centre');
   });
 
@@ -244,7 +246,8 @@ describe('static i18n', function() {
     assert.strictEqual(field.def, 'fr');
 
     {
-      // adminLocale is defaultAdminLocale even if user.adminLocale is not present
+      // adminLocale is defaultAdminLocale even if user.adminLocale is not
+      // present
       const browserData = apos.i18n.getBrowserData(apos.task.getReq());
       assert.strictEqual(browserData.locale, 'en');
       assert.strictEqual(browserData.adminLocale, 'fr');

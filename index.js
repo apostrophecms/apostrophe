@@ -44,24 +44,25 @@ let defaults = require('./defaults.js');
 //
 // `openTelemetryProvider`
 //
-// If set, Apostrophe will register it as a global OpenTelemetry tracer provider.
-// The expected value is an object, an instance of TracerProvider.
-// If the Node SDK is used in the application instead of manual configuration,
-// the provider instance is only available as a
-// private property: `sdkInstance._tracerProvider`. An issue can be opened
-// to discuss the exposure of a public getter with the OpenTelemetry developers.
+// If set, Apostrophe will register it as a global OpenTelemetry tracer
+// provider. The expected value is an object, an instance of TracerProvider. If
+// the Node SDK is used in the application instead of manual configuration, the
+// provider instance is only available as a private property:
+// `sdkInstance._tracerProvider`. An issue can be opened to discuss the exposure
+// of a public getter with the OpenTelemetry developers.
 //
 // `beforeExit`
 //
 // If set, Apostrophe will invoke it (await) before invoking process.exit.
-// `beforeExit` may be an async function, will be awaited, and takes no arguments.
+// `beforeExit` may be an async function, will be awaited, and takes no
+// arguments.
 //
 // `pnpm`
 // A boolean to force on or off the pnpm related build routines. If not set,
 // an automated check will be performed to determine if pnpm is in use. We offer
 // an option, because automated check is not 100% reliable. Monorepo tools are
-// often hiding package management specifics (lock files, node_module structure, etc.)
-// in a centralized store.
+// often hiding package management specifics (lock files, node_module
+// structure, etc.) in a centralized store.
 //
 // ## Awaiting the Apostrophe function
 //
@@ -249,8 +250,9 @@ async function apostrophe(options, telemetry, rootSpan) {
       }
     };
 
-    // Signals to various (build related) places that we are running a pnpm installation.
-    // The relevant option, if set, has a higher precedence over the automated check.
+    // Signals to various (build related) places that we are running a pnpm
+    // installation. The relevant option, if set, has a higher precedence over
+    // the automated check.
     self.isPnpm = options.pnpm ??
       fs.existsSync(path.join(self.npmRootDir, 'pnpm-lock.yaml'));
 
@@ -321,8 +323,8 @@ async function apostrophe(options, telemetry, rootSpan) {
     self.apos.schema.registerAllSchemas();
     await self.apos.lock.withLock('@apostrophecms/migration:migrate', async () => {
       await self.apos.migration.migrate(self.argv);
-      // Inserts the global doc in the default locale if it does not exist; same for other
-      // singleton piece types registered by other modules
+      // Inserts the global doc in the default locale if it does not exist;
+      // same for other singleton piece types registered by other modules
       for (const apostropheModule of Object.values(self.modules)) {
         if (self.instanceOf(apostropheModule, '@apostrophecms/piece-type') && apostropheModule.options.singletonAuto) {
           await apostropheModule.insertIfMissing();
@@ -330,8 +332,8 @@ async function apostrophe(options, telemetry, rootSpan) {
       }
       await self.apos.page.implementParkAllInDefaultLocale();
       await self.apos.doc.replicate(); // emits beforeReplicate and afterReplicate events
-      // Replicate will have created the parked pages across locales if needed, but we may
-      // still need to reset parked properties
+      // Replicate will have created the parked pages across locales if needed,
+      // but we may still need to reset parked properties
       await self.apos.page.implementParkAllInOtherLocales();
     });
     await self.emit('ready'); // formerly afterInit
@@ -626,9 +628,9 @@ async function apostrophe(options, telemetry, rootSpan) {
       if (!target) {
         continue;
       }
-      // Add all the modules that want to be before this one to the target's beforeSelf.
-      // Do this recursively for every module from the beforeSelf array that has own
-      // `beforeSelf` members.
+      // Add all the modules that want to be before this one to the target's
+      // beforeSelf. Do this recursively for every module from the beforeSelf
+      // array that has own `beforeSelf` members.
       addBeforeSelfRecursive(name, m.beforeSelf, target.beforeSelf);
     }
 

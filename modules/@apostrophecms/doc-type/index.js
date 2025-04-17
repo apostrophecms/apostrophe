@@ -19,8 +19,9 @@ module.exports = {
     relationshipSuggestionIcon: 'text-box-icon',
     relationshipSuggestionFields: [ 'slug' ]
   },
-  // Adding permissions for advanced permissions to allow modules to use it without
-  // being forced to check if the module is used with advanced permissions or not.
+  // Adding permissions for advanced permissions to allow modules to use it
+  // without being forced to check if the module is used with advanced
+  // permissions or not.
   cascades: [ 'fields', 'permissions' ],
   fields(self) {
     return {
@@ -219,7 +220,8 @@ module.exports = {
     self.enableBrowserData();
     self.addContextMenu();
 
-    // force autopublish to false when not localized to avoid bizarre configuration
+    // force autopublish to false when not localized to avoid bizarre
+    // configuration
     if (!self.options.localized) {
       self.options.autopublish = false;
     }
@@ -331,7 +333,8 @@ module.exports = {
       afterDelete: {
         async deleteRelatedReverseId(req, doc) {
           // When deleting an unlocalized or draft document,
-          // we remove related reverse IDs of documents having a relation to the deleted one
+          // we remove related reverse IDs of documents having a relation to
+          // the deleted one
           if (!doc.aposMode || doc.aposMode === 'draft') {
             await self.deleteRelatedReverseId(doc, true);
           }
@@ -353,10 +356,10 @@ module.exports = {
         // The default behavior is quite useful, so you won't often need to
         // override this.
         //
-        // Each "text" is an *object* and must have at least `weight` and `text` properties.
-        // If `weight` is >= 10, the text will be included in autocomplete searches and
-        // given higher priority in full-text searches. Otherwise it will be included
-        // only in full-text searches.
+        // Each "text" is an *object* and must have at least `weight` and
+        // `text` properties. If `weight` is >= 10, the text will be included in
+        // autocomplete searches and given higher priority in full-text
+        // searches. Otherwise it will be included only in full-text searches.
         //
         // If `silent` is `true`, the `searchSummary` property will not contain
         // the text.
@@ -586,7 +589,8 @@ module.exports = {
       },
       // Return a new schema containing only fields for which the
       // current user has the permission specified by the `editPermission`
-      // property of the schema field, or there is no `editPermission`|`viewPermission` property for the field.
+      // property of the schema field, or there is no
+      // `editPermission`|`viewPermission` property for the field.
       allowedSchema(req) {
         let disabled;
         let type;
@@ -599,9 +603,9 @@ module.exports = {
         const typeIndex = _.findIndex(schema, { name: 'type' });
         if (typeIndex !== -1) {
           // This option exists so that the
-          // @apostrophecms/option-overrides and @apostrophecms/workflow modules,
-          // if present, can be used together to disable various types based
-          // on locale settings
+          // @apostrophecms/option-overrides and @apostrophecms/workflow
+          // modules, if present, can be used together to disable various types
+          // based on locale settings
           disabled = self.apos.page.getOption(req, 'disabledTypes');
           if (disabled) {
             // Take care to clone so we don't wind up modifying
@@ -657,10 +661,12 @@ module.exports = {
       },
 
       // This method provides the back end of /autocomplete routes.
-      // For the implementation of the autocomplete() query builder see autocomplete.js.
+      // For the implementation of the autocomplete() query builder see
+      // autocomplete.js.
       //
-      // "query" must contain a "field" property which is the schema relationship field
-      // that describes the relationship we're adding items to.
+      // "query" must contain a "field" property which is the schema
+      // relationship field that describes the relationship we're adding items
+      // to.
       //
       // "query" must also contain a "term" property, which is a partial
       // string to be autocompleted; otherwise an empty array is returned.
@@ -745,11 +751,12 @@ module.exports = {
       // update the doc object accordingly.
       //
       // If `options.presentFieldsOnly` is true, only fields that exist in
-      // `input` are affected. Otherwise any absent fields get their default values.
+      // `input` are affected. Otherwise any absent fields get their default
+      // values.
       //
       // To intentionally erase a field's contents when this option
-      // is present, use `null` for that input field or another representation appropriate
-      // to the type, i.e. an empty string for a string.
+      // is present, use `null` for that input field or another representation
+      // appropriate to the type, i.e. an empty string for a string.
       //
       // If `options.copyingId` is present, the doc with the given id is
       // fetched and used as defaults for any schema fields not defined
@@ -802,16 +809,17 @@ module.exports = {
         }
       },
       // Return the names of all schema fields present in the `input` object,
-      // taking into account issues like relationship fields keeping their data in
-      // a separate ids property, etc.
+      // taking into account issues like relationship fields keeping their data
+      // in a separate ids property, etc.
       fieldsPresent(input) {
         return self.schema
           .filter((field) => _.has(input, field.name))
           .map((field) => field.name);
       },
       // Returns a query that finds docs the current user can edit. Unlike
-      // find(), this query defaults to including docs in the archive. Subclasses
-      // of @apostrophecms/piece-type often extend this to remove more default filters
+      // find(), this query defaults to including docs in the archive.
+      // Subclasses of @apostrophecms/piece-type often extend this to remove
+      // more default filters
       findForEditing(req, criteria, builders) {
         const query = self.find(req, criteria).permission('edit').archived(null);
         if (builders) {
@@ -860,7 +868,8 @@ module.exports = {
         return submitted;
       },
       // Dismisses a previous submission of the given draft for review.
-      // The draft is unchanged; it simply is no longer marked as needing review.
+      // The draft is unchanged; it simply is no longer marked as needing
+      // review.
       async dismissSubmission(req, draft) {
         if (!self.apos.permission.can(req, 'publish', draft)) {
           if (!self.apos.permission.can(req, 'edit', draft)) {
@@ -880,10 +889,10 @@ module.exports = {
         });
       },
       // Publish the given draft. If `options.permissions` is explicitly
-      // set to `false`, permissions checks are bypassed. If `options.autopublishing`
-      // is true, then the `edit` permission is sufficient, otherwise the
-      // `publish` permission is checked for. Returns the draft with its
-      // new `lastPublishedAt` value.
+      // set to `false`, permissions checks are bypassed. If
+      // `options.autopublishing` is true, then the `edit` permission is
+      // sufficient, otherwise the `publish` permission is checked for. Returns
+      // the draft with its new `lastPublishedAt` value.
       async publish(req, draft, options = {}) {
         let firstTime = false;
         if (!self.isLocalized()) {
@@ -927,9 +936,9 @@ module.exports = {
           previousPublished = await self.apos.doc.db.findOne({
             _id: published._id
           });
-          // Update "previous" so we can revert the most recent publication if desired.
-          // Do this first so we don't mistakenly think all references to the
-          // attachments are already gone before we do it
+          // Update "previous" so we can revert the most recent publication if
+          // desired. Do this first so we don't mistakenly think all references
+          // to the attachments are already gone before we do it
           if (previousPublished) {
             previousPublished._id = previousPublished._id.replace(':published', ':previous');
             previousPublished.aposLocale = previousPublished.aposLocale.replace(':published', ':previous');
@@ -1041,17 +1050,19 @@ module.exports = {
           _id: draft._id
         });
 
-        // Note: calling `apos.doc.delete` removes the previous version of the document
+        // Note: calling `apos.doc.delete` removes the previous version of the
+        // document
         const clonedReq = req.clone({ mode: 'published' });
         await self.apos.doc.delete(clonedReq, published, { checkForChildren: false });
 
         return updatedDraft;
       },
-      // Localize (export) the given draft to another locale, creating the document in the
-      // other locale if necessary. By default, if the document already exists in the
-      // other locale, it is not overwritten. Use the `update: true` option to change that.
-      // You can localize starting from either draft or published content. Either way what
-      // gets created or updated in the other locale is a draft.
+      // Localize (export) the given draft to another locale, creating the
+      // document in the other locale if necessary. By default, if the document
+      // already exists in the other locale, it is not overwritten. Use the
+      // `update: true` option to change that. You can localize starting from
+      // either draft or published content. Either way what gets created or
+      // updated in the other locale is a draft.
       async localize(req, draft, toLocale, options = { update: false }) {
         if (!self.isLocalized()) {
           throw new Error(`${self.__meta.name} is not a localized type, cannot be localized`);
@@ -1068,8 +1079,8 @@ module.exports = {
         // also use permission('view') so that we are not actually restricted
         // to what we can edit, avoiding any confusion about whether there
         // is really an existing localized doc or not and preventing the
-        // possibility of inserting an unwanted duplicate. The update() call will
-        // still stop us if edit permissions are an issue
+        // possibility of inserting an unwanted duplicate. The update() call
+        // will still stop us if edit permissions are an issue
         const existing = await actionModule.findForEditing(toReq, {
           _id: toId
         }).permission('view').toObject();
@@ -1107,15 +1118,17 @@ module.exports = {
               // Replicating the home page for the first time
               result = await self.apos.doc.insert(toReq, insert);
             } else {
-              // A page that is not the home page, being replicated for the first time
+              // A page that is not the home page, being replicated for the
+              // first time
               let { lastTargetId, lastPosition } = await self.apos.page.inferLastTargetIdAndPosition(draft);
               let localizedTargetId = lastTargetId.replace(`:${draft.aposLocale}`, `:${toLocale}:draft`);
-              // When fetching the target (parent or peer), always use findForEditing
-              // so we don't miss doc templates and other edge cases, but also use
-              // .permission('view') because we are not actually editing the target
-              // and should not be blocked over edit permissions. Later change this check
-              // to 'create' ("can create a child of this doc"), but not until we're ready
-              // to do it for all creation attempts
+              // When fetching the target (parent or peer), always use
+              // findForEditing so we don't miss doc templates and other edge
+              // cases, but also use .permission('view') because we are not
+              // actually editing the target and should not be blocked over edit
+              // permissions. Later change this check to 'create' ("can create a
+              // child of this doc"), but not until we're ready to do it for all
+              // creation attempts
               const localizedTarget = await actionModule
                 .findForEditing(toReq, self.apos.page.getIdCriteria(localizedTargetId))
                 .permission('view')
@@ -1126,8 +1139,9 @@ module.exports = {
               if (!localizedTarget) {
                 if ((lastPosition === 'firstChild') || (lastPosition === 'lastChild')) {
                   throw self.apos.error('notfound', req.t('apostrophe:parentNotLocalized'), {
-                    // Also provide as data for code that prefers to localize client side
-                    // when it is certain an error message is user friendly
+                    // Also provide as data for code that prefers to localize
+                    // client side when it is certain an error message is user
+                    // friendly
                     parentNotLocalized: true
                   });
                 } else {
@@ -1139,7 +1153,8 @@ module.exports = {
                     .relationships(false)
                     .toObject();
                   if (!originalTarget) {
-                    // Almost impossible (race conditions like someone removing it while we're in the modal)
+                    // Almost impossible (race conditions like someone removing
+                    // it while we're in the modal)
                     throw self.apos.error('notfound');
                   }
                   const criteria = {
@@ -1154,8 +1169,9 @@ module.exports = {
                     .toObject();
                   if (!localizedTarget) {
                     throw self.apos.error('notfound', req.t('apostrophe:parentNotLocalized'), {
-                      // Also provide as data for code that prefers to localize client side
-                      // when it is certain an error message is user friendly
+                      // Also provide as data for code that prefers to localize
+                      // client side when it is certain an error message is user
+                      // friendly
                       parentNotLocalized: true
                     });
                   }
@@ -1324,8 +1340,8 @@ module.exports = {
       // document mode you did not pass is retrieved and compared to the
       // one you did pass.
       async isModified(req, draftOrPublished) {
-        // Straight to mongo for speed. We can even compare relationships without
-        // loading joins because we are only interested in the permanent
+        // Straight to mongo for speed. We can even compare relationships
+        // without loading joins because we are only interested in the permanent
         // storage of the ids and fields
         let draft, published;
         if (draftOrPublished._id.endsWith(':published')) {
@@ -1413,16 +1429,16 @@ module.exports = {
       },
 
       // Returns an object containing the properties of doc that
-      // were formerly deduplicated (and require restoration of the original slug
-      // and other potentially conflicting properties) when restored from the
-      // archive, used to "undo publish" or any other scenario where the slug
-      // and similar properties should once again treated as "in conflict"
-      // with content that is in play on the site. The returned object
-      // contains values for those properties that have been reduplicated, and
-      // can be passed to $set or Object.assign or both, depending on your
-      // situation. If existing docs on the site would immediately conflict,
-      // then those particular fields are left in their "deduplicated"
-      // form for the user to fix manually. `doc` is not changed.
+      // were formerly deduplicated (and require restoration of the original
+      // slug and other potentially conflicting properties) when restored from
+      // the archive, used to "undo publish" or any other scenario where the
+      // slug and similar properties should once again treated as "in conflict"
+      // with content that is in play on the site. The returned object contains
+      // values for those properties that have been reduplicated, and can be
+      // passed to $set or Object.assign or both, depending on your situation.
+      // If existing docs on the site would immediately conflict, then those
+      // particular fields are left in their "deduplicated" form for the user to
+      // fix manually. `doc` is not changed.
 
       async getRevertDeduplicationSet(req, doc) {
         if (doc.parkedId === 'archive') {
@@ -1520,7 +1536,8 @@ module.exports = {
       },
 
       // Remove forbidden fields from document
-      // A forbidden field is a field for which the current user does not have the appropriate viewPermission to see it
+      // A forbidden field is a field for which the current user does not have
+      // the appropriate viewPermission to see it
       removeForbiddenFields(req, doc) {
         if (!doc) {
           return doc;
@@ -1659,9 +1676,10 @@ module.exports = {
           def: false
         },
 
-        // `.addLateCriteria({...})` provides an object to be merged directly into the final
-        // criteria object that will go to MongoDB. This is to be used only
-        // in cases where MongoDB forbids the use of an operator inside `$and`.
+        // `.addLateCriteria({...})` provides an object to be merged directly
+        // into the final criteria object that will go to MongoDB. This is to be
+        // used only in cases where MongoDB forbids the use of an operator
+        // inside `$and`.
         //
         // TODO: Since `$near` can now be used in `$and` operators, this query
         // builder is deprecated and should be removed in the 4.x major version.
@@ -1677,13 +1695,13 @@ module.exports = {
           }
         },
 
-        // `.and({ price: { $gte: 0 } })` requires the query to match only documents
-        // with a price greater than 0, in addition to all other criteria for the
-        // query.
+        // `.and({ price: { $gte: 0 } })` requires the query to match only
+        // documents with a price greater than 0, in addition to all other
+        // criteria for the query.
         //
-        // Since this is the main way additional criteria get merged, this method
-        // performs a few transformations of the query to make it more readable
-        // when APOS_LOG_ALL_QUERIES=1 is in the environment.
+        // Since this is the main way additional criteria get merged, this
+        // method performs a few transformations of the query to make it more
+        // readable when APOS_LOG_ALL_QUERIES=1 is in the environment.
 
         and: {
           set(c) {
@@ -1816,15 +1834,16 @@ module.exports = {
               delete projection[property];
             }
             if (query.get('search')) {
-              // MongoDB mandates this if we want to sort on search result quality
+              // MongoDB mandates this if we want to sort on search result
+              // quality
               projection.textScore = { $meta: 'textScore' };
             } else if (projection.textScore) {
-              // Gracefully elide the textScore projection when it is not useful and
-              // would cause an error anyway.
+              // Gracefully elide the textScore projection when it is not
+              // useful and would cause an error anyway.
               //
-              // This allows the reuse of the `project()` value passed to one query
-              // in a second query without worrying about whether the second query
-              // contains a search or not
+              // This allows the reuse of the `project()` value passed to one
+              // query in a second query without worrying about whether the
+              // second query contains a search or not
               delete projection.textScore;
             }
             query.set('project', projection);
@@ -1844,13 +1863,13 @@ module.exports = {
           def: false
         },
 
-        // `.defaultSort({ title: 1 })` changes the default value for the `sort` query builder.
-        // The argument is the same as for the `sort` query builder: an
-        // object like `{ title: 1 }`. `false` can be passed to clear
-        // a default.
+        // `.defaultSort({ title: 1 })` changes the default value for the
+        // `sort` query builder. The argument is the same as for the `sort`
+        // query builder: an object like `{ title: 1 }`. `false` can be passed
+        // to clear a default.
         //
-        // This query builder is called by @apostrophecms/piece-type based on its
-        // `sort` configuration option.
+        // This query builder is called by @apostrophecms/piece-type based on
+        // its `sort` configuration option.
         //
         // It is distinct from the `sort` feature so that we can
         // distinguish between cases where a default sort should be ignored
@@ -1941,7 +1960,8 @@ module.exports = {
         // Sets the number of docs per page and enables the
         // use of the `page` query builder to indicate the current page number.
         //
-        // Used by `@apostrophecms/piece-type` and `@apostrophecms/piece-page-type`.
+        // Used by `@apostrophecms/piece-type` and
+        // `@apostrophecms/piece-page-type`.
 
         perPage: {
           def: undefined,
@@ -1954,7 +1974,8 @@ module.exports = {
         // overall (there is no page 0). You must also
         // use `perPage`.
         //
-        // Used by `@apostrophecms/piece-type` and `@apostrophecms/piece-page-type`.
+        // Used by `@apostrophecms/piece-type` and
+        // `@apostrophecms/piece-page-type`.
 
         page: {
           def: 1,
@@ -1969,10 +1990,10 @@ module.exports = {
           }
         },
 
-        // `.permission('edit')` would limit the returned docs to those for which the
-        // user associated with the query's `req` has the named permission.
-        // By default, `view` is checked for. You might want to specify
-        // `edit`.
+        // `.permission('edit')` would limit the returned docs to those for
+        // which the user associated with the query's `req` has the named
+        // permission. By default, `view` is checked for. You might want to
+        // specify `edit`.
         //
         // USE WITH CARE: If you pass `false`, permissions checks are disabled
         // for this particular query.
@@ -2022,11 +2043,12 @@ module.exports = {
           }
         },
 
-        // `.autocomplete('sta')` limits results to docs which are a good match for
-        // a partial string beginning with `sta`, for instance `station`. Appropriate words
-        // must exist in the title or other text schema fields of
-        // the doc (autocomplete is not full text body search). Those words
-        // are then fed back into the `search` query builder to prioritize the results.
+        // `.autocomplete('sta')` limits results to docs which are a good match
+        // for a partial string beginning with `sta`, for instance `station`.
+        // Appropriate words must exist in the title or other text schema fields
+        // of the doc (autocomplete is not full text body search). Those words
+        // are then fed back into the `search` query builder to prioritize the
+        // results.
 
         autocomplete: require('./lib/autocomplete.js')(self, query),
 
@@ -2034,9 +2056,9 @@ module.exports = {
         // Search is implemented using MongoDB's `$text` operator and a full
         // text index.
         //
-        // If this query builder is set, the `sort` query builder will default to sorting
-        // by search quality. This is important because the worst of the
-        // full-text search matches will be of very poor quality.
+        // If this query builder is set, the `sort` query builder will default
+        // to sorting by search quality. This is important because the worst of
+        // the full-text search matches will be of very poor quality.
 
         search: {
           finalize() {
@@ -2047,9 +2069,10 @@ module.exports = {
             if (search) {
               if (query.get('regexSearch')) {
                 // TODO: is this necessary in MongoDB 3.4+?
-                // A query builder like the `geo` query builder of @apostrophecms/places
-                // has warned us that `$near` or another operator incompatible
-                // with `$text` is present. We must dumb down to regex search
+                // A query builder like the `geo` query builder of
+                // @apostrophecms/places has warned us that `$near` or another
+                // operator incompatible with `$text` is present. We must dumb
+                // down to regex search
                 query.and({
                   highSearchText: self.apos.util.searchify(search)
                 });
@@ -2071,8 +2094,8 @@ module.exports = {
         // the default behavior.
         //
         // if flag is `true`, returns only docs in the archive. Note permissions
-        // would still prevent a typical site visitor from obtaining any results,
-        // but an editor might.
+        // would still prevent a typical site visitor from obtaining any
+        // results, but an editor might.
         //
         // if flag is `null` (not undefined), return
         // docs regardless of archived status.
@@ -2104,8 +2127,9 @@ module.exports = {
             return self.apos.launder.booleanOrNull(s);
           },
           choices() {
-            // For the archive query builder, it is generally a mistake not to offer "No" as a choice,
-            // even if everything is in the archive, as "No" is often the default.
+            // For the archive query builder, it is generally a mistake not to
+            // offer "No" as a choice, even if everything is in the archive, as
+            // "No" is often the default.
             return [
               {
                 value: '0',
@@ -2181,15 +2205,15 @@ module.exports = {
               return;
             }
             // Put them in the correct order as specified first
-            // We must modify the array object in place, as there is no provision
-            // for returning a new one
+            // We must modify the array object in place, as there is no
+            // provision for returning a new one
             results.splice(0, skip);
             results.splice(limit, results.length - limit);
           }
         },
 
-        // If set to true, attach a `_publishedDoc` property to each draft document,
-        // containing the related published document.
+        // If set to true, attach a `_publishedDoc` property to each draft
+        // document, containing the related published document.
 
         withPublished: {
           launder(value) {
@@ -2238,13 +2262,13 @@ module.exports = {
           }
         },
 
-        // `.relationships(true)`. Fetches relationships by default, for all types retrieved,
-        // based on the schema for each type. If `relationships(false)` is
-        // explicitly called no relationships are fetched. If
-        // `relationships([ ... ])` is invoked with an array of relationship names
-        // only those relationships and those intermediate to them
-        // are fetched (dot notation). See `@apostrophecms/schema`
-        // for more information.
+        // `.relationships(true)`. Fetches relationships by default, for all
+        // types retrieved, based on the schema for each type. If
+        // `relationships(false)` is explicitly called no relationships are
+        // fetched. If `relationships([ ... ])` is invoked with an array of
+        // relationship names only those relationships and those intermediate to
+        // them are fetched (dot notation). See `@apostrophecms/schema` for more
+        // information.
 
         relationships: {
           def: true,
@@ -2256,7 +2280,8 @@ module.exports = {
             const resultsByType = _.groupBy(results, 'type');
             for (const type of _.keys(resultsByType)) {
               const manager = self.apos.doc.getManager(type);
-              // Careful, there will be no manager if type was not part of the projection
+              // Careful, there will be no manager if type was not part of the
+              // projection
               if (manager && manager.schema) {
                 await self.apos.schema.relate(
                   query.req,
@@ -2269,11 +2294,11 @@ module.exports = {
           }
         },
 
-        // `.addUrls(true)`. Invokes the `addUrls` method of all doc type managers
-        // with relevant docs among the results, if they have one.
+        // `.addUrls(true)`. Invokes the `addUrls` method of all doc type
+        // managers with relevant docs among the results, if they have one.
         //
-        // The `addUrls` method receives `(req, docs)`. All of the docs will be of
-        // the appropriate type for that manager.
+        // The `addUrls` method receives `(req, docs)`. All of the docs will be
+        // of the appropriate type for that manager.
         //
         // The `addUrls` method should add the `._url` property to each doc,
         // if possible.
@@ -2309,10 +2334,12 @@ module.exports = {
           }
         },
 
-        // `.previous({ doc object goes here })`. If set to a doc object, this query builder will limit
-        // results to the docs that precede it in the current sort order.
+        // `.previous({ doc object goes here })`. If set to a doc object, this
+        // query builder will limit results to the docs that precede it in the
+        // current sort order.
         //
-        // In addition to the current sort, the `_id` is used as a tiebreaker sort to avoid loops.
+        // In addition to the current sort, the `_id` is used as a tiebreaker
+        // sort to avoid loops.
 
         previous: {
           def: false,
@@ -2321,10 +2348,12 @@ module.exports = {
           }
         },
 
-        // `.next({ doc object goes here })`. If set to a doc object, this query builder will limit
-        // results to the docs that follow it in the current sort order.
+        // `.next({ doc object goes here })`. If set to a doc object, this
+        // query builder will limit results to the docs that follow it in the
+        // current sort order.
         //
-        // In addition to the current sort, the `_id` is used as a tiebreaker sort to avoid loops.
+        // In addition to the current sort, the `_id` is used as a tiebreaker
+        // sort to avoid loops.
 
         next: {
           def: false,
@@ -2410,7 +2439,8 @@ module.exports = {
                   for (const item of area.items) {
                     if (area._edit) {
                       // Keep propagating ._edit so a widget can be passed
-                      // like a doc to aposArea if it contains nested areas. -Tom
+                      // like a doc to aposArea if it contains nested areas.
+                      // -Tom
                       item._edit = true;
                     }
                     item._docId = doc._id;
@@ -2478,16 +2508,17 @@ module.exports = {
             const baseQuery = query.get('choices-query-prefinalize');
             baseQuery.set('choices-query-prefinalize', null);
             for (const filter of filters) {
-              // The choices for each filter should reflect the effect of all filters
-              // except this one (filtering by topic pares down the list of categories and
-              // vice versa)
+              // The choices for each filter should reflect the effect of all
+              // filters except this one (filtering by topic pares down the list
+              // of categories and vice versa)
               const _query = baseQuery.clone();
-              // Make sure this is a legitimate builder before attempting to shut it off
+              // Make sure this is a legitimate builder before attempting to
+              // shut it off
               if (!_.has(query.builders, filter)) {
                 continue;
               }
-              // Make sure it would ever be accepted via a query parameter before attempting
-              // to shut it off
+              // Make sure it would ever be accepted via a query parameter
+              // before attempting to shut it off
               if (!query.builders[filter].launder) {
                 continue;
               }
@@ -2503,8 +2534,8 @@ module.exports = {
           }
         },
 
-        // Alternative to `choices` that also returns a count property for each choice,
-        // has a higher impact on the db
+        // Alternative to `choices` that also returns a count property for each
+        // choice, has a higher impact on the db
         counts: {
           def: false,
           launder(counts) {
@@ -2676,10 +2707,11 @@ module.exports = {
         // there is no ambiguity about what this method should do
         //
         // However, if there is no choices function or no query builder at all,
-        // the distinct database values for the property are presented as the options.
+        // the distinct database values for the property are presented as the
+        // options.
         //
-        // In this scenario the explicit values `true` or `false` receive the labels
-        // `Yes` and `No`.
+        // In this scenario the explicit values `true` or `false` receive the
+        // labels `Yes` and `No`.
         //
         // Not chainable.
 
@@ -2865,7 +2897,8 @@ module.exports = {
         // Otherwise `false` is returned. The default implementation can
         // handle `_url` and `relationship` fields (not reverse).
         //
-        // This method is a good candidate to be extended via `extendQueryMethods`.
+        // This method is a good candidate to be extended via
+        // `extendQueryMethods`.
         //
         // Not chainable.
 
@@ -2923,10 +2956,11 @@ module.exports = {
           return false;
         },
 
-        // Create a mongo query directly from the given parameters. You don't want this API.
-        // It is a low level implementation detail overridden by `@apostrophecms/optimizer` as needed.
-        // Seemingly we don't need req at all here, but overrides like @apostrophecms/optimizer need it,
-        // so it must be provided
+        // Create a mongo query directly from the given parameters. You don't
+        // want this API. It is a low level implementation detail overridden by
+        // `@apostrophecms/optimizer` as needed. Seemingly we don't need req at
+        // all here, but overrides like @apostrophecms/optimizer need it, so it
+        // must be provided
 
         lowLevelMongoCursor(req, criteria, projection, options) {
           const mongo = self.apos.doc.db.find(criteria).project(projection);
@@ -2993,8 +3027,9 @@ module.exports = {
           return query.state[key];
         },
 
-        // Invoke builders whose names are present in a `params` object (often this is `req.query`),
-        // skipping all builders without a `launder` method. Never trust a browser.
+        // Invoke builders whose names are present in a `params` object (often
+        // this is `req.query`), skipping all builders without a `launder`
+        // method. Never trust a browser.
 
         applyBuildersSafely(params) {
           for (let [ name, value ] of Object.entries(params)) {
@@ -3010,10 +3045,11 @@ module.exports = {
           return query;
         },
 
-        // Invoke the query builders whose names are present in the given object, passing the
-        // corresponding value for each, WITHOUT checking for safety or
-        // laundering the data in any way. ALWAYS use `applyBuildersSafely` instead for anything
-        // coming directly from the user. If `obj` is not an object this call does nothing.
+        // Invoke the query builders whose names are present in the given
+        // object, passing the corresponding value for each, WITHOUT checking
+        // for safety or laundering the data in any way. ALWAYS use
+        // `applyBuildersSafely` instead for anything coming directly from the
+        // user. If `obj` is not an object this call does nothing.
 
         applyBuilders(obj) {
           for (const [ name, val ] of Object.entries(obj || {})) {
@@ -3251,12 +3287,14 @@ module.exports = {
             // If a field has "sortify: true" in the schema, automatically
             // fix sort({ title: 1 }) to be sort({ titleSortify: 1 })
 
-            // If the type query builder was not used, we're limited to sortified fields that exist
-            // for all pages, but that's still useful (title).
+            // If the type query builder was not used, we're limited to
+            // sortified fields that exist for all pages, but that's still
+            // useful (title).
             //
-            // There's an @apostrophecms/page "type" that is never really in the database but
-            // has a manager thanks to @apostrophecms/any-page-type. Use that as a default
-            // so that we always get a manager object
+            // There's an @apostrophecms/page "type" that is never really in
+            // the database but has a manager thanks to
+            // @apostrophecms/any-page-type. Use that as a default so that we
+            // always get a manager object
 
             const manager = self.apos.doc.getManager(query.get('type') || '@apostrophecms/any-page-type');
             if (!(manager && manager.schema)) {
@@ -3283,11 +3321,10 @@ module.exports = {
         },
 
         // Invoked when the default sort will be used. Figure out what that is,
-        // starting with the `defaultSort` query builder's value and falling back
-        // to `title` (which the sortify behavior will turn into
-        // `titleSortify` later). Makes sure the default sort is
-        // not `search` as in the absence of an actual search
-        // a mongodb error would occur.
+        // starting with the `defaultSort` query builder's value and falling
+        // back to `title` (which the sortify behavior will turn into
+        // `titleSortify` later). Makes sure the default sort is not `search` as
+        // in the absence of an actual search a mongodb error would occur.
         //
         // A good override point for changing the default sort
         // behavior in additional ways.

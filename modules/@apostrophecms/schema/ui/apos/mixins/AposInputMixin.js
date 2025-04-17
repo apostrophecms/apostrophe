@@ -71,7 +71,8 @@ export default {
       uid: Math.random(),
       // Automatically updated for you, can be watched
       focus: false,
-      // Can be overriden at input component level to handle async field preparation
+      // Can be overriden at input component level to handle async field
+      // preparation
       fieldReady: true
     };
   },

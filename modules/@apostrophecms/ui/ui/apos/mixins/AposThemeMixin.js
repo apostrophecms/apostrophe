@@ -1,4 +1,5 @@
-// Provides computed classes for decorating top-level Apos vue apps with a UI theme
+// Provides computed classes for decorating top-level Apos vue apps with a UI
+// theme
 
 export default {
   computed: {

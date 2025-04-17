@@ -41,7 +41,8 @@ module.exports = (self) => {
           // from advanced permissions back to regular and there is a right
           // way to do that (via a task) so we should not interfere. There
           // should be no default for the password, but don't chance it;
-          // also leave advanced permission group data alone just for good measure
+          // also leave advanced permission group data alone just for good
+          // measure
           delete changes.password;
           delete changes.role;
           delete changes.groupsIds;
@@ -129,8 +130,8 @@ module.exports = (self) => {
           }
         } else if (field.type === 'relationship') {
           for (const [ key, item ] of Object.entries(doc[field.fieldsStorage] || {})) {
-            // Careful, newDotPath contains the relationship name, we are storing
-            // in the fieldsStorage property for this relationship
+            // Careful, newDotPath contains the relationship name, we are
+            // storing in the fieldsStorage property for this relationship
             const storageDotPath = dotPath ? `${dotPath}.${field.fieldsStorage}` : field.fieldsStorage;
             const itemPath = `${storageDotPath}.${key}`;
             self.addMissingSchemaFieldsFor(item, field.schema, itemPath, changes);
