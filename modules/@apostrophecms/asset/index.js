@@ -89,7 +89,7 @@ module.exports = {
     // with the internal webpack build).
     productionSourceMaps: false,
     // The configuration to control the development server and HMR when
-    // supported. The value can be: - boolen `false`: disable the dev server and
+    // supported. The value can be: - boolean `false`: disable the dev server and
     // HMR. - boolean `true`: same as `public` (default). - string `public`:
     // serve only the source files from the `ui/src` folder. - string `apos`:
     // serve only the admin UI files from the `ui/apos` folder.
@@ -392,7 +392,7 @@ module.exports = {
       // server.
       //
       // It's called only if the module supports dev server and HMR, `hmr` is
-      // enabled and if it's apporpriate to start the dev server (development
+      // enabled and if it's appropriate to start the dev server (development
       // mode, not a task, etc.). Accepts the same options as the `build`
       // method. Returns the same object as the `build` method with additional
       // development related properties: * `devServerUrl` (optional, string or
@@ -409,7 +409,7 @@ module.exports = {
       // to the external build module.
       //
       // It's called only if the module supports hmr, `hmr` is enabled and
-      // if it's apporpriate to start the watcher (development mode, not a
+      // if it's appropriate to start the watcher (development mode, not a
       // task, watch enabled etc.). The watcher is a chokidar instance that
       // watches the original module source files. The method should attach the
       // necessary listeners to the watcher. Returns void.

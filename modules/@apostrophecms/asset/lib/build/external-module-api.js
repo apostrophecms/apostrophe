@@ -88,7 +88,7 @@ module.exports = (self) => {
     // supported scenes are `apos` and `public` and custom scene names equal to
     // extra bundle (only those who should be loaded separately in the browser).
     //
-    // Additonal properties added after entrypoints are processed by the core
+    // Additional properties added after entrypoints are processed by the core
     // and the external build module: - `manifest`: object, see the manifest
     // section of `configureBuildModule()` docs for more information. -
     // `bundles`: a `Set` containing the bundle names that this entrypoint is
