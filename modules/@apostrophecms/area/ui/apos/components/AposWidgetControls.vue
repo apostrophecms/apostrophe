@@ -79,7 +79,7 @@ export default {
       default: false
     }
   },
-  emits: [ 'remove', 'edit', 'cut', 'copy', 'clone', 'up', 'down' ],
+  emits: [ 'remove', 'edit', 'cut', 'copy', 'clone', 'up', 'down', 'update' ],
   data() {
     const { widgetOperations = [] } = apos.modules['@apostrophecms/area'];
     const filteredOperations = widgetOperations.filter(operation => {
@@ -221,15 +221,21 @@ export default {
     filterByWidgetType(operation) {
       return !operation.type || operation.type === this.modelValue.type;
     },
-    handleClick({ action, modal }) {
+    async handleClick({ action, modal }) {
       if (action) {
         this.$emit(action);
       }
       if (modal) {
-        apos.modal.execute(modal, {
+        const result = await apos.modal.execute(modal, {
           widget: this.modelValue,
           field: this.areaField
         });
+        if (result.widget) {
+          // TODO: make sure the update method from
+          // modules/@apostrophecms/area/ui/apos/components/AposAreaEditor.vue
+          // does the job and does not mess with the widget type and _id:
+          this.$emit('update', result.widget);
+        }
       }
     }
   }

@@ -121,6 +121,7 @@
           @copy="$emit('copy', i);"
           @clone="$emit('clone', i);"
           @down="$emit('down', i);"
+          @update="$emit('update')"
         />
       </div>
       <!-- Still used for contextual editing components -->
