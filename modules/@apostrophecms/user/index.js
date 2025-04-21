@@ -1,17 +1,18 @@
-// The `@apostrophecms/user` module provides user accounts. It is **not** intended to
-// be extended with new subclass modules. The `@apostrophecms/login` module only
-// looks for instances of `@apostrophecms/user`. Of course you may implicitly subclass
-// it at project level (not changing the name) in order to alter its behavior.
+// The `@apostrophecms/user` module provides user accounts. It is **not**
+// intended to be extended with new subclass modules. The `@apostrophecms/login`
+// module only looks for instances of `@apostrophecms/user`. Of course you may
+// implicitly subclass it at project level (not changing the name) in order to
+// alter its behavior.
 //
 // ### Public "staff directories" vs. users
 //
-// In our experience, combining the concept of a "user" who can log in and do things
-// with the concept of a "staff member" who appears in a staff directory is more
-// trouble than it is worth.
+// In our experience, combining the concept of a "user" who can log in and do
+// things with the concept of a "staff member" who appears in a staff directory
+// is more trouble than it is worth.
 //
 // So for a staff directory, we suggest you create a separate `employee` module
-// or similar, extending `@apostrophecms/piece-type`, unless it's true that basically
-// everyone should be allowed to log in.
+// or similar, extending `@apostrophecms/piece-type`, unless it's true that
+// basically everyone should be allowed to log in.
 //
 // ### `secrets` option
 //
@@ -221,8 +222,8 @@ module.exports = {
       beforeSave: {
         // There is a migration that sets the role to admin if the role does
         // not exist, accommodating databases prior to 3.0 beta 1. To keep this
-        // from becoming a possible security concern, refuse any new inserts/updates
-        // with no role
+        // from becoming a possible security concern, refuse any new
+        // inserts/updates with no role
         async requireRole(req, doc, options) {
           if (![ 'guest', 'editor', 'contributor', 'admin' ].includes(doc.role)) {
             throw self.apos.error('invalid', 'The role property of a user must be guest, editor, contributor or admin');
@@ -242,14 +243,16 @@ module.exports = {
           }
         }
       },
-      // Reflect email and username changes in the safe after deduplicating in the piece
+      // Reflect email and username changes in the safe after deduplicating in
+      // the piece
       afterArchive: {
         async updateSafe(req, piece) {
           await self.insertOrUpdateSafe(req, piece, 'update');
         }
       },
       afterRescue: {
-        // Reflect email and username changes in the safe after deduplicating in the piece
+        // Reflect email and username changes in the safe after deduplicating
+        // in the piece
         async updateSafe(req, piece) {
           await self.insertOrUpdateSafe(req, piece, 'update');
         }
@@ -259,10 +262,11 @@ module.exports = {
   methods(self) {
     return {
 
-      // Add `username` and `email` to the list of fields that automatically get uniquely prefixed
-      // when a user is in the archive, so that they can be reused by another piece. When
-      // the piece is rescued from the archive the prefix is removed again, unless the username
-      // or email address has been claimed by another user in the meanwhile.
+      // Add `username` and `email` to the list of fields that automatically
+      // get uniquely prefixed when a user is in the archive, so that they can
+      // be reused by another piece. When the piece is rescued from the archive
+      // the prefix is removed again, unless the username or email address has
+      // been claimed by another user in the meanwhile.
 
       addOurArchivedPrefixFields() {
         self.addDeduplicatePrefixFields([
@@ -278,7 +282,8 @@ module.exports = {
         self.secrets = self.options.secrets || [];
       },
 
-      // Index and obtain access to the `aposUsersSafe` MongoDB collection as `self.safe`.
+      // Index and obtain access to the `aposUsersSafe` MongoDB collection as
+      // `self.safe`.
 
       async ensureSafe() {
         await self.ensureSafeCollection();
@@ -301,10 +306,10 @@ module.exports = {
         });
       },
 
-      // After a user is updated, check to see if the `groups` option is configured for
-      // simplified user management. If it is, convert the single-select choice made
-      // via `piece.group` to an array stored in `groupIds`, so that all other code
-      // can find groups in a consistent way.
+      // After a user is updated, check to see if the `groups` option is
+      // configured for simplified user management. If it is, convert the
+      // single-select choice made via `piece.group` to an array stored in
+      // `groupIds`, so that all other code can find groups in a consistent way.
 
       async afterConvert(req, piece) {
         if (self.options.groups) {
@@ -343,7 +348,8 @@ module.exports = {
         } else {
           const changes = { $set: safeUser };
           if (!safeUser.email) {
-            // Sparse indexes are only sparse on null/undefined, an empty string is not good enough
+            // Sparse indexes are only sparse on null/undefined, an empty
+            // string is not good enough
             changes.$unset = { email: 1 };
           }
           await self.safe.updateOne({ _id: safeUser._id }, changes);
@@ -441,11 +447,11 @@ module.exports = {
       // in `options.secrets` when configuring this module or via
       // `addSecrets` are not stored as plaintext and are not kept in the
       // aposDocs collection. Instead, they are hashed and salted using the
-      // the same algorithm applied to passwords and the resulting hash is stored
-      // in a separate `aposUsersSafe` collection. This method
-      // can be used to verify that `attempt` matches the
-      // previously hashed value for the property named `secret`,
-      // without ever storing the actual value of the secret.
+      // the same algorithm applied to passwords and the resulting hash is
+      // stored in a separate `aposUsersSafe` collection. This method can be
+      // used to verify that `attempt` matches the previously hashed value for
+      // the property named `secret`, without ever storing the actual value of
+      // the secret.
       //
       // If the secret does not match, an `invalid` error is thrown.
       // Otherwise the method returns normally.

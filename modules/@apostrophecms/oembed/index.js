@@ -6,8 +6,8 @@ const cheerio = require('cheerio');
 // oembed or do not support it well, and it is possible to add more by
 // extending the `enhanceOembetter` method. The server-side
 // code provides a query route with caching. The browser-side code
-// provides methods to make a query, and also to make a query and then immediately
-// display the result.
+// provides methods to make a query, and also to make a query and then
+// immediately display the result.
 //
 // Also see the [oembetter](https://www.npmjs.com/package/oembetter) npm module and
 // the [oembed](http://oembed.com/) documentation.
@@ -34,20 +34,25 @@ module.exports = {
   methods(self) {
     return {
 
-      // Creates an instance of the `oembetter` module and adds the standard allowlist.
-      // Called by `afterConstruct`.
+      // Creates an instance of the `oembetter` module and adds the standard
+      // allowlist. Called by `afterConstruct`.
 
       createOembetter() {
         self.oembetter = require('oembetter')();
         // Don't permit oembed of untrusted sites, which could
         // lead to XSS attacks
 
-        self.oembetter.allowlist(self.oembetter.suggestedAllowlist.concat(self.options.allowlist || [], [
-          'wufoo.com',
-          'infogr.am',
-          'slideshare.net'
-        ]));
-        self.oembetter.endpoints(self.oembetter.suggestedEndpoints.concat(self.options.endpoints || []));
+        self.oembetter.allowlist(self.oembetter.suggestedAllowlist.concat(
+          self.options.allowlist || [],
+          [
+            'wufoo.com',
+            'infogr.am',
+            'slideshare.net'
+          ])
+        );
+        self.oembetter.endpoints(
+          self.oembetter.suggestedEndpoints.concat(self.options.endpoints || [])
+        );
       },
 
       // Enhances oembetter to support services better or to support services
@@ -67,9 +72,10 @@ module.exports = {
       //
       // If `options.alwaysIframe` is true, the result is a simple
       // iframe of the URL. If `options.iframeHeight` is set, the iframe
-      // has that height in pixels, otherwise it is left to CSS. These iframe-related
-      // options are not used in core Apostrophe and remain available to project-level
-      // application code for backwards compatibility purposes only.
+      // has that height in pixels, otherwise it is left to CSS. These
+      // iframe-related options are not used in core Apostrophe and remain
+      // available to project-level application code for backwards compatibility
+      // purposes only.
       //
       // The `options` object is passed on to `oembetter.fetch`.
       //

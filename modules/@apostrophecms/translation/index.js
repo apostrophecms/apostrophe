@@ -1,6 +1,7 @@
 // ⚠️ The presence of this module in core may be temporary.
 // Its presence should not be relied upon in project development.
-// It is an implementation detail supporting @apostrophecms-pro/automatic-translation
+// It is an implementation detail supporting
+// @apostrophecms-pro/automatic-translation
 
 module.exports = {
   extend: '@apostrophecms/module',
@@ -60,8 +61,9 @@ module.exports = {
             );
           }
 
-          // Explicitly resolve the provider name to avoid errors as consequence of
-          // internal logic (empty argument vs non-existent provider).
+          // Explicitly resolve the provider name to avoid errors as
+          // consequence of internal logic (empty argument vs non-existent
+          // provider).
           const providerName = self.getProvider(aposProvider)?.name ?? '';
 
           return manager.translate(req, providerName, doc, source, target, {
@@ -145,23 +147,23 @@ module.exports = {
       // - `draft` (Object): The document to translate
       // - `source` (String): The language code of the original document
       // - `target` (String): The language code to translate the document to
-      // - `options` (Object): Additional options as passed from the beforeLocalize
-      //   event.
-      // The `translate` method should directly modify the `draft` object.
+      // - `options` (Object): Additional options as passed from the
+      // beforeLocalize event. The `translate` method should directly modify the
+      // `draft` object.
       //
-      // The provider module must also implement a `getSupportedLanguages` method
-      // that takes the following arguments:
-      // - `req` (Object): The request object
-      // - `query` (Object): An object with the following properties:
-      //    - `provider` (String): Requried, the provider name
-      //    - `source` (Array): Optional, an array of language codes to translate from
-      //    - `target` (Array): Optional, an array of language codes to translate to
-      // The method should return an object with `source` and `target` properties,
-      // each containing an array of objects with `code` and `supported` properties.
-      // The `code` property should be the language code and the `supported` property
-      // should be a boolean indicating whether the provider supports the language.
-      // If no `source` or `target` parameters are provided, the method should return
-      // all supported languages for any source or target language.
+      // The provider module must also implement a `getSupportedLanguages`
+      // method that takes the following arguments: - `req` (Object): The
+      // request object - `query` (Object): An object with the following
+      // properties: - `provider` (String): Requried, the provider name -
+      // `source` (Array): Optional, an array of language codes to translate
+      // from - `target` (Array): Optional, an array of language codes to
+      // translate to The method should return an object with `source` and
+      // `target` properties, each containing an array of objects with `code`
+      // and `supported` properties. The `code` property should be the language
+      // code and the `supported` property should be a boolean indicating
+      // whether the provider supports the language. If no `source` or `target`
+      // parameters are provided, the method should return all supported
+      // languages for any source or target language.
       //
       // Example:
       // ```js

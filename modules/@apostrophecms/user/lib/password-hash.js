@@ -24,7 +24,11 @@ function getScryptOptions(options) {
   // Per https://github.com/nodejs/node/issues/21524
   // Without this the parameters are rejected as soon as we
   // exceed the default cost of 16384
-  result.maxmem = 128 * result.parallelization * result.blockSize + 128 * (2 + result.cost) * result.blockSize;
+  result.maxmem = 128 *
+    result.parallelization *
+    result.blockSize + 128 *
+    (2 + result.cost) *
+    result.blockSize;
   return result;
 }
 

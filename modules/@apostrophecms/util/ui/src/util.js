@@ -16,12 +16,13 @@ export default () => {
   apos.util = {};
 
   // emit a custom event on the specified DOM element in a cross-browser way.
-  // If `data` is present, the properties of `data` will be available on the event object
-  // in your event listeners. For events unrelated to the DOM, we often emit on
-  // `document.body` and call `addEventListener` on `document.body` elsewhere.
+  // If `data` is present, the properties of `data` will be available on the
+  // event object in your event listeners. For events unrelated to the DOM, we
+  // often emit on `document.body` and call `addEventListener` on
+  // `document.body` elsewhere.
   //
-  // "Where is `apos.util.on`?" You don't need it, use `addEventListener`, which is
-  // standard.
+  // "Where is `apos.util.on`?" You don't need it, use `addEventListener`,
+  // which is standard.
 
   apos.util.emit = function(el, name, data) {
     let event;
@@ -115,9 +116,11 @@ export default () => {
   };
 
   // Map of widget players. Adding one is as simple as:
-  // window.apos.util.widgetPlayers['widget-name'] = function(el, data, options) {}
+  // window.apos.util.widgetPlayers['widget-name'] = function(el, data,
+  // options) {}
   //
-  // Use the widget's name, like "apostrophe-images", NOT the name of its module.
+  // Use the widget's name, like "apostrophe-images", NOT the name of its
+  // module.
   //
   // Your player receives the DOM element of the widget and the
   // pre-parsed `data` and `options` objects associated with it,
@@ -174,19 +177,22 @@ export default () => {
     }
   };
 
-  // Alias for onReadyAndRefresh, the recommended way to use and document this functionality
+  // Alias for onReadyAndRefresh, the recommended way to use and document this
+  // functionality
   apos.util.onReady = apos.util.onReadyAndRefresh.bind(apos.util.onReadyAndRefresh);
 
   // Run all the players that haven't been run. Invoked for you at DOMready
   // time. You may also invoke it if you just AJAXed in some content and
   // have reason to suspect there could be widgets in there. You may pass:
   //
-  // * Nothing at all - entire document is searched for new widgets to enhance, or
-  // * A DOM element - new widgets to enhance are found within this scope only.
+  // * Nothing at all - entire document is searched for new widgets to enhance,
+  // or * A DOM element - new widgets to enhance are found within this scope
+  // only.
   //
   // To register a widget player for the `apostrophe-images` widget, write:
   //
-  // `apos.util.widgetPlayers['apostrophe-images'] = function(el, data, options) { ... }`
+  // `apos.util.widgetPlayers['apostrophe-images'] = function(el, data,
+  // options) { ... }`
   //
   // `el` is a DOM element, not a jQuery object. Otherwise identical to
   // traditional Apostrophe widget players. `data` contains the properties
@@ -285,16 +291,17 @@ export default () => {
     return apos.assetBaseUrl + path;
   };
 
-  // Returns true if the uri references the same site (same host and port) as the
-  // current page. Cross-browser implementation, valid at least back to IE11.
-  // Regarding port numbers, this will match as long as the URIs are consistent
-  // about not explicitly specifying the port number when it is 80 (HTTP) or 443 (HTTPS),
-  // which is generally the case.
+  // Returns true if the uri references the same site (same host and port) as
+  // the current page. Cross-browser implementation, valid at least back to
+  // IE11. Regarding port numbers, this will match as long as the URIs are
+  // consistent about not explicitly specifying the port number when it is 80
+  // (HTTP) or 443 (HTTPS), which is generally the case.
 
   apos.util.sameSite = function(uri) {
     const matches = uri.match(/^(https?:)?\/\/([^/]+)/);
     if (!matches) {
-      // If URI is not absolute or protocol-relative then it is always same-origin
+      // If URI is not absolute or protocol-relative then it is always
+      // same-origin
       return true;
     }
     return window.location.host === matches[2];

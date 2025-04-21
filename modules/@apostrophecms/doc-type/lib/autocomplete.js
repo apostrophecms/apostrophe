@@ -61,7 +61,8 @@ module.exports = function(self, query) {
       // that don't actually match one of the words in the
       // autocomplete phrase
 
-      results = results.filter(result => words.find(word => result.substr(0, word.length) === word));
+      results = results
+        .filter(result => words.find(word => result.substr(0, word.length) === word));
 
       // If we match nothing, return nothing. Don't assume
       // we know what kind of query it was though.

@@ -30,7 +30,9 @@ module.exports = {
           async convert(req, field, data, destination) {
             destination[field.name] = self.apos.launder.string(data[field.name]);
 
-            if (field.required && (_.isUndefined(destination[field.name]) || !destination[field.name].toString().length)) {
+            const isUndefined = _.isUndefined(destination[field.name]) ||
+              !destination[field.name].toString().length;
+            if (field.required && isUndefined) {
               throw self.apos.error('required');
             }
 

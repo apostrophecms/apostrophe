@@ -74,8 +74,8 @@ async function createAdmin(apos, {
 
 // Resolves to a user with the specified `role`. `username` defaults to
 // `role`. `title` defaults to `username` or `role`.
-// `password` defaults to `username` or `role`. `email` defaults to `${username}@test.io`
-// where `username` can also be inferred from `role`.
+// `password` defaults to `username` or `role`. `email` defaults to
+// `${username}@test.io` where `username` can also be inferred from `role`.
 
 async function createUser(apos, role, {
   username, password, title, email

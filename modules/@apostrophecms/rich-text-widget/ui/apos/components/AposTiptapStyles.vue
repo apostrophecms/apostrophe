@@ -103,7 +103,8 @@ export default {
           t.class === item.class &&
           t.level === item.level
         );
-        // If the index of the current item is the same as the first index, keep it
+        // If the index of the current item is the same as the first index,
+        // keep it
         return index === firstIndex;
       });
 

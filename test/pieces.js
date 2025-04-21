@@ -464,14 +464,16 @@ describe('Pieces', function() {
 
   it('should be able to retrieve the next piece from the database per sort order', async function() {
     const req = apos.task.getReq();
-    // The default sort order is reverse chronological, so "next" is older, not newer
+    // The default sort order is reverse chronological, so "next" is older, not
+    // newer
     const next = await apos.modules.thing.find(req).next(insertedTwo).toObject();
     assert(next.title === 'hello');
   });
 
   it('should be able to retrieve the previous piece from the database', async function() {
     const req = apos.task.getReq();
-    // The default sort order is reverse chronological, so "previous" is newer, not older
+    // The default sort order is reverse chronological, so "previous" is newer,
+    // not older
     const previous = await apos.modules.thing.find(req).previous(insertedOne).toObject();
     assert(previous.title === 'hello #2');
   });
@@ -1632,7 +1634,12 @@ describe('Pieces', function() {
       color: 'red'
     };
 
-    await apos.modules.product.convert(req, inputPiece, existingPiece, { presentFieldsOnly: true });
+    await apos.modules.product.convert(
+      req,
+      inputPiece,
+      existingPiece,
+      { presentFieldsOnly: true }
+    );
 
     assert(Object.keys(existingPiece).length === 2);
     assert(existingPiece.title === 'new product name');
@@ -1783,7 +1790,9 @@ describe('Pieces', function() {
     const eTagParts = response.headers.etag.split(':');
 
     assert(eTagParts[0] === apos.asset.getReleaseId());
-    assert(eTagParts[1] === (new Date(response.body.cacheInvalidatedAt)).getTime().toString());
+    assert(
+      eTagParts[1] === (new Date(response.body.cacheInvalidatedAt)).getTime().toString()
+    );
     assert(eTagParts[2]);
 
     delete apos.thing.options.cache;
@@ -1852,7 +1861,8 @@ describe('Pieces', function() {
     assert(response2.status === 200);
     assert(response2.body);
 
-    // New ETag has been generated, with the new value of the edited piece's `cacheInvalidatedAt` field...
+    // New ETag has been generated, with the new value of the edited piece's
+    // `cacheInvalidatedAt` field...
     assert(eTag2Parts[1] === pieceUpdateResponse.cacheInvalidatedAt.getTime().toString());
     // ...and a new timestamp
     assert(eTag2Parts[2] !== eTag1Parts[2]);
@@ -1872,7 +1882,8 @@ describe('Pieces', function() {
 
     const eTagParts = response1.headers.etag.split(':');
     const outOfDateETagParts = [ ...eTagParts ];
-    outOfDateETagParts[2] = Number(outOfDateETagParts[2]) - (4444 + 1) * 1000; // 1s outdated
+    outOfDateETagParts[2] = Number(outOfDateETagParts[2]) -
+      (4444 + 1) * 1000; // 1s outdated
 
     const response2 = await apos.http.get('/api/v1/thing/testThing:en:published', {
       fullResponse: true,
@@ -1921,7 +1932,9 @@ describe('Pieces', function() {
     const eTagParts = response.headers.etag.split(':');
 
     assert(eTagParts[0] !== apos.asset.getReleaseId());
-    assert(eTagParts[1] !== (new Date(response.body.cacheInvalidatedAt)).getTime().toString());
+    assert(
+      eTagParts[1] !== (new Date(response.body.cacheInvalidatedAt)).getTime().toString()
+    );
 
     delete apos.thing.options.cache;
   });
@@ -1939,7 +1952,9 @@ describe('Pieces', function() {
     const eTagParts = response.headers.etag.split(':');
 
     assert(eTagParts[0] !== apos.asset.getReleaseId());
-    assert(eTagParts[1] !== (new Date(response.body.cacheInvalidatedAt)).getTime().toString());
+    assert(
+      eTagParts[1] !== (new Date(response.body.cacheInvalidatedAt)).getTime().toString()
+    );
 
     delete apos.thing.options.cache;
   });
@@ -2279,7 +2294,9 @@ describe('Pieces', function() {
           discontinued: 'April 2077'
         };
         const inserted = await apos.modules.board.insert(req, candidate);
-        const board = await apos.modules.board.find(apos.task.getAdminReq(), { _id: inserted._id }).toObject();
+        const board = await apos.modules.board
+          .find(apos.task.getAdminReq(), { _id: inserted._id })
+          .toObject();
 
         const actual = {
           title: board.title,
@@ -2411,7 +2428,9 @@ describe('Pieces', function() {
           discontinued: 'April 2077'
         };
         const inserted = await apos.modules.board.insert(req, candidate);
-        const board = await apos.modules.board.find(apos.task.getEditorReq(), { _id: inserted._id }).toObject();
+        const board = await apos.modules.board
+          .find(apos.task.getEditorReq(), { _id: inserted._id })
+          .toObject();
 
         const actual = {
           title: board.title,
@@ -2542,7 +2561,9 @@ describe('Pieces', function() {
           discontinued: 'April 2077'
         };
         const inserted = await apos.modules.board.insert(req, candidate);
-        const board = await apos.modules.board.find(apos.task.getContributorReq(), { _id: inserted._id }).toObject();
+        const board = await apos.modules.board
+          .find(apos.task.getContributorReq(), { _id: inserted._id })
+          .toObject();
 
         const actual = {
           title: board.title,

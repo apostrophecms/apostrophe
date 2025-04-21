@@ -51,21 +51,30 @@ module.exports = function(self) {
         spanEmit.setAttribute(telemetry.Attributes.EVENT_NAME, name);
 
         for (const entry of chain) {
-          const handlers = self.apos.eventHandlers[entry.name] && self.apos.eventHandlers[entry.name][name];
+          const handlers = self.apos.eventHandlers[entry.name] &&
+            self.apos.eventHandlers[entry.name][name];
           if (handlers) {
             for (const handler of handlers) {
 
-              // Create an active "inner" span for each handler using the parent as a context
+              // Create an active "inner" span for each handler using the
+              // parent as a context
               const spanHandlerName = spanEmitName + `:handler:${handler.moduleName}:${handler.handlerName}`;
               await telemetry.startActiveSpan(spanHandlerName, async (spanHandler) => {
-                spanHandler.setAttribute(SemanticAttributes.CODE_FUNCTION, handler.handlerName);
-                spanHandler.setAttribute(SemanticAttributes.CODE_NAMESPACE, handler.moduleName);
+                spanHandler.setAttribute(
+                  SemanticAttributes.CODE_FUNCTION,
+                  handler.handlerName
+                );
+                spanHandler.setAttribute(
+                  SemanticAttributes.CODE_NAMESPACE,
+                  handler.moduleName
+                );
                 spanHandler.setAttribute(telemetry.Attributes.EVENT_MODULE, moduleName);
                 spanHandler.setAttribute(telemetry.Attributes.EVENT_NAME, name);
 
                 try {
                   const module = self.apos.modules[handler.moduleName];
-                  const fn = module.compiledHandlers[entry.name][name][handler.handlerName];
+                  const fn = module
+                    .compiledHandlers[entry.name][name][handler.handlerName];
                   // Although we have `self` it can't hurt to
                   // supply the correct `this`
                   await fn.apply(module, args);
@@ -131,7 +140,8 @@ module.exports = function(self) {
       const eh = self.apos.eventHandlers[moduleName];
       eh[eventName] = eh[eventName] || [];
       if (_.find(eh[eventName], function (item) {
-        return (item.moduleName === self.__meta.name) && (item.handlerName === handlerName);
+        return (item.moduleName === self.__meta.name) &&
+          (item.handlerName === handlerName);
       })) {
         // The "event name and method name must differ" rule helps
         // prevent this situation, but it is still possible if this
@@ -145,7 +155,8 @@ module.exports = function(self) {
       });
       self.compiledHandlers = self.compiledHandlers || {};
       self.compiledHandlers[moduleName] = self.compiledHandlers[moduleName] || {};
-      self.compiledHandlers[moduleName][eventName] = self.compiledHandlers[moduleName][eventName] || {};
+      self.compiledHandlers[moduleName][eventName] = self
+        .compiledHandlers[moduleName][eventName] || {};
       self.compiledHandlers[moduleName][eventName][handlerName] = fn;
     }
 

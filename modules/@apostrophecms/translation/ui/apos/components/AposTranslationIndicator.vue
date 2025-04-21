@@ -1,3 +1,4 @@
+<!-- eslint-disable max-len -->
 <template>
   <span
     class="apos-translation-indicator"

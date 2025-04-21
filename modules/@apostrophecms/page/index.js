@@ -9,7 +9,8 @@ module.exports = {
     alias: 'page',
     types: [
       {
-        // So that the minimum parked pages don't result in an error when home has no manager. -Tom
+        // So that the minimum parked pages don't result in an error when home
+        // has no manager. -Tom
         name: '@apostrophecms/home-page',
         label: 'apostrophe:home'
       }
@@ -258,26 +259,27 @@ module.exports = {
   restApiRoutes(self) {
 
     return {
-      // Trees are arranged in a tree, not a list. So this API returns the home page,
-      // with _children populated if ?_children=1 is in the query string. An editor can
-      // also get a light version of the entire tree with ?all=1, for use in a
-      // drag-and-drop UI.
+      // Trees are arranged in a tree, not a list. So this API returns the home
+      // page, with _children populated if ?_children=1 is in the query string.
+      // An editor can also get a light version of the entire tree with ?all=1,
+      // for use in a drag-and-drop UI.
       //
-      // If ?flat=1 is present, the pages are returned as a flat list rather than a tree,
-      // and the `_children` property of each is just an array of `_id`s.
+      // If ?flat=1 is present, the pages are returned as a flat list rather
+      // than a tree, and the `_children` property of each is just an array of
+      // `_id`s.
       //
-      // If ?autocomplete=x is present, then an autocomplete prefix search for pages
-      // matching that string is carried out, and a flat list of pages is returned,
-      // with no `_children`. This is mainly useful to our relationship editor.
-      // The user must have some page editing privileges to use it. The 10 best
-      // matches are returned as an object with a `results` property containing the
-      // array of pages.
-      // If ?type=x is present, only pages of that type are returned. This query
-      // parameter is only used in conjunction with ?autocomplete=x. It will be
-      // ignored otherwise.
+      // If ?autocomplete=x is present, then an autocomplete prefix search for
+      // pages matching that string is carried out, and a flat list of pages is
+      // returned, with no `_children`. This is mainly useful to our
+      // relationship editor. The user must have some page editing privileges to
+      // use it. The 10 best matches are returned as an object with a `results`
+      // property containing the array of pages. If ?type=x is present, only
+      // pages of that type are returned. This query parameter is only used in
+      // conjunction with ?autocomplete=x. It will be ignored otherwise.
       //
       // If querying for draft pages, you may add ?published=1 to attach a
-      // `_publishedDoc` property to each draft that also exists in a published form.
+      // `_publishedDoc` property to each draft that also exists in a published
+      // form.
 
       getAll: [
         ...self.apos.expressCacheOnDemand ? [ self.apos.expressCacheOnDemand ] : [],
@@ -298,7 +300,10 @@ module.exports = {
               throw self.apos.error('forbidden');
             }
 
-            const query = self.getRestQuery(req).permission(false).limit(10).relationships(false)
+            const query = self.getRestQuery(req)
+              .permission(false)
+              .limit(10)
+              .relationships(false)
               .areas(false);
             if (type.length) {
               query.type(type);
@@ -344,18 +349,25 @@ module.exports = {
             if (!self.apos.permission.can(req, 'view', '@apostrophecms/any-page-type')) {
               throw self.apos.error('forbidden');
             }
-            const page = await self.getRestQuery(req).permission(false).and({ level: 0 }).children({
-              depth: 1000,
-              archived,
-              orphan: null,
-              relationships: false,
-              areas: false,
-              permission: false,
-              withPublished: self.apos.launder.boolean(req.query.withPublished),
-              project: self.getAllProjection()
-            }).toObject();
+            const page = await self.getRestQuery(req)
+              .permission(false)
+              .and({ level: 0 })
+              .children({
+                depth: 1000,
+                archived,
+                orphan: null,
+                relationships: false,
+                areas: false,
+                permission: false,
+                withPublished: self.apos.launder.boolean(req.query.withPublished),
+                project: self.getAllProjection()
+              }).toObject();
 
-            if (self.options.cache && self.options.cache.api && self.options.cache.api.maxAge) {
+            if (
+              self.options.cache &&
+              self.options.cache.api &&
+              self.options.cache.api.maxAge
+            ) {
               self.setMaxAge(req, self.options.cache.api.maxAge);
             }
 
@@ -378,7 +390,11 @@ module.exports = {
           } else {
             const result = await self.getRestQuery(req).and({ level: 0 }).toObject();
 
-            if (self.options.cache && self.options.cache.api && self.options.cache.api.maxAge) {
+            if (
+              self.options.cache &&
+              self.options.cache.api &&
+              self.options.cache.api.maxAge
+            ) {
               self.setMaxAge(req, self.options.cache.api.maxAge);
             }
 
@@ -412,9 +428,13 @@ module.exports = {
           // Edit access to draft is sufficient to fetch either
           await self.publicApiCheckAsync(req);
           const criteria = self.getIdCriteria(_id);
-          const result = await self.getRestQuery(req).permission(false).and(criteria).toObject();
+          const result = await self
+            .getRestQuery(req)
+            .permission(false)
+            .and(criteria)
+            .toObject();
 
-          if (self.options.cache && self.options.cache.api && self.options.cache.api.maxAge) {
+          if (self.options.cache?.api?.maxAge) {
             const { maxAge } = self.options.cache.api;
 
             if (!self.options.cache.api.etags) {
@@ -439,18 +459,21 @@ module.exports = {
           return result;
         }
       ],
-      // POST a new page to the site. The schema fields should be part of the JSON request body.
+      // POST a new page to the site. The schema fields should be part of the
+      // JSON request body.
       //
-      // You may pass `_targetId` and `_position` to specify the location in the page tree.
-      // `_targetId` is the _id of another page, and `_position` may be `before`, `after`,
-      // `firstChild` or `lastChild`.
+      // You may pass `_targetId` and `_position` to specify the location in
+      // the page tree. `_targetId` is the _id of another page, and `_position`
+      // may be `before`, `after`, `firstChild` or `lastChild`.
       //
-      // If you do not specify these properties they default to the homepage and `lastChild`,
-      // creating a subpage of the home page.
+      // If you do not specify these properties they default to the homepage
+      // and `lastChild`, creating a subpage of the home page.
       //
-      // You may pass _copyingId. If you do all properties not in `req.body` are copied from it.
+      // You may pass _copyingId. If you do all properties not in `req.body`
+      // are copied from it.
       //
-      // This call is atomic with respect to other REST write operations on pages.
+      // This call is atomic with respect to other REST write operations on
+      // pages.
       async post(req) {
         await self.publicApiCheckAsync(req);
         let targetId = self.apos.launder.string(req.body._targetId);
@@ -458,7 +481,12 @@ module.exports = {
         // Here we have to normalize before calling insert because we
         // need the parent page to call newChild(). insert calls again but
         // sees there's no work to be done, so no performance hit
-        const normalized = await self.getTargetIdAndPosition(req, null, targetId, position);
+        const normalized = await self.getTargetIdAndPosition(
+          req,
+          null,
+          targetId,
+          position
+        );
         targetId = normalized.targetId || '_home';
         position = normalized.position;
         const copyingId = self.apos.launder.id(req.body._copyingId);
@@ -519,29 +547,33 @@ module.exports = {
           });
         });
       },
-      // Consider using `PATCH` instead unless you're sure you have 100% up to date
-      // data for every property of the page. If you are trying to change one thing,
-      // `PATCH` is a smarter choice.
+      // Consider using `PATCH` instead unless you're sure you have 100% up to
+      // date data for every property of the page. If you are trying to change
+      // one thing, `PATCH` is a smarter choice.
       //
       // Update the page via `PUT`. The entire page, including all areas,
       // must be in req.body.
       //
-      // To move a page in the tree at the same time, you may pass `_targetId` and
-      // `_position`. Unlike normal properties passed to PUT these are not mandatory
-      // to pass every time.
+      // To move a page in the tree at the same time, you may pass `_targetId`
+      // and `_position`. Unlike normal properties passed to PUT these are not
+      // mandatory to pass every time.
       //
-      // This call is atomic with respect to other REST write operations on pages.
+      // This call is atomic with respect to other REST write operations on
+      // pages.
       //
-      // If `_advisoryLock: { tabId: 'xyz', lock: true }` is passed, the operation will begin by obtaining an advisory
-      // lock on the document for the given context id, and no other items in the patch will be addressed
-      // unless that succeeds. The client must then refresh the lock frequently (by default, at least
-      // every 30 seconds) with repeated PATCH requests of the `_advisoryLock` property with the same
-      // context id. If `_advisoryLock: { tabId: 'xyz', lock: false }` is passed, the advisory lock will be
-      // released *after* addressing other items in the same patch. If `force: true` is added to
-      // the `_advisoryLock` object it will always remove any competing advisory lock.
+      // If `_advisoryLock: { tabId: 'xyz', lock: true }` is passed, the
+      // operation will begin by obtaining an advisory lock on the document for
+      // the given context id, and no other items in the patch will be addressed
+      // unless that succeeds. The client must then refresh the lock frequently
+      // (by default, at least every 30 seconds) with repeated PATCH requests of
+      // the `_advisoryLock` property with the same context id. If
+      // `_advisoryLock: { tabId: 'xyz', lock: false }` is passed, the advisory
+      // lock will be released *after* addressing other items in the same patch.
+      // If `force: true` is added to the `_advisoryLock` object it will always
+      // remove any competing advisory lock.
       //
-      // `_advisoryLock` is only relevant if you want to ask others not to edit the document while you are
-      // editing it in a modal or similar.
+      // `_advisoryLock` is only relevant if you want to ask others not to edit
+      // the document while you are editing it in a modal or similar.
 
       async put(req, _id) {
         _id = self.inferIdLocaleAndMode(req, _id);
@@ -556,7 +588,9 @@ module.exports = {
             throw self.apos.error('forbidden');
           }
           const input = req.body;
-          const manager = self.apos.doc.getManager(self.apos.launder.string(input.type) || page.type);
+          const manager = self.apos.doc.getManager(
+            self.apos.launder.string(input.type) || page.type
+          );
           if (!manager) {
             throw self.apos.error('invalid');
           }
@@ -604,9 +638,9 @@ module.exports = {
       },
       // Patch some properties of the page.
       //
-      // You may pass `_targetId` and `_position` to move the page within the tree. `_position`
-      // may be `before`, `after` or `inside`. To move a page into or out of the archive, set
-      // `archived` to `true` or `false`.
+      // You may pass `_targetId` and `_position` to move the page within the
+      // tree. `_position` may be `before`, `after` or `inside`. To move a page
+      // into or out of the archive, set `archived` to `true` or `false`.
       async patch(req, _id) {
         _id = self.inferIdLocaleAndMode(req, _id);
         await self.publicApiCheckAsync(req);
@@ -910,15 +944,17 @@ module.exports = {
           if (self.options.home === false) {
             return;
           }
-          // Avoid redundant work when ancestors are available. They won't be if they are
-          // not enabled OR we're not on a regular CMS page at the moment
+          // Avoid redundant work when ancestors are available. They won't be
+          // if they are not enabled OR we're not on a regular CMS page at the
+          // moment
           if (req.data.page && req.data.page._ancestors && req.data.page._ancestors[0]) {
             req.data.home = req.data.page._ancestors[0];
             return;
           }
-          // Fetch the home page with the same builders used to fetch ancestors, for consistency.
-          // If builders for ancestors are not configured, then by default we still fetch the children of the
-          // home page, so that tabs are easy to implement. However allow this to be
+          // Fetch the home page with the same builders used to fetch
+          // ancestors, for consistency. If builders for ancestors are not
+          // configured, then by default we still fetch the children of the home
+          // page, so that tabs are easy to implement. However allow this to be
           // expressly shut off:
           //
           // home: { children: false }
@@ -1023,7 +1059,8 @@ database.`);
         composeBatchOperations() {
           const groupedOperations = Object.entries(self.batchOperations)
             .reduce((acc, [ opName, properties ]) => {
-              // Check if there is a required schema field for this batch operation.
+              // Check if there is a required schema field for this batch
+              // operation.
               const requiredFieldNotFound = properties.requiredField && !self.schema
                 .some((field) => field.name === properties.requiredField);
 
@@ -1073,7 +1110,8 @@ database.`);
             };
           }
 
-          // Returns the object entry, e.g., `[groupName, { ...groupProperties }]`
+          // Returns the object entry, e.g., `[groupName, { ...groupProperties
+          // }]`
           function getAssociatedGroup (operation) {
             return Object.entries(self.batchOperationsGroups)
               .find(([ _key, { operations } ]) => {
@@ -1126,27 +1164,31 @@ database.`);
       // it to be called from the universal @apostrophecms/doc PATCH route
       // as well.
       //
-      // However if you plan to submit many patches over a period of time while editing you may also
-      // want to use the advisory lock mechanism.
+      // However if you plan to submit many patches over a period of time while
+      // editing you may also want to use the advisory lock mechanism.
       //
-      // If `_advisoryLock: { tabId: 'xyz', lock: true }` is passed, the operation will begin by obtaining an advisory
-      // lock on the document for the given context id, and no other items in the patch will be addressed
-      // unless that succeeds. The client must then refresh the lock frequently (by default, at least
-      // every 30 seconds) with repeated PATCH requests of the `_advisoryLock` property with the same
-      // context id. If `_advisoryLock: { tabId: 'xyz', lock: false }` is passed, the advisory lock will be
-      // released *after* addressing other items in the same patch. If `force: true` is added to
-      // the `_advisoryLock` object it will always remove any competing advisory lock.
+      // If `_advisoryLock: { tabId: 'xyz', lock: true }` is passed, the
+      // operation will begin by obtaining an advisory lock on the document for
+      // the given context id, and no other items in the patch will be addressed
+      // unless that succeeds. The client must then refresh the lock frequently
+      // (by default, at least every 30 seconds) with repeated PATCH requests of
+      // the `_advisoryLock` property with the same context id. If
+      // `_advisoryLock: { tabId: 'xyz', lock: false }` is passed, the advisory
+      // lock will be released *after* addressing other items in the same patch.
+      // If `force: true` is added to the `_advisoryLock` object it will always
+      // remove any competing advisory lock.
       //
-      // `_advisoryLock` is only relevant if you plan to make ongoing edits over a period of time
-      // and wish to avoid conflict with other users. You do not need it for one-time patches.
+      // `_advisoryLock` is only relevant if you plan to make ongoing edits
+      // over a period of time and wish to avoid conflict with other users. You
+      // do not need it for one-time patches.
       //
-      // If `input._patches` is an array of patches to the same document, this method
-      // will iterate over those patches as if each were `input`, applying all of them
-      // within a single lock and without redundant network operations. This greatly
-      // improves the performance of saving all changes to a document at once after
-      // accumulating a number of changes in patch form on the front end. If _targetId and
-      // _position are present only the last such values given in the array of patches
-      // are applied.
+      // If `input._patches` is an array of patches to the same document, this
+      // method will iterate over those patches as if each were `input`,
+      // applying all of them within a single lock and without redundant network
+      // operations. This greatly improves the performance of saving all changes
+      // to a document at once after accumulating a number of changes in patch
+      // form on the front end. If _targetId and _position are present only the
+      // last such values given in the array of patches are applied.
       async patch(req, _id) {
         return self.withLock(req, async () => {
           const input = req.body;
@@ -1197,7 +1239,8 @@ database.`);
                   const position = self.apos.launder.string(input._position);
                   modified = await self.move(req, page._id, targetId, position);
                 }
-                result = await self.findOneForEditing(req, { _id }, { attachments: true });
+                result = await self
+                  .findOneForEditing(req, { _id }, { attachments: true });
                 if (modified) {
                   result.__changed = modified.changed;
                 }
@@ -1215,16 +1258,19 @@ database.`);
           return result;
         });
       },
-      // Apply a single patch to the given page without saving. An implementation detail of the
-      // patch method, also used by the undo mechanism to simulate patches.
-      // Does not handle _targetId, that is implemented in the patch method.
+      // Apply a single patch to the given page without saving. An
+      // implementation detail of the patch method, also used by the undo
+      // mechanism to simulate patches. Does not handle _targetId, that is
+      // implemented in the patch method.
       async applyPatch(req, page, input) {
-        const manager = self.apos.doc.getManager(self.apos.launder.string(input.type) || page.type);
+        const manager = self.apos.doc
+          .getManager(self.apos.launder.string(input.type) || page.type);
         if (!manager) {
           throw self.apos.error('invalid');
         }
         self.apos.schema.implementPatchOperators(input, page);
-        const parentPage = page._ancestors.length && page._ancestors[page._ancestors.length - 1];
+        const parentPage = page._ancestors.length &&
+          page._ancestors[page._ancestors.length - 1];
         const schema = self.apos.schema.subsetSchemaForPatch(manager.allowedSchema(req, {
           ...page,
           type: manager.name
@@ -1284,11 +1330,11 @@ database.`);
         return query;
       },
       // Insert a page. `targetId` must be an existing page id, `_archive` or
-      // `_home`, and `position` may be `before`, `inside` or `after`. Alternatively
-      // `position` may be a zero-based offset for the new child
-      // of `targetId` (note that the `rank` property of sibling pages
-      // is not strictly ascending, so use an array index into `_children` to
-      // determine this parameter instead).
+      // `_home`, and `position` may be `before`, `inside` or `after`.
+      // Alternatively `position` may be a zero-based offset for the new child
+      // of `targetId` (note that the `rank` property of sibling pages is not
+      // strictly ascending, so use an array index into `_children` to determine
+      // this parameter instead).
       //
       // The `options` argument may be omitted completely. If
       // `options.permissions` is explicitly set to false, permissions checks
@@ -1300,7 +1346,12 @@ database.`);
       // are bypassed.
       async insert(req, targetId, position, page, options = {}) {
         // Handle numeric positions
-        const normalized = await self.getTargetIdAndPosition(req, null, targetId, position);
+        const normalized = await self.getTargetIdAndPosition(
+          req,
+          null,
+          targetId,
+          position
+        );
         targetId = normalized.targetId;
         position = normalized.position;
         return self.withLock(req, async () => {
@@ -1341,8 +1392,8 @@ database.`);
             if (!parent.level && (page.type !== '@apostrophecms/archive-page')) {
               const archive = peers.find(peer => peer.type === '@apostrophecms/archive-page');
               if (archive) {
-                // Archive has to be last child of the home page, but don't be punitive,
-                // just put this page before it
+                // Archive has to be last child of the home page, but don't be
+                // punitive, just put this page before it
                 return self.insert(req, archive._id, 'before', page, options);
               }
             }
@@ -1395,11 +1446,11 @@ database.`);
           page.path = self.apos.util.addSlashIfNeeded(parent.path) + page.aposDocId;
           page.level = parent.level + 1;
           await self.apos.doc.insert(req, page, options);
-          // Prevent a published page from being inserted as a child of a draft page.
-          // In effect when this method is called again from the `afterInsert` event
-          // of the `doc` module. This can happen when we are inserting a page
-          // in req.mode == 'published', which results in insertDrafOf being called
-          // (`page-type` module).
+          // Prevent a published page from being inserted as a child of a draft
+          // page. In effect when this method is called again from the
+          // `afterInsert` event of the `doc` module. This can happen when we
+          // are inserting a page in req.mode == 'published', which results in
+          // insertDrafOf being called (`page-type` module).
           if (page.lastPublishedAt && !parent.lastPublishedAt) {
             await self.unpublish(req, page);
             throw self.apos.error('forbidden', 'Publish the parent page first.');
@@ -1414,7 +1465,8 @@ database.`);
       // The function is awaited.
       //
       // Nested locks for the same `req` are permitted, in order to allow
-      // inserts or moves that are triggered by `afterMove`, `beforeInsert`, etc.
+      // inserts or moves that are triggered by `afterMove`, `beforeInsert`,
+      // etc.
       //
       // If fn returns a value, that value is passed on.
       async withLock(req, fn) {
@@ -1493,26 +1545,31 @@ database.`);
       },
       // Move a page already in the page tree to another location.
       //
-      // `movedId` is the id of the page being moved. `targetId` must be an existing page
-      // id, and `position` may be `before`, `firstChild`, `lastChild` or `after`. Alternatively
-      // `position` may be a zero-based offset for the new child
-      // of `targetId` (note that the `rank` property of sibling pages
-      // is not strictly ascending, so use an array index into `_children` to
-      // determine this parameter instead).
+      // `movedId` is the id of the page being moved. `targetId` must be an
+      // existing page id, and `position` may be `before`, `firstChild`,
+      // `lastChild` or `after`. Alternatively `position` may be a zero-based
+      // offset for the new child of `targetId` (note that the `rank` property
+      // of sibling pages is not strictly ascending, so use an array index into
+      // `_children` to determine this parameter instead).
       //
-      // As a shorthand, `targetId` may be `_archive` to refer to the main archive page,
-      // or `_home` to refer to the home page.
+      // As a shorthand, `targetId` may be `_archive` to refer to the main
+      // archive page, or `_home` to refer to the home page.
       //
       // Returns an object with a `modified` property, containing an
-      // array of objects with _id and slug properties, indicating the new slugs of all
-      // modified pages. If `options` is passed to this method, it is
-      // also supplied as the `options` property of the returned object.
+      // array of objects with _id and slug properties, indicating the new
+      // slugs of all modified pages. If `options` is passed to this method, it
+      // is also supplied as the `options` property of the returned object.
       //
-      // After the moved and target pages are fetched, the `beforeMove` event is emitted with
-      // `req, moved, target, position`.
+      // After the moved and target pages are fetched, the `beforeMove` event
+      // is emitted with `req, moved, target, position`.
       async move(req, movedId, targetId, position) {
         // Handle numeric positions
-        const normalized = await self.getTargetIdAndPosition(req, movedId, targetId, position);
+        const normalized = await self.getTargetIdAndPosition(
+          req,
+          movedId,
+          targetId,
+          position
+        );
         targetId = normalized.targetId;
         position = normalized.position;
         return self.withLock(req, body);
@@ -1591,14 +1648,17 @@ database.`);
             changed
           };
           async function getMoved() {
-            const moved = await self.findForEditing(req, { _id: movedId }).permission(false).ancestors({
-              depth: 1,
-              visibility: null,
-              archived: null,
-              areas: false,
-              relationships: false,
-              permission: false
-            })
+            const moved = await self
+              .findForEditing(req, { _id: movedId })
+              .permission(false)
+              .ancestors({
+                depth: 1,
+                visibility: null,
+                archived: null,
+                areas: false,
+                relationships: false,
+                permission: false
+              })
               .toObject();
             if (!moved) {
               throw self.apos.error('invalid', 'No such page');
@@ -1632,8 +1692,8 @@ database.`);
               if (!parent.level && (moved.type !== '@apostrophecms/archive-page')) {
                 const archive = parent._children.find(peer => peer.type === '@apostrophecms/archive-page');
                 if (archive) {
-                  // Archive has to be last child of the home page, but don't be punitive,
-                  // just put this page before it
+                  // Archive has to be last child of the home page, but don't
+                  // be punitive, just put this page before it
                   return self.move(req, moved._id, archive._id, 'before');
                 }
               }
@@ -1675,7 +1735,8 @@ database.`);
             originalPath = moved.path;
             originalSlug = moved.slug;
             const level = parent.level + 1;
-            const newPath = self.apos.util.addSlashIfNeeded(parent.path) + path.basename(moved.path);
+            const newPath = self.apos.util.addSlashIfNeeded(parent.path) +
+              path.basename(moved.path);
             // We're going to use update with $set, but we also want to update
             // the object so that moveDescendants can see what we did
             moved.path = newPath;
@@ -1691,15 +1752,18 @@ database.`);
 
                 moved.slug = parent.slug.endsWith(movedSlugCandidate)
                   ? parent.slug.replace(movedSlugCandidate, '').concat(moved.slug)
-                  : moved.slug.replace(matchOldParentSlugPrefix, self.apos.util.addSlashIfNeeded(parent.slug));
+                  : moved.slug.replace(
+                    matchOldParentSlugPrefix,
+                    self.apos.util.addSlashIfNeeded(parent.slug)
+                  );
                 changed.push({
                   _id: moved._id,
                   slug: moved.slug
                 });
               } else if (parent.archived && !moved.archived) {
                 // #385: we don't follow the pattern of our old parent but we're
-                // moving to the archive, so the slug must change to avoid blocking
-                // reuse of the old URL by a new page
+                // moving to the archive, so the slug must change to avoid
+                // blocking reuse of the old URL by a new page
                 moved.slug = parent.slug + '/' + path.basename(moved.slug);
               }
             }
@@ -1723,7 +1787,13 @@ database.`);
             };
           }
           async function updateDescendants() {
-            changed = changed.concat(await self.updateDescendantsAfterMove(req, moved, originalPath, originalSlug));
+            const descendants = await self.updateDescendantsAfterMove(
+              req,
+              moved,
+              originalPath,
+              originalSlug
+            );
+            changed = changed.concat(descendants);
           }
         }
       },
@@ -1738,8 +1808,8 @@ database.`);
         const _req = req.clone({});
         const criteria = self.getIdCriteria(self.inferIdLocaleAndMode(_req, targetId));
         // Use findForEditing to ensure we get improvements to that method from
-        // npm modules that make the query more inclusive. Then explicitly shut off
-        // things we know we don't want to be blocked by
+        // npm modules that make the query more inclusive. Then explicitly shut
+        // off things we know we don't want to be blocked by
         const target = await self.findForEditing(_req, criteria)
           .permission(false)
           .archived(null)
@@ -1816,11 +1886,12 @@ database.`);
           position
         };
       },
-      // Based on `req`, `moved`, `data.moved`, `data.oldParent` and `data.parent`, decide whether
-      // this move should be permitted. If it should not be, throw an error.
+      // Based on `req`, `moved`, `data.moved`, `data.oldParent` and
+      // `data.parent`, decide whether this move should be permitted. If it
+      // should not be, throw an error.
       //
-      // This method is async because overrides, for instance in @apostrophecms/workflow,
-      // may require asynchronous work to perform it.
+      // This method is async because overrides, for instance in
+      // @apostrophecms/workflow, may require asynchronous work to perform it.
       async movePermissions(req, moved, data) {
       },
       async deduplicatePages(req, pages, toArchive) {
@@ -1860,7 +1931,10 @@ database.`);
               if (self.apos.doc.isUniqueError(err)) {
                 // The slug is now in conflict for this subpage.
                 // Try again with path only
-                self.apos.doc.db.updateOne({ _id: descendant._id }, { $set: { path: descendant.path } });
+                self.apos.doc.db.updateOne(
+                  { _id: descendant._id },
+                  { $set: { path: descendant.path } }
+                );
               } else {
                 throw err;
               }
@@ -1868,10 +1942,10 @@ database.`);
           }
         }
       },
-      // Returns `{ parentSlug: '/foo', changed: [ ... ] }` where `parentSlug` is the
-      // slug of the page's former parent, and `changed` is an array
-      // of objects with _id and slug properties, including all subpages that
-      // had to move too.
+      // Returns `{ parentSlug: '/foo', changed: [ ... ] }` where `parentSlug`
+      // is the slug of the page's former parent, and `changed` is an array of
+      // objects with _id and slug properties, including all subpages that had
+      // to move too.
       async archive(req, _id) {
         const archive = await findArchive();
         if (!archive) {
@@ -2013,13 +2087,14 @@ database.`);
           return await self.serve500Error(req, err);
         }
 
-        if (self.options.cache && self.options.cache.page && self.options.cache.page.maxAge) {
+        if (self.options.cache?.page?.maxAge) {
           const { maxAge } = self.options.cache.page;
 
           if (!self.options.cache.page.etags) {
             self.setMaxAge(req, maxAge);
           } else if (self.checkETag(req, undefined, maxAge)) {
-            // Stop there and send a 304 status code; the cached response will be used
+            // Stop there and send a 304 status code; the cached response will
+            // be used
             return res.sendStatus(304);
           }
         }
@@ -2254,14 +2329,18 @@ database.`);
       // A request is "found" if it should not be
       // treated as a "404 not found" situation
       isFound(req) {
-        return req.loginRequired || req.insufficient || req.redirect || (req.data.page && !req.notFound);
+        return req.loginRequired ||
+          req.insufficient ||
+          req.redirect ||
+          (req.data.page && !req.notFound);
       },
       // Returns the query builders to be invoked when fetching a
       // page, by default. These add information about ancestor and child
       // pages of the page in question
       getServePageBuilders() {
         return self.options.builders || {
-          // Get the kids of the ancestors too so we can do tabs and accordion nav
+          // Get the kids of the ancestors too so we can do tabs and accordion
+          // nav
           ancestors: { children: true },
           // Get our own kids
           children: true
@@ -2297,9 +2376,10 @@ database.`);
       // been set, also set `req.data.page` if the slug is an exact match.
       // Otherwise set `req.remainder` to the nonmatching portion
       // of `req.params[0]` and leave `req.data.bestPage` as-is.
-      // `req.remainder` is then utilized by modules like `@apostrophecms/page-type`
-      // to implement features like dispatch, which powers the
-      // "permalink" or "show" pages of `@apostrophecms/piece-page-type`
+      // `req.remainder` is then utilized by modules like
+      // `@apostrophecms/page-type` to implement features like dispatch, which
+      // powers the "permalink" or "show" pages of
+      // `@apostrophecms/piece-page-type`
       evaluatePageMatch(req) {
         const slug = req.params[0];
         if (!req.data.bestPage) {
@@ -2403,7 +2483,11 @@ database.`);
           descendant.slug = newSlug;
           descendant.level = descendant.level + (page.level - oldLevel);
           descendant.archived = page.archived;
-          await self.apos.doc.retryUntilUnique(req, descendant, () => self.update(req, descendant));
+          await self.apos.doc.retryUntilUnique(
+            req,
+            descendant,
+            () => self.update(req, descendant)
+          );
           changed.push({
             _id: descendant._id,
             slug: descendant.slug,
@@ -2421,7 +2505,10 @@ database.`);
         if (!item.parkedId) {
           throw new Error('Parked pages must have a unique parkedId property');
         }
-        if (!((item.type || (item._defaults && item._defaults.type)) && (item.slug || item._defaults.slug))) {
+        if (
+          !((item.type || (item._defaults && item._defaults.type)) &&
+          (item.slug || item._defaults.slug))
+        ) {
           throw new Error('Parked pages must have type and slug properties, they may be fixed or part of _defaults:\n' + JSON.stringify(item, null, '  '));
         }
         item = klona(item);
@@ -2461,7 +2548,10 @@ database.`);
         async function updateExisting() {
           // Enforce all permanent properties on existing
           // pages too
-          await self.apos.doc.db.updateOne({ _id: existing._id }, { $set: self.apos.util.clonePermanent(item) });
+          await self.apos.doc.db.updateOne(
+            { _id: existing._id },
+            { $set: self.apos.util.clonePermanent(item) }
+          );
         }
         async function insert() {
           const parkedDefaults = { ...(item._defaults || {}) };
@@ -2528,7 +2618,8 @@ database.`);
           throw new Error('Wrong number of arguments');
         }
         const slug = argv._[1];
-        const count = await self.apos.doc.db.updateOne({ slug }, { $unset: { parked: 1 } });
+        const count = await self.apos.doc.db
+          .updateOne({ slug }, { $unset: { parked: 1 } });
         if (!count) {
           throw 'No page with that slug was found.';
         }
@@ -2569,7 +2660,11 @@ database.`);
               path: self.matchDescendants(home),
               aposLocale: req.locale,
               level: home.level + 1
-            }).project({ rank: 1 }).sort({ rank: 1 }).toArray()).reduce((memo, page) => Math.max(memo, page.rank), 0) + 1;
+            })
+              .project({ rank: 1 })
+              .sort({ rank: 1 })
+              .toArray())
+              .reduce((memo, page) => Math.max(memo, page.rank), 0) + 1;
             page.path = `${home.path}/${page.aposDocId}`;
             page.rank = rank;
             const $set = {
@@ -2590,8 +2685,8 @@ database.`);
       },
       // Invoked by the @apostrophecms/version module.
       //
-      // Your module can add additional doc properties that should never be rolled back by pushing
-      // them onto the `fields` array.
+      // Your module can add additional doc properties that should never be
+      // rolled back by pushing them onto the `fields` array.
       docUnversionedFields(req, doc, fields) {
         // Moves in the tree have knock-on effects on other
         // pages, they are not suitable for rollback
@@ -2600,19 +2695,23 @@ database.`);
       // Returns true if the doc is a page in the tree
       // (it has a slug with a leading /).
       isPage(doc) {
-        // Proper docs always have a slug, but some of our unit tests are lazy about this.
+        // Proper docs always have a slug, but some of our unit tests are lazy
+        // about this.
         return doc.slug && doc.slug.match(/^\//);
       },
-      // Returns a regular expression to match the `path` property of the descendants of the given page,
-      // but not itself. You can also pass the path rather than the entire page object.
+      // Returns a regular expression to match the `path` property of the
+      // descendants of the given page, but not itself. You can also pass the
+      // path rather than the entire page object.
       matchDescendants(pageOrPath) {
         const path = pageOrPath.path || pageOrPath;
-        // Make sure there is a trailing slash, but don't add two (the home page already has one).
-        // Also make sure there is at least one additional character, which there always will be,
-        // in order to prevent the home page from matching as its own descendant
+        // Make sure there is a trailing slash, but don't add two (the home
+        // page already has one). Also make sure there is at least one
+        // additional character, which there always will be, in order to prevent
+        // the home page from matching as its own descendant
         return new RegExp(`^${self.apos.util.regExpQuote(path)}/.`);
       },
-      // Returns the path property of the page's parent. For use in queries to fetch the parent.
+      // Returns the path property of the page's parent. For use in queries to
+      // fetch the parent.
       getParentPath(page) {
         return page.path.replace(/\/[^/]+$/, '');
       },
@@ -2663,7 +2762,8 @@ database.`);
         }
         return schema;
       },
-      // Get the page type names for all the parked pages, including parked children, recursively.
+      // Get the page type names for all the parked pages, including parked
+      // children, recursively.
       getParkedTypes() {
         return self.parked.map(getType).concat(getChildTypes(self.parked));
         function getType(park) {
@@ -2677,7 +2777,9 @@ database.`);
           let types = [];
           _.each(parked, function (page) {
             if (page._children) {
-              types = types.concat(_.map(page._children, getType)).concat(getChildTypes(page._children));
+              types = types
+                .concat(_.map(page._children, getType))
+                .concat(getChildTypes(page._children));
             }
           });
           return _.uniq(types);
@@ -2714,12 +2816,11 @@ database.`);
       },
       // Returns the effective base URL for the given request.
       // If Apostrophe's top-level `baseUrl` option is set, or a hostname is
-      // defined for the active locale, then that is consulted, otherwise the base URL
-      // is the empty string. This makes it easier to build absolute
-      // URLs (when `baseUrl` is configured), or to harmlessly prepend
-      // the empty string (when it is not configured). The
-      // Apostrophe queries used to fetch Apostrophe pages
-      // consult this method.
+      // defined for the active locale, then that is consulted, otherwise the
+      // base URL is the empty string. This makes it easier to build absolute
+      // URLs (when `baseUrl` is configured), or to harmlessly prepend the empty
+      // string (when it is not configured). The Apostrophe queries used to
+      // fetch Apostrophe pages consult this method.
       getBaseUrl(req) {
         const hostname = self.apos.i18n.locales[req.locale]?.hostname;
 
@@ -2841,9 +2942,10 @@ database.`);
       },
       // Throws a `notfound` exception if a public API projection is
       // not specified and the user does not have the `view-draft` permission,
-      // which all roles capable of editing the site at all will have. This is needed because
-      // although all API calls check permissions specifically where appropriate,
-      // we also want to flunk all public access to REST APIs if not specifically configured.
+      // which all roles capable of editing the site at all will have. This is
+      // needed because although all API calls check permissions specifically
+      // where appropriate, we also want to flunk all public access to REST APIs
+      // if not specifically configured.
       publicApiCheck(req) {
         if (!self.options.publicApiProjection) {
           if (!self.canAccessApi(req)) {
@@ -2929,7 +3031,10 @@ database.`);
               $ne: null
             }
           }).toArray();
-          const locales = [ self.apos.i18n.defaultLocale, ...Object.keys(self.apos.i18n.locales) ];
+          const locales = [
+            self.apos.i18n.defaultLocale,
+            ...Object.keys(self.apos.i18n.locales)
+          ];
           const parkedIds = [ ...new Set(parkedPages.map(page => page.parkedId)) ];
           for (const parkedId of parkedIds) {
             let aposDocId;
@@ -3005,7 +3110,9 @@ database.`);
             const matches = parkedPages.filter(page => page.parkedId === parkedId);
             for (const match of matches) {
               if (match.aposDocId !== aposDocId) {
-                idChanges.push([ match._id, match._id.replace(match.aposDocId, aposDocId) ]);
+                idChanges.push(
+                  [ match._id, match._id.replace(match.aposDocId, aposDocId) ]
+                );
               }
             }
           }

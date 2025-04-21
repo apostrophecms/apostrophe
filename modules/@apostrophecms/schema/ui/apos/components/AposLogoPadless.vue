@@ -1,3 +1,4 @@
+<!-- eslint-disable max-len -->
 <template>
   <svg viewBox="0 0 141.5 144.5">
     <linearGradient

@@ -274,7 +274,8 @@ describe('Attachment', function() {
       // Because "draft" and "previous" both have it, unarchived
       assert(attachment.docIds.length === 2);
       assert(attachment.archivedDocIds.length === 1);
-      // Should still be accessible at this point because the draft still uses it
+      // Should still be accessible at this point because the draft still uses
+      // it
       const fd = fs.openSync(apos.rootDir + '/public' + apos.attachment.url(attachment, { size: 'original' }), 'r');
       assert(fd);
       fs.closeSync(fd);

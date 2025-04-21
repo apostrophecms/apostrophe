@@ -2,16 +2,16 @@ const broadband = require('broadband');
 const _ = require('lodash');
 const addMissingSchemaFields = require('./lib/addMissingSchemaFields.js');
 
-// Provide services for database migration. The `@apostrophecms/migration:migrate` task
-// carries out all migrations that have been registered with this module. Migrations
-// are used to make changes to the database at the time of a new code deployment,
-// typically because we need to represent the data in a different way or correct
-// errors.
+// Provide services for database migration. The
+// `@apostrophecms/migration:migrate` task carries out all migrations that have
+// been registered with this module. Migrations are used to make changes to the
+// database at the time of a new code deployment, typically because we need to
+// represent the data in a different way or correct errors.
 //
 // Migrations MUST be idempotent (it must be safe to run them twice). Apostrophe
 // does remember whether they have been run before in a cache but there is
-// NO guarantee that they will not run again when the cache is cleared. If this is
-// difficult to guarantee, you may wish to write a task instead.
+// NO guarantee that they will not run again when the cache is cleared. If this
+// is difficult to guarantee, you may wish to write a task instead.
 
 module.exports = {
   options: { alias: 'migration' },
@@ -51,19 +51,22 @@ module.exports = {
   },
   methods(self) {
     return {
-      // Add a migration function to be invoked when the @apostrophecms/migration:migrate task is invoked.
-      // Each migration is only invoked once, however they will all be invoked on a brand-new site, so
-      // they must check whether a change is actually needed before making a change
-      // (they must be harmless to run twice).
+      // Add a migration function to be invoked when the
+      // @apostrophecms/migration:migrate task is invoked. Each migration is
+      // only invoked once, however they will all be invoked on a brand-new
+      // site, so they must check whether a change is actually needed before
+      // making a change (they must be harmless to run twice).
       //
-      // Note that previous instances of the site ARE NOT STOPPED while migrations are run.
-      // Migrations must minimize their impact on currently running instances of older versions
-      // of the site. Copy data to new properties, don't remove it (except perhaps in a later migration
-      // after the initial copy is successful).
+      // Note that previous instances of the site ARE NOT STOPPED while
+      // migrations are run. Migrations must minimize their impact on currently
+      // running instances of older versions of the site. Copy data to new
+      // properties, don't remove it (except perhaps in a later migration after
+      // the initial copy is successful).
       //
-      // If you absolutely must prevent requests from being executed during the migration,
-      // wrap them with the `await apos.global.busy(myFunction)` API. Note that this API
-      // involves a significant startup delay to allow existing requests to terminate.
+      // If you absolutely must prevent requests from being executed during the
+      // migration, wrap them with the `await apos.global.busy(myFunction)` API.
+      // Note that this API involves a significant startup delay to allow
+      // existing requests to terminate.
       add(name, migrationFn, options) {
         if (!options) {
           options = {};
@@ -74,12 +77,12 @@ module.exports = {
           fn: migrationFn
         });
       },
-      // Invoke the iterator function once for each doc in the aposDocs collection.
-      // If only two arguments are given, `limit` is assumed to be 1 (only one
-      // doc may be processed at a time).
+      // Invoke the iterator function once for each doc in the aposDocs
+      // collection. If only two arguments are given, `limit` is assumed to be 1
+      // (only one doc may be processed at a time).
       //
-      // This method will never visit the same doc twice in a single call, even if
-      // modifications are made.
+      // This method will never visit the same doc twice in a single call, even
+      // if modifications are made.
       //
       // THIS API IS FOR MIGRATION AND TASK USE ONLY AND HAS NO SECURITY.
       async eachDoc(criteria, limit, iterator) {
@@ -89,12 +92,12 @@ module.exports = {
         }
         return self.each(self.apos.doc.db, criteria, limit, iterator);
       },
-      // Invoke an async iterator function once for each document in the given collection.
-      // If only three arguments are given, `limit` is assumed to be 1 (only one
-      // doc may be processed at a time).
+      // Invoke an async iterator function once for each document in the given
+      // collection. If only three arguments are given, `limit` is assumed to be
+      // 1 (only one doc may be processed at a time).
       //
-      // This method will never visit the same document twice in a single call, even if
-      // modifications are made.
+      // This method will never visit the same document twice in a single call,
+      // even if modifications are made.
       //
       // THIS API IS FOR MIGRATION AND TASK USE ONLY AND HAS NO SECURITY.
       async each(collection, criteria, limit, iterator) {
@@ -135,8 +138,8 @@ module.exports = {
       // If only three arguments are given, `limit` is assumed to be 1 (only one
       // doc may be processed at a time).
       //
-      // This method will never visit the same doc twice in a single call, even if
-      // modifications are made.
+      // This method will never visit the same doc twice in a single call, even
+      // if modifications are made.
       //
       // THIS API IS FOR MIGRATION AND TASK USE ONLY AND HAS NO SECURITY.
       //
@@ -159,14 +162,14 @@ module.exports = {
           }
         });
       },
-      // Invoke the iterator function once for each widget in each area in each doc
-      // in the aposDocs collection. The `iterator` function receives
-      // `(doc, widget, dotPath)` and must be an async function.
+      // Invoke the iterator function once for each widget in each area in each
+      // doc in the aposDocs collection. The `iterator` function receives `(doc,
+      // widget, dotPath)` and must be an async function.
       //
       // `limit` may be completely omitted and defaults to `1`.
       //
-      // This method will never visit the same doc twice in a single call, even if
-      // modifications are made.
+      // This method will never visit the same doc twice in a single call, even
+      // if modifications are made.
       //
       // Widget loaders are NOT called.
       //
@@ -227,7 +230,8 @@ module.exports = {
           });
         });
       },
-      // How we now track migrations performed: a mongodb collection (persistent)
+      // How we now track migrations performed: a mongodb collection
+      // (persistent)
       async enableCollection() {
         self.db = await self.apos.db.collection('aposMigrations');
       },
@@ -238,7 +242,8 @@ module.exports = {
         if (self.apos.isNew) {
           // Since the site is brand new (zero documents), we may assume
           // it requires no migrations. Mark them all as "done" but note
-          // that they were skipped, just in case we decide that's an issue later
+          // that they were skipped, just in case we decide that's an issue
+          // later
           const at = new Date();
           // Just in case the db has no documents but did
           // start to run migrations on a previous attempt,
@@ -260,8 +265,9 @@ module.exports = {
             await self.runOne(migration);
           }
         }
-        // In production, this event is emitted only at the end of the migrate command line task.
-        // In dev it is emitted at every startup after the automatic migration.
+        // In production, this event is emitted only at the end of the migrate
+        // command line task. In dev it is emitted at every startup after the
+        // automatic migration.
         //
         // Intentionally emitted regardless of whether the site is new or not.
         //

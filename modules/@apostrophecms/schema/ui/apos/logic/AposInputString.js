@@ -59,7 +59,10 @@ export default {
         // previous value matched the previous value of the other field(s)
         oldValue = Object.values(oldValue).join(' ').trim();
         newValue = Object.values(newValue).join(' ').trim();
-        if ((!this.wasPopulated && ((this.next == null) || (!this.next.length))) || (this.next === oldValue)) {
+        if (
+          (!this.wasPopulated &&
+          ((this.next == null) || (!this.next.length))) || (this.next === oldValue)
+        ) {
           this.next = newValue;
         }
       }
@@ -111,12 +114,18 @@ export default {
       }
 
       if (this.field.min && minMaxFields.includes(this.field.type)) {
-        if ((!isString || value.length) && (this.minMaxComparable(value) < this.field.min)) {
+        if (
+          (!isString || value.length) &&
+          (this.minMaxComparable(value) < this.field.min)
+        ) {
           return 'min';
         }
       }
       if (this.field.max && minMaxFields.includes(this.field.type)) {
-        if ((!isString || value.length) && (this.minMaxComparable(value) > this.field.max)) {
+        if (
+          (!isString || value.length) &&
+          (this.minMaxComparable(value) > this.field.max)
+        ) {
           return 'max';
         }
       }

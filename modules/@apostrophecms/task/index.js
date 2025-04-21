@@ -34,7 +34,10 @@ module.exports = {
           await telemetry.startActiveSpan(spanName, async (span) => {
             span.setAttribute(SemanticAttributes.CODE_FUNCTION, 'runTask');
             span.setAttribute(SemanticAttributes.CODE_NAMESPACE, '@apostrophecms/task');
-            span.setAttribute(telemetry.Attributes.ARGV, telemetry.stringify(self.apos.argv));
+            span.setAttribute(
+              telemetry.Attributes.ARGV,
+              telemetry.stringify(self.apos.argv)
+            );
 
             let task;
             if (!cmd) {
@@ -52,7 +55,10 @@ module.exports = {
 
               // help with specific task
               if (self.apos.argv._.length === 2) {
-                span.setAttribute(telemetry.Attributes.TARGET_NAMESPACE, self.apos.argv._[1]);
+                span.setAttribute(
+                  telemetry.Attributes.TARGET_NAMESPACE,
+                  self.apos.argv._[1]
+                );
                 task = self.find(self.apos.argv._[1]);
                 if (!task) {
                   console.error('There is no such task.');
@@ -104,7 +110,8 @@ module.exports = {
       //
       // Examples (assume `products` extends `@apostrophecms/piece-type`):
       //
-      // `await self.apos.task.invoke('@apostrophecms/user:add', [ 'admin', 'admin' ])`
+      // `await self.apos.task.invoke('@apostrophecms/user:add', [ 'admin',
+      // 'admin' ])`
       //
       // `await self.apos.task.invoke('products:generate', { total: 20 })`
       //
@@ -180,7 +187,10 @@ module.exports = {
         }
         const moduleName = matches[1];
         const name = matches[2];
-        if (!(self.apos.modules[moduleName] && _.has(self.apos.modules[moduleName].tasks, name))) {
+        if (
+          !(self.apos.modules[moduleName] &&
+          _.has(self.apos.modules[moduleName].tasks, name))
+        ) {
           return false;
         }
         const task = self.apos.modules[moduleName].tasks[name];
@@ -208,7 +218,8 @@ module.exports = {
       },
 
       // Register error (if any) and close the current telemetry span;
-      // send a signal back to the bootstrap to exit the process with a given code.
+      // send a signal back to the bootstrap to exit the process with a given
+      // code.
 
       exit(after, code, span, err) {
         after.exit = code;

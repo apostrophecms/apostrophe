@@ -10,7 +10,8 @@ module.exports = {
   ],
   options: {
     perPage: 10,
-    // Pages should never be considered "related documents" when localizing another document etc.
+    // Pages should never be considered "related documents" when localizing
+    // another document etc.
     relatedDocument: false
   },
   fields(self) {
@@ -44,9 +45,10 @@ module.exports = {
       remove: [ 'archived' ],
       group: {
         utility: {
-          // Keep `slug`, `type`, `visibility` and `orphan` fields before others,
-          // in case of modules improving `@apostrophecms/doc-type` that would add
-          // custom fields (included in `self.fieldsGroups.utility.fields`).
+          // Keep `slug`, `type`, `visibility` and `orphan` fields before
+          // others, in case of modules improving `@apostrophecms/doc-type` that
+          // would add custom fields (included in
+          // `self.fieldsGroups.utility.fields`).
           fields: _.uniq([
             'slug',
             'type',
@@ -121,8 +123,8 @@ module.exports = {
           }
           let matched;
           if (_.isEmpty(self.rules)) {
-            // If there are no dispatch rules, assume this is an "ordinary" page type and
-            // just look for an exact match
+            // If there are no dispatch rules, assume this is an "ordinary"
+            // page type and just look for an exact match
             if (req.remainder !== '/') {
               req.notFound = true;
             } else {
@@ -170,7 +172,8 @@ module.exports = {
             permission: false
           });
           if (published && (doc.level > 0)) {
-            const { lastTargetId, lastPosition } = await self.apos.page.inferLastTargetIdAndPosition(doc);
+            const { lastTargetId, lastPosition } = await self.apos.page
+              .inferLastTargetIdAndPosition(doc);
             return self.apos.page.move(
               req.clone({
                 mode: 'published'
@@ -232,9 +235,9 @@ module.exports = {
           if (descendants) {
             // TODO it might be nice to have an option to automatically do it
             // recursively, but right now this is a hypothetical because we
-            // only invoke the unpublish API as "undo publish," and "publish" is already
-            // guarded to happen from the bottom up. Just providing minimum
-            // acceptable coverage here for now
+            // only invoke the unpublish API as "undo publish," and "publish"
+            // is already guarded to happen from the bottom up. Just providing
+            // minimum acceptable coverage here for now
             throw self.apos.error('invalid', 'You must unpublish child pages before unpublishing their parent.');
           }
         },
@@ -254,7 +257,8 @@ module.exports = {
             // chance we need to "replay" such a move
             return;
           }
-          const { lastTargetId, lastPosition } = await self.apos.page.inferLastTargetIdAndPosition(result.published);
+          const { lastTargetId, lastPosition } = await self.apos.page
+            .inferLastTargetIdAndPosition(result.published);
           await self.apos.page.move(
             publishedReq,
             result.published._id,
@@ -295,8 +299,8 @@ module.exports = {
       dispatchAll() {
         self.dispatch('/', req => self.setTemplate(req, 'page'));
       },
-      // Add an Express-style route that responds when "the rest" of the URL, beyond
-      // the page slug itself, matches a pattern.
+      // Add an Express-style route that responds when "the rest" of the URL,
+      // beyond the page slug itself, matches a pattern.
       //
       // For instance,  if the page slug is `/poets`, the URL is
       // `/poets/chaucer`, and this method has been called with
@@ -304,15 +308,16 @@ module.exports = {
       // be invoked with `(req)`. **The method must be an async
       // function, and it will be awaited.**
       //
-      // **Special case:** if the page slug is simply `/poets` (with no slash) and
-      // there is a dispatch route with the pattern `/`, that route will be invoked.
+      // **Special case:** if the page slug is simply `/poets` (with no slash)
+      // and there is a dispatch route with the pattern `/`, that route will be
+      // invoked.
       //
-      // Dispatch routes can also have async middleware. Pass middleware functions as
-      // arguments in between the pattern and the handler. Dispatch middleware
-      // functions are async functions which receive `(req)` as an argument. If
-      // a middleware function explicitly returns `false`, no more middleware is run
-      // and the handler is not run. Otherwise the chain of middleware continues
-      // and, at the end, the handler is invoked.
+      // Dispatch routes can also have async middleware. Pass middleware
+      // functions as arguments in between the pattern and the handler. Dispatch
+      // middleware functions are async functions which receive `(req)` as an
+      // argument. If a middleware function explicitly returns `false`, no more
+      // middleware is run and the handler is not run. Otherwise the chain of
+      // middleware continues and, at the end, the handler is invoked.
       dispatch(pattern) {
         const keys = [];
         const regexp = pathToRegexp(pattern, keys);
@@ -383,8 +388,10 @@ module.exports = {
           setModified: false
         };
         if (doc.level > 0) {
-          const { lastTargetId, lastPosition } = await self.apos.page.inferLastTargetIdAndPosition(doc);
-          // Replay the high level positioning used to place it in the published locale
+          const { lastTargetId, lastPosition } = await self.apos.page
+            .inferLastTargetIdAndPosition(doc);
+          // Replay the high level positioning used to place it in the
+          // published locale
           return self.apos.page.insert(
             _req,
             lastTargetId.replace(':published', ':draft'),
@@ -409,8 +416,10 @@ module.exports = {
           mode: 'published'
         });
         if (doc.level > 0) {
-          const { lastTargetId, lastPosition } = await self.apos.page.inferLastTargetIdAndPosition(doc);
-          // Replay the high level positioning used to place it in the draft locale
+          const { lastTargetId, lastPosition } = await self.apos.page
+            .inferLastTargetIdAndPosition(doc);
+          // Replay the high level positioning used to place it in the draft
+          // locale
           return self.apos.page.insert(
             _req,
             // do not force published doc as it might not exist, lastTargetId

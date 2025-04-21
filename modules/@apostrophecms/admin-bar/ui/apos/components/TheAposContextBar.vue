@@ -60,7 +60,8 @@ export default {
   emits: [ 'visibility-changed' ],
   data() {
     const query = apos.http.parseQuery(location.search);
-    // If the URL references a draft, go into draft mode but then clean up the URL
+    // If the URL references a draft, go into draft mode but then clean up the
+    // URL
     const draftMode = query.aposMode || 'published';
     if (draftMode === 'draft') {
       const newQuery = { ...query };
@@ -88,9 +89,9 @@ export default {
         }
         : {},
       contextStack: [],
-      // If a published context doc itself is not editable this will contain a hint
-      // that the draft version is editable, when appropriate. It should only be
-      // consulted when the context doc is published and not editable
+      // If a published context doc itself is not editable this will contain a
+      // hint that the draft version is editable, when appropriate. It should
+      // only be consulted when the context doc is published and not editable
       draftIsEditable: false
     };
   },
@@ -221,13 +222,14 @@ export default {
   methods: {
     // Implements the `set-context` Apostrophe event, which can change the mode
     // (`draft` or `published`), the locale (such as `en`), and the context
-    // document (`doc`). Navigates to `doc._url` if it differs from the browser's
-    // current URL in the new mode, whether it is the current context doc or not.
+    // document (`doc`). Navigates to `doc._url` if it differs from the
+    // browser's current URL in the new mode, whether it is the current context
+    // doc or not.
     //
-    // Accepts `mode`, `locale` and `doc` properties in its options object. Whether
-    // the mode and locale are changing or not, if the `_url` of `doc` in the
-    // final mode and locale does not match the current URL, navigate to it.
-    // `doc` becomes the new context doc if it is not already.
+    // Accepts `mode`, `locale` and `doc` properties in its options object.
+    // Whether the mode and locale are changing or not, if the `_url` of `doc`
+    // in the final mode and locale does not match the current URL, navigate to
+    // it. `doc` becomes the new context doc if it is not already.
     //
     // You should not emit `set-context` with a doc that has no `_url`, nor
     // do you need to because the user's browsing context does not change
@@ -240,8 +242,8 @@ export default {
     // context document, such as global or palette, while it is being edited
     // "on the page."
     //
-    // TODO: locales are not fully implemented in the UI yet. They are considered
-    // in this API to reduce bc breaks in forthcoming betas.
+    // TODO: locales are not fully implemented in the UI yet. They are
+    // considered in this API to reduce bc breaks in forthcoming betas.
     async onSetContext({
       mode,
       locale,
@@ -298,14 +300,14 @@ export default {
       await this.refresh();
     },
     // Accept a hint that a user is actively typing and/or manipulating controls
-    // and it would best not to enable a save button or a "...Saved" indication yet
-    // to avoid a frenetic display and/or a situation where not everything is ready
-    // to be saved yet.
+    // and it would best not to enable a save button or a "...Saved" indication
+    // yet to avoid a frenetic display and/or a situation where not everything
+    // is ready to be saved yet.
     //
     // If the event is emitted with a boolean value of `true`, the emitter takes
-    // responsibility for later emitting `false` to indicate active typing/manipulating
-    // is no longer in progress. If the event is emitted with no value then there is a
-    // 1100-millisecond, debounced timeout.
+    // responsibility for later emitting `false` to indicate active
+    // typing/manipulating is no longer in progress. If the event is emitted
+    // with no value then there is a 1100-millisecond, debounced timeout.
 
     async onContextEditing(state) {
       if ((typeof state) === 'boolean') {
@@ -481,7 +483,8 @@ export default {
         }
       } catch (e) {
         if (e.status === 404) {
-          // TODO don't get this far, check this in advance and disable it in the UI
+          // TODO don't get this far, check this in advance and disable it in
+          // the UI
           await apos.alert({
             heading: 'apostrophe:doesNotExistYet',
             description: 'apostrophe:doesNotExistYetDescription'

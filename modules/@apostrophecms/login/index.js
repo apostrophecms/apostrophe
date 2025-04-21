@@ -37,7 +37,8 @@
 // `passport`
 //
 // Apostrophe's instance of the [passport](https://npmjs.org/package/passport) npm module.
-// You may access this object if you need to implement additional passport "strategies."
+// You may access this object if you need to implement additional passport
+// "strategies."
 
 const Passport = require('passport').Passport;
 const LocalStrategy = require('passport-local');
@@ -153,10 +154,9 @@ module.exports = {
             };
             const cookie = req.session.cookie;
             await destroySession();
-            // Session cookie expiration isn't automatic with `req.session.destroy`.
-            // Fix that to reduce challenges for those attempting to implement custom
-            // caching strategies at the edge
-            // https://github.com/expressjs/session/issues/241
+            // Session cookie expiration isn't automatic with
+            // `req.session.destroy`. Fix that to reduce challenges for those
+            // attempting to implement custom caching strategies at the edge https://github.com/expressjs/session/issues/241
             const expireCookie = new expressSession.Cookie(cookie);
             expireCookie.expires = new Date(0);
             const name = self.apos.modules['@apostrophecms/express'].sessionOptions.name;
@@ -166,10 +166,10 @@ module.exports = {
             req.res.cookie(`${self.apos.shortName}.${loggedInCookieName}`, 'false');
           }
         },
-        // invokes the `props(req, user)` function for the requirement specified by
-        // `body.name`. Invoked before displaying each `afterPasswordVerified`
-        // requirement. The return value of the function, which should
-        // be an object, is delivered as the API response
+        // invokes the `props(req, user)` function for the requirement
+        // specified by `body.name`. Invoked before displaying each
+        // `afterPasswordVerified` requirement. The return value of the
+        // function, which should be an object, is delivered as the API response
         async requirementProps(req) {
           const { user } = await self.findIncompleteTokenAndUser(
             req,
@@ -378,7 +378,8 @@ module.exports = {
       // props for beforeSubmit requirements
       async getContext(req) {
         const aposPackage = require('../../../package.json');
-        // For performance beforeSubmit requirement props all happen together here
+        // For performance beforeSubmit requirement props all happen together
+        // here
         const requirementProps = {};
         for (const [ name, requirement ] of Object.entries(self.requirements)) {
           if ((requirement.phase !== 'afterPasswordVerified') && requirement.props) {
@@ -484,13 +485,13 @@ module.exports = {
       // the username or the email address (both are unique).
       //
       // If the user's credentials are invalid, `false` is returned after a
-      // 1000ms delay to discourage abuse. If another type of error occurs, it is thrown
-      // normally.
+      // 1000ms delay to discourage abuse. If another type of error occurs, it
+      // is thrown normally.
       //
       // If the user's login SUCCEEDS, the return value is
       // the `user` object.
-      // `attempts`,  `ip` and `requestId` are optional, sent for only logging needs.
-      // They won't be available with passport.
+      // `attempts`,  `ip` and `requestId` are optional, sent for only logging
+      // needs. They won't be available with passport.
 
       async verifyLogin(username, password, attempts = 0, ip, requestId) {
         const req = self.apos.task.getReq();
@@ -699,10 +700,10 @@ module.exports = {
         }
       },
 
-      // Implementation detail of the login route and the requirementProps mechanism for
-      // custom login requirements. Given the string `token`, returns
-      // `{ token, user }`. Throws an exception if the token is not found.
-      // `token` is sanitized before passing to mongodb.
+      // Implementation detail of the login route and the requirementProps
+      // mechanism for custom login requirements. Given the string `token`,
+      // returns `{ token, user }`. Throws an exception if the token is not
+      // found. `token` is sanitized before passing to mongodb.
       async findIncompleteTokenAndUser(req, token) {
         token = await self.bearerTokens.findOne({
           _id: self.apos.launder.string(token),
@@ -745,8 +746,8 @@ module.exports = {
         }
       },
 
-      // Implementation detail of the login route. Log in the user, or if there are
-      // `requirements` that require password verification occur first,
+      // Implementation detail of the login route. Log in the user, or if there
+      // are `requirements` that require password verification occur first,
       // return an incomplete token.
       async initialLogin(req) {
         const username = self.apos.launder.string(req.body.username);
@@ -796,8 +797,8 @@ module.exports = {
               _id: token,
               userId: user._id,
               requirementsToVerify,
-              // Default lifetime of 1 hour is generous to permit situations like
-              // installing a TOTP app for the first time
+              // Default lifetime of 1 hour is generous to permit situations
+              // like installing a TOTP app for the first time
               expires: new Date(
                 new Date().getTime() + (self.options.incompleteLifetime || 60 * 60 * 1000)
               )
@@ -857,7 +858,8 @@ module.exports = {
         };
       },
 
-      // Awaitable wrapper for req.login. An implementation detail of the login route
+      // Awaitable wrapper for req.login. An implementation detail of the login
+      // route
       async passportLogin(req, user) {
         const cookieName = `${self.apos.shortName}.${loggedInCookieName}`;
         if (req.cookies[cookieName] !== 'true') {
@@ -1002,7 +1004,8 @@ module.exports = {
         before: '@apostrophecms/i18n',
         middleware: (() => {
           // Wrap the passport middleware so that if the apikey or bearer token
-          // middleware already supplied req.user, that wins (explicit wins over implicit)
+          // middleware already supplied req.user, that wins (explicit wins
+          // over implicit)
           const passportSession = self.passport.session();
           return (req, res, next) => req.user ? next() : passportSession(req, res, next);
         })()
@@ -1010,7 +1013,8 @@ module.exports = {
       removeUserForDraftSharing: {
         before: '@apostrophecms/i18n',
         middleware(req, res, next) {
-          // Remove user to hide the admin UI, in order to simulate a logged-out page view
+          // Remove user to hide the admin UI, in order to simulate a
+          // logged-out page view
           if (self.isShareDraftRequest(req)) {
             delete req.user;
           }

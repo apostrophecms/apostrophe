@@ -6,15 +6,17 @@ const Promise = require('bluebird');
 module.exports = {
   async init(self) {
     self.uploadfs = await self.getInstance(self.options.uploadfs || {});
-    // Like @apostrophecms/express or @apostrophecms/db, this module has no alias and instead
-    // points to the service it provides because that is more useful
+    // Like @apostrophecms/express or @apostrophecms/db, this module has no
+    // alias and instead points to the service it provides because that is more
+    // useful
     self.apos.uploadfs = self.uploadfs;
   },
 
   methods(self) {
     return {
-      // Initializes and returns a new instance of uploadfs, applying the appropriate defaults
-      // and environment variables where not overridden by the given options object
+      // Initializes and returns a new instance of uploadfs, applying the
+      // appropriate defaults and environment variables where not overridden by
+      // the given options object
       async getInstance(options = {}) {
         const uploadfsDefaultSettings = {
           backend: 'local',

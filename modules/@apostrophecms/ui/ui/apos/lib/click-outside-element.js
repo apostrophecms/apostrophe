@@ -3,7 +3,11 @@ export default {
     app.directive('click-outside-element', {
       beforeMount(el, binding) {
         el.aposClickOutsideHandler = (event) => {
-          if ((el !== event.target) && !el.contains(event.target) && !apos.modal.onTopOf(event.target, el)) {
+          if (
+            (el !== event.target) &&
+            !el.contains(event.target) &&
+            !apos.modal.onTopOf(event.target, el)
+          ) {
             binding.value(event);
           }
         };

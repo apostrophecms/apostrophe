@@ -119,15 +119,17 @@ export default {
      * Array of headers to display in the table.
      * The `name` property is used to determine the value to display
      * for each cell in the table.
-     * `translate` is optional and if true, the relevant items values will be translated.
-     * `css` is the class suffix to apply to the cell. If missing, `name` is used.
-     * `id` is optional unique identifier for the header. If missing, `name` is used.
-     * It's only used for internal purposes (loop keys).
+     * `translate` is optional and if true, the relevant items values will be
+     * translated. `css` is the class suffix to apply to the cell. If missing,
+     * `name` is used. `id` is optional unique identifier for the header. If
+     * missing, `name` is used. It's only used for internal purposes (loop
+     * keys).
      * `icon` is the optional icon component name to display in the header.
      * `iconSize` is the optional size of the icon to display in the header.
-     * If `action` is truthy, the header will be rendered as a button by default.
-     * `format` is the optional format to apply to the value before displaying it.
-     * It can be a predefined format or a function. Predefined formats are:
+     * If `action` is truthy, the header will be rendered as a button by
+     * default. `format` is the optional format to apply to the value before
+     * displaying it. It can be a predefined format or a function. Predefined
+     * formats are:
      * - `last:n` to display the last n characters of the string.
      * - `yesno` to display "Yes" or "No" based on the value.
      *

@@ -1,8 +1,9 @@
-// The admin bar module implements Apostrophe's admin bar at the top of the screen. Any module
-// can register a button (or more than one) for this bar by calling the `add` method of this
-// module. Buttons can also be grouped into dropdown menus and restricted to those with
-// particular permissions. [@apostrophecms/piece-type](../@apostrophecms/piece-type/index.html) automatically
-// takes advantage of this module.
+// The admin bar module implements Apostrophe's admin bar at the top of the
+// screen. Any module can register a button (or more than one) for this bar by
+// calling the `add` method of this module. Buttons can also be grouped into
+// dropdown menus and restricted to those with particular permissions.
+// [@apostrophecms/piece-type](../@apostrophecms/piece-type/index.html)
+// automatically takes advantage of this module.
 
 const _ = require('lodash');
 const { createId } = require('@paralleldrive/cuid2');
@@ -190,14 +191,15 @@ module.exports = {
       // wish to implement a custom admin bar item not powered by
       // the `AposModals` app.
       //
-      // If `options.contextUtility` is true, the item will be displayed in a tray of
-      // icons just to the right of the login and/or locales menu. If `options.toggle` is also true,
-      // then the button will have the `active` state until toggled
-      // off again. `options.tooltip.deactivate` and `options.tooltip.activate` may be
-      // provided to offer a different tooltip during the active versus inactive states,
-      // respectively. Otherwise, `options.tooltip` is used. The regular label is also present
-      // for screenreaders only. The contextUtility functionality is typically used for
-      // experiences that temporarily change the current editing context.
+      // If `options.contextUtility` is true, the item will be displayed in a
+      // tray of icons just to the right of the login and/or locales menu. If
+      // `options.toggle` is also true, then the button will have the `active`
+      // state until toggled off again. `options.tooltip.deactivate` and
+      // `options.tooltip.activate` may be provided to offer a different tooltip
+      // during the active versus inactive states, respectively. Otherwise,
+      // `options.tooltip` is used. The regular label is also present for
+      // screenreaders only. The contextUtility functionality is typically used
+      // for experiences that temporarily change the current editing context.
       //
       // If `options.user` is true, the menu bar item will appear
       // on the user's personal dropdown, where "Log Out" appears. Such items
@@ -256,7 +258,10 @@ module.exports = {
           }
           // Only build a menu if there are at least two items after filtering
           // for permissions
-          if (item.menuLeader === item.name && (items[i + 1] && items[i + 1].menuLeader === item.name)) {
+          if (
+            item.menuLeader === item.name &&
+            items[i + 1]?.menuLeader === item.name
+          ) {
             menu = {
               menu: true,
               items: [ item ],
@@ -313,7 +318,8 @@ module.exports = {
       groupItems() {
         // Implement the groups and addGroups options. Mark the grouped items
         // with a `menuLeader` property.
-        const groups = self.options.groups || self.groups.concat(self.options.addGroups || []);
+        const groups = self.options.groups ||
+          self.groups.concat(self.options.addGroups || []);
 
         groups.forEach(function (group) {
           if (!group.label) {
@@ -418,7 +424,8 @@ module.exports = {
               screens: {}
             },
           // Base API URL appropriate to the context document
-          contextBar: context && self.apos.doc.getManager(context.type).options.contextBar,
+          contextBar: context && self.apos.doc
+            .getManager(context.type).options.contextBar,
           showAdminBar: self.getShowAdminBar(req),
           // Simplifies frontend logic
           contextId: context && context._id,
