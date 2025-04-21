@@ -462,7 +462,6 @@ export default {
     this.$refs.editor.addEventListener('cut', this.ignoreEvent)
     this.$refs.editor.addEventListener('copy', this.ignoreEvent);
     this.$refs.editor.addEventListener('paste', this.ignoreEvent)
-    // this.$refs.editor.addEventListener('keydown', this.handleKeydown)
     
   },
 
@@ -474,8 +473,6 @@ export default {
     ignoreEvent(e) {
       e.aposIgnoreEvent = true;
     },
-    handlePaste() {},
-    handleCopy() {},
     showTableControls() {
       return this.editor?.isActive('table') ?? false;
     },

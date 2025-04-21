@@ -1,6 +1,5 @@
 <template>
   <div
-    ref="area"
     :data-apos-area="areaId"
     class="apos-area"
     :class="themeClass"
@@ -266,7 +265,7 @@ export default {
         }
       });
     },
-    handlePaste(index = 1) {
+    handlePaste(index = 0) {
       this.paste(index);
     },
     areaUpdatedHandler(area) {
