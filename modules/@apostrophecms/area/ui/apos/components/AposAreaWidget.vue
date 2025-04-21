@@ -8,6 +8,7 @@
     :data-area-label="widgetLabel"
     :data-apos-widget-foreign="foreign ? 1 : 0"
     :data-apos-widget-id="widget._id"
+    tabindex="0"
   >
     <div
       ref="wrapper"
@@ -268,7 +269,7 @@ export default {
       }
     }
   },
-  emits: [ 'clone', 'up', 'down', 'remove', 'edit', 'cut', 'copy', 'update', 'add', 'changed' ],
+  emits: [ 'clone', 'up', 'down', 'remove', 'edit', 'cut', 'copy', 'update', 'add', 'changed', 'paste' ],
   data() {
     return {
       mounted: false, // hack around needing DOM to be rendered for computed classes
@@ -413,15 +414,48 @@ export default {
       // If another widget was in focus (because the user clicked the "add"
       // menu, for example), and this widget was created, give the new widget
       // focus.
-      apos.bus.$emit('widget-focus', this.widget._id);
+      apos.bus.$emit('widget-focus', { _id: this.widget._id });
     }
+    this.$refs.widget.addEventListener('copy', this.handleCopy);
+    this.$refs.widget.addEventListener('paste', this.handlePaste);
+    this.$refs.widget.addEventListener('cut', this.handleCut);
+    this.$refs.widget.addEventListener('keydown', this.handleDuplicate);
+    this.$refs.widget.addEventListener('keydown', this.handleRemove);
   },
   unmounted() {
     // Remove the focus parent listener when unmounted
     apos.bus.$off('widget-focus-parent', this.focusParent);
   },
   methods: {
-
+    handleCut(e) {
+      if (this.isFocused && !e.aposIgnoreEvent) {
+        this.$emit('cut', this.i);
+      }
+    },
+    handleCopy(e) {
+      if (this.isFocused && !e.aposIgnoreEvent) {
+        this.$emit('copy', this.i);
+      }
+    },
+    handlePaste(e) {
+      if (this.isFocused && !e.aposIgnoreEvent) {
+        this.$emit('paste', this.i + 1);
+      }
+    },
+    handleRemove(e) {
+      if (e.key === 'Backspace' && !e.aposIgnoreEvent) {
+        if (this.isFocused) {
+          this.$emit('remove', this.i);
+        }
+      }
+    },
+    handleDuplicate(e) {
+      if ((e.metaKey  && e.shiftKey &&  e.key === 'd') && !e.aposIgnoreEvent) {
+        if (this.isFocused) {
+          this.$emit('clone', this.i);
+        }
+      }
+    },
     getFocusForMenu({ menuId, isOpen }) {
       if (
         (
@@ -463,18 +497,18 @@ export default {
         const $parent = this.getParent();
         // .. And have a parent
         if ($parent) {
-          apos.bus.$emit('widget-focus', $parent.dataset.areaWidget);
+          apos.bus.$emit('widget-focus', { _id: $parent.dataset.areaWidget });
         }
       }
     },
 
     // Ask the parent AposAreaEditor to make us focused
-    getFocus(e, id) {
+    getFocus(e, _id) {
       if (e) {
         e.stopPropagation();
       }
       this.isSuppressed = false;
-      apos.bus.$emit('widget-focus', id);
+      apos.bus.$emit('widget-focus', { _id });
     },
 
     // Our widget was hovered
@@ -502,7 +536,7 @@ export default {
       if (!this.$el.contains(event.target)) {
         this.isSuppressed = true;
         document.removeEventListener('click', this.unfocus);
-        apos.bus.$emit('widget-focus', null);
+        apos.bus.$emit('widget-focus', { _id: null });
       }
     },
 

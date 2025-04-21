@@ -1,12 +1,15 @@
 <template>
   <div
+    ref="area"
     :data-apos-area="areaId"
     class="apos-area"
     :class="themeClass"
   >
     <div
+      ref="empty"
       v-if="next.length === 0 && !foreign"
       class="apos-empty-area"
+      tabindex="0"
     >
       <template v-if="isEmptySingleton">
         <AposButton
@@ -66,6 +69,7 @@
         @clone="clone"
         @update="update"
         @add="add"
+        @paste="paste"
       />
     </div>
   </div>
@@ -201,7 +205,7 @@ export default {
     // issues with live widget preview and also performance, the top level
     // array will change in situations where a patch API call is actually
     // needed at this level
-    next() {
+    next(newVal) {
       if (!this.docId) {
         // For the benefit of AposInputArea which is the
         // direct parent when we are not editing on-page
@@ -216,6 +220,10 @@ export default {
         _id: this.id,
         items: this.next
       });
+
+      if (!newVal.length) {
+        this.bindEmptyHandlers();
+      }
     },
     generation() {
       this.next = this.getValidItems();
@@ -243,12 +251,23 @@ export default {
       apos.bus.$on('widget-hover', this.updateWidgetHovered);
       apos.bus.$on('widget-focus', this.updateWidgetFocused);
       window.addEventListener('keydown', this.focusParentEvent);
+      this.bindEmptyHandlers();
     },
     unbindEventListeners() {
       apos.bus.$off('area-updated', this.areaUpdatedHandler);
       apos.bus.$off('widget-hover', this.updateWidgetHovered);
       apos.bus.$off('widget-focus', this.updateWidgetFocused);
       window.removeEventListener('keydown', this.focusParentEvent);
+    },
+    bindEmptyHandlers() {
+      this.$nextTick(() => {
+        if (this.$refs.empty) {
+          this.$refs.empty.addEventListener('paste', this.handlePaste);
+        }
+      });
+    },
+    handlePaste(index = 1) {
+      this.paste(index);
     },
     areaUpdatedHandler(area) {
       for (const item of this.next) {
@@ -267,10 +286,26 @@ export default {
       this.hoveredWidget = _id;
       this.hoveredNonForeignWidget = nonForeignId;
     },
-    updateWidgetFocused(widgetId) {
-      this.focusedWidget = widgetId;
+    updateWidgetFocused({ _id, focus }) {
+      this.focusedWidget = _id;
       // Attached to window so that modals can see the area is active
-      window.apos.focusedWidget = widgetId;
+      window.apos.focusedWidget = _id;
+      if (focus) {
+        this.$nextTick(() => {
+          const $el = document.querySelector(`[data-apos-widget-id="${_id}"]`);
+          const headerOffset = window.apos.adminBar.height;
+          const elementPosition = $el.getBoundingClientRect().top;
+          const offsetPosition = elementPosition + window.pageYOffset - (headerOffset + 40);
+
+          $el.focus({
+            preventScroll: true
+          });
+          window.scrollTo({
+            top: offsetPosition,
+            behavior: 'smooth'
+          });
+        });
+      }
     },
     async up(i) {
       if (this.docId === window.apos.adminBar.contextId) {
@@ -320,6 +355,10 @@ export default {
         ...this.next.slice(0, i),
         ...this.next.slice(i + 1)
       ];
+      const focusNext = this.next[i] || this.next[ i - 1 ];
+      if (focusNext) {
+        apos.bus.$emit('widget-focus', { _id: focusNext._id, focus: true });
+      }
     },
     async cut(i) {
       apos.area.widgetClipboard.set(this.next[i]);
@@ -412,8 +451,21 @@ export default {
       );
       this.insert({
         widget,
-        index
+        index: index + 1
       });
+    },
+    async paste(index) {
+      const clipboard = apos.area.widgetClipboard.get();
+      if (clipboard) {
+        const widget = clipboard;
+        const matchingChoice = this.contextMenuOptions.menu.find(option => option.name === widget.type);
+        if (matchingChoice) {
+          this.add({
+            index,
+            clipboard
+          })
+        }
+      }
     },
     // Regenerate all array item, area, object and widget ids so they are considered
     // new. Useful when copying a widget with nested content.
@@ -465,7 +517,7 @@ export default {
     }) {
       if (clipboard) {
         // clear clipboard after paste
-        apos.area.widgetClipboard.set(null);
+        // apos.area.widgetClipboard.set(null);
         this.regenerateIds(
           apos.modules[apos.area.widgetManagers[clipboard.type]].schema,
           clipboard
@@ -558,6 +610,7 @@ export default {
       if (this.widgetIsContextual(widget.type)) {
         this.edit(index);
       }
+      apos.bus.$emit('widget-focus', { _id: widget._id, focus: true });
     },
     widgetIsContextual(type) {
       return this.moduleOptions.widgetIsContextual[type];
@@ -648,6 +701,10 @@ function cancelRefresh(refreshOptions) {
   min-height: 50px;
   background-color: var(--a-base-9);
   border-radius: var(--a-border-radius);
+
+  &:focus, &:active {
+    border-color: var(--a-primary);
+  }
 }
 
 </style>

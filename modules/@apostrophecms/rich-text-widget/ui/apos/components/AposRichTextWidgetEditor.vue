@@ -82,6 +82,7 @@
     </floating-menu>
     <div
       class="apos-rich-text-editor__editor"
+      ref="editor"
       :class="editorModifiers"
     >
       <editor-content
@@ -458,6 +459,11 @@ export default {
       }
     });
     apos.bus.$on('apos-refreshing', this.onAposRefreshing);
+    this.$refs.editor.addEventListener('cut', this.ignoreEvent)
+    this.$refs.editor.addEventListener('copy', this.ignoreEvent);
+    this.$refs.editor.addEventListener('paste', this.ignoreEvent)
+    // this.$refs.editor.addEventListener('keydown', this.handleKeydown)
+    
   },
 
   beforeUnmount() {
@@ -465,6 +471,11 @@ export default {
     apos.bus.$off('apos-refreshing', this.onAposRefreshing);
   },
   methods: {
+    ignoreEvent(e) {
+      e.aposIgnoreEvent = true;
+    },
+    handlePaste() {},
+    handleCopy() {},
     showTableControls() {
       return this.editor?.isActive('table') ?? false;
     },

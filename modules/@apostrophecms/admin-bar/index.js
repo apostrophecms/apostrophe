@@ -115,7 +115,7 @@ module.exports = {
           action: {
             type: 'command-menu-admin-bar-toggle-publish-draft'
           },
-          shortcut: 'Ctrl+Shift+D Meta+Shift+D'
+          shortcut: 'Ctrl+Shift+M Meta+Shift+M'
         },
         ...breakpointPreviewModeCommands
       },
