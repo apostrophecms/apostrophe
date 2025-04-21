@@ -1,9 +1,6 @@
 <template>
   <div class="apos-area-modify-controls">
-    <AposButtonGroup
-      v-if="!foreign"
-      :modifiers="[ 'vertical' ]"
-    >
+    <AposButtonGroup :modifiers="[ 'vertical' ]">
       <AposButton
         v-for="control in widgetPrimaryControls"
         :key="control.action"
@@ -61,10 +58,6 @@ export default {
       default() {
         return {};
       }
-    },
-    foreign: {
-      type: Boolean,
-      required: true
     },
     disabled: {
       type: Boolean,
