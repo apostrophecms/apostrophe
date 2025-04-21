@@ -81,16 +81,9 @@ export default {
   },
   emits: [ 'remove', 'edit', 'cut', 'copy', 'clone', 'up', 'down', 'update' ],
   data() {
-    const { widgetOperations = [] } = apos.modules['@apostrophecms/area'];
-    const filteredOperations = widgetOperations.filter(operation => {
-      return !operation.type || operation.type === `${this.modelValue.type}-widget`;
-    });
-
     return {
-      widgetPrimaryOperations: filteredOperations
-        .filter(operation => !operation.secondaryLevel),
-      widgetSecondaryOperations: filteredOperations
-        .filter(operation => operation.secondaryLevel)
+      widgetPrimaryOperations: this.getOperations({ secondaryLevel: false }),
+      widgetSecondaryOperations: this.getOperations({ secondaryLevel: true })
     };
   },
   computed: {
@@ -218,8 +211,17 @@ export default {
     }
   },
   methods: {
-    filterByWidgetType(operation) {
-      return !operation.type || operation.type === this.modelValue.type;
+    getOperations({ secondaryLevel }) {
+      const { widgetOperations = [] } = apos.modules['@apostrophecms/area'];
+
+      return widgetOperations
+        .filter(operation => !operation.type || operation.type === `${this.modelValue.type}-widget`)
+        .filter(operation => {
+          if (secondaryLevel) {
+            return operation.secondaryLevel;
+          }
+          return !operation.secondaryLevel;
+        });
     },
     async handleClick({ action, modal }) {
       if (action) {
