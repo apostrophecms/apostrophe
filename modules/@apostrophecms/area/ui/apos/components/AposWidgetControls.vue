@@ -232,7 +232,7 @@ export default {
           widget: this.modelValue,
           field: this.areaField
         });
-        if (result.widget) {
+        if (result?.widget) {
           // TODO: make sure the update method from
           // modules/@apostrophecms/area/ui/apos/components/AposAreaEditor.vue
           // does the job and does not mess with the widget type and _id:
