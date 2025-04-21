@@ -137,8 +137,9 @@ export default {
   methods: {
     togglePublishDraftMode() {
       if (this.canTogglePublishDraftMode) {
-        const mode = this.draftMode === 'draft' ? 'published' : 'draft';
-        this.$emit('switch-draft-mode', mode);
+        this.switchDraftMode({
+          action: this.draftMode === 'draft' ? 'published' : 'draft'
+        });
       }
     },
     switchDraftMode(item) {
