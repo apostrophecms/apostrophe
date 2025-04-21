@@ -6,15 +6,7 @@ describe('Areas', function() {
 
   this.timeout(t.timeout);
 
-  after(async function() {
-    return t.destroy(apos);
-  });
-
-  /// ///
-  // EXISTENCE
-  /// ///
-
-  it('should initialize', async function() {
+  before(async function() {
     apos = await t.create({
       root: module,
 
@@ -74,6 +66,14 @@ describe('Areas', function() {
     // so override that in order to get apostrophe to
     // listen normally and not try to run a task. -Tom
     apos.argv._ = [];
+  });
+
+  after(async function() {
+    return t.destroy(apos);
+  });
+
+  beforeEach(function() {
+    apos.area.widgetOperations = [];
   });
 
   it('can get widgets from groups', function() {
@@ -422,6 +422,169 @@ describe('Areas', function() {
         name: 'test'
       }, 0)
     );
+  });
+
+  it('should support custom widget operations', function() {
+    const operation = {
+      name: 'someAction',
+      modal: 'AposSomeModal',
+      label: 'Some label',
+      icon: 'some-icon',
+      secondaryLevel: true,
+      permission: {
+        action: 'create',
+        type: 'article'
+      }
+    };
+
+    apos.area.addWidgetOperation(operation);
+
+    assert.strictEqual(apos.area.widgetOperations.length, 1);
+    assert.deepStrictEqual(apos.area.widgetOperations, [ { ...operation } ]);
+  });
+
+  it('should support custom widget operations added via a widget module', function() {
+    const operation = {
+      name: 'someAction',
+      modal: 'AposSomeModal',
+      label: 'Some label',
+      icon: 'some-icon',
+      secondaryLevel: true,
+      permission: {
+        action: 'create',
+        type: 'article'
+      }
+    };
+
+    apos.modules['@apostrophecms/image-widget'].addWidgetOperation(operation);
+
+    assert.strictEqual(apos.area.widgetOperations.length, 1);
+    assert.deepStrictEqual(apos.area.widgetOperations, [ {
+      ...operation,
+      type: '@apostrophecms/image-widget'
+    } ]);
+  });
+
+  it('should throw an error when adding a widget operation that lacks required properties', function() {
+    const message = /requires name, label and modal/;
+
+    assert.throws(
+      () => {
+        apos.area.addWidgetOperation({
+          label: 'Some label',
+          modal: 'AposSomeModal',
+          icon: 'some-icon'
+        });
+      },
+      { message }
+    );
+
+    assert.throws(
+      () => {
+        apos.area.addWidgetOperation({
+          name: 'someAction',
+          modal: 'AposSomeModal',
+          icon: 'some-icon'
+        });
+      },
+      { message }
+    );
+
+    assert.throws(
+      () => {
+        apos.area.addWidgetOperation({
+          name: 'someAction',
+          label: 'Some label',
+          icon: 'some-icon'
+        });
+      },
+      { message }
+    );
+
+    assert.throws(
+      () => {
+        apos.area.addWidgetOperation({
+          name: 'someAction',
+          label: 'Some label',
+          modal: 'AposSomeModal'
+        });
+      },
+      { message: /requires the icon property at primary level/ }
+    );
+
+    // This ensures that the icon is not required at secondary level:
+    apos.area.addWidgetOperation({
+      name: 'someAction',
+      label: 'Some label',
+      modal: 'AposSomeModal',
+      secondaryLevel: true
+    });
+  });
+
+  it('should replace an existing widget operation based on the name', function() {
+    const operation = {
+      name: 'nameA',
+      modal: 'modalA-2',
+      label: 'Label A-2',
+      icon: 'icon-a-2'
+    };
+
+    apos.area.widgetOperations = [
+      {
+        name: 'nameA',
+        modal: 'modalA-1',
+        label: 'Label A-1',
+        icon: 'icon-a-1'
+      },
+      {
+        name: 'nameB',
+        modal: 'modalB',
+        label: 'Label B',
+        icon: 'icon-b'
+      }
+    ];
+    apos.area.addWidgetOperation(operation);
+
+    assert.strictEqual(apos.area.widgetOperations.length, 2);
+    assert.deepStrictEqual(apos.area.widgetOperations, [
+      {
+        name: 'nameB',
+        modal: 'modalB',
+        label: 'Label B',
+        icon: 'icon-b'
+      },
+      {
+        name: 'nameA',
+        modal: 'modalA-2',
+        label: 'Label A-2',
+        icon: 'icon-a-2'
+      }
+    ]);
+  });
+
+  it('should handle widget operations with custom permissions', function() {
+    const operation = {
+      name: 'someAction',
+      modal: 'AposSomeModal',
+      label: 'Some label',
+      icon: 'sone-icon',
+      permission: {
+        action: 'delete',
+        type: 'article'
+      }
+    };
+
+    apos.area.widgetOperations = [ operation ];
+
+    {
+      const browserData = apos.area.getBrowserData(apos.task.getReq());
+      assert.deepStrictEqual(browserData.widgetOperations, [ { ...operation } ]);
+    }
+
+    {
+      const browserData = apos.area.getBrowserData(apos.task.getContributorReq());
+      assert.deepStrictEqual(browserData.widgetOperations, []);
+    }
   });
 });
 

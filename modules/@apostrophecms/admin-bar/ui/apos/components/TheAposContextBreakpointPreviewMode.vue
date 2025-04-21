@@ -256,10 +256,10 @@ export default {
       }
       return 'cellphone-icon';
     },
-    selectBreakpoint(selected) {
+    selectBreakpoint(item) {
       const {
         name, label, width, height
-      } = this.breakpoints.find(({ name }) => name === selected);
+      } = this.breakpoints.find(({ name }) => name === item.action);
       this.toggleBreakpointPreviewMode({
         mode: name,
         label,

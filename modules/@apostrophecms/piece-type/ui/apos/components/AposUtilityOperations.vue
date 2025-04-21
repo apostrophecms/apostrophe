@@ -61,12 +61,12 @@ export default {
   },
 
   methods: {
-    async handleUtilityOperation(action) {
+    async handleUtilityOperation(item) {
       const operation = [
         ...this.utilityOperations.menu,
         ...this.utilityOperations.buttons
       ]
-        .find((op) => op.action === action);
+        .find((op) => op.action === item.action);
 
       if (!operation) {
         // eslint-disable-next-line no-console
@@ -86,7 +86,7 @@ export default {
         await apos.modal.execute(modal, {
           moduleName: this.moduleOptions.name,
           moduleAction: this.moduleOptions.action,
-          action,
+          action: item.action,
           labels: this.moduleLabels,
           messages: operation.messages,
           ...modalOptions

@@ -140,7 +140,7 @@ export default {
       this.$emit('select-tab', id);
     },
     moreMenuHandler(item) {
-      this.$emit('select-tab', item);
+      this.$emit('select-tab', item.action);
     }
   }
 };
