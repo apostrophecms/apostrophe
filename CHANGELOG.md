@@ -1,5 +1,11 @@
 # Changelog
 
+## UNRELEASED
+
+### Fixes
+
+* Fixes a RT bug where including `table` in `toolbar` but omitting an `insert` array crashed the rich text editor.
+
 ## 4.15.0 (2025-04-16)
 
 ### Adds
