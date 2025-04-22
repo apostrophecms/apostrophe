@@ -33,7 +33,8 @@ module.exports = (self) => {
           items = [];
         }
       } catch (e) {
-        // Always recover graciously and import something reasonable, like an empty area
+        // Always recover graciously and import something reasonable, like an
+        // empty area
         items = [];
       }
       items = await self.apos.area.sanitizeItems(req, items, field.options, options);
@@ -1121,7 +1122,8 @@ module.exports = (self) => {
         .find(req, { $or: clauses })
         .relationships(false)
         .toArray();
-      // Must maintain input order. Also discard things not actually found in the db
+      // Must maintain input order. Also discard things not actually found in
+      // the db
       const actualDocs = [];
       for (const item of input) {
         if ((typeof item) === 'string') {
@@ -1195,8 +1197,9 @@ module.exports = (self) => {
 
             const value = query.get(field.name + suffix);
             const criteria = {};
-            // Even programmers appreciate shortcuts, so it's not enough that the
-            // sanitizer (which doesn't apply to programmatic use) accepts these
+            // Even programmers appreciate shortcuts, so it's not enough that
+            // the sanitizer (which doesn't apply to programmatic use) accepts
+            // these
             if (Array.isArray(value)) {
               criteria[field.idsStorage] = {};
               criteria[field.idsStorage][operator] = value.map(self.apos.doc.toAposDocId);
@@ -1382,8 +1385,8 @@ module.exports = (self) => {
         if (!forwardRelationship) {
           fail('reverseOf property does not match the name property of any relationship in the schema for ' + field.withType + '. Hint: you are taking advantage of a relationship already being edited in the schema for that type, "reverse" must match "name".');
         }
-        // Make sure the other relationship has any missing fields auto-supplied before
-        // trying to access them
+        // Make sure the other relationship has any missing fields
+        // auto-supplied before trying to access them
         self.validate([ forwardRelationship ], {
           type: 'doc type',
           subtype: otherModule.name

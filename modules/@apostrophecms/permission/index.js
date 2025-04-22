@@ -146,9 +146,15 @@ module.exports = {
           return {};
         }
 
-        const restrictedViewTypes = Object.keys(self.apos.doc.managers).filter(name => ranks[self.apos.doc.getManager(name).options.viewRole] > ranks[role]);
-        const restrictedEditTypes = Object.keys(self.apos.doc.managers).filter(name => ranks[self.apos.doc.getManager(name).options.editRole] > ranks[role]);
-        const restrictedPublishTypes = Object.keys(self.apos.doc.managers).filter(name => ranks[self.apos.doc.getManager(name).options.publishRole] > ranks[role]);
+        const restrictedViewTypes = Object.keys(self.apos.doc.managers)
+          .filter(name =>
+            ranks[self.apos.doc.getManager(name).options.viewRole] > ranks[role]);
+        const restrictedEditTypes = Object.keys(self.apos.doc.managers)
+          .filter(name =>
+            ranks[self.apos.doc.getManager(name).options.editRole] > ranks[role]);
+        const restrictedPublishTypes = Object.keys(self.apos.doc.managers)
+          .filter(name =>
+            ranks[self.apos.doc.getManager(name).options.publishRole] > ranks[role]);
         if (action === 'view') {
           if (role === 'guest') {
             return {
@@ -273,11 +279,14 @@ module.exports = {
         });
       },
       // Returns an object with properties describing the permissions associated
-      // with the given module, which should be a piece type or the `@apostrophecms/any-page-type`
-      // module. Used to populate the permission grid on the front end
+      // with the given module, which should be a piece type or the
+      // `@apostrophecms/any-page-type` module. Used to populate the permission
+      // grid on the front end
       describePermissionSet(req, apostropheModule, options = {}) {
         const permissionSet = {
-          label: apostropheModule.options.permissionsLabel || apostropheModule.options.pluralLabel || apostropheModule.options.label,
+          label: apostropheModule.options.permissionsLabel ||
+            apostropheModule.options.pluralLabel ||
+            apostropheModule.options.label,
           name: apostropheModule.__meta.name,
           singleton: apostropheModule.options.singleton,
           page: apostropheModule.__meta.name === '@apostrophecms/any-page-type',
@@ -308,10 +317,14 @@ module.exports = {
       // reduces the set to those considered interesting and those that
       // do not match the typical permissions, in an intuitive order
       presentPermissionSets(permissionSets) {
-        let newPermissionSets = permissionSets.filter(permissionSet => self.matchInterestingType(permissionSet));
+        let newPermissionSets = permissionSets
+          .filter(permissionSet => self.matchInterestingType(permissionSet));
         newPermissionSets = [
           ...newPermissionSets,
-          ...permissionSets.filter(permissionSet => !newPermissionSets.includes(permissionSet) && !self.matchTypicalPieceType(permissionSet) && !self.neverMentionType(permissionSet))
+          ...permissionSets.filter(permissionSet =>
+            !newPermissionSets.includes(permissionSet) &&
+            !self.matchTypicalPieceType(permissionSet) &&
+            !self.neverMentionType(permissionSet))
         ];
         const typicalPieceType = permissionSets.find(self.matchTypicalPieceType);
         if (typicalPieceType) {
@@ -319,7 +332,12 @@ module.exports = {
             ...typicalPieceType,
             name: '@apostrophecms/piece-type',
             label: 'apostrophe:pieceContent',
-            includes: permissionSets.filter(permissionSet => self.matchTypicalPieceType(permissionSet) && !newPermissionSets.includes(permissionSet)).map(permissionSet => permissionSet.label)
+            includes: permissionSets
+              .filter(permissionSet =>
+                self.matchTypicalPieceType(permissionSet) &&
+                !newPermissionSets.includes(permissionSet)
+              )
+              .map(permissionSet => permissionSet.label)
           });
         }
         return newPermissionSets;
@@ -351,7 +369,9 @@ module.exports = {
         });
         for (const module of Object.values(self.apos.modules)) {
           if (self.apos.synth.instanceOf(module, '@apostrophecms/piece-type')) {
-            permissionSets.push(self.describePermissionSet(_req, module, { piece: true }));
+            permissionSets.push(
+              self.describePermissionSet(_req, module, { piece: true })
+            );
           }
         }
         permissionSets.push(self.describePermissionSet(_req, self.apos.modules['@apostrophecms/any-page-type']));

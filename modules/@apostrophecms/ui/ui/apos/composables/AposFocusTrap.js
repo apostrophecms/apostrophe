@@ -13,21 +13,25 @@ import {
  *   on each cycle. Default is false.
  * - `withPriority`: If true, 'data-apos-focus-priority' attribute will be used
  *   to find the first element to focus. Default is true.
- * - `triggerRef`: (optional) A ref to the element that will trigger the focus trap.
- *   It's used as a focus target when exiting the current element focusable elements.
- *   If boolean `true` is passed, the active modal focused element will be used.
+ * - `triggerRef`: (optional) A ref to the element that will trigger the focus
+ * trap.
+ *   It's used as a focus target when exiting the current element focusable
+ *   elements. If boolean `true` is passed, the active modal focused element
+ *   will be used.
  * - `onExit`: (optional) A callback to be called when exiting the focus trap.
  *
  * @param {{
  *  retries?: number;
  *  refreshOnCycle?: boolean;
  *  withPriority?: boolean;
- *  triggerRef?: import('vue').Ref<HTMLElement | import('vue').ComponentPublicInstance>
+ *  triggerRef?: import('vue').Ref<HTMLElement |
+ *  import('vue').ComponentPublicInstance>
  *    | HTMLElement | boolean;
  *  onExit?: () => void;
  * }} options
  * @returns {{
-*   runTrap: (containerRef:  import('vue').Ref<HTMLElement> | HTMLElement) => Promise<void>;
+ *   runTrap: (containerRef:  import('vue').Ref<HTMLElement> | HTMLElement) =>
+ *   Promise<void>;
  *  hasRunningTrap: import('vue').ComputedRef<boolean>;
  *  stopTrap: () => void;
  *  resetTrap: () => void;

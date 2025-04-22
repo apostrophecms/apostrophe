@@ -36,8 +36,8 @@ module.exports = (self) => ({
     const symLinkModules = await findNodeModulesSymlinks(self.apos.npmRootDir);
     // Make it clear if builds should detect changes
     const detectChanges = typeof argv.changes === 'string';
-    // Remove invalid changes. `argv.changes` is a comma separated list of relative
-    // to `apos.rootDir` files or folders
+    // Remove invalid changes. `argv.changes` is a comma separated list of
+    // relative to `apos.rootDir` files or folders
     const sourceChanges = detectChanges
       ? filterValidChanges(
         argv.changes.split(',').map(p => p.trim()),
@@ -52,9 +52,10 @@ module.exports = (self) => ({
     await fs.mkdirp(buildDir);
 
     // Static asset files in `public` subdirs of each module are copied
-    // to the same relative path `/public/apos-frontend/namespace/modules/modulename`.
-    // Inherited files are also copied, with the deepest subclass overriding in the
-    // event of a conflict
+    // to the same relative path
+    // `/public/apos-frontend/namespace/modules/modulename`. Inherited files are
+    // also copied, with the deepest subclass overriding in the event of a
+    // conflict
     if (self.options.publicBundle) {
       await moduleOverrides(`${bundleDir}/modules`, 'public');
     }
@@ -210,7 +211,8 @@ module.exports = (self) => ({
       }));
       const modulesDir = `${buildDir}/${name}/modules`;
       const source = options.source || name;
-      // Gather pnpm modules that are used in the build to be added as resolve paths
+      // Gather pnpm modules that are used in the build to be added as resolve
+      // paths
       const pnpmModules = new Set();
       await moduleOverrides(modulesDir, `ui/${source}`, pnpmModules);
 
@@ -279,8 +281,9 @@ module.exports = (self) => ({
         });
 
         const outputFilename = `${name}-build.js`;
-        // Remove previous build artifacts, as some pipelines won't build all artifacts
-        // if there is no input, and we don't want stale output in the bundle
+        // Remove previous build artifacts, as some pipelines won't build all
+        // artifacts if there is no input, and we don't want stale output in the
+        // bundle
         fs.removeSync(`${bundleDir}/${outputFilename}`);
         const cssPath = `${bundleDir}/${outputFilename}`.replace(/\.js$/, '.css');
         fs.removeSync(cssPath);
@@ -323,8 +326,8 @@ module.exports = (self) => ({
           symLinkModules
         );
         webpackInstanceConfigMerged.cache.cacheLocation = cacheMeta.location;
-        // Exclude symlinked modules from the cache managedPaths, no other way for now
-        // https://github.com/webpack/webpack/issues/12112
+        // Exclude symlinked modules from the cache managedPaths, no other way
+        // for now https://github.com/webpack/webpack/issues/12112
         if (cacheMeta.managedPathsRegex) {
           webpackInstanceConfigMerged.snapshot = {
             managedPaths: [ cacheMeta.managedPathsRegex ]
@@ -734,9 +737,9 @@ module.exports = (self) => ({
     }
 
     function cleanErrors(errors) {
-      // Dev experience: remove confusing and inaccurate webpack warning about module loaders
-      // when straightforward JS parse errors occur, stackoverflow is full of people
-      // confused by this
+      // Dev experience: remove confusing and inaccurate webpack warning about
+      // module loaders when straightforward JS parse errors occur,
+      // stackoverflow is full of people confused by this
       return errors.replace(/(ERROR in[\s\S]*?Module parse failed[\s\S]*)You may need an appropriate loader.*/, '$1');
     }
 

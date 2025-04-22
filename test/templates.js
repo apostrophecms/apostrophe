@@ -14,8 +14,8 @@ describe('Templates', function() {
   });
 
   /**
-   * Helper ofr grabbing output between --label-- ... --endlabel--, split it to lines
-   * and remove all whitespace
+   * Helper ofr grabbing output between --label-- ... --endlabel--, split it to
+   * lines and remove all whitespace
    *
    * @param {String} result page output
    * @param {String} label a test case marker

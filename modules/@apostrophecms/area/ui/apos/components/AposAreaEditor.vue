@@ -416,8 +416,8 @@ export default {
         index
       });
     },
-    // Regenerate all array item, area, object and widget ids so they are considered
-    // new. Useful when copying a widget with nested content.
+    // Regenerate all array item, area, object and widget ids so they are
+    // considered new. Useful when copying a widget with nested content.
     regenerateIds(schema, object) {
       object._id = createId();
       for (const field of schema) {

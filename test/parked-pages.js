@@ -122,7 +122,8 @@ describe('Parked Pages', function() {
       },
       shortName: apos2.options.shortName
     });
-    // prove apos2 and apos3 are talking to the same db and it hasn't been erased
+    // prove apos2 and apos3 are talking to the same db and it hasn't been
+    // erased
     assert(await apos3.db.collection('verify').findOne({
       checkSameDb: true
     }));

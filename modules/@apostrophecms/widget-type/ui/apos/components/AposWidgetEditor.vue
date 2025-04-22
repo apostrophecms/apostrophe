@@ -243,8 +243,8 @@ export default {
         clearTimeout(this.updatePreviewTimeout);
       }
       if (!this.lastPreview || (now - this.lastPreview > 250)) {
-        // If we're still dragging the slider around, refresh every once in a while,
-        // no matter what
+        // If we're still dragging the slider around, refresh every once in a
+        // while, no matter what
         body();
       } else {
         this.updatePreviewTimeout = setTimeout(body, 250);
@@ -334,8 +334,8 @@ export default {
 };
 
 function guessOrigin(area) {
-  // When we are in live preview mode, use the bounding box of the area to figure out which
-  // side of the screen will least obscure the widget
+  // When we are in live preview mode, use the bounding box of the area to
+  // figure out which side of the screen will least obscure the widget
   const rect = area.$el.getBoundingClientRect();
   const cx = (rect.right - rect.left) / 2 + rect.left;
   // Favor the right hand side slightly because rich text

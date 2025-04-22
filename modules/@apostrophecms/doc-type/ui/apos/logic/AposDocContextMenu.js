@@ -402,7 +402,7 @@ export default {
   methods: {
     customDiscardDraft() {
       if (this.showDiscardDraft && this.canDiscardDraft) {
-        this.menuHandler('discardDraft');
+        this.menuHandler({ action: 'discardDraft' });
       }
     },
     async onContentChanged({ doc, docIds }) {
@@ -423,14 +423,14 @@ export default {
         }
       }
     },
-    menuHandler(action) {
-      const operation = this.customOperations.find(op => op.action === action);
+    menuHandler(item) {
+      const operation = this.customOperations.find(op => op.action === item.action);
       if (operation) {
         this.customAction(this.context, operation);
         return;
       }
 
-      this[action](this.context);
+      this[item.action](this.context);
     },
     async edit(doc) {
       await apos.modal.execute(

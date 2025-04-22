@@ -16,8 +16,9 @@ module.exports = {
   init(self) {
     // Map friendly errors created via `apos.error` to status codes.
     //
-    // Everything else comes through as a 500, you don't have to register that one, and
-    // shouldn't because clients should never be given sensitive details about 500 errors
+    // Everything else comes through as a 500, you don't have to register that
+    // one, and shouldn't because clients should never be given sensitive
+    // details about 500 errors
     self.errors = {
       min: 400,
       max: 400,
@@ -52,19 +53,21 @@ module.exports = {
         self.errors[name] = code;
       },
 
-      // Fetch the given URL and return the response body. Accepts the following options:
+      // Fetch the given URL and return the response body. Accepts the
+      // following options:
       //
       // `qs` (builds a query string with qs)
       // `jar` (pass in a cookie jar obtained from apos.http.jar())
-      // `parse` (can be 'json` to always parse the response body as JSON, otherwise the response body is
-      // parsed as JSON only if the content-type is application/json)
-      // `headers` (an object containing header names and values)
-      // `fullResponse` (if true, return an object with `status`, `headers` and `body`
-      // properties, rather than returning the body directly; the individual `headers` are canonicalized
-      // to lowercase names. If a header appears multiple times an array is returned for it)
+      // `parse` (can be 'json` to always parse the response body as JSON,
+      // otherwise the response body is parsed as JSON only if the content-type
+      // is application/json) `headers` (an object containing header names and
+      // values) `fullResponse` (if true, return an object with `status`,
+      // `headers` and `body` properties, rather than returning the body
+      // directly; the individual `headers` are canonicalized to lowercase
+      // names. If a header appears multiple times an array is returned for it)
       //
-      // If the status code is >= 400 an error is thrown. The error object will be
-      // similar to a `fullResponse` object, with a `status` property.
+      // If the status code is >= 400 an error is thrown. The error object will
+      // be similar to a `fullResponse` object, with a `status` property.
       //
       // If the URL is site-relative (starts with /) it will be requested from
       // the apostrophe site itself.
@@ -92,22 +95,24 @@ module.exports = {
         return self.remote('HEAD', url, options);
       },
 
-      // Send a POST request to the given URL and return the response body. Accepts the following options:
+      // Send a POST request to the given URL and return the response body.
+      // Accepts the following options:
       //
       // `qs` (pass object; builds a query string with qs)
       // `jar` (pass in a cookie jar obtained from apos.http.jar())
-      // `send` (can be 'json' to always send `options.body` JSON encoded, or 'form' to send it URL-encoded)
-      // `body` (request body; if an object or array, sent as JSON, otherwise sent as-is, unless
-      // the `send` option is set)
-      // `parse` (can be 'json` to always parse the response body as JSON, otherwise the response body is
-      // parsed as JSON only if the content-type is application/json)
-      // `headers` (an object containing header names and values)
-      // `fullResponse` (if true, return an object with `status`, `headers` and `body`
-      // properties, rather than returning the body directly; the individual `headers` are canonicalized
-      // to lowercase names. If a header appears multiple times an array is returned for it)
+      // `send` (can be 'json' to always send `options.body` JSON encoded, or
+      // 'form' to send it URL-encoded) `body` (request body; if an object or
+      // array, sent as JSON, otherwise sent as-is, unless the `send` option is
+      // set) `parse` (can be 'json` to always parse the response body as JSON,
+      // otherwise the response body is parsed as JSON only if the content-type
+      // is application/json) `headers` (an object containing header names and
+      // values) `fullResponse` (if true, return an object with `status`,
+      // `headers` and `body` properties, rather than returning the body
+      // directly; the individual `headers` are canonicalized to lowercase
+      // names. If a header appears multiple times an array is returned for it)
       //
-      // If the status code is >= 400 an error is thrown. The error object will be
-      // similar to a `fullResponse` object, with a `status` property.
+      // If the status code is >= 400 an error is thrown. The error object will
+      // be similar to a `fullResponse` object, with a `status` property.
       //
       // If the URL is site-relative (starts with /) it will be requested from
       // the apostrophe site itself.
@@ -116,22 +121,24 @@ module.exports = {
         return self.remote('POST', url, options);
       },
 
-      // Send a DELETE request to the given URL and return the response body. Accepts the following options:
+      // Send a DELETE request to the given URL and return the response body.
+      // Accepts the following options:
       //
       // `qs` (pass object; builds a query string with qs)
       // `jar` (pass in a cookie jar obtained from apos.http.jar())
-      // `send` (can be 'json' to always send `options.body` JSON encoded, or 'form' to send it URL-encoded)
-      // `body` (request body; if an object or array, sent as JSON, otherwise sent as-is, unless
-      // the `send` option is set)
-      // `parse` (can be 'json` to always parse the response body as JSON, otherwise the response body is
-      // parsed as JSON only if the content-type is application/json)
-      // `headers` (an object containing header names and values)
-      // `fullResponse` (if true, return an object with `status`, `headers` and `body`
-      // properties, rather than returning the body directly; the individual `headers` are canonicalized
-      // to lowercase names. If a header appears multiple times an array is returned for it)
+      // `send` (can be 'json' to always send `options.body` JSON encoded, or
+      // 'form' to send it URL-encoded) `body` (request body; if an object or
+      // array, sent as JSON, otherwise sent as-is, unless the `send` option is
+      // set) `parse` (can be 'json` to always parse the response body as JSON,
+      // otherwise the response body is parsed as JSON only if the content-type
+      // is application/json) `headers` (an object containing header names and
+      // values) `fullResponse` (if true, return an object with `status`,
+      // `headers` and `body` properties, rather than returning the body
+      // directly; the individual `headers` are canonicalized to lowercase
+      // names. If a header appears multiple times an array is returned for it)
       //
-      // If the status code is >= 400 an error is thrown. The error object will be
-      // similar to a `fullResponse` object, with a `status` property.
+      // If the status code is >= 400 an error is thrown. The error object will
+      // be similar to a `fullResponse` object, with a `status` property.
       //
       // If the URL is site-relative (starts with /) it will be requested from
       // the apostrophe site itself.
@@ -140,22 +147,24 @@ module.exports = {
         return self.remote('DELETE', url, options);
       },
 
-      // Send a PUT request to the given URL and return the response body. Accepts the following options:
+      // Send a PUT request to the given URL and return the response body.
+      // Accepts the following options:
       //
       // `qs` (pass object; builds a query string with qs)
       // `jar` (pass in a cookie jar obtained from apos.http.jar())
-      // `send` (can be 'json' to always send `options.body` JSON encoded, or 'form' to send it URL-encoded)
-      // `body` (request body; if an object or array, sent as JSON, otherwise sent as-is, unless
-      // the `send` option is set)
-      // `parse` (can be 'json` to always parse the response body as JSON, otherwise the response body is
-      // parsed as JSON only if the content-type is application/json)
-      // `headers` (an object containing header names and values)
-      // `fullResponse` (if true, return an object with `status`, `headers` and `body`
-      // properties, rather than returning the body directly; the individual `headers` are canonicalized
-      // to lowercase names. If a header appears multiple times an array is returned for it)
+      // `send` (can be 'json' to always send `options.body` JSON encoded, or
+      // 'form' to send it URL-encoded) `body` (request body; if an object or
+      // array, sent as JSON, otherwise sent as-is, unless the `send` option is
+      // set) `parse` (can be 'json` to always parse the response body as JSON,
+      // otherwise the response body is parsed as JSON only if the content-type
+      // is application/json) `headers` (an object containing header names and
+      // values) `fullResponse` (if true, return an object with `status`,
+      // `headers` and `body` properties, rather than returning the body
+      // directly; the individual `headers` are canonicalized to lowercase
+      // names. If a header appears multiple times an array is returned for it)
       //
-      // If the status code is >= 400 an error is thrown. The error object will be
-      // similar to a `fullResponse` object, with a `status` property.
+      // If the status code is >= 400 an error is thrown. The error object will
+      // be similar to a `fullResponse` object, with a `status` property.
       //
       // If the URL is site-relative (starts with /) it will be requested from
       // the apostrophe site itself.
@@ -164,23 +173,26 @@ module.exports = {
         return self.remote('PUT', url, options);
       },
 
-      // Send a PATCH request to the given URL and return the response body. Accepts the following options:
+      // Send a PATCH request to the given URL and return the response body.
+      // Accepts the following options:
       //
       // `qs` (pass object; builds a query string with qs)
       // `jar` (pass in a cookie jar obtained from apos.http.jar())
-      // `send` (can be 'json' to always send `options.body` JSON encoded, or 'form' to send it URL-encoded)
-      // `body` (request body; if an object or array, sent as JSON, otherwise sent as-is, unless
-      // the `send` option is set)
-      // `parse` (can be 'json` to always parse the response body as JSON, otherwise the response body is
-      // parsed as JSON only if the content-type is application/json)
-      // `headers` (an object containing header names and values)
-      // `fullResponse` (if true, return an object with `status`, `headers` and `body`
-      // properties, rather than returning the body directly; the individual `headers` are canonicalized
-      // to lowercase names. If a header appears multiple times an array is returned for it)
-      // `originalResponse` (if true, return the response object exactly as it is returned by node-fetch)
+      // `send` (can be 'json' to always send `options.body` JSON encoded, or
+      // 'form' to send it URL-encoded) `body` (request body; if an object or
+      // array, sent as JSON, otherwise sent as-is, unless the `send` option is
+      // set) `parse` (can be 'json` to always parse the response body as JSON,
+      // otherwise the response body is parsed as JSON only if the content-type
+      // is application/json) `headers` (an object containing header names and
+      // values) `fullResponse` (if true, return an object with `status`,
+      // `headers` and `body` properties, rather than returning the body
+      // directly; the individual `headers` are canonicalized to lowercase
+      // names. If a header appears multiple times an array is returned for it)
+      // `originalResponse` (if true, return the response object exactly as it
+      // is returned by node-fetch)
       //
-      // If the status code is >= 400 an error is thrown. The error object will be
-      // similar to a `fullResponse` object, with a `status` property.
+      // If the status code is >= 400 an error is thrown. The error object will
+      // be similar to a `fullResponse` object, with a `status` property.
       //
       // If the URL is site-relative (starts with /) it will be requested from
       // the apostrophe site itself.
@@ -236,7 +248,8 @@ module.exports = {
         const res = await fetch(url, options);
         let body;
         if (options.jar) {
-          // This is node-fetch specific, browsers limit what JS can see about this header
+          // This is node-fetch specific, browsers limit what JS can see about
+          // this header
           (res.headers.raw()['set-cookie'] || []).forEach(cookie => {
             options.jar.setCookieSync(cookie, url);
           });
@@ -261,9 +274,9 @@ module.exports = {
         function fullResponse() {
           const headers = {};
           res.headers.forEach((value, name) => {
-            // Optional support for fetching arrays of headers with the same name
-            // could be added at a later time if anyone really cares. Usually
-            // just a source of bugs
+            // Optional support for fetching arrays of headers with the same
+            // name could be added at a later time if anyone really cares.
+            // Usually just a source of bugs
             headers[name] = value;
           });
           return {
@@ -291,8 +304,9 @@ module.exports = {
         return new tough.CookieJar();
       },
 
-      // Given a cookie jar received from `apos.http.jar()` and a context URL, return the current value for
-      // the given cookie name, or undefined if there is none set
+      // Given a cookie jar received from `apos.http.jar()` and a context URL,
+      // return the current value for the given cookie name, or undefined if
+      // there is none set
 
       getCookie(jar, url, name) {
         if (url.match(/^\//)) {

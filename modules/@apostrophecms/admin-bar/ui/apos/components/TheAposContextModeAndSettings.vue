@@ -6,7 +6,8 @@
   >
     <!--
       TODO: Each div at this level serves as a discrete context menu state
-      Modules should be able to provide their own menus here to complete tasks specific to them.
+      Modules should be able to provide their own menus here to complete
+      tasks specific to them.
       It might also be worth breaking up the core menus into their own vue components to
       further illustrate this concept.
     -->
@@ -107,9 +108,14 @@ export default {
       if (this.canPublish) {
         if (this.context.lastPublishedAt) {
           // Document went from unpublished to published and has nothing staged
-          if (this.hasBeenPublishedThisPageload && !this.readyToPublish && this.hasBeenPublishedButNotUpdated) {
+          if (
+            this.hasBeenPublishedThisPageload &&
+            !this.readyToPublish &&
+            this.hasBeenPublishedButNotUpdated
+          ) {
             return 'apostrophe:published';
-          // Document *has* had changes published this page load, but nothing staged now
+          // Document *has* had changes published this page load, but nothing
+          // staged now
           } else if (this.hasBeenPublishedThisPageload && !this.readyToPublish) {
             return 'apostrophe:updated';
           // Document has been published and has staged changes
@@ -125,7 +131,8 @@ export default {
         if (this.hasBeenPublishedThisPageload && !this.readyToPublish) {
           return 'apostrophe:submitted';
         }
-        // Document has been previously published and contributor has staged changes
+        // Document has been previously published and contributor has staged
+        // changes
         if (this.context.lastPublishedAt) {
           return 'apostrophe:submitUpdate';
         } else {
@@ -135,7 +142,11 @@ export default {
       }
     },
     publishTooltip() {
-      if (this.canPublish && this.context.lastPublishedAt && !this.hasBeenPublishedThisPageload) {
+      if (
+        this.canPublish &&
+        this.context.lastPublishedAt &&
+        !this.hasBeenPublishedThisPageload
+      ) {
         return {
           content: 'apostrophe:updateTooltip',
           placement: 'bottom'
@@ -145,10 +156,12 @@ export default {
       return false;
     },
     isAutopublished() {
-      return this.context._aposAutopublish ?? (window.apos.modules[this.context.type].autopublish || false);
+      return this.context._aposAutopublish ??
+        (window.apos.modules[this.context.type].autopublish || false);
     },
     hasBeenPublishedThisPageload() {
-      return (this.context.lastPublishedAt > this.mountedAt) || ((this.context.submitted && this.context.submitted.at) > this.mountedAt);
+      return (this.context.lastPublishedAt > this.mountedAt) ||
+        ((this.context.submitted && this.context.submitted.at) > this.mountedAt);
     },
     canSwitchToEditMode() {
       return !this.editMode;
@@ -188,9 +201,6 @@ export default {
         this.hasBeenPublishedButNotUpdated = false;
       }
       this.$emit('publish');
-    },
-    emitEvent(name) {
-      apos.bus.$emit('admin-menu-click', name);
     }
   }
 };

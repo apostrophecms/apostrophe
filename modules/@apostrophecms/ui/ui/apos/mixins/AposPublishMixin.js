@@ -1,4 +1,5 @@
-// Provides reusable UI methods relating to the publication and management of drafts.
+// Provides reusable UI methods relating to the publication and management of
+// drafts.
 
 export default {
   computed: {
@@ -7,13 +8,14 @@ export default {
     }
   },
   methods: {
-    // A UI method to publish a document. If errors occur they are displayed to the user
-    // appropriately, not returned or thrown to the caller. If a page cannot be published
-    // because its ancestors are unpublished, the user is invited to publish its
-    // ancestors first, and the publish operation is then retried.
+    // A UI method to publish a document. If errors occur they are displayed to
+    // the user appropriately, not returned or thrown to the caller. If a page
+    // cannot be published because its ancestors are unpublished, the user is
+    // invited to publish its ancestors first, and the publish operation is then
+    // retried.
     //
-    // A notification of success is displayed, with a button to revert the published
-    // mode of the document to its previous value.
+    // A notification of success is displayed, with a button to revert the
+    // published mode of the document to its previous value.
     //
     // Returns `true` if the document was ultimately published.
     async publish(doc) {
@@ -111,8 +113,8 @@ export default {
         return false;
       }
     },
-    // A UI method to submit a draft document for review and possible publication
-    // ("propose changes").
+    // A UI method to submit a draft document for review and possible
+    // publication ("propose changes").
     async submitDraft(doc) {
       const action = window.apos.modules[doc.type].action;
       try {
@@ -178,13 +180,15 @@ export default {
         return false;
       }
     },
-    // A UI method to revert a draft document to the last published version or, if the document
-    // has never been published, delete the draft entirely. The user is advised of the difference.
+    // A UI method to revert a draft document to the last published version or,
+    // if the document has never been published, delete the draft entirely. The
+    // user is advised of the difference.
     //
-    // Returns an object if a change was made, or false if an error was reported to the user.
+    // Returns an object if a change was made, or false if an error was
+    // reported to the user.
     //
-    // If the draft document still exists the returned object will have a `doc` property containing
-    // its newly reverted contents.
+    // If the draft document still exists the returned object will have a `doc`
+    // property containing its newly reverted contents.
     async discardDraft(doc) {
       const isPublished = !!doc.lastPublishedAt;
       try {

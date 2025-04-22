@@ -61,12 +61,12 @@ export default {
   },
 
   methods: {
-    async handleUtilityOperation(action) {
+    async handleUtilityOperation(item) {
       const operation = [
         ...this.utilityOperations.menu,
         ...this.utilityOperations.buttons
       ]
-        .find((op) => op.action === action);
+        .find((op) => op.action === item.action);
 
       if (!operation) {
         // eslint-disable-next-line no-console
@@ -86,7 +86,7 @@ export default {
         await apos.modal.execute(modal, {
           moduleName: this.moduleOptions.name,
           moduleAction: this.moduleOptions.action,
-          action,
+          action: item.action,
           labels: this.moduleLabels,
           messages: operation.messages,
           ...modalOptions
@@ -94,8 +94,8 @@ export default {
       } else if (event) {
         apos.bus.$emit(event, payload);
       } else {
-        // For backwards compatibility, because it did nothing before we should not
-        // throw a hard error here
+        // For backwards compatibility, because it did nothing before we should
+        // not throw a hard error here
         // eslint-disable-next-line no-console
         console.error('utility operation has no modalOptions.modal or eventOptions.event property');
       }

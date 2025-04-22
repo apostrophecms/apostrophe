@@ -3,15 +3,16 @@ const { createId } = require('@paralleldrive/cuid2');
 const { SemanticAttributes } = require('@opentelemetry/semantic-conventions');
 const { klona } = require('klona');
 
-// This module is responsible for managing all of the documents (apostrophe "docs")
-// in the `aposDocs` mongodb collection.
+// This module is responsible for managing all of the documents (apostrophe
+// "docs") in the `aposDocs` mongodb collection.
 //
 // The `getManager` method should be used to obtain a reference to the module
 // that manages a particular doc type, so that you can benefit from behavior
-// specific to that module. One method of this module that you may sometimes use directly
-// is `apos.doc.find()`, which returns a query[query](server-@apostrophecms/query.html) for
-// fetching documents of all types. This is useful when implementing something
-// like the [@apostrophecms/search](../@apostrophecms/search/index.html) module.
+// specific to that module. One method of this module that you may sometimes
+// use directly is `apos.doc.find()`, which returns a
+// query[query](server-@apostrophecms/query.html) for fetching documents of all
+// types. This is useful when implementing something like the
+// [@apostrophecms/search](../@apostrophecms/search/index.html) module.
 //
 // ## Options
 //
@@ -71,7 +72,12 @@ module.exports = {
           if (_id) {
             criteria._id = { $ne: _id };
           }
-          const doc = await self.find(req, criteria).permission(false).archived(null).project({ slug: 1 }).toObject();
+          const doc = await self
+            .find(req, criteria)
+            .permission(false)
+            .archived(null)
+            .project({ slug: 1 })
+            .toObject();
           if (doc) {
             throw self.apos.error('conflict');
           } else {
@@ -261,7 +267,8 @@ module.exports = {
             lastPublishedAt
           };
           await manager.insertDraftOf(req, doc, draft, options);
-          // Published doc must know it is published, otherwise various bugs ensue
+          // Published doc must know it is published, otherwise various bugs
+          // ensue
           return self.apos.doc.db.updateOne({
             _id: doc._id
           }, {
@@ -326,10 +333,10 @@ module.exports = {
       // `aposDocId` is implicitly updated, `path` is updated if a page,
       // and all references found in relationships are updated via reverse
       // relationship id lookups, after which attachment references are updated.
-      // This is a slow operation, which is why this method should be called only
-      // by migrations and tasks that remedy an unexpected situation. _id is
-      // meant to be an immutable property, this method is a workaround
-      // for situations like a renamed locale or a replication bug fix.
+      // This is a slow operation, which is why this method should be called
+      // only by migrations and tasks that remedy an unexpected situation. _id
+      // is meant to be an immutable property, this method is a workaround for
+      // situations like a renamed locale or a replication bug fix.
       //
       // If `keep` is set to `'old'` the old document's content wins
       // in the event of a conflict. If `keep` is set to `'new'` the
@@ -337,14 +344,16 @@ module.exports = {
       // If `keep` is not set, a `conflict` error is thrown in the
       // event of a conflict.
       //
-      // If `skipReplace` is set to `true`, the method will not attempt to remove
-      // the old document, but will still update the new document. The new _id
-      // for each pair will be used for retrieving the "existing" document in this case.
+      // If `skipReplace` is set to `true`, the method will not attempt to
+      // remove the old document, but will still update the new document. The
+      // new _id for each pair will be used for retrieving the "existing"
+      // document in this case.
 
       async changeDocIds(pairs, { keep, skipReplace = false } = {}) {
         let renamed = 0;
         let kept = 0;
-        // Get page paths up front so we can avoid multiple queries when working on path changes
+        // Get page paths up front so we can avoid multiple queries when working
+        // on path changes
         const pages = await self.apos.doc.db.find({
           path: { $exists: 1 },
           slug: /^\//
@@ -354,7 +363,8 @@ module.exports = {
         for (const pair of pairs) {
           const [ from, to ] = pair;
           const oldAposDocId = from.split(':')[0];
-          const existing = await self.apos.doc.db.findOne({ _id: skipReplace ? to : from });
+          const existing = await self.apos.doc.db
+            .findOne({ _id: skipReplace ? to : from });
           if (!existing) {
             throw self.apos.error('notfound');
           }
@@ -371,7 +381,10 @@ module.exports = {
           }
           const isPage = self.apos.page.isPage(existing);
           if (isPage) {
-            replacement.path = existing.path.replace(existing.aposDocId, replacement.aposDocId);
+            replacement.path = existing.path.replace(
+              existing.aposDocId,
+              replacement.aposDocId
+            );
           }
           try {
             if (!skipReplace) {
@@ -379,13 +392,15 @@ module.exports = {
               renamed++;
             }
           } catch (e) {
-            // First reinsert old doc to prevent content loss on new doc insert failure
+            // First reinsert old doc to prevent content loss on new doc insert
+            // failure
             await self.apos.doc.db.insertOne(existing);
             if (!self.apos.doc.isUniqueError(e)) {
               // We cannot fix this error
               throw e;
             }
-            const existingReplacement = await self.apos.doc.db.findOne({ _id: replacement._id });
+            const existingReplacement = await self.apos.doc.db
+              .findOne({ _id: replacement._id });
             if (!existingReplacement) {
               // We don't know the cause of this error
               throw e;
@@ -405,7 +420,8 @@ module.exports = {
                 await self.apos.doc.db.insertOne(replacement);
                 renamed++;
               } catch (e) {
-                // Reinsert old doc to prevent content loss on new doc insert failure
+                // Reinsert old doc to prevent content loss on new doc insert
+                // failure
                 await self.apos.doc.db.insertOne(existing);
                 throw e;
               }
@@ -527,9 +543,9 @@ module.exports = {
         try {
           return await attempt();
         } catch (e) {
-          // We are experiencing what may be a mongodb bug in which these indexes
-          // have different weights than expected and the createIndex call fails.
-          // If this happens drop and recreate the text index
+          // We are experiencing what may be a mongodb bug in which these
+          // indexes have different weights than expected and the createIndex
+          // call fails. If this happens drop and recreate the text index
           if (e.toString().match(/different options/)) {
             self.apos.util.warn('Text index has unexpected weights or other misconfiguration, reindexing');
             await self.db.dropIndex('highSearchText_text_lowSearchText_text_title_text_searchBoost_text');
@@ -582,7 +598,8 @@ module.exports = {
       // await apos.doc.find(req, { type: 'foobar' }).toArray()
 
       find(req, criteria = {}, options = {}) {
-        return self.apos.modules['@apostrophecms/any-doc-type'].find(req, criteria, options);
+        return self.apos.modules['@apostrophecms/any-doc-type']
+          .find(req, criteria, options);
       },
 
       // **Most often you will insert or update docs via the
@@ -593,8 +610,8 @@ module.exports = {
       //
       // Insert the given document. If the slug is not
       // unique it is made unique. `beforeInsert`, `beforeSave`, `afterInsert`
-      // and `afterSave` events are emitted via the appropriate doc type manager,
-      // then awaited. They receive `(req, doc, options)`.
+      // and `afterSave` events are emitted via the appropriate doc type
+      // manager, then awaited. They receive `(req, doc, options)`.
       //
       // Returns the inserted document.
       //
@@ -632,7 +649,9 @@ module.exports = {
 
             await telemetry.startActiveSpan(`db:${doc.type}:insert`, async (spanInsert) => {
               spanInsert.setAttribute(SemanticAttributes.CODE_FUNCTION, 'insertBody');
-              spanInsert.setAttribute(SemanticAttributes.CODE_NAMESPACE, self.__meta.name);
+              spanInsert.setAttribute(
+                SemanticAttributes.CODE_NAMESPACE, self.__meta.name
+              );
               spanInsert.setAttribute(telemetry.Attributes.TARGET_NAMESPACE, doc.type);
               spanInsert.setAttribute(telemetry.Attributes.TARGET_FUNCTION, 'insert');
               try {
@@ -701,7 +720,9 @@ module.exports = {
 
             await telemetry.startActiveSpan(`db:${doc.type}:update`, async (spanUpdate) => {
               spanUpdate.setAttribute(SemanticAttributes.CODE_FUNCTION, 'updateBody');
-              spanUpdate.setAttribute(SemanticAttributes.CODE_NAMESPACE, self.__meta.name);
+              spanUpdate.setAttribute(
+                SemanticAttributes.CODE_NAMESPACE, self.__meta.name
+              );
               spanUpdate.setAttribute(telemetry.Attributes.TARGET_NAMESPACE, doc.type);
               spanUpdate.setAttribute(telemetry.Attributes.TARGET_FUNCTION, 'update');
               try {
@@ -868,7 +889,8 @@ module.exports = {
               // to a duplicate path or slug; a far more likely explanation is
               // that another docFixUniqueError handler is needed to address
               // an additional property that has to be unique. Report the
-              // original error to avoid confusion ("ZOMG, what are all these digits!")
+              // original error to avoid confusion ("ZOMG, what are all these
+              // digits!")
               firstError.aposAddendum = 'retryUntilUnique failed, most likely you need another docFixUniqueError method to handle another property that has a unique index, reporting original error';
               throw firstError;
             }
@@ -876,8 +898,9 @@ module.exports = {
           }
         }
       },
-      // Called by an `@apostrophecms/doc-type:insert` event handler to confirm that the user
-      // has the appropriate permissions for the doc's type and content.
+      // Called by an `@apostrophecms/doc-type:insert` event handler to confirm
+      // that the user has the appropriate permissions for the doc's type and
+      // content.
       testInsertPermissions(req, doc, options) {
         if (options.permissions !== false) {
           if (!self.apos.permission.can(req, 'create', doc)) {
@@ -931,8 +954,9 @@ module.exports = {
         });
       },
 
-      // Insert the given document. Called by `.insert()`. You will usually want to
-      // call the insert method of the appropriate doc type manager instead:
+      // Insert the given document. Called by `.insert()`. You will usually
+      // want to call the insert method of the appropriate doc type manager
+      // instead:
       //
       // ```javascript
       // self.apos.doc.getManager(doc.type).insert(...)
@@ -953,7 +977,8 @@ module.exports = {
         }
         if (!doc.visibility) {
           // If the visibility property has been removed from the schema
-          // (images and files), make sure public queries can still match this type
+          // (images and files), make sure public queries can still match this
+          // type
           doc.visibility = 'public';
         }
         return self.retryUntilUnique(req, doc, async function () {
@@ -965,52 +990,68 @@ module.exports = {
       // key. See `getMetaPath` method for more information.
       //
       // Signature:
-      // `apos.doc.setMeta(doc, namespace, [subobject], ...pathComponents, key, value);`
-      // where arguments are as follows:
-      // - `doc`: the document to attach the meta property to.
-      // - `namespace`: the namespace of the meta property, by convention the
-      //   module name that is setting the meta property.
-      // - `subobject`: (optional) the name of the field subobject (e.g. array
-      //   item, widget, or any other field type object that have `_id` property).
-      //   This argument dictates how `pathComponents` are interpreted. If
-      //   `subobject` is not provided, `pathComponents` are interpreted as
-      //   a path starting from `doc`. If `subobject` is provided, `pathComponents`
-      //   are interpreted as a relative path from the `subobject` field.
-      // - `pathComponents`: the dot path to the field value. It can be any number
-      //   of strings with or without dot-separated components. If `subobject` is
-      //   provided, `pathComponents` are interpreted as a relative path from the
-      //   `subobject` field. If `subobject` is not provided, `pathComponents` are
-      //   interpreted as a top-level path. `pathComponents` is optional when
-      //   `subobject` field is provided. This way you can set a meta property
-      //   directly for e.g. array or widget field. See examples below.
-      // - `key`: the key of the meta property. Should be a string. Dot-path is
-      //   not supported, dots will be treated as part of the key. It's prefixed
-      //   automatically with the `namespace` (`namespace:key`) to avoid
-      //   conflicts with other modules.
-      // - `value`: the value of the meta property. Can be any JSON-serializable value.
+      // `apos.doc.setMeta(doc, namespace, [subobject], ...pathComponents, key,
+      // value);` where arguments are as follows: - `doc`: the document to
+      // attach the meta property to. - `namespace`: the namespace of the meta
+      // property, by convention the module name that is setting the meta
+      // property. - `subobject`: (optional) the name of the field subobject
+      // (e.g. array item, widget, or any other field type object that have
+      // `_id` property). This argument dictates how `pathComponents` are
+      // interpreted. If `subobject` is not provided, `pathComponents` are
+      // interpreted as a path starting from `doc`. If `subobject` is provided,
+      // `pathComponents` are interpreted as a relative path from the
+      // `subobject` field. - `pathComponents`: the dot path to the field value.
+      // It can be any number of strings with or without dot-separated
+      // components. If `subobject` is provided, `pathComponents` are
+      // interpreted as a relative path from the `subobject` field. If
+      // `subobject` is not provided, `pathComponents` are interpreted as a
+      // top-level path. `pathComponents` is optional when `subobject` field is
+      // provided. This way you can set a meta property directly for e.g. array
+      // or widget field. See examples below. - `key`: the key of the meta
+      // property. Should be a string. Dot-path is not supported, dots will be
+      // treated as part of the key. It's prefixed automatically with the
+      // `namespace` (`namespace:key`) to avoid conflicts with other modules. -
+      // `value`: the value of the meta property. Can be any JSON-serializable
+      // value.
       //
       // The document field metadata can be consumed by admin UI components. See
       // `schema.addFieldMetadataComponent()` method for more information.
       //
       // Examples:
-      // - Set value of a top-level meta property of a generic field (e.g. string,
-      //   number, boolean, etc.):
-      // `apos.doc.setMeta(doc, 'my-module', 'title', 'myMetaKey', 'myMetaValue');`
+      // - Set value of a top-level meta property of a generic field (e.g.
+      // string, number, boolean, etc.): `apos.doc.setMeta(doc, 'my-module',
+      // 'title', 'myMetaKey', 'myMetaValue');`
       //
       // - Set value of a top-level meta property of an object field (can be
       //   further nested):
-      // `apos.doc.setMeta(doc, 'my-module', 'address', 'city', 'myMetaKey', 'myMetaValue');`
+      // `apos.doc.setMeta(
+      // doc,
+      // 'my-module',
+      // 'address',
+      // 'city',
+      // 'myMetaKey',
+      // 'myMetaValue'
+      // );`
       //
-      // - Set value of a meta property of a field inside of an array field type:
-      // `apos.doc.setMeta(doc, 'my-module', arrayItemObject, 'city', 'myMetaKey', 'myMetaValue');`
+      // - Set value of a meta property of a field inside of an array field
+      // type:
+      // eslint-disable-next-line max-len
+      // `apos.doc.setMeta(doc, 'my-module', arrayItemObject, 'city',
+      // 'myMetaKey', 'myMetaValue');`
       //
       // - Set value of a meta property of a rich text widget
-      // `apos.doc.setMeta(doc, 'my-module', widgetObject, 'myMetaKey', 'myMetaValue');`
+      // `apos.doc.setMeta(doc, 'my-module', widgetObject, 'myMetaKey',
+      // 'myMetaValue');`
       //
-      // - Dots in the `key` are treated as part of the key, dots in `pathComponents`
-      //   are treated as dot-path and are not altered:
-      // `apos.doc.setMeta(doc, 'my-module', 'address', 'city.name', 'myMetaKey.with.dots', 'myMetaValue');`
-      //  will set `doc.aposMeta.address.aposMeta.city.name['my-module:myMetaKey.with.dots']: 'myMetaValue'`.
+      // - Dots in the `key` are treated as part of the key, dots in
+      // `pathComponents` are treated as dot-path and are not altered:
+      // eslint-disable-next-line max-len
+      // `apos.doc.setMeta(doc, 'my-module', 'address', 'city.name',
+      // 'myMetaKey.with.dots', 'myMetaValue');`
+      // eslint-disable-next-line max-len
+      // will set
+      // `doc.aposMeta.address.aposMeta.city.name['my-module:myMetaKey.with.dots']:
+      // 'myMetaValue'`.
       setMeta(doc, namespace, ...pathArgsWithKeyAndValue) {
         if (!_.isPlainObject(doc) || !namespace) {
           throw self.apos.error('invalid', 'Valid document and namespace are required.', {
@@ -1072,9 +1113,9 @@ module.exports = {
           `aposMeta.${self.getMetaPath(...pathArgs)}`
         )?.[nsKey];
       },
-      // Remove meta data key for a given field. It has exactly the same signature as
-      // `setMeta` method, except the last `value` argument.
-      // A cleanup is performed to remove empty meta properties on each call.
+      // Remove meta data key for a given field. It has exactly the same
+      // signature as `setMeta` method, except the last `value` argument. A
+      // cleanup is performed to remove empty meta properties on each call.
       removeMeta(doc, namespace, ...pathArgsWithKey) {
         if (!doc || !namespace) {
           throw self.apos.error('invalid', 'Document and namespace are required.', {
@@ -1135,8 +1176,8 @@ module.exports = {
           return true;
         }
       },
-      // Get all meta keys for a given field. It has exactly the same signature as
-      // `setMeta` method, except no key/value should be provided.
+      // Get all meta keys for a given field. It has exactly the same signature
+      // as `setMeta` method, except no key/value should be provided.
       getMetaKeys(doc, namespace, ...pathArgs) {
         return Object.keys(
           _.get(
@@ -1150,18 +1191,19 @@ module.exports = {
       // Get the meta path for a given field.
       // Signature:
       // `apos.doc.getMetaPath([subobject,] ...pathComponents);`
-      // See `setMeta` for more information about `subobject` and `pathComponents` arguments.
+      // See `setMeta` for more information about `subobject` and
+      // `pathComponents` arguments.
       //
       // Returns the path to the meta property withouth the namespace and key.
-      // The returned path can be directly used to access or modify the meta property.
-      // It's supported by all meta API methods.
+      // The returned path can be directly used to access or modify the meta
+      // property. It's supported by all meta API methods.
       //
       // Example:
       // ```js
-      // const path = apos.doc.getMetaPath(subobject, 'address', 'city', 'name');
-      // apos.doc.setMeta(doc, ns, path, 'myMetaKey', 'myMetaValue');
-      // apos.doc.getMeta(doc, ns, path, 'myMetaKey');
-      // apos.doc.removeMeta(doc, ns, path, 'myMetaKey');
+      // const path = apos.doc.getMetaPath(subobject, 'address', 'city',
+      // 'name'); apos.doc.setMeta(doc, ns, path, 'myMetaKey', 'myMetaValue');
+      // apos.doc.getMeta(doc, ns, path, 'myMetaKey'); apos.doc.removeMeta(doc,
+      // ns, path, 'myMetaKey');
       getMetaPath(...pathArgs) {
         const args = pathArgs
           .filter(arg => typeof arg !== 'undefined' && arg !== null);
@@ -1216,31 +1258,38 @@ module.exports = {
           return { _id: idOrCriteria };
         }
       },
-      // Is this MongoDB error related to uniqueness? Great for retrying on duplicates.
-      // Used heavily by the pages module and no doubt will be by other things.
+      // Is this MongoDB error related to uniqueness? Great for retrying on
+      // duplicates. Used heavily by the pages module and no doubt will be by
+      // other things.
       //
-      // There are three error codes for this: 13596 ("cannot change _id of a document")
-      // and 11000 and 11001 which specifically relate to the uniqueness of an index.
-      // 13596 can arise on an upsert operation, especially when the _id is assigned
-      // by the caller rather than by MongoDB.
+      // There are three error codes for this: 13596 ("cannot change _id of a
+      // document") and 11000 and 11001 which specifically relate to the
+      // uniqueness of an index. 13596 can arise on an upsert operation,
+      // especially when the _id is assigned by the caller rather than by
+      // MongoDB.
       //
-      // IMPORTANT: you are responsible for making sure ALL of your unique indexes
-      // are accounted for before retrying... otherwise an infinite loop will
-      // likely result.
+      // IMPORTANT: you are responsible for making sure ALL of your unique
+      // indexes are accounted for before retrying... otherwise an infinite loop
+      // will likely result.
       isUniqueError(err) {
         if (!err) {
           return false;
         }
-        return err.code === 13596 || err.code === 13596 || err.code === 11000 || err.code === 11001;
+        return err.code === 13596 ||
+          err.code === 13596 ||
+          err.code === 11000 ||
+          err.code === 11001;
       },
       // Set the manager object corresponding
       // to a given doc type. Typically `manager`
       // is a module that subclasses `@apostrophecms/doc-type`
-      // (or its subclasses `@apostrophecms/piece-type` and `@apostrophecms/page-type`).
+      // (or its subclasses `@apostrophecms/piece-type` and
+      // `@apostrophecms/page-type`).
       setManager(type, manager) {
         self.managers[type] = manager;
       },
-      // Returns an array of all of the doc types that have a registered manager.
+      // Returns an array of all of the doc types that have a registered
+      // manager.
       getManaged() {
         return Object.keys(self.managers);
       },
@@ -1433,39 +1482,44 @@ module.exports = {
       // All properties are required except for `conditions`, `moduleName`,
       // `modifiers` and `manuallyPublished`.
       //
-      // Context operations are universal, e.g. they are displayed by the context
-      // menu no matter what the content type is, unless overridden by `conditions`.
+      // Context operations are universal, e.g. they are displayed by the
+      // context menu no matter what the content type is, unless overridden by
+      // `conditions`.
       //
       // `action` is the operation identifier and should be globally unique.
-      // For convenience, if several modules add an operation with the same `action`,
-      // it is only added once. This prevents duplicates if all subclasses of
-      // `doc-type` or `piece-type` register the same operation.
+      // For convenience, if several modules add an operation with the same
+      // `action`, it is only added once. This prevents duplicates if all
+      // subclasses of `doc-type` or `piece-type` register the same operation.
       //
       // `context` currently must be `update`.
       //
-      // `modal` is the name of the modal component to be opened by the operation.
+      // `modal` is the name of the modal component to be opened by the
+      // operation.
       //
-      // `label` is the menu item label to be shown when expanding the context menu.
+      // `label` is the menu item label to be shown when expanding the context
+      // menu.
       //
       // An additional `moduleName` property is supported. If it is not given,
-      // it will be inferred from the `type` of the document in context, with all page
-      // types using the page module (not their type-specific module). This is almost
-      // always correct, therefore it only makes sense to pass an explicit
-      // `moduleName` option here if the action API should be invoked on a different module
-      // than expected.
+      // it will be inferred from the `type` of the document in context, with
+      // all page types using the page module (not their type-specific module).
+      // This is almost always correct, therefore it only makes sense to pass an
+      // explicit `moduleName` option here if the action API should be invoked
+      // on a different module than expected.
       //
-      // An additional optional `modifiers` property is supported - button modifiers
-      // as supported by `AposContextMenu` (e.g. modifiers: [ 'danger' ]).
+      // An additional optional `modifiers` property is supported - button
+      // modifiers as supported by `AposContextMenu` (e.g. modifiers: [ 'danger'
+      // ]).
       //
       // An optional `manuallyPublished` boolean property is supported - if true
-      // the menu will be shown only for docs which have `autopublish: false` and
-      // `localized: true` options.
+      // the menu will be shown only for docs which have `autopublish: false`
+      // and `localized: true` options.
       //
-      // `conditions` defines the circumstances under which the opetion should be displayed.
-      // If all `conditions` are not met, the item is not displayed for this particular
-      // document.
+      // `conditions` defines the circumstances under which the opetion should
+      // be displayed. If all `conditions` are not met, the item is not
+      // displayed for this particular document.
       //
-      // `conditions` may be an array containing one or multiple of these values:
+      // `conditions` may be an array containing one or multiple of these
+      // values:
       //
       // 'canPublish', 'canEdit', 'canDismissSubmission', 'canDiscardDraft',
       // 'canLocalize', 'canArchive', 'canUnpublish', 'canCopy', 'canRestore',
@@ -1578,9 +1632,13 @@ module.exports = {
                 forSchema(field.schema, value);
               }
             } else if (field.type === 'relationship') {
-              doc[field.idsStorage] = (doc[field.idsStorage] || []).map(self.apos.doc.toAposDocId);
+              doc[field.idsStorage] = (doc[field.idsStorage] || [])
+                .map(self.apos.doc.toAposDocId);
               if (field.fieldsStorage) {
-                doc[field.fieldsStorage] = Object.fromEntries(Object.entries(doc[field.fieldsStorage] || {}).map(([ key, value ]) => [ self.apos.doc.toAposDocId(key), value ]));
+                doc[field.fieldsStorage] = Object.fromEntries(
+                  Object.entries(doc[field.fieldsStorage] || {})
+                    .map(([ key, value ]) => [ self.apos.doc.toAposDocId(key), value ])
+                );
               }
               needed = true;
             }
@@ -1624,8 +1682,8 @@ module.exports = {
       // with more than one instance per locale. Emits
       // `@apostrophecms/doc:beforeReplicate` with an array of criteria
       // to be used to locate docs that require replication, which can
-      // be modified by event handlers. Also emits `@apostrophecms/doc:afterReplicate`
-      // when replication is complete.
+      // be modified by event handlers. Also emits
+      // `@apostrophecms/doc:afterReplicate` when replication is complete.
       async replicate() {
         const localeNames = Object.keys(self.apos.i18n.locales);
         const criteria = [];
@@ -1647,13 +1705,14 @@ module.exports = {
           });
         }
         self.replicateReached = true;
-        // Include the criteria array in the event so that more entries can be pushed to it
+        // Include the criteria array in the event so that more entries
+        // can be pushed to it
         await self.emit('beforeReplicate', criteria);
         // We can skip the core work of this method if there is only one locale,
-        // but the events should always be emitted as the guarantee is still there
-        // ("this is before replication if any," "this is after replication if any")
-        // and we otherwise complicate modules that mainly care about not missing
-        // out if there *is* replication
+        // but the events should always be emitted as the guarantee is still
+        // there ("this is before replication if any," "this is after
+        // replication if any") and we otherwise complicate modules that mainly
+        // care about not missing out if there *is* replication
         if (localeNames.length > 1) {
           for (const criterion of criteria) {
             const existing = await self.apos.doc.db.find({
@@ -1779,7 +1838,8 @@ module.exports = {
       },
 
       async bestAposDocId(criteria) {
-        const existing = await self.apos.doc.db.findOne(criteria, { projection: { aposDocId: 1 } });
+        const existing = await self.apos.doc.db
+          .findOne(criteria, { projection: { aposDocId: 1 } });
         return existing?.aposDocId || self.apos.util.generateId();
       },
 

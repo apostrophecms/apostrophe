@@ -1,7 +1,8 @@
-// This module provides a special doc type manager, `@apostrophecms/any-page-type`, a virtual
-// type which actually refers to any page in the tree, regardless of type. This
-// allows you to create [@apostrophecms/schema](Apostrophe schema relationships) that can link to
-// any page in the page tree, rather than one specific page type.
+// This module provides a special doc type manager,
+// `@apostrophecms/any-page-type`, a virtual type which actually refers to any
+// page in the tree, regardless of type. This allows you to create
+// [@apostrophecms/schema](Apostrophe schema relationships) that can link to any
+// page in the page tree, rather than one specific page type.
 
 const _ = require('lodash');
 
@@ -65,8 +66,8 @@ module.exports = {
       // Returns a MongoDB projection object to be used when querying
       // for this type if all that is needed is a title for display
       // in an autocomplete menu. Since this is a page, we are including
-      // the slug as well. `query.field` will contain the schema field definition
-      // for the relationship we're trying to autocomplete.
+      // the slug as well. `query.field` will contain the schema field
+      // definition for the relationship we're trying to autocomplete.
       getAutocompleteProjection(_super, query) {
         const projection = _super(query);
         projection.slug = 1;
@@ -92,20 +93,22 @@ module.exports = {
           }
         },
 
-        // `.ancestors(true)` retrieves the ancestors of each returned page and assigns them
-        // to the `._ancestors` property. The home page is `._ancestors[0]`. The
-        // page itself is not included in its own `._ancestors` array.
+        // `.ancestors(true)` retrieves the ancestors of each returned page and
+        // assigns them to the `._ancestors` property. The home page is
+        // `._ancestors[0]`. The page itself is not included in its own
+        // `._ancestors` array.
         //
         // If the argument is an object, do all of the above, and also call the
-        // query builders present in the object on the query that fetches the ancestors.
-        // For example, you can pass `{ children: true }` to fetch the children of
-        // each ancestor as the `._children` property of each ancestor, or pass
-        // `{ children: { depth: 2 } }` to get really fancy.
+        // query builders present in the object on the query that fetches the
+        // ancestors. For example, you can pass `{ children: true }` to fetch
+        // the children of each ancestor as the `._children` property of each
+        // ancestor, or pass `{ children: { depth: 2 } }` to get really fancy.
         //
-        // `ancestors` also has its own `depth` option, but it doesn't do what you think.
-        // If the `depth` option is present as a top-level property of the object passed
-        // to `ancestors`, then only that many ancestors are retrieved, counting backwards
-        // from the immediate parent of each page.
+        // `ancestors` also has its own `depth` option, but it doesn't do what
+        // you think. If the `depth` option is present as a top-level property
+        // of the object passed to `ancestors`, then only that many ancestors
+        // are retrieved, counting backwards from the immediate parent of each
+        // page.
         ancestors: {
           def: false,
           async after(results) {
@@ -116,7 +119,8 @@ module.exports = {
             }
             for (const page of results) {
               if (!page.path) {
-                // Projection is too limited, don't crash trying to get ancestors
+                // Projection is too limited, don't crash trying to get
+                // ancestors
                 continue;
               }
               const subquery = self.apos.page.find(req);
@@ -167,8 +171,9 @@ module.exports = {
         // orphan docs. If flag is `false`, return only
         // docs that are not orphans. Orphans are pages that
         // are not returned by the default behavior of the
-        // `children` query builder implemented by `@apostrophecms/any-page-type`
-        // and thus are left out of standard navigation.
+        // `children` query builder implemented by
+        // `@apostrophecms/any-page-type` and thus are left out of standard
+        // navigation.
         orphan: {
           finalize() {
             const orphan = query.get('orphan');
@@ -190,8 +195,8 @@ module.exports = {
         // If `.children(true)` is called, return all children of a given page
         // as a `._children` array property of the page. If the argument is an
         // object, it may have a `depth` property to fetch nested children. Any
-        // other properties are passed on to the query builder when making the query
-        // for the children, which you may use to filter them.
+        // other properties are passed on to the query builder when making the
+        // query for the children, which you may use to filter them.
         children: {
           def: false,
           launder(input) {
@@ -214,12 +219,17 @@ module.exports = {
               return;
             }
 
-            const subquery = self.apos.page.find(query.req).areas(false).relationships(false).orphan(false);
+            const subquery = self.apos.page
+              .find(query.req)
+              .areas(false)
+              .relationships(false)
+              .orphan(false);
 
             const parameters = applySubqueryOptions(subquery, value, [ 'depth' ]);
 
             let depth = parameters.depth;
-            // Careful, let them specify a depth of 0 but still have a good default
+            // Careful, let them specify a depth of 0 but still have a good
+            // default
             if (depth === undefined) {
               depth = 1;
             }
@@ -230,7 +240,8 @@ module.exports = {
             const clauses = [];
 
             if (!results.find(page => page.path)) {
-              // Gracefully bow out if the projection is too limited to get children
+              // Gracefully bow out if the projection is too limited to get
+              // children
               return;
             }
 
@@ -255,16 +266,17 @@ module.exports = {
               rank: 1
             });
 
-            // pagesByPath is a lookup table of all the page objects we've seen so far
-            // indexed by their path. An important wrinkle: two page objects can exist
-            // for the same page if we're fetching descendants of ancestors with a
-            // depth of 2. For instance, if foo is the first child of the home page,
-            // then /foo/bar should appear as a child of _ancestors[0]._children[0],
-            // but also of _ancestors[1]. We address that by building an array of page
-            // objects with the same path and adding appropriate children to
-            // all of them. We don't try to get cute and reuse the same page object
-            // because the other filters specified for fetching the ancestors may be
-            // different from those used to fetch their children. -Tom
+            // pagesByPath is a lookup table of all the page objects we've seen
+            // so far indexed by their path. An important wrinkle: two page
+            // objects can exist for the same page if we're fetching descendants
+            // of ancestors with a depth of 2. For instance, if foo is the first
+            // child of the home page, then /foo/bar should appear as a child of
+            // _ancestors[0]._children[0], but also of _ancestors[1]. We address
+            // that by building an array of page objects with the same path and
+            // adding appropriate children to all of them. We don't try to get
+            // cute and reuse the same page object because the other filters
+            // specified for fetching the ancestors may be different from those
+            // used to fetch their children. -Tom
 
             const pagesByPath = {};
             _.each(results, function(page) {
@@ -317,11 +329,12 @@ module.exports = {
           }
         }
       },
-      // Apply default restrictions suitable for fetching ancestor pages to the query as
-      // a starting point before applying the ancestor options. Called by the
-      // ancestors filter here and also by pages.pageBeforeSend when it fetches just
-      // the home page using the same options, in the event ancestors were not loaded,
-      // such as on the home page itself. You should not need to modify or invoke this.
+      // Apply default restrictions suitable for fetching ancestor pages to the
+      // query as a starting point before applying the ancestor options. Called
+      // by the ancestors filter here and also by pages.pageBeforeSend when it
+      // fetches just the home page using the same options, in the event
+      // ancestors were not loaded, such as on the home page itself. You should
+      // not need to modify or invoke this.
       methods: {
         ancestorPerformanceRestrictions() {
           query.areas(false).relationships(false);

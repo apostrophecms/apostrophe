@@ -1872,7 +1872,8 @@ describe('Pages', function() {
       });
 
       // Publish directly via insert and req.mode = 'published'.
-      // This can really be done only programmatically, but it's a valid use case.
+      // This can really be done only programmatically, but it's a valid use
+      // case.
       await assert.rejects(
         apos.page.insert(req.clone({ mode: 'published' }), root._id, 'lastChild', {
           title: 'First Page',
@@ -1884,7 +1885,8 @@ describe('Pages', function() {
         }
       );
 
-      // IMPORTANT - assert the published page is gone, the draft is still there.
+      // IMPORTANT - assert the published page is gone, the draft is still
+      // there.
       const pages = await apos.doc.db.find({
         type: 'test-page'
       }).sort({ rank: 1 }).toArray();

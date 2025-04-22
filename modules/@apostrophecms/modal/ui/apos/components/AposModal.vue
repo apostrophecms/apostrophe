@@ -74,7 +74,9 @@
                   {{ $t(modalTitle) }}
                 </h2>
                 <div
-                  v-if="hasBeenLocalized || hasSlot('primaryControls') || hasSlot('localeDisplay')"
+                  v-if="hasBeenLocalized ||
+                    hasSlot('primaryControls') ||
+                    hasSlot('localeDisplay')"
                   class="apos-modal__controls--header"
                 >
                   <div
@@ -322,9 +324,13 @@ async function trapFocus() {
     const firstElementToFocus = findPriorityElementOrFirst(elementsToFocus);
     const foundPriorityElement = firstElementToFocus?.hasAttribute('data-apos-focus-priority');
 
-    // // Components render at various times and can't be counted on to be available on modal's mount
-    // // Update the trap focus list until a data-apos-focus-priority element is found or the retry limit is reached
-    if (!foundPriorityElement && findPriorityFocusElementRetryMax.value > currentPriorityFocusElementRetry.value) {
+    // Components render at various times and can't be counted on to be available on
+    // modal's mount. Update the trap focus list until a data-apos-focus-priority element
+    // is found or the retry limit is reached
+    if (
+      !foundPriorityElement &&
+      findPriorityFocusElementRetryMax.value > currentPriorityFocusElementRetry.value
+    ) {
       await new Promise(resolve => setTimeout(resolve, 50));
       currentPriorityFocusElementRetry.value++;
       await trapFocus();

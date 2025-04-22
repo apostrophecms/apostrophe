@@ -1,14 +1,17 @@
 const _ = require('lodash');
 
-// A subclass of `@apostrophecms/piece-type`, `@apostrophecms/image` establishes a library
-// of uploaded images in formats suitable for use on the web.
+// A subclass of `@apostrophecms/piece-type`, `@apostrophecms/image`
+// establishes a library of uploaded images in formats suitable for use on the
+// web.
 //
-// Together with [@apostrophecms/image-widget](../@apostrophecms/image-widget/index.html),
-// this module provides a simple way to add downloadable PDFs and the like to
-// a website, and to manage a library of them for reuse.
+// Together with
+// [@apostrophecms/image-widget](../@apostrophecms/image-widget/index.html),
+// this module provides a simple way to add downloadable PDFs and the like to a
+// website, and to manage a library of them for reuse.
 //
 // Each `@apostrophecms/image` doc has an `attachment` schema field, implemented
-// by the [@apostrophecms/attachment](../@apostrophecms/attachment/index.html) module.
+// by the [@apostrophecms/attachment](../@apostrophecms/attachment/index.html)
+// module.
 
 module.exports = {
   extend: '@apostrophecms/piece-type',
@@ -28,8 +31,8 @@ module.exports = {
     editRole: 'editor',
     publishRole: 'editor',
     showPermissions: true,
-    // Images should by default be considered "related documents" when localizing
-    // another document that references them
+    // Images should by default be considered "related documents" when
+    // localizing another document that references them
     relatedDocument: true,
     relationshipEditor: 'AposImageRelationshipEditor',
     relationshipEditorLabel: 'apostrophe:editImageAdjustments',
@@ -266,7 +269,8 @@ module.exports = {
           const testRatio = image._fields
             ? (image._fields.width / image._fields.height)
             : (image.attachment.width / image.attachment.height);
-          const configuredRatio = widgetOptions.aspectRatio[0] / widgetOptions.aspectRatio[1];
+          const configuredRatio = widgetOptions.aspectRatio[0] /
+            widgetOptions.aspectRatio[1];
           return withinOnePercent(testRatio, configuredRatio);
         }
         async function autocrop(image, widgetOptions) {
@@ -306,7 +310,9 @@ module.exports = {
             if (!image) {
               return res.status(404).send('notfound');
             }
-            const url = image.attachment && image.attachment._urls && image.attachment._urls[size];
+            const url = image.attachment &&
+              image.attachment._urls &&
+              image.attachment._urls[size];
             if (url) {
               return res.redirect(image.attachment._urls[size]);
             }
@@ -323,18 +329,18 @@ module.exports = {
     return {
       // This method is available as a template helper: apos.image.first
       //
-      // Find the first image attachment referenced within an object that may have attachments
-      // as properties or sub-properties.
+      // Find the first image attachment referenced within an object that may
+      // have attachments as properties or sub-properties.
       //
-      // For best performance be reasonably specific; don't pass an entire page or piece
-      // object if you can pass page.thumbnail to avoid an exhaustive search, especially
-      // if the page has many relationships.
+      // For best performance be reasonably specific; don't pass an entire page
+      // or piece object if you can pass page.thumbnail to avoid an exhaustive
+      // search, especially if the page has many relationships.
       //
       // For ease of use, a null or undefined `within` argument is accepted.
       //
-      // Note that this method doesn't actually care if the attachment is part of
-      // an `@apostrophecms/image` piece or not. It simply checks whether the `group`
-      // property is set to `images`.
+      // Note that this method doesn't actually care if the attachment is part
+      // of an `@apostrophecms/image` piece or not. It simply checks whether the
+      // `group` property is set to `images`.
       //
       // Examples:
       //
@@ -360,21 +366,21 @@ module.exports = {
       },
       // This method is available as a template helper: apos.image.all
       //
-      // Find all image attachments referenced within an object that may have attachments
-      // as properties or sub-properties.
+      // Find all image attachments referenced within an object that may have
+      // attachments as properties or sub-properties.
       //
-      // For best performance be reasonably specific; don't pass an entire page or piece
-      // object if you can pass page.thumbnail to avoid an exhaustive search, especially
-      // if the page has many relationships.
+      // For best performance be reasonably specific; don't pass an entire page
+      // or piece object if you can pass page.thumbnail to avoid an exhaustive
+      // search, especially if the page has many relationships.
       //
       // When available, the `_description`, `_credit` and `_creditUrl` are
       // also returned as part of the object.
       //
       // For ease of use, a null or undefined `within` argument is accepted.
       //
-      // Note that this method doesn't actually care if the attachment is part of
-      // an `@apostrophecms/image` piece or not. It simply checks whether the `group`
-      // property is set to `images`.
+      // Note that this method doesn't actually care if the attachment is part
+      // of an `@apostrophecms/image` piece or not. It simply checks whether the
+      // `group` property is set to `images`.
       //
       // Examples:
       //
@@ -399,8 +405,8 @@ module.exports = {
       },
       // This method is available as a template helper: apos.image.srcset
       //
-      // Given an image attachment, return a string that can be used as the value
-      // of a `srcset` HTML attribute.
+      // Given an image attachment, return a string that can be used as the
+      // value of a `srcset` HTML attribute.
       srcset(attachment, cropFields) {
         if (!self.apos.attachment.isSized(attachment)) {
           return '';
@@ -499,14 +505,13 @@ module.exports = {
           await self.updateImageCropsForRelationship(req, docId, piece, croppedIndex);
         }
       },
-      // This handler operates on all documents of a given aposDocId. The `piece`
-      // argument is the image piece that has been updated.
-      // - Auto re-crop the image, using the same width/height ratio if the
-      // image has been cropped.
-      // - Remove any existing focal point data.
+      // This handler operates on all documents of a given aposDocId. The
+      // `piece` argument is the image piece that has been updated. - Auto
+      // re-crop the image, using the same width/height ratio if the image has
+      // been cropped. - Remove any existing focal point data.
       //
-      // `croppedIndex` is used to avoid re-cropping the same image when updating multiple
-      // documents. It's internally mutated by the handler.
+      // `croppedIndex` is used to avoid re-cropping the same image when
+      // updating multiple documents. It's internally mutated by the handler.
       async updateImageCropsForRelationship(req, aposDocId, piece, croppedIndex = {}) {
         const dbDocs = await self.apos.doc.db.find({
           aposDocId
@@ -514,7 +519,11 @@ module.exports = {
         const changeSets = dbDocs.flatMap(doc => getDocRelations(doc, piece));
         for (const changeSet of changeSets) {
           try {
-            const cropFields = await autocrop(changeSet.image, changeSet.cropFields, croppedIndex);
+            const cropFields = await autocrop(
+              changeSet.image,
+              changeSet.cropFields,
+              croppedIndex
+            );
             const $set = {
               [changeSet.docDotPath]: cropFields
             };
@@ -651,7 +660,9 @@ module.exports = {
             if (!minSize) {
               return;
             }
-            const $nin = Object.keys(self.apos.attachment.sized).filter(key => self.apos.attachment.sized[key]);
+            const $nin = Object
+              .keys(self.apos.attachment.sized)
+              .filter(key => self.apos.attachment.sized[key]);
             const criteria = {
               $or: [
                 {

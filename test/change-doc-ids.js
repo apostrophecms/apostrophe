@@ -173,7 +173,10 @@ describe('change-doc-ids', function() {
       assert(test.path.includes(newPageDocId));
       assert(test._children[0].path.includes(newPageDocId));
     }
-    const articles = await apos.article.find(apos.task.getReq(), {}).sort({ slug: 1 }).toArray();
+    const articles = await apos.article
+      .find(apos.task.getReq(), {})
+      .sort({ slug: 1 })
+      .toArray();
     assert.strictEqual(articles[0].title, 'Article 0');
     assert(articles[0]._categories);
     assert.strictEqual(articles[0]._categories.length, 2);
@@ -185,7 +188,8 @@ describe('change-doc-ids', function() {
         true,
         'newCategoryId not found'
       );
-      const newCategory = articles[0]._categories.find(category => category._id === newCategoryId);
+      const newCategory = articles[0]._categories
+        .find(category => category._id === newCategoryId);
       assert(newCategory);
       assert.strictEqual(newCategory._id, newCategoryId);
       assert.strictEqual(newCategory.aposDocId, newCategoryId.replace(/:.+$/, ''));

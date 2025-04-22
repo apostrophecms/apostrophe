@@ -1,4 +1,5 @@
-// Vue plugin. Create a new directive with i18n support by applying the decorator
+// Vue plugin. Create a new directive with i18n support by applying the
+// decorator
 import { $t } from './i18next';
 import {
   computePosition, arrow, offset, flip, shift

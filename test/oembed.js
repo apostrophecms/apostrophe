@@ -29,13 +29,9 @@ describe('Oembed', function() {
   //
   // let youtube = 'https://www.youtube.com/watch?v=us00G8oILCM&feature=related';
 
-  // it('YouTube still has the video we like to use for testing', async function() {
-  //   try {
-  //     const response = await request({
-  //       method: 'GET',
-  //       uri: youtube,
-  //       resolveWithFullResponse: true
-  //     });
+  // it('YouTube still has the video we like to use for testing', async
+  // function() { try { const response = await request({ method: 'GET', uri:
+  // youtube, resolveWithFullResponse: true });
 
   //     assert(response.statusCode === 200);
   //   } catch (e) {

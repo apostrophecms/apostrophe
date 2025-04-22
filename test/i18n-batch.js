@@ -250,9 +250,8 @@ describe('i18n batch localization', function() {
     const image1Fr = log.find(entry => entry._id === image1._id && entry.locale === 'fr');
     const image2Fr = log.find(entry => entry._id === image2._id && entry.locale === 'fr');
 
-    // Image 1 is related to both pages, but logs contain only the first relationship
-    // that is found.
-    // Image 2 is related to page 2 only.
+    // Image 1 is related to both pages, but logs contain only the first
+    // relationship that is found. Image 2 is related to page 2 only.
     assert.equal(image1Fr.error, false);
     assert.equal(image1Fr.relationship, page1Es.aposDocId);
     assert.equal(image2Fr.error, false);
@@ -357,9 +356,8 @@ describe('i18n batch localization', function() {
     const image1Fr = log.find(entry => entry._id === image1._id && entry.locale === 'fr');
     const image2Fr = log.find(entry => entry._id === image2._id && entry.locale === 'fr');
 
-    // Image 1 is related to both pages, but logs contain only the first relationship
-    // that is found.
-    // Image 2 is related to page 2 only.
+    // Image 1 is related to both pages, but logs contain only the first
+    // relationship that is found. Image 2 is related to page 2 only.
     assert.equal(image1Fr.error, false);
     assert.equal(image1Fr.relationship, page1.aposDocId);
     assert.equal(image2Fr.error, false);

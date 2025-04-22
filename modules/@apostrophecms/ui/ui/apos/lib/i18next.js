@@ -53,7 +53,13 @@ export default {
     }
     if (i18n.adminLocale !== i18n.defaultLocale) {
       for (const [ ns, phrases ] of Object.entries(i18n.i18n[i18n.defaultLocale])) {
-        i18next.addResourceBundle(canonicalize(i18n.defaultLocale), ns, phrases, true, true);
+        i18next.addResourceBundle(
+          canonicalize(i18n.defaultLocale),
+          ns,
+          phrases,
+          true,
+          true
+        );
       }
     }
     if ((i18n.adminLocale !== 'en') && (i18n.defaultLocale !== 'en')) {

@@ -52,7 +52,12 @@ module.exports = {
           );
 
           try {
-            const composed = self.apos.util.pipe(self.composeRemoves, self.composeCommands, self.composeGroups, self.composeModals)({ definitions });
+            const composed = self.apos.util.pipe(
+              self.composeRemoves,
+              self.composeCommands,
+              self.composeGroups,
+              self.composeModals
+            )({ definitions });
 
             const validationResult = [].concat(
               Object.entries(composed.commands)
@@ -73,7 +78,11 @@ module.exports = {
             );
             self.compileErrors(validationResult);
 
-            const built = self.apos.util.pipe(self.buildCommands, self.buildGroups, self.buildModals)({ composed });
+            const built = self.apos.util.pipe(
+              self.buildCommands,
+              self.buildGroups,
+              self.buildModals
+            )({ composed });
             self.commands = built.commands;
             self.groups = built.groups;
             self.modals = built.modals;
@@ -115,7 +124,9 @@ module.exports = {
             );
         };
 
-        const concatenate = Object.values(initialState.definitions).reduce(formatRemove, []);
+        const concatenate = Object
+          .values(initialState.definitions)
+          .reduce(formatRemove, []);
 
         return {
           ...initialState,
@@ -131,7 +142,9 @@ module.exports = {
             );
         };
 
-        const concatenate = Object.values(initialState.definitions).reduce(formatCommands, {});
+        const concatenate = Object
+          .values(initialState.definitions)
+          .reduce(formatCommands, {});
 
         return {
           ...initialState,
@@ -149,7 +162,8 @@ module.exports = {
                   name,
                   {
                     ...group,
-                    commands: (group.commands || []).filter(command => !commands.includes(command))
+                    commands: (group.commands || [])
+                      .filter(command => !commands.includes(command))
                   }
                 ];
               })
@@ -166,7 +180,9 @@ module.exports = {
             );
         };
 
-        const concatenate = Object.values(initialState.definitions).reduce(formatGroups, {});
+        const concatenate = Object
+          .values(initialState.definitions)
+          .reduce(formatGroups, {});
 
         return {
           ...initialState,
@@ -182,7 +198,9 @@ module.exports = {
             );
         };
 
-        const concatenate = Object.values(initialState.definitions).reduce(formatModals, {});
+        const concatenate = Object
+          .values(initialState.definitions)
+          .reduce(formatModals, {});
 
         return {
           ...initialState,
@@ -278,7 +296,9 @@ module.exports = {
             : state;
         };
 
-        const concatenate = Object.entries(initialState.composed.groups).reduce(filterGroups, {});
+        const concatenate = Object
+          .entries(initialState.composed.groups)
+          .reduce(filterGroups, {});
 
         return {
           ...initialState,
@@ -298,7 +318,9 @@ module.exports = {
           };
         };
 
-        const concatenate = Object.entries(initialState.composed.modals).reduce(formatModals, {});
+        const concatenate = Object
+          .entries(initialState.composed.modals)
+          .reduce(formatModals, {});
 
         return {
           ...initialState,
@@ -338,7 +360,10 @@ module.exports = {
       getVisibleModals(visibleCommands, modals = self.modals) {
         return Object.fromEntries(
           Object.entries(modals)
-            .map(([ key, groups ]) => [ key, self.getVisibleGroups(visibleCommands, groups) ])
+            .map(([ key, groups ]) => [
+              key,
+              self.getVisibleGroups(visibleCommands, groups)
+            ])
             .filter(([ , groups ]) => Object.keys(groups).length)
         );
       },

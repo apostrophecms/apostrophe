@@ -1,9 +1,11 @@
 // This module makes an instance of the [i18next](https://npmjs.org/package/i18next) npm module available
-// in Nunjucks templates via the `__t()` helper function. That function is also available on `req` objects
-// as `req.t()`. Any options passed to this module are passed on to `i18next`.
+// in Nunjucks templates via the `__t()` helper function. That function is also
+// available on `req` objects as `req.t()`. Any options passed to this module
+// are passed on to `i18next`.
 //
-// `apos.i18n.i18next` can be used to directly access the `i18next` npm module instance if necessary.
-// It usually is not necessary. Use `req.t` if you need to localize in a route.
+// `apos.i18n.i18next` can be used to directly access the `i18next` npm module
+// instance if necessary. It usually is not necessary. Use `req.t` if you need
+// to localize in a route.
 //
 // ## Options
 //
@@ -13,15 +15,10 @@
 //
 // ### `adminLocales`
 //
-// Controls what admin UI language can be set per user. If set, `adminLocale` user field
-// will be automatically added to the user schema.
-// Contains an array of objects with `label` and `value` properties:
-// ```js
-// {
-//   label: 'English',
-//   value: 'en'
-// }
-// ```
+// Controls what admin UI language can be set per user. If set, `adminLocale`
+// user field will be automatically added to the user schema. Contains an array
+// of objects with `label` and `value` properties: ```js { label: 'English',
+// value: 'en' } ```
 //
 // ### `defaultAdminLocale`
 //
@@ -110,7 +107,11 @@ module.exports = {
     if (self.defaultAdminLocale && typeof self.defaultAdminLocale !== 'string') {
       throw self.apos.error('invalid', 'The "defaultAdminLocale" option must be a string.');
     }
-    if (self.defaultAdminLocale && self.adminLocales.length && !self.adminLocales.some(al => al.value === self.defaultAdminLocale)) {
+    if (
+      self.defaultAdminLocale &&
+      self.adminLocales.length &&
+      !self.adminLocales.some(al => al.value === self.defaultAdminLocale)
+    ) {
       throw self.apos.error('invalid', `The value of "defaultAdminLocale" "${self.defaultAdminLocale}" doesn't match any of the existing "adminLocales" values.`);
     }
     const fallbackLng = [ self.defaultLocale ];
@@ -118,7 +119,8 @@ module.exports = {
     if (fallbackLng[0] !== 'en') {
       fallbackLng.push('en');
     }
-    // Make sure we have our own instance to avoid conflicts with other apos objects
+    // Make sure we have our own instance to avoid conflicts with other apos
+    // objects
     self.i18next = i18next.createInstance({
       fallbackLng,
       // Required to prevent the debugger from complaining
@@ -156,10 +158,11 @@ module.exports = {
       '@apostrophecms/page:beforeSend': {
         // Developers can link to alternate locales by iterating over
         // `data.localizations` in any page template. Each element always has
-        // `locale`, `label` and `homePageUrl` properties. Each element also has an
-        // `available` property; if true, the current context document is available
-        // in that locale, `title` and a small number of other document properties are
-        // populated, and `_url` redirects to the context document in that locale.
+        // `locale`, `label` and `homePageUrl` properties. Each element also
+        // has an `available` property; if true, the current context document is
+        // available in that locale, `title` and a small number of other
+        // document properties are populated, and `_url` redirects to the
+        // context document in that locale.
         //
         // The array is provided in the order in which locales are configured.
         // The current locale is included and has the property `current: true`.
@@ -244,8 +247,12 @@ module.exports = {
         // from the Apostrophe Express module to ensure that user
         // defined cookie settings are respected.
         const aposExpressModule = self.apos.modules['@apostrophecms/express'];
-        req.session.cookie = new ExpressSessionCookie(aposExpressModule.sessionOptions.cookie);
-        return res.redirect(self.apos.url.build(req.url, { aposCrossDomainSessionToken: null }));
+        req.session.cookie = new ExpressSessionCookie(
+          aposExpressModule.sessionOptions.cookie
+        );
+        return res.redirect(
+          self.apos.url.build(req.url, { aposCrossDomainSessionToken: null })
+        );
       },
       // If the `redirectToFirstLocale` option is enabled
       // and the homepage is requested,
@@ -283,7 +290,8 @@ module.exports = {
           return next();
         }
 
-        // Add / for home page and to avoid being redirected again in the `locale` middleware:
+        // Add / for home page and to avoid being redirected again in
+        // the `locale` middleware:
         const redirectUrl = `${localesToCheck[0].prefix}/`;
 
         return res.redirect(redirectUrl);
@@ -393,9 +401,9 @@ module.exports = {
           // from LocalStorage to the cross-domain session cache
           let clipboard = req.body.clipboard;
           if (clipboard && ((typeof clipboard) !== 'string')) {
-            // Clipboard re-validation doesn't have to be more detailed here because
-            // on any actual paste attempt it will go through server side validation
-            // like any normal insert of a widget
+            // Clipboard re-validation doesn't have to be more detailed here
+            // because on any actual paste attempt it will go through server
+            // side validation like any normal insert of a widget
             clipboard = null;
           }
           const _id = self.apos.launder.id(req.body.contextDocId);
@@ -404,14 +412,11 @@ module.exports = {
             locale: sanitizedLocale
           });
           if (_id) {
-            doc = await self.apos.doc.find(localeReq, {
-              aposDocId: _id.split(':')[0]
-            }).toObject();
-            if (!doc) {
-              const publishedLocaleReq = localeReq.clone({ mode: 'draft' });
-              doc = await self.apos.doc.find(publishedLocaleReq, {
-                aposDocId: _id.split(':')[0]
-              }).toObject();
+            const aposDocId = _id.split(':')[0];
+            doc = await self.apos.doc.find(localeReq, { aposDocId }).toObject();
+            if (!doc?._url) {
+              const draftLocaleReq = localeReq.clone({ mode: 'draft' });
+              doc = await self.apos.doc.find(draftLocaleReq, { aposDocId }).toObject();
             }
           }
           if (!sanitizedLocale) {
@@ -425,7 +430,10 @@ module.exports = {
             // with the appropriate prefix
             result.redirectTo = localeReq.prefix;
           };
-          if (self.locales[localeReq.locale].hostname !== self.locales[req.locale].hostname) {
+          if (
+            self.locales[localeReq.locale].hostname !==
+            self.locales[req.locale].hostname
+          ) {
             const crossDomainSessionToken = self.apos.util.generateId();
             const session = {
               ...req.session,
@@ -489,15 +497,17 @@ module.exports = {
         self.addDefaultResourcesForModule(module);
         self.addNamespacedResourcesForModule(module);
       },
-      // Automatically adds any localizations found in .json files in the main `i18n` subdirectory
-      // of a module.
+      // Automatically adds any localizations found in .json files in
+      // the main `i18n` subdirectory of a module.
       //
-      // These are added to the `default` namespace, unless the legacy `i18n.ns` option is set
-      // for the module (not the preferred way, use namespace subdirectories in new projects).
+      // These are added to the `default` namespace, unless the legacy
+      // `i18n.ns` option is set for the module (not the preferred way, use
+      // namespace subdirectories in new projects).
       addDefaultResourcesForModule(module) {
         const ns = (module.options.i18n && module.options.i18n.ns) || 'default';
         self.namespaces[ns] = self.namespaces[ns] || {};
-        self.namespaces[ns].browser = self.namespaces[ns].browser || (module.options.i18n && module.options.i18n.browser);
+        self.namespaces[ns].browser = self.namespaces[ns].browser ||
+          (module.options.i18n && module.options.i18n.browser);
         for (const entry of module.__meta.chain) {
           const localizationsDir = path.join(entry.dirname, 'i18n');
           if (!self.defaultLocalizationsDirsAdded.has(localizationsDir)) {
@@ -510,16 +520,18 @@ module.exports = {
                 // Likely a namespace subdirectory
                 continue;
               }
-              const data = JSON.parse(fs.readFileSync(path.join(localizationsDir, localizationFile)));
+              const data = JSON.parse(
+                fs.readFileSync(path.join(localizationsDir, localizationFile))
+              );
               const locale = localizationFile.replace('.json', '');
               self.i18next.addResourceBundle(locale, ns, data, true, true);
             }
           }
         }
       },
-      // Automatically adds any localizations found in subdirectories of the main `i18n`
-      // subdirectory of a module. The subdirectory's name is treated as an i18n namespace
-      // name.
+      // Automatically adds any localizations found in subdirectories of the
+      // main `i18n` subdirectory of a module. The subdirectory's name is
+      // treated as an i18n namespace name.
       addNamespacedResourcesForModule(module) {
         for (const entry of module.__meta.chain) {
           const metadata = module.__meta.i18n[entry.name] || {};
@@ -544,7 +556,8 @@ module.exports = {
               }
               for (const localizationFile of fs.readdirSync(namespaceDir)) {
                 if (!localizationFile.endsWith('.json')) {
-                  // Exclude parsing of non-JSON files, like hidden files, in the namespace directory
+                  // Exclude parsing of non-JSON files, like hidden files,
+                  // in the namespace directory
                   continue;
                 }
                 const fullLocalizationFile = path.join(namespaceDir, localizationFile);
@@ -729,15 +742,16 @@ module.exports = {
         );
       },
       setPrefixUrls(req) {
-        // In a production-like environment, use req.hostname, otherwise the Host header
-        // to allow port numbers in dev.
+        // In a production-like environment, use req.hostname, otherwise the
+        // Host header to allow port numbers in dev.
         //
-        // Watch out for modules that won't be set up if this is an afterInit task in an
-        // early module like the asset module
+        // Watch out for modules that won't be set up if this is an afterInit
+        // task in an early module like the asset module
         const host = (process.env.NODE_ENV === 'production') ? req.hostname : req.get('Host');
         const fallbackBaseUrl = `${req.protocol}://${host}`;
         if (self.hostnamesInUse) {
-          req.baseUrl = (self.apos.page && self.apos.page.getBaseUrl(req)) || fallbackBaseUrl;
+          req.baseUrl = (self.apos.page && self.apos.page.getBaseUrl(req)) ||
+            fallbackBaseUrl;
         } else {
           req.baseUrl = self.apos.page && self.apos.page.getBaseUrl(req);
         }
@@ -829,34 +843,33 @@ module.exports = {
       // - `relatedTypes`: an array of related doc types to be localized in case
       //    they are found in the batch of documents to localize.
       // - `toLocales`: an array of locales to localize the documents to.
-      // - `update`: a boolean indicating whether to localize existing related documents.
-      // - `relatedOnly`: a boolean indicating whether to only localize related documents
-      //    and skip the parent documents (`_ids`).
+      // - `update`: a boolean indicating whether to localize existing related
+      // documents. - `relatedOnly`: a boolean indicating whether to only
+      // localize related documents and skip the parent documents (`_ids`).
       //
-      // Automatic translation instructions may be included in the `req.query` object:
-      // - `aposTranslateProvider`: the unique name of the translation provider.
-      // - `aposLocale`: the locale to translate from.
-      // Note that without these instructions, the signal to the automatic translation
+      // Automatic translation instructions may be included in the `req.query`
+      // object: - `aposTranslateProvider`: the unique name of the translation
+      // provider. - `aposLocale`: the locale to translate from. Note that
+      // without these instructions, the signal to the automatic translation
       // service will not be sent.
       //
-      // `manager` is the `self` object of the module that is localizing the documents.
-      // If the batch is a set of pages, `manager` should be an instance of
-      // `@apostrophecms/page`. For pieces, `manager` should be an instance of
-      // the piece type module.
-      // `reporting` is an optional object that can be used to report progress. See
-      // the `@apostrophecms/job` module for more information.
+      // `manager` is the `self` object of the module that is localizing the
+      // documents. If the batch is a set of pages, `manager` should be an
+      // instance of `@apostrophecms/page`. For pieces, `manager` should be an
+      // instance of the piece type module. `reporting` is an optional object
+      // that can be used to report progress. See the `@apostrophecms/job`
+      // module for more information.
       //
-      // The handler will return a log, array of objects with the following properties:
-      // - `id`: the document `_id` value
-      // - `aposId`: the document `aposDocId` value
-      // - `type`: the document type, can be `null` if the document is not found
-      // - `title`: the document title, can be `null` if the document is not found
-      // - `relationship`: the `aposDocId` of the parent document,
-      //    or `false` if the document is the parent.
-      // - `error`: a boolean or string `reason` indicating whether an error
-      //   occurred during localization. If `error` is a string, it will contain
-      //   the error name. See `@apostrophecms/error` and `@apostrophecms/http` modules.
-      // - `detail`: optional string (i18n key) explaining the error.
+      // The handler will return a log, array of objects with the following
+      // properties: - `id`: the document `_id` value - `aposId`: the document
+      // `aposDocId` value - `type`: the document type, can be `null` if the
+      // document is not found - `title`: the document title, can be `null` if
+      // the document is not found - `relationship`: the `aposDocId` of the
+      // parent document, or `false` if the document is the parent. - `error`: a
+      // boolean or string `reason` indicating whether an error occurred during
+      // localization. If `error` is a string, it will contain the error name.
+      // See `@apostrophecms/error` and `@apostrophecms/http` modules. -
+      // `detail`: optional string (i18n key) explaining the error.
       async localizeBatch(req, manager, reporting = null) {
         if (!req.user) {
           throw self.apos.error('forbidden');
@@ -1203,9 +1216,9 @@ module.exports = {
 
         // Filter out related doc types that opt out completely (pages should
         // never be considered "related" to other pages simply because
-        // of navigation links, the feature is meant for pieces that feel more like
-        // part of the document being localized)
-        // We also remove non localized content like users and check for permissions.
+        // of navigation links, the feature is meant for pieces that feel more
+        // like part of the document being localized) We also remove non
+        // localized content like users and check for permissions.
         function canLocalize(req, doc, related) {
           if (!self.apos.modules[doc.type]) {
             return false;

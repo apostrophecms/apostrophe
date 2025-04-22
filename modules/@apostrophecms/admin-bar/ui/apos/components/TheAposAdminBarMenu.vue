@@ -13,7 +13,7 @@
         class="apos-admin-bar__btn"
         :modifiers="['no-motion']"
         role="menuitem"
-        @click="emitEvent('@apostrophecms/page:manager')"
+        @click="emitEvent({ action: '@apostrophecms/page:manager' })"
       />
     </li>
     <li
@@ -42,7 +42,7 @@
         :modifiers="['no-motion']"
         class="apos-admin-bar__btn"
         role="menuitem"
-        @click="emitEvent(item.action)"
+        @click="emitEvent(item)"
       />
     </li>
     <li
@@ -85,7 +85,7 @@
           :label="item.label"
           :action="item.action"
           :state="trayItemState[item.name] ? [ 'active' ] : []"
-          @click="emitEvent(item.action)"
+          @click="emitEvent(item)"
         />
       </template>
     </li>
@@ -122,10 +122,9 @@ export default {
     }
   },
   async mounted() {
-    apos.bus.$on('admin-menu-click', this.onAdminMenuClick);
-
     const itemsSet = klona(this.items);
-    this.menuItems = itemsSet.filter(item => !(item.options && item.options.contextUtility))
+    this.menuItems = itemsSet
+      .filter(item => !(item.options && item.options.contextUtility))
       .map(item => {
         if (item.items) {
           item.items.forEach(subitem => {
@@ -148,12 +147,25 @@ export default {
     });
   },
   methods: {
-    emitEvent(name) {
-      apos.bus.$emit('admin-menu-click', name);
+    emitEvent(item) {
+      apos.bus.$emit('admin-menu-click', item.action);
+
+      // Maintain a knowledge of which tray item toggles are active
+      const trayItem = this.trayItems.find(trayItem => trayItem.name === item.action);
+
+      if (trayItem && trayItem.options.toggle) {
+        this.trayItemState = {
+          ...this.trayItemState,
+          [item.action]: !this.trayItemState[item.action]
+        };
+      }
     },
     trayItemTooltip(item) {
       if (item.options.toggle) {
-        if (this.trayItemState[item.name] && item.options.tooltip && item.options.tooltip.deactivate) {
+        if (
+          this.trayItemState[item.name] &&
+          item.options.tooltip?.deactivate
+        ) {
           return {
             content: item.options.tooltip.deactivate,
             placement: 'bottom'
@@ -168,17 +180,6 @@ export default {
         }
       } else {
         return item.options.tooltip;
-      }
-    },
-    // Maintain a knowledge of which tray item toggles are active
-    onAdminMenuClick(e) {
-      const name = e.itemName || e;
-      const trayItem = this.trayItems.find(item => item.name === name);
-      if (trayItem && trayItem.options.toggle) {
-        this.trayItemState = {
-          ...this.trayItemState,
-          [name]: !this.trayItemState[name]
-        };
       }
     }
   }

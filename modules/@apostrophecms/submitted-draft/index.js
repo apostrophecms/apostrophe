@@ -96,10 +96,12 @@ module.exports = {
         patchTypeField() {
           const typeField = self.schema.find(field => field.name === '_type');
           const managers = Object.values(self.apos.doc.managers);
-          typeField.choices = managers.filter(manager => manager.isLocalized() && !manager.options.autopublish).map(manager => ({
-            label: manager.options.label || manager.name || manager.__meta.name,
-            value: manager.name || manager.__meta.name
-          }));
+          typeField.choices = managers
+            .filter(manager => manager.isLocalized() && !manager.options.autopublish)
+            .map(manager => ({
+              label: manager.options.label || manager.name || manager.__meta.name,
+              value: manager.name || manager.__meta.name
+            }));
         }
       }
     };
