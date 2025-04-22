@@ -107,7 +107,7 @@
         class="apos-image-cropper__container"
       >
         <AposImageCropper
-          :attachment="item.attachment"
+          :attachment="image.attachment"
           :doc-fields="docFields"
           :aspect-ratio="aspectRatio"
           :min-size="minSize"
@@ -138,21 +138,28 @@ export default {
       type: Object,
       default: null
     },
-    title: {
-      type: String,
-      required: true
-    },
     item: {
       type: Object,
       default: () => ({})
+    },
+    widget: {
+      type: Object,
+      default: null
+    },
+    field: {
+      type: Object,
+      default: null
     }
   },
   emits: [ 'modal-result' ],
   data() {
     const { aspectRatio, disableAspectRatio } = this.getAspectRatioFromConfig();
     const minSize = this.getMinSize();
+    const image = this.getImage();
 
+    console.log('image', image);
     return {
+      image,
       original: this.modelValue,
       docFields: {
         data: this.setDataValues()
@@ -165,7 +172,7 @@ export default {
       },
       modalTitle: {
         key: 'apostrophe:editImageRelationshipTitle',
-        title: this.title
+        title: image.title
       },
       currentTab: null,
       aspectRatio,
@@ -173,8 +180,8 @@ export default {
       disableAspectRatio,
       minSize,
       correctingSizes: false,
-      maxWidth: this.item.attachment.width,
-      maxHeight: this.item.attachment.height,
+      maxWidth: this.image.attachment.width,
+      maxHeight: this.image.attachment.height,
       minWidth: minSize[0] || 1,
       minHeight: minSize[1] || 1,
       containerHeight: 0
@@ -191,8 +198,12 @@ export default {
     this.computeMinSizes();
   },
   methods: {
+    getImage() {
+      console.log('this.widget', this.widget);
+      return this.item || this.widget?._image?.[0]?.title;
+    },
     computeMaxSizes() {
-      const { width, height } = this.item.attachment;
+      const { width, height } = this.image.attachment;
 
       if (!this.aspectRatio) {
         this.maxWidth = width;
@@ -260,16 +271,16 @@ export default {
     },
     setDataValues() {
       if (
-        this.item._fields &&
-        this.item._fields.width &&
-        this.item._fields.height
+        this.image._fields &&
+        this.image._fields.width &&
+        this.image._fields.height
       ) {
-        return { ...this.item._fields };
+        return { ...this.image._fields };
       }
 
       return {
-        width: this.item.attachment.width,
-        height: this.item.attachment.height,
+        width: this.image.attachment.width,
+        height: this.image.attachment.height,
         top: 0,
         left: 0,
         x: null,
@@ -277,10 +288,10 @@ export default {
       };
     },
     async submit() {
-      if (this.item.attachment) {
+      if (this.image.attachment) {
         await apos.http.post(`${apos.attachment.action}/crop`, {
           body: {
-            _id: this.item.attachment._id,
+            _id: this.image.attachment._id,
             crop: this.docFields.data
           },
           busy: true

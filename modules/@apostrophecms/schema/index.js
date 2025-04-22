@@ -2258,6 +2258,13 @@ module.exports = {
           } catch (error) {
             throw self.apos.error('invalid', error.message);
           }
+        },
+        getFieldSchema(id) {
+          const field = self.getFieldById(id);
+          if (!field) {
+            throw self.apos.error('notfound');
+          }
+          return field.schema;
         }
       },
       post: {
@@ -2270,6 +2277,8 @@ module.exports = {
   extendMethods(self) {
     return {
       getBrowserData(_super, req) {
+        const field = self.getFieldById('1a85ebf69e66b0de94134ed18f329104');
+        console.log('field', field);
         const browserOptions = _super(req);
         const fields = {};
         for (const name in self.fieldTypes) {
