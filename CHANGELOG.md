@@ -12,6 +12,7 @@ A `secondaryLevel: true` option is available to add operations to the widget's c
 ### Fixes
 
 * Fixes all eslint warnings.
+* Fixes a RT bug where including `table` in `toolbar` but omitting an `insert` array crashed the rich text editor. 
 
 ## 4.15.0 (2025-04-16)
 
