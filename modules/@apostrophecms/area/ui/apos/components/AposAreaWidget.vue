@@ -280,8 +280,7 @@ export default {
     'copy',
     'update',
     'add',
-    'changed',
-    'adjust-image'
+    'changed'
   ],
   data() {
     return {

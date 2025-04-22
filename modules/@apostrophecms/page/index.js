@@ -1210,7 +1210,6 @@ database.`);
             throw self.apos.error('forbidden');
           }
           const patches = Array.isArray(input._patches) ? input._patches : [ input ];
-
           // Conventional for loop so we can handle the last one specially
           for (let i = 0; (i < patches.length); i++) {
             const input = patches[i];
