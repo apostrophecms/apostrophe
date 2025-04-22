@@ -1,16 +1,5 @@
 <template>
-<<<<<<< HEAD
   <li class="apos-context-menu__item">
-=======
-  <li
-    class="apos-context-menu__item"
-    :class="menuItem.separator ? 'apos-context-menu__item--separator' : null"
-  >
-    <hr
-      v-if="menuItem.separator"
-      class="apos-context-menu__separator"
-    >
->>>>>>> e596dd757 (eslint)
     <button
       class="apos-context-menu__button"
       :class="modifiers"
