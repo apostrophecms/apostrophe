@@ -286,7 +286,7 @@ export default {
       if (activeOptions.toolbar?.some(tool => tool === 'table')) {
         if (!activeOptions.insert?.some(tool => tool === 'table')) {
           activeOptions.insert = [
-          ...(activeOptions.insert || []),
+            ...(activeOptions.insert || []),
             'table'
           ];
         }
