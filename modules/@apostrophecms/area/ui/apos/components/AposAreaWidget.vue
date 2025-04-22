@@ -111,8 +111,8 @@
           :disabled="disabled"
           :max-reached="maxReached"
           :tabbable="isFocused"
+          :field-id="fieldId"
           :model-value="widget"
-          :area-field="field"
           @up="$emit('up', i);"
           @remove="$emit('remove', i);"
           @edit="$emit('edit', i);"
@@ -144,7 +144,6 @@
         :options="widgetOptions"
         :type="widget.type"
         :area-field-id="fieldId"
-        :area-field="field"
         :following-values="followingValuesWithParent"
         :model-value="widget"
         :value="widget"
@@ -235,10 +234,6 @@ export default {
     },
     next: {
       type: Array,
-      required: true
-    },
-    field: {
-      type: Object,
       required: true
     },
     fieldId: {

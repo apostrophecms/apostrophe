@@ -41,7 +41,7 @@ export default {
       type: Object,
       required: true
     },
-    areaField: {
+    areaId: {
       type: Object,
       default: null
     },
