@@ -272,11 +272,9 @@ export default {
     async editRelationship (item) {
       const editor = this.field.editor || 'AposRelationshipEditor';
 
-      console.log('this.field', this.field);
       const result = await apos.modal.execute(editor, {
         schema: this.field.schema,
-        item,
-        'model-value': item._fields
+        item
       });
 
       if (result) {

@@ -18,7 +18,7 @@
       <AposButton
         type="primary"
         label="apostrophe:update"
-        :disabled="docFields.hasErrors"
+        :disabled="!isModified"
         :attrs="{'data-apos-focus-priority': true}"
         @click="submit"
       />
@@ -132,15 +132,15 @@ export default {
   props: {
     schema: {
       type: Array,
-      default: () => ([])
-    },
-    modelValue: {
-      type: Object,
       default: null
+    },
+    widgetSchema: {
+      type: Array,
+      default: () => ([])
     },
     item: {
       type: Object,
-      default: () => ({})
+      default: null
     },
     widget: {
       type: Object,
@@ -156,14 +156,15 @@ export default {
     const { aspectRatio, disableAspectRatio } = this.getAspectRatioFromConfig();
     const minSize = this.getMinSize();
     const image = this.getImage();
+    const data = this.setDataValues(image);
 
-    console.log('image', image);
     return {
       image,
-      original: this.modelValue,
+      original: { ...data },
       docFields: {
-        data: this.setDataValues()
+        data
       },
+      fieldSchema: this.getFieldSchema(),
       errors: {},
       modal: {
         active: false,
@@ -180,12 +181,18 @@ export default {
       disableAspectRatio,
       minSize,
       correctingSizes: false,
-      maxWidth: this.image.attachment.width,
-      maxHeight: this.image.attachment.height,
+      maxWidth: image.attachment.width,
+      maxHeight: image.attachment.height,
       minWidth: minSize[0] || 1,
       minHeight: minSize[1] || 1,
       containerHeight: 0
     };
+  },
+
+  computed: {
+    isModified() {
+      return detectDocChange(this.fieldSchema, this.original, this.docFields.data);
+    }
   },
   async mounted() {
     this.modal.active = true;
@@ -199,8 +206,11 @@ export default {
   },
   methods: {
     getImage() {
-      console.log('this.widget', this.widget);
-      return this.item || this.widget?._image?.[0]?.title;
+      return this.item || this.widget?._image?.[0];
+    },
+    getFieldSchema() {
+      return this.schema ||
+        this.widgetSchema.find((field) => field.name === '_image')?.schema || [];
     },
     computeMaxSizes() {
       const { width, height } = this.image.attachment;
@@ -269,18 +279,18 @@ export default {
         this.minHeight = Math.round(minWidth / this.aspectRatio);
       }
     },
-    setDataValues() {
+    setDataValues(image) {
       if (
-        this.image._fields &&
-        this.image._fields.width &&
-        this.image._fields.height
+        image._fields &&
+        image._fields.width &&
+        image._fields.height
       ) {
-        return { ...this.image._fields };
+        return { ...image._fields };
       }
 
       return {
-        width: this.image.attachment.width,
-        height: this.image.attachment.height,
+        width: image.attachment.width,
+        height: image.attachment.height,
         top: 0,
         left: 0,
         x: null,
@@ -308,6 +318,7 @@ export default {
         },
         updateCoordinates
       };
+      console.log('this.docFields update', this.docFields);
     },
     inputWidth(e) {
       this.input(e, 'width');
@@ -324,9 +335,6 @@ export default {
 
       this.computeAspectRatio(value, name);
       this.updateDocFields({ [name]: value });
-    },
-    isModified() {
-      return detectDocChange(this.schema, this.original, this.docFields.data);
     },
     blurInput() {
       const { width, height } = this.docFields.data;

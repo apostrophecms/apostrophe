@@ -24,7 +24,6 @@ module.exports = {
     self.determineBestAssetUrl('placeholder');
     self.addWidgetOperation({
       name: 'adjustImage',
-      /* label: 'apostrophe:adjustImage', */
       label: 'apostrophe:editImageAdjustments',
       icon: 'image-edit-outline',
       modal: 'AposImageRelationshipEditor',

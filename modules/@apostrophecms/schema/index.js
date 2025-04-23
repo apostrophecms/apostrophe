@@ -2277,8 +2277,6 @@ module.exports = {
   extendMethods(self) {
     return {
       getBrowserData(_super, req) {
-        const field = self.getFieldById('1a85ebf69e66b0de94134ed18f329104');
-        console.log('field', field);
         const browserOptions = _super(req);
         const fields = {};
         for (const name in self.fieldTypes) {

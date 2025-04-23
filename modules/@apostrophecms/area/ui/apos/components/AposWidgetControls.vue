@@ -41,9 +41,9 @@ export default {
       type: Object,
       required: true
     },
-    areaId: {
-      type: Object,
-      default: null
+    fieldId: {
+      type: String,
+      required: true
     },
     first: {
       type: Boolean,
@@ -223,7 +223,9 @@ export default {
       if (modal) {
         const result = await apos.modal.execute(modal, {
           widget: this.modelValue,
-          field: this.areaField
+          widgetSchema: apos.modules[
+            apos.area.widgetManagers[this.modelValue.type]
+          ].schema
         });
         if (result?.widget) {
           // TODO: make sure the update method from
