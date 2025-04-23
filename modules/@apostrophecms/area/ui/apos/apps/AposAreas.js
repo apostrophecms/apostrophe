@@ -103,7 +103,6 @@ export default function() {
 
       el.parentNode.replaceChild(apos.area.activeEditor.$el, el);
     } else {
-
       const app = createApp(component, {
         options,
         id: data._id,
