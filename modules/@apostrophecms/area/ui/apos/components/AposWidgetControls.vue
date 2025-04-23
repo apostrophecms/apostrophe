@@ -225,7 +225,7 @@ export default {
           widget: this.modelValue,
           widgetSchema: apos.modules[
             apos.area.widgetManagers[this.modelValue.type]
-          ].schema
+          ]?.schema
         });
         if (result?.widget) {
           // TODO: make sure the update method from
