@@ -307,7 +307,23 @@ export default {
           busy: true
         });
       }
-      this.$emit('modal-result', this.docFields.data);
+
+      const image = {
+        ...this.image,
+        _fields: this.docFields.data
+      };
+
+      if (!this.widget) {
+        this.$emit('modal-result', { image });
+      } else {
+        const widget = {
+          ...this.widget,
+          _image: [ image ]
+        };
+
+        this.$emit('modal-result', { widget });
+      }
+
       this.modal.showModal = false;
     },
     updateDocFields(coordinates, updateCoordinates = true) {
@@ -318,7 +334,6 @@ export default {
         },
         updateCoordinates
       };
-      console.log('this.docFields update', this.docFields);
     },
     inputWidth(e) {
       this.input(e, 'width');
