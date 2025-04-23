@@ -2,7 +2,7 @@
 
 ## UNRELEASED
 
-* Update `jquery-ui` to 1.14.1 to address a vulnerability issue.
+* Update `jquery-ui` to 1.14 to address vulnerabilities fixed in [version 1.13](https://jqueryui.com/upgrade-guide/1.13).
 
 ## 2.227.10 (2025-03-19)
 
