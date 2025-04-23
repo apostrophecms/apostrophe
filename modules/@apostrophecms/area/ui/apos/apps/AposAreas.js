@@ -104,10 +104,6 @@ export default function() {
       el.parentNode.replaceChild(apos.area.activeEditor.$el, el);
     } else {
 
-      // TODO: Use this to retrieve field or does it later
-      /* const moduleOptions = window.apos.modules[apos.area.widgetManagers[this.type]]; */
-      console.log('this.type', this.type);
-      console.log('apos.area.widgetManagers', apos.area.widgetManagers);
       const app = createApp(component, {
         options,
         id: data._id,
