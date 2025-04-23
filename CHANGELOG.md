@@ -1,5 +1,9 @@
 # Changelog
 
+## UNRELEASED
+
+* Update `jquery-ui` to 1.14.1 to address a vulnerability issue.
+
 ## 2.227.10 (2025-03-19)
 
 * Improve docs locking system messages.
