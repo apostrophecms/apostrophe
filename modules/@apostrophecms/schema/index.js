@@ -2258,13 +2258,6 @@ module.exports = {
           } catch (error) {
             throw self.apos.error('invalid', error.message);
           }
-        },
-        getFieldSchema(id) {
-          const field = self.getFieldById(id);
-          if (!field) {
-            throw self.apos.error('notfound');
-          }
-          return field.schema;
         }
       },
       post: {
