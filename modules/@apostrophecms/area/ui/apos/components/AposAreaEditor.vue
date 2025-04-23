@@ -629,33 +629,6 @@ export default {
       };
       return widget;
     }
-    /* async adjustImage(widget) { */
-    /*   if (!widget._image?.length) { */
-    /*     return; */
-    /*   } */
-    /*   const schema = apos.modules[widget.type].schema; */
-    /*   const [ item ] = widget._image; */
-    /*   const result = await apos.modal.execute('AposImageRelationshipEditor', { */
-    /*     schema, */
-    /*     item, */
-    /*     title: item.title, */
-    /*     'model-value': item._fields */
-    /*   }); */
-    /**/
-    /*   if (result) { */
-    /*     const updatedImg = { */
-    /*       ...item, */
-    /*       _fields: result */
-    /*     }; */
-    /**/
-    /*     const updatedWidget = { */
-    /*       ...widget, */
-    /*       _image: [ updatedImg ] */
-    /*     }; */
-    /**/
-    /*     this.update(updatedWidget); */
-    /*   } */
-    /* } */
   }
 };
 
