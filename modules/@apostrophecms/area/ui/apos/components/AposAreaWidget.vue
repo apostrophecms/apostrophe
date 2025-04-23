@@ -120,7 +120,7 @@
           @copy="$emit('copy', i);"
           @clone="$emit('clone', i);"
           @down="$emit('down', i);"
-          @update="$emit('update')"
+          @update="$emit('update', $event)"
         />
       </div>
       <!-- Still used for contextual editing components -->
