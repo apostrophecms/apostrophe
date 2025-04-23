@@ -277,15 +277,12 @@ export default {
         item
       });
 
-      if (result) {
+      if (result?.image) {
         const index = this.next.findIndex(_item => _item._id === item._id);
 
         this.next = this.next.map((item, i) => {
           return i === index
-            ? {
-              ...item,
-              _fields: result
-            }
+            ? result.image
             : item;
         });
       }
