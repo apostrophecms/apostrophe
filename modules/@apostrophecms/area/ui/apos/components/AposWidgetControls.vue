@@ -205,17 +205,14 @@ export default {
   },
   methods: {
     getOperations({ secondaryLevel }) {
-      const { widgetOperations = [] } = apos.modules['@apostrophecms/area'];
-
-      return widgetOperations
-        /* .filter(operation => !operation.type || operation.type === `${this.modelValue.type}-widget`) */
-        .filter(operation => !operation.types || operation.types.includes(`${this.modelValue.type}-widget`))
-        .filter(operation => {
-          if (secondaryLevel) {
-            return operation.secondaryLevel;
-          }
-          return !operation.secondaryLevel;
-        });
+      const moduleOptions = apos.modules[apos.area.widgetManagers[this.modelValue.type]];
+      const { widgetOperations = [] } = moduleOptions || {};
+      return widgetOperations.filter(operation => {
+        if (secondaryLevel) {
+          return operation.secondaryLevel;
+        }
+        return !operation.secondaryLevel;
+      });
     },
     async handleClick({ action, modal }) {
       if (action) {
