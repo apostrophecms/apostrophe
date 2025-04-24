@@ -418,12 +418,8 @@ module.exports = {
       },
 
       addWidgetOperation(operation) {
-        self.apos.area.addWidgetOperation({
-          ...operation,
-          type: self.__meta.name
-        });
+        self.apos.area.addWidgetOperation(operation, self.__meta.name);
       }
-
     };
   },
   extendMethods(self) {

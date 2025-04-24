@@ -208,7 +208,8 @@ export default {
       const { widgetOperations = [] } = apos.modules['@apostrophecms/area'];
 
       return widgetOperations
-        .filter(operation => !operation.type || operation.type === `${this.modelValue.type}-widget`)
+        /* .filter(operation => !operation.type || operation.type === `${this.modelValue.type}-widget`) */
+        .filter(operation => !operation.types || operation.types.includes(`${this.modelValue.type}-widget`))
         .filter(operation => {
           if (secondaryLevel) {
             return operation.secondaryLevel;
