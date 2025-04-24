@@ -110,7 +110,7 @@ const { stripIndent } = require('common-tags');
 const _ = require('lodash');
 
 module.exports = {
-  cascades: [ 'fields' ],
+  cascades: [ 'fields', 'widgetOperations' ],
   options: {
     neverLoadSelf: true,
     initialModal: true,
@@ -120,6 +120,29 @@ module.exports = {
     width: '',
     // left or right:
     origin: 'right'
+  },
+  handlers(self) {
+    return {
+      'apostrophe:modulesRegistered': {
+        composeWidgetperations() {
+          self.widgetOperations = Object.entries(self.widgetOperations)
+            .map(([ name, operation ]) => {
+              if (!name || !operation.label || !operation.modal) {
+                throw self.apos.error('invalid', 'widgetOperations requires name, label and modal properties.');
+              }
+
+              if (operation.secondaryLevel !== true && !operation.icon) {
+                throw self.apos.error('invalid', 'widgetOperations requires the icon property at primary level.');
+              }
+
+              return {
+                name,
+                ...operation
+              };
+            });
+        }
+      }
+    };
   },
   init(self) {
     const badFieldName = Object.keys(self.fields).indexOf('type') !== -1;
@@ -417,8 +440,31 @@ module.exports = {
         return [];
       },
 
+      checkWidgetOperationsPermissions(req) {
+        return self.widgetOperations.filter(({ permission }) => {
+          if (permission?.action && permission?.type) {
+            // QUESTION: Shouldn't we check `req.mode` instead?
+            return self.apos.permission.can(req, permission.action, permission.type, permission.mode || 'draft');
+          }
+          return true;
+        });
+      },
+      // Question: Should we keep this method in area module?
+      // `widget-type` is not available from the modules list,
+      // so it might be inconvenient to call this method
       addWidgetOperation(operation) {
-        self.apos.area.addWidgetOperation(operation, self.__meta.name);
+        if (!operation.name || !operation.label || !operation.modal) {
+          throw self.apos.error('invalid', 'widgetOperations requires name, label and modal properties.');
+        }
+
+        if (operation.secondaryLevel !== true && !operation.icon) {
+          throw self.apos.error('invalid', 'widgetOperations requires the icon property at primary level.');
+        }
+
+        self.widgetOperations = [
+          ...self.widgetOperations.filter(({ name }) => name !== operation.name),
+          operation
+        ];
       }
     };
   },
@@ -452,7 +498,8 @@ module.exports = {
           components: self.options.components,
           width: self.options.width,
           origin: self.options.origin,
-          preview: self.options.preview
+          preview: self.options.preview,
+          widgetOperations: self.checkWidgetOperationsPermissions(req)
         });
         return result;
       }
