@@ -659,45 +659,6 @@ module.exports = {
           }
         });
       },
-      addWidgetOperation(operation, type) {
-        if (!operation.name || !operation.label || !operation.modal) {
-          throw self.apos.error('invalid', 'addWidgetOperation requires name, label and modal properties.');
-        }
-
-        if (operation.secondaryLevel !== true && !operation.icon) {
-          throw self.apos.error('invalid', 'addWidgetOperation requires the icon property at primary level.');
-        }
-
-        if (type) {
-          const existingOperation = self.widgetOperations
-            .find(({ name }) => name === operation.name);
-
-          if (existingOperation) {
-            if (
-              operation.label !== existingOperation.label ||
-              operation.modal !== existingOperation.modal ||
-              operation.icon !== existingOperation.icon ||
-              !_.isEqual(operation.permission, existingOperation.permission)
-            ) {
-              throw self.apos.error('invalid', `You are trying to create a widget operation that already exists with a different configuration: ${operation.name}. Please use a different name.`);
-            }
-
-            existingOperation.types = [
-              ...(existingOperation.types || []),
-              type
-            ];
-            return;
-          }
-
-          operation.types = [ type ];
-        }
-
-        /* self.widgetOperations = self.widgetOperations.filter( */
-        /*   ({ name }) => name !== operation.name */
-        /* ); */
-
-        self.widgetOperations.push(operation);
-      },
       getBrowserData(req) {
         const widgets = {};
         const widgetEditors = {};
@@ -722,15 +683,6 @@ module.exports = {
           contextualWidgetDefaultData[name] = manager.options.defaultData || {};
         });
 
-        const widgetOperations = self.widgetOperations.filter(({ permission }) => {
-          if (permission?.action && permission?.type) {
-            return self.apos.permission.can(req, permission.action, permission.type, permission.mode || 'draft');
-          }
-          return true;
-        });
-
-        console.log('widgetOperations', widgetOperations);
-
         return {
           components: {
             editor: 'AposAreaEditor',
@@ -743,8 +695,7 @@ module.exports = {
           widgetPreview,
           contextualWidgetDefaultData,
           widgetManagers,
-          action: self.action,
-          widgetOperations
+          action: self.action
         };
       },
       async addDeduplicateWidgetIdsMigration() {
