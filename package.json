@@ -1,6 +1,6 @@
 {
   "name": "apostrophe",
-  "version": "4.15.1",
+  "version": "4.15.2",
   "description": "The Apostrophe Content Management System.",
   "main": "index.js",
   "scripts": {
@@ -71,7 +71,7 @@
     "css-loader": "^5.2.4",
     "csv-parse": "^5.6.0",
     "dayjs": "^1.9.8",
-    "dompurify": "^2.3.1",
+    "dompurify": "^3.2.5",
     "express": "^4.16.4",
     "express-bearer-token": "^3.0.0",
     "express-cache-on-demand": "^1.0.3",
