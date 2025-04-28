@@ -1,5 +1,11 @@
 # Changelog
 
+## 4.15.2 (2025-04-28)
+
+### Security
+
+* Fixes a potential XSS attack vector, [https://github.com/advisories/GHSA-vhxf-7vqr-mrjg](CVE-2025-26791). While the risk was low, it was possible for one user with login and editing privileges to carry out an XSS attack on another by uploading a specially crafted SVG file. Normally this would not work because ApostropheCMS typically renders uploaded SVGs via an `img` tag, however if the second user downloaded the SVG file from the media library the exploit could work.
+
 ## 4.15.1 (2025-04-22)
 
 ### Fixes
