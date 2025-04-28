@@ -9,7 +9,8 @@ module.exports = {
   options: {
     label: 'apostrophe:rawHtml',
     className: false,
-    icon: 'code-tags-icon'
+    icon: 'code-tags-icon',
+    preview: false
   },
   fields: {
     add: {
