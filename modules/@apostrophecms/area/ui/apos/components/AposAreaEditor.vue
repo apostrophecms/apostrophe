@@ -393,6 +393,7 @@ export default {
           type: widget.type,
           docId: this.docId,
           parentFollowingValues: this.followingValues,
+          areaFieldId: this.fieldId,
           meta: this.meta[widget._id]?.aposMeta,
           preview
         });

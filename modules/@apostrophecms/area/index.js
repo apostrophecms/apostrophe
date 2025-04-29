@@ -168,7 +168,7 @@ module.exports = {
         const type = self.apos.launder.string(req.body.type);
         const field = self.apos.schema.getFieldById(areaFieldId);
         if (!field) {
-          throw self.apos.error('invalid');
+          throw self.apos.error('invalid', 'Missing area field ID');
         }
 
         const widgets = self.getWidgets(field.options);
@@ -178,7 +178,7 @@ module.exports = {
         const manager = self.getWidgetManager(type);
         if (!manager) {
           self.warnMissingWidgetType(type);
-          throw self.apos.error('invalid');
+          throw self.apos.error('invalid', 'Missing widget type');
         }
         try {
           widget = await manager.sanitize(req, widget, options);
