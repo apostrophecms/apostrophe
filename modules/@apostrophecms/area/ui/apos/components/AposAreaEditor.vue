@@ -501,6 +501,7 @@ export default {
           options: this.widgetOptionsByType(name),
           type: name,
           docId: this.docId,
+          areaFieldId: this.fieldId,
           parentFollowingValues: this.followingValues,
           preview
         });

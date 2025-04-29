@@ -34,33 +34,18 @@ module.exports = {
     return {
       post: {
         async renderWidget(req) {
-          let widget = typeof req.body.widget === 'object' ? req.body.widget : {};
-          const areaFieldId = self.apos.launder.string(req.body.areaFieldId);
-          const type = self.apos.launder.string(req.body.type);
           const _docId = self.apos.launder.id(req.body._docId);
-          const field = self.apos.schema.getFieldById(areaFieldId);
           const livePreview = self.apos.launder.boolean(req.body.livePreview);
-          if (!field) {
-            throw self.apos.error('invalid');
+          const {
+            manager, widget, field, type, options
+          } = await self.validateWidgetRequest(req, livePreview);
+
+          // The sanitization failed, but we are in live preview mode,
+          // so we need to return a special error code.
+          if (!widget && livePreview) {
+            return 'aposLivePreviewSchemaNotYetValid';
           }
 
-          const widgets = self.getWidgets(field.options);
-
-          const options = widgets[type] || {};
-
-          const manager = self.getWidgetManager(type);
-          if (!manager) {
-            self.warnMissingWidgetType(type);
-            throw self.apos.error('invalid');
-          }
-          try {
-            widget = await sanitize(widget);
-          } catch (e) {
-            if (livePreview) {
-              return 'aposLivePreviewSchemaNotYetValid';
-            }
-            throw e;
-          }
           widget._edit = true;
           widget._docId = _docId;
           // So that carrying out relationship loading again can yield results
@@ -68,9 +53,6 @@ module.exports = {
           self.apos.schema.prepareForStorage(req, widget);
           await load();
           return render();
-          async function sanitize(widget) {
-            return manager.sanitize(req, widget, options);
-          }
           async function load() {
             // Hint to call nested widget loaders as if it were a doc
             widget._virtual = true;
@@ -92,7 +74,10 @@ module.exports = {
                 if (v && v.metaType === 'area') {
                   const manager = self.apos.util.getManagerOf(o);
                   if (!manager) {
-                    self.apos.util.warnDevOnce('noManagerForDocInExternalFront', `No manager for: ${o.metaType} ${o.type || ''}`);
+                    self.apos.util.warnDevOnce(
+                      'noManagerForDocInExternalFront',
+                      `No manager for: ${o.metaType} ${o.type || ''}`
+                    );
                     return;
                   }
                   const field = manager.schema.find(f => f.name === k);
@@ -109,6 +94,12 @@ module.exports = {
             }
             return self.renderWidget(req, type, widget, options);
           }
+        },
+        async validateWidget(req) {
+          const { widget } = await self.validateWidgetRequest(req);
+          return {
+            widget
+          };
         }
       }
     };
@@ -156,6 +147,61 @@ module.exports = {
       // Get the manager object for the given widget type name.
       getWidgetManager(name) {
         return self.widgetManagers[name];
+      },
+      // Validate a widget request. The `req.body` object is expected to contain
+      // - `widget` - the widget object to be validated
+      // - `areaFieldId` - the field id of the area field
+      // - `type` - the type of the widget
+      // Returns an object with the following properties:
+      // - `manager` - the widget manager object
+      // - `widget` - the sanitized widget object
+      // - `field` - the area field object
+      // - `type` - the type of the widget
+      // - `options` - the options for the widget type
+      // If `forLivePreview` is true and the widget is not valid, the method
+      // returns the same response but with `widget` set to null. Otherwise,
+      // failing to validate the widget results in an `invalid` error
+      // being thrown.
+      async validateWidgetRequest(req, forLivePreview = false) {
+        let widget = typeof req.body.widget === 'object' ? req.body.widget : {};
+        const areaFieldId = self.apos.launder.string(req.body.areaFieldId);
+        const type = self.apos.launder.string(req.body.type);
+        const field = self.apos.schema.getFieldById(areaFieldId);
+        if (!field) {
+          throw self.apos.error('invalid');
+        }
+
+        const widgets = self.getWidgets(field.options);
+
+        const options = widgets[type] || {};
+
+        const manager = self.getWidgetManager(type);
+        if (!manager) {
+          self.warnMissingWidgetType(type);
+          throw self.apos.error('invalid');
+        }
+        try {
+          widget = await manager.sanitize(req, widget, options);
+        } catch (e) {
+          if (forLivePreview) {
+            return {
+              manager,
+              widget: null,
+              field,
+              type,
+              options
+            };
+          }
+          throw e;
+        }
+
+        return {
+          manager,
+          widget,
+          field,
+          type,
+          options
+        };
       },
       // Print warning message about a missing widget type — only once per run
       // per type.
