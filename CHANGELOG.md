@@ -19,6 +19,18 @@ A `secondaryLevel: true` option is available to add operations to the widget's c
 * Fixes a RT bug where including `table` in `toolbar` but omitting an `insert` array crashed the rich text editor. 
 * Widget live preview is now attempting to auto-position the Widget Editor modal only if no explicit widget configuration (`options.origin`) is provided.
 
+## 4.15.2 (2025-04-28)
+
+### Security
+
+* Fixes a potential XSS attack vector, [CVE-2025-26791](https://github.com/advisories/GHSA-vhxf-7vqr-mrjg). While the risk was low, it was possible for one user with login and editing privileges to carry out an XSS attack on another by uploading a specially crafted SVG file. Normally this would not work because ApostropheCMS typically renders uploaded SVGs via an `img` tag, however if the second user downloaded the SVG file from the media library the exploit could work.
+
+## 4.15.1 (2025-04-22)
+
+### Fixes
+
+* Fixes a RT bug where including `table` in `toolbar` but omitting an `insert` array crashed the rich text editor.
+
 ## 4.15.0 (2025-04-16)
 
 ### Adds
