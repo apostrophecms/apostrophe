@@ -16,7 +16,6 @@ A `secondaryLevel: true` option is available to add operations to the widget's c
 ### Fixes
 
 * Fixes all eslint warnings.
-* Fixes a RT bug where including `table` in `toolbar` but omitting an `insert` array crashed the rich text editor. 
 * Widget live preview is now attempting to auto-position the Widget Editor modal only if no explicit widget configuration (`options.origin`) is provided.
 
 ## 4.15.0 (2025-04-16)
