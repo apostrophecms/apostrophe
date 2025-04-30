@@ -3293,7 +3293,10 @@ module.exports = {
             // we are using regex search
             if (!query.get('regexSearch')) {
               if ((!sort) || (sort === 'search')) {
-                sort = { textScore: { $meta: 'textScore' } };
+                sort = {
+                  textScore: { $meta: 'textScore' },
+                  _id: 1
+                };
               }
             }
           } else if (!sort) {
