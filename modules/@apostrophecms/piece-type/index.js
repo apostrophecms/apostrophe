@@ -49,7 +49,7 @@ module.exports = {
         slug: {
           type: 'slug',
           label: 'apostrophe:slug',
-          following: ['title', 'archived'],
+          following: [ 'title', 'archived' ],
           required: true
         }
       },
@@ -213,7 +213,7 @@ module.exports = {
     group: {
       more: {
         icon: 'dots-vertical-icon',
-        operations: ['localize']
+        operations: [ 'localize' ]
       }
     }
   },
@@ -244,7 +244,7 @@ module.exports = {
   restApiRoutes(self) {
     return {
       getAll: [
-        ...self.apos.expressCacheOnDemand ? [self.apos.expressCacheOnDemand] : [],
+        ...self.apos.expressCacheOnDemand ? [ self.apos.expressCacheOnDemand ] : [],
         async (req) => {
           await self.publicApiCheckAsync(req);
           const query = self.getRestQuery(req);
@@ -291,7 +291,7 @@ module.exports = {
         }
       ],
       getOne: [
-        ...self.apos.expressCacheOnDemand ? [self.apos.expressCacheOnDemand] : [],
+        ...self.apos.expressCacheOnDemand ? [ self.apos.expressCacheOnDemand ] : [],
         async (req, _id) => {
           _id = self.inferIdLocaleAndMode(req, _id);
           await self.publicApiCheckAsync(req);
@@ -320,7 +320,7 @@ module.exports = {
           const renderAreas = req.query['render-areas'];
           const inline = renderAreas === 'inline';
           if (inline || self.apos.launder.boolean(renderAreas)) {
-            await self.apos.area.renderDocsAreas(req, [doc], {
+            await self.apos.area.renderDocsAreas(req, [ doc ], {
               inline
             });
           }
@@ -415,7 +415,7 @@ module.exports = {
               await self.publish(req, piece);
             }, {
               action: 'publish',
-              docTypes: [self.__meta.name]
+              docTypes: [ self.__meta.name ]
             }
           );
         },
@@ -442,7 +442,7 @@ module.exports = {
               await self.update(req, piece);
             }, {
               action: 'archive',
-              docTypes: [self.__meta.name]
+              docTypes: [ self.__meta.name ]
             }
           );
         },
@@ -469,7 +469,7 @@ module.exports = {
               await self.update(req, piece);
             }, {
               action: 'restore',
-              docTypes: [self.__meta.name]
+              docTypes: [ self.__meta.name ]
             }
           );
         },
@@ -491,7 +491,7 @@ module.exports = {
             {
               action: 'localize',
               ids: req.body._ids,
-              docTypes: [self.__meta.name]
+              docTypes: [ self.__meta.name ]
             }
           );
         },
@@ -632,7 +632,7 @@ module.exports = {
       'apostrophe:modulesRegistered': {
         composeBatchOperations() {
           const groupedOperations = Object.entries(self.batchOperations)
-            .reduce((acc, [opName, properties]) => {
+            .reduce((acc, [ opName, properties ]) => {
 
               const disableOperation = self.disableBatchOperation(opName, properties);
               if (disableOperation) {
@@ -660,12 +660,12 @@ module.exports = {
             }, {});
 
           self.batchOperations = Object.entries(groupedOperations)
-            .map(([action, properties]) => ({
+            .map(([ action, properties ]) => ({
               action,
               ...properties
             }));
 
-          function getOperationOrGroup(currentOp, [groupName, groupProperties], acc) {
+          function getOperationOrGroup(currentOp, [ groupName, groupProperties ], acc) {
             if (!groupName) {
               // Operation is not grouped. Return it as it is.
               return currentOp;
@@ -686,14 +686,14 @@ module.exports = {
           // }]`
           function getAssociatedGroup(operation) {
             return Object.entries(self.batchOperationsGroups)
-              .find(([_key, { operations }]) => {
+              .find(([ _key, { operations } ]) => {
                 return operations.includes(operation);
               }) || [];
           }
         },
         composeUtilityOperations() {
           self.utilityOperations = Object.entries(self.utilityOperations || {})
-            .map(([action, properties]) => ({
+            .map(([ action, properties ]) => ({
               action,
               ...properties
             }));
@@ -1008,7 +1008,7 @@ module.exports = {
           }
           const patches = Array.isArray(input._patches)
             ? input._patches
-            : [input];
+            : [ input ];
           // Conventional for loop so we can handle the last one specially
           for (let i = 0; i < patches.length; i++) {
             const input = patches[i];
@@ -1157,9 +1157,13 @@ module.exports = {
         });
       },
       getManagerApiProjection(req) {
+        // If not configured at all, return null to fetch everything
+        if (self.options.managerApiProjection === undefined) {
+          return null;
+        }
         // Start from the configured projection, or fall back
-        // to our defaults
-        const defaultFields = {
+        // to the base essential fields
+        const essentialFields = {
           _id: 1,
           _url: 1,
           aposDocId: 1,
@@ -1171,10 +1175,21 @@ module.exports = {
           type: 1,
           visibility: 1
         };
-        const baseFields = self.options.managerApiProjection || defaultFields;
-        // Shallow-clone so we don’t mutate the original
-        const projection = { ...baseFields };
-        // Include extra columns added in configuration
+
+        // Handle special case where user passes `true` to get minimal defaults
+        let configuredProjection;
+        if (self.options.managerApiProjection === true) {
+          configuredProjection = {};
+        } else {
+          configuredProjection = self.options.managerApiProjection;
+        }
+
+        // Always add essential fields, even if not in user's projection
+        const projection = {
+          ...configuredProjection,
+          ...essentialFields
+        };
+
         self.columns.forEach(({ name }) => {
           // Strip “draft:” or “published:” prefixes if present
           const column = name.replace(/^(draft|published):/, '');
@@ -1193,7 +1208,7 @@ module.exports = {
         };
         if (self.options.localized) {
           criteria.aposLocale = {
-            $in: Object.keys(self.apos.i18n.locales).map(locale => [`${locale}:published`, `${locale}:draft`]).flat()
+            $in: Object.keys(self.apos.i18n.locales).map(locale => [ `${locale}:published`, `${locale}:draft` ]).flat()
           };
         }
         const existing = await self.apos.doc.db.findOne(criteria, { _id: 1 });
