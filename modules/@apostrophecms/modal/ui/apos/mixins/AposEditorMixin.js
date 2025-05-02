@@ -192,7 +192,11 @@ export default {
           }
         }
       } else {
-        await apos.notify((e.body && e.body.message) || fallback, {
+        // As per the new standard, any message in `data.detail` is considered
+        // a human readable error message. If it is not present, we fall back to
+        // the message in `body.message` or the fallback.
+        const bodyMessage = e.body?.data?.detail || e.body?.message;
+        await apos.notify(bodyMessage || fallback, {
           type: 'danger',
           icon: 'alert-circle-icon',
           dismiss: true
