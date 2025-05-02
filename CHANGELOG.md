@@ -4,6 +4,7 @@
 
 ### Adds
 
+* Adds a server validation before adding a widget to an area. Introduces a new POST route `@apostrophecms/area/validate-widget`.
 * The new `apos.area.addWidgetOperation` method can be used to display custom operations for widgets.
 A wrapper is available in the `@apostrophecms/widget-type` module to register operations only for widgets that match the type of the module where the wrapper is invoked.
 For example, calling `self.addWidgetOperation` in the ``@apostrophecms/image-widget`` module will apply the operation exclusively to image widgets.
@@ -12,6 +13,18 @@ A `secondaryLevel: true` option is available to add operations to the widget's c
 ### Fixes
 
 * Fixes all eslint warnings.
+
+## 4.15.2 (2025-04-28)
+
+### Security
+
+* Fixes a potential XSS attack vector, [CVE-2025-26791](https://github.com/advisories/GHSA-vhxf-7vqr-mrjg). While the risk was low, it was possible for one user with login and editing privileges to carry out an XSS attack on another by uploading a specially crafted SVG file. Normally this would not work because ApostropheCMS typically renders uploaded SVGs via an `img` tag, however if the second user downloaded the SVG file from the media library the exploit could work.
+
+## 4.15.1 (2025-04-22)
+
+### Fixes
+
+* Fixes a RT bug where including `table` in `toolbar` but omitting an `insert` array crashed the rich text editor.
 
 ## 4.15.0 (2025-04-16)
 

@@ -117,6 +117,10 @@ export default {
       type: Object,
       default: null
       // if present, has "area", "index" and "create" properties
+    },
+    areaFieldId: {
+      type: String,
+      default: null
     }
   },
   emits: [ 'modal-result' ],
@@ -279,6 +283,16 @@ export default {
           });
           this.focusNextError();
           return;
+        } else {
+          try {
+            await this.serverValidate();
+          } catch (e) {
+            this.triggerValidation = false;
+            await this.handleSaveError(e, {
+              fallback: 'A validation error occurred while saving the widget.'
+            });
+            return;
+          }
         }
         try {
           await this.postprocess();
@@ -292,6 +306,23 @@ export default {
         this.$emit('modal-result', widget);
         this.modal.showModal = false;
       });
+    },
+    async serverValidate() {
+      await apos.http.post(
+          `${apos.area.action}/validate-widget`,
+          {
+            busy: true,
+            qs: {
+              aposEdit: '1',
+              aposMode: 'draft'
+            },
+            body: {
+              widget: this.docFields.data,
+              areaFieldId: this.areaFieldId,
+              type: this.type
+            }
+          }
+      );
     },
     getWidgetObject(props = {}) {
       const widget = klona(this.docFields.data);
