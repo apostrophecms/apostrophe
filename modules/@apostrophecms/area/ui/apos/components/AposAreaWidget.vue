@@ -452,7 +452,7 @@ export default {
       }
     },
     handleDuplicate(e) {
-      if ((e.metaKey  && e.shiftKey &&  e.key === 'd') && !e.aposIgnoreEvent) {
+      if ((e.metaKey && e.shiftKey && e.key === 'd') && !e.aposIgnoreEvent) {
         if (this.isFocused) {
           this.$emit('clone', this.i);
         }
