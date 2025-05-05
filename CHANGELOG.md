@@ -10,10 +10,15 @@ A wrapper is available in the `@apostrophecms/widget-type` module to register op
 For example, calling `self.addWidgetOperation` in the ``@apostrophecms/image-widget`` module will apply the operation exclusively to image widgets.
 A `secondaryLevel: true` option is available to add operations to the widget's controls context menu.
 
+### Changes
+
+* Enable widget live preview by default.
+
 ### Fixes
 
 * Fixes autocomplete and search sorting and as a consequence, fixes potential duplicates during pagination.
 * Fixes all eslint warnings.
+* Widget live preview is now attempting to auto-position the Widget Editor modal only if no explicit widget configuration (`options.origin`) is provided.
 
 ## 4.15.2 (2025-04-28)
 
