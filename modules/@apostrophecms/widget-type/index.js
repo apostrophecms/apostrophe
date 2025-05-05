@@ -123,9 +123,7 @@ module.exports = {
     preview: true
   },
   init(self) {
-    self.isExplicitOrigin = self.options.preview
-      ? self.options.origin !== null
-      : true;
+    self.isExplicitOrigin = self.options.origin !== null;
     self.options.origin = self.options.origin || 'right';
 
     const badFieldName = Object.keys(self.fields).indexOf('type') !== -1;
