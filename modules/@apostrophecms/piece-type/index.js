@@ -26,10 +26,8 @@ module.exports = {
     //   title: 1,
     //   _url: 1,
     // },
-    // By default the manager modal will get all the pieces fields below +
-    // all manager columns
-    // you can enable a projection using
-    // managerApiProjection: {
+    // By default the manager modal only fetches these fields:
+    // {
     //   _id: 1,
     //   _url: 1,
     //   aposDocId: 1,
@@ -41,6 +39,9 @@ module.exports = {
     //   type: 1,
     //   visibility: 1
     // }
+    // plus any fields you’ve added via your `columns()` definitions.
+    // To customize or narrow this, supply your own projection in:
+    //   options.managerApiProjection = { /* desired fields here */ }
   },
   fields(self) {
     return {
@@ -392,7 +393,7 @@ module.exports = {
           }
           return self.publish(req, draft);
         },
-        async publish (req) {
+        async publish(req) {
           if (!Array.isArray(req.body._ids)) {
             throw self.apos.error('invalid');
           }
@@ -418,7 +419,7 @@ module.exports = {
             }
           );
         },
-        async archive (req) {
+        async archive(req) {
           if (!Array.isArray(req.body._ids)) {
             throw self.apos.error('invalid');
           }
@@ -445,7 +446,7 @@ module.exports = {
             }
           );
         },
-        async restore (req) {
+        async restore(req) {
           if (!Array.isArray(req.body._ids)) {
             throw self.apos.error('invalid');
           }
@@ -664,7 +665,7 @@ module.exports = {
               ...properties
             }));
 
-          function getOperationOrGroup (currentOp, [ groupName, groupProperties ], acc) {
+          function getOperationOrGroup(currentOp, [ groupName, groupProperties ], acc) {
             if (!groupName) {
               // Operation is not grouped. Return it as it is.
               return currentOp;
@@ -683,7 +684,7 @@ module.exports = {
 
           // Returns the object entry, e.g., `[groupName, { ...groupProperties
           // }]`
-          function getAssociatedGroup (operation) {
+          function getAssociatedGroup(operation) {
             return Object.entries(self.batchOperationsGroups)
               .find(([ _key, { operations } ]) => {
                 return operations.includes(operation);
@@ -1156,19 +1157,44 @@ module.exports = {
         });
       },
       getManagerApiProjection(req) {
-        if (!self.options.managerApiProjection) {
+        // If not configured at all, return null to fetch everything
+        if (self.options.managerApiProjection === undefined) {
           return null;
         }
+        // Start from the configured projection, or fall back
+        // to the base essential fields
+        const essentialFields = {
+          _id: 1,
+          _url: 1,
+          aposDocId: 1,
+          aposLocale: 1,
+          aposMode: 1,
+          docPermissions: 1,
+          slug: 1,
+          title: 1,
+          type: 1,
+          visibility: 1
+        };
 
-        const projection = { ...self.options.managerApiProjection };
+        // Handle special case where user passes `true` to get minimal defaults
+        let configuredProjection;
+        if (self.options.managerApiProjection === true) {
+          configuredProjection = {};
+        } else {
+          configuredProjection = self.options.managerApiProjection;
+        }
+
+        // Always add essential fields, even if not in user's projection
+        const projection = {
+          ...configuredProjection,
+          ...essentialFields
+        };
+
         self.columns.forEach(({ name }) => {
-          const column = (name.startsWith('draft:') || name.startsWith('published:'))
-            ? name.replace(/^(draft|published):/, '')
-            : name;
-
+          // Strip “draft:” or “published:” prefixes if present
+          const column = name.replace(/^(draft|published):/, '');
           projection[column] = 1;
         });
-
         return projection;
       },
       async insertIfMissing() {
@@ -1204,7 +1230,7 @@ module.exports = {
 
         // Check if there is a required schema field for this batch operation.
         const requiredFieldNotFound = properties.requiredField &&
-                !self.schema.some((field) => field.name === properties.requiredField);
+          !self.schema.some((field) => field.name === properties.requiredField);
         if (requiredFieldNotFound) {
           return true;
         }
@@ -1304,7 +1330,7 @@ module.exports = {
 
         localize: {
           usage: 'Add draft version documents for each locale when a module has the "localized" option.' +
-        '\nExample: node app [moduleName]:localize',
+            '\nExample: node app [moduleName]:localize',
           async task() {
             if (!self.options.localized) {
               throw new Error('Localized option not set to true, so the module cannot be localized.');
@@ -1354,10 +1380,10 @@ module.exports = {
 
         unlocalize: {
           usage: 'Remove duplicate documents when a module has not "localized" and "autopublish" anymore.' +
-        '\nOptions are:' +
-        '\n- locale: if not set, it is the project\'s default locale' +
-        '\n- mode: by default, published' +
-        '\nExample: node app [moduleName]:unlocalize --mode=published --locale=en',
+            '\nOptions are:' +
+            '\n- locale: if not set, it is the project\'s default locale' +
+            '\n- mode: by default, published' +
+            '\nExample: node app [moduleName]:unlocalize --mode=published --locale=en',
           async task(argv) {
             if (self.options.localized) {
               throw new Error('Localized option not set to false, so the module cannot be unlocalized.');
@@ -1405,8 +1431,8 @@ module.exports = {
               : {};
 
             try {
-            // We have 30 minutes (by default) for each iteration.
-            // https://www.mongodb.com/docs/manual/reference/method/cursor.noCursorTimeout/#session-idle-timeout-overrides-nocursortimeout
+              // We have 30 minutes (by default) for each iteration.
+              // https://www.mongodb.com/docs/manual/reference/method/cursor.noCursorTimeout/#session-idle-timeout-overrides-nocursortimeout
               cursor = (await self.find(req, criteria)
                 .locale(null)
                 .limit(0)

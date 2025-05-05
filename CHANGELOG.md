@@ -20,6 +20,10 @@ A `secondaryLevel: true` option is available to add operations to the widget's c
 * Fixes all eslint warnings.
 * Widget live preview is now attempting to auto-position the Widget Editor modal only if no explicit widget configuration (`options.origin`) is provided.
 
+### Changes
+
+* Updates the default fields for the `getMangageApiProjection()` to include a more sensible base configuration and adds a `true` option to return the minimal default values.
+
 ## 4.15.2 (2025-04-28)
 
 ### Security
