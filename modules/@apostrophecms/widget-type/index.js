@@ -118,7 +118,8 @@ module.exports = {
     placeholderClass: 'apos-placeholder',
     // two-thirds, half or full:
     width: '',
-    // left or right:
+    // left or right, or null for no explicit origin (internally set
+    // to 'right'):
     origin: null,
     preview: true
   },
