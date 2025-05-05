@@ -12,6 +12,7 @@ A `secondaryLevel: true` option is available to add operations to the widget's c
 
 ### Fixes
 
+* Fixes autocomplete and search sorting and as a consequence, fixes potential duplicates during pagination.
 * Fixes all eslint warnings.
 
 ## 4.15.2 (2025-04-28)
