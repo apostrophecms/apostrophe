@@ -283,9 +283,12 @@ export default {
       // no configuration needed. If:
       // 1. The table is configured for the toolbar but not insert, move it
       // 2. remove the table tool from the toolbar
-      if (activeOptions.toolbar.some(tool => tool === 'table')) {
-        if (!activeOptions.insert.some(tool => tool === 'table')) {
-          activeOptions.insert.push('table');
+      if (activeOptions.toolbar?.some(tool => tool === 'table')) {
+        if (!activeOptions.insert?.some(tool => tool === 'table')) {
+          activeOptions.insert = [
+            ...(activeOptions.insert || []),
+            'table'
+          ];
         }
         activeOptions.toolbar = activeOptions.toolbar.filter(tool => tool !== 'table');
       }
