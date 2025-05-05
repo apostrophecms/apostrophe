@@ -405,7 +405,7 @@ module.exports = {
           return self.apos.modules['@apostrophecms/job'].runBatch(
             req,
             req.body._ids,
-            async function (req, id) {
+            async function(req, id) {
               const piece = await self.findOneForEditing(req, { _id: id });
 
               if (!piece) {
