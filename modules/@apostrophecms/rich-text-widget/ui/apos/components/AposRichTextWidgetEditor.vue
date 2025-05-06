@@ -81,8 +81,8 @@
       </ul>
     </floating-menu>
     <div
-      class="apos-rich-text-editor__editor"
       ref="editor"
+      class="apos-rich-text-editor__editor"
       :class="editorModifiers"
     >
       <editor-content
@@ -462,10 +462,9 @@ export default {
       }
     });
     apos.bus.$on('apos-refreshing', this.onAposRefreshing);
-    this.$refs.editor.addEventListener('cut', this.ignoreEvent)
+    this.$refs.editor.addEventListener('cut', this.ignoreEvent);
     this.$refs.editor.addEventListener('copy', this.ignoreEvent);
-    this.$refs.editor.addEventListener('paste', this.ignoreEvent)
-    
+    this.$refs.editor.addEventListener('paste', this.ignoreEvent);
   },
 
   beforeUnmount() {

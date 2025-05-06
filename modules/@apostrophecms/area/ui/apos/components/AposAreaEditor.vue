@@ -346,10 +346,15 @@ export default {
         ...this.next.slice(0, i),
         ...this.next.slice(i + 1)
       ];
-      const focusNext = this.next[ i - 1 ] || this.next[i];
+      const focusNext = this.next[i - 1] || this.next[i];
+
       if (focusNext) {
-        apos.bus.$emit('widget-focus', { _id: focusNext._id, scrollIntoView: true });
+        apos.bus.$emit('widget-focus', {
+          _id: focusNext._id,
+          scrollIntoView: true
+        });
       }
+
     },
     async cut(i) {
       apos.area.widgetClipboard.set(this.next[i]);
@@ -450,12 +455,14 @@ export default {
       const clipboard = apos.area.widgetClipboard.get();
       if (clipboard) {
         const widget = clipboard;
-        const matchingChoice = this.contextMenuOptions.menu.find(option => option.name === widget.type);
-        if (matchingChoice) {
+        const allowed = this.contextMenuOptions.menu.find(
+          option => option.name === widget.type
+        );
+        if (allowed) {
           this.add({
             index,
             clipboard
-          })
+          });
         }
       }
     },
@@ -507,9 +514,7 @@ export default {
       name,
       clipboard
     }) {
-      if (clipboard) {
-        // clear clipboard after paste
-        // apos.area.widgetClipboard.set(null);
+      if (clipboard) {s
         this.regenerateIds(
           apos.modules[apos.area.widgetManagers[clipboard.type]].schema,
           clipboard
@@ -603,10 +608,10 @@ export default {
       if (this.widgetIsContextual(widget.type)) {
         this.edit(index);
       }
-      console.log(widget._id);
-      // this.$nextTick(() => {
-        apos.bus.$emit('widget-focus', { _id: widget._id, scrollIntoView: true });
-      // });
+      apos.bus.$emit('widget-focus', {
+        _id: widget._id,
+        scrollIntoView: true
+      });
     },
     widgetIsContextual(type) {
       return this.moduleOptions.widgetIsContextual[type];
