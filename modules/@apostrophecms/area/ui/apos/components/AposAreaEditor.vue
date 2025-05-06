@@ -5,10 +5,10 @@
     :class="themeClass"
   >
     <div
-      ref="empty"
       v-if="next.length === 0 && !foreign"
       class="apos-empty-area"
       tabindex="0"
+      @paste="paste(0)"
     >
       <template v-if="isEmptySingleton">
         <AposButton
@@ -204,7 +204,7 @@ export default {
     // issues with live widget preview and also performance, the top level
     // array will change in situations where a patch API call is actually
     // needed at this level
-    next(newVal) {
+    next() {
       if (!this.docId) {
         // For the benefit of AposInputArea which is the
         // direct parent when we are not editing on-page
@@ -219,10 +219,6 @@ export default {
         _id: this.id,
         items: this.next
       });
-
-      if (!newVal.length) {
-        this.bindEmptyHandlers();
-      }
     },
     generation() {
       this.next = this.getValidItems();
@@ -250,23 +246,13 @@ export default {
       apos.bus.$on('widget-hover', this.updateWidgetHovered);
       apos.bus.$on('widget-focus', this.updateWidgetFocused);
       window.addEventListener('keydown', this.focusParentEvent);
-      this.bindEmptyHandlers();
+      // this.bindEmptyHandlers();
     },
     unbindEventListeners() {
       apos.bus.$off('area-updated', this.areaUpdatedHandler);
       apos.bus.$off('widget-hover', this.updateWidgetHovered);
       apos.bus.$off('widget-focus', this.updateWidgetFocused);
       window.removeEventListener('keydown', this.focusParentEvent);
-    },
-    bindEmptyHandlers() {
-      this.$nextTick(() => {
-        if (this.$refs.empty) {
-          this.$refs.empty.addEventListener('paste', this.handlePaste);
-        }
-      });
-    },
-    handlePaste(index = 0) {
-      this.paste(index);
     },
     areaUpdatedHandler(area) {
       for (const item of this.next) {
@@ -285,24 +271,30 @@ export default {
       this.hoveredWidget = _id;
       this.hoveredNonForeignWidget = nonForeignId;
     },
-    updateWidgetFocused({ _id, focus }) {
+    updateWidgetFocused({ _id, scrollIntoView = false }) {
       this.focusedWidget = _id;
       // Attached to window so that modals can see the area is active
       window.apos.focusedWidget = _id;
-      if (focus) {
+      if (scrollIntoView) {
         this.$nextTick(() => {
           const $el = document.querySelector(`[data-apos-widget-id="${_id}"]`);
-          const headerOffset = window.apos.adminBar.height;
-          const elementPosition = $el.getBoundingClientRect().top;
-          const offsetPosition = elementPosition + window.pageYOffset - (headerOffset + 40);
+          if (!$el) {
+            return;
+          }
+          const headerHeight = window.apos.adminBar.height;
+          const bufferSpace = 40;
+          const targetTop = $el.offsetTop;
+          const scrollPos = targetTop - headerHeight - bufferSpace;
+          
+          window.scrollTo({
+            top: scrollPos,
+            behavior: 'smooth'
+          });
 
           $el.focus({
             preventScroll: true
           });
-          window.scrollTo({
-            top: offsetPosition,
-            behavior: 'smooth'
-          });
+
         });
       }
     },
@@ -354,9 +346,9 @@ export default {
         ...this.next.slice(0, i),
         ...this.next.slice(i + 1)
       ];
-      const focusNext = this.next[i] || this.next[ i - 1 ];
+      const focusNext = this.next[ i - 1 ] || this.next[i];
       if (focusNext) {
-        apos.bus.$emit('widget-focus', { _id: focusNext._id, focus: true });
+        apos.bus.$emit('widget-focus', { _id: focusNext._id, scrollIntoView: true });
       }
     },
     async cut(i) {
@@ -611,7 +603,10 @@ export default {
       if (this.widgetIsContextual(widget.type)) {
         this.edit(index);
       }
-      apos.bus.$emit('widget-focus', { _id: widget._id, focus: true });
+      console.log(widget._id);
+      // this.$nextTick(() => {
+        apos.bus.$emit('widget-focus', { _id: widget._id, scrollIntoView: true });
+      // });
     },
     widgetIsContextual(type) {
       return this.moduleOptions.widgetIsContextual[type];

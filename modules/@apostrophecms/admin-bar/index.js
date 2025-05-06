@@ -86,6 +86,42 @@ module.exports = {
           },
           shortcut: 'Ctrl+Shift+Z Meta+Shift+Z'
         },
+        [`${self.__meta.name}:cut-widget`]: {
+          type: 'item',
+          label: 'apostrophe:commandMenuWidgetCut',
+          action: {
+            type: 'command-menu-admin-bar-cut-widget'
+          },
+          shortcut: 'Ctrl+X Meta+X',
+          listener: false
+        },
+        [`${self.__meta.name}:copy-widget`]: {
+          type: 'item',
+          label: 'apostrophe:commandMenuWidgetCopy',
+          action: {
+            type: 'command-menu-admin-bar-copy-widget'
+          },
+          shortcut: 'Ctrl+C Meta+C',
+          listener: false
+        },
+        [`${self.__meta.name}:paste-widget`]: {
+          type: 'item',
+          label: 'apostrophe:commandMenuWidgetPaste',
+          action: {
+            type: 'command-menu-admin-bar-paste-widget'
+          },
+          shortcut: 'Ctrl+V Meta+V',
+          listener: false
+        },
+        [`${self.__meta.name}:duplicate-widget`]: {
+          type: 'item',
+          label: 'apostrophe:commandMenuWidgetDuplicate',
+          action: {
+            type: 'command-menu-admin-bar-duplicate-widget'
+          },
+          shortcut: 'Ctrl+Shift+D Meta+Shift+D',
+          listener: false
+        },
         [`${self.__meta.name}:discard-draft`]: {
           type: 'item',
           label: 'apostrophe:commandMenuDiscardDraft',
@@ -127,6 +163,9 @@ module.exports = {
             commands: [
               `${self.__meta.name}:undo`,
               `${self.__meta.name}:redo`,
+              `${self.__meta.name}:cut-widget`,
+              `${self.__meta.name}:copy-widget`,
+              `${self.__meta.name}:paste-widget`,
               `${self.__meta.name}:discard-draft`,
               `${self.__meta.name}:publish-draft`
             ]

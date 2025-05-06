@@ -452,8 +452,11 @@ export default {
       }
     },
     handleDuplicate(e) {
-      if ((e.metaKey && e.shiftKey && e.key === 'd') && !e.aposIgnoreEvent) {
-        if (this.isFocused) {
+      if (
+        (e.metaKey && e.shiftKey && e.key === 'd') ||
+        (e.ctrlKey && e.shiftKey && e.key === 'd')
+      ) {
+        if (this.isFocused && !e.aposIgnoreEvent) {
           this.$emit('clone', this.i);
         }
       }
