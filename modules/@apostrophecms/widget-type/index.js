@@ -126,7 +126,7 @@ module.exports = {
   handlers(self) {
     return {
       'apostrophe:modulesRegistered': {
-        composeWidgetperations() {
+        composeWidgetOperations() {
           self.widgetOperations = Object.entries(self.widgetOperations)
             .map(([ name, operation ]) => {
               if (!name || !operation.label || !operation.modal) {
@@ -453,23 +453,6 @@ module.exports = {
           }
           return true;
         });
-      },
-      // Question: Should we keep this method in area module?
-      // `widget-type` is not available from the modules list,
-      // so it might be inconvenient to call this method
-      addWidgetOperation(operation) {
-        if (!operation.name || !operation.label || !operation.modal) {
-          throw self.apos.error('invalid', 'widgetOperations requires name, label and modal properties.');
-        }
-
-        if (operation.secondaryLevel !== true && !operation.icon) {
-          throw self.apos.error('invalid', 'widgetOperations requires the icon property at primary level.');
-        }
-
-        self.widgetOperations = [
-          ...self.widgetOperations.filter(({ name }) => name !== operation.name),
-          operation
-        ];
       }
     };
   },
