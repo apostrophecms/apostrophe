@@ -118,10 +118,15 @@ module.exports = {
     placeholderClass: 'apos-placeholder',
     // two-thirds, half or full:
     width: '',
-    // left or right:
-    origin: 'right'
+    // left or right, or null for no explicit origin (internally set
+    // to 'right'):
+    origin: null,
+    preview: true
   },
   init(self) {
+    self.isExplicitOrigin = self.options.origin !== null;
+    self.options.origin = self.options.origin || 'right';
+
     const badFieldName = Object.keys(self.fields).indexOf('type') !== -1;
     if (badFieldName) {
       throw new Error(`The ${self.__meta.name} module contains a forbidden field property name: "type".`);
@@ -456,7 +461,8 @@ module.exports = {
           components: self.options.components,
           width: self.options.width,
           origin: self.options.origin,
-          preview: self.options.preview
+          preview: self.options.preview,
+          isExplicitOrigin: self.isExplicitOrigin
         });
         return result;
       }

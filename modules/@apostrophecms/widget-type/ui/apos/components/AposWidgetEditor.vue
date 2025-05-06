@@ -138,7 +138,7 @@ export default {
         active: false,
         type: 'slide',
         width: moduleOptions.width,
-        origin: this.preview ? guessOrigin(this.preview.area) : moduleOptions.origin,
+        origin: guessOrigin(this.preview?.area, moduleOptions),
         showModal: false
       },
       triggerValidation: false
@@ -364,7 +364,12 @@ export default {
   }
 };
 
-function guessOrigin(area) {
+function guessOrigin(area, { isExplicitOrigin, origin }) {
+  // No preview available OR custom origin.
+  // Respect the origin configuration if it's not the default
+  if (!area || isExplicitOrigin) {
+    return origin;
+  }
   // When we are in live preview mode, use the bounding box of the area to
   // figure out which side of the screen will least obscure the widget
   const rect = area.$el.getBoundingClientRect();
