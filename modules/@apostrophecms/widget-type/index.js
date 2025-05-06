@@ -129,8 +129,8 @@ module.exports = {
         composeWidgetOperations() {
           self.widgetOperations = Object.entries(self.widgetOperations)
             .map(([ name, operation ]) => {
-              if (!name || !operation.label || !operation.modal) {
-                throw self.apos.error('invalid', 'widgetOperations requires name, label and modal properties.');
+              if (!operation.label || !operation.modal) {
+                throw self.apos.error('invalid', 'widgetOperations requires label and modal properties.');
               }
 
               if (operation.secondaryLevel !== true && !operation.icon) {
