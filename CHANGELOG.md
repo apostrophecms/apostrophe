@@ -4,6 +4,7 @@
 
 ### Adds
 
+* Adds image widget width slider. Introduce widget options `defaultImageWidth` (percentage, 0 by default) and `imageResizeStep` to control the initial width of the image (0% means the setting is disabled) and the step of the width slider (default is 5) respectively.
 * Adds a server validation before adding a widget to an area. Introduces a new POST route `@apostrophecms/area/validate-widget`.
 * The new `apos.area.addWidgetOperation` method can be used to display custom operations for widgets.
 A wrapper is available in the `@apostrophecms/widget-type` module to register operations only for widgets that match the type of the module where the wrapper is invoked.
