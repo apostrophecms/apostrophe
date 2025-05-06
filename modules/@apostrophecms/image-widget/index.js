@@ -9,7 +9,7 @@ module.exports = {
     placeholderClass: false,
     placeholderImage: 'jpg',
     // 0 means disabled width setting
-    defaultImageWidth: 0,
+    defaultImageWidth: 100,
     imageResizeStep: 5
   },
   fields(self) {
@@ -26,10 +26,12 @@ module.exports = {
           type: 'range',
           label: 'apostrophe:imageWidth',
           help: 'apostrophe:imageWidthHelp',
-          min: 0,
+          // 0 makes no sense, so we skip it and
+          // go for the 1st step
+          min: self.options.imageResizeStep,
           max: 100,
-          step: self.options.imageResizeStep || 1,
-          def: self.options.defaultImageWidth ?? 100
+          step: self.options.imageResizeStep,
+          def: self.options.defaultImageWidth
         }
       }
     };
