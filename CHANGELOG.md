@@ -4,10 +4,9 @@
 
 ### Adds
 
+* Uses new `widgetOperations` to add the `adjustImage` operation to the image widget.
 * Adds a server validation before adding a widget to an area. Introduces a new POST route `@apostrophecms/area/validate-widget`.
-* The new `apos.area.addWidgetOperation` method can be used to display custom operations for widgets.
-A wrapper is available in the `@apostrophecms/widget-type` module to register operations only for widgets that match the type of the module where the wrapper is invoked.
-For example, calling `self.addWidgetOperation` in the ``@apostrophecms/image-widget`` module will apply the operation exclusively to image widgets.
+* The new `widgetOperations` cascade config property can be used to display custom operations for widgets. 
 A `secondaryLevel: true` option is available to add operations to the widget's controls context menu.
 
 ### Changes
