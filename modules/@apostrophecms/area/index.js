@@ -25,7 +25,6 @@ module.exports = {
     ];
     self.richTextWidgetTypes = [];
     self.widgetManagers = {};
-    self.widgetOperations = [];
 
     self.enableBrowserData();
     self.addDeduplicateWidgetIdsMigration();
