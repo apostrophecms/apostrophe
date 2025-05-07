@@ -134,19 +134,15 @@ export default {
       type: Array,
       default: null
     },
+    widget: {
+      type: Object,
+      default: null
+    },
     widgetSchema: {
       type: Array,
       default: () => ([])
     },
     item: {
-      type: Object,
-      default: null
-    },
-    widget: {
-      type: Object,
-      default: null
-    },
-    field: {
       type: Object,
       default: null
     }
@@ -308,20 +304,19 @@ export default {
         });
       }
 
-      const image = {
-        ...this.image,
-        _fields: this.docFields.data
-      };
-
       if (!this.widget) {
-        this.$emit('modal-result', { image });
+        this.$emit('modal-result', this.docFields.data);
       } else {
+        const image = {
+          ...this.image,
+          _fields: this.docFields.data
+        };
         const widget = {
           ...this.widget,
           _image: [ image ]
         };
 
-        this.$emit('modal-result', { widget });
+        this.$emit('modal-result', widget);
       }
 
       this.modal.showModal = false;

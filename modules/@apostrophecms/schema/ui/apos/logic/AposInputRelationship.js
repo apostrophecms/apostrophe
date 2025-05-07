@@ -274,16 +274,19 @@ export default {
 
       const result = await apos.modal.execute(editor, {
         schema: this.field.schema,
-        item
+        item,
+        title: item.title,
+        'model-value': item._fields
       });
 
-      if (result?.image) {
-        const index = this.next.findIndex(_item => _item._id === item._id);
-
-        this.next = this.next.map((item, i) => {
-          return i === index
-            ? result.image
-            : item;
+      if (result) {
+        this.next = this.next.map((rel) => {
+          return rel._id === item._id
+            ? {
+              ...item,
+              _fields: result
+            }
+            : rel;
         });
       }
     },

@@ -228,11 +228,11 @@ export default {
             apos.area.widgetManagers[this.modelValue.type]
           ]?.schema
         });
-        if (result?.widget) {
+        if (result) {
           // TODO: make sure the update method from
           // modules/@apostrophecms/area/ui/apos/components/AposAreaEditor.vue
           // does the job and does not mess with the widget type and _id:
-          this.$emit('update', result.widget);
+          this.$emit('update', result);
         }
       }
     }
