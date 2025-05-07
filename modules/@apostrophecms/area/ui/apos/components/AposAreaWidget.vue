@@ -650,6 +650,11 @@ export default {
       outline-offset: 2px;
     }
 
+    &.apos-is-highlighted,
+    &.apos-is-focused {
+      z-index: $z-index-default;
+    }
+
     &.apos-is-highlighted {
       outline: 1px dashed var(--a-primary-transparent-50);
     }

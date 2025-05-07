@@ -691,6 +691,10 @@ function cancelRefresh(refreshOptions) {
 </script>
 
 <style lang="scss" scoped>
+.apos-areas-widgets-list {
+  z-index: $z-index-base;
+  position: relative;
+}
 .apos-empty-area {
   display: flex;
   flex-direction: column;
