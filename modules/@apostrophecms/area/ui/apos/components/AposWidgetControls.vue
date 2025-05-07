@@ -41,10 +41,6 @@ export default {
       type: Object,
       required: true
     },
-    fieldId: {
-      type: String,
-      required: true
-    },
     first: {
       type: Boolean,
       required: true

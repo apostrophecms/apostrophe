@@ -111,7 +111,6 @@
           :disabled="disabled"
           :max-reached="maxReached"
           :tabbable="isFocused"
-          :field-id="fieldId"
           :model-value="widget"
           @up="$emit('up', i);"
           @remove="$emit('remove', i);"
