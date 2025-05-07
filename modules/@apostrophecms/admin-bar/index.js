@@ -166,6 +166,7 @@ module.exports = {
               `${self.__meta.name}:cut-widget`,
               `${self.__meta.name}:copy-widget`,
               `${self.__meta.name}:paste-widget`,
+              `${self.__meta.name}:duplicate-widget`,
               `${self.__meta.name}:discard-draft`,
               `${self.__meta.name}:publish-draft`
             ]

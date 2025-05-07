@@ -246,7 +246,6 @@ export default {
       apos.bus.$on('widget-hover', this.updateWidgetHovered);
       apos.bus.$on('widget-focus', this.updateWidgetFocused);
       window.addEventListener('keydown', this.focusParentEvent);
-      // this.bindEmptyHandlers();
     },
     unbindEventListeners() {
       apos.bus.$off('area-updated', this.areaUpdatedHandler);
@@ -285,7 +284,7 @@ export default {
           const bufferSpace = 40;
           const targetTop = $el.offsetTop;
           const scrollPos = targetTop - headerHeight - bufferSpace;
-          
+
           window.scrollTo({
             top: scrollPos,
             behavior: 'smooth'
@@ -514,7 +513,7 @@ export default {
       name,
       clipboard
     }) {
-      if (clipboard) {s
+      if (clipboard) {
         this.regenerateIds(
           apos.modules[apos.area.widgetManagers[clipboard.type]].schema,
           clipboard
