@@ -445,7 +445,7 @@ module.exports = {
         return [];
       },
 
-      checkWidgetOperationsPermissions(req) {
+      getAllowedWidgetOperations(req) {
         return self.widgetOperations.filter(({ permission }) => {
           if (permission?.action && permission?.type) {
             return self.apos.permission.can(req, permission.action, permission.type);
@@ -487,7 +487,7 @@ module.exports = {
           origin: self.options.origin,
           preview: self.options.preview,
           isExplicitOrigin: self.isExplicitOrigin,
-          widgetOperations: self.checkWidgetOperationsPermissions(req)
+          widgetOperations: self.getAllowedWidgetOperations(req)
         });
         return result;
       }
