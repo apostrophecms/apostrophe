@@ -448,8 +448,7 @@ module.exports = {
       checkWidgetOperationsPermissions(req) {
         return self.widgetOperations.filter(({ permission }) => {
           if (permission?.action && permission?.type) {
-            // QUESTION: Shouldn't we check `req.mode` instead?
-            return self.apos.permission.can(req, permission.action, permission.type, permission.mode || 'draft');
+            return self.apos.permission.can(req, permission.action, permission.type);
           }
           return true;
         });
