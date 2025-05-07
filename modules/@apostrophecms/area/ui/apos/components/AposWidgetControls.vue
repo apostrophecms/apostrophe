@@ -212,7 +212,10 @@ export default {
           return operation.secondaryLevel;
         }
         return !operation.secondaryLevel;
-      });
+      }).map(operation => ({
+        action: operation.action || operation.name,
+        ...operation
+      }));
     },
     async handleClick({ action, modal }) {
       if (action) {
