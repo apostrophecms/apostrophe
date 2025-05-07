@@ -1,9 +1,11 @@
 {% set attachment = apos.image.first(data.widget._image) %}
+{% set width = data.widget.width + '%' if (data.widget.width and data.widget.width < 100) else '' %}
 
 {% if data.widget.aposPlaceholder and data.manager.options.placeholderUrl %}
   <img
     src="{{ data.manager.options.placeholderUrl }}"
     alt="{{ __t('apostrophe:imagePlaceholder') }}"
+    {% if width %} style="width: {{ width }}"{% endif %}
     class="image-widget-placeholder"
   />
 {% else %}
@@ -16,6 +18,8 @@
   {% if attachment %}
     <img {% if className %} class="{{ className }}"{% endif %}
       {% if loadingType %} loading="{{ loadingType }}"{% endif %}
+      {% if width %} style="width: {{ width }};"{% endif %}
+      data-apos-test="image-widget"
       srcset="{{ apos.image.srcset(attachment) }}"
       src="{{ apos.attachment.url(attachment, { size: size }) }}"
       alt="{{ attachment._alt or '' }}"

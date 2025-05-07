@@ -241,6 +241,8 @@
   "imageTag": "Image Tag",
   "imageTags": "Image Tags",
   "images": "Images",
+  "imageWidth": "Image Width",
+  "imageWidthHelp": "Width of the image in percent. 100% is full width, set to 0% to disable the width setting.",
   "inputFieldIsDisabled": "This field is disabled",
   "insertAndNew": "{{ saveLabel }} {{ typeLabel }} and create a new one.",
   "insertAndRedirect": "{{ saveLabel }} {{ typeLabel }} and be redirected to the {{ typeLabel }}.",
