@@ -695,6 +695,7 @@ function cancelRefresh(refreshOptions) {
   z-index: $z-index-base;
   position: relative;
 }
+
 .apos-empty-area {
   display: flex;
   flex-direction: column;
