@@ -9,15 +9,22 @@ module.exports = {
     placeholderClass: false,
     placeholderImage: 'jpg'
   },
-  widgetOperations: {
-    add: {
-      adjustImage: {
-        label: 'apostrophe:editImageAdjustments',
-        icon: 'image-edit-outline',
-        modal: 'AposImageRelationshipEditor',
-        tooltip: 'apostrophe:editImageAdjustments'
+  widgetOperations(self, options) {
+    const {
+      relationshipEditor = 'AposImageRelationshipEditor',
+      relationshipEditorLabel = 'apostrophe:editImageAdjustments',
+      relationshipEditorIcon = 'image-edit-outline'
+    } = options.apos.image.options || {};
+    return {
+      add: {
+        adjustImage: {
+          label: relationshipEditorLabel,
+          icon: relationshipEditorIcon,
+          modal: relationshipEditor,
+          tooltip: relationshipEditorLabel
+        }
       }
-    }
+    };
   },
   fields: {
     add: {
