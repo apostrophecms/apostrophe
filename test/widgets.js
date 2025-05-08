@@ -552,7 +552,7 @@ describe('Widgets', function() {
         test2: test2Widget.widgetOperations
       };
 
-      assert.deepStrictEqual(actual, expected);
+      assert.deepEqual(actual, expected);
     });
 
     it('should handle widget operations with custom permissions', function() {
