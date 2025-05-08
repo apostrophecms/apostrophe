@@ -280,21 +280,14 @@ export default {
       });
 
       if (result) {
-        const index = this.next.findIndex(_item => _item._id === item._id);
-
-        this.next = this.next.map((item, i) => {
-          return i === index
+        this.next = this.next.map((rel) => {
+          return rel._id === item._id
             ? {
               ...item,
               _fields: result
             }
-            : item;
+            : rel;
         });
-      }
-    },
-    getEditRelationshipLabel () {
-      if (this.field.editor === 'AposImageRelationshipEditor') {
-        return 'apostrophe:editImageAdjustments';
       }
     },
     getDefault() {

@@ -67,7 +67,6 @@ export default function() {
   }
 
   function createAreaApp(el) {
-
     const options = JSON.parse(el.getAttribute('data-options'));
     const data = JSON.parse(el.getAttribute('data'));
     const fieldId = el.getAttribute('data-field-id');

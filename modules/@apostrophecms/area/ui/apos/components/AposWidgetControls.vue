@@ -41,10 +41,6 @@ export default {
       type: Object,
       required: true
     },
-    areaField: {
-      type: Object,
-      default: null
-    },
     first: {
       type: Boolean,
       required: true
@@ -205,16 +201,17 @@ export default {
   },
   methods: {
     getOperations({ secondaryLevel }) {
-      const { widgetOperations = [] } = apos.modules['@apostrophecms/area'];
-
-      return widgetOperations
-        .filter(operation => !operation.type || operation.type === `${this.modelValue.type}-widget`)
-        .filter(operation => {
-          if (secondaryLevel) {
-            return operation.secondaryLevel;
-          }
-          return !operation.secondaryLevel;
-        });
+      const moduleOptions = apos.modules[apos.area.widgetManagers[this.modelValue.type]];
+      const { widgetOperations = [] } = moduleOptions || {};
+      return widgetOperations.filter(operation => {
+        if (secondaryLevel) {
+          return operation.secondaryLevel;
+        }
+        return !operation.secondaryLevel;
+      }).map(operation => ({
+        action: operation.action || operation.name,
+        ...operation
+      }));
     },
     async handleClick({ action, modal }) {
       if (action) {
@@ -223,13 +220,15 @@ export default {
       if (modal) {
         const result = await apos.modal.execute(modal, {
           widget: this.modelValue,
-          field: this.areaField
+          widgetSchema: apos.modules[
+            apos.area.widgetManagers[this.modelValue.type]
+          ]?.schema
         });
-        if (result?.widget) {
+        if (result) {
           // TODO: make sure the update method from
           // modules/@apostrophecms/area/ui/apos/components/AposAreaEditor.vue
           // does the job and does not mess with the widget type and _id:
-          this.$emit('update', result.widget);
+          this.$emit('update', result);
         }
       }
     }

@@ -112,7 +112,6 @@
           :max-reached="maxReached"
           :tabbable="isFocused"
           :model-value="widget"
-          :area-field="field"
           @up="$emit('up', i);"
           @remove="$emit('remove', i);"
           @edit="$emit('edit', i);"
@@ -120,7 +119,7 @@
           @copy="$emit('copy', i);"
           @clone="$emit('clone', i);"
           @down="$emit('down', i);"
-          @update="$emit('update')"
+          @update="$emit('update', $event)"
         />
       </div>
       <!-- Still used for contextual editing components -->
@@ -144,7 +143,6 @@
         :options="widgetOptions"
         :type="widget.type"
         :area-field-id="fieldId"
-        :area-field="field"
         :following-values="followingValuesWithParent"
         :model-value="widget"
         :value="widget"
@@ -237,10 +235,6 @@ export default {
       type: Array,
       required: true
     },
-    field: {
-      type: Object,
-      required: true
-    },
     fieldId: {
       type: String,
       required: true
@@ -270,7 +264,18 @@ export default {
       }
     }
   },
-  emits: [ 'clone', 'up', 'down', 'remove', 'edit', 'cut', 'copy', 'update', 'add', 'changed' ],
+  emits: [
+    'clone',
+    'up',
+    'down',
+    'remove',
+    'edit',
+    'cut',
+    'copy',
+    'update',
+    'add',
+    'changed'
+  ],
   data() {
     return {
       mounted: false, // hack around needing DOM to be rendered for computed classes
@@ -558,7 +563,6 @@ export default {
     widgetEditorComponent(type) {
       return this.moduleOptions.components.widgetEditors[type];
     }
-
   }
 };
 </script>

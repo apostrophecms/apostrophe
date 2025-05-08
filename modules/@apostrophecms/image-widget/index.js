@@ -12,6 +12,23 @@ module.exports = {
     defaultImageWidth: 100,
     imageResizeStep: 5
   },
+  widgetOperations(self, options) {
+    const {
+      relationshipEditor = 'AposImageRelationshipEditor',
+      relationshipEditorLabel = 'apostrophe:editImageAdjustments',
+      relationshipEditorIcon = 'image-edit-outline'
+    } = options.apos.image.options || {};
+    return {
+      add: {
+        adjustImage: {
+          label: relationshipEditorLabel,
+          icon: relationshipEditorIcon,
+          modal: relationshipEditor,
+          tooltip: relationshipEditorLabel
+        }
+      }
+    };
+  },
   fields(self) {
     return {
       add: {

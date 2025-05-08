@@ -110,7 +110,7 @@ const { stripIndent } = require('common-tags');
 const _ = require('lodash');
 
 module.exports = {
-  cascades: [ 'fields' ],
+  cascades: [ 'fields', 'widgetOperations' ],
   options: {
     neverLoadSelf: true,
     initialModal: true,
@@ -122,6 +122,29 @@ module.exports = {
     // to 'right'):
     origin: null,
     preview: true
+  },
+  handlers(self) {
+    return {
+      'apostrophe:modulesRegistered': {
+        composeWidgetOperations() {
+          self.widgetOperations = Object.entries(self.widgetOperations)
+            .map(([ name, operation ]) => {
+              if (!operation.label || !operation.modal) {
+                throw self.apos.error('invalid', 'widgetOperations requires label and modal properties.');
+              }
+
+              if (operation.secondaryLevel !== true && !operation.icon) {
+                throw self.apos.error('invalid', 'widgetOperations requires the icon property at primary level.');
+              }
+
+              return {
+                name,
+                ...operation
+              };
+            });
+        }
+      }
+    };
   },
   init(self) {
     self.isExplicitOrigin = self.options.origin !== null;
@@ -422,13 +445,14 @@ module.exports = {
         return [];
       },
 
-      addWidgetOperation(operation) {
-        self.apos.area.addWidgetOperation({
-          ...operation,
-          type: self.__meta.name
+      getAllowedWidgetOperations(req) {
+        return self.widgetOperations.filter(({ permission }) => {
+          if (permission?.action && permission?.type) {
+            return self.apos.permission.can(req, permission.action, permission.type);
+          }
+          return true;
         });
       }
-
     };
   },
   extendMethods(self) {
@@ -462,7 +486,8 @@ module.exports = {
           width: self.options.width,
           origin: self.options.origin,
           preview: self.options.preview,
-          isExplicitOrigin: self.isExplicitOrigin
+          isExplicitOrigin: self.isExplicitOrigin,
+          widgetOperations: self.getAllowedWidgetOperations(req)
         });
         return result;
       }
