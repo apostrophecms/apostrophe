@@ -7,7 +7,10 @@ module.exports = {
     dimensionAttrs: false,
     placeholder: true,
     placeholderClass: false,
-    placeholderImage: 'jpg'
+    placeholderImage: 'jpg',
+    // 0 means disabled width setting
+    defaultImageWidth: 100,
+    imageResizeStep: 5
   },
   widgetOperations(self, options) {
     const {
@@ -26,16 +29,29 @@ module.exports = {
       }
     };
   },
-  fields: {
-    add: {
-      _image: {
-        type: 'relationship',
-        label: 'apostrophe:image',
-        max: 1,
-        required: true,
-        withType: '@apostrophecms/image'
+  fields(self) {
+    return {
+      add: {
+        _image: {
+          type: 'relationship',
+          label: 'apostrophe:image',
+          max: 1,
+          required: true,
+          withType: '@apostrophecms/image'
+        },
+        width: {
+          type: 'range',
+          label: 'apostrophe:imageWidth',
+          help: 'apostrophe:imageWidthHelp',
+          // 0 makes no sense, so we skip it and
+          // go for the 1st step
+          min: self.options.imageResizeStep,
+          max: 100,
+          step: self.options.imageResizeStep,
+          def: self.options.defaultImageWidth
+        }
       }
-    }
+    };
   },
   init(self) {
     self.determineBestAssetUrl('placeholder');

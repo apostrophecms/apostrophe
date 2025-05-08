@@ -5,6 +5,7 @@
 ### Adds
 
 * Uses new `widgetOperations` to add the `adjustImage` operation to the image widget.
+* Adds image widget width slider. Introduce widget options `defaultImageWidth` (percentage, 100 by default, a full width) and `imageResizeStep` to control the initial width of the image and the step of the width slider (default is 5) respectively. Projects that override the `widget.html` template should sync back the changes from the original template `modules/@apostrophecms/image-widget/views/widget.html`.
 * Adds a server validation before adding a widget to an area. Introduces a new POST route `@apostrophecms/area/validate-widget`.
 * The new `widgetOperations` cascade config property can be used to display custom operations for widgets. 
 A `secondaryLevel: true` option is available to add operations to the widget's controls context menu.
@@ -18,6 +19,10 @@ A `secondaryLevel: true` option is available to add operations to the widget's c
 * Fixes autocomplete and search sorting and as a consequence, fixes potential duplicates during pagination.
 * Fixes all eslint warnings.
 * Widget live preview is now attempting to auto-position the Widget Editor modal only if no explicit widget configuration (`options.origin`) is provided.
+
+### Changes
+
+* Updates the default fields for the `getMangageApiProjection()` to include a more sensible base configuration and adds a `true` option to return the minimal default values.
 
 ## 4.15.2 (2025-04-28)
 
