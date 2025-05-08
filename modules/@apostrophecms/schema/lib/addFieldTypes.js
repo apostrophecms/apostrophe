@@ -748,7 +748,7 @@ module.exports = (self) => {
     async convert(req, field, data, destination) {
       destination[field.name] = self.apos.launder.float(
         data[field.name],
-        undefined,
+        field.def,
         field.min,
         field.max
       );

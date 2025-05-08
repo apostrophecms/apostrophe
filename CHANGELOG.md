@@ -17,6 +17,7 @@ A `secondaryLevel: true` option is available to add operations to the widget's c
 
 ### Fixes
 
+* Fixes `range` field type default value not being set properly.
 * Fixes autocomplete and search sorting and as a consequence, fixes potential duplicates during pagination.
 * Fixes all eslint warnings.
 * Widget live preview is now attempting to auto-position the Widget Editor modal only if no explicit widget configuration (`options.origin`) is provided.
