@@ -119,14 +119,22 @@ module.exports = {
     minimumDefaultOptions: {
       toolbar: [
         'styles',
+        '|',
         'bold',
         'italic',
         'strike',
+        'underline',
+        'subscript',
+        'superscript',
+        'blockquote',
+        '|',
+        'image',
+        'horizontalRule',
         'link',
         'anchor',
         'bulletList',
         'orderedList',
-        'blockquote'
+        'color'
       ],
       styles: [
         // you may also use a `class` property with these
@@ -134,7 +142,6 @@ module.exports = {
           tag: 'p',
           label: 'apostrophe:richTextParagraph'
         },
-
         {
           tag: 'h1',
           label: 'apostrophe:richTextH1'
@@ -159,7 +166,13 @@ module.exports = {
           tag: 'h6',
           label: 'apostrophe:richTextH6'
         }
+      ],
+      insert: [
+        'image',
+        'table',
+        'importTable'
       ]
+
     },
     defaultOptions: {},
     components: {
@@ -386,6 +399,7 @@ module.exports = {
       ...self.options.minimumDefaultOptions,
       ...self.options.defaultOptions
     };
+    console.log('self.options.defaultOptions', self.options.defaultOptions);
   },
   icons: {
     'format-text-icon': 'FormatText',
