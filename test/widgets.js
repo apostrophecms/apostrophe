@@ -492,8 +492,10 @@ describe('Widgets', function() {
   });
 
   describe('Widget Operations', function() {
+    let _apos;
+
     before(async function() {
-      apos = await t.create({
+      _apos = await t.create({
         root: module,
         modules: {
           'test1-widget': {
@@ -532,9 +534,13 @@ describe('Widgets', function() {
       });
     });
 
-    it('should support custom widget operations and ihnerit them from extended modules', function() {
-      const test1Widget = apos.modules['test1-widget'];
-      const test2Widget = apos.modules['test2-widget'];
+    after(function() {
+      return t.destroy(_apos);
+    });
+
+    it('should support custom widget operations and inherit them from extended modules', function() {
+      const test1Widget = _apos.modules['test1-widget'];
+      const test2Widget = _apos.modules['test2-widget'];
       const expectedOperations = [ {
         name: 'operation1',
         label: 'Operation 1',
@@ -567,10 +573,10 @@ describe('Widgets', function() {
         }
       };
 
-      const permissionWidget = apos.modules['test-permission-widget'];
-      const adminBrowserData = permissionWidget.getBrowserData(apos.task.getReq());
+      const permissionWidget = _apos.modules['test-permission-widget'];
+      const adminBrowserData = permissionWidget.getBrowserData(_apos.task.getReq());
       const contribBrowserData = permissionWidget.getBrowserData(
-        apos.task.getContributorReq()
+        _apos.task.getContributorReq()
       );
 
       const actual = {
