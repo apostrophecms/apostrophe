@@ -81,6 +81,7 @@
       </ul>
     </floating-menu>
     <div
+      ref="editor"
       class="apos-rich-text-editor__editor"
       :class="editorModifiers"
     >
@@ -461,6 +462,9 @@ export default {
       }
     });
     apos.bus.$on('apos-refreshing', this.onAposRefreshing);
+    this.$refs.editor.addEventListener('cut', this.ignoreEvent);
+    this.$refs.editor.addEventListener('copy', this.ignoreEvent);
+    this.$refs.editor.addEventListener('paste', this.ignoreEvent);
   },
 
   beforeUnmount() {
@@ -468,6 +472,9 @@ export default {
     apos.bus.$off('apos-refreshing', this.onAposRefreshing);
   },
   methods: {
+    ignoreEvent(e) {
+      e.aposIgnoreEvent = true;
+    },
     showTableControls() {
       return this.editor?.isActive('table') ?? false;
     },
