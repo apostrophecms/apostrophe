@@ -134,6 +134,11 @@ module.exports = {
           tag: 'p',
           label: 'apostrophe:richTextParagraph'
         },
+
+        {
+          tag: 'h1',
+          label: 'apostrophe:richTextH1'
+        },
         {
           tag: 'h2',
           label: 'apostrophe:richTextH2'
@@ -145,6 +150,14 @@ module.exports = {
         {
           tag: 'h4',
           label: 'apostrophe:richTextH4'
+        },
+        {
+          tag: 'h5',
+          label: 'apostrophe:richTextH5'
+        },
+        {
+          tag: 'h6',
+          label: 'apostrophe:richTextH6'
         }
       ]
     },
