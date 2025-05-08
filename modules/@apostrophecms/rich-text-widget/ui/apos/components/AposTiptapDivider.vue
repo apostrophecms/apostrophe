@@ -22,7 +22,9 @@ export default {
     @include type-help;
 
     & {
-      padding: 10px;
+      display: flex;
+      align-items: center;
+      padding: 0 10px;
       opacity: 0.3;
     }
   }
