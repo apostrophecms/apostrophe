@@ -24,7 +24,12 @@ module.exports = {
           label: relationshipEditorLabel,
           icon: relationshipEditorIcon,
           modal: relationshipEditor,
-          tooltip: relationshipEditorLabel
+          tooltip: relationshipEditorLabel,
+          if: {
+            '_image.0': {
+              $exists: true
+            }
+          }
         }
       }
     };

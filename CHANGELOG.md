@@ -8,7 +8,7 @@
 * Adds image widget width slider. Introduce widget options `defaultImageWidth` (percentage, 100 by default, a full width) and `imageResizeStep` to control the initial width of the image and the step of the width slider (default is 5) respectively. Projects that override the `widget.html` template should sync back the changes from the original template `modules/@apostrophecms/image-widget/views/widget.html`.
 * Adds a server validation before adding a widget to an area. Introduces a new POST route `@apostrophecms/area/validate-widget`.
 * The new `widgetOperations` cascade config property can be used to display custom operations for widgets. 
-A `secondaryLevel: true` option is available to add operations to the widget's controls context menu.
+A `secondaryLevel: true` option is available to add operations to the widget's controls context menu. An `if` condition can be used to test properties of the widget before displaying an operation.
 
 ### Changes
 
