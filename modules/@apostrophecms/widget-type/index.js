@@ -123,25 +123,184 @@ module.exports = {
     origin: null,
     preview: true
   },
+  widgetOperations: {
+    // action
+    // disabled
+    // icon
+    // label
+    // modal
+    // tooltip
+    //
+    // TODO: separator
+    // TODO: modifiers
+
+    // iconOnly: true,
+    // icon: 'plus-icon',
+    // type: 'group',
+    // modifiers: [ 'small', 'inline' ],
+    // role: 'menuitem',
+    // class: 'apos-area-modify-controls__button',
+    // iconSize: 16,
+    // disableFocus: !this.tabbable
+    //
+    // TODO: set tooltip with first
+    // TODO: set disabled = field && field.readOnly
+    add: {
+      nudgeUp: {
+        action: 'up',
+        // disabled: this.first || this.disabled,
+        icon: 'arrow-up-icon',
+        label: 'apostrophe:nudgeUp'
+        // tooltip: {
+        //   content: this.first || this.disabled ? null : 'apostrophe:nudgeUp',
+        //   placement: 'left'
+        // },
+        // if: {
+        //   first: true
+        // }
+      },
+      nudgeDown: {
+        action: 'down',
+        // disabled: this.last || this.disabled,
+        // disableIf: {
+        //   last: true
+        // }
+        icon: 'arrow-down-icon',
+        label: 'apostrophe:nudgeDown'
+        // tooltip: {
+        //   content: this.last || this.disabled ? null : 'apostrophe:nudgeDown',
+        //   placement: 'left'
+        // },
+      },
+      // TODO: contextual only
+      // if (!this.options.contextual) {
+      edit: {
+        action: 'edit',
+        // disabled: this.disabled,
+        icon: 'playlist-edit-icon',
+        label: 'apostrophe:edit',
+        tooltip: {
+          content: 'apostrophe:editWidget',
+          placement: 'left'
+        }
+      },
+      // TODO: should be last
+      remove: {
+        action: 'remove',
+        // disabled: this.disabled,
+        icon: 'trash-can-outline-icon',
+        label: 'apostrophe:remove',
+        tooltip: {
+          content: 'apostrophe:delete',
+          placement: 'left'
+        }
+      },
+
+      // More
+      cut: {
+        action: 'cut',
+        icon: 'content-cut-icon',
+        label: 'apostrophe:cut'
+      },
+      copy: {
+        action: 'copy',
+        icon: 'content-copy-icon',
+        label: 'apostrophe:copy'
+      },
+      clone: {
+        action: 'clone',
+        icon: 'content-duplicate-icon',
+        label: 'apostrophe:duplicate'
+        // TODO: implement
+        // modifiers: [
+        //   ...(this.disabled || this.maxReached) ? [ 'disabled' ] : []
+        // ]
+      }
+      // TODO: separator
+      // separator: {
+      //   separator: true
+      // }
+    },
+    group: {
+      more: {
+        icon: 'dots-horizontal-icon',
+        operations: [ 'cut', 'copy', 'clone', 'separator' ]
+      }
+    },
+    order: [
+      'nudgeUp',
+      'nudgeDown',
+      'edit',
+      // TODO: allow more
+      // 'more'
+      'remove'
+    ]
+  },
   handlers(self) {
     return {
       'apostrophe:modulesRegistered': {
         composeWidgetOperations() {
-          self.widgetOperations = Object.entries(self.widgetOperations)
-            .map(([ name, operation ]) => {
-              if (!operation.label || !operation.modal) {
-                throw self.apos.error('invalid', 'widgetOperations requires label and modal properties.');
-              }
+          const groupedOperations = Object.entries(self.widgetOperations)
+            .reduce((acc, [ opName, properties ]) => {
+              // Check if there is a required schema field for this widget
+              // operation.
+              const requiredFieldNotFound = properties.requiredField && !self.schema
+                .some((field) => field.name === properties.requiredField);
 
-              if (operation.secondaryLevel !== true && !operation.icon) {
-                throw self.apos.error('invalid', 'widgetOperations requires the icon property at primary level.');
+              if (requiredFieldNotFound) {
+                return acc;
               }
+              // Find a group for the operation, if there is one.
+              const associatedGroup = getAssociatedGroup(opName);
+              const currentOperation = {
+                action: opName,
+                ...properties
+              };
+              const { action, ...props } = getOperationOrGroup(
+                currentOperation,
+                associatedGroup,
+                acc
+              );
 
               return {
-                name,
-                ...operation
+                ...acc,
+                [action]: {
+                  ...props
+                }
               };
-            });
+            }, {});
+
+          self.widgetOperations = Object.entries(groupedOperations)
+            .map(([ action, properties ]) => ({
+              action,
+              ...properties
+            }));
+
+          function getOperationOrGroup (currentOp, [ groupName, groupProperties ], acc) {
+            if (!groupName) {
+              // Operation is not grouped. Return it as it is.
+              return currentOp;
+            }
+
+            // Return the operation group with the new operation added.
+            return {
+              action: groupName,
+              ...groupProperties,
+              operations: [
+                ...(acc[groupName] && acc[groupName].operations) || [],
+                currentOp
+              ]
+            };
+          }
+
+          // Returns the object entry, e.g., `[groupName, { ...groupProperties
+          // }]`
+          function getAssociatedGroup (operation) {
+            return Object.entries(self.widgetOperationsGroups)
+              .find(([ _key, { operations } ]) => {
+                return operations.includes(operation);
+              }) || [];
+          }
         }
       }
     };

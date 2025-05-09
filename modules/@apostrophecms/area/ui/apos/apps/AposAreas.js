@@ -110,6 +110,7 @@ export default function() {
         choices,
         docId: _docId,
         fieldId,
+        field: {},
         renderings
       });
 

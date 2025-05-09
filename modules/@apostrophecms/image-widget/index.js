@@ -21,12 +21,21 @@ module.exports = {
     return {
       add: {
         adjustImage: {
-          label: relationshipEditorLabel,
           icon: relationshipEditorIcon,
+          label: relationshipEditorLabel,
           modal: relationshipEditor,
           tooltip: relationshipEditorLabel
         }
-      }
+      },
+      order: [
+        'nudgeUp',
+        'nudgeDown',
+        'edit',
+        'adjustImage',
+        // TODO: allow more
+        // 'more'
+        'remove'
+      ]
     };
   },
   fields(self) {
