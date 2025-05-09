@@ -35,6 +35,8 @@
 
 <script>
 
+import checkIfConditions from 'apostrophe/lib/check-if-conditions';
+
 export default {
   props: {
     modelValue: {
@@ -69,12 +71,6 @@ export default {
     }
   },
   emits: [ 'remove', 'edit', 'cut', 'copy', 'clone', 'up', 'down', 'update' ],
-  data() {
-    return {
-      widgetPrimaryOperations: this.getOperations({ secondaryLevel: false }),
-      widgetSecondaryOperations: this.getOperations({ secondaryLevel: true })
-    };
-  },
   computed: {
     widgetDefaultControl() {
       return {
@@ -197,6 +193,12 @@ export default {
         },
         action: 'remove'
       };
+    },
+    widgetPrimaryOperations() {
+      return this.getOperations({ secondaryLevel: false });
+    },
+    widgetSecondaryOperations() {
+      return this.getOperations({ secondaryLevel: true });
     }
   },
   methods: {
@@ -204,6 +206,11 @@ export default {
       const moduleOptions = apos.modules[apos.area.widgetManagers[this.modelValue.type]];
       const { widgetOperations = [] } = moduleOptions || {};
       return widgetOperations.filter(operation => {
+        if (operation.if) {
+          if (!checkIfConditions(this.modelValue, operation.if)) {
+            return false;
+          }
+        }
         if (secondaryLevel) {
           return operation.secondaryLevel;
         }
