@@ -43,17 +43,6 @@ module.exports = {
           max: 1,
           required: true,
           withType: '@apostrophecms/image'
-        },
-        width: {
-          type: 'range',
-          label: 'apostrophe:imageWidth',
-          // 0 makes no sense, so we skip it and
-          // go for the 1st step
-          min: self.options.imageResizeStep,
-          max: 100,
-          step: self.options.imageResizeStep,
-          unit: '%',
-          def: self.options.defaultImageWidth
         }
       }
     };
