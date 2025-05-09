@@ -241,7 +241,6 @@
   "imageTag": "Image Tag",
   "imageTags": "Image Tags",
   "images": "Images",
-  "imageWidth": "Image Width",
   "inputFieldIsDisabled": "This field is disabled",
   "insertAndNew": "{{ saveLabel }} {{ typeLabel }} and create a new one.",
   "insertAndRedirect": "{{ saveLabel }} {{ typeLabel }} and be redirected to the {{ typeLabel }}.",
