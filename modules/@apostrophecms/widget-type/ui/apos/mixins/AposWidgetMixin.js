@@ -71,7 +71,7 @@ export default {
           // mode. It is better to display the old until we display the new, we
           // have "busy" for clarity
           const result = await apos.http.post(`${apos.area.action}/render-widget?aposEdit=1&aposMode=${this.mode}`, {
-            busy: true,
+            busy: !aposLivePreview,
             body: parameters
           });
           //
