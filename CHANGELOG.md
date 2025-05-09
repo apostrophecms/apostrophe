@@ -20,6 +20,7 @@ A `secondaryLevel: true` option is available to add operations to the widget's c
 * Fixes autocomplete and search sorting and as a consequence, fixes potential duplicates during pagination.
 * Fixes all eslint warnings.
 * Widget live preview is now attempting to auto-position the Widget Editor modal only if no explicit widget configuration (`options.origin`) is provided.
+* Fixes `z-index` of widget controls, going above the controls add button.
 
 ### Changes
 
