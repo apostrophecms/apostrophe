@@ -75,8 +75,8 @@
       <div
         class="
           apos-area-widget-controls
-          apos-area-widget-controls__add--top
-          apos-area-widget-controls__add
+          apos-area-widget-controls--add--top
+          apos-area-widget-controls--add
         "
         :class="addClasses"
       >
@@ -99,7 +99,7 @@
         :class="{'apos-is-disabled': isFocused}"
       />
       <div
-        class="apos-area-widget-controls apos-area-widget-controls__modify"
+        class="apos-area-widget-controls apos-area-widget-controls--modify"
         :class="controlsClasses"
       >
         <AposWidgetControls
@@ -156,8 +156,8 @@
       <div
         class="
           apos-area-widget-controls
-          apos-area-widget-controls__add
-          apos-area-widget-controls__add--bottom
+          apos-area-widget-controls--add
+          apos-area-widget-controls--add--bottom
         "
         :class="addClasses"
       >
@@ -626,7 +626,7 @@ export default {
     }
 
     &.apos-is-ui-adjusted {
-      .apos-area-widget-controls__modify {
+      .apos-area-widget-controls--modify {
         top: 0;
         transform: translate3d(-10px, 50px, 0);
       }
@@ -684,7 +684,7 @@ export default {
     }
   }
 
-  .apos-area-widget-controls__modify {
+  .apos-area-widget-controls--modify {
     z-index: $z-index-widget-focused-controls;
     top: 50%;
     right: 0;
@@ -723,20 +723,20 @@ export default {
     }
   }
 
-  .apos-area-widget-controls__add {
+  .apos-area-widget-controls--add {
     top: 0;
     left: 50%;
     transform: translate(-50%, -50%);
 
-    &.apos-area-widget-controls__add--top.apos-is-open--menu-top,
-    &.apos-area-widget-controls__add--bottom.apos-is-open--menu-bottom {
+    &.apos-area-widget-controls--add--top.apos-is-open--menu-top,
+    &.apos-area-widget-controls--add--bottom.apos-is-open--menu-bottom {
       z-index: $z-index-area-schema-ui;
     }
   }
 
-  .apos-area-widget-controls__add {
-    &.apos-area-widget-controls__add--top.apos-is-open--menu-top,
-    &.apos-area-widget-controls__add--bottom.apos-is-open--menu-bottom {
+  .apos-area-widget-controls--add {
+    &.apos-area-widget-controls--add--top.apos-is-open--menu-top,
+    &.apos-area-widget-controls--add--bottom.apos-is-open--menu-bottom {
 
       /* stylelint-disable-next-line max-nesting-depth */
       :deep(.apos-button__wrapper .apos-button:not([disabled])) {
@@ -745,7 +745,7 @@ export default {
     }
   }
 
-  .apos-area-widget-controls__add {
+  .apos-area-widget-controls--add {
     :deep(.apos-button__wrapper) {
       padding: 8px;
 
@@ -786,7 +786,7 @@ export default {
     }
   }
 
-  .apos-area-widget-controls__add--bottom {
+  .apos-area-widget-controls--add--bottom {
     top: auto;
     bottom: 0;
     transform: translate(-50%, 50%);
