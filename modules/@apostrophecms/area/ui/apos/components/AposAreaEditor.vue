@@ -31,6 +31,7 @@
           :disabled="field && field.readOnly"
           :widget-options="options.widgets"
           :tabbable="true"
+          :open="false"
           @add="add"
         />
       </template>

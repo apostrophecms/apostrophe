@@ -118,31 +118,16 @@ export default function() {
   }
 
   function createWidgetClipboardApp() {
+
+    // Simpler and more reliable to just talk to localStorage always and avoid the
+    // storage event handle
     class Clipboard {
-      constructor() {
-        const existing = window.localStorage.getItem('aposWidgetClipboard');
-        this.widgetClipboard = existing ? JSON.parse(existing) : null;
-
-        window.addEventListener('storage', this.onStorage);
-      }
-
       set(widget) {
-        this.widgetClipboard = widget;
-        localStorage.setItem('aposWidgetClipboard', JSON.stringify(this.widgetClipboard));
+        localStorage.setItem('aposWidgetClipboard', JSON.stringify(widget));
       }
-
       get() {
-        // If we don't clone, the second paste will be a duplicate key error
-        return klona(this.widgetClipboard);
-      }
-
-      onStorage() {
-        // When local storage changes, dump the list to
-        // the console.
-        const contents = window.localStorage.getItem('aposWidgetClipboard');
-        if (contents) {
-          this.widgetClipboard = JSON.parse(contents);
-        }
+        const existing = window.localStorage.getItem('aposWidgetClipboard');
+        return existing ? JSON.parse(existing) : null;
       }
     }
 

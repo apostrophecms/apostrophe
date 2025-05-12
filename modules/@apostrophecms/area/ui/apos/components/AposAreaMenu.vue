@@ -17,6 +17,7 @@
     :max-reached="maxReached"
     :disabled="isDisabled"
     :menu-id="menuId"
+    :open="open"
     @add="$emit('add', $event);"
   />
 </template>
@@ -63,13 +64,16 @@ export default {
     menuId: {
       type: String,
       default: null
+    },
+    open: {
+      type: Boolean
     }
   },
   emits: [ 'add' ],
   computed: {
     buttonOptions() {
       return {
-        label: 'apostrophe:addContent',
+        label: 'testing',
         icon: 'plus-icon',
         type: 'primary',
         modifiers: this.empty ? [] : [ 'round', 'tiny' ],
