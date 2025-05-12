@@ -1035,6 +1035,29 @@ module.exports = (self) => {
         rootConvert = true
       } = {}
     ) {
+
+      const canEdit = () => self.apos.permission.can(
+        req,
+        field.editPermission.action,
+        field.editPermission.type
+      );
+      const canView = () => self.apos.permission.can(
+        req,
+        field.viewPermission.action,
+        field.viewPermission.type
+      );
+      const can =
+        (!field.withType && !field.editPermission && !field.viewPermission) ||
+        (field.withType && self.apos.permission.can(req, 'view', field.withType)) ||
+        (field.editPermission && canEdit()) ||
+        (field.viewPermission && canView()) ||
+        false;
+
+      if (!can) {
+        // Silently leave the relationship alone
+        return;
+      }
+
       const options = {
         fetchRelationships,
         rootConvert
@@ -1043,6 +1066,7 @@ module.exports = (self) => {
       if (!manager) {
         throw Error('relationship with type ' + field.withType + ' unrecognized');
       }
+
       let input = data[field.name];
       if (input == null) {
         input = [];
