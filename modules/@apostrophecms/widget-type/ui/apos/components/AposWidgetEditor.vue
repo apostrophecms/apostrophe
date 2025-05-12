@@ -273,7 +273,7 @@ export default {
       if (this.preview.create) {
         this.preview.area.remove(this.getPreviewWidgetIndex(), { autosave: false });
       } else if (!this.saving) {
-        this.preview.area.update(this.previewSnapshot, { autosave: false });
+        this.preview.area.update(this.previewSnapshot, { autosave: false, reverting: true });
       }
     },
     async save() {

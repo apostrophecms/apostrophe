@@ -441,8 +441,10 @@ export default {
         // actual files, and the reference count will update automatically
       }
     },
-    async update(updated, { autosave = true } = {}) {
-      updated.aposPlaceholder = false;
+    async update(updated, { autosave = true, reverting = false } = {}) {
+      if (!reverting) {
+        updated.aposPlaceholder = false;
+      }
       if (!updated.metaType) {
         updated.metaType = 'widget';
       }

@@ -1051,12 +1051,6 @@ module.exports = (self) => {
         // Handy in CSV: allows titles or _ids
         input = input.split(/\s*,\s*/);
       }
-      if (field.min && field.min > input.length) {
-        throw self.apos.error('min', `Minimum ${field.withType} required not reached.`);
-      }
-      if (field.max && field.max < input.length) {
-        throw self.apos.error('max', `Maximum ${field.withType} required reached.`);
-      }
       if (fetchRelationships === false) {
         destination[field.name] = [];
 
@@ -1116,49 +1110,58 @@ module.exports = (self) => {
       }
       if (!clauses.length) {
         destination[field.name] = [];
-        return;
-      }
-      const results = await manager
-        .find(req, { $or: clauses })
-        .relationships(false)
-        .toArray();
-      // Must maintain input order. Also discard things not actually found in
-      // the db
-      const actualDocs = [];
-      for (const item of input) {
-        if ((typeof item) === 'string') {
-          const result = results
-            .find(result => (result.title === item) || (result._id === item));
-          if (result) {
-            actualDocs.push(result);
-          }
-        } else if ((item && (typeof item._id === 'string'))) {
-          const result = results.find(doc => (doc._id === item._id));
-          if (result) {
-            if (field.schema) {
-              const destArray = Array.isArray(destination[field.name])
-                ? destination[field.name]
-                : [];
-              const destItem = destArray.find((doc) => doc._id === item._id);
-              result._fields = {
-                ...destItem?._fields || {}
-              };
-
-              if (item && ((typeof item._fields === 'object'))) {
-                await self.convert(
-                  req,
-                  field.schema,
-                  item._fields || {},
-                  result._fields,
-                  options
-                );
-              }
+      } else {
+        const results = await manager
+          .find(req, { $or: clauses })
+          .relationships(false)
+          .toArray();
+        // Must maintain input order. Also discard things not actually found in
+        // the db
+        const actualDocs = [];
+        for (const item of input) {
+          if ((typeof item) === 'string') {
+            const result = results
+              .find(result => (result.title === item) || (result._id === item));
+            if (result) {
+              actualDocs.push(result);
             }
-            actualDocs.push(result);
+          } else if ((item && (typeof item._id === 'string'))) {
+            const result = results.find(doc => (doc._id === item._id));
+            if (result) {
+              if (field.schema) {
+                const destArray = Array.isArray(destination[field.name])
+                  ? destination[field.name]
+                  : [];
+                const destItem = destArray.find((doc) => doc._id === item._id);
+                result._fields = {
+                  ...destItem?._fields || {}
+                };
+
+                if (item && ((typeof item._fields === 'object'))) {
+                  await self.convert(
+                    req,
+                    field.schema,
+                    item._fields || {},
+                    result._fields,
+                    options
+                  );
+                }
+              }
+              actualDocs.push(result);
+            }
           }
         }
+        destination[field.name] = actualDocs;
       }
-      destination[field.name] = actualDocs;
+      if (field.required && (destination[field.name].length === 0)) {
+        throw self.apos.error('required');
+      }
+      if (field.min && field.min > destination[field.name].length) {
+        throw self.apos.error('min', `Minimum ${field.withType} required not reached.`);
+      }
+      if (field.max && field.max < destination[field.name].length) {
+        throw self.apos.error('max', `Maximum ${field.withType} required reached.`);
+      }
     },
 
     relate: async function (req, field, objects, options) {
