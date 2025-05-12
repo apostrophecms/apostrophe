@@ -92,6 +92,7 @@
           :tabbable="isHovered || isFocused"
           :menu-id="`${widget._id}-widget-menu-top`"
           :class="{[classes.open]: menuOpen === 'top'}"
+          :open="menuOpen === 'top'"
           @add="$emit('add', $event);"
         />
       </div>
@@ -170,6 +171,7 @@
           :tabbable="isHovered || isFocused"
           :menu-id="`${widget._id}-widget-menu-bottom`"
           :class="{[classes.open]: menuOpen === 'bottom'}"
+          :open="menuOpen === 'bottom'"
           @add="$emit('add', $event)"
         />
       </div>

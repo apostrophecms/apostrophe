@@ -17,6 +17,7 @@
     :max-reached="maxReached"
     :disabled="isDisabled"
     :menu-id="menuId"
+    :open="open"
     @add="$emit('add', $event);"
   />
 </template>
@@ -63,6 +64,9 @@ export default {
     menuId: {
       type: String,
       default: null
+    },
+    open: {
+      type: Boolean
     }
   },
   emits: [ 'add' ],
