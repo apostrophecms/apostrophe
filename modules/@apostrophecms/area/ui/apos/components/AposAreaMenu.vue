@@ -73,7 +73,7 @@ export default {
   computed: {
     buttonOptions() {
       return {
-        label: 'testing',
+        label: 'apostrophe:addContent',
         icon: 'plus-icon',
         type: 'primary',
         modifiers: this.empty ? [] : [ 'round', 'tiny' ],
