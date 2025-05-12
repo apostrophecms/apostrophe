@@ -1,6 +1,5 @@
 /* eslint-disable vue/one-component-per-file */
 import createApp from 'Modules/@apostrophecms/ui/lib/vue';
-import { klona } from 'klona';
 
 export default function() {
 
@@ -125,6 +124,7 @@ export default function() {
       set(widget) {
         localStorage.setItem('aposWidgetClipboard', JSON.stringify(widget));
       }
+
       get() {
         const existing = window.localStorage.getItem('aposWidgetClipboard');
         return existing ? JSON.parse(existing) : null;
