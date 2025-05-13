@@ -193,7 +193,6 @@ module.exports = {
           }
           throw e;
         }
-
         return {
           manager,
           widget,
