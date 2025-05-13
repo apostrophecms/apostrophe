@@ -1,4 +1,3 @@
-
 <template>
   <div
     ref="widget"
@@ -155,7 +154,8 @@
       />
       <div
         class="
-          apos-area-widget-controls apos-area-widget-controls--add
+          apos-area-widget-controls
+          apos-area-widget-controls--add
           apos-area-widget-controls--add--bottom
         "
         :class="addClasses"
@@ -691,6 +691,7 @@ export default {
   }
 
   .apos-area-widget-controls--modify {
+    z-index: $z-index-widget-focused-controls;
     top: 50%;
     right: 0;
     transform: translate3d(-10px, -50%, 0);

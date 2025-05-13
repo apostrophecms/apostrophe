@@ -22,6 +22,7 @@ A `secondaryLevel: true` option is available to add operations to the widget's c
 * Widget live preview is now attempting to auto-position the Widget Editor modal only if no explicit widget configuration (`options.origin`) is provided.
 * `required` is now implemented on the server side as well for `relationship` fields. It behaves like `min: 1`. It was always implemented on the front end. However, note that a relationship can still become empty if the related document is archived or deleted.
 * Image widgets, and others with a placeholder when empty, now restore their placeholder view when canceling the widget editor in live preview mode.
+* Fixes `z-index` of widget controls, going above the controls add button.
 
 ### Changes
 
