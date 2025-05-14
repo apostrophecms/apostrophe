@@ -1193,7 +1193,7 @@ database.`);
       // fetchRelationships can be set to false when utilizing this code
       // as part of trusted logic that will address missing documents in
       // relationships later.
-      async patch(req, _id, { fetchRelationships = true }) {
+      async patch(req, _id, { fetchRelationships = true } = {}) {
         return self.withLock(req, async () => {
           const input = req.body;
           const keys = Object.keys(input);
