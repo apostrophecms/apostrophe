@@ -1,5 +1,15 @@
 # Changelog
 
+## UNRELEASED
+
+### Adds
+
+* Support for `fetchRelationships: false` in `applyPatch` and related methods. This is intended for the use of the `@apostrophecms/import-export` module, so the functionality is not exposed in a way that can be accessed simply by making a web request.
+
+### Fixes
+
+* Errors thrown on the server side by subfields of widgets are now reported in a useful form at the document level. Previously a different error occurred in the error handling logic itself, confusing the issue.
+
 ## 4.16.0 (2025-05-14)
 
 ### Adds
