@@ -6,8 +6,7 @@
 
 * Uses new `widgetOperations` to add the `adjustImage` operation to the image widget.
 * Adds a server validation before adding a widget to an area. Introduces a new POST route `@apostrophecms/area/validate-widget`.
-* The new `widgetOperations` cascade config property can be used to display custom operations for widgets. 
-A `secondaryLevel: true` option is available to add operations to the widget's controls context menu. An `if` condition can be used to test properties of the widget before displaying an operation.
+* The new `widgetOperations` cascade config property can be used to display custom operations for widgets. An `if` condition can be used to test properties of the widget before displaying an operation.
 
 ### Changes
 
