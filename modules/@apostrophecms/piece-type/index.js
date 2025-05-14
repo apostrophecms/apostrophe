@@ -356,10 +356,13 @@ module.exports = {
         });
         return self.delete(req, piece);
       },
-      async patch(req, _id) {
+      // fetchRelationships can be set to false when utilizing this code
+      // as part of trusted logic that will address missing documents in
+      // relationships later.
+      async patch(req, _id, { fetchRelationships = true } = {}) {
         _id = self.inferIdLocaleAndMode(req, _id);
         await self.publicApiCheckAsync(req);
-        return self.convertPatchAndRefresh(req, req.body, _id);
+        return self.convertPatchAndRefresh(req, req.body, _id, { fetchRelationships });
       }
     };
 
@@ -989,8 +992,11 @@ module.exports = {
       // As an optimization, and to prevent unnecessary updates of `updatedAt`,
       // no calls to `self.update()` are made when only `_advisoryLock` is
       // present in `input` or it contains no properties at all.
+      //
+      // You can pass fetchRelationships: false to skip the check for whether
+      // related documents in relationships actually exist.
 
-      async convertPatchAndRefresh(req, input, _id) {
+      async convertPatchAndRefresh(req, input, _id, { fetchRelationships = true } = {}) {
         const keys = Object.keys(input);
         let possiblePatchedFields;
         if (input._advisoryLock && keys.length === 1) {
@@ -1031,7 +1037,7 @@ module.exports = {
             if (possiblePatchedFields) {
               await self.applyPatch(req, piece, input, {
                 force: self.apos.launder.boolean(input._advisory)
-              });
+              }, { fetchRelationships });
             }
             if (i === patches.length - 1) {
               if (possiblePatchedFields) {
@@ -1065,13 +1071,17 @@ module.exports = {
       // Apply a single patch to the given piece without saving.
       // An implementation detail of convertPatchAndRefresh,
       // also used by the undo mechanism to simulate patches.
-      async applyPatch(req, piece, input) {
+      //
+      // `fetchRelationships` can be set to false when utilizing this code
+      // as part of trusted logic that will address missing documents in
+      // relationships later.
+      async applyPatch(req, piece, input, { fetchRelationships = true } = {}) {
         self.apos.schema.implementPatchOperators(input, piece);
         const schema = self.apos.schema.subsetSchemaForPatch(
           self.allowedSchema(req),
           input
         );
-        await self.apos.schema.convert(req, schema, input, piece);
+        await self.apos.schema.convert(req, schema, input, piece, { fetchRelationships});
         await self.emit('afterConvert', req, input, piece);
       },
       // Generate a sample piece of this type. The `i` counter

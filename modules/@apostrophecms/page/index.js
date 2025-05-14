@@ -1189,7 +1189,11 @@ database.`);
       // to a document at once after accumulating a number of changes in patch
       // form on the front end. If _targetId and _position are present only the
       // last such values given in the array of patches are applied.
-      async patch(req, _id) {
+      //
+      // fetchRelationships can be set to false when utilizing this code
+      // as part of trusted logic that will address missing documents in
+      // relationships later.
+      async patch(req, _id, { fetchRelationships = true } ) {
         return self.withLock(req, async () => {
           const input = req.body;
           const keys = Object.keys(input);
@@ -1228,7 +1232,7 @@ database.`);
             }
             self.enforceParkedProperties(req, page, input);
             if (possiblePatchedFields) {
-              await self.applyPatch(req, page, input);
+              await self.applyPatch(req, page, input, { fetchRelationships });
             }
             if (i === (patches.length - 1)) {
               if (possiblePatchedFields) {
@@ -1262,7 +1266,11 @@ database.`);
       // implementation detail of the patch method, also used by the undo
       // mechanism to simulate patches. Does not handle _targetId, that is
       // implemented in the patch method.
-      async applyPatch(req, page, input) {
+      //
+      // fetchRelationships can be set to false when utilizing this code
+      // as part of trusted logic that will address missing documents in
+      // relationships later.
+      async applyPatch(req, page, input, { fetchRelationships = true } = {}) {
         const manager = self.apos.doc
           .getManager(self.apos.launder.string(input.type) || page.type);
         if (!manager) {
@@ -1275,7 +1283,7 @@ database.`);
           ...page,
           type: manager.name
         }, parentPage), input);
-        await self.apos.schema.convert(req, schema, input, page);
+        await self.apos.schema.convert(req, schema, input, page, { fetchRelationships });
         await manager.emit('afterConvert', req, input, page);
       },
       // True delete. Will throw an error if the page
