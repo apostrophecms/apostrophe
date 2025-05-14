@@ -1081,7 +1081,7 @@ module.exports = {
           self.allowedSchema(req),
           input
         );
-        await self.apos.schema.convert(req, schema, input, piece, { fetchRelationships});
+        await self.apos.schema.convert(req, schema, input, piece, { fetchRelationships });
         await self.emit('afterConvert', req, input, piece);
       },
       // Generate a sample piece of this type. The `i` counter
