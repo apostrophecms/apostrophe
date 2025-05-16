@@ -40,6 +40,7 @@
     "@opentelemetry/semantic-conventions": "^1.0.1",
     "@paralleldrive/cuid2": "^2.2.2",
     "@tiptap/core": "2.11.0",
+    "@tiptap/pm": "2.11.0",
     "@tiptap/extension-color": "2.11.0",
     "@tiptap/extension-floating-menu": "2.11.0",
     "@tiptap/extension-highlight": "2.11.0",
