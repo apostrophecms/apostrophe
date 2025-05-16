@@ -1,5 +1,11 @@
 # Changelog
 
+## 4.17.1 (2025-05-16)
+
+### Fixes
+
+* Pinned to tiptap 2.11.0 and specific prosemirror releases compatible with it, to work around a bug that broke the behavior of lists in the editor when re-opening an existing list. We are working with upstream projects to resolve this so we can continue to track updates in tiptap and prosemirror.
+
 ## 4.17.0 (2025-05-14)
 
 ### Adds
