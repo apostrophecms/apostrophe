@@ -41,6 +41,7 @@
     "@paralleldrive/cuid2": "^2.2.2",
     "@tiptap/core": "2.11.0",
     "@tiptap/pm": "2.11.0",
+    "@tiptap/extension-bubble-menu": "2.11.0",
     "@tiptap/extension-blockquote": "2.11.0",
     "@tiptap/extension-bold": "2.11.0",
     "@tiptap/extension-bullet-list": "2.11.0",
