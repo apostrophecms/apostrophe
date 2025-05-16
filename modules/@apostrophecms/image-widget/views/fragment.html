@@ -22,10 +22,10 @@
 {% endfragment %}
 
 {%- macro _imageWithLink(widget, attachment, options, manager, contextOptions) -%}
-  {%- if widget.linkTo !== 'none' -%}
-    {{- _link(widget, attachment, options, manager, contextOptions) -}}
-  {%- else -%}
+  {%- if not widget.linkTo or widget.linkTo === 'none' -%}
     {{- _image(attachment, options, manager, contextOptions) -}}
+  {%- else -%}
+    {{- _link(widget, attachment, options, manager, contextOptions) -}}
   {%- endif -%}
 {%- endmacro -%}
 
