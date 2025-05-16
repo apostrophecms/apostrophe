@@ -58,7 +58,6 @@
     "@tiptap/extension-ordered-list": "2.12.0",
     "@tiptap/extension-paragraph": "2.12.0",
     "@tiptap/extension-strike": "2.12.0",
-    "@tiptap/extension-text-style@": ".11.0 deduped",
     "@tiptap/extension-text": "2.12.0",
     "@tiptap/extension-color": "2.11.0",
     "@tiptap/extension-floating-menu": "2.11.0",
