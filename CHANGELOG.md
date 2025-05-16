@@ -1,5 +1,11 @@
 # Changelog
 
+## UNRELEASED
+
+### Adds
+
+* Adds link configuration to the `@apostrophecms/image-widget` UI and a new option `linkWithType` to control what document types can be linked to. Opt-out of the widget inline styles (reset) by setting `inlineStyles: false` in the widget configuration or ccontextual options (area). 
+
 ## 4.17.0 (2025-05-14)
 
 ### Adds
