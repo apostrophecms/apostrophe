@@ -88,7 +88,9 @@ export default {
       originalBodyBackground: null,
       shortcuts: this.getShortcuts(),
       breakpoints: this.getBreakpointItems(),
-      showDropdown: false
+      showDropdown: false,
+      bodyId: '',
+      bodyClass: ''
     };
   },
   computed: {
@@ -157,12 +159,34 @@ export default {
       width,
       height
     }) {
-      document.querySelector('body').setAttribute('data-breakpoint-preview-mode', mode);
-      document.querySelector('[data-apos-refreshable]').setAttribute('data-resizable', this.resizable);
-      document.querySelector('[data-apos-refreshable]').setAttribute('data-label', this.$t(label));
-      document.querySelector('[data-apos-refreshable]').style.width = width;
-      document.querySelector('[data-apos-refreshable]').style.height = height;
-      document.querySelector('[data-apos-refreshable]').style.background = this.originalBodyBackground;
+      const bodyEl = document.querySelector('body');
+      const styles = window.getComputedStyle(bodyEl);
+      console.log('styles', styles);
+      const refreshableEl = document.querySelector('[data-apos-refreshable]');
+      this.bodyId = bodyEl.getAttribute('id')?.trim();
+      this.bodyClass = bodyEl.getAttribute('class')?.trim();
+      if (this.bodyId) {
+        bodyEl.removeAttribute('id');
+        refreshableEl.setAttribute('id', this.bodyId);
+      }
+      if (this.bodyClass) {
+        bodyEl.removeAttribute('class');
+        refreshableEl.className += ` ${this.bodyClass}`;
+      }
+      /* this.bodyClass.forEach((c) => { */
+      /*   bodyEl.classList.remove(c); */
+      /*   refreshableEl.classList.add(c); */
+      /* }); */
+      /* this.bodyId.forEach((id) => { */
+      /*   bodyEl.removeAttribute('id'); */
+      /*   refreshableEl.ids.add(id); */
+      /* }); */
+      bodyEl.setAttribute('data-breakpoint-preview-mode', mode);
+      refreshableEl.setAttribute('data-resizable', this.resizable);
+      refreshableEl.setAttribute('data-label', this.$t(label));
+      refreshableEl.style.width = width;
+      refreshableEl.style.height = height;
+      /* refreshableEl.style.background = this.originalBodyBackground; */
 
       this.mode = mode;
       this.$emit('switch-breakpoint-preview-mode', {
@@ -185,17 +209,7 @@ export default {
       height
     }) {
       if (this.mode === mode || mode === null) {
-        document.querySelector('body').removeAttribute('data-breakpoint-preview-mode');
-        document.querySelector('[data-apos-refreshable]').removeAttribute('data-resizable');
-        document.querySelector('[data-apos-refreshable]').removeAttribute('data-label');
-        document.querySelector('[data-apos-refreshable]').style.removeProperty('width');
-        document.querySelector('[data-apos-refreshable]').style.removeProperty('height');
-        document.querySelector('[data-apos-refreshable]').style.removeProperty('background');
-
-        this.mode = null;
-        this.$emit('reset-breakpoint-preview-mode');
-        this.saveState({ mode: this.mode });
-
+        this.resetBreakpointPreview();
         return;
       }
 
@@ -205,6 +219,33 @@ export default {
         width,
         height
       });
+    },
+    // TODO: explore getComputedStyle
+    resetBreakpointPreview() {
+      const bodyEl = document.querySelector('body');
+      const refreshableEl = document.querySelector('[data-apos-refreshable]');
+      /* this.bodyId = bodyEl.getAttribute('id')?.trim(); */
+      /* this.bodyClass = bodyEl.getAttribute('class')?.trim(); */
+      if (this.bodyId) {
+        bodyEl.setAttribute('id', this.bodyId);
+        refreshableEl.setAttribute('id', this.bodyId);
+      }
+      if (this.bodyClass) {
+        bodyEl.setAttribute('class', this.bodyClass);
+        refreshableEl.className = refreshableEl.className.replace(this.bodyClass, '');
+      }
+
+      bodyEl.removeAttribute('data-breakpoint-preview-mode');
+      refreshableEl.removeAttribute('data-resizable');
+      refreshableEl.removeAttribute('data-label');
+      refreshableEl.style.removeProperty('width');
+      refreshableEl.style.removeProperty('height');
+      /* refreshableEl.style.removeProperty('background'); */
+
+      this.mode = null;
+      this.$emit('reset-breakpoint-preview-mode');
+      this.saveState({ mode: this.mode });
+
     },
     loadState() {
       return JSON.parse(sessionStorage.getItem('aposBreakpointPreviewMode') || '{}');
