@@ -52,14 +52,19 @@ module.exports = {
       };
       return fields;
     }, {});
+    const orTypes = linkWithType.map(type => ({
+      linkTo: type
+    }));
     linkWithTypeFields.updateTitle = {
       label: 'apostrophe:updateTitle',
       type: 'boolean',
+      // Optional list of tiptap extensions filter.
+      // The extension name equals to the file name in the UI
+      // `/tiptap-extensions` folder (the original Tiptap extension name).
+      extensions: [ 'Link' ],
       def: true,
       if: {
-        $or: linkWithType.map(type => ({
-          linkTo: type
-        }))
+        $or: orTypes
       }
     };
 
@@ -81,16 +86,42 @@ module.exports = {
             linkTo: '_url'
           }
         },
+        hrefTitle: {
+          label: 'apostrophe:linkTitle',
+          type: 'string',
+          if: {
+            linkTo: '_url'
+          }
+        },
+        title: {
+          label: 'apostrophe:linkTitle',
+          help: 'apostrophe:linkTitleRelHelp',
+          type: 'string',
+          if: {
+            $or: orTypes
+          }
+        },
         target: {
           label: 'apostrophe:linkTarget',
           type: 'checkboxes',
           htmlAttribute: 'target',
+          // Should be accounted in nested structures as Image.
+          // Should be ignored in the Link implementation.
+          htmlTag: 'a',
           choices: [
             {
               label: 'apostrophe:openLinkInNewTab',
               value: '_blank'
             }
-          ]
+          ],
+          if: {
+            $or: linkWithType.map(type => ({
+              linkTo: type
+            }))
+              .concat([ {
+                linkTo: '_url'
+              } ])
+          }
         }
       }
     };
@@ -546,6 +577,7 @@ module.exports = {
               'href',
               'id',
               'name',
+              'title',
               ...self.linkSchema
                 .filter(field => field.htmlAttribute)
                 .map(field => field.htmlAttribute)
@@ -603,6 +635,14 @@ module.exports = {
             {
               tag: 'figure',
               attributes: [ 'class' ]
+            },
+            {
+              tag: 'a',
+              attributes: [
+                'href',
+                ...self.linkSchema
+                  .filter(field => field.htmlAttribute)
+                  .map(field => field.htmlAttribute) ]
             },
             {
               tag: 'img',

@@ -10,6 +10,7 @@ export default options => {
     addOptions() {
       return {
         addPasteHandler: true,
+        openOnClick: false,
         HTMLAttributes: {}
       };
     },
@@ -24,10 +25,29 @@ export default options => {
 
     draggable: true,
 
-    isolating: true,
+    // isolating: true,
 
     addAttributes() {
-      return {
+      const atttrs = {
+        ...this.parent?.(),
+        // The link schema HTML attributes, e.g. target.
+        ...apos.modules['@apostrophecms/rich-text-widget'].linkSchema
+          .filter(field => !!field.htmlAttribute)
+          .filter(field => !field.extensions || field.extensions.includes('Image'))
+          .reduce((obj, field) => {
+            obj[field.htmlAttribute] = {
+              default: field.def ?? null,
+              parseHTML: element => {
+                if (field.htmlTag) {
+                  return element.querySelector(field.htmlTag)
+                    ?.getAttribute(field.htmlAttribute);
+                }
+                return element.getAttribute(field.htmlAttribute);
+              }
+            };
+            return obj;
+          }, {}),
+        // Image specific, defined in the component schema.
         imageId: {
           default: null,
           parseHTML: element => {
@@ -48,6 +68,14 @@ export default options => {
             return imageId;
           }
         },
+        href: {
+          default: null,
+          parseHTML: element => element.querySelector('a')?.getAttribute('href')
+        },
+        title: {
+          default: null,
+          parseHTML: element => element.querySelector('a')?.getAttribute('title')
+        },
         caption: {
           default: '',
           parseHTML: element => element.querySelector('figcaption')?.innerText || ''
@@ -61,12 +89,22 @@ export default options => {
           parseHTML: element => element.querySelector('img')?.getAttribute('alt')
         }
       };
+
+      return atttrs;
     },
 
     parseHTML() {
       // <figure>
       //   <img src="/media/cc0-images/elephant-660-480.jpg"
       //     alt="Elephant at sunset">
+      //   <figcaption>An elephant at sunset</figcaption>
+      // </figure>
+      // OR with link
+      // <figure>
+      //   <a href="https://example.com">
+      //     <img src="/media/cc0-images/elephant-660-480.jpg"
+      //       alt="Elephant at sunset">
+      //   </a>
       //   <figcaption>An elephant at sunset</figcaption>
       // </figure>
       return [
@@ -78,31 +116,189 @@ export default options => {
     },
 
     renderHTML({ HTMLAttributes }) {
-      return [
+      const result = [
         'figure',
         mergeAttributes(
           this.options.HTMLAttributes,
           {
             class: HTMLAttributes.style
           }
-        ),
-        [
-          'img',
+        )
+      ];
+      // Conditionally add the link
+      const imgAttrs = {
+        src: `${apos.modules['@apostrophecms/image'].action}/${HTMLAttributes.imageId}/src`,
+        alt: HTMLAttributes.alt,
+        draggable: false,
+        contenteditable: false
+      };
+      if (HTMLAttributes.href) {
+        result.push([
+          'a',
           mergeAttributes(
             HTMLAttributes,
             {
-              src: `${apos.modules['@apostrophecms/image'].action}/${HTMLAttributes.imageId}/src`,
-              alt: HTMLAttributes.alt,
+              href: HTMLAttributes.href,
+              title: HTMLAttributes.title,
+              target: HTMLAttributes.target,
               draggable: false,
-              contenteditable: false
+              contenteditable: false,
+              class: 'apos-rich-text-image-link'
             }
+          ),
+          [
+            'img',
+            mergeAttributes(
+              HTMLAttributes,
+              imgAttrs
+            )
+          ]
+        ]);
+      } else {
+        result.push([
+          'img',
+          mergeAttributes(
+            HTMLAttributes,
+            imgAttrs
           )
-        ],
-        [
-          'figcaption',
-          0
-        ]
-      ];
+        ]);
+      }
+      result.push([
+        'figcaption',
+        0
+      ]);
+
+      return result;
+    },
+
+    addNodeView() {
+      return ({
+        editor, node, getPos, HTMLAttributes, decorations
+      }) => {
+        const defaultWrapperClass = editor.isEditable
+          ? 'ProseMirror-selectednode'
+          : '';
+        const dom = document.createElement('figure');
+        if (HTMLAttributes.style) {
+          dom.className = HTMLAttributes.style;
+        }
+
+        // Create the image element
+        const img = document.createElement('img');
+        img.src = `${apos.modules['@apostrophecms/image'].action}/${node.attrs.imageId}/src`;
+        if (HTMLAttributes.alt) {
+          img.alt = HTMLAttributes.alt;
+        }
+        img.draggable = false;
+
+        // Create the figure caption
+        let figcaption;
+        if (HTMLAttributes.caption) {
+          figcaption = document.createElement('figcaption');
+          // TipTap will manage the content here
+          figcaption.innerText = HTMLAttributes.caption;
+        }
+
+        // If we have an href, wrap the image in an anchor
+        let anchor = null;
+        if (HTMLAttributes.href) {
+          anchor = document.createElement('a');
+          anchor.href = HTMLAttributes.href;
+          if (HTMLAttributes.target) {
+            anchor.target = HTMLAttributes.target;
+            if (HTMLAttributes.target === '_blank') {
+              anchor.rel = 'noopener noreferrer';
+            }
+          }
+          if (HTMLAttributes.title) {
+            anchor.title = HTMLAttributes.title;
+          }
+          anchor.appendChild(img);
+
+          // Prevent clicks when the editor is editable
+          anchor.addEventListener('click', (event) => {
+            // If editor is not editable, the default link behavior will work
+            if (editor.isEditable) {
+              event.preventDefault();
+            }
+          });
+
+          dom.appendChild(anchor);
+        } else {
+          dom.appendChild(img);
+        }
+
+        if (HTMLAttributes.caption) {
+          dom.appendChild(figcaption);
+        }
+
+        return {
+          dom,
+          contentDOM: HTMLAttributes.caption ? figcaption : null,
+          update: (updatedNode) => {
+            if (updatedNode.type !== node.type) {
+              return false;
+            }
+
+            if (updatedNode.attrs.style) {
+              dom.className = defaultWrapperClass + ' ' + updatedNode.attrs.style;
+            } else {
+              dom.className = defaultWrapperClass;
+            }
+            img.alt = updatedNode.attrs.alt;
+            img.src = updatedNode.attrs.imageId
+              ? `${apos.modules['@apostrophecms/image'].action}/${updatedNode.attrs.imageId}/src`
+              : '';
+            const updateFigcaption = dom.querySelector('figcaption');
+            if (updatedNode.attrs.caption && !updateFigcaption) {
+              figcaption = document.createElement('figcaption');
+              dom.appendChild(figcaption);
+            } else if (!updatedNode.attrs.caption && updateFigcaption) {
+              figcaption = dom.querySelector('figcaption');
+              figcaption.remove();
+              figcaption = null;
+            }
+            if (figcaption) {
+              figcaption.innerText = updatedNode.attrs.caption;
+            }
+
+            const updateAnchor = dom.querySelector('a');
+            if (updatedNode.attrs.href && !updateAnchor) {
+              anchor = document.createElement('a');
+              // wrap the image in an anchor
+              dom.insertBefore(anchor, img);
+              anchor.appendChild(img);
+            } else if (!updatedNode.attrs.href && updateAnchor) {
+              anchor = dom.querySelector('a');
+              // move the image as a first child of the figure
+              // and remove the anchor
+              dom.insertBefore(img, anchor);
+              anchor.remove();
+              anchor = null;
+            }
+            if (anchor) {
+              anchor.href = updatedNode.attrs.href;
+              if (updatedNode.attrs.title) {
+                anchor.title = updatedNode.attrs.title;
+              } else {
+                anchor.removeAttribute('title');
+              }
+              if (updatedNode.attrs.target) {
+                anchor.target = updatedNode.attrs.target;
+              } else {
+                anchor.removeAttribute('target');
+              }
+              if (updatedNode.attrs.target === '_blank') {
+                anchor.rel = 'noopener noreferrer';
+              } else {
+                anchor.removeAttribute('rel');
+              }
+            }
+
+            return true;
+          }
+        };
+      };
     },
 
     addCommands() {
@@ -120,7 +316,10 @@ export default options => {
                 } ]
                 : []
             })
-            .createParagraphNear()
+            // Disabled for now because it's problematic.
+            // Every update on the Image results in a new paragraph
+            // added after the image, and sometimes before it.
+            // .createParagraphNear()
             .run();
         }
       };

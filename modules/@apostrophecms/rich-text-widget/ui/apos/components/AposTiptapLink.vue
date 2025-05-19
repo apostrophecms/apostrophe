@@ -87,6 +87,7 @@ export default {
       },
       formModifiers: [ 'small', 'margin-micro' ],
       originalSchema: moduleOptions.linkSchema
+        .filter(field => !field.extensions || field.extensions.includes('Link'))
     };
   },
   computed: {
@@ -186,6 +187,8 @@ export default {
         acc[field.htmlAttribute] = Array.isArray(value) ? value[0] : value;
         return acc;
       }, {});
+      // TODO - the title fields should be hadled here
+      // attrs.title = ...
       attrs.href = this.docFields.data.href;
       this.editor.commands.setLink(attrs);
 
@@ -233,6 +236,7 @@ export default {
           this.docFields.data.linkTo = '_url';
           return;
         }
+        // TODO - the title fields should be hadled here
         // Never expose the special link format for permalinks in the UI
         this.docFields.data.href = '';
         try {
