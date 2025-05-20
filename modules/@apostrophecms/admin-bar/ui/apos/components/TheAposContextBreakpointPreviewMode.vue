@@ -90,7 +90,9 @@ export default {
       breakpoints: this.getBreakpointItems(),
       showDropdown: false,
       bodyId: '',
-      bodyClass: ''
+      bodyClass: '',
+      bodyDataset: {},
+      bodyStyle: ''
     };
   },
   computed: {
@@ -160,33 +162,45 @@ export default {
       height
     }) {
       const bodyEl = document.querySelector('body');
-      const styles = window.getComputedStyle(bodyEl);
-      console.log('styles', styles);
+      const dataset = Object.entries(bodyEl.dataset)
+        .filter(([ key ]) => !key.startsWith('apos') || key === 'breakpointPreviewMode');
       const refreshableEl = document.querySelector('[data-apos-refreshable]');
+      const refreshableBodyEl = document.createElement('div');
+      refreshableBodyEl.setAttribute('data-apos-refreshable-body', '');
+
+      Array.from(refreshableEl.childNodes).forEach(child => {
+        refreshableBodyEl.append(child);
+      });
+      refreshableEl.append(refreshableBodyEl);
+
+      this.bodyDataset = Object.fromEntries(dataset);
+      this.bodyStyle = bodyEl.getAttribute('style');
       this.bodyId = bodyEl.getAttribute('id')?.trim();
       this.bodyClass = bodyEl.getAttribute('class')?.trim();
+      if (this.bodyDataset) {
+        Object.entries(this.bodyDataset).forEach(([ key, value ]) => {
+          console.log('key', key);
+          bodyEl.removeAttribute(key);
+          refreshableBodyEl.setAttribute(key, value);
+        });
+      }
+      if (this.bodyStyle) {
+        bodyEl.removeAttribute('style');
+        refreshableBodyEl.setAttribute('style', this.bodyStyle);
+      }
       if (this.bodyId) {
         bodyEl.removeAttribute('id');
-        refreshableEl.setAttribute('id', this.bodyId);
+        refreshableBodyEl.setAttribute('id', this.bodyId);
       }
       if (this.bodyClass) {
         bodyEl.removeAttribute('class');
-        refreshableEl.className += ` ${this.bodyClass}`;
+        refreshableBodyEl.className = this.bodyClass;
       }
-      /* this.bodyClass.forEach((c) => { */
-      /*   bodyEl.classList.remove(c); */
-      /*   refreshableEl.classList.add(c); */
-      /* }); */
-      /* this.bodyId.forEach((id) => { */
-      /*   bodyEl.removeAttribute('id'); */
-      /*   refreshableEl.ids.add(id); */
-      /* }); */
       bodyEl.setAttribute('data-breakpoint-preview-mode', mode);
       refreshableEl.setAttribute('data-resizable', this.resizable);
       refreshableEl.setAttribute('data-label', this.$t(label));
       refreshableEl.style.width = width;
       refreshableEl.style.height = height;
-      /* refreshableEl.style.background = this.originalBodyBackground; */
 
       this.mode = mode;
       this.$emit('switch-breakpoint-preview-mode', {
@@ -220,19 +234,34 @@ export default {
         height
       });
     },
-    // TODO: explore getComputedStyle
     resetBreakpointPreview() {
       const bodyEl = document.querySelector('body');
       const refreshableEl = document.querySelector('[data-apos-refreshable]');
-      /* this.bodyId = bodyEl.getAttribute('id')?.trim(); */
-      /* this.bodyClass = bodyEl.getAttribute('class')?.trim(); */
+      const refreshableBodyEl = document.querySelector('[data-apos-refreshable-body]');
+      if (!refreshableBodyEl) {
+        return;
+      }
+
+      refreshableBodyEl.remove();
+      Array.from(refreshableBodyEl.childNodes).forEach(child => {
+        if (child.nodeType !== Node.TEXT_NODE || child.nodeValue.trim()) {
+          refreshableEl.append(child);
+        }
+      });
+
+      if (this.bodyDataset) {
+        Object.entries(this.bodyDataset).forEach(([ key, value ]) => {
+          bodyEl.setAttribute(key, value);
+        });
+      }
+      if (this.bodyStyle) {
+        bodyEl.setAttribute('style', this.bodyStyle);
+      }
       if (this.bodyId) {
         bodyEl.setAttribute('id', this.bodyId);
-        refreshableEl.setAttribute('id', this.bodyId);
       }
       if (this.bodyClass) {
         bodyEl.setAttribute('class', this.bodyClass);
-        refreshableEl.className = refreshableEl.className.replace(this.bodyClass, '');
       }
 
       bodyEl.removeAttribute('data-breakpoint-preview-mode');
@@ -240,7 +269,6 @@ export default {
       refreshableEl.removeAttribute('data-label');
       refreshableEl.style.removeProperty('width');
       refreshableEl.style.removeProperty('height');
-      /* refreshableEl.style.removeProperty('background'); */
 
       this.mode = null;
       this.$emit('reset-breakpoint-preview-mode');
