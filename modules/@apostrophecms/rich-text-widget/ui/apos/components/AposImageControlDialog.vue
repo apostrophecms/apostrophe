@@ -65,7 +65,7 @@ export default {
       docFields: {
         data: {}
       },
-      formModifiers: [ 'small', 'margin-micro' ],
+      formModifiers: [ 'micro' ],
       originalSchema: [
         {
           name: '_image',

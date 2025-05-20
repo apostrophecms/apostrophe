@@ -192,12 +192,9 @@ export default options => {
         img.draggable = false;
 
         // Create the figure caption
-        let figcaption;
-        if (HTMLAttributes.caption) {
-          figcaption = document.createElement('figcaption');
-          // TipTap will manage the content here
-          figcaption.innerText = HTMLAttributes.caption;
-        }
+        const figcaption = document.createElement('figcaption');
+        figcaption.innerText = HTMLAttributes.caption || '';
+        figcaption.contentEditable = 'false';
 
         // If we have an href, wrap the image in an anchor
         let anchor = null;
@@ -216,25 +213,26 @@ export default options => {
           anchor.appendChild(img);
 
           // Prevent clicks when the editor is editable
-          anchor.addEventListener('click', (event) => {
-            // If editor is not editable, the default link behavior will work
-            if (editor.isEditable) {
-              event.preventDefault();
-            }
-          });
+          anchor.addEventListener('click', hrefHandler);
 
           dom.appendChild(anchor);
         } else {
           dom.appendChild(img);
         }
 
-        if (HTMLAttributes.caption) {
-          dom.appendChild(figcaption);
+        dom.appendChild(figcaption);
+
+        function hrefHandler(event) {
+          // If editor is not editable, the default link behavior will work
+          if (editor.isEditable) {
+            event.preventDefault();
+          }
         }
 
         return {
           dom,
-          contentDOM: HTMLAttributes.caption ? figcaption : null,
+          // No specification for the contentDOM, we probably don't need it
+          // contentDOM: figcaption,
           update: (updatedNode) => {
             if (updatedNode.type !== node.type) {
               return false;
@@ -249,22 +247,12 @@ export default options => {
             img.src = updatedNode.attrs.imageId
               ? `${apos.modules['@apostrophecms/image'].action}/${updatedNode.attrs.imageId}/src`
               : '';
-            const updateFigcaption = dom.querySelector('figcaption');
-            if (updatedNode.attrs.caption && !updateFigcaption) {
-              figcaption = document.createElement('figcaption');
-              dom.appendChild(figcaption);
-            } else if (!updatedNode.attrs.caption && updateFigcaption) {
-              figcaption = dom.querySelector('figcaption');
-              figcaption.remove();
-              figcaption = null;
-            }
-            if (figcaption) {
-              figcaption.innerText = updatedNode.attrs.caption;
-            }
+            figcaption.innerText = updatedNode.attrs.caption || '';
 
             const updateAnchor = dom.querySelector('a');
             if (updatedNode.attrs.href && !updateAnchor) {
               anchor = document.createElement('a');
+              anchor.addEventListener('click', hrefHandler);
               // wrap the image in an anchor
               dom.insertBefore(anchor, img);
               anchor.appendChild(img);
@@ -273,6 +261,7 @@ export default options => {
               // move the image as a first child of the figure
               // and remove the anchor
               dom.insertBefore(img, anchor);
+              anchor.removeEventListener('click', hrefHandler);
               anchor.remove();
               anchor = null;
             }
