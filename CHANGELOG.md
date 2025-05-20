@@ -7,6 +7,12 @@
 * Adds link configuration to the `@apostrophecms/image-widget` UI and a new option `linkWithType` to control what document types can be linked to. Opt-out of the widget inline styles (reset) by setting `inlineStyles: false` in the widget configuration or ccontextual options (area). 
 * Adds a link configuration to the Rich Text image widget. It respects the existing `linkWithType` Rich Text option. Introduces a Title configuration for both Image and Link Rich Text widgets.
 
+## 4.17.1 (2025-05-16)
+
+### Fixes
+
+* Pinned to tiptap 2.11.0 and specific prosemirror releases compatible with it, to work around a bug that broke the behavior of lists in the editor when re-opening an existing list. We are working with upstream projects to resolve this so we can continue to track updates in tiptap and prosemirror.
+
 ## 4.17.0 (2025-05-14)
 
 ### Adds
