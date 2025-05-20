@@ -5,6 +5,7 @@
 ### Adds
 
 * Adds link configuration to the `@apostrophecms/image-widget` UI and a new option `linkWithType` to control what document types can be linked to. Opt-out of the widget inline styles (reset) by setting `inlineStyles: false` in the widget configuration or ccontextual options (area). 
+* Adds a link configuration to the Rich Text image widget. It respects the existing `linkWithType` Rich Text option. Introduces a Title configuration for both Image and Link Rich Text widgets.
 
 ## 4.17.0 (2025-05-14)
 
