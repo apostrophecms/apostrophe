@@ -273,11 +273,12 @@ export default {
           }
         }
         const matches = attrs.href?.match(/^#apostrophe-permalink-(.*)$/);
+        let doc;
         if (!matches) {
           this.docFields.data.linkTo = attrs.href ? '_url' : 'none';
         } else {
           try {
-            const doc = await apos.http.get(`/api/v1/@apostrophecms/doc/${matches[1]}`, {
+            doc = await apos.http.get(`/api/v1/@apostrophecms/doc/${matches[1]}`, {
               busy: true,
               draft: true
             });
@@ -304,7 +305,9 @@ export default {
             break;
           }
           default: {
-            this.docFields.data.title = attrs.title;
+            this.docFields.data.title = doc?.title && attrs.title === doc?.title
+              ? ''
+              : attrs.title;
             this.docFields.data.hrefTitle = '';
           }
         }

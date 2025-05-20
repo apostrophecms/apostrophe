@@ -85,7 +85,7 @@ export default {
       docFields: {
         data: {}
       },
-      formModifiers: [ 'small', 'margin-micro' ],
+      formModifiers: [ 'micro' ],
       originalSchema: moduleOptions.linkSchema
         .filter(field => !field.extensions || field.extensions.includes('Link'))
     };
@@ -187,7 +187,16 @@ export default {
         acc[field.htmlAttribute] = Array.isArray(value) ? value[0] : value;
         return acc;
       }, {});
-      // TODO - the title fields should be hadled here
+      switch (this.docFields.data.linkTo) {
+        case '_url': {
+          attrs.title = this.docFields.data.hrefTitle || this.docFields.data.caption;
+          break;
+        }
+        default: {
+          const doc = this.docFields.data[`_${this.docFields.data.linkTo}`]?.[0];
+          attrs.title = this.docFields.data.title || doc?.title;
+        }
+      }
       // attrs.title = ...
       attrs.href = this.docFields.data.href;
       this.editor.commands.setLink(attrs);
@@ -236,7 +245,6 @@ export default {
           this.docFields.data.linkTo = '_url';
           return;
         }
-        // TODO - the title fields should be hadled here
         // Never expose the special link format for permalinks in the UI
         this.docFields.data.href = '';
         try {
@@ -247,6 +255,19 @@ export default {
           this.docFields.data.linkTo = doc.slug.startsWith('/') ? '@apostrophecms/any-page-type' : doc.type;
           this.docFields.data[`_${this.docFields.data.linkTo}`] = [ doc ];
           this.docFields.data.updateTitle = !!parseInt(matches[2]);
+          switch (this.docFields.data.linkTo) {
+            case '_url': {
+              this.docFields.data.hrefTitle = attrs.title;
+              this.docFields.data.title = '';
+              break;
+            }
+            default: {
+              this.docFields.data.title = doc?.title && attrs.title === doc?.title
+                ? ''
+                : attrs.title;
+              this.docFields.data.hrefTitle = '';
+            }
+          }
         } catch (e) {
           if (e.status === 404) {
             // No longer available

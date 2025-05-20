@@ -305,9 +305,10 @@ export default options => {
                 } ]
                 : []
             })
-            // Disabled for now because it's problematic.
+            // Disabled for now because it's annooying.
             // Every update on the Image results in a new paragraph
             // added after the image, and sometimes before it.
+            // We can re-enable if it breaks stuff.
             // .createParagraphNear()
             .run();
         }

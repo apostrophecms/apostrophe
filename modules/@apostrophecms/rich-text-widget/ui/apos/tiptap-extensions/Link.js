@@ -14,7 +14,7 @@ export default (options) => {
         ...this.parent?.(),
         title: {
           default: null,
-          parseHTML: element => element.querySelector('a')?.getAttribute('title')
+          parseHTML: element => element.getAttribute('title')
         },
         ...apos.modules['@apostrophecms/rich-text-widget'].linkSchema
           .filter(field => !!field.htmlAttribute)
