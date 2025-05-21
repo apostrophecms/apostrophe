@@ -71,6 +71,7 @@
             :module-name="moduleName"
             :options="{noPager: true}"
             :batch-operations="moduleOptions.batchOperations"
+            :batch-tags="batchTags"
             @select-click="selectClick"
             @search="search"
             @filter="filter"
@@ -155,6 +156,7 @@ export default {
       totalPages: 1,
       currentPage: 1,
       tagList: [],
+      batchTags: [],
       filterValues: {},
       modal: {
         active: false,
@@ -308,6 +310,8 @@ export default {
       await this.appendMedia(result);
       this.isFirstLoading = false;
     });
+
+    this.batchTags = await this.getTags();
   },
 
   beforeUnmount() {
@@ -748,6 +752,45 @@ export default {
             type: 'danger'
           });
         }
+      }
+    },
+    async getTags() {
+      try {
+        const { withType = '@apostrophecms/image-tag' } = this.moduleOptions.schema.find(field => field._name === '_tags') || {};
+        const action = apos.modules[withType]?.action;
+        if (!action) {
+          return [];
+        }
+
+        const response = await apos.http.get(
+          action,
+          {
+            draft: true,
+            qs: {
+              sort: {},
+              project: {
+                _id: 1,
+                _url: 1,
+                type: 1,
+                title: 1,
+                slug: 1
+              }
+            }
+          }
+        );
+
+        const tags = (response.results || []).map(tag => {
+          return {
+            ...tag,
+            searchText: tag.title.toLowerCase(),
+            label: tag.title
+          };
+        });
+
+        return tags;
+      } catch (error) {
+        // TODO: notify message
+        apos.notify(error.message);
       }
     }
   }

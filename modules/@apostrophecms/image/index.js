@@ -63,6 +63,38 @@ module.exports = {
     relationshipSuggestionIcon: 'image-icon',
     relationshipSuggestionFields: []
   },
+  batchOperations: {
+    add: {
+      tag: {
+        label: 'apostrophe:tag',
+        messages: {
+          progress: 'apostrophe:batchTagProgress',
+          completed: 'apostrophe:batchTagCompleted'
+        },
+        icon: 'label-icon',
+        action: 'tag',
+        permission: 'edit'
+      },
+      delete: {
+        label: 'apostrophe:delete',
+        messages: {
+          progress: 'apostrophe:batchDeleteProgress',
+          completed: 'apostrophe:batchDeleteCompleted'
+        },
+        icon: 'delete-icon',
+        if: {
+          archived: true
+        },
+        modalOptions: {
+          title: 'apostrophe:deleteType',
+          description: 'apostrophe:deleteBatchConfirmation',
+          confirmationButton: 'apostrophe:deleteBatchConfirmationButton'
+        },
+        permission: 'delete'
+      }
+    },
+    order: [ 'tag', 'archive', 'restore', 'delete' ]
+  },
   utilityOperations: {
     remove: [ 'new' ]
   },

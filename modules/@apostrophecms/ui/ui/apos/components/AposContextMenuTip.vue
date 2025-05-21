@@ -13,14 +13,14 @@
       width="27px"
       height="11px"
       stroke="none"
-      stroke-width="1"
       fill="none"
       fill-rule="evenodd"
     >
       <path
         class="apos-context-menu__tip-outline"
         d="M17.2842712,1.46446609 L25.748,9.928 L1.749,9.928 L10.2132034,1.46446609 C12.1658249,-0.488155365 15.3316498,-0.488155365 17.2842712,1.46446609 Z"
-        stroke="var(--a-base-8)"
+        stroke="var(--a-base-9)"
+        stroke-width="1"
       />
       <path
         class="apos-context-menu__tip-background"

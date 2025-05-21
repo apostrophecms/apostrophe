@@ -23,8 +23,17 @@
         } in activeOperations"
         :key="action"
       >
+        <AposTagApply
+          v-if="action === 'tag'"
+          :tags="batchTags"
+          :apply-to="checked"
+          :checked="checkedTags"
+          @add="tagAdd"
+          @check="tagCheck"
+          @uncheck="tagUncheck"
+        />
         <AposButton
-          v-if="!operations"
+          v-else-if="!operations"
           :label="label"
           :action="action"
           :icon="icon"
@@ -85,7 +94,7 @@ export default {
       type: String,
       required: true
     },
-    applyTags: {
+    batchTags: {
       type: Array,
       default: () => []
     },
@@ -326,6 +335,15 @@ export default {
           ...rest
         });
       }
+    },
+    tagAdd() {
+      throw new Error('implement');
+    },
+    tagCheck() {
+      throw new Error('implement');
+    },
+    tagUncheck() {
+      throw new Error('implement');
     }
   }
 };
