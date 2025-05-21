@@ -56,7 +56,6 @@
   </div>
 </template>
 <script>
-
 export default {
   name: 'TheAposContextBreakpointPreviewMode',
   props: {
@@ -155,16 +154,9 @@ export default {
     );
   },
   methods: {
-    switchBreakpointPreviewMode({
-      mode,
-      label,
-      width,
-      height
-    }) {
-      const bodyEl = document.querySelector('body');
+    moveBodyAttributes(bodyEl, refreshableEl) {
       const dataset = Object.entries(bodyEl.dataset)
-        .filter(([ key ]) => !key.startsWith('apos') || key === 'breakpointPreviewMode');
-      const refreshableEl = document.querySelector('[data-apos-refreshable]');
+        .filter(([ key ]) => !key.startsWith('apos') && key !== 'breakpointpreviewmode');
       const refreshableBodyEl = document.createElement('div');
       refreshableBodyEl.setAttribute('data-apos-refreshable-body', '');
 
@@ -179,11 +171,12 @@ export default {
       this.bodyClass = bodyEl.getAttribute('class')?.trim();
       if (this.bodyDataset) {
         Object.entries(this.bodyDataset).forEach(([ key, value ]) => {
-          console.log('key', key);
-          bodyEl.removeAttribute(key);
-          refreshableBodyEl.setAttribute(key, value);
+          const dataKey = `data-${key}`;
+          bodyEl.removeAttribute(dataKey);
+          refreshableBodyEl.setAttribute(dataKey, value);
         });
       }
+
       if (this.bodyStyle) {
         bodyEl.removeAttribute('style');
         refreshableBodyEl.setAttribute('style', this.bodyStyle);
@@ -196,6 +189,21 @@ export default {
         bodyEl.removeAttribute('class');
         refreshableBodyEl.className = this.bodyClass;
       }
+    },
+    switchBreakpointPreviewMode({
+      mode,
+      label,
+      width,
+      height
+    }) {
+      const bodyEl = document.querySelector('body');
+      const refreshableEl = document.querySelector('[data-apos-refreshable]');
+
+      // Only when switching to mobile preview from the normal state
+      if (!this.mode) {
+        this.moveBodyAttributes(bodyEl, refreshableEl);
+      }
+
       bodyEl.setAttribute('data-breakpoint-preview-mode', mode);
       refreshableEl.setAttribute('data-resizable', this.resizable);
       refreshableEl.setAttribute('data-label', this.$t(label));
@@ -216,23 +224,13 @@ export default {
         height
       });
     },
-    toggleBreakpointPreviewMode({
-      mode,
-      label,
-      width,
-      height
-    }) {
-      if (this.mode === mode || mode === null) {
+    toggleBreakpointPreviewMode(state) {
+      if (this.mode === state.mode || state.mode === null) {
         this.resetBreakpointPreview();
         return;
       }
 
-      this.switchBreakpointPreviewMode({
-        mode,
-        label,
-        width,
-        height
-      });
+      this.switchBreakpointPreviewMode(state);
     },
     resetBreakpointPreview() {
       const bodyEl = document.querySelector('body');
@@ -251,7 +249,8 @@ export default {
 
       if (this.bodyDataset) {
         Object.entries(this.bodyDataset).forEach(([ key, value ]) => {
-          bodyEl.setAttribute(key, value);
+          const dataKey = `data-${key}`;
+          bodyEl.setAttribute(dataKey, value);
         });
       }
       if (this.bodyStyle) {
