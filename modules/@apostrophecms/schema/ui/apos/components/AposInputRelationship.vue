@@ -54,8 +54,8 @@
             :label="browseLabel"
             :modifiers="buttonModifiers"
             type="input"
-            @click="choose"
             :attrs="{'data-apos-focus-priority': true}"
+            @click="choose"
           />
         </div>
         <AposSlatList
