@@ -55,6 +55,7 @@
             :modifiers="buttonModifiers"
             type="input"
             @click="choose"
+            :attrs="{'data-apos-focus-priority': true}"
           />
         </div>
         <AposSlatList

@@ -114,10 +114,63 @@
     right: 5px;
   }
 
+  .apos-input-relationship__items {
+    margin-bottom: 5px;
+  }
+
+  .apos-slat {
+    padding: 5px;
+  }
+
   .apos-field__label {
     margin-bottom: 7px;
     font-size: var(--a-type-small);
     font-weight: 500;
+
+    &:has(+ .apos-field__help) {
+      margin-bottom: 3px;
+    }
+  }
+
+  .apos-field__error {
+    font-size: var(--a-type-tiny);
+    margin: 7.5px 0;
+  }
+
+  .apos-field__help {
+    font-size: var(--a-type-small);
+    margin-bottom: 5px;
+    color: var(--a-base-2);
+  }
+
+  .apos-choice-label-text {
+    font-size: var(--a-type-smaller);
+  }
+
+  &.apos-field--relationship {
+
+    .apos-input-relationship__button {
+      padding: 0;
+    }
+
+    .apos-button,
+    .apos-button--small {
+      font-size: var(--a-type-small);
+    }
+
+    .apos-search__item {
+      padding: 5px 10px;
+
+      &--suggestion {
+        padding: 10px;
+      }
+    }
+
+    .apos-search {
+      .apos-search__item--attachment .apos-search-image img {
+        max-height: 25px;
+      }
+    }
   }
 
   &.apos-field--color {

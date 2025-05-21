@@ -53,6 +53,11 @@ export default {
             cellValue: 'updatedAt'
           },
           {
+            columnHeader: 'Slug',
+            property: 'slug',
+            cellValue: 'slug'
+          },
+          {
             property: 'contextMenu',
             component: 'AposCellContextMenu'
           }
