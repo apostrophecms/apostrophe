@@ -139,8 +139,8 @@
 
   .apos-field__help {
     margin-bottom: $spacing-half;
-    font-size: var(--a-type-small);
     color: var(--a-base-2);
+    font-size: var(--a-type-small);
   }
 
   .apos-choice-label-text {
@@ -182,8 +182,8 @@
 
       &:not(.apos-search__item--disabled) .apos-search-image {
         flex-basis: 25px;
+        
         // stylelint-disable-next-line max-nesting-depth
-
         img {
           max-width: 25px;
           max-height: 25px;
