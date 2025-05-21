@@ -354,6 +354,4 @@ export default {
   :deep(.apos-schema .apos-field.apos-field--micro) {
     margin-bottom: $spacing-base + $spacing-half;
   }
-  
-
 </style>
