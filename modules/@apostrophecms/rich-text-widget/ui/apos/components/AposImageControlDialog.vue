@@ -322,7 +322,7 @@ export default {
 
 <style lang="scss" scoped>
   .apos-image-control__dialog {
-    width: 300px;
+    width: 340px;
   }
 
   .apos-is-active {
@@ -350,5 +350,10 @@ export default {
       display: none;
     }
   }
+
+  :deep(.apos-schema .apos-field.apos-field--micro) {
+    margin-bottom: $spacing-base + $spacing-half;
+  }
+  
 
 </style>

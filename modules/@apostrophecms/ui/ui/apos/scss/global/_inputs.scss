@@ -106,40 +106,40 @@
 
 .apos-field.apos-field--micro {
   .apos-input {
-    padding: 7px;
+    padding: $spacing-three-quarters;
     font-size: var(--a-type-small);
   }
 
   .apos-input-icon {
-    right: 5px;
+    right: $spacing-half;
   }
 
   .apos-input-relationship__items {
-    margin-bottom: 5px;
+    margin: $spacing-half 0;
   }
 
   .apos-slat {
-    padding: 5px;
+    padding: $spacing-half;
   }
 
   .apos-field__label {
-    margin-bottom: 7px;
+    margin-bottom: $spacing-three-quarters;
     font-size: var(--a-type-small);
     font-weight: 500;
 
     &:has(+ .apos-field__help) {
-      margin-bottom: 3px;
+      margin-bottom: $spacing-one-quarter;
     }
   }
 
   .apos-field__error {
     font-size: var(--a-type-tiny);
-    margin: 7.5px 0;
+    margin: $spacing-three-quarters 0;
   }
 
   .apos-field__help {
     font-size: var(--a-type-small);
-    margin-bottom: 5px;
+    margin-bottom: $spacing-half;
     color: var(--a-base-2);
   }
 
@@ -150,6 +150,7 @@
   &.apos-field--relationship {
 
     .apos-input-relationship__button {
+      top: 1px;
       padding: 0;
     }
 
@@ -158,17 +159,32 @@
       font-size: var(--a-type-small);
     }
 
-    .apos-search__item {
-      padding: 5px 10px;
-
-      &--suggestion {
-        padding: 10px;
-      }
+    .apos-search__item:not(.apos-search__item--disabled) .apos-indicator svg {
+      max-width: $spacing-base;
     }
 
-    .apos-search {
-      .apos-search__item--attachment .apos-search-image img {
-        max-height: 25px;
+    .apos-search__item {
+      padding: $spacing-half $spacing-base;
+      gap: $spacing-half;
+
+      &:not(.apos-search__item--suggestion),
+      &:not(.apos-search__item--hint),
+      &:not(.apos-search__item--disabled) {
+        .apos-search__item__field {
+          display: none;
+        }
+      }
+
+      &--suggestion {
+        padding: $spacing-base;
+      }
+
+      &:not(.apos-search__item--disabled) .apos-search-image {
+        flex-basis: 25px;
+        img {
+          max-width: 25px;
+          max-height: 25px;
+        }
       }
     }
   }
