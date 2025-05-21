@@ -133,13 +133,13 @@
   }
 
   .apos-field__error {
-    font-size: var(--a-type-tiny);
     margin: $spacing-three-quarters 0;
+    font-size: var(--a-type-tiny);
   }
 
   .apos-field__help {
-    font-size: var(--a-type-small);
     margin-bottom: $spacing-half;
+    font-size: var(--a-type-small);
     color: var(--a-base-2);
   }
 
@@ -148,7 +148,6 @@
   }
 
   &.apos-field--relationship {
-
     .apos-input-relationship__button {
       top: 1px;
       padding: 0;
@@ -170,17 +169,21 @@
       &:not(.apos-search__item--suggestion),
       &:not(.apos-search__item--hint),
       &:not(.apos-search__item--disabled) {
+        // stylelint-disable-next-line max-nesting-depth
         .apos-search__item__field {
           display: none;
         }
       }
 
+      // stylelint-disable-next-line max-nesting-depth
       &--suggestion {
         padding: $spacing-base;
       }
 
       &:not(.apos-search__item--disabled) .apos-search-image {
         flex-basis: 25px;
+        // stylelint-disable-next-line max-nesting-depth
+
         img {
           max-width: 25px;
           max-height: 25px;

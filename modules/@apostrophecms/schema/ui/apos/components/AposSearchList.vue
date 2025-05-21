@@ -120,18 +120,6 @@ export default {
   }
 }
 
-@mixin disabled {
-
-}
-
-@mixin suggestion {
-
-}
-
-@mixin hint {
-
-}
-
 .apos-search__item {
   display: flex;
   box-sizing: border-box;
@@ -192,6 +180,7 @@ export default {
     background-color: var(--a-base-9);
   }
 
+  /* stylelint-disable-next-line selector-not-notation */
   &:hover:not(.apos-search__item--disabled):not(.apos-search__item--hint) {
     background-color: var(--a-base-9);
     cursor: pointer;
