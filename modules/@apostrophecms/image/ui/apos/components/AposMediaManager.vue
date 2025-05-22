@@ -68,6 +68,7 @@
             :displayed-items="items.length"
             :checked="checked"
             :checked-count="checked.length"
+            :checked-docs-tags="checkedDocsTags"
             :module-name="moduleName"
             :options="{noPager: true}"
             :batch-operations="moduleOptions.batchOperations"
@@ -256,6 +257,9 @@ export default {
       return this.totalPages > 1 &&
         this.currentPage === this.totalPages &&
         !this.isScrollLoading;
+    },
+    checkedDocsTags() {
+      return Object.fromEntries(this.checkedDocs.map(doc => [ doc._id, doc.tagsIds ]));
     }
   },
 
@@ -767,13 +771,8 @@ export default {
           {
             draft: true,
             qs: {
-              sort: {},
-              project: {
-                _id: 1,
-                _url: 1,
-                type: 1,
-                title: 1,
-                slug: 1
+              sort: {
+                title: 1
               }
             }
           }

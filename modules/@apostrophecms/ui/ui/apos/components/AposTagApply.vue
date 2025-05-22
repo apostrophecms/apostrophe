@@ -1,16 +1,16 @@
+<!--
 // input
 * tags
 * applyTo
 * checked
 // output
-* add
-* check
-* uncheck
+* added
+* checked
+* unchecked
 // method
 * search
-
 ---
-
+-->
 <template>
   <AposContextMenu
     :menu-placement
@@ -23,15 +23,14 @@
         ref="textInput"
         v-model="searchValue"
         :field="searchField"
-        :status="searchStatus"
         @return="checkOrCreate"
       />
       <div class="apos-apply-tag__create">
         <AposButton
           :label="createLabel"
-          type="quiet"
           :disabled="isTagFound"
           :disable-focus="!isOpen"
+          type="quiet"
           @click="create"
         />
       </div>
@@ -42,18 +41,17 @@
         >
           <li
             v-for="tag in searchTags"
-            :key="`${keyPrefix}-${tag.slug}`"
+            :key="tag.slug"
             class="apos-apply-tag-menu__tag"
           >
             <AposCheckbox
-              v-if="checkboxestag.slug]"
-              v-model="checked"
+              v-if="checkboxes[tag.slug]"
+              v-model="checkboxes[tag.slug].model"
               :field="checkboxes[tag.slug].field"
-              :status="checkboxes[tag.slug].status"
               :choice="checkboxes[tag.slug].choice"
               :disable-focus="!isOpen"
-              @updated="updateTag"
             />
+            <!-- @updated="updateTag" -->
           </li>
         </ol>
         <div
@@ -86,7 +84,6 @@
 import {
   computed, inject, nextTick, reactive, ref, useTemplateRef
 } from 'vue';
-import { createId } from '@paralleldrive/cuid2';
 
 const $t = inject('i18n');
 
@@ -104,12 +101,8 @@ const props = defineProps({
     type: Array,
     required: true
   },
-  checked: {
-    type: Array,
-    required: true
-  },
   applyTo: {
-    type: Array,
+    type: Object,
     required: true
   },
   menuPlacement: {
@@ -128,26 +121,20 @@ const props = defineProps({
   }
 });
 
-const emit = defineEmits([ 'create-tag', 'update' ]);
+const emit = defineEmits([ 'created', 'checked', 'unchecked' ]);
 
 const textInput = useTemplateRef('textInput');
 
 // data
 const isOpen = ref(false);
-
 const isCreating = ref(false);
 const searchValue = reactive({ data: '' });
-const searchStatus = reactive({});
-// const checkboxes = reactive({});
-// `myTags` will be the canonical array of tags and matching doc IDs that
-// we will emit.
-// const myTags = reactive([]);
-// const checked = reactive([]);
-const keyPrefix = ref(`key-${createId()}`); // used to keep checkboxes in sync w state
-// TODO: remove
-// const origin = ref('below');
 
 // computed
+const applyToIds = computed(() => {
+  return Object.keys(props.applyTo);
+});
+
 const searchText = computed(() => {
   return searchValue.data.toLowerCase();
 });
@@ -169,7 +156,7 @@ const searchTags = computed(() => {
 });
 
 const isDisabled = computed(() => {
-  return props.applyTo.length === 0;
+  return applyToIds.value.length === 0;
 });
 
 // Generate the button label.
@@ -196,11 +183,10 @@ const searchField = computed(() => {
   };
 });
 
-// TODO: refactor below
 const checkboxes = computed(() => {
   const state = {};
-  props.tags.forEach((tag) => {
-    state[tag.slug] = createCheckbox(tag, props.applyTo);
+  props.tags.forEach(tag => {
+    state[tag.slug] = getCheckbox(tag, props.applyTo);
   });
 
   return state;
@@ -209,115 +195,116 @@ const checkboxes = computed(() => {
 // methods
 
 function checkOrCreate() {
-  if (!searchText.value.length > 2 && searchTags.value.length) {
-    emit('check', searchTags.value.at(0));
-  }
+  // if (!searchText.value.length > 2 && searchTags.value.length) {
+  //   // TODO: toggle and emit
+  //   emit('checked', searchTags.value.at(0));
+  //   emit('unchecked', searchTags.value.at(0));
+  //   return;
+  // }
+
+  create();
 };
 
 // Create a new tag, or set up the input with "New Tag" if  empty.
 function create() {
   // The string input's `return` event still submits duplicates, so prevent
   // them here.
-  if (isTagFound.value) {
-    return;
-  }
-
-  if (!searchText.value || !searchText.value.length) {
-    isCreating.value = true;
-    searchValue.data = $t('apostrophe:tagNewTag');
-    textInput.$el.querySelector('input').focus();
-    nextTick(() => {
-      textInput.$el.querySelector('input').select();
-    });
-  } else {
-    // TODO: No current sign of `create-tag` usage. Delete if unused.
-    emit('create-tag', searchText.value);
-
-    const tag = {
-      label: searchText.value,
-      // TODO: incorrect slug, handle outside the component
-      slug: searchText.value,
-      match: props.applyTo
-    };
-    checkboxes[tag.slug] = createCheckbox(tag, props.applyTo);
-    // TODO: remove
-    // props.tags.unshift(tag);
-    isCreating.value = false;
-    emit('update', props.tags);
-  }
+  // if (isTagFound.value) {
+  //   return;
+  // }
+  //
+  // if (!searchText.value || !searchText.value.length) {
+  //   isCreating.value = true;
+  //   searchValue.data = $t('apostrophe:tagNewTag');
+  //   textInput.$el.querySelector('input').focus();
+  //   nextTick(() => {
+  //     textInput.$el.querySelector('input').select();
+  //   });
+  // } else {
+  //   // TODO: No current sign of `create-tag` usage. Delete if unused.
+  //   emit('create-tag', searchText.value);
+  //
+  //   const tag = {
+  //     label: searchText.value,
+  //     // TODO: incorrect slug, handle outside the component
+  //     slug: searchText.value,
+  //     match: props.applyTo
+  //   };
+  //   checkboxes[tag.slug] = createCheckbox(tag, props.applyTo);
+  //   // TODO: remove
+  //   // props.tags.unshift(tag);
+  //   isCreating.value = false;
+  //   emit('update', props.tags);
+  // }
 }
 
 // `checked` will track all that are checked, but `updateTag` also
 // updates indeterminate state and `match` arrays for the updated tag.
-function updateTag($event) {
-  const slug = $event.target.value.toLowerCase();
-  // Find the matching tag.
-  const tag = props.tags.find(tag => tag.searchText === slug);
-  // Find the matching checkbox.
-  const box = checkboxes[slug];
-  if (!box) {
-    // This should never happen. You updated a checkbox to trigger this.
-    return;
-  }
+// function updateTag($event) {
+//   const slug = $event.target.value.toLowerCase();
+//   // Find the matching tag.
+//   const tag = props.tags.find(tag => tag.searchText === slug);
+//   // Find the matching checkbox.
+//   const box = checkboxes[slug];
+//   if (!box) {
+//     // This should never happen. You updated a checkbox to trigger this.
+//     return;
+//   }
+//
+//   if (!tag.match) {
+//     // If the tag has no `match` values, assign all the `applyTo` IDs to it.
+//     tag.match = props.applyTo;
+//   } else {
+//     if (tag.match.length === props.applyTo.length) {
+//       // If the tag has existings matches
+//       // previously full check, unapply to all
+//       delete tag.match;
+//     } else {
+//       // Previously indeterminate. Set it's matches to all of `applyTo`.
+//       tag.match = props.applyTo;
+//
+//       delete box.choice.indeterminate;
+//     }
+//   }
+//   // Force refresh the checkboxes.
+//   // keyPrefix.value = `key-${createId()}`;
+//
+//   // TODO: This should probably have an "Apply" or "Save" button to confirm
+//   // before running emitting the updates.
+//   emit('update', props.tags);
+// }
 
-  if (!tag.match) {
-    // If the tag has no `match` values, assign all the `applyTo` IDs to it.
-    tag.match = props.applyTo;
-  } else {
-    if (tag.match.length === props.applyTo.length) {
-      // If the tag has existings matches
-      // previously full check, unapply to all
-      delete tag.match;
-    } else {
-      // Previously indeterminate. Set it's matches to all of `applyTo`.
-      tag.match = props.applyTo;
-
-      delete box.choice.indeterminate;
-    }
-  }
-  // Force refresh the checkboxes.
-  keyPrefix.value = `key-${createId()}`;
-
-  // TODO: This should probably have an "Apply" or "Save" button to confirm
-  // before running emitting the updates.
-  emit('update', props.tags);
-}
-
-function createCheckbox(tag, applyTo) {
+function getCheckbox(tag, applyTo) {
   const checkbox = {
     field: {
       type: 'checkbox',
       name: tag.slug
     },
-    status: {},
     choice: {
       label: tag.label,
-      value: tag.slug
-    }
+      value: true
+    },
+    model: false
   };
 
   const state = getCheckedState(tag);
-
-  // If so, add those slugs to the `checked` array.
-  if (state !== 'unchecked') {
-    checked.push(tag.slug);
+  if (state === 'checked') {
+    checkbox.model = true;
   }
-
-  // If only some of `applyTo` matches, use the indeterminate state.
   if (state === 'indeterminate') {
+    checkbox.model = true;
     checkbox.choice.indeterminate = true;
   }
+
   return checkbox;
 }
 
-function getCheckedState (tag) {
-  if (!tag.match) {
-    return 'unchecked';
-  }
-  // Go over the docs, checking how well they match the tag.
-  if (props.applyTo.every(id => tag.match.includes(id))) {
+function getCheckedState(tag) {
+  if (applyToIds.value.every(id => props.applyTo[id]?.includes(tag.aposDocId))) {
     return 'checked';
-  } else if (props.applyTo.some(id => tag.match.includes(id))) {
+  }
+
+  if (applyToIds.value.some(id => props.applyTo[id]?.includes(tag.aposDocId))) {
     return 'indeterminate';
   }
 

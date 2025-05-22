@@ -26,11 +26,10 @@
         <AposTagApply
           v-if="action === 'tag'"
           :tags="batchTags"
-          :apply-to="checked"
-          :checked="checkedTags"
-          @add="tagAdd"
-          @check="tagCheck"
-          @uncheck="tagUncheck"
+          :apply-to="checkedDocsTags"
+          @added="tagAdd"
+          @checked="tagCheck"
+          @unchecked="tagUncheck"
         />
         <AposButton
           v-else-if="!operations"
@@ -149,6 +148,10 @@ export default {
     checkedCount: {
       type: Number,
       required: true
+    },
+    checkedDocsTags: {
+      type: Object,
+      default: () => ({})
     },
     moduleName: {
       type: String,
