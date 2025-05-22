@@ -1,5 +1,12 @@
 # Changelog
 
+## UNRELEASE
+
+### Adds
+
+* Adds body style support for breakpoint preview mode. Created new `[data-apos-refreshable-body]` div inside the container during breapoint preview.
+Switch body attributes to this new div to keep supporting body styles in breakpoint preview mode.
+
 ## 4.17.1 (2025-05-16)
 
 ### Fixes
