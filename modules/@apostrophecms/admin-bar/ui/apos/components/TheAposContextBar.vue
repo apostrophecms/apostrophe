@@ -551,7 +551,9 @@ export default {
       }
     },
     async refresh(options = {}) {
-      const refreshable = document.querySelector('[data-apos-refreshable]');
+      // In breakpoint preview mode, uses the fake body.
+      const refreshable = document.querySelector('[data-apos-refreshable-body]') ||
+        document.querySelector('[data-apos-refreshable]');
       if (options.scrollcheck) {
         window.apos.adminBar.scrollPosition = {
           x: window.scrollX,
@@ -613,7 +615,8 @@ export default {
         // "@ notation" PATCH feature. Sort the areas by DOM depth
         // to ensure parents patch before children
         this.original = {};
-        const els = Array.from(document.querySelectorAll('[data-apos-area-newly-editable]')).filter(el => el.getAttribute('data-doc-id') === this.context._id);
+        const els = Array.from(document.querySelectorAll('[data-apos-area-newly-editable]'))
+          .filter(el => el.getAttribute('data-doc-id') === this.context._id);
         els.sort((a, b) => {
           const da = depth(a);
           const db = depth(b);

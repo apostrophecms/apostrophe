@@ -56,7 +56,6 @@
   </div>
 </template>
 <script>
-
 export default {
   name: 'TheAposContextBreakpointPreviewMode',
   props: {
@@ -88,7 +87,11 @@ export default {
       originalBodyBackground: null,
       shortcuts: this.getShortcuts(),
       breakpoints: this.getBreakpointItems(),
-      showDropdown: false
+      showDropdown: false,
+      bodyId: '',
+      bodyClass: '',
+      bodyDataset: {},
+      bodyStyle: ''
     };
   },
   computed: {
@@ -151,18 +154,61 @@ export default {
     );
   },
   methods: {
+    moveBodyAttributes(bodyEl, refreshableEl) {
+      const dataset = Object.entries(bodyEl.dataset)
+        .filter(([ key ]) => !key.startsWith('apos') && key !== 'breakpointpreviewmode');
+      const refreshableBodyEl = document.createElement('div');
+      refreshableBodyEl.setAttribute('data-apos-refreshable-body', '');
+
+      Array.from(refreshableEl.childNodes).forEach(child => {
+        refreshableBodyEl.append(child);
+      });
+      refreshableEl.append(refreshableBodyEl);
+
+      this.bodyDataset = Object.fromEntries(dataset);
+      this.bodyStyle = bodyEl.getAttribute('style');
+      this.bodyId = bodyEl.getAttribute('id')?.trim();
+      this.bodyClass = bodyEl.getAttribute('class')?.trim();
+      if (this.bodyDataset) {
+        Object.entries(this.bodyDataset).forEach(([ key, value ]) => {
+          const dataKey = `data-${key}`;
+          bodyEl.removeAttribute(dataKey);
+          refreshableBodyEl.setAttribute(dataKey, value);
+        });
+      }
+
+      if (this.bodyStyle) {
+        bodyEl.removeAttribute('style');
+        refreshableBodyEl.setAttribute('style', this.bodyStyle);
+      }
+      if (this.bodyId) {
+        bodyEl.removeAttribute('id');
+        refreshableBodyEl.setAttribute('id', this.bodyId);
+      }
+      if (this.bodyClass) {
+        bodyEl.removeAttribute('class');
+        refreshableBodyEl.className = this.bodyClass;
+      }
+    },
     switchBreakpointPreviewMode({
       mode,
       label,
       width,
       height
     }) {
-      document.querySelector('body').setAttribute('data-breakpoint-preview-mode', mode);
-      document.querySelector('[data-apos-refreshable]').setAttribute('data-resizable', this.resizable);
-      document.querySelector('[data-apos-refreshable]').setAttribute('data-label', this.$t(label));
-      document.querySelector('[data-apos-refreshable]').style.width = width;
-      document.querySelector('[data-apos-refreshable]').style.height = height;
-      document.querySelector('[data-apos-refreshable]').style.background = this.originalBodyBackground;
+      const bodyEl = document.querySelector('body');
+      const refreshableEl = document.querySelector('[data-apos-refreshable]');
+
+      // Only when switching to mobile preview from the normal state
+      if (!this.mode) {
+        this.moveBodyAttributes(bodyEl, refreshableEl);
+      }
+
+      bodyEl.setAttribute('data-breakpoint-preview-mode', mode);
+      refreshableEl.setAttribute('data-resizable', this.resizable);
+      refreshableEl.setAttribute('data-label', this.$t(label));
+      refreshableEl.style.width = width;
+      refreshableEl.style.height = height;
 
       this.mode = mode;
       this.$emit('switch-breakpoint-preview-mode', {
@@ -178,33 +224,55 @@ export default {
         height
       });
     },
-    toggleBreakpointPreviewMode({
-      mode,
-      label,
-      width,
-      height
-    }) {
-      if (this.mode === mode || mode === null) {
-        document.querySelector('body').removeAttribute('data-breakpoint-preview-mode');
-        document.querySelector('[data-apos-refreshable]').removeAttribute('data-resizable');
-        document.querySelector('[data-apos-refreshable]').removeAttribute('data-label');
-        document.querySelector('[data-apos-refreshable]').style.removeProperty('width');
-        document.querySelector('[data-apos-refreshable]').style.removeProperty('height');
-        document.querySelector('[data-apos-refreshable]').style.removeProperty('background');
-
-        this.mode = null;
-        this.$emit('reset-breakpoint-preview-mode');
-        this.saveState({ mode: this.mode });
-
+    toggleBreakpointPreviewMode(state) {
+      if (this.mode === state.mode || state.mode === null) {
+        this.resetBreakpointPreview();
         return;
       }
 
-      this.switchBreakpointPreviewMode({
-        mode,
-        label,
-        width,
-        height
+      this.switchBreakpointPreviewMode(state);
+    },
+    resetBreakpointPreview() {
+      const bodyEl = document.querySelector('body');
+      const refreshableEl = document.querySelector('[data-apos-refreshable]');
+      const refreshableBodyEl = document.querySelector('[data-apos-refreshable-body]');
+      if (!refreshableBodyEl) {
+        return;
+      }
+
+      refreshableBodyEl.remove();
+      Array.from(refreshableBodyEl.childNodes).forEach(child => {
+        if (child.nodeType !== Node.TEXT_NODE || child.nodeValue.trim()) {
+          refreshableEl.append(child);
+        }
       });
+
+      if (this.bodyDataset) {
+        Object.entries(this.bodyDataset).forEach(([ key, value ]) => {
+          const dataKey = `data-${key}`;
+          bodyEl.setAttribute(dataKey, value);
+        });
+      }
+      if (this.bodyStyle) {
+        bodyEl.setAttribute('style', this.bodyStyle);
+      }
+      if (this.bodyId) {
+        bodyEl.setAttribute('id', this.bodyId);
+      }
+      if (this.bodyClass) {
+        bodyEl.setAttribute('class', this.bodyClass);
+      }
+
+      bodyEl.removeAttribute('data-breakpoint-preview-mode');
+      refreshableEl.removeAttribute('data-resizable');
+      refreshableEl.removeAttribute('data-label');
+      refreshableEl.style.removeProperty('width');
+      refreshableEl.style.removeProperty('height');
+
+      this.mode = null;
+      this.$emit('reset-breakpoint-preview-mode');
+      this.saveState({ mode: this.mode });
+
     },
     loadState() {
       return JSON.parse(sessionStorage.getItem('aposBreakpointPreviewMode') || '{}');
