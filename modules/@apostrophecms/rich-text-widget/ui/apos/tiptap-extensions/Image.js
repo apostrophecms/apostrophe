@@ -219,8 +219,8 @@ export default options => {
               anchor.setAttribute(attr, HTMLAttributes[attr]);
             }
           }
-          if (HTMLAttributes.target === '_blank') {
-            anchor.rel = 'noopener noreferrer';
+          if (HTMLAttributes.rel) {
+            anchor.rel = HTMLAttributes.rel;
           }
           anchor.href = HTMLAttributes.href;
           if (HTMLAttributes.title) {
@@ -294,15 +294,10 @@ export default options => {
               } else {
                 anchor.removeAttribute('title');
               }
-              if (updatedNode.attrs.target === '_blank') {
-                anchor.rel = 'noopener noreferrer';
+              if (updatedNode.attrs.rel) {
+                anchor.rel = updatedNode.attrs.rel;
               } else {
-                const val = anchor.rel?.replace('noopener noreferrer', '').trim();
-                if (val) {
-                  anchor.rel = val;
-                } else {
-                  anchor.removeAttribute('rel');
-                }
+                anchor.removeAttribute('rel');
               }
             }
 
