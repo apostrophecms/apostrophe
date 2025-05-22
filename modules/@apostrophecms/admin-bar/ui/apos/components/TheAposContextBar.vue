@@ -551,6 +551,7 @@ export default {
       }
     },
     async refresh(options = {}) {
+      // In breakpoint preview mode, uses the fake body.
       const refreshable = document.querySelector('[data-apos-refreshable-body]') ||
         document.querySelector('[data-apos-refreshable]');
       if (options.scrollcheck) {
@@ -753,7 +754,6 @@ export default {
       }
     },
     async updateDraftIsEditable() {
-      console.log('=====> draft editable <=====');
       if (this.context.aposLocale && this.context.aposLocale.endsWith('published') && !this.context._edit) {
         // A contributor might be able to edit the draft
         try {
