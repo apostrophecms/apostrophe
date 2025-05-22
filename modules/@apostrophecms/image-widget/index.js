@@ -10,7 +10,7 @@ module.exports = {
     placeholderImage: 'jpg',
     linkWithType: [ '@apostrophecms/any-page-type' ],
     // Should we write e.g. a reset style for the `figure` element?
-    inlineStyle: true
+    inlineStyles: true
   },
   widgetOperations(self, options) {
     const {
@@ -36,10 +36,7 @@ module.exports = {
   },
   fields(self, options) {
     const slugify = options.apos.util.slugify;
-    const linkWithType = Array.isArray(options.linkWithType)
-      ? options.linkWithType
-      : [ options.linkWithType ];
-
+    const linkWithType = options.linkWithType;
     const linkWithTypeChoices = linkWithType
       .map(type => ({
         label: type,
@@ -63,13 +60,6 @@ module.exports = {
         withType: type,
         required: true,
         max: 1,
-        builders: {
-          project: {
-            title: 1,
-            type: 1,
-            slug: 1
-          }
-        },
         if: {
           linkTo: type
         }
@@ -159,9 +149,7 @@ module.exports = {
   methods(self) {
     return {
       validateAndAddSchemaLabels() {
-        const linkWithType = (Array.isArray(self.options.linkWithType)
-          ? self.options.linkWithType
-          : [ self.options.linkWithType ]);
+        const linkWithType = self.options.linkWithType;
 
         for (const type of linkWithType) {
           if (!self.apos.modules[type]) {

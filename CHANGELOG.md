@@ -4,7 +4,7 @@
 
 ### Adds
 
-* Adds link configuration to the `@apostrophecms/image-widget` UI and a new option `linkWithType` to control what document types can be linked to. Opt-out of the widget inline styles (reset) by setting `inlineStyles: false` in the widget configuration or ccontextual options (area). 
+* Adds link configuration to the `@apostrophecms/image-widget` UI and a new option `linkWithType` to control what document types can be linked to. Opt-out of the widget inline styles (reset) by setting `inlineStyles: false` in the widget configuration or contextual options (area). 
 * Use the link configuration of the Rich Text widget for image links too. It respects the existing `linkWithType` Rich Text option and uses the same schema (`linkFields`) used for text links. The fields from that schema can opt-in for specific tiptap extension now via a field property `extensions` (array) with possible array values `Link` and/or `Image`. You still need to specify the `htmlAttribute` property (the name of the attribute to be added to the link tag) in the schema when adding more fields. If the `extensions` property is not set, the field will be applied for both tiptap extensions.
 
 ## 4.17.1 (2025-05-16)
