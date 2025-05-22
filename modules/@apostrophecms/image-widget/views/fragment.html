@@ -86,7 +86,7 @@
 {% endmacro %}
 
 {% macro _figureStyle(options, manager) %}
-  {%- if options.inlineStyle === true -%}margin: 0;
-  {%- elif options.inlineStyle !== false and manager.options.inlineStyle === true -%}margin: 0;
+  {%- if options.inlineStyles === true -%}margin: 0;
+  {%- elif options.inlineStyles !== false and manager.options.inlineStyles === true -%}margin: 0;
   {%- endif -%}
 {% endmacro %}

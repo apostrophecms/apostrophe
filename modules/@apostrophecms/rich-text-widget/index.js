@@ -39,13 +39,6 @@ module.exports = {
         required: true,
         max: 1,
         browse: true,
-        builders: {
-          project: {
-            title: 1,
-            type: 1,
-            slug: 1
-          }
-        },
         if: {
           linkTo: type
         }
