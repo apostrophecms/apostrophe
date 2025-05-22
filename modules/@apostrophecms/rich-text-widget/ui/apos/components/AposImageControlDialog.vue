@@ -18,13 +18,13 @@
       <AposButton
         type="default"
         label="apostrophe:cancel"
-        :modifiers="formModifiers"
+        :modifiers="['small']"
         @click="close"
       />
       <AposButton
         type="primary"
         label="apostrophe:save"
-        :modifiers="formModifiers"
+        :modifiers="['small']"
         :disabled="docFields.hasErrors"
         @click="save"
       />
@@ -350,7 +350,7 @@ export default {
 
 <style lang="scss" scoped>
   .apos-image-control__dialog {
-    width: 400px;
+    width: 340px;
   }
 
   .apos-is-active {
@@ -379,4 +379,7 @@ export default {
     }
   }
 
+  :deep(.apos-schema .apos-field.apos-field--micro) {
+    margin-bottom: $spacing-base + $spacing-half;
+  }
 </style>
