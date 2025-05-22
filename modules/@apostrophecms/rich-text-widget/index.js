@@ -574,6 +574,7 @@ module.exports = {
               'id',
               'name',
               'title',
+              'rel',
               ...self.linkSchema
                 .filter(field => field.htmlAttribute)
                 .map(field => field.htmlAttribute)
@@ -636,6 +637,9 @@ module.exports = {
               tag: 'a',
               attributes: [
                 'href',
+                'name',
+                'title',
+                'rel',
                 ...self.linkSchema
                   .filter(field => field.htmlAttribute)
                   .map(field => field.htmlAttribute) ]

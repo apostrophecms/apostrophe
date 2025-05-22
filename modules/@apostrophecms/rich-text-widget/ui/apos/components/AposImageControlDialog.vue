@@ -199,11 +199,24 @@ export default {
           return acc;
         }, {})
       };
-
       if (image) {
         attrs.alt = image.alt;
       }
-
+      // external link, noopener noreferrer merged with
+      // eventual rel attribute
+      const relField = this.schemaHtmlAttributes.find(item => item.htmlAttribute === 'rel');
+      if (this.docFields.data.target?.includes('_blank') && this.docFields.data.linkTo === '_url') {
+        let rel = 'noopener noreferrer';
+        if (relField) {
+          rel += ` ${this.docFields.data[relField.htmlAttribute] || ''}`;
+        }
+        rel = new Set(rel.trim().split(' ').filter(Boolean));
+        attrs.rel = [ ...rel ].join(' ');
+      } else {
+        attrs.rel = relField
+          ? this.docFields.data[relField.htmlAttribute] || null
+          : null;
+      }
       // href & title
       switch (this.docFields.data.linkTo) {
         case 'none': {

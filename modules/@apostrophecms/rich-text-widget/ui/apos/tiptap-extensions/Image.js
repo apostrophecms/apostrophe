@@ -75,6 +75,10 @@ export default options => {
           default: null,
           parseHTML: element => element.querySelector('a')?.getAttribute('title')
         },
+        rel: {
+          default: null,
+          parseHTML: element => element.querySelector('a')?.getAttribute('rel')
+        },
         caption: {
           default: '',
           parseHTML: element => element.querySelector('figcaption')?.innerText || ''
@@ -132,34 +136,35 @@ export default options => {
         contenteditable: false
       };
       if (HTMLAttributes.href) {
+        const linkAttrs = apos.modules['@apostrophecms/rich-text-widget'].linkSchema
+          .filter(field => !!field.htmlAttribute)
+          .filter(field => !field.extensions || field.extensions.includes('Image'))
+          .reduce((obj, field) => {
+            obj[field.htmlAttribute] = HTMLAttributes[field.htmlAttribute];
+            return obj;
+          }, {});
         result.push([
           'a',
           mergeAttributes(
-            HTMLAttributes,
+            linkAttrs,
             {
               href: HTMLAttributes.href,
               title: HTMLAttributes.title,
               target: HTMLAttributes.target,
+              rel: HTMLAttributes.rel,
               draggable: false,
-              contenteditable: false,
-              class: 'apos-rich-text-image-link'
+              contenteditable: false
             }
           ),
           [
             'img',
-            mergeAttributes(
-              HTMLAttributes,
-              imgAttrs
-            )
+            imgAttrs
           ]
         ]);
       } else {
         result.push([
           'img',
-          mergeAttributes(
-            HTMLAttributes,
-            imgAttrs
-          )
+          imgAttrs
         ]);
       }
       result.push([

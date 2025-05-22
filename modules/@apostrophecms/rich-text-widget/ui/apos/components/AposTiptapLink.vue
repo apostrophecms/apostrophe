@@ -197,7 +197,21 @@ export default {
           attrs.title = this.docFields.data.title || doc?.title;
         }
       }
-      // attrs.title = ...
+      // external link, noopener noreferrer merged with
+      // eventual rel attribute
+      const relField = this.schemaHtmlAttributes.find(item => item.htmlAttribute === 'rel');
+      if (this.docFields.data.target?.includes('_blank') && this.docFields.data.linkTo === '_url') {
+        let rel = 'noopener noreferrer';
+        if (relField) {
+          rel += ` ${this.docFields.data[relField.htmlAttribute] || ''}`;
+        }
+        rel = new Set(rel.trim().split(' ').filter(Boolean));
+        attrs.rel = [ ...rel ].join(' ');
+      } else {
+        attrs.rel = relField
+          ? this.docFields.data[relField.htmlAttribute] || null
+          : null;
+      }
       attrs.href = this.docFields.data.href;
       this.editor.commands.setLink(attrs);
 
