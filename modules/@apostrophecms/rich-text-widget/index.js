@@ -58,9 +58,8 @@ module.exports = {
     linkWithTypeFields.updateTitle = {
       label: 'apostrophe:updateTitle',
       type: 'boolean',
-      // Optional list of tiptap extensions filter.
-      // The extension name equals to the file name in the UI
-      // `/tiptap-extensions` folder (the original Tiptap extension name).
+      // Optional.
+      // Can be Link and/or Image
       extensions: [ 'Link' ],
       def: true,
       if: {
@@ -105,9 +104,6 @@ module.exports = {
           label: 'apostrophe:linkTarget',
           type: 'checkboxes',
           htmlAttribute: 'target',
-          // Should be accounted in nested structures as Image.
-          // Should be ignored in the Link implementation.
-          htmlTag: 'a',
           choices: [
             {
               label: 'apostrophe:openLinkInNewTab',

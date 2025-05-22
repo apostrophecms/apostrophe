@@ -52,9 +52,24 @@ export default {
   emits: [ 'before-commands', 'close' ],
   data() {
     const moduleOptions = klona(apos.modules['@apostrophecms/rich-text-widget']);
+    // Grab only the fields that are image-related if explicitly set
+    // set in the schema.
+    const linkToOptions = moduleOptions.linkSchema
+      .find(field => field.name === 'linkTo')?.choices || [];
     const linkSchema = moduleOptions.linkSchema
-      .filter(field => !field.extensions || field.extensions.includes('Image'));
-    linkSchema.find(item => item.name === 'linkTo')?.choices.unshift({
+      .filter(field => !field.extensions || field.extensions.includes('Image'))
+      .map(field => {
+        if (field.htmlAttribute) {
+          field.htmlTag = 'a';
+          field.if = {
+            $or: linkToOptions.map(option => ({
+              linkTo: option.value
+            })).concat(field.if?.$or || [])
+          };
+        }
+        return field;
+      });
+    linkToOptions.unshift({
       label: this.$t('apostrophe:none'),
       value: 'none'
     });

@@ -31,6 +31,8 @@ export default options => {
       const atttrs = {
         ...this.parent?.(),
         // The link schema HTML attributes, e.g. target.
+        // Grab only the fields that are image-related if explicitly set
+        // set in the schema.
         ...apos.modules['@apostrophecms/rich-text-widget'].linkSchema
           .filter(field => !!field.htmlAttribute)
           .filter(field => !field.extensions || field.extensions.includes('Image'))
@@ -38,11 +40,8 @@ export default options => {
             obj[field.htmlAttribute] = {
               default: field.def ?? null,
               parseHTML: element => {
-                if (field.htmlTag) {
-                  return element.querySelector(field.htmlTag)
-                    ?.getAttribute(field.htmlAttribute);
-                }
-                return element.getAttribute(field.htmlAttribute);
+                return element.querySelector('a')
+                  ?.getAttribute(field.htmlAttribute);
               }
             };
             return obj;
@@ -178,6 +177,16 @@ export default options => {
         const defaultWrapperClass = editor.isEditable
           ? 'ProseMirror-selectednode'
           : '';
+        const coreAttrs = new Set([
+          'imageId',
+          'href',
+          'title',
+          'caption',
+          'style',
+          'alt'
+        ]);
+        const linkAttrs = Object.keys(HTMLAttributes)
+          .filter(attr => !coreAttrs.has(attr));
         const dom = document.createElement('figure');
         if (HTMLAttributes.style) {
           dom.className = HTMLAttributes.style;
@@ -200,13 +209,15 @@ export default options => {
         let anchor = null;
         if (HTMLAttributes.href) {
           anchor = document.createElement('a');
-          anchor.href = HTMLAttributes.href;
-          if (HTMLAttributes.target) {
-            anchor.target = HTMLAttributes.target;
-            if (HTMLAttributes.target === '_blank') {
-              anchor.rel = 'noopener noreferrer';
+          for (const attr of linkAttrs) {
+            if (HTMLAttributes[attr] !== null) {
+              anchor.setAttribute(attr, HTMLAttributes[attr]);
             }
           }
+          if (HTMLAttributes.target === '_blank') {
+            anchor.rel = 'noopener noreferrer';
+          }
+          anchor.href = HTMLAttributes.href;
           if (HTMLAttributes.title) {
             anchor.title = HTMLAttributes.title;
           }
@@ -237,7 +248,6 @@ export default options => {
             if (updatedNode.type !== node.type) {
               return false;
             }
-
             if (updatedNode.attrs.style) {
               dom.className = defaultWrapperClass + ' ' + updatedNode.attrs.style;
             } else {
@@ -266,21 +276,28 @@ export default options => {
               anchor = null;
             }
             if (anchor) {
+              for (const attr of linkAttrs) {
+                if (updatedNode.attrs[attr] !== null) {
+                  anchor.setAttribute(attr, updatedNode.attrs[attr]);
+                } else {
+                  anchor.removeAttribute(attr);
+                }
+              }
               anchor.href = updatedNode.attrs.href;
               if (updatedNode.attrs.title) {
                 anchor.title = updatedNode.attrs.title;
               } else {
                 anchor.removeAttribute('title');
               }
-              if (updatedNode.attrs.target) {
-                anchor.target = updatedNode.attrs.target;
-              } else {
-                anchor.removeAttribute('target');
-              }
               if (updatedNode.attrs.target === '_blank') {
                 anchor.rel = 'noopener noreferrer';
               } else {
-                anchor.removeAttribute('rel');
+                const val = anchor.rel?.replace('noopener noreferrer', '').trim();
+                if (val) {
+                  anchor.rel = val;
+                } else {
+                  anchor.removeAttribute('rel');
+                }
               }
             }
 
