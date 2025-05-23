@@ -616,12 +616,19 @@ export default {
       this.skipLoadObserver = false;
     },
     async onContentChanged({
-      action, doc, docTypes
+      action, doc, docIds, docTypes
     }) {
       const types = this.getContentChangedTypes(doc, docTypes);
       if (!types.includes(this.moduleName)) {
         return;
       }
+
+      if (docIds && action === 'tag') {
+        const { items: updatedImages } = await this.getMedia({ _ids: docIds });
+        updatedImages.forEach(this.updateStateDoc);
+        return;
+      }
+
       this.modified = false;
       if (action === 'update') {
         this.updateStateDoc(doc);
