@@ -37,13 +37,13 @@
           <AposButton
             type="default"
             label="apostrophe:cancel"
-            :modifiers="formModifiers"
+            :modifiers="['small']"
             @click="close"
           />
           <AposButton
             type="primary"
             label="apostrophe:save"
-            :modifiers="formModifiers"
+            :modifiers="['small']"
             :disabled="docFields.hasErrors"
             @click="save"
           />
