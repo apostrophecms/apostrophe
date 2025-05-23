@@ -629,13 +629,16 @@ export default {
       }
 
       if (docIds && action === 'tag') {
-        const { items: updatedImages } = await this.getMedia({
+        const { items: updatedImages, tagList } = await this.getMedia({
           _ids: docIds,
           tags: true
         });
         updatedImages.forEach(this.updateStateDoc);
 
         this.batchTags = await this.getTags();
+        if (Array.isArray(tagList)) {
+          this.tagList = tagList;
+        }
 
         // If we were editing one, replacing it.
         if (this.editing && updatedImages.length === 1) {
