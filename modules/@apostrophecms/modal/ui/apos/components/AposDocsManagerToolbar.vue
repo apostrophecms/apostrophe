@@ -343,8 +343,7 @@ export default {
       const tagOperation = this.activeOperations.find(operation => operation.action === 'tag');
 
       this.$emit('batch', {
-        label: tagOperation.label,
-        action: 'tag',
+        ...tagOperation,
         requestOptions: {
           operation,
           ...props
