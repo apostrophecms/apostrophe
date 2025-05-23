@@ -347,6 +347,11 @@ export default {
         page: this.currentPage,
         viewContext: this.relationshipField ? 'relationship' : 'manage'
       };
+      // Used for batch tagging update
+      if (options._ids) {
+        qs._ids = options._ids;
+        qs.perPage = options._ids.length;
+      }
       const filtered = !!Object.keys(this.filterValues).length;
       if (this.moduleOptions && Array.isArray(this.moduleOptions.filters)) {
         this.moduleOptions.filters.forEach(filter => {
@@ -624,8 +629,23 @@ export default {
       }
 
       if (docIds && action === 'tag') {
-        const { items: updatedImages } = await this.getMedia({ _ids: docIds });
+        const { items: updatedImages } = await this.getMedia({
+          _ids: docIds,
+          tags: true
+        });
         updatedImages.forEach(this.updateStateDoc);
+
+        this.batchTags = await this.getTags();
+
+        // If we were editing one, replacing it.
+        if (this.editing && updatedImages.length === 1) {
+          this.modified = false;
+          // Needed to refresh the AposMediaManagerEditor
+          await this.updateEditing(null);
+          await this.$nextTick();
+          await this.updateEditing(updatedImages.at(0)._id);
+        }
+
         return;
       }
 
