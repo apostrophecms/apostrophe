@@ -87,7 +87,6 @@ module.exports = {
           label: 'apostrophe:linkTo',
           type: 'select',
           choices: linkWithTypeChoices,
-          required: true,
           def: 'none'
         },
         ...linkWithTypeFields,
