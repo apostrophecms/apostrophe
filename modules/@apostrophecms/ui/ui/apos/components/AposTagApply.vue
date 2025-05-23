@@ -183,8 +183,8 @@ const checkboxes = computed(() => {
 function checkOrCreate() {
   if (searchValue.value.data.length && searchTags.value.length) {
     const tag = searchTags.value.at(0);
-    const { model } = checkboxes.value[tag.slug];
-    emit(model ? 'unchecked' : 'checked', tag.slug);
+    const { model, choice } = checkboxes.value[tag.slug];
+    emit(model === false || choice.indeterminate ? 'checked' : 'unchecked', tag.slug);
 
     return;
   }
