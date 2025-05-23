@@ -27,9 +27,9 @@
           v-if="action === 'tag'"
           :tags="batchTags"
           :apply-to="checkedDocsTags"
-          @added="tagAdd"
-          @checked="tagCheck"
-          @unchecked="tagUncheck"
+          @added="title => updateTag('create', { title })"
+          @checked="slug => updateTag('add', { slug })"
+          @unchecked="slug => updateTag('remove', { slug })"
         />
         <AposButton
           v-else-if="!operations"
@@ -339,14 +339,17 @@ export default {
         });
       }
     },
-    tagAdd() {
-      throw new Error('implement');
-    },
-    tagCheck() {
-      throw new Error('implement');
-    },
-    tagUncheck() {
-      throw new Error('implement');
+    updateTag(operation, props) {
+      const tagOperation = this.activeOperations.find(operation => operation.action === 'tag');
+
+      this.$emit('batch', {
+        label: tagOperation.label,
+        action: 'tag',
+        requestOptions: {
+          operation,
+          ...props
+        }
+      });
     }
   }
 };
