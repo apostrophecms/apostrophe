@@ -362,11 +362,11 @@ async function setDropdownPosition() {
   // https://floating-ui.com/docs/flip#combining-with-shift
   const middleware = [ offset(mOffset) ];
   const flipMiddleware = flip({
-    fallbackStrategy: 'initialPlacement',
-    // crossAxis: 'alignment',
-    // fallbackAxisSideDirection: 'end',
-    // pass detectOverflow options to modify
-    // the clipping boundaries with our Admin UI top bar
+    // Always fallback to bottom when there is no placement
+    // that fits the viewport.
+    fallbackPlacements: [ 'bottom' ],
+    // Pass detectOverflow options to modify
+    // the clipping boundaries with our Admin UI top bar/Modal header
     // in mind
     padding: {
       top: 120
