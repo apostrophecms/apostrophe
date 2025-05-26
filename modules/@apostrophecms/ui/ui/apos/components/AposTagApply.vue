@@ -4,6 +4,7 @@
     :button
     :disabled="isDisabled"
     @open="isOpen = $event"
+    @close="clearSearch"
   >
     <div class="apos-apply-tag-menu__inner">
       <AposInputString
@@ -33,11 +34,11 @@
           >
             <AposCheckbox
               v-if="checkboxes[tag.slug]"
-              v-model="checkboxes[tag.slug].model"
+              v-model="checkboxes[tag.slug].model.value"
               :field="checkboxes[tag.slug].field"
               :choice="checkboxes[tag.slug].choice"
               :disable-focus="!isOpen"
-              @updated="updateTag"
+              @updated="$event => updateTag($event.target.name)"
             />
           </li>
         </ol>
@@ -180,11 +181,17 @@ const checkboxes = computed(() => {
 
 // methods
 
+function clearSearch() {
+  searchValue.value.data = '';
+}
+
 function checkOrCreate() {
   if (searchValue.value.data.length && searchTags.value.length) {
     const tag = searchTags.value.at(0);
-    const { model, choice } = checkboxes.value[tag.slug];
-    emit(model === false || choice.indeterminate ? 'checked' : 'unchecked', tag.slug);
+    const { model } = checkboxes.value[tag.slug];
+
+    checkboxes.value[tag.slug].model.value = !model.value;
+    updateTag(tag.slug);
 
     return;
   }
@@ -195,12 +202,7 @@ function checkOrCreate() {
 // Create a new tag, or set up the input with "New Tag" if  empty.
 function create() {
   if (!searchValue.value.data.length) {
-    // isCreating.value = true;
-    // searchValue.data = $t('apostrophe:tagNewTag');
     textInput.$el.querySelector('input').focus();
-    // nextTick(() => {
-    //   textInput.$el.querySelector('input').select();
-    // });
 
     return;
   }
@@ -212,18 +214,17 @@ function create() {
   }
 
   emit('added', searchValue.value.data);
-  // isCreating.value = false;
 }
 
-function updateTag($event) {
-  const { name } = $event.target;
+function updateTag(name) {
   const { model } = checkboxes.value[name];
 
-  if (model) {
+  if (model.value) {
     emit('checked', name);
     return;
   }
 
+  delete checkboxes.value[name].choice.indeterminate;
   emit('unchecked', name);
 }
 
@@ -235,17 +236,18 @@ function getCheckbox(tag, applyTo) {
     },
     choice: {
       label: tag.label,
-      value: true
+      value: true,
+      triggerIndeterminateEvent: true
     },
-    model: false
+    model: ref(false)
   };
 
   const state = getCheckedState(tag);
   if (state === 'checked') {
-    checkbox.model = true;
+    checkbox.model.value = true;
   }
   if (state === 'indeterminate') {
-    checkbox.model = true;
+    checkbox.model.value = true;
     checkbox.choice.indeterminate = true;
   }
 
