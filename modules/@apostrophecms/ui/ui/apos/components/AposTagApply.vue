@@ -70,7 +70,7 @@
 
 <script setup>
 import {
-  computed, inject, reactive, ref, useTemplateRef
+  computed, inject, ref, useTemplateRef
 } from 'vue';
 
 const $t = inject('i18n');
