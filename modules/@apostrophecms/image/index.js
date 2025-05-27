@@ -74,26 +74,9 @@ module.exports = {
         icon: 'label-icon',
         action: 'tag',
         permission: 'edit'
-      },
-      delete: {
-        label: 'apostrophe:delete',
-        messages: {
-          progress: 'apostrophe:batchDeleteProgress',
-          completed: 'apostrophe:batchDeleteCompleted'
-        },
-        icon: 'delete-icon',
-        if: {
-          archived: true
-        },
-        modalOptions: {
-          title: 'apostrophe:deleteType',
-          description: 'apostrophe:deleteBatchConfirmation',
-          confirmationButton: 'apostrophe:deleteBatchConfirmationButton'
-        },
-        permission: 'delete'
       }
     },
-    order: [ 'tag', 'archive', 'restore', 'delete' ]
+    order: [ 'tag', 'archive', 'restore' ]
   },
   utilityOperations: {
     remove: [ 'new' ]
