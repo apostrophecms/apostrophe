@@ -1,4 +1,3 @@
-
 <template>
   <div
     ref="widget"
@@ -333,12 +332,14 @@ export default {
     isFocused() {
       if (this.isSuppressed) {
         return false;
-      } else {
-        if (this.widgetFocused === this.widget._id) {
-          document.addEventListener('click', this.unfocus);
-        }
-        return this.widgetFocused === this.widget._id;
       }
+
+      const isWidgetFocused = this.widgetFocused === this.widget._id;
+      if (isWidgetFocused) {
+        document.addEventListener('click', this.unfocus);
+      }
+
+      return isWidgetFocused;
     },
     isHovered() {
       return this.widgetHovered === this.widget._id;
@@ -418,49 +419,12 @@ export default {
       // focus.
       apos.bus.$emit('widget-focus', { _id: this.widget._id });
     }
-    this.$refs.widget.addEventListener('copy', this.handleCopy);
-    this.$refs.widget.addEventListener('paste', this.handlePaste);
-    this.$refs.widget.addEventListener('cut', this.handleCut);
-    this.$refs.widget.addEventListener('keydown', this.handleDuplicate);
-    this.$refs.widget.addEventListener('keydown', this.handleRemove);
   },
   unmounted() {
     // Remove the focus parent listener when unmounted
     apos.bus.$off('widget-focus-parent', this.focusParent);
   },
   methods: {
-    handleCut(e) {
-      if (this.isFocused && !e.aposIgnoreEvent) {
-        this.$emit('cut', this.i);
-      }
-    },
-    handleCopy(e) {
-      if (this.isFocused && !e.aposIgnoreEvent) {
-        this.$emit('copy', this.i);
-      }
-    },
-    handlePaste(e) {
-      if (this.isFocused && !e.aposIgnoreEvent) {
-        this.$emit('paste', this.i + 1);
-      }
-    },
-    handleRemove(e) {
-      if (e.key === 'Backspace' && !e.aposIgnoreEvent) {
-        if (this.isFocused) {
-          this.$emit('remove', this.i);
-        }
-      }
-    },
-    handleDuplicate(e) {
-      if (
-        (e.metaKey && e.shiftKey && e.key === 'd') ||
-        (e.ctrlKey && e.shiftKey && e.key === 'd')
-      ) {
-        if (this.isFocused && !e.aposIgnoreEvent) {
-          this.$emit('clone', this.i);
-        }
-      }
-    },
     getFocusForMenu({ menuId, isOpen }) {
       if (
         (

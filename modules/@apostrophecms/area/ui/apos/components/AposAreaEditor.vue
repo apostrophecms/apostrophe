@@ -197,6 +197,12 @@ export default {
     foreign() {
       // Cast to boolean is necessary to satisfy prop typing
       return !!(this.docId && (window.apos.adminBar.contextId !== this.docId));
+    },
+    focusedWidgetIndex() {
+      return this.next.findIndex(widget => widget._id === this.focusedWidget);
+    },
+    isContentEditable() {
+      return document.activeElement.closest('[contenteditable]') !== null;
     }
   },
   watch: {
@@ -245,13 +251,58 @@ export default {
       apos.bus.$on('area-updated', this.areaUpdatedHandler);
       apos.bus.$on('widget-hover', this.updateWidgetHovered);
       apos.bus.$on('widget-focus', this.updateWidgetFocused);
+      apos.bus.$on('command-menu-area-copy-widget', this.handleCopy);
+      apos.bus.$on('command-menu-area-cut-widget', this.handleCut);
+      apos.bus.$on('command-menu-area-duplicate-widget', this.handleDuplicate);
+      apos.bus.$on('command-menu-area-paste-widget', this.handlePaste);
+      apos.bus.$on('command-menu-area-remove-widget', this.handleRemove);
       window.addEventListener('keydown', this.focusParentEvent);
     },
     unbindEventListeners() {
       apos.bus.$off('area-updated', this.areaUpdatedHandler);
       apos.bus.$off('widget-hover', this.updateWidgetHovered);
       apos.bus.$off('widget-focus', this.updateWidgetFocused);
+      apos.bus.$off('command-menu-area-copy-widget', this.handleCopy);
+      apos.bus.$off('command-menu-area-cut-widget', this.handleCut);
+      apos.bus.$off('command-menu-area-duplicate-widget', this.handleDuplicate);
+      apos.bus.$off('command-menu-area-paste-widget', this.handlePaste);
+      apos.bus.$off('command-menu-area-remove-widget', this.handleRemove);
       window.removeEventListener('keydown', this.focusParentEvent);
+    },
+    handleCopy() {
+      if (this.isContentEditable) {
+        return;
+      }
+
+      this.copy(this.focusedWidgetIndex);
+    },
+    handleCut() {
+      if (this.isContentEditable) {
+        return;
+      }
+
+      this.cut(this.focusedWidgetIndex);
+    },
+    handleDuplicate() {
+      if (this.isContentEditable) {
+        return;
+      }
+
+      this.clone(this.focusedWidgetIndex);
+    },
+    handlePaste() {
+      if (this.isContentEditable) {
+        return;
+      }
+
+      this.paste(this.focusedWidgetIndex);
+    },
+    handleRemove() {
+      if (this.isContentEditable) {
+        return;
+      }
+
+      this.remove(this.focusedWidgetIndex);
     },
     areaUpdatedHandler(area) {
       for (const item of this.next) {

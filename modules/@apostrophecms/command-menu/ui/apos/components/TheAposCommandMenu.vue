@@ -38,7 +38,7 @@ export default {
         modals
           .flatMap(group => {
             return Object.values(group.commands)
-              .filter(command => command.shortcut && command.listener !== false)
+              .filter(command => command.shortcut)
               .flatMap(command => {
                 return command.shortcut
                   .split(' ')
