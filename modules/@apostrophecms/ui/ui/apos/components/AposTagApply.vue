@@ -132,14 +132,37 @@ const isTagFound = computed(() => {
   return props.tags.some((tag) => tag.searchText === searchText.value);
 });
 
+// Sort checked first
+// then indeterminate
+// and finally unchecked alphabetically
+const sortedTags = computed(() => {
+  if (!applyToIds.value.length) {
+    return props.tags;
+  }
+
+  const checked = props.tags.filter(tag =>
+    checkboxes.value[tag.slug].model.value === true &&
+    checkboxes.value[tag.slug].choice.indeterminate !== true
+  );
+  const indeterminate = props.tags.filter(tag =>
+    checkboxes.value[tag.slug].model.value === true &&
+    checkboxes.value[tag.slug].choice.indeterminate === true
+  );
+  const unchecked = props.tags.filter(tag =>
+    checkboxes.value[tag.slug].model.value !== true
+  );
+
+  return [].concat(checked, indeterminate, unchecked);
+});
+
 // Unless we're in the middle of creating a new tag,
 // search the tags that match the search input
 const searchTags = computed(() => {
   if (searchText.value.length) {
-    return props.tags.filter((tag) => tag.searchText.includes(searchText.value));
+    return sortedTags.value.filter((tag) => tag.searchText.includes(searchText.value));
   }
 
-  return props.tags;
+  return sortedTags.value;
 });
 
 const isDisabled = computed(() => {
