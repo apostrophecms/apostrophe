@@ -235,6 +235,12 @@ module.exports = {
               `${self.__meta.name}:archive-selected`,
               `${self.__meta.name}:exit-manager`
             ]
+          },
+          '@apostrophecms/command-menu:general': {
+            label: 'apostrophe:commandMenuGeneral',
+            commands: [
+              '@apostrophecms/command-menu:show-shortcut-list'
+            ]
           }
         }
       }
