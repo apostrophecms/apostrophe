@@ -81,7 +81,6 @@
       </ul>
     </floating-menu>
     <div
-      ref="editor"
       class="apos-rich-text-editor__editor"
       :class="editorModifiers"
     >
