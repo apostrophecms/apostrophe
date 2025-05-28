@@ -12,6 +12,28 @@ module.exports = {
     defaultImageWidth: 100,
     imageResizeStep: 5
   },
+  widgetOperations(self, options) {
+    const {
+      relationshipEditor = 'AposImageRelationshipEditor',
+      relationshipEditorLabel = 'apostrophe:editImageAdjustments',
+      relationshipEditorIcon = 'image-edit-outline'
+    } = options.apos.image.options || {};
+    return {
+      add: {
+        adjustImage: {
+          label: relationshipEditorLabel,
+          icon: relationshipEditorIcon,
+          modal: relationshipEditor,
+          tooltip: relationshipEditorLabel,
+          if: {
+            '_image.0': {
+              $exists: true
+            }
+          }
+        }
+      }
+    };
+  },
   fields(self) {
     return {
       add: {
@@ -21,17 +43,6 @@ module.exports = {
           max: 1,
           required: true,
           withType: '@apostrophecms/image'
-        },
-        width: {
-          type: 'range',
-          label: 'apostrophe:imageWidth',
-          help: 'apostrophe:imageWidthHelp',
-          // 0 makes no sense, so we skip it and
-          // go for the 1st step
-          min: self.options.imageResizeStep,
-          max: 100,
-          step: self.options.imageResizeStep,
-          def: self.options.defaultImageWidth
         }
       }
     };

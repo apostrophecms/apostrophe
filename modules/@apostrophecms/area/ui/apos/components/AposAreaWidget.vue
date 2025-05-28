@@ -92,6 +92,7 @@
           :tabbable="isHovered || isFocused"
           :menu-id="`${widget._id}-widget-menu-top`"
           :class="{[classes.open]: menuOpen === 'top'}"
+          :open="menuOpen === 'top'"
           @add="$emit('add', $event);"
         />
       </div>
@@ -112,7 +113,6 @@
           :max-reached="maxReached"
           :tabbable="isFocused"
           :model-value="widget"
-          :area-field="field"
           @up="$emit('up', i);"
           @remove="$emit('remove', i);"
           @edit="$emit('edit', i);"
@@ -120,7 +120,7 @@
           @copy="$emit('copy', i);"
           @clone="$emit('clone', i);"
           @down="$emit('down', i);"
-          @update="$emit('update')"
+          @update="$emit('update', $event)"
         />
       </div>
       <!-- Still used for contextual editing components -->
@@ -144,7 +144,6 @@
         :options="widgetOptions"
         :type="widget.type"
         :area-field-id="fieldId"
-        :area-field="field"
         :following-values="followingValuesWithParent"
         :model-value="widget"
         :value="widget"
@@ -156,7 +155,8 @@
       />
       <div
         class="
-          apos-area-widget-controls apos-area-widget-controls--add
+          apos-area-widget-controls
+          apos-area-widget-controls--add
           apos-area-widget-controls--add--bottom
         "
         :class="addClasses"
@@ -172,6 +172,7 @@
           :tabbable="isHovered || isFocused"
           :menu-id="`${widget._id}-widget-menu-bottom`"
           :class="{[classes.open]: menuOpen === 'bottom'}"
+          :open="menuOpen === 'bottom'"
           @add="$emit('add', $event)"
         />
       </div>
@@ -237,10 +238,6 @@ export default {
       type: Array,
       required: true
     },
-    field: {
-      type: Object,
-      required: true
-    },
     fieldId: {
       type: String,
       required: true
@@ -270,7 +267,19 @@ export default {
       }
     }
   },
-  emits: [ 'clone', 'up', 'down', 'remove', 'edit', 'cut', 'copy', 'update', 'add', 'changed', 'paste' ],
+  emits: [
+    'clone',
+    'up',
+    'down',
+    'remove',
+    'edit',
+    'cut',
+    'copy',
+    'update',
+    'add',
+    'changed',
+    'paste'
+  ],
   data() {
     return {
       mounted: false, // hack around needing DOM to be rendered for computed classes
@@ -559,7 +568,6 @@ export default {
     widgetEditorComponent(type) {
       return this.moduleOptions.components.widgetEditors[type];
     }
-
   }
 };
 </script>
@@ -686,6 +694,7 @@ export default {
   }
 
   .apos-area-widget-controls--modify {
+    z-index: $z-index-widget-focused-controls;
     top: 50%;
     right: 0;
     transform: translate3d(-10px, -50%, 0);

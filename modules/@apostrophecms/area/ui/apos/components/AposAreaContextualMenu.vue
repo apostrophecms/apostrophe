@@ -10,6 +10,8 @@
       :button="buttonOptions"
       :popover-modifiers="inContext ? ['z-index-in-context'] : []"
       :menu-id="menuId"
+      @open="buttonOpen = true"
+      @close="buttonOpen = false"
     >
       <ul class="apos-area-menu__wrapper">
         <li
@@ -133,6 +135,9 @@ export default {
       default() {
         return `areaMenu-${createId()}`;
       }
+    },
+    open: {
+      type: Boolean
     }
   },
   emits: [ 'add' ],
@@ -140,7 +145,8 @@ export default {
     return {
       active: 0,
       groupIsFocused: false,
-      inContext: true
+      inContext: true,
+      buttonOpen: false
     };
   },
   computed: {
@@ -176,6 +182,20 @@ export default {
       return flag;
     },
     myMenu() {
+      // Ensures we take a fresh look at the clipboard when toggled open again.
+      // We can't just use || because shortcut evaluation will prevent the second
+      // reactive property from being evaluated.
+      let openVia = 0;
+      if (this.open) {
+        openVia++;
+      }
+      if (this.buttonOpen) {
+        openVia++;
+      }
+      if (openVia === 0) {
+        // If the menu is not open, we don't need to compute it right now
+        return [];
+      }
       const clipboard = apos.area.widgetClipboard.get();
       const menu = [ ...this.contextMenuOptions.menu ];
       if (clipboard) {

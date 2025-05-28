@@ -752,9 +752,8 @@ module.exports = {
           const [ destId, destPath ] = error.path.includes('.')
             ? error.path.split('.')
             : [ null, error.path ];
-
           const curDestination = destId
-            ? destination.find(({ _id }) => _id === destId)
+            ? (destination.items || destination || []).find(({ _id }) => _id === destId)
             : destination;
 
           const errorPath = destinationPath

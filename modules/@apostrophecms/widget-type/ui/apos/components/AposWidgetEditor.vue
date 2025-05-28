@@ -72,6 +72,7 @@ import { detectDocChange } from 'Modules/@apostrophecms/schema/lib/detectChange'
 import { createId } from '@paralleldrive/cuid2';
 import { klona } from 'klona';
 import newInstance from 'apostrophe/modules/@apostrophecms/schema/lib/newInstance.js';
+import { debounceAsync } from 'Modules/@apostrophecms/ui/utils';
 
 export default {
   name: 'AposWidgetEditor',
@@ -141,7 +142,8 @@ export default {
         origin: guessOrigin(this.preview?.area, moduleOptions),
         showModal: false
       },
-      triggerValidation: false
+      triggerValidation: false,
+      lastPreview: null
     };
   },
   computed: {
@@ -189,6 +191,7 @@ export default {
     ];
   },
   unmounted() {
+    this.areaDebounceUpdate.cancel?.();
     apos.area.widgetOptions = apos.area.widgetOptions.slice(1);
   },
   created() {
@@ -207,6 +210,22 @@ export default {
     if (!this.id) {
       this.newId = createId();
     }
+    this.areaDebounceUpdate = this.preview
+      ? debounceAsync(
+        (now) => {
+          this.lastPreview = now;
+          return this.preview?.area
+            .update(this.getPreviewWidgetObject(), { autosave: false })
+            .catch(e => {
+              if (e.name !== 'debounce.canceled') {
+                // eslint-disable-next-line no-console
+                console.error('Error updating preview', e);
+              }
+            });
+        },
+        250
+      )
+      : () => {};
     this.initPreview();
   },
   methods: {
@@ -239,38 +258,28 @@ export default {
         return;
       }
       const now = Date.now();
-      const body = () => {
-        this.lastPreview = now;
-        this.preview.area.update(this.getPreviewWidgetObject(), { autosave: false });
-      };
-      if (this.updatePreviewTimeout) {
-        clearTimeout(this.updatePreviewTimeout);
-      }
       if (!this.lastPreview || (now - this.lastPreview > 250)) {
         // If we're still dragging the slider around, refresh every once in a
         // while, no matter what
-        body();
+        this.areaDebounceUpdate.skipDelay(now);
       } else {
-        this.updatePreviewTimeout = setTimeout(body, 250);
+        this.areaDebounceUpdate(now);
       }
     },
     removePreview() {
       if (!this.preview) {
         return;
       }
-      if (this.updatePreviewTimeout) {
-        clearTimeout(this.updatePreviewTimeout);
-      }
       if (this.preview.create) {
         this.preview.area.remove(this.getPreviewWidgetIndex(), { autosave: false });
       } else if (!this.saving) {
-        this.preview.area.update(this.previewSnapshot, { autosave: false });
+        this.preview.area.update(this.previewSnapshot, {
+          autosave: false,
+          reverting: true
+        });
       }
     },
     async save() {
-      if (this.updatePreviewTimeout) {
-        clearTimeout(this.updatePreviewTimeout);
-      }
       this.triggerValidation = true;
       this.$nextTick(async () => {
         const widget = this.getWidgetObject();

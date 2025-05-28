@@ -5,12 +5,30 @@
 ### Adds
 
 * Adds keyboard shortcuts for manipulating widgets in areas. Includes Cut, Copy, Paste, Delete, and Duplicate.
-* Adds image widget width slider. Introduce widget options `defaultImageWidth` (percentage, 100 by default, a full width) and `imageResizeStep` to control the initial width of the image and the step of the width slider (default is 5) respectively. Projects that override the `widget.html` template should sync back the changes from the original template `modules/@apostrophecms/image-widget/views/widget.html`.
+
+## 4.17.1 (2025-05-16)
+
+### Fixes
+
+* Pinned to tiptap 2.11.0 and specific prosemirror releases compatible with it, to work around a bug that broke the behavior of lists in the editor when re-opening an existing list. We are working with upstream projects to resolve this so we can continue to track updates in tiptap and prosemirror.
+
+## 4.17.0 (2025-05-14)
+
+### Adds
+
+* Support for `fetchRelationships: false` in `applyPatch` and related methods. This is intended for the use of the `@apostrophecms/import-export` module, so the functionality is not exposed in a way that can be accessed simply by making a web request.
+
+### Fixes
+
+* Errors thrown on the server side by subfields of widgets are now reported in a useful form at the document level. Previously a different error occurred in the error handling logic itself, confusing the issue.
+
+## 4.16.0 (2025-05-14)
+
+### Adds
+
+* Uses new `widgetOperations` to add the `adjustImage` operation to the image widget.
 * Adds a server validation before adding a widget to an area. Introduces a new POST route `@apostrophecms/area/validate-widget`.
-* The new `apos.area.addWidgetOperation` method can be used to display custom operations for widgets.
-A wrapper is available in the `@apostrophecms/widget-type` module to register operations only for widgets that match the type of the module where the wrapper is invoked.
-For example, calling `self.addWidgetOperation` in the ``@apostrophecms/image-widget`` module will apply the operation exclusively to image widgets.
-A `secondaryLevel: true` option is available to add operations to the widget's controls context menu.
+* The new `widgetOperations` cascade config property can be used to display custom operations for widgets. An `if` condition can be used to test properties of the widget before displaying an operation.
 
 ### Changes
 
@@ -21,7 +39,11 @@ A `secondaryLevel: true` option is available to add operations to the widget's c
 * Fixes `range` field type default value not being set properly.
 * Fixes autocomplete and search sorting and as a consequence, fixes potential duplicates during pagination.
 * Fixes all eslint warnings.
+* When pasting a widget from the clipboard, the correct widget type is always offered on the "Add Content" menu.
 * Widget live preview is now attempting to auto-position the Widget Editor modal only if no explicit widget configuration (`options.origin`) is provided.
+* `required` is now implemented on the server side as well for `relationship` fields. It behaves like `min: 1`. It was always implemented on the front end. However, note that a relationship can still become empty if the related document is archived or deleted.
+* Image widgets, and others with a placeholder when empty, now restore their placeholder view when canceling the widget editor in live preview mode.
+* Fixes `z-index` of widget controls, going above the controls add button.
 
 ### Changes
 

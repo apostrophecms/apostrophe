@@ -491,4 +491,105 @@ describe('Widgets', function() {
     });
   });
 
+  describe('Widget Operations', function() {
+    let _apos;
+
+    before(async function() {
+      _apos = await t.create({
+        root: module,
+        modules: {
+          'test1-widget': {
+            extend: '@apostrophecms/widget-type',
+            widgetOperations: {
+              add: {
+                operation1: {
+                  label: 'Operation 1',
+                  icon: 'image-edit-outline',
+                  modal: 'FakeModal',
+                  tooltip: 'tooltip'
+                }
+              }
+            }
+          },
+          'test2-widget': {
+            extend: 'test1-widget'
+          },
+          'test-permission-widget': {
+            extend: '@apostrophecms/widget-type',
+            widgetOperations: {
+              add: {
+                operation: {
+                  label: 'Operation',
+                  icon: 'some-icon',
+                  modal: 'AposSomeModal',
+                  permission: {
+                    action: 'delete',
+                    type: 'article'
+                  }
+                }
+              }
+            }
+          }
+        }
+      });
+    });
+
+    after(function() {
+      return t.destroy(_apos);
+    });
+
+    it('should support custom widget operations and inherit them from extended modules', function() {
+      const test1Widget = _apos.modules['test1-widget'];
+      const test2Widget = _apos.modules['test2-widget'];
+      const expectedOperations = [ {
+        name: 'operation1',
+        label: 'Operation 1',
+        icon: 'image-edit-outline',
+        modal: 'FakeModal',
+        tooltip: 'tooltip'
+      } ];
+      const expected = {
+        test1: expectedOperations,
+        test2: expectedOperations
+      };
+
+      const actual = {
+        test1: test1Widget.widgetOperations,
+        test2: test2Widget.widgetOperations
+      };
+
+      assert.deepEqual(actual, expected);
+    });
+
+    it('should handle widget operations with custom permissions', function() {
+      const operation = {
+        name: 'operation',
+        modal: 'AposSomeModal',
+        label: 'Operation',
+        icon: 'some-icon',
+        permission: {
+          action: 'delete',
+          type: 'article'
+        }
+      };
+
+      const permissionWidget = _apos.modules['test-permission-widget'];
+      const adminBrowserData = permissionWidget.getBrowserData(_apos.task.getReq());
+      const contribBrowserData = permissionWidget.getBrowserData(
+        _apos.task.getContributorReq()
+      );
+
+      const actual = {
+        admin: adminBrowserData.widgetOperations,
+        contributor: contribBrowserData.widgetOperations
+      };
+
+      const expected = {
+        admin: [ operation ],
+        contributor: []
+      };
+
+      assert.deepEqual(actual, expected);
+    });
+  });
 });
