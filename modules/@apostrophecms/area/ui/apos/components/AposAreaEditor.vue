@@ -202,7 +202,7 @@ export default {
     focusedWidgetIndex() {
       return this.next.findIndex(widget => widget._id === this.focusedWidget);
     },
-    isContentEditable() {
+    isInsideContentEditable() {
       return document.activeElement.closest('[contenteditable]') !== null;
     }
   },
@@ -271,35 +271,35 @@ export default {
       window.removeEventListener('keydown', this.focusParentEvent);
     },
     handleCopy() {
-      if (this.isContentEditable) {
+      if (this.isInsideContentEditable) {
         return;
       }
 
       this.copy(this.focusedWidgetIndex);
     },
     handleCut() {
-      if (this.isContentEditable) {
+      if (this.isInsideContentEditable) {
         return;
       }
 
       this.cut(this.focusedWidgetIndex);
     },
     handleDuplicate() {
-      if (this.isContentEditable) {
+      if (this.isInsideContentEditable) {
         return;
       }
 
       this.clone(this.focusedWidgetIndex);
     },
     handlePaste() {
-      if (this.isContentEditable) {
+      if (this.isInsideContentEditable) {
         return;
       }
 
       this.paste(this.focusedWidgetIndex);
     },
     handleRemove() {
-      if (this.isContentEditable) {
+      if (this.isInsideContentEditable) {
         return;
       }
 
