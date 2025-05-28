@@ -91,7 +91,8 @@ export default {
       bodyId: '',
       bodyClass: '',
       bodyDataset: {},
-      bodyStyle: ''
+      bodyStyle: '',
+      observer: new MutationObserver(this.observerCallback)
     };
   },
   computed: {
@@ -154,6 +155,14 @@ export default {
     );
   },
   methods: {
+    observerCallback(mutationList, observer) {
+      for (const mutation of mutationList) {
+        console.log('mutation.type', mutation.type);
+        if (mutation.type === 'attributes') {
+          console.log('mutation', mutation);
+        }
+      }
+    },
     moveBodyAttributes(bodyEl, refreshableEl) {
       const dataset = Object.entries(bodyEl.dataset)
         .filter(([ key ]) => !key.startsWith('apos') && key !== 'breakpointpreviewmode');
@@ -201,7 +210,13 @@ export default {
 
       // Only when switching to mobile preview from the normal state
       if (!this.mode) {
+        this.observer.observe(bodyEl, {
+          attributes: true,
+          childList: true,
+          subtree: true
+        });
         this.moveBodyAttributes(bodyEl, refreshableEl);
+
       }
 
       bodyEl.setAttribute('data-breakpoint-preview-mode', mode);
@@ -236,6 +251,9 @@ export default {
       const bodyEl = document.querySelector('body');
       const refreshableEl = document.querySelector('[data-apos-refreshable]');
       const refreshableBodyEl = document.querySelector('[data-apos-refreshable-body]');
+
+      this.observer.disconnect();
+
       if (!refreshableBodyEl) {
         return;
       }
