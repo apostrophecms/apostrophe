@@ -109,6 +109,7 @@
   "commandMenuWidgetCut": "Cortar Widget",
   "commandMenuWidgetDuplicate": "Duplicar Widget",
   "commandMenuWidgetPaste": "Colar Widget",
+  "commandMenuWidgetRemove": "Remover Widget",
   "confirmArchive": "Você vai arquivar o(a) {{ type }} {{ title }}.",
   "confirmSettings": "Confirmar Configurações",
   "contentArchived": "Conteúdo Arquivado",

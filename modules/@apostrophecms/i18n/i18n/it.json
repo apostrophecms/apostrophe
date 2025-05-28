@@ -109,6 +109,7 @@
   "commandMenuWidgetCut": "Taglia Widget",
   "commandMenuWidgetDuplicate": "Duplica Widget",
   "commandMenuWidgetPaste": "Incolla Widget",
+  "commandMenuWidgetRemove": "Rimuovi Widget",
   "confirmArchive": "Stai per archiviare {{ type }} {{ title }}.",
   "confirmSettings": "Conferma le impostazioni",
   "contentArchived": "Contenuto archiviato",

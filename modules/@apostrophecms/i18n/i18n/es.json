@@ -109,6 +109,7 @@
   "commandMenuWidgetCut": "Cortar Componente",
   "commandMenuWidgetDuplicate": "Duplicar Componente",
   "commandMenuWidgetPaste": "Pegar Componente",
+  "commandMenuWidgetRemove": "Eliminar Componente",
   "confirmArchive": "Va a archivar el {{ type }} {{ title }}.",
   "confirmSettings": "Confirmar Configuración",
   "contentArchived": "Contenido Archivado",
