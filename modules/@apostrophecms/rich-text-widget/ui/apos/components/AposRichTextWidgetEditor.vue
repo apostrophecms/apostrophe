@@ -1,7 +1,7 @@
 <template>
   <AposRichTextEditor
     :options="options"
-    :model-value="modelValue"
+    :value="modelValue.content"
     :doc-id="docId"
     :id="modelValue._id"
     @update="update" />
@@ -54,8 +54,11 @@ export default {
   },
   emits: [ 'update' ],
   methods: {
-    update(widget) {
-      this.$emit('update', widget);
+    update(content) {
+      this.$emit('update', {
+        ...this.modelValue,
+        content
+      });
     }
   }
 };

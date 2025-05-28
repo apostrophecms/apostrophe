@@ -163,10 +163,10 @@ export default {
       type: Object,
       required: true
     },
-    modelValue: {
-      type: Object,
+    value: {
+      type: String,
       default() {
-        return {};
+        return '';
       }
     },
     docId: {
@@ -179,18 +179,16 @@ export default {
     focused: {
       type: Boolean,
       default: false
+    },
+    id: {
+      type: String
     }
   },
   emits: [ 'update' ],
   data() {
     return {
       editor: null,
-      docFields: {
-        data: {
-          ...this.modelValue
-        },
-        hasErrors: false
-      },
+      next: this.value,
       pending: null,
       isFocused: null,
       isShowingInsert: false,
@@ -284,10 +282,10 @@ export default {
     },
     autofocus() {
       // Only true for a new rich text widget
-      return !this.modelValue.content.length;
+      return !this.value.length;
     },
     initialContent() {
-      const content = this.transformNamedAnchors(this.modelValue.content);
+      const content = this.transformNamedAnchors(this.value);
       if (content.length) {
         return content;
       }
@@ -324,7 +322,7 @@ export default {
     isVisuallyEmpty () {
       const div = document.createElement('div');
       let hasTable = false;
-      div.innerHTML = this.modelValue.content;
+      div.innerHTML = this.value;
       if (this.editor) {
         const editorJSON = this.editor.getJSON();
         hasTable = !!editorJSON?.content.filter(c => c.type === 'table').length;
@@ -520,11 +518,9 @@ export default {
         clearTimeout(this.pending);
         this.pending = null;
       }
-      const content = this.editor.getHTML();
-      const widget = this.docFields.data;
-      widget.content = content;
       // ... removes need for deep watching in parent
-      this.$emit('update', { ...widget });
+      this.next = this.editor.getHTML();
+      this.$emit('update', this.next);
     },
     // Legacy content may have `id` and `name` attributes on anchor tags
     // but our tiptap anchor extension needs them on a separate `span`, so nest
