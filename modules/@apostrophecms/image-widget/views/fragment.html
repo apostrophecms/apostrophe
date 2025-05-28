@@ -7,17 +7,13 @@
       class="image-widget-placeholder"
     />
   {%- elif attachment -%}
-    {%- if widget.caption -%}
       {%- set className = options.className or manager.options.className -%}
 <figure class="{{ className + "__wrapper" }}" style="{{ _figureStyle(options, manager) | trim }}">
   {{ _imageWithLink(widget, attachment, options, manager, contextOptions) -}}
-  <figcaption class="{{ className + "__caption" }}">
+  {% if widget.caption -%}<figcaption class="{{ className + "__caption" }}">
     {{ widget.caption }}
-  </figcaption>
+  </figcaption>{% endif %}
 </figure>
-    {%- else -%}
-      {{- _imageWithLink(widget, attachment, options, manager, contextOptions) -}}
-    {%- endif -%}
   {%- endif -%}
 {% endfragment %}
 
