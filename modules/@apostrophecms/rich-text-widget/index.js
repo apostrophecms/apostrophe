@@ -402,7 +402,6 @@ module.exports = {
       ...self.options.minimumDefaultOptions,
       ...self.options.defaultOptions
     };
-    console.log('self.options.defaultOptions', self.options.defaultOptions);
   },
   icons: {
     'format-text-icon': 'FormatText',
