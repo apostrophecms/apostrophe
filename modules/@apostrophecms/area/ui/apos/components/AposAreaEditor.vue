@@ -326,6 +326,7 @@ export default {
       this.focusedWidget = _id;
       // Attached to window so that modals can see the area is active
       window.apos.focusedWidget = _id;
+
       if (scrollIntoView) {
         this.$nextTick(() => {
           const $el = document.querySelector(`[data-apos-widget-id="${_id}"]`);
@@ -345,7 +346,6 @@ export default {
           $el.focus({
             preventScroll: true
           });
-
         });
       }
     },
