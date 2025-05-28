@@ -640,11 +640,12 @@ export default {
           this.tagList = tagList;
         }
 
+        await this.updateEditing(null);
+
         // If we were editing one, replacing it.
         if (this.editing && updatedImages.length === 1) {
           this.modified = false;
           // Needed to refresh the AposMediaManagerEditor
-          await this.updateEditing(null);
           await this.$nextTick();
           await this.updateEditing(updatedImages.at(0)._id);
         }
