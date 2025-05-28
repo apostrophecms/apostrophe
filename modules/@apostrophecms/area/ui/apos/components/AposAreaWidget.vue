@@ -7,6 +7,7 @@
     :data-area-label="widgetLabel"
     :data-apos-widget-foreign="foreign ? 1 : 0"
     :data-apos-widget-id="widget._id"
+    tabindex="0"
   >
     <div
       ref="wrapper"
@@ -276,7 +277,8 @@ export default {
     'copy',
     'update',
     'add',
-    'changed'
+    'changed',
+    'paste'
   ],
   data() {
     return {
@@ -339,12 +341,14 @@ export default {
     isFocused() {
       if (this.isSuppressed) {
         return false;
-      } else {
-        if (this.widgetFocused === this.widget._id) {
-          document.addEventListener('click', this.unfocus);
-        }
-        return this.widgetFocused === this.widget._id;
       }
+
+      const isWidgetFocused = this.widgetFocused === this.widget._id;
+      if (isWidgetFocused) {
+        document.addEventListener('click', this.unfocus);
+      }
+
+      return isWidgetFocused;
     },
     isHovered() {
       return this.widgetHovered === this.widget._id;
@@ -422,7 +426,7 @@ export default {
       // If another widget was in focus (because the user clicked the "add"
       // menu, for example), and this widget was created, give the new widget
       // focus.
-      apos.bus.$emit('widget-focus', this.widget._id);
+      apos.bus.$emit('widget-focus', { _id: this.widget._id });
     }
   },
   unmounted() {
@@ -430,7 +434,6 @@ export default {
     apos.bus.$off('widget-focus-parent', this.focusParent);
   },
   methods: {
-
     getFocusForMenu({ menuId, isOpen }) {
       if (
         (
@@ -473,18 +476,18 @@ export default {
         const $parent = this.getParent();
         // .. And have a parent
         if ($parent) {
-          apos.bus.$emit('widget-focus', $parent.dataset.areaWidget);
+          apos.bus.$emit('widget-focus', { _id: $parent.dataset.areaWidget });
         }
       }
     },
 
     // Ask the parent AposAreaEditor to make us focused
-    getFocus(e, id) {
+    getFocus(e, _id) {
       if (e) {
         e.stopPropagation();
       }
       this.isSuppressed = false;
-      apos.bus.$emit('widget-focus', id);
+      apos.bus.$emit('widget-focus', { _id });
     },
 
     // Our widget was hovered
@@ -512,7 +515,7 @@ export default {
       if (!this.$el.contains(event.target)) {
         this.isSuppressed = true;
         document.removeEventListener('click', this.unfocus);
-        apos.bus.$emit('widget-focus', null);
+        apos.bus.$emit('widget-focus', { _id: null });
       }
     },
 

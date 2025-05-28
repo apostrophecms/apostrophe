@@ -1,5 +1,11 @@
 # Changelog
 
+## UNRELEASED
+
+### Adds
+
+* Adds keyboard shortcuts for manipulating widgets in areas. Includes Cut, Copy, Paste, Delete, and Duplicate.
+
 ## 4.17.1 (2025-05-16)
 
 ### Fixes
