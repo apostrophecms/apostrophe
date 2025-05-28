@@ -369,7 +369,7 @@ async function setDropdownPosition() {
     // the clipping boundaries with our Admin UI top bar/Modal header
     // in mind
     padding: {
-      top: 120
+      top: (window.apos.adminBar?.height || 0) + 10
     }
   });
   const shiftMiddleware = shift({ padding: 5 });

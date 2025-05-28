@@ -325,6 +325,7 @@ export default {
           case 'none': {
             this.docFields.data.title = '';
             this.docFields.data.hrefTitle = '';
+            this.docFields.data.href = '';
             break;
           }
           case '_url': {
@@ -337,6 +338,7 @@ export default {
               ? ''
               : attrs.title;
             this.docFields.data.hrefTitle = '';
+            this.docFields.data.href = '';
           }
         }
       } finally {

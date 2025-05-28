@@ -25,8 +25,6 @@ export default options => {
 
     draggable: true,
 
-    // isolating: true,
-
     addAttributes() {
       const atttrs = {
         ...this.parent?.(),
@@ -97,6 +95,7 @@ export default options => {
     },
 
     parseHTML() {
+      // The markup for the image node can be either:
       // <figure>
       //   <img src="/media/cc0-images/elephant-660-480.jpg"
       //     alt="Elephant at sunset">

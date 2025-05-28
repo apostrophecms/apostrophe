@@ -80,6 +80,7 @@ module.exports = {
         },
         hrefTitle: {
           label: 'apostrophe:linkTitle',
+          help: 'apostrophe:linkTitleUrlHelp',
           type: 'string',
           if: {
             linkTo: '_url'
