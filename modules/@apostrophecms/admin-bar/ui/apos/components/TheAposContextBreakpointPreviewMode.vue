@@ -95,7 +95,11 @@ export default {
       bodyStyle: '',
       refreshableBodyEl: null,
       observer: new MutationObserver(this.observerCallback),
-      originalBodyClassRemoveMethod: null
+      originalClassMethods: {
+        remove: null,
+        replace: null,
+        toggle: null
+      }
     };
   },
   computed: {
@@ -161,15 +165,10 @@ export default {
   methods: {
     observerCallback(mutationList, observer) {
       for (const mutation of mutationList) {
-        if (mutation.type !== 'attributes') {
-          continue;
-        }
-
         if (mutation.attributeName === 'class') {
           if (!mutation.target.classList) {
             continue;
           }
-
           const addedClasses = Array.from(mutation.target.classList) || [];
           addedClasses.forEach(className => {
             if (!this.bodyClass.includes(className)) {
@@ -182,34 +181,19 @@ export default {
         }
 
         if (mutation.attributeName === 'style') {
-          continue;
-        }
-
-        if (mutation.attributeName.startsWith('data-')) {
-          const dataKey = mutation.attributeName;
-          if (
-            dataKey.startsWith('data-apos-') ||
-            dataKey === 'data-breakpoint-preview-mode' ||
-            !mutation.target.hasAttribute(dataKey)
-          ) {
-            continue;
+          const style = mutation.target.getAttribute('style');
+          if (style) {
+            this.refreshableBodyEl.setAttribute('style', style);
+            mutation.target.removeAttribute('style');
+            this.bodyStyle = style;
           }
-
-          const value = mutation.target.getAttribute(dataKey);
-          this.refreshableBodyEl.setAttribute(dataKey, value);
-          this.bodyDataset[dataKey] = value;
-          mutation.target.removeAttribute(dataKey);
-          continue;
         }
-
-        /* if (mutation.attributeName === '') { */
-        /**/
-        /*   continue */
-        /* } */
-
       }
     },
     moveBodyAttributes(refreshableEl) {
+      // TODO: Might use `dataset` if we don't need to support data attributes
+      // changes in mutation observer..
+      // Also, should we move all attributes and not only data ones? I think we should
       const dataset = Object.values(this.bodyEl.attributes)
         .filter(({ name }) => name.startsWith('data-') && !name.startsWith('data-apos'))
         .map(({ name, value }) => [ name, value ]);
@@ -222,10 +206,8 @@ export default {
       refreshableEl.append(this.refreshableBodyEl);
 
       this.bodyDataset = Object.fromEntries(dataset);
-      console.log('this.bodyDataset', this.bodyDataset);
+      this.bodyId = this.bodyEl.getAttribute('id')?.trim() || null;
       this.bodyStyle = this.bodyEl.getAttribute('style');
-      this.bodyId = this.bodyEl.getAttribute('id')?.trim();
-
       this.bodyClass = this.bodyEl.getAttribute('class')?.trim().split(/\s+/) || [];
       if (this.bodyDataset) {
         Object.entries(this.bodyDataset).forEach(([ key, value ]) => {
@@ -233,7 +215,6 @@ export default {
           this.refreshableBodyEl.setAttribute(key, value);
         });
       }
-
       if (this.bodyStyle) {
         this.bodyEl.removeAttribute('style');
         this.refreshableBodyEl.setAttribute('style', this.bodyStyle);
@@ -249,6 +230,46 @@ export default {
         });
       }
     },
+    // In breakpoint preview mode if classes are updated on body
+    // it will be done on the [data-apos-refreshable-body] element
+    bindNativeMethod() {
+      this.originalClassMethods.remove = this.bodyEl.classList.remove;
+      this.bodyEl.classList.remove = (...args) => {
+        this.bodyClass = this.bodyClass.filter(className => !args.includes(className));
+        this.refreshableBodyEl.classList.remove(...args);
+      };
+      this.bodyEl.classList.replace = (...args) => {
+        const [ oldClass, newClass ] = args;
+        this.bodyClass = this.bodyClass
+          .map(className => className === oldClass ? newClass : className);
+        this.refreshableBodyEl.classList.replace(...args);
+      };
+      this.bodyEl.classList.toggle = (className, opt) => {
+        if (this.bodyClass.includes(className) && !opt) {
+          this.bodyClass = this.bodyClass.filter(c => c !== className);
+        }
+        if (!this.bodyClass.includes(className) && (opt == null || opt)) {
+          this.bodyClass.push(className);
+        }
+        this.refreshableBodyEl.classList.toggle(className, opt);
+      };
+    },
+    // Out of breakpoint preview mode, classList methods are
+    // updating body like they should
+    unbindNativeMethod() {
+      if (this.originalClassMethods.remove) {
+        this.bodyEl.classList.remove = this.originalClassMethods.remove;
+        this.originalBodyClassRemoveMethod = null;
+      }
+      if (this.originalClassMethods.replace) {
+        this.bodyEl.classList.replace = this.originalClassMethods.replace;
+        this.originalBodyClassReplaceMethod = null;
+      }
+      if (this.originalClassMethods.toggle) {
+        this.bodyEl.classList.toggle = this.originalClassMethods.toggle;
+        this.originalBodyClassToggleMethod = null;
+      }
+    },
     switchBreakpointPreviewMode({
       mode,
       label,
@@ -261,19 +282,7 @@ export default {
       if (!this.mode) {
         this.moveBodyAttributes(refreshableEl);
         this.observer.observe(this.bodyEl, { attributes: true });
-
-        this.originalBodyClassRemoveMethod = this.bodyEl.classList.remove;
-        this.bodyEl.classList.remove = (...args) => {
-          this.bodyClass = this.bodyClass.filter(className => !args.includes(className));
-          this.refreshableBodyEl.classList.remove(...args);
-        };
-        // TODO: update native method for removeAttribute and removeStyle???
-
-        // TESTS
-        this.bodyEl.style.backgroundColor = '#gggggg';
-        this.bodyEl.classList.remove('foo', 'my-body');
-        this.bodyEl.setAttribute('data-test', 'test-value');
-        this.bodyEl.setAttribute('data-empty', '');
+        this.bindNativeMethod();
       }
 
       this.bodyEl.setAttribute('data-breakpoint-preview-mode', mode);
@@ -306,10 +315,9 @@ export default {
     },
     resetBreakpointPreview() {
       const refreshableEl = document.querySelector('[data-apos-refreshable]');
-      this.bodyEl.classList.remove = this.originalBodyClassRemoveMethod;
-      this.originalBodyClassRemoveMethod = null;
-      this.observer.disconnect();
+      this.unbindNativeMethod();
 
+      this.observer.disconnect();
       if (!this.refreshableBodyEl) {
         return;
       }
