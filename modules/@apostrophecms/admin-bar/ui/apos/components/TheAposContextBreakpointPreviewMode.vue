@@ -56,7 +56,6 @@
   </div>
 </template>
 <script>
-
 export default {
   name: 'TheAposContextBreakpointPreviewMode',
   props: {
@@ -88,7 +87,19 @@ export default {
       originalBodyBackground: null,
       shortcuts: this.getShortcuts(),
       breakpoints: this.getBreakpointItems(),
-      showDropdown: false
+      showDropdown: false,
+      bodyEl: null,
+      bodyId: '',
+      bodyClass: [],
+      bodyDataset: {},
+      bodyStyle: '',
+      refreshableBodyEl: null,
+      observer: new MutationObserver(this.observerCallback),
+      originalClassMethods: {
+        remove: null,
+        replace: null,
+        toggle: null
+      }
     };
   },
   computed: {
@@ -130,6 +141,7 @@ export default {
     }
   },
   mounted() {
+    this.bodyEl = document.querySelector('body');
     this.setShowDropdown();
     apos.bus.$on(
       'command-menu-admin-bar-toggle-breakpoint-preview-mode',
@@ -151,18 +163,133 @@ export default {
     );
   },
   methods: {
+    observerCallback(mutationList, observer) {
+      for (const mutation of mutationList) {
+        if (mutation.attributeName === 'class') {
+          if (!mutation.target.classList) {
+            continue;
+          }
+          const addedClasses = Array.from(mutation.target.classList) || [];
+          addedClasses.forEach(className => {
+            if (!this.bodyClass.includes(className)) {
+              this.bodyClass.push(className);
+              this.refreshableBodyEl.classList.add(className);
+            }
+          });
+          this.bodyEl.removeAttribute('class');
+          continue;
+        }
+
+        if (mutation.attributeName === 'style') {
+          const style = mutation.target.getAttribute('style');
+          if (style) {
+            this.refreshableBodyEl.setAttribute('style', style);
+            mutation.target.removeAttribute('style');
+            this.bodyStyle = style;
+          }
+        }
+      }
+    },
+    moveBodyAttributes(refreshableEl) {
+      // TODO: Might use `dataset` if we don't need to support data attributes
+      // changes in mutation observer..
+      // Also, should we move all attributes and not only data ones? I think we should
+      const dataset = Object.values(this.bodyEl.attributes)
+        .filter(({ name }) => name.startsWith('data-') && !name.startsWith('data-apos'))
+        .map(({ name, value }) => [ name, value ]);
+      this.refreshableBodyEl = document.createElement('div');
+      this.refreshableBodyEl.setAttribute('data-apos-refreshable-body', '');
+
+      Array.from(refreshableEl.childNodes).forEach(child => {
+        this.refreshableBodyEl.append(child);
+      });
+      refreshableEl.append(this.refreshableBodyEl);
+
+      this.bodyDataset = Object.fromEntries(dataset);
+      this.bodyId = this.bodyEl.getAttribute('id')?.trim() || null;
+      this.bodyStyle = this.bodyEl.getAttribute('style');
+      this.bodyClass = this.bodyEl.getAttribute('class')?.trim().split(/\s+/) || [];
+      if (this.bodyDataset) {
+        Object.entries(this.bodyDataset).forEach(([ key, value ]) => {
+          this.bodyEl.removeAttribute(key);
+          this.refreshableBodyEl.setAttribute(key, value);
+        });
+      }
+      if (this.bodyStyle) {
+        this.bodyEl.removeAttribute('style');
+        this.refreshableBodyEl.setAttribute('style', this.bodyStyle);
+      }
+      if (this.bodyId) {
+        this.bodyEl.removeAttribute('id');
+        this.refreshableBodyEl.setAttribute('id', this.bodyId);
+      }
+      if (this.bodyClass) {
+        this.bodyEl.removeAttribute('class');
+        this.bodyClass.forEach(className => {
+          this.refreshableBodyEl.classList.add(className);
+        });
+      }
+    },
+    // In breakpoint preview mode if classes are updated on body
+    // it will be done on the [data-apos-refreshable-body] element
+    bindNativeMethod() {
+      this.originalClassMethods.remove = this.bodyEl.classList.remove;
+      this.bodyEl.classList.remove = (...args) => {
+        this.bodyClass = this.bodyClass.filter(className => !args.includes(className));
+        this.refreshableBodyEl.classList.remove(...args);
+      };
+      this.bodyEl.classList.replace = (...args) => {
+        const [ oldClass, newClass ] = args;
+        this.bodyClass = this.bodyClass
+          .map(className => className === oldClass ? newClass : className);
+        this.refreshableBodyEl.classList.replace(...args);
+      };
+      this.bodyEl.classList.toggle = (className, opt) => {
+        if (this.bodyClass.includes(className) && !opt) {
+          this.bodyClass = this.bodyClass.filter(c => c !== className);
+        }
+        if (!this.bodyClass.includes(className) && (opt == null || opt)) {
+          this.bodyClass.push(className);
+        }
+        this.refreshableBodyEl.classList.toggle(className, opt);
+      };
+    },
+    // Out of breakpoint preview mode, classList methods are
+    // updating body like they should
+    unbindNativeMethod() {
+      if (this.originalClassMethods.remove) {
+        this.bodyEl.classList.remove = this.originalClassMethods.remove;
+        this.originalBodyClassRemoveMethod = null;
+      }
+      if (this.originalClassMethods.replace) {
+        this.bodyEl.classList.replace = this.originalClassMethods.replace;
+        this.originalBodyClassReplaceMethod = null;
+      }
+      if (this.originalClassMethods.toggle) {
+        this.bodyEl.classList.toggle = this.originalClassMethods.toggle;
+        this.originalBodyClassToggleMethod = null;
+      }
+    },
     switchBreakpointPreviewMode({
       mode,
       label,
       width,
       height
     }) {
-      document.querySelector('body').setAttribute('data-breakpoint-preview-mode', mode);
-      document.querySelector('[data-apos-refreshable]').setAttribute('data-resizable', this.resizable);
-      document.querySelector('[data-apos-refreshable]').setAttribute('data-label', this.$t(label));
-      document.querySelector('[data-apos-refreshable]').style.width = width;
-      document.querySelector('[data-apos-refreshable]').style.height = height;
-      document.querySelector('[data-apos-refreshable]').style.background = this.originalBodyBackground;
+      const refreshableEl = document.querySelector('[data-apos-refreshable]');
+
+      // Only when switching to mobile preview from the normal state
+      if (!this.mode) {
+        this.moveBodyAttributes(refreshableEl);
+        this.observer.observe(this.bodyEl, { attributes: true });
+        this.bindNativeMethod();
+      }
+
+      this.bodyEl.setAttribute('data-breakpoint-preview-mode', mode);
+      refreshableEl.setAttribute('data-resizable', this.resizable);
+      refreshableEl.setAttribute('data-label', this.$t(label));
+      refreshableEl.style.width = width;
+      refreshableEl.style.height = height;
 
       this.mode = mode;
       this.$emit('switch-breakpoint-preview-mode', {
@@ -178,33 +305,59 @@ export default {
         height
       });
     },
-    toggleBreakpointPreviewMode({
-      mode,
-      label,
-      width,
-      height
-    }) {
-      if (this.mode === mode || mode === null) {
-        document.querySelector('body').removeAttribute('data-breakpoint-preview-mode');
-        document.querySelector('[data-apos-refreshable]').removeAttribute('data-resizable');
-        document.querySelector('[data-apos-refreshable]').removeAttribute('data-label');
-        document.querySelector('[data-apos-refreshable]').style.removeProperty('width');
-        document.querySelector('[data-apos-refreshable]').style.removeProperty('height');
-        document.querySelector('[data-apos-refreshable]').style.removeProperty('background');
-
-        this.mode = null;
-        this.$emit('reset-breakpoint-preview-mode');
-        this.saveState({ mode: this.mode });
-
+    toggleBreakpointPreviewMode(state) {
+      if (this.mode === state.mode || state.mode === null) {
+        this.resetBreakpointPreview();
         return;
       }
 
-      this.switchBreakpointPreviewMode({
-        mode,
-        label,
-        width,
-        height
+      this.switchBreakpointPreviewMode(state);
+    },
+    resetBreakpointPreview() {
+      const refreshableEl = document.querySelector('[data-apos-refreshable]');
+      this.unbindNativeMethod();
+
+      this.observer.disconnect();
+      if (!this.refreshableBodyEl) {
+        return;
+      }
+
+      this.refreshableBodyEl.remove();
+      Array.from(this.refreshableBodyEl.childNodes).forEach(child => {
+        if (child.nodeType !== Node.TEXT_NODE || child.nodeValue.trim()) {
+          refreshableEl.append(child);
+        }
       });
+      this.refreshableBodyEl = null;
+
+      if (this.bodyDataset) {
+        Object.entries(this.bodyDataset).forEach(([ key, value ]) => {
+          this.bodyEl.setAttribute(key, value);
+        });
+      }
+      if (this.bodyStyle) {
+        this.bodyEl.setAttribute('style', this.bodyStyle);
+      }
+      if (this.bodyId) {
+        this.bodyEl.setAttribute('id', this.bodyId);
+      }
+      if (this.bodyClass) {
+        this.bodyClass.forEach(className => {
+          this.bodyEl.classList.add(className);
+        });
+        this.bodyClass = [];
+      }
+
+      this.bodyEl.removeAttribute('data-breakpoint-preview-mode');
+      refreshableEl.removeAttribute('data-resizable');
+      refreshableEl.removeAttribute('data-label');
+      refreshableEl.style.removeProperty('width');
+      refreshableEl.style.removeProperty('height');
+
+      this.mode = null;
+      this.$emit('reset-breakpoint-preview-mode');
+      this.saveState({ mode: this.mode });
+
     },
     loadState() {
       return JSON.parse(sessionStorage.getItem('aposBreakpointPreviewMode') || '{}');

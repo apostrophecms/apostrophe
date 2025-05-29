@@ -25,7 +25,6 @@ body[data-breakpoint-preview-mode] {
     margin: $spacing-base * 6 auto auto;
     border: 1px solid var(--a-base-6);
     box-shadow: 0 0 12px 0 var(--a-base-7);
-    background-color: var(--a-background-primary);
 
     &[data-resizable="false"] {
       transition:
