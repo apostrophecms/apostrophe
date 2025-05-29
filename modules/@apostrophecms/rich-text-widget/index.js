@@ -968,95 +968,22 @@ module.exports = {
   },
   extendMethods(self) {
     return {
+
+      // Implements the standard sanitize method of widgets, in this case sanitizing
+      // rich text content using the sanitizeHtml method
       async sanitize(_super, req, input, options) {
         try {
           const rteOptions = {
             ...self.options.defaultOptions,
             ...options
           };
-
           const output = await _super(req, input, rteOptions);
-          const finalOptions = self.optionsToSanitizeHtml(rteOptions);
 
-          if (input.import?.html) {
-            if ((typeof input.import.html) !== 'string') {
-              throw self.apos.error('invalid', 'import.html must be a string');
-            }
-            if (input.import.baseUrl && ((typeof input.import.html) !== 'string')) {
-              throw self.apos.error('invalid', 'If present, import.baseUrl must be a string');
-            }
-            const $ = cheerio.load(input.import.html);
-            const $images = $('img');
-            // Build an array of cheerio objects because
-            // we need to iterate while doing async work,
-            // which .each() can't do
-            const $$images = [];
-            $images.each((i, el) => {
-              const $image = $(el);
-              $$images.push($image);
-            });
-            for (const $image of $$images) {
-              const src = $image.attr('src');
-              const alt = $image.attr('alt') && self.apos.util.escapeHtml($image.attr('alt'));
-              const url = new URL(src, input.import.baseUrl || self.apos.baseUrl);
-              const res = await fetch(url);
-              if (res.status >= 400) {
-                self.apos.util.warn(`Error ${res.status} while importing ${src}, ignoring image`);
-                continue;
-              }
-              const id = self.apos.util.generateId();
-              const temp = self.apos.attachment.uploadfs.getTempPath() + `/${id}`;
-              const matches = src.match(/\/([^/]+\.\w+)$/);
-              if (!matches) {
-                self.apos.util.warn('img URL has no extension, skipping:', src);
-                continue;
-              }
-              const name = matches[1];
-              try {
-                await util.promisify(pipeline)(
-                  Readable.fromWeb(res.body),
-                  createWriteStream(temp)
-                );
-                const attachment = await self.apos.attachment.insert(req, {
-                  name,
-                  path: temp
-                });
-                const image = await self.apos.image.insert(req, {
-                  title: name,
-                  attachment
-                });
-                const newSrc = `${self.apos.image.action}/${image.aposDocId}/src`;
-                $image.replaceWith(
-                  `<figure>
-                    <img src="${newSrc}" ${alt && `alt="${alt}"`} />
-                    <figcaption></figcaption>
-                  </figure>
-                  `
-                );
-              } finally {
-                try {
-                  unlinkSync(temp);
-                } catch (e) {
-                  // It's OK if we never created it
-                }
-              }
-            }
-            input.content = $.html();
-          }
+          // Return value contains `content`, but also `imageIds` and `permalinkIds`
+          // for optimization purposes. Merge these properties in so that any
+          // ordinary schema fields are also retained
+          Object.assign(output, await this.sanitizeRichText(req, input, rteOptions));
 
-          output.content = self.sanitizeHtml(input.content, finalOptions);
-
-          const permalinkAnchors = output.content.match(/"#apostrophe-permalink-[^"?]*?\?/g);
-          output.permalinkIds = (permalinkAnchors && permalinkAnchors.map(anchor => {
-            const matches = anchor.match(/apostrophe-permalink-(.*)\?/);
-            return matches[1];
-          })) || [];
-          const quotedAction = self.apos.util.regExpQuote(self.apos.modules['@apostrophecms/image'].action);
-          const imageAnchors = output.content.match(new RegExp(`${quotedAction}/([^/]+)/src`, 'g'));
-          output.imageIds = (imageAnchors && imageAnchors.map(anchor => {
-            const matches = anchor.match(new RegExp(`${quotedAction}/([^/]+)/src`));
-            return matches[1];
-          })) || [];
           return output;
         } catch (e) {
           // Because the trace for template errors is not very
@@ -1101,9 +1028,118 @@ module.exports = {
           tableOptions: self.options.tableOptions
         };
         return finalData;
+      },
+
+      // `content` must be a string containing HTML markup. It will be sanitized according
+      // to `options`.
+      //
+      // If `options.importImages` is true, any plain img tags found in `richText` will be automatically fetched,
+      // converted to apostrophe attachments, and linked correctly in the returned value as figures.
+      //
+      // If `options.baseUrl` is set it will be used to resolve URLs when using `importImages`.
+      //
+      // Other `options` are our standard rich text options e.g. `toolbar`, `insert`, `styles`, etc.
+      // Only markup pertaining to what these settings allow will be retained.
+      //
+      // This method returns an object with the following properties:
+      // - `content`: the sanitized rich text markup
+      // - `permalinkIds`: an array of aposDocIds of permalinks found in the rich text
+      // - `imageIds`: an array of aposDocIds of inline images found in the rich text
+
+      async sanitizeRichText(req, content, options) {
+        const input = options.importImages ? {
+          import: {
+            html: content,
+            baseUrl: options.baseUrl
+          }
+        } : {
+          content
+        };
+        const finalOptions = self.optionsToSanitizeHtml(options);
+
+        if (input.import?.html) {
+          if ((typeof input.import.html) !== 'string') {
+            throw self.apos.error('invalid', 'import.html must be a string');
+          }
+          if (input.import.baseUrl && ((typeof input.import.html) !== 'string')) {
+            throw self.apos.error('invalid', 'If present, import.baseUrl must be a string');
+          }
+          const $ = cheerio.load(input.import.html);
+          const $images = $('img');
+          // Build an array of cheerio objects because
+          // we need to iterate while doing async work,
+          // which .each() can't do
+          const $$images = [];
+          $images.each((i, el) => {
+            const $image = $(el);
+            $$images.push($image);
+          });
+          for (const $image of $$images) {
+            const src = $image.attr('src');
+            const alt = $image.attr('alt') && self.apos.util.escapeHtml($image.attr('alt'));
+            const url = new URL(src, input.import.baseUrl || self.apos.baseUrl);
+            const res = await fetch(url);
+            if (res.status >= 400) {
+              self.apos.util.warn(`Error ${res.status} while importing ${src}, ignoring image`);
+              continue;
+            }
+            const id = self.apos.util.generateId();
+            const temp = self.apos.attachment.uploadfs.getTempPath() + `/${id}`;
+            const matches = src.match(/\/([^/]+\.\w+)$/);
+            if (!matches) {
+              self.apos.util.warn('img URL has no extension, skipping:', src);
+              continue;
+            }
+            const name = matches[1];
+            try {
+              await util.promisify(pipeline)(
+                Readable.fromWeb(res.body),
+                createWriteStream(temp)
+              );
+              const attachment = await self.apos.attachment.insert(req, {
+                name,
+                path: temp
+              });
+              const image = await self.apos.image.insert(req, {
+                title: name,
+                attachment
+              });
+              const newSrc = `${self.apos.image.action}/${image.aposDocId}/src`;
+              $image.replaceWith(
+                `<figure>
+                  <img src="${newSrc}" ${alt && `alt="${alt}"`} />
+                  <figcaption></figcaption>
+                </figure>
+                `
+              );
+            } finally {
+              try {
+                unlinkSync(temp);
+              } catch (e) {
+                // It's OK if we never created it
+              }
+            }
+          }
+          input.content = $.html();
+        }
+
+        output.content = self.sanitizeHtml(input.content, finalOptions);
+
+        const permalinkAnchors = output.content.match(/"#apostrophe-permalink-[^"?]*?\?/g);
+        output.permalinkIds = (permalinkAnchors && permalinkAnchors.map(anchor => {
+          const matches = anchor.match(/apostrophe-permalink-(.*)\?/);
+          return matches[1];
+        })) || [];
+        const quotedAction = self.apos.util.regExpQuote(self.apos.modules['@apostrophecms/image'].action);
+        const imageAnchors = output.content.match(new RegExp(`${quotedAction}/([^/]+)/src`, 'g'));
+        output.imageIds = (imageAnchors && imageAnchors.map(anchor => {
+          const matches = anchor.match(new RegExp(`${quotedAction}/([^/]+)/src`));
+          return matches[1];
+        })) || [];
       }
     };
   },
+
   tasks(self) {
     const confirm = async (isConfirmed) => {
       if (isConfirmed) {

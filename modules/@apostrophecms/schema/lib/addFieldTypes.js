@@ -1439,6 +1439,76 @@ module.exports = (self) => {
     }
   });
 
+  self.addFieldType({
+    name: 'richText',
+    convert(req, field, data, destination) {
+      destination[field.name] = self.apos.launder.string(data[field.name]);
+      destination[field.name] = checkStringLength(
+        destination[field.name],
+        field.min,
+        field.max
+      );
+      // If field is required but empty (and client side didn't catch that)
+      // This is new and until now if JS client side failed, then it would
+      // allow the save with empty values -Lars
+      if (
+        field.required &&
+        (_.isUndefined(data[field.name]) || !data[field.name].toString().length)
+      ) {
+        throw self.apos.error('required');
+      }
+
+      if (field.pattern) {
+        const regex = new RegExp(field.pattern);
+
+        if (!regex.test(destination[field.name])) {
+          throw self.apos.error('invalid');
+        }
+      }
+    },
+    index(value, field, texts) {
+      const silent = field.silent === undefined ? true : field.silent;
+      texts.push({
+        weight: field.weight || 15,
+        text: value,
+        silent
+      });
+    },
+    isEmpty(field, value) {
+      return !value.length;
+    },
+    validate(field, options, warn, fail) {
+      if (!field.pattern) {
+        return;
+      }
+
+      const isRegexInstance = field.pattern instanceof RegExp;
+      if (!isRegexInstance && typeof field.pattern !== 'string') {
+        fail('The pattern property must be a RegExp or a String');
+      }
+
+      field.pattern = isRegexInstance ? field.pattern.source : field.pattern;
+    },
+    addQueryBuilder(field, query) {
+      query.addBuilder(field.name, {
+        finalize: function () {
+          if (self.queryBuilderInterested(query, field.name)) {
+            const criteria = {};
+            criteria[field.name] = new RegExp(self.apos.util.regExpQuote(query.get(field.name)), 'i');
+            query.and(criteria);
+          }
+        },
+        launder: function (s) {
+          return self.apos.launder.string(s);
+        },
+        choices: async function () {
+          return self.sortedDistinct(field.name, query);
+        }
+      });
+    },
+    def: ''
+  });
+
   function checkStringLength (string, min, max) {
     if (string && min && string.length < min) {
       // Would be unpleasant, but shouldn't happen since the browser
