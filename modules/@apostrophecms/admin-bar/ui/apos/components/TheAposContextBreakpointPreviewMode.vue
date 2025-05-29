@@ -88,11 +88,14 @@ export default {
       shortcuts: this.getShortcuts(),
       breakpoints: this.getBreakpointItems(),
       showDropdown: false,
+      bodyEl: null,
       bodyId: '',
-      bodyClass: '',
+      bodyClass: [],
       bodyDataset: {},
       bodyStyle: '',
-      observer: new MutationObserver(this.observerCallback)
+      refreshableBodyEl: null,
+      observer: new MutationObserver(this.observerCallback),
+      originalBodyClassRemoveMethod: null
     };
   },
   computed: {
@@ -134,6 +137,7 @@ export default {
     }
   },
   mounted() {
+    this.bodyEl = document.querySelector('body');
     this.setShowDropdown();
     apos.bus.$on(
       'command-menu-admin-bar-toggle-breakpoint-preview-mode',
@@ -157,46 +161,92 @@ export default {
   methods: {
     observerCallback(mutationList, observer) {
       for (const mutation of mutationList) {
-        console.log('mutation.type', mutation.type);
-        if (mutation.type === 'attributes') {
-          console.log('mutation', mutation);
+        if (mutation.type !== 'attributes') {
+          continue;
         }
+
+        if (mutation.attributeName === 'class') {
+          if (!mutation.target.classList) {
+            continue;
+          }
+
+          const addedClasses = Array.from(mutation.target.classList) || [];
+          addedClasses.forEach(className => {
+            if (!this.bodyClass.includes(className)) {
+              this.bodyClass.push(className);
+              this.refreshableBodyEl.classList.add(className);
+            }
+          });
+          this.bodyEl.removeAttribute('class');
+          continue;
+        }
+
+        if (mutation.attributeName === 'style') {
+          continue;
+        }
+
+        if (mutation.attributeName.startsWith('data-')) {
+          const dataKey = mutation.attributeName;
+          if (
+            dataKey.startsWith('data-apos-') ||
+            dataKey === 'data-breakpoint-preview-mode' ||
+            !mutation.target.hasAttribute(dataKey)
+          ) {
+            continue;
+          }
+
+          const value = mutation.target.getAttribute(dataKey);
+          this.refreshableBodyEl.setAttribute(dataKey, value);
+          this.bodyDataset[dataKey] = value;
+          mutation.target.removeAttribute(dataKey);
+          continue;
+        }
+
+        /* if (mutation.attributeName === '') { */
+        /**/
+        /*   continue */
+        /* } */
+
       }
     },
-    moveBodyAttributes(bodyEl, refreshableEl) {
-      const dataset = Object.entries(bodyEl.dataset)
-        .filter(([ key ]) => !key.startsWith('apos') && key !== 'breakpointpreviewmode');
-      const refreshableBodyEl = document.createElement('div');
-      refreshableBodyEl.setAttribute('data-apos-refreshable-body', '');
+    moveBodyAttributes(refreshableEl) {
+      const dataset = Object.values(this.bodyEl.attributes)
+        .filter(({ name }) => name.startsWith('data-') && !name.startsWith('data-apos'))
+        .map(({ name, value }) => [ name, value ]);
+      this.refreshableBodyEl = document.createElement('div');
+      this.refreshableBodyEl.setAttribute('data-apos-refreshable-body', '');
 
       Array.from(refreshableEl.childNodes).forEach(child => {
-        refreshableBodyEl.append(child);
+        this.refreshableBodyEl.append(child);
       });
-      refreshableEl.append(refreshableBodyEl);
+      refreshableEl.append(this.refreshableBodyEl);
 
       this.bodyDataset = Object.fromEntries(dataset);
-      this.bodyStyle = bodyEl.getAttribute('style');
-      this.bodyId = bodyEl.getAttribute('id')?.trim();
-      this.bodyClass = bodyEl.getAttribute('class')?.trim();
+      console.log('this.bodyDataset', this.bodyDataset);
+      this.bodyStyle = this.bodyEl.getAttribute('style');
+      this.bodyId = this.bodyEl.getAttribute('id')?.trim();
+
+      this.bodyClass = this.bodyEl.getAttribute('class')?.trim().split(/\s+/) || [];
       if (this.bodyDataset) {
         Object.entries(this.bodyDataset).forEach(([ key, value ]) => {
-          const dataKey = `data-${key}`;
-          bodyEl.removeAttribute(dataKey);
-          refreshableBodyEl.setAttribute(dataKey, value);
+          this.bodyEl.removeAttribute(key);
+          this.refreshableBodyEl.setAttribute(key, value);
         });
       }
 
       if (this.bodyStyle) {
-        bodyEl.removeAttribute('style');
-        refreshableBodyEl.setAttribute('style', this.bodyStyle);
+        this.bodyEl.removeAttribute('style');
+        this.refreshableBodyEl.setAttribute('style', this.bodyStyle);
       }
       if (this.bodyId) {
-        bodyEl.removeAttribute('id');
-        refreshableBodyEl.setAttribute('id', this.bodyId);
+        this.bodyEl.removeAttribute('id');
+        this.refreshableBodyEl.setAttribute('id', this.bodyId);
       }
       if (this.bodyClass) {
-        bodyEl.removeAttribute('class');
-        refreshableBodyEl.className = this.bodyClass;
+        this.bodyEl.removeAttribute('class');
+        this.bodyClass.forEach(className => {
+          this.refreshableBodyEl.classList.add(className);
+        });
       }
     },
     switchBreakpointPreviewMode({
@@ -205,21 +255,28 @@ export default {
       width,
       height
     }) {
-      const bodyEl = document.querySelector('body');
       const refreshableEl = document.querySelector('[data-apos-refreshable]');
 
       // Only when switching to mobile preview from the normal state
       if (!this.mode) {
-        this.observer.observe(bodyEl, {
-          attributes: true,
-          childList: true,
-          subtree: true
-        });
-        this.moveBodyAttributes(bodyEl, refreshableEl);
+        this.moveBodyAttributes(refreshableEl);
+        this.observer.observe(this.bodyEl, { attributes: true });
 
+        this.originalBodyClassRemoveMethod = this.bodyEl.classList.remove;
+        this.bodyEl.classList.remove = (...args) => {
+          this.bodyClass = this.bodyClass.filter(className => !args.includes(className));
+          this.refreshableBodyEl.classList.remove(...args);
+        };
+        // TODO: update native method for removeAttribute and removeStyle???
+
+        // TESTS
+        this.bodyEl.style.backgroundColor = '#gggggg';
+        this.bodyEl.classList.remove('foo', 'my-body');
+        this.bodyEl.setAttribute('data-test', 'test-value');
+        this.bodyEl.setAttribute('data-empty', '');
       }
 
-      bodyEl.setAttribute('data-breakpoint-preview-mode', mode);
+      this.bodyEl.setAttribute('data-breakpoint-preview-mode', mode);
       refreshableEl.setAttribute('data-resizable', this.resizable);
       refreshableEl.setAttribute('data-label', this.$t(label));
       refreshableEl.style.width = width;
@@ -248,40 +305,42 @@ export default {
       this.switchBreakpointPreviewMode(state);
     },
     resetBreakpointPreview() {
-      const bodyEl = document.querySelector('body');
       const refreshableEl = document.querySelector('[data-apos-refreshable]');
-      const refreshableBodyEl = document.querySelector('[data-apos-refreshable-body]');
-
+      this.bodyEl.classList.remove = this.originalBodyClassRemoveMethod;
+      this.originalBodyClassRemoveMethod = null;
       this.observer.disconnect();
 
-      if (!refreshableBodyEl) {
+      if (!this.refreshableBodyEl) {
         return;
       }
 
-      refreshableBodyEl.remove();
-      Array.from(refreshableBodyEl.childNodes).forEach(child => {
+      this.refreshableBodyEl.remove();
+      Array.from(this.refreshableBodyEl.childNodes).forEach(child => {
         if (child.nodeType !== Node.TEXT_NODE || child.nodeValue.trim()) {
           refreshableEl.append(child);
         }
       });
+      this.refreshableBodyEl = null;
 
       if (this.bodyDataset) {
         Object.entries(this.bodyDataset).forEach(([ key, value ]) => {
-          const dataKey = `data-${key}`;
-          bodyEl.setAttribute(dataKey, value);
+          this.bodyEl.setAttribute(key, value);
         });
       }
       if (this.bodyStyle) {
-        bodyEl.setAttribute('style', this.bodyStyle);
+        this.bodyEl.setAttribute('style', this.bodyStyle);
       }
       if (this.bodyId) {
-        bodyEl.setAttribute('id', this.bodyId);
+        this.bodyEl.setAttribute('id', this.bodyId);
       }
       if (this.bodyClass) {
-        bodyEl.setAttribute('class', this.bodyClass);
+        this.bodyClass.forEach(className => {
+          this.bodyEl.classList.add(className);
+        });
+        this.bodyClass = [];
       }
 
-      bodyEl.removeAttribute('data-breakpoint-preview-mode');
+      this.bodyEl.removeAttribute('data-breakpoint-preview-mode');
       refreshableEl.removeAttribute('data-resizable');
       refreshableEl.removeAttribute('data-label');
       refreshableEl.style.removeProperty('width');
