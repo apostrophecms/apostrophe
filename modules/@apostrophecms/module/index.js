@@ -529,6 +529,11 @@ module.exports = {
           return false;
         }
 
+        if (req.res.statusCode >= 400) {
+          // Don't cache errors
+          return false;
+        }
+
         return Object.entries(req.session).every(([ key, val ]) =>
           key === 'cookie' || (
             (key === 'flash' || key === 'passport') && _.isEmpty(val)
