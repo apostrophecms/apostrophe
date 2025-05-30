@@ -275,35 +275,37 @@ export default {
       window.removeEventListener('keydown', this.focusParentEvent);
     },
     handleCopy() {
-      if (this.isInsideContentEditable || !this.focusedWidgetIndex) {
+      if (this.isInsideContentEditable || this.focusedWidgetIndex === -1) {
         return;
       }
 
       this.copy(this.focusedWidgetIndex);
     },
     handleCut() {
-      if (this.isInsideContentEditable || !this.focusedWidgetIndex) {
+      if (this.isInsideContentEditable || this.focusedWidgetIndex === -1) {
         return;
       }
 
       this.cut(this.focusedWidgetIndex);
     },
     handleDuplicate() {
-      if (this.isInsideContentEditable || !this.focusedWidgetIndex) {
+      if (this.isInsideContentEditable || this.focusedWidgetIndex === -1) {
         return;
       }
 
       this.clone(this.focusedWidgetIndex);
     },
     handlePaste() {
-      if (this.isInsideContentEditable || !this.focusedWidgetIndex) {
+      if (this.isInsideContentEditable ||
+        (this.focusedWidgetIndex === -1 && this.next.length > 0)
+      ) {
         return;
       }
 
-      this.paste(this.focusedWidgetIndex);
+      this.paste(Math.max(this.focusedWidgetIndex, 0));
     },
     handleRemove() {
-      if (this.isInsideContentEditable || !this.focusedWidgetIndex) {
+      if (this.isInsideContentEditable || this.focusedWidgetIndex === -1) {
         return;
       }
 
