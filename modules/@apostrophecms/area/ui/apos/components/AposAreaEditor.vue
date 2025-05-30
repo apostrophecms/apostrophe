@@ -200,6 +200,10 @@ export default {
       return !!(this.docId && (window.apos.adminBar.contextId !== this.docId));
     },
     focusedWidgetIndex() {
+      if (!this.focusedWidget) {
+        return -1;
+      }
+
       return this.next.findIndex(widget => widget._id === this.focusedWidget);
     },
     isInsideContentEditable() {
@@ -271,35 +275,35 @@ export default {
       window.removeEventListener('keydown', this.focusParentEvent);
     },
     handleCopy() {
-      if (this.isInsideContentEditable) {
+      if (this.isInsideContentEditable || !this.focusedWidgetIndex) {
         return;
       }
 
       this.copy(this.focusedWidgetIndex);
     },
     handleCut() {
-      if (this.isInsideContentEditable) {
+      if (this.isInsideContentEditable || !this.focusedWidgetIndex) {
         return;
       }
 
       this.cut(this.focusedWidgetIndex);
     },
     handleDuplicate() {
-      if (this.isInsideContentEditable) {
+      if (this.isInsideContentEditable || !this.focusedWidgetIndex) {
         return;
       }
 
       this.clone(this.focusedWidgetIndex);
     },
     handlePaste() {
-      if (this.isInsideContentEditable) {
+      if (this.isInsideContentEditable || !this.focusedWidgetIndex) {
         return;
       }
 
       this.paste(this.focusedWidgetIndex);
     },
     handleRemove() {
-      if (this.isInsideContentEditable) {
+      if (this.isInsideContentEditable || !this.focusedWidgetIndex) {
         return;
       }
 
