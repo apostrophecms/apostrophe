@@ -4,8 +4,6 @@
     class="apos-area"
     :class="themeClass"
   >
-    <!--
-    -->
     <div
       v-if="next.length === 0 && !foreign"
       v-click-outside-element="resetFocusedArea"
