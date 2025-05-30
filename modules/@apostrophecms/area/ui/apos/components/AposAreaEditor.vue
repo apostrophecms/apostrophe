@@ -4,11 +4,15 @@
     class="apos-area"
     :class="themeClass"
   >
+    <!--
+    -->
     <div
       v-if="next.length === 0 && !foreign"
+      v-click-outside-element="resetFocusedArea"
       class="apos-empty-area"
       tabindex="0"
       @paste="paste(0)"
+      @click="setFocusedArea(areaId)"
     >
       <template v-if="isEmptySingleton">
         <AposButton
@@ -204,10 +208,7 @@ export default {
         return -1;
       }
 
-      return this.next.findIndex(widget => widget._id === this.focusedWidget);
-    },
-    isInsideContentEditable() {
-      return document.activeElement.closest('[contenteditable]') !== null;
+      return this.next.findIndex(widget => widget._id === window.apos.focusedWidget);
     }
   },
   watch: {
@@ -274,29 +275,59 @@ export default {
       apos.bus.$off('command-menu-area-remove-widget', this.handleRemove);
       window.removeEventListener('keydown', this.focusParentEvent);
     },
+    isInsideContentEditable() {
+      return document.activeElement.closest('[contenteditable]') !== null;
+    },
+    isInsideFocusedArea() {
+      return window.apos.focusedArea === this.areaId;
+    },
+    resetFocusedArea() {
+      if (window.apos.focusedArea !== this.areaId) {
+        return;
+      }
+
+      this.setFocusedArea(null);
+    },
+    setFocusedArea(areaId) {
+      window.apos.focusedArea = areaId;
+    },
     handleCopy() {
-      if (this.isInsideContentEditable || this.focusedWidgetIndex === -1) {
+      if (
+        !this.isInsideFocusedArea() ||
+        this.isInsideContentEditable() ||
+        this.focusedWidgetIndex === -1
+      ) {
         return;
       }
 
       this.copy(this.focusedWidgetIndex);
     },
     handleCut() {
-      if (this.isInsideContentEditable || this.focusedWidgetIndex === -1) {
+      if (
+        !this.isInsideFocusedArea() ||
+        this.isInsideContentEditable() ||
+        this.focusedWidgetIndex === -1
+      ) {
         return;
       }
 
       this.cut(this.focusedWidgetIndex);
     },
     handleDuplicate() {
-      if (this.isInsideContentEditable || this.focusedWidgetIndex === -1) {
+      if (
+        !this.isInsideFocusedArea() ||
+        this.isInsideContentEditable() ||
+        this.focusedWidgetIndex === -1
+      ) {
         return;
       }
 
       this.clone(this.focusedWidgetIndex);
     },
     handlePaste() {
-      if (this.isInsideContentEditable ||
+      if (
+        !this.isInsideFocusedArea() ||
+        this.isInsideContentEditable() ||
         (this.focusedWidgetIndex === -1 && this.next.length > 0)
       ) {
         return;
@@ -305,7 +336,11 @@ export default {
       this.paste(Math.max(this.focusedWidgetIndex, 0));
     },
     handleRemove() {
-      if (this.isInsideContentEditable || this.focusedWidgetIndex === -1) {
+      if (
+        !this.isInsideFocusedArea() ||
+        this.isInsideContentEditable() ||
+        this.focusedWidgetIndex === -1
+      ) {
         return;
       }
 
