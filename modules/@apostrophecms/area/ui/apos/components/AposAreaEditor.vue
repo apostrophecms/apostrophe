@@ -72,7 +72,6 @@
         @update="update"
         @add="add"
         @paste="paste"
-        @click="setFocusedArea(areaId)"
       />
     </div>
   </div>
@@ -367,6 +366,9 @@ export default {
       // Attached to window so that modals can see the area is active
       window.apos.focusedWidget = _id;
 
+      // We want what's next to run only once
+      // for the area containing the focusedWidget
+      // and not for all areas present on the page
       if (this.focusedWidgetIndex === -1) {
         return;
       }
