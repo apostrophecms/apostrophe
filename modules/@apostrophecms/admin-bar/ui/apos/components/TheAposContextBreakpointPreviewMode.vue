@@ -238,20 +238,23 @@ export default {
         this.bodyClass = this.bodyClass.filter(className => !args.includes(className));
         this.refreshableBodyEl.classList.remove(...args);
       };
-      this.bodyEl.classList.replace = (...args) => {
-        const [ oldClass, newClass ] = args;
+
+      this.originalClassMethods.replace = this.bodyEl.classList.replace;
+      this.bodyEl.classList.replace = (oldClass, newClass) => {
         this.bodyClass = this.bodyClass
           .map(className => className === oldClass ? newClass : className);
-        this.refreshableBodyEl.classList.replace(...args);
+        this.refreshableBodyEl.classList.replace(oldClass, newClass);
       };
-      this.bodyEl.classList.toggle = (className, opt) => {
-        if (this.bodyClass.includes(className) && !opt) {
+
+      this.originalClassMethods.toggle = this.bodyEl.classList.toggle;
+      this.bodyEl.classList.toggle = (className, force) => {
+        if (this.bodyClass.includes(className) && !force) {
           this.bodyClass = this.bodyClass.filter(c => c !== className);
         }
-        if (!this.bodyClass.includes(className) && (opt == null || opt)) {
+        if (!this.bodyClass.includes(className) && force !== false) {
           this.bodyClass.push(className);
         }
-        this.refreshableBodyEl.classList.toggle(className, opt);
+        this.refreshableBodyEl.classList.toggle(className, force);
       };
     },
     // Out of breakpoint preview mode, classList methods are
@@ -357,7 +360,6 @@ export default {
       this.mode = null;
       this.$emit('reset-breakpoint-preview-mode');
       this.saveState({ mode: this.mode });
-
     },
     loadState() {
       return JSON.parse(sessionStorage.getItem('aposBreakpointPreviewMode') || '{}');
