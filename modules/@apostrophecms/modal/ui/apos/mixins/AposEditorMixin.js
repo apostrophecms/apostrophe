@@ -89,13 +89,18 @@ export default {
     // in our default configuration `followingValues` will be:
     //
     // `{ slug: { title: 'latest title here' } }`
-    followingValues(followedByCategory) {
+    followingValues(followedByCategory, parentOnly = false) {
       const fields = this.getFieldsByCategory(followedByCategory);
 
       const followingValues = {};
       const parentFollowing = {};
       for (const [ key, val ] of Object.entries(this.parentFollowingValues || {})) {
         parentFollowing[`<${key}`] = val;
+      }
+
+      if (parentOnly) {
+        // If we are only interested in the parent following values, return them
+        return parentFollowing;
       }
 
       for (const field of fields) {
@@ -142,11 +147,16 @@ export default {
     // in that category, although they may be conditional upon fields in either
     // category.
     getConditionalFields(followedByCategory) {
-      return getConditionalFields(
-        this.schema,
-        this.getFieldsByCategory(followedByCategory),
+      const values = {
         // currentDoc for arrays, docFields for all other editors
-        this.currentDoc ? this.currentDoc.data : this.docFields.data,
+        ...(this.currentDoc ? this.currentDoc.data : this.docFields.data),
+        // Append the parent following values without the current doc
+        // values, so that the parent can be used in conditions
+        ...this.followingValues(followedByCategory, true)
+      };
+      return getConditionalFields(
+        this.getFieldsByCategory(followedByCategory),
+        values,
         this.externalConditionsResults
       );
     },

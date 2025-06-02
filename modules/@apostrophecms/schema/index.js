@@ -699,6 +699,7 @@ module.exports = {
         }
       },
 
+      // FIXME - should support following values in the `if` clause
       async getNonVisibleFields({
         req, schema, destination, nonVisibleFields = new Set(), fieldPath = ''
       }) {

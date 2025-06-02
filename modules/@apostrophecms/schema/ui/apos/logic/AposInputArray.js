@@ -1,7 +1,7 @@
 import AposInputMixin from 'Modules/@apostrophecms/schema/mixins/AposInputMixin';
 import AposInputFollowingMixin from 'Modules/@apostrophecms/schema/mixins/AposInputFollowingMixin';
 import AposInputConditionalFieldsMixin from 'Modules/@apostrophecms/schema/mixins/AposInputConditionalFieldsMixin';
-import { getConditionTypesObject } from 'Modules/@apostrophecms/schema/lib/conditionalFields';
+import { getConditionTypesObject, hasParentConditionalField } from 'Modules/@apostrophecms/schema/lib/conditionalFields';
 
 import { createId } from '@paralleldrive/cuid2';
 import { klona } from 'klona';
@@ -42,10 +42,20 @@ export default {
   },
   computed: {
     isInlineTable() {
-      return this.field.style === 'table' && this.field.inline;
+      return this.field.style === 'table' && this.isInline;
     },
     isInlineStandard() {
-      return this.field.style !== 'table' && this.field.inline;
+      return this.field.style !== 'table' && this.isInline;
+    },
+    isInline() {
+      return !!this.field.inline;
+    },
+    shouldResetConditionalFields() {
+      if (!this.isInline) {
+        return false;
+      }
+
+      return hasParentConditionalField(this.schema);
     },
     isDraggable() {
       if (this.field.draggable === false) {
@@ -168,10 +178,19 @@ export default {
           this.validateAndEmit();
         }
       }
+    },
+    followingValues: {
+      // Re-evaluate following values when the parentFollowingValues prop changes
+      async handler(values) {
+        if (this.shouldResetConditionalFields) {
+          this.setItemsConditionalFields();
+        }
+      },
+      deep: true
     }
   },
   async mounted() {
-    if (this.field.inline) {
+    if (this.isInline) {
       await this.evaluateExternalConditions();
       this.setItemsConditionalFields();
     }
@@ -239,20 +258,28 @@ export default {
     }) {
       this.items.splice(newIndex, 0, this.items.splice(oldIndex, 1)[0]);
     },
-    getItemsSchema(_id) {
+    getItemData(_id) {
       return (this.items.find((item) => item._id === _id))?.schemaInput.data;
+    },
+    getItemDataWithFollowingValues(itemId) {
+      const data = this.getItemData(itemId) || {};
+      const followingValues = this.computeFollowingValues(data, true);
+      return {
+        ...data,
+        ...followingValues
+      };
     },
     setItemsConditionalFields(itemId) {
       if (itemId) {
         this.itemsConditionalFields[itemId] = this.getConditionalFields(
-          this.getItemsSchema(itemId)
+          this.getItemDataWithFollowingValues(itemId)
         );
         return;
       }
 
       for (const _id of Object.keys(this.itemsConditionalFields)) {
         this.itemsConditionalFields[_id] = this.getConditionalFields(
-          this.getItemsSchema(_id)
+          this.getItemDataWithFollowingValues(_id)
         );
       }
     },
