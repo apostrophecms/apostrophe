@@ -119,20 +119,35 @@ module.exports = {
     minimumDefaultOptions: {
       toolbar: [
         'styles',
+        '|',
         'bold',
         'italic',
         'strike',
+        'underline',
+        'subscript',
+        'superscript',
+        'blockquote',
+        '|',
+        'alignLeft',
+        'alignCenter',
+        'alignRight',
+        'image',
+        'horizontalRule',
         'link',
         'anchor',
         'bulletList',
         'orderedList',
-        'blockquote'
+        'color'
       ],
       styles: [
         // you may also use a `class` property with these
         {
           tag: 'p',
           label: 'apostrophe:richTextParagraph'
+        },
+        {
+          tag: 'h1',
+          label: 'apostrophe:richTextH1'
         },
         {
           tag: 'h2',
@@ -145,8 +160,22 @@ module.exports = {
         {
           tag: 'h4',
           label: 'apostrophe:richTextH4'
+        },
+        {
+          tag: 'h5',
+          label: 'apostrophe:richTextH5'
+        },
+        {
+          tag: 'h6',
+          label: 'apostrophe:richTextH6'
         }
+      ],
+      insert: [
+        'image',
+        'table',
+        'importTable'
       ]
+
     },
     defaultOptions: {},
     components: {

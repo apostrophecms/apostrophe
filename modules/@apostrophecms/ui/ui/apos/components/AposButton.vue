@@ -19,6 +19,7 @@
       :type="buttonType"
       :role="role"
       :style="{color: textColor}"
+      :download="download ? '' : null"
       v-on="href ? {} : {click: click}"
     >
       <transition name="fade">
@@ -160,6 +161,10 @@ export default {
     secondIcon: {
       type: String,
       default: null
+    },
+    download: {
+      type: Boolean,
+      default: false
     }
   },
   emits: [ 'click', 'icon' ],
