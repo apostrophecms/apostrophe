@@ -1,16 +1,16 @@
 <template>
   <div
+    v-click-outside-element="resetFocusedArea"
     :data-apos-area="areaId"
     class="apos-area"
     :class="themeClass"
+    @click="setFocusedArea(areaId)"
   >
     <div
       v-if="next.length === 0 && !foreign"
-      v-click-outside-element="resetFocusedArea"
       class="apos-empty-area"
       tabindex="0"
       @paste="paste(0)"
-      @click="setFocusedArea(areaId)"
     >
       <template v-if="isEmptySingleton">
         <AposButton
@@ -72,6 +72,7 @@
         @update="update"
         @add="add"
         @paste="paste"
+        @click="setFocusedArea(areaId)"
       />
     </div>
   </div>
@@ -365,6 +366,12 @@ export default {
       this.focusedWidget = _id;
       // Attached to window so that modals can see the area is active
       window.apos.focusedWidget = _id;
+
+      if (this.focusedWidgetIndex === -1) {
+        return;
+      }
+
+      this.setFocusedArea(this.areaId);
 
       if (scrollIntoView) {
         this.$nextTick(() => {
