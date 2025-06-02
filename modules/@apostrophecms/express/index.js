@@ -317,7 +317,7 @@ module.exports = {
             taskReq = self.apos.task.getReq();
           } else if (info.role === 'editor') {
             taskReq = self.apos.task.getEditorReq();
-          } else if (info.role === 'contriburor') {
+          } else if (info.role === 'contributor') {
             taskReq = self.apos.task.getContributorReq();
           } else if (info.role === 'guest') {
             taskReq = self.apos.task.getGuestReq();
