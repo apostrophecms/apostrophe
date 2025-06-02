@@ -1,5 +1,15 @@
 # Changelog
 
+## UNRELEASED
+
+### Changes
+
+* Set the `Cache-Control` header to `no-store` for error pages in order to prevent the risk of serving stale error pages to users.
+
+### Fixes
+
+* The Download links in the media library now immediately download the file as expected, rather than navigating to the image in the current tab. `AposButton` now supports the `:download="true"` prop as expected.
+
 ## 4.17.1 (2025-05-16)
 
 ### Fixes
