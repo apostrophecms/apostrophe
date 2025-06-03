@@ -3282,11 +3282,11 @@ database.`);
         });
       },
       composeFilters() {
-        self.filters = Object.keys(self.filters)
-          .map(name => ({
+        self.filters = Object.entries(self.filters)
+          .map(([ name, filter ]) => ({
             name,
-            ...self.filters[name],
-            inputType: self.filters[name].inputType || 'select'
+            ...filter,
+            inputType: filter.inputType || 'select'
           }));
 
         // Add a null choice if not already added or set to `required`
