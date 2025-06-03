@@ -24,7 +24,7 @@ module.exports = {
   options: {
     alias: 'schema'
   },
-  init(self) {
+  async init(self) {
     self.fieldTypes = {};
     self.fieldsById = {};
     self.arrayManagers = {};
@@ -37,6 +37,11 @@ module.exports = {
     addFieldTypes(self);
 
     self.validatedSchemas = {};
+
+    // Universal ESM library, an async import is required.
+    const { default: checkIfCondition, isExternalCondition } = await import('../../../lib/universal/check-if-conditions.mjs');
+    self.checkIfCondition = checkIfCondition;
+    self.isExternalCondition = isExternalCondition;
   },
 
   methods(self) {
@@ -500,84 +505,61 @@ module.exports = {
         });
       },
 
-      async evaluateCondition(req, field, clause, destination, conditionalFields) {
-        for (const [ key, val ] of Object.entries(clause)) {
-          const destinationKey = _.get(destination, key);
+      async evaluateCondition(
+        req, field, clause, destination, conditionalFields,
+        followingValues = {}
+      ) {
+        const allValues = {
+          ...destination,
+          ...followingValues
+        };
 
-          if (key === '$or') {
-            const results = await Promise.all(
-              val.map(clause => self.evaluateCondition(
-                req,
-                field,
-                clause,
-                destination,
-                conditionalFields)
-              )
-            );
-            const testResults = _.isPlainObject(results?.[0])
-              ? results.some(({ value }) => value)
-              : results.some((value) => value);
-            if (!testResults) {
+        // 1. Evaluate all conditions without the externals.
+        const savedExternalConditions = [];
+        const result = self.checkIfCondition(
+          allValues,
+          clause,
+          (propName, conditionValue, docValue) => {
+            if (conditionalFields?.[propName] === false) {
               return false;
             }
-            continue;
-          } else if (val.$ne) {
-            if (val.$ne === destinationKey) {
-              return false;
+            if (self.isExternalCondition(propName)) {
+              savedExternalConditions.push({
+                name: propName,
+                value: conditionValue
+              });
             }
-            continue;
+            // Non-boolean return values are ignored
           }
+        );
 
-          // Handle external conditions:
-          //  - `if: { 'methodName()': true }`
-          //  - `if: { 'moduleName:methodName()': 'expected value' }`
-          // Checking if key ends with a closing parenthesis here to throw
-          // later if any argument is passed.
-          if (key.endsWith(')')) {
-            let externalConditionResult;
-
-            try {
-              externalConditionResult = await self.evaluateMethod(
-                req,
-                key,
-                field.name,
-                field.moduleName,
-                destination._id
-              );
-            } catch (error) {
-              throw self.apos.error('invalid', error.message);
-            }
-
-            if (externalConditionResult !== val) {
-              return false;
-            };
-
-            // Stop there, this is an external condition thus
-            // does not need to be checked against doc fields.
-            continue;
-          }
-
-          // test with Object.prototype for the case val.min === 0
-          if (Object.hasOwn(val, 'min') || Object.hasOwn(val, 'max')) {
-            if (destinationKey < val.min) {
-              return false;
-            }
-            if (destinationKey > val.max) {
-              return false;
-            }
-            continue;
-          }
-
-          if (conditionalFields?.[key] === false) {
-            return false;
-          }
-
-          if (destinationKey !== val) {
-            return false;
-          }
+        // 2. If the conditions evaluate to false or no external conditionss, stop.
+        if (!result || savedExternalConditions.length === 0) {
+          return result;
         }
 
-        return true;
+        // 3. Otherwise, evaluate the external conditions.
+        // Handle external conditions:
+        //  - `if: { 'methodName()': true }`
+        //  - `if: { 'moduleName:methodName()': 'expected value' }`
+        const promises = savedExternalConditions.map(({ name }) => {
+          return self.evaluateMethod(
+            req,
+            name,
+            field.name,
+            field.moduleName,
+            destination._id
+          );
+        });
+
+        try {
+          const externalResults = await Promise.all(promises);
+          return externalResults.every((externalResult, index) => {
+            return externalResult === savedExternalConditions[index].value;
+          });
+        } catch (error) {
+          throw self.apos.error('invalid', error.message);
+        }
       },
 
       async isFieldRequired(req, field, destination) {
@@ -699,13 +681,20 @@ module.exports = {
         }
       },
 
-      // FIXME - should support following values in the `if` clause
       async getNonVisibleFields({
-        req, schema, destination, nonVisibleFields = new Set(), fieldPath = ''
+        req, schema, destination,
+        nonVisibleFields = new Set(), fieldPath = '',
+        parentFollowingValues = {}
       }) {
         for (const field of schema) {
           const curPath = fieldPath ? `${fieldPath}.${field.name}` : field.name;
-          const isVisible = await self.isVisible(req, schema, destination, field.name);
+          const isVisible = await self.isVisible(
+            req,
+            schema,
+            destination,
+            field.name,
+            parentFollowingValues
+          );
           if (!isVisible) {
             nonVisibleFields.add(curPath);
             continue;
@@ -713,6 +702,14 @@ module.exports = {
           if (!field.schema) {
             continue;
           }
+
+          // Get following values for the current parent before
+          // going deeper into the schema.
+          parentFollowingValues = self.getNextFollowingValues(
+            schema,
+            destination,
+            parentFollowingValues
+          );
 
           // Relationship does not support conditional fields right now
           if ([ 'array' /*, 'relationship' */].includes(field.type) && field.schema) {
@@ -722,7 +719,8 @@ module.exports = {
                 schema: field.schema,
                 destination: arrayItem,
                 nonVisibleFields,
-                fieldPath: `${curPath}.${arrayItem._id}`
+                fieldPath: `${curPath}.${arrayItem._id}`,
+                parentFollowingValues
               });
             }
           } else if (field.type === 'object') {
@@ -731,7 +729,8 @@ module.exports = {
               schema: field.schema,
               destination: destination[field.name],
               nonVisibleFields,
-              fieldPath: curPath
+              fieldPath: curPath,
+              parentFollowingValues
             });
           }
         }
@@ -836,9 +835,36 @@ module.exports = {
         return curSchema;
       },
 
+      // Retrieve all `following` fields from a schema (ignore sub-schema),
+      // merge it with the provided `parentFollowingValues` and apply the
+      // `<` prefix to the keys of the resulting object to increase the nesting
+      // level so that they can be passed to a sub-schema.
+      getNextFollowingValues(schema, values, parentFollowingValues = {}) {
+        const newFollowingValues = {};
+        for (const field of schema) {
+          if (!field.following) {
+            continue;
+          }
+          const following = Array.isArray(field.following)
+            ? field.following
+            : [ field.following ];
+          for (const followingField of following) {
+            // Add the parent prefix to the following field
+            newFollowingValues[`<${followingField}`] = values[followingField];
+          }
+        }
+
+        for (const [ name, value ] of Object.entries(parentFollowingValues)) {
+          newFollowingValues[`<${name}`] = value;
+        }
+
+        return newFollowingValues;
+      },
       // Determine whether the given field is visible
       // based on `if` conditions of all fields
-      async isVisible(req, schema, destination, name) {
+      async isVisible(
+        req, schema, destination, name, followingValues = {}
+      ) {
         const conditionalFields = {};
         const errors = {};
 
@@ -852,7 +878,8 @@ module.exports = {
                   field,
                   field.if,
                   destination,
-                  conditionalFields
+                  conditionalFields,
+                  followingValues
                 );
                 const previous = conditionalFields[field.name];
                 if (previous !== result) {

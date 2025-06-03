@@ -1,4 +1,4 @@
-import checkIfConditions from 'apostrophe/lib/check-if-conditions';
+import checkIfConditions, { isExternalCondition as isExtCondition } from 'apostrophe/lib/universal/check-if-conditions.mjs';
 
 // Supported field conditional types,
 // you can add a condition type to this array to make it available to the
@@ -83,7 +83,7 @@ export async function evaluateExternalCondition(conditionKey, fieldId, docId) {
 // Checking if key ends with a closing parenthesis here
 // to throw later if any argument is passed.
 export function isExternalCondition(conditionKey, conditionType) {
-  if (!conditionKey.endsWith(')')) {
+  if (!isExtCondition(conditionKey)) {
     return false;
   }
 
