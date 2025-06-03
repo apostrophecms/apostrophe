@@ -60,6 +60,7 @@
         :filters="filters"
         :choices="filterChoices"
         :values="filterValues"
+        :module-name="moduleName"
         @input="filter"
       />
       <AposInputString
