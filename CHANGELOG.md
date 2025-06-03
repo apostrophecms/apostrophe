@@ -4,6 +4,7 @@
 
 ### Adds
 
+* Adds MongoDB-style support (comparison operators) for conditional fields and all systems that use conditions. Conditional fields now have access to the `following` values from the parent schema fields.
 * Adds link configuration to the `@apostrophecms/image-widget` UI and a new option `linkWithType` to control what document types can be linked to. Opt-out of the widget inline styles (reset) by setting `inlineStyles: false` in the widget configuration or contextual options (area). 
 
 ### Changes
