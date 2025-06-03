@@ -26,7 +26,7 @@ export default options => {
     draggable: true,
 
     addAttributes() {
-      const atttrs = {
+      return {
         ...this.parent?.(),
         // The link schema HTML attributes, e.g. target.
         // Grab only the fields that are image-related if explicitly set
@@ -90,8 +90,6 @@ export default options => {
           parseHTML: element => element.querySelector('img')?.getAttribute('alt')
         }
       };
-
-      return atttrs;
     },
 
     parseHTML() {
