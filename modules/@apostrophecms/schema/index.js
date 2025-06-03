@@ -915,16 +915,17 @@ module.exports = {
         fieldModuleName,
         docId = null,
         optionalParenthesis = false,
-        following = {}
+        following = {},
+        featureType = 'field'
       ) {
         const [ methodDefinition, rest ] = methodKey.split('(');
         const hasParenthesis = rest !== undefined;
 
         if (!hasParenthesis && !optionalParenthesis) {
-          throw new Error(`The method "${methodDefinition}" defined in the "${fieldName}" field should be written with parenthesis: "${methodDefinition}()".`);
+          throw new Error(`The method "${methodDefinition}" defined in the "${fieldName}" ${featureType} should be written with parenthesis: "${methodDefinition}()".`);
         }
         if (hasParenthesis && !methodKey.endsWith('()')) {
-          self.apos.util.warn(`The method "${methodDefinition}" defined in the "${fieldName}" field should be written without argument: "${methodDefinition}()".`);
+          self.apos.util.warn(`The method "${methodDefinition}" defined in the "${fieldName}" ${featureType} should be written without argument: "${methodDefinition}()".`);
           methodKey = methodDefinition + '()';
         }
 
@@ -935,9 +936,9 @@ module.exports = {
         const module = self.apos.modules[moduleName];
 
         if (!module) {
-          throw new Error(`The "${moduleName}" module defined in the "${fieldName}" field does not exist.`);
+          throw new Error(`The "${moduleName}" module defined in the "${fieldName}" ${featureType} does not exist.`);
         } else if (!module[methodName]) {
-          throw new Error(`The "${methodName}" method from "${moduleName}" module defined in the "${fieldName}" field does not exist.`);
+          throw new Error(`The "${methodName}" method from "${moduleName}" module defined in the "${fieldName}" ${featureType} does not exist.`);
         }
 
         return module[methodName](req, { docId }, following);
@@ -2194,6 +2195,44 @@ module.exports = {
         });
       },
 
+      async choicesFilters(req) {
+        const moduleName = self.apos.launder.string(req.body.type);
+        const filterName = self.apos.launder.string(req.body.filterName);
+
+        const mod = self.apos.modules[moduleName];
+        if (!mod) {
+          throw self.apos.error('invalid', `Module "${moduleName}" not found.`);
+        }
+
+        const filter = mod.filters.find(f => f.name === filterName);
+        if (!filter) {
+          throw self.apos.error('invalid', `Filter "${filterName}" not found in module "${moduleName}".`);
+        }
+
+        try {
+          const choices = await self.evaluateMethod(
+            req,
+            filter.choices,
+            filter.name,
+            moduleName,
+            null,
+            true,
+            {},
+            'filter'
+          );
+
+          if (Array.isArray(choices)) {
+            return {
+              choices
+            };
+          } else {
+            throw self.apos.error('invalid', `The method ${filter.choices} from the module ${moduleName} did not return an array`);
+          }
+        } catch (error) {
+          throw self.apos.error('invalid', error.message);
+        }
+      },
+
       async choicesRoute(req) {
         const fieldId = self.apos.launder.string(req.query.fieldId);
         const docId = self.apos.launder.string(req.query.docId);
@@ -2259,7 +2298,11 @@ module.exports = {
     return {
       get: {
         async choices(req) {
-          return self.choicesRoute(req);
+          const featureType = self.apos.launder.string(req.body.featureType);
+
+          return featureType === 'filter'
+            ? self.choicesFilters(req)
+            : self.choicesRoute(req);
         },
         async evaluateExternalCondition(req) {
           const fieldId = self.apos.launder.string(req.query.fieldId);
@@ -2289,7 +2332,11 @@ module.exports = {
       },
       post: {
         async choices(req) {
-          return self.choicesRoute(req);
+          const featureType = self.apos.launder.string(req.body.featureType);
+
+          return featureType === 'filter'
+            ? self.choicesFilters(req)
+            : self.choicesRoute(req);
         }
       }
     };
