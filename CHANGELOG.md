@@ -7,6 +7,10 @@
 * Adds body style support for breakpoint preview mode. Created new `[data-apos-refreshable-body]` div inside the container during breapoint preview.
 Switch body attributes to this new div to keep supporting body styles in breakpoint preview mode.
 
+### Changes
+
+* Set the `Cache-Control` header to `no-store` for error pages in order to prevent the risk of serving stale error pages to users.
+
 ### Fixes
 
 * The Download links in the media library now immediately download the file as expected, rather than navigating to the image in the current tab. `AposButton` now supports the `:download="true"` prop as expected.
