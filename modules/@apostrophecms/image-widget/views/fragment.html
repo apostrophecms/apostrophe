@@ -55,7 +55,7 @@
   href="{{- _url(widget) | trim -}}" 
   title="{{- _title(widget) | trim -}}" 
   class="{{- className + "__link" -}}"
-  {%- if widget.linkTarget[0] === '_blank' %} target="{{ widget.linkTarget | first | trim }}"{% endif %}
+  {%- if widget.linkTarget[0] %} target="{{ widget.linkTarget | first | trim }}"{% endif %}
   {%- if widget.linkTarget[0] === '_blank' and widget.linkTo === '_url' %} rel="noopener noreferrer"{% endif %}>
   {{ _image(attachment, options, manager, contextOptions) }}
 </a>
