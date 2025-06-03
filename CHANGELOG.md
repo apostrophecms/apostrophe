@@ -4,6 +4,8 @@
 
 ### Adds
 
+* Adds link configuration to the `@apostrophecms/image-widget` UI and a new option `linkWithType` to control what document types can be linked to. Opt-out of the widget inline styles (reset) by setting `inlineStyles: false` in the widget configuration or contextual options (area). 
+
 * Adds body style support for breakpoint preview mode. Created new `[data-apos-refreshable-body]` div inside the container during breapoint preview.
 Switch body attributes to this new div to keep supporting body styles in breakpoint preview mode.
 
@@ -14,6 +16,7 @@ Switch body attributes to this new div to keep supporting body styles in breakpo
 ### Fixes
 
 * The Download links in the media library now immediately download the file as expected, rather than navigating to the image in the current tab. `AposButton` now supports the `:download="true"` prop as expected.
+* Using an API key with the editor, contributor or guest role now have a `req` object with the corresponding rights. The old behavior gave non-admin API keys less access than expected.
 
 ## 4.17.1 (2025-05-16)
 
