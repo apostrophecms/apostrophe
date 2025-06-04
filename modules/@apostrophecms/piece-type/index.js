@@ -274,18 +274,17 @@ module.exports = {
               inline
             });
           }
-          if (dynamicChoices.length) {
-            result.choices = await self.apos.schema.getFilterDynamicChoices(
-              req,
-              dynamicChoices,
-              self.__meta.name
-            );
-          }
-          if (query.get('choicesResults')) {
-            result.choices = Object.assign(result.choices || {}, query.get('choicesResults'));
-          }
-          if (query.get('countsResults')) {
-            result.counts = query.get('countsResults');
+          const filterDynamicChoices = await self.apos.schema.getFilterDynamicChoices(
+            req,
+            dynamicChoices,
+            self.__meta.name
+          );
+          const choicesResults = query.get('choicesResults') || {};
+          result.choices = Object.assign(filterDynamicChoices, choicesResults);
+
+          const countsResult = query.get('countsResults');
+          if (countsResult) {
+            result.counts = countsResult;
           }
 
           if (
