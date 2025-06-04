@@ -358,19 +358,35 @@ async function setDropdownPosition() {
     return;
   }
   const centerArrowEl = iconToCenterTo.value || dropdown.value;
+  // The proper ordering as recommended by Floating UI
+  // https://floating-ui.com/docs/flip#combining-with-shift
+  const middleware = [ offset(mOffset) ];
+  const flipMiddleware = flip({
+    // Always fallback to bottom when there is no placement
+    // that fits the viewport.
+    fallbackPlacements: [ 'bottom' ],
+    // Pass detectOverflow options to modify
+    // the clipping boundaries with our Admin UI top bar/Modal header
+    // in mind
+    padding: {
+      top: (window.apos.adminBar?.height || 0) + 10
+    }
+  });
+  const shiftMiddleware = shift({ padding: 5 });
+  if (props.menuPlacement.includes('-')) {
+    middleware.push(flipMiddleware, shiftMiddleware);
+  } else {
+    middleware.push(shiftMiddleware, flipMiddleware);
+  }
+  middleware.push(arrow({
+    element: arrowEl.value,
+    padding: 5
+  }));
   const {
     x, y, middlewareData, placement: dropdownPlacement
   } = await computePosition(centerArrowEl, dropdownContent.value, {
     placement: props.menuPlacement,
-    middleware: [
-      offset(mOffset),
-      shift({ padding: 5 }),
-      flip(),
-      arrow({
-        element: arrowEl.value,
-        padding: 5
-      })
-    ]
+    middleware
   });
 
   placement.value = dropdownPlacement;

@@ -106,18 +106,90 @@
 
 .apos-field.apos-field--micro {
   .apos-input {
-    padding: 7px;
+    padding: $spacing-three-quarters;
     font-size: var(--a-type-small);
   }
 
   .apos-input-icon {
-    right: 5px;
+    right: $spacing-half;
+  }
+
+  .apos-input-relationship__items {
+    margin: $spacing-half 0;
+  }
+
+  .apos-slat {
+    padding: $spacing-half;
   }
 
   .apos-field__label {
-    margin-bottom: 7px;
+    margin-bottom: $spacing-three-quarters;
     font-size: var(--a-type-small);
     font-weight: 500;
+
+    &:has(+ .apos-field__help) {
+      margin-bottom: $spacing-one-quarter;
+    }
+  }
+
+  .apos-field__error {
+    margin: $spacing-three-quarters 0;
+    font-size: var(--a-type-tiny);
+  }
+
+  .apos-field__help {
+    margin-bottom: $spacing-half;
+    color: var(--a-base-2);
+    font-size: var(--a-type-small);
+  }
+
+  .apos-choice-label-text {
+    font-size: var(--a-type-smaller);
+  }
+
+  &.apos-field--relationship {
+    .apos-input-relationship__button {
+      top: 1px;
+      padding: 0;
+    }
+
+    .apos-button,
+    .apos-button--small {
+      font-size: var(--a-type-small);
+    }
+
+    .apos-search__item:not(.apos-search__item--disabled) .apos-indicator svg {
+      max-width: $spacing-base;
+    }
+
+    .apos-search__item {
+      padding: $spacing-half $spacing-base;
+      gap: $spacing-half;
+
+      &:not(.apos-search__item--suggestion),
+      &:not(.apos-search__item--hint),
+      &:not(.apos-search__item--disabled) {
+        // stylelint-disable-next-line max-nesting-depth
+        .apos-search__item__field {
+          display: none;
+        }
+      }
+
+      // stylelint-disable-next-line max-nesting-depth
+      &--suggestion {
+        padding: $spacing-base;
+      }
+
+      &:not(.apos-search__item--disabled) .apos-search-image {
+        flex-basis: 25px;
+        
+        // stylelint-disable-next-line max-nesting-depth
+        img {
+          max-width: 25px;
+          max-height: 25px;
+        }
+      }
+    }
   }
 
   &.apos-field--color {

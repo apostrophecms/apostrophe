@@ -333,15 +333,18 @@ export default {
     insertMenu() {
       return this.moduleOptions.insertMenu;
     },
-    isVisuallyEmpty () {
+    isVisuallyEmpty() {
       const div = document.createElement('div');
-      let hasTable = false;
-      div.innerHTML = this.modelValue.content;
+      let hasSomeContent = false;
+      div.innerHTML = this.modelValue.content?.trim();
       if (this.editor) {
         const editorJSON = this.editor.getJSON();
-        hasTable = !!editorJSON?.content.filter(c => c.type === 'table').length;
+        // We are interested in different than the default `p` wrappers
+        // when the innerHTML is empty.
+        hasSomeContent = !!editorJSON?.content
+          .filter(c => ![ 'paragraph' ].includes(c.type)).length;
       }
-      return (!div.textContent && !hasTable);
+      return (!div.textContent && !hasSomeContent);
     },
     editorModifiers () {
       const classes = [];
