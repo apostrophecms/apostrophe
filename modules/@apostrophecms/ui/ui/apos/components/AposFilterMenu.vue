@@ -56,16 +56,11 @@ export default {
           type: 'outline'
         };
       }
-    },
-    moduleName: {
-      type: String,
-      required: true
     }
   },
   emits: [ 'input' ],
   data() {
     return {
-      filterSets: [],
       map: {
         radio: 'AposInputRadio',
         checkbox: 'AposInputCheckboxes',
@@ -73,6 +68,31 @@ export default {
       },
       generation: 0
     };
+  },
+  computed: {
+    filterSets() {
+      const sets = [];
+      this.filters.forEach(filter => {
+        sets.push({
+          name: filter.name,
+          key: `${this.generation}:${filter.name}`,
+          field: {
+            name: filter.name,
+            type: filter.inputType || 'select',
+            label: filter.label || filter.name,
+            choices: this.addNullChoice(
+              filter,
+              this.choices[filter.name] || filter.choices
+            )
+          },
+          value: {
+            data: this.values[filter.name]
+          },
+          status: {}
+        });
+      });
+      return sets;
+    }
   },
   watch: {
     choices() {
@@ -82,32 +102,7 @@ export default {
       this.generation++;
     }
   },
-  mounted() {
-    this.setFilters();
-  },
   methods: {
-    async setFilters() {
-      const sets = [];
-      for (const filter of this.filters) {
-        const choices = await this.getChoices(filter);
-
-        sets.push({
-          name: filter.name,
-          key: `${this.generation}:${filter.name}`,
-          field: {
-            name: filter.name,
-            type: filter.inputType || 'select',
-            label: filter.label || filter.name,
-            choices: this.addNullChoice(filter, choices)
-          },
-          value: {
-            data: this.values[filter.name]
-          },
-          status: {}
-        });
-      }
-      this.filterSets = sets;
-    },
     input(value, filterName) {
       this.$emit('input', filterName, value);
     },
@@ -133,27 +128,6 @@ export default {
           value: null
         }
       ].concat(choices);
-    },
-    async getChoices(filter) {
-      if (typeof filter.choices === 'string') {
-        const action = apos.modules['@apostrophecms/schema'].action;
-
-        const response = await apos.http.post(
-          `${action}/choices`,
-          {
-            busy: true,
-            body: {
-              filterName: filter.name,
-              type: this.moduleName,
-              featureType: 'filter'
-            }
-          }
-        );
-
-        return response.choices || [];
-      }
-
-      return filter.choices;
     }
   }
 };
