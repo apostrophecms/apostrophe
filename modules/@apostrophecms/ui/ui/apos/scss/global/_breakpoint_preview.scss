@@ -9,9 +9,13 @@
   }
 }
 
-body[data-breakpoint-preview-mode] {
-  container-type: size;
+html:has(body[data-breakpoint-preview-mode]) {
   background: var(--a-base-10);
+}
+
+body[data-breakpoint-preview-mode] {
+  all: unset;
+  container-type: size;
 
   [data-apos-context-label] {
     display: block;
