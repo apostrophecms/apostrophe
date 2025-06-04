@@ -254,6 +254,7 @@
   "linkTarget": "Link Target",
   "linkTitle": "Link Title",
   "linkTitleRelHelp": "If empty, the title of the related document will be used.",
+  "linkTitleUrlHelp": "If empty, the caption of the image will be used.",
   "linkTo": "Link To...",
   "listJoiner": ", ",
   "live": "Live",
