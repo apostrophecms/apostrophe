@@ -164,30 +164,25 @@ export default {
           continue;
         }
         const bodyAttribute = mutation.target
-          .getAttribute(mutation.attributeName)?.trim();
-        if (bodyAttribute) {
-          this.refreshableBodyEl.setAttribute(mutation.attributeName, bodyAttribute);
-        }
+          .getAttribute(mutation.attributeName);
+        this.refreshableBodyEl.setAttribute(mutation.attributeName, bodyAttribute);
       }
     },
 
     createFakeBody(refreshableEl) {
-      const attributes = Object.values(this.bodyEl.attributes)
-        .filter(({ name }) => !name.startsWith('data-apos'))
-        .map(({ name, value }) => [ name, value.trim() ]);
-
       this.refreshableBodyEl = document.createElement('div');
       this.refreshableBodyEl.setAttribute('data-apos-refreshable-body', '');
       Array.from(refreshableEl.childNodes).forEach(child => {
         this.refreshableBodyEl.append(child);
       });
-      refreshableEl.append(this.refreshableBodyEl);
 
-      if (attributes.length) {
-        attributes.forEach(([ key, value ]) => {
-          this.refreshableBodyEl.setAttribute(key, value);
+      Array.from(this.bodyEl.attributes || {})
+        .filter(({ name }) => !name.startsWith('data-apos'))
+        .forEach(({ name, value }) => {
+          this.refreshableBodyEl.setAttribute(name, value);
         });
-      }
+
+      refreshableEl.append(this.refreshableBodyEl);
     },
 
     switchBreakpointPreviewMode({
@@ -240,31 +235,13 @@ export default {
         return;
       }
 
-      this.refreshableBodyEl.remove();
       Array.from(this.refreshableBodyEl.childNodes).forEach(child => {
         if (child.nodeType !== Node.TEXT_NODE || child.nodeValue.trim()) {
           refreshableEl.append(child);
         }
       });
+      this.refreshableBodyEl.remove();
       this.refreshableBodyEl = null;
-
-      if (this.bodyDataset) {
-        Object.entries(this.bodyDataset).forEach(([ key, value ]) => {
-          this.bodyEl.setAttribute(key, value);
-        });
-      }
-      if (this.bodyStyle) {
-        this.bodyEl.setAttribute('style', this.bodyStyle);
-      }
-      if (this.bodyId) {
-        this.bodyEl.setAttribute('id', this.bodyId);
-      }
-      if (this.bodyClass) {
-        this.bodyClass.forEach(className => {
-          this.bodyEl.classList.add(className);
-        });
-        this.bodyClass = [];
-      }
 
       this.bodyEl.removeAttribute('data-breakpoint-preview-mode');
       refreshableEl.removeAttribute('data-resizable');
