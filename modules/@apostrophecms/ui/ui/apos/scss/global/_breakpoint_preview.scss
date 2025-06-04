@@ -13,6 +13,10 @@ html:has(body[data-breakpoint-preview-mode]) {
   background: var(--a-base-10);
 }
 
+:where([data-apos-refreshable-body]) {
+  background-color: var(--a-background-primary);
+}
+
 body[data-breakpoint-preview-mode] {
   all: unset;
   container-type: size;
