@@ -202,14 +202,6 @@ export default {
       if (!this.mode) {
         this.createFakeBody(refreshableEl);
         this.observer.observe(this.bodyEl, { attributes: true });
-
-        // TEST
-        setTimeout(() => {
-          this.bodyEl.setAttribute('attrbro', 'ici');
-          this.bodyEl.setAttribute('data-tutu', 'tutu');
-          this.bodyEl.setAttribute('style', 'background: red;');
-          this.bodyEl.setAttribute('id', 'test-id');
-        }, 300);
       }
 
       this.bodyEl.setAttribute('data-breakpoint-preview-mode', mode);
