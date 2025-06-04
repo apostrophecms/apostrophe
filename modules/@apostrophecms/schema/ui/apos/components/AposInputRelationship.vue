@@ -54,6 +54,7 @@
             :label="browseLabel"
             :modifiers="buttonModifiers"
             type="input"
+            :attrs="{'data-apos-focus-priority': true}"
             @click="choose"
           />
         </div>
