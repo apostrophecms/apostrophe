@@ -314,6 +314,7 @@ module.exports = {
           const flat = self.apos.launder.boolean(req.query.flat);
           const autocomplete = self.apos.launder.string(req.query.autocomplete);
           const type = self.apos.launder.string(req.query.type);
+          const dynamicChoices = self.apos.launder.strings(req.query.dynamicChoices);
 
           if (autocomplete.length) {
             if (!self.apos.permission.can(req, 'view', '@apostrophecms/any-page-type')) {
@@ -359,12 +360,19 @@ module.exports = {
 
             const docs = await query.toArray();
 
-            const choices = query.get('choicesResults');
+            const choicesResults = query.get('choicesResults') || {};
+            const dynamicFiltersChoices = await self.apos.schema.getFilterDynamicChoices(
+              req,
+              dynamicChoices,
+              self.__meta.name
+            );
+
+            const choices = Object.assign(choicesResults, dynamicFiltersChoices);
             return {
               results: docs.map(doc => manager.removeForbiddenFields(req, doc)),
               pages: query.get('totalPages'),
               currentPage: query.get('page') || 1,
-              ...choices && { choices }
+              choices
             };
           }
 
