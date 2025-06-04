@@ -2196,7 +2196,7 @@ module.exports = {
       },
 
       async getFilterDynamicChoices(req, dynamicChoices, moduleName) {
-        if (dynamicChoices.length) {
+        if (!dynamicChoices.length) {
           return {};
         }
         const mod = self.apos.modules[moduleName];
