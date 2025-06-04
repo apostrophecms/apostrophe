@@ -5,7 +5,6 @@
 ### Adds
 
 * Adds link configuration to the `@apostrophecms/image-widget` UI and a new option `linkWithType` to control what document types can be linked to. Opt-out of the widget inline styles (reset) by setting `inlineStyles: false` in the widget configuration or contextual options (area). 
-
 * Adds body style support for breakpoint preview mode. Created new `[data-apos-refreshable-body]` div inside the container during breapoint preview.
 Switch body attributes to this new div to keep supporting body styles in breakpoint preview mode.
 
