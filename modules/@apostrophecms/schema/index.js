@@ -2168,6 +2168,9 @@ module.exports = {
       },
 
       async getFilterDynamicChoices(req, dynamicChoices, moduleName) {
+        if (dynamicChoices.length) {
+          return {};
+        }
         const mod = self.apos.modules[moduleName];
         if (!mod) {
           throw self.apos.error('invalid', `Module "${moduleName}" not found.`);
