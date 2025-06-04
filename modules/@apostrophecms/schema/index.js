@@ -2195,42 +2195,43 @@ module.exports = {
         });
       },
 
-      async choicesFilters(req) {
-        const moduleName = self.apos.launder.string(req.body.type);
-        const filterName = self.apos.launder.string(req.body.filterName);
-
+      async getFilterDynamicChoices(req, dynamicChoices, moduleName) {
         const mod = self.apos.modules[moduleName];
         if (!mod) {
           throw self.apos.error('invalid', `Module "${moduleName}" not found.`);
         }
 
-        const filter = mod.filters.find(f => f.name === filterName);
-        if (!filter) {
-          throw self.apos.error('invalid', `Filter "${filterName}" not found in module "${moduleName}".`);
-        }
+        const result = {};
+        for (const choice of dynamicChoices) {
+          const filter = mod.filters.find(f => f.name === choice);
 
-        try {
-          const choices = await self.evaluateMethod(
-            req,
-            filter.choices,
-            filter.name,
-            moduleName,
-            null,
-            true,
-            {},
-            'filter'
-          );
-
-          if (Array.isArray(choices)) {
-            return {
-              choices
-            };
-          } else {
-            throw self.apos.error('invalid', `The method ${filter.choices} from the module ${moduleName} did not return an array`);
+          if (!filter) {
+            throw self.apos.error('invalid', `Filter "${choice}" not found in module "${moduleName}".`);
           }
-        } catch (error) {
-          throw self.apos.error('invalid', error.message);
+
+          try {
+            const choices = await self.evaluateMethod(
+              req,
+              filter.choices,
+              filter.name,
+              moduleName,
+              null,
+              true,
+              {},
+              'filter'
+            );
+
+            if (Array.isArray(choices)) {
+              result[choice] = choices;
+            } else {
+              throw self.apos.error('invalid', `The method ${filter.choices} from the module ${moduleName} did not return an array`);
+            }
+          } catch (error) {
+            throw self.apos.error('invalid', error.message);
+          }
         }
+
+        return result;
       },
 
       async choicesRoute(req) {
@@ -2298,11 +2299,7 @@ module.exports = {
     return {
       get: {
         async choices(req) {
-          const featureType = self.apos.launder.string(req.body.featureType);
-
-          return featureType === 'filter'
-            ? self.choicesFilters(req)
-            : self.choicesRoute(req);
+          return self.choicesRoute(req);
         },
         async evaluateExternalCondition(req) {
           const fieldId = self.apos.launder.string(req.query.fieldId);
@@ -2332,11 +2329,7 @@ module.exports = {
       },
       post: {
         async choices(req) {
-          const featureType = self.apos.launder.string(req.body.featureType);
-
-          return featureType === 'filter'
-            ? self.choicesFilters(req)
-            : self.choicesRoute(req);
+          return self.choicesRoute(req);
         }
       }
     };
