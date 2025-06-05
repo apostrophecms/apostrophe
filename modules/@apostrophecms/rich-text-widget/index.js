@@ -201,7 +201,8 @@ module.exports = {
       insert: [
         'image',
         'table',
-        'importTable'
+        'importTable',
+        'horizontalRule'
       ]
 
     },
