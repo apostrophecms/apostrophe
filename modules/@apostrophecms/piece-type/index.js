@@ -280,7 +280,10 @@ module.exports = {
             self.__meta.name
           );
           const choicesResults = query.get('choicesResults') || {};
-          result.choices = Object.assign(filterDynamicChoices, choicesResults);
+          const choices = Object.assign(filterDynamicChoices, choicesResults);
+          if (Object.keys(choices).length) {
+            result.choices = choices;
+          }
 
           const countsResult = query.get('countsResults');
           if (countsResult) {

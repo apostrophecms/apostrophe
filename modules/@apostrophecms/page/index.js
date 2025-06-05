@@ -366,13 +366,13 @@ module.exports = {
               dynamicChoices,
               self.__meta.name
             );
-
             const choices = Object.assign(choicesResults, dynamicFiltersChoices);
+
             return {
               results: docs.map(doc => manager.removeForbiddenFields(req, doc)),
               pages: query.get('totalPages'),
               currentPage: query.get('page') || 1,
-              choices
+              ...Object.keys(choices).length && { choices }
             };
           }
 
