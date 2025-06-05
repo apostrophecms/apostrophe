@@ -45,14 +45,18 @@ module.exports = {
       };
       return fields;
     }, {});
+    const orTypes = linkWithType.map(type => ({
+      linkTo: type
+    }));
     linkWithTypeFields.updateTitle = {
       label: 'apostrophe:updateTitle',
       type: 'boolean',
+      // Optional.
+      // Can be Link and/or Image
+      extensions: [ 'Link' ],
       def: true,
       if: {
-        $or: linkWithType.map(type => ({
-          linkTo: type
-        }))
+        $or: orTypes
       }
     };
 
@@ -74,6 +78,22 @@ module.exports = {
             linkTo: '_url'
           }
         },
+        hrefTitle: {
+          label: 'apostrophe:linkTitle',
+          help: 'apostrophe:linkTitleUrlHelp',
+          type: 'string',
+          if: {
+            linkTo: '_url'
+          }
+        },
+        title: {
+          label: 'apostrophe:linkTitle',
+          help: 'apostrophe:linkTitleRelHelp',
+          type: 'string',
+          if: {
+            $or: orTypes
+          }
+        },
         target: {
           label: 'apostrophe:linkTarget',
           type: 'checkboxes',
@@ -83,7 +103,15 @@ module.exports = {
               label: 'apostrophe:openLinkInNewTab',
               value: '_blank'
             }
-          ]
+          ],
+          if: {
+            $or: linkWithType.map(type => ({
+              linkTo: type
+            }))
+              .concat([ {
+                linkTo: '_url'
+              } ])
+          }
         }
       }
     };
@@ -568,6 +596,8 @@ module.exports = {
               'href',
               'id',
               'name',
+              'title',
+              'rel',
               ...self.linkSchema
                 .filter(field => field.htmlAttribute)
                 .map(field => field.htmlAttribute)
@@ -625,6 +655,17 @@ module.exports = {
             {
               tag: 'figure',
               attributes: [ 'class' ]
+            },
+            {
+              tag: 'a',
+              attributes: [
+                'href',
+                'name',
+                'title',
+                'rel',
+                ...self.linkSchema
+                  .filter(field => field.htmlAttribute)
+                  .map(field => field.htmlAttribute) ]
             },
             {
               tag: 'img',

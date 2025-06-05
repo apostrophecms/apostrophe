@@ -2,7 +2,6 @@ const t = require('../test-lib/test.js');
 const assert = require('assert');
 
 describe('Express', function() {
-
   let jar;
   let apos;
 
@@ -169,6 +168,142 @@ describe('Express', function() {
     assert(req.absoluteUrl === 'https://example.com/subdir/test');
 
     // Last use of this apos object
+    await t.destroy(apos);
+  });
+
+  it('should find pages marked as "loginRequired" when using an API key with different roles', async function() {
+    apos = await t.create({
+      root: module,
+      modules: {
+        '@apostrophecms/express': {
+          options: {
+            apiKeys: {
+              adminKey: { role: 'admin' },
+              editorKey: { role: 'editor' },
+              contributorKey: { role: 'contributor' },
+              guestKey: { role: 'guest' }
+            }
+          }
+        },
+        '@apostrophecms/page': {
+          options: {
+            park: [
+              {
+                parkedId: 'child',
+                title: 'Child',
+                slug: '/child',
+                type: 'default-page',
+                visibility: 'loginRequired'
+              }
+            ]
+          }
+        },
+        'default-page': {}
+      }
+    });
+
+    const base = apos.http.getBase();
+    const keys = [
+      'adminKey',
+      'editorKey',
+      'contributorKey',
+      'guestKey'
+    ];
+
+    for (const key of keys) {
+      const response = await fetch(`${base}/child`, {
+        method: 'GET',
+        headers: new Headers({ Authorization: `ApiKey ${key}` })
+      });
+
+      assert.strictEqual(response.status, 200);
+    };
+
+    await t.destroy(apos);
+  });
+
+  it('should not find pages marked as "loginRequired" when not using an API key', async function() {
+    apos = await t.create({
+      root: module,
+      modules: {
+        '@apostrophecms/express': {
+          options: {
+            apiKeys: {
+              adminKey: { role: 'admin' },
+              editorKey: { role: 'editor' },
+              contributorKey: { role: 'contributor' },
+              guestKey: { role: 'guest' }
+            }
+          }
+        },
+        '@apostrophecms/page': {
+          options: {
+            park: [
+              {
+                parkedId: 'child',
+                title: 'Child',
+                slug: '/child',
+                type: 'default-page',
+                visibility: 'loginRequired'
+              }
+            ]
+          }
+        },
+        'default-page': {}
+      }
+    });
+
+    const base = apos.http.getBase();
+
+    const response = await fetch(`${base}/child`, {
+      method: 'GET'
+    });
+
+    assert.strictEqual(response.status, 404);
+
+    await t.destroy(apos);
+  });
+
+  it('should not find pages marked as "loginRequired" when using an wrong API key', async function() {
+    apos = await t.create({
+      root: module,
+      modules: {
+        '@apostrophecms/express': {
+          options: {
+            apiKeys: {
+              adminKey: { role: 'admin' },
+              editorKey: { role: 'editor' },
+              contributorKey: { role: 'contributor' },
+              guestKey: { role: 'guest' }
+            }
+          }
+        },
+        '@apostrophecms/page': {
+          options: {
+            park: [
+              {
+                parkedId: 'child',
+                title: 'Child',
+                slug: '/child',
+                type: 'default-page',
+                visibility: 'loginRequired'
+              }
+            ]
+          }
+        },
+        'default-page': {}
+      }
+    });
+
+    const base = apos.http.getBase();
+
+    const response = await fetch(`${base}/child`, {
+      method: 'GET',
+      headers: new Headers({ Authorization: 'ApiKey unkownKey' })
+    });
+
+    assert.strictEqual(response.status, 403);
+
     await t.destroy(apos);
   });
 });
