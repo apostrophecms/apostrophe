@@ -221,4 +221,89 @@ describe('Express', function() {
 
     await t.destroy(apos);
   });
+
+  it('should not find pages marked as "loginRequired" when not using an API key', async function() {
+    apos = await t.create({
+      root: module,
+      modules: {
+        '@apostrophecms/express': {
+          options: {
+            apiKeys: {
+              adminKey: { role: 'admin' },
+              editorKey: { role: 'editor' },
+              contributorKey: { role: 'contributor' },
+              guestKey: { role: 'guest' }
+            }
+          }
+        },
+        '@apostrophecms/page': {
+          options: {
+            park: [
+              {
+                parkedId: 'child',
+                title: 'Child',
+                slug: '/child',
+                type: 'default-page',
+                visibility: 'loginRequired'
+              }
+            ]
+          }
+        },
+        'default-page': {}
+      }
+    });
+
+    const base = apos.http.getBase();
+
+    const response = await fetch(`${base}/child`, {
+      method: 'GET'
+    });
+
+    assert.strictEqual(response.status, 404);
+
+    await t.destroy(apos);
+  });
+
+  it('should not find pages marked as "loginRequired" when using an wrong API key', async function() {
+    apos = await t.create({
+      root: module,
+      modules: {
+        '@apostrophecms/express': {
+          options: {
+            apiKeys: {
+              adminKey: { role: 'admin' },
+              editorKey: { role: 'editor' },
+              contributorKey: { role: 'contributor' },
+              guestKey: { role: 'guest' }
+            }
+          }
+        },
+        '@apostrophecms/page': {
+          options: {
+            park: [
+              {
+                parkedId: 'child',
+                title: 'Child',
+                slug: '/child',
+                type: 'default-page',
+                visibility: 'loginRequired'
+              }
+            ]
+          }
+        },
+        'default-page': {}
+      }
+    });
+
+    const base = apos.http.getBase();
+
+    const response = await fetch(`${base}/child`, {
+      method: 'GET',
+      headers: new Headers({ Authorization: 'ApiKey unkownKey' })
+    });
+
+    assert.strictEqual(response.status, 403);
+
+    await t.destroy(apos);
+  });
 });
