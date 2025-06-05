@@ -4,13 +4,14 @@
     :data-apos-area="areaId"
     class="apos-area"
     :class="themeClass"
-    @click="setFocusedArea(areaId)"
+    @click="setFocusedArea(areaId, $event)"
   >
     <div
       v-if="next.length === 0 && !foreign"
       class="apos-empty-area"
       tabindex="0"
       @paste="paste(0)"
+      @click="setFocusedArea(areaId, $event)"
     >
       <template v-if="isEmptySingleton">
         <AposButton
@@ -284,9 +285,14 @@ export default {
         return;
       }
 
-      this.setFocusedArea(null);
+      this.setFocusedArea(null, null);
     },
-    setFocusedArea(areaId) {
+    setFocusedArea(areaId, event) {
+      if (event) {
+        // prevent parent areas from changing the focusedArea
+        event.stopPropagation();
+      }
+
       window.apos.focusedArea = areaId;
     },
     handleCopy() {
@@ -373,7 +379,7 @@ export default {
         return;
       }
 
-      this.setFocusedArea(this.areaId);
+      this.setFocusedArea(this.areaId, null);
 
       if (scrollIntoView) {
         this.$nextTick(() => {
@@ -381,15 +387,16 @@ export default {
           if (!$el) {
             return;
           }
-          const headerHeight = window.apos.adminBar.height;
-          const bufferSpace = 40;
-          const targetTop = $el.offsetTop;
-          const scrollPos = targetTop - headerHeight - bufferSpace;
-
-          window.scrollTo({
-            top: scrollPos,
-            behavior: 'smooth'
-          });
+          $el.scrollIntoView({ behavior: 'smooth' });
+          // const headerHeight = window.apos.adminBar.height;
+          // const bufferSpace = 40;
+          // const targetTop = $el.offsetTop;
+          // const scrollPos = targetTop - headerHeight - bufferSpace;
+          //
+          // window.scrollTo({
+          //   top: scrollPos,
+          //   behavior: 'smooth'
+          // });
 
           $el.focus({
             preventScroll: true
