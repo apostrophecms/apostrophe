@@ -72,6 +72,7 @@ module.exports = {
         ...linkWithTypeFields,
         href: {
           label: 'apostrophe:url',
+          help: 'apostrophe:linkHrefHelp',
           type: 'string',
           required: true,
           if: {
