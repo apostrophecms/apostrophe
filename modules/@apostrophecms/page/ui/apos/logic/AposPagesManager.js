@@ -150,13 +150,7 @@ export default {
       if (!filter.choices) {
         this.queryExtras.choices = this.queryExtras.choices || [];
         this.queryExtras.choices.push(filter.name);
-      } else if (typeof filter.choices === 'string') {
-        this.queryExtras.dynamicChoices = [
-          ...this.queryExtras.dynamicChoices || [],
-          filter.name
-        ];
       }
-
     });
   },
   async mounted() {
