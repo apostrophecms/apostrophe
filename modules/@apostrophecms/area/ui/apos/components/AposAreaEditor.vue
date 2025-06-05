@@ -387,16 +387,16 @@ export default {
           if (!$el) {
             return;
           }
-          $el.scrollIntoView({ behavior: 'smooth' });
-          // const headerHeight = window.apos.adminBar.height;
-          // const bufferSpace = 40;
-          // const targetTop = $el.offsetTop;
-          // const scrollPos = targetTop - headerHeight - bufferSpace;
-          //
-          // window.scrollTo({
-          //   top: scrollPos,
-          //   behavior: 'smooth'
-          // });
+
+          const headerHeight = window.apos.adminBar.height;
+          const bufferSpace = 40;
+          const targetTop = $el.getBoundingClientRect().top;
+          const scrollPos = targetTop - headerHeight - bufferSpace;
+
+          window.scrollBy({
+            top: scrollPos,
+            behavior: 'smooth'
+          });
 
           $el.focus({
             preventScroll: true
