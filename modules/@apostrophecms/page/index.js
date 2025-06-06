@@ -290,6 +290,7 @@ module.exports = {
           const flat = self.apos.launder.boolean(req.query.flat);
           const autocomplete = self.apos.launder.string(req.query.autocomplete);
           const type = self.apos.launder.string(req.query.type);
+          const dynamicChoices = self.apos.launder.strings(req.query.dynamicChoices);
 
           if (autocomplete.length) {
             if (!self.apos.permission.can(req, 'view', '@apostrophecms/any-page-type')) {
@@ -335,13 +336,19 @@ module.exports = {
 
             const docs = await query.toArray();
 
+            const choicesResults = query.get('choicesResults') || {};
+            const dynamicFiltersChoices = await self.apos.schema.getFilterDynamicChoices(
+              req,
+              dynamicChoices,
+              self.__meta.name
+            );
+            const choices = Object.assign(choicesResults, dynamicFiltersChoices);
+
             return {
               results: docs.map(doc => manager.removeForbiddenFields(req, doc)),
               pages: query.get('totalPages'),
               currentPage: query.get('page') || 1,
-              ...(query.get('choicesResults') && {
-                choices: query.get('choicesResults')
-              })
+              ...Object.keys(choices).length && { choices }
             };
           }
 
@@ -3259,19 +3266,18 @@ database.`);
         });
       },
       composeFilters() {
-        self.filters = Object.keys(self.filters)
-          .map(name => ({
+        self.filters = Object.entries(self.filters)
+          .map(([ name, filter ]) => ({
             name,
-            ...self.filters[name],
-            inputType: self.filters[name].inputType || 'select'
+            ...filter,
+            inputType: filter.inputType || 'select'
           }));
 
         // Add a null choice if not already added or set to `required`
         self.filters.forEach((filter) => {
-          if (filter.choices) {
+          if (Array.isArray(filter.choices)) {
             if (
               !filter.required &&
-              filter.choices &&
               !filter.choices.find((choice) => choice.value === null)
             ) {
               filter.def = null;
