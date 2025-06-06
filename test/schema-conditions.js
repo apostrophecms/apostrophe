@@ -164,8 +164,8 @@ describe('Schema - conditions', function () {
         b: 2
       };
 
-      const actiual = checkIfConditions(doc, conditions);
-      assert.equal(actiual, true);
+      const actual = checkIfConditions(doc, conditions);
+      assert.equal(actual, true);
     });
 
     it('should evaluate nested conditions', async function () {
