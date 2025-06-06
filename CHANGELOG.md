@@ -14,6 +14,7 @@ Switch body attributes to this new div to keep supporting body styles in breakpo
 ### Changes
 
 * Set the `Cache-Control` header to `no-store` for error pages in order to prevent the risk of serving stale error pages to users.
+* Updates rich-text default configuration.
 
 ### Fixes
 
