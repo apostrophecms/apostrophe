@@ -178,8 +178,8 @@ describe('Schema - conditions', function () {
         'b.c': 2
       };
 
-      const actiual = checkIfConditions(doc, conditions);
-      assert.equal(actiual, true);
+      const actual = checkIfConditions(doc, conditions);
+      assert.equal(actual, true);
     });
 
     it('should evaluate $or conditions', async function () {
@@ -195,8 +195,8 @@ describe('Schema - conditions', function () {
         ]
       };
 
-      const actiual = checkIfConditions(doc, conditions);
-      assert.equal(actiual, true);
+      const actual = checkIfConditions(doc, conditions);
+      assert.equal(actual, true);
     });
 
     it('should evaluate $and conditions', async function () {
@@ -212,8 +212,8 @@ describe('Schema - conditions', function () {
         ]
       };
 
-      const actiual = checkIfConditions(doc, conditions);
-      assert.equal(actiual, true);
+      const actual = checkIfConditions(doc, conditions);
+      assert.equal(actual, true);
     });
 
     it('should evaluate mixed top level only $or and $and conditions', async function () {
@@ -234,8 +234,8 @@ describe('Schema - conditions', function () {
         ]
       };
 
-      const actiual = checkIfConditions(doc, conditions);
-      assert.equal(actiual, true);
+      const actual = checkIfConditions(doc, conditions);
+      assert.equal(actual, true);
 
       {
         const conditions = {
@@ -520,8 +520,8 @@ describe('Schema - conditions', function () {
         'a.b.c': 2
       };
 
-      const actiual = checkIfConditions(doc, conditions);
-      assert.equal(actiual, true);
+      const actual = checkIfConditions(doc, conditions);
+      assert.equal(actual, true);
 
       {
         const conditions = {
@@ -760,8 +760,8 @@ describe('Schema - conditions', function () {
       };
 
       // External conditions should not affect the evaluation by default
-      const actiual = checkIfConditions(doc, conditions);
-      assert.equal(actiual, true);
+      const actual = checkIfConditions(doc, conditions);
+      assert.equal(actual, true);
     });
 
     it('should handle external conditions via voter function', async function () {
@@ -779,12 +779,12 @@ describe('Schema - conditions', function () {
       const evaluatedExternalCondtions = {
         'externalCondition()': false
       };
-      const actiual = checkIfConditions(doc, conditions, (key) => {
+      const actual = checkIfConditions(doc, conditions, (key) => {
         if (Object.hasOwn(evaluatedExternalCondtions, key)) {
           return evaluatedExternalCondtions[key];
         }
       });
-      assert.equal(actiual, false);
+      assert.equal(actual, false);
     });
 
     it('should throw when unknown operator is used', async function () {
