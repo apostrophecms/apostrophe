@@ -265,8 +265,8 @@ export default {
       const data = this.getItemData(itemId) || {};
       const followingValues = this.computeFollowingValues(data, true);
       return {
-        ...data,
-        ...followingValues
+        ...followingValues,
+        ...data
       };
     },
     setItemsConditionalFields(itemId) {

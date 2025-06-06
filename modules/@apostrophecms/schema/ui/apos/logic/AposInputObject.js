@@ -44,8 +44,8 @@ export default {
     },
     dataWithfollowingValues() {
       return {
-        ...this.values,
-        ...this.computeFollowingValues(this.schemaInput.data, true)
+        ...this.computeFollowingValues(this.schemaInput.data, true),
+        ...this.values
       };
     },
     shouldResetConditionalFields() {

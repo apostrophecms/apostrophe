@@ -168,6 +168,7 @@ export function hasParentConditionalField(schema) {
         if (value.some(item => hasParentField(item))) {
           return true;
         }
+        continue;
       }
       if (value && typeof value === 'object' && hasParentField(value)) {
         return true;

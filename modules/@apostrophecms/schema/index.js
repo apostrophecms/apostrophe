@@ -510,8 +510,8 @@ module.exports = {
         followingValues = {}
       ) {
         const allValues = {
-          ...destination,
-          ...followingValues
+          ...followingValues,
+          ...destination
         };
 
         // 1. Evaluate all conditions without the externals.

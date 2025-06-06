@@ -148,11 +148,11 @@ export default {
     // category.
     getConditionalFields(followedByCategory) {
       const values = {
-        // currentDoc for arrays, docFields for all other editors
-        ...(this.currentDoc ? this.currentDoc.data : this.docFields.data),
         // Append the parent following values without the current doc
         // values, so that the parent can be used in conditions
-        ...this.followingValues(followedByCategory, true)
+        ...this.followingValues(followedByCategory, true),
+        // currentDoc for arrays, docFields for all other editors
+        ...(this.currentDoc ? this.currentDoc.data : this.docFields.data)
       };
       return getConditionalFields(
         this.getFieldsByCategory(followedByCategory),
