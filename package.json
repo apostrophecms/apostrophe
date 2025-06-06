@@ -145,7 +145,7 @@
     "postcss-html": "^1.3.0",
     "postcss-loader": "^8.1.1",
     "postcss-scss": "^4.0.3",
-    "postcss-viewport-to-container-toggle": "github:apostrophecms/postcss-viewport-to-container-toggle",
+    "postcss-viewport-to-container-toggle": "^2.0.0",
     "prompts": "^2.4.1",
     "qs": "^6.10.1",
     "regexp-quote": "0.0.0",
