@@ -570,6 +570,80 @@ describe('Schema - conditions', function () {
       }
     });
 
+    it('should support dot notation props for strings', async function () {
+      const { default: checkIfConditions } = await getLib();
+      const doc = {
+        a: {
+          b: 'test'
+        }
+      };
+      const conditions = {
+        'a.b.length': { $gt: 3 }
+      };
+
+      const actual = checkIfConditions(doc, conditions);
+      assert.equal(actual, true);
+      {
+        const conditions = {
+          'a.b.length': { $gt: 5 }
+        };
+        const actual = checkIfConditions(doc, conditions);
+        assert.equal(actual, false);
+      }
+    });
+
+    it('should not be able to break the app with bad props', async function () {
+      const { default: checkIfConditions } = await getLib();
+      const doc = {
+        a: 'test'
+      };
+      const conditions = {
+        'a.notAThing': 'a value'
+      };
+
+      const actual = checkIfConditions(doc, conditions);
+      assert.equal(actual, false);
+
+      {
+        const doc = {
+          a: {
+            b: null
+          }
+        };
+        const conditions = {
+          'a.b.notAThing': 'a value'
+        };
+        const actual = checkIfConditions(doc, conditions);
+        assert.equal(actual, false);
+      }
+
+      {
+        const doc = {
+          a: {
+            b: undefined
+          }
+        };
+        const conditions = {
+          'a.b.length': 0
+        };
+        const actual = checkIfConditions(doc, conditions);
+        assert.equal(actual, false);
+      }
+
+      {
+        const doc = {
+          a: {
+            b: 0
+          }
+        };
+        const conditions = {
+          'a.b.length': 0
+        };
+        const actual = checkIfConditions(doc, conditions);
+        assert.equal(actual, false);
+      }
+    });
+
     it('should evaluate multiple comparison operators in a single condition', async function () {
       const { default: checkIfConditions } = await getLib();
       const doc = {
