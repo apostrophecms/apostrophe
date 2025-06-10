@@ -3290,7 +3290,7 @@ database.`);
 
         // Add a null choice if not already added or set to `required`
         self.filters.forEach((filter) => {
-          if (Array.isArray(filter.choices)) {
+          if (filter.choices) {
             if (
               !filter.required &&
               !filter.choices.find((choice) => choice.value === null)
