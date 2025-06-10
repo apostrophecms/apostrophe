@@ -332,16 +332,14 @@ module.exports = {
 
             // populates totalPages when perPage is present
             await query.toCount();
-
             const docs = await query.toArray();
 
+            const choices = query.get('choicesResults');
             return {
               results: docs.map(doc => manager.removeForbiddenFields(req, doc)),
               pages: query.get('totalPages'),
               currentPage: query.get('page') || 1,
-              ...(query.get('choicesResults') && {
-                choices: query.get('choicesResults')
-              })
+              ...choices && { choices }
             };
           }
 
@@ -3259,11 +3257,11 @@ database.`);
         });
       },
       composeFilters() {
-        self.filters = Object.keys(self.filters)
-          .map(name => ({
+        self.filters = Object.entries(self.filters)
+          .map(([ name, filter ]) => ({
             name,
-            ...self.filters[name],
-            inputType: self.filters[name].inputType || 'select'
+            ...filter,
+            inputType: filter.inputType || 'select'
           }));
 
         // Add a null choice if not already added or set to `required`
@@ -3271,7 +3269,6 @@ database.`);
           if (filter.choices) {
             if (
               !filter.required &&
-              filter.choices &&
               !filter.choices.find((choice) => choice.value === null)
             ) {
               filter.def = null;
