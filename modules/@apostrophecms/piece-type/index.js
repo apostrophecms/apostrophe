@@ -274,10 +274,11 @@ module.exports = {
               inline
             });
           }
+
           const filterDynamicChoices = await self.apos.schema.getFilterDynamicChoices(
             req,
             dynamicChoices,
-            self.__meta.name
+            self
           );
           const choicesResults = query.get('choicesResults') || {};
           const choices = Object.assign(filterDynamicChoices, choicesResults);

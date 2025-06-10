@@ -2195,18 +2195,15 @@ module.exports = {
         });
       },
 
-      async getFilterDynamicChoices(req, dynamicChoices, moduleName) {
+      async getFilterDynamicChoices(req, dynamicChoices, manager) {
         if (!dynamicChoices.length) {
           return {};
         }
-        const mod = self.apos.modules[moduleName];
-        if (!mod) {
-          throw self.apos.error('invalid', `Module "${moduleName}" not found.`);
-        }
 
+        const moduleName = manager.__meta.name;
         const result = {};
         for (const choice of dynamicChoices) {
-          const filter = mod.filters.find(f => f.name === choice);
+          const filter = manager.filters.find(f => f.name === choice);
 
           if (!filter) {
             throw self.apos.error('invalid', `Filter "${choice}" not found in module "${moduleName}".`);
