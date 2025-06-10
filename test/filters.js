@@ -1,4 +1,3 @@
-const { fromNode } = require('bluebird');
 const t = require('../test-lib/test.js');
 const assert = require('assert');
 
@@ -28,6 +27,10 @@ describe('Manager Filters', function() {
               },
               _topics: {
                 label: 'Topics'
+              },
+              other: {
+                label: 'Other',
+                choices: 'topic:topicMethod()'
               }
             }
           },
@@ -70,42 +73,26 @@ describe('Manager Filters', function() {
             };
           }
         },
-        'default-page': {
-          options: {
-            alias: 'defaultPage'
-          },
-          extend: '@apostrophecms/page-type',
-          filters: {
-            add: {
-              score: {
-                label: 'Score',
-                choices: 'article:getScoreChoices()'
-              },
-              _topics: {
-                label: 'Topics'
-              }
-            }
-          },
-          fields: {
-            add: {
-              _topics: {
-                label: 'Topics',
-                type: 'relationship',
-                withType: 'topic'
-              },
-              score: {
-                label: 'Score',
-                type: 'select',
-                choices: 'getScoreChoices()',
-                required: true
-              }
-            }
-          }
-        },
         topic: {
           extend: '@apostrophecms/piece-type',
           options: {
             alias: 'topic'
+          },
+          methods(self) {
+            return {
+              topicMethod() {
+                return [
+                  {
+                    label: 'Topic 1',
+                    value: 'Topic 1'
+                  },
+                  {
+                    label: 'Topic 2',
+                    value: 'Topic 2'
+                  }
+                ];
+              }
+            };
           }
         }
       }
@@ -191,7 +178,27 @@ describe('Manager Filters', function() {
   });
 
   it('should be able to get dynamic choices from a method in another module', async function() {
-    // TODO
+    const { choices: actual } = await apos.http.get('/api/v1/article', {
+      jar,
+      qs: {
+        dynamicChoices: [ 'other' ]
+      }
+    });
+
+    const expected = {
+      other: [
+        {
+          label: 'Topic 1',
+          value: 'Topic 1'
+        },
+        {
+          label: 'Topic 2',
+          value: 'Topic 2'
+        }
+      ]
+    };
+
+    assert.deepEqual(actual, expected);
   });
 
   async function insertDocs() {
@@ -240,36 +247,8 @@ describe('Manager Filters', function() {
       }
     ];
 
-    const defaultPage = apos.defaultPage.newInstance();
-    const pages = [
-      {
-        ...defaultPage,
-        type: 'default-page',
-        title: 'Page 1',
-        score: 0,
-        _topics: [ insertedTopics[0] ]
-      },
-      {
-        ...defaultPage,
-        type: 'default-page',
-        title: 'Page 2',
-        score: 1,
-        _topics: [ insertedTopics[1] ]
-      },
-      {
-        ...defaultPage,
-        type: 'default-page',
-        title: 'Page 3',
-        score: 2,
-        _topics: [ insertedTopics[2] ]
-      }
-    ];
-
     for (const article of articles) {
       await apos.article.insert(req, article);
-    }
-    for (const page of pages) {
-      await apos.page.insert(req, '_home', 'lastChild', page);
     }
   }
 
