@@ -55,6 +55,7 @@
     "@tiptap/extension-underline": "^2.0.3",
     "@tiptap/starter-kit": "^2.0.3",
     "@tiptap/vue-3": "^2.0.3",
+    "prosemirror-model": "1.25.0",
     "@vue/compiler-sfc": "^3.3.8",
     "autoprefixer": "^10.4.1",
     "bluebird": "^3.7.2",
