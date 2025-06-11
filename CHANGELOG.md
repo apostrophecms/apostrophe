@@ -1,6 +1,6 @@
 # Changelog
 
-## UNRELEASED
+## 4.18.0 (2025-06-11)
 
 ### Adds
 
