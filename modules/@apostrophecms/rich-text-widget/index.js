@@ -981,7 +981,7 @@ module.exports = {
 
           // Return value contains `content`, but also `imageIds` and `permalinkIds`
           // for optimization purposes. Merge these properties in so that any
-          // ordinary schema fields are also retained
+          // ordinary schema fields handled by the base class are also retained
           Object.assign(output, await this.sanitizeRichText(req, input, rteOptions));
 
           return output;
@@ -1047,6 +1047,8 @@ module.exports = {
       // - `imageIds`: an array of aposDocIds of inline images found in the rich text
 
       async sanitizeRichText(req, content, options) {
+        const output = {};
+
         const input = options.importImages ? {
           import: {
             html: content,
@@ -1136,6 +1138,7 @@ module.exports = {
           const matches = anchor.match(new RegExp(`${quotedAction}/([^/]+)/src`));
           return matches[1];
         })) || [];
+        return options;
       }
     };
   },
