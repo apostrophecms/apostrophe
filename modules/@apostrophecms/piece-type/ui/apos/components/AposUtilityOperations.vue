@@ -8,9 +8,9 @@
       :key="button.action"
       type="default"
       :icon-only="button.iconOnly"
-      :icon="button.icon || false"
+      :icon="button.icon || null"
       :label="button.label"
-      @click="handleUtilityOperation(button.action)"
+      @click="handleUtilityOperation(button)"
     />
     <AposContextMenu
       v-if="utilityOperations.menu.length"
@@ -62,15 +62,16 @@ export default {
 
   methods: {
     async handleUtilityOperation(item) {
-      const operation = [
+
+      const sources = [
         ...this.utilityOperations.menu,
         ...this.utilityOperations.buttons
-      ]
+      ];
+      const operation = sources
         .find((op) => op.action === item.action);
-
       if (!operation) {
         // eslint-disable-next-line no-console
-        console.error('utility operation definition was not found');
+        console.error('utility operation definition was not found:', item);
         return;
       }
 

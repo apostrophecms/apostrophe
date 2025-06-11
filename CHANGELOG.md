@@ -15,11 +15,13 @@ Switch body attributes to this new div to keep supporting body styles in breakpo
 
 * Set the `Cache-Control` header to `no-store` for error pages in order to prevent the risk of serving stale error pages to users.
 * Updates rich-text default configuration.
+* For added convenience, the "New" button is no longer hidden away in the kebab menu when selecting a page or piece.
 
 ### Fixes
 
 * The Download links in the media library now immediately download the file as expected, rather than navigating to the image in the current tab. `AposButton` now supports the `:download="true"` prop as expected.
 * Using an API key with the editor, contributor or guest role now have a `req` object with the corresponding rights. The old behavior gave non-admin API keys less access than expected.
+* The `button: true` option for utility operations now works as expected.
 
 ## 4.17.1 (2025-05-16)
 
