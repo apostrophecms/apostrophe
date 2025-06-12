@@ -235,6 +235,30 @@ module.exports = {
               `${self.__meta.name}:archive-selected`,
               `${self.__meta.name}:exit-manager`
             ]
+          },
+          '@apostrophecms/command-menu:general': {
+            label: 'apostrophe:commandMenuGeneral',
+            commands: [
+              '@apostrophecms/command-menu:show-shortcut-list'
+            ]
+          }
+        },
+        [`${self.__meta.name}:editor`]: {
+          '@apostrophecms/command-menu:content': {
+            label: 'apostrophe:commandMenuContent',
+            commands: [
+              '@apostrophecms/area:cut-widget',
+              '@apostrophecms/area:copy-widget',
+              '@apostrophecms/area:paste-widget',
+              '@apostrophecms/area:duplicate-widget',
+              '@apostrophecms/area:remove-widget'
+            ]
+          },
+          '@apostrophecms/command-menu:general': {
+            label: 'apostrophe:commandMenuGeneral',
+            commands: [
+              '@apostrophecms/command-menu:show-shortcut-list'
+            ]
           }
         }
       }

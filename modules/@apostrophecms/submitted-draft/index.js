@@ -82,7 +82,7 @@ module.exports = {
           '@apostrophecms/command-menu:taskbar-manager': {
             label: 'apostrophe:commandMenuTaskbar',
             commands: [
-              `${self.__meta.name}:manager`
+              `${self.__meta.name}:taskbar-manager`
             ]
           }
         }
