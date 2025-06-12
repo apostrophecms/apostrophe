@@ -1,5 +1,17 @@
 # Changelog
 
+## UNRELEASED
+
+### Adds
+
+* Adds keyboard shortcuts for manipulating widgets in areas. Includes Cut, Copy, Paste, Delete, and Duplicate.
+
+### Changes
+
+### Fixes
+
+* Add missing Pages manager shortcuts list helper.
+
 ## 4.18.0 (2025-06-11)
 
 ### Adds
