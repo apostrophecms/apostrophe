@@ -45,14 +45,18 @@ module.exports = {
       };
       return fields;
     }, {});
+    const orTypes = linkWithType.map(type => ({
+      linkTo: type
+    }));
     linkWithTypeFields.updateTitle = {
       label: 'apostrophe:updateTitle',
       type: 'boolean',
+      // Optional.
+      // Can be Link and/or Image
+      extensions: [ 'Link' ],
       def: true,
       if: {
-        $or: linkWithType.map(type => ({
-          linkTo: type
-        }))
+        $or: orTypes
       }
     };
 
@@ -68,10 +72,27 @@ module.exports = {
         ...linkWithTypeFields,
         href: {
           label: 'apostrophe:url',
+          help: 'apostrophe:linkHrefHelp',
           type: 'string',
           required: true,
           if: {
             linkTo: '_url'
+          }
+        },
+        hrefTitle: {
+          label: 'apostrophe:linkTitle',
+          help: 'apostrophe:linkTitleUrlHelp',
+          type: 'string',
+          if: {
+            linkTo: '_url'
+          }
+        },
+        title: {
+          label: 'apostrophe:linkTitle',
+          help: 'apostrophe:linkTitleRelHelp',
+          type: 'string',
+          if: {
+            $or: orTypes
           }
         },
         target: {
@@ -83,7 +104,15 @@ module.exports = {
               label: 'apostrophe:openLinkInNewTab',
               value: '_blank'
             }
-          ]
+          ],
+          if: {
+            $or: linkWithType.map(type => ({
+              linkTo: type
+            }))
+              .concat([ {
+                linkTo: '_url'
+              } ])
+          }
         }
       }
     };
@@ -119,20 +148,35 @@ module.exports = {
     minimumDefaultOptions: {
       toolbar: [
         'styles',
+        '|',
         'bold',
         'italic',
         'strike',
+        'underline',
+        'subscript',
+        'superscript',
+        'blockquote',
+        '|',
+        'alignLeft',
+        'alignCenter',
+        'alignRight',
+        'image',
+        'horizontalRule',
         'link',
         'anchor',
         'bulletList',
         'orderedList',
-        'blockquote'
+        'color'
       ],
       styles: [
         // you may also use a `class` property with these
         {
           tag: 'p',
           label: 'apostrophe:richTextParagraph'
+        },
+        {
+          tag: 'h1',
+          label: 'apostrophe:richTextH1'
         },
         {
           tag: 'h2',
@@ -145,8 +189,23 @@ module.exports = {
         {
           tag: 'h4',
           label: 'apostrophe:richTextH4'
+        },
+        {
+          tag: 'h5',
+          label: 'apostrophe:richTextH5'
+        },
+        {
+          tag: 'h6',
+          label: 'apostrophe:richTextH6'
         }
+      ],
+      insert: [
+        'image',
+        'table',
+        'importTable',
+        'horizontalRule'
       ]
+
     },
     defaultOptions: {},
     components: {
@@ -312,8 +371,8 @@ module.exports = {
       table: {
         icon: 'table-icon',
         label: 'apostrophe:table',
-        action: 'insertTable',
-        description: 'apostrophe:tableDescription'
+        description: 'apostrophe:tableDescription',
+        action: 'insertTable'
       },
       image: {
         icon: 'image-icon',
@@ -324,6 +383,7 @@ module.exports = {
       horizontalRule: {
         icon: 'minus-icon',
         label: 'apostrophe:richTextHorizontalRule',
+        description: 'apostrophe:richTextHorizontalRuleDescription',
         action: 'setHorizontalRule'
       },
       importTable: {
@@ -539,6 +599,8 @@ module.exports = {
               'href',
               'id',
               'name',
+              'title',
+              'rel',
               ...self.linkSchema
                 .filter(field => field.htmlAttribute)
                 .map(field => field.htmlAttribute)
@@ -596,6 +658,17 @@ module.exports = {
             {
               tag: 'figure',
               attributes: [ 'class' ]
+            },
+            {
+              tag: 'a',
+              attributes: [
+                'href',
+                'name',
+                'title',
+                'rel',
+                ...self.linkSchema
+                  .filter(field => field.htmlAttribute)
+                  .map(field => field.htmlAttribute) ]
             },
             {
               tag: 'img',

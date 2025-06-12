@@ -55,10 +55,28 @@ export default {
       // or none at all, depending
       deep: true,
       handler(newValue, oldValue) {
+        if (this.field.followingIgnore === true) {
+          return;
+        }
+        let ov = oldValue;
+        let nv = newValue;
+        if (Array.isArray(this.field.followingIgnore)) {
+          ov = Object.fromEntries(
+            Object.entries(oldValue).filter(([ key ]) => {
+              return !this.field.followingIgnore.includes(key);
+            })
+          );
+          nv = Object.fromEntries(
+            Object.entries(newValue).filter(([ key ]) => {
+              return !this.field.followingIgnore.includes(key);
+            })
+          );
+        }
         // Follow the value of the other field(s), but only if our
         // previous value matched the previous value of the other field(s)
-        oldValue = Object.values(oldValue).join(' ').trim();
-        newValue = Object.values(newValue).join(' ').trim();
+        oldValue = Object.values(ov).join(' ').trim();
+        newValue = Object.values(nv).join(' ').trim();
+
         if (
           (!this.wasPopulated &&
           ((this.next == null) || (!this.next.length))) || (this.next === oldValue)

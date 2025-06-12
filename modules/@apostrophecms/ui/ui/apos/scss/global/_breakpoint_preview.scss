@@ -9,9 +9,17 @@
   }
 }
 
-body[data-breakpoint-preview-mode] {
-  container-type: size;
+html:has(body[data-breakpoint-preview-mode]) {
   background: var(--a-base-10);
+}
+
+:where([data-apos-refreshable-body]) {
+  background-color: var(--a-background-primary);
+}
+
+body[data-breakpoint-preview-mode] {
+  all: unset;
+  container-type: size;
 
   [data-apos-context-label] {
     display: block;
@@ -25,7 +33,6 @@ body[data-breakpoint-preview-mode] {
     margin: $spacing-base * 6 auto auto;
     border: 1px solid var(--a-base-6);
     box-shadow: 0 0 12px 0 var(--a-base-7);
-    background-color: var(--a-background-primary);
 
     &[data-resizable="false"] {
       transition:

@@ -56,8 +56,23 @@ export default {
       // secondary slug field could be configured to watch
       // one or more other fields
       handler(newValue, oldValue) {
-        const newClone = klona(newValue);
-        const oldClone = klona(oldValue);
+        if (this.field.followingIgnore === true) {
+          return;
+        }
+        let newClone = klona(newValue);
+        let oldClone = klona(oldValue);
+        if (Array.isArray(this.field.followingIgnore)) {
+          newClone = Object.fromEntries(
+            Object.entries(newValue).filter(([ key ]) => {
+              return !this.field.followingIgnore.includes(key);
+            })
+          );
+          oldClone = Object.fromEntries(
+            Object.entries(oldValue).filter(([ key ]) => {
+              return !this.field.followingIgnore.includes(key);
+            })
+          );
+        }
 
         // Track whether the slug is archived for prefixing.
         this.isArchived = newValue.archived;

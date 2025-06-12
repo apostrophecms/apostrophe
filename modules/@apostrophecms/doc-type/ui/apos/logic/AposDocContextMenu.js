@@ -2,7 +2,7 @@ import { detectDocChange } from 'Modules/@apostrophecms/schema/lib/detectChange'
 import AposPublishMixin from 'Modules/@apostrophecms/ui/mixins/AposPublishMixin';
 import AposArchiveMixin from 'Modules/@apostrophecms/ui/mixins/AposArchiveMixin';
 import AposModifiedMixin from 'Modules/@apostrophecms/ui/mixins/AposModifiedMixin';
-import checkIfConditions from 'apostrophe/lib/check-if-conditions';
+import checkIfConditions from 'apostrophe/lib/universal/check-if-conditions.mjs';
 
 export default {
   name: 'AposDocContextMenu',
