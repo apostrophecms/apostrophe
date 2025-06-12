@@ -72,6 +72,7 @@ module.exports = {
         ...linkWithTypeFields,
         href: {
           label: 'apostrophe:url',
+          help: 'apostrophe:linkHrefHelp',
           type: 'string',
           required: true,
           if: {
@@ -201,7 +202,8 @@ module.exports = {
       insert: [
         'image',
         'table',
-        'importTable'
+        'importTable',
+        'horizontalRule'
       ]
 
     },
@@ -369,8 +371,8 @@ module.exports = {
       table: {
         icon: 'table-icon',
         label: 'apostrophe:table',
-        action: 'insertTable',
-        description: 'apostrophe:tableDescription'
+        description: 'apostrophe:tableDescription',
+        action: 'insertTable'
       },
       image: {
         icon: 'image-icon',
@@ -381,6 +383,7 @@ module.exports = {
       horizontalRule: {
         icon: 'minus-icon',
         label: 'apostrophe:richTextHorizontalRule',
+        description: 'apostrophe:richTextHorizontalRuleDescription',
         action: 'setHorizontalRule'
       },
       importTable: {

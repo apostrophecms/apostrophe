@@ -35,7 +35,7 @@
 
 <script>
 
-import checkIfConditions from 'apostrophe/lib/check-if-conditions';
+import checkIfConditions from 'apostrophe/lib/universal/check-if-conditions.mjs';
 
 export default {
   props: {

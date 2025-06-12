@@ -5,16 +5,31 @@
 ### Adds
 
 * Adds keyboard shortcuts for manipulating widgets in areas. Includes Cut, Copy, Paste, Delete, and Duplicate.
-* Adds link configuration to the `@apostrophecms/image-widget` UI and a new option `linkWithType` to control what document types can be linked to. Opt-out of the widget inline styles (reset) by setting `inlineStyles: false` in the widget configuration or contextual options (area). 
-* Use the link configuration of the Rich Text widget for image links too. It respects the existing `linkWithType` Rich Text option and uses the same schema (`linkFields`) used for text links. The fields from that schema can opt-in for specific tiptap extension now via a field property `extensions` (array) with possible array values `Link` and/or `Image`. You still need to specify the `htmlAttribute` property (the name of the attribute to be added to the link tag) in the schema when adding more fields. If the `extensions` property is not set, the field will be applied for both tiptap extensions.
 
 ### Changes
-
-* Set the `Cache-Control` header to `no-store` for error pages in order to prevent the risk of serving stale error pages to users.
 
 ### Fixes
 
 * Add missing Pages manager shortcuts list helper.
+
+## 4.18.0 (2025-06-11)
+
+### Adds
+
+* Adds MongoDB-style support (comparison operators) for conditional fields and all systems that use conditions. Conditional fields now have access to the `following` values from the parent schema fields.
+* Add `followingIgnore` option to the `string` field schema. A boolean `true` results in all `following` values being ignored (not attempted to be used as a value for the field). When array of strings, the UI will ignore every item that matches a `following` field name.
+* Adds link configuration to the `@apostrophecms/image-widget` UI and a new option `linkWithType` to control what document types can be linked to. Opt-out of the widget inline styles (reset) by setting `inlineStyles: false` in the widget configuration or contextual options (area). 
+* Use the link configuration of the Rich Text widget for image links too. It respects the existing `linkWithType` Rich Text option and uses the same schema (`linkFields`) used for text links. The fields from that schema can opt-in for specific tiptap extension now via a field property `extensions` (array) with possible array values `Link` and/or `Image`. You still need to specify the `htmlAttribute` property (the name of the attribute to be added to the link tag) in the schema when adding more fields. If the `extensions` property is not set, the field will be applied for both tiptap extensions.
+* Adds body style support for breakpoint preview mode. Created new `[data-apos-refreshable-body]` div inside the container during breapoint preview.
+Switch body attributes to this new div to keep supporting body styles in breakpoint preview mode.
+
+### Changes
+
+* Set the `Cache-Control` header to `no-store` for error pages in order to prevent the risk of serving stale error pages to users.
+* Updates rich-text default configuration.
+
+### Fixes
+
 * The Download links in the media library now immediately download the file as expected, rather than navigating to the image in the current tab. `AposButton` now supports the `:download="true"` prop as expected.
 * Using an API key with the editor, contributor or guest role now have a `req` object with the corresponding rights. The old behavior gave non-admin API keys less access than expected.
 
