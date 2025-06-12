@@ -1,49 +1,49 @@
 <template>
   <AposContextMenu
-    menu-placement="bottom-end"
-    @open="open = $event"
+    :menu-placement
+    :button
+    :disabled="isDisabled"
+    @open="isOpen = $event"
+    @close="clearSearch"
   >
     <div class="apos-apply-tag-menu__inner">
       <AposInputString
         ref="textInput"
+        v-model="searchValue"
         :field="searchField"
-        :model-value="searchValue"
-        :status="searchStatus"
-        @update:model-value="updateSearchInput"
-        @return="create"
+        @return="checkOrCreate"
       />
       <div class="apos-apply-tag__create">
         <AposButton
           :label="createLabel"
+          :disabled="isTagFound"
+          :disable-focus="!isOpen"
           type="quiet"
-          :disabled="disabledCreate"
-          :disable-focus="!open"
           @click="create"
         />
       </div>
       <div>
         <ol
-          v-if="searchTags.length && !creating"
+          v-if="searchTags.length"
           class="apos-apply-tag-menu__tags"
         >
           <li
             v-for="tag in searchTags"
-            :key="`${keyPrefix}-${tag.slug}`"
+            :key="tag.slug"
             class="apos-apply-tag-menu__tag"
           >
             <AposCheckbox
               v-if="checkboxes[tag.slug]"
-              v-model="checked"
+              v-model="checkboxes[tag.slug].model.value"
               :field="checkboxes[tag.slug].field"
-              :status="checkboxes[tag.slug].status"
               :choice="checkboxes[tag.slug].choice"
-              :disable-focus="!open"
-              @updated="updateTag"
+              :disable-focus="!isOpen"
+              @updated="$event => updateTag($event.target.name)"
             />
           </li>
         </ol>
         <div
-          v-if="(!searchTags.length && myTags.length) && !creating"
+          v-if="(!searchTags.length && tags.length)"
           class="apos-apply-tag-menu__empty"
         >
           <p class="apos-apply-tag-menu__empty-message">
@@ -51,11 +51,11 @@
             <AposButton
               :label="{
                 key: 'apostrophe:tagNoTagsFoundCreateOne',
-                tag: searchInputValue
+                tag: searchValue.data
               }"
               type="quiet"
-              :disabled="disabledCreate"
-              :disable-focus="!open"
+              :disabled="isTagFound"
+              :disable-focus="!isOpen"
               @click="create"
             />
           </p>
@@ -68,237 +68,228 @@
   </AposContextMenu>
 </template>
 
-<script>
-import { createId } from '@paralleldrive/cuid2';
+<script setup>
+import {
+  computed, inject, ref, useTemplateRef
+} from 'vue';
 
-export default {
-  props: {
-    primaryAction: {
-      type: Object,
-      default() {
-        return {
-          label: 'apostrophe:tagAddTag',
-          action: 'add-tag'
-        };
-      }
-    },
-    tags: {
-      type: Array,
-      default() {
-        return [];
-      }
-    },
-    applyTo: {
-      type: Array,
-      required: true
-    },
-    tipAlignment: {
-      type: String,
-      default: 'left'
-    }
-  },
-  emits: [ 'create-tag', 'update' ],
-  data() {
-    return {
-      creating: false,
-      searchValue: { data: '' },
-      searchStatus: {},
-      checkboxes: {},
-      // `myTags` will be the canonical array of tags and matching doc IDs that
-      // we will emit.
-      myTags: [ ...this.tags ],
-      checked: [],
-      searchInputValue: '',
-      keyPrefix: `key-${createId()}`, // used to keep checkboxes in sync w state
-      origin: 'below',
-      open: false,
-      button: {
-        label: 'Context Menu Label',
-        iconOnly: true,
-        icon: 'Label',
-        type: 'outline'
-      }
-    };
-  },
-  computed: {
-    // Returns true if a tag slug already exists for what you entered, so you
-    // can't create a new tag.
-    disabledCreate() {
-      const matches = this.myTags.filter((tag) => {
-        return tag.slug === this.searchInputValue;
-      });
-      if (matches.length) {
-        return true;
-      } else {
-        return false;
-      }
-    },
-    // Unless we're in the middle of creating a new tag, search the tags that
-    // match the search input (as long as above 2 characters).
-    searchTags() {
-      if (this.creating) {
-        return [];
-      }
-      if (this.searchInputValue.length > 2) {
-        return this.myTags.filter((tag) => {
-          return tag.slug.includes(this.searchInputValue);
-        });
-      } else {
-        return this.myTags;
-      }
-    },
-    // Generate the button label.
-    createLabel() {
-      if (this.searchInputValue.length) {
-        return {
-          key: 'apostrophe:tagCreateTag',
-          tag: this.searchInputValue
-        };
-      } else {
-        return 'apostrophe:tagCreateNewTag';
-      }
-    },
-    // Generate the field object for the search field.
-    searchField() {
+const $t = inject('i18n');
+
+const props = defineProps({
+  primaryAction: {
+    type: Object,
+    default() {
       return {
-        name: 'tagSearch',
-        label: 'apostrophe:tagSearchApplyTags',
-        placeholder: 'apostrophe:tagSearchPlaceholder',
-        help: 'apostrophe:findOrAddTag',
-        icon: (!this.searchTags || !this.searchTags.length) ? 'pencil-icon' : 'magnify-icon',
-        disableFocus: !this.open
+        label: 'apostrophe:tagAddTag',
+        action: 'add-tag'
       };
     }
   },
-  mounted () {
-    const checkboxes = {};
-    this.tags.forEach((tag) => {
-      checkboxes[tag.slug] = this.createCheckbox(tag, this.applyTo);
-    });
-    this.checkboxes = checkboxes;
+  tags: {
+    type: Array,
+    required: true
   },
-  methods: {
-    // Create a new tag, or set up the input with "New Tag" if  empty.
-    create() {
-      // The string input's `return` event still submits duplicates, so prevent
-      // them here.
-      if (this.disabledCreate) {
-        return;
-      }
-
-      if (!this.searchInputValue || !this.searchInputValue.length) {
-        this.creating = true;
-        this.searchValue.data = this.$t('apostrophe:tagNewTag');
-        this.$refs.textInput.$el.querySelector('input').focus();
-        this.$nextTick(() => {
-          this.$refs.textInput.$el.querySelector('input').select();
-        });
-      } else {
-        // TODO: No current sign of `create-tag` usage. Delete if unused.
-        this.$emit('create-tag', this.searchInputValue);
-
-        const tag = {
-          label: this.searchInputValue,
-          slug: this.searchInputValue,
-          match: this.applyTo
-        };
-        this.checkboxes[tag.slug] = this.createCheckbox(tag, this.applyTo);
-        this.myTags.unshift(tag);
-        this.creating = false;
-        this.emitState();
-      }
-    },
-    // `checked` will track all that are checked, but `updateTag` also
-    // updates indeterminate state and `match` arrays for the updated tag.
-    updateTag($event) {
-      const slug = $event.target.value;
-      // Find the matching tag.
-      const tag = this.myTags.find(tag => tag.slug === slug);
-      // Find the matching checkbox.
-      const box = this.checkboxes[slug];
-      if (!box) {
-        // This should never happen. You updated a checkbox to trigger this.
-        return;
-      }
-
-      if (!tag.match) {
-        // If the tag has no `match` values, assign all the `applyTo` IDs to it.
-        tag.match = this.applyTo;
-      } else {
-        if (tag.match.length === this.applyTo.length) {
-          // If the tag has existings matches
-          // previously full check, unapply to all
-          delete tag.match;
-        } else {
-          // Previously indeterminate. Set it's matches to all of `applyTo`.
-          tag.match = this.applyTo;
-
-          delete box.status.indeterminate;
-          delete box.choice.indeterminate;
-        }
-      }
-      // Force refresh the checkboxes.
-      this.keyPrefix = `key-${createId()}`;
-
-      // TODO: This should probably have an "Apply" or "Save" button to confirm
-      // before running emitting the updates.
-      this.emitState();
-    },
-    emitState() {
-      this.$emit('update', this.myTags);
-    },
-    // Take the string field value and get a lower case version.
-    updateSearchInput(value) {
-      this.searchInputValue = value.data.toLowerCase();
-      if (!this.searchInputValue) {
-        this.creating = false;
-      }
-    },
-    createCheckbox(tag, applyTo) {
-      const checkbox = {
-        field: {
-          type: 'checkbox',
-          name: tag.slug
-        },
-        // TODO: status and value are not needed.
-        status: {},
-        value: { data: [] },
-        choice: {
-          label: tag.label,
-          value: tag.slug
-        }
-      };
-
-      const state = this.getCheckedState(tag);
-
-      // If so, add those slugs to the `checked` array.
-      if (state !== 'unchecked') {
-        this.checked.push(tag.slug);
-      }
-
-      // If only some of `applyTo` matches, use the indeterminate state.
-      if (state === 'indeterminate') {
-        checkbox.choice.indeterminate = true;
-        checkbox.status.indeterminate = true;
-      }
-      return checkbox;
-    },
-    getCheckedState (tag) {
-      if (!tag.match) {
-        return 'unchecked';
-      }
-      // Go over the docs, checking how well they match the tag.
-      if (this.applyTo.every(id => tag.match.includes(id))) {
-        return 'checked';
-      } else if (this.applyTo.some(id => tag.match.includes(id))) {
-        return 'indeterminate';
-      }
-
-      return 'unchecked';
-    }
+  applyTo: {
+    type: Object,
+    required: true
+  },
+  menuPlacement: {
+    type: String,
+    default: 'bottom-start'
+  },
+  button: {
+    type: Object,
+    default: () => ({
+      label: 'apostrophe:tag',
+      iconOnly: false,
+      icon: 'label-icon',
+      modifiers: [ 'small' ],
+      type: 'outline'
+    })
   }
+});
+
+const emit = defineEmits([ 'added', 'checked', 'unchecked' ]);
+
+const textInput = useTemplateRef('textInput');
+
+// data
+const isOpen = ref(false);
+const searchValue = ref({ data: '' });
+
+// computed
+const applyToIds = computed(() => {
+  return Object.keys(props.applyTo);
+});
+
+const searchText = computed(() => {
+  return searchValue.value.data.toLowerCase();
+});
+
+// Returns true if a tag already exists for what you entered,
+// so you can't create a new tag.
+const isTagFound = computed(() => {
+  return props.tags.some((tag) => tag.searchText === searchText.value);
+});
+
+// Sort checked first
+// then indeterminate
+// and finally unchecked alphabetically
+const sortedTags = computed(() => {
+  if (!applyToIds.value.length) {
+    return props.tags;
+  }
+
+  const checked = props.tags.filter(tag =>
+    checkboxes.value[tag.slug].model.value === true &&
+    checkboxes.value[tag.slug].choice.indeterminate !== true
+  );
+  const indeterminate = props.tags.filter(tag =>
+    checkboxes.value[tag.slug].model.value === true &&
+    checkboxes.value[tag.slug].choice.indeterminate === true
+  );
+  const unchecked = props.tags.filter(tag =>
+    checkboxes.value[tag.slug].model.value !== true
+  );
+
+  return [].concat(checked, indeterminate, unchecked);
+});
+
+// Unless we're in the middle of creating a new tag,
+// search the tags that match the search input
+const searchTags = computed(() => {
+  if (searchText.value.length) {
+    return sortedTags.value.filter((tag) => tag.searchText.includes(searchText.value));
+  }
+
+  return sortedTags.value;
+});
+
+const isDisabled = computed(() => {
+  return applyToIds.value.length === 0;
+});
+
+// Generate the button label.
+const createLabel = computed(() => {
+  if (searchValue.value.data.length) {
+    return {
+      key: 'apostrophe:tagCreateTag',
+      tag: searchValue.value.data
+    };
+  }
+
+  return 'apostrophe:tagCreateNewTag';
+});
+
+// Generate the field object for the search field.
+const searchField = computed(() => {
+  return {
+    name: 'tagSearch',
+    label: 'apostrophe:tagSearchApplyTags',
+    placeholder: 'apostrophe:tagSearchPlaceholder',
+    help: 'apostrophe:findOrAddTag',
+    icon: !searchTags.value.length ? 'pencil-icon' : 'magnify-icon',
+    disableFocus: !isOpen.value
+  };
+});
+
+const checkboxes = computed(() => {
+  const state = {};
+  props.tags.forEach(tag => {
+    state[tag.slug] = getCheckbox(tag, props.applyTo);
+  });
+
+  return state;
+});
+
+// methods
+
+function clearSearch() {
+  searchValue.value.data = '';
+}
+
+function checkOrCreate() {
+  if (searchValue.value.data.length && searchTags.value.length) {
+    const tag = searchTags.value.at(0);
+    const { model } = checkboxes.value[tag.slug];
+
+    checkboxes.value[tag.slug].model.value = !model.value;
+    updateTag(tag.slug);
+
+    return;
+  }
+
+  create();
 };
 
+// Create a new tag, or set up the input with "New Tag" if  empty.
+function create() {
+  if (!searchValue.value.data.length) {
+    textInput.value.$el.querySelector('input').focus();
+
+    return;
+  }
+
+  // The string input's `return` event still submits duplicates, so prevent
+  // them here.
+  if (isTagFound.value) {
+    return;
+  }
+
+  emit('added', searchValue.value.data);
+
+  clearSearch();
+}
+
+function updateTag(name) {
+  const { model } = checkboxes.value[name];
+
+  if (model.value) {
+    emit('checked', name);
+    return;
+  }
+
+  delete checkboxes.value[name].choice.indeterminate;
+  emit('unchecked', name);
+}
+
+function getCheckbox(tag, applyTo) {
+  const checkbox = {
+    field: {
+      type: 'checkbox',
+      name: tag.slug
+    },
+    choice: {
+      label: tag.label,
+      value: true,
+      triggerIndeterminateEvent: true
+    },
+    model: ref(false)
+  };
+
+  const state = getCheckedState(tag);
+  if (state === 'checked') {
+    checkbox.model.value = true;
+  }
+  if (state === 'indeterminate') {
+    checkbox.model.value = true;
+    checkbox.choice.indeterminate = true;
+  }
+
+  return checkbox;
+}
+
+function getCheckedState(tag) {
+  if (applyToIds.value.every(id => props.applyTo[id]?.includes(tag.aposDocId))) {
+    return 'checked';
+  }
+
+  if (applyToIds.value.some(id => props.applyTo[id]?.includes(tag.aposDocId))) {
+    return 'indeterminate';
+  }
+
+  return 'unchecked';
+}
 </script>
 
 <style lang="scss" scoped>
