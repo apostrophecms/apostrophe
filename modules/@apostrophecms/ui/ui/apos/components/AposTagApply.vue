@@ -225,7 +225,7 @@ function checkOrCreate() {
 // Create a new tag, or set up the input with "New Tag" if  empty.
 function create() {
   if (!searchValue.value.data.length) {
-    textInput.$el.querySelector('input').focus();
+    textInput.value.$el.querySelector('input').focus();
 
     return;
   }
@@ -237,6 +237,8 @@ function create() {
   }
 
   emit('added', searchValue.value.data);
+
+  clearSearch();
 }
 
 function updateTag(name) {
