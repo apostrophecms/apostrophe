@@ -341,9 +341,11 @@ export default {
     },
     updateTag(operation, props) {
       const tagOperation = this.activeOperations.find(operation => operation.action === 'tag');
+      const messages = tagOperation.messages?.[operation] || {};
 
       this.$emit('batch', {
         ...tagOperation,
+        messages,
         requestOptions: {
           operation,
           ...props
