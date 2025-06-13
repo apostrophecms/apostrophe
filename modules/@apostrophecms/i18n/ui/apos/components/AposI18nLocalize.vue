@@ -231,6 +231,9 @@
                     {{ $t('apostrophe:automaticTranslationSettings') }}
                   </span>
                 </p>
+                <p v-if="automaticTranslationDisclaimer" class="apos-wizard__translation-disclaimer">
+                  {{ automaticTranslationDisclaimer }}
+                </p>
                 <AposCheckbox
                   v-model="wizard.values.translateContent.data"
                   :field="{ name: 'translate' }"
@@ -449,7 +452,8 @@ export default {
       translationEnabled: apos.modules['@apostrophecms/translation'].enabled,
       translationErrMsg: null,
       translationShowRetry: false,
-      translationShowLoader: false
+      translationShowLoader: false,
+      automaticTranslationDisclaimer: this.$t('apostrophe:automaticTranslationDisclaimer')
     };
   },
   computed: {
