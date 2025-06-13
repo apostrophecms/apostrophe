@@ -837,8 +837,8 @@ module.exports = {
       },
 
       isEmpty(widget) {
-        const text = self.apos.util.htmlToPlaintext(widget.content || '');
-        return !text.trim().length;
+        const html = (widget.content || '').trim();
+        return html.length === 0;
       },
 
       sanitizeHtml(html, options) {
