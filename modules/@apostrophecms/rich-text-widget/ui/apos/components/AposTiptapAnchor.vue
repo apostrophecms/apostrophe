@@ -165,7 +165,8 @@ export default {
       this.close();
     },
     keyboardHandler(e) {
-      if (e.key === 'Escape') {
+      if ((!e.aposConsumedEscape) && (e.key === 'Escape')) {
+        e.aposConsumedEscape = true;
         this.close();
       }
       if (e.key === 'Enter') {

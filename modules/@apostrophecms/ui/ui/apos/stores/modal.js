@@ -37,6 +37,10 @@ export const useModalStore = defineStore('modal', () => {
       : stack.value;
   }
 
+  function getDepth() {
+    return stack.value.length;
+  }
+
   function getAt(index) {
     const last = stack.value.length - 1;
     const target = index < 0
@@ -193,6 +197,7 @@ export const useModalStore = defineStore('modal', () => {
     remove,
     get,
     getAt,
+    getDepth,
     getProperties,
     execute,
     updateModalData,

@@ -150,12 +150,14 @@ export default {
     }
   },
   async mounted() {
+    apos.adminBar.disableRefresh();
     this.populateFields();
     await this.evaluateExternalConditions();
     this.evaluateConditions();
     window.addEventListener('keydown', this.keyboardHandler);
   },
   beforeUnmount() {
+    apos.adminBar.enableRefresh();
     window.removeEventListener('keydown', this.keyboardHandler);
   },
   methods: {
@@ -247,7 +249,8 @@ export default {
       return attrs;
     },
     keyboardHandler(e) {
-      if (e.key === 'Escape') {
+      if (!e.aposConsumedEscape && (e.key === 'Escape')) {
+        e.aposConsumedEscape = true;
         this.close();
       }
       if (e.key === 'Enter') {

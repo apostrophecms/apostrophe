@@ -219,7 +219,8 @@ export default {
       this.close();
     },
     keyboardHandler(e) {
-      if (e.key === 'Escape') {
+      if (!e.aposConsumedEscape && (e.key === 'Escape')) {
+        e.aposConsumedEscape = true;
         this.close();
       }
       if (e.key === 'Enter') {
@@ -301,10 +302,12 @@ export default {
       window.addEventListener('keydown', this.keyboardHandler);
       await this.populateFields();
       this.evaluateConditions();
+      apos.adminBar.disableRefresh();
       this.$emit('open-popover');
     },
     closePopover() {
       window.removeEventListener('keydown', this.keyboardHandler);
+      apos.adminBar.enableRefresh();
       this.$emit('close');
     }
   }

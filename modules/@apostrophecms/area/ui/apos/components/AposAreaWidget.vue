@@ -525,7 +525,8 @@ export default {
     },
 
     handleKeyboardUnfocus($event) {
-      if ($event.key === 'Escape') {
+      if (!$event.aposConsumedEscape && ($event.key === 'Escape')) {
+        $event.aposConsumedEscape = true;
         this.getFocus($event, null);
         document.activeElement.blur();
         this.$refs.wrapper.focus();

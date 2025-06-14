@@ -383,6 +383,7 @@ export default {
           this.emitWidgetUpdate();
         }
       } else {
+        console.log('focus change emit');
         apos.bus.$emit('close-context-menus');
       }
     },
@@ -487,6 +488,7 @@ export default {
       this.closeToolbar();
     },
     onBubbleHide() {
+      console.log('bubble hide emit');
       apos.bus.$emit('close-context-menus', 'richText');
     },
     generateKey() {
@@ -494,7 +496,8 @@ export default {
         Math.random().toString(36).substring(2, 15);
     },
     handleUIKeydown(e) {
-      if (e.key === 'Escape') {
+      if (!e.aposConsumedEscape && (e.key === 'Escape')) {
+        e.aposConsumedEscape = true;
         this.doSuppressInsertMenu();
       } else {
         this.suppressInsertMenu = false;

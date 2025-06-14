@@ -2,6 +2,13 @@
 
 ## UNRELEASED
 
+### Fixes
+
+* When creating a link or adding an image in the rich text editor, it is now possible to create or edit a page or piece as part of that process without losing the ability to finish creating the link or adding the image.
+* Context menus and other controls lower in the modal stack no longer close themselves prematurely based on events in the top modal, e.g. escape key, outside clicks, clicks on context menus in the top modal, etc. This fix also facilitates the flow of creating a new document as part of selecting a document.
+
+## 4.18.0 (2025-06-11)
+
 ### Adds
 
 * Adds MongoDB-style support (comparison operators) for conditional fields and all systems that use conditions. Conditional fields now have access to the `following` values from the parent schema fields.

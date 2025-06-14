@@ -35,7 +35,7 @@
         v-if="isOpen"
         v-bind="menuAttrs"
         ref="dropdownContent"
-        v-click-outside-element="hide"
+        v-click-outside-element="hideOnOutsideClick"
         :style="dropdownContentStyle"
         class="apos-context-menu__dropdown-content"
         :class="popoverClass"
@@ -68,6 +68,11 @@ import { createId } from '@paralleldrive/cuid2';
 
 import { useAposTheme } from '../composables/AposTheme.js';
 import { useFocusTrap } from '../composables/AposFocusTrap.js';
+
+import { useModalStore } from 'Modules/@apostrophecms/ui/stores/modal';
+
+let modalStore = null;
+let modalDepth = null;
 
 const props = defineProps({
   richTextMenu: {
@@ -252,6 +257,8 @@ const { themeClass } = useAposTheme();
 onMounted(() => {
   apos.bus.$on('context-menu-toggled', hideWhenOtherOpen);
   apos.bus.$on('close-context-menus', hideContextMenu);
+  modalStore = useModalStore();
+  modalDepth = modalStore.getDepth();
 });
 
 onBeforeUnmount(() => {
@@ -267,8 +274,9 @@ function getMenuOffset() {
 }
 
 function hideWhenOtherOpen({ menuId }) {
-  if (props.menuId !== menuId) {
+  if ((modalDepth === modalStore.getDepth()) && (props.menuId !== menuId)) {
     otherMenuOpened.value = true;
+    console.log('hiding because other opened', modalDepth, modalStore.getDepth());
     hide();
   }
 }
@@ -279,13 +287,25 @@ function setIconToCenterTo(el) {
   }
 }
 
-function hideContextMenu(type = 'contextMenu') {
+function hideContextMenu(type) {
+  if (modalDepth !== modalStore.getDepth()) {
+    return;
+  }
   if (type === 'richText' && props.richTextMenu) {
+    console.log('richText hiding context menu');
     hide();
   }
   if (type === 'contextMenu' && !props.richTextMenu) {
+    console.log('contextMenu hiding context menu');
     hide();
   }
+}
+
+function hideOnOutsideClick(e) {
+  if (modalDepth !== modalStore.getDepth()) {
+    return;
+  }
+  return hide(e);
 }
 
 async function hide(e) {
@@ -339,6 +359,7 @@ function buttonClicked(e) {
   }
   otherMenuOpened.value = false;
   apos.bus.$emit('context-menu-toggled', {
+    modalDepth,
     menuId: props.menuId,
     isOpen: isOpen.value
   });
@@ -427,7 +448,13 @@ const ignoreInputTypes = [
  * @param {KeyboardEvent} event
  */
 function handleKeyboard(event) {
+  if (modalDepth !== modalStore.getDepth()) {
+    return;
+  }
   if (event.key !== 'Escape' || !isOpen.value) {
+    return;
+  }
+  if (event.aposConsumedEscape) {
     return;
   }
   /** @type {HTMLElement} */
@@ -442,6 +469,7 @@ function handleKeyboard(event) {
     )
   ) {
     event.stopImmediatePropagation();
+    event.aposConsumedEscape = true;
     return;
   }
 
@@ -450,6 +478,7 @@ function handleKeyboard(event) {
     : dropdownButton.value?.$el?.focus();
 
   event.stopImmediatePropagation();
+  event.aposConsumedEscape = true;
   hide();
 }
 </script>
