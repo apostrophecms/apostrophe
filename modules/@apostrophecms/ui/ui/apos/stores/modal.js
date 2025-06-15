@@ -47,6 +47,14 @@ export const useModalStore = defineStore('modal', () => {
   // Listens for keystrokes globally, but delivers them only
   // if "el" is currently in the topmost modal (if any)
   function onKeyDown(el, fn) {
+    if (!
+      (
+        (el instanceof Element) &&
+        ((typeof fn) === 'function')
+      )
+    ) {
+      throw new Error('pass el, fn where el is your DOM element');
+    }
     keyDownListeners.push({
       el,
       fn
@@ -55,7 +63,7 @@ export const useModalStore = defineStore('modal', () => {
 
   // Reverse of onKeyDown. Note you call it with just fn
   function offKeyDown(fn) {
-    if (arguments.length === 2) {
+    if ((typeof fn) !== 'function') {
       throw new Error('Call offKeyDown with just fn');
     }
     keyDownListeners = keyDownListeners.filter(({ fn: fnFound }) => fnFound !== fn);

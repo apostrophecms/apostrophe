@@ -2,6 +2,10 @@
 
 ## UNRELEASED
 
+### Changes
+
+* When the page or piece manager is displayed solely for the purpose of choosing pages or pieces for a relationship and the user chooses to create a new page or piece, the "save draft and preview" and "publish and view" options are no longer offered. This ensures that the user is able to complete the selection process. The page or piece can still be edited in context later.
+
 ### Fixes
 
 * When creating a link or adding an image in the rich text editor, it is now possible to create or edit a page or piece as part of that process without losing the ability to finish creating the link or adding the image.

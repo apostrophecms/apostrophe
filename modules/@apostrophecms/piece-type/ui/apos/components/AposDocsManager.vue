@@ -290,7 +290,8 @@ export default {
       await apos.modal.execute(apos.modules[moduleName].components.editorModal, {
         moduleName,
         docId: piece && piece._id,
-        filterValues: this.filterValues
+        filterValues: this.filterValues,
+        hasRelationshipField: !!this.relationshipField
       });
     },
     async finishSaved() {
@@ -468,7 +469,7 @@ export default {
       }
     },
     bindShortcuts() {
-      this.modalStore.onKeyDown(this.$refs.modal.value, this.shortcutNew);
+      this.modalStore.onKeyDown(this.$refs.modal, this.shortcutNew);
     },
     destroyShortcuts() {
       this.modalStore.offKeyDown(this.shortcutNew);
