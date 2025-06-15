@@ -302,9 +302,6 @@ function hideContextMenu(type) {
 }
 
 function hideOnOutsideClick(e) {
-  if (modalDepth !== modalStore.getDepth()) {
-    return;
-  }
   return hide(e);
 }
 
