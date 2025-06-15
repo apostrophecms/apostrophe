@@ -54,6 +54,7 @@
 
 <script>
 import AposEditorMixin from 'Modules/@apostrophecms/modal/mixins/AposEditorMixin';
+import { useModalStore } from 'Modules/@apostrophecms/ui/stores/modal';
 
 export default {
   name: 'AposTiptapAnchor',
@@ -139,6 +140,7 @@ export default {
     }
   },
   async mounted() {
+    this.modalStore = useModalStore();
     await this.evaluateExternalConditions();
   },
   methods: {
@@ -165,8 +167,9 @@ export default {
       this.close();
     },
     keyboardHandler(e) {
-      if ((!e.aposConsumedEscape) && (e.key === 'Escape')) {
-        e.aposConsumedEscape = true;
+      if (e.key === 'Escape') {
+        // Don't confuse escape key handlers in other modal layers etc.
+        e.stopPropagation();
         this.close();
       }
       if (e.key === 'Enter') {
@@ -194,10 +197,10 @@ export default {
       await this.populateFields();
       this.evaluateConditions();
       this.hasAnchorOnOpen = Boolean(this.docFields.data.anchor);
-      window.addEventListener('keydown', this.keyboardHandler);
+      this.modalStore.onKeyDown(this.$el, this.keyboardHandler);
     },
     closePopover() {
-      window.removeEventListener('keydown', this.keyboardHandler);
+      this.modalStore.offKeyDown(this.keyboardHandler);
       this.$emit('close');
     }
   }

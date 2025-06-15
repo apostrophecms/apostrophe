@@ -255,12 +255,11 @@ export default {
         }
 
         case 'Escape': {
-          if (!e.aposConsumedEscape) {
-            e.aposConsumedEscape = true;
-            stop();
-            this.closeList(null, true);
-            break;
-          }
+          // Don't confuse escape key handlers in other modal layers etc.
+          e.stopPropagation();
+          stop();
+          this.closeList(null, true);
+          break;
         }
       }
     },

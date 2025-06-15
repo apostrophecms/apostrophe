@@ -5,7 +5,7 @@
 ### Fixes
 
 * When creating a link or adding an image in the rich text editor, it is now possible to create or edit a page or piece as part of that process without losing the ability to finish creating the link or adding the image.
-* Context menus and other controls lower in the modal stack no longer close themselves prematurely based on events in the top modal, e.g. escape key, outside clicks, clicks on context menus in the top modal, etc. This fix also facilitates the flow of creating a new document as part of selecting a document.
+* Context menus and other controls lower in the modal stack no longer close themselves prematurely based on events in the top modal, e.g. escape key, outside clicks, clicks on context menus in the top modal, clicks on notifications, etc. These fixes also facilitate the flow of creating a new document as part of selecting a document.
 
 ## 4.18.0 (2025-06-11)
 

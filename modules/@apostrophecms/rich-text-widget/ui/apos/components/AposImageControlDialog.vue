@@ -35,6 +35,7 @@
 <script>
 import AposEditorMixin from 'Modules/@apostrophecms/modal/mixins/AposEditorMixin';
 import { klona } from 'klona';
+import { useModalStore } from 'Modules/@apostrophecms/ui/stores/modal';
 
 export default {
   name: 'AposImageControlDialog',
@@ -150,15 +151,16 @@ export default {
     }
   },
   async mounted() {
+    this.modalStore = useModalStore();
     apos.adminBar.disableRefresh();
     this.populateFields();
     await this.evaluateExternalConditions();
     this.evaluateConditions();
-    window.addEventListener('keydown', this.keyboardHandler);
+    this.modalStore.onKeyDown(this.$el, this.keyboardHandler);
   },
   beforeUnmount() {
     apos.adminBar.enableRefresh();
-    window.removeEventListener('keydown', this.keyboardHandler);
+    this.modalStore.offKeyDown(this.keyboardHandler);
   },
   methods: {
     close() {
@@ -249,8 +251,9 @@ export default {
       return attrs;
     },
     keyboardHandler(e) {
-      if (!e.aposConsumedEscape && (e.key === 'Escape')) {
-        e.aposConsumedEscape = true;
+      if (e.key === 'Escape') {
+        // Don't confuse escape key handlers in other modal layers etc.
+        e.stopPropagation();
         this.close();
       }
       if (e.key === 'Enter') {

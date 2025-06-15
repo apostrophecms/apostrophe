@@ -525,11 +525,12 @@ export default {
     },
 
     handleKeyboardUnfocus($event) {
-      if (!$event.aposConsumedEscape && ($event.key === 'Escape')) {
-        $event.aposConsumedEscape = true;
+      if ($event.key === 'Escape') {
         this.getFocus($event, null);
         document.activeElement.blur();
         this.$refs.wrapper.focus();
+        // Don't confuse escape key handlers in other modal layers etc.
+        $event.stopPropagation();
       }
     },
 

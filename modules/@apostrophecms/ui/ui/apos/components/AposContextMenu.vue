@@ -35,7 +35,7 @@
         v-if="isOpen"
         v-bind="menuAttrs"
         ref="dropdownContent"
-        v-click-outside-element="hideOnOutsideClick"
+        v-click-outside-element="hide"
         :style="dropdownContentStyle"
         class="apos-context-menu__dropdown-content"
         :class="popoverClass"
@@ -276,7 +276,6 @@ function getMenuOffset() {
 function hideWhenOtherOpen({ menuId }) {
   if ((modalDepth === modalStore.getDepth()) && (props.menuId !== menuId)) {
     otherMenuOpened.value = true;
-    console.log('hiding because other opened', modalDepth, modalStore.getDepth());
     hide();
   }
 }
@@ -292,17 +291,11 @@ function hideContextMenu(type) {
     return;
   }
   if (type === 'richText' && props.richTextMenu) {
-    console.log('richText hiding context menu');
     hide();
   }
   if (type === 'contextMenu' && !props.richTextMenu) {
-    console.log('contextMenu hiding context menu');
     hide();
   }
-}
-
-function hideOnOutsideClick(e) {
-  return hide(e);
 }
 
 async function hide(e) {
@@ -451,9 +444,6 @@ function handleKeyboard(event) {
   if (event.key !== 'Escape' || !isOpen.value) {
     return;
   }
-  if (event.aposConsumedEscape) {
-    return;
-  }
   /** @type {HTMLElement} */
   const target = event.target;
 
@@ -466,7 +456,6 @@ function handleKeyboard(event) {
     )
   ) {
     event.stopImmediatePropagation();
-    event.aposConsumedEscape = true;
     return;
   }
 
@@ -475,7 +464,6 @@ function handleKeyboard(event) {
     : dropdownButton.value?.$el?.focus();
 
   event.stopImmediatePropagation();
-  event.aposConsumedEscape = true;
   hide();
 }
 </script>

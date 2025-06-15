@@ -248,11 +248,8 @@ export default {
           }
           break;
         case 'Escape':
-          if (!event.aposConsumedEscape) {
-            event.aposConsumedEscape = true;
-            this.handleFocusOut();
-            event.stopPropagation();
-          }
+          event.stopPropagation();
+          this.handleFocusOut();
           break;
       }
     },

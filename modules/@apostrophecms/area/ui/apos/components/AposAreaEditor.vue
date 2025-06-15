@@ -77,6 +77,7 @@ import { createId } from '@paralleldrive/cuid2';
 import { klona } from 'klona';
 import AposThemeMixin from 'Modules/@apostrophecms/ui/mixins/AposThemeMixin';
 import newInstance from 'apostrophe/modules/@apostrophecms/schema/lib/newInstance.js';
+import { useModalStore } from 'Modules/@apostrophecms/ui/stores/modal';
 
 export default {
   name: 'AposAreaEditor',
@@ -233,6 +234,7 @@ export default {
     }
   },
   mounted() {
+    this.modalStore = useModalStore();
     this.bindEventListeners();
   },
   beforeUnmount() {
@@ -243,13 +245,13 @@ export default {
       apos.bus.$on('area-updated', this.areaUpdatedHandler);
       apos.bus.$on('widget-hover', this.updateWidgetHovered);
       apos.bus.$on('widget-focus', this.updateWidgetFocused);
-      window.addEventListener('keydown', this.focusParentEvent);
+      this.modalStore.onKeyDown(this.$el, this.focusParentEvent);
     },
     unbindEventListeners() {
       apos.bus.$off('area-updated', this.areaUpdatedHandler);
       apos.bus.$off('widget-hover', this.updateWidgetHovered);
       apos.bus.$off('widget-focus', this.updateWidgetFocused);
-      window.removeEventListener('keydown', this.focusParentEvent);
+      this.modalStore.offKeyDown(this.focusParentEvent);
     },
     areaUpdatedHandler(area) {
       for (const item of this.next) {

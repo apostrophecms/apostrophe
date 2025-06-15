@@ -251,6 +251,7 @@ export default {
     });
   },
   async mounted() {
+    this.modalStore = useModalStore();
     this.bindShortcuts();
     this.headers = this.computeHeaders();
     // Get the data. This will be more complex in actuality.
@@ -467,10 +468,10 @@ export default {
       }
     },
     bindShortcuts() {
-      window.addEventListener('keydown', this.shortcutNew);
+      this.modalStore.onKeyDown(this.$refs.modal.value, this.shortcutNew);
     },
     destroyShortcuts() {
-      window.removeEventListener('keydown', this.shortcutNew);
+      this.modalStore.offKeyDown(this.shortcutNew);
     },
     computeHeaders() {
       let headers = this.moduleOptions.columns || [];
