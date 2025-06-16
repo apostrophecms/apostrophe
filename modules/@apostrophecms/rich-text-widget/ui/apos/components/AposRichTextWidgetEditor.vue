@@ -298,7 +298,12 @@ export default {
       // Only true for a new rich text widget
       return !this.modelValue.content.length;
     },
-    defaultContent() {
+    initialContent() {
+      const content = this.transformNamedAnchors(this.modelValue.content);
+      if (content.length) {
+        return content;
+      }
+
       // If we don't supply a valid instance of the first style, then
       // the text align control will not work until the user manually
       // applies a style or refreshes the page
@@ -309,25 +314,8 @@ export default {
             ? this.editorOptions.marks.find(style => style.def)
             : null;
 
-      // The above can be null or undefined, play safe.
-      if (defaultStyle) {
-        // eslint-disable-next-line no-console
-        console.warn(
-          'No default node found for the rich text widget, please check your configuration.'
-        );
-        return '<p></p>';
-      }
-
       const _class = defaultStyle.class ? ` class="${defaultStyle.class}"` : '';
       return `<${defaultStyle.tag}${_class}></${defaultStyle.tag}>`;
-    },
-    initialContent() {
-      const content = this.transformNamedAnchors(this.modelValue.content);
-      if (content.length) {
-        return content;
-      }
-
-      return this.defaultContent;
     },
     // Names of active toolbar items for this particular widget, as an array
     toolbar() {
@@ -347,14 +335,16 @@ export default {
     },
     isVisuallyEmpty() {
       const div = document.createElement('div');
-      let hasDefaultContent = false;
+      let hasSomeContent = false;
       div.innerHTML = this.modelValue.content?.trim();
       if (this.editor) {
-        // We are interested in different than the default HTML content
-        // when the textContent is empty.
-        hasDefaultContent = this.editor.getHTML().trim() === this.defaultContent.trim();
+        const editorJSON = this.editor.getJSON();
+        // We are interested in different than the default `p` wrappers
+        // when the innerHTML is empty.
+        hasSomeContent = !!editorJSON?.content
+          .filter(c => ![ 'paragraph' ].includes(c.type)).length;
       }
-      return (!div.textContent && hasDefaultContent);
+      return (!div.textContent && !hasSomeContent);
     },
     editorModifiers () {
       const classes = [];

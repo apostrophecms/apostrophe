@@ -837,8 +837,11 @@ module.exports = {
       },
 
       isEmpty(widget) {
-        const html = (widget.content || '').trim();
-        return html.length === 0;
+        const content = (widget.content || '').trim();
+        const text = self.apos.util.htmlToPlaintext(content).trim();
+        return text.length === 0 &&
+          content.includes('<table') === false &&
+          content.includes('<figure') === false;
       },
 
       sanitizeHtml(html, options) {
