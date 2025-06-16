@@ -5,6 +5,7 @@
 ### Adds
 
 * Adds keyboard shortcuts for manipulating widgets in areas. Includes Cut, Copy, Paste, Delete, and Duplicate.
+* Adds dynamic choices working with piece manager filters. 
 
 ### Changes
 
