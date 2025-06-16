@@ -46,6 +46,7 @@
   "at": "at",
   "attachment": "Attachment",
   "automaticTranslationCheckbox": "Translate text content",
+  "automaticTranslationCheckboxHelp": "",
   "automaticTranslationDisclaimer": "",
   "automaticTranslationErrMsg": "An error happened while getting available languages for translation. Translation will be skipped.",
   "automaticTranslationErrorNoProvider": "Translation provider not found. Page \"{{ title }}\" was not translated.",

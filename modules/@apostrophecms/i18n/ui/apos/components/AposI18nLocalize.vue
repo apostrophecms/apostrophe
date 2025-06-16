@@ -231,7 +231,10 @@
                     {{ $t('apostrophe:automaticTranslationSettings') }}
                   </span>
                 </p>
-                <p v-if="automaticTranslationDisclaimer" class="apos-wizard__translation-disclaimer">
+                <p
+                  v-if="automaticTranslationDisclaimer"
+                  class="apos-wizard__translation-disclaimer"
+                >
                   {{ automaticTranslationDisclaimer }}
                 </p>
                 <AposCheckbox
@@ -239,7 +242,8 @@
                   :field="{ name: 'translate' }"
                   :choice="{
                     value: wizard.values.translateContent.data,
-                    label: $t('apostrophe:automaticTranslationCheckbox')
+                    label: $t('apostrophe:automaticTranslationCheckbox'),
+                    htmlHelp: $t('apostrophe:automaticTranslationCheckboxHelp')
                   }"
                   data-apos-test="localizationTranslationCheck"
                 />
