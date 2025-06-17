@@ -41,40 +41,40 @@
         />
       </template>
     </div>
-    <div class="apos-areas-widgets-list">
+    <TransitionGroup name="apos-widget-list" tag="div">
       <AposAreaWidget
-        v-for="(widget, i) in next"
-        :key="widget._id"
-        :area-id="areaId"
-        :widget="widget"
-        :meta="meta[widget._id]"
-        :generation="generation"
-        :i="i"
-        :options="options"
-        :next="next"
-        :following-values="followingValues"
-        :doc-id="docId"
-        :context-menu-options="contextMenuOptions"
-        :field-id="fieldId"
-        :field="field"
-        :disabled="field && field.readOnly"
-        :widget-hovered="hoveredWidget"
-        :non-foreign-widget-hovered="hoveredNonForeignWidget"
-        :widget-focused="focusedWidget"
-        :max-reached="maxReached"
-        :rendering="rendering(widget)"
-        @up="up"
-        @down="down"
-        @remove="remove"
-        @cut="cut"
-        @copy="copy"
-        @edit="edit"
-        @clone="clone"
-        @update="update"
-        @add="add"
-        @paste="paste"
-      />
-    </div>
+          v-for="(widget, i) in next"
+          :key="widget._id"
+          :area-id="areaId"
+          :widget="widget"
+          :meta="meta[widget._id]"
+          :generation="generation"
+          :i="i"
+          :options="options"
+          :next="next"
+          :following-values="followingValues"
+          :doc-id="docId"
+          :context-menu-options="contextMenuOptions"
+          :field-id="fieldId"
+          :field="field"
+          :disabled="field && field.readOnly"
+          :widget-hovered="hoveredWidget"
+          :non-foreign-widget-hovered="hoveredNonForeignWidget"
+          :widget-focused="focusedWidget"
+          :max-reached="maxReached"
+          :rendering="rendering(widget)"
+          @up="up"
+          @down="down"
+          @remove="remove"
+          @cut="cut"
+          @copy="copy"
+          @edit="edit"
+          @clone="clone"
+          @update="update"
+          @add="add"
+          @paste="paste"
+        />
+    </TransitionGroup>
   </div>
 </template>
 
@@ -337,7 +337,7 @@ export default {
         return;
       }
 
-      this.paste(Math.max(this.focusedWidgetIndex, 0));
+      this.paste(Math.max(this.focusedWidgetIndex + 1, 0));
     },
     handleRemove() {
       if (
@@ -814,6 +814,18 @@ function cancelRefresh(refreshOptions) {
   &:focus, &:active {
     border-color: var(--a-primary);
   }
+}
+
+.apos-widget-list-enter-active,
+.apos-widget-list-leave-active {
+  transition: all 0.3s ease;
+  transform: scale(1);
+  opacity: 1;
+}
+.apos-widget-list-enter-from,
+.apos-widget-list-leave-to {
+  opacity: 0;
+  transform: scale(0.96);
 }
 
 </style>
