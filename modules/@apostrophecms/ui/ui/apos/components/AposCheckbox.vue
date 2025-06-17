@@ -30,18 +30,18 @@
         :size="10"
       />
     </span>
-    <div class="apos-choice-label">
-      <span
-        v-if="choice.label"
-        :class="{'apos-sr-only': field.hideLabel }"
-        class="apos-choice-label-text"
-      >
+    <div
+      v-if="choice.label"
+      :class="{'apos-sr-only': field.hideLabel }"
+      class="apos-choice-label-text"
+    >
+      <span>
         {{ $t(choice.label) }}
       </span>
       <!-- eslint-disable vue/no-v-html -->
       <p
         v-if="(choice.help || choice.htmlHelp)"
-        class="apos-choice-label-help apos-field__help"
+        class="apos-choice-label-text--help apos-field__help"
         v-html="$t(choice.help || choice.htmlHelp)"
       />
     </div>
@@ -116,7 +116,7 @@ export default {
   border-radius: 3px;
 }
 
-.apos-choice-label {
+.apos-choice-label-text {
   display: inline-flex;
   flex-direction: column;
   align-items: baseline;
