@@ -68,6 +68,9 @@ module.exports = {
       tag: {
         label: 'apostrophe:tag',
         messages: {
+          create: {
+            progress: 'apostrophe:batchTagProgress'
+          },
           add: {
             progress: 'apostrophe:batchTagProgress'
           },
