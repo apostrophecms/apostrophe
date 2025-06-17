@@ -818,10 +818,11 @@ function cancelRefresh(refreshOptions) {
 
 .apos-widget-list-enter-active,
 .apos-widget-list-leave-active {
-  transition: all 0.3s ease;
+  @include apos-transition($duration:0.3s);
   transform: scale(1);
   opacity: 1;
 }
+
 .apos-widget-list-enter-from,
 .apos-widget-list-leave-to {
   opacity: 0;
