@@ -551,7 +551,7 @@
   "tableDescription": "Agregar contenido tabular a tu página",
   "tableImport": "Importar tabla",
   "tagAddTag": "Agregar etiqueta",
-  "tagCreateNewTag": "Crear nueva etiqueta",
+  "tagCreateNewTag": "Crear etiqueta",
   "tagCreateTag": "Crear etiqueta \"{{ tag }}\"",
   "tagNewTag": "Nueva etiqueta",
   "tagNoTagsFoundCreateOne": "¿Crear {{ tag }}?",

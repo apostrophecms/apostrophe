@@ -551,7 +551,7 @@
   "tableDescription": "Pridať tabuľkový obsah na vašu stránku",
   "tableImport": "Importovať tabuľku",
   "tagAddTag": "Pridať tag",
-  "tagCreateNewTag": "Vytvoriť nový tag",
+  "tagCreateNewTag": "Vytvoriť tag",
   "tagCreateTag": "Vytvoriť tag \"{{ tag }}\"",
   "tagNewTag": "Nový tag",
   "tagNoTagsFoundCreateOne": "vytvoriť {{ tag }}?",
