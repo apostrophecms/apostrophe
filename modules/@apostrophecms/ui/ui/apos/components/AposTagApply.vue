@@ -3,6 +3,7 @@
     :menu-placement
     :button
     :disabled="isDisabled"
+    class="apos-apply-tag-menu"
     @open="isOpen = $event"
     @close="clearSearch"
   >
@@ -22,48 +23,46 @@
           @click="create"
         />
       </div>
-      <div>
-        <ol
-          v-if="searchTags.length"
-          class="apos-apply-tag-menu__tags"
-        >
-          <li
-            v-for="tag in searchTags"
-            :key="tag.slug"
-            class="apos-apply-tag-menu__tag"
-          >
-            <AposCheckbox
-              v-if="checkboxes[tag.slug]"
-              v-model="checkboxes[tag.slug].model.value"
-              :field="checkboxes[tag.slug].field"
-              :choice="checkboxes[tag.slug].choice"
-              :disable-focus="!isOpen"
-              @updated="$event => updateTag($event.target.name)"
-            />
-          </li>
-        </ol>
-        <div
-          v-if="(!searchTags.length && tags.length)"
-          class="apos-apply-tag-menu__empty"
-        >
-          <p class="apos-apply-tag-menu__empty-message">
-            {{ $t('apostrophe:tagNoTagsFoundPerhaps') }}
-            <AposButton
-              :label="{
-                key: 'apostrophe:tagNoTagsFoundCreateOne',
-                tag: searchValue.data
-              }"
-              type="quiet"
-              :disabled="isTagFound"
-              :disable-focus="!isOpen"
-              @click="create"
-            />
-          </p>
-          <span class="apos-apply-tag-menu__empty-icon">
-            🌾
-          </span>
-        </div>
-      </div>
+    </div>
+    <ol
+      v-if="searchTags.length"
+      class="apos-apply-tag-menu__tags"
+    >
+      <li
+        v-for="tag in searchTags"
+        :key="tag.slug"
+        class="apos-apply-tag-menu__tag"
+      >
+        <AposCheckbox
+          v-if="checkboxes[tag.slug]"
+          v-model="checkboxes[tag.slug].model.value"
+          :field="checkboxes[tag.slug].field"
+          :choice="checkboxes[tag.slug].choice"
+          :disable-focus="!isOpen"
+          @updated="$event => updateTag($event.target.name)"
+        />
+      </li>
+    </ol>
+    <div
+      v-if="(!searchTags.length && tags.length)"
+      class="apos-apply-tag-menu__empty"
+    >
+      <p class="apos-apply-tag-menu__empty-message">
+        {{ $t('apostrophe:tagNoTagsFoundPerhaps') }}
+        <AposButton
+          :label="{
+            key: 'apostrophe:tagNoTagsFoundCreateOne',
+            tag: searchValue.data
+          }"
+          type="quiet"
+          :disabled="isTagFound"
+          :disable-focus="!isOpen"
+          @click="create"
+        />
+      </p>
+      <span class="apos-apply-tag-menu__empty-icon">
+        🌾
+      </span>
     </div>
   </AposContextMenu>
 </template>
@@ -293,8 +292,15 @@ function getCheckedState(tag) {
 </script>
 
 <style lang="scss" scoped>
-  .apos-apply-tag-menu__inner {
+  .apos-apply-tag-menu :deep(.apos-context-menu__pane) {
+    padding: 0;
+  }
+
+  .apos-apply-tag-menu__inner,
+  .apos-apply-tag-menu__tags,
+  .apos-apply-tag-menu__empty {
     min-width: 280px;
+    padding: $spacing-double;
   }
 
   .apos-apply-tag-menu__primary-action {
@@ -303,10 +309,16 @@ function getCheckedState(tag) {
     margin-top: 10px;
   }
 
+  .apos-apply-tag-menu__inner {
+    position: relative;
+  }
+
   .apos-apply-tag__create {
     display: flex;
     justify-content: flex-end;
-    margin-top: 10px;
+    position: absolute;
+    top: $spacing-double;
+    right: $spacing-double;
   }
 
   .apos-apply-tag-menu__tags {
@@ -316,6 +328,7 @@ function getCheckedState(tag) {
       max-height: 160px;
       overflow-y: auto;
       margin-top: 15px;
+      margin-bottom: 15px;
       // Negative margin/padding below is for the checkbox focus state.
       margin-left: -10px;
       padding-left: 10px;
@@ -323,14 +336,15 @@ function getCheckedState(tag) {
   }
 
   .apos-apply-tag-menu__tag {
-    margin-top: 10px;
+    padding: $spacing-base $spacing-double;
+    border-top: 1px solid var(--a-base-9);
   }
 
   .apos-apply-tag-menu__empty {
     display: flex;
     flex-direction: column;
     align-items: center;
-    padding: 40px 0 20px;
+    padding: $spacing-quadruple $spacing-double;
   }
 
   .apos-apply-tag-menu__empty-message {
