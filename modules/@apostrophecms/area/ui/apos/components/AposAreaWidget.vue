@@ -112,6 +112,7 @@
           :max-reached="maxReached"
           :tabbable="isFocused"
           :model-value="widget"
+          :widgetOptions="widgetOptions"
           @up="$emit('up', i);"
           @remove="$emit('remove', i);"
           @edit="$emit('edit', i);"

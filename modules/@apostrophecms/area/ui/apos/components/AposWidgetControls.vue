@@ -68,6 +68,10 @@ export default {
     tabbable: {
       type: Boolean,
       default: false
+    },
+    widgetOptions: {
+      type: Object,
+      required: true
     }
   },
   emits: [ 'remove', 'edit', 'cut', 'copy', 'clone', 'up', 'down', 'update' ],
@@ -229,7 +233,8 @@ export default {
           widget: this.modelValue,
           widgetSchema: apos.modules[
             apos.area.widgetManagers[this.modelValue.type]
-          ]?.schema
+          ]?.schema,
+          widgetOptions: this.widgetOptions
         });
         if (result) {
           // TODO: make sure the update method from
