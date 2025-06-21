@@ -902,4 +902,47 @@ describe('Login', function() {
     assert.strictEqual(whoamiResponse.email, 'hputter@aol.com');
   });
 
+  it('should return user data with additional whoamiFields if explicitly added at GET login/whoami when user is logged in', async function() {
+
+    const jar = apos.http.jar();
+
+    apos.modules['@apostrophecms/login'].options.whoamiFields = [ 'role' ];
+
+    await apos.http.post(
+      '/api/v1/@apostrophecms/login/login',
+      {
+        method: 'POST',
+        body: {
+          username: 'HarryPutter',
+          password: 'crookshanks',
+          session: true
+        },
+        jar
+      }
+    );
+
+    const whoamiResponse = await apos.http.get('/api/v1/@apostrophecms/login/whoami', { jar });
+    assert.strictEqual(whoamiResponse.role, 'admin');
+  });
+
+  it('should not return user data with additional whoamiFields if not explicitly added at GET login/whoami when user is logged in', async function() {
+
+    const jar = apos.http.jar();
+
+    await apos.http.post(
+      '/api/v1/@apostrophecms/login/login',
+      {
+        method: 'POST',
+        body: {
+          username: 'HarryPutter',
+          password: 'crookshanks',
+          session: true
+        },
+        jar
+      }
+    );
+
+    const whoamiResponse = await apos.http.get('/api/v1/@apostrophecms/login/whoami', { jar });
+    assert.ok(!('role' in whoamiResponse));
+  });
 });
