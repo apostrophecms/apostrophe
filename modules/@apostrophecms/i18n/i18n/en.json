@@ -249,6 +249,7 @@
   "imagePlaceholder": "Image placeholder",
   "imageTag": "Image Tag",
   "imageTags": "Image Tags",
+  "imageUploadMsg": "Choose from the {{ mediaLibrary }}, {{ yourDevice }} or drop a file here",
   "images": "Images",
   "inputFieldIsDisabled": "This field is disabled",
   "insertAndNew": "{{ saveLabel }} {{ typeLabel }} and create a new one.",
@@ -324,6 +325,7 @@
   "mediaDimensions": "Dimensions: {{ width }} 𝗑 {{ height }}",
   "mediaFileSize": "File Size: {{ fileSize }}",
   "mediaKB": "{{ size }}KB",
+  "mediaLibrary": "Media Library",
   "mediaLibraryEndReached": "You've reached the end of the media library.",
   "mediaMB": "{{ size }}MB",
   "mediaManagerErrorRestoring": "Error Restoring",
@@ -631,5 +633,6 @@
   "willMoveImageToArchive": "This will move the image to the archive.",
   "yes": "Yes",
   "yesLocalizeAndSwitchLocales": "Yes, localize this page and switch locales",
-  "youTookControl": "You took control of this document in another tab or window. A document can only be edited in one place at a time."
+  "youTookControl": "You took control of this document in another tab or window. A document can only be edited in one place at a time.",
+  "yourDevice": "your device"
 }
