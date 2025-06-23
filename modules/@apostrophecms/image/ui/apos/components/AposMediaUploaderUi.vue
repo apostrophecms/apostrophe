@@ -1,0 +1,141 @@
+<template>
+  <div
+    ref="mediaUploaderEl"
+    class="apos-media-uploader"
+    :class="{'apos-media-uploader--enabled': !props.disabled}"
+  >
+    <div class="apos-media-uploader__inner">
+      <!-- if we want animations.. -->
+      <!-- <AposImagePlusIcon class="apos-media-uploader__icon" /> -->
+      <AposIndicator
+        class="apos-media-uploader__icon"
+        :icon-size="40"
+        :icon="props.icon"
+      />
+      <p v-html="instructionsTranslation" />
+    </div>
+  </div>
+</template>
+
+<script setup>
+import {
+  inject, useTemplateRef, onMounted
+} from 'vue';
+
+const $t = inject('i18n');
+const props = defineProps({
+  icon: {
+    type: String,
+    default: 'image-plus-icon'
+  },
+  diabled: {
+    type: Boolean,
+    default: false
+  }
+});
+const emit = defineEmits([ 'media', 'upload' ]);
+const mediaUploaderEl = useTemplateRef('mediaUploaderEl');
+
+const mediaLibraryTranslation = $t('apostrophe:mediaLibrary');
+const yourDeviceTranslation = $t('apostrophe:yourDevice');
+const instructionsTranslation = $t('apostrophe:imageUploadMsg', {
+  mediaLibrary: `<button data-apos-emit="media">${mediaLibraryTranslation}</button>`,
+  yourDevice: `<button data-apos-emit="upload">${yourDeviceTranslation}</button>`
+});
+
+onMounted(() => {
+  bindEmits();
+});
+
+function bindEmits() {
+  mediaUploaderEl.value.querySelectorAll('[data-apos-emit]').forEach((el) => {
+    el.addEventListener('click', (event) => {
+      const action = event.currentTarget.getAttribute('data-apos-emit');
+      emit(action);
+    });
+  });
+
+}
+</script>
+
+<style lang="scss">
+.apos-media-uploader {
+  @include apos-button-reset();
+  @include apos-transition();
+
+  & {
+    display: flex;
+    box-sizing: border-box;
+    align-items: center;
+    justify-content: center;
+    border: 2px dashed var(--a-base-3);
+    color: inherit;
+    grid-column: 1 / 3;
+    grid-row: 1 / 3;
+  }
+}
+
+.apos-media-uploader--enabled .apos-media-uploader__inner {
+  &::after {
+    @include apos-transition($duration: 0.3s);
+
+    & {
+      z-index: $z-index-under;
+      position: absolute;
+      content: '';
+      width: 90%;
+      height: 90%;
+      background-image:
+        linear-gradient(to right, rgba($brand-magenta, 0.3), rgba($brand-blue, 0.3)),
+        linear-gradient(to right, rgba($brand-gold, 0.3), rgba($brand-magenta, 0.3));
+      background-size:
+        100% 60%,
+        100% 60%;
+      background-position:
+        5% -5%,
+        5% 100%;
+      background-repeat: no-repeat;
+      filter: blur(10px);
+    }
+  }
+
+  &:hover,
+  &:active,
+  &:focus,
+  &.apos-is-dragging {
+    outline: 2px dashed var(--a-primary);
+
+    &::after {
+      width: 102%;
+      height: 102%;
+    }
+
+    .apos-media-uploader__icon {
+      fill: url("#apos-upload-gradient");
+      transform: translateY(-2px);
+    }
+  }
+}
+
+.apos-media-uploader__inner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  background-color: var(--a-background-primary);
+}
+
+.apos-media-uploader__icon {
+  @include apos-transition($duration: 0.2s);
+
+  & {
+    width: 57px;
+    max-width: 50%;
+    height: auto;
+    margin-bottom: 5px;
+    fill: var(--a-text-primary);
+  }
+}
+</style>
