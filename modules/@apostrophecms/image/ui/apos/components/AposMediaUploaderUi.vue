@@ -9,7 +9,7 @@
       <!-- <AposImagePlusIcon class="apos-media-uploader__icon" /> -->
       <AposIndicator
         class="apos-media-uploader__icon"
-        :icon-size="40"
+        :icon-size="70"
         :icon="props.icon"
       />
       <p
@@ -139,9 +139,9 @@ function bindEmits() {
       height: 102%;
     }
 
-    .apos-media-uploader__icon {
-      fill: url("#apos-upload-gradient");
-      transform: translateY(-2px);
+    .apos-media-uploader__icon svg {
+      /* fill: url("#apos-upload-gradient"); */
+      transform: translateY(0);
     }
   }
 }
@@ -153,18 +153,42 @@ function bindEmits() {
   justify-content: center;
   width: 100%;
   height: 100%;
-  background-color: var(--a-background-primary);
+  padding: 20px;
 }
 
 .apos-media-uploader__icon {
   @include apos-transition($duration: 0.2s);
 
-  & {
-    width: 57px;
-    max-width: 50%;
-    height: auto;
-    margin-bottom: 5px;
-    fill: var(--a-text-primary);
+  svg {
+    fill: var(--a-base-8);
   }
 }
+
+.apos-media-uploader__instructions {
+  margin: 10px 0 15px;
+  font-size: var(--a-type-heading);
+  max-width: 360px;
+  text-align: center;
+}
+
+.apos-media-uploader__btn {
+  @include apos-button-reset();
+
+  & {
+    color: var(--a-primary);
+    font-weight: var(--a-weight-base);
+    text-decoration: underline;
+  }
+
+  &:hover {
+    cursor: pointer;
+  }
+}
+
+.apos-media-uploader__infos {
+  margin: 0 0 10px;
+  color: var(--a-background-inverted);
+  font-size: var(--a-type-large);
+}
+
 </style>
