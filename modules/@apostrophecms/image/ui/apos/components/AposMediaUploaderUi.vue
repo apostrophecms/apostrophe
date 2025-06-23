@@ -12,7 +12,20 @@
         :icon-size="40"
         :icon="props.icon"
       />
-      <p v-html="instructionsTranslation" />
+      <p
+        class="apos-media-uploader__instructions"
+        v-html="instructionsTranslation"
+      />
+      <p
+        class="apos-media-uploader__infos"
+        v-html="acceptTranslation"
+      />
+      <p
+        v-if="props.minSize"
+        class="apos-media-uploader__infos"
+      >
+        {{ minSizeTranslation }}
+      </p>
     </div>
   </div>
 </template>
@@ -39,8 +52,24 @@ const mediaUploaderEl = useTemplateRef('mediaUploaderEl');
 const mediaLibraryTranslation = $t('apostrophe:mediaLibrary');
 const yourDeviceTranslation = $t('apostrophe:yourDevice');
 const instructionsTranslation = $t('apostrophe:imageUploadMsg', {
-  mediaLibrary: `<button data-apos-emit="media">${mediaLibraryTranslation}</button>`,
-  yourDevice: `<button data-apos-emit="upload">${yourDeviceTranslation}</button>`
+  mediaLibrary: `<button class="apos-media-uploader__btn" data-apos-click="openMedia">${mediaLibraryTranslation}</button>`,
+  yourDevice: `<button class="apos-media-uploader__btn" data-apos-click="searchFile">${yourDeviceTranslation}</button>`
+});
+const minSizeTranslation = props.minSize && $t('apostrophe:mininumSize', {
+  width: props.minSize[0] || '_',
+  height: props.minSize[1] || '_'
+});
+const formattedAccept = props.accept
+  .replace(/\s+|\.+/g, '')
+  .split(',')
+  .map((format) => format.trim().toUpperCase());
+const formats = formattedAccept
+  .slice(0, formattedAccept.length - 1)
+  .map((format) => `<strong>${format}</strong>`)
+  .join(', ');
+const acceptTranslation = $t('apostrophe:imageUploadSupport', {
+  formats,
+  last: `<strong>${formattedAccept[formattedAccept.length - 1]}</strong>`
 });
 
 onMounted(() => {
