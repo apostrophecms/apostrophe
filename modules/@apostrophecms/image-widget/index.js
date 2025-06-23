@@ -10,7 +10,10 @@ module.exports = {
     placeholderImage: 'jpg',
     linkWithType: [ '@apostrophecms/any-page-type' ],
     // Should we write e.g. a reset style for the `figure` element?
-    inlineStyles: true
+    inlineStyles: true,
+    components: {
+      widget: 'AposImageWidget'
+    }
   },
   widgetOperations(self, options) {
     const {
