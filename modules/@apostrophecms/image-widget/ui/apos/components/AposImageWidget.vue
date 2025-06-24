@@ -22,5 +22,7 @@ function upload() {
 </script>
 
 <style lang="scss" scoped>
-
+.apos-image-widget {
+  position: relative;
+}
 </style>
