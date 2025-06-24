@@ -432,10 +432,15 @@ export default {
       });
       this.edited[updated._id] = true;
     },
-    // Add a widget into an area.
+    // Add a widget into an area. index is required, along
+    // with one and only one of name, widget or clipboard.
+    // If widget is passed it is inserted directly. If
+    // clipboard is passed it is cloned and inserted and
+    // the clipboard is cleared.
     async add({
       index,
       name,
+      widget,
       clipboard
     }) {
       if (clipboard) {
@@ -444,6 +449,11 @@ export default {
         clipboard = this.cloneWidget(clipboard);
         return this.insert({
           widget: clipboard,
+          index
+        });
+      } else if (widget) {
+        return this.insert({
+          widget,
           index
         });
       } else if (this.widgetIsContextual(name)) {

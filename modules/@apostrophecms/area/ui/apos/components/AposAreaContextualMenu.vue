@@ -72,7 +72,7 @@
                   <AposAreaMenuItem
                     :item="child"
                     :tabbable="itemIndex === active"
-                    @click="add(child)"
+                    @click="action(child)"
                     @up="switchItem(`child-${itemIndex}-${childIndex - 1}`, -1)"
                     @down="switchItem(`child-${itemIndex}-${childIndex + 1}`, 1)"
                   />
@@ -83,7 +83,7 @@
           <AposAreaMenuItem
             v-else
             :item="item"
-            @click="add(item)"
+            @click="action(item)"
             @up="switchItem(`item-${itemIndex - 1}`, -1)"
             @down="switchItem(`item-${itemIndex + 1}`, 1)"
           />
@@ -196,8 +196,14 @@ export default {
         // If the menu is not open, we don't need to compute it right now
         return [];
       }
-      const clipboard = apos.area.widgetClipboard.get();
       const menu = [ ...this.contextMenuOptions.menu ];
+      for (const createWidgetOperation of this.moduleOptions.createWidgetOperations) {
+        menu.unshift({
+          type: 'operation',
+          ...createWidgetOperation
+        });
+      }
+      const clipboard = apos.area.widgetClipboard.get();
       if (clipboard) {
         const widget = clipboard;
         const matchingChoice = menu.find(option => option.name === widget.type);
@@ -226,7 +232,20 @@ export default {
     this.inContext = !apos.util.closest(this.$el, '[data-apos-schema-area]');
   },
   methods: {
-    async add(item) {
+    async action(item) {
+      if (item.type === 'operation') {
+        const widget = await apos.modal.execute(item.modal, {
+          options: this.options
+        });
+        if (widget) {
+          // Insert the widget at the appropriate insertion point, like we normally would
+          this.$emit('add', {
+            ...widget,
+            index: this.index
+          });
+        }
+        return;
+      }
       // Potential TODO: If we find ourselves manually flipping these bits in
       // other AposContextMenu overrides we should consider refactoring
       // contextmenus to be able to self close when any click takes place within
