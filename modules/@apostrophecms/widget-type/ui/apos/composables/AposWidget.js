@@ -1,39 +1,30 @@
 
 import { isEqual } from 'lodash';
 import {
-  ref, unref, watch, onMounted, computed, nextTick
+  ref, unref, computed, nextTick
 } from 'vue';
 
 // When modifyin this file, verify that `AposWidgetMixin.js` still works
-export function useAposWidget(data) {
+export function useAposWidget(props) {
   const rendered = ref('...');
 
   const moduleOptions = computed(() => {
-    return apos.modules[apos.area.widgetManagers[data.type]];
-  });
-
-  watch(data.modelValue, () => {
-    renderContent();
-  });
-
-  onMounted(() => {
-    renderContent();
+    return apos.modules[apos.area.widgetManagers[props.type]];
   });
 
   return {
-    rendered,
+    renderContent,
     getClasses: () => _getClasses({
-      modelValue: data.modelValue,
+      modelValue: props.modelValue,
       moduleOptions
     })
   };
 
   async function renderContent() {
-    rendered.value = await _renderContent(data);
+    rendered.value = await _renderContent(props);
     nextTick(() => {
-      _emitWidgetRendered({ aposLivePreview: data.aposLivePreview });
+      _emitWidgetRendered({ aposLivePreview: props.aposLivePreview });
     });
-
   }
 };
 
@@ -51,38 +42,30 @@ export function _getClasses(_modelValue, _moduleOptions) {
   };
 }
 
-export async function _renderContent(data) {
-  const modelValue = unref(data.modelValue);
-  const docId = unref(data.docId);
-  const areaFieldId = unref(data.areaFieldId);
-  const rendering = unref(data.rendering);
-  const mode = unref(data.mode);
-  const type = unref(data.type);
-
+export async function _renderContent(props) {
   apos.bus.$emit('widget-rendering');
   const {
     aposLivePreview,
     ...widget
-  } = modelValue;
+  } = props.modelValue;
   const body = {
-    _docId: docId,
+    _docId: props.docId,
     widget,
-    areaFieldId,
-    type,
-    livePreview: aposLivePreview
+    areaFieldId: props.areaFieldId,
+    type: props.type,
+    livePreview: props.aposLivePreview
   };
   try {
-    if (rendering && (isEqual(rendering.parameters, body))) {
-      return rendering.html;
+    if (props.rendering && (isEqual(props.rendering.parameters, body))) {
+      return props.rendering.html;
     } else {
       // Don't use a placeholder here, it causes flickering in live preview
       // mode. It is better to display the old until we display the new, we
       // have "busy" for clarity
-      const result = await apos.http.post(`${apos.area.action}/render-widget?aposEdit=1&aposMode=${mode}`, {
-        busy: !aposLivePreview,
+      const result = await apos.http.post(`${apos.area.action}/render-widget?aposEdit=1&aposMode=${props.mode}`, {
+        busy: !props.aposLivePreview,
         body
       });
-        //
       if (result !== 'aposLivePreviewSchemaNotYetValid') {
         return result;
       }
