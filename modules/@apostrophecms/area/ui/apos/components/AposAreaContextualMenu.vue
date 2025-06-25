@@ -234,13 +234,16 @@ export default {
   methods: {
     async action(item) {
       if (item.type === 'operation') {
-        const widget = await apos.modal.execute(item.modal, {
+        const props = {
+          ...item.props,
           options: this.options
-        });
+        }
+        const widget = await apos.modal.execute(item.modal, props);
         if (widget) {
+          console.log('widget is:', JSON.stringify(widget, null, 2));
           // Insert the widget at the appropriate insertion point, like we normally would
           this.$emit('add', {
-            ...widget,
+            widget,
             index: this.index
           });
         }
