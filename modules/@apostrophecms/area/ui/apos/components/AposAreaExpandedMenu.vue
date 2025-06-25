@@ -76,6 +76,10 @@
 export default {
   name: 'AposAreaExpandedMenu',
   props: {
+    field: {
+      type: Object,
+      default: null
+    },
     options: {
       type: Object,
       required: true

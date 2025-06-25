@@ -14,6 +14,7 @@
     :index="index"
     :widget-options="options.widgets"
     :options="options"
+    :field-id="fieldId"
     :max-reached="maxReached"
     :disabled="isDisabled"
     :menu-id="menuId"
@@ -57,6 +58,9 @@ export default {
         return {};
       }
     },
+    fieldId: {
+      type: String
+    },
     tabbable: {
       type: Boolean,
       default: false
@@ -92,7 +96,7 @@ export default {
   methods: {
     async openExpandedMenu(index) {
       const data = await apos.modal.execute('AposAreaExpandedMenu', {
-        field: this.field,
+        fieldId: this.fieldId,
         options: this.options,
         index
       });

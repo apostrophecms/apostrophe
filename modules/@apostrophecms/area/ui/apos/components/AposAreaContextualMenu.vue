@@ -130,6 +130,9 @@ export default {
         return {};
       }
     },
+    fieldId: {
+      type: String
+    },
     menuId: {
       type: String,
       default() {
@@ -236,7 +239,8 @@ export default {
       if (item.type === 'operation') {
         const props = {
           ...item.props,
-          options: this.options
+          options: this.options,
+          fieldId: this.fieldId
         }
         const widget = await apos.modal.execute(item.modal, props);
         if (widget) {
