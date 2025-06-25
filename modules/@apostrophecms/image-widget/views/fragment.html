@@ -8,7 +8,7 @@
     />
   {%- elif attachment -%}
       {%- set className = options.className or manager.options.className -%}
-<figure class="{{ className + "__wrapper" }}" style="{{ _figureStyle(options, manager) | trim }}">
+<figure{% if className %} class="{{ className + "__wrapper" }}"{% endif %} style="{{ _figureStyle(options, manager) | trim }}">
   {{ _imageWithLink(widget, attachment, options, manager, contextOptions) -}}
   {% if widget.caption -%}<figcaption class="{{ className + "__caption" }}">
     {{ widget.caption }}
@@ -30,7 +30,7 @@
   {%- set dimensionAttrs = options.dimensionAttrs or manager.options.dimensionAttrs -%}
   {%- set loadingType = options.loadingType or manager.options.loadingType -%}
   {%- set size = options.size or manager.options.size or 'full' -%}
-<img {% if className %} class="{{ className }}"{% endif %}
+<img{% if className %} class="{{ className }}"{% endif %}
   {% if loadingType %} loading="{{ loadingType }}"{% endif %}
   data-apos-test="image-widget"
   srcset="{{ apos.image.srcset(attachment) }}"
