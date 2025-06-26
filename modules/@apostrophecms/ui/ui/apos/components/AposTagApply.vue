@@ -16,6 +16,7 @@
       />
       <div class="apos-apply-tag-menu__create">
         <AposButton
+          class="apos-apply-tag-menu__create-tag-btn"
           :label="createBtnLabel"
           :disabled="!createUi && isTagFound"
           :disable-focus="!isOpen"
@@ -53,20 +54,15 @@
       >
         <p class="apos-apply-tag-menu__empty-message">
           {{ noTagsTranslation }}
-          <AposButton
-            :label="{
-              key: 'apostrophe:tagNoTagsFoundCreateOne',
-              tag: searchValue.data
-            }"
-            type="quiet"
-            :disabled="isTagFound"
-            :disable-focus="!isOpen"
-            @click.stop="createOrManage"
-          />
         </p>
-        <span class="apos-apply-tag-menu__empty-icon">
-          🌾
-        </span>
+        <AposButton
+          class="apos-apply-tag-menu__empty-create-btn"
+          :label="noTagsCreateLabel"
+          type="quiet"
+          :disabled="isTagFound"
+          :disable-focus="!isOpen"
+          @click.stop="createOrManage"
+        />
       </div>
     </div>
     <div
@@ -156,7 +152,7 @@ const isTagFound = computed(() => {
 
 const noTagsTranslation = computed(() => {
   return props.tags.length
-    ? $t('apostrophe:tagNoTagsFoundPerhaps')
+    ? $t('apostrophe:tagNoResultFor', { tag: searchValue.value.data })
     : $t('apostrophe:tagNoTagsYet');
 });
 
@@ -204,6 +200,17 @@ const createBtnLabel = computed(() => {
   if (searchValue.value.data.length) {
     return {
       key: 'apostrophe:tagCreateTagName',
+      tag: searchValue.value.data
+    };
+  }
+
+  return 'apostrophe:tagCreateTag';
+});
+
+const noTagsCreateLabel = computed(() => {
+  if (searchValue.value.data.length) {
+    return {
+      key: 'apostrophe:tagCreateNewTagName',
       tag: searchValue.value.data
     };
   }
@@ -367,6 +374,13 @@ function getCheckedState(tag) {
   justify-content: flex-end;
 }
 
+.apos-apply-tag-menu__create-tag-btn:deep(.apos-button__label) {
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-wrap: nowrap;
+}
+
 .apos-apply-tag-menu__tags {
   @include apos-list-reset();
 
@@ -389,16 +403,32 @@ function getCheckedState(tag) {
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: $spacing-quadruple $spacing-double;
+  padding: 50px 20px 60px;
 }
 
 .apos-apply-tag-menu__empty-message {
   @include type-base;
 
   & {
-    margin-bottom: 20px;
-    max-width: 240px;
+    overflow: hidden;
+    margin-top: 0;
+    margin-bottom: 10px;
+    font-size: var(--a-type-heading);
     text-align: center;
+    text-overflow: ellipsis;
+    max-width: 100%;
+    text-wrap: nowrap;
+  }
+}
+
+.apos-apply-tag-menu__empty-create-btn {
+  font-size: var(--a-type-menu);
+
+  :deep(.apos-button__label) {
+    max-width: 200px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    text-wrap: nowrap;
   }
 }
 
