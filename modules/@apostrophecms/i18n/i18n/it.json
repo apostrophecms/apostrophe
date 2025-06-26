@@ -551,7 +551,7 @@
   "tableDescription": "Aggiungi una tabella alla tua pagina",
   "tableImport": "Importa tabella",
   "tagAddTag": "Aggiungi etichetta",
-  "tagCreateNewTag": "Crea nuova etichetta",
+  "tagCreateNewTag": "Crea etichetta",
   "tagCreateTag": "Crea etichetta \"{{ tag }}\"",
   "tagNewTag": "Nuova etichetta",
   "tagNoTagsFoundCreateOne": "crea {{ tag }}?",
