@@ -16,53 +16,76 @@
       />
       <div class="apos-apply-tag-menu__create">
         <AposButton
-          :label="createLabel"
-          :disabled="isTagFound"
+          :label="createBtnLabel"
+          :disabled="!createUi && isTagFound"
           :disable-focus="!isOpen"
           type="quiet"
-          @click="create"
+          @click="createOrManage"
         />
       </div>
     </div>
-    <ol
-      v-if="searchTags.length"
-      class="apos-apply-tag-menu__tags"
-    >
-      <li
-        v-for="tag in searchTags"
-        :key="tag.slug"
-        class="apos-apply-tag-menu__tag"
-      >
-        <AposCheckbox
-          v-if="checkboxes[tag.slug]"
-          v-model="checkboxes[tag.slug].model.value"
-          :field="checkboxes[tag.slug].field"
-          :choice="checkboxes[tag.slug].choice"
-          :disable-focus="!isOpen"
-          @updated="$event => updateTag($event.target.name)"
-        />
-      </li>
-    </ol>
     <div
-      v-if="(!searchTags.length && tags.length)"
-      class="apos-apply-tag-menu__empty"
+      v-if="!createUi"
+      class="apos-apply-tag-menu__search-body"
     >
-      <p class="apos-apply-tag-menu__empty-message">
-        {{ $t('apostrophe:tagNoTagsFoundPerhaps') }}
-        <AposButton
-          :label="{
-            key: 'apostrophe:tagNoTagsFoundCreateOne',
-            tag: searchValue.data
-          }"
-          type="quiet"
-          :disabled="isTagFound"
-          :disable-focus="!isOpen"
-          @click="create"
-        />
-      </p>
-      <span class="apos-apply-tag-menu__empty-icon">
-        🌾
-      </span>
+      <ol
+        v-if="searchTags.length"
+        class="apos-apply-tag-menu__tags"
+      >
+        <li
+          v-for="tag in searchTags"
+          :key="tag.slug"
+          class="apos-apply-tag-menu__tag"
+        >
+          <AposCheckbox
+            v-if="checkboxes[tag.slug]"
+            v-model="checkboxes[tag.slug].model.value"
+            :field="checkboxes[tag.slug].field"
+            :choice="checkboxes[tag.slug].choice"
+            :disable-focus="!isOpen"
+            @updated="$event => updateTag($event.target.name)"
+          />
+        </li>
+      </ol>
+      <div
+        v-if="(!searchTags.length && tags.length)"
+        class="apos-apply-tag-menu__empty"
+      >
+        <p class="apos-apply-tag-menu__empty-message">
+          {{ $t('apostrophe:tagNoTagsFoundPerhaps') }}
+          <AposButton
+            :label="{
+              key: 'apostrophe:tagNoTagsFoundCreateOne',
+              tag: searchValue.data
+            }"
+            type="quiet"
+            :disabled="isTagFound"
+            :disable-focus="!isOpen"
+            @click="create"
+          />
+        </p>
+        <span class="apos-apply-tag-menu__empty-icon">
+          🌾
+        </span>
+      </div>
+    </div>
+    <div
+      v-else
+      class="apos-apply-tag-menu__create-btns"
+    >
+      <AposButton
+        class="apos-apply-tag-menu__btn"
+        type="secondary"
+        label="apostrophe:cancel"
+        @click.stop="closeCreateUi"
+      />
+      <AposButton
+        class="apos-apply-tag-menu__btn"
+        type="primary"
+        label="apostrophe:tagCreateNewTag"
+        :disabled="!searchValue.data.length || isTagFound"
+        @click.stop="create"
+      />
     </div>
   </AposContextMenu>
 </template>
@@ -110,13 +133,12 @@ const props = defineProps({
 
 const emit = defineEmits([ 'added', 'checked', 'unchecked' ]);
 
-const textInput = useTemplateRef('textInput');
+const textInputEl = useTemplateRef('textInput');
 
-// data
 const isOpen = ref(false);
 const searchValue = ref({ data: '' });
+const createUi = ref(false);
 
-// computed
 const applyToIds = computed(() => {
   return Object.keys(props.applyTo);
 });
@@ -168,26 +190,28 @@ const isDisabled = computed(() => {
   return applyToIds.value.length === 0;
 });
 
-// Generate the button label.
-const createLabel = computed(() => {
+const createBtnLabel = computed(() => {
+  if (createUi.value) {
+    return 'apostrophe:tagManage';
+  }
   if (searchValue.value.data.length) {
     return {
-      key: 'apostrophe:tagCreateTag',
+      key: 'apostrophe:tagCreateTagName',
       tag: searchValue.value.data
     };
   }
 
-  return 'apostrophe:tagCreateNewTag';
+  return 'apostrophe:tagCreateTag';
 });
 
 // Generate the field object for the search field.
 const searchField = computed(() => {
   return {
     name: 'tagSearch',
-    label: 'apostrophe:tagSearchApplyTags',
+    label: createUi.value ? 'apostrophe:tagCreateNewTag' : 'apostrophe:tagSearchApplyTags',
     placeholder: 'apostrophe:tagSearchPlaceholder',
-    help: 'apostrophe:findOrAddTag',
-    icon: !searchTags.value.length ? 'pencil-icon' : 'magnify-icon',
+    help: createUi.value ? 'apostrophe:tagCreateHelp' : 'apostrophe:findOrAddTag',
+    icon: createUi.value ? '' : 'magnify-icon',
     disableFocus: !isOpen.value
   };
 });
@@ -202,9 +226,9 @@ const checkboxes = computed(() => {
 });
 
 // methods
-
 function clearSearch() {
   searchValue.value.data = '';
+  closeCreateUi();
 }
 
 function checkOrCreate() {
@@ -221,14 +245,17 @@ function checkOrCreate() {
   create();
 };
 
-// Create a new tag, or set up the input with "New Tag" if  empty.
-function create() {
-  if (!searchValue.value.data.length) {
-    textInput.value.$el.querySelector('input').focus();
-
-    return;
+function createOrManage() {
+  if (!createUi.value && searchValue.value.data) {
+    return create();
   }
 
+  toggleCreateUi();
+  textInputEl.value.$el.querySelector('input').focus();
+}
+
+// Create a new tag, or set up the input with "New Tag" if  empty.
+function create() {
   // The string input's `return` event still submits duplicates, so prevent
   // them here.
   if (isTagFound.value) {
@@ -238,6 +265,14 @@ function create() {
   emit('added', searchValue.value.data);
 
   clearSearch();
+}
+
+function toggleCreateUi() {
+  createUi.value = !createUi.value;
+}
+
+function closeCreateUi() {
+  createUi.value = false;
 }
 
 function updateTag(name) {
@@ -292,94 +327,116 @@ function getCheckedState(tag) {
 </script>
 
 <style lang="scss" scoped>
-  .apos-apply-tag-menu :deep(.apos-context-menu__pane) {
-    padding: 0;
+.apos-apply-tag-menu :deep(.apos-context-menu__pane) {
+  display: flex;
+  flex-direction: column;
+  width: 400px;
+  padding: 0;
+}
+
+.apos-apply-tag-menu__inner,
+.apos-apply-tag-menu__tags,
+.apos-apply-tag-menu__empty {
+  min-width: 280px;
+  padding: $spacing-double;
+}
+
+.apos-apply-tag-menu__primary-action {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 10px;
+}
+
+.apos-apply-tag-menu__inner {
+  position: relative;
+  padding-bottom: 12px;
+}
+
+.apos-apply-tag-menu__create {
+  position: absolute;
+  top: $spacing-double;
+  right: $spacing-double;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.apos-apply-tag-menu__tags {
+  @include apos-list-reset();
+
+  & {
+    max-height: 315px;
+    overflow-y: auto;
+  }
+}
+
+.apos-apply-tag-menu__tag {
+  padding: $spacing-base $spacing-double;
+  border-top: 1px solid var(--a-base-9);
+}
+
+.apos-apply-tag-menu__search-body {
+  flex: 1;
+}
+
+.apos-apply-tag-menu__empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: $spacing-quadruple $spacing-double;
+}
+
+.apos-apply-tag-menu__empty-message {
+  @include type-base;
+
+  & {
+    margin-bottom: 20px;
+    max-width: 240px;
+    text-align: center;
+  }
+}
+
+.apos-apply-tag-menu__empty-icon {
+  color: var(--a-base-5);
+}
+
+.apos-apply-tag-menu__empty-icon {
+  // Variable sizes are less important for icons.
+  /* stylelint-disable-next-line scale-unlimited/declaration-strict-value */
+  @include type-title;
+
+  & {
+    margin: 0;
+  }
+}
+
+.fade-enter-active, .fade-leave-active {
+  transition: all 500ms;
+}
+
+.fade-enter, .fade-leave-to {
+  position: absolute;
+  width: 100%;
+  opacity: 0;
+  transform: translateY(-5px);
+}
+
+.apos-apply-tag-menu__create-btns {
+  display: flex;
+  flex-direction: row;
+  justify-content: stretch;
+  padding: 10px 20px 20px;
+}
+
+.apos-apply-tag-menu__btn {
+  flex: 1;
+
+  &:first-child {
+    margin-right: 10px;
   }
 
-  .apos-apply-tag-menu__inner,
-  .apos-apply-tag-menu__tags,
-  .apos-apply-tag-menu__empty {
-    min-width: 280px;
-    padding: $spacing-double;
-  }
-
-  .apos-apply-tag-menu__primary-action {
-    display: flex;
-    justify-content: flex-end;
-    margin-top: 10px;
-  }
-
-  .apos-apply-tag-menu__inner {
-    position: relative;
-  }
-
-  .apos-apply-tag-menu__create {
-    position: absolute;
-    top: $spacing-double;
-    right: $spacing-double;
-    display: flex;
-    justify-content: flex-end;
-  }
-
-  .apos-apply-tag-menu__tags {
-    @include apos-list-reset();
-
-    & {
-      max-height: 160px;
-      overflow-y: auto;
-      margin-top: 15px;
-      margin-bottom: 15px;
-      // Negative margin/padding below is for the checkbox focus state.
-      margin-left: -10px;
-      padding-left: 10px;
-    }
-  }
-
-  .apos-apply-tag-menu__tag {
-    padding: $spacing-base $spacing-double;
-    border-top: 1px solid var(--a-base-9);
-  }
-
-  .apos-apply-tag-menu__empty {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    padding: $spacing-quadruple $spacing-double;
-  }
-
-  .apos-apply-tag-menu__empty-message {
-    @include type-base;
-
-    & {
-      margin-bottom: 20px;
-      max-width: 240px;
-      text-align: center;
-    }
-  }
-
-  .apos-apply-tag-menu__empty-icon {
-    color: var(--a-base-5);
-  }
-
-  .apos-apply-tag-menu__empty-icon {
-    // Variable sizes are less important for icons.
-    /* stylelint-disable-next-line scale-unlimited/declaration-strict-value */
-    @include type-title;
-
-    & {
-      margin: 0;
-    }
-  }
-
-  .fade-enter-active, .fade-leave-active {
-    transition: all 500ms;
-  }
-
-  .fade-enter, .fade-leave-to {
-    position: absolute;
+  :deep(.apos-button) {
+    box-sizing: border-box;
     width: 100%;
-    opacity: 0;
-    transform: translateY(-5px);
   }
-
+}
 </style>
