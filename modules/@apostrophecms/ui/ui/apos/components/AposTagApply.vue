@@ -84,7 +84,7 @@
         type="primary"
         label="apostrophe:tagCreateNewTag"
         :disabled="!searchValue.data.length || isTagFound"
-        :tooltip="isTagFound && 'apostrophe'"
+        :tooltip="isTagFound && 'apostrophe:tagExist'"
         @click.stop="create"
       />
     </div>
@@ -155,8 +155,8 @@ const isTagFound = computed(() => {
 });
 
 const noTagsTranslation = computed(() => {
-  return searchTags.value.length
-    ? $t('apostrophe:tagNoTagsFound')
+  return props.tags.length
+    ? $t('apostrophe:tagNoTagsFoundPerhaps')
     : $t('apostrophe:tagNoTagsYet');
 });
 
