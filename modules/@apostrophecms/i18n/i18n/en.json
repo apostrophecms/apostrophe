@@ -563,6 +563,7 @@
   "tagNewTag": "New Tag",
   "tagNoTagsFoundCreateOne": "create {{ tag }}?",
   "tagNoTagsFoundPerhaps": "We couldn't find any matching tags. Perhaps",
+  "tagNoTagsYet": "No tags yet. Perhaps",
   "tagSearchApplyTags": "Apply Tags",
   "tagSearchPlaceholder": "Tag...",
   "tagYourImages": "Tag your images to make searching and filtering the media manager easier",

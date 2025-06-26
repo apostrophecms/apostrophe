@@ -48,11 +48,11 @@
         </li>
       </ol>
       <div
-        v-if="(!searchTags.length && tags.length)"
+        v-else
         class="apos-apply-tag-menu__empty"
       >
         <p class="apos-apply-tag-menu__empty-message">
-          {{ $t('apostrophe:tagNoTagsFoundPerhaps') }}
+          {{ noTagsTranslation }}
           <AposButton
             :label="{
               key: 'apostrophe:tagNoTagsFoundCreateOne',
@@ -61,7 +61,7 @@
             type="quiet"
             :disabled="isTagFound"
             :disable-focus="!isOpen"
-            @click="create"
+            @click.stop="createOrManage"
           />
         </p>
         <span class="apos-apply-tag-menu__empty-icon">
@@ -77,14 +77,14 @@
         class="apos-apply-tag-menu__btn"
         type="secondary"
         label="apostrophe:cancel"
-        @click.stop="clearSearch"
+        @click.stop="closeCreateUi"
       />
       <AposButton
         class="apos-apply-tag-menu__btn"
         type="primary"
         label="apostrophe:tagCreateNewTag"
         :disabled="!searchValue.data.length || isTagFound"
-        :tooltip="isTagFound && 'apostrophe:tagExist'"
+        :tooltip="isTagFound && 'apostrophe'"
         @click.stop="create"
       />
     </div>
@@ -152,6 +152,12 @@ const searchText = computed(() => {
 // so you can't create a new tag.
 const isTagFound = computed(() => {
   return props.tags.some((tag) => tag.searchText === searchText.value);
+});
+
+const noTagsTranslation = computed(() => {
+  return searchTags.value.length
+    ? $t('apostrophe:tagNoTagsFound')
+    : $t('apostrophe:tagNoTagsYet');
 });
 
 // Sort checked first
