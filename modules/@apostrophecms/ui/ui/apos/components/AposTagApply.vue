@@ -14,7 +14,7 @@
         :field="searchField"
         @return="checkOrCreate"
       />
-      <div class="apos-apply-tag__create">
+      <div class="apos-apply-tag-menu__create">
         <AposButton
           :label="createLabel"
           :disabled="isTagFound"
@@ -313,12 +313,12 @@ function getCheckedState(tag) {
     position: relative;
   }
 
-  .apos-apply-tag__create {
-    display: flex;
-    justify-content: flex-end;
+  .apos-apply-tag-menu__create {
     position: absolute;
     top: $spacing-double;
     right: $spacing-double;
+    display: flex;
+    justify-content: flex-end;
   }
 
   .apos-apply-tag-menu__tags {
