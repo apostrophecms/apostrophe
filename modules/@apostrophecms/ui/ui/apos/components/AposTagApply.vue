@@ -84,6 +84,7 @@
         type="primary"
         label="apostrophe:tagCreateNewTag"
         :disabled="!searchValue.data.length || isTagFound"
+        :tooltip="isTagFound && 'apostrophe:tagExist'"
         @click.stop="create"
       />
     </div>

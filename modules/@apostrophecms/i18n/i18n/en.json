@@ -556,6 +556,7 @@
   "tagAddTag": "Add Tag",
   "tagCreateHelp": "The new tag will be applied to your selection",
   "tagCreateNewTag": "Create new tag",
+  "tagExist": "This tag already exist",
   "tagCreateTag": "Create Tag",
   "tagCreateTagName": "Create Tag \"{{ tag }}\"",
   "tagManage": "Manage Tags",
