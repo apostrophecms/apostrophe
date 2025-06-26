@@ -77,7 +77,7 @@
         class="apos-apply-tag-menu__btn"
         type="secondary"
         label="apostrophe:cancel"
-        @click.stop="closeCreateUi"
+        @click.stop="clearSearch"
       />
       <AposButton
         class="apos-apply-tag-menu__btn"
