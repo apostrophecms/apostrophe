@@ -5,6 +5,7 @@
 ### Adds
 
 * Adds keyboard shortcuts for manipulating widgets in areas. Includes Cut, Copy, Paste, Delete, and Duplicate.
+* Automatic translation now supports a disclaimer and an help text for the checkbox. You can now set the disclaimer by setting `automaticTranslationDisclaimer` `i18n` key and the help text by setting `automaticTranslationCheckboxHelp` `i18n` key.
 
 ### Changes
 
