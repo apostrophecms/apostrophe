@@ -1070,7 +1070,8 @@ module.exports = {
                 });
                 const image = await self.apos.image.insert(req, {
                   title: name,
-                  attachment
+                  attachment,
+                  tagsIds: input.import.imageTags || []
                 });
                 const newSrc = `${self.apos.image.action}/${image.aposDocId}/src`;
                 $image.replaceWith(
