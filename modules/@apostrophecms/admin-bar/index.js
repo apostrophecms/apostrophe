@@ -284,122 +284,30 @@ module.exports = {
       // Called by `afterInit`
 
       orderItems() {
-        // Get items that are explicitly ordered (these override 'last: true')
-        const explicitlyOrderedNames = new Set(self.options.order || []);
+        const ordered = [];
+        const unordered = [];
+        const last = [];
 
-        // Separate items: last items (but not if explicitly ordered), regular items
-        const lastItems = [];
-        const regularItems = [];
-
+        // Separate items into categories
         self.items.forEach(item => {
-          if (item.options.last && !explicitlyOrderedNames.has(item.name)) {
-            lastItems.push(item);
-          } else {
-            regularItems.push(item);
+          if (!(self.options.order || []).includes(item.name)) {
+            if (item.options.last) {
+              last.push(item);
+            } else {
+              unordered.push(item);
+            }
           }
         });
 
-        // If there's an explicit order defined, apply it
-        if (self.options.order && self.options.order.length > 0) {
-          const orderedItems = [];
-          const unorderedItems = [ ...regularItems ];
-          const groups = self.options.groups ||
-          self.groups.concat(self.options.addGroups || []);
-
-          // Process each item in the order array
-          self.options.order.forEach(name => {
-            const itemIndex = unorderedItems.findIndex(item => item.name === name);
-            if (itemIndex !== -1) {
-              orderedItems.push(unorderedItems.splice(itemIndex, 1)[0]);
-            }
-          });
-
-          // Separate remaining unordered items into group members and non-group items
-          if (groups.length > 0) {
-            const allGroupMemberNames = new Set();
-            groups.forEach(group => {
-              if (group.items && group.items.length > 0) {
-                group.items.forEach(memberName => {
-                  allGroupMemberNames.add(memberName);
-                });
-              }
-            });
-
-            const groupMembers = unorderedItems.filter(
-              item => allGroupMemberNames.has(item.name)
-            );
-            const nonGroupItems = unorderedItems.filter(
-              item => !allGroupMemberNames.has(item.name)
-            );
-
-            // Combine: explicitly ordered items +
-            // group members + non-group items + last items
-            self.items = [
-              ...orderedItems,
-              ...groupMembers,
-              ...nonGroupItems,
-              ...lastItems
-            ];
-          } else {
-            // No groups, use original logic
-            self.items = [
-              ...orderedItems,
-              ...unorderedItems,
-              ...lastItems
-            ];
+        // Build ordered array in the sequence specified by options.order
+        (self.options.order || []).forEach(name => {
+          const item = self.items.find(item => item.name === name);
+          if (item) {
+            ordered.push(item);
           }
-        } else {
-          // NO EXPLICIT ORDER: Check if we have groups and use their definition order
-          const groups = self.options.groups ||
-          self.groups.concat(self.options.addGroups || []);
+        });
 
-          if (groups.length > 0) {
-            // Create implicit order based on group definition order
-            const orderedItems = [];
-            const allGroupMemberNames = new Set();
-
-            // First pass: collect all group member names
-            groups.forEach(group => {
-              if (group.items && group.items.length > 0) {
-                group.items.forEach(memberName => {
-                  allGroupMemberNames.add(memberName);
-                });
-              }
-            });
-
-            // Second pass: add group leaders in definition order
-            groups.forEach(group => {
-              if (group.items && group.items.length > 0) {
-                const leaderName = group.items[0];
-                const leaderItem = regularItems.find(item => item.name === leaderName);
-                if (leaderItem) {
-                  orderedItems.push(leaderItem);
-                }
-              }
-            });
-
-            // Add remaining group members in their current relative order
-            // (groupItems() will move them to follow their leaders later)
-            regularItems.forEach(item => {
-              if (allGroupMemberNames.has(item.name) && !orderedItems.includes(item)) {
-                orderedItems.push(item);
-              }
-            });
-
-            // Add items that are NOT in any group
-            regularItems.forEach(item => {
-              if (!allGroupMemberNames.has(item.name)) {
-                orderedItems.push(item);
-              }
-            });
-
-            // Order: group leaders first (in definition order), then other group members, then non-group items, then last items
-            self.items = [...orderedItems, ...lastItems];
-          } else {
-            // No explicit order and no groups, just separate regular items from last items
-            self.items = [...regularItems, ...lastItems];
-          }
-        }
+        self.items = ordered.concat(unordered).concat(last);
       },
 
       // Marks items that have been grouped via the `groups` option — or via
@@ -413,7 +321,54 @@ module.exports = {
         const groups = self.options.groups ||
           self.groups.concat(self.options.addGroups || []);
 
-        groups.forEach(function (group) {
+        // Track which items have been claimed and in what role
+        const itemRoles = new Map();
+        const conflicts = [];
+
+        // First pass: detect conflicts
+        groups.forEach(function (group, groupIndex) {
+          if (!group.label || !group.items || group.items.length === 0) {
+            return;
+          }
+
+          const leaderName = group.items[0];
+
+          group.items.forEach(function (itemName, itemIndex) {
+            const role = itemIndex === 0 ? 'leader' : 'member';
+
+            if (itemRoles.has(itemName)) {
+              const existing = itemRoles.get(itemName);
+              conflicts.push({
+                itemName,
+                existing: existing,
+                new: { groupLabel: group.label, role, groupIndex }
+              });
+            } else {
+              itemRoles.set(itemName, {
+                groupLabel: group.label,
+                role,
+                groupIndex,
+                leaderName
+              });
+            }
+          });
+        });
+
+        // Report conflicts with helpful warnings
+        if (conflicts.length > 0) {
+          self.apos.util.warn('Admin bar group conflicts detected:');
+          conflicts.forEach(conflict => {
+            const { itemName, existing, new: newRole } = conflict;
+            self.apos.util.warn(
+              `  - "${itemName}" is ${existing.role} of "${existing.groupLabel}" ` +
+              `but also ${newRole.role} of "${newRole.groupLabel}". ` +
+              `Using first definition (${existing.role} of "${existing.groupLabel}").`
+            );
+          });
+        }
+
+        // Second pass: apply grouping using first-wins rule
+        groups.forEach(function (group, groupIndex) {
           if (!group.label || !group.items || group.items.length === 0) {
             return;
           }
@@ -423,10 +378,10 @@ module.exports = {
           // Set the group label
           self.groupLabels[leaderName] = group.label;
 
-          // Mark all group items with their leader
+          // Mark all group items with their leader (first-wins rule)
           group.items.forEach(function (name) {
             const item = self.items.find(item => item.name === name);
-            if (item) {
+            if (item && !item.menuLeader) {  // Only set if not already claimed
               item.menuLeader = leaderName;
             }
           });
@@ -435,11 +390,11 @@ module.exports = {
           const leaderIndex = self.items.findIndex(item => item.name === leaderName);
           if (leaderIndex === -1) return;
 
-          // Collect all group members (including leader)
+          // Collect all group members that weren't claimed by earlier groups
           const groupMembers = [];
           group.items.forEach(function (name) {
             const item = self.items.find(item => item.name === name);
-            if (item) {
+            if (item && item.menuLeader === leaderName) {  // Only include if this group owns it
               groupMembers.push(item);
             }
           });
