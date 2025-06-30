@@ -38,7 +38,7 @@ module.exports = {
       }
     };
     let index = 1;
-    for (const [ name, screen ] of Object.entries(breakpointPreviewModeScreens)) {
+    for (const [name, screen] of Object.entries(breakpointPreviewModeScreens)) {
       // Up to 9 shortcuts available
       if (index === 9) {
         break;
@@ -264,7 +264,7 @@ module.exports = {
           ) {
             menu = {
               menu: true,
-              items: [ item ],
+              items: [item],
               leader: item,
               label: self.groupLabels[item.name] || item.label
             };
@@ -326,12 +326,14 @@ module.exports = {
             });
 
             const groupMembers = unorderedItems.filter(
-              item => allGroupMemberNames.has(item.name));
+              item => allGroupMemberNames.has(item.name)
+            );
             const nonGroupItems = unorderedItems.filter(
-              item => !allGroupMemberNames.has(item.name));
+              item => !allGroupMemberNames.has(item.name)
+            );
 
-            // Combine: explicitly ordered items + group members
-            // + non-group items + last items
+            // Combine: explicitly ordered items +
+            // group members + non-group items + last items
             self.items = [
               ...orderedItems,
               ...groupMembers,
@@ -340,7 +342,11 @@ module.exports = {
             ];
           } else {
             // No groups, use original logic
-            self.items = [ ...orderedItems, ...unorderedItems, ...lastItems ];
+            self.items = [
+              ...orderedItems,
+              ...unorderedItems,
+              ...lastItems
+            ];
           }
         } else {
           // NO EXPLICIT ORDER: Check if we have groups and use their definition order
@@ -387,13 +393,11 @@ module.exports = {
               }
             });
 
-            // Order: group leaders first (in definition order),
-            // then other group members, then non-group items, then last items
-            self.items = [ ...orderedItems, ...lastItems ];
+            // Order: group leaders first (in definition order), then other group members, then non-group items, then last items
+            self.items = [...orderedItems, ...lastItems];
           } else {
-            // No explicit order and no groups,
-            // just separate regular items from last items
-            self.items = [ ...regularItems, ...lastItems ];
+            // No explicit order and no groups, just separate regular items from last items
+            self.items = [...regularItems, ...lastItems];
           }
         }
       },
@@ -406,43 +410,49 @@ module.exports = {
       // user only sees one of them, etc. Called by `afterInit`
 
       groupItems() {
-        // Implement the groups and addGroups options. Mark the grouped items
-        // with a `menuLeader` property.
         const groups = self.options.groups ||
           self.groups.concat(self.options.addGroups || []);
 
         groups.forEach(function (group) {
-          if (!group.label) {
+          if (!group.label || !group.items || group.items.length === 0) {
             return;
           }
 
-          self.groupLabels[group.items[0]] = group.label;
+          const leaderName = group.items[0];
 
-          group.items.forEach(function (name, groupIndex) {
-            const item = _.find(self.items, { name });
+          // Set the group label
+          self.groupLabels[leaderName] = group.label;
+
+          // Mark all group items with their leader
+          group.items.forEach(function (name) {
+            const item = self.items.find(item => item.name === name);
             if (item) {
-              item.menuLeader = group.items[0];
-            } else {
-              return;
-            }
-            // Make sure the submenu items wind up following the leader
-            // in self.items in the appropriate order
-            if (name !== item.menuLeader) {
-              const indexLeader = _.findIndex(self.items, { name: item.menuLeader });
-              if (indexLeader === -1) {
-                throw new Error('Admin bar grouping error: no match for ' + item.menuLeader + ' in menu item ' + item.name);
-              }
-              let indexMe = _.findIndex(self.items, { name });
-              if (indexMe !== indexLeader + groupIndex) {
-                // Swap ourselves into the right position following our leader
-                if (indexLeader + groupIndex < indexMe) {
-                  indexMe++;
-                }
-                self.items.splice(indexLeader + groupIndex, 0, item);
-                self.items.splice(indexMe, 1);
-              }
+              item.menuLeader = leaderName;
             }
           });
+
+          // Find the leader's current position
+          const leaderIndex = self.items.findIndex(item => item.name === leaderName);
+          if (leaderIndex === -1) return;
+
+          // Collect all group members (including leader)
+          const groupMembers = [];
+          group.items.forEach(function (name) {
+            const item = self.items.find(item => item.name === name);
+            if (item) {
+              groupMembers.push(item);
+            }
+          });
+
+          if (groupMembers.length === 0) return;
+
+          // Remove all group members from current positions
+          self.items = self.items.filter(item =>
+            !groupMembers.some(member => member.name === item.name)
+          );
+
+          // Re-insert all group members together at the leader's original position
+          self.items.splice(leaderIndex, 0, ...groupMembers);
         });
       },
 
