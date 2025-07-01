@@ -4,10 +4,71 @@ const { stripIndent } = require('common-tags');
 // An area is a series of zero or more widgets, in which users can add
 // and remove widgets and drag them to reorder them. This module implements
 // areas, with the help of a query builder in the doc module. This module also
-// provides browser-side support for invoking the players of widgets in an area and for editing areas.
+// provides browser-side support for invoking the players of widgets in an area
+// and for editing areas.
 
 module.exports = {
   options: { alias: 'area' },
+  commands(self) {
+    return {
+      add: {
+        [`${self.__meta.name}:cut-widget`]: {
+          type: 'item',
+          label: 'apostrophe:commandMenuWidgetCut',
+          action: {
+            type: 'command-menu-area-cut-widget'
+          },
+          shortcut: 'Ctrl+X Meta+X'
+        },
+        [`${self.__meta.name}:copy-widget`]: {
+          type: 'item',
+          label: 'apostrophe:commandMenuWidgetCopy',
+          action: {
+            type: 'command-menu-area-copy-widget'
+          },
+          shortcut: 'Ctrl+C Meta+C'
+        },
+        [`${self.__meta.name}:paste-widget`]: {
+          type: 'item',
+          label: 'apostrophe:commandMenuWidgetPaste',
+          action: {
+            type: 'command-menu-area-paste-widget'
+          },
+          shortcut: 'Ctrl+V Meta+V'
+        },
+        [`${self.__meta.name}:duplicate-widget`]: {
+          type: 'item',
+          label: 'apostrophe:commandMenuWidgetDuplicate',
+          action: {
+            type: 'command-menu-area-duplicate-widget'
+          },
+          shortcut: 'Ctrl+Shift+D Meta+Shift+D'
+        },
+        [`${self.__meta.name}:remove-widget`]: {
+          type: 'item',
+          label: 'apostrophe:commandMenuWidgetRemove',
+          action: {
+            type: 'command-menu-area-remove-widget'
+          },
+          shortcut: 'Backspace'
+        }
+      },
+      modal: {
+        default: {
+          '@apostrophecms/command-menu:content': {
+            label: 'apostrophe:commandMenuContent',
+            commands: [
+              `${self.__meta.name}:cut-widget`,
+              `${self.__meta.name}:copy-widget`,
+              `${self.__meta.name}:paste-widget`,
+              `${self.__meta.name}:duplicate-widget`,
+              `${self.__meta.name}:remove-widget`
+            ]
+          }
+        }
+      }
+    };
+  },
   init(self) {
     // These properties have special meaning in Apostrophe docs and are not
     // acceptable for use as top-level area names
@@ -22,9 +83,9 @@ module.exports = {
       'rank',
       'level'
     ];
-    self.widgetManagers = {};
     self.richTextWidgetTypes = [];
     self.widgetManagers = {};
+
     self.enableBrowserData();
     self.addDeduplicateWidgetIdsMigration();
   },
@@ -32,26 +93,18 @@ module.exports = {
     return {
       post: {
         async renderWidget(req) {
-          let widget = typeof req.body.widget === 'object' ? req.body.widget : {};
-          const areaFieldId = self.apos.launder.string(req.body.areaFieldId);
-          const type = self.apos.launder.string(req.body.type);
           const _docId = self.apos.launder.id(req.body._docId);
-          const field = self.apos.schema.getFieldById(areaFieldId);
+          const livePreview = self.apos.launder.boolean(req.body.livePreview);
+          const {
+            manager, widget, field, type, options
+          } = await self.validateWidgetRequest(req, livePreview);
 
-          if (!field) {
-            throw self.apos.error('invalid');
+          // The sanitization failed, but we are in live preview mode,
+          // so we need to return a special error code.
+          if (!widget && livePreview) {
+            return 'aposLivePreviewSchemaNotYetValid';
           }
 
-          const widgets = self.getWidgets(field.options);
-
-          const options = widgets[type] || {};
-
-          const manager = self.getWidgetManager(type);
-          if (!manager) {
-            self.warnMissingWidgetType(type);
-            throw self.apos.error('invalid');
-          }
-          widget = await sanitize(widget);
           widget._edit = true;
           widget._docId = _docId;
           // So that carrying out relationship loading again can yield results
@@ -59,9 +112,6 @@ module.exports = {
           self.apos.schema.prepareForStorage(req, widget);
           await load();
           return render();
-          async function sanitize(widget) {
-            return manager.sanitize(req, widget, options);
-          }
           async function load() {
             // Hint to call nested widget loaders as if it were a doc
             widget._virtual = true;
@@ -83,7 +133,10 @@ module.exports = {
                 if (v && v.metaType === 'area') {
                   const manager = self.apos.util.getManagerOf(o);
                   if (!manager) {
-                    self.apos.util.warnDevOnce('noManagerForDocInExternalFront', `No manager for: ${o.metaType} ${o.type || ''}`);
+                    self.apos.util.warnDevOnce(
+                      'noManagerForDocInExternalFront',
+                      `No manager for: ${o.metaType} ${o.type || ''}`
+                    );
                     return;
                   }
                   const field = manager.schema.find(f => f.name === k);
@@ -100,6 +153,12 @@ module.exports = {
             }
             return self.renderWidget(req, type, widget, options);
           }
+        },
+        async validateWidget(req) {
+          const { widget } = await self.validateWidgetRequest(req);
+          return {
+            widget
+          };
         }
       }
     };
@@ -121,8 +180,8 @@ module.exports = {
     return {
       // Set the manager object for the given widget type name. The manager is
       // expected to provide `sanitize`, `output` and `load` methods. Normally
-      // this method is called for you when you extend the `@apostrophecms/widget-type`
-      // module, which is recommended.
+      // this method is called for you when you extend the
+      // `@apostrophecms/widget-type` module, which is recommended.
       setWidgetManager(name, manager) {
         self.widgetManagers[name] = manager;
       },
@@ -148,7 +207,62 @@ module.exports = {
       getWidgetManager(name) {
         return self.widgetManagers[name];
       },
-      // Print warning message about a missing widget type — only once per run per type.
+      // Validate a widget request. The `req.body` object is expected to contain
+      // - `widget` - the widget object to be validated
+      // - `areaFieldId` - the field id of the area field
+      // - `type` - the type of the widget
+      // Returns an object with the following properties:
+      // - `manager` - the widget manager object
+      // - `widget` - the sanitized widget object
+      // - `field` - the area field object
+      // - `type` - the type of the widget
+      // - `options` - the options for the widget type
+      // If `forLivePreview` is true and the widget is not valid, the method
+      // returns the same response but with `widget` set to null. Otherwise,
+      // failing to validate the widget results in an `invalid` error
+      // being thrown.
+      async validateWidgetRequest(req, forLivePreview = false) {
+        let widget = typeof req.body.widget === 'object' ? req.body.widget : {};
+        const areaFieldId = self.apos.launder.string(req.body.areaFieldId);
+        const type = self.apos.launder.string(req.body.type);
+        const field = self.apos.schema.getFieldById(areaFieldId);
+        if (!field) {
+          throw self.apos.error('invalid', 'Missing area field ID');
+        }
+
+        const widgets = self.getWidgets(field.options);
+
+        const options = widgets[type] || {};
+
+        const manager = self.getWidgetManager(type);
+        if (!manager) {
+          self.warnMissingWidgetType(type);
+          throw self.apos.error('invalid', 'Missing widget type');
+        }
+        try {
+          widget = await manager.sanitize(req, widget, options);
+        } catch (e) {
+          if (forLivePreview) {
+            return {
+              manager,
+              widget: null,
+              field,
+              type,
+              options
+            };
+          }
+          throw e;
+        }
+        return {
+          manager,
+          widget,
+          field,
+          type,
+          options
+        };
+      },
+      // Print warning message about a missing widget type — only once per run
+      // per type.
       warnMissingWidgetType(name) {
         if (!self.missingWidgetTypes) {
           self.missingWidgetTypes = {};
@@ -169,8 +283,9 @@ module.exports = {
         area._edit = context._edit;
         return area;
       },
-      // Render the given `area` object via `area.html`, with the given `context`
-      // which may be omitted. Called for you by the `{% area %} custom tag.
+      // Render the given `area` object via `area.html`, with the given
+      // `context` which may be omitted. Called for you by the `{% area %}
+      // custom tag.
       //
       // If `inline` is true then the rendering of each widget is attached
       // to the widget as a `_rendered` property, bypassing normal full-area
@@ -222,7 +337,12 @@ module.exports = {
         }
         if (inline) {
           for (const item of area.items) {
-            item._rendered = await self.renderWidget(req, item.type, item, widgets[item.type]);
+            item._rendered = await self.renderWidget(
+              req,
+              item.type,
+              item,
+              widgets[item.type]
+            );
           }
           return null;
         }
@@ -290,7 +410,12 @@ module.exports = {
         async function render(area, path, context, opts) {
           const preppedArea = self.prepForRender(area, context, path);
 
-          const areaRendered = await self.apos.area.renderArea(req, preppedArea, context, { inline });
+          const areaRendered = await self.apos.area.renderArea(
+            req,
+            preppedArea,
+            context,
+            { inline }
+          );
           if (inline) {
             return;
           }
@@ -426,10 +551,14 @@ module.exports = {
           }
           const existingArea = _.get(doc, dotPath);
           const existingItems = existingArea && (existingArea.items || []);
-          if (_.isEqual(self.apos.util.clonePermanent(items), self.apos.util.clonePermanent(existingItems))) {
+          const isEqual = _.isEqual(
+            self.apos.util.clonePermanent(items),
+            self.apos.util.clonePermanent(existingItems)
+          );
+          if (isEqual) {
             // No real change — don't waste a version and clutter the database.
-            // Sometimes only the server-side sanitizers can tell accurately that
-            // nothing has changed. -Tom
+            // Sometimes only the server-side sanitizers can tell accurately
+            // that nothing has changed. -Tom
             return;
           }
           _.set(doc, dotPath, {
@@ -470,11 +599,12 @@ module.exports = {
           // a widget or something else that isn't a top level doc type, or
           // the projection did not include type.
           //
-          // TODO: a better solution to the entire option-forwarding problem? -Tom
+          // TODO: a better solution to the entire option-forwarding problem?
+          // -Tom
           return {};
         }
         const schema = manager.schema;
-        const field = _.find(schema, 'name', name);
+        const field = schema?.find(field => field.name === name);
         if (!(field && field.options)) {
           return {};
         }
@@ -490,7 +620,8 @@ module.exports = {
       // one in a `<div>...</div>` block. Of course, there may already be a div
       // in the rich txt (but then again there may not).
       //
-      // Also available as a helper via `apos.area.richText(area, options)` in templates.
+      // Also available as a helper via `apos.area.richText(area, options)` in
+      // templates.
       //
       // Content will be retrieved from any widget type that supplies a
       // `getRichText` method.
@@ -525,22 +656,23 @@ module.exports = {
       // Returns the plaintext contents  of all rich text widgets
       // within the provided doc or area, concatenated as a single string.
       //
-      // By default the rich text contents of the various widgets are joined with
-      // a newline between. You may pass your own `options.delimiter` string if
-      // you wish a different delimiter or the empty string.
+      // By default the rich text contents of the various widgets are joined
+      // with a newline between. You may pass your own `options.delimiter`
+      // string if you wish a different delimiter or the empty string.
       //
-      // Whitespace is trimmed off the leading and trailing edges of the string, and
-      // consecutive newlines are condensed to one, to better match reasonable expectations
-      // re: text that began as HTML.
+      // Whitespace is trimmed off the leading and trailing edges of the
+      // string, and consecutive newlines are condensed to one, to better match
+      // reasonable expectations. re: text that began as HTML.
       //
-      // Pass `options.limit` to limit the number of characters. This method will
-      // return fewer characters in order to avoid cutting off in mid-word.
+      // Pass `options.limit` to limit the number of characters. This method
+      // will return fewer characters in order to avoid cutting off in mid-word.
       //
-      // By default, three periods (`...`) follow a truncated string. If you prefer,
-      // set `options.ellipsis` to a different suffix, which may be the empty string
-      // if you wish.
+      // By default, three periods (`...`) follow a truncated string. If you
+      // prefer, set `options.ellipsis` to a different suffix, which may be the
+      // empty string if you wish.
       //
-      // Also available as a helper via `apos.area.plaintext(area, options)` in templates.
+      // Also available as a helper via `apos.area.plaintext(area, options)` in
+      // templates.
       //
       // Content will be retrieved from any widget type that supplies a
       // `getRichText` method.
@@ -559,13 +691,15 @@ module.exports = {
         return self.apos.util.truncatePlaintext(plaintext, options.limit, ellipsis);
       },
       // Very handy for imports of all kinds: convert plaintext to an area with
-      // one `@apostrophecms/rich-text` widget if it is not blank, otherwise an empty area. null and
-      // undefined are tolerated and converted to empty areas.
+      // one `@apostrophecms/rich-text` widget if it is not blank, otherwise an
+      // empty area. null and undefined are tolerated and converted to empty
+      // areas.
       fromPlaintext(plaintext) {
         return self.fromRichText(self.apos.util.escapeHtml(plaintext, true));
       },
-      // Convert HTML to an area with one '@apostrophecms/rich-text' widget, otherwise
-      // an empty area. null and undefined are tolerated and converted to empty areas.
+      // Convert HTML to an area with one '@apostrophecms/rich-text' widget,
+      // otherwise an empty area. null and undefined are tolerated and converted
+      // to empty areas.
       fromRichText(html) {
         const area = {
           metaType: 'area',
@@ -634,6 +768,7 @@ module.exports = {
         const widgetEditors = {};
         const widgetManagers = {};
         const widgetIsContextual = {};
+        const widgetPreview = {};
         const widgetHasPlaceholder = {};
         const widgetHasInitialModal = {};
         const contextualWidgetDefaultData = {};
@@ -645,8 +780,10 @@ module.exports = {
           widgetEditors[name] = (browserData && browserData.components && browserData.components.widgetEditor) || 'AposWidgetEditor';
           widgetManagers[name] = manager.__meta.name;
           widgetIsContextual[name] = manager.options.contextual;
+          widgetPreview[name] = manager.options.preview;
           widgetHasPlaceholder[name] = manager.options.placeholder;
-          widgetHasInitialModal[name] = !manager.options.placeholder && manager.options.initialModal !== false;
+          widgetHasInitialModal[name] = !manager.options.placeholder &&
+            manager.options.initialModal !== false;
           contextualWidgetDefaultData[name] = manager.options.defaultData || {};
         });
 
@@ -659,6 +796,7 @@ module.exports = {
           widgetIsContextual,
           widgetHasPlaceholder,
           widgetHasInitialModal,
+          widgetPreview,
           contextualWidgetDefaultData,
           widgetManagers,
           action: self.action
@@ -693,10 +831,12 @@ module.exports = {
   helpers(self) {
     return {
       // Returns the rich text markup of all `@apostrophecms/rich-text` widgets
-      // within the provided doc or area, concatenated as a single string. In future this method
-      // may improve to return the content of other widgets that consider themselves primarily
-      // providers of rich text, such as subclasses of `@apostrophecms/rich-text`,
-      // which will **not** be regarded as a bc break. However it will never return images, videos, etc.
+      // within the provided doc or area, concatenated as a single string. In
+      // future this method may improve to return the content of other widgets
+      // that consider themselves primarily providers of rich text, such as
+      // subclasses of `@apostrophecms/rich-text`, which will **not** be
+      // regarded as a bc break. However it will never return images, videos,
+      // etc.
       //
       // By default the rich text contents of the widgets are joined with
       // a newline between. You may pass your own `options.delimiter` string if
@@ -708,22 +848,23 @@ module.exports = {
       // Content will be retrieved from any widget type that supplies a
       // `getRichText` method.
       richText: function (within, options) {
-        // Use the safe filter so that the markup doesn't get double-escaped by nunjucks
+        // Use the safe filter so that the markup doesn't get double-escaped by
+        // nunjucks
         return self.apos.template.safe(self.richText(within, options));
       },
       // Returns the plaintext contents  of all rich text widgets
       // within the provided doc or area, concatenated as a single string.
       //
-      // By default the rich text contents of the various widgets are joined with
-      // a newline between. You may pass your own `options.delimiter` string if
-      // you wish a different delimiter or the empty string.
+      // By default the rich text contents of the various widgets are joined
+      // with a newline between. You may pass your own `options.delimiter`
+      // string if you wish a different delimiter or the empty string.
       //
-      // Pass `options.limit` to limit the number of characters. This method will
-      // return fewer characters in order to avoid cutting off in mid-word.
+      // Pass `options.limit` to limit the number of characters. This method
+      // will return fewer characters in order to avoid cutting off in mid-word.
       //
-      // By default, three periods (`...`) follow a truncated string. If you prefer,
-      // set `options.ellipsis` to a different suffix, which may be the empty string
-      // if you wish.
+      // By default, three periods (`...`) follow a truncated string. If you
+      // prefer, set `options.ellipsis` to a different suffix, which may be the
+      // empty string if you wish.
       //
       // Content will be retrieved from any widget type that supplies a
       // `getRichText` method.

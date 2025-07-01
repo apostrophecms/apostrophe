@@ -1,5 +1,8 @@
+import checkIfConditions, { isExternalCondition as isExtCondition } from 'apostrophe/lib/universal/check-if-conditions.mjs';
+
 // Supported field conditional types,
-// you can add a condition type to this array to make it available to the frontend
+// you can add a condition type to this array to make it available to the
+// frontend
 const conditionTypes = [ 'if', 'requiredIf' ];
 export const getConditionTypesObject = () => Object
   .fromEntries(conditionTypes.map((key) => ([ key, {} ])));
@@ -77,15 +80,17 @@ export async function evaluateExternalCondition(conditionKey, fieldId, docId) {
 
   return [ conditionKey, result ];
 }
-// Checking if key ends with a closing parenthesis here to throw later if any argument is passed.
+// Checking if key ends with a closing parenthesis here
+// to throw later if any argument is passed.
 export function isExternalCondition(conditionKey, conditionType) {
-  if (!conditionKey.endsWith(')')) {
+  if (!isExtCondition(conditionKey)) {
     return false;
   }
 
   const [ methodDefinition ] = conditionKey.split('(');
 
   if (!conditionKey.endsWith('()')) {
+    // eslint-disable-next-line no-console
     console.warn(`Warning in \`${conditionType}\` definition: "${methodDefinition}()" should not be passed any argument.`);
   }
 
@@ -100,87 +105,75 @@ export function isExternalCondition(conditionKey, conditionType) {
 // Any condition on a field that is itself conditional fails if the second
 // field's conditions fail.
 //
-// If present, followedByCategory must be either "other" or "utility", and
-// the returned object will contain properties only for conditional fields
-// in that category, although they may be conditional upon fields in either
-// category.
-// `schema` - the entire fields schema, document schema for editors,
-// field.schema for complex fields
-// `fields` - the subset of fields (part of the schema) that we are evaluating
+// `schema` - the field schema, document schema for editors,
+// field.schema for complex fields that we are evaluating
 // `values` - the schema (all) values
 // `externalConditionsResults` - the results of the external conditions,
 // as returned by `evaluateExternalConditions`
 export function getConditionalFields(
   schema,
-  fields,
   values,
   externalConditionsResults
 ) {
-  const conditionalFields = getConditionTypesObject();
+  const result = getConditionTypesObject();
 
   for (const field of schema) {
     for (const conditionType of conditionTypes) {
       if (field[conditionType]) {
-        const result = evaluate(field[conditionType], conditionType);
-        conditionalFields[conditionType][field.name] = result;
-      }
-    }
-  }
-
-  const result = getConditionTypesObject();
-
-  for (const field of fields) {
-    for (const conditionType of conditionTypes) {
-      if (field[conditionType]) {
-        result[conditionType][field.name] = conditionalFields[conditionType][field.name];
+        result[conditionType][field.name] = checkIfConditions(
+          values,
+          field[conditionType],
+          (propName, condition, docValue) =>
+            evaluateExternal(propName, condition, conditionType)
+        );
       }
     }
   }
 
   return result;
 
-  function evaluate(clause, conditionType) {
-    for (const [ key, val ] of Object.entries(clause)) {
-      if (key === '$or') {
-        if (!val.some(clause => evaluate(clause, conditionType))) {
-          return false;
-        }
+  // Handle external conditions as a voter function.
+  // Non-boolean returns are ignored by the `checkIfConditions` function.
+  function evaluateExternal(propName, conditionValue, conditionType) {
+    if (isExternalCondition(propName, conditionType)) {
+      return externalConditionsResults[conditionType]?.[propName] === conditionValue;
+    }
+  }
+}
 
-        // No need to go further here, the key is an "$or" condition...
+// Check if any of the conditional fields has a parent following value.
+// This can be used in components to determine if they need to recalculate
+// the conditional fields when the parent following values change (performance
+// optimization).
+export function hasParentConditionalField(schema) {
+  // Detect of any of the conditional fields has a parent following value
+  const hasParentCondition = schema
+    .filter(field => conditionTypes.some(type => field[type]))
+    .flatMap(field => conditionTypes.map(type => field[type]).filter(Boolean))
+    .some(hasParentField);
+
+  return hasParentCondition;
+
+  // A recursive function to check if any condition has a parent field.
+  // The condition is an object where keys are field names or operators like `$or`
+  function hasParentField(condition) {
+    if (!condition) {
+      return false;
+    }
+    for (const [ key, value ] of Object.entries(condition)) {
+      if (key.startsWith('<')) {
+        return true;
+      }
+      if (Array.isArray(value)) {
+        if (value.some(item => hasParentField(item))) {
+          return true;
+        }
         continue;
       }
-
-      if (isExternalCondition(key, conditionType)) {
-        if (externalConditionsResults[conditionType][key] !== val) {
-          return false;
-        }
-
-        // Stop there, this is an external condition thus
-        // does not need to be checked against doc fields.
-        continue;
-      }
-
-      if (conditionalFields[conditionType][key] === false) {
-        return false;
-      }
-
-      const fieldValue = values[key];
-
-      if (Array.isArray(fieldValue)) {
-        return fieldValue.includes(val);
-      }
-
-      if (val.min && fieldValue < val.min) {
-        return false;
-      }
-      if (val.max && fieldValue > val.max) {
-        return false;
-      }
-
-      if (val !== fieldValue) {
-        return false;
+      if (value && typeof value === 'object' && hasParentField(value)) {
+        return true;
       }
     }
-    return true;
+    return false;
   }
 }

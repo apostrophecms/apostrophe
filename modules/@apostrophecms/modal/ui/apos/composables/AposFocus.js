@@ -24,14 +24,15 @@ export function useAposFocus() {
   // Adapted from https://uxdesign.cc/how-to-trap-focus-inside-modal-to-make-it-ada-compliant-6a50f9a70700
   // All the elements inside modal which you want to make focusable.
   //
-  // This has been adapted to Vue logic with `this.elementsToFocus` array as a data
-  // so that any elements, not only from a modal but a menu for instance, can be focusable.
-  // `cycleElementsToFocus` listeners relies on this dynamic list which has the advantage of
-  // taking new or less elements to focus, after an update has happened inside a modal,
-  // like an XHR call to get the pieces list in the AposDocsManager modal, for instance.
-  // If the fnFocus argument is provided, it will be called with the event and
-  // the element to focus. Otherwise, the default behavior is to focus the element
-  // and prevent the default event behavior.
+  // This has been adapted to Vue logic with `this.elementsToFocus` array as a
+  // data so that any elements, not only from a modal but a menu for instance,
+  // can be focusable. `cycleElementsToFocus` listeners relies on this dynamic
+  // list which has the advantage of taking new or less elements to focus, after
+  // an update has happened inside a modal, like an XHR call to get the pieces
+  // list in the AposDocsManager modal, for instance. If the fnFocus argument is
+  // provided, it will be called with the event and the element to focus.
+  // Otherwise, the default behavior is to focus the element and prevent the
+  // default event behavior.
   /**
    * @param {KeyboardEvent} e event
    * @param {HTMLElement[]} elements
@@ -59,8 +60,14 @@ export function useAposFocus() {
     // the active one per stack.
     const firstElementRadioStack = getInputRadioStack(firstElementToFocus, elems);
     const lastElementRadioStack = getInputRadioStack(lastElementToFocus, elems);
-    firstElementToFocus = getInputCheckedOrCurrent(firstElementToFocus, firstElementRadioStack);
-    lastElementToFocus = getInputCheckedOrCurrent(lastElementToFocus, lastElementRadioStack);
+    firstElementToFocus = getInputCheckedOrCurrent(
+      firstElementToFocus,
+      firstElementRadioStack
+    );
+    lastElementToFocus = getInputCheckedOrCurrent(
+      lastElementToFocus,
+      lastElementRadioStack
+    );
 
     const focus = fnFocus || ((ev, el) => {
       el.focus();

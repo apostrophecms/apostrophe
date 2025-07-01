@@ -48,37 +48,40 @@ export default () => {
     return apos.http.remote('DELETE', url, options, callback);
   };
 
-  // Send an HTTP request with the given method to the given URL and return the response body.
+  // Send an HTTP request with the given method to the given URL and return the
+  // response body.
   //
-  // The callback is optional as long as Promise support is present in the browser, directly or as
-  // a polyfill. If a callback is used it will receive `(err, result)` where `result` is the
-  // return value described below.
+  // The callback is optional as long as Promise support is present in the
+  // browser, directly or as a polyfill. If a callback is used it will receive
+  // `(err, result)` where `result` is the return value described below.
   //
   // Accepts the following options:
   //
   // `qs` (pass object; builds a query string, does not support recursion)
-  // `send`: by default, `options.body` is sent as JSON if it is an object and it is not a
-  // `FormData` object. If `send` is set to `json`, it is always sent as JSON.
-  // `body` (request body, not for GET; if an object or array, sent as JSON, otherwise sent as-is, unless
-  // the `send` option is set)
-  // `parse` (can be 'json` to always parse the response body as JSON, otherwise the response body is
-  // parsed as JSON only if the content-type is application/json)
-  // `headers` (an object containing header names and values)
-  // `draft` (if true, always add aposMode=draft to the query string, creating one if needed)
-  // `fullResponse` (if true, return an object with `status`, `headers` and `body`
-  // properties, rather than returning the body directly; the individual `headers` are canonicalized
-  // to lowercase names. If there are duplicate headers after canonicalization only the
-  // last value is returned. If a header appears multiple times an array is returned for it)
-  // `downloadProgress` (may be a function accepting `received` and `total` parameters. May never be called. If
-  // called, `received` will be the bytes sent so far, and `total` will be the total bytes to be
-  // received. If the total is unknown, it will be `null`)
-  // `uploadProgress` (may be a function accepting `sent` and `total` parameters. May never be called. If
-  // called, `sent` will be the bytes sent so far, and `total` will be the total bytes to be
-  // sent. If the total is unknown, it will be `null`)
-  // `prefix`: If explicitly set to `false`, do not automatically prefix the URL,
-  // even if the site has a site-wide prefix or locale prefix.
-  // It can become handy when the given url is already prefixed,
-  // which is the case when using the document's computed `_url` field for instance.
+  // `send`: by default, `options.body` is sent as JSON if it is an object and
+  // it is not a `FormData` object. If `send` is set to `json`, it is always
+  // sent as JSON. `body` (request body, not for GET; if an object or array,
+  // sent as JSON, otherwise sent as-is, unless the `send` option is set)
+  // `parse` (can be 'json` to always parse the response body as JSON, otherwise
+  // the response body is parsed as JSON only if the content-type is
+  // application/json) `headers` (an object containing header names and values)
+  // `draft` (if true, always add aposMode=draft to the query string, creating
+  // one if needed) `fullResponse` (if true, return an object with `status`,
+  // `headers` and `body` properties, rather than returning the body directly;
+  // the individual `headers` are canonicalized to lowercase names. If there are
+  // duplicate headers after canonicalization only the last value is returned.
+  // If a header appears multiple times an array is returned for it)
+  // `downloadProgress` (may be a function accepting `received` and `total`
+  // parameters. May never be called. If called, `received` will be the bytes
+  // sent so far, and `total` will be the total bytes to be received. If the
+  // total is unknown, it will be `null`) `uploadProgress` (may be a function
+  // accepting `sent` and `total` parameters. May never be called. If called,
+  // `sent` will be the bytes sent so far, and `total` will be the total bytes
+  // to be sent. If the total is unknown, it will be `null`) `prefix`: If
+  // explicitly set to `false`, do not automatically prefix the URL, even if the
+  // site has a site-wide prefix or locale prefix. It can become handy when the
+  // given url is already prefixed, which is the case when using the document's
+  // computed `_url` field for instance.
   //
   // If the status code is >= 400 an error is thrown. The error object will be
   // similar to a `fullResponse` object, with a `status` property.

@@ -2,7 +2,8 @@
 // To use: Create some UI with the below data attributes
 // data-apos-bus-event='{"name": "EVENT-NAME", "data": {"FOO": TRUE}}'
 // Also accepts a simplified name-only string data-apos-bus-event="NAME"
-// `data` parameter is optional, if present will be passed through the emitted event
+// `data` parameter is optional, if present will be passed through the emitted
+// event
 
 export default function() {
   document.body.addEventListener('click', (e) => {
@@ -19,6 +20,7 @@ export default function() {
       if (name) {
         apos.bus.$emit(name, json.data || null);
       } else {
+        // eslint-disable-next-line no-console
         console.error('Apostrophe bus events require a name');
         apos.notify('apostrophe:error', { type: 'error' });
       }

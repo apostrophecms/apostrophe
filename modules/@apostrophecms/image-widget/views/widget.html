@@ -1,33 +1,8 @@
-{% if data.widget.aposPlaceholder and data.manager.options.placeholderUrl %}
-  <img
-    src="{{ data.manager.options.placeholderUrl }}"
-    alt="{{ __t('apostrophe:imagePlaceholder') }}"
-    class="image-widget-placeholder"
-  />
-{% else %}
-  {% set className = data.options.className or data.manager.options.className %}
-  {% set dimensionAttrs = data.options.dimensionAttrs or data.manager.options.dimensionAttrs %}
-  {% set loadingType = data.options.loadingType or data.manager.options.loadingType %}
-  {% set size = data.options.size or data.manager.options.size or 'full' %}
+{% import "@apostrophecms/image-widget:fragment.html" as image %}
+{% render image.render(
+  widget = data.widget, 
+  options = data.options,
+  manager = data.manager, 
+  contextOptions = data.contextOptions
+)%}
 
-  {% set attachment = apos.image.first(data.widget._image) %}
-
-  {% if attachment %}
-    <img {% if className %} class="{{ className }}"{% endif %}
-      {% if loadingType %} loading="{{ loadingType }}"{% endif %}
-      srcset="{{ apos.image.srcset(attachment) }}"
-      src="{{ apos.attachment.url(attachment, { size: size }) }}"
-      alt="{{ attachment._alt or '' }}"
-      {% if dimensionAttrs %}
-        {% if attachment.width %} width="{{ apos.attachment.getWidth(attachment) }}" {% endif %}
-        {% if attachment.height %} height="{{ apos.attachment.getHeight(attachment) }}" {% endif %}
-      {% endif %}
-      {% if data.contextOptions and data.contextOptions.sizes %}
-        sizes="{{ data.contextOptions.sizes }}"
-      {% endif %}
-      {% if apos.attachment.hasFocalPoint(attachment) %}
-        style="object-position: {{ apos.attachment.focalPointToObjectPosition(attachment) }}"
-      {%- endif -%}
-    />
-  {% endif %}
-{% endif %}

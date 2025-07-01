@@ -9,7 +9,8 @@ module.exports = {
   options: {
     label: 'apostrophe:rawHtml',
     className: false,
-    icon: 'code-tags-icon'
+    icon: 'code-tags-icon',
+    preview: false
   },
   fields: {
     add: {
@@ -24,8 +25,8 @@ module.exports = {
   components(self) {
     return {
       render(req, data) {
-        // Be understanding of the panic that is probably going on in a user's mind as
-        // they try to remember how to use safe mode. -Tom
+        // Be understanding of the panic that is probably going on in a user's
+        // mind as they try to remember how to use safe mode. -Tom
         const safeModeVariations = [
           'safemode',
           'safeMode',

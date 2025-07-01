@@ -2,7 +2,7 @@ import { detectDocChange } from 'Modules/@apostrophecms/schema/lib/detectChange'
 import AposPublishMixin from 'Modules/@apostrophecms/ui/mixins/AposPublishMixin';
 import AposArchiveMixin from 'Modules/@apostrophecms/ui/mixins/AposArchiveMixin';
 import AposModifiedMixin from 'Modules/@apostrophecms/ui/mixins/AposModifiedMixin';
-import checkIfConditions from 'apostrophe/lib/check-if-conditions';
+import checkIfConditions from 'apostrophe/lib/universal/check-if-conditions.mjs';
 
 export default {
   name: 'AposDocContextMenu',
@@ -27,9 +27,10 @@ export default {
         return null;
       }
     },
-    // These props all default to true, and can be passed with a value of false to hide
-    // functionality even if the user can otherwise perform the action on this document.
-    // The component will figure out on its own if the user can perform each action or not.
+    // These props all default to true, and can be passed with
+    // a value of false to hide functionality even if the user can
+    // otherwise perform the action on this document. The component will
+    // figure out on its own if the user can perform each action or not.
     showEdit: {
       type: Boolean,
       default() {
@@ -112,65 +113,81 @@ export default {
         //     action: 'share'
         //   }
         // ] : []),
-        ...((this.showEdit && this.context._edit) ? [
-          {
+        ...((this.showEdit && this.context._edit)
+          ? [ {
             // When archived the edit action opens a read-only "editor"
             label: this.context.archived ? 'apostrophe:view' : 'apostrophe:edit',
             action: 'edit'
-          }
-        ] : []),
-        ...((this.showPreview && this.canPreview) ? [
-          {
-            label: 'apostrophe:preview',
-            action: 'preview'
-          }
-        ] : []),
-        ...((this.showDismissSubmission && this.canDismissSubmission) ? [
-          {
-            label: 'apostrophe:dismissSubmission',
-            action: 'dismissSubmission'
-          }
-        ] : []),
-        ...(this.showCopy && this.canCopy ? [
-          {
-            label: 'apostrophe:duplicate',
-            action: 'copy'
-          }
-        ] : []),
-        ...(this.canLocalize ? [
-          {
-            label: 'apostrophe:localize',
-            action: 'localize'
-          }
-        ] : []),
+          } ]
+          : []),
+        ...((this.showPreview && this.canPreview)
+          ? [
+            {
+              label: 'apostrophe:preview',
+              action: 'preview'
+            }
+          ]
+          : []),
+        ...((this.showDismissSubmission && this.canDismissSubmission)
+          ? [
+            {
+              label: 'apostrophe:dismissSubmission',
+              action: 'dismissSubmission'
+            }
+          ]
+          : []),
+        ...(this.showCopy && this.canCopy
+          ? [
+            {
+              label: 'apostrophe:duplicate',
+              action: 'copy'
+            }
+          ]
+          : []),
+        ...(this.canLocalize
+          ? [
+            {
+              label: 'apostrophe:localize',
+              action: 'localize'
+            }
+          ]
+          : []),
         ...this.customMenusByContext,
-        ...((this.showDiscardDraft && this.canDiscardDraft) ? [
-          {
-            label: this.context.lastPublishedAt ? 'apostrophe:discardDraft' : 'apostrophe:deleteDraft',
-            action: 'discardDraft',
-            modifiers: [ 'danger' ]
-          }
-        ] : []),
-        ...(this.showArchive && this.canArchive ? [
-          {
-            label: 'apostrophe:archive',
-            action: 'archive',
-            modifiers: [ 'danger' ]
-          }
-        ] : []),
-        ...(this.canUnpublish ? [
-          {
-            label: 'apostrophe:unpublish',
-            action: 'unpublish',
-            modifiers: [ 'danger' ]
-          }
-        ] : []),
-        ...(this.showRestore && this.canRestore ? [
-          {
-            label: 'apostrophe:restore',
-            action: 'restore'
-          }
-        ] : [])
+        ...((this.showDiscardDraft && this.canDiscardDraft)
+          ? [
+            {
+              label: this.context.lastPublishedAt ? 'apostrophe:discardDraft' : 'apostrophe:deleteDraft',
+              action: 'discardDraft',
+              modifiers: [ 'danger' ]
+            }
+          ]
+          : []),
+        ...(this.showArchive && this.canArchive
+          ? [
+            {
+              label: 'apostrophe:archive',
+              action: 'archive',
+              modifiers: [ 'danger' ]
+            }
+          ]
+          : []),
+        ...(this.canUnpublish
+          ? [
+            {
+              label: 'apostrophe:unpublish',
+              action: 'unpublish',
+              modifiers: [ 'danger' ]
+            }
+          ]
+          : []),
+        ...(this.showRestore && this.canRestore
+          ? [
+            {
+              label: 'apostrophe:restore',
+              action: 'restore'
+            }
+          ]
+          : [])
       ];
 
       return menu;
@@ -251,7 +268,9 @@ export default {
       }
     },
     canDismissSubmission() {
-      return this.canEdit && this.context.submitted && (this.canPublish || (this.context.submitted.byId === apos.login.user._id));
+      return this.canEdit &&
+        this.context.submitted &&
+        (this.canPublish || (this.context.submitted.byId === apos.login.user._id));
     },
     canDiscardDraft() {
       if (!this.manuallyPublished) {
@@ -260,10 +279,17 @@ export default {
       if (!this.context._id) {
         return false;
       }
-      if (!this.context.lastPublishedAt && !this.canDeleteDraft && !this.context._delete) {
+      if (
+        !this.context.lastPublishedAt &&
+        !this.canDeleteDraft &&
+        !this.context._delete
+      ) {
         return false;
       }
-      if (this.context.lastPublishedAt && (!this.context.modified || !this.context._edit)) {
+      if (
+        this.context.lastPublishedAt &&
+        (!this.context.modified || !this.context._edit)
+      ) {
         return false;
       }
       return (
@@ -279,13 +305,15 @@ export default {
         this.context._id;
     },
     canArchive() {
+      const publishable = Boolean(this.canPublish && this.context.lastPublishedAt) ||
+        !this.manuallyPublished;
       return (
         this.context._delete &&
         this.context._id &&
         !this.moduleOptions.singleton &&
         !this.context.archived &&
         !this.context.parked &&
-        (Boolean(this.canPublish && this.context.lastPublishedAt) || !this.manuallyPublished)
+        publishable
       );
     },
     canUnpublish() {
@@ -351,7 +379,8 @@ export default {
     schema() {
       // moduleOptions gives us the action, etc. but here we need the schema
       // which is always type specific, even for pages so get it ourselves
-      let schema = (apos.modules[this.context.type].schema || []).filter(field => apos.schema.components.fields[field.type]);
+      let schema = (apos.modules[this.context.type].schema || [])
+        .filter(field => apos.schema.components.fields[field.type]);
       // Archive UI is handled via action buttons
       schema = schema.filter(field => field.name !== 'archived');
       return schema;
@@ -373,13 +402,13 @@ export default {
   methods: {
     customDiscardDraft() {
       if (this.showDiscardDraft && this.canDiscardDraft) {
-        this.menuHandler('discardDraft');
+        this.menuHandler({ action: 'discardDraft' });
       }
     },
-    async onContentChanged(e) {
-      if (e.doc && (e.doc._id === this.context._id)) {
-        this.context = e.doc;
-      } else if (e.docIds && e.docIds.includes(this.context._id)) {
+    async onContentChanged({ doc, docIds }) {
+      if (doc && (doc._id === this.context._id)) {
+        this.context = doc;
+      } else if (docIds && docIds.includes(this.context._id)) {
         try {
           this.context = await apos.http.get(`${this.moduleOptions.action}/${this.context._id}`, {
             busy: true
@@ -388,26 +417,29 @@ export default {
           // If not found it is likely that there was an archiving or restoring
           // batch operation.
           if (error.name !== 'notfound') {
+            // eslint-disable-next-line no-console
             console.error(error);
           }
         }
       }
     },
-    menuHandler(action) {
-      const operation = this.customOperations.find(op => op.action === action);
+    menuHandler(item) {
+      const operation = this.customOperations.find(op => op.action === item.action);
       if (operation) {
         this.customAction(this.context, operation);
         return;
       }
 
-      this[action](this.context);
+      this[item.action](this.context);
     },
     async edit(doc) {
-      await apos.modal.execute(doc._aposEditorModal || this.moduleOptions.components.editorModal, {
-        moduleName: this.moduleName,
-        docId: doc._id,
-        type: doc.type
-      });
+      await apos.modal.execute(
+        doc._aposEditorModal || this.moduleOptions.components.editorModal,
+        {
+          moduleName: this.moduleName,
+          docId: doc._id,
+          type: doc.type
+        });
     },
     preview(doc) {
       window.open(doc._url, '_blank').focus();
@@ -423,16 +455,18 @@ export default {
         }
       }
 
-      await apos.modal.execute(doc._aposEditorModal || this.moduleOptions.components.editorModal, {
-        moduleName: this.moduleName,
-        copyOfId: doc._id,
-        // Passed for bc
-        copyOf: {
-          ...this.current || doc,
-          _id: doc._id
-        },
-        type: doc.type
-      });
+      await apos.modal.execute(
+        doc._aposEditorModal || this.moduleOptions.components.editorModal,
+        {
+          moduleName: this.moduleName,
+          copyOfId: doc._id,
+          // Passed for bc
+          copyOf: {
+            ...this.current || doc,
+            _id: doc._id
+          },
+          type: doc.type
+        });
 
     },
     async customAction(doc, operation) {
@@ -462,9 +496,11 @@ export default {
       }
       await apos.modal.execute(operation.modal, props);
       function docProps(doc) {
-        return Object.fromEntries(Object.entries(operation.docProps || {}).map(([ key, value ]) => {
-          return [ key, doc[value] ];
-        }));
+        return Object.fromEntries(
+          Object.entries(operation.docProps || {}).map(([ key, value ]) => {
+            return [ key, doc[value] ];
+          })
+        );
       }
     },
     async localize(doc) {

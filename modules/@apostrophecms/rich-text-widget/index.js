@@ -5,6 +5,7 @@ const sanitizeHtml = require('sanitize-html');
 const cheerio = require('cheerio');
 const { createWriteStream, unlinkSync } = require('fs');
 const { Readable, pipeline } = require('stream');
+const apiRoutes = require('./lib/apiRoutes');
 const util = require('util');
 
 module.exports = {
@@ -44,14 +45,18 @@ module.exports = {
       };
       return fields;
     }, {});
+    const orTypes = linkWithType.map(type => ({
+      linkTo: type
+    }));
     linkWithTypeFields.updateTitle = {
       label: 'apostrophe:updateTitle',
       type: 'boolean',
+      // Optional.
+      // Can be Link and/or Image
+      extensions: [ 'Link' ],
       def: true,
       if: {
-        $or: linkWithType.map(type => ({
-          linkTo: type
-        }))
+        $or: orTypes
       }
     };
 
@@ -67,10 +72,27 @@ module.exports = {
         ...linkWithTypeFields,
         href: {
           label: 'apostrophe:url',
+          help: 'apostrophe:linkHrefHelp',
           type: 'string',
           required: true,
           if: {
             linkTo: '_url'
+          }
+        },
+        hrefTitle: {
+          label: 'apostrophe:linkTitle',
+          help: 'apostrophe:linkTitleUrlHelp',
+          type: 'string',
+          if: {
+            linkTo: '_url'
+          }
+        },
+        title: {
+          label: 'apostrophe:linkTitle',
+          help: 'apostrophe:linkTitleRelHelp',
+          type: 'string',
+          if: {
+            $or: orTypes
           }
         },
         target: {
@@ -82,7 +104,15 @@ module.exports = {
               label: 'apostrophe:openLinkInNewTab',
               value: '_blank'
             }
-          ]
+          ],
+          if: {
+            $or: linkWithType.map(type => ({
+              linkTo: type
+            }))
+              .concat([ {
+                linkTo: '_url'
+              } ])
+          }
         }
       }
     };
@@ -97,6 +127,13 @@ module.exports = {
     defaultData: { content: '' },
     className: false,
     linkWithType: [ '@apostrophecms/any-page-type' ],
+    tableOptions: {
+      resizable: true,
+      handleWidth: 10,
+      cellMinWidth: 100,
+      lastColumnResizable: false,
+      class: 'apos-rich-text-table'
+    },
     // For permalinks and images. For efficiency we make
     // one query
     project: {
@@ -111,20 +148,35 @@ module.exports = {
     minimumDefaultOptions: {
       toolbar: [
         'styles',
+        '|',
         'bold',
         'italic',
         'strike',
+        'underline',
+        'subscript',
+        'superscript',
+        'blockquote',
+        '|',
+        'alignLeft',
+        'alignCenter',
+        'alignRight',
+        'image',
+        'horizontalRule',
         'link',
         'anchor',
         'bulletList',
         'orderedList',
-        'blockquote'
+        'color'
       ],
       styles: [
         // you may also use a `class` property with these
         {
           tag: 'p',
           label: 'apostrophe:richTextParagraph'
+        },
+        {
+          tag: 'h1',
+          label: 'apostrophe:richTextH1'
         },
         {
           tag: 'h2',
@@ -137,8 +189,23 @@ module.exports = {
         {
           tag: 'h4',
           label: 'apostrophe:richTextH4'
+        },
+        {
+          tag: 'h5',
+          label: 'apostrophe:richTextH5'
+        },
+        {
+          tag: 'h6',
+          label: 'apostrophe:richTextH6'
         }
+      ],
+      insert: [
+        'image',
+        'table',
+        'importTable',
+        'horizontalRule'
       ]
+
     },
     defaultOptions: {},
     components: {
@@ -154,10 +221,6 @@ module.exports = {
         component: 'AposTiptapMarks',
         label: 'apostrophe:richTextMarkStyles',
         icon: 'palette-swatch-icon'
-      },
-      table: {
-        component: 'AposTiptapTable',
-        label: 'apostrophe:table'
       },
       '|': { component: 'AposTiptapDivider' },
       bold: {
@@ -198,7 +261,6 @@ module.exports = {
         icon: 'format-subscript-icon',
         command: 'toggleSubscript'
       },
-
       horizontalRule: {
         component: 'AposTiptapButton',
         label: 'apostrophe:richTextHorizontalRule',
@@ -298,14 +360,19 @@ module.exports = {
         component: 'AposTiptapColor',
         label: 'apostrophe:richTextColor',
         command: 'setColor'
+      },
+      importTable: {
+        component: 'AposTiptapImportTable',
+        icon: 'cloud-upload-icon',
+        label: 'apostrophe:richTextUploadCsvTable'
       }
     },
     editorInsertMenu: {
       table: {
         icon: 'table-icon',
         label: 'apostrophe:table',
-        action: 'insertTable',
-        description: 'apostrophe:tableDescription'
+        description: 'apostrophe:tableDescription',
+        action: 'insertTable'
       },
       image: {
         icon: 'image-icon',
@@ -316,7 +383,15 @@ module.exports = {
       horizontalRule: {
         icon: 'minus-icon',
         label: 'apostrophe:richTextHorizontalRule',
+        description: 'apostrophe:richTextHorizontalRuleDescription',
         action: 'setHorizontalRule'
+      },
+      importTable: {
+        icon: 'cloud-upload-icon',
+        label: 'apostrophe:tableImport',
+        description: 'apostrophe:richTextUploadCsvTable',
+        component: 'AposTiptapImportTable',
+        noPopover: true
       }
     },
     // Additional properties used in executing tiptap commands
@@ -363,7 +438,17 @@ module.exports = {
     'format-text-icon': 'FormatText',
     'format-color-highlight-icon': 'FormatColorHighlight',
     'table-icon': 'Table',
-    'palette-swatch-icon': 'PaletteSwatch'
+    'palette-swatch-icon': 'PaletteSwatch',
+    'table-row-plus-after-icon': 'TableRowPlusAfter',
+    'table-column-plus-after-icon': 'TableColumnPlusAfter',
+    'table-column-remove-icon': 'TableColumnRemove',
+    'table-row-remove-icon': 'TableRowRemove',
+    'table-plus-icon': 'TablePlus',
+    'table-minus-icon': 'TableMinus',
+    'table-column-icon': 'TableColumn',
+    'table-row-icon': 'TableRow',
+    'table-split-cell-icon': 'TableSplitCell',
+    'table-merge-cells-icon': 'TableMergeCells'
   },
   handlers(self) {
     return {
@@ -377,9 +462,11 @@ module.exports = {
       }
     };
   },
+  apiRoutes,
   methods(self) {
     return {
-      // Return just the rich text of the widget, which may be undefined or null if it has not yet been edited
+      // Return just the rich text of the widget, which may be undefined or
+      // null if it has not yet been edited
 
       getRichText(widget) {
         return widget.content;
@@ -483,7 +570,7 @@ module.exports = {
           anchor: [ 'span' ],
           superscript: [ 'sup' ],
           subscript: [ 'sub' ],
-          table: [ 'table', 'tr', 'td', 'th' ],
+          table: [ 'table', 'tr', 'td', 'th', 'colgroup', 'col', 'div' ],
           image: [ 'figure', 'img', 'figcaption' ],
           div: [ 'div' ],
           color: [ 'span' ]
@@ -512,6 +599,8 @@ module.exports = {
               'href',
               'id',
               'name',
+              'title',
+              'rel',
               ...self.linkSchema
                 .filter(field => field.htmlAttribute)
                 .map(field => field.htmlAttribute)
@@ -539,18 +628,47 @@ module.exports = {
           },
           table: [
             {
+              tag: 'div',
+              attributes: [ 'class' ]
+            },
+            {
+              tag: 'table',
+              attributes: [ 'style', 'class' ]
+            },
+            {
+              tag: 'col',
+              attributes: [ 'style' ]
+            },
+            {
               tag: 'td',
-              attributes: [ 'colspan', 'rowspan' ]
+              attributes: [ 'colspan', 'rowspan', 'colwidth' ]
             },
             {
               tag: 'th',
-              attributes: [ 'colspan', 'rowspan' ]
+              attributes: [ 'colspan', 'rowspan', 'colwidth' ]
+            }
+          ],
+          colgroup: [
+            {
+              tag: 'col',
+              attributes: [ 'style' ]
             }
           ],
           image: [
             {
               tag: 'figure',
               attributes: [ 'class' ]
+            },
+            {
+              tag: 'a',
+              attributes: [
+                'href',
+                'name',
+                'title',
+                'rel',
+                ...self.linkSchema
+                  .filter(field => field.htmlAttribute)
+                  .map(field => field.htmlAttribute) ]
             },
             {
               tag: 'img',
@@ -569,7 +687,9 @@ module.exports = {
               for (const attribute of entry.attributes) {
                 allowedAttributes[entry.tag] = allowedAttributes[entry.tag] || [];
                 allowedAttributes[entry.tag].push(attribute);
-                allowedAttributes[entry.tag] = [ ...new Set(allowedAttributes[entry.tag]) ];
+                allowedAttributes[entry.tag] = [
+                  ...new Set(allowedAttributes[entry.tag])
+                ];
               }
             }
           }
@@ -622,6 +742,14 @@ module.exports = {
                 /^var\(--[a-zA-Z0-9-]+\)$/
               ]
             }
+          },
+          table: {
+            selector: '*',
+            properties: {
+              'min-width': [ /[0-9]{1,4}(px|em|%)/i ],
+              'max-width': [ /[0-9]{1,4}(px|em|%)/i ],
+              width: [ /[0-9]{1,4}(px|em|%)/i ]
+            }
           }
         };
         for (const item of self.combinedItems(options)) {
@@ -659,14 +787,36 @@ module.exports = {
             }
           }
         }
+
+        if (options.toolbar?.includes('table') || options.insert?.includes('table')) {
+          allowedClasses.div = {
+            ...(allowedClasses.div || {})
+          };
+
+          // If `resizable`, allow the prosemirror wrapper through
+          if (self.options.tableOptions?.resizable) {
+            allowedClasses.div.tableWrapper = true;
+          }
+
+          allowedClasses.table = {
+            ...(allowedClasses.table || {})
+          };
+
+          // If custom class applied to table
+          if (self.options.tableOptions?.class) {
+            allowedClasses.table[self.options.tableOptions.class] = true;
+          }
+        }
+
         for (const tag of Object.keys(allowedClasses)) {
           allowedClasses[tag] = Object.keys(allowedClasses[tag]);
         }
+
         return allowedClasses;
       },
 
-      // Returns a combined array of toolbar and insert menu items from the given
-      // set of rich text widget options
+      // Returns a combined array of toolbar and insert menu items from the
+      // given set of rich text widget options
       combinedItems(options) {
         return [ ...(options.toolbar || []), ...(options.insert || []) ];
       },
@@ -687,8 +837,11 @@ module.exports = {
       },
 
       isEmpty(widget) {
-        const text = self.apos.util.htmlToPlaintext(widget.content || '');
-        return !text.trim().length;
+        const content = (widget.content || '').trim();
+        const text = self.apos.util.htmlToPlaintext(content).trim();
+        return text.length === 0 &&
+          content.includes('<table') === false &&
+          content.includes('<figure') === false;
       },
 
       sanitizeHtml(html, options) {
@@ -706,9 +859,9 @@ module.exports = {
           if (!self.validateAnchor(anchor)) {
             return;
           }
-          // tiptap will apply data-anchor to every tag involved in the selection
-          // at any depth. For ids and anchors this doesn't really make sense.
-          // Save the id to the first, rootmost tag involved
+          // tiptap will apply data-anchor to every tag involved in the
+          // selection at any depth. For ids and anchors this doesn't really
+          // make sense. Save the id to the first, rootmost tag involved
           if (!seen.has(anchor)) {
             $el.attr('id', anchor);
             seen.add(anchor);
@@ -760,7 +913,9 @@ module.exports = {
             const href = content.indexOf(' href="', left);
             const close = content.indexOf('"', href + 7);
             if ((left !== -1) && (href !== -1) && (close !== -1)) {
-              content = content.substring(0, href + 6) + doc._url + content.substring(close + 1);
+              content = content.substring(0, href + 6) +
+                doc._url +
+                content.substring(close + 1);
             } else {
               // So we don't get stuck in an infinite loop
               break;
@@ -771,7 +926,9 @@ module.exports = {
             const right = content.indexOf('>', left);
             const nextLeft = content.indexOf('<', right);
             if ((right !== -1) && (nextLeft !== -1)) {
-              content = content.substring(0, right + 1) + self.apos.util.escapeHtml(doc.title) + content.substring(nextLeft);
+              content = content.substring(0, right + 1) +
+                self.apos.util.escapeHtml(doc.title) +
+                content.substring(nextLeft);
             }
           }
         }
@@ -903,14 +1060,18 @@ module.exports = {
               }
               const name = matches[1];
               try {
-                await util.promisify(pipeline)(Readable.fromWeb(res.body), createWriteStream(temp));
+                await util.promisify(pipeline)(
+                  Readable.fromWeb(res.body),
+                  createWriteStream(temp)
+                );
                 const attachment = await self.apos.attachment.insert(req, {
                   name,
                   path: temp
                 });
                 const image = await self.apos.image.insert(req, {
                   title: name,
-                  attachment
+                  attachment,
+                  tagsIds: input.import.imageTags || []
                 });
                 const newSrc = `${self.apos.image.action}/${image.aposDocId}/src`;
                 $image.replaceWith(
@@ -976,12 +1137,16 @@ module.exports = {
           tiptapTextCommands: self.options.tiptapTextCommands,
           tiptapTypes: self.options.tiptapTypes,
           placeholderText: self.options.placeholder && self.options.placeholderText,
-          // Not optional in presence of an insert menu, it's not acceptable UX without it
+          // Not optional in presence of an insert menu, it's not acceptable UX
+          // without it
           placeholderTextWithInsertMenu: self.options.placeholderTextWithInsertMenu,
-          linkWithType: Array.isArray(self.options.linkWithType) ? self.options.linkWithType : [ self.options.linkWithType ],
+          linkWithType: Array.isArray(self.options.linkWithType)
+            ? self.options.linkWithType
+            : [ self.options.linkWithType ],
           linkSchema: self.linkSchema,
           imageStyles: self.options.imageStyles,
-          color: self.options.color
+          color: self.options.color,
+          tableOptions: self.options.tableOptions
         };
         return finalData;
       }

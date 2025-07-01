@@ -123,7 +123,9 @@ module.exports = {
         } else {
           template = _.str.rtrim(template.slice(0, template.length - 1));
         }
-        return (template + pruneStr).length > str.length ? str : str.slice(0, template.length) + pruneStr;
+        return (template + pruneStr).length > str.length
+          ? str
+          : str.slice(0, template.length) + pruneStr;
       },
       // Escape a plaintext string correctly for use in HTML.
       // If `{ pretty: true }` is in the options object,
@@ -167,7 +169,8 @@ module.exports = {
       // Convert HTML to true plaintext, with all entities decoded.
       htmlToPlaintext(html) {
         // The awesomest HTML renderer ever (look out webkit):
-        // block element opening tags = newlines, closing tags and non-container tags just gone
+        // block element opening tags = newlines, closing tags and
+        // non-container tags just gone
         html = html.replace(/<\/.*?>/g, '');
         html = html.replace(/<(h1|h2|h3|h4|h5|h6|p|br|blockquote|li|article|address|footer|pre|header|table|tr|td|th|tfoot|thead|div|dl|dt|dd).*?>/gi, '\n');
         html = html.replace(/<.*?>/g, '');
@@ -177,8 +180,8 @@ module.exports = {
       capitalizeFirst(s) {
         return s.charAt(0).toUpperCase() + s.substr(1);
       },
-      // Convert other name formats such as underscore and camelCase to a hyphenated css-style
-      // name.
+      // Convert other name formats such as underscore and camelCase to a
+      // hyphenated css-style name.
       cssName(camel) {
         // Keep in sync with client side version
         let i;
@@ -214,13 +217,15 @@ module.exports = {
       },
       // Convert a name to camel case.
       //
-      // Useful in converting CSV with friendly headings into sensible property names.
+      // Useful in converting CSV with friendly headings into sensible property
+      // names.
       //
       // Only digits and ASCII letters remain.
       //
-      // Anything that isn't a digit or an ASCII letter prompts the next character
-      // to be uppercase. Existing uppercase letters also trigger uppercase, unless
-      // they are the first character; this preserves existing camelCase names.
+      // Anything that isn't a digit or an ASCII letter prompts the next
+      // character to be uppercase. Existing uppercase letters also trigger
+      // uppercase, unless they are the first character; this preserves existing
+      // camelCase names.
       camelName(s) {
         // Keep in sync with client side version
         let i;
@@ -382,17 +387,18 @@ module.exports = {
         }
         return c;
       },
-      // `ids` should be an array of mongodb IDs. The elements of the `items` array, which
-      // should be the result of a mongodb query, are returned in the order specified by `ids`.
-      // This is useful after performing an `$in` query with MongoDB (note that `$in` does NOT sort its
-      // strings in the order given).
+      // `ids` should be an array of mongodb IDs. The elements of the `items`
+      // array, which should be the result of a mongodb query, are returned in
+      // the order specified by `ids`. This is useful after performing an `$in`
+      // query with MongoDB (note that `$in` does NOT sort its strings in the
+      // order given).
       //
-      // Any IDs that do not actually exist for an item in the `items` array are not returned,
-      // and vice versa. You should not assume the result will have the same length as
-      // either array.
+      // Any IDs that do not actually exist for an item in the `items` array
+      // are not returned, and vice versa. You should not assume the result will
+      // have the same length as either array.
       //
-      // Optionally you may specify a property name other than _id as the third argument.
-      // You may use dot notation in this argument.
+      // Optionally you may specify a property name other than _id as the third
+      // argument. You may use dot notation in this argument.
       orderById(ids, items, idProperty) {
         if (idProperty === undefined) {
           idProperty = '_id';
@@ -420,20 +426,22 @@ module.exports = {
       isAjaxRequest(req) {
         return (req.xhr || req.query.xhr) && (req.query.aposRefresh !== '1');
       },
-      // Sort the given array of strings in place, comparing strings in a case-insensitive way.
+      // Sort the given array of strings in place, comparing strings in a
+      // case-insensitive way.
       insensitiveSort(strings) {
         strings.sort(self.insensitiveSortCompare);
       },
-      // Sort the given array of objects in place, based on the value of the given property of each object,
-      // in a case-insensitive way.
+      // Sort the given array of objects in place, based on the value of the
+      // given property of each object, in a case-insensitive way.
       insensitiveSortByProperty(objects, property) {
         objects.sort(function (a, b) {
           return self.insensitiveSortCompare(a[property], b[property]);
         });
       },
-      // Compare two strings in a case-insensitive way, returning -1, 0 or 1, suitable for use with sort().
-      // If the two strings represent numbers, compare them as numbers for a natural sort order
-      // when comparing strings like '4' and '10'.
+      // Compare two strings in a case-insensitive way, returning -1, 0 or 1,
+      // suitable for use with sort(). If the two strings represent numbers,
+      // compare them as numbers for a natural sort order when comparing strings
+      // like '4' and '10'.
       insensitiveSortCompare(a, b) {
         let na, nb;
         if (a && a.toString().toLowerCase()) {
@@ -491,10 +499,17 @@ module.exports = {
       //
       // Useful to locate a specific widget within a doc.
       //
-      // Returns an object like this: `{ object: { ... }, dotPath: 'dot.path.of.object' }`
+      // Returns an object like this: `{ object: { ... }, dotPath:
+      // 'dot.path.of.object' }`
       //
-      // Ignore the `_dotPath` argument to this method; it is used for recursion.
-      findNestedObjectAndDotPathById(object, id, { ignoreDynamicProperties = false } = {}, _dotPath) {
+      // Ignore the `_dotPath` argument to this method; it is used for
+      // recursion.
+      findNestedObjectAndDotPathById(
+        object,
+        id,
+        { ignoreDynamicProperties = false } = {},
+        _dotPath
+      ) {
         let key;
         let val;
         let result;
@@ -513,7 +528,12 @@ module.exports = {
                 dotPath: subPath.join('.')
               };
             }
-            result = self.findNestedObjectAndDotPathById(val, id, { ignoreDynamicProperties }, subPath);
+            result = self.findNestedObjectAndDotPathById(
+              val,
+              id,
+              { ignoreDynamicProperties },
+              subPath
+            );
             if (result) {
               return result;
             }
@@ -651,24 +671,25 @@ module.exports = {
       // dot-namespaced key. A function is returned. Call that function
       // with no arguments at the end of your operation.
       //
-      // Alternatively, you may pass the duration in milliseconds yourself as the
-      // third argument. In this case no function is returned. This is useful if
-      // you are already gathering timing information for other purposes.
+      // Alternatively, you may pass the duration in milliseconds yourself as
+      // the third argument. In this case no function is returned. This is
+      // useful if you are already gathering timing information for other
+      // purposes.
       //
       // Profiler modules such as `@apostrophecms/profiler` override this
       // method to provide detailed performance analysis. Note that they must
       // support both calling syntaxes. The default implementation does nothing.
       //
-      // If the dot-separated key looks like `callAll.pageBeforeSend.module-name`,
-      // time is tracked to `callAll`, `callAll.pageBeforeSend`, and
-      // `callAll.pageBeforeSend.module-name` as categories. Note that the
-      // most general category should come first.
+      // If the dot-separated key looks like
+      // `callAll.pageBeforeSend.module-name`, time is tracked to `callAll`,
+      // `callAll.pageBeforeSend`, and `callAll.pageBeforeSend.module-name` as
+      // categories. Note that the most general category should come first.
       //
       // To avoid overhead and bloat in the core, the default implementation
-      // does nothing. Also most core modules and methods do not invoke this method.
-      // However, the `@apostrophecms/profiler` module extends them to invoke it,
-      // for performance reasons: the profiler itself can have
-      // a performance overhead.
+      // does nothing. Also most core modules and methods do not invoke this
+      // method. However, the `@apostrophecms/profiler` module extends them to
+      // invoke it, for performance reasons: the profiler itself can have a
+      // performance overhead.
       profile(req, key, optionalDuration) {
         if (typeof req === 'string') {
           // Called without a `req`
@@ -730,7 +751,8 @@ module.exports = {
       resolveAtReference(o, path) {
         path = path.split('.');
         if (path[0] && (path[0].charAt(0) === '@')) {
-          const info = self.apos.util.findNestedObjectAndDotPathById(o, path[0].substring(1));
+          const info = self.apos.util
+            .findNestedObjectAndDotPathById(o, path[0].substring(1));
           if (!info) {
             return path.join('.');
           }
@@ -764,7 +786,11 @@ module.exports = {
           if (!matches) {
             throw new Error(`@ syntax used without an id: ${path}`);
           }
-          const found = self.apos.util.findNestedObjectAndDotPathById(o, matches[1], { ignoreDynamicProperties: true });
+          const found = self.apos.util.findNestedObjectAndDotPathById(
+            o,
+            matches[1],
+            { ignoreDynamicProperties: true }
+          );
           if (found) {
             if (matches[2].length) {
               o = found.object;
@@ -784,10 +810,12 @@ module.exports = {
         p = path[i];
         o[p] = v;
       },
-      // Pushes the given label onto `req.aposStack` before awaiting the given function; then pops the label off the stack
-      // and returns the result of the function. If the stack limit is reached, a warning which includes the stack itself
-      // is printed to assist in debugging, and the return value is `undefined`. Code that calls this function should be
-      // prepared not to crash if `undefined` is returned.
+      // Pushes the given label onto `req.aposStack` before awaiting the given
+      // function; then pops the label off the stack and returns the result of
+      // the function. If the stack limit is reached, a warning which includes
+      // the stack itself is printed to assist in debugging, and the return
+      // value is `undefined`. Code that calls this function should be prepared
+      // not to crash if `undefined` is returned.
 
       async recursionGuard(req, label, fn) {
         req.aposStack.push(label);
@@ -829,7 +857,9 @@ module.exports = {
         // access to things like `req.get`. Solution: ask `Object.create` to
         // create a new object with the same prototype as `req`, then copy the
         // own properties of `req` into the new object.
-        const result = Object.assign(Object.create(Object.getPrototypeOf(req)), req, properties);
+        const result = Object.assign(
+          Object.create(Object.getPrototypeOf(req)), req, properties
+        );
         self.apos.i18n.setPrefixUrls(result);
         // Must have its own clone function or we can't clone two levels deep
         result.clone = (properties = {}) => {
@@ -837,7 +867,8 @@ module.exports = {
         };
         return result;
       },
-      pipe: (...functions) => (initial) => functions.reduce((accumulator, current) => current(accumulator), initial),
+      pipe: (...functions) => (initial) => functions
+        .reduce((accumulator, current) => current(accumulator), initial),
       merge(...objects) {
         const concatArrays = (objValue, srcValue) => {
           if (Array.isArray(objValue)) {
@@ -874,7 +905,8 @@ module.exports = {
         if (!messageAs || args.length === 0) {
           return args;
         }
-        // Already formatted by the structured log module. Nothing we can do if not.
+        // Already formatted by the structured log module. Nothing we can do if
+        // not.
         if (args.length === 1 && _.isPlainObject(args[0])) {
           return args;
         }
@@ -932,8 +964,8 @@ module.exports = {
         return self.generateId();
       },
 
-      // Test whether the specified date object refers to a date in the current year.
-      // The events module utilizes this
+      // Test whether the specified date object refers to a date in the current
+      // year. The events module utilizes this
 
       isCurrentYear: function(date) {
         const now = new Date();
@@ -950,7 +982,8 @@ module.exports = {
         return (o === false);
       },
 
-      // Convert string to start case (make default labels out of camelCase property names)
+      // Convert string to start case (make default labels out of camelCase
+      // property names)
       startCase: function(o) {
         return _.startCase(o);
       },
@@ -1138,9 +1171,11 @@ module.exports = {
 
       // Groups by the property named by 'key' on each of the values.
       // If the property referred to by the string 'key' is found to be
-      // an array property of the first object, apos.util.groupByArray is called.
+      // an array property of the first object, apos.util.groupByArray is
+      // called.
       //
-      // Usage: {{ apos.util.groupBy(people, 'age') }} or {{ apos.util.groupBy(items, 'colors') }}
+      // Usage: {{ apos.util.groupBy(people, 'age') }} or {{
+      // apos.util.groupBy(items, 'colors') }}
       groupBy: function(items, key) {
         if (items.length && Array.isArray(items[0][key])) {
           return groupByArray(items, key);

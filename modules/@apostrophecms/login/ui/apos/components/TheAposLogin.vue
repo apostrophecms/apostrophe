@@ -3,11 +3,14 @@
     <div
       v-show="loaded"
       class="apos-login apos-theme-dark"
-      data-apos-test="loginForm"
+      data-apos-test="loginPage"
       :class="themeClass"
     >
       <transition name="fade-outer">
-        <div v-if="showNav" class="apos-login__nav">
+        <div
+          v-if="showNav"
+          class="apos-login__nav"
+        >
           <a
             href="#"
             class="apos-login__link apos-login--arrow-left"
@@ -20,7 +23,10 @@
         </div>
       </transition>
       <div class="apos-login__wrapper">
-        <transition name="fade-body" mode="out-in">
+        <transition
+          name="fade-body"
+          mode="out-in"
+        >
           <AposForgotPasswordForm
             v-if="loaded && stage === 'forgotPassword'"
             :context="context"
@@ -46,9 +52,15 @@
         </transition>
       </div>
       <transition name="fade-outer">
-        <div v-show="loaded" class="apos-login__footer">
+        <div
+          v-show="loaded"
+          class="apos-login__footer"
+        >
           <AposLogo class="apos-login__logo" />
-          <label class="apos-login__project-version">
+          <label
+            data-apos-test="projectVersion"
+            class="apos-login__project-version"
+          >
             Version {{ context.version }}
           </label>
         </div>

@@ -1,27 +1,28 @@
-// `@apostrophecms/piece-page-type` implements "index pages" that display pieces of a
-// particular type in a paginated, filterable way. It's great for implementing
-// blogs, event listings, project listings, staff directories... almost any
-// content type.
+// `@apostrophecms/piece-page-type` implements "index pages" that display
+// pieces of a particular type in a paginated, filterable way. It's great for
+// implementing blogs, event listings, project listings, staff directories...
+// almost any content type.
 //
 // You will `extend` this module in new modules corresponding to your modules
 // that extend `@apostrophecms/piece-type`.
 //
 // To learn more and see complete examples, see:
 //
-// [Reusable content with pieces](../../tutorials/getting-started/reusable-content-with-pieces.html)
+// [Reusable content with
+// pieces](../../tutorials/getting-started/reusable-content-with-pieces.html)
 //
 // ## Options
 //
 // ### `piecesFilters`
 //
-// If present, this is an array of objects with `name` properties.This works only if the corresponding
-// query builders exist and have a `launder` method. An array of choices for each is populated
-// in `req.data.piecesFilters`. The choices in the
-// array are objects with `label` and `value` properties.
+// If present, this is an array of objects with `name` properties.This works
+// only if the corresponding query builders exist and have a `launder` method.
+// An array of choices for each is populated in `req.data.piecesFilters`. The
+// choices in the array are objects with `label` and `value` properties.
 //
-// If a filter configuration has a `counts` property set to `true`, then the array provided for
-// that filter will also have a `count` property for each value. This has a performance
-// impact.
+// If a filter configuration has a `counts` property set to `true`, then the
+// array provided for that filter will also have a `count` property for each
+// value. This has a performance impact.
 
 const _ = require('lodash');
 
@@ -46,7 +47,10 @@ module.exports = {
       // query builders by default.
 
       indexQuery(req) {
-        const query = self.pieces.find(req, {}).applyBuildersSafely(req.query).perPage(self.perPage);
+        const query = self.pieces
+          .find(req, {})
+          .applyBuildersSafely(req.query)
+          .perPage(self.perPage);
         self.filterByIndexPage(query, req.data.page);
         return query;
       },
@@ -96,10 +100,10 @@ module.exports = {
       },
 
       // Invokes query builders on the given query to ensure it only fetches
-      // results appropriate to the given page. By default this method does nothing,
-      // as it is quite common to have one pieces-page per piece type, but if you have
-      // more than one you can override this method and `chooseParentPage` to map particular
-      // pieces to particular pieces-pages.
+      // results appropriate to the given page. By default this method does
+      // nothing, as it is quite common to have one pieces-page per piece type,
+      // but if you have more than one you can override this method and
+      // `chooseParentPage` to map particular pieces to particular pieces-pages.
 
       filterByIndexPage(query, page) {
       },
@@ -147,8 +151,8 @@ module.exports = {
           if (doc || !req.user || !self.pieces.contextual) {
             return;
           }
-          // Use findForEditing to allow subclasses to extend the set of filters that
-          // don't apply by default in an editing context. -Tom
+          // Use findForEditing to allow subclasses to extend the set of
+          // filters that don't apply by default in an editing context. -Tom
           const query = self.pieces.findForEditing(req, { slug: req.params.slug });
           doc = await query.toObject();
         }
@@ -176,8 +180,8 @@ module.exports = {
         }
       },
 
-      // Invoked just before the piece is displayed on its "show page." By default,
-      // does nothing. A useful override point.
+      // Invoked just before the piece is displayed on its "show page." By
+      // default, does nothing. A useful override point.
 
       async beforeShow(req) {
       },
@@ -189,8 +193,9 @@ module.exports = {
       // e.g. `/blog/good-article`, it is assumed to be the slug of the
       // article and `showPage` is invoked. You can override this method,
       // for instance to also accept `/:year/:month/:day/:slug` as a way of
-      // invoking `self.showPage`. See [@apostrophecms/page-type](../@apostrophecms/page-type/index.html)
-      // for more about what you can do with dispatch routes.
+      // invoking `self.showPage`. See
+      // [@apostrophecms/page-type](../@apostrophecms/page-type/index.html) for
+      // more about what you can do with dispatch routes.
 
       dispatchAll() {
         self.dispatch('/', self.indexPage);
@@ -200,8 +205,9 @@ module.exports = {
       // This method is called for you. You should override it if you will have
       // more than one pieces-page on the site for a given type of piece.
       //
-      // In the presence of pieces-pages, queries for the corresponding pieces are
-      // automatically enhanced to invoke it when building the `_url` property of each piece.
+      // In the presence of pieces-pages, queries for the corresponding pieces
+      // are automatically enhanced to invoke it when building the `_url`
+      // property of each piece.
       //
       // Given an array containing all of the index pages of this type that
       // exist on the site and an individual piece, your override of this method
@@ -213,9 +219,13 @@ module.exports = {
 
       chooseParentPage(pages, piece) {
         // Complain if this method is called with more than one page without an
-        // extension to make it smart enough to presumably do something intelligent
-        // in that situation. Don't complain though if this is just a call to _super
-        if ((self.originalChooseParentPage === self.chooseParentPage) && (pages.length > 1)) {
+        // extension to make it smart enough to presumably do something
+        // intelligent in that situation. Don't complain though if this is just
+        // a call to _super
+        if (
+          (self.originalChooseParentPage === self.chooseParentPage) &&
+          (pages.length > 1)
+        ) {
           self.apos.util.warnDevOnce(`${self.__meta.name}/chooseParentPage`, `Your site has more than one ${self.name} page, but does not extend the chooseParentPage\nmethod in ${self.__meta.name} to choose the right one for individual ${self.pieces.name}. You should also extend filterByIndexPage.\nOtherwise URLs for each ${self.pieces.name} will point to an arbitrarily chosen page.`);
         }
         return pages[0];
@@ -235,10 +245,11 @@ module.exports = {
 
       // Adds the `._url` property to all of the provided pieces,
       // which are assumed to be of the appropriate type for this module.
-      // Aliased as the `addUrls` method of [@apostrophecms/piece-type](../@apostrophecms/piece-type/index.html).
+      // Aliased as the `addUrls` method of
+      // [@apostrophecms/piece-type](../@apostrophecms/piece-type/index.html).
 
       async addUrlsToPieces(req, results) {
-        const pieceName = self.pieces.name;
+        const pieceName = `${self.pieces.name}:${req.mode}`;
         if (!(req.aposParentPageCache && req.aposParentPageCache[pieceName])) {
           const pages = await self.findForAddUrlsToPieces(req).toArray();
           if (!req.aposParentPageCache) {
@@ -247,7 +258,11 @@ module.exports = {
           req.aposParentPageCache[pieceName] = pages;
         }
         results.forEach(function (piece) {
-          const parentPage = self.chooseParentPage(req.aposParentPageCache[pieceName], piece);
+          const parentPage = self.chooseParentPage(
+            req.aposParentPageCache[pieceName] || [],
+            piece
+          );
+
           if (parentPage) {
             piece._url = self.buildUrl(req, parentPage, piece);
             piece._parent = self.pruneParent(parentPage);
@@ -302,9 +317,9 @@ module.exports = {
       },
 
       // Default implementation: we are ready to add URLs to pieces when we have
-      // at least one reachable piece page. pieceTypeName is guaranteed to always
-      // be our corresponding piece module name right now, however it is provided
-      // in case a subclass chooses to invoke `addUrlsVia` for multiple
+      // at least one reachable piece page. pieceTypeName is guaranteed to
+      // always be our corresponding piece module name right now, however it is
+      // provided in case a subclass chooses to invoke `addUrlsVia` for multiple
       // piece types
       async readyToAddUrlsToPieces(req, pieceTypeName) {
         return !!(await self.find(req, {}).areas(false).relationships(false).toObject());
@@ -327,9 +342,9 @@ module.exports = {
         const req = query.req;
         req.data.piecesFilters = req.data.piecesFilters || {};
         for (const filter of self.piecesFilters) {
-          // The choices for each filter should reflect the effect of all filters
-          // except this one (filtering by topic pares down the list of categories and
-          // vice versa)
+          // The choices for each filter should reflect the effect of all
+          // filters except this one (filtering by topic pares down the list of
+          // categories and vice versa)
           const _query = query.clone();
           _query[filter.name](undefined);
           req.data.piecesFilters[filter.name] = await _query.toChoices(filter.name, _.pick(filter, 'counts'));

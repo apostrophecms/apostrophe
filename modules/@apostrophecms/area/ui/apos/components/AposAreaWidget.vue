@@ -1,4 +1,3 @@
-
 <template>
   <div
     ref="widget"
@@ -8,6 +7,7 @@
     :data-area-label="widgetLabel"
     :data-apos-widget-foreign="foreign ? 1 : 0"
     :data-apos-widget-id="widget._id"
+    tabindex="0"
   >
     <div
       ref="wrapper"
@@ -26,8 +26,16 @@
         :class="labelsClasses"
       >
         <ol class="apos-area-widget__breadcrumbs">
-          <li class="apos-area-widget__breadcrumb apos-area-widget__breadcrumb--widget-icon">
-            <AposIndicator :icon="widgetIcon" :icon-size="13" />
+          <li
+            class="
+              apos-area-widget__breadcrumb
+              apos-area-widget__breadcrumb--widget-icon
+            "
+          >
+            <AposIndicator
+              :icon="widgetIcon"
+              :icon-size="13"
+            />
           </li>
           <li
             v-for="(item, index) in breadcrumbs.list"
@@ -45,7 +53,10 @@
               @click="getFocus($event, item.id)"
             />
           </li>
-          <li class="apos-area-widget__breadcrumb" data-apos-widget-breadcrumb="0">
+          <li
+            class="apos-area-widget__breadcrumb"
+            data-apos-widget-breadcrumb="0"
+          >
             <AposButton
               type="quiet"
               :label="foreign ? {
@@ -63,7 +74,11 @@
         </ol>
       </div>
       <div
-        class="apos-area-widget-controls apos-area-widget-controls--add apos-area-widget-controls--add--top"
+        class="
+          apos-area-widget-controls
+          apos-area-widget-controls--add--top
+          apos-area-widget-controls--add
+        "
         :class="addClasses"
       >
         <AposAreaMenu
@@ -77,6 +92,7 @@
           :tabbable="isHovered || isFocused"
           :menu-id="`${widget._id}-widget-menu-top`"
           :class="{[classes.open]: menuOpen === 'top'}"
+          :open="menuOpen === 'top'"
           @add="$emit('add', $event);"
         />
       </div>
@@ -93,10 +109,10 @@
           :first="i === 0"
           :last="i === next.length - 1"
           :options="{ contextual: isContextual }"
-          :foreign="foreign"
           :disabled="disabled"
           :max-reached="maxReached"
           :tabbable="isFocused"
+          :model-value="widget"
           @up="$emit('up', i);"
           @remove="$emit('remove', i);"
           @edit="$emit('edit', i);"
@@ -104,6 +120,7 @@
           @copy="$emit('copy', i);"
           @clone="$emit('clone', i);"
           @down="$emit('down', i);"
+          @update="$emit('update', $event)"
         />
       </div>
       <!-- Still used for contextual editing components -->
@@ -127,7 +144,6 @@
         :options="widgetOptions"
         :type="widget.type"
         :area-field-id="fieldId"
-        :area-field="field"
         :following-values="followingValuesWithParent"
         :model-value="widget"
         :value="widget"
@@ -138,7 +154,11 @@
         @edit="$emit('edit', i);"
       />
       <div
-        class="apos-area-widget-controls apos-area-widget-controls--add apos-area-widget-controls--add--bottom"
+        class="
+          apos-area-widget-controls
+          apos-area-widget-controls--add
+          apos-area-widget-controls--add--bottom
+        "
         :class="addClasses"
       >
         <AposAreaMenu
@@ -152,6 +172,7 @@
           :tabbable="isHovered || isFocused"
           :menu-id="`${widget._id}-widget-menu-bottom`"
           :class="{[classes.open]: menuOpen === 'bottom'}"
+          :open="menuOpen === 'bottom'"
           @add="$emit('add', $event)"
         />
       </div>
@@ -217,10 +238,6 @@ export default {
       type: Array,
       required: true
     },
-    field: {
-      type: Object,
-      required: true
-    },
     fieldId: {
       type: String,
       required: true
@@ -250,7 +267,19 @@ export default {
       }
     }
   },
-  emits: [ 'clone', 'up', 'down', 'remove', 'edit', 'cut', 'copy', 'update', 'add', 'changed' ],
+  emits: [
+    'clone',
+    'up',
+    'down',
+    'remove',
+    'edit',
+    'cut',
+    'copy',
+    'update',
+    'add',
+    'changed',
+    'paste'
+  ],
   data() {
     return {
       mounted: false, // hack around needing DOM to be rendered for computed classes
@@ -294,7 +323,8 @@ export default {
       const moduleName = `${this.widget.type}-widget`;
       const module = window.apos.modules[moduleName];
       if (!module) {
-        console.error(`No ${moduleName} module found for widget type ${this.widget.type}`);
+        // eslint-disable-next-line no-console
+        console.warn(`No ${moduleName} module found for widget type ${this.widget.type}`);
       }
       return module.label;
     },
@@ -311,12 +341,14 @@ export default {
     isFocused() {
       if (this.isSuppressed) {
         return false;
-      } else {
-        if (this.widgetFocused === this.widget._id) {
-          document.addEventListener('click', this.unfocus);
-        }
-        return this.widgetFocused === this.widget._id;
       }
+
+      const isWidgetFocused = this.widgetFocused === this.widget._id;
+      if (isWidgetFocused) {
+        document.addEventListener('click', this.unfocus);
+      }
+
+      return isWidgetFocused;
     },
     isHovered() {
       return this.widgetHovered === this.widget._id;
@@ -394,7 +426,7 @@ export default {
       // If another widget was in focus (because the user clicked the "add"
       // menu, for example), and this widget was created, give the new widget
       // focus.
-      apos.bus.$emit('widget-focus', this.widget._id);
+      apos.bus.$emit('widget-focus', { _id: this.widget._id });
     }
   },
   unmounted() {
@@ -402,7 +434,6 @@ export default {
     apos.bus.$off('widget-focus-parent', this.focusParent);
   },
   methods: {
-
     getFocusForMenu({ menuId, isOpen }) {
       if (
         (
@@ -419,7 +450,8 @@ export default {
       }
     },
 
-    // Determine whether or not we should adjust the label based on its position to the admin bar
+    // Determine whether or not we should adjust the label based on its
+    // position to the admin bar
     adjustUi() {
       const { height: labelHeight } = this.$refs.label.getBoundingClientRect();
       const { top: widgetTop } = this.$refs.widget.getBoundingClientRect();
@@ -444,18 +476,18 @@ export default {
         const $parent = this.getParent();
         // .. And have a parent
         if ($parent) {
-          apos.bus.$emit('widget-focus', $parent.dataset.areaWidget);
+          apos.bus.$emit('widget-focus', { _id: $parent.dataset.areaWidget });
         }
       }
     },
 
     // Ask the parent AposAreaEditor to make us focused
-    getFocus(e, id) {
+    getFocus(e, _id) {
       if (e) {
         e.stopPropagation();
       }
       this.isSuppressed = false;
-      apos.bus.$emit('widget-focus', id);
+      apos.bus.$emit('widget-focus', { _id });
     },
 
     // Our widget was hovered
@@ -483,7 +515,7 @@ export default {
       if (!this.$el.contains(event.target)) {
         this.isSuppressed = true;
         document.removeEventListener('click', this.unfocus);
-        apos.bus.$emit('widget-focus', null);
+        apos.bus.$emit('widget-focus', { _id: null });
       }
     },
 
@@ -511,7 +543,8 @@ export default {
     },
 
     // Hacky way to get the parents tree of a widget
-    // would be easier of areas/widgets were recursively calling each other and able to pass data all the way down
+    // would be easier of areas/widgets were recursively calling each other and
+    // able to pass data all the way down
     getBreadcrumbs() {
       if (this.breadcrumbs.$lastEl) {
         const $parent = apos.util.closest(this.breadcrumbs.$lastEl.parentNode, '[data-area-widget]');
@@ -535,7 +568,6 @@ export default {
     widgetEditorComponent(type) {
       return this.moduleOptions.components.widgetEditors[type];
     }
-
   }
 };
 </script>
@@ -662,6 +694,7 @@ export default {
   }
 
   .apos-area-widget-controls--modify {
+    z-index: $z-index-widget-focused-controls;
     top: 50%;
     right: 0;
     transform: translate3d(-10px, -50%, 0);
@@ -750,7 +783,13 @@ export default {
       justify-content: center;
       padding: 5px;
       transition: all 200ms var(--a-transition-timing-bounce);
-      background-image: linear-gradient( 45deg, var(--a-primary), var(--a-primary-dark-15), var(--a-primary-light-40), var(--a-primary) );
+      background-image: linear-gradient(
+        45deg,
+        var(--a-primary),
+        var(--a-primary-dark-15),
+        var(--a-primary-light-40),
+        var(--a-primary)
+      );
       background-size: 200% 100%;
       border-radius: 12px;
     }
@@ -809,7 +848,8 @@ export default {
   }
 
   .apos-area-widget__breadcrumbs:hover .apos-area-widget__breadcrumb,
-  .apos-area-widget__breadcrumbs:hover .apos-area-widget__breadcrumb :deep(.apos-button__content) {
+  .apos-area-widget__breadcrumbs:hover .apos-area-widget__breadcrumb
+    :deep(.apos-button__content) {
     color: var(--a-text-primary);
   }
 

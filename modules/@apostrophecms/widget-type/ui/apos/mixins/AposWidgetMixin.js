@@ -52,30 +52,42 @@ export default {
   methods: {
     async renderContent() {
       apos.bus.$emit('widget-rendering');
+      const {
+        aposLivePreview,
+        ...widget
+      } = this.modelValue;
       const parameters = {
         _docId: this.docId,
-        widget: this.modelValue,
+        widget,
         areaFieldId: this.areaFieldId,
-        type: this.type
+        type: this.type,
+        livePreview: aposLivePreview
       };
       try {
         if (this.rendering && (isEqual(this.rendering.parameters, parameters))) {
           this.rendered = this.rendering.html;
         } else {
-          this.rendered = '...';
-          this.rendered = await apos.http.post(`${apos.area.action}/render-widget?aposEdit=1&aposMode=${this.mode}`, {
-            busy: true,
+          // Don't use a placeholder here, it causes flickering in live preview
+          // mode. It is better to display the old until we display the new, we
+          // have "busy" for clarity
+          const result = await apos.http.post(`${apos.area.action}/render-widget?aposEdit=1&aposMode=${this.mode}`, {
+            busy: !aposLivePreview,
             body: parameters
           });
+          //
+          if (result !== 'aposLivePreviewSchemaNotYetValid') {
+            this.rendered = result;
+          }
         }
         // Wait for reactivity to render v-html so that markup is
         // in the DOM before hinting that it might be time to prepare
         // sub-area editors and run players
         setTimeout(function() {
-          apos.bus.$emit('widget-rendered');
+          apos.bus.$emit('widget-rendered', { edit: !aposLivePreview });
         }, 0);
       } catch (e) {
         this.rendered = '<p>Unable to render this widget.</p>';
+        // eslint-disable-next-line no-console
         console.error('Unable to render widget. Possibly the schema has been changed and the existing widget does not pass validation.', e);
       }
     },

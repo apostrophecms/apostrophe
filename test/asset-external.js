@@ -430,8 +430,8 @@ describe('Asset - External Build', function () {
       scene: 'public'
     });
 
-    // Showcases that the only the dynamic Vue CSS is injected, because the widget
-    // owning the bundle counter-vue is present.
+    // Showcases that the only the dynamic Vue CSS is injected, because the
+    // widget owning the bundle counter-vue is present.
     const actualPublic = injectedPublic.replace(/>\s+</g, '><');
     const expectedPublic = '<link rel="stylesheet" href="/apos-frontend/default/public-bundle.css">' +
       '<link rel="stylesheet" href="/apos-frontend/default/counter-vue-bundle.css">' +

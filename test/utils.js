@@ -1,5 +1,6 @@
+/* eslint-disable no-console */
 const t = require('../test-lib/test.js');
-const assert = require('assert');
+const assert = require('assert/strict');
 const _ = require('lodash');
 
 const getUtils = async () => import('../modules/@apostrophecms/ui/ui/apos/utils/index.js');
@@ -764,6 +765,37 @@ describe('Utils', async function() {
         calledAsync.push(num);
         return 'async';
       }
+    });
+
+    it('should execute a queue of async tasks serially', async function () {
+      const { asyncTaskQueue } = await getUtils();
+      const results = [];
+      const resolved = [];
+      const task1 = async () => {
+        await wait(100);
+        results.push('task1');
+        return 'task1';
+      };
+      const task2 = async () => {
+        await wait(50);
+        results.push('task2');
+        return 'task2';
+      };
+      const task3 = async () => {
+        await wait(0);
+        results.push('task3');
+        return 'task3';
+      };
+
+      const queue = asyncTaskQueue();
+      queue.add(task1).then((result) => resolved.push(result));
+      queue.add(task2).then((result) => resolved.push(result));
+      queue.add(task3).then((result) => resolved.push(result));
+
+      await wait(200);
+
+      assert.deepEqual(results, [ 'task1', 'task2', 'task3' ]);
+      assert.deepEqual(resolved, [ 'task1', 'task2', 'task3' ]);
     });
   });
 });

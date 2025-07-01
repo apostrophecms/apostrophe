@@ -221,7 +221,9 @@ describe('Assets', function() {
   });
 
   it('should load the right bundles inside the right page', async function () {
-    const { _id: homeId } = await apos.page.find(apos.task.getAnonReq(), { level: 0 }).toObject();
+    const { _id: homeId } = await apos.page
+      .find(apos.task.getAnonReq(), { level: 0 })
+      .toObject();
     const jar = apos.http.jar();
 
     await apos.doc.db.insertMany(pagesToInsert(homeId));

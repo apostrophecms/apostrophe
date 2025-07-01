@@ -5,15 +5,17 @@
   >
     <bubble-menu
       v-if="editor"
+      plugin-key="richTextMenu"
       class="bubble-menu"
       :tippy-options="{
         maxWidth: 'none',
         duration: 300,
-        zIndex: 2000,
+        zIndex: 999,
         animation: 'fade',
         inertia: true,
         placement: 'bottom',
-        hideOnClick: false
+        hideOnClick: false,
+        onHide: onBubbleHide
       }"
       :editor="editor"
     >
@@ -22,7 +24,10 @@
         class-list="apos-rich-text-toolbar"
         :has-tip="false"
       >
-        <div class="apos-rich-text-toolbar__inner">
+        <div
+          ref="toolbar"
+          class="apos-rich-text-toolbar__inner"
+        >
           <component
             :is="(tools[item] && tools[item].component) || 'AposTiptapUndefined'"
             v-for="(item, index) in toolbar"
@@ -31,6 +36,9 @@
             :tool="tools[item]"
             :options="editorOptions"
             :editor="editor"
+            @open-popover="openPopover"
+            @close="closeToolbar"
+            @focusout="onBtnBlur"
           />
         </div>
       </AposContextMenuDialog>
@@ -40,8 +48,9 @@
       :id="`insert-menu-${modelValue._id}`"
       ref="insertMenu"
       :key="insertMenuKey"
+      plugin-key="insertMenu"
       class="apos-rich-text-insert-menu"
-      :tippy-options="{ duration: 100, zIndex: 2000, placement: 'bottom-start' }"
+      :tippy-options="{ duration: 100, zIndex: 999, placement: 'bottom-start' }"
       :should-show="showFloatingMenu"
       :editor="editor"
       role="listbox"
@@ -50,55 +59,35 @@
       <div class="apos-rich-text-insert-menu-heading">
         {{ $t('apostrophe:richTextInsertMenuHeading') }}
       </div>
-      <div
+      <ul
         class="apos-rich-text-insert-menu-wrapper"
         @keydown.prevent.arrow-up="focusInsertMenuItem(true)"
         @keydown.prevent.arrow-down="focusInsertMenuItem()"
         @keydown="closeInsertMenu"
       >
-        <button
+        <li
           v-for="(item, index) in insert"
           :key="`${item}-${index}`"
-          class="apos-rich-text-insert-menu-item"
-          role="option"
-          data-insert-menu-item
-          @click="activateInsertMenuItem(item, insertMenu[item])"
         >
-          <div class="apos-rich-text-insert-menu-icon">
-            <AposIndicator
-              :icon="insertMenu[item].icon"
-              :icon-size="24"
-              class="apos-button__icon"
-              fill-color="currentColor"
-            />
-          </div>
-          <div class="apos-rich-text-insert-menu-label">
-            <h4>{{ $t(insertMenu[item].label) }}</h4>
-            <p>{{ $t(insertMenu[item].description) }}</p>
-          </div>
-        </button>
-        <div class="apos-rich-text-insert-menu-components">
-          <div
-            v-for="(item, index) in insert"
-            :key="`${item}-${index}-component`"
-          >
-            <component
-              :is="activeInsertMenuComponent.component"
-              v-if="item === activeInsertMenuComponent?.name"
-              :active="true"
-              :editor="editor"
-              :options="editorOptions"
-              @before-commands="removeSlash"
-              @cancel="cancelInsertMenuItem"
-              @done="closeInsertMenuItem"
-              @close="closeInsertMenuItem"
-            />
-          </div>
-        </div>
-      </div>
+          <AposTiptapInsertItem
+            :name="item"
+            :menu-item="insertMenu[item]"
+            :editor="editor"
+            :editor-options="editorOptions"
+            @done="doSuppressInsertMenu"
+            @set-active-insert-menu="setActiveInsertMenu"
+          />
+        </li>
+      </ul>
     </floating-menu>
-    <div class="apos-rich-text-editor__editor" :class="editorModifiers">
-      <editor-content :editor="editor" :class="editorOptions.className" />
+    <div
+      class="apos-rich-text-editor__editor"
+      :class="editorModifiers"
+    >
+      <editor-content
+        :editor="editor"
+        :class="editorOptions.className"
+      />
     </div>
     <div
       v-if="showPlaceholder !== null && (!placeholderText || !isFocused)"
@@ -107,6 +96,19 @@
     >
       {{ $t('apostrophe:emptyRichTextWidget') }}
     </div>
+    <floating-menu
+      v-if="editor"
+      :should-show="showTableControls"
+      :tippy-options="tableTippyOptions"
+      :editor="editor"
+      plugin-key="tableMenu"
+      role="listbox"
+      tabindex="0"
+    >
+      <AposTiptapTableControls
+        :editor="editor"
+      />
+    </floating-menu>
   </div>
 </template>
 
@@ -117,6 +119,7 @@ import {
   BubbleMenu,
   FloatingMenu
 } from '@tiptap/vue-3';
+import AposTiptapTableControls from './AposTiptapTableControls.vue';
 // Starter Kit extensions
 import BlockQuote from '@tiptap/extension-blockquote';
 import Bold from '@tiptap/extension-bold';
@@ -152,7 +155,8 @@ export default {
   components: {
     EditorContent,
     BubbleMenu,
-    FloatingMenu
+    FloatingMenu,
+    AposTiptapTableControls
   },
   props: {
     type: {
@@ -203,12 +207,32 @@ export default {
       isFocused: null,
       isShowingInsert: false,
       showPlaceholder: null,
-      activeInsertMenuComponent: null,
+      activeInsertMenuComponent: false,
       suppressInsertMenu: false,
-      insertMenuKey: null
+      insertMenuKey: null,
+      openedPopover: false
     };
   },
   computed: {
+    tableOptions() {
+      const options = this.moduleOptions.tableOptions || {};
+
+      if (options.class) {
+        options.HTMLAttributes = { class: options.class };
+        delete options.class;
+      }
+
+      return options;
+    },
+    tableTippyOptions() {
+      return {
+        zIndex: 2001,
+        placement: 'top',
+        offset: [ 0, 35 ],
+        moveTransition: 'transform 0s ease-out',
+        appendTo: document.body
+      };
+    },
     moduleOptions() {
       return apos.modules[apos.area.widgetManagers[this.type]];
     },
@@ -235,12 +259,14 @@ export default {
       Object.keys(this.defaultOptions).forEach((option) => {
         if (option !== 'styles') {
           activeOptions[option] = (activeOptions[option] !== undefined)
-            ? activeOptions[option] : this.defaultOptions[option];
+            ? activeOptions[option]
+            : this.defaultOptions[option];
         }
       });
 
       activeOptions.className = (activeOptions.className !== undefined)
-        ? activeOptions.className : this.moduleOptions.className;
+        ? activeOptions.className
+        : this.moduleOptions.className;
 
       if (activeOptions.toolbar.includes('styles')) {
         activeOptions.toolbar = activeOptions.toolbar.filter(t => t !== 'styles');
@@ -250,6 +276,21 @@ export default {
         if (activeOptions.nodes.length) {
           activeOptions.toolbar = [ 'nodes', ...activeOptions.toolbar ];
         }
+      }
+
+      // The table tool is no longer part of the toolbar but will
+      // automatically appear when interacting with a table element,
+      // no configuration needed. If:
+      // 1. The table is configured for the toolbar but not insert, move it
+      // 2. remove the table tool from the toolbar
+      if (activeOptions.toolbar?.some(tool => tool === 'table')) {
+        if (!activeOptions.insert?.some(tool => tool === 'table')) {
+          activeOptions.insert = [
+            ...(activeOptions.insert || []),
+            'table'
+          ];
+        }
+        activeOptions.toolbar = activeOptions.toolbar.filter(tool => tool !== 'table');
       }
       return activeOptions;
     },
@@ -292,20 +333,33 @@ export default {
     insertMenu() {
       return this.moduleOptions.insertMenu;
     },
-    isVisuallyEmpty () {
+    isVisuallyEmpty() {
       const div = document.createElement('div');
-      div.innerHTML = this.modelValue.content;
-      return !div.textContent;
+      let hasSomeContent = false;
+      div.innerHTML = this.modelValue.content?.trim();
+      if (this.editor) {
+        const editorJSON = this.editor.getJSON();
+        // We are interested in different than the default `p` wrappers
+        // when the innerHTML is empty.
+        hasSomeContent = !!editorJSON?.content
+          .filter(c => ![ 'paragraph' ].includes(c.type)).length;
+      }
+      return (!div.textContent && !hasSomeContent);
     },
     editorModifiers () {
       const classes = [];
       if (this.isVisuallyEmpty) {
         classes.push('apos-is-visually-empty');
       }
-      // Per Stu's original logic we have to deal with an edge case when the page is
-      // first loading by displaying the initial placeholder then too (showPlaceholder
-      // state not yet computed)
-      if (((this.placeholderText && this.moduleOptions.placeholder) || this.insert.length) && this.isFocused && (this.showPlaceholder !== false)) {
+      // Per Stu's original logic we have to deal with an edge case when the
+      // page is first loading by displaying the initial placeholder then too
+      // (showPlaceholder state not yet computed)
+      const hasPlaceholder = this.placeholderText && this.moduleOptions.placeholder;
+      if (
+        (hasPlaceholder || this.insert.length) &&
+        this.isFocused &&
+        this.showPlaceholder !== false
+      ) {
         classes.push('apos-show-initial-placeholder');
       }
       return classes;
@@ -317,7 +371,9 @@ export default {
       return this.moduleOptions.tiptapTypes;
     },
     placeholderText() {
-      return this.insert.length > 0 ? this.moduleOptions.placeholderTextWithInsertMenu : (this.moduleOptions.placeholderText || '');
+      return this.insert.length > 0
+        ? this.moduleOptions.placeholderTextWithInsertMenu
+        : (this.moduleOptions.placeholderText || '');
     }
   },
   watch: {
@@ -363,7 +419,7 @@ export default {
       Underline,
       Superscript,
       Subscript,
-      Table,
+      Table.configure(this.tableOptions),
       TableCell,
       TableHeader,
       TableRow,
@@ -378,6 +434,8 @@ export default {
     ]
       .filter(Boolean)
       .concat(this.aposTiptapExtensions());
+
+    this.ensureExtensionsPriority(extensions);
 
     this.editor = new Editor({
       content: this.initialContent,
@@ -415,8 +473,27 @@ export default {
     apos.bus.$off('apos-refreshing', this.onAposRefreshing);
   },
   methods: {
+    showTableControls() {
+      return this.editor?.isActive('table') ?? false;
+    },
+    openPopover() {
+      this.openedPopover = true;
+    },
+    onBtnBlur(e) {
+      if (this.openedPopover) {
+        return;
+      }
+      if (this.$refs.toolbar?.contains(e.relatedTarget)) {
+        return;
+      }
+      this.closeToolbar();
+    },
+    onBubbleHide() {
+      apos.bus.$emit('close-context-menus', 'richText');
+    },
     generateKey() {
-      return Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+      return Math.random().toString(36).substring(2, 15) +
+        Math.random().toString(36).substring(2, 15);
     },
     handleUIKeydown(e) {
       if (e.key === 'Escape') {
@@ -427,7 +504,7 @@ export default {
     },
     doSuppressInsertMenu() {
       this.suppressInsertMenu = true;
-      this.activeInsertMenuComponent = null;
+      this.activeInsertMenuComponent = false;
       this.insertMenuKey = this.generateKey();
       this.editor.commands.focus();
     },
@@ -595,10 +672,26 @@ export default {
           types: this.tiptapTypes
         }));
     },
+    // Find the `defaultNode` extension and ensure it's registered first.
+    // Any other priority related logic should be handled here.
+    // Why sorting is important?
+    // See https://github.com/ProseMirror/prosemirror/issues/1534#issuecomment-2984216986
+    // related with list item issues and `defaultNode`.
+    // NOTE: this handler mutates the input array for performance reasons.
+    ensureExtensionsPriority(extensions) {
+      const defaultNodeIndex = extensions.findIndex(ext => ext.name === 'defaultNode');
+      if (defaultNodeIndex > 0) {
+        const defaultNode = extensions.splice(defaultNodeIndex, 1)[0];
+        extensions.unshift(defaultNode);
+      }
+
+      return extensions;
+    },
     showFloatingMenu({
       state, oldState
     }) {
-      const hasChanges = JSON.stringify(state?.doc.toJSON()) !== JSON.stringify(oldState?.doc.toJSON());
+      const hasChanges = JSON.stringify(state?.doc.toJSON()) !==
+        JSON.stringify(oldState?.doc.toJSON());
       const { $to } = state.selection;
 
       if (
@@ -625,42 +718,6 @@ export default {
       this.isShowingInsert = false;
       return false;
     },
-    activateInsertMenuItem(name, info) {
-      // Select the / and remove it
-      if (info.component) {
-        this.activeInsertMenuComponent = {
-          name,
-          ...info
-        };
-      } else {
-        this.removeSlash();
-        this.editor.commands[info.action || name]();
-        this.editor.commands.focus();
-      }
-    },
-    removeSlash() {
-      const state = this.editor.state;
-      const { $to } = state.selection;
-      if (state.selection.empty && $to?.nodeBefore?.text) {
-        const text = $to.nodeBefore.text;
-        if (text.slice(-1) === '/') {
-          const pos = this.editor.view.state.selection.$anchor.pos;
-          // Select the slash so an insert operation can replace it
-          this.editor.commands.setTextSelection({
-            from: pos - 1,
-            to: pos
-          });
-          this.editor.commands.deleteSelection();
-        }
-      }
-    },
-    closeInsertMenuItem() {
-      this.removeSlash();
-      this.activeInsertMenuComponent = null;
-    },
-    cancelInsertMenuItem() {
-      this.doSuppressInsertMenu();
-    },
     closeInsertMenu(e) {
       if (
         [ 'ArrowUp', 'ArrowDown', 'Enter', ' ' ].includes(e.key) ||
@@ -669,7 +726,7 @@ export default {
         return;
       }
       this.editor.commands.focus();
-      this.activeInsertMenuComponent = null;
+      this.activeInsertMenuComponent = false;
       // Only insert character keys
       if (e.key.length === 1) {
         this.editor.commands.insertContent(e.key);
@@ -689,6 +746,13 @@ export default {
         targetIndex = buttons.length - 1;
       }
       buttons[index || targetIndex]?.focus();
+    },
+    setActiveInsertMenu(isActive = true) {
+      this.activeInsertMenuComponent = isActive;
+    },
+    closeToolbar() {
+      this.openedPopover = false;
+      this.editor.chain().focus().run();
     }
   }
 };
@@ -711,6 +775,11 @@ function traverseNextNode(node) {
 
   $z-index-button-background: 1;
   $z-index-button-foreground: 2;
+
+  .bubble-menu {
+    width: max-content;
+    max-width: 95vw;
+  }
 
   .apos-rich-text-toolbar.editor-menu-bubble {
     z-index: $z-index-manager-toolbar;
@@ -740,10 +809,6 @@ function traverseNextNode(node) {
 
     .apos-is-active .apos-button--rich-text:hover::after {
       background-color: var(--a-primary-transparent-15);
-    }
-
-    .apos-button--rich-text .apos-button__icon {
-      transition: all 300ms var(--a-transition-timing-bounce);
     }
 
     .apos-button--rich-text {
@@ -823,19 +888,23 @@ function traverseNextNode(node) {
     gap: 6px;
   }
 
-  .apos-rich-text-editor__editor :deep(.ProseMirror) { /* stylelint-disable-line selector-class-pattern */
+/* stylelint-disable-next-line selector-class-pattern */
+  .apos-rich-text-editor__editor :deep(.ProseMirror) {
     @include apos-transition();
   }
 
-  .apos-rich-text-editor__editor :deep(.ProseMirror:focus) { /* stylelint-disable-line selector-class-pattern */
+/* stylelint-disable-next-line selector-class-pattern */
+  .apos-rich-text-editor__editor :deep(.ProseMirror:focus) {
     outline: none;
   }
 
-  .apos-rich-text-editor__editor :deep(.ProseMirror) { /* stylelint-disable-line selector-class-pattern */
+/* stylelint-disable-next-line selector-class-pattern */
+  .apos-rich-text-editor__editor :deep(.ProseMirror) {
     padding: 10px 0;
   }
 
-  .apos-rich-text-editor__editor :deep(.ProseMirror:focus p.apos-is-empty::after) { /* stylelint-disable-line selector-class-pattern, selector-no-qualifying-type */
+/* stylelint-disable-next-line selector-class-pattern, selector-no-qualifying-type */
+  .apos-rich-text-editor__editor :deep(.ProseMirror:focus p.apos-is-empty::after) {
     display: block;
     margin: 5px 0 10px;
     padding-top: 5px;
@@ -863,7 +932,9 @@ function traverseNextNode(node) {
     transition: transform 400ms var(--a-transition-timing-bounce) 100ms;
   }
 
-  .apos-rich-text-editor__editor :deep(.tippy-box[data-animation='fade'][data-state='hidden']) {
+  .apos-rich-text-editor__editor :deep(
+    .tippy-box[data-animation='fade'][data-state='hidden']
+  ) {
     opacity: 0;
     transform: scale(0.9);
   }
@@ -917,18 +988,15 @@ function traverseNextNode(node) {
     min-height: 200px;
   }
 
-  .apos-rich-text-editor__editor :deep(th), .apos-rich-text-editor__editor :deep(td) {
-    outline: dotted;
-  }
-
   // So editors can identify the cells that would take part
   // in a merge operation
-  .apos-rich-text-editor__editor :deep(.selectedCell) { /* stylelint-disable-line selector-class-pattern */
+  /* stylelint-disable-next-line selector-class-pattern */
+  .apos-rich-text-editor__editor :deep(.selectedCell) {
     // Should be visible on any background, light mode or dark mode
     backdrop-filter: invert(0.1);
   }
-
-  .apos-rich-text-editor__editor :deep(figure.ProseMirror-selectednode) { /* stylelint-disable-line selector-no-qualifying-type, selector-class-pattern */
+/* stylelint-disable-next-line selector-no-qualifying-type, selector-class-pattern */
+  .apos-rich-text-editor__editor :deep(figure.ProseMirror-selectednode) {
     opacity: 0.5;
   }
 
@@ -952,66 +1020,9 @@ function traverseNextNode(node) {
   .apos-rich-text-insert-menu-wrapper {
     display: flex;
     flex-direction: column;
-  }
-
-  .apos-rich-text-insert-menu-item {
-    @include apos-transition();
-
-    & {
-      all: unset;
-      display: flex;
-      flex-direction: row;
-      align-items: center;
-      gap: 12px;
-      padding: 14px 16px;
-      border-bottom: 1px solid var(--a-base-9);
-    }
-
-    &:last-of-type {
-      border-bottom: none;
-    }
-
-    &:hover {
-      background-color: var(--a-primary-transparent-10);
-    }
-
-    &:active, &:focus {
-      background-color: var(--a-primary);
-      color: var(--a-white);
-    }
-  }
-
-  .apos-rich-text-insert-menu-label {
-    display: flex;
-    flex-direction: column;
-    gap: 5px;
-
-    h4, p {
-      margin: 0;
-      font-family: var(--a-family-default);
-    }
-
-    h4 {
-      font-weight: 500;
-      font-size: var(--a-type-large);
-    }
-
-    p {
-      font-size: var(--a-type-label);
-    }
-  }
-
-  .apos-rich-text-insert-menu-icon {
-    position: relative;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 40px;
-    height: 40px;
-    border: 1px solid var(--a-base-8);
-    color: var(--a-text-primary);
-    background-color: var(--a-white);
-    border-radius: var(--a-border-radius);
+    list-style: none;
+    margin: 0;
+    padding: 0;
   }
 
   .apos-rich-text-insert-menu-heading {

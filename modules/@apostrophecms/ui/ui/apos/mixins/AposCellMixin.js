@@ -19,8 +19,8 @@ export default {
     // Access to property or sub-property via dot path. You can also optionally
     // specify a source object other than `item`.
     //
-    // `this.get('title')` gets `this.item.title`. `this.get('draft:submitted.by')` gets
-    // `this.draft.submitted.by`.
+    // `this.get('title')` gets `this.item.title`.
+    // `this.get('draft:submitted.by')` gets `this.draft.submitted.by`.
     get(fieldName) {
       let [ namespace, path ] = fieldName.split(':');
       if (!path) {

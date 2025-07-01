@@ -5,7 +5,7 @@ import AposArchiveMixin from 'Modules/@apostrophecms/ui/mixins/AposArchiveMixin'
 import AposPublishMixin from 'Modules/@apostrophecms/ui/mixins/AposPublishMixin';
 import AposDocsManagerMixin from 'Modules/@apostrophecms/modal/mixins/AposDocsManagerMixin';
 import { klona } from 'klona';
-import { debounce } from 'Modules/@apostrophecms/ui/utils';
+import { debounce, asyncTaskQueue } from 'Modules/@apostrophecms/ui/utils';
 
 export default {
   name: 'AposPagesManager',
@@ -33,6 +33,8 @@ export default {
       totalPages: 1,
       pages: [],
       pagesFlat: [],
+      updateQueue: asyncTaskQueue(),
+      updateQueueIndex: 0,
       options: {
         columns: [
           {
@@ -69,6 +71,20 @@ export default {
     };
   },
   computed: {
+    /**
+     * Extends the AposDocsManagerMixin's isModified method to check for
+     * existing updates in the queue.
+     *
+     * @returns {boolean}
+     */
+    isModified() {
+      // `updateQueueIndex` is a "reactive" hack,
+      // because `hasTasks` is not reactive.
+      if (this.updateQueueIndex > 0 && this.updateQueue.hasTasks()) {
+        return true;
+      }
+      return this.relationshipIsModified();
+    },
     treeOptions() {
       return {
         bulkSelect: true,
@@ -103,15 +119,18 @@ export default {
       const checkLen = this.checked.length;
       const rowLen = this.items.length;
 
-      return checkLen > 0 && checkLen !== rowLen ? {
-        value: 'checked',
-        indeterminate: true
-      } : {
-        value: 'checked'
-      };
+      return checkLen > 0 && checkLen !== rowLen
+        ? {
+          value: 'checked',
+          indeterminate: true
+        }
+        : {
+          value: 'checked'
+        };
     },
     canCreate() {
-      const page = this.items.find(page => page.aposDocId === this.moduleOptions.page.aposDocId);
+      const page = this.items
+        .find(page => page.aposDocId === this.moduleOptions.page.aposDocId);
       if (page) {
         return page._create;
       }
@@ -170,6 +189,17 @@ export default {
         this.checked.push(doc._id);
       }
     },
+    onUpdate(page) {
+      // A "reactive" hack, because `hasTasks` is not reactive.
+      this.updateQueueIndex++;
+      this.updateQueue.add(() => this.update(page))
+        .then(() => {
+          this.updateQueueIndex++;
+        })
+        .catch(() => {
+          this.updateQueueIndex++;
+        });
+    },
     async update(page) {
       const body = {
         _targetId: page.endContext,
@@ -177,9 +207,10 @@ export default {
       };
 
       const route = `${this.moduleOptions.action}/${page.changedId}`;
+      let result;
       try {
-        await apos.http.patch(route, {
-          busy: true,
+        result = await apos.http.patch(route, {
+          busy: false,
           body,
           draft: true
         });
@@ -192,12 +223,126 @@ export default {
         });
       }
 
-      await this.getPages();
-      if (this.items.find(page => {
-        return (page.aposDocId === (window.apos.page.page && window.apos.page.page.aposDocId)) && page.archived;
+      // Patch returned a list of the modifications of all pages due to moving
+      // the page. We need to update the tree with the changes.
+      // The tree is already optimistically updated with the new position, we
+      // only care to keep the state consistent.
+      if (result.__changed) {
+        try {
+          // await new Promise(resolve => setTimeout(resolve, 3000));
+          await this.updateTree(result);
+          // This might interrupt the queued tasks, but it's fine.
+          // We have to refresh if the current page is moved and has a new URL
+          // as a consequence.
+          const currentSlug = window.apos.page.page?.slug;
+          const currentId = window.apos.page.page?.aposDocId;
+          const currentPage = this.pagesFlat.find(page => page.aposDocId === currentId);
+          if (currentPage && currentPage.slug !== currentSlug) {
+            location.assign(currentPage._url);
+          }
+        } catch (error) {
+          await apos.notify(error.body.message || this.$t('apostrophe:treeError'), {
+            type: 'danger',
+            icon: 'alert-circle-icon',
+            dismiss: true,
+            localize: false
+          });
+          // If the update fails, we need to refresh the tree
+          // to avoid inconsistant state. This won't stop the rest of the
+          // tasks in the queue, but will reset the scroll position. A small
+          // price to pay for consistency.
+          await this.getPages();
+        }
+      } else {
+        await this.getPages();
+      }
+
+      if (this.items.some(page => {
+        return (page.aposDocId === window.apos.page.page?.aposDocId) && page.archived;
       })) {
         // With the current page gone, we need to move to safe ground
-        location.assign(`${window.apos.prefix}/`);
+        location.assign(`${apos.prefix}/`);
+      }
+    },
+    // Recursively update the tree and the flat list with the changes returned
+    // by the server. The `changes` array contains a list of documents with
+    // only the fields that have changed. Update both draft and published
+    // documents. The current document changes comes only for draft and contains
+    // the new depth, updatedAt, and order. We request a fresh published
+    // document for the current document to update it. The rest of the changes
+    // are only the new order values for both draft and published documents.
+    async updateTree(updated) {
+      const { __changed, ...draft } = updated;
+      const changes = __changed.map(change => {
+        if (change.slug) {
+          return {
+            ...change,
+            _url: `${window.apos.prefix}${change.slug}`
+          };
+        }
+        return change;
+      });
+      // Retrieve the published document version, generate a change object for
+      // it.
+      const published = await apos.http.get(
+        `${this.moduleOptions.action}/${draft._id.replace(':draft', ':published')}`,
+        { busy: false }
+      );
+      const draftChange = changes.find(change => change._id === updated._id);
+      const publishedChanges = Object.keys(draftChange)
+        .reduce((acc, key) => {
+          acc[key] = published[key];
+          return acc;
+        }, {});
+      changes.push(publishedChanges);
+
+      // Quick lookup for the changes
+      const index = changes.reduce((acc, change, currentIndex) => {
+        acc[change._id] = currentIndex;
+        return acc;
+      }, {});
+
+      this.pages.forEach(updateNode);
+      for (const [ i, page ] of this.pagesFlat.entries()) {
+        const success = update(page, changes, index);
+        if (success) {
+          this.pagesFlat[i] = { ...page };
+        }
+      }
+      this.pages = [ ...this.pages ];
+      this.pagesFlat = [ ...this.pagesFlat ];
+
+      function updateNode(node) {
+        update(node, changes, index);
+        if (node._children) {
+          node._children.forEach(updateNode);
+        }
+      }
+
+      function update(node, changes, index) {
+        // Update the published document if it exists
+        const publishedId = node._publishedDoc?._id;
+        if (publishedId && typeof index[publishedId] !== 'undefined') {
+          Object.assign(node._publishedDoc, changes[index[publishedId]]);
+          node._publishedDoc = { ...node._publishedDoc };
+        }
+        // Update the draft document
+        if (typeof index[node._id] !== 'undefined') {
+          Object.assign(node, changes[index[node._id]]);
+          // Any changes to the slug has to be applied, no matter
+          // if the changes contain published document changes.
+          // The children changes for published docs are currently
+          // not reported by the server.
+          if (changes[index[node._id]].slug && node._publishedDoc) {
+            node._publishedDoc.slug = node.slug;
+            node._publishedDoc.path = node.path;
+            node._publishedDoc._url = node._url;
+            node._publishedDoc = { ...node._publishedDoc };
+          }
+          return true;
+        }
+
+        return false;
       }
     },
 
@@ -245,7 +390,8 @@ export default {
           page: this.currentPage
         });
 
-        // If editor is looking at the archive tree, trim the normal page tree response
+        // If editor is looking at the archive tree, trim the normal page tree
+        // response
         if (this.filterValues.archived) {
           pageTree = pageTree._children.find(page => page.slug === '/archive');
           pageTree = pageTree._children;
@@ -366,7 +512,8 @@ export default {
               ...requestOptions,
               _ids: this.checked,
               messages,
-              type: this.checked.length === 1 ? this.moduleLabels.singular
+              type: this.checked.length === 1
+                ? this.moduleLabels.singular
                 : this.moduleLabels.plural
             }
           });
@@ -380,6 +527,7 @@ export default {
             interpolate: { operation: label },
             type: 'danger'
           });
+          // eslint-disable-next-line no-console
           console.error(error);
         }
       }
@@ -390,9 +538,15 @@ export default {
         return item._id;
       });
     },
-    async onContentChanged({ doc, action }) {
+    async onContentChanged({
+      doc, action, docIds, docTypes
+    }) {
+      const types = this.getContentChangedTypes(doc, docTypes);
+      if (!types.includes(this.moduleName)) {
+        return;
+      }
       if (
-        !doc ||
+        docIds ||
         !doc.aposLocale ||
         doc.aposLocale.split(':')[0] === this.modalData.locale
       ) {

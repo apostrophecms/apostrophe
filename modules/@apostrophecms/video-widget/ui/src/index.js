@@ -1,4 +1,5 @@
 export default () => {
+  apos.oembedCache ||= {};
   apos.util.widgetPlayers['@apostrophecms/video'] = {
     selector: '[data-apos-video-widget]',
     player: function(el) {
@@ -30,15 +31,25 @@ export default () => {
       }
 
       function query(options, callback) {
+        if (Object.hasOwn(apos.oembedCache, options.url)) {
+          return callback(null, apos.oembedCache[options.url]);
+        }
         const opts = {
           qs: {
             url: options.url
           }
         };
-        return apos.http.get('/api/v1/@apostrophecms/oembed/query', opts, callback);
+        return apos.http.get('/api/v1/@apostrophecms/oembed/query', opts, function(err, result) {
+          if (err) {
+            return callback(err);
+          }
+          apos.oembedCache[options.url] = result;
+          return callback(null, result);
+        });
       }
 
       function play(el, result) {
+        // Use aspect-ratio to eliminate the need for any timeout at all
         const shaker = document.createElement('div');
         shaker.innerHTML = result.html;
         const inner = shaker.firstChild;
@@ -49,38 +60,17 @@ export default () => {
         }
         inner.removeAttribute('width');
         inner.removeAttribute('height');
-        el.append(inner);
-        // wait for CSS width to be known
-        setTimeout(function() {
-          // If oembed results include width and height we can get the
-          // video aspect ratio right
-          if (result.width && result.height) {
-            inner.style.width = '100%';
-            resizeVideo(inner);
-            // If we need to initially size the video, also resize it on window
-            // resize.
-            window.addEventListener('resize', resizeHandler);
-          } else {
-            // No, so assume the oembed HTML code is responsive.
-          }
-        }, 0);
-      }
-
-      function resizeVideo(canvasEl) {
-        canvasEl.style.height = ((queryResult.height / queryResult.width) * canvasEl.offsetWidth) + 'px';
-      };
-
-      function resizeHandler() {
-        if (document.contains(el)) {
-          resizeVideo(el.querySelector('[data-apos-video-canvas]'));
-        } else {
-          window.removeEventListener('resize', resizeHandler);
+        if (result.width && result.height) {
+          inner.style.width = '100%';
+          inner.style.aspectRatio = `${queryResult.width} / ${queryResult.height}`;
         }
+        el.append(inner);
       }
 
       function fail(err) {
         apos.util.removeClass(el, 'apos-oembed-busy');
         apos.util.addClass(el, 'apos-oembed-invalid');
+        // eslint-disable-next-line no-console
         console.error(err);
         if (err !== 'undefined') {
           el.innerHTML = '<p>Error loading video</p>';

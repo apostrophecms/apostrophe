@@ -14,8 +14,12 @@
           @click="selectTab"
         >
           {{ $t(tab.label) }}
-          <span v-if="tabErrors[tab.name] && tabErrors[tab.name].length" class="apos-modal-tabs__label apos-modal-tabs__label--error">
-            {{ tabErrors[tab.name].length }} {{ generateErrorLabel(tabErrors[tab.name].length) }}
+          <span
+            v-if="tabErrors[tab.name] && tabErrors[tab.name].length"
+            class="apos-modal-tabs__label apos-modal-tabs__label--error"
+          >
+            {{ tabErrors[tab.name].length }} {{
+              generateErrorLabel(tabErrors[tab.name].length) }}
           </span>
         </button>
       </li>
@@ -126,7 +130,9 @@ export default {
       background-color: var(--a-base-10);
     }
 
-    &[aria-selected='true'], &[aria-selected='true']:hover, &[aria-selected='true']:focus {
+    &[aria-selected='true'],
+    &[aria-selected='true']:hover,
+    &[aria-selected='true']:focus {
       border-bottom: 3px solid var(--a-primary);
       color: var(--a-primary);
       background-color: var(--a-base-10);

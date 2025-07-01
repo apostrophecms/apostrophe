@@ -19,16 +19,23 @@
       :type="buttonType"
       :role="role"
       :style="{color: textColor}"
+      :download="download ? '' : null"
       v-on="href ? {} : {click: click}"
     >
       <transition name="fade">
-        <AposSpinner v-if="busy" :color="spinnerColor" />
+        <AposSpinner
+          v-if="busy"
+          :color="spinnerColor"
+        />
       </transition>
       <span
         v-if="colorStyle"
         class="apos-button__color-preview"
       >
-        <span :style="colorStyle" class="apos-button__color-preview__swatch" />
+        <span
+          :style="colorStyle"
+          class="apos-button__color-preview__swatch"
+        />
         <div class="apos-button__color-preview__checkerboard">
           <AposColorCheckerboard />
         </div>
@@ -43,7 +50,10 @@
           @icon="$emit('icon', $event)"
         />
         <slot name="label">
-          <span class="apos-button__label" :class="{ 'apos-sr-only' : (iconOnly || type === 'color') }">
+          <span
+            class="apos-button__label"
+            :class="{ 'apos-sr-only' : (iconOnly || type === 'color') }"
+          >
             {{ $t(label, interpolate) }}
           </span>
         </slot>
@@ -151,6 +161,10 @@ export default {
     secondIcon: {
       type: String,
       default: null
+    },
+    download: {
+      type: Boolean,
+      default: false
     }
   },
   emits: [ 'click', 'icon' ],

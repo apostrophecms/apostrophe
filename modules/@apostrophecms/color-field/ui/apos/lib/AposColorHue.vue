@@ -1,5 +1,8 @@
 <template>
-  <div class="apos-color__hue" :class="[directionClass]">
+  <div
+    class="apos-color__hue"
+    :class="[directionClass]"
+  >
     <div
       ref="container"
       class="apos-color__hue-container"
@@ -7,7 +10,7 @@
       :aria-valuenow="colors.hsl.h"
       aria-valuemin="0"
       aria-valuemax="360"
-      @mousedown="handleMouseDown"
+      @mousedown.prevent="handleMouseDown"
       @touchmove="handleChange"
       @touchstart="handleChange"
     >
@@ -181,11 +184,29 @@ export default {
 }
 
 .apos-color__hue--horizontal {
-  background: linear-gradient(to right, #f00 0%, #ff0 17%, #0f0 33%, #0ff 50%, #00f 67%, #f0f 83%, #f00 100%);
+  background: linear-gradient(
+    to right,
+    #f00 0%,
+    #ff0 17%,
+    #0f0 33%,
+    #0ff 50%,
+    #00f 67%,
+    #f0f 83%,
+    #f00 100%
+  );
 }
 
 .apos-color__hue--vertical {
-  background: linear-gradient(to top, #f00 0%, #ff0 17%, #0f0 33%, #0ff 50%, #00f 67%, #f0f 83%, #f00 100%);
+  background: linear-gradient(
+    to top,
+    #f00 0%,
+    #ff0 17%,
+    #0f0 33%,
+    #0ff 50%,
+    #00f 67%,
+    #f0f 83%,
+    #f00 100%
+  );
 }
 
 .apos-color__hue-container {

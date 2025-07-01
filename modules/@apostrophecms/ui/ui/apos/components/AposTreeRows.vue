@@ -3,10 +3,12 @@
     item-key="_id"
     class="apos-tree__list"
     tag="ol"
-    :list="rows"
+    :list="computedRows"
     :options="dragOptions"
     @start="startDrag"
     @end="endDrag"
+    @add="add"
+    @remove="remove"
   >
     <template #item="{element: row}">
       <li
@@ -22,11 +24,11 @@
       >
         <div class="apos-tree__row-data">
           <button
-            v-if="row._children && row._children.length > 0"
+            v-if="row.__count > 0"
             class="apos-tree__row__toggle"
             data-apos-tree-toggle
             :aria-label="$t('apostrophe:toggleSection')"
-            :aria-expanded="!options.startCollapsed"
+            :aria-expanded="row.__expanded"
             @click="toggleSection($event)"
           >
             <AposIndicator
@@ -37,7 +39,7 @@
           <component
             :is="getEffectiveType(col, row)"
             v-for="(col, index) in headers"
-            :key="`${col.property}-${index}`"
+            :key="`${row.__key}-${col.property}-${index}`"
             :draft="row"
             :published="row._publishedDoc"
             :header="col"
@@ -48,7 +50,11 @@
             :data-col="col.property"
             :style="getCellStyles(col.property, index)"
             :options="moduleOptions"
-            @click="((getEffectiveType(col, row) === 'button') && col.action) ? $emit(col.action, row._id) : null"
+            @click="
+              ((getEffectiveType(col, row) === 'button') && col.action)
+                ? $emit(col.action, row._id)
+                : null
+            "
           >
             <AposIndicator
               v-if="options.draggable && index === 0 && !row.parked"
@@ -56,7 +62,8 @@
               class="apos-tree__row__icon apos-tree__row__icon--handle"
             />
             <AposIndicator
-              v-if="index === 0 && row.parked && row.type !== '@apostrophecms/archive-page'"
+              v-if="index === 0 && row.parked &&
+                row.type !== '@apostrophecms/archive-page'"
               icon="lock-icon"
               class="apos-tree__row__icon apos-tree__row__icon--parked"
               tooltip="apostrophe:pageIsParked"
@@ -81,6 +88,7 @@
                 readOnly: maxReached && !checked.includes(row._id)
               }"
               :choice="{ value: row._id }"
+              @pointerdown="pointerEvent"
             />
             <span class="apos-tree__cell__value">
               <AposIndicator
@@ -89,7 +97,10 @@
                 class="apos-tree__cell__icon"
                 :icon-size="getEffectiveIconSize(col, row)"
               />
-              <span v-if="getEffectiveCellLabel(col, row)" class="apos-tree__cell__label">
+              <span
+                v-if="getEffectiveCellLabel(col, row)"
+                class="apos-tree__cell__label"
+              >
                 {{ getEffectiveCellLabel(col, row) }}
               </span>
             </span>
@@ -109,12 +120,14 @@
           :list-id="row._id"
           :tree-id="treeId"
           :options="options"
-          :class="{ 'apos-is-collapsed': options.startCollapsed }"
+          :class="{ 'apos-is-collapsed': !row.__expanded }"
           :style="{
-            'max-height': options.startCollapsed ? '0' : null
+            'max-height': !row.__expanded ? '0' : null
           }"
           :module-options="moduleOptions"
+          :expanded-index="expandedIndex"
           @update="$emit('update', $event)"
+          @toggle="$emit('toggle', $event)"
         />
       </li>
     </template>
@@ -182,6 +195,12 @@ export default {
       type: String,
       required: true
     },
+    expandedIndex: {
+      type: Object,
+      default() {
+        return {};
+      }
+    },
     moduleOptions: {
       type: Object,
       default() {
@@ -189,13 +208,24 @@ export default {
       }
     }
   },
-  emits: [ 'update', 'update:checked', 'change' ],
+  emits: [ 'update', 'update:checked', 'change', 'toggle' ],
   data() {
     return {
-      treeBranches: []
+      treeBranches: [],
+      countModifier: {}
     };
   },
   computed: {
+    computedRows() {
+      return this.rows.map(row => {
+        return {
+          ...row,
+          __count: (this.countModifier[row._id] || 0) + (row._children?.length || 0),
+          __expanded: this.isExpanded(row._id),
+          __key: `${row._id}-${row.level}-${row.rank}`
+        };
+      });
+    },
     // Handle the local check state within this component.
     checkedProxy: {
       get() {
@@ -207,6 +237,12 @@ export default {
     },
     dragOptions() {
       return {
+        scroll: true,
+        // px, how near the mouse must be to an edge to start scrolling.
+        scrollSensitivity: 100,
+        scrollSpeed: 1000, // px, speed of the scrolling
+        // apply autoscroll to all parent elements, allowing for easier movement
+        bubbleScroll: true,
         group: this.treeId,
         fallbackOnBody: true,
         swapThreshold: 0.65,
@@ -222,6 +258,8 @@ export default {
     }
   },
   mounted() {
+    apos.bus.$on('apos-tree-child:added', this.onChildAdd);
+    apos.bus.$on('apos-tree-child:removed', this.onChildRemove);
     // Use $nextTick to make sure attributes like `clientHeight` are settled.
     this.$nextTick(() => {
       if (!this.$refs['tree-branches']) {
@@ -230,7 +268,17 @@ export default {
       this.setHeights();
     });
   },
+  beforeUnmount() {
+    apos.bus.$off('apos-tree-child:added', this.onChildAdd);
+    apos.bus.$off('apos-tree-child:removed', this.onChildRemove);
+  },
   methods: {
+    // Fix for chrome when some text is selected (needed double click to check
+    // the box) Comes from sortablejs, so we avoid the event to propagate to
+    // sortablejs listener
+    pointerEvent(event) {
+      event.stopPropagation();
+    },
     setHeights() {
       this.treeBranches.forEach(branch => {
         // Add padding to the max-height to avoid needing a `resize`
@@ -239,6 +287,27 @@ export default {
         branch.$el.setAttribute('data-apos-branch-height', `${height}px`);
         branch.$el.style.maxHeight = `${height}px`;
       });
+    },
+    // Send a global signal to the tree that a child has been added or removed.
+    add(event) {
+      // The ID of the new parent, or 'root' if top-level.
+      apos.bus.$emit('apos-tree-child:added', event.to.dataset.listRow);
+    },
+    remove(event) {
+      // The ID of the original parent, or 'root' if top-level.
+      apos.bus.$emit('apos-tree-child:removed', event.from.dataset.listRow);
+    },
+    // Listen for the global signal that a child has been added or removed.
+    // Record children count corrections if we have a matching row.
+    onChildAdd(event) {
+      if (this.rows.some(row => row._id === event)) {
+        this.countModifier[event] = (this.countModifier[event] || 0) + 1;
+      }
+    },
+    onChildRemove(event) {
+      if (this.rows.some(row => row._id === event)) {
+        this.countModifier[event] = (this.countModifier[event] || 0) - 1;
+      }
     },
     startDrag() {},
     endDrag(event) {
@@ -256,16 +325,28 @@ export default {
       const rowList = row.querySelector('[data-apos-branch-height]');
       const toggle = (data && data.toggle) ||
         event.target.closest('[data-apos-tree-toggle]');
+      const rowId = row.dataset.rowId;
 
       if (toggle.getAttribute('aria-expanded') !== 'true') {
         rowList.style.maxHeight = rowList.getAttribute('data-apos-branch-height');
         toggle.setAttribute('aria-expanded', true);
         rowList.classList.remove('apos-is-collapsed');
+        this.$emit('toggle', {
+          _id: rowId,
+          expanded: true
+        });
       } else if (rowList) {
         rowList.style.maxHeight = 0;
         toggle.setAttribute('aria-expanded', false);
         rowList.classList.add('apos-is-collapsed');
+        this.$emit('toggle', {
+          _id: rowId,
+          expanded: false
+        });
       }
+    },
+    isExpanded(id) {
+      return this.expandedIndex[id] ?? !this.options.startCollapsed;
     },
     keydownRow(event) {
       if (event.key === ' ') {
@@ -375,7 +456,10 @@ export default {
 
       // Original default of just printing the row property value
       const publishedDoc = row._publishedDoc;
-      const value = (publishedDoc && (publishedDoc[col.cellValue] !== undefined) && publishedDoc[col.cellValue]) || row[col.cellValue];
+      const value = (publishedDoc &&
+        (publishedDoc[col.cellValue] !== undefined) &&
+        publishedDoc[col.cellValue]) ||
+        row[col.cellValue];
       if (value) {
         return value;
       }

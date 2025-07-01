@@ -11,16 +11,26 @@
         <template #bodyMain>
           <div class="apos-report__body">
             <div>
-              <h2 v-if="contentHeadingText" class="apos-report__heading">
+              <h2
+                v-if="contentHeadingText"
+                class="apos-report__heading"
+              >
                 {{ contentHeadingText }}
               </h2>
-              <p v-if="contentDescriptionText" class="apos-report__description">
+              <p
+                v-if="contentDescriptionText"
+                class="apos-report__description"
+              >
                 {{ contentDescriptionText }}
               </p>
             </div>
             <div
               v-if="finalItems.length"
-              class="apos-primary-scrollbar apos-report__table apos-report__table--bordered"
+              class="
+                apos-primary-scrollbar
+                apos-report__table
+                apos-report__table--bordered
+              "
             >
               <AposTable
                 ref="table"
@@ -118,14 +128,16 @@ export default {
      * Options for the modal.
      *
      * `mode` can be one of 'error', 'warning', 'info', 'success', 'all'. The
-     * default is 'error'. It's used to filter the items by their `type` property.
+     * default is 'error'. It's used to filter the items by their `type`
+     * property.
      *
-     * `localize` is a boolean that determines if the content should be localized.
-     * This excludes the headers, which are always localized.
+     * `localize` is a boolean that determines if the content should be
+     * localized. This excludes the headers, which are always localized.
      *
-     * `interpolate` is an object that will be used to interpolate when localizing.
-     * Additional interpolation properties are auto included - `count` (the number of
-     * filtered by type items in the table) and `total` (the total number of items).
+     * `interpolate` is an object that will be used to interpolate when
+     * localizing. Additional interpolation properties are auto included -
+     * `count` (the number of filtered by type items in the table) and `total`
+     * (the total number of items).
      *
      * @type {{
      *  mode?: 'error' | 'warning' | 'info' | 'success' | 'all',

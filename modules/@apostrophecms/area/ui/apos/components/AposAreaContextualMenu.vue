@@ -1,5 +1,8 @@
 <template>
-  <div class="apos-area-menu" :class="{'apos-is-focused': groupIsFocused}">
+  <div
+    class="apos-area-menu"
+    :class="{'apos-is-focused': groupIsFocused}"
+  >
     <AposContextMenu
       v-bind="extendedContextMenuOptions"
       ref="contextMenu"
@@ -7,6 +10,8 @@
       :button="buttonOptions"
       :popover-modifiers="inContext ? ['z-index-in-context'] : []"
       :menu-id="menuId"
+      @open="buttonOpen = true"
+      @close="buttonOpen = false"
     >
       <ul class="apos-area-menu__wrapper">
         <li
@@ -16,7 +21,10 @@
           class="apos-area-menu__item"
           :class="{'apos-has-group': item.items}"
         >
-          <dl v-if="item.items" class="apos-area-menu__group">
+          <dl
+            v-if="item.items"
+            class="apos-area-menu__group"
+          >
             <dt>
               <button
                 v-if="item.items"
@@ -44,7 +52,10 @@
                 />
               </button>
             </dt>
-            <dd class="apos-area-menu__group-list" role="region">
+            <dd
+              class="apos-area-menu__group-list"
+              role="region"
+            >
               <ul
                 :id="`${menuId}-group-${itemIndex}`"
                 class="apos-area-menu__items apos-area-menu__items--accordion"
@@ -124,6 +135,9 @@ export default {
       default() {
         return `areaMenu-${createId()}`;
       }
+    },
+    open: {
+      type: Boolean
     }
   },
   emits: [ 'add' ],
@@ -131,7 +145,8 @@ export default {
     return {
       active: 0,
       groupIsFocused: false,
-      inContext: true
+      inContext: true,
+      buttonOpen: false
     };
   },
   computed: {
@@ -167,6 +182,20 @@ export default {
       return flag;
     },
     myMenu() {
+      // Ensures we take a fresh look at the clipboard when toggled open again.
+      // We can't just use || because shortcut evaluation will prevent the second
+      // reactive property from being evaluated.
+      let openVia = 0;
+      if (this.open) {
+        openVia++;
+      }
+      if (this.buttonOpen) {
+        openVia++;
+      }
+      if (openVia === 0) {
+        // If the menu is not open, we don't need to compute it right now
+        return [];
+      }
       const clipboard = apos.area.widgetClipboard.get();
       const menu = [ ...this.contextMenuOptions.menu ];
       if (clipboard) {
@@ -192,15 +221,17 @@ export default {
     }
   },
   mounted() {
-    // if this area is not in-context then it is assumed in a schema's modal and we need to bump
-    // the z-index of menus above them
+    // if this area is not in-context then it is assumed in a schema's modal and
+    // we need to bump the z-index of menus above them
     this.inContext = !apos.util.closest(this.$el, '[data-apos-schema-area]');
   },
   methods: {
     async add(item) {
-      // Potential TODO: If we find ourselves manually flipping these bits in other AposContextMenu overrides
-      // we should consider refactoring contextmenus to be able to self close when any click takes place within their el
-      // as it is often the logical experience (not always, see tag menus and filters)
+      // Potential TODO: If we find ourselves manually flipping these bits in
+      // other AposContextMenu overrides we should consider refactoring
+      // contextmenus to be able to self close when any click takes place within
+      // their el as it is often the logical experience (not always, see tag
+      // menus and filters)
       this.$refs.contextMenu.hide();
       this.$emit('add', {
         ...item,

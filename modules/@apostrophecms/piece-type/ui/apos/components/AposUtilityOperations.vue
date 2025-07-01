@@ -61,11 +61,15 @@ export default {
   },
 
   methods: {
-    async handleUtilityOperation(action) {
-      const operation = [ ...this.utilityOperations.menu, ...this.utilityOperations.buttons ]
-        .find((op) => op.action === action);
+    async handleUtilityOperation(item) {
+      const operation = [
+        ...this.utilityOperations.menu,
+        ...this.utilityOperations.buttons
+      ]
+        .find((op) => op.action === item.action);
 
       if (!operation) {
+        // eslint-disable-next-line no-console
         console.error('utility operation definition was not found');
         return;
       }
@@ -82,7 +86,7 @@ export default {
         await apos.modal.execute(modal, {
           moduleName: this.moduleOptions.name,
           moduleAction: this.moduleOptions.action,
-          action,
+          action: item.action,
           labels: this.moduleLabels,
           messages: operation.messages,
           ...modalOptions
@@ -90,8 +94,9 @@ export default {
       } else if (event) {
         apos.bus.$emit(event, payload);
       } else {
-        // For backwards compatibility, because it did nothing before we should not
-        // throw a hard error here
+        // For backwards compatibility, because it did nothing before we should
+        // not throw a hard error here
+        // eslint-disable-next-line no-console
         console.error('utility operation has no modalOptions.modal or eventOptions.event property');
       }
     },
@@ -104,29 +109,30 @@ export default {
         canCreate
       } = this.moduleOptions;
 
-      const operations = ((Array.isArray(utilityOperations) && utilityOperations) || []).filter(operation => {
-        let ok = true;
-        if (operation.relationship != null) {
-          if (this.hasRelationshipField) {
-            ok = operation.relationship;
-          } else {
-            ok = !operation.relationship;
+      const operations = ((Array.isArray(utilityOperations) && utilityOperations) || [])
+        .filter(operation => {
+          let ok = true;
+          if (operation.relationship != null) {
+            if (this.hasRelationshipField) {
+              ok = operation.relationship;
+            } else {
+              ok = !operation.relationship;
+            }
           }
-        }
-        if (operation.canCreate) {
-          ok = ok && canCreate;
-        }
-        if (operation.canEdit) {
-          ok = ok && canEdit;
-        }
-        if (operation.canArchive) {
-          ok = ok && canArchive;
-        }
-        if (operation.canPublish) {
-          ok = ok && canPublish;
-        }
-        return ok;
-      });
+          if (operation.canCreate) {
+            ok = ok && canCreate;
+          }
+          if (operation.canEdit) {
+            ok = ok && canEdit;
+          }
+          if (operation.canArchive) {
+            ok = ok && canArchive;
+          }
+          if (operation.canPublish) {
+            ok = ok && canPublish;
+          }
+          return ok;
+        });
 
       this.utilityOperations.menu = operations.filter(operation => !operation.button);
       this.utilityOperations.buttons = operations.filter(operation => operation.button);

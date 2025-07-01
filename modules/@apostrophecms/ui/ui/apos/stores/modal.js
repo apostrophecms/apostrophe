@@ -74,7 +74,8 @@ export const useModalStore = defineStore('modal', () => {
         focusedElement: null,
         locale: activeModal.value?.locale || apos.i18n.locale,
         hasContextLocale: activeModal.value
-          ? (activeModal.value.hasContextLocale || activeModal.value.locale !== apos.i18n.locale)
+          ? (activeModal.value.hasContextLocale ||
+              activeModal.value.locale !== apos.i18n.locale)
           : false
       };
 
@@ -86,10 +87,12 @@ export const useModalStore = defineStore('modal', () => {
 
   function updateModalData(id, data) {
     stack.value = stack.value.map((modal) => {
-      return modal.id === id ? {
-        ...modal,
-        ...data
-      } : modal;
+      return modal.id === id
+        ? {
+          ...modal,
+          ...data
+        }
+        : modal;
     });
   }
 

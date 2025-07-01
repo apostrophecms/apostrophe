@@ -13,7 +13,8 @@
 // `passwordReset`
 //
 // If set to `true`, the user is given the option to reset their password,
-// provided they can receive a confirmation email. Not available if `localLogin` is `false`.
+// provided they can receive a confirmation email.
+// Not available if `localLogin` is `false`.
 //
 // `passwordResetHours`
 //
@@ -36,7 +37,8 @@
 // `passport`
 //
 // Apostrophe's instance of the [passport](https://npmjs.org/package/passport) npm module.
-// You may access this object if you need to implement additional passport "strategies."
+// You may access this object if you need to implement additional passport
+// "strategies."
 
 const Passport = require('passport').Passport;
 const LocalStrategy = require('passport-local');
@@ -147,16 +149,16 @@ module.exports = {
           if (req.session) {
             const destroySession = () => {
               return require('util').promisify(function(callback) {
-                // Be thorough, nothing in the session potentially related to the login should survive logout
+                // Be thorough, nothing in the session potentially
+                // related to the login should survive logout
                 return req.session.destroy(callback);
               })();
             };
             const cookie = req.session.cookie;
             await destroySession();
-            // Session cookie expiration isn't automatic with `req.session.destroy`.
-            // Fix that to reduce challenges for those attempting to implement custom
-            // caching strategies at the edge
-            // https://github.com/expressjs/session/issues/241
+            // Session cookie expiration isn't automatic with
+            // `req.session.destroy`. Fix that to reduce challenges for those
+            // attempting to implement custom caching strategies at the edge https://github.com/expressjs/session/issues/241
             const expireCookie = new expressSession.Cookie(cookie);
             expireCookie.expires = new Date(0);
             const name = self.apos.modules['@apostrophecms/express'].sessionOptions.name;
@@ -166,12 +168,15 @@ module.exports = {
             req.res.cookie(`${self.apos.shortName}.${loggedInCookieName}`, 'false');
           }
         },
-        // invokes the `props(req, user)` function for the requirement specified by
-        // `body.name`. Invoked before displaying each `afterPasswordVerified`
-        // requirement. The return value of the function, which should
-        // be an object, is delivered as the API response
+        // invokes the `props(req, user)` function for the requirement
+        // specified by `body.name`. Invoked before displaying each
+        // `afterPasswordVerified` requirement. The return value of the
+        // function, which should be an object, is delivered as the API response
         async requirementProps(req) {
-          const { user } = await self.findIncompleteTokenAndUser(req, req.body.incompleteToken);
+          const { user } = await self.findIncompleteTokenAndUser(
+            req,
+            req.body.incompleteToken
+          );
 
           const name = self.apos.launder.string(req.body.name);
 
@@ -254,7 +259,7 @@ module.exports = {
         async context(req) {
           return self.getContext(req);
         },
-        ...(self.isPasswordResetEnabled() ? {
+        ...self.isPasswordResetEnabled() && {
           async resetRequest(req) {
             const wait = (t = 2000) => Promise.delay(t);
             const site = (req.headers.host || '').replace(/:\d+$/, '');
@@ -341,7 +346,7 @@ module.exports = {
             user.password = password;
             await self.apos.user.update(req, user, { permissions: false });
           }
-        } : {})
+        }
       },
       get: {
         // For bc this route is still available via GET, however
@@ -391,7 +396,8 @@ module.exports = {
       // props for beforeSubmit requirements
       async getContext(req) {
         const aposPackage = require('../../../package.json');
-        // For performance beforeSubmit requirement props all happen together here
+        // For performance beforeSubmit requirement props all happen together
+        // here
         const requirementProps = {};
         for (const [ name, requirement ] of Object.entries(self.requirements)) {
           if ((requirement.phase !== 'afterPasswordVerified') && requirement.props) {
@@ -497,13 +503,13 @@ module.exports = {
       // the username or the email address (both are unique).
       //
       // If the user's credentials are invalid, `false` is returned after a
-      // 1000ms delay to discourage abuse. If another type of error occurs, it is thrown
-      // normally.
+      // 1000ms delay to discourage abuse. If another type of error occurs, it
+      // is thrown normally.
       //
       // If the user's login SUCCEEDS, the return value is
       // the `user` object.
-      // `attempts`,  `ip` and `requestId` are optional, sent for only logging needs. They won't
-      // be available with passport.
+      // `attempts`,  `ip` and `requestId` are optional, sent for only logging
+      // needs. They won't be available with passport.
 
       async verifyLogin(username, password, attempts = 0, ip, requestId) {
         const req = self.apos.task.getReq();
@@ -564,14 +570,16 @@ module.exports = {
           schema: self.getSchema(),
           action: self.action,
           passwordResetEnabled: self.isPasswordResetEnabled(),
-          ...(req.user ? {
-            user: {
-              _id: req.user._id,
-              title: req.user.title,
-              username: req.user.username,
-              email: req.user.email
+          ...(req.user
+            ? {
+              user: {
+                _id: req.user._id,
+                title: req.user.title,
+                username: req.user.username,
+                email: req.user.email
+              }
             }
-          } : {}),
+            : {}),
           requirements: Object.fromEntries(
             Object.entries(self.requirements).map(([ name, requirement ]) => {
               const browserRequirement = {
@@ -635,7 +643,11 @@ module.exports = {
 
       async checkForUserAndAlert() {
         const adminReq = self.apos.task.getReq();
-        const user = await self.apos.user.find(adminReq, {}).relationships(false).limit(1).toObject();
+        const user = await self.apos.user
+          .find(adminReq, {})
+          .relationships(false)
+          .limit(1)
+          .toObject();
 
         if (!user && !self.apos.options.test) {
           self.apos.util.warnDev('There are no users created for this installation of ApostropheCMS yet.');
@@ -648,7 +660,8 @@ module.exports = {
       },
 
       // Finalize an incomplete login based on the provided incompleteToken
-      // and various `requirements` subproperties. Implementation detail of the login route
+      // and various `requirements` subproperties.
+      // Implementation detail of the login route
       async finalizeIncompleteLogin(req) {
         const session = self.apos.launder.boolean(req.body.session);
         // Completing a previous incomplete login
@@ -705,10 +718,10 @@ module.exports = {
         }
       },
 
-      // Implementation detail of the login route and the requirementProps mechanism for
-      // custom login requirements. Given the string `token`, returns
-      // `{ token, user }`. Throws an exception if the token is not found.
-      // `token` is sanitized before passing to mongodb.
+      // Implementation detail of the login route and the requirementProps
+      // mechanism for custom login requirements. Given the string `token`,
+      // returns `{ token, user }`. Throws an exception if the token is not
+      // found. `token` is sanitized before passing to mongodb.
       async findIncompleteTokenAndUser(req, token) {
         token = await self.bearerTokens.findOne({
           _id: self.apos.launder.string(token),
@@ -739,7 +752,10 @@ module.exports = {
       async verifyRequirements(req, requirements) {
         for (const [ name, requirement ] of Object.entries(requirements)) {
           try {
-            await requirement.verify(req, req.body.requirements && req.body.requirements[name]);
+            await requirement.verify(
+              req,
+              req.body.requirements && req.body.requirements[name]
+            );
           } catch (e) {
             e.data = e.data || {};
             e.data.requirement = name;
@@ -748,8 +764,9 @@ module.exports = {
         }
       },
 
-      // Implementation detail of the login route. Log in the user, or if there are
-      // `requirements` that require password verification occur first, return an incomplete token.
+      // Implementation detail of the login route. Log in the user, or if there
+      // are `requirements` that require password verification occur first,
+      // return an incomplete token.
       async initialLogin(req) {
         const username = self.apos.launder.string(req.body.username);
         const password = self.apos.launder.string(req.body.password);
@@ -798,9 +815,11 @@ module.exports = {
               _id: token,
               userId: user._id,
               requirementsToVerify,
-              // Default lifetime of 1 hour is generous to permit situations like
-              // installing a TOTP app for the first time
-              expires: new Date(new Date().getTime() + (self.options.incompleteLifetime || 60 * 60 * 1000))
+              // Default lifetime of 1 hour is generous to permit situations
+              // like installing a TOTP app for the first time
+              expires: new Date(
+                new Date().getTime() + (self.options.incompleteLifetime || 60 * 60 * 1000)
+              )
             });
 
             await self.clearLoginAttempts(user.username);
@@ -824,7 +843,10 @@ module.exports = {
             await self.bearerTokens.insertOne({
               _id: token,
               userId: user._id,
-              expires: new Date(new Date().getTime() + (self.options.bearerTokens.lifetime || (86400 * 7 * 2)) * 1000)
+              expires: new Date(
+                new Date().getTime() +
+                  (self.options.bearerTokens.lifetime || (86400 * 7 * 2)) * 1000
+              )
             });
 
             await self.clearLoginAttempts(user.username);
@@ -854,7 +876,8 @@ module.exports = {
         };
       },
 
-      // Awaitable wrapper for req.login. An implementation detail of the login route
+      // Awaitable wrapper for req.login. An implementation detail of the login
+      // route
       async passportLogin(req, user) {
         const cookieName = `${self.apos.shortName}.${loggedInCookieName}`;
         if (req.cookies[cookieName] !== 'true') {
@@ -999,7 +1022,8 @@ module.exports = {
         before: '@apostrophecms/i18n',
         middleware: (() => {
           // Wrap the passport middleware so that if the apikey or bearer token
-          // middleware already supplied req.user, that wins (explicit wins over implicit)
+          // middleware already supplied req.user, that wins (explicit wins
+          // over implicit)
           const passportSession = self.passport.session();
           return (req, res, next) => req.user ? next() : passportSession(req, res, next);
         })()
@@ -1007,7 +1031,8 @@ module.exports = {
       removeUserForDraftSharing: {
         before: '@apostrophecms/i18n',
         middleware(req, res, next) {
-          // Remove user to hide the admin UI, in order to simulate a logged-out page view
+          // Remove user to hide the admin UI, in order to simulate a
+          // logged-out page view
           if (self.isShareDraftRequest(req)) {
             delete req.user;
           }
@@ -1017,7 +1042,12 @@ module.exports = {
       honorLoginInvalidBefore: {
         before: '@apostrophecms/i18n',
         middleware(req, res, next) {
-          if (req.user && req.user._viaSession && req.user.loginInvalidBefore && ((!req.session.loginAt) || (req.session.loginAt < req.user.loginInvalidBefore))) {
+          if (
+            req.user &&
+            req.user._viaSession &&
+            req.user.loginInvalidBefore &&
+            (!req.session.loginAt || (req.session.loginAt < req.user.loginInvalidBefore))
+          ) {
             req.session.destroy();
             delete req.user;
           }

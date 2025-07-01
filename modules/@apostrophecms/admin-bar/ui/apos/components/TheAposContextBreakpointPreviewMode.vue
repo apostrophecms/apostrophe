@@ -56,11 +56,11 @@
   </div>
 </template>
 <script>
-
 export default {
   name: 'TheAposContextBreakpointPreviewMode',
   props: {
-    // { screenName: { label: string, width: string, height: string, icon: string } }
+    // { screenName: { label: string, width: string, height: string, icon:
+    // string } }
     screens: {
       type: Object,
       validator(value, props) {
@@ -87,7 +87,10 @@ export default {
       originalBodyBackground: null,
       shortcuts: this.getShortcuts(),
       breakpoints: this.getBreakpointItems(),
-      showDropdown: false
+      showDropdown: false,
+      bodyEl: null,
+      refreshableBodyEl: null,
+      observer: new MutationObserver(this.observerCallback)
     };
   },
   computed: {
@@ -129,6 +132,7 @@ export default {
     }
   },
   mounted() {
+    this.bodyEl = document.querySelector('body');
     this.setShowDropdown();
     apos.bus.$on(
       'command-menu-admin-bar-toggle-breakpoint-preview-mode',
@@ -150,18 +154,56 @@ export default {
     );
   },
   methods: {
+    observerCallback(mutationList, observer) {
+      for (const mutation of mutationList) {
+        if (
+          mutation.type !== 'attributes' ||
+          mutation.attributeName.startsWith('data-apos') ||
+          mutation.attributeName === 'data-breakpoint-preview-mode'
+        ) {
+          continue;
+        }
+        const bodyAttribute = mutation.target
+          .getAttribute(mutation.attributeName);
+        this.refreshableBodyEl.setAttribute(mutation.attributeName, bodyAttribute);
+      }
+    },
+
+    createFakeBody(refreshableEl) {
+      this.refreshableBodyEl = document.createElement('div');
+      this.refreshableBodyEl.setAttribute('data-apos-refreshable-body', '');
+      Array.from(refreshableEl.childNodes).forEach(child => {
+        this.refreshableBodyEl.append(child);
+      });
+
+      Array.from(this.bodyEl.attributes || {})
+        .filter(({ name }) => !name.startsWith('data-apos'))
+        .forEach(({ name, value }) => {
+          this.refreshableBodyEl.setAttribute(name, value);
+        });
+
+      refreshableEl.append(this.refreshableBodyEl);
+    },
+
     switchBreakpointPreviewMode({
       mode,
       label,
       width,
       height
     }) {
-      document.querySelector('body').setAttribute('data-breakpoint-preview-mode', mode);
-      document.querySelector('[data-apos-refreshable]').setAttribute('data-resizable', this.resizable);
-      document.querySelector('[data-apos-refreshable]').setAttribute('data-label', this.$t(label));
-      document.querySelector('[data-apos-refreshable]').style.width = width;
-      document.querySelector('[data-apos-refreshable]').style.height = height;
-      document.querySelector('[data-apos-refreshable]').style.background = this.originalBodyBackground;
+      const refreshableEl = document.querySelector('[data-apos-refreshable]');
+
+      // Only when switching to mobile preview from the normal state
+      if (!this.mode) {
+        this.createFakeBody(refreshableEl);
+        this.observer.observe(this.bodyEl, { attributes: true });
+      }
+
+      this.bodyEl.setAttribute('data-breakpoint-preview-mode', mode);
+      refreshableEl.setAttribute('data-resizable', this.resizable);
+      refreshableEl.setAttribute('data-label', this.$t(label));
+      refreshableEl.style.width = width;
+      refreshableEl.style.height = height;
 
       this.mode = mode;
       this.$emit('switch-breakpoint-preview-mode', {
@@ -177,33 +219,39 @@ export default {
         height
       });
     },
-    toggleBreakpointPreviewMode({
-      mode,
-      label,
-      width,
-      height
-    }) {
-      if (this.mode === mode || mode === null) {
-        document.querySelector('body').removeAttribute('data-breakpoint-preview-mode');
-        document.querySelector('[data-apos-refreshable]').removeAttribute('data-resizable');
-        document.querySelector('[data-apos-refreshable]').removeAttribute('data-label');
-        document.querySelector('[data-apos-refreshable]').style.removeProperty('width');
-        document.querySelector('[data-apos-refreshable]').style.removeProperty('height');
-        document.querySelector('[data-apos-refreshable]').style.removeProperty('background');
-
-        this.mode = null;
-        this.$emit('reset-breakpoint-preview-mode');
-        this.saveState({ mode: this.mode });
-
+    toggleBreakpointPreviewMode(state) {
+      if (this.mode === state.mode || state.mode === null) {
+        this.resetBreakpointPreview();
         return;
       }
 
-      this.switchBreakpointPreviewMode({
-        mode,
-        label,
-        width,
-        height
+      this.switchBreakpointPreviewMode(state);
+    },
+    resetBreakpointPreview() {
+      const refreshableEl = document.querySelector('[data-apos-refreshable]');
+
+      this.observer.disconnect();
+      if (!this.refreshableBodyEl) {
+        return;
+      }
+
+      Array.from(this.refreshableBodyEl.childNodes).forEach(child => {
+        if (child.nodeType !== Node.TEXT_NODE || child.nodeValue.trim()) {
+          refreshableEl.append(child);
+        }
       });
+      this.refreshableBodyEl.remove();
+      this.refreshableBodyEl = null;
+
+      this.bodyEl.removeAttribute('data-breakpoint-preview-mode');
+      refreshableEl.removeAttribute('data-resizable');
+      refreshableEl.removeAttribute('data-label');
+      refreshableEl.style.removeProperty('width');
+      refreshableEl.style.removeProperty('height');
+
+      this.mode = null;
+      this.$emit('reset-breakpoint-preview-mode');
+      this.saveState({ mode: this.mode });
     },
     loadState() {
       return JSON.parse(sessionStorage.getItem('aposBreakpointPreviewMode') || '{}');
@@ -255,10 +303,10 @@ export default {
       }
       return 'cellphone-icon';
     },
-    selectBreakpoint(selected) {
+    selectBreakpoint(item) {
       const {
         name, label, width, height
-      } = this.breakpoints.find(({ name }) => name === selected);
+      } = this.breakpoints.find(({ name }) => name === item.action);
       this.toggleBreakpointPreviewMode({
         mode: name,
         label,

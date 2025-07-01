@@ -36,8 +36,8 @@ module.exports = (self) => ({
     const symLinkModules = await findNodeModulesSymlinks(self.apos.npmRootDir);
     // Make it clear if builds should detect changes
     const detectChanges = typeof argv.changes === 'string';
-    // Remove invalid changes. `argv.changes` is a comma separated list of relative
-    // to `apos.rootDir` files or folders
+    // Remove invalid changes. `argv.changes` is a comma separated list of
+    // relative to `apos.rootDir` files or folders
     const sourceChanges = detectChanges
       ? filterValidChanges(
         argv.changes.split(',').map(p => p.trim()),
@@ -52,9 +52,10 @@ module.exports = (self) => ({
     await fs.mkdirp(buildDir);
 
     // Static asset files in `public` subdirs of each module are copied
-    // to the same relative path `/public/apos-frontend/namespace/modules/modulename`.
-    // Inherited files are also copied, with the deepest subclass overriding in the
-    // event of a conflict
+    // to the same relative path
+    // `/public/apos-frontend/namespace/modules/modulename`. Inherited files are
+    // also copied, with the deepest subclass overriding in the event of a
+    // conflict
     if (self.options.publicBundle) {
       await moduleOverrides(`${bundleDir}/modules`, 'public');
     }
@@ -68,7 +69,8 @@ module.exports = (self) => ({
       } else if (!rebuild) {
         let checkTimestamp = false;
 
-        // If options.publicBundle, only builds contributing to the apos admin UI (currently just "apos")
+        // If options.publicBundle, only builds contributing
+        // to the apos admin UI (currently just "apos")
         // are candidates to skip the build simply because package-lock.json is
         // older than the bundle. All other builds frequently contain
         // project level code
@@ -118,7 +120,9 @@ module.exports = (self) => ({
     // so that page refresh is issued only when needed.
     if (detectChanges) {
       // merge the scenes that have been built
-      const scenes = [ ...new Set(buildsExecuted.map(name => self.builds[name].scenes).flat()) ];
+      const scenes = [
+        ...new Set(buildsExecuted.map(name => self.builds[name].scenes).flat())
+      ];
       merge(scenes);
       return buildsExecuted;
     }
@@ -126,7 +130,9 @@ module.exports = (self) => ({
     // Discover the set of unique asset scenes that exist (currently
     // just `public` and `apos`) by examining those specified as
     // targets for the various builds
-    const scenes = [ ...new Set(Object.values(self.builds).map(options => options.scenes).flat()) ];
+    const scenes = [
+      ...new Set(Object.values(self.builds).map(options => options.scenes).flat())
+    ];
 
     // enumerate public assets and include them in deployment if appropriate
     const publicAssets = self.apos.util.glob('modules/**/*', {
@@ -205,11 +211,17 @@ module.exports = (self) => ({
       }));
       const modulesDir = `${buildDir}/${name}/modules`;
       const source = options.source || name;
-      // Gather pnpm modules that are used in the build to be added as resolve paths
+      // Gather pnpm modules that are used in the build to be added as resolve
+      // paths
       const pnpmModules = new Set();
       await moduleOverrides(modulesDir, `ui/${source}`, pnpmModules);
 
-      let iconImports, componentImports, tiptapExtensionImports, appImports, indexJsImports, indexSassImports;
+      let iconImports,
+        componentImports,
+        tiptapExtensionImports,
+        appImports,
+        indexJsImports,
+        indexSassImports;
       if (options.apos) {
         iconImports = await getIcons();
         componentImports = await getImports(`${source}/components`, '*.vue', {
@@ -217,7 +229,11 @@ module.exports = (self) => ({
           importLastVersion: true
         });
         /* componentImports = getGlobalVueComponents(self); */
-        tiptapExtensionImports = await getImports(`${source}/tiptap-extensions`, '*.js', { registerTiptapExtensions: true });
+        tiptapExtensionImports = await getImports(
+          `${source}/tiptap-extensions`,
+          '*.js',
+          { registerTiptapExtensions: true }
+        );
         appImports = await getImports(`${source}/apps`, '*.js', {
           invokeApps: true,
           enumerateImports: true,
@@ -265,8 +281,9 @@ module.exports = (self) => ({
         });
 
         const outputFilename = `${name}-build.js`;
-        // Remove previous build artifacts, as some pipelines won't build all artifacts
-        // if there is no input, and we don't want stale output in the bundle
+        // Remove previous build artifacts, as some pipelines won't build all
+        // artifacts if there is no input, and we don't want stale output in the
+        // bundle
         fs.removeSync(`${bundleDir}/${outputFilename}`);
         const cssPath = `${bundleDir}/${outputFilename}`.replace(/\.js$/, '.css');
         fs.removeSync(cssPath);
@@ -303,10 +320,14 @@ module.exports = (self) => ({
           : webpackInstanceConfig;
 
         // Inject the cache location at the end - we need the merged config
-        const cacheMeta = await computeCacheMeta(name, webpackInstanceConfigMerged, symLinkModules);
+        const cacheMeta = await computeCacheMeta(
+          name,
+          webpackInstanceConfigMerged,
+          symLinkModules
+        );
         webpackInstanceConfigMerged.cache.cacheLocation = cacheMeta.location;
-        // Exclude symlinked modules from the cache managedPaths, no other way for now
-        // https://github.com/webpack/webpack/issues/12112
+        // Exclude symlinked modules from the cache managedPaths, no other way
+        // for now https://github.com/webpack/webpack/issues/12112
         if (cacheMeta.managedPathsRegex) {
           webpackInstanceConfigMerged.snapshot = {
             managedPaths: [ cacheMeta.managedPathsRegex ]
@@ -414,7 +435,8 @@ module.exports = (self) => ({
               ${(components && components.registerCode) || ''}
               ${(tiptap && tiptap.registerCode) || ''}
               ` +
-              (app ? stripIndent`
+              (app
+                ? stripIndent`
               if (document.readyState !== 'loading') {
                 setTimeout(invoke, 0);
               } else {
@@ -423,12 +445,15 @@ module.exports = (self) => ({
               function invoke() {
                 ${app.invokeCode}
               }
-              ` : '') +
+              `
+                : '') +
               // No delay on these, they expect to run early like ui/public code
               // and the first ones invoked set up expected stuff like apos.http
-              (indexJs ? stripIndent`
+              (indexJs
+                ? stripIndent`
                 ${indexJs.invokeCode}
-              ` : '')
+              `
+                : '')
       );
     }
 
@@ -712,9 +737,9 @@ module.exports = (self) => ({
     }
 
     function cleanErrors(errors) {
-      // Dev experience: remove confusing and inaccurate webpack warning about module loaders
-      // when straightforward JS parse errors occur, stackoverflow is full of people
-      // confused by this
+      // Dev experience: remove confusing and inaccurate webpack warning about
+      // module loaders when straightforward JS parse errors occur,
+      // stackoverflow is full of people confused by this
       return errors.replace(/(ERROR in[\s\S]*?Module parse failed[\s\S]*)You may need an appropriate loader.*/, '$1');
     }
 

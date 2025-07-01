@@ -16,13 +16,16 @@
           class="apos-table__header"
           :class="`apos-table__header--${header.css}`"
           data-apos-test="tableHeaderCell"
-          :style="headerStyles(header)"
+          :style="header.headerStyles"
         >
-          <slot :name="`header-${header.name}`" :header="header">
+          <slot
+            :name="`header-${header.name}`"
+            :header="header"
+          >
             <component
               :is="header.component"
-              class="apos-table__header-label"
-              :class="{ 'apos-table__header--pointer': header.action }"
+              :class="header.headerClasses"
+              :title="$t(header.label)"
               @click="onColClick(header)"
             >
               <component
@@ -61,7 +64,7 @@
             :item="item"
             :header="header"
             :classes="header.cellClasses"
-            :valueFormatted="getValue(item, header)"
+            :value-formatted="getValue(item, header)"
             :value="getValue(item, header, false)"
           >
             <p
@@ -92,10 +95,17 @@
  *  width?: string | number,
  *  action?: boolean | string,
  *  format?: string | (value: any) => string | number | boolean,
+ *  translate?: boolean,
  *  visibility?: 'always' | 'never' | 'table' | 'export'
  * }} TableHeader
  *
- * @typedef {Required<TableHeader> & { component: string; cellClasses: string[] }} FinalTableHeader
+ * @typedef {
+ * Required<TableHeader> & {
+ *  component: string;
+ *  cellClasses: string[];
+ *  headerClasses: string[];
+ *  headerStyles: { width: string };
+ * }} FinalTableHeader
  *
  * @typedef {{
  *  _id: string;
@@ -109,14 +119,17 @@ export default {
      * Array of headers to display in the table.
      * The `name` property is used to determine the value to display
      * for each cell in the table.
-     * `css` is the class suffix to apply to the cell. If missing, `name` is used.
-     * `id` is optional unique identifier for the header. If missing, `name` is used.
-     * It's only used for internal purposes (loop keys).
+     * `translate` is optional and if true, the relevant items values will be
+     * translated. `css` is the class suffix to apply to the cell. If missing,
+     * `name` is used. `id` is optional unique identifier for the header. If
+     * missing, `name` is used. It's only used for internal purposes (loop
+     * keys).
      * `icon` is the optional icon component name to display in the header.
      * `iconSize` is the optional size of the icon to display in the header.
-     * If `action` is truthy, the header will be rendered as a button by default.
-     * `format` is the optional format to apply to the value before displaying it.
-     * It can be a predefined format or a function. Predefined formats are:
+     * If `action` is truthy, the header will be rendered as a button by
+     * default. `format` is the optional format to apply to the value before
+     * displaying it. It can be a predefined format or a function. Predefined
+     * formats are:
      * - `last:n` to display the last n characters of the string.
      * - `yesno` to display "Yes" or "No" based on the value.
      *
@@ -173,7 +186,9 @@ export default {
           iconSize: header.iconSize ?? 10,
           css: header.css ?? header.name,
           format: this.getFormatFactory(header),
-          cellClasses: this.cellCss(header)
+          cellClasses: this.cellCss(header),
+          headerClasses: this.headerCss(header),
+          headerStyles: this.headerStyles(header)
         };
       });
     },
@@ -215,6 +230,9 @@ export default {
         }
       } catch (e) {
         return null;
+      }
+      if (header.translate === true) {
+        value = this.$t(value);
       }
       if (format) {
         return header.format(value);
@@ -265,6 +283,18 @@ export default {
       return {
         width: this.maxCellWidth
       };
+    },
+    headerCss(header) {
+      const classes = [
+        'apos-table__header-label'
+      ];
+      if (this.isTableFixed) {
+        classes.push('apos-table__cell-field-fixed');
+      }
+      if (header.action) {
+        classes.push('apos-table__header--pointer');
+      }
+      return classes;
     },
     cellCss(header) {
       const classes = [
@@ -333,7 +363,23 @@ export default {
 }
 
 .apos-table__header-label {
+  display: inline-block;
+  overflow: hidden;
   width: 100%;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.apos-table__header-icon {
+  display: inline-block;
+}
+
+.apos-table__header:focus-within {
+  box-shadow: inset 0 0 0 1px var(--a-base-5);
+}
+
+.apos-table__header-label:focus {
+  outline: none;
 }
 
 // Unset the default global styles for the table title cell.

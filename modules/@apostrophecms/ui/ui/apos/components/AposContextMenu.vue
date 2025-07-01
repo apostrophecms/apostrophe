@@ -9,7 +9,13 @@
       ref="dropdown"
       class="apos-popover__btn apos-context-menu__dropdown"
     >
+      <slot
+        v-if="slots.button"
+        name="button"
+        :on-click="buttonClicked"
+      />
       <AposButton
+        v-else
         v-bind="button"
         ref="dropdownButton"
         class="apos-context-menu__btn"
@@ -17,7 +23,7 @@
         :data-apos-test="identifier"
         :state="buttonState"
         :disabled="disabled"
-        :tooltip="tooltip"
+        :tooltip="btnTooltip"
         :attrs="{
           'aria-haspopup': 'menu',
           'aria-expanded': isOpen ? true : false
@@ -27,14 +33,12 @@
       />
       <div
         v-if="isOpen"
+        v-bind="menuAttrs"
         ref="dropdownContent"
         v-click-outside-element="hide"
-        :data-apos-test="isRendered ? 'context-menu-content' : null"
+        :style="dropdownContentStyle"
         class="apos-context-menu__dropdown-content"
         :class="popoverClass"
-        data-apos-menu
-        :style="dropdownContentStyle"
-        :aria-hidden="!isOpen"
       >
         <AposContextMenuDialog
           :menu-placement="placement"
@@ -42,6 +46,7 @@
           :menu="menu"
           :active-item="activeItem"
           :is-open="isOpen"
+          :has-tip="hasTip"
           @item-clicked="menuItemClicked"
           @set-arrow="setArrow"
         >
@@ -54,7 +59,7 @@
 
 <script setup>
 import {
-  ref, computed, watch, onMounted, onBeforeUnmount
+  ref, computed, onMounted, onBeforeUnmount, nextTick, useSlots
 } from 'vue';
 import {
   computePosition, offset, shift, flip, arrow
@@ -65,6 +70,10 @@ import { useAposTheme } from '../composables/AposTheme.js';
 import { useFocusTrap } from '../composables/AposFocusTrap.js';
 
 const props = defineProps({
+  richTextMenu: {
+    type: Boolean,
+    default: false
+  },
   identifier: {
     type: String,
     default: 'contextMenuTrigger'
@@ -107,7 +116,7 @@ const props = defineProps({
     default: false
   },
   tooltip: {
-    type: [ String, Boolean ],
+    type: [ String, Boolean, Object ],
     default: false
   },
   popoverModifiers: {
@@ -121,10 +130,6 @@ const props = defineProps({
     default() {
       return createId();
     }
-  },
-  centerOnIcon: {
-    type: Boolean,
-    default: false
   },
   activeItem: {
     type: String,
@@ -141,15 +146,32 @@ const props = defineProps({
   dynamicFocus: {
     type: Boolean,
     default: false
+  },
+  // Tell the context menu to center the tip on the button icon
+  // and not the the entire button
+  centerOnIcon: {
+    type: Boolean,
+    default: false
+  },
+  // Can pass an element ref center the menu tip on this element
+  // allows to perform the same thing than centerOnIcon when the button
+  // is rendered through a slot
+  centerTipEl: {
+    type: Object,
+    default: null
+  },
+  hasTip: {
+    type: Boolean,
+    default: true
   }
 });
 
 const emit = defineEmits([ 'open', 'close', 'item-clicked' ]);
+const slots = useSlots();
 
 const isOpen = ref(false);
 const isRendered = ref(false);
 const placement = ref(props.menuPlacement);
-const event = ref(null);
 /** @type {import('vue').Ref<HTMLElement | null>}} */
 const contextMenuRef = ref(null);
 /** @type {import('vue').Ref<HTMLElement | null>}} */
@@ -161,7 +183,7 @@ const dropdownContent = ref(null);
 const dropdownContentStyle = ref({});
 const arrowEl = ref(null);
 const iconToCenterTo = ref(null);
-const menuOffset = getMenuOffset();
+const mOffset = getMenuOffset();
 const otherMenuOpened = ref(false);
 
 const {
@@ -173,6 +195,12 @@ const {
   // the context menu.
   // triggerRef: dropdownButton,
   // onExit: hide
+});
+
+const menuResizeObserver = new ResizeObserver((entries) => {
+  for (const _entry of entries) {
+    setDropdownPosition();
+  }
 });
 
 defineExpose({
@@ -207,44 +235,28 @@ const buttonState = computed(() => {
   return isOpen.value ? [ 'active' ] : null;
 });
 
-watch(isOpen, async (newVal) => {
-  emit(newVal ? 'open' : 'close', event.value);
-  if (newVal) {
-    setDropdownPosition();
-    window.addEventListener('resize', setDropdownPosition);
-    window.addEventListener('scroll', setDropdownPosition);
-    contextMenuRef.value?.addEventListener('keydown', handleKeyboard);
-    if (props.trapFocus && !hasRunningTrap.value) {
-      await runTrap(dropdownContent);
-    }
-    if (!props.trapFocus) {
-      dropdownContent.value.querySelector('[tabindex]')?.focus();
-    }
-    isRendered.value = true;
-  } else {
-    if (props.trapFocus) {
-      resetTrap();
-    }
-    window.removeEventListener('resize', setDropdownPosition);
-    window.removeEventListener('scroll', setDropdownPosition);
-    contextMenuRef.value?.addEventListener('keydown', handleKeyboard);
-    if (!otherMenuOpened.value && !props.trapFocus) {
-      dropdown.value.querySelector('[tabindex]').focus();
-    }
-  }
-  otherMenuOpened.value = false;
-}, { flush: 'post' });
+const btnTooltip = computed(() => {
+  return props.tooltip || props.button?.tooltip || false;
+});
+
+const menuAttrs = computed(() => {
+  return {
+    'data-apos-test': isRendered.value ? 'context-menu-content' : null,
+    ...!props.richTextMenu && { 'data-apos-menu': '' },
+    'aria-hidden': !isOpen.value
+  };
+});
 
 const { themeClass } = useAposTheme();
 
 onMounted(() => {
   apos.bus.$on('context-menu-toggled', hideWhenOtherOpen);
-  apos.bus.$on('close-context-menus', hide);
+  apos.bus.$on('close-context-menus', hideContextMenu);
 });
 
 onBeforeUnmount(() => {
   apos.bus.$off('context-menu-toggled', hideWhenOtherOpen);
-  apos.bus.$off('close-context-menus', hide);
+  apos.bus.$off('close-context-menus', hideContextMenu);
 });
 
 function getMenuOffset() {
@@ -262,30 +274,84 @@ function hideWhenOtherOpen({ menuId }) {
 }
 
 function setIconToCenterTo(el) {
-  if (el && props.centerOnIcon) {
+  if (el && (props.centerOnIcon || props.centerTipEl)) {
     iconToCenterTo.value = el;
   }
 }
 
-function hide() {
+function hideContextMenu(type = 'contextMenu') {
+  if (type === 'richText' && props.richTextMenu) {
+    hide();
+  }
+  if (type === 'contextMenu' && !props.richTextMenu) {
+    hide();
+  }
+}
+
+async function hide(e) {
+  if (!isOpen.value) {
+    return;
+  }
+  if (dropdownContent.value) {
+    menuResizeObserver.unobserve(dropdownContent.value);
+  }
   isOpen.value = false;
+  await nextTick();
+  emit('close', e);
+  if (props.trapFocus) {
+    resetTrap();
+  }
+  window.removeEventListener('resize', setDropdownPosition);
+  window.removeEventListener('scroll', setDropdownPosition);
+  contextMenuRef.value?.addEventListener('keydown', handleKeyboard);
+  if (!otherMenuOpened.value && !props.trapFocus) {
+    dropdown.value.querySelector('[tabindex]').focus();
+  }
+}
+
+async function show(e) {
+  if (isOpen.value) {
+    return;
+  }
+  isOpen.value = true;
+  await nextTick();
+  emit('open', e);
+  setDropdownPosition();
+  menuResizeObserver.observe(dropdownContent.value);
+  window.addEventListener('resize', setDropdownPosition);
+  window.addEventListener('scroll', setDropdownPosition);
+  contextMenuRef.value?.addEventListener('keydown', handleKeyboard);
+  if (props.trapFocus && !hasRunningTrap.value) {
+    await runTrap(dropdownContent);
+  }
+  if (!props.trapFocus) {
+    dropdownContent.value.querySelector('[tabindex]')?.focus();
+  }
+  isRendered.value = true;
+  if (props.centerTipEl) {
+    setIconToCenterTo(props.centerTipEl.$el);
+  }
 }
 
 function buttonClicked(e) {
-  isOpen.value = !isOpen.value;
+  if (isOpen.value) {
+    hide(e);
+  } else {
+    show(e);
+  }
+  otherMenuOpened.value = false;
   apos.bus.$emit('context-menu-toggled', {
     menuId: props.menuId,
     isOpen: isOpen.value
   });
-  event.value = e;
 }
 
 function setArrow(el) {
   arrowEl.value = el;
 }
 
-function menuItemClicked(name) {
-  emit('item-clicked', name);
+function menuItemClicked(item) {
+  emit('item-clicked', item);
   hide();
 }
 
@@ -294,19 +360,35 @@ async function setDropdownPosition() {
     return;
   }
   const centerArrowEl = iconToCenterTo.value || dropdown.value;
+  // The proper ordering as recommended by Floating UI
+  // https://floating-ui.com/docs/flip#combining-with-shift
+  const middleware = [ offset(mOffset) ];
+  const flipMiddleware = flip({
+    // Always fallback to bottom when there is no placement
+    // that fits the viewport.
+    fallbackPlacements: [ 'bottom' ],
+    // Pass detectOverflow options to modify
+    // the clipping boundaries with our Admin UI top bar/Modal header
+    // in mind
+    padding: {
+      top: (window.apos.adminBar?.height || 0) + 10
+    }
+  });
+  const shiftMiddleware = shift({ padding: 5 });
+  if (props.menuPlacement.includes('-')) {
+    middleware.push(flipMiddleware, shiftMiddleware);
+  } else {
+    middleware.push(shiftMiddleware, flipMiddleware);
+  }
+  middleware.push(arrow({
+    element: arrowEl.value,
+    padding: 5
+  }));
   const {
     x, y, middlewareData, placement: dropdownPlacement
   } = await computePosition(centerArrowEl, dropdownContent.value, {
     placement: props.menuPlacement,
-    middleware: [
-      offset(menuOffset),
-      shift({ padding: 5 }),
-      flip(),
-      arrow({
-        element: arrowEl.value,
-        padding: 5
-      })
-    ]
+    middleware
   });
 
   placement.value = dropdownPlacement;
@@ -314,6 +396,10 @@ async function setDropdownPosition() {
     left: `${x}px`,
     top: `${y}px`
   };
+
+  if (!arrowEl.value) {
+    return;
+  }
 
   const { x: arrowX, y: arrowY } = middlewareData.arrow;
   Object.assign(arrowEl.value.style, {
@@ -393,8 +479,8 @@ function handleKeyboard(event) {
 }
 
 .apos-context-menu__popup--tb-padded .apos-context-menu__pane{
-  padding-top: 20px;
-  padding-bottom: 20px;
+  padding-top: $spacing-double;
+  padding-bottom: $spacing-double;
 }
 
 .apos-context-menu__popup {
@@ -414,9 +500,10 @@ function handleKeyboard(event) {
   @include type-base;
 
   & {
-    padding: 20px;
-    border: 1px solid var(--a-base-8);
-    border-radius: var(--a-border-radius);
+    padding: $spacing-half 0;
+    border: 1px solid var(--a-base-9);
+    border-radius: var(--a-border-radius-large);
+    font-size: var(--a-type-menu);
     box-shadow: var(--a-box-shadow);
     background-color: var(--a-background-primary);
   }
@@ -433,9 +520,8 @@ function handleKeyboard(event) {
     display: inline-block;
     list-style-type: none;
     width: max-content;
-    margin: none;
     margin-block: 0;
-    padding: 10px 0;
+    margin: $spacing-half 0;
   }
 }
 </style>

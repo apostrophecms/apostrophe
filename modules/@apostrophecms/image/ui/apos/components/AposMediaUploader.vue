@@ -44,6 +44,8 @@
 </template>
 
 <script>
+import { createId } from '@paralleldrive/cuid2';
+
 export default {
   name: 'AposMediaUploader',
   props: {
@@ -118,6 +120,7 @@ export default {
         this.$emit('upload-started');
         const files = event.dataTransfer ? event.dataTransfer.files : event.target.files;
         const fileCount = files.length;
+        let errorCount = 0;
 
         const emptyDoc = await apos.http.post(this.action, {
           busy: true,
@@ -128,19 +131,18 @@ export default {
         });
 
         // Send up placeholders
-        for (const file of files) {
-          this.createPlaceholder(file);
-        }
+        [ ...files ].forEach(() => this.createPlaceholder(emptyDoc));
 
-        const imageIds = [];
+        const images = [];
         // Actually upload the images and send them up once all done.
         for (const file of files) {
           try {
-            const img = await this.insertImage(file, emptyDoc);
+            const img = await this.insertImage(file, { ...emptyDoc });
             if (img?._id) {
-              imageIds.push(img._id);
+              images.push(img);
             }
           } catch (e) {
+            errorCount++;
             const msg = e.body && e.body.message ? e.body.message : this.$t('apostrophe:uploadError');
             await apos.notify(msg, {
               type: 'danger',
@@ -148,20 +150,35 @@ export default {
               dismiss: true,
               localize: false
             });
-            return;
           }
         }
 
-        await apos.notify('apostrophe:uploaded', {
-          type: 'success',
-          dismiss: true,
-          interpolate: {
-            count: fileCount
-          }
-        });
+        if (errorCount > 0) {
+          await apos.notify('apostrophe:uploadedError', {
+            type: 'danger',
+            icon: 'alert-circle-icon',
+            // Let it stick, we have too many server side notifications now
+            // (1 per failure).
+            dismiss: false,
+            interpolate: {
+              count: errorCount
+            }
+          });
+        }
+
+        const successCount = fileCount - errorCount;
+        if (successCount > 0) {
+          await apos.notify('apostrophe:uploaded', {
+            type: 'success',
+            dismiss: true,
+            interpolate: {
+              count: successCount
+            }
+          });
+        }
 
         // When complete, refresh the image grid, with the new images at top.
-        this.$emit('upload-complete', imageIds);
+        this.$emit('upload-complete', images);
       } finally {
         apos.bus.$emit('busy', {
           name: 'busy',
@@ -170,20 +187,11 @@ export default {
         this.$refs.upload.value = '';
       }
     },
-    createPlaceholder(file) {
-      const img = new Image();
-      const dimensions = {};
-      const objectUrl = window.URL.createObjectURL(file);
-      const self = this;
-
-      img.onload = function () {
-        dimensions.width = this.width;
-        dimensions.height = this.height;
-        window.URL.revokeObjectURL(objectUrl);
-
-        self.$emit('create-placeholder', dimensions);
-      };
-      img.src = objectUrl;
+    createPlaceholder(piece) {
+      this.$emit('create-placeholder', {
+        ...piece,
+        __placeholder: createId()
+      });
     },
     async insertImage(file, emptyDoc) {
       const formData = new window.FormData();
@@ -226,8 +234,9 @@ export default {
         }
       }
     },
-    // Trigger the file input click (via `this.create`) when pressing Enter or Space
-    // of the drag&drop area, which is made focusable unlike the input file.
+    // Trigger the file input click (via `this.create`) when pressing Enter or
+    // Space of the drag&drop area, which is made focusable unlike the input
+    // file.
     onUploadDragAndDropKeyDown(e) {
       const isEnterPressed = e.key === 'Enter' || e.code === 'Enter' || e.code === 'NumpadEnter';
       const isSpaceBarPressed = e.keyCode === 32 || e.code === 'Space';

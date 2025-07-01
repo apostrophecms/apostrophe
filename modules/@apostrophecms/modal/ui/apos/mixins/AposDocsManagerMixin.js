@@ -44,10 +44,16 @@ export default {
         // Treated as min for consistency with AposMinMaxCount
         return 'min';
       }
-      if (this.relationshipField.min && this.checked.length < this.relationshipField.min) {
+      if (
+        this.relationshipField.min &&
+        this.checked.length < this.relationshipField.min
+      ) {
         return 'min';
       }
-      if (this.relationshipField.max && this.checked.length > this.relationshipField.max) {
+      if (
+        this.relationshipField.max &&
+        this.checked.length > this.relationshipField.max
+      ) {
         return 'max';
       }
 
@@ -233,11 +239,11 @@ export default {
         // For now we add it to a set of ids to be selected on the next refresh
         // of the items array, which works well for newly inserted documents.
         // In the future this will be replaced with logic that can deal with
-        // selecting any document, but we should implement the "Really Select All,
-        // Not Just This Page" action first.
+        // selecting any document, but we should implement the "Really Select
+        // All, Not Just This Page" action first.
         //
-        // We know we always work with drafts in the media manager, so let's adapt
-        // a published doc _id without a fuss
+        // We know we always work with drafts in the media manager, so let's
+        // adapt a published doc _id without a fuss
         this.selectPending.add(doc._id.replace(':published', ':draft'));
       }
       if (action === 'archive') {
@@ -267,9 +273,34 @@ export default {
         }
       });
       if (this.allPiecesSelection) {
-        this.allPiecesSelection.isSelected = this.checked.length === this.allPiecesSelection.total ||
+        const totalChecked = this.checked.length === this.allPiecesSelection.total;
+        this.allPiecesSelection.isSelected = totalChecked ||
           (this.checked.length && this.maxReached());
       }
+    },
+    getDocModuleName(doc) {
+      // Don't assume the piece has the type of the module,
+      // this could be a virtual piece type such as "submitted-draft"
+      // that manages docs of many types
+      if (doc) {
+        return doc.slug.startsWith('/') ? '@apostrophecms/page' : doc.type;
+      }
+      return this.moduleName;
+    },
+    getContentChangedTypes(doc, types) {
+      const submitDraftType = '@apostrophecms/submitted-draft';
+      if (doc) {
+        const moduleName = this.getDocModuleName(doc);
+        return [
+          moduleName,
+          submitDraftType,
+          ...moduleName !== doc.type ? [ doc.type ] : []
+        ];
+      }
+      if (!types) {
+        return [ this.moduleName, submitDraftType ];
+      }
+      return [ ...types, submitDraftType ];
     }
   }
 };

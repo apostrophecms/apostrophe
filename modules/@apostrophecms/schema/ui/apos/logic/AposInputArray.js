@@ -1,7 +1,7 @@
 import AposInputMixin from 'Modules/@apostrophecms/schema/mixins/AposInputMixin';
 import AposInputFollowingMixin from 'Modules/@apostrophecms/schema/mixins/AposInputFollowingMixin';
 import AposInputConditionalFieldsMixin from 'Modules/@apostrophecms/schema/mixins/AposInputConditionalFieldsMixin';
-import { getConditionTypesObject } from 'Modules/@apostrophecms/schema/lib/conditionalFields';
+import { getConditionTypesObject, hasParentConditionalField } from 'Modules/@apostrophecms/schema/lib/conditionalFields';
 
 import { createId } from '@paralleldrive/cuid2';
 import { klona } from 'klona';
@@ -27,7 +27,8 @@ export default {
   },
   data() {
     const next = this.getNext();
-    // this.schema is a computed property and is not available in data, that's why we use this.field.schema here instead
+    // this.schema is a computed property and is not available in data, that's
+    // why we use this.field.schema here instead
     const items = modelItems(next, this.field, this.field.schema);
     return {
       next,
@@ -41,10 +42,20 @@ export default {
   },
   computed: {
     isInlineTable() {
-      return this.field.style === 'table' && this.field.inline;
+      return this.field.style === 'table' && this.isInline;
     },
     isInlineStandard() {
-      return this.field.style !== 'table' && this.field.inline;
+      return this.field.style !== 'table' && this.isInline;
+    },
+    isInline() {
+      return !!this.field.inline;
+    },
+    shouldResetConditionalFields() {
+      if (!this.isInline) {
+        return false;
+      }
+
+      return hasParentConditionalField(this.schema);
     },
     isDraggable() {
       if (this.field.draggable === false) {
@@ -59,24 +70,29 @@ export default {
       return true;
     },
     isAddDisabled() {
-      return this.field.readOnly || (this.field.max && (this.items.length >= this.field.max));
+      return this.field.readOnly ||
+        (this.field.max && (this.items.length >= this.field.max));
     },
     inlineContextMenu() {
       return [
-        ...(this.isDraggable ? [
-          {
-            label: this.$t('apostrophe:moveUp'),
-            action: 'move-up'
-          },
-          {
-            label: this.$t('apostrophe:moveDown'),
-            action: 'move-down'
-          }
-        ] : []),
-        ...(this.field.duplicate !== false ? [ {
-          label: this.$t('apostrophe:duplicate'),
-          action: 'duplicate'
-        } ] : []),
+        ...(this.isDraggable
+          ? [
+            {
+              label: this.$t('apostrophe:moveUp'),
+              action: 'move-up'
+            },
+            {
+              label: this.$t('apostrophe:moveDown'),
+              action: 'move-down'
+            }
+          ]
+          : []),
+        ...(this.field.duplicate !== false
+          ? [ {
+            label: this.$t('apostrophe:duplicate'),
+            action: 'duplicate'
+          } ]
+          : []),
         {
           label: this.$t('apostrophe:remove'),
           action: 'remove',
@@ -162,10 +178,19 @@ export default {
           this.validateAndEmit();
         }
       }
+    },
+    followingValues: {
+      // Re-evaluate following values when the parentFollowingValues prop changes
+      async handler(values) {
+        if (this.shouldResetConditionalFields) {
+          this.setItemsConditionalFields();
+        }
+      },
+      deep: true
     }
   },
   async mounted() {
-    if (this.field.inline) {
+    if (this.isInline) {
       await this.evaluateExternalConditions();
       this.setItemsConditionalFields();
     }
@@ -233,17 +258,29 @@ export default {
     }) {
       this.items.splice(newIndex, 0, this.items.splice(oldIndex, 1)[0]);
     },
-    getItemsSchema(_id) {
+    getItemData(_id) {
       return (this.items.find((item) => item._id === _id))?.schemaInput.data;
+    },
+    getItemDataWithFollowingValues(itemId) {
+      const data = this.getItemData(itemId) || {};
+      const followingValues = this.computeFollowingValues(data, true);
+      return {
+        ...followingValues,
+        ...data
+      };
     },
     setItemsConditionalFields(itemId) {
       if (itemId) {
-        this.itemsConditionalFields[itemId] = this.getConditionalFields(this.getItemsSchema(itemId));
+        this.itemsConditionalFields[itemId] = this.getConditionalFields(
+          this.getItemDataWithFollowingValues(itemId)
+        );
         return;
       }
 
       for (const _id of Object.keys(this.itemsConditionalFields)) {
-        this.itemsConditionalFields[_id] = this.getConditionalFields(this.getItemsSchema(_id));
+        this.itemsConditionalFields[_id] = this.getConditionalFields(
+          this.getItemDataWithFollowingValues(_id)
+        );
       }
     },
     emitValidate() {
@@ -263,7 +300,9 @@ export default {
         return 'max';
       }
       if (value.length && this.field.fields && this.field.fields.add) {
-        const [ uniqueFieldName, uniqueFieldSchema ] = Object.entries(this.field.fields.add).find(([ , subfield ]) => subfield.unique) || [];
+        const [ uniqueFieldName, uniqueFieldSchema ] = Object
+          .entries(this.field.fields.add)
+          .find(([ , subfield ]) => subfield.unique) || [];
         if (uniqueFieldName) {
           const duplicates = this.next
             .map(item =>
@@ -276,10 +315,12 @@ export default {
             duplicates.forEach(duplicate => {
               this.items.forEach(item => {
                 uniqueFieldSchema.type === 'relationship'
-                  ? item.schemaInput.data[uniqueFieldName] && item.schemaInput.data[uniqueFieldName].forEach(datum => {
-                    item.schemaInput.fieldState[uniqueFieldName].duplicate = duplicate.split('|').find(i => i === datum._id);
+                  ? item.schemaInput.data[uniqueFieldName]?.forEach(datum => {
+                    item.schemaInput.fieldState[uniqueFieldName].duplicate = duplicate
+                      .split('|').find(i => i === datum._id);
                   })
-                  : item.schemaInput.fieldState[uniqueFieldName].duplicate = item.schemaInput.data[uniqueFieldName] === duplicate;
+                  : item.schemaInput.fieldState[uniqueFieldName].duplicate = item
+                    .schemaInput.data[uniqueFieldName] === duplicate;
               });
             });
 
@@ -425,7 +466,7 @@ export default {
       );
     },
     inlineMenuHandler(event, { index, id }) {
-      switch (event) {
+      switch (event.action) {
         case 'move-up':
           this.moveUpdate({
             oldIndex: index,

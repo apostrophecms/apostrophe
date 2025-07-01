@@ -7,6 +7,7 @@
       <label
         class="apos-login__project apos-login__project-env"
         :class="[`apos-login__project-env--${env}`]"
+        data-apos-test="environment"
       >
         {{ env }}
       </label>

@@ -32,7 +32,7 @@ describe('Urls', function() {
         try {
           assert(apos.url.build('#') === '#');
         } catch (e) {
-          console.error(e.stack);
+          assert(false);
         }
       });
       it('adds a single parameter to a queryless URL', function() {

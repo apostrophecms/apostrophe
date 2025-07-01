@@ -1,9 +1,3 @@
-<!--
-  AposMediaManager will be in charge of all media-related state logic
-  this includes doing the selecting and deselecting of items, deciding the editor/selection view,
-  emitting batch action events, etc. All sub views will recieve `media` as a prop
--->
-
 <template>
   <AposModal
     :modal="modal"
@@ -13,14 +7,20 @@
     @show-modal="modal.showModal = true"
     @esc="confirmAndCancel"
   >
-    <template v-if="relationshipField" #secondaryControls>
+    <template
+      v-if="relationshipField"
+      #secondaryControls
+    >
       <AposButton
         type="default"
         label="apostrophe:cancel"
         @click="confirmAndCancel"
       />
     </template>
-    <template v-else #secondaryControls>
+    <template
+      v-else
+      #secondaryControls
+    >
       <AposButton
         type="default"
         label="apostrophe:exit"
@@ -52,7 +52,10 @@
     </template>
     <template #main>
       <AposLoadingBlock v-if="isFirstLoading" />
-      <AposModalBody v-else>
+      <AposModalBody
+        v-else
+        ref="modalBody"
+      >
         <template #bodyHeader>
           <AposDocsManagerToolbar
             :selected-state="selectAllState"
@@ -67,9 +70,11 @@
             :checked-count="checked.length"
             :module-name="moduleName"
             :options="{noPager: true}"
+            :batch-operations="moduleOptions.batchOperations"
             @select-click="selectClick"
             @search="search"
             @filter="filter"
+            @batch="handleBatchAction"
           />
         </template>
         <template #bodyMain>
@@ -83,9 +88,6 @@
             :module-options="moduleOptions"
             :max-reached="maxReached()"
             :is-last-page="isLastPage"
-            :options="{
-              hideCheckboxes: !relationshipField
-            }"
             :relationship-field="relationshipField"
             :is-scroll-loading="isScrollLoading"
             @edit="updateEditing"
@@ -126,8 +128,7 @@
 </template>
 
 <script>
-import { createId } from '@paralleldrive/cuid2';
-import { debounceAsync } from 'Modules/@apostrophecms/ui/utils';
+import { debounceAsync, asyncTaskQueue } from 'Modules/@apostrophecms/ui/utils';
 import AposModifiedMixin from 'Modules/@apostrophecms/ui/mixins/AposModifiedMixin';
 import AposDocsManagerMixin from 'Modules/@apostrophecms/modal/mixins/AposDocsManagerMixin';
 
@@ -148,6 +149,8 @@ export default {
       isFirstLoading: true,
       isLoading: false,
       isScrollLoading: false,
+      skipLoadObserver: false,
+      lock: 0,
       loadRef: null,
       totalPages: 1,
       currentPage: 1,
@@ -170,6 +173,7 @@ export default {
       debouncedGetMedia: debounceAsync(this.getMedia, DEBOUNCE_TIMEOUT, {
         onSuccess: this.appendMedia
       }),
+      scrollQueue: asyncTaskQueue(),
       loadObserver: new IntersectionObserver(
         this.handleIntersect,
         {
@@ -177,7 +181,11 @@ export default {
           rootMargin: '30px',
           threshold: 0
         }
-      )
+      ),
+      // A flag to indicate if the upload was triggered by the user.
+      // If true, it'll enable additional logic to avoid duplicate items
+      // when infinite scrolling.
+      uploaded: false
     };
   },
   computed: {
@@ -186,12 +194,12 @@ export default {
       if (this.relationshipField) {
         result = {
           key: 'apostrophe:chooseDocType',
-          type: this.$t(this.moduleLabels.pluralLabel)
+          type: this.$t(this.moduleLabels.plural)
         };
       } else {
         result = {
           key: 'apostrophe:manageDocType',
-          type: this.$t(this.moduleLabels.pluralLabel)
+          type: this.$t(this.moduleLabels.plural)
         };
       }
       return result;
@@ -214,8 +222,8 @@ export default {
         return null;
       }
       return {
-        label: this.moduleOptions.label,
-        pluralLabel: this.moduleOptions.pluralLabel
+        singular: this.moduleOptions.label,
+        plural: this.moduleOptions.pluralLabel
       };
     },
     accept() {
@@ -233,21 +241,29 @@ export default {
       if (this.relationshipField && (this.relationshipField.max === 1)) {
         return {
           key: 'apostrophe:selectOneLabel',
-          typeLabel: this.$t(this.moduleLabels.label)
+          typeLabel: this.$t(this.moduleLabels.singular)
         };
       } else {
         return {
           key: 'apostrophe:selectManyLabel',
-          typeLabel: this.$t(this.moduleLabels.pluralLabel)
+          typeLabel: this.$t(this.moduleLabels.plural)
         };
       }
     },
     isLastPage() {
-      return this.totalPages > 1 && this.currentPage === this.totalPages;
+      return this.totalPages > 1 &&
+        this.currentPage === this.totalPages &&
+        !this.isScrollLoading;
     }
   },
 
   watch: {
+    // Reset uploaded flag when the item state is reset.
+    items(newVal) {
+      if (newVal.length === 0) {
+        this.uploaded = false;
+      }
+    },
     async checked (newVal, oldVal) {
       this.lastSelected = newVal.at(-1);
       if (newVal.length > 1 || newVal.length === 0) {
@@ -281,11 +297,17 @@ export default {
 
   async mounted() {
     this.modal.active = true;
-    // Do these before any async work or they might get added after they are "removed"
+    // Do these before any async work or they might get added after they are
+    // "removed"
     apos.bus.$on('content-changed', this.onContentChanged);
     apos.bus.$on('command-menu-manager-close', this.confirmAndCancel);
-    await this.debouncedGetMedia.skipDelay({ tags: true });
-    this.isFirstLoading = false;
+
+    // Load the first page of media, no debounce.
+    await this.scrollQueue.add(async () => {
+      const result = await this.getMedia({ tags: true });
+      await this.appendMedia(result);
+      this.isFirstLoading = false;
+    });
   },
 
   beforeUnmount() {
@@ -295,6 +317,11 @@ export default {
   },
 
   methods: {
+    hasScroll() {
+      const gridHeight = this.$refs.display?.$el?.offsetHeight;
+      const containerHeight = this.$refs.modalBody?.getBodyMainRef()?.offsetHeight;
+      return gridHeight > containerHeight;
+    },
     setDefaultFilters() {
       this.moduleOptions.filters.forEach(filter => {
         this.filterValues[filter.name] = filter.def;
@@ -342,9 +369,9 @@ export default {
 
       if (options.tags) {
         if (filtered) {
-          // We never filter the tag list because they are presented like folders,
-          // and folders don't disappear when empty. So we need to make a
-          // separate query for distinct tags if our first query was filtered
+          // We never filter the tag list because they are presented like
+          // folders, and folders don't disappear when empty. So we need to make
+          // a separate query for distinct tags if our first query was filtered
           const apiResponse = (await apos.http.get(
             this.moduleOptions.action, {
               busy: true,
@@ -360,6 +387,7 @@ export default {
         }
       }
 
+      result.options = options;
       result.currentPage = apiResponse.currentPage;
       result.totalPages = apiResponse.pages;
       result.items = [];
@@ -369,17 +397,46 @@ export default {
       return result;
     },
     async appendMedia({
-      tagList, currentPage, totalPages, items
+      tagList, currentPage, totalPages, items, options = {}
     }) {
+      if (typeof options.lock === 'number' && options.lock !== this.lock) {
+        return;
+      }
       if (Array.isArray(tagList)) {
         this.tagList = tagList;
       }
-      this.items = [];
       this.currentPage = currentPage;
       this.totalPages = totalPages;
+      // Do not perform extra work if not needed
+      const skipIds = options.loadMoreIfSkipped && !options.loadMore
+        ? new Set(this.items.map(item => item._id))
+        : new Set();
+
+      let skipped = 0;
       for (const item of items) {
+        if (skipIds.has(item._id)) {
+          skipped++;
+          continue;
+        }
         this.items.push(item);
       }
+
+      // In effect when resetting the state (e.g. search) and we want to
+      // load items until the scroll is available.
+      if (options.loadMore) {
+        this.isLoading = false;
+        await this.$nextTick();
+        await this.loadUntilScroll(options.lock);
+      } else if (options.loadMoreIfSkipped && skipped > 0) {
+        // In effect after an upload and when the user scrolls down.
+        // We want to load more items if we skipped some due to duplicates
+        // (items that were added to the list without being requested from
+        // the server index route).
+        // This ensures that the inifinite scroll will work as expected.
+        await this.loadWhenIntersecting(options.lock);
+      }
+
+      return skipped;
     },
     async refetchMedia(opts) {
       this.isLoading = true;
@@ -388,26 +445,50 @@ export default {
       await this.debouncedGetMedia.skipDelay(opts);
       this.isLoading = false;
       this.modified = false;
-      this.updateEditing(null);
+      this.clearSelected();
     },
     async filter(name, value) {
       this.filterValues[name] = value;
       this.refetchMedia();
     },
-    createPlaceholder(dimensions) {
-      this.items.unshift({
-        _id: createId(),
-        title: 'placeholder image',
-        dimensions
-      });
+    createPlaceholder(piece) {
+      this.items.unshift(piece);
     },
-    async completeUploading(imgIds) {
-      this.currentPage = 1;
-      this.items = [];
-      await this.debouncedGetMedia.skipDelay();
-      if (Array.isArray(imgIds) && imgIds.length && this.items.length === 0) {
-        const [ widgetOptions = {} ] = apos.area.widgetOptions;
-        const [ width, height ] = widgetOptions.minSize || [];
+    async completeUploading(images) {
+      this.uploaded = true;
+      const [ widgetOptions = {} ] = apos.area.widgetOptions;
+      const [ width, height ] = widgetOptions.minSize || [];
+      let minSizeError = false;
+
+      // Filter out images that are too small
+      const uploaded = images.filter(image => {
+        if (width && image.attachment?.width && width > image.attachment.width) {
+          minSizeError = true;
+          if (this.editing?._id === image._id) {
+            this.updateEditing(null);
+          }
+          return false;
+        }
+        if (height && image.attachment?.height && height > image.attachment.height) {
+          minSizeError = true;
+          if (this.editing?._id === image._id) {
+            this.updateEditing(null);
+          }
+          return false;
+        }
+        return true;
+      });
+      const imgIds = uploaded.map(image => image._id);
+
+      this.items = this.items.map(item => {
+        if (!item.__placeholder) {
+          return item;
+        }
+        return uploaded.shift();
+      })
+        .filter(image => (!!image && !image.__placeholder));
+
+      if (minSizeError) {
         await apos.notify('apostrophe:minSize', {
           type: 'danger',
           icon: 'alert-circle-icon',
@@ -417,8 +498,6 @@ export default {
             height
           }
         });
-        this.updateEditing(null);
-        return;
       }
       if (Array.isArray(imgIds) && imgIds.length) {
         const checked = this.checked.concat(imgIds);
@@ -434,7 +513,10 @@ export default {
       this.checked = [];
     },
     async updateEditing(id) {
-      const item = this.items.find(item => item._id === id);
+      let item = this.items.find(item => item._id === id);
+      if (!item) {
+        item = this.checkedDocs.find(item => item._id === id);
+      }
       // We only care about the current doc for this prompt,
       // we are not in danger of discarding a selection when
       // we switch images
@@ -460,7 +542,10 @@ export default {
     select(id) {
       if (this.checked.includes(id)) {
         this.updateEditing(id);
-      } else if (this.relationshipField && (this.relationshipField.max > 1 || !this.relationshipField.max)) {
+      } else if (
+        this.relationshipField &&
+        (this.relationshipField.max > 1 || !this.relationshipField.max)
+      ) {
         this.selectAnother(id);
       } else {
         this.checked = [ id ];
@@ -509,27 +594,32 @@ export default {
     },
 
     async search(value) {
+      this.lock++;
+      this.skipLoadObserver = true;
       this.filterValues.autocomplete = value;
       this.currentPage = 1;
       this.items = [];
       this.isLoading = true;
-      await this.debouncedGetMedia();
+      await this.debouncedGetMedia({
+        loadMore: true,
+        lock: this.lock
+      });
       this.isLoading = false;
+      this.skipLoadObserver = false;
     },
-
-    async onContentChanged({ action, doc }) {
-      if (doc.type !== '@apostrophecms/image' || ![ 'archive', 'update' ].includes(action)) {
+    async onContentChanged({
+      action, doc, docTypes
+    }) {
+      const types = this.getContentChangedTypes(doc, docTypes);
+      if (!types.includes(this.moduleName)) {
         return;
       }
-
       this.modified = false;
-      if (action === 'archive') {
-        this.removeStateDoc(doc);
-      }
       if (action === 'update') {
         this.updateStateDoc(doc);
+      } else {
+        this.refetchMedia();
       }
-
       await this.updateEditing(null);
     },
 
@@ -545,6 +635,8 @@ export default {
       }
     },
 
+    // Keep it for later when we will be able to udpate the UI without
+    // refreshing existing because it would break pagination.
     removeStateDoc(doc) {
       const index = this.items.findIndex(item => item._id === doc._id);
       const checkedIndex = this.checked.findIndex(checkedId => checkedId === doc._id);
@@ -561,44 +653,101 @@ export default {
       }
     },
 
+    async loadUntilScroll(lock) {
+      let attempts = 0;
+      let shouldLoad = true;
+      while (!this.hasScroll() && shouldLoad && attempts < 20) {
+        shouldLoad = await this.loadWhenIntersecting(lock);
+        attempts++;
+        await this.$nextTick();
+      }
+    },
     async handleIntersect(entries) {
       for (const entry of entries) {
         if (
           entry.isIntersecting &&
-          this.currentPage < this.totalPages &&
           !this.isFirstLoading &&
-          this.items.length
+          !this.skipLoadObserver
         ) {
-          this.currentPage++;
-          this.isScrollLoading = true;
-          await this.$nextTick();
-          this.loadRef.scrollIntoView({
-            behavior: 'smooth'
-          });
-          await this.debouncedGetMedia.skipDelay();
-          this.isScrollLoading = false;
+          this.scrollQueue.add(async () => {
+            await this.loadWhenIntersecting();
+            await this.$nextTick();
+            await this.loadUntilScroll();
+          // eslint-disable-next-line no-console
+          }).catch(console.error);
         }
       }
     },
+    async loadWhenIntersecting(lock) {
+      if (
+        this.currentPage < this.totalPages &&
+        this.items.length
+      ) {
+        this.currentPage++;
+        this.isScrollLoading = true;
+        const result = await this.getMedia({
+          lock,
+          // Tell the load handler to request more items if it finds
+          // duplicates in the response, only after an upload.
+          loadMoreIfSkipped: this.uploaded
+        });
+        // Not efficient, the currentPage is already incremented.
+        // We can't revert it because we don't know what happened meanwhile.
+        // This is an architectural issue and a source of racing conditions.
+        // It can be fixed only by mass refactoring at the right time in
+        // the future.
+        if (typeof lock === 'number' && lock !== this.lock) {
+          this.isScrollLoading = false;
+          return false;
+        }
+        await this.appendMedia(result);
+        this.isScrollLoading = false;
+
+        return true;
+      }
+
+      return false;
+    },
     observeLoadRef() {
-      if (this.totalPages < 2) {
+      if (this.totalPages < 2 || !this.loadRef) {
         return;
       }
 
       this.loadObserver.observe(this.loadRef);
     },
-
     disconnectObserver() {
       if (this.loadObserver) {
         this.loadObserver.disconnect();
       }
     },
-
     setLoadRef(ref) {
       this.loadRef = ref;
       this.disconnectObserver();
       if (ref) {
         this.observeLoadRef();
+      }
+    },
+    async handleBatchAction({
+      label, action, requestOptions = {}, messages
+    }) {
+      if (action) {
+        try {
+          await apos.http.post(`${this.moduleOptions.action}/${action}`, {
+            body: {
+              ...requestOptions,
+              _ids: this.checked,
+              messages,
+              type: this.checked.length === 1
+                ? this.moduleLabels.singular
+                : this.moduleLabels.plural
+            }
+          });
+        } catch (error) {
+          apos.notify('apostrophe:errorBatchOperationNoti', {
+            interpolate: { operation: this.$t(label) },
+            type: 'danger'
+          });
+        }
       }
     }
   }

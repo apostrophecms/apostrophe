@@ -42,7 +42,10 @@
         @click="create()"
       />
     </template>
-    <template v-if="relationshipField" #leftRail>
+    <template
+      v-if="relationshipField"
+      #leftRail
+    >
       <AposModalRail>
         <div class="apos-pages-manager__relationship__rail">
           <div class="apos-pages-manager__relationship__counts">
@@ -63,7 +66,10 @@
     </template>
     <template #main>
       <AposModalBody>
-        <template v-if="!relationshipField" #bodyHeader>
+        <template
+          v-if="!relationshipField"
+          #bodyHeader
+        >
           <AposDocsManagerToolbar
             :selected-state="selectAllState"
             :total-pages="totalPages"
@@ -108,7 +114,7 @@
             :icons="icons"
             :options="treeOptions"
             :module-options="moduleOptions"
-            @update="update"
+            @update="onUpdate"
           />
         </template>
       </AposModalBody>

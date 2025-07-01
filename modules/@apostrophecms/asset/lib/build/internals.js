@@ -10,10 +10,11 @@ module.exports = (self) => {
     // Compute the configuration provided per module as a `build` property.
     // It has the same shape as the legacy `webpack` property. The difference
     // is that the `build` property now supports different "vendors". An upgrade
-    // path would be moving existing `webpack` configurations to `build.webpack`.
-    // However, we keep the legacy `webpack` property for compatibility reasons.
-    // Only external build modules will consume the `build` property.
-    // Uses the public API `getRegisteredModules()` to get the cached list of modules.
+    // path would be moving existing `webpack` configurations to
+    // `build.webpack`. However, we keep the legacy `webpack` property for
+    // compatibility reasons. Only external build modules will consume the
+    // `build` property. Uses the public API `getRegisteredModules()` to get the
+    // cached list of modules.
     async setBuildExtensions() {
       self.moduleBuildExtensions = await getBuildExtensions({
         getMetadata: self.apos.synth.getMetadata,
@@ -24,11 +25,11 @@ module.exports = (self) => {
 
     // Ensure the namespaced by alias `moduleBuildExtensions` data is available
     // for the existing systems (BC).
-    // Generate the entrypoints configuration - the new format for the build module,
-    // describing the entrypoint configuration, including the extra bundles.
-    // Pass evnironment variable `APOS_ASSET_DEBUG=1` to see the debug output in both
-    // external build and the legacy webpack mode.
-    // See the `getBuildEntrypoints()` method for the entrypoint configuration schema.
+    // Generate the entrypoints configuration - the new format for the build
+    // module, describing the entrypoint configuration, including the extra
+    // bundles. Pass evnironment variable `APOS_ASSET_DEBUG=1` to see the debug
+    // output in both external build and the legacy webpack mode. See the
+    // `getBuildEntrypoints()` method for the entrypoint configuration schema.
     setBuildExtensionsForExternalModule() {
       if (!self.hasBuildModule()) {
         return;
@@ -115,11 +116,10 @@ module.exports = (self) => {
       });
     },
 
-    // Get the entrypoints containing manifest data currently initialized. The information
-    // is available after the build initialization is done:
-    // - after an actual build task (any environment)
-    // - after the dev server is started (development)
-    // - after a saved build manifest is loaded (production)
+    // Get the entrypoints containing manifest data currently initialized. The
+    // information is available after the build initialization is done: - after
+    // an actual build task (any environment) - after the dev server is started
+    // (development) - after a saved build manifest is loaded (production)
     getCurrentBuildEntrypoints() {
       return self.currentBuildManifest.entrypoints ?? [];
     },
@@ -162,7 +162,8 @@ module.exports = (self) => {
 
     // Saves the build manifest to disk. Also adds `bundles` to the manifest
     // if available as entrypoint information.
-    // See the manifest section in `configureBuildModule()` method docs for more information.
+    // See the manifest section in `configureBuildModule()` method docs for
+    // more information.
     async saveBuildManifest(manifest) {
       const {
         entrypoints, ts, devServerUrl, hmrTypes
@@ -195,13 +196,15 @@ module.exports = (self) => {
       );
     },
 
-    // Called by the asset build process to compute the bundle data, write `-bundle` files,
-    // enhance the entrypoints with a `bundles` property, and return a list of all bundle files.
+    // Called by the asset build process to compute the bundle data, write
+    // `-bundle` files, enhance the entrypoints with a `bundles` property, and
+    // return a list of all bundle files.
     //
-    // The `bundles` (Set) property added to the entrypoints configuration contans the bundle files
-    // used later when injecting the scripts and stylesheets in the browser.
-    // The `metadata` is the return value of the external build module build method
-    // (see `self.build()` and `configureBuildModule()`).
+    // The `bundles` (Set) property added to the entrypoints configuration
+    // contans the bundle files used later when injecting the scripts and
+    // stylesheets in the browser. The `metadata` is the return value of the
+    // external build module build method (see `self.build()` and
+    // `configureBuildModule()`).
     async computeBuildScenes(metadata, { write = true } = {}) {
       const bundlePath = self.getBundleRootDir();
       const buildRoot = self.getBuildRootDir();
@@ -233,9 +236,9 @@ module.exports = (self) => {
         const bundles = configs.reduce((acc, config) => {
           const { root, files } = config.manifest;
 
-          // const jsTargetName = `${scene}-${config.condition ?? 'module'}-bundle.js`;
-          // Combining script type modules is a bad idea. We need to load them per
-          // entrypoint and not a scene.
+          // const jsTargetName = `${scene}-${config.condition ??
+          // 'module'}-bundle.js`; Combining script type modules is a bad idea.
+          // We need to load them per entrypoint and not a scene.
           const prefix = config.name === scene ? scene : `${scene}-${config.name}`;
           const jsTargetName = `${prefix}-${config.condition ?? 'module'}-bundle.js`;
           // CSS bundles are always scene based.
@@ -288,10 +291,11 @@ module.exports = (self) => {
       }
     },
 
-    // Accepts the result of the external build module build method (see `self.build()`
-    // and `configureBuildModule()`), creates a list of all files that need to be copied
-    // from the build (`apos-build`) to the bundle (`public/apos-frontent`) directory
-    // based on the manifest data available, copies them, and returns the list.
+    // Accepts the result of the external build module build method (see
+    // `self.build()` and `configureBuildModule()`), creates a list of all files
+    // that need to be copied from the build (`apos-build`) to the bundle
+    // (`public/apos-frontent`) directory based on the manifest data available,
+    // copies them, and returns the list.
     async copyBuildArtefacts(metadata) {
       const buildRoot = self.getBuildRootDir();
       const bundleRoot = self.getBundleRootDir();
@@ -359,22 +363,17 @@ module.exports = (self) => {
       return result;
     },
 
-    // Copy a `folder` (if exists) from any existing module to the `target` directory.
-    // The `modules` option is usually the result of `self.getRegisteredModules()`.
-    // It's not resolved internally to avoid overhead (it's not cheap). The caller
-    // is responsible for resolving and caching the modules list.
-    // `target` is the absolute path to the target directory.
-    // Usage:
-    // const modules = self.getRegisteredModules();
-    // const copied = await self.copyModulesFolder({
-    //   target: '/path/to/build',
-    //   folder: 'public',
-    //   modules
-    // });
-    // Returns an array of objects with the following properties:
-    //   - `name`: the module name.
-    //   - `source`: the absolute path to the source directory.
-    //   - `target`: the absolute path to the target directory.
+    // Copy a `folder` (if exists) from any existing module to the `target`
+    // directory. The `modules` option is usually the result of
+    // `self.getRegisteredModules()`. It's not resolved internally to avoid
+    // overhead (it's not cheap). The caller is responsible for resolving and
+    // caching the modules list. `target` is the absolute path to the target
+    // directory. Usage: const modules = self.getRegisteredModules(); const
+    // copied = await self.copyModulesFolder({ target: '/path/to/build', folder:
+    // 'public', modules }); Returns an array of objects with the following
+    // properties: - `name`: the module name. - `source`: the absolute path to
+    // the source directory. - `target`: the absolute path to the target
+    // directory.
     async copyModulesFolder({
       target, folder, modules
     }) {
@@ -423,21 +422,22 @@ module.exports = (self) => {
       return result;
     },
 
-    // Generate the browser script/stylesheet import markup for a scene based on the available
-    // manifest data and environmnent.
-    // The `scene` argument is the scene name (`apos` or `public`), and the `output`
-    // argument is the output type - `js` or `css`.
-    // The `modulePreload` argument is a Set that might be provided by the caller to collect
-    // the unique list of module preload links (this method is called multiple times).
+    // Generate the browser script/stylesheet import markup for a scene based
+    // on the available manifest data and environmnent. The `scene` argument is
+    // the scene name (`apos` or `public`), and the `output` argument is the
+    // output type - `js` or `css`. The `modulePreload` argument is a Set that
+    // might be provided by the caller to collect the unique list of module
+    // preload links (this method is called multiple times).
     getBundlePageMarkup({
       scene, output, modulePreload = new Set()
     }) {
       let entrypoints;
 
       // CSS is special (as always!). In HMR mode, we want to serve ONLY
-      // the CSS that is not HMRed (because we run either `apos` or `public` dev server).
-      // We filter it no matter the output, because `apos` type doesn't have `css` in its `output
-      // property. This is intended, the CSS is combined and delivered via the `index` entrypoint.
+      // the CSS that is not HMRed (because we run either `apos` or `public`
+      // dev server). We filter it no matter the output, because `apos` type
+      // doesn't have `css` in its `output property. This is intended, the CSS
+      // is combined and delivered via the `index` entrypoint.
       if (self.currentBuildManifest.hmrTypes && output === 'css') {
         entrypoints = self.apos.asset.getCurrentBuildEntrypoints()
           .filter(e => !!e.manifest &&
@@ -446,7 +446,8 @@ module.exports = (self) => {
           );
       } else {
         entrypoints = self.apos.asset.getCurrentBuildEntrypoints()
-          .filter(e => !!e.manifest && e.scenes.includes(scene) && e.outputs?.includes(output));
+          .filter((e) =>
+            !!e.manifest && e.scenes.includes(scene) && e.outputs?.includes(output));
       }
 
       const markup = [];
@@ -510,8 +511,8 @@ module.exports = (self) => {
     },
 
     // Deploy all public assets for release. Executes only in production.
-    // `files` is a flat array of relative to the bundleRoot (getBundleRoot) paths
-    // to the files to be deployed.
+    // `files` is a flat array of relative to the bundleRoot (getBundleRoot)
+    // paths to the files to be deployed.
     async deploy(files) {
       if (process.env.NODE_ENV !== 'production') {
         return;

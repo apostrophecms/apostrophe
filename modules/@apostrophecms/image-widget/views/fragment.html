@@ -1,0 +1,89 @@
+{% fragment render(widget = {}, options = {}, manager = {}, contextOptions = {}) %}
+  {%- set attachment = apos.image.first(widget._image) -%}
+  {%- if widget.aposPlaceholder and manager.options.placeholderUrl -%}
+    <img
+      src="{{ manager.options.placeholderUrl }}"
+      alt="{{ __t('apostrophe:imagePlaceholder') }}"
+      class="image-widget-placeholder"
+    />
+  {%- elif attachment -%}
+      {%- set className = options.className or manager.options.className -%}
+<figure{% if className %} class="{{ className + "__wrapper" }}"{% endif %} style="{{ _figureStyle(options, manager) | trim }}">
+  {{ _imageWithLink(widget, attachment, options, manager, contextOptions) -}}
+  {% if widget.caption -%}<figcaption class="{{ className + "__caption" }}">
+    {{ widget.caption }}
+  </figcaption>{% endif %}
+</figure>
+  {%- endif -%}
+{% endfragment %}
+
+{%- macro _imageWithLink(widget, attachment, options, manager, contextOptions) -%}
+  {%- if not widget.linkTo or widget.linkTo === 'none' -%}
+    {{- _image(attachment, options, manager, contextOptions) -}}
+  {%- else -%}
+    {{- _link(widget, attachment, options, manager, contextOptions) -}}
+  {%- endif -%}
+{%- endmacro -%}
+
+{% macro _image(attachment, options, manager, contextOptions) %}
+  {%- set className = options.className or manager.options.className -%}
+  {%- set dimensionAttrs = options.dimensionAttrs or manager.options.dimensionAttrs -%}
+  {%- set loadingType = options.loadingType or manager.options.loadingType -%}
+  {%- set size = options.size or manager.options.size or 'full' -%}
+<img{% if className %} class="{{ className }}"{% endif %}
+  {% if loadingType %} loading="{{ loadingType }}"{% endif %}
+  data-apos-test="image-widget"
+  srcset="{{ apos.image.srcset(attachment) }}"
+  src="{{ apos.attachment.url(attachment, { size: size }) }}"
+  alt="{{ attachment._alt or '' }}"
+  {% if dimensionAttrs %}
+    {% if attachment.width %} width="{{ apos.attachment.getWidth(attachment) }}" {% endif %}
+    {% if attachment.height %} height="{{ apos.attachment.getHeight(attachment) }}" {% endif %}
+  {% endif %}
+  {% if contextOptions and contextOptions.sizes %}
+    sizes="{{ contextOptions.sizes }}"
+  {% endif %}
+  {% if apos.attachment.hasFocalPoint(attachment) %}
+    style="object-position: {{ apos.attachment.focalPointToObjectPosition(attachment) }}"
+  {%- endif -%}
+/>
+{% endmacro %}
+
+{% macro _link(widget, attachment, options, manager, contextOptions) %}
+  {%- set className = options.className or manager.options.className -%}
+<a 
+  href="{{- _url(widget) | trim -}}" 
+  title="{{- _title(widget) | trim -}}" 
+  class="{{- className + "__link" -}}"
+  {%- if widget.linkTarget[0] %} target="{{ widget.linkTarget | first | trim }}"{% endif %}
+  {%- if widget.linkTarget[0] === '_blank' and widget.linkTo === '_url' %} rel="noopener noreferrer"{% endif %}>
+  {{ _image(attachment, options, manager, contextOptions) }}
+</a>
+{% endmacro %}
+
+{% macro _url(widget) %}
+  {% set type = widget.linkTo %}
+  {% set name = '_' + apos.util.slugify(type) %}
+  {% set item = widget[name][0] %}
+  {% if type === '_url' %}
+    {{- widget.linkHref -}}
+  {% else %}
+    {{- item._url -}}
+  {% endif %}
+{% endmacro %}
+
+{% macro _title(widget) %}
+  {% set name = '_' + apos.util.slugify(widget.linkTo) %}
+  {% set item = widget[name][0] %}
+  {% if widget.linkTo === '_url' %}
+    {{- widget.linkHrefTitle or widget.caption -}}
+  {% else %}
+    {{- widget.linkTitle or item.title -}}
+  {% endif %}
+{% endmacro %}
+
+{% macro _figureStyle(options, manager) %}
+  {%- if options.inlineStyles === true -%}margin: 0;
+  {%- elif options.inlineStyles !== false and manager.options.inlineStyles === true -%}margin: 0;
+  {%- endif -%}
+{% endmacro %}

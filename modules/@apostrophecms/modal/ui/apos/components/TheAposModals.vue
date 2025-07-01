@@ -23,10 +23,11 @@ export default {
     const store = useModalStore();
 
     onMounted(() => {
-      // Open one of the server-side configured top level admin bar menus by name.
-      // To allow for injecting additional props dynamically, if itemName is an
-      // object, it must have an itemName property and a props property. The props
-      // property is merged with the props supplied by the server-side configuration.
+      // Open one of the server-side configured top level admin bar menus by
+      // name. To allow for injecting additional props dynamically, if itemName
+      // is an object, it must have an itemName property and a props property.
+      // The props property is merged with the props supplied by the server-side
+      // configuration.
 
       apos.bus.$on('admin-menu-click', async (itemName) => {
         let item;

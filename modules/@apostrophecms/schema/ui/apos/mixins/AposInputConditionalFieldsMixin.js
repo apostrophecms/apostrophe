@@ -51,7 +51,6 @@ export default {
     getConditionalFields(values) {
       return getConditionalFields(
         this.schema,
-        this.schema,
         values,
         this.externalConditionsResults
       );

@@ -18,7 +18,7 @@
       <AposButton
         type="primary"
         label="apostrophe:update"
-        :disabled="docFields.hasErrors"
+        :disabled="!isModified"
         :attrs="{'data-apos-focus-priority': true}"
         @click="submit"
       />
@@ -26,7 +26,10 @@
     <template #leftRail>
       <AposModalRail>
         <div class="apos-schema">
-          <div class="apos-field" data-apos-field="aspectRatio">
+          <div
+            class="apos-field"
+            data-apos-field="aspectRatio"
+          >
             <label class="apos-field__label">
               {{ $t('apostrophe:aspectRatio') }}
               <AposIndicator
@@ -60,7 +63,10 @@
             }}
           </div>
           <div class="apos-schema__aligned-fields">
-            <div class="apos-field" data-apos-field="width">
+            <div
+              class="apos-field"
+              data-apos-field="width"
+            >
               <label class="apos-field__label apos-field__label--aligned">
                 W
               </label>
@@ -74,7 +80,10 @@
                 @blur="blurInput"
               >
             </div>
-            <div class="apos-field" data-apos-field="height">
+            <div
+              class="apos-field"
+              data-apos-field="height"
+            >
               <label class="apos-field__label apos-field__label--aligned">
                 H
               </label>
@@ -93,9 +102,12 @@
       </AposModalRail>
     </template>
     <template #main>
-      <div ref="cropperContainer" class="apos-image-cropper__container">
+      <div
+        ref="cropperContainer"
+        class="apos-image-cropper__container"
+      >
         <AposImageCropper
-          :attachment="item.attachment"
+          :attachment="image.attachment"
           :doc-fields="docFields"
           :aspect-ratio="aspectRatio"
           :min-size="minSize"
@@ -120,31 +132,35 @@ export default {
   props: {
     schema: {
       type: Array,
-      default: () => ([])
+      default: null
     },
-    modelValue: {
+    widget: {
       type: Object,
       default: null
     },
-    title: {
-      type: String,
-      required: true
+    widgetSchema: {
+      type: Array,
+      default: () => ([])
     },
     item: {
       type: Object,
-      default: () => ({})
+      default: null
     }
   },
   emits: [ 'modal-result' ],
   data() {
     const { aspectRatio, disableAspectRatio } = this.getAspectRatioFromConfig();
     const minSize = this.getMinSize();
+    const image = this.getImage();
+    const data = this.setDataValues(image);
 
     return {
-      original: this.modelValue,
+      image,
+      original: { ...data },
       docFields: {
-        data: this.setDataValues()
+        data
       },
+      fieldSchema: this.getFieldSchema(),
       errors: {},
       modal: {
         active: false,
@@ -153,7 +169,7 @@ export default {
       },
       modalTitle: {
         key: 'apostrophe:editImageRelationshipTitle',
-        title: this.title
+        title: image.title
       },
       currentTab: null,
       aspectRatio,
@@ -161,12 +177,18 @@ export default {
       disableAspectRatio,
       minSize,
       correctingSizes: false,
-      maxWidth: this.item.attachment.width,
-      maxHeight: this.item.attachment.height,
+      maxWidth: image.attachment.width,
+      maxHeight: image.attachment.height,
       minWidth: minSize[0] || 1,
       minHeight: minSize[1] || 1,
       containerHeight: 0
     };
+  },
+
+  computed: {
+    isModified() {
+      return detectDocChange(this.fieldSchema, this.original, this.docFields.data);
+    }
   },
   async mounted() {
     this.modal.active = true;
@@ -179,8 +201,15 @@ export default {
     this.computeMinSizes();
   },
   methods: {
+    getImage() {
+      return this.item || this.widget?._image?.[0];
+    },
+    getFieldSchema() {
+      return this.schema ||
+        this.widgetSchema.find((field) => field.name === '_image')?.schema || [];
+    },
     computeMaxSizes() {
-      const { width, height } = this.item.attachment;
+      const { width, height } = this.image.attachment;
 
       if (!this.aspectRatio) {
         this.maxWidth = width;
@@ -225,7 +254,8 @@ export default {
         return;
       }
 
-      // If ratio wants a square, we simply take the higher min size of the image
+      // If ratio wants a square, we simply take the higher min size of the
+      // image
       if (this.aspectRatio === 1) {
         const higherValue = minWidth > minHeight ? minWidth : minHeight;
         this.minWidth = higherValue;
@@ -245,18 +275,18 @@ export default {
         this.minHeight = Math.round(minWidth / this.aspectRatio);
       }
     },
-    setDataValues() {
+    setDataValues(image) {
       if (
-        this.item._fields &&
-        this.item._fields.width &&
-        this.item._fields.height
+        image._fields &&
+        image._fields.width &&
+        image._fields.height
       ) {
-        return { ...this.item._fields };
+        return { ...image._fields };
       }
 
       return {
-        width: this.item.attachment.width,
-        height: this.item.attachment.height,
+        width: image.attachment.width,
+        height: image.attachment.height,
         top: 0,
         left: 0,
         x: null,
@@ -264,16 +294,31 @@ export default {
       };
     },
     async submit() {
-      if (this.item.attachment) {
+      if (this.image.attachment) {
         await apos.http.post(`${apos.attachment.action}/crop`, {
           body: {
-            _id: this.item.attachment._id,
+            _id: this.image.attachment._id,
             crop: this.docFields.data
           },
           busy: true
         });
       }
-      this.$emit('modal-result', this.docFields.data);
+
+      if (!this.widget) {
+        this.$emit('modal-result', this.docFields.data);
+      } else {
+        const image = {
+          ...this.image,
+          _fields: this.docFields.data
+        };
+        const widget = {
+          ...this.widget,
+          _image: [ image ]
+        };
+
+        this.$emit('modal-result', widget);
+      }
+
       this.modal.showModal = false;
     },
     updateDocFields(coordinates, updateCoordinates = true) {
@@ -300,9 +345,6 @@ export default {
 
       this.computeAspectRatio(value, name);
       this.updateDocFields({ [name]: value });
-    },
-    isModified() {
-      return detectDocChange(this.schema, this.original, this.docFields.data);
     },
     blurInput() {
       const { width, height } = this.docFields.data;
@@ -390,7 +432,8 @@ export default {
         ? {
           aspectRatio: widgetOptions.aspectRatio[0] / widgetOptions.aspectRatio[1],
           disableAspectRatio: true
-        } : {
+        }
+        : {
           aspectRatio: null,
           disableAspectRatio: false
         };
@@ -423,7 +466,7 @@ export default {
 };
 </script>
 
-<style scoped lang="scss" >
+<style scoped lang="scss">
 .apos-schema {
   margin: 30px 15px 0;
 

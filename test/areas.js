@@ -6,15 +6,7 @@ describe('Areas', function() {
 
   this.timeout(t.timeout);
 
-  after(async function() {
-    return t.destroy(apos);
-  });
-
-  /// ///
-  // EXISTENCE
-  /// ///
-
-  it('should initialize', async function() {
+  before(async function() {
     apos = await t.create({
       root: module,
 
@@ -74,6 +66,14 @@ describe('Areas', function() {
     // so override that in order to get apostrophe to
     // listen normally and not try to run a task. -Tom
     apos.argv._ = [];
+  });
+
+  after(async function() {
+    return t.destroy(apos);
+  });
+
+  beforeEach(function() {
+    apos.area.widgetOperations = [];
   });
 
   it('can get widgets from groups', function() {
@@ -233,15 +233,14 @@ describe('Areas', function() {
   it('renders an area passed to the `renderArea` method', async function () {
     const req = apos.task.getReq();
     firstRendered = await apos.area.renderArea(req, rteArea, areaDocs[0]);
-
     assert(firstRendered);
-    assert.equal(firstRendered, `
+    assert.equal(firstRendered.trim(), `
 <div class="apos-area">
 <div data-rich-text>
   <p>Perhaps its fate that today is the 4th of July, and you will once again be fighting for our freedom, not from tyranny, oppression, or persecution -- but from annihilation.</p><p>We're fighting for our right to live, to exist.</p>
 </div>
 </div>
-`);
+`.trim());
   });
 
   it('returns rendered HTML from the `renderArea` method for a mixed widget area', async function() {
@@ -269,14 +268,11 @@ describe('Areas', function() {
       assert(doc.main._rendered);
       assert(!doc.main.items);
 
-      // TODO the approach in this test can't cover array or object area rendering
-      // properly without a further overhaul (not a new problem).
-      // if (doc.moreAreas) {
-      //   doc.moreAreas.forEach(area => {
-      //     assert(area.someWidgets._rendered);
-      //     assert(!area.someWidgets.items);
-      //   });
-      // }
+      // TODO the approach in this test can't cover array or object area
+      // rendering properly without a further overhaul (not a new problem). if
+      // (doc.moreAreas) { doc.moreAreas.forEach(area => {
+      // assert(area.someWidgets._rendered); assert(!area.someWidgets.items);
+      // }); }
     });
 
     assert.equal(areaDocs[0].main._rendered, firstRendered);

@@ -5,7 +5,10 @@
       'apos-is-replacing': showReplace
     }"
   >
-    <div v-if="activeMedia" class="apos-media-editor__inner">
+    <div
+      v-if="activeMedia"
+      class="apos-media-editor__inner"
+    >
       <div class="apos-media-editor__thumb-wrapper">
         <img
           v-if="activeMedia.attachment && activeMedia.attachment._urls"
@@ -15,10 +18,16 @@
         >
       </div>
       <ul class="apos-media-editor__details">
-        <li v-if="createdDate" class="apos-media-editor__detail">
+        <li
+          v-if="createdDate"
+          class="apos-media-editor__detail"
+        >
           {{ $t('apostrophe:mediaCreatedDate', { createdDate }) }}
         </li>
-        <li v-if="fileSize" class="apos-media-editor__detail">
+        <li
+          v-if="fileSize"
+          class="apos-media-editor__detail"
+        >
           {{ $t('apostrophe:mediaFileSize', { fileSize }) }}
         </li>
         <li
@@ -34,7 +43,10 @@
         </li>
       </ul>
       <ul class="apos-media-editor__links">
-        <li class="apos-media-editor__link" aria-hidden="true">
+        <li
+          class="apos-media-editor__link"
+          aria-hidden="true"
+        >
           <AposButton
             type="quiet"
             label="apostrophe:replace"
@@ -42,7 +54,10 @@
             @click="showReplace = true"
           />
         </li>
-        <li v-if="activeMedia.attachment && activeMedia.attachment._urls" class="apos-media-editor__link">
+        <li
+          v-if="activeMedia.attachment && activeMedia.attachment._urls"
+          class="apos-media-editor__link"
+        >
           <AposButton
             type="quiet"
             label="apostrophe:view"
@@ -50,11 +65,14 @@
             @click="viewMedia"
           />
         </li>
-        <li v-if="activeMedia.attachment && activeMedia.attachment._urls" class="apos-media-editor__link">
+        <li
+          v-if="activeMedia.attachment && activeMedia.attachment._urls"
+          class="apos-media-editor__link"
+        >
           <AposButton
             type="quiet"
             label="apostrophe:download"
-            :href="!isArchived ? activeMedia.attachment._urls.original : false"
+            :href="!isArchived ? activeMedia.attachment._urls.original : null"
             :disabled="isArchived"
             download
           />
@@ -131,12 +149,7 @@ export default {
     },
     moduleLabels: {
       type: Object,
-      default() {
-        return {
-          label: 'Image',
-          pluralLabel: 'Images'
-        };
-      }
+      required: true
     }
   },
   emits: [ 'back', 'modified' ],
@@ -219,7 +232,8 @@ export default {
       deep: true,
       handler(newData, oldData) {
         this.$nextTick(() => {
-          // If either old or new state are an empty object, it's not "modified."
+          // If either old or new state are an empty object, it's not
+          // "modified."
           if (!(Object.keys(oldData).length > 0 && Object.keys(newData).length > 0)) {
             this.$emit('modified', false);
           } else {
@@ -247,8 +261,8 @@ export default {
     this.$emit('modified', false);
   },
   methods: {
-    moreMenuHandler(action) {
-      this[action]();
+    moreMenuHandler(item) {
+      this[item.action]();
     },
     async updateActiveDoc(newMedia) {
       newMedia = newMedia || {};
@@ -274,19 +288,32 @@ export default {
         return;
       }
       const route = `${this.moduleOptions.action}/${this.activeMedia._id}`;
-      const patched = await apos.http.patch(route, {
-        busy: true,
-        body: {
-          archived: true
-        },
-        draft: true
-        // Autopublish will take care of the published side
-      });
-      apos.bus.$emit('content-changed', {
-        doc: patched,
-        action: 'archive'
-      });
-      await this.cancel();
+      try {
+        const patched = await apos.http.patch(route, {
+          busy: true,
+          body: {
+            archived: true
+          },
+          draft: true
+          // Autopublish will take care of the published side
+        });
+        apos.bus.$emit('content-changed', {
+          doc: patched,
+          action: 'archive'
+        });
+        await apos.notify('apostrophe:contentArchived', {
+          type: 'success',
+          icon: 'archive-arrow-down-icon',
+          dismiss: true
+        });
+        await this.cancel();
+      } catch (e) {
+        await apos.notify('apostrophe:errorWhileArchiving', {
+          type: 'danger',
+          icon: 'alert-circle-icon',
+          dismiss: true
+        });
+      }
     },
     async save() {
       this.triggerValidation = true;
@@ -322,9 +349,16 @@ export default {
         });
         apos.bus.$emit('content-changed', {
           doc,
-          action: 'update'
+          action: this.restoreOnly ? 'restore' : 'update'
         });
         this.original = klona(this.docFields.data);
+        const successEvent = this.restoreOnly
+          ? 'apostrophe:contentRestored'
+          : 'apostrophe:changesPublished';
+        apos.notify(successEvent, {
+          type: 'success',
+          dismiss: true
+        });
       } catch (e) {
         if (this.isLockedError(e)) {
           await this.showLockedError(e);
@@ -335,12 +369,11 @@ export default {
             : this.$t('apostrophe:mediaManagerErrorSaving');
 
           await this.handleSaveError(e, {
-            fallback: `${errorMessage} ${this.moduleLabels.label}`
+            fallback: `${errorMessage} ${this.moduleLabels.singular}`
           });
         }
       } finally {
         this.showReplace = false;
-
       }
     },
     generateLipKey() {

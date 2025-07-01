@@ -42,7 +42,8 @@ export default {
 
   computed: {
     schema() {
-      let schema = (this.moduleOptions.schema || []).filter(field => apos.schema.components.fields[field.type]);
+      let schema = (this.moduleOptions.schema || [])
+        .filter(field => apos.schema.components.fields[field.type]);
       if (this.restoreOnly || this.readOnly) {
         schema = klona(schema);
         for (const field of schema) {
@@ -82,13 +83,13 @@ export default {
       );
     },
 
-    // followedByCategory may be falsy (all fields), "other" or "utility". The returned
-    // object contains properties named for each field in that category that
-    // follows other fields. For instance if followedBy is "utility" then in our
-    // default configuration `followingValues` will be:
+    // followedByCategory may be falsy (all fields), "other" or "utility". The
+    // returned object contains properties named for each field in that category
+    // that follows other fields. For instance if followedBy is "utility" then
+    // in our default configuration `followingValues` will be:
     //
     // `{ slug: { title: 'latest title here' } }`
-    followingValues(followedByCategory) {
+    followingValues(followedByCategory, parentOnly = false) {
       const fields = this.getFieldsByCategory(followedByCategory);
 
       const followingValues = {};
@@ -97,9 +98,16 @@ export default {
         parentFollowing[`<${key}`] = val;
       }
 
+      if (parentOnly) {
+        // If we are only interested in the parent following values, return them
+        return parentFollowing;
+      }
+
       for (const field of fields) {
         if (field.following) {
-          const following = Array.isArray(field.following) ? field.following : [ field.following ];
+          const following = Array.isArray(field.following)
+            ? field.following
+            : [ field.following ];
           followingValues[field.name] = {};
           for (const name of following) {
             if (name.startsWith('<')) {
@@ -139,11 +147,16 @@ export default {
     // in that category, although they may be conditional upon fields in either
     // category.
     getConditionalFields(followedByCategory) {
-      return getConditionalFields(
-        this.schema,
-        this.getFieldsByCategory(followedByCategory),
+      const values = {
+        // Append the parent following values without the current doc
+        // values, so that the parent can be used in conditions
+        ...this.followingValues(followedByCategory, true),
         // currentDoc for arrays, docFields for all other editors
-        this.currentDoc ? this.currentDoc.data : this.docFields.data,
+        ...(this.currentDoc ? this.currentDoc.data : this.docFields.data)
+      };
+      return getConditionalFields(
+        this.getFieldsByCategory(followedByCategory),
+        values,
         this.externalConditionsResults
       );
     },
@@ -166,6 +179,7 @@ export default {
     // in the schema. fallback is a fallback error message, if none is provided
     // by the server.
     async handleSaveError(e, { fallback }) {
+      // eslint-disable-next-line no-console
       console.error(e);
       if (e.body && e.body.data && e.body.data.errors) {
         const serverErrors = {};
@@ -188,7 +202,11 @@ export default {
           }
         }
       } else {
-        await apos.notify((e.body && e.body.message) || fallback, {
+        // As per the new standard, any message in `data.detail` is considered
+        // a human readable error message. If it is not present, we fall back to
+        // the message in `body.message` or the fallback.
+        const bodyMessage = e.body?.data?.detail || e.body?.message;
+        await apos.notify(bodyMessage || fallback, {
           type: 'danger',
           icon: 'alert-circle-icon',
           dismiss: true
@@ -219,7 +237,8 @@ export default {
           body: {
             relationship: relationship.value,
             // Pass the options of the widget currently being edited, some
-            // postprocessors need these (e.g. autocropping cares about widget aspectRatio)
+            // postprocessors need these
+            // (e.g. autocropping cares about widget aspectRatio)
             widgetOptions: apos.area.widgetOptions[0]
           },
           busy: true
@@ -236,10 +255,16 @@ export default {
             });
           } else if (field.type === 'array') {
             for (const value of (object[field.name] || [])) {
-              relationships = [ ...relationships, findRelationships(field.schema, value) ];
+              relationships = [
+                ...relationships,
+                findRelationships(field.schema, value)
+              ];
             }
           } else if (field.type === 'object') {
-            relationships = [ ...relationships, findRelationships(field.schema, object[field.name] || {}) ];
+            relationships = [
+              ...relationships,
+              findRelationships(field.schema, object[field.name] || {})
+            ];
           }
         }
         return relationships;

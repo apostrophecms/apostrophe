@@ -3,8 +3,8 @@
  * `this.isModified` returns true. Your component must supply that method.
  *
  * If your component has a `modal` property, which is normal for modals,
- * it will close automatically on confirmation. If your component does not have a
- * `modal` property then you must implement your own `close` method.
+ * it will close automatically on confirmation. If your component does not have
+ * a `modal` property then you must implement your own `close` method.
  *
  * The labels can be overridden by overriding data properties as shown below.
  *

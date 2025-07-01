@@ -57,7 +57,10 @@
           <span class="apos-button-split__menu__dialog-label">
             {{ $t(item.label) }}
           </span>
-          <span v-if="item.description" class="apos-button-split__menu__dialog-description">
+          <span
+            v-if="item.description"
+            class="apos-button-split__menu__dialog-description"
+          >
             {{ $t(item.description) }}
           </span>
         </li>
@@ -174,7 +177,9 @@ function initialize() {
 
     & {
       position: relative;
-      padding: $spacing-base + $spacing-half $spacing-double $spacing-base + $spacing-half $spacing-quadruple;
+      padding: $spacing-base +
+        $spacing-half $spacing-double $spacing-base +
+        $spacing-half $spacing-quadruple;
       border-bottom: 1px solid var(--a-base-9);
     }
 

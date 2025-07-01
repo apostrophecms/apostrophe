@@ -16,7 +16,10 @@
         @click="confirmAndCancel"
       />
     </template>
-    <template v-if="showLocalePicker" #localeDisplay>
+    <template
+      v-if="showLocalePicker"
+      #localeDisplay
+    >
       <AposDocLocalePicker
         :locale="modalData.locale"
         :doc-id="referenceDocId"
@@ -72,7 +75,10 @@
     <template #main>
       <AposModalBody>
         <template #bodyMain>
-          <div v-if="docReady" class="apos-doc-editor__body">
+          <div
+            v-if="docReady"
+            class="apos-doc-editor__body"
+          >
             <AposSchema
               v-for="tab in tabs"
               v-show="tab.name === currentTab"
@@ -277,7 +283,8 @@ export default {
         // Allow initial submission
         return false;
       }
-      // Block re-submission of an unmodified draft (we already checked modified)
+      // Block re-submission of an unmodified draft (we already checked
+      // modified)
       return true;
     },
     moduleOptions() {
@@ -414,6 +421,7 @@ export default {
         }
       } catch (e) {
         if (e.name !== 'notfound') {
+          // eslint-disable-next-line no-console
           console.error(e);
           await apos.notify('apostrophe:fetchPublishedVersionFailed', {
             type: 'warning',
@@ -531,7 +539,8 @@ export default {
           }
           this.original = klona(docData);
           this.docFields.data = docData;
-          // TODO: Is this block even useful since published is fetched after loadDoc?
+          // TODO: Is this block even useful since published is fetched after
+          // loadDoc?
           if (this.published) {
             this.changed = detectDocChange(
               this.schema,
@@ -637,13 +646,12 @@ export default {
         if (this.isLockedError(e)) {
           await this.showLockedError(e);
           this.modal.showModal = false;
-          return;
         } else {
           await this.handleSaveError(e, {
             fallback: 'An error occurred saving the document.'
           });
-          return;
         }
+        return;
       }
       if (!keepOpen) {
         this.$emit('modal-result', doc);
@@ -651,6 +659,12 @@ export default {
       }
       if (draft) {
         await apos.notify('apostrophe:draftSaved', {
+          type: 'success',
+          dismiss: true,
+          icon: 'file-document-icon'
+        });
+      } else if (!andPublish && this.moduleOptions.autopublish) {
+        await apos.notify('apostrophe:changesPublished', {
           type: 'success',
           dismiss: true,
           icon: 'file-document-icon'
@@ -683,6 +697,7 @@ export default {
           dismiss: true
         });
 
+        // eslint-disable-next-line no-console
         console.error(`Error while creating new, empty content. Review your configuration for ${this.docType} (including \`type\` options in \`@apostrophecms/page\` if it's a page type).`);
 
         this.modal.showModal = false;
@@ -721,14 +736,16 @@ export default {
     },
     computeSaveMenu () {
       // Powers the dropdown Save menu
-      // all actions expected to be methods of this component
-      // Needs to be manually computed because this.saveLabel doesn't stay reactive when part of an object
+      // all actions expected to be methods of this component Needs to be
+      // manually computed because this.saveLabel doesn't stay reactive when
+      // part of an object
       const typeLabel = this.$t(this.moduleOptions
         ? this.moduleOptions.label
         : 'document');
       const isNew = !this.currentId;
       // this.original takes a moment to populate, don't crash
-      const canPreview = this.original && (this.original._id ? this.original._url : this.original._previewable);
+      const canPreview = this.original &&
+        (this.original._id ? this.original._url : this.original._previewable);
       const canNew = this.moduleOptions.showCreate;
       const isSingleton = this.moduleOptions.singleton;
       const description = {
@@ -741,7 +758,8 @@ export default {
           action: 'onSave',
           description: {
             ...description,
-            key: isSingleton ? 'apostrophe:updateSingleton'
+            key: isSingleton
+              ? 'apostrophe:updateSingleton'
               : (isNew ? 'apostrophe:insertAndReturn' : 'apostrophe:updateAndReturn')
           },
           def: true
@@ -809,21 +827,21 @@ export default {
     setSavePreference(pref) {
       window.localStorage.setItem(this.savePreferenceName, pref);
     },
-    onContentChanged(e) {
-      if (!e.doc || this.original?._id !== e.doc._id) {
+    onContentChanged({ doc, action }) {
+      if (!doc || this.original?._id !== doc._id) {
         return;
       }
-      if (e.doc.type !== this.docType) {
-        this.docType = e.doc.type;
+      if (doc.type !== this.docType) {
+        this.docType = doc.type;
       }
-      this.docFields.data = e.doc;
+      this.docFields.data = doc;
       this.generation++;
 
       if (
-        e.action === 'archive' ||
-        e.action === 'unpublish' ||
-        e.action === 'delete' ||
-        e.action === 'revert-draft-to-published'
+        action === 'archive' ||
+        action === 'unpublish' ||
+        action === 'delete' ||
+        action === 'revert-draft-to-published'
       ) {
         this.modal.showModal = false;
       }

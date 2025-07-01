@@ -1,7 +1,7 @@
 // This is the business logic of the AposResetPasswordForm Vue component.
 // It is in a separate file so that you can override the component's templates
-// and styles just by copying the .vue file to your project, and leave the business logic
-// unchanged.
+// and styles just by copying the .vue file to your project, and leave the
+// business logic unchanged.
 
 import AposLoginFormMixin from 'Modules/@apostrophecms/login/mixins/AposLoginFormMixin';
 

@@ -31,8 +31,8 @@ module.exports = {
     '@apostrophecms/oembed': {},
     '@apostrophecms/pager': {},
     '@apostrophecms/any-doc-type': {},
-    // global comes first so it can register a doc type manager and clean things up before
-    // pages claims any orphan page types
+    // global comes first so it can register a doc type manager and clean
+    // things up before pages claims any orphan page types
     '@apostrophecms/global': {},
     '@apostrophecms/polymorphic-type': {},
     '@apostrophecms/page': {},
@@ -43,7 +43,6 @@ module.exports = {
     '@apostrophecms/area': {},
     '@apostrophecms/rich-text-widget': {},
     '@apostrophecms/html-widget': {},
-    '@apostrophecms/image-widget': {},
     '@apostrophecms/color-field': {},
     '@apostrophecms/oembed-field': {},
     '@apostrophecms/video-widget': {},
@@ -52,6 +51,7 @@ module.exports = {
     '@apostrophecms/settings': {},
     '@apostrophecms/image': {},
     '@apostrophecms/image-tag': {},
+    '@apostrophecms/image-widget': {},
     '@apostrophecms/file': {},
     '@apostrophecms/file-tag': {},
     '@apostrophecms/soft-redirect': {},

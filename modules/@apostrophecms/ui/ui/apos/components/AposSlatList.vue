@@ -12,13 +12,19 @@
       @update="update"
     >
       <template #item="{element: item}">
-        <transition-group type="transition" name="apos-flip-list">
+        <transition-group
+          type="transition"
+          name="apos-flip-list"
+        >
           <AposSlat
             :key="item._id"
             class="apos-slat-list__item"
             :item="item"
             :selected="selected === item._id"
-            :class="{'apos-slat-list__item--disabled' : disabled, 'apos-input--error': duplicate}"
+            :class="{
+              'apos-slat-list__item--disabled' : disabled,
+              'apos-input--error': duplicate
+            }"
             :disabled="disabled"
             :engaged="engaged === item._id"
             :parent="listId"

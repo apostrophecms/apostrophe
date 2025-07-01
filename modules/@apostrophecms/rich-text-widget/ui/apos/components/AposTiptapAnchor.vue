@@ -1,33 +1,21 @@
 <template>
   <div class="apos-anchor-control">
-    <AposButton
-      type="rich-text"
-      :class="{ 'apos-is-active': buttonActive }"
-      :label="tool.label"
-      :icon-only="!!tool.icon"
-      :icon="tool.icon || false"
-      :modifiers="['no-border', 'no-motion']"
-      :tooltip="{
-        content: tool.label,
-        placement: 'top',
-        delay: 650
-      }"
-      @click="click"
-    />
-    <div
-      v-if="active"
-      v-click-outside-element="close"
-      class="apos-popover apos-anchor-control__dialog"
-      x-placement="bottom"
-      :class="{
-        'apos-is-triggered': active,
-        'apos-has-selection': hasSelection
-      }"
+    <AposContextMenu
+      ref="contextMenu"
+      menu-placement="bottom-end"
+      :button="button"
+      :rich-text-menu="true"
+      @open="openPopover"
+      @close="closePopover"
     >
-      <AposContextMenuDialog
-        menu-placement="bottom-start"
+      <div
+        class="apos-popover apos-anchor-control__dialog"
+        :class="{ 'apos-has-selection': hasSelection }"
       >
-        <div v-if="hasAnchorOnOpen" class="apos-anchor-control__remove">
+        <div
+          v-if="hasAnchorOnOpen"
+          class="apos-anchor-control__remove"
+        >
           <AposButton
             type="quiet"
             label="apostrophe:removeRichTextAnchor"
@@ -59,8 +47,8 @@
             @click="save"
           />
         </footer>
-      </AposContextMenuDialog>
-    </div>
+      </div>
+    </AposContextMenu>
   </div>
 </template>
 
@@ -84,6 +72,7 @@ export default {
       required: true
     }
   },
+  emits: [ 'close' ],
   data () {
     return {
       generation: 1,
@@ -100,13 +89,28 @@ export default {
           type: 'string',
           required: true
         }
-      ],
-      active: false
+      ]
     };
   },
   computed: {
+    button() {
+      return {
+        ...this.buttonActive ? { class: 'apos-is-active' } : {},
+        type: 'rich-text',
+        label: this.tool.label,
+        'icon-only': Boolean(this.tool.icon),
+        icon: this.tool.icon || false,
+        'icon-size': this.tool.iconSize || 16,
+        modifiers: [ 'no-border', 'no-motion' ],
+        tooltip: {
+          content: this.tool.label,
+          placement: 'top',
+          delay: 650
+        }
+      };
+    },
     buttonActive() {
-      return this.editor.isActive('anchor') || this.active;
+      return this.editor.isActive('anchor');
     },
     lastSelectionTime() {
       return this.editor.view.input.lastSelectionTime;
@@ -123,20 +127,12 @@ export default {
     }
   },
   watch: {
-    active(newVal) {
-      if (newVal) {
-        this.hasAnchorOnOpen = !!(this.docFields.data.anchor);
-        window.addEventListener('keydown', this.keyboardHandler);
-      } else {
-        window.removeEventListener('keydown', this.keyboardHandler);
-      }
-    },
     'editor.view.input.lastSelectionTime': {
-      handler(newVal, oldVal) {
+      handler() {
         this.populateFields();
       }
     },
-    hasSelection(newVal, oldVal) {
+    hasSelection(newVal) {
       if (!newVal) {
         this.close();
       }
@@ -144,50 +140,40 @@ export default {
   },
   async mounted() {
     await this.evaluateExternalConditions();
-    this.evaluateConditions();
   },
   methods: {
     removeAnchor() {
       this.docFields.data = {};
       this.editor.commands.unsetAnchor();
+      this.editor.chain().focus().blur().run();
       this.close();
     },
-    click() {
-      if (this.hasSelection) {
-        this.active = !this.active;
-        this.populateFields();
-      }
-    },
     close() {
-      if (this.active) {
-        this.active = false;
-        this.editor.chain().focus();
-      }
+      this.$refs.contextMenu.hide();
     },
-    save() {
+    async save() {
       this.triggerValidation = true;
-      this.$nextTick(() => {
-        if (this.docFields.hasErrors) {
-          return;
-        }
-        this.editor.commands.setAnchor({
-          id: this.docFields.data.anchor
-        });
-        this.close();
+      await this.$nextTick();
+
+      if (this.docFields.hasErrors) {
+        return;
+      }
+      this.editor.commands.setAnchor({
+        id: this.docFields.data.anchor
       });
+      this.editor.chain().focus().blur().run();
+      this.close();
     },
     keyboardHandler(e) {
-      if (e.keyCode === 27) {
+      if (e.key === 'Escape') {
         this.close();
       }
-      if (e.keyCode === 13) {
+      if (e.key === 'Enter') {
         if (this.docFields.data.anchor) {
           this.save();
           this.close();
-          e.preventDefault();
-        } else {
-          e.preventDefault();
         }
+        e.preventDefault();
       }
     },
     async populateFields() {
@@ -202,34 +188,25 @@ export default {
       } finally {
         this.generation++;
       }
+    },
+    async openPopover() {
+      await this.populateFields();
+      this.evaluateConditions();
+      this.hasAnchorOnOpen = Boolean(this.docFields.data.anchor);
+      window.addEventListener('keydown', this.keyboardHandler);
+    },
+    closePopover() {
+      window.removeEventListener('keydown', this.keyboardHandler);
+      this.$emit('close');
     }
   }
 };
 </script>
 
 <style lang="scss" scoped>
-  .apos-anchor-control {
-    position: relative;
-    display: inline-block;
-  }
-
-  .apos-anchor-control__dialog {
-    z-index: $z-index-modal;
-    position: absolute;
-    top: calc(100% + 5px);
-    left: -15px;
-    width: 250px;
-    opacity: 0;
-    pointer-events: none;
-  }
-
   .apos-anchor-control__dialog.apos-is-triggered.apos-has-selection {
     opacity: 1;
     pointer-events: auto;
-  }
-
-  .apos-is-active {
-    background-color: var(--a-base-7);
   }
 
   .apos-anchor-control__footer {

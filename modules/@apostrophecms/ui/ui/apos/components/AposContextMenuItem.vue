@@ -1,6 +1,14 @@
 <template>
-  <li class="apos-context-menu__item">
+  <li
+    class="apos-context-menu__item"
+    :class="menuItem.separator ? 'apos-context-menu__item--separator' : null"
+  >
+    <hr
+      v-if="menuItem.separator"
+      class="apos-context-menu__separator"
+    >
     <button
+      v-else
       class="apos-context-menu__button"
       :class="modifiers"
       :tabindex="tabindex"
@@ -78,7 +86,7 @@ export default {
   },
   methods: {
     click() {
-      this.$emit('clicked', this.menuItem.action);
+      this.$emit('clicked', this.menuItem);
     }
   }
 };
@@ -87,7 +95,20 @@ export default {
 <style lang="scss" scoped>
 .apos-context-menu__item {
   display: flex;
+  align-items: center;
+}
 
+.apos-context-menu__item:not(.apos-context-menu__item--separator) {
+  min-height: 36px;
+}
+
+.apos-context-menu__separator {
+  box-sizing: border-box;
+  width: 100%;
+  margin: $spacing-half 0;
+  padding: 0;
+  border-color: var(--a-base-10);
+  border-style: solid;
 }
 
 .apos-context-menu__button {
@@ -98,27 +119,25 @@ export default {
     flex-grow: 1;
     align-items: center;
     width: 100%;
-    margin: 0 10px;
-    padding: 10px;
+    margin: 0 $spacing-three-quarters;
+    padding: $spacing-base;
     border: none;
-    color: var(--a-base-1);
+    font-size: var(--a-type-menu);
+    font-weight: 300;
     text-align: left;
-    border-radius: 3px;
+    border-radius: $spacing-half;
     background-color: var(--a-background-primary);
   }
 
   &:hover {
     cursor: pointer;
-    color: var(--a-text-primary);
+    background-color: var(--a-primary-transparent-05);
   }
 
-  &:focus {
-    outline: none;
-    color: var(--a-text-primary);
-  }
-
+  &:focus,
   &:active {
-    color: var(--a-base-1);
+    outline: 1px solid var(--a-primary-transparent-25);
+    background-color: var(--a-primary-transparent-05);
   }
 
   &--danger {
@@ -128,8 +147,15 @@ export default {
       color: var(--a-danger-button-hover);
     }
 
+    &:hover,
     &:focus,
     &:active {
+      background-color: var(--a-danger-button-background);
+    }
+
+    &:focus,
+    &:active {
+      outline: 1px solid var(--a-danger);
       color: var(--a-danger-button-active);
     }
   }
@@ -141,17 +167,29 @@ export default {
     &:focus,
     &:active {
       color: var(--a-primary);
+      background-color: var(--a-primary-transparent-15);
+    }
+
+    &:focus,
+    &:active {
+      outline: 1px solid var(--a-primary-transparent-25);
     }
   }
 
   &--disabled {
-    color: var(--a-base-5);
+    color: var(--a-base-3);
+
+    &:focus,
+    &:active {
+      outline: 1px solid var(--a-base-8);
+    }
 
     &:hover,
     &:focus,
     &:active {
       cursor: not-allowed;
       color: var(--a-base-5);
+      background-color: var(--a-base-9);
     }
   }
 
@@ -161,6 +199,6 @@ export default {
 }
 
 .apos-context-menu__active {
-  background-color: var(--a-base-10)
+  background-color: var(--a-base-10);
 }
 </style>

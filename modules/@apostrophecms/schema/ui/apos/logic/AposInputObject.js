@@ -3,6 +3,7 @@ import { klona } from 'klona';
 import AposInputMixin from 'Modules/@apostrophecms/schema/mixins/AposInputMixin.js';
 import AposInputFollowingMixin from 'Modules/@apostrophecms/schema/mixins/AposInputFollowingMixin.js';
 import AposInputConditionalFieldsMixin from 'Modules/@apostrophecms/schema/mixins/AposInputConditionalFieldsMixin.js';
+import { hasParentConditionalField } from 'Modules/@apostrophecms/schema/lib/conditionalFields';
 
 export default {
   name: 'AposInputObject',
@@ -40,6 +41,15 @@ export default {
   computed: {
     followingValuesWithParent() {
       return this.computeFollowingValues(this.schemaInput.data);
+    },
+    dataWithfollowingValues() {
+      return {
+        ...this.computeFollowingValues(this.schemaInput.data, true),
+        ...this.values
+      };
+    },
+    shouldResetConditionalFields() {
+      return hasParentConditionalField(this.schema);
     },
     // Reqiured for AposInputConditionalFieldsMixin
     schema() {
@@ -95,6 +105,14 @@ export default {
         }
       }
     },
+    followingValues: {
+      async handler(values) {
+        if (this.shouldResetConditionalFields) {
+          this.evaluateConditions(this.dataWithfollowingValues);
+        }
+      },
+      deep: true
+    },
     generation() {
       this.next = this.getNext();
       this.schemaInput = {
@@ -104,7 +122,7 @@ export default {
   },
   async created() {
     await this.evaluateExternalConditions(this.values);
-    this.evaluateConditions(this.values);
+    this.evaluateConditions(this.dataWithfollowingValues);
   },
   methods: {
     emitValidate() {

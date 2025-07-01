@@ -1,11 +1,12 @@
 const _ = require('lodash');
 
-// A subclass of `@apostrophecms/piece-type`, `@apostrophecms/file` establishes a library
-// of uploaded files, which may be of any type acceptable to the
+// A subclass of `@apostrophecms/piece-type`, `@apostrophecms/file` establishes
+// a library of uploaded files, which may be of any type acceptable to the
 // [@apostrophecms/attachment](../@apostrophecms/attachment/index.html) module.
-// Together with [@apostrophecms/file-widget](../@apostrophecms/file-widget/index.html),
-// this module provides a simple way to add downloadable PDFs and the like to
-// a website, and to manage a library of them for reuse.
+// Together with
+// [@apostrophecms/file-widget](../@apostrophecms/file-widget/index.html), this
+// module provides a simple way to add downloadable PDFs and the like to a
+// website, and to manage a library of them for reuse.
 
 module.exports = {
   extend: '@apostrophecms/piece-type',
@@ -82,7 +83,12 @@ module.exports = {
     }
   },
   filters: {
-    remove: [ 'visibility' ]
+    remove: [ 'visibility' ],
+    add: {
+      _tags: {
+        label: 'apostrophe:tags'
+      }
+    }
   },
   methods(self) {
     return {

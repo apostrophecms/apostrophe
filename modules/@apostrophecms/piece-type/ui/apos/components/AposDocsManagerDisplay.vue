@@ -25,7 +25,10 @@
             {{ $t(header.label) }}
           </component>
         </th>
-        <th key="contextMenu" class="apos-table__header">
+        <th
+          key="contextMenu"
+          class="apos-table__header"
+        >
           <component
             :is="getEl({})"
             class="apos-table__header-label apos-is-hidden"
@@ -48,7 +51,9 @@
           <AposCheckbox
             v-if="item._id"
             v-model="checkProxy"
-            v-apos-tooltip="options.disableUnpublished && !item.lastPublishedAt ? 'apostrophe:publishBeforeUsingTooltip' : null"
+            v-apos-tooltip="options.disableUnpublished && !item.lastPublishedAt
+              ? 'apostrophe:publishBeforeUsingTooltip'
+              : null"
             :field="{
               name: item._id,
               hideLabel: true,

@@ -1,6 +1,7 @@
-// Implements "soft redirects." When a 404 is about to occur, Apostrophe will look
-// for a page or piece that has been associated with that URL in the past, and
-// redirect if there is one. This only comes into play if a 404 is about to occur.
+// Implements "soft redirects." When a 404 is about to occur, Apostrophe will
+// look for a page or piece that has been associated with that URL in the past,
+// and redirect if there is one. This only comes into play if a 404 is about to
+// occur.
 //
 // ## Options
 //
@@ -10,8 +11,8 @@
 //
 // ### `statusCode`
 //
-// Set this option to return another HTTP status code when redirecting. You may use
-// e.g. HTTP 301 for permanent redirects. Defaults to HTTP 302.
+// Set this option to return another HTTP status code when redirecting. You may
+// use e.g. HTTP 301 for permanent redirects. Defaults to HTTP 302.
 //
 // For example in your `app.js` module configuration:
 //
@@ -75,7 +76,10 @@ module.exports = {
             }
           });
           for (const doc of docs) {
-            await self.apos.doc.db.updateOne({ _id: doc._id }, { $addToSet: { historicUrls: self.local(doc._url) } });
+            await self.apos.doc.db.updateOne(
+              { _id: doc._id },
+              { $addToSet: { historicUrls: self.local(doc._url) } }
+            );
           }
         }
       }

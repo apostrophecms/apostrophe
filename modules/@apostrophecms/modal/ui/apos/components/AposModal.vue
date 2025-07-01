@@ -24,7 +24,10 @@
           @click="emit('esc')"
         />
       </transition>
-      <transition :name="transitionType" @after-leave="$emit('inactive')">
+      <transition
+        :name="transitionType"
+        @after-leave="$emit('inactive')"
+      >
         <div
           v-if="modal.showModal"
           :class="innerClasses"
@@ -36,7 +39,10 @@
               <p class="apos-modal__busy-text">
                 {{ modal.busyTitle }}
               </p>
-              <AposSpinner :weight="'heavy'" class="apos-busy__spinner" />
+              <AposSpinner
+                :weight="'heavy'"
+                class="apos-busy__spinner"
+              />
             </div>
           </template>
           <div
@@ -44,22 +50,39 @@
             class="apos-modal__content"
             data-apos-test="modal-content"
           >
-            <header v-if="!modal.disableHeader" class="apos-modal__header">
+            <header
+              v-if="!modal.disableHeader"
+              class="apos-modal__header"
+            >
               <div class="apos-modal__header__main">
-                <div v-if="hasSlot('secondaryControls')" class="apos-modal__controls--secondary">
+                <div
+                  v-if="hasSlot('secondaryControls')"
+                  class="apos-modal__controls--secondary"
+                >
                   <slot name="secondaryControls" />
                 </div>
-                <h2 :id="props.modalData.id" class="apos-modal__heading">
-                  <span v-if="modal.a11yTitle" class="apos-sr-only">
+                <h2
+                  :id="props.modalData.id"
+                  class="apos-modal__heading"
+                >
+                  <span
+                    v-if="modal.a11yTitle"
+                    class="apos-sr-only"
+                  >
                     {{ $t(modal.a11yTitle) }}
                   </span>
                   {{ $t(modalTitle) }}
                 </h2>
                 <div
-                  v-if="hasBeenLocalized || hasSlot('primaryControls') || hasSlot('localeDisplay')"
+                  v-if="hasBeenLocalized ||
+                    hasSlot('primaryControls') ||
+                    hasSlot('localeDisplay')"
                   class="apos-modal__controls--header"
                 >
-                  <div v-if="hasSlot('localeDisplay')" class="apos-modal__locale">
+                  <div
+                    v-if="hasSlot('localeDisplay')"
+                    class="apos-modal__locale"
+                  >
                     <slot name="localeDisplay" />
                   </div>
                   <AposLocale
@@ -67,13 +90,22 @@
                     class="apos-modal__locale"
                     :locale="currentLocale"
                   />
-                  <div v-if="hasSlot('primaryControls')" class="apos-modal__controls--primary">
+                  <div
+                    v-if="hasSlot('primaryControls')"
+                    class="apos-modal__controls--primary"
+                  >
                     <slot name="primaryControls" />
                   </div>
                 </div>
               </div>
-              <div v-if="hasSlot('breadcrumbs')" class="apos-modal__breadcrumbs">
-                <slot class="apos-modal__breadcrumbs" name="breadcrumbs" />
+              <div
+                v-if="hasSlot('breadcrumbs')"
+                class="apos-modal__breadcrumbs"
+              >
+                <slot
+                  class="apos-modal__breadcrumbs"
+                  name="breadcrumbs"
+                />
               </div>
             </header>
             <div
@@ -292,9 +324,13 @@ async function trapFocus() {
     const firstElementToFocus = findPriorityElementOrFirst(elementsToFocus);
     const foundPriorityElement = firstElementToFocus?.hasAttribute('data-apos-focus-priority');
 
-    // // Components render at various times and can't be counted on to be available on modal's mount
-    // // Update the trap focus list until a data-apos-focus-priority element is found or the retry limit is reached
-    if (!foundPriorityElement && findPriorityFocusElementRetryMax.value > currentPriorityFocusElementRetry.value) {
+    // Components render at various times and can't be counted on to be available on
+    // modal's mount. Update the trap focus list until a data-apos-focus-priority element
+    // is found or the retry limit is reached
+    if (
+      !foundPriorityElement &&
+      findPriorityFocusElementRetryMax.value > currentPriorityFocusElementRetry.value
+    ) {
       await new Promise(resolve => setTimeout(resolve, 50));
       currentPriorityFocusElementRetry.value++;
       await trapFocus();

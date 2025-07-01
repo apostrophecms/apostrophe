@@ -94,10 +94,11 @@ module.exports = {
       // currently support the cancel (undo/rollback) operation.
       //
       // The `batchSimple` method of `@apostrophecms/piece-type` is an even
-      // simpler wrapper for this method if you are implementing a batch operation
-      // on a single type of piece.
+      // simpler wrapper for this method if you are implementing a batch
+      // operation on a single type of piece.
       //
-      // Notification messages should be included on a `req.body.messages` object. See `triggerNotification for details`.
+      // Notification messages should be included on a `req.body.messages`
+      // object. See `triggerNotification for details`.
       async runBatch(req, ids, change, options = {}) {
         let job;
         let notification;
@@ -120,7 +121,8 @@ module.exports = {
             // can't show progress.
             jobId: total && job._id,
             ids,
-            action: options.action
+            action: options.action,
+            docTypes: options.docTypes
           });
 
           return {
@@ -165,17 +167,18 @@ module.exports = {
           }
         }
       },
-      // Similar to `runBatch`, this method Starts and supervises a long-running job,
-      // however unlike `runBatch` the `doTheWork` function provided is invoked just
-      // once, and when it completes the job is over. This is not the way to
-      // implement a batch operation on pieces; see the `batchSimple` method
-      // of that module.
+      // Similar to `runBatch`, this method Starts and supervises a
+      // long-running job, however unlike `runBatch` the `doTheWork` function
+      // provided is invoked just once, and when it completes the job is over.
+      // This is not the way to implement a batch operation on pieces; see the
+      // `batchSimple` method of that module.
       //
-      // The `doTheWork` function receives `(req, reporting)` and may optionally invoke
-      // `reporting.success()` and `reporting.failure()` to update the progress and error
-      // counters, and `reporting.setTotal()` to indicate the total number of
-      // counts expected so a progress meter can be rendered. This is optional
-      // and an indication of progress is still displayed without it.
+      // The `doTheWork` function receives `(req, reporting)` and may
+      // optionally invoke `reporting.success()` and `reporting.failure()` to
+      // update the progress and error counters, and `reporting.setTotal()` to
+      // indicate the total number of counts expected so a progress meter can be
+      // rendered. This is optional and an indication of progress is still
+      // displayed without it.
       //
       // `reporting.setResults(object)` may also be called to pass a
       // results object, which will be available on the finished job document.
@@ -185,7 +188,8 @@ module.exports = {
       // background afterwards. You can pass `jobId` to the `progress` API route
       // of this module as `_id` on the request body to get job status info.
       //
-      // Notification messages should be included on a `req.body.messages` object. See `triggerNotification for details`.
+      // Notification messages should be included on a `req.body.messages`
+      // object. See `triggerNotification for details`.
       async run(req, doTheWork, options = {}) {
         const res = req.res;
         let job;
@@ -195,7 +199,10 @@ module.exports = {
           job = await self.start(options);
 
           const notification = await self.triggerNotification(req, 'progress', {
-            jobId: job._id
+            jobId: job._id,
+            ids: options.ids,
+            action: options.action,
+            docTypes: options.docTypes
           });
 
           run({ notificationId: notification.noteId });
@@ -282,7 +289,8 @@ module.exports = {
           job: {
             _id: options.jobId,
             action: options.action,
-            ids: options.ids
+            ids: options.ids,
+            docTypes: options.docTypes
           },
           event,
           classes: options.classes,

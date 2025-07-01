@@ -15,7 +15,12 @@
             :key="groupIndex"
             class="apos-widget-group"
           >
-            <h2 v-if="group.label" class="apos-widget-group__label">{{ $t(group.label) }}</h2>
+            <h2
+              v-if="group.label"
+              class="apos-widget-group__label"
+            >
+              {{ $t(group.label) }}
+            </h2>
             <div
               :class="[
                 `apos-widget-group--${group.columns}-column${
@@ -52,7 +57,10 @@
                 <p class="apos-widget__label">
                   {{ $t(item.label) }}
                 </p>
-                <p v-if="item.description" class="apos-widget__help">
+                <p
+                  v-if="item.description"
+                  class="apos-widget__help"
+                >
                   {{ $t(item.description) }}
                 </p>
               </button>
@@ -96,6 +104,7 @@ export default {
     if (this.options.groups) {
       for (const item of Object.keys(this.options.groups)) {
         if (!this.isValidColumn(item.columns)) {
+          // eslint-disable-next-line no-console
           console.warn(
             `apos.expanded-menu: The specified number of columns for the group ${item.label} is not between the allowed range of 1-4.`
           );
@@ -106,6 +115,7 @@ export default {
       }
     } else if (this.options.widgets) {
       if (!this.isValidColumn(this.options.columns)) {
+        // eslint-disable-next-line no-console
         console.warn(
           'apos.expanded-menu: The specified number of columns for the area is not between the allowed range of 1-4.'
         );
@@ -114,6 +124,7 @@ export default {
       const group = this.createGroup(this.options);
       this.groups.push(group);
     } else {
+      // eslint-disable-next-line no-console
       console.warn(
         'apos.expanded-menu: No groups or widgets defined. Please, either add a groups or widgets property to your area configuration.'
       );
@@ -169,7 +180,14 @@ export default {
       }
 
       for (const item of Object.keys(config.widgets)) {
-        group.widgets.push(apos.modules[`${item}-widget`]);
+        const widgetName = `${item}-widget`;
+        const widgetModule = apos.modules[widgetName];
+        if (!widgetModule) {
+          // eslint-disable-next-line no-console
+          console.warn(`${widgetName} is not available in this project, please verify its configuration`);
+        } else {
+          group.widgets.push(widgetModule);
+        }
       }
 
       return group;
@@ -258,6 +276,8 @@ export default {
   @include type-base;
 
   & {
+    display: flex;
+    flex-direction: column;
     padding: 0;
     border: none;
     border-radius: var(--a-border-radius);
@@ -266,6 +286,7 @@ export default {
   }
 
   .apos-widget__preview {
+    margin-bottom: 10px;
     transition: opacity 250ms ease-in-out;
 
     .apos-icon--add {
