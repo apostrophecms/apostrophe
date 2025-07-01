@@ -417,7 +417,24 @@ module.exports = {
       bodyParserJson: bodyParser.json({
         limit: '16mb',
         ...(self.options.bodyParser && self.options.bodyParser.json)
-      })
+      }),
+      convertPostToGet(req, res, next) {
+        // Convert POST to GET if the request is a POST has a body
+        // with a key `__aposGetWithQuery` to allow big query strings
+        if (req.method !== 'POST' || !req.body?.__aposGetWithQuery) {
+          return next();
+        }
+        req.method = 'GET';
+        req.query = req.body.__aposGetWithQuery;
+        delete req.body;
+        if (!req.url.includes('?')) {
+          req.url = req.url + '?' + qs.stringify(req.query);
+        } else {
+          req.url = req.url + '&' + qs.stringify(req.query);
+        }
+
+        return next();
+      }
     };
   },
 
