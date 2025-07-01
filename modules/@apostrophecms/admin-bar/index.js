@@ -318,96 +318,43 @@ module.exports = {
       // user only sees one of them, etc. Called by `afterInit`
 
       groupItems() {
+        // Implement the groups and addGroups options. Mark the grouped items
+        // with a `menuLeader` property.
         const groups = self.options.groups ||
           self.groups.concat(self.options.addGroups || []);
 
-        // Track which items have been claimed and in what role
-        const itemRoles = new Map();
-        const conflicts = [];
-
-        // First pass: detect conflicts
-        groups.forEach(function (group, groupIndex) {
-          if (!group.label || !group.items || group.items.length === 0) {
+        groups.forEach(function (group) {
+          if (!group.label) {
             return;
           }
 
-          const leaderName = group.items[0];
+          self.groupLabels[group.items[0]] = group.label;
 
-          group.items.forEach(function (itemName, itemIndex) {
-            const role = itemIndex === 0 ? 'leader' : 'member';
-
-            if (itemRoles.has(itemName)) {
-              const existing = itemRoles.get(itemName);
-              conflicts.push({
-                itemName,
-                existing: existing,
-                new: { groupLabel: group.label, role, groupIndex }
-              });
+          group.items.forEach(function (name, groupIndex) {
+            const item = _.find(self.items, { name });
+            if (item) {
+              item.menuLeader = group.items[0];
             } else {
-              itemRoles.set(itemName, {
-                groupLabel: group.label,
-                role,
-                groupIndex,
-                leaderName
-              });
+              return;
+            }
+            // Make sure the submenu items wind up following the leader
+            // in self.items in the appropriate order
+            if (name !== item.menuLeader) {
+              const indexLeader = _.findIndex(self.items, { name: item.menuLeader });
+              if (indexLeader === -1) {
+                throw new Error('Admin bar grouping error: no match for ' + item.menuLeader + ' in menu item ' + item.name);
+              }
+              let indexMe = _.findIndex(self.items, { name });
+              if (indexMe !== indexLeader + groupIndex) {
+                // Swap ourselves into the right position following our leader
+                if (indexLeader + groupIndex < indexMe) {
+                  indexMe++;
+                }
+                self.items.splice(indexLeader + groupIndex, 0, item);
+                self.items.splice(indexMe, 1);
+              }
             }
           });
-        });
-
-        // Report conflicts with helpful warnings
-        if (conflicts.length > 0) {
-          self.apos.util.warn('Admin bar group conflicts detected:');
-          conflicts.forEach(conflict => {
-            const { itemName, existing, new: newRole } = conflict;
-            self.apos.util.warn(
-              `  - "${itemName}" is ${existing.role} of "${existing.groupLabel}" ` +
-              `but also ${newRole.role} of "${newRole.groupLabel}". ` +
-              `Using first definition (${existing.role} of "${existing.groupLabel}").`
-            );
-          });
-        }
-
-        // Second pass: apply grouping using first-wins rule
-        groups.forEach(function (group, groupIndex) {
-          if (!group.label || !group.items || group.items.length === 0) {
-            return;
-          }
-
-          const leaderName = group.items[0];
-
-          // Set the group label
-          self.groupLabels[leaderName] = group.label;
-
-          // Mark all group items with their leader (first-wins rule)
-          group.items.forEach(function (name) {
-            const item = self.items.find(item => item.name === name);
-            if (item && !item.menuLeader) {  // Only set if not already claimed
-              item.menuLeader = leaderName;
-            }
-          });
-
-          // Find the leader's current position
-          const leaderIndex = self.items.findIndex(item => item.name === leaderName);
-          if (leaderIndex === -1) return;
-
-          // Collect all group members that weren't claimed by earlier groups
-          const groupMembers = [];
-          group.items.forEach(function (name) {
-            const item = self.items.find(item => item.name === name);
-            if (item && item.menuLeader === leaderName) {  // Only include if this group owns it
-              groupMembers.push(item);
-            }
-          });
-
-          if (groupMembers.length === 0) return;
-
-          // Remove all group members from current positions
-          self.items = self.items.filter(item =>
-            !groupMembers.some(member => member.name === item.name)
-          );
-
-          // Re-insert all group members together at the leader's original position
-          self.items.splice(leaderIndex, 0, ...groupMembers);
         });
       },
 

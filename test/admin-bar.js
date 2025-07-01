@@ -9,7 +9,7 @@ describe('Admin bar', function () {
   // EXISTENCE
   /// ///
 
-  it('should allow groups to appear in definition order', async function () {
+  it('should allow a group reversing the current order', async function () {
     let apos;
     try {
       apos = await t.create({
@@ -22,14 +22,16 @@ describe('Admin bar', function () {
                   label: 'Media',
                   items: [
                     '@apostrophecms/image',
-                    '@apostrophecms/image-tag'
+                    '@apostrophecms/image-tag',
+                    '@apostrophecms/file',
+                    '@apostrophecms/file-tag'
                   ]
                 },
                 {
                   label: 'Content',
                   items: [
                     '@apostrophecms/file',
-                    '@apostrophecms/file-tag'
+                    '@apostrophecms/image'
                   ]
                 }
               ]
@@ -37,54 +39,23 @@ describe('Admin bar', function () {
           }
         }
       });
-
       assert(apos.modules['@apostrophecms/admin-bar']);
       assert(apos.adminBar);
-
-      // Find the first item belonging to each group
-      const findFirstGroupItem = (groupLabel) => {
-        return apos.adminBar.items.find(item => {
-          // Check if this item is a group leader for this group
-          if (apos.adminBar.groupLabels[item.name] === groupLabel) {
-            return true;
-          }
-          // Check if this item belongs to a leader of this group
-          if (item.menuLeader && apos.adminBar.groupLabels[item.menuLeader] === groupLabel) {
-            return true;
-          }
-          return false;
-        });
-      };
-
-      const firstMediaItem = findFirstGroupItem('Media');
-      const firstContentItem = findFirstGroupItem('Content');
-
-      assert(firstMediaItem, 'Should find at least one Media group item');
-      assert(firstContentItem, 'Should find at least one Content group item');
-
-      const mediaGroupIndex = apos.adminBar.items.indexOf(firstMediaItem);
-      const contentGroupIndex = apos.adminBar.items.indexOf(firstContentItem);
-
-      assert(mediaGroupIndex < contentGroupIndex,
-        'Media group (defined first) should appear before Content group (defined second) in the admin bar');
-
-      // Verify the groups actually exist and have correct labels
-      assert.strictEqual(apos.adminBar.groupLabels['@apostrophecms/image'], 'Media');
-      assert.strictEqual(apos.adminBar.groupLabels['@apostrophecms/file'], 'Content');
-
+      assert.strictEqual(apos.adminBar.items.length, 7);
+      assert(apos.adminBar.items[2].name === '@apostrophecms/file');
+      assert(apos.adminBar.items[3].name === '@apostrophecms/image');
     } finally {
       t.destroy(apos);
     }
   });
 
-  it('should respect explicit order when provided', async function () {
+  it('should allow a group obeying the current order', async function () {
     let apos;
     try {
       apos = await t.create({
         modules: {
           '@apostrophecms/admin-bar': {
             options: {
-              order: ['@apostrophecms/file', '@apostrophecms/image'],
               addGroups: [
                 {
                   label: 'Media',
@@ -92,6 +63,13 @@ describe('Admin bar', function () {
                     '@apostrophecms/image',
                     '@apostrophecms/file'
                   ]
+                },
+                {
+                  label: 'Content',
+                  items: [
+                    '@apostrophecms/file',
+                    '@apostrophecms/image'
+                  ]
                 }
               ]
             }
@@ -100,81 +78,9 @@ describe('Admin bar', function () {
       });
       assert(apos.modules['@apostrophecms/admin-bar']);
       assert(apos.adminBar);
-
-      // With explicit order, @apostrophecms/file should come first
-      const fileIndex = apos.adminBar.items.findIndex(item => item.name === '@apostrophecms/file');
-      const imageIndex = apos.adminBar.items.findIndex(item => item.name === '@apostrophecms/image');
-
-      assert(fileIndex !== -1, '@apostrophecms/file should be found');
-      assert(imageIndex !== -1, '@apostrophecms/image should be found');
-      assert(fileIndex < imageIndex, '@apostrophecms/file should come before @apostrophecms/image per explicit order');
-
-      // They should still be grouped together
-      assert(imageIndex === fileIndex + 1, 'Group members should be consecutive');
-    } finally {
-      t.destroy(apos);
-    }
-  });
-
-  it('should handle last: true items correctly with explicit order', async function () {
-    let apos;
-    try {
-      apos = await t.create({
-        root: module,
-        modules: {
-          '@apostrophecms/admin-bar': {
-            init(self) {
-              // Add a test item with last: true
-              self.add('test-last-item', 'Test Last', null, { last: true });
-              self.add('test-regular-item', 'Test Regular', null, {});
-            },
-            options: {
-              order: ['test-last-item', '@apostrophecms/page'] // Explicit order should override last: true
-            }
-          }
-        }
-      });
-
-      const lastItemIndex = apos.adminBar.items.findIndex(item => item.name === 'test-last-item');
-      const regularItemIndex = apos.adminBar.items.findIndex(item => item.name === 'test-regular-item');
-
-      assert(lastItemIndex !== -1, 'test-last-item should be found');
-      assert(regularItemIndex !== -1, 'test-regular-item should be found');
-
-      // Explicit order should override last: true, so test-last-item should come first
-      assert(lastItemIndex < regularItemIndex, 'Explicit order should override last: true option');
-
-      // test-last-item should be in position 0 (first in order array)
-      assert(lastItemIndex === 0, 'test-last-item should be first due to explicit order');
-    } finally {
-      t.destroy(apos);
-    }
-  });
-
-  it('should place last: true items at end when not in explicit order', async function () {
-    let apos;
-    try {
-      apos = await t.create({
-        root: module,
-        modules: {
-          '@apostrophecms/admin-bar': {
-            init(self) {
-              self.add('test-last-item', 'Test Last', null, { last: true });
-              self.add('test-regular-item', 'Test Regular', null, {});
-            }
-            // No explicit order - last: true should work normally
-          }
-        }
-      });
-
-      const lastItemIndex = apos.adminBar.items.findIndex(item => item.name === 'test-last-item');
-      const regularItemIndex = apos.adminBar.items.findIndex(item => item.name === 'test-regular-item');
-
-      assert(lastItemIndex !== -1, 'test-last-item should be found');
-      assert(regularItemIndex !== -1, 'test-regular-item should be found');
-
-      // Without explicit order, last: true should put item at end
-      assert(lastItemIndex > regularItemIndex, 'last: true item should appear after regular items');
+      assert(apos.adminBar.items.length === 7);
+      assert(apos.adminBar.items[1].name === '@apostrophecms/file');
+      assert(apos.adminBar.items[2].name === '@apostrophecms/image');
     } finally {
       t.destroy(apos);
     }
@@ -260,25 +166,115 @@ describe('Admin bar', function () {
     }
   });
 
-  it('should handle complex scenario with order, groups, and last items', async function () {
+  it('should respect the order array for positioning items', async function () {
     let apos;
     try {
       apos = await t.create({
         root: module,
         modules: {
           '@apostrophecms/admin-bar': {
-            init(self) {
-              self.add('article', 'Article', null, {});
-              self.add('topic', 'Topic', null, {});
-              self.add('settings', 'Settings', null, { last: true });
-              self.add('help', 'Help', null, { last: true });
-            },
             options: {
-              order: ['@apostrophecms/user', 'topic'],
+              order: [
+                '@apostrophecms/file',
+                '@apostrophecms/image',
+                '@apostrophecms/user'
+              ]
+            }
+          }
+        }
+      });
+
+      assert(apos.adminBar.items[0].name === '@apostrophecms/file');
+      assert(apos.adminBar.items[1].name === '@apostrophecms/image');
+      assert(apos.adminBar.items[2].name === '@apostrophecms/user');
+    } finally {
+      t.destroy(apos);
+    }
+  });
+
+  it('should place unordered items after ordered items but before last items', async function () {
+    let apos;
+    try {
+      apos = await t.create({
+        root: module,
+        modules: {
+          '@apostrophecms/admin-bar': {
+            options: {
+              order: ['@apostrophecms/user']
+            }
+          },
+          // Add a module with last:true to test positioning
+          'test-module': {
+            init(self) {
+              self.apos.adminBar.add('test-module', 'Test', null, { last: true });
+            }
+          }
+        }
+      });
+
+      const userIndex = apos.adminBar.items.findIndex(item => item.name === '@apostrophecms/user');
+      const testIndex = apos.adminBar.items.findIndex(item => item.name === 'test-module');
+      const imageIndex = apos.adminBar.items.findIndex(item => item.name === '@apostrophecms/image');
+
+      // user (ordered) should come first
+      // image (unordered) should come after user but before test-module
+      // test-module (last:true) should come last
+      assert(userIndex < imageIndex);
+      assert(imageIndex < testIndex);
+    } finally {
+      t.destroy(apos);
+    }
+  });
+
+  it('should override last:true when item appears in order array', async function () {
+    let apos;
+    try {
+      apos = await t.create({
+        root: module,
+        modules: {
+          '@apostrophecms/admin-bar': {
+            options: {
+              order: ['@apostrophecms/user', '@apostrophecms/image']
+            }
+          },
+          'test-module': {
+            init(self) {
+              self.apos.adminBar.add('test-module', 'Test', null, { last: true });
+            }
+          }
+        }
+      });
+
+      const userIndex = apos.adminBar.items.findIndex(item => item.name === '@apostrophecms/user');
+      const imageIndex = apos.adminBar.items.findIndex(item => item.name === '@apostrophecms/image');
+      const testIndex = apos.adminBar.items.findIndex(item => item.name === 'test-module');
+
+      // Even if image had last:true, it should respect order position
+      assert(userIndex === 0);
+      assert(imageIndex === 1);
+      // test-module should still be last since it's not in order
+      assert(testIndex === apos.adminBar.items.length - 1);
+    } finally {
+      t.destroy(apos);
+    }
+  });
+
+  it('should position groups based on leader placement in order array', async function () {
+    let apos;
+    try {
+      apos = await t.create({
+        root: module,
+        modules: {
+          '@apostrophecms/admin-bar': {
+            options: {
+              order: ['@apostrophecms/image'],
               addGroups: [
                 {
-                  label: 'Content',
-                  items: ['article', 'topic']
+                  label: 'Media',
+                  items: [
+                    '@apostrophecms/image',
+                    '@apostrophecms/file'
+                  ]
                 }
               ]
             }
@@ -286,28 +282,107 @@ describe('Admin bar', function () {
         }
       });
 
-      const items = apos.adminBar.items;
-      const getIndex = (name) => items.findIndex(item => item.name === name);
+      const imageIndex = apos.adminBar.items.findIndex(item => item.name === '@apostrophecms/image');
+      const fileIndex = apos.adminBar.items.findIndex(item => item.name === '@apostrophecms/file');
 
-      const userIndex = getIndex('@apostrophecms/user');
-      const topicIndex = getIndex('topic');
-      const articleIndex = getIndex('article');
-      const settingsIndex = getIndex('settings');
-      const helpIndex = getIndex('help');
-
-      // Verify explicit order is respected
-      assert(userIndex < topicIndex, '@apostrophecms/user should come before topic (explicit order)');
-
-      // Verify grouping works
-      assert(Math.abs(topicIndex - articleIndex) === 1, 'topic and article should be adjacent (grouped)');
-
-      // Verify last items are at the end
-      assert(settingsIndex > topicIndex && settingsIndex > articleIndex, 'settings should be after content items');
-      assert(helpIndex > topicIndex && helpIndex > articleIndex, 'help should be after content items');
-      assert(settingsIndex < items.length && helpIndex < items.length, 'last items should be present');
+      // Image (group leader) should be positioned according to order
+      assert(imageIndex === 0);
+      // File should immediately follow its group leader
+      assert(fileIndex === imageIndex + 1);
+      // Both should have the same menuLeader
+      assert(apos.adminBar.items[imageIndex].menuLeader === '@apostrophecms/image');
+      assert(apos.adminBar.items[fileIndex].menuLeader === '@apostrophecms/image');
     } finally {
       t.destroy(apos);
     }
   });
 
+  it('should handle items in order array that do not exist', async function () {
+    let apos;
+    try {
+      apos = await t.create({
+        root: module,
+        modules: {
+          '@apostrophecms/admin-bar': {
+            options: {
+              order: [
+                'non-existent-module',
+                '@apostrophecms/user',
+                'another-fake-module'
+              ]
+            }
+          }
+        }
+      });
+
+      // Should not crash and should still position existing items correctly
+      const userIndex = apos.adminBar.items.findIndex(item => item.name === '@apostrophecms/user');
+      assert(userIndex === 0); // Should be first among existing ordered items
+    } finally {
+      t.destroy(apos);
+    }
+  });
+
+  it('should handle empty order array', async function () {
+    let apos;
+    try {
+      apos = await t.create({
+        root: module,
+        modules: {
+          '@apostrophecms/admin-bar': {
+            options: {
+              order: []
+            }
+          }
+        }
+      });
+
+      // Should behave like no order option was provided
+      // All items should be in their default positions
+      assert(apos.adminBar.items.length > 0);
+      // This test mainly ensures no crashes occur
+    } finally {
+      t.destroy(apos);
+    }
+  });
+
+  it('should handle groups with leaders not in order array', async function () {
+    let apos;
+    try {
+      apos = await t.create({
+        root: module,
+        modules: {
+          '@apostrophecms/admin-bar': {
+            options: {
+              order: ['@apostrophecms/user'], // user is ordered, but not the group leader
+              addGroups: [
+                {
+                  label: 'Media',
+                  items: [
+                    '@apostrophecms/image', // group leader, not in order
+                    '@apostrophecms/file'
+                  ]
+                }
+              ]
+            }
+          }
+        }
+      });
+
+      const userIndex = apos.adminBar.items.findIndex(item => item.name === '@apostrophecms/user');
+      const imageIndex = apos.adminBar.items.findIndex(item => item.name === '@apostrophecms/image');
+      const fileIndex = apos.adminBar.items.findIndex(item => item.name === '@apostrophecms/file');
+
+      // User should be first (ordered)
+      assert(userIndex === 0);
+      // Image and file should be grouped together but after ordered items
+      assert(Math.abs(imageIndex - fileIndex) === 1);
+      assert(imageIndex > userIndex);
+      // Group should still be properly formed
+      assert(apos.adminBar.items[imageIndex].menuLeader === '@apostrophecms/image');
+      assert(apos.adminBar.items[fileIndex].menuLeader === '@apostrophecms/image');
+    } finally {
+      t.destroy(apos);
+    }
+  });
 });
