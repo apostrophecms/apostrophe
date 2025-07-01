@@ -492,5 +492,112 @@ module.exports = {
         });
       }
     };
+  },
+  tasks(self) {
+    return {
+      inspect: {
+        usage: 'Inspect and list all registered admin bar items and groups',
+        ready: true,
+
+        async task(apos, argv) {
+
+          const allGroups = [
+            ...self.groups,
+            ...(self.options.addGroups || []),
+            ...(self.options.groups || [])
+          ];
+          console.log('\n🔍 APOSTROPHE ADMIN BAR INSPECTION\n');
+          console.log('=' + '='.repeat(50));
+
+          // Display configuration overview
+          console.log('\n📋 CONFIGURATION OVERVIEW');
+          console.log('-'.repeat(30));
+          console.log(`Page Tree Enabled: ${self.options.pageTree ? '✅' : '❌'}`);
+          if (self.options.order) {
+            console.log(`Order: [${self.options.order.join(', ')}]`);
+          }
+
+          console.log(`Total Items Registered: ${self.items.length}`);
+          console.log(`Total Groups Registered: ${allGroups.length}`);
+
+          console.log(`Custom Order Defined: ${self.options.order ? '✅' : '❌'}`);
+          console.log(`Custom Bars: ${self.bars.length}`);
+
+          // Display all registered items
+          console.log('\n📝 REGISTERED ITEMS');
+          console.log('-'.repeat(30));
+
+          if (self.items.length === 0) {
+            console.log('No items registered');
+          } else {
+            self.items.forEach((item, index) => {
+              console.log(`\n${index + 1}. ${item.name}`);
+              console.log(`   Action: ${item.action}`);
+              console.log(`   Label: ${item.label}`);
+
+              if (item.menuLeader) {
+                const groupLabel = self.groupLabels[item.menuLeader];
+                if (groupLabel) {
+                  console.log(`   Group: "${groupLabel}" (leader: ${item.menuLeader})`);
+                } else {
+                  console.log(`   Group Leader: ${item.menuLeader}`);
+                }
+              }
+
+              if (item.options && Object.keys(item.options).length > 0) {
+                console.log(`   Options:`);
+                Object.entries(item.options).forEach(([key, value]) => {
+                  console.log(`     ${key}: ${JSON.stringify(value)}`);
+                });
+              }
+            });
+          }
+
+          // Display registered groups
+          console.log('\n👥 REGISTERED GROUPS');
+          console.log('-'.repeat(30));
+
+          if (allGroups.length === 0) {
+            console.log('No groups registered');
+          } else {
+            allGroups.forEach((group, index) => {
+              console.log(`\n${index + 1}. Group: "${group.label || 'Unnamed'}"`);
+              console.log(`   Items: [${group.items.join(', ')}]`);
+
+              // Show which items actually exist
+              const existingItems = group.items.filter(itemName =>
+                self.items.some(item => item.name === itemName)
+              );
+              const missingItems = group.items.filter(itemName =>
+                !self.items.some(item => item.name === itemName)
+              );
+
+              if (existingItems.length > 0) {
+                console.log(`   ✅ Existing: [${existingItems.join(', ')}]`);
+              }
+              if (missingItems.length > 0) {
+                console.log(`   ❌ Missing: [${missingItems.join(', ')}]`);
+              }
+            });
+          }
+
+          // Display custom bars
+          if (self.bars.length > 0) {
+            console.log('\n📊 CUSTOM BARS');
+            console.log('-'.repeat(30));
+
+            self.bars.forEach((bar, index) => {
+              console.log(`\n${index + 1}. ${bar.id}`);
+              console.log(`   Component: ${bar.componentName}`);
+              console.log(`   Last: ${bar.last ? '✅' : '❌'}`);
+              if (bar.props) {
+                console.log(`   Props: ${JSON.stringify(bar.props, null, 2)}`);
+              }
+            });
+          }
+          console.log('\n✨ Inspection complete!\n');
+        }
+      }
+    };
   }
 };
