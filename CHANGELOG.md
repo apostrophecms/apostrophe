@@ -4,6 +4,7 @@
 
 ### Adds
 
+* Implemented GET /api/v1/@apostrophecms/login/whoami route such that it returns the details of the currently logged in user; added the route to the login module.
 * Adds keyboard shortcuts for manipulating widgets in areas. Includes Cut, Copy, Paste, Delete, and Duplicate.
 * Adds dynamic choices working with piece manager filters. 
 * Allow `import.imageTags` (array of image tag IDs) to be passed to the rich text widget when importing (see https://docs.apostrophecms.org/reference/api/rich-text.html#importing-inline-images).
