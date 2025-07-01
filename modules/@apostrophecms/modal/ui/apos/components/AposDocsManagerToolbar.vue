@@ -30,6 +30,7 @@
           @added="title => updateTag('create', { title })"
           @checked="slug => updateTag('add', { slug })"
           @unchecked="slug => updateTag('remove', { slug })"
+          @refresh-data="$emit('refresh-data')"
         />
         <AposButton
           v-else-if="!operations"
@@ -159,11 +160,12 @@ export default {
     }
   },
   emits: [
-    'select-click',
+    'batch',
     'filter',
-    'search',
     'page-change',
-    'batch'
+    'refresh-data',
+    'search',
+    'select-click'
   ],
   data() {
     return {

@@ -1,5 +1,6 @@
 <template>
   <AposContextMenu
+    ref="contextMenu"
     :menu-placement
     :button
     :disabled="isDisabled"
@@ -61,7 +62,7 @@
           type="quiet"
           :disabled="isTagFound"
           :disable-focus="!isOpen"
-          @click.stop="createOrManage"
+          @click.stop="createOrSearch"
         />
       </div>
     </div>
@@ -128,9 +129,10 @@ const props = defineProps({
   }
 });
 
-const emit = defineEmits([ 'added', 'checked', 'unchecked' ]);
+const emit = defineEmits([ 'added', 'checked', 'unchecked', 'refresh-data' ]);
 
 const textInputEl = useTemplateRef('textInput');
+const contextMenuEl = useTemplateRef('contextMenu');
 
 const isOpen = ref(false);
 const searchValue = ref({ data: '' });
@@ -259,7 +261,26 @@ function checkOrCreate() {
   create();
 };
 
-function createOrManage() {
+async function createOrManage() {
+  if (createUi.value) {
+    const imageTagMod = apos.modules['@apostrophecms/image-tag'];
+    await apos.modal.execute(imageTagMod.components.managerModal, {
+      moduleName: imageTagMod.name
+    });
+
+    emit('refresh-data');
+    contextMenuEl.value.show();
+    return;
+  }
+
+  if (searchValue.value.data) {
+    return create();
+  }
+
+  toggleCreateUi();
+}
+
+function createOrSearch() {
   if (!createUi.value && searchValue.value.data) {
     return create();
   }
