@@ -345,7 +345,8 @@ export default {
       const qs = {
         ...this.filterValues,
         page: this.currentPage,
-        viewContext: this.relationshipField ? 'relationship' : 'manage'
+        viewContext: this.relationshipField ? 'relationship' : 'manage',
+        aposMode: 'draft'
       };
       // Used for batch tagging update
       if (options._ids) {
@@ -373,12 +374,11 @@ export default {
           delete qs[prop];
         };
       }
-      const apiResponse = (await apos.http.get(
-        this.moduleOptions.action, {
-          qs,
-          draft: true
+      const apiResponse = await apos.http.post(this.moduleOptions.action, {
+        body: {
+          __aposGetWithQuery: qs
         }
-      ));
+      });
 
       if (options.tags) {
         if (filtered) {
