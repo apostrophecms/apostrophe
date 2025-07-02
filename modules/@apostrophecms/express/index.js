@@ -430,7 +430,11 @@ module.exports = {
         if (!req.url.includes('?')) {
           req.url = req.url + '?' + qs.stringify(req.query);
         } else {
-          req.url = req.url + '&' + qs.stringify(req.query);
+          const [ url, queryString ] = req.url.split('?');
+          const firstPart = queryString.endsWith('&')
+            ? queryString
+            : (queryString ? `${queryString}&` : '');
+          req.url = `${url}?${firstPart}${qs.stringify(req.query)}`;
         }
 
         return next();
