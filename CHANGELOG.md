@@ -5,7 +5,7 @@
 ### Adds
 
 * Adds keyboard shortcuts for manipulating widgets in areas. Includes Cut, Copy, Paste, Delete, and Duplicate.
-* Adds dynamic choices working with piece manager filters. 
+* Adds dynamic choices working with piece manager filters.
 
 ### Changes
 
@@ -13,6 +13,7 @@
 
 * Add missing Pages manager shortcuts list helper.
 * Improve the `isEmpty` method of the rich text widget to take into account the HTML blocks (`<figure>` and `<table>`) that are not empty but do not contain any plain text.
+* Fixed admin bar item ordering to correctly respect the precedence hierarchy: groups (when leader is positioned) > explicit order array > groups (when leader has positioning options) > individual `last`/`after` options.
 
 ## 4.18.0 (2025-06-11)
 
