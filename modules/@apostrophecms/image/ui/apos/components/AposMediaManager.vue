@@ -345,14 +345,16 @@ export default {
       const qs = {
         ...this.filterValues,
         page: this.currentPage,
-        viewContext: this.relationshipField ? 'relationship' : 'manage',
-        aposMode: 'draft'
+        viewContext: this.relationshipField ? 'relationship' : 'manage'
       };
+
       // Used for batch tagging update
       if (options._ids) {
         qs._ids = options._ids;
         qs.perPage = options._ids.length;
+        qs.page = 1;
       }
+
       const filtered = !!Object.keys(this.filterValues).length;
       if (this.moduleOptions && Array.isArray(this.moduleOptions.filters)) {
         this.moduleOptions.filters.forEach(filter => {
@@ -374,10 +376,12 @@ export default {
           delete qs[prop];
         };
       }
+
       const apiResponse = await apos.http.post(this.moduleOptions.action, {
         body: {
           __aposGetWithQuery: qs
-        }
+        },
+        draft: true
       });
 
       if (options.tags) {
