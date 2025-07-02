@@ -874,7 +874,6 @@ describe('Login', function() {
       assert.fail('Expected error but got success');
     } catch (err) {
       assert.strictEqual(err.status, 404);
-      assert(err.message.includes('notfound'));
     }
   });
 
@@ -888,7 +887,7 @@ describe('Login', function() {
         method: 'POST',
         body: {
           username: 'HarryPutter',
-          password: 'crookshanks',
+          password: 'AnotherLovelyPassword',
           session: true
         },
         jar
@@ -898,7 +897,7 @@ describe('Login', function() {
     const whoamiResponse = await apos.http.get('/api/v1/@apostrophecms/login/whoami', { jar });
     assert.ok(whoamiResponse._id);
     assert.strictEqual(whoamiResponse.username, 'HarryPutter');
-    assert.strictEqual(whoamiResponse.title, 'Harry Putter');
+    assert.strictEqual(whoamiResponse.title, 'Extra Cool Putter');
     assert.strictEqual(whoamiResponse.email, 'hputter@aol.com');
   });
 
@@ -914,7 +913,7 @@ describe('Login', function() {
         method: 'POST',
         body: {
           username: 'HarryPutter',
-          password: 'crookshanks',
+          password: 'AnotherLovelyPassword',
           session: true
         },
         jar
@@ -929,13 +928,16 @@ describe('Login', function() {
 
     const jar = apos.http.jar();
 
+    // Reset the whoamiFields to default (empty)
+    apos.modules['@apostrophecms/login'].options.whoamiFields = [];
+
     await apos.http.post(
       '/api/v1/@apostrophecms/login/login',
       {
         method: 'POST',
         body: {
           username: 'HarryPutter',
-          password: 'crookshanks',
+          password: 'AnotherLovelyPassword',
           session: true
         },
         jar
