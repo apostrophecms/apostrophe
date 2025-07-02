@@ -366,6 +366,7 @@ function getCheckedState(tag) {
   display: flex;
   flex-direction: column;
   width: 400px;
+  height: 450px;
   padding: 0;
 }
 
@@ -404,20 +405,20 @@ function getCheckedState(tag) {
 
 .apos-apply-tag-menu__tags {
   @include apos-list-reset();
-
-  & {
-    max-height: 315px;
-    overflow-y: auto;
-  }
 }
 
 .apos-apply-tag-menu__tag {
-  padding: $spacing-base $spacing-double;
+  padding: 11px 20px;
   border-top: 1px solid var(--a-base-9);
+
+  &:last-child {
+    border-bottom: 1px solid var(--a-base-9);
+  }
 }
 
 .apos-apply-tag-menu__search-body {
   flex: 1;
+  overflow-y: auto;
 }
 
 .apos-apply-tag-menu__empty {
