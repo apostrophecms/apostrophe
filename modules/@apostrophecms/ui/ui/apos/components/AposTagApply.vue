@@ -421,11 +421,15 @@ function getCheckedState(tag) {
   overflow-y: auto;
 }
 
+/* TODO: Fix UI when no tags found or none exist */
 .apos-apply-tag-menu__empty {
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 50px 20px 60px;
+  justify-content: center;
+  height: 100%;
+  padding: 0 0 10px;
+  box-sizing: border-box;
 }
 
 .apos-apply-tag-menu__empty-message {
