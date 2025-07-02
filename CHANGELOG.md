@@ -6,7 +6,7 @@
 
 * Adds keyboard shortcuts for manipulating widgets in areas. Includes Cut, Copy, Paste, Delete, and Duplicate.
 * Adds a new way to make `GET` requests with a large query string. It can become a `POST` request containing the key `__aposGetWithQuery` in its body.
-A middleware checks for this key and converts the request back to a `GET` request with the right query string.
+A middleware checks for this key and converts the request back to a `GET` request with the right `req.query` property.
 
 ### Changes
 
