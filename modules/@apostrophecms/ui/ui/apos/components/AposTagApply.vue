@@ -5,6 +5,7 @@
     :button
     :disabled="isDisabled"
     class="apos-apply-tag-menu"
+    :class="{ 'apos-apply-tag-menu--create-ui': createUi }"
     @open="isOpen = $event"
     @close="clearSearch"
   >
@@ -366,8 +367,12 @@ function getCheckedState(tag) {
   display: flex;
   flex-direction: column;
   width: 400px;
-  height: 450px;
   padding: 0;
+}
+
+.apos-apply-tag-menu:not(.apos-apply-tag-menu--create-ui)
+:deep(.apos-context-menu__pane) {
+  height: 450px;
 }
 
 .apos-apply-tag-menu__inner,
@@ -424,12 +429,12 @@ function getCheckedState(tag) {
 /* TODO: Fix UI when no tags found or none exist */
 .apos-apply-tag-menu__empty {
   display: flex;
+  box-sizing: border-box;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   height: 100%;
   padding: 0 0 10px;
-  box-sizing: border-box;
 }
 
 .apos-apply-tag-menu__empty-message {
