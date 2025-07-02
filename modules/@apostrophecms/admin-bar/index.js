@@ -317,45 +317,121 @@ module.exports = {
       // render time so we can handle it properly if an individual
       // user only sees one of them, etc. Called by `afterInit`
 
+      // Fixed groupItems method that respects group registration order
+
       groupItems() {
-        // Implement the groups and addGroups options. Mark the grouped items
-        // with a `menuLeader` property.
         const groups = self.options.groups ||
           self.groups.concat(self.options.addGroups || []);
 
-        groups.forEach(function (group) {
-          if (!group.label) {
-            return;
-          }
+        // Track which items have been grouped to detect duplicates
+        const groupedItems = new Map(); // itemName -> groupLabel
 
-          self.groupLabels[group.items[0]] = group.label;
-
-          group.items.forEach(function (name, groupIndex) {
-            const item = _.find(self.items, { name });
-            if (item) {
-              item.menuLeader = group.items[0];
-            } else {
+        // If we have an explicit order
+        // use the existing logic with duplicate detection
+        if (self.options.order && self.options.order.length > 0) {
+          groups.forEach(function (group) {
+            if (!group.label) {
               return;
             }
-            // Make sure the submenu items wind up following the leader
-            // in self.items in the appropriate order
-            if (name !== item.menuLeader) {
-              const indexLeader = _.findIndex(self.items, { name: item.menuLeader });
-              if (indexLeader === -1) {
-                throw new Error('Admin bar grouping error: no match for ' + item.menuLeader + ' in menu item ' + item.name);
+
+            self.groupLabels[group.items[0]] = group.label;
+
+            group.items.forEach(function (name, groupIndex) {
+              // Check for duplicates
+              if (groupedItems.has(name)) {
+                self.apos.util.warn(
+                  `Admin bar item "${name}" appears in multiple groups: "${groupedItems.get(name)}" and "${group.label}". ` +
+                  `Using first occurrence in "${groupedItems.get(name)}".`
+                );
+                return; // Skip this item in the current group
               }
-              let indexMe = _.findIndex(self.items, { name });
-              if (indexMe !== indexLeader + groupIndex) {
-                // Swap ourselves into the right position following our leader
-                if (indexLeader + groupIndex < indexMe) {
-                  indexMe++;
+
+              const item = _.find(self.items, { name });
+              if (item) {
+                item.menuLeader = group.items[0];
+                groupedItems.set(name, group.label);
+              } else {
+                return;
+              }
+
+              // Make sure the submenu items wind up following the leader
+              // in self.items in the appropriate order
+              if (name !== item.menuLeader) {
+                const indexLeader = _.findIndex(self.items, { name: item.menuLeader });
+                if (indexLeader === -1) {
+                  throw new Error('Admin bar grouping error: no match for ' + item.menuLeader + ' in menu item ' + item.name);
                 }
-                self.items.splice(indexLeader + groupIndex, 0, item);
-                self.items.splice(indexMe, 1);
+                let indexMe = _.findIndex(self.items, { name });
+                if (indexMe !== indexLeader + groupIndex) {
+                  // Swap ourselves into the right position following our leader
+                  if (indexLeader + groupIndex < indexMe) {
+                    indexMe++;
+                  }
+                  self.items.splice(indexLeader + groupIndex, 0, item);
+                  self.items.splice(indexMe, 1);
+                }
               }
+            });
+          });
+        } else {
+          // No explicit order - respect group registration order
+          const newItems = [];
+          const processedItems = new Set();
+
+          // First, process all groups in registration order
+          groups.forEach(function (group) {
+            if (!group.label) {
+              return;
+            }
+
+            // Collect valid items for this group (excluding duplicates and missing items)
+            const validGroupItems = [];
+
+            group.items.forEach(function (name) {
+              // Check for duplicates
+              if (groupedItems.has(name)) {
+                self.apos.util.warn(
+                  `Admin bar item "${name}" appears in multiple groups: "${groupedItems.get(name)}" and "${group.label}". ` +
+                  `Using first occurrence in "${groupedItems.get(name)}".`
+                );
+                return;
+              }
+
+              const item = _.find(self.items, { name });
+              if (item && !processedItems.has(name)) {
+                validGroupItems.push({ item, name });
+              }
+            });
+
+            // Only create a group if there are multiple valid items
+            if (validGroupItems.length > 1) {
+              const leaderName = validGroupItems[0].name;
+              self.groupLabels[leaderName] = group.label;
+
+              validGroupItems.forEach(({ item, name }) => {
+                item.menuLeader = leaderName;
+                newItems.push(item);
+                processedItems.add(name);
+                groupedItems.set(name, group.label);
+              });
+            } else if (validGroupItems.length === 1) {
+              // Single item - add without grouping
+              const { item, name } = validGroupItems[0];
+              newItems.push(item);
+              processedItems.add(name);
             }
           });
-        });
+
+          // Then add any remaining ungrouped items in their original order
+          self.items.forEach(function (item) {
+            if (!processedItems.has(item.name)) {
+              newItems.push(item);
+              processedItems.add(item.name);
+            }
+          });
+
+          self.items = newItems;
+        }
       },
 
       // Determine if the specified admin bar item object should
