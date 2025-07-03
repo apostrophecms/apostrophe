@@ -1,9 +1,11 @@
 <template>
   <AposContextMenu
+    ref="contextMenu"
     :menu-placement
     :button
     :disabled="isDisabled"
     class="apos-apply-tag-menu"
+    :class="{ 'apos-apply-tag-menu--create-ui': createUi }"
     @open="isOpen = $event"
     @close="clearSearch"
   >
@@ -61,7 +63,7 @@
           type="quiet"
           :disabled="isTagFound"
           :disable-focus="!isOpen"
-          @click.stop="createOrManage"
+          @click.stop="createOrSearch"
         />
       </div>
     </div>
@@ -128,9 +130,10 @@ const props = defineProps({
   }
 });
 
-const emit = defineEmits([ 'added', 'checked', 'unchecked' ]);
+const emit = defineEmits([ 'added', 'checked', 'unchecked', 'refresh-data' ]);
 
 const textInputEl = useTemplateRef('textInput');
+const contextMenuEl = useTemplateRef('contextMenu');
 
 const isOpen = ref(false);
 const searchValue = ref({ data: '' });
@@ -259,7 +262,26 @@ function checkOrCreate() {
   create();
 };
 
-function createOrManage() {
+async function createOrManage() {
+  if (createUi.value) {
+    const imageTagMod = apos.modules['@apostrophecms/image-tag'];
+    await apos.modal.execute(imageTagMod.components.managerModal, {
+      moduleName: imageTagMod.name
+    });
+
+    emit('refresh-data');
+    contextMenuEl.value.show();
+    return;
+  }
+
+  if (searchValue.value.data) {
+    return create();
+  }
+
+  toggleCreateUi();
+}
+
+function createOrSearch() {
   if (!createUi.value && searchValue.value.data) {
     return create();
   }
@@ -348,6 +370,11 @@ function getCheckedState(tag) {
   padding: 0;
 }
 
+.apos-apply-tag-menu:not(.apos-apply-tag-menu--create-ui)
+:deep(.apos-context-menu__pane) {
+  height: 450px;
+}
+
 .apos-apply-tag-menu__inner,
 .apos-apply-tag-menu__tags,
 .apos-apply-tag-menu__empty {
@@ -383,27 +410,31 @@ function getCheckedState(tag) {
 
 .apos-apply-tag-menu__tags {
   @include apos-list-reset();
-
-  & {
-    max-height: 315px;
-    overflow-y: auto;
-  }
 }
 
 .apos-apply-tag-menu__tag {
-  padding: $spacing-base $spacing-double;
+  padding: 11px 20px;
   border-top: 1px solid var(--a-base-9);
+
+  &:last-child {
+    border-bottom: 1px solid var(--a-base-9);
+  }
 }
 
 .apos-apply-tag-menu__search-body {
   flex: 1;
+  overflow-y: auto;
 }
 
+/* TODO: Fix UI when no tags found or none exist */
 .apos-apply-tag-menu__empty {
   display: flex;
+  box-sizing: border-box;
   flex-direction: column;
   align-items: center;
-  padding: 50px 20px 60px;
+  justify-content: center;
+  height: 100%;
+  padding: 0 0 10px;
 }
 
 .apos-apply-tag-menu__empty-message {
