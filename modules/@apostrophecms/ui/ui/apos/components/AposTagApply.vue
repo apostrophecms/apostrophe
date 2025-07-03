@@ -91,7 +91,7 @@
 
 <script setup>
 import {
-  computed, inject, ref, useTemplateRef
+  computed, inject, ref, useTemplateRef, watch
 } from 'vue';
 
 const $t = inject('i18n');
@@ -138,6 +138,7 @@ const contextMenuEl = useTemplateRef('contextMenu');
 const isOpen = ref(false);
 const searchValue = ref({ data: '' });
 const createUi = ref(false);
+const sortedTags = ref([]);
 
 const applyToIds = computed(() => {
   return Object.keys(props.applyTo);
@@ -157,29 +158,6 @@ const noTagsTranslation = computed(() => {
   return props.tags.length
     ? $t('apostrophe:tagNoResultFor', { tag: searchValue.value.data })
     : $t('apostrophe:tagNoTagsYet');
-});
-
-// Sort checked first
-// then indeterminate
-// and finally unchecked alphabetically
-const sortedTags = computed(() => {
-  if (!applyToIds.value.length) {
-    return props.tags;
-  }
-
-  const checked = props.tags.filter(tag =>
-    checkboxes.value[tag.slug].model.value === true &&
-    checkboxes.value[tag.slug].choice.indeterminate !== true
-  );
-  const indeterminate = props.tags.filter(tag =>
-    checkboxes.value[tag.slug].model.value === true &&
-    checkboxes.value[tag.slug].choice.indeterminate === true
-  );
-  const unchecked = props.tags.filter(tag =>
-    checkboxes.value[tag.slug].model.value !== true
-  );
-
-  return [].concat(checked, indeterminate, unchecked);
 });
 
 // Unless we're in the middle of creating a new tag,
@@ -242,10 +220,38 @@ const checkboxes = computed(() => {
   return state;
 });
 
-// methods
+watch(props.tags, (newVal, oldVal) => {
+  console.log('newVal', newVal);
+  console.log('oldVal', oldVal);
+
+  sortTags();
+}, { immediate: true });
+
+// Sort checked first then indeterminate and finally unchecked alphabetically
+function sortTags() {
+  if (!applyToIds.value.length) {
+    return props.tags;
+  }
+
+  const checked = props.tags.filter(tag =>
+    checkboxes.value[tag.slug].model.value === true &&
+    checkboxes.value[tag.slug].choice.indeterminate !== true
+  );
+  const indeterminate = props.tags.filter(tag =>
+    checkboxes.value[tag.slug].model.value === true &&
+    checkboxes.value[tag.slug].choice.indeterminate === true
+  );
+  const unchecked = props.tags.filter(tag =>
+    checkboxes.value[tag.slug].model.value !== true
+  );
+
+  sortedTags.value = [].concat(checked, indeterminate, unchecked);
+}
+
 function clearSearch() {
   searchValue.value.data = '';
   closeCreateUi();
+  sortTags();
 }
 
 function checkOrCreate() {
