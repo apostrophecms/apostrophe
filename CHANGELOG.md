@@ -4,14 +4,18 @@
 
 ### Adds
 
+* Implemented GET /api/v1/@apostrophecms/login/whoami route such that it returns the details of the currently logged in user; added the route to the login module.
 * Adds keyboard shortcuts for manipulating widgets in areas. Includes Cut, Copy, Paste, Delete, and Duplicate.
 * Automatic translation now supports a disclaimer and an help text for the checkbox. You can now set the disclaimer by setting `automaticTranslationDisclaimer` `i18n` key and the help text by setting `automaticTranslationCheckboxHelp` `i18n` key.
+* Adds dynamic choices working with piece manager filters. 
+* Allow `import.imageTags` (array of image tag IDs) to be passed to the rich text widget when importing (see https://docs.apostrophecms.org/reference/api/rich-text.html#importing-inline-images).
 
 ### Changes
 
 ### Fixes
 
 * Add missing Pages manager shortcuts list helper.
+* Improve the `isEmpty` method of the rich text widget to take into account the HTML blocks (`<figure>` and `<table>`) that are not empty but do not contain any plain text.
 
 ## 4.18.0 (2025-06-11)
 

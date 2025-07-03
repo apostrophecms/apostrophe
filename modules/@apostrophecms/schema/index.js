@@ -753,7 +753,7 @@ module.exports = {
             ? error.path.split('.')
             : [ null, error.path ];
           const curDestination = destId
-            ? (destination.items || destination || []).find(({ _id }) => _id === destId)
+            ? (destination?.items || destination || []).find(({ _id }) => _id === destId)
             : destination;
 
           const errorPath = destinationPath
@@ -915,16 +915,17 @@ module.exports = {
         fieldModuleName,
         docId = null,
         optionalParenthesis = false,
-        following = {}
+        following = {},
+        featureType = 'field'
       ) {
         const [ methodDefinition, rest ] = methodKey.split('(');
         const hasParenthesis = rest !== undefined;
 
         if (!hasParenthesis && !optionalParenthesis) {
-          throw new Error(`The method "${methodDefinition}" defined in the "${fieldName}" field should be written with parenthesis: "${methodDefinition}()".`);
+          throw new Error(`The method "${methodDefinition}" defined in the "${fieldName}" ${featureType} should be written with parenthesis: "${methodDefinition}()".`);
         }
         if (hasParenthesis && !methodKey.endsWith('()')) {
-          self.apos.util.warn(`The method "${methodDefinition}" defined in the "${fieldName}" field should be written without argument: "${methodDefinition}()".`);
+          self.apos.util.warn(`The method "${methodDefinition}" defined in the "${fieldName}" ${featureType} should be written without argument: "${methodDefinition}()".`);
           methodKey = methodDefinition + '()';
         }
 
@@ -935,9 +936,9 @@ module.exports = {
         const module = self.apos.modules[moduleName];
 
         if (!module) {
-          throw new Error(`The "${moduleName}" module defined in the "${fieldName}" field does not exist.`);
+          throw new Error(`The "${moduleName}" module defined in the "${fieldName}" ${featureType} does not exist.`);
         } else if (!module[methodName]) {
-          throw new Error(`The "${methodName}" method from "${moduleName}" module defined in the "${fieldName}" field does not exist.`);
+          throw new Error(`The "${methodName}" method from "${moduleName}" module defined in the "${fieldName}" ${featureType} does not exist.`);
         }
 
         return module[methodName](req, { docId }, following);
@@ -2192,6 +2193,45 @@ module.exports = {
           props,
           if: condition
         });
+      },
+
+      async getFilterDynamicChoices(req, dynamicChoices, manager) {
+        if (!dynamicChoices.length) {
+          return {};
+        }
+
+        const moduleName = manager.__meta.name;
+        const result = {};
+        for (const choice of dynamicChoices) {
+          const filter = manager.filters.find(f => f.name === choice);
+
+          if (!filter) {
+            throw self.apos.error('invalid', `Filter "${choice}" not found in module "${moduleName}".`);
+          }
+
+          try {
+            const choices = await self.evaluateMethod(
+              req,
+              filter.choices,
+              filter.name,
+              moduleName,
+              null,
+              true,
+              {},
+              'filter'
+            );
+
+            if (Array.isArray(choices)) {
+              result[choice] = choices;
+            } else {
+              throw self.apos.error('invalid', `The method ${filter.choices} from the module ${moduleName} did not return an array`);
+            }
+          } catch (error) {
+            throw self.apos.error('invalid', error.message);
+          }
+        }
+
+        return result;
       },
 
       async choicesRoute(req) {

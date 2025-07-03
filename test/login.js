@@ -867,4 +867,84 @@ describe('Login', function() {
       }
     );
   });
+
+  it('should return an error with code 404 at GET login/whoami when user is not logged in', async function() {
+    try {
+      await apos.http.get('/api/v1/@apostrophecms/login/whoami');
+      assert.fail('Expected error but got success');
+    } catch (err) {
+      assert.strictEqual(err.status, 404);
+    }
+  });
+
+  it('should return user data at GET login/whoami when user is logged in', async function() {
+
+    const jar = apos.http.jar();
+
+    await apos.http.post(
+      '/api/v1/@apostrophecms/login/login',
+      {
+        method: 'POST',
+        body: {
+          username: 'HarryPutter',
+          password: 'AnotherLovelyPassword',
+          session: true
+        },
+        jar
+      }
+    );
+
+    const whoamiResponse = await apos.http.get('/api/v1/@apostrophecms/login/whoami', { jar });
+    assert.ok(whoamiResponse._id);
+    assert.strictEqual(whoamiResponse.username, 'HarryPutter');
+    assert.strictEqual(whoamiResponse.title, 'Extra Cool Putter');
+    assert.strictEqual(whoamiResponse.email, 'hputter@aol.com');
+  });
+
+  it('should return user data with additional whoamiFields if explicitly added at GET login/whoami when user is logged in', async function() {
+
+    const jar = apos.http.jar();
+
+    apos.modules['@apostrophecms/login'].options.whoamiFields = [ 'role' ];
+
+    await apos.http.post(
+      '/api/v1/@apostrophecms/login/login',
+      {
+        method: 'POST',
+        body: {
+          username: 'HarryPutter',
+          password: 'AnotherLovelyPassword',
+          session: true
+        },
+        jar
+      }
+    );
+
+    const whoamiResponse = await apos.http.get('/api/v1/@apostrophecms/login/whoami', { jar });
+    assert.strictEqual(whoamiResponse.role, 'admin');
+  });
+
+  it('should not return user data with additional whoamiFields if not explicitly added at GET login/whoami when user is logged in', async function() {
+
+    const jar = apos.http.jar();
+
+    // Reset the whoamiFields to default (empty)
+    apos.modules['@apostrophecms/login'].options.whoamiFields = [];
+
+    await apos.http.post(
+      '/api/v1/@apostrophecms/login/login',
+      {
+        method: 'POST',
+        body: {
+          username: 'HarryPutter',
+          password: 'AnotherLovelyPassword',
+          session: true
+        },
+        jar
+      }
+    );
+
+    const whoamiResponse = await apos.http.get('/api/v1/@apostrophecms/login/whoami', { jar });
+    assert.ok(!('role' in whoamiResponse));
+  });
 });
