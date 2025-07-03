@@ -124,7 +124,7 @@ export function getConditionalFields(
           values,
           field[conditionType],
           (propName, condition, docValue) =>
-            evaluateExternal(propName, condition, conditionType)
+            evaluateExternalAndHidden(propName, condition, conditionType)
         );
       }
     }
@@ -134,9 +134,13 @@ export function getConditionalFields(
 
   // Handle external conditions as a voter function.
   // Non-boolean returns are ignored by the `checkIfConditions` function.
-  function evaluateExternal(propName, conditionValue, conditionType) {
+  function evaluateExternalAndHidden(propName, conditionValue, conditionType) {
     if (isExternalCondition(propName, conditionType)) {
       return externalConditionsResults[conditionType]?.[propName] === conditionValue;
+    }
+
+    if (result[conditionType]?.[propName] === false) {
+      return false;
     }
   }
 }
