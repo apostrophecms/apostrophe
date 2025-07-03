@@ -417,7 +417,27 @@ module.exports = {
       bodyParserJson: bodyParser.json({
         limit: '16mb',
         ...(self.options.bodyParser && self.options.bodyParser.json)
-      })
+      }),
+      // Supports POST that are supposed to be GET requests
+      // when the query string is too big, we convert it back to GET here.
+      convertPostToGetWithQuery(req, res, next) {
+        if (req.method === 'POST' && req.body?.__aposGetWithQuery) {
+          req.method = 'GET';
+          req.query = req.body.__aposGetWithQuery;
+          delete req.body;
+          if (!req.url.includes('?')) {
+            req.url = req.url + '?' + qs.stringify(req.query);
+          } else {
+            const [ url, queryString ] = req.url.split('?');
+            const firstPart = queryString.endsWith('&')
+              ? queryString
+              : (queryString ? `${queryString}&` : '');
+            req.url = `${url}?${firstPart}${qs.stringify(req.query)}`;
+          }
+        }
+
+        return next();
+      }
     };
   },
 
