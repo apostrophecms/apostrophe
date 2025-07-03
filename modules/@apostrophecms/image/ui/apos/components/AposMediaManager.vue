@@ -77,6 +77,7 @@
             @search="search"
             @filter="filter"
             @batch="handleBatchAction"
+            @refresh-data="refreshData"
           />
         </template>
         <template #bodyMain>
@@ -315,7 +316,7 @@ export default {
       this.isFirstLoading = false;
     });
 
-    this.batchTags = await this.getTags();
+    await this.getTags();
   },
 
   beforeUnmount() {
@@ -373,19 +374,17 @@ export default {
           delete qs[prop];
         };
       }
-      const apiResponse = (await apos.http.get(
-        this.moduleOptions.action, {
-          qs,
-          draft: true
-        }
-      ));
+      const apiResponse = await apos.http.get(this.moduleOptions.action, {
+        qs,
+        draft: true
+      });
 
       if (options.tags) {
         if (filtered) {
           // We never filter the tag list because they are presented like
           // folders, and folders don't disappear when empty. So we need to make
           // a separate query for distinct tags if our first query was filtered
-          const apiResponse = (await apos.http.get(
+          const tagApiResponse = await apos.http.get(
             this.moduleOptions.action, {
               busy: true,
               qs: {
@@ -393,8 +392,8 @@ export default {
               },
               draft: true
             }
-          ));
-          result.tagList = apiResponse.choices._tags;
+          );
+          result.tagList = tagApiResponse.choices._tags;
         } else {
           result.tagList = apiResponse.choices ? apiResponse.choices._tags : [];
         }
@@ -629,27 +628,7 @@ export default {
       }
 
       if (docIds && action === 'tag') {
-        const { items: updatedImages, tagList } = await this.getMedia({
-          _ids: docIds,
-          tags: true
-        });
-        updatedImages.forEach(this.updateStateDoc);
-
-        this.batchTags = await this.getTags();
-        if (Array.isArray(tagList)) {
-          this.tagList = tagList;
-        }
-
-        await this.updateEditing(null);
-
-        // If we were editing one, replacing it.
-        if (this.editing && updatedImages.length === 1) {
-          this.modified = false;
-          // Needed to refresh the AposMediaManagerEditor
-          await this.$nextTick();
-          await this.updateEditing(updatedImages.at(0)._id);
-        }
-
+        await this.refreshData(docIds);
         return;
       }
 
@@ -660,6 +639,29 @@ export default {
         this.refetchMedia();
       }
       await this.updateEditing(null);
+    },
+
+    async refreshData(docIds) {
+      const { items: updatedImages, tagList } = await this.getMedia({
+        ...docIds && { _ids: docIds },
+        tags: true
+      });
+      updatedImages.forEach(this.updateStateDoc);
+
+      await this.getTags();
+      if (Array.isArray(tagList)) {
+        this.tagList = tagList;
+      }
+
+      await this.updateEditing(null);
+
+      // If we were editing one, replacing it.
+      if (this.editing && updatedImages.length === 1) {
+        this.modified = false;
+        // Needed to refresh the AposMediaManagerEditor
+        await this.$nextTick();
+        await this.updateEditing(updatedImages.at(0)._id);
+      }
     },
 
     updateStateDoc(doc) {
@@ -817,7 +819,7 @@ export default {
           };
         });
 
-        return tags;
+        this.batchTags = tags;
       } catch (error) {
         // TODO: notify message
         apos.notify(error.message);
