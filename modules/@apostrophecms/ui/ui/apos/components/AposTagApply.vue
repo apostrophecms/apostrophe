@@ -6,8 +6,8 @@
     :disabled="isDisabled"
     class="apos-apply-tag-menu"
     :class="{ 'apos-apply-tag-menu--create-ui': createUi }"
-    @open="isOpen = $event"
-    @close="clearSearch"
+    @open="openPopover"
+    @close="closePopover"
   >
     <div class="apos-apply-tag-menu__inner">
       <AposInputString
@@ -75,7 +75,7 @@
         class="apos-apply-tag-menu__btn"
         type="secondary"
         label="apostrophe:cancel"
-        @click.stop="closeCreateUi"
+        @click.stop="toggleCreateUi"
       />
       <AposButton
         class="apos-apply-tag-menu__btn"
@@ -139,6 +139,7 @@ const isOpen = ref(false);
 const searchValue = ref({ data: '' });
 const createUi = ref(false);
 const sortedTags = ref([]);
+const unwatchTags = ref(null);
 
 const applyToIds = computed(() => {
   return Object.keys(props.applyTo);
@@ -220,12 +221,21 @@ const checkboxes = computed(() => {
   return state;
 });
 
-watch(props.tags, (newVal, oldVal) => {
-  console.log('newVal', newVal);
-  console.log('oldVal', oldVal);
-
+function openPopover() {
+  isOpen.value = true;
   sortTags();
-}, { immediate: true });
+  textInputEl.value.$el.querySelector('input').focus();
+
+  unwatchTags.value = watch(() => props.tags.length, (newVal, oldVal) => {
+    sortTags();
+  });
+
+}
+
+function closePopover() {
+  unwatchTags.value?.();
+  clearSearch();
+}
 
 // Sort checked first then indeterminate and finally unchecked alphabetically
 function sortTags() {
@@ -251,7 +261,6 @@ function sortTags() {
 function clearSearch() {
   searchValue.value.data = '';
   closeCreateUi();
-  sortTags();
 }
 
 function checkOrCreate() {
@@ -293,7 +302,6 @@ function createOrSearch() {
   }
 
   toggleCreateUi();
-  textInputEl.value.$el.querySelector('input').focus();
 }
 
 // Create a new tag, or set up the input with "New Tag" if  empty.
@@ -311,6 +319,10 @@ function create() {
 
 function toggleCreateUi() {
   createUi.value = !createUi.value;
+  if (!createUi.value) {
+    sortTags();
+  }
+  textInputEl.value.$el.querySelector('input').focus();
 }
 
 function closeCreateUi() {
