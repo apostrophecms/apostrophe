@@ -15,6 +15,7 @@
 
 * Add missing Pages manager shortcuts list helper.
 * Improve the `isEmpty` method of the rich text widget to take into account the HTML blocks (`<figure>` and `<table>`) that are not empty but do not contain any plain text.
+* (Backward compatibility break) Conditional field that depends on already hidden field is also hidden, again.
 
 ## 4.18.0 (2025-06-11)
 
