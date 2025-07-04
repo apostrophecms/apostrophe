@@ -373,68 +373,68 @@ module.exports = {
               }
             });
           });
-        } else {
-          // No explicit order - respect group registration order
-          const newItems = [];
-          const processedItems = new Set();
+          return;
+        }
+        // No explicit order - respect group registration order
+        const newItems = [];
+        const processedItems = new Set();
 
-          // First, process all groups in registration order
-          groups.forEach(function (group) {
-            if (!group.label) {
+        // First, process all groups in registration order
+        groups.forEach(function (group) {
+          if (!group.label) {
+            return;
+          }
+
+          // Collect valid items for this group (excluding duplicates and missing items)
+          const validGroupItems = [];
+
+          group.items.forEach(function (name) {
+            // Check for duplicates
+            if (groupedItems.has(name)) {
+              self.apos.util.warn(
+                `Admin bar item "${name}" appears in multiple groups: "${groupedItems.get(name)}" and "${group.label}". ` +
+                `Using first occurrence in "${groupedItems.get(name)}".`
+              );
               return;
             }
 
-            // Collect valid items for this group (excluding duplicates and missing items)
-            const validGroupItems = [];
-
-            group.items.forEach(function (name) {
-              // Check for duplicates
-              if (groupedItems.has(name)) {
-                self.apos.util.warn(
-                  `Admin bar item "${name}" appears in multiple groups: "${groupedItems.get(name)}" and "${group.label}". ` +
-                  `Using first occurrence in "${groupedItems.get(name)}".`
-                );
-                return;
-              }
-
-              const item = _.find(self.items, { name });
-              if (item && !processedItems.has(name)) {
-                validGroupItems.push({
-                  item,
-                  name
-                });
-              }
-            });
-
-            // Only create a group if there are multiple valid items
-            if (validGroupItems.length > 1) {
-              const leaderName = validGroupItems[0].name;
-              self.groupLabels[leaderName] = group.label;
-
-              validGroupItems.forEach(({ item, name }) => {
-                item.menuLeader = leaderName;
-                newItems.push(item);
-                processedItems.add(name);
-                groupedItems.set(name, group.label);
+            const item = _.find(self.items, { name });
+            if (item && !processedItems.has(name)) {
+              validGroupItems.push({
+                item,
+                name
               });
-            } else if (validGroupItems.length === 1) {
-              // Single item - add without grouping
-              const { item, name } = validGroupItems[0];
+            }
+          });
+
+          // Only create a group if there are multiple valid items
+          if (validGroupItems.length > 1) {
+            const leaderName = validGroupItems[0].name;
+            self.groupLabels[leaderName] = group.label;
+
+            validGroupItems.forEach(({ item, name }) => {
+              item.menuLeader = leaderName;
               newItems.push(item);
               processedItems.add(name);
-            }
-          });
+              groupedItems.set(name, group.label);
+            });
+          } else if (validGroupItems.length === 1) {
+            // Single item - add without grouping
+            const { item, name } = validGroupItems[0];
+            newItems.push(item);
+            processedItems.add(name);
+          }
+        });
 
-          // Then add any remaining ungrouped items in their original order
-          self.items.forEach(function (item) {
-            if (!processedItems.has(item.name)) {
-              newItems.push(item);
-              processedItems.add(item.name);
-            }
-          });
+        // Then add any remaining ungrouped items in their original order
+        self.items.forEach(function (item) {
+          if (!processedItems.has(item.name)) {
+            newItems.push(item);
+            processedItems.add(item.name);
+          }
+        });
 
-          self.items = newItems;
-        }
+        self.items = newItems;
       },
 
       // Determine if the specified admin bar item object should
