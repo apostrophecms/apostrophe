@@ -327,7 +327,7 @@ function createOrSearch() {
 function create() {
   // The string input's `return` event still submits duplicates, so prevent
   // them here.
-  if (isTagFound.value) {
+  if (isTagFound.value || !canCreate) {
     return;
   }
 
