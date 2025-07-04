@@ -63,6 +63,28 @@ module.exports = {
     relationshipSuggestionIcon: 'image-icon',
     relationshipSuggestionFields: []
   },
+  batchOperations: {
+    add: {
+      tag: {
+        label: 'apostrophe:tag',
+        messages: {
+          create: {
+            progress: 'apostrophe:batchTagProgress'
+          },
+          add: {
+            progress: 'apostrophe:batchTagProgress'
+          },
+          remove: {
+            progress: 'apostrophe:batchUntagProgress'
+          }
+        },
+        icon: 'label-icon',
+        action: 'tag',
+        permission: 'edit'
+      }
+    },
+    order: [ 'tag', 'archive', 'restore' ]
+  },
   utilityOperations: {
     remove: [ 'new' ]
   },
@@ -292,6 +314,56 @@ module.exports = {
           b = b * 100 / max;
           return Math.abs(a - b) < 1;
         }
+      },
+      async tag(req) {
+        const title = self.apos.launder.string(req.body.title);
+        const slug = self.apos.launder.string(req.body.slug);
+        const operation = self.apos.launder.string(req.body.operation);
+
+        if (!Array.isArray(req.body._ids)) {
+          throw self.apos.error('invalid', 'Missing _ids');
+        }
+        if (![ 'create', 'add', 'remove' ].includes(operation)) {
+          throw self.apos.error('invalid', `"${operation}" is not a valid operation`);
+        }
+
+        req.body._ids = req.body._ids.map(_id => {
+          return self.inferIdLocaleAndMode(req, self.apos.launder.id(_id));
+        });
+
+        const imageTagManager = self.apos.doc.getManager('@apostrophecms/image-tag');
+        const tag = (operation === 'create')
+          ? await imageTagManager.insert(
+            req,
+            {
+              ...imageTagManager.newInstance(),
+              title
+            }
+          )
+          : await imageTagManager.find(req, { slug }).toObject();
+
+        return self.apos.modules['@apostrophecms/job'].runBatch(
+          req,
+          req.body._ids,
+          async function(req, id) {
+            const piece = await self.findOneForEditing(req, { _id: id });
+            if (!piece) {
+              throw self.apos.error('notfound');
+            }
+
+            piece._tags = operation === 'remove'
+              ? piece._tags.filter(pieceTag => pieceTag.aposDocId !== tag.aposDocId)
+              : piece._tags
+                .filter(pieceTag => pieceTag.aposDocId !== tag.aposDocId)
+                .concat(tag);
+
+            await self.update(req, piece);
+          },
+          {
+            action: 'tag',
+            docTypes: [ self.__meta.name ]
+          }
+        );
       }
     }
   }),

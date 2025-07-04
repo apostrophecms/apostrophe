@@ -89,15 +89,10 @@ export const useNotificationStore = defineStore('notification', () => {
           .sort()
           .at(-1);
 
-        const seenIds = allNotifications
-          .filter((notification) => notification.updatedAt === latestTimestamp)
-          .map((notification) => notification._id);
-
         const res = await apos.http.get(apos.notification.action, {
           ...(latestTimestamp && {
             qs: {
-              modifiedOnOrSince: latestTimestamp,
-              seenIds // TODO: can be skipped if we replace $gte to $gt backend side
+              modifiedOnOrSince: latestTimestamp
             }
           })
         });
