@@ -38,7 +38,7 @@ module.exports = {
       }
     };
     let index = 1;
-    for (const [name, screen] of Object.entries(breakpointPreviewModeScreens)) {
+    for (const [ name, screen ] of Object.entries(breakpointPreviewModeScreens)) {
       // Up to 9 shortcuts available
       if (index === 9) {
         break;
@@ -264,7 +264,7 @@ module.exports = {
           ) {
             menu = {
               menu: true,
-              items: [item],
+              items: [ item ],
               leader: item,
               label: self.groupLabels[item.name] || item.label
             };
@@ -399,7 +399,10 @@ module.exports = {
 
               const item = _.find(self.items, { name });
               if (item && !processedItems.has(name)) {
-                validGroupItems.push({ item, name });
+                validGroupItems.push({
+                  item,
+                  name
+                });
               }
             });
 
@@ -621,8 +624,8 @@ module.exports = {
               }
 
               if (item.options && Object.keys(item.options).length > 0) {
-                console.log(`   Options:`);
-                Object.entries(item.options).forEach(([key, value]) => {
+                console.log('   Options:');
+                Object.entries(item.options).forEach(([ key, value ]) => {
                   console.log(`     ${key}: ${JSON.stringify(value)}`);
                 });
               }

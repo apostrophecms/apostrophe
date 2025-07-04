@@ -166,11 +166,11 @@ describe('Admin bar', function () {
               addGroups: [
                 {
                   label: 'Alpha Group',
-                  items: ['@apostrophecms/image-tag', '@apostrophecms/file-tag']
+                  items: [ '@apostrophecms/image-tag', '@apostrophecms/file-tag' ]
                 },
                 {
                   label: 'Beta Group',
-                  items: ['@apostrophecms/image', '@apostrophecms/file']
+                  items: [ '@apostrophecms/image', '@apostrophecms/file' ]
                 }
               ]
             }
@@ -213,7 +213,7 @@ describe('Admin bar', function () {
               addGroups: [
                 {
                   label: 'Test Group',
-                  items: ['item-a', 'item-b', 'item-c'] // All grouped despite last/after
+                  items: [ 'item-a', 'item-b', 'item-c' ] // All grouped despite last/after
                 }
               ]
             }
@@ -253,7 +253,7 @@ describe('Admin bar', function () {
           },
           '@apostrophecms/admin-bar': {
             options: {
-              order: ['item-x', '@apostrophecms/user', 'item-y', '@apostrophecms/image']
+              order: [ 'item-x', '@apostrophecms/user', 'item-y', '@apostrophecms/image' ]
             }
           }
         }
@@ -388,7 +388,7 @@ describe('Admin bar', function () {
         modules: {
           '@apostrophecms/admin-bar': {
             options: {
-              order: ['@apostrophecms/user']
+              order: [ '@apostrophecms/user' ]
             }
           },
           // Add a module with last:true to test positioning
@@ -428,7 +428,7 @@ describe('Admin bar', function () {
           },
           '@apostrophecms/admin-bar': {
             options: {
-              order: ['item-x', '@apostrophecms/user', 'item-y', '@apostrophecms/image']
+              order: [ 'item-x', '@apostrophecms/user', 'item-y', '@apostrophecms/image' ]
             }
           }
         }
@@ -457,7 +457,7 @@ describe('Admin bar', function () {
         modules: {
           '@apostrophecms/admin-bar': {
             options: {
-              order: ['@apostrophecms/image'],
+              order: [ '@apostrophecms/image' ],
               addGroups: [
                 {
                   label: 'Media',
@@ -544,7 +544,7 @@ describe('Admin bar', function () {
         modules: {
           '@apostrophecms/admin-bar': {
             options: {
-              order: ['@apostrophecms/user'], // user is ordered, but not the group leader
+              order: [ '@apostrophecms/user' ], // user is ordered, but not the group leader
               addGroups: [
                 {
                   label: 'Media',
