@@ -6,8 +6,8 @@
     :disabled="isDisabled"
     class="apos-apply-tag-menu"
     :class="{ 'apos-apply-tag-menu--create-ui': createUi }"
-    @open="isOpen = $event"
-    @close="clearSearch"
+    @open="openPopover"
+    @close="closePopover"
   >
     <div class="apos-apply-tag-menu__inner">
       <AposInputString
@@ -18,6 +18,7 @@
       />
       <div class="apos-apply-tag-menu__create">
         <AposButton
+          v-if="canCreate"
           class="apos-apply-tag-menu__create-tag-btn"
           :label="createBtnLabel"
           :disabled="!createUi && isTagFound"
@@ -58,6 +59,7 @@
           {{ noTagsTranslation }}
         </p>
         <AposButton
+          v-if="canCreate"
           class="apos-apply-tag-menu__empty-create-btn"
           :label="noTagsCreateLabel"
           type="quiet"
@@ -75,7 +77,7 @@
         class="apos-apply-tag-menu__btn"
         type="secondary"
         label="apostrophe:cancel"
-        @click.stop="closeCreateUi"
+        @click.stop="toggleCreateUi"
       />
       <AposButton
         class="apos-apply-tag-menu__btn"
@@ -91,7 +93,7 @@
 
 <script setup>
 import {
-  computed, inject, ref, useTemplateRef
+  computed, inject, ref, useTemplateRef, watch
 } from 'vue';
 
 const $t = inject('i18n');
@@ -138,6 +140,9 @@ const contextMenuEl = useTemplateRef('contextMenu');
 const isOpen = ref(false);
 const searchValue = ref({ data: '' });
 const createUi = ref(false);
+const sortedTags = ref([]);
+const unwatchTags = ref(null);
+const canCreate = apos.modules['@apostrophecms/image-tag'].canCreate;
 
 const applyToIds = computed(() => {
   return Object.keys(props.applyTo);
@@ -154,32 +159,9 @@ const isTagFound = computed(() => {
 });
 
 const noTagsTranslation = computed(() => {
-  return props.tags.length
-    ? $t('apostrophe:tagNoResultFor', { tag: searchValue.value.data })
-    : $t('apostrophe:tagNoTagsYet');
-});
-
-// Sort checked first
-// then indeterminate
-// and finally unchecked alphabetically
-const sortedTags = computed(() => {
-  if (!applyToIds.value.length) {
-    return props.tags;
-  }
-
-  const checked = props.tags.filter(tag =>
-    checkboxes.value[tag.slug].model.value === true &&
-    checkboxes.value[tag.slug].choice.indeterminate !== true
-  );
-  const indeterminate = props.tags.filter(tag =>
-    checkboxes.value[tag.slug].model.value === true &&
-    checkboxes.value[tag.slug].choice.indeterminate === true
-  );
-  const unchecked = props.tags.filter(tag =>
-    checkboxes.value[tag.slug].model.value !== true
-  );
-
-  return [].concat(checked, indeterminate, unchecked);
+  return !props.tags.length && !searchValue.value.data
+    ? $t('apostrophe:tagNoTagsYet')
+    : $t('apostrophe:tagNoResultFor', { tag: searchValue.value.data });
 });
 
 // Unless we're in the middle of creating a new tag,
@@ -242,7 +224,55 @@ const checkboxes = computed(() => {
   return state;
 });
 
-// methods
+function openPopover() {
+  isOpen.value = true;
+  sortTags();
+  textInputEl.value.$el.querySelector('input').focus();
+
+  unwatchTags.value = watch(() => props.tags, (newVal, oldVal) => {
+    if (triggerTagsWatcher(oldVal, newVal)) {
+      sortTags();
+    }
+  });
+}
+
+function triggerTagsWatcher(oldTags, newTags) {
+  if (oldTags.length !== newTags.length) {
+    return true;
+  }
+
+  return newTags.some((tag, index) => {
+    const oldTag = oldTags[index];
+    return oldTag.title !== tag.title || oldTag.slug !== tag.slug;
+  });
+}
+
+function closePopover() {
+  unwatchTags.value?.();
+  clearSearch();
+}
+
+// Sort checked first then indeterminate and finally unchecked alphabetically
+function sortTags() {
+  if (!applyToIds.value.length) {
+    return props.tags;
+  }
+
+  const checked = props.tags.filter(tag =>
+    checkboxes.value[tag.slug].model.value === true &&
+    checkboxes.value[tag.slug].choice.indeterminate !== true
+  );
+  const indeterminate = props.tags.filter(tag =>
+    checkboxes.value[tag.slug].model.value === true &&
+    checkboxes.value[tag.slug].choice.indeterminate === true
+  );
+  const unchecked = props.tags.filter(tag =>
+    checkboxes.value[tag.slug].model.value !== true
+  );
+
+  sortedTags.value = [].concat(checked, indeterminate, unchecked);
+}
+
 function clearSearch() {
   searchValue.value.data = '';
   closeCreateUi();
@@ -270,7 +300,11 @@ async function createOrManage() {
     });
 
     emit('refresh-data');
-    contextMenuEl.value.show();
+
+    if (contextMenuEl.value) {
+      contextMenuEl.value.show();
+    }
+
     return;
   }
 
@@ -287,14 +321,13 @@ function createOrSearch() {
   }
 
   toggleCreateUi();
-  textInputEl.value.$el.querySelector('input').focus();
 }
 
 // Create a new tag, or set up the input with "New Tag" if  empty.
 function create() {
   // The string input's `return` event still submits duplicates, so prevent
   // them here.
-  if (isTagFound.value) {
+  if (isTagFound.value || !canCreate) {
     return;
   }
 
@@ -305,6 +338,10 @@ function create() {
 
 function toggleCreateUi() {
   createUi.value = !createUi.value;
+  if (!createUi.value) {
+    sortTags();
+  }
+  textInputEl.value.$el.querySelector('input').focus();
 }
 
 function closeCreateUi() {
@@ -442,13 +479,16 @@ function getCheckedState(tag) {
 
   & {
     overflow: hidden;
-    margin-top: 0;
-    margin-bottom: 10px;
+    margin: 0;
     font-size: var(--a-type-heading);
     text-align: center;
     text-overflow: ellipsis;
     max-width: 100%;
     text-wrap: nowrap;
+  }
+
+  + .apos-button__wrapper {
+    margin-top: 10px;
   }
 }
 
