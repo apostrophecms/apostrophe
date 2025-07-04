@@ -263,7 +263,6 @@ module.exports = {
               count
             };
           }
-
           result.pages = query.get('totalPages');
           result.currentPage = query.get('page') || 1;
           result.results = (await query.toArray())
