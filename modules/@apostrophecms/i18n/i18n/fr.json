@@ -561,7 +561,6 @@
   "tagCreateTagName": "créer \"{{ tag }}\"",
   "tagExist": "Ce tag existe déjà",
   "tagManage": "Gérer Tags",
-  "tagNewTag": "Nouveau tag",
   "tagNoResultFor": "Pas de résultats pour \"{{ tag }}\"",
   "tagNoTagsYet": "Pas encore de tags",
   "tagSearchApplyTags": "Appliquer des tags",

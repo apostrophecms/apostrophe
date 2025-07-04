@@ -561,7 +561,6 @@
   "tagCreateTagName": "vytvoriť \"{{ tag }}\"",
   "tagExist": "Táto tag už existuje",
   "tagManage": "Spravovať Tags",
-  "tagNewTag": "Nový tag",
   "tagNoTagsFoundCreateOne": "vytvoriť {{ tag }}?",
   "tagNoTagsFoundPerhaps": "Nenašli sme žiadne zodpovedajúce tagy. Možno",
   "tagSearchApplyTags": "Použiť tagy",
