@@ -156,9 +156,9 @@ const isTagFound = computed(() => {
 });
 
 const noTagsTranslation = computed(() => {
-  return props.tags.length
-    ? $t('apostrophe:tagNoResultFor', { tag: searchValue.value.data })
-    : $t('apostrophe:tagNoTagsYet');
+  return !props.tags.length && !searchValue.value.data
+    ? $t('apostrophe:tagNoTagsYet')
+    : $t('apostrophe:tagNoResultFor', { tag: searchValue.value.data });
 });
 
 // Unless we're in the middle of creating a new tag,
