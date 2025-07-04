@@ -1,6 +1,7 @@
 <template>
   <AposContextMenu
     ref="contextMenu"
+    identifier="tagTrigger"
     :menu-placement
     :button
     :disabled="isDisabled"
