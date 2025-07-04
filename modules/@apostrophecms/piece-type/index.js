@@ -261,6 +261,7 @@ module.exports = {
               count
             };
           }
+
           result.pages = query.get('totalPages');
           result.currentPage = query.get('page') || 1;
           result.results = (await query.toArray())
@@ -272,11 +273,14 @@ module.exports = {
               inline
             });
           }
-          if (query.get('choicesResults')) {
-            result.choices = query.get('choicesResults');
+
+          const choicesResult = query.get('choicesResults');
+          if (choicesResult) {
+            result.choices = choicesResult;
           }
-          if (query.get('countsResults')) {
-            result.counts = query.get('countsResults');
+          const countsResult = query.get('countsResults');
+          if (countsResult) {
+            result.counts = countsResult;
           }
 
           if (

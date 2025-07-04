@@ -389,15 +389,16 @@ export default {
           // We never filter the tag list because they are presented like
           // folders, and folders don't disappear when empty. So we need to make
           // a separate query for distinct tags if our first query was filtered
-          const tagApiResponse = await apos.http.get(
-            this.moduleOptions.action, {
-              busy: true,
-              qs: {
-                choices: '_tags'
-              },
-              draft: true
-            }
-          );
+          const tagApiResponse = await apos.http.get(this.moduleOptions.action, {
+            busy: true,
+            qs: {
+              choices: '_tags',
+              // Don't get useless data (minimimum per page is 1)
+              perPage: 1,
+              project: { title: 1 }
+            },
+            draft: true
+          });
           result.tagList = tagApiResponse.choices._tags;
         } else {
           result.tagList = apiResponse.choices ? apiResponse.choices._tags : [];
