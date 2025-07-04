@@ -137,6 +137,11 @@ export default () => {
         options.qs = options.draft
           ? apos.util.assign({ aposMode: 'draft' }, options.qs)
           : apos.util.assign({ aposMode: 'published' }, options.qs);
+      } else if (options.body?.__aposGetWithQuery) {
+        options.body.__aposGetWithQuery = {
+          ...options.body.__aposGetWithQuery,
+          aposMode: options.draft ? 'draft' : 'published'
+        };
       } else {
         // Careful, there could be existing query parameters baked into url
         qat = url.indexOf('?');
