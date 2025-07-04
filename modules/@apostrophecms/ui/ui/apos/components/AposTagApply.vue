@@ -18,6 +18,7 @@
       />
       <div class="apos-apply-tag-menu__create">
         <AposButton
+          v-if="canCreate"
           class="apos-apply-tag-menu__create-tag-btn"
           :label="createBtnLabel"
           :disabled="!createUi && isTagFound"
@@ -58,6 +59,7 @@
           {{ noTagsTranslation }}
         </p>
         <AposButton
+          v-if="canCreate"
           class="apos-apply-tag-menu__empty-create-btn"
           :label="noTagsCreateLabel"
           type="quiet"
@@ -140,6 +142,7 @@ const searchValue = ref({ data: '' });
 const createUi = ref(false);
 const sortedTags = ref([]);
 const unwatchTags = ref(null);
+const canCreate = apos.modules['@apostrophecms/image-tag'].canCreate;
 
 const applyToIds = computed(() => {
   return Object.keys(props.applyTo);
@@ -460,13 +463,16 @@ function getCheckedState(tag) {
 
   & {
     overflow: hidden;
-    margin-top: 0;
-    margin-bottom: 10px;
+    margin: 0;
     font-size: var(--a-type-heading);
     text-align: center;
     text-overflow: ellipsis;
     max-width: 100%;
     text-wrap: nowrap;
+  }
+
+  + .apos-button__wrapper {
+    margin-top: 10px;
   }
 }
 
