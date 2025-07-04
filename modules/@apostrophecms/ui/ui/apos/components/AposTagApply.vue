@@ -229,10 +229,22 @@ function openPopover() {
   sortTags();
   textInputEl.value.$el.querySelector('input').focus();
 
-  unwatchTags.value = watch(() => props.tags.length, (newVal, oldVal) => {
-    sortTags();
+  unwatchTags.value = watch(() => props.tags, (newVal, oldVal) => {
+    if (triggerTagsWatcher(oldVal, newVal)) {
+      sortTags();
+    }
   });
+}
 
+function triggerTagsWatcher(oldTags, newTags) {
+  if (oldTags.length !== newTags.length) {
+    return true;
+  }
+
+  return newTags.some((tag, index) => {
+    const oldTag = oldTags[index];
+    return oldTag.title !== tag.title || oldTag.slug !== tag.slug;
+  });
 }
 
 function closePopover() {
@@ -288,7 +300,11 @@ async function createOrManage() {
     });
 
     emit('refresh-data');
-    contextMenuEl.value.show();
+
+    if (contextMenuEl.value) {
+      contextMenuEl.value.show();
+    }
+
     return;
   }
 
