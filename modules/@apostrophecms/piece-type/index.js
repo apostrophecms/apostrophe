@@ -248,6 +248,8 @@ module.exports = {
         async (req) => {
           await self.publicApiCheckAsync(req);
           const query = self.getRestQuery(req);
+          const dynamicChoices = self.apos.launder.strings(req.query.dynamicChoices);
+
           if (!query.get('perPage')) {
             query.perPage(
               self.options.perPage
@@ -274,10 +276,17 @@ module.exports = {
             });
           }
 
-          const choicesResult = query.get('choicesResults');
-          if (choicesResult) {
-            result.choices = choicesResult;
+          const filterDynamicChoices = await self.apos.schema.getFilterDynamicChoices(
+            req,
+            dynamicChoices,
+            self
+          );
+          const choicesResults = query.get('choicesResults') || {};
+          const choices = Object.assign(filterDynamicChoices, choicesResults);
+          if (Object.keys(choices).length) {
+            result.choices = choices;
           }
+
           const countsResult = query.get('countsResults');
           if (countsResult) {
             result.counts = countsResult;

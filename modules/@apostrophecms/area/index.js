@@ -604,7 +604,7 @@ module.exports = {
           return {};
         }
         const schema = manager.schema;
-        const field = _.find(schema, 'name', name);
+        const field = schema?.find(field => field.name === name);
         if (!(field && field.options)) {
           return {};
         }
