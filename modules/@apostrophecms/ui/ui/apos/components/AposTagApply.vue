@@ -275,7 +275,7 @@ function sortTags() {
 }
 
 function clearSearch() {
-  searchValue.value.data = '';
+  searchValue.value = { data: '' };
   closeCreateUi();
 }
 
