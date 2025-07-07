@@ -79,7 +79,7 @@ module.exports = {
       },
       modal: {
         default: {
-          '@apostrophecms/command-menu:taskbar-manager': {
+          '@apostrophecms/command-menu:taskbar': {
             label: 'apostrophe:commandMenuTaskbar',
             commands: [
               `${self.__meta.name}:taskbar-manager`
