@@ -358,7 +358,10 @@ module.exports = {
             throw self.apos.error('notfound');
           }
 
-          const fields = new Set([ ...self.options.minimumWhoamiFields, ...self.options.whoamiFields ]);
+          const fields = new Set([
+            ...self.options.minimumWhoamiFields,
+            ...self.options.whoamiFields
+          ]);
           const user = {};
 
           for (const field of fields) {

@@ -68,13 +68,16 @@
             :displayed-items="items.length"
             :checked="checked"
             :checked-count="checked.length"
+            :checked-docs-tags="checkedDocsTags"
             :module-name="moduleName"
             :options="{noPager: true}"
             :batch-operations="moduleOptions.batchOperations"
+            :batch-tags="batchTags"
             @select-click="selectClick"
             @search="search"
             @filter="filter"
             @batch="handleBatchAction"
+            @refresh-data="refreshData"
           />
         </template>
         <template #bodyMain>
@@ -155,6 +158,7 @@ export default {
       totalPages: 1,
       currentPage: 1,
       tagList: [],
+      batchTags: [],
       filterValues: {},
       modal: {
         active: false,
@@ -254,6 +258,9 @@ export default {
       return this.totalPages > 1 &&
         this.currentPage === this.totalPages &&
         !this.isScrollLoading;
+    },
+    checkedDocsTags() {
+      return Object.fromEntries(this.checkedDocs.map(doc => [ doc._id, doc.tagsIds ]));
     }
   },
 
@@ -308,6 +315,8 @@ export default {
       await this.appendMedia(result);
       this.isFirstLoading = false;
     });
+
+    await this.getTags();
   },
 
   beforeUnmount() {
@@ -339,6 +348,14 @@ export default {
         page: this.currentPage,
         viewContext: this.relationshipField ? 'relationship' : 'manage'
       };
+
+      // Used for batch tagging update
+      if (options._ids) {
+        qs._ids = options._ids;
+        qs.perPage = options._ids.length;
+        qs.page = 1;
+      }
+
       const filtered = !!Object.keys(this.filterValues).length;
       if (this.moduleOptions && Array.isArray(this.moduleOptions.filters)) {
         this.moduleOptions.filters.forEach(filter => {
@@ -360,28 +377,29 @@ export default {
           delete qs[prop];
         };
       }
-      const apiResponse = (await apos.http.get(
-        this.moduleOptions.action, {
-          qs,
-          draft: true
-        }
-      ));
+      const apiResponse = await apos.http.post(this.moduleOptions.action, {
+        body: {
+          __aposGetWithQuery: qs
+        },
+        draft: true
+      });
 
       if (options.tags) {
         if (filtered) {
           // We never filter the tag list because they are presented like
           // folders, and folders don't disappear when empty. So we need to make
           // a separate query for distinct tags if our first query was filtered
-          const apiResponse = (await apos.http.get(
-            this.moduleOptions.action, {
-              busy: true,
-              qs: {
-                choices: '_tags'
-              },
-              draft: true
-            }
-          ));
-          result.tagList = apiResponse.choices._tags;
+          const tagApiResponse = await apos.http.get(this.moduleOptions.action, {
+            busy: true,
+            qs: {
+              choices: '_tags',
+              // Don't get useless data (minimimum per page is 1)
+              perPage: 1,
+              project: { title: 1 }
+            },
+            draft: true
+          });
+          result.tagList = tagApiResponse.choices._tags;
         } else {
           result.tagList = apiResponse.choices ? apiResponse.choices._tags : [];
         }
@@ -608,12 +626,18 @@ export default {
       this.skipLoadObserver = false;
     },
     async onContentChanged({
-      action, doc, docTypes
+      action, doc, docIds, docTypes
     }) {
       const types = this.getContentChangedTypes(doc, docTypes);
       if (!types.includes(this.moduleName)) {
         return;
       }
+
+      if (docIds && action === 'tag') {
+        await this.refreshData(docIds);
+        return;
+      }
+
       this.modified = false;
       if (action === 'update') {
         this.updateStateDoc(doc);
@@ -621,6 +645,29 @@ export default {
         this.refetchMedia();
       }
       await this.updateEditing(null);
+    },
+
+    async refreshData(docIds) {
+      const { items: updatedImages, tagList } = await this.getMedia({
+        ...docIds && { _ids: docIds },
+        tags: true
+      });
+      updatedImages.forEach(this.updateStateDoc);
+
+      await this.getTags();
+      if (Array.isArray(tagList)) {
+        this.tagList = tagList;
+      }
+
+      await this.updateEditing(null);
+
+      // If we were editing one, replacing it.
+      if (this.editing && updatedImages.length === 1) {
+        this.modified = false;
+        // Needed to refresh the AposMediaManagerEditor
+        await this.$nextTick();
+        await this.updateEditing(updatedImages.at(0)._id);
+      }
     },
 
     updateStateDoc(doc) {
@@ -748,6 +795,40 @@ export default {
             type: 'danger'
           });
         }
+      }
+    },
+    async getTags() {
+      try {
+        const { withType = '@apostrophecms/image-tag' } = this.moduleOptions.schema.find(field => field._name === '_tags') || {};
+        const action = apos.modules[withType]?.action;
+        if (!action) {
+          return [];
+        }
+
+        const response = await apos.http.get(
+          action,
+          {
+            draft: true,
+            qs: {
+              sort: {
+                title: 1
+              }
+            }
+          }
+        );
+
+        const tags = (response.results || []).map(tag => {
+          return {
+            ...tag,
+            searchText: tag.title.toLowerCase(),
+            label: tag.title
+          };
+        });
+
+        this.batchTags = tags;
+      } catch (error) {
+        // TODO: notify message
+        apos.notify(error.message);
       }
     }
   }
