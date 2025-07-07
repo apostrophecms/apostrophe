@@ -390,7 +390,6 @@ export default {
           // folders, and folders don't disappear when empty. So we need to make
           // a separate query for distinct tags if our first query was filtered
           const tagApiResponse = await apos.http.get(this.moduleOptions.action, {
-            busy: true,
             qs: {
               choices: '_tags',
               // Don't get useless data (minimimum per page is 1)
