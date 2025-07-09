@@ -18,6 +18,7 @@ A middleware checks for this key and converts the request back to a `GET` reques
 
 ### Fixes
 
+* Pasting a widget now pastes it after the focused widget, instead of before.
 * Add missing Pages manager shortcuts list helper.
 * Improve the `isEmpty` method of the rich text widget to take into account the HTML blocks (`<figure>` and `<table>`) that are not empty but do not contain any plain text.
 * (Backward compatibility break) Conditional field that depends on already hidden field is also hidden, again.
