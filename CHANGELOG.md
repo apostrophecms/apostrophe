@@ -5,7 +5,6 @@
 ### Adds
 * Adds dynamic choices working with piece manager filters.
 
-
 ### Changes
 
 ### Fixes
