@@ -2,7 +2,13 @@
 
 ## UNRELEASED
 
+### Adds
 * Adds dynamic choices working with piece manager filters.
+
+
+### Changes
+
+### Fixes
 
 ## 4.19.0 (2025-07-09)
 
