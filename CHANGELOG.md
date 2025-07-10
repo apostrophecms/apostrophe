@@ -2,12 +2,21 @@
 
 ## UNRELEASED
 
+* Adds dynamic choices working with piece manager filters.
+
+## 4.19.0 (2025-07-09)
+
 ### Adds
 
 * Implemented GET /api/v1/@apostrophecms/login/whoami route such that it returns the details of the currently logged in user; added the route to the login module.
+  Thanks to [sombitganguly](https://github.com/sombitganguly) for this contribution.
 * Adds keyboard shortcuts for manipulating widgets in areas. Includes Cut, Copy, Paste, Delete, and Duplicate.
-* Adds dynamic choices working with piece manager filters.
+* Automatic translation now supports a disclaimer and an help text for the checkbox. You can now set the disclaimer by setting `automaticTranslationDisclaimer` `i18n` key and the help text by setting `automaticTranslationCheckboxHelp` `i18n` key.
+* Adds dynamic choices working with piece manager filters. 
 * Allow `import.imageTags` (array of image tag IDs) to be passed to the rich text widget when importing (see https://docs.apostrophecms.org/reference/api/rich-text.html#importing-inline-images).
+* Adds a new way to make `GET` requests with a large query string. It can become a `POST` request containing the key `__aposGetWithQuery` in its body.
+A middleware checks for this key and converts the request back to a `GET` request with the right `req.query` property.
+* Adds a new batch operation to tag images.
 
 ### Changes
 

@@ -205,6 +205,7 @@ const menuResizeObserver = new ResizeObserver((entries) => {
 
 defineExpose({
   hide,
+  show,
   setDropdownPosition
 });
 

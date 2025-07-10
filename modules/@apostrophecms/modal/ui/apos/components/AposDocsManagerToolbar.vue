@@ -23,8 +23,17 @@
         } in activeOperations"
         :key="action"
       >
+        <AposTagApply
+          v-if="action === 'tag'"
+          :tags="batchTags"
+          :apply-to="checkedDocsTags"
+          @added="title => updateTag('create', { title })"
+          @checked="slug => updateTag('add', { slug })"
+          @unchecked="slug => updateTag('remove', { slug })"
+          @refresh-data="$emit('refresh-data')"
+        />
         <AposButton
-          v-if="!operations"
+          v-else-if="!operations"
           :label="label"
           :action="action"
           :icon="icon"
@@ -85,7 +94,7 @@ export default {
       type: String,
       required: true
     },
-    applyTags: {
+    batchTags: {
       type: Array,
       default: () => []
     },
@@ -141,17 +150,22 @@ export default {
       type: Number,
       required: true
     },
+    checkedDocsTags: {
+      type: Object,
+      default: () => ({})
+    },
     moduleName: {
       type: String,
       required: true
     }
   },
   emits: [
-    'select-click',
+    'batch',
     'filter',
-    'search',
     'page-change',
-    'batch'
+    'refresh-data',
+    'search',
+    'select-click'
   ],
   data() {
     return {
@@ -326,6 +340,19 @@ export default {
           ...rest
         });
       }
+    },
+    updateTag(operation, props) {
+      const tagOperation = this.activeOperations.find(operation => operation.action === 'tag');
+      const messages = tagOperation.messages?.[operation] || {};
+
+      this.$emit('batch', {
+        ...tagOperation,
+        messages,
+        requestOptions: {
+          operation,
+          ...props
+        }
+      });
     }
   }
 };
