@@ -1070,6 +1070,7 @@ module.exports = {
                 });
                 const image = await self.apos.image.insert(req, {
                   title: name,
+                  alt,
                   attachment,
                   tagsIds: input.import.imageTags || []
                 });

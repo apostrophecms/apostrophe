@@ -3,9 +3,12 @@
 ## UNRELEASED
 
 ### Adds
-* Adds dynamic choices working with piece manager filters.
+
+- Adds any alt text found in an attribute to the media library attachment during import of rich text inline images by API
 
 ### Changes
+
+- Changes handling of `order` and `groups` in the `admin-bar` module to respect, rather that reverse, the order of items
 
 ### Fixes
 
