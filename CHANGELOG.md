@@ -12,6 +12,8 @@
 
 ### Fixes
 
+* Let the `@apostrophecms/page:unpark` task unpark all parked pages with the given slug, not just the first one.
+
 ## 4.19.0 (2025-07-09)
 
 ### Adds
