@@ -1117,6 +1117,10 @@ module.exports = (self) => {
           }
         }
       }
+      // PRO-8043: When dealing with ID's only, request based locale inference
+      // is not needed. `undefined` - default auto locale inference,
+      // `null` - no locale inference.
+      const inferLocale = titlesOrIds.length > 0 ? undefined : null;
       const clauses = [];
       if (titlesOrIds.length) {
         clauses.push({
@@ -1138,6 +1142,7 @@ module.exports = (self) => {
         const results = await manager
           .find(req, { $or: clauses })
           .relationships(false)
+          .locale(inferLocale)
           .toArray();
         // Must maintain input order. Also discard things not actually found in
         // the db

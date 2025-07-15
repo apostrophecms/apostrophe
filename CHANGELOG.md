@@ -4,13 +4,15 @@
 
 ### Adds
 
-- Adds any alt text found in an attribute to the media library attachment during import of rich text inline images by API
+* Adds any alt text found in an attribute to the media library attachment during import of rich text inline images by API
 
 ### Changes
 
-- Changes handling of `order` and `groups` in the `admin-bar` module to respect, rather that reverse, the order of items
+* Changes handling of `order` and `groups` in the `admin-bar` module to respect, rather that reverse, the order of items
 
 ### Fixes
+
+* Ensure relationship convert handler can handle properly some cases where the document and request modes are different.
 
 ## 4.19.0 (2025-07-09)
 

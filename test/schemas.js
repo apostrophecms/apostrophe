@@ -2775,6 +2775,129 @@ describe('Schemas', function() {
     assert.deepEqual(actual, expected);
   });
 
+  it('should allow to convert relationships without inferring the mode', async function () {
+    const req = apos.task.getReq();
+    assert.equal(req.mode, 'published');
+
+    const articlePublished = await apos.article.insert(req, {
+      ...apos.article.newInstance(),
+      title: 'Test Article',
+      slug: 'test-article'
+    });
+    assert.equal(articlePublished.aposMode, 'published');
+
+    const topicPublished = await apos.topic.insert(req, {
+      ...apos.topic.newInstance(),
+      title: 'Test Topic',
+      slug: 'test-topic',
+      _rel: [ articlePublished ]
+    });
+    assert.equal(topicPublished.aposMode, 'published');
+
+    const topicDraft = await apos.topic.find(
+      req.clone({ mode: 'draft' }),
+      { slug: 'test-topic' }
+    )
+      .toObject();
+
+    assert.equal(topicDraft.aposMode, 'draft');
+    assert.equal(topicDraft._rel.length, 1);
+    assert.equal(topicDraft._rel[0].aposMode, 'draft');
+
+    // Simulate the relationship field being required
+    const relSchema = apos.topic.schema.find(s => s.name === '_rel');
+    relSchema.required = true;
+
+    {
+      // Ensure it fails when required relationship field is empty
+      const converted = {};
+      const input = {
+        ...topicDraft,
+        _rel: []
+      };
+      await assert.rejects(
+        () => apos.schema.convert(req, apos.topic.schema, input, converted),
+        (err) => {
+          const actual = {
+            length: err.length,
+            message: err[0]?.message,
+            path: err[0]?.path
+          };
+          const expected = {
+            length: 1,
+            message: 'required',
+            path: '_rel'
+          };
+          assert.deepEqual(actual, expected, 'Required error does not match');
+          return true;
+        }
+      );
+    }
+
+    {
+      // Convert the topicDraft as if it's an input with `published`
+      // request mode, it should pass.
+      const converted = {};
+      const input = {
+        ...topicDraft
+      };
+      await apos.schema.convert(req, apos.topic.schema, input, converted);
+      const actual = {
+        _id: converted._rel?.[0]?._id,
+        mode: converted._rel?.[0]?.aposMode,
+        _rel: converted._rel?.length
+      };
+      const expected = {
+        _id: articlePublished._id.replace(':published', ':draft'),
+        mode: 'draft',
+        _rel: 1
+      };
+      assert.deepEqual(actual, expected, 'Converted relationship should be in draft mode');
+    }
+
+    {
+      // Ensure it infers the request mode when not clear if IDs are used.
+      // This should fail because the input is in draft mode but the request
+      // is in published mode.
+      const converted = {};
+      const input = {
+        ...topicDraft,
+        _rel: [ topicDraft._rel[0]._id ]
+      };
+      await assert.rejects(
+        () => apos.schema.convert(req, apos.topic.schema, input, converted),
+        (err) => {
+          const actual = {
+            length: err.length,
+            message: err[0]?.message,
+            path: err[0]?.path,
+            _rel: converted._rel.length
+          };
+          const expected = {
+            length: 1,
+            message: 'required',
+            path: '_rel',
+            _rel: 0
+          };
+          assert.deepEqual(
+            actual,
+            expected,
+            'Required error when different modes does not match'
+          );
+          return true;
+        }
+      );
+    }
+
+    // Clean up
+    relSchema.required = false;
+    await apos.doc.db.deleteMany({
+      type: {
+        $in: [ 'article', 'topic' ]
+      }
+    });
+  });
+
   describe('field.readOnly with default value', function() {
     const givenSchema = [
       {
