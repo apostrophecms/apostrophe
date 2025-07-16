@@ -937,6 +937,7 @@ module.exports = {
       // Quickly replaces inline image placeholder URLs with
       // actual, SEO-friendly URLs based on `widget._relatedDocs`.
       linkImages(widget, content) {
+        console.log('content', content);
         // "Why no regexps?" We need to do this as quickly as we can.
         // indexOf and lastIndexOf are much faster.
         let i;
@@ -944,20 +945,57 @@ module.exports = {
           let offset = 0;
           while (true) {
             const target = `${self.apos.modules['@apostrophecms/image'].action}/${doc.aposDocId}/src`;
+            console.log('target', target);
             i = content.indexOf(target, offset);
+            console.log('i', i);
             if (i === -1) {
+              console.log('---');
               break;
             }
             offset = i + target.length;
+            console.log('offset', offset);
             // If you can edit the widget, you don't want the link replaced,
             // as that would lose the image if you edit the widget
             const left = content.lastIndexOf('<', i);
+            console.log('left', left);
             const src = content.indexOf(' src="', left);
+            console.log('src', src);
             const close = content.indexOf('"', src + 6);
+            console.log('close', close);
             if ((left !== -1) && (src !== -1) && (close !== -1)) {
               content = content.substring(0, src + 5) + doc.attachment._urls[self.apos.modules['@apostrophecms/image'].getLargestSize()] + content.substring(close + 1);
+              console.log('content', content);
+              console.log('---');
+
+              // update or insert alt attribute
+              const tagEnd = content.indexOf('>', left);
+              if (tagEnd !== -1) {
+                let imgTag = content.substring(left, tagEnd + 1);
+                // Look for alt attribute in the tag
+                const altAttr = ' alt="';
+                const altIndex = imgTag.indexOf(altAttr);
+                if (altIndex !== -1) {
+                  // Replace the existing alt value
+                  const altValueStart = altIndex + altAttr.length;
+                  const altValueEnd = imgTag.indexOf('"', altValueStart);
+                  imgTag = imgTag.substring(0, altValueStart) +
+                    self.apos.util.escapeHtml(doc.alt || '') +
+                    imgTag.substring(altValueEnd);
+                } else {
+                  // Insert alt attribute before closing >
+                  imgTag = imgTag.replace(
+                    /\/?>$/,
+                    ` alt="${self.apos.util.escapeHtml(doc.alt || '')}"$&`
+                  );
+                }
+                // Replace the tag in content
+                content = content.substring(0, left) +
+                  imgTag + content.substring(tagEnd + 1);
+              }
+
             } else {
               // So we don't get stuck in an infinite loop
+              console.log('---');
               break;
             }
           }
