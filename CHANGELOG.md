@@ -12,6 +12,8 @@
 
 ### Fixes
 
+* Exclude unknown page types from the page manager.
+
 ## 4.19.0 (2025-07-09)
 
 ### Adds
