@@ -381,8 +381,8 @@ export default {
   watch: {
     suppressWidgetControls(newVal) {
       if (newVal) {
-        this.$emit('suppressWidgetControls')
-      } 
+        this.$emit('suppressWidgetControls');
+      }
     },
     isFocused(newVal) {
       if (!newVal) {

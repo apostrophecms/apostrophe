@@ -135,7 +135,7 @@
         :doc-id="docId"
         :focused="isFocused"
         @update="$emit('update', $event)"
-        @suppressWidgetControls="suppressWidgetControls"
+        @suppress-widget-controls="suppressWidgetControls"
       />
       <component
         :is="widgetComponent(widget.type)"
