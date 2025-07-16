@@ -2649,7 +2649,7 @@ database.`);
         }
         const slug = argv._[1];
         const count = await self.apos.doc.db
-          .updateOne({ slug }, { $unset: { parked: 1 } });
+          .updateMany({ slug }, { $unset: { parked: 1 } });
         if (!count) {
           throw 'No page with that slug was found.';
         }
