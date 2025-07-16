@@ -955,7 +955,38 @@ module.exports = {
             const src = content.indexOf(' src="', left);
             const close = content.indexOf('"', src + 6);
             if ((left !== -1) && (src !== -1) && (close !== -1)) {
-              content = content.substring(0, src + 5) + doc.attachment._urls[self.apos.modules['@apostrophecms/image'].getLargestSize()] + content.substring(close + 1);
+              const imageModule = self.apos.modules['@apostrophecms/image'];
+              const newSrc = doc.attachment._urls[imageModule.getLargestSize()];
+              content = content.substring(0, src + 5) + newSrc +
+                content.substring(close + 1);
+
+              // Now handle the alt attribute - recalculate positions after
+              // src replacement. Find the img tag boundaries again since content changed
+              const newLeft = content.lastIndexOf('<', i);
+              const newRight = content.indexOf('>', newLeft);
+              if (newRight !== -1) {
+                // Look for existing alt attribute within this img tag
+                const altStart = content.indexOf(' alt="', newLeft);
+                const altText = doc.alt ? self.apos.util.escapeHtml(doc.alt) : '';
+
+                if ((altStart !== -1) && (altStart < newRight)) {
+                  // Alt attribute exists, replace it
+                  const altValueStart = altStart + 6; // after ' alt="'
+                  const altEnd = content.indexOf('"', altValueStart);
+                  if (altEnd !== -1) {
+                    content = content.substring(0, altValueStart) + altText +
+                      content.substring(altEnd);
+                  }
+                } else if (altText) {
+                  // Alt attribute doesn't exist and we have alt text, insert it
+                  // before the img tag closes. Check if it's self-closing (/>) or not
+                  const beforeClose = content.substring(newRight - 1, newRight) === '/'
+                    ? newRight - 1
+                    : newRight;
+                  content = content.substring(0, beforeClose) + ` alt="${altText}"` +
+                    content.substring(beforeClose);
+                }
+              }
             } else {
               // So we don't get stuck in an infinite loop
               break;
