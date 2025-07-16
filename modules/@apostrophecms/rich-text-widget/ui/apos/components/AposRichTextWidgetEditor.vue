@@ -216,11 +216,6 @@ export default {
     };
   },
   computed: {
-    selectionIsEmpty() {
-      if (this.editor) {
-        return this.editor.view.state.selection.empty;
-      } 
-    },
     tableOptions() {
       const options = this.moduleOptions.tableOptions || {};
 
@@ -385,9 +380,7 @@ export default {
   },
   watch: {
     suppressWidgetControls(newVal) {
-      console.log('suppressWidgetControls changed');
       if (newVal) {
-        console.log('emit suppress');
         this.$emit('suppressWidgetControls')
       } 
     },
