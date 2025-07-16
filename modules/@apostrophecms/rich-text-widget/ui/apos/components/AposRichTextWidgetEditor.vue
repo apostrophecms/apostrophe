@@ -193,7 +193,7 @@ export default {
       default: false
     }
   },
-  emits: [ 'update' ],
+  emits: [ 'update', 'suppressWidgetControls' ],
   data() {
     return {
       editor: null,
@@ -209,11 +209,18 @@ export default {
       showPlaceholder: null,
       activeInsertMenuComponent: false,
       suppressInsertMenu: false,
+      suppressWidgetControls: false,
+      hasSelection: false,
       insertMenuKey: null,
       openedPopover: false
     };
   },
   computed: {
+    selectionIsEmpty() {
+      if (this.editor) {
+        return this.editor.view.state.selection.empty;
+      } 
+    },
     tableOptions() {
       const options = this.moduleOptions.tableOptions || {};
 
@@ -377,8 +384,16 @@ export default {
     }
   },
   watch: {
+    suppressWidgetControls(newVal) {
+      console.log('suppressWidgetControls changed');
+      if (newVal) {
+        console.log('emit suppress');
+        this.$emit('suppressWidgetControls')
+      } 
+    },
     isFocused(newVal) {
       if (!newVal) {
+        this.suppressWidgetControls = false;
         if (this.pending) {
           this.emitWidgetUpdate();
         }
@@ -463,6 +478,13 @@ export default {
         this.$nextTick(() => {
           this.showPlaceholder = true;
         });
+      },
+      onSelectionUpdate: ({ editor }) => {
+        this.$nextTick(() => {
+          if (!editor.view.state.selection.empty) {
+            this.suppressWidgetControls = true;
+          }
+        });
       }
     });
     apos.bus.$on('apos-refreshing', this.onAposRefreshing);
@@ -501,6 +523,7 @@ export default {
       } else {
         this.suppressInsertMenu = false;
       }
+      this.suppressWidgetControls = true;
     },
     doSuppressInsertMenu() {
       this.suppressInsertMenu = true;
