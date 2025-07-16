@@ -1118,9 +1118,9 @@ module.exports = (self) => {
         }
       }
       // PRO-8043: When dealing with ID's only, request based locale inference
-      // is not needed. `undefined` - default auto locale inference,
+      // is not needed. `false` - default auto locale inference,
       // `null` - no locale inference.
-      const inferLocale = titlesOrIds.length > 0 ? undefined : null;
+      const inferLocale = titlesOrIds.length > 0 ? false : null;
       const clauses = [];
       if (titlesOrIds.length) {
         clauses.push({
