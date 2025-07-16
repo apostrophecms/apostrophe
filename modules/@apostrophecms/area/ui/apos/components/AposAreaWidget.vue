@@ -440,7 +440,6 @@ export default {
   },
   methods: {
     suppressWidgetControls() {
-      console.log('hide those controls!!!');
       this.isSuppressingWidgetControls = true;
     },
     getFocusForMenu({ menuId, isOpen }) {
