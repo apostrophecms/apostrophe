@@ -13,6 +13,7 @@
 ### Fixes
 
 * Ensure relationship convert handler can handle properly some cases where the document and request modes are different.
+* Exclude unknown page types from the page manager.
 
 ## 4.19.0 (2025-07-09)
 
