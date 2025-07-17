@@ -135,7 +135,7 @@
         :doc-id="docId"
         :focused="isFocused"
         @update="$emit('update', $event)"
-        @suppress-widget-controls="suppressWidgetControls"
+        @suppress-widget-controls="isSuppressingWidgetControls = true"
       />
       <component
         :is="widgetComponent(widget.type)"
@@ -439,9 +439,6 @@ export default {
     apos.bus.$off('widget-focus-parent', this.focusParent);
   },
   methods: {
-    suppressWidgetControls() {
-      this.isSuppressingWidgetControls = true;
-    },
     getFocusForMenu({ menuId, isOpen }) {
       if (
         (
