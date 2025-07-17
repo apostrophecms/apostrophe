@@ -4,14 +4,15 @@
 
 ### Adds
 
-- Adds any alt text found in an attribute to the media library attachment during import of rich text inline images by API
+* Adds any alt text found in an attribute to the media library attachment during import of rich text inline images by API
 
 ### Changes
 
-- Changes handling of `order` and `groups` in the `admin-bar` module to respect, rather that reverse, the order of items
+* Changes handling of `order` and `groups` in the `admin-bar` module to respect, rather that reverse, the order of items
 
 ### Fixes
 
+* Ensure relationship convert handler can handle properly some cases where the document and request modes are different.
 * Let the `@apostrophecms/page:unpark` task unpark all parked pages with the given slug, not just the first one.
 * Exclude unknown page types from the page manager.
 
