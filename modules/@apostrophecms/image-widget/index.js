@@ -6,11 +6,16 @@ module.exports = {
     icon: 'image-icon',
     dimensionAttrs: false,
     placeholder: true,
+    initialModal: false,
     placeholderClass: false,
     placeholderImage: 'jpg',
     linkWithType: [ '@apostrophecms/any-page-type' ],
     // Should we write e.g. a reset style for the `figure` element?
-    inlineStyles: true
+    inlineStyles: true,
+    // contextual: true, TODO: FIX
+    components: {
+      widget: 'AposImageWidget'
+    }
   },
   widgetOperations(self, options) {
     const {
