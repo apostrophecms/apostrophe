@@ -41,7 +41,10 @@
         />
       </template>
     </div>
-    <div class="apos-areas-widgets-list">
+    <TransitionGroup
+      name="apos-widget-list"
+      tag="div"
+    >
       <AposAreaWidget
         v-for="(widget, i) in next"
         :key="widget._id"
@@ -74,7 +77,7 @@
         @add="add"
         @paste="paste"
       />
-    </div>
+    </TransitionGroup>
   </div>
 </template>
 
@@ -337,7 +340,7 @@ export default {
         return;
       }
 
-      this.paste(Math.max(this.focusedWidgetIndex, 0));
+      this.paste(Math.max(this.focusedWidgetIndex + 1, 0));
     },
     handleRemove() {
       if (
@@ -814,6 +817,22 @@ function cancelRefresh(refreshOptions) {
   &:focus, &:active {
     border-color: var(--a-primary);
   }
+}
+
+.apos-widget-list-enter-active,
+.apos-widget-list-leave-active {
+  @include apos-transition($duration:0.3s);
+
+  & {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.apos-widget-list-enter-from,
+.apos-widget-list-leave-to {
+  opacity: 0;
+  transform: scale(0.96);
 }
 
 </style>
