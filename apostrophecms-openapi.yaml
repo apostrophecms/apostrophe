@@ -1525,6 +1525,318 @@ paths:
         - BearerAuth: []
         - SessionAuth: []
 
+  /@apostrophecms/login/whoami:
+    get:
+      summary: Get current user information
+      description: |
+        Returns information about the currently authenticated user.
+
+        **Security note:** Only explicitly configured fields are returned, 
+        never the complete user object. This prevents accidental exposure 
+        of sensitive user data.
+      tags:
+        - Authentication
+      responses:
+        '200':
+          description: Current user information retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  _id:
+                    type: string
+                    description: User's unique identifier
+                    example: "user123"
+                  username:
+                    type: string
+                    description: User's login username
+                    example: "john-doe"
+                  title:
+                    type: string
+                    description: User's display name
+                    example: "John Doe"
+                  email:
+                    type: string
+                    format: email
+                    description: User's email address (if configured in whoamiFields)
+                    example: "john@example.com"
+                additionalProperties: true
+                description: Additional fields based on whoamiFields configuration
+        '404':
+          description: User not authenticated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Not authenticated"
+      security:
+        - ApiKeyAuth: []
+        - BearerAuth: []
+        - SessionAuth: []
+
+    post:
+      summary: Get current user information
+      description: |
+        Returns information about the currently authenticated user.
+
+        **Note:** POST method is recommended for this endpoint.
+
+        **Security note:** Only explicitly configured fields are returned, 
+        never the complete user object. This prevents accidental exposure 
+        of sensitive user data.
+      tags:
+        - Authentication
+      responses:
+        '200':
+          description: Current user information retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  _id:
+                    type: string
+                    description: User's unique identifier
+                    example: "user123"
+                  username:
+                    type: string
+                    description: User's login username
+                    example: "john-doe"
+                  title:
+                    type: string
+                    description: User's display name
+                    example: "John Doe"
+                  email:
+                    type: string
+                    format: email
+                    description: User's email address (if configured in whoamiFields)
+                    example: "john@example.com"
+                additionalProperties: true
+                description: Additional fields based on whoamiFields configuration
+        '404':
+          description: User not authenticated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Not authenticated"
+      security:
+        - ApiKeyAuth: []
+        - BearerAuth: []
+        - SessionAuth: []
+
+  /@apostrophecms/login/context:
+    get:
+      summary: Get login context information
+      description: |
+        Returns login context information including environment and requirements.
+        This endpoint provides information about the login system configuration.
+      tags:
+        - Authentication
+      responses:
+        '200':
+          description: Login context retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  localLogin:
+                    type: boolean
+                    description: Whether local login is enabled
+                    example: true
+                  passwordReset:
+                    type: boolean
+                    description: Whether password reset is enabled
+                    example: false
+                  loginUrl:
+                    type: string
+                    description: The configured login URL
+                    example: "/login"
+                additionalProperties: true
+                description: Additional context based on configuration
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      security: []
+
+    post:
+      summary: Get login context information
+      description: |
+        Returns login context information including environment and requirements.
+        This endpoint provides information about the login system configuration.
+      tags:
+        - Authentication
+      responses:
+        '200':
+          description: Login context retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  localLogin:
+                    type: boolean
+                    description: Whether local login is enabled
+                    example: true
+                  passwordReset:
+                    type: boolean
+                    description: Whether password reset is enabled
+                    example: false
+                  loginUrl:
+                    type: string
+                    description: The configured login URL
+                    example: "/login"
+                additionalProperties: true
+                description: Additional context based on configuration
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      security: []
+
+  /@apostrophecms/login/resetRequest:
+    post:
+      summary: Request password reset
+      description: |
+        Initiates a password reset process by sending a reset link to the user's email address.
+
+        **Note:** This endpoint is only available when `passwordReset` is enabled in the login module configuration.
+
+        The user will not be notified if the email check fails or if the email fails to send.
+        However, debug information will be output in the server terminal.
+      tags:
+        - Authentication
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+              properties:
+                email:
+                  type: string
+                  format: email
+                  description: Email address of the user requesting password reset
+                  example: "user@example.com"
+      responses:
+        '200':
+          description: Password reset request processed (always returns success for security)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "If an account with that email exists, a password reset link has been sent."
+        '400':
+          description: Bad request - missing or invalid email
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Password reset not enabled
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Password reset is not enabled"
+      security: []
+
+  /@apostrophecms/login/reset:
+    post:
+      summary: Complete password reset
+      description: |
+        Completes a password reset using the token provided in the reset email.
+
+        **Note:** This endpoint is only available when `passwordReset` is enabled in the login module configuration.
+
+        Reset tokens are valid for the number of hours specified in `passwordResetHours` (default: 48 hours).
+      tags:
+        - Authentication
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - token
+                - password
+              properties:
+                token:
+                  type: string
+                  description: Reset token from the password reset email
+                  example: "reset-token-from-email"
+                password:
+                  type: string
+                  format: password
+                  description: New password for the user account
+                  example: "new-secure-password"
+      responses:
+        '200':
+          description: Password reset completed successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "Password has been reset successfully"
+        '400':
+          description: Bad request - missing or invalid token/password
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Password reset not enabled or invalid token
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Invalid or expired reset token"
+        '410':
+          description: Reset token expired
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Reset token has expired"
+      security: []
+
   # Page endpoints
   /@apostrophecms/page:
     get:
