@@ -13,6 +13,7 @@
 ### Fixes
 
 * Ensure relationship convert handler can handle properly some cases where the document and request modes are different.
+* Let the `@apostrophecms/page:unpark` task unpark all parked pages with the given slug, not just the first one.
 * Exclude unknown page types from the page manager.
 
 ## 4.19.0 (2025-07-09)
