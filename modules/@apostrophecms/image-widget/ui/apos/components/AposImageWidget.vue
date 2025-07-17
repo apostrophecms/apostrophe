@@ -19,7 +19,7 @@
 
 <script setup>
 import {
-  computed, watch, onMounted
+  computed, watch
 } from 'vue';
 import { useAposWidget } from 'Modules/@apostrophecms/widget-type/composables/AposWidget';
 import aposWidgetProps from 'Modules/@apostrophecms/widget-type/composables/AposWidgetProps';
@@ -27,7 +27,7 @@ import aposWidgetProps from 'Modules/@apostrophecms/widget-type/composables/Apos
 const moduleOptions = window.apos.modules['@apostrophecms/image'];
 const accept = moduleOptions.schema.find(field => field.name === 'attachment').accept;
 
-const emit = defineEmits([ 'edit' ]);
+const emit = defineEmits([ 'edit', 'update' ]);
 
 const props = defineProps(aposWidgetProps);
 const {
@@ -38,24 +38,24 @@ const hasImage = computed(() => {
   return Boolean(props.modelValue?._image?.length);
 });
 
-watch(props.modelValue, () => {
+watch(() => props.modelValue, async (newVal) => {
   if (hasImage.value) {
-    renderContent();
-  }
-});
+    await renderContent();
 
-onMounted(() => {
-  if (hasImage.value) {
-    renderContent();
   }
-});
+}, { immediate: true });
+
+/* onMounted(() => { */
+/*   if (hasImage.value) { */
+/*     renderContent(); */
+/*   } */
+/* }); */
 
 function openMedia() {
   console.log('=====> open media <=====');
 }
 
 async function upload(files = []) {
-  console.log('=====> upload <=====');
   const [ file ] = files;
   if (!file) {
     return;
@@ -90,7 +90,10 @@ async function upload(files = []) {
       draft: true
     });
 
-    console.log('imgPiece', imgPiece);
+    emit('update', {
+      ...props.modelValue,
+      _image: [ imgPiece ]
+    });
   } catch (e) {
     const msg = e.body?.message ? e.body.message : this.$t('apostrophe:uploadError');
     await apos.notify(msg, {

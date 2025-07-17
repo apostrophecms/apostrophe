@@ -13,6 +13,7 @@ export function useAposWidget(props) {
   });
 
   return {
+    rendered,
     renderContent,
     getClasses: () => _getClasses({
       modelValue: props.modelValue,
