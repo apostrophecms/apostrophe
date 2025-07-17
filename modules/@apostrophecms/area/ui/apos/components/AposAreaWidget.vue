@@ -135,6 +135,7 @@
         :doc-id="docId"
         :focused="isFocused"
         @update="$emit('update', $event)"
+        @suppress-widget-controls="isSuppressingWidgetControls = true"
       />
       <component
         :is="widgetComponent(widget.type)"
@@ -285,12 +286,14 @@ export default {
       mounted: false, // hack around needing DOM to be rendered for computed classes
       isSuppressed: false,
       menuOpen: null,
+      isSuppressingWidgetControls: false,
       classes: {
         show: 'apos-is-visible',
         open: 'apos-is-open',
         focus: 'apos-is-focused',
         highlight: 'apos-is-highlighted',
-        adjust: 'apos-is-ui-adjusted'
+        adjust: 'apos-is-ui-adjusted',
+        suppressWidgetControls: 'apos-is-suppressing-widget-controls'
       },
       breadcrumbs: {
         $lastEl: null,
@@ -362,7 +365,8 @@ export default {
     },
     controlsClasses() {
       return {
-        [this.classes.show]: this.isFocused
+        [this.classes.show]: this.isFocused,
+        [this.classes.suppressWidgetControls]: this.isSuppressingWidgetControls
       };
     },
     containerClasses() {
@@ -398,6 +402,7 @@ export default {
       } else {
         this.menuOpen = null;
         this.$refs.wrapper.removeEventListener('keydown', this.handleKeyboardUnfocus);
+        this.isSuppressingWidgetControls = false;
       }
     }
   },
@@ -881,7 +886,7 @@ export default {
     }
   }
 
-  .apos-is-visible,
+  .apos-is-visible:not(.apos-is-suppressing-widget-controls),
   .apos-is-focused {
     opacity: 1;
     pointer-events: auto;
