@@ -224,10 +224,7 @@ export default {
         ...operation
       }));
     },
-    async handleClick({ action, modal }) {
-      if (action) {
-        this.$emit(action);
-      }
+    async handleClick({ action, modal, ignoreResult = false }) {
       if (modal) {
         const result = await apos.modal.execute(modal, {
           widget: this.modelValue,
@@ -236,11 +233,12 @@ export default {
           ]?.schema,
           widgetOptions: this.widgetOptions
         });
-        if (result) {
-          // TODO: make sure the update method from
-          // modules/@apostrophecms/area/ui/apos/components/AposAreaEditor.vue
-          // does the job and does not mess with the widget type and _id:
+        if (result && !ignoreResult) {
           this.$emit('update', result);
+        }
+      } else {
+        if (action) {
+          this.$emit(action);
         }
       }
     }
