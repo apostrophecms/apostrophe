@@ -242,9 +242,9 @@ export default {
           options: this.options,
           fieldId: this.fieldId
         }
+        this.$refs.contextMenu.hide();
         const widget = await apos.modal.execute(item.modal, props);
         if (widget) {
-          console.log('widget is:', JSON.stringify(widget, null, 2));
           // Insert the widget at the appropriate insertion point, like we normally would
           this.$emit('add', {
             widget,

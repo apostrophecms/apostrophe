@@ -145,8 +145,6 @@ import AposDocErrorsMixin from 'Modules/@apostrophecms/modal/mixins/AposDocError
 import { detectDocChange } from 'Modules/@apostrophecms/schema/lib/detectChange';
 import { useModalStore } from 'Modules/@apostrophecms/ui/stores/modal';
 
-console.log('executing');
-
 export default {
   name: 'AposDocEditor',
   mixins: [
@@ -393,7 +391,6 @@ export default {
     }
   },
   async mounted() {
-    console.log('received:', JSON.stringify(this.values, null, '  '));
     this.modal.active = true;
     await this.evaluateExternalConditions();
     // After computed properties become available
@@ -485,9 +482,7 @@ export default {
         this.docType = newInstance.type;
       }
       if (this.values) {
-        console.log('assigning props in new doc');
         Object.assign(newInstance, this.values);
-        console.log('now newInstance looks like:', JSON.stringify(newInstance, null, '  '));
       }
       this.docFields.data = newInstance;
       const slugField = this.schema.find(field => field.name === 'slug');

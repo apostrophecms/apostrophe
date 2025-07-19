@@ -64,17 +64,12 @@ export const useModalStore = defineStore('modal', () => {
   }
 
   async function execute(componentName, props) {
-    console.log('here we go');
-    console.log(componentName);
     const pipeline = componentName.split('|');
-    console.log(pipeline);
     componentName = pipeline.pop();
-    console.log('componentName');
     const transformers = pipeline;
     for (const transformer of transformers) {
       props = await apos.ui.transformers[transformer](props);
     }
-    console.log('final props are:', props);
     return new Promise((resolve) => {
       const item = {
         id: `modal:${createId()}`,
