@@ -134,25 +134,39 @@ export default {
       );
     }
 
-    const clipboard = this.getClipboard();
-    this.groups = clipboard
-      ? [ clipboard ].concat(this.groups)
-      : this.groups;
+    this.groups = [
+      ...this.getClipboardGroups(),
+      ...this.groups,
+      ...this.getCreateWidgetOperationsGroups(),
+    ];
+  },
+  computed: {
+    moduleOptions() {
+      return window.apos.area;
+    }
   },
   methods: {
     isValidColumn(count) {
       return count ? +count > 1 && +count < 4 : true;
     },
-    getClipboard() {
+    getCreateWidgetOperationsGroups() {
+      const result = this.moduleOptions.createWidgetOperations.map(operation => ({
+        type: 'operation',
+        ...operation
+      }));
+      console.log('result is:', result);
+      return result;
+    },
+    getClipboardGroups() {
       const clipboard = apos.area.widgetClipboard.get();
       if (!clipboard) {
-        return null;
+        return [];
       }
 
       const widgets = this.groups.flatMap(group => Object.values(group.widgets));
       const matchingChoice = widgets.find(widget => widget.name === clipboard.type);
       if (!matchingChoice) {
-        return null;
+        return [];
       }
 
       const group = {
@@ -171,7 +185,7 @@ export default {
         columns: 1
       };
 
-      return group;
+      return [ group ];
     },
     createGroup(config) {
       const group = {
