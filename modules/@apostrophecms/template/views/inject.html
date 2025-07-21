@@ -1,3 +1,4 @@
 {% for c in data.components %}
   {% component c %}
 {% endfor %}
+{{ (data.html | safe) if data.html }}

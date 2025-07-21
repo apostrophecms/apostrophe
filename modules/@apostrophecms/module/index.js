@@ -333,6 +333,62 @@ module.exports = {
         });
       },
 
+      // Prepepnd/append nodes, rendered to HTML, to a given location. Supports
+      // the same locations as `apos.template.prepend()` and `apos.template.append()`.
+      // The rendered markup is automatically escaped and injected into the
+      // appropriate location in the HTML document.
+      // The `method` argument is the name of existing method in the current module.
+      // It should be string, passing a function will throw an error.
+      // Example:
+      // ```
+      // self.prependNodes('head', 'myMethod');
+      // self.appendNodes('main', 'anotherMethod');
+      // ```
+      // In the example above, `myMethod` and `anotherMethod` should be defined
+      // in the current module, and they should return an array of node objects.
+      // ```
+      // methods(self) {
+      //   return {
+      //     myMethod() {
+      //       return [
+      //         {
+      //           name: 'meta',
+      //           attributes: {
+      //             name: 'my-meta',
+      //             content: 'my content'
+      //           }
+      //         }
+      //       ];
+      //     },
+      //     anotherMethod() {
+      //       return [
+      //         {
+      //           tag: 'h4',
+      //           body: [
+      //             {
+      //               text: 'Heading text'
+      //             }
+      //           ]
+      //         }
+      //       ];
+      //     }
+      //   };
+      // }
+      // ```
+      // Node objects SHOULD have either `name` or `text` property.
+      // A node with `name` property can have `attrs` (array of element attributes)
+      // and/or `body` (array of child nodes).
+      // `text` nodes are rendered as text (no HTML tags), they don't support
+      // any other properties.
+      prependNodes(location, method) {
+        return self.apos.template
+          .prependNodes(location, self.__meta.name, method);
+      },
+      appendNodes(location, method) {
+        return self.apos.template
+          .appendNodes(location, self.__meta.name, method);
+      },
+
       // Render a template. Template overrides are respected; the
       // project level modules/modulename/views folder wins if
       // it has such a template, followed by the npm module,
