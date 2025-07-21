@@ -4,10 +4,10 @@
     class="apos-image-widget"
   >
     <AposMediaUploaderUi
-      :min-size="[100, 100]"
+      :min-size="props.options?.minSize"
       :accept="accept"
       @upload="upload"
-      @media="openMedia"
+      @media="selectFromManager"
     />
   </div>
   <div
@@ -41,23 +41,89 @@ const hasImage = computed(() => {
 watch(() => props.modelValue, async (newVal) => {
   if (hasImage.value) {
     await renderContent();
-
   }
 }, { immediate: true });
 
-/* onMounted(() => { */
-/*   if (hasImage.value) { */
-/*     renderContent(); */
-/*   } */
-/* }); */
+async function selectFromManager() {
+  const modalItem = apos.modal.modals.find((modal) => modal.itemName === '@apostrophecms/image:manager');
+  if (!modalItem) {
+    return;
+  }
 
-function openMedia() {
-  console.log('=====> open media <=====');
+  const [ selectedImg ] = (await apos.modal.execute(modalItem.componentName, {
+    ...modalItem.props,
+    moduleName: props.type,
+    chosen: [],
+    relationshipField: { max: 1 }
+  })) || [];
+
+  if (selectedImg) {
+    emit('update', {
+      ...props.modelValue,
+      _image: [ selectedImg ]
+    });
+  }
+}
+
+/**
+ * @param {File} file - File uploaded by user
+ * @returns {boolean} - Returns a boolean false if the image is not valid
+ */
+async function checkImageValid(file) {
+  const isValid = await new Promise((resolve, reject) => {
+    if (!file) {
+      return resolve(false);
+    }
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const img = new Image();
+      img.onload = (evt) => {
+        const image = evt.target;
+        /* const aspectRatio = image.width / image.height; */
+        const minSize = props.options.minSize;
+        if (!minSize) {
+          resolve(true);
+        }
+
+        if (
+          (minSize[0] && image.width < minSize[0]) ||
+          (minSize[1] && image.height < minSize[1])
+        ) {
+          apos.notify('apostrophe:minimumSize', {
+            type: 'danger',
+            icon: 'alert-circle-icon',
+            dismiss: true,
+            interpolate: {
+              width: minSize[0],
+              height: minSize[1]
+            }
+          });
+          resolve(false);
+        }
+      };
+
+      img.src = e.target.result; // Use the file data from FileReader
+    };
+    reader.onerror = () => {
+      apos.notify('apostrophe:uploadError', {
+        type: 'danger',
+        icon: 'alert-circle-icon',
+        dismiss: true
+      });
+      resolve(false);
+    };
+
+    reader.readAsDataURL(file);
+  });
+
+  return isValid;
 }
 
 async function upload(files = []) {
   const [ file ] = files;
-  if (!file) {
+  const isValid = await checkImageValid(file);
+  console.log('isValid', isValid);
+  if (!isValid) {
     return;
   }
 
