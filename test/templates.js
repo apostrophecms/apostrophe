@@ -36,14 +36,23 @@ describe('Templates', function() {
       root: module,
       modules: {
         'express-test': {},
-        'template-test': {},
-        'template-subclass-test': {},
+        'template-test': {
+          options: {
+            ignoreNoCodeWarning: true
+          }
+        },
+        'template-subclass-test': {
+          options: {
+            ignoreNoCodeWarning: true
+          }
+        },
         'template-options-test': {},
         'inject-test': {},
         'with-layout-page': {
           extend: '@apostrophecms/page-type'
         },
         'fragment-page': {
+          extend: '@apostrophecms/page-type',
           components(self) {
             return {
               async test(req, input) {
@@ -73,6 +82,7 @@ describe('Templates', function() {
             self.appendNodes('head', 'appendHeadTest');
             self.prependNodes('main', 'prependMainTest');
             self.appendNodes('main', 'appendMainTest');
+            self.appendNodes('body', 'appendBodyTest');
           },
           methods(self) {
             return {
@@ -115,6 +125,32 @@ describe('Templates', function() {
                     body: [
                       {
                         text: 'append-node-main-test<test>'
+                      }
+                    ]
+                  }
+                ];
+              },
+              appendBodyTest(req) {
+                return [
+                  {
+                    comment: 'append-node-body-comment-test'
+                  },
+                  {
+                    raw: '<h4>append-node-body-raw-test</h4>'
+                  },
+                  {
+                    name: 'h3',
+                    attrs: {
+                      boolean: true,
+                      ignored1: false,
+                      ignored2: null,
+                      ignored3: undefined,
+                      truthy: 'true',
+                      falsy: 'false'
+                    },
+                    body: [
+                      {
+                        text: 'append-node-body-misc-test'
                       }
                     ]
                   }
@@ -281,6 +317,15 @@ describe('Templates', function() {
     const prependNodeMainLastIndex = body.lastIndexOf('<h4>prepend-node-main-test&lt;test&gt;</h4>');
     const appendNodeMainLastIndex = body.lastIndexOf('<h4>append-node-main-test&lt;test&gt;</h4>');
 
+    // Comment/raw checks
+    const appendNodeBodyCommentTestIndex = body.indexOf('<!-- append-node-body-comment-test -->');
+    const appendNodeBodyRawTestIndex = body.indexOf('<h4>append-node-body-raw-test</h4>');
+
+    // Attribute handling checks
+    const appendNodeBodyMiscTestIndex = body.indexOf(
+      '<h3 boolean truthy="true" falsy="false">append-node-body-misc-test</h3>'
+    );
+
     const actual = {
       prependHeadExist: prependNodeHeadTestIndex !== -1,
       appendHeadExist: appendNodeHeadTestIndex !== -1,
@@ -291,7 +336,10 @@ describe('Templates', function() {
       appendMainExist: appendNodeMainTestIndex !== -1,
       prependMainNoDuplicate: prependNodeMainTestIndex === prependNodeMainLastIndex,
       appendMainNoDuplicate: appendNodeMainTestIndex === appendNodeMainLastIndex,
-      mainOrder: prependNodeMainTestIndex < appendNodeMainTestIndex
+      mainOrder: prependNodeMainTestIndex < appendNodeMainTestIndex,
+      appendBodyCommentExist: appendNodeBodyCommentTestIndex !== -1,
+      appendBodyRawExist: appendNodeBodyRawTestIndex !== -1,
+      appendNodeBodyAttrsCheck: appendNodeBodyMiscTestIndex !== -1
     };
 
     const expected = {
@@ -304,7 +352,10 @@ describe('Templates', function() {
       appendMainExist: true,
       prependMainNoDuplicate: true,
       appendMainNoDuplicate: true,
-      mainOrder: true
+      mainOrder: true,
+      appendBodyCommentExist: true,
+      appendBodyRawExist: true,
+      appendNodeBodyAttrsCheck: true
     };
 
     assert.deepEqual(
