@@ -307,8 +307,14 @@ module.exports = {
       }
     };
   },
-  methods(self) {
+  methods(self, options) {
     return {
+      getBrowserData() {
+        console.dir(options, { depth: 0 });
+        return {
+          ...options
+        };
+      },
       // Public API for external build modules.
       ...require('./lib/build/external-module-api')(self),
       // Internals

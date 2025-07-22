@@ -96,9 +96,15 @@ const formats = formattedAccept
   .slice(0, formattedAccept.length - 1)
   .map((format) => `<strong>${format}</strong>`)
   .join(', ');
+
+const assetModule = apos.modules['@apostrophecms/asset'];
+console.log('assetModule', assetModule);
+/* const maxSize = apos.modules['apostrophecms/asset']; */
+
 const acceptTranslation = $t('apostrophe:imageUploadSupport', {
   formats,
-  last: `<strong>${formattedAccept[formattedAccept.length - 1]}</strong>`
+  last: `<strong>${formattedAccept[formattedAccept.length - 1]}</strong>`,
+  upTo: ' ' + $t('apostrophe:imageUploadUpTo', {})
 });
 
 const dragging = computed(() => {
@@ -108,11 +114,6 @@ const dragging = computed(() => {
 const dragover = computed(() => {
   return dragOverCounter.value > 0;
 });
-
-// TODO: Show drag style only if items are images
-function isImageBeingDragged(e) {
-  return true;
-}
 
 function dragEnterListener(e) {
   if (e.dataTransfer?.types.includes('Files')) {
