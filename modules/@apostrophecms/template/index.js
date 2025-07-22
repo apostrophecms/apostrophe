@@ -1136,10 +1136,12 @@ module.exports = {
       //     attrs: { href: '/some/path', rel: 'stylesheet' }
       //   }
       // ]
-      // Node objects SHOULD have either `name` or `text` property.
+      // Node object SHOULD have either `name`, `text`, `raw` or `comment` property.
       // A node with `name` can have `attrs` (array of element attributes)
-      // and `body` (array of child nodes).
-      // `text` nodes are rendered as text (no HTML tags).
+      // and `body` (array of child nodes, recursion).
+      // `text` nodes are rendered as text (no HTML tags), the value is always a string.
+      // `comment` nodes are rendered as HTML comments, the value is always a string.
+      // `raw` nodes are rendered as is, no escaping, the value is always a string.
       renderNodes(nodes) {
         if (!Array.isArray(nodes)) {
           self.logError(
@@ -1152,10 +1154,22 @@ module.exports = {
           if (node.text) {
             return self.apos.util.escapeHtml(node.text);
           }
+          if (node.comment) {
+            return `\n<!-- ${self.apos.util.escapeHtml(node.comment)} -->\n`;
+          }
+          if (node.raw) {
+            return node.raw;
+          }
           if (node.name) {
             const name = self.apos.util.escapeHtml(node.name);
             const attrs = Object.entries(node.attrs || {})
               .map(([ key, value ]) => {
+                if (value === false || value === null || value === undefined) {
+                  return '';
+                }
+                if (value === true) {
+                  return ` ${self.apos.util.escapeHtml(key)}`;
+                }
                 return ` ${self.apos.util.escapeHtml(key)}="${self.apos.util.escapeHtml(value)}"`;
               })
               .join('')

@@ -349,7 +349,7 @@ module.exports = {
       // ```
       // methods(self) {
       //   return {
-      //     myMethod() {
+      //     myMethod(req) {
       //       return [
       //         {
       //           name: 'meta',
@@ -360,13 +360,27 @@ module.exports = {
       //         }
       //       ];
       //     },
-      //     anotherMethod() {
+      //     anotherMethod(req) {
       //       return [
       //         {
       //           tag: 'h4',
       //           body: [
       //             {
+      //               comment: 'Start Heading text'
+      //             },
+      //             {
       //               text: 'Heading text'
+      //             }
+      //             {
+      //               comment: 'End Heading text'
+      //             }
+      //             {
+      //               name: 'script`,
+      //               body: [
+      //                 {
+      //                   raw: 'console.log("This is not escaped, be careful!");'
+      //                 }
+      //               ]
       //             }
       //           ]
       //         }
@@ -375,11 +389,12 @@ module.exports = {
       //   };
       // }
       // ```
-      // Node objects SHOULD have either `name` or `text` property.
-      // A node with `name` property can have `attrs` (array of element attributes)
-      // and/or `body` (array of child nodes).
-      // `text` nodes are rendered as text (no HTML tags), they don't support
-      // any other properties.
+      // Node object SHOULD have either `name`, `text`, `raw` or `comment` property.
+      // A node with `name` can have `attrs` (array of element attributes)
+      // and `body` (array of child nodes, recursion).
+      // `text` nodes are rendered as text (no HTML tags), the value is always a string.
+      // `comment` nodes are rendered as HTML comments, the value is always a string.
+      // `raw` nodes are rendered as is, no escaping, the value is always a string.
       prependNodes(location, method) {
         return self.apos.template
           .prependNodes(location, self.__meta.name, method);
