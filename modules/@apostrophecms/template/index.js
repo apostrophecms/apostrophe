@@ -1112,7 +1112,7 @@ module.exports = {
         }
 
         const key = end + '-' + location;
-        self.runtimeNodes[key] = self.runtimeNodes[key] || [];
+        self.runtimeNodes[key] ||= [];
         self.runtimeNodes[key].push({
           moduleName,
           method

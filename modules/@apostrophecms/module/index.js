@@ -342,7 +342,7 @@ module.exports = {
       // Example:
       // ```
       // self.prependNodes('head', 'myMethod');
-      // self.appendNodes('main', 'anotherMethod');
+      // self.appendNodes('body', 'anotherMethod');
       // ```
       // In the example above, `myMethod` and `anotherMethod` should be defined
       // in the current module, and they should return an array of node objects.
