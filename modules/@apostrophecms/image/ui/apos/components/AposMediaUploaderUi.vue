@@ -190,6 +190,24 @@ async function uploadMedia (event) {
   // Set `dragover` in case the media was dropped.
   dragover.value = false;
   const files = event.dataTransfer ? event.dataTransfer.files : event.target.files;
+  if (!props.accept) {
+    emit('upload', files);
+    return;
+  }
+
+  const hasNoValidFile = [ ...files ].find((file) => {
+    const ext = file.name.split('.').pop();
+    return !props.accept.includes(ext);
+  });
+
+  if (hasNoValidFile) {
+    apos.notify('apostrophe:invalid', {
+      type: 'danger',
+      icon: 'alert-circle-icon',
+      dismiss: true
+    });
+    return;
+  }
 
   emit('upload', files);
 }
