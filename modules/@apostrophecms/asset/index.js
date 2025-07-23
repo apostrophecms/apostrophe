@@ -309,11 +309,6 @@ module.exports = {
   },
   methods(self) {
     return {
-      getBrowserData() {
-        return {
-          maxSize: self.options.maxSize
-        };
-      },
       // Public API for external build modules.
       ...require('./lib/build/external-module-api')(self),
       // Internals

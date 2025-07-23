@@ -1187,7 +1187,8 @@ module.exports = {
           // for bc
           uploadsUrl: self.uploadfs.getUrl(),
           croppable: self.croppable,
-          sized: self.sized
+          sized: self.sized,
+          maxSize: self.options.maxSize
         };
       },
       // Middleware method used when only those with attachment privileges

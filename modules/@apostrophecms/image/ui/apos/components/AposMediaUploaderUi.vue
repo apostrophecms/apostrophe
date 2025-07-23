@@ -116,7 +116,7 @@ const dragover = computed(() => {
  * @returns {String} - Formatted string containing configured maximum size
  */
 function getMaxSize() {
-  const maxSize = apos.modules['@apostrophecms/asset'].maxSize;
+  const maxSize = apos.modules['@apostrophecms/attachment']?.maxSize;
   if (typeof maxSize === 'number') {
     const num = (maxSize / (1024 * 1024)).toFixed(1).toString();
     return `${num}mb`;
