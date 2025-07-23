@@ -9,7 +9,8 @@
 
 ### Changes
 
-- Changes handling of `order` and `groups` in the `admin-bar` module to respect, rather that reverse, the order of items
+* Changes handling of `order` and `groups` in the `admin-bar` module to respect, rather that reverse, the order of items
+* Interacting with the text inside a rich text widget will hide the widget controls to prevent awkawrd text selection.
 
 ### Fixes
 

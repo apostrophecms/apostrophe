@@ -25,7 +25,7 @@
         class="apos-area-widget-controls apos-area-widget__label"
         :class="labelsClasses"
       >
-        <ol class="apos-area-widget__breadcrumbs">
+        <ol class="apos-area-widget__breadcrumbs" @click="isSuppressingWidgetControls = false">
           <li
             class="
               apos-area-widget__breadcrumb
