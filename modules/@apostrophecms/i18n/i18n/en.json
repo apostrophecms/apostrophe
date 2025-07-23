@@ -251,7 +251,7 @@
   "imageTags": "Image Tags",
   "imageUploadMsg": "Choose from the {{ mediaLibrary }}, {{ yourDevice }}, or drop a file here",
   "imageUploadSupport": "Supports {{ formats }} or {{ last }} formats{{ upTo }}",
-  "imageUploadUpTo": "up to {{ size }}mb",
+  "imageUploadUpTo": "up to {{ maxSize }}",
   "images": "Images",
   "inputFieldIsDisabled": "This field is disabled",
   "insertAndNew": "{{ saveLabel }} {{ typeLabel }} and create a new one.",

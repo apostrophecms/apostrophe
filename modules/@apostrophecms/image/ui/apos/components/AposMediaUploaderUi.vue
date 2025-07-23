@@ -97,14 +97,11 @@ const formats = formattedAccept
   .map((format) => `<strong>${format}</strong>`)
   .join(', ');
 
-const assetModule = apos.modules['@apostrophecms/asset'];
-console.log('assetModule', assetModule);
-/* const maxSize = apos.modules['apostrophecms/asset']; */
-
+const maxSize = getMaxSize();
 const acceptTranslation = $t('apostrophe:imageUploadSupport', {
   formats,
   last: `<strong>${formattedAccept[formattedAccept.length - 1]}</strong>`,
-  upTo: ' ' + $t('apostrophe:imageUploadUpTo', {})
+  upTo: maxSize ? ' ' + $t('apostrophe:imageUploadUpTo', { maxSize }) : ''
 });
 
 const dragging = computed(() => {
@@ -115,6 +112,18 @@ const dragover = computed(() => {
   return dragOverCounter.value > 0;
 });
 
+function getMaxSize() {
+  const maxSize = apos.modules['@apostrophecms/asset'].maxSize;
+  if (typeof maxSize === 'number') {
+    const num = (maxSize / (1024 * 1024)).toFixed(1).toString();
+    return `${num}mb`;
+  }
+  if (typeof maxSize !== 'string') {
+    return null;
+  }
+  const maxSizeStr = maxSize.toLowerCase();
+  return maxSizeStr.trim();
+}
 function dragEnterListener(e) {
   if (e.dataTransfer?.types.includes('Files')) {
     dragCounter.value++;

@@ -307,12 +307,11 @@ module.exports = {
       }
     };
   },
-  methods(self, options) {
+  methods(self) {
     return {
       getBrowserData() {
-        console.dir(options, { depth: 0 });
         return {
-          ...options
+          maxSize: self.options.maxSize
         };
       },
       // Public API for external build modules.
