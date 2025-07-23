@@ -327,7 +327,7 @@
   "mediaDimensions": "Dimensions: {{ width }} 𝗑 {{ height }}",
   "mediaFileSize": "File Size: {{ fileSize }}",
   "mediaKB": "{{ size }}KB",
-  "mediaLibrary": "media Library",
+  "mediaLibrary": "media library",
   "mediaLibraryEndReached": "You've reached the end of the media library.",
   "mediaMB": "{{ size }}MB",
   "mediaManagerErrorRestoring": "Error Restoring",

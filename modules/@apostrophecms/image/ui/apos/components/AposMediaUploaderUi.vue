@@ -119,13 +119,13 @@ function getMaxSize() {
   const maxSize = apos.modules['@apostrophecms/attachment']?.maxSize;
   if (typeof maxSize === 'number') {
     const num = (maxSize / (1024 * 1024)).toFixed(1).toString();
-    return `${num}mb`;
+    return `<strong>${num}MB</strong>`;
   }
   if (typeof maxSize !== 'string') {
     return null;
   }
   const maxSizeStr = maxSize.toLowerCase();
-  return maxSizeStr.trim();
+  return `<strong>${maxSizeStr.trim()}</strong>`;
 }
 
 /**
