@@ -109,7 +109,7 @@ function checkImageValid(image) {
 
 /**
  * @param {File} file - File uploaded by user
- * @returns {boolean} - Returns a boolean false if the image is not valid
+ * @returns {boolean} - Returns a boolean telling if the image is valid
  */
 async function checkFileValid(file) {
   const isValid = await new Promise((resolve, reject) => {
@@ -120,7 +120,7 @@ async function checkFileValid(file) {
     reader.onload = (e) => {
       const img = new Image();
       img.onload = (evt) => {
-        checkImageValid(evt.target);
+        resolve(checkImageValid(evt.target));
       };
 
       img.src = e.target.result; // Use the file data from FileReader
@@ -140,6 +140,9 @@ async function checkFileValid(file) {
   return isValid;
 }
 
+/**
+ * @param {File[]} files - Files user is uploading
+ */
 async function upload(files = []) {
   const [ file ] = files;
   const isValid = await checkFileValid(file);

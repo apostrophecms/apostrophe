@@ -9,7 +9,7 @@
     }"
     @drop.prevent="uploadMedia"
     @dragover.prevent=""
-    @dragenter="draftOverEnter"
+    @dragenter="dragOverEnter"
     @dragleave="dragOverLeave"
     @drop="dragOverLeave"
   >
@@ -97,7 +97,6 @@ const formats = formattedAccept
   .slice(0, formattedAccept.length - 1)
   .map((format) => `<strong>${format}</strong>`)
   .join(', ');
-
 const maxSize = getMaxSize();
 const acceptTranslation = $t('apostrophe:imageUploadSupport', {
   formats,
@@ -113,6 +112,9 @@ const dragover = computed(() => {
   return dragOverCounter.value > 0;
 });
 
+/**
+ * @returns {String} - Formatted string containing configured maximum size
+ */
 function getMaxSize() {
   const maxSize = apos.modules['@apostrophecms/asset'].maxSize;
   if (typeof maxSize === 'number') {
@@ -125,26 +127,38 @@ function getMaxSize() {
   const maxSizeStr = maxSize.toLowerCase();
   return maxSizeStr.trim();
 }
+
+/**
+ * Increment drag counter when leaving document
+ * @param {DragEvent} e
+ */
 function dragEnterListener(e) {
   if (e.dataTransfer?.types.includes('Files')) {
     dragCounter.value++;
   }
 }
 
+/**
+ * Decrement drag counter when leaving document
+ * @param {DragEvent} e
+ */
 function dragLeaveListener(e) {
   if (e.dataTransfer?.types.includes('Files')) {
     dragCounter.value--;
   }
 }
 
+/** Reset drag counter when dropping */
 function dropListener() {
   dragCounter.value = 0;
 }
 
-function draftOverEnter() {
+/** Increment drag over counter when entering a drop zone */
+function dragOverEnter() {
   dragOverCounter.value++;
 }
 
+/** Decrement drag over counter when leaving a drop zone */
 function dragOverLeave() {
   dragOverCounter.value--;
 }
@@ -162,6 +176,7 @@ onUnmounted(() => {
   document.removeEventListener('drop', dropListener);
 });
 
+/** Bind click events on links contained in translated texts */
 function bindEmits() {
   mediaUploaderEl.value.querySelectorAll('[data-apos-click]').forEach((el) => {
     el.addEventListener('click', (event) => {
@@ -179,6 +194,7 @@ function openMedia() {
   emit('media');
 }
 
+/** Used to open the user file system */
 function searchFile() {
   if (props.disabled) {
     return;
@@ -186,9 +202,12 @@ function searchFile() {
   uploadEl.value.click();
 }
 
+/**
+ * @param {DragEvent} event - Dropped file event
+ */
 async function uploadMedia (event) {
   // Set `dragover` in case the media was dropped.
-  dragover.value = false;
+  dragOverCounter.value = 0;
   const files = event.dataTransfer ? event.dataTransfer.files : event.target.files;
   if (!props.accept) {
     emit('upload', files);
@@ -208,7 +227,6 @@ async function uploadMedia (event) {
     });
     return;
   }
-
   emit('upload', files);
 }
 </script>
