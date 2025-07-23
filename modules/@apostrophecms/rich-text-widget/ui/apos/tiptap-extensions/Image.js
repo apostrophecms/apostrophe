@@ -115,7 +115,6 @@ export default options => {
       ];
     },
 
-    // TODO: update alt attibute on edit mode (here?)
     renderHTML({ HTMLAttributes }) {
       const result = [
         'figure',
