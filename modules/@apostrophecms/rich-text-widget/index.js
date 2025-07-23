@@ -937,8 +937,6 @@ module.exports = {
       // Quickly replaces inline image placeholder URLs with
       // actual, SEO-friendly URLs based on `widget._relatedDocs`.
       linkImages(widget, content) {
-        console.log('----');
-        console.log('content', content);
         // "Why no regexps?" We need to do this as quickly as we can.
         // indexOf and lastIndexOf are much faster.
         let i;
@@ -947,7 +945,6 @@ module.exports = {
           while (true) {
             const target = `${self.apos.modules['@apostrophecms/image'].action}/${doc.aposDocId}/src`;
             i = content.indexOf(target, offset);
-            console.log('i', i);
             if (i === -1) {
               break;
             }
@@ -957,49 +954,37 @@ module.exports = {
             const left = content.lastIndexOf('<', i);
             const src = content.indexOf(' src="', left);
             const close = content.indexOf('"', src + 6);
-            if ((left !== -1) && (src !== -1) && (close !== -1)) {
-              content = content.substring(0, src + 5) + doc.attachment._urls[self.apos.modules['@apostrophecms/image'].getLargestSize()] + content.substring(close + 1);
 
-              // Update or insert alt attribute
-              const tagEnd = content.indexOf('>', left);
-              console.log('tagEnd', tagEnd);
-              if (tagEnd !== -1) {
-                let imgTag = content.substring(left, tagEnd + 1);
-                console.log('imgTag', imgTag);
-                const altAttr = ' alt="';
-                const altIndex = imgTag.indexOf(altAttr);
-                console.log('altIndex', altIndex);
-                if (altIndex !== -1) {
-                  // Replace the existing alt value
-                  const altValueStart = altIndex + altAttr.length;
-                  console.log('altValueStart', altValueStart);
-                  const altValueEnd = imgTag.indexOf('"', altValueStart);
-                  console.log('altValueEnd', altValueEnd);
-                  imgTag = imgTag.substring(0, altValueStart) +
-                    self.apos.util.escapeHtml(doc.alt || '') +
-                    imgTag.substring(altValueEnd);
-                  console.log('updated imgTag', imgTag);
-                } else {
-                  // Insert alt attribute before closing >
-                  imgTag = imgTag.replace(
-                    /\/?>$/,
-                    ` alt="${self.apos.util.escapeHtml(doc.alt || '')}"$&`
-                  );
-                  console.log('inserted imgTag', imgTag);
-                }
-                // Replace the tag in content
-                content = content.substring(0, left) +
-                  imgTag + content.substring(tagEnd + 1);
-
-                console.log('updated content', content);
-                console.log('---');
-              }
-
-            } else {
+            if (left === -1 || src === -1 || close === -1) {
               // So we don't get stuck in an infinite loop
-              console.log('---');
               break;
             }
+
+            content = content.substring(0, src + 5) + doc.attachment._urls[self.apos.modules['@apostrophecms/image'].getLargestSize()] + content.substring(close + 1);
+
+            const tagEnd = content.indexOf('>', left);
+
+            if (tagEnd === -1) {
+              continue;
+            }
+
+            let imgTag = content.substring(left, tagEnd + 1);
+
+            const altAttr = ' alt="';
+            const altIndex = imgTag.indexOf(altAttr);
+
+            if (altIndex === -1) {
+              continue;
+            }
+
+            const altValueStart = altIndex + altAttr.length;
+            const altValueEnd = imgTag.indexOf('"', altValueStart);
+
+            // Replace the existing alt value in the img tag
+            imgTag = imgTag.substring(0, altValueStart) + self.apos.util.escapeHtml(doc.alt || '') + imgTag.substring(altValueEnd);
+
+            // Replace the img tag in content
+            content = content.substring(0, left) + imgTag + content.substring(tagEnd + 1);
           }
         }
         return content;
