@@ -10,7 +10,8 @@
     @drop.prevent="uploadMedia"
     @dragover.prevent=""
     @dragenter="draftOverEnter"
-    @dragleave="dragOverLeaver"
+    @dragleave="dragOverLeave"
+    @drop="dragOverLeave"
   >
     <div class="apos-media-uploader__inner">
       <!-- if we want animations.. -->
@@ -144,7 +145,7 @@ function draftOverEnter() {
   dragOverCounter.value++;
 }
 
-function dragOverLeaver() {
+function dragOverLeave() {
   dragOverCounter.value--;
 }
 
