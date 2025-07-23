@@ -5,7 +5,7 @@
 ### Adds
 
 * Adds any alt text found in an attribute to the media library attachment during import of rich text inline images by API
-* Adds `prependNodes` and `appendNodes` methods to every module. These methods allow you to inject HTML to every page using a `node` declaration. More information can be found in the [documentation](https://docs.apostrophecms.org/reference/modules/module.html#prepend-and-append-nodes). 
+* Adds `prependNodes` and `appendNodes` methods to every module. These methods allow you to inject HTML to every page using a `node` declaration.
 
 ### Changes
 
