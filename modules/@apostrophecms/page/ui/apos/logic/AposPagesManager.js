@@ -428,6 +428,9 @@ export default {
       }
 
       function filterValidPages(page) {
+        if (Array.isArray(page)) {
+          return page.map(filterValidPages).filter(p => p._id);
+        }
         const result = {};
         if (!self.moduleOptions.validPageTypes.includes(page.type)) {
           return result;
