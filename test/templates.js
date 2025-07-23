@@ -36,14 +36,23 @@ describe('Templates', function() {
       root: module,
       modules: {
         'express-test': {},
-        'template-test': {},
-        'template-subclass-test': {},
+        'template-test': {
+          options: {
+            ignoreNoCodeWarning: true
+          }
+        },
+        'template-subclass-test': {
+          options: {
+            ignoreNoCodeWarning: true
+          }
+        },
         'template-options-test': {},
         'inject-test': {},
         'with-layout-page': {
           extend: '@apostrophecms/page-type'
         },
         'fragment-page': {
+          extend: '@apostrophecms/page-type',
           components(self) {
             return {
               async test(req, input) {
@@ -63,6 +72,89 @@ describe('Templates', function() {
                 await Promise.delay(100);
                 input.afterDelay = true;
                 return input;
+              }
+            };
+          }
+        },
+        'inject-nodes': {
+          init(self) {
+            self.prependNodes('head', 'prependHeadTest');
+            self.appendNodes('head', 'appendHeadTest');
+            self.prependNodes('main', 'prependMainTest');
+            self.appendNodes('main', 'appendMainTest');
+            self.appendNodes('body', 'appendBodyTest');
+          },
+          methods(self) {
+            return {
+              prependHeadTest(req) {
+                return [
+                  {
+                    name: 'meta',
+                    attrs: {
+                      name: 'prepend-node-head-test>'
+                    }
+                  }
+                ];
+              },
+              appendHeadTest(req) {
+                return [
+                  {
+                    name: 'meta',
+                    attrs: {
+                      name: 'append-node-head-test>'
+                    }
+                  }
+                ];
+              },
+              prependMainTest(req) {
+                return [
+                  {
+                    name: 'h4',
+                    body: [
+                      {
+                        text: 'prepend-node-main-test<test>'
+                      }
+                    ]
+                  }
+                ];
+              },
+              appendMainTest(req) {
+                return [
+                  {
+                    name: 'h4',
+                    body: [
+                      {
+                        text: 'append-node-main-test<test>'
+                      }
+                    ]
+                  }
+                ];
+              },
+              appendBodyTest(req) {
+                return [
+                  {
+                    comment: 'append-node-body-comment-test'
+                  },
+                  {
+                    raw: '<h4>append-node-body-raw-test</h4>'
+                  },
+                  {
+                    name: 'h3',
+                    attrs: {
+                      boolean: true,
+                      ignored1: false,
+                      ignored2: null,
+                      ignored3: undefined,
+                      truthy: 'true',
+                      falsy: 'false'
+                    },
+                    body: [
+                      {
+                        text: 'append-node-body-misc-test'
+                      }
+                    ]
+                  }
+                ];
               }
             };
           }
@@ -205,6 +297,72 @@ describe('Templates', function() {
     assert.ok(appendDevWebpackIndex > separatorIndex);
     assert.ok(appendDevIndex > separatorIndex);
     assert.ok(appendDevWebpackIndex < appendDevIndex);
+  });
+
+  it('should render pages successfully with nodes prepend and append', async function() {
+    const req = apos.task.getReq();
+    const html = (await apos.modules['with-layout-page'].renderPage(req, 'page'))
+      .split('<body');
+    const head = html[0];
+    const body = html[1];
+
+    const prependNodeHeadTestIndex = head.indexOf('<meta name="prepend-node-head-test&gt;" />');
+    const appendNodeHeadTestIndex = head.indexOf('<meta name="append-node-head-test&gt;" />');
+    const prependNodeMainTestIndex = body.indexOf('<h4>prepend-node-main-test&lt;test&gt;</h4>');
+    const appendNodeMainTestIndex = body.indexOf('<h4>append-node-main-test&lt;test&gt;</h4>');
+
+    // Duplicate checks
+    const prependNodeHeadLastIndex = head.lastIndexOf('<meta name="prepend-node-head-test&gt;" />');
+    const appendNodeHeadLastIndex = head.lastIndexOf('<meta name="append-node-head-test&gt;" />');
+    const prependNodeMainLastIndex = body.lastIndexOf('<h4>prepend-node-main-test&lt;test&gt;</h4>');
+    const appendNodeMainLastIndex = body.lastIndexOf('<h4>append-node-main-test&lt;test&gt;</h4>');
+
+    // Comment/raw checks
+    const appendNodeBodyCommentTestIndex = body.indexOf('<!-- append-node-body-comment-test -->');
+    const appendNodeBodyRawTestIndex = body.indexOf('<h4>append-node-body-raw-test</h4>');
+
+    // Attribute handling checks
+    const appendNodeBodyMiscTestIndex = body.indexOf(
+      '<h3 boolean truthy="true" falsy="false">append-node-body-misc-test</h3>'
+    );
+
+    const actual = {
+      prependHeadExist: prependNodeHeadTestIndex !== -1,
+      appendHeadExist: appendNodeHeadTestIndex !== -1,
+      prependHeadNoDuplicate: prependNodeHeadTestIndex === prependNodeHeadLastIndex,
+      appendHeadNoDuplicate: appendNodeHeadTestIndex === appendNodeHeadLastIndex,
+      headOrder: prependNodeHeadTestIndex < appendNodeHeadTestIndex,
+      prependMainExist: prependNodeMainTestIndex !== -1,
+      appendMainExist: appendNodeMainTestIndex !== -1,
+      prependMainNoDuplicate: prependNodeMainTestIndex === prependNodeMainLastIndex,
+      appendMainNoDuplicate: appendNodeMainTestIndex === appendNodeMainLastIndex,
+      mainOrder: prependNodeMainTestIndex < appendNodeMainTestIndex,
+      appendBodyCommentExist: appendNodeBodyCommentTestIndex !== -1,
+      appendBodyRawExist: appendNodeBodyRawTestIndex !== -1,
+      appendNodeBodyAttrsCheck: appendNodeBodyMiscTestIndex !== -1
+    };
+
+    const expected = {
+      prependHeadExist: true,
+      appendHeadExist: true,
+      prependHeadNoDuplicate: true,
+      appendHeadNoDuplicate: true,
+      headOrder: true,
+      prependMainExist: true,
+      appendMainExist: true,
+      prependMainNoDuplicate: true,
+      appendMainNoDuplicate: true,
+      mainOrder: true,
+      appendBodyCommentExist: true,
+      appendBodyRawExist: true,
+      appendNodeBodyAttrsCheck: true
+    };
+
+    assert.deepEqual(
+      actual,
+      expected,
+      'There was an issue with the prepend/append node rendering.'
+    );
   });
 
   it('should not escape <br /> generated by the nlbr filter, but should escape tags in its input', async function() {
