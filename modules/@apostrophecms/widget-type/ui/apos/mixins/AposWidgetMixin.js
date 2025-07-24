@@ -60,8 +60,7 @@ export default {
         _docId: this.docId,
         widget,
         areaFieldId: this.areaFieldId,
-        type: this.type,
-        livePreview: aposLivePreview
+        type: this.type
       };
       try {
         if (this.rendering && (isEqual(this.rendering.parameters, parameters))) {
@@ -72,7 +71,10 @@ export default {
           // have "busy" for clarity
           const result = await apos.http.post(`${apos.area.action}/render-widget?aposEdit=1&aposMode=${this.mode}`, {
             busy: !aposLivePreview,
-            body: parameters
+            body: {
+              ...parameters,
+              livePreview: aposLivePreview
+            }
           });
           //
           if (result !== 'aposLivePreviewSchemaNotYetValid') {

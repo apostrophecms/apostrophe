@@ -15,6 +15,7 @@
 
 * Let the `@apostrophecms/page:unpark` task unpark all parked pages with the given slug, not just the first one.
 * Exclude unknown page types from the page manager.
+* Remove multiple calls to render-widget when switch to edit mode.
 
 ## 4.19.0 (2025-07-09)
 
