@@ -58,7 +58,7 @@ const $t = inject('i18n');
 const props = defineProps({
   icon: {
     type: String,
-    default: 'image-plus-icon'
+    default: 'image-icon'
   },
   diabled: {
     type: Boolean,
@@ -230,7 +230,11 @@ async function uploadMedia (event) {
   emit('upload', files);
 }
 </script>
-
+<style>
+  .apos-is-highlighted .apos-media-uploader {
+    outline-color: transparent !important;
+  }
+</style>
 <style lang="scss" scoped>
 .apos-media-uploader {
   @include apos-button-reset();
@@ -240,12 +244,13 @@ async function uploadMedia (event) {
     box-sizing: border-box;
     align-items: center;
     justify-content: center;
-    border: 1px dashed var(--a-base-3);
+    border-radius: var(--a-border-radius);
+    outline: 1px dashed var(--a-base-5);
     color: inherit;
     grid-column: 1 / 3;
     grid-row: 1 / 3;
-    border-radius: 16px;
-    background-color: var(--a-base-9);
+    min-height: 350px;
+    background-color: var(--a-base-10);
   }
 
   &.apos-is-dragging {
@@ -286,7 +291,7 @@ async function uploadMedia (event) {
   @include apos-transition($duration: 0.2s);
 
   :deep(svg) {
-    fill: var(--a-base-8);
+    fill: var(--a-base-7);
   }
 }
 
@@ -298,11 +303,12 @@ async function uploadMedia (event) {
 }
 
 :deep(.apos-media-uploader__btn) {
+  all: unset;
   @include apos-button-reset();
 
   & {
     color: var(--a-primary);
-    font-weight: var(--a-weight-base);
+    font-weight: var(--a-weight-light);
     text-decoration: underline;
   }
 
