@@ -31,15 +31,20 @@ describe('Big Upload', function() {
                   try {
                     received = true;
                     assert(req.files);
-                    assert(req.files.file);
-                    assert.strictEqual(req.files.file.name, 'crop_image.png');
-                    const buffer2 = fs.readFileSync(req.files.file.path);
+                    // With multer, req.files is an array when using .any()
+                    const file = req.files.find(f => f.fieldname === 'file') || req.files[0];
+                    assert(file);
+                    assert.strictEqual(file.originalname || file.name, 'crop_image.png');
+                    const buffer2 = fs.readFileSync(file.path);
                     assert(buffer.equals(buffer2));
                     return {
                       ok: true
                     };
                   } finally {
-                    fs.unlinkSync(req.files.file.path);
+                    const file = req.files.find(f => f.fieldname === 'file') || req.files[0];
+                    if (file) {
+                      fs.unlinkSync(file.path);
+                    }
                   }
                 }
               ]

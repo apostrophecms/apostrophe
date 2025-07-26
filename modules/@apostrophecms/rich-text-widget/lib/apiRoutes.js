@@ -1,5 +1,5 @@
 const fs = require('node:fs');
-const connectMultiparty = require('connect-multiparty');
+const multer = require('multer');
 const { pipeline } = require('stream/promises');
 const { parse: csvParse } = require('csv-parse');
 const { Transform } = require('stream');
@@ -9,14 +9,14 @@ module.exports = self => {
   return {
     post: {
       generateCsvTable: [
-        connectMultiparty(),
+        multer({ dest: require('os').tmpdir() }).single('file'),
         async (req) => {
-          const { file } = req.files || {};
+          const file = req.file;
           if (!file) {
             throw self.apos.error('invalid', 'A file is required');
           }
 
-          const extension = file.name.split('.').pop();
+          const extension = file.originalname.split('.').pop();
           if (extension !== 'csv') {
             throw self.apos.error('invalid', 'Only csv files are supported');
           }
