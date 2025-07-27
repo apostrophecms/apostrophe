@@ -163,7 +163,7 @@ module.exports = (self) => ({
         });
       }
       let n = 0;
-      req.files = [];
+      req.files = {};
       for (const [ param, {
         name, type, chunks
       } ] of Object.entries(bigUpload.files)) {
@@ -188,12 +188,11 @@ module.exports = (self) => ({
         }
         await out.close();
         n++;
-        req.files.push({
-          fieldname: param,
-          originalname: name,
+        req.files[param] = {
+          name,
           path: tmp,
-          mimetype: type
-        });
+          type
+        };
       }
       return next();
     } catch (e) {
