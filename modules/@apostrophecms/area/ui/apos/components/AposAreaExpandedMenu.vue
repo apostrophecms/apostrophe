@@ -29,8 +29,27 @@
               ]"
             >
               <button
+                v-if="group.type === 'operations'"
+                v-for="(item, itemIndex) in group.operations"
+                :key="`operation-{{itemIndex}}`"
+                :data-apos-focus-priority="itemIndex === 0 ? true : null"
+                class="apos-operation"
+                @click="operation(item)"
+              >
+                <p class="apos-operation__label">
+                  {{ $t(item.label) }}
+                </p>
+                <p
+                  v-if="item.description"
+                  class="apos-operation__help"
+                >
+                  {{ $t(item.description) }}
+                </p>
+              </button>
+              <button
+                v-else
                 v-for="(item, itemIndex) in group.widgets"
-                :key="itemIndex"
+                :key="`widget-{{itemIndex}}`"
                 :data-apos-focus-priority="itemIndex === 0 ? true : null"
                 class="apos-widget"
                 @click="add(item)"
@@ -65,6 +84,7 @@
                 </p>
               </button>
             </div>
+            <hr class="apos-expanded-divider" v-if="group.type !== 'widgets'" />
           </div>
         </template>
       </AposModalBody>
@@ -76,9 +96,9 @@
 export default {
   name: 'AposAreaExpandedMenu',
   props: {
-    field: {
-      type: Object,
-      default: null
+    fieldId: {
+      type: String,
+      required: true
     },
     options: {
       type: Object,
@@ -136,8 +156,8 @@ export default {
 
     this.groups = [
       ...this.getClipboardGroups(),
-      ...this.groups,
       ...this.getCreateWidgetOperationsGroups(),
+      ...this.groups
     ];
   },
   computed: {
@@ -150,12 +170,16 @@ export default {
       return count ? +count > 1 && +count < 4 : true;
     },
     getCreateWidgetOperationsGroups() {
-      const result = this.moduleOptions.createWidgetOperations.map(operation => ({
-        type: 'operation',
-        ...operation
-      }));
-      console.log('result is:', result);
-      return result;
+      const operations = this.moduleOptions.createWidgetOperations;
+      if (operations.length === 0) {
+        return [];
+      }
+      return [
+        {
+          type: 'operations',
+          operations
+        }
+      ];
     },
     getClipboardGroups() {
       const clipboard = apos.area.widgetClipboard.get();
@@ -190,7 +214,8 @@ export default {
     createGroup(config) {
       const group = {
         columns: +config.columns || 3,
-        widgets: []
+        widgets: [],
+        type: 'widgets'
       };
 
       if (config.label) {
@@ -230,6 +255,22 @@ export default {
       };
       this.$emit('modal-result', data);
       this.modal.showModal = false;
+    },
+    async operation(item) {
+      const props = {
+        ...item.props,
+        options: this.options,
+        fieldId: this.fieldId
+      };
+      const widget = await apos.modal.execute(item.modal, props);
+      if (widget) {
+        const data = {
+          widget,
+          index: this.index
+        };
+        this.$emit('modal-result', data);
+        this.modal.showModal = false;
+      }
     }
   }
 };
@@ -380,5 +421,9 @@ export default {
 .apos-widget__label {
   line-height: 1.2;
   margin-bottom: 5px;
+}
+
+.apos-expanded-divider {
+  margin-top: 2em;
 }
 </style>
