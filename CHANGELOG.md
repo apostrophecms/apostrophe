@@ -1,5 +1,18 @@
 # Changelog
 
+## UNRELEASED
+
+### Adds
+
+* Modules can now call `apos.area.addCreateWidgetOperation` to register a custom operation that invokes a modal and inserts the widget returned by that modal. These operations are offered as choices in all "add widget" menus, both regular and expanded.
+* `AposDocEditor` now accepts a `values` prop, which can be used to pass an object of initial values for some or all fields. Use of this prop is optional. It is not supported when editing existing documents.
+* `apos.doc.edit` now accepts an optional `values` object as the final parameter, containing initial values for some or all fields. This is supported only when editing existing documents.
+* When specifying a modal name to be executed, developers may now register "transformers" to be invoked first, using pipe syntax. For example, the modal name `aposSectionTemplateLibraryWidgetToDoc|AposDocEditor` will invoke the transformer `aposSectionTemplateLibraryWidgetToDoc` with the original props, and pass the returned result to `AposDocEditor`. Note that transformers are awaited. Transformers are registered in frontend admin UI code by passing a name and a function to `apos.ui.addTransformer`.
+
+### Changes
+
+* A `clone-widget.js` file has been factored out, providing a universal way to return a clone of an existing widget which is distinct from the original.
+
 ## 4.18.0 (2025-06-11)
 
 ### Adds
