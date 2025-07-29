@@ -9,11 +9,23 @@ export default {
       ? this.modelValue.data
       : [];
   },
+  watch: {
+    'modelValue.data'(oldValue, newValue) {
+      console.log({
+        oldValue,
+        newValue
+      });
+    }
+  },
   methods: {
     getChoiceId(uid, value) {
       return (uid + JSON.stringify(value)).replace(/\s+/g, '');
     },
     watchValue () {
+      console.log({
+        next: this.next,
+        modelValueData: this.modelValue.data
+      });
       this.error = this.modelValue.error;
       this.next = this.modelValue.data || [];
     },
@@ -63,6 +75,38 @@ export default {
         this.modelValue.data = this.modelValue.data.filter((val) => val !== choice.value);
       } else {
         this.modelValue.data.push(choice.value);
+      }
+      console.log({
+        choice: choice.value,
+        data: this.modelValue.data
+      });
+    },
+    change(choice) {
+      console.log({
+        choice,
+        value: choice.value,
+        data: this.modelValue.data
+      });
+
+      this.modelValue.data = this.modelValue.data.includes(choice.value)
+        ? this.modelValue.data.filter(value => value !== choice.value)
+        : this.modelValue.data.concat(event.value);
+
+      console.log({
+        choice,
+        data: this.modelValue.data
+      });
+    }
+  },
+  computed: {
+    checkProxy: {
+      get() {
+        console.log('get', { data: this.modelValue.data });
+        return this.modelValue.data;
+      },
+      set(val) {
+        console.log('set', { val });
+        this.$emit('update:modelValue', val);
       }
     }
   }

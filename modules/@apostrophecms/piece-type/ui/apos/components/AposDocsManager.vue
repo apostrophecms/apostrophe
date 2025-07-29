@@ -448,11 +448,22 @@ export default {
       });
     },
     async filter(filter, value) {
+      console.log('top filter', {
+        filterValues: this.filterValues[filter],
+        value,
+        isArray: Array.isArray(value)
+      });
       if (this.filterValues[filter] === value) {
         return;
       }
 
-      this.filterValues[filter] = value;
+      this.filterValues[filter] = Array.isArray(value)
+        ? (this.filterValues[filter] || []).concat(value)
+        : value;
+      console.log('top filter #2', {
+        filterValues: this.filterValues[filter],
+        value
+      });
       this.currentPage = 1;
 
       await this.managePieces();

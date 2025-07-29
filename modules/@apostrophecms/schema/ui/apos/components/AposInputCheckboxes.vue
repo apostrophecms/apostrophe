@@ -20,10 +20,13 @@
         v-else
         :id="getChoiceId(uid, choice.value)"
         :key="choice.value"
-        v-model="modelValue.data"
+        v-model="checkProxy"
         :for="getChoiceId(uid, choice.value)"
         :choice="choice"
-        :field="field"
+        :field="{
+          ...field,
+          name: choice.value
+        }"
       />
     </template>
   </AposInputWrapper>

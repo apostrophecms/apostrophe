@@ -73,6 +73,11 @@ export default {
     filterSets() {
       const sets = [];
       this.filters.forEach(filter => {
+        console.log({
+          filter,
+          choices: this.choices,
+          values: this.values
+        });
         sets.push({
           name: filter.name,
           key: `${this.generation}:${filter.name}`,
@@ -88,7 +93,8 @@ export default {
           value: {
             data: this.values[filter.name]
           },
-          status: {}
+          status: {},
+          def: []
         });
       });
       return sets;
@@ -104,6 +110,10 @@ export default {
   },
   methods: {
     input(value, filterName) {
+      console.log({
+        value,
+        filterName
+      });
       this.$emit('input', filterName, value);
     },
     addNullChoice(filter, choices) {
