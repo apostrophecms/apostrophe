@@ -17,6 +17,12 @@
 * Let the `@apostrophecms/page:unpark` task unpark all parked pages with the given slug, not just the first one.
 * Exclude unknown page types from the page manager.
 
+
+### Security
+
+* Clear an npm audit warning by replacing `connect-multiparty` with `multer`. Thanks to [Radhakrishnan Mohan](https://github.com/RadhaKrishnan) for this contribution.
+* To be clear, this was never an actual security vulnerability. The CVE in question is disputed, and for good reasons. However, since `connect-multiparty` is no longer maintained, it makes sense to move to `multer`.
+
 ## 4.19.0 (2025-07-09)
 
 ### Adds

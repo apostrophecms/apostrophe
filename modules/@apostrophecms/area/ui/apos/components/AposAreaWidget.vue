@@ -26,8 +26,8 @@
         :class="labelsClasses"
       >
         <ol
-          @click="isSuppressingWidgetControls = false"
           class="apos-area-widget__breadcrumbs"
+          @click="isSuppressingWidgetControls = false"
         >
           <li
             class="
