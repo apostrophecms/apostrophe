@@ -6,6 +6,7 @@
     <AposMediaUploaderUi
       :min-size="props.options?.minSize"
       :accept="accept"
+      :placeholder="widgetModuleOptions.placeholderUrl"
       @upload="upload"
       @media="selectFromManager"
     />
@@ -25,7 +26,9 @@ import {
 import { useAposWidget } from 'Modules/@apostrophecms/widget-type/composables/AposWidget';
 import aposWidgetProps from 'Modules/@apostrophecms/widget-type/composables/AposWidgetProps';
 
-const moduleOptions = window.apos.modules['@apostrophecms/image'];
+const moduleOptions = apos.modules['@apostrophecms/image'];
+const widgetModuleOptions = apos.modules['@apostrophecms/image-widget'];
+console.log('widgetModuleOptions', widgetModuleOptions);
 const accept = moduleOptions.schema.find(field => field.name === 'attachment').accept;
 
 const emit = defineEmits([ 'edit', 'update' ]);

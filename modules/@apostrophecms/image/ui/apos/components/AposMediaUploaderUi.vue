@@ -2,6 +2,7 @@
   <label
     ref="mediaUploaderEl"
     class="apos-media-uploader"
+    :style="uploaderStyle"
     :class="{
       'apos-media-uploader--disabled': props.disabled,
       'apos-is-dragging': dragging,
@@ -71,6 +72,10 @@ const props = defineProps({
   accept: {
     type: String,
     default: 'gif,.jpg,.png,.svg,.webp,.jpeg'
+  },
+  placeholder: {
+    type: String,
+    default: null
   }
 });
 const emit = defineEmits([ 'media', 'upload' ]);
@@ -110,6 +115,16 @@ const dragging = computed(() => {
 
 const dragover = computed(() => {
   return dragOverCounter.value > 0;
+});
+
+const uploaderStyle = computed(() => {
+  if (!props.placeholder) {
+    return {};
+  }
+
+  return {
+    'background-image': `url(${props.placeholder})`
+  };
 });
 
 /**
@@ -232,6 +247,7 @@ async function uploadMedia (event) {
 </script>
 <style>
   .apos-is-highlighted .apos-media-uploader {
+    /* stylelint-disable-next-line declaration-no-important */
     outline-color: transparent !important;
   }
 </style>
@@ -240,6 +256,7 @@ async function uploadMedia (event) {
   @include apos-button-reset();
 
   & {
+    position: relative;
     display: flex;
     box-sizing: border-box;
     align-items: center;
@@ -251,6 +268,20 @@ async function uploadMedia (event) {
     grid-row: 1 / 3;
     min-height: 350px;
     background-color: var(--a-base-10);
+    background-position: center;
+    background-repeat: no-repeat;
+    background-size: cover;
+  }
+
+  &:before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(255, 255, 255, 0.5);
+    z-index: 0;
   }
 
   &.apos-is-dragging {
@@ -285,6 +316,7 @@ async function uploadMedia (event) {
   width: 100%;
   height: 100%;
   padding: 20px;
+  z-index: 1
 }
 
 .apos-media-uploader__icon {
@@ -303,10 +335,10 @@ async function uploadMedia (event) {
 }
 
 :deep(.apos-media-uploader__btn) {
-  all: unset;
   @include apos-button-reset();
 
   & {
+    all: unset;
     color: var(--a-primary);
     font-weight: var(--a-weight-light);
     text-decoration: underline;
