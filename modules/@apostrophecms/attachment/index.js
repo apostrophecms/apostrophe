@@ -159,7 +159,6 @@ module.exports = {
       post: {
         upload: [
           self.canUpload,
-          //In the existing code, we are reading the zeroth element from the files array object, which results in processing only a single file. Therefore, I am currently reading just one file from the Multer package.
           require('multer')({ dest: require('os').tmpdir() }).single('file'),
           async function (req) {
             try {
@@ -175,7 +174,6 @@ module.exports = {
 
               return attachment;
             } finally {
-              //Hence I am reading the single file from the upload and I am checking the condtion for the same
               if (req.file) {
                 try {
                   fs.unlinkSync(req.file.path);

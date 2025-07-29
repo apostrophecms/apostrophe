@@ -16,6 +16,7 @@
 
 * Let the `@apostrophecms/page:unpark` task unpark all parked pages with the given slug, not just the first one.
 * Exclude unknown page types from the page manager.
+* Resolved an issue affecting `withRelationships` with two or more steps. This issue could cause a document to appear to be related to the same document more than once.
 
 ## 4.19.0 (2025-07-09)
 
