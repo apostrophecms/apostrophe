@@ -138,6 +138,8 @@ module.exports = {
     };
   },
   init(self) {
+    self.hidePlaceholder = self.options.placeholder === false;
+    self.options.placeholder = true;
     self.determineBestAssetUrl('placeholder');
   },
   handlers(self) {
@@ -179,12 +181,14 @@ module.exports = {
       }
     };
   },
-  extendMethods() {
+  extendMethods(self) {
     return {
-      sanitize(_super, req, input, widgetOpts, convertOpts) {
-        input.aposPlaceholder = true;
-        _super(req, input, widgetOpts, convertOpts);
-
+      getBrowserData(_super, req) {
+        return {
+          ..._super(req),
+          hidePlaceholder: self.hidePlaceholder,
+          placeholderUrl: self.options.placeholderUrl
+        };
       }
     };
   }

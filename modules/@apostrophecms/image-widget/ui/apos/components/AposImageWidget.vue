@@ -42,10 +42,9 @@ const hasImage = computed(() => {
 });
 
 const placeholder = computed(() => {
-  if (widgetModuleOptions.placeholder === false) {
-    return null;
-  }
-  return widgetModuleOptions.placeholderUrl || null;
+  return widgetModuleOptions.hidePlaceholder
+    ? null
+    : widgetModuleOptions.placeholderUrl;
 });
 
 watch(() => props.modelValue, async (newVal) => {
