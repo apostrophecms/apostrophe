@@ -9,12 +9,20 @@
 
 ### Changes
 
-- Changes handling of `order` and `groups` in the `admin-bar` module to respect, rather that reverse, the order of items
+* Changes handling of `order` and `groups` in the `admin-bar` module to respect, rather that reverse, the order of items
+* Interacting with the text inside a rich text widget will hide the widget controls to prevent awkawrd text selection.
 
 ### Fixes
 
 * Let the `@apostrophecms/page:unpark` task unpark all parked pages with the given slug, not just the first one.
 * Exclude unknown page types from the page manager.
+* Resolved an issue affecting `withRelationships` with two or more steps. This issue could cause a document to appear to be related to the same document more than once.
+
+
+### Security
+
+* Clear an npm audit warning by replacing `connect-multiparty` with `multer`. Thanks to [Radhakrishnan Mohan](https://github.com/RadhaKrishnan) for this contribution.
+* To be clear, this was never an actual security vulnerability. The CVE in question is disputed, and for good reasons. However, since `connect-multiparty` is no longer maintained, it makes sense to move to `multer`.
 
 ## 4.19.0 (2025-07-09)
 
