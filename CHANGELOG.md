@@ -17,7 +17,7 @@
 * Let the `@apostrophecms/page:unpark` task unpark all parked pages with the given slug, not just the first one.
 * Exclude unknown page types from the page manager.
 * Resolved an issue affecting `withRelationships` with two or more steps. This issue could cause a document to appear to be related to the same document more than once.
-
+* Fixed a regression that prevented multiple variations of `p` with different classes from being recognized again when reopening the rich text editor, even if they are all on the style menu. This was caused by knock-on effects of upstream changes in tiptap and prosemirror and our previous efforts to mitigate these. Those upstream changes were correct, but they did have certain side effects in ApostropheCMS. By more fully specifying the desired behavior, we have now fully corrected the issue at the ApostropheCMS level.
 
 ### Security
 
