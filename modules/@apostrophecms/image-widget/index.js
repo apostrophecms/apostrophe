@@ -7,8 +7,6 @@ module.exports = {
     dimensionAttrs: false,
     placeholder: true,
     initialModal: false,
-    placeholderClass: false,
-    placeholderImage: 'jpg',
     linkWithType: [ '@apostrophecms/any-page-type' ],
     // Should we write e.g. a reset style for the `figure` element?
     inlineStyles: true,
@@ -178,6 +176,15 @@ module.exports = {
           }
           return self.apos.modules[type].options?.label ?? type;
         }
+      }
+    };
+  },
+  extendMethods() {
+    return {
+      sanitize(_super, req, input, widgetOpts, convertOpts) {
+        input.aposPlaceholder = true;
+        _super(req, input, widgetOpts, convertOpts);
+
       }
     };
   }
