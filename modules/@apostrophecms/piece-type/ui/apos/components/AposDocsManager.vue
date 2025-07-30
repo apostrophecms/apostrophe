@@ -469,7 +469,7 @@ export default {
       }
     },
     bindShortcuts() {
-      this.modalStore.onKeyDown(this.$refs.modal, this.shortcutNew);
+      this.modalStore.onKeyDown(this.$el, this.shortcutNew);
     },
     destroyShortcuts() {
       this.modalStore.offKeyDown(this.shortcutNew);
