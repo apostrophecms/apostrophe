@@ -117,7 +117,7 @@ export default {
       this.$emit('input', filterName, value);
     },
     addNullChoice(filter, choices) {
-      if (filter.required) {
+      if (filter.required || filter.inputType === 'checkbox') {
         return choices;
       }
       if (!choices) {

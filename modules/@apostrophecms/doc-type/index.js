@@ -1619,7 +1619,7 @@ module.exports = {
               !filter.required &&
               !filter.choices.find((choice) => choice.value === null)
             ) {
-              filter.def = null;
+              filter.def = filter.inputType === 'checkbox' ? [] : null;
               filter.choices.push({
                 value: null,
                 label: 'apostrophe:none'
@@ -1628,7 +1628,9 @@ module.exports = {
           } else {
             // Dynamic choices from the REST API, but
             // we need a label for "no opinion"
-            filter.nullLabel = 'apostrophe:filterMenuChooseOne';
+            filter.nullLabel = filter.inputType === 'radio'
+              ? 'apostrophe:any'
+              : 'apostrophe:filterMenuChooseOne';
           }
         });
       },
