@@ -34,6 +34,7 @@ const Promise = require('bluebird');
 const path = require('path');
 const { stripIndent } = require('common-tags');
 const { SemanticAttributes } = require('@opentelemetry/semantic-conventions');
+const voidElements = require('void-elements');
 
 module.exports = {
   options: { alias: 'template' },
@@ -50,9 +51,11 @@ module.exports = {
       async inject(req, data) {
         const key = `${data.end}-${data.where}`;
         const components = self.getInjectedComponents(key, data);
+        const html = data.when ? '' : self.injectNodes(req, key);
 
         return {
-          components
+          components,
+          html
         };
       }
     };
@@ -67,12 +70,10 @@ module.exports = {
     };
 
     self.envs = {};
-
     self.filters = {};
-
     self.nunjucks = self.options.language || require('nunjucks');
-
     self.insertions = {};
+    self.runtimeNodes = {};
 
   },
   handlers(self) {
@@ -1073,6 +1074,141 @@ module.exports = {
         };
       },
 
+      prependNodes(location, moduleName, method) {
+        self.registerRuntimeNodes('prepend', location, moduleName, method);
+      },
+
+      appendNodes(location, moduleName, method) {
+        self.registerRuntimeNodes('append', location, moduleName, method);
+      },
+
+      registerRuntimeNodes(end, location, moduleName, method) {
+        if (typeof method !== 'string') {
+          throw new Error(
+            `Do not pass a function to "apos.template.${end}Nodes()". ` +
+            'Pass a string with the name of the method to call on the module, ' +
+            'e.g. "myMethod"'
+          );
+        }
+        if (typeof moduleName !== 'string') {
+          throw new Error(
+            `Invalid "moduleName" detected in "apos.template.${end}Nodes()". ` +
+            'Pass a string with the name of the module, e.g. "some-module"'
+          );
+        }
+
+        if (typeof self.apos.modules[moduleName] === 'undefined') {
+          throw new Error(
+            `Invalid module "${moduleName}"detected in "apos.template.${end}Nodes()". ` +
+            'Make sure the module is registered in your "app.js" file.'
+          );
+        }
+
+        if (!self.apos.modules[moduleName][method]) {
+          throw new Error(
+            `Invalid method "${method}" detected in "apos.template.${end}Nodes()". ` +
+            `Make sure the module "${moduleName}" has a method named "${method}".`
+          );
+        }
+
+        const key = end + '-' + location;
+        self.runtimeNodes[key] ||= [];
+        self.runtimeNodes[key].push({
+          moduleName,
+          method
+        });
+      },
+
+      // Accepts array of node objects and returns a string - HTML
+      // representation of the nodes. Example nodes:
+      // [
+      //   {
+      //     name: 'div',
+      //     attrs: { class: 'my-class' },
+      //     body: [
+      //       {
+      //         text: 'Hello world'
+      //       }
+      //     ]
+      //   },
+      //   {
+      //     name: 'link',
+      //     attrs: { href: '/some/path', rel: 'stylesheet' }
+      //   }
+      // ]
+      // Node object SHOULD have either `name`, `text`, `raw` or `comment` property.
+      // A node with `name` can have `attrs` (array of element attributes)
+      // and `body` (array of child nodes, recursion).
+      // `text` nodes are rendered as text (no HTML tags), the value is always a string.
+      // `comment` nodes are rendered as HTML comments, the value is always a string.
+      // `raw` nodes are rendered as is, no escaping, the value is always a string.
+      renderNodes(nodes) {
+        if (!Array.isArray(nodes)) {
+          self.logError(
+            'render-nodes',
+            'Invalid nodes array passed to apos.template.renderNodes()'
+          );
+          return '';
+        }
+        return nodes.map(node => {
+          if (node.text) {
+            return self.apos.util.escapeHtml(node.text);
+          }
+          if (node.comment) {
+            return `\n<!-- ${self.apos.util.escapeHtml(node.comment)} -->\n`;
+          }
+          if (node.raw) {
+            return node.raw;
+          }
+          if (node.name) {
+            const name = self.apos.util.escapeHtml(node.name);
+            const attrs = Object.entries(node.attrs || {})
+              .map(([ key, value ]) => {
+                if (value === false || value === null || value === undefined) {
+                  return '';
+                }
+                if (value === true) {
+                  return ` ${self.apos.util.escapeHtml(key)}`;
+                }
+                return ` ${self.apos.util.escapeHtml(key)}="${self.apos.util.escapeHtml(value)}"`;
+              })
+              .join('')
+              .trimEnd();
+
+            if (!node.body && voidElements[name]) {
+              return `<${name}${attrs} />`;
+            }
+
+            const body = (
+              node.body ? self.renderNodes(node.body) : ''
+            ).trim();
+
+            return `<${name}${attrs}>${body}</${name}>`;
+          }
+          self.logError(
+            'render-nodes',
+            'Invalid node object passed to apos.template.renderNodes()',
+            { node }
+          );
+          return '';
+        })
+          .join('')
+          .trim();
+      },
+
+      injectNodes(req, locationKey) {
+        const nodes = self.runtimeNodes[locationKey] || [];
+        if (!nodes.length) {
+          return '';
+        }
+        const output = [];
+        for (const { moduleName, method } of nodes) {
+          const handler = self.apos.modules[moduleName][method];
+          output.push(self.renderNodes(handler(req)));
+        }
+        return output.join('\n');
+      },
+
       async annotateDataForExternalFront(req, template, data, moduleName) {
         const docs = self.getDocsForExternalFront(req, template, data, moduleName);
         for (const doc of docs) {
@@ -1100,6 +1236,12 @@ module.exports = {
           };
           data.bundleMarkup.js.push(...Array.from(modulePreload));
         }
+
+        // `node` injections
+        data.prependHead = self.injectNodes(req, 'prepend-head');
+        data.appendHead = self.injectNodes(req, 'append-head');
+        data.prependBody = self.injectNodes(req, 'prepend-body');
+        data.appendBody = self.injectNodes(req, 'append-body');
 
         return data;
       },
