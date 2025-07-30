@@ -271,10 +271,6 @@ export default {
         });
     },
     filter(filter, value) {
-      console.log('filter', {
-        filter,
-        value
-      });
       this.$emit('filter', filter, value.data);
       if (this.filterValues[filter] !== value) {
         this.computeActiveOperations();

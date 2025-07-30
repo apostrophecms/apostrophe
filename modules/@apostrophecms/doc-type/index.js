@@ -1607,11 +1607,14 @@ module.exports = {
       },
 
       composeFilters() {
-        self.filters = Object.entries(self.filters).map(([ name, filter ]) => ({
-          name,
-          ...filter,
-          inputType: filter.inputType || 'select'
-        }));
+        // TODO: keep in sync with page/index.js composeFilters
+        self.filters = Object.entries(self.filters)
+          .map(([ name, filter ]) => ({
+            name,
+            ...filter,
+            inputType: filter.inputType || 'select'
+          }));
+
         // Add a null choice if not already added or set to `required`
         self.filters.forEach((filter) => {
           if (Array.isArray(filter.choices)) {
@@ -1619,11 +1622,13 @@ module.exports = {
               !filter.required &&
               !filter.choices.find((choice) => choice.value === null)
             ) {
-              filter.def = filter.inputType === 'checkbox' ? [] : null;
-              filter.choices.push({
-                value: null,
-                label: 'apostrophe:none'
-              });
+              filter.def = null;
+              filter.choices = filter.inputType === 'checkbox'
+                ? filter.choices
+                : filter.choices.concat({
+                  value: null,
+                  label: 'apostrophe:none'
+                });
             }
           } else {
             // Dynamic choices from the REST API, but
@@ -1631,6 +1636,9 @@ module.exports = {
             filter.nullLabel = filter.inputType === 'radio'
               ? 'apostrophe:any'
               : 'apostrophe:filterMenuChooseOne';
+          }
+          if (filter.inputType === 'checkbox') {
+            filter.def = [];
           }
         });
       },
