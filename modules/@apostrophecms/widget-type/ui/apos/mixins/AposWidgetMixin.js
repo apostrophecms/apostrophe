@@ -1,33 +1,14 @@
-import { isEqual } from 'lodash';
+import props from '../composables/AposWidgetProps.js';
+import {
+  _renderContent, _emitWidgetRendered, _getClasses
+} from '../composables/AposWidget.js';
 
 export default {
-  props: {
-    // NOTE: docId is always null, investigate if needed
-    docId: String,
-    type: String,
-    areaFieldId: String,
-    modelValue: Object,
-    mode: {
-      type: String,
-      default: 'draft'
-    },
-    meta: {
-      type: Object,
-      default() {
-        return {};
-      }
-    },
-    // Ignored for server side rendering
-    areaField: Object,
-    followingValues: Object,
-    // Fix missing prop rendered as `[object Object]` attribute in the DOM
-    options: Object,
-    rendering: {
-      type: Object,
-      default() {
-        return null;
-      }
-    }
+  props,
+  data() {
+    return {
+      rendered: '...'
+    };
   },
   watch: {
     modelValue: {
@@ -36,73 +17,23 @@ export default {
       }
     }
   },
-  data() {
-    return {
-      rendered: '...'
-    };
-  },
-  mounted() {
-    this.renderContent();
-  },
   computed: {
     moduleOptions() {
       return apos.modules[apos.area.widgetManagers[this.type]];
     }
   },
+  mounted() {
+    this.renderContent();
+  },
   methods: {
-    async renderContent() {
-      apos.bus.$emit('widget-rendering');
-      const {
-        aposLivePreview,
-        ...widget
-      } = this.modelValue;
-      const parameters = {
-        _docId: this.docId,
-        widget,
-        areaFieldId: this.areaFieldId,
-        type: this.type
-      };
-      try {
-        if (this.rendering && (isEqual(this.rendering.parameters, parameters))) {
-          this.rendered = this.rendering.html;
-        } else {
-          // Don't use a placeholder here, it causes flickering in live preview
-          // mode. It is better to display the old until we display the new, we
-          // have "busy" for clarity
-          const result = await apos.http.post(`${apos.area.action}/render-widget?aposEdit=1&aposMode=${this.mode}`, {
-            busy: !aposLivePreview,
-            body: {
-              ...parameters,
-              livePreview: aposLivePreview
-            }
-          });
-          //
-          if (result !== 'aposLivePreviewSchemaNotYetValid') {
-            this.rendered = result;
-          }
-        }
-        // Wait for reactivity to render v-html so that markup is
-        // in the DOM before hinting that it might be time to prepare
-        // sub-area editors and run players
-        setTimeout(function() {
-          apos.bus.$emit('widget-rendered', { edit: !aposLivePreview });
-        }, 0);
-      } catch (e) {
-        this.rendered = '<p>Unable to render this widget.</p>';
-        // eslint-disable-next-line no-console
-        console.error('Unable to render widget. Possibly the schema has been changed and the existing widget does not pass validation.', e);
-      }
-    },
     getClasses() {
-      const { placeholderClass } = this.moduleOptions;
-
-      if (!placeholderClass) {
-        return {};
-      }
-
-      return {
-        [placeholderClass]: this.modelValue.aposPlaceholder === true
-      };
+      return _getClasses(this.modelValue, this.moduleOptions);
+    },
+    async renderContent() {
+      this.rendered = await _renderContent(this.$props);
+      this.$nextTick(() => {
+        _emitWidgetRendered(this.$props);
+      });
     }
   }
 };
