@@ -268,24 +268,19 @@ async function uploadMedia (event) {
     grid-row: 1 / 3;
     min-height: 350px;
     background-color: var(--a-base-10);
-    background-position: center;
-    background-repeat: no-repeat;
     background-size: cover;
   }
 
-  &:before {
+  &::before {
     content: '';
+    z-index: $z-index-base;
     position: absolute;
-    left: 0;
-    top: 0;
-    right: 0;
-    bottom: 0;
-    background: rgba(255, 255, 255, 0.5);
-    z-index: 0;
+    inset: 0;
+    background: rgba(255 255 255 / 70%);
   }
 
   &.apos-is-dragging {
-    border: 1px solid var(--a-primary);
+    outline: 1px solid var(--a-primary);
     box-shadow: 0 0 0 3px var(--a-primary-transparent-50),
   }
 
@@ -309,6 +304,7 @@ async function uploadMedia (event) {
 }
 
 .apos-media-uploader__inner {
+  z-index: $z-index-default;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -316,7 +312,6 @@ async function uploadMedia (event) {
   width: 100%;
   height: 100%;
   padding: 20px;
-  z-index: 1
 }
 
 .apos-media-uploader__icon {

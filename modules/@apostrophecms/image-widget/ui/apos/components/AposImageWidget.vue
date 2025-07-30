@@ -6,7 +6,7 @@
     <AposMediaUploaderUi
       :min-size="props.options?.minSize"
       :accept="accept"
-      :placeholder="widgetModuleOptions.placeholderUrl"
+      :placeholder="placeholder"
       @upload="upload"
       @media="selectFromManager"
     />
@@ -26,10 +26,9 @@ import {
 import { useAposWidget } from 'Modules/@apostrophecms/widget-type/composables/AposWidget';
 import aposWidgetProps from 'Modules/@apostrophecms/widget-type/composables/AposWidgetProps';
 
-const moduleOptions = apos.modules['@apostrophecms/image'];
+const imgModuleOptions = apos.modules['@apostrophecms/image'];
 const widgetModuleOptions = apos.modules['@apostrophecms/image-widget'];
-console.log('widgetModuleOptions', widgetModuleOptions);
-const accept = moduleOptions.schema.find(field => field.name === 'attachment').accept;
+const accept = imgModuleOptions.schema.find(field => field.name === 'attachment').accept;
 
 const emit = defineEmits([ 'edit', 'update' ]);
 
@@ -40,6 +39,13 @@ const {
 
 const hasImage = computed(() => {
   return Boolean(props.modelValue?._image?.length);
+});
+
+const placeholder = computed(() => {
+  if (widgetModuleOptions.placeholder === false) {
+    return null;
+  }
+  return widgetModuleOptions.placeholderUrl || null;
 });
 
 watch(() => props.modelValue, async (newVal) => {
@@ -154,7 +160,7 @@ async function upload(files = []) {
   }
 
   try {
-    const emptyDoc = await apos.http.post(moduleOptions.action, {
+    const emptyDoc = await apos.http.post(imgModuleOptions.action, {
       busy: true,
       body: {
         _newInstance: true
@@ -176,7 +182,7 @@ async function upload(files = []) {
       attachment
     });
 
-    const imgPiece = await apos.http.post(moduleOptions.action, {
+    const imgPiece = await apos.http.post(imgModuleOptions.action, {
       busy: true,
       body: imageData,
       draft: true
