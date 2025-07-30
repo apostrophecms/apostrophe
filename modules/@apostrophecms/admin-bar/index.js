@@ -116,7 +116,7 @@ module.exports = {
           action: {
             type: 'command-menu-admin-bar-toggle-publish-draft'
           },
-          shortcut: 'Ctrl+Shift+D Meta+Shift+D'
+          shortcut: 'Ctrl+Shift+M Meta+Shift+M'
         },
         ...breakpointPreviewModeCommands
       },
@@ -284,28 +284,30 @@ module.exports = {
       // Called by `afterInit`
 
       orderItems() {
-        // Items with a preference to go last go last...
-        const moving = [];
-        while (true) {
-          const moveIndex = _.findIndex(self.items, function (item) {
-            return item.options.last;
-          });
-          if (moveIndex === -1) {
-            break;
-          }
-          moving.push(self.items[moveIndex]);
-          self.items.splice(moveIndex, 1);
-        }
-        self.items = self.items.concat(moving);
-        // ... But then explicit order kicks in
-        _.each(self.options.order || [], function (name) {
-          const item = _.find(self.items, { name });
-          if (item) {
-            self.items = [ item ].concat(_.filter(self.items, function (item) {
-              return item.name !== name;
-            }));
+        const ordered = [];
+        const unordered = [];
+        const last = [];
+
+        // Separate items into categories
+        self.items.forEach(item => {
+          if (!(self.options.order || []).includes(item.name)) {
+            if (item.options.last) {
+              last.push(item);
+            } else {
+              unordered.push(item);
+            }
           }
         });
+
+        // Build ordered array in the sequence specified by options.order
+        (self.options.order || []).forEach(name => {
+          const item = self.items.find(item => item.name === name);
+          if (item) {
+            ordered.push(item);
+          }
+        });
+
+        self.items = ordered.concat(unordered).concat(last);
       },
 
       // Marks items that have been grouped via the `groups` option — or via
@@ -315,45 +317,124 @@ module.exports = {
       // render time so we can handle it properly if an individual
       // user only sees one of them, etc. Called by `afterInit`
 
+      // Fixed groupItems method that respects group registration order
+
       groupItems() {
-        // Implement the groups and addGroups options. Mark the grouped items
-        // with a `menuLeader` property.
         const groups = self.options.groups ||
           self.groups.concat(self.options.addGroups || []);
 
+        // Track which items have been grouped to detect duplicates
+        const groupedItems = new Map(); // itemName -> groupLabel
+
+        // If we have an explicit order
+        // use the existing logic with duplicate detection
+        if (self.options.order && self.options.order.length > 0) {
+          groups.forEach(function (group) {
+            if (!group.label) {
+              return;
+            }
+
+            self.groupLabels[group.items[0]] = group.label;
+
+            group.items.forEach(function (name, groupIndex) {
+              // Check for duplicates
+              if (groupedItems.has(name)) {
+                self.apos.util.warn(
+                  `Admin bar item "${name}" appears in multiple groups: "${groupedItems.get(name)}" and "${group.label}". ` +
+                  `Using first occurrence in "${groupedItems.get(name)}".`
+                );
+                return; // Skip this item in the current group
+              }
+
+              const item = _.find(self.items, { name });
+              if (item) {
+                item.menuLeader = group.items[0];
+                groupedItems.set(name, group.label);
+              } else {
+                return;
+              }
+
+              // Make sure the submenu items wind up following the leader
+              // in self.items in the appropriate order
+              if (name !== item.menuLeader) {
+                const indexLeader = _.findIndex(self.items, { name: item.menuLeader });
+                if (indexLeader === -1) {
+                  throw new Error('Admin bar grouping error: no match for ' + item.menuLeader + ' in menu item ' + item.name);
+                }
+                let indexMe = _.findIndex(self.items, { name });
+                if (indexMe !== indexLeader + groupIndex) {
+                  // Swap ourselves into the right position following our leader
+                  if (indexLeader + groupIndex < indexMe) {
+                    indexMe++;
+                  }
+                  self.items.splice(indexLeader + groupIndex, 0, item);
+                  self.items.splice(indexMe, 1);
+                }
+              }
+            });
+          });
+          return;
+        }
+        // No explicit order - respect group registration order
+        const newItems = [];
+        const processedItems = new Set();
+
+        // First, process all groups in registration order
         groups.forEach(function (group) {
           if (!group.label) {
             return;
           }
 
-          self.groupLabels[group.items[0]] = group.label;
+          // Collect valid items for this group (excluding duplicates and missing items)
+          const validGroupItems = [];
 
-          group.items.forEach(function (name, groupIndex) {
-            const item = _.find(self.items, { name });
-            if (item) {
-              item.menuLeader = group.items[0];
-            } else {
+          group.items.forEach(function (name) {
+            // Check for duplicates
+            if (groupedItems.has(name)) {
+              self.apos.util.warn(
+                `Admin bar item "${name}" appears in multiple groups: "${groupedItems.get(name)}" and "${group.label}". ` +
+                `Using first occurrence in "${groupedItems.get(name)}".`
+              );
               return;
             }
-            // Make sure the submenu items wind up following the leader
-            // in self.items in the appropriate order
-            if (name !== item.menuLeader) {
-              const indexLeader = _.findIndex(self.items, { name: item.menuLeader });
-              if (indexLeader === -1) {
-                throw new Error('Admin bar grouping error: no match for ' + item.menuLeader + ' in menu item ' + item.name);
-              }
-              let indexMe = _.findIndex(self.items, { name });
-              if (indexMe !== indexLeader + groupIndex) {
-                // Swap ourselves into the right position following our leader
-                if (indexLeader + groupIndex < indexMe) {
-                  indexMe++;
-                }
-                self.items.splice(indexLeader + groupIndex, 0, item);
-                self.items.splice(indexMe, 1);
-              }
+
+            const item = _.find(self.items, { name });
+            if (item && !processedItems.has(name)) {
+              validGroupItems.push({
+                item,
+                name
+              });
             }
           });
+
+          // Only create a group if there are multiple valid items
+          if (validGroupItems.length > 1) {
+            const leaderName = validGroupItems[0].name;
+            self.groupLabels[leaderName] = group.label;
+
+            validGroupItems.forEach(({ item, name }) => {
+              item.menuLeader = leaderName;
+              newItems.push(item);
+              processedItems.add(name);
+              groupedItems.set(name, group.label);
+            });
+          } else if (validGroupItems.length === 1) {
+            // Single item - add without grouping
+            const { item, name } = validGroupItems[0];
+            newItems.push(item);
+            processedItems.add(name);
+          }
         });
+
+        // Then add any remaining ungrouped items in their original order
+        self.items.forEach(function (item) {
+          if (!processedItems.has(item.name)) {
+            newItems.push(item);
+            processedItems.add(item.name);
+          }
+        });
+
+        self.items = newItems;
       },
 
       // Determine if the specified admin bar item object should
@@ -417,12 +498,12 @@ module.exports = {
             aposDocId: context.aposDocId
           },
           breakpointPreviewMode: self.apos.asset.options.breakpointPreviewMode ||
-            {
-              enable: false,
-              debug: false,
-              resizable: false,
-              screens: {}
-            },
+          {
+            enable: false,
+            debug: false,
+            resizable: false,
+            screens: {}
+          },
           // Base API URL appropriate to the context document
           contextBar: context && self.apos.doc
             .getManager(context.type).options.contextBar,
@@ -488,6 +569,113 @@ module.exports = {
           }
           return b.last === true ? -1 : 1;
         });
+      }
+    };
+  },
+  tasks(self) {
+    return {
+      inspect: {
+        usage: 'Inspect and list all registered admin bar items and groups',
+        ready: true,
+
+        async task(apos, argv) {
+
+          const allGroups = [
+            ...self.groups,
+            ...(self.options.addGroups || []),
+            ...(self.options.groups || [])
+          ];
+          console.log('\n🔍 APOSTROPHE ADMIN BAR INSPECTION\n');
+          console.log('=' + '='.repeat(50));
+
+          // Display configuration overview
+          console.log('\n📋 CONFIGURATION OVERVIEW');
+          console.log('-'.repeat(30));
+          console.log(`Page Tree Enabled: ${self.options.pageTree ? '✅' : '❌'}`);
+          if (self.options.order) {
+            console.log(`Order: [${self.options.order.join(', ')}]`);
+          }
+
+          console.log(`Total Items Registered: ${self.items.length}`);
+          console.log(`Total Groups Registered: ${allGroups.length}`);
+
+          console.log(`Custom Order Defined: ${self.options.order ? '✅' : '❌'}`);
+          console.log(`Custom Bars: ${self.bars.length}`);
+
+          // Display all registered items
+          console.log('\n📝 REGISTERED ITEMS');
+          console.log('-'.repeat(30));
+
+          if (self.items.length === 0) {
+            console.log('No items registered');
+          } else {
+            self.items.forEach((item, index) => {
+              console.log(`\n${index + 1}. ${item.name}`);
+              console.log(`   Action: ${item.action}`);
+              console.log(`   Label: ${item.label}`);
+
+              if (item.menuLeader) {
+                const groupLabel = self.groupLabels[item.menuLeader];
+                if (groupLabel) {
+                  console.log(`   Group: "${groupLabel}" (leader: ${item.menuLeader})`);
+                } else {
+                  console.log(`   Group Leader: ${item.menuLeader}`);
+                }
+              }
+
+              if (item.options && Object.keys(item.options).length > 0) {
+                console.log('   Options:');
+                Object.entries(item.options).forEach(([ key, value ]) => {
+                  console.log(`     ${key}: ${JSON.stringify(value)}`);
+                });
+              }
+            });
+          }
+
+          // Display registered groups
+          console.log('\n👥 REGISTERED GROUPS');
+          console.log('-'.repeat(30));
+
+          if (allGroups.length === 0) {
+            console.log('No groups registered');
+          } else {
+            allGroups.forEach((group, index) => {
+              console.log(`\n${index + 1}. Group: "${group.label || 'Unnamed'}"`);
+              console.log(`   Items: [${group.items.join(', ')}]`);
+
+              // Show which items actually exist
+              const existingItems = group.items.filter(itemName =>
+                self.items.some(item => item.name === itemName)
+              );
+              const missingItems = group.items.filter(itemName =>
+                !self.items.some(item => item.name === itemName)
+              );
+
+              if (existingItems.length > 0) {
+                console.log(`   ✅ Existing: [${existingItems.join(', ')}]`);
+              }
+              if (missingItems.length > 0) {
+                console.log(`   ❌ Missing: [${missingItems.join(', ')}]`);
+              }
+            });
+          }
+
+          // Display custom bars
+          if (self.bars.length > 0) {
+            console.log('\n📊 CUSTOM BARS');
+            console.log('-'.repeat(30));
+
+            self.bars.forEach((bar, index) => {
+              console.log(`\n${index + 1}. ${bar.id}`);
+              console.log(`   Component: ${bar.componentName}`);
+              console.log(`   Last: ${bar.last ? '✅' : '❌'}`);
+              if (bar.props) {
+                console.log(`   Props: ${JSON.stringify(bar.props, null, 2)}`);
+              }
+            });
+          }
+          console.log('\n✨ Inspection complete!\n');
+        }
       }
     };
   }

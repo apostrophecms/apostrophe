@@ -12,6 +12,45 @@
 ### Changes
 
 * A `clone-widget.js` file has been factored out, providing a universal way to return a clone of an existing widget which is distinct from the original.
+* Adds any alt text found in an attribute to the media library attachment during import of rich text inline images by API
+* Adds `prependNodes` and `appendNodes` methods to every module. These methods allow you to inject HTML to every page using a `node` declaration.
+* Changes handling of `order` and `groups` in the `admin-bar` module to respect, rather that reverse, the order of items
+* Interacting with the text inside a rich text widget will hide the widget controls to prevent awkward text selection.
+
+### Fixes
+
+* Let the `@apostrophecms/page:unpark` task unpark all parked pages with the given slug, not just the first one.
+* Exclude unknown page types from the page manager.
+* Resolved an issue affecting `withRelationships` with two or more steps. This issue could cause a document to appear to be related to the same document more than once.
+
+
+### Security
+
+* Clear an npm audit warning by replacing `connect-multiparty` with `multer`. Thanks to [Radhakrishnan Mohan](https://github.com/RadhaKrishnan) for this contribution.
+* To be clear, this was never an actual security vulnerability. The CVE in question is disputed, and for good reasons. However, since `connect-multiparty` is no longer maintained, it makes sense to move to `multer`.
+
+## 4.19.0 (2025-07-09)
+
+### Adds
+
+* Implemented GET /api/v1/@apostrophecms/login/whoami route such that it returns the details of the currently logged in user; added the route to the login module.
+  Thanks to [sombitganguly](https://github.com/sombitganguly) for this contribution.
+* Adds keyboard shortcuts for manipulating widgets in areas. Includes Cut, Copy, Paste, Delete, and Duplicate.
+* Automatic translation now supports a disclaimer and an help text for the checkbox. You can now set the disclaimer by setting `automaticTranslationDisclaimer` `i18n` key and the help text by setting `automaticTranslationCheckboxHelp` `i18n` key.
+* Adds dynamic choices working with piece manager filters. 
+* Allow `import.imageTags` (array of image tag IDs) to be passed to the rich text widget when importing (see https://docs.apostrophecms.org/reference/api/rich-text.html#importing-inline-images).
+* Adds a new way to make `GET` requests with a large query string. It can become a `POST` request containing the key `__aposGetWithQuery` in its body.
+A middleware checks for this key and converts the request back to a `GET` request with the right `req.query` property.
+* Adds a new batch operation to tag images.
+
+### Changes
+
+### Fixes
+
+* Add missing Pages manager shortcuts list helper.
+* Improve the `isEmpty` method of the rich text widget to take into account the HTML blocks (`<figure>` and `<table>`) that are not empty but do not contain any plain text.
+* Fixed admin bar item ordering to correctly respect the precedence hierarchy: groups (when leader is positioned) > explicit order array > groups (when leader has positioning options) > individual `last`/`after` options.
+* (Backward compatibility break) Conditional field that depends on already hidden field is also hidden, again.
 
 ## 4.18.0 (2025-06-11)
 

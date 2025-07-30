@@ -9,6 +9,66 @@ const { stripIndent } = require('common-tags');
 
 module.exports = {
   options: { alias: 'area' },
+  commands(self) {
+    return {
+      add: {
+        [`${self.__meta.name}:cut-widget`]: {
+          type: 'item',
+          label: 'apostrophe:commandMenuWidgetCut',
+          action: {
+            type: 'command-menu-area-cut-widget'
+          },
+          shortcut: 'Ctrl+X Meta+X'
+        },
+        [`${self.__meta.name}:copy-widget`]: {
+          type: 'item',
+          label: 'apostrophe:commandMenuWidgetCopy',
+          action: {
+            type: 'command-menu-area-copy-widget'
+          },
+          shortcut: 'Ctrl+C Meta+C'
+        },
+        [`${self.__meta.name}:paste-widget`]: {
+          type: 'item',
+          label: 'apostrophe:commandMenuWidgetPaste',
+          action: {
+            type: 'command-menu-area-paste-widget'
+          },
+          shortcut: 'Ctrl+V Meta+V'
+        },
+        [`${self.__meta.name}:duplicate-widget`]: {
+          type: 'item',
+          label: 'apostrophe:commandMenuWidgetDuplicate',
+          action: {
+            type: 'command-menu-area-duplicate-widget'
+          },
+          shortcut: 'Ctrl+Shift+D Meta+Shift+D'
+        },
+        [`${self.__meta.name}:remove-widget`]: {
+          type: 'item',
+          label: 'apostrophe:commandMenuWidgetRemove',
+          action: {
+            type: 'command-menu-area-remove-widget'
+          },
+          shortcut: 'Backspace'
+        }
+      },
+      modal: {
+        default: {
+          '@apostrophecms/command-menu:content': {
+            label: 'apostrophe:commandMenuContent',
+            commands: [
+              `${self.__meta.name}:cut-widget`,
+              `${self.__meta.name}:copy-widget`,
+              `${self.__meta.name}:paste-widget`,
+              `${self.__meta.name}:duplicate-widget`,
+              `${self.__meta.name}:remove-widget`
+            ]
+          }
+        }
+      }
+    };
+  },
   init(self) {
     // These properties have special meaning in Apostrophe docs and are not
     // acceptable for use as top-level area names
@@ -545,7 +605,7 @@ module.exports = {
           return {};
         }
         const schema = manager.schema;
-        const field = _.find(schema, 'name', name);
+        const field = schema?.find(field => field.name === name);
         if (!(field && field.options)) {
           return {};
         }

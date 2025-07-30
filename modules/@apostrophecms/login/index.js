@@ -69,7 +69,9 @@ module.exports = {
       allowedAttempts: 3,
       perMinutes: 1,
       lockoutMinutes: 1
-    }
+    },
+    minimumWhoamiFields: [ '_id', 'username', 'title', 'email' ],
+    whoamiFields: []
   },
   async init(self) {
     self.passport = new Passport();
@@ -351,6 +353,25 @@ module.exports = {
         // it should be accessed via POST because the result
         // may differ by individual user session and should not
         // be cached
+        async whoami (req) {
+          if (!req.user) {
+            throw self.apos.error('notfound');
+          }
+
+          const fields = new Set([
+            ...self.options.minimumWhoamiFields,
+            ...self.options.whoamiFields
+          ]);
+          const user = {};
+
+          for (const field of fields) {
+            if (req.user[field] !== undefined) {
+              user[field] = req.user[field];
+            }
+          }
+
+          return user;
+        },
         async context(req) {
           return self.getContext(req);
         },

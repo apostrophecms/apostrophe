@@ -333,6 +333,77 @@ module.exports = {
         });
       },
 
+      // Prepepnd/append nodes, rendered to HTML, to a given location. Supports
+      // the same locations as `apos.template.prepend()` and `apos.template.append()`.
+      // The rendered markup is automatically escaped and injected into the
+      // appropriate location in the HTML document.
+      // The `method` argument is the name of existing method in the current module.
+      // It should be string, passing a function will throw an error.
+      // Example:
+      // ```
+      // self.prependNodes('head', 'myMethod');
+      // self.appendNodes('body', 'anotherMethod');
+      // ```
+      // In the example above, `myMethod` and `anotherMethod` should be defined
+      // in the current module, and they should return an array of node objects.
+      // ```
+      // methods(self) {
+      //   return {
+      //     myMethod(req) {
+      //       return [
+      //         {
+      //           name: 'meta',
+      //           attributes: {
+      //             name: 'my-meta',
+      //             content: 'my content'
+      //           }
+      //         }
+      //       ];
+      //     },
+      //     anotherMethod(req) {
+      //       return [
+      //         {
+      //           tag: 'h4',
+      //           body: [
+      //             {
+      //               comment: 'Start Heading text'
+      //             },
+      //             {
+      //               text: 'Heading text'
+      //             }
+      //             {
+      //               comment: 'End Heading text'
+      //             }
+      //             {
+      //               name: 'script`,
+      //               body: [
+      //                 {
+      //                   raw: 'console.log("This is not escaped, be careful!");'
+      //                 }
+      //               ]
+      //             }
+      //           ]
+      //         }
+      //       ];
+      //     }
+      //   };
+      // }
+      // ```
+      // Node object SHOULD have either `name`, `text`, `raw` or `comment` property.
+      // A node with `name` can have `attrs` (array of element attributes)
+      // and `body` (array of child nodes, recursion).
+      // `text` nodes are rendered as text (no HTML tags), the value is always a string.
+      // `comment` nodes are rendered as HTML comments, the value is always a string.
+      // `raw` nodes are rendered as is, no escaping, the value is always a string.
+      prependNodes(location, method) {
+        return self.apos.template
+          .prependNodes(location, self.__meta.name, method);
+      },
+      appendNodes(location, method) {
+        return self.apos.template
+          .appendNodes(location, self.__meta.name, method);
+      },
+
       // Render a template. Template overrides are respected; the
       // project level modules/modulename/views folder wins if
       // it has such a template, followed by the npm module,

@@ -379,7 +379,7 @@ module.exports = {
             userId: req.user._id,
             ...(options.modifiedOnOrSince && {
               updatedAt: {
-                $gte: new Date(options.modifiedOnOrSince)
+                $gt: new Date(options.modifiedOnOrSince)
               }
             }),
             ...(options.seenIds && {

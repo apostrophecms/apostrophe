@@ -837,8 +837,11 @@ module.exports = {
       },
 
       isEmpty(widget) {
-        const text = self.apos.util.htmlToPlaintext(widget.content || '');
-        return !text.trim().length;
+        const content = (widget.content || '').trim();
+        const text = self.apos.util.htmlToPlaintext(content).trim();
+        return text.length === 0 &&
+          content.includes('<table') === false &&
+          content.includes('<figure') === false;
       },
 
       sanitizeHtml(html, options) {
@@ -1067,7 +1070,9 @@ module.exports = {
                 });
                 const image = await self.apos.image.insert(req, {
                   title: name,
-                  attachment
+                  alt,
+                  attachment,
+                  tagsIds: input.import.imageTags || []
                 });
                 const newSrc = `${self.apos.image.action}/${image.aposDocId}/src`;
                 $image.replaceWith(

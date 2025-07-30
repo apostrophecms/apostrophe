@@ -68,6 +68,14 @@ const joinr = module.exports = {
     getter,
     idMapper
   ) {
+    // This method never alters the items array itself, it alters
+    // the objects within it. So it is safe to reduce that array to
+    // its unique elements, and this simplifies calling code which does
+    // not have to guard against this situation.
+    // Note that we mean literal uniqueness (e.g. by reference), as this
+    // is the only time we need to avoid appending the same joined objects
+    // more than once.
+    items = [ ...new Set(items) ];
     let otherIds = [];
     const othersById = {};
     for (const item of items) {
@@ -167,6 +175,14 @@ const joinr = module.exports = {
     getter,
     idMapper
   ) {
+    // This method never alters the items array itself, it alters
+    // the objects within it. So it is safe to reduce that array to
+    // its unique elements, and this simplifies calling code which does
+    // not have to guard against this situation.
+    // Note that we mean literal uniqueness (e.g. by reference), as this
+    // is the only time we need to avoid appending the same joined objects
+    // more than once.
+    items = [ ...new Set(items) ];
     const itemIds = items.map(item => idMapper(item._id));
     for (const item of items) {
       if (!item[objectsField]) {
