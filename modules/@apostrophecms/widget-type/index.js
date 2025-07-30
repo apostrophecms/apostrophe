@@ -381,7 +381,6 @@ module.exports = {
         output.metaType = 'widget';
         output.type = self.name;
         output.aposPlaceholder = self.apos.launder.boolean(input.aposPlaceholder);
-        console.log('output.aposPlaceholder', output.aposPlaceholder);
         if (!output.aposPlaceholder) {
           const schema = self.allowedSchema(req);
           await self.apos.schema.convert(req, schema, input, output, convertOptions);
@@ -481,6 +480,7 @@ module.exports = {
           action: self.action,
           schema,
           contextual: self.options.contextual,
+          placeholder: self.options.placeholder,
           placeholderClass: self.options.placeholderClass,
           placeholderUrl: self.options.placeholderUrl,
           className: self.options.className,
