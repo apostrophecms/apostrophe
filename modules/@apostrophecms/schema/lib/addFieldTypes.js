@@ -343,10 +343,14 @@ module.exports = (self) => {
           // Support one or many
           if (Array.isArray(value)) {
             return _.map(value, function (v) {
-              return self.apos.launder.select(v, field.choices, field.def);
+              return (typeof field.choices) === 'string'
+                ? self.apos.launder.string(v, field.def)
+                : self.apos.launder.select(v, field.choices, field.def);
             });
           } else {
-            return [ self.apos.launder.select(value, field.choices, field.def) ];
+            return (typeof field.choices) === 'string'
+              ? self.apos.launder.string(value, field.def)
+              : self.apos.launder.select(value, field.choices, field.def);
           }
         },
         choices: async function () {
@@ -398,7 +402,9 @@ module.exports = (self) => {
           // Support one or many
           if (Array.isArray(value)) {
             return _.map(value, function (v) {
-              return self.apos.launder.select(v, field.choices, null);
+              return (typeof field.choices) === 'string'
+                ? self.apos.launder.string(v, null)
+                : self.apos.launder.select(v, field.choices, null);
             });
           } else {
             value = (typeof field.choices) === 'string'
