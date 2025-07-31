@@ -198,7 +198,7 @@ describe('Rich Text Widget', function () {
     assert.equal(attributes.a.includes('data-single-choice'), true);
   });
 
-  it.only('should add images for testing', async function() {
+  it('should add images for testing', async function() {
     const req = apos.task.getReq();
     const base = apos.http.getBase();
 
