@@ -44,6 +44,27 @@ export default (options) => {
           HTMLAttributes: attrs,
           levels: def.options.level ? [ def.options.level ] : null
         };
+      },
+      parseHTML() {
+        return [
+          {
+            tag: 'p',
+            getAttrs: el => {
+              // We must make sure the DefaultNode is only
+              // returned for the subset of elements that actually
+              // match its class, or lack of one. Otherwise it will
+              // hoover up all elements sharing its element name,
+              // breaking the ability to have alternates with classes
+              // listed in "styles" in the toolbar "stick" when you
+              // open the editor again -Tom
+              if (def.options.class) {
+                return el.getAttribute('class') === def.options.class;
+              } else {
+                return !el.hasAttribute('class');
+              }
+            }
+          }
+        ];
       }
     });
   }
