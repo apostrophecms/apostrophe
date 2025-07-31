@@ -10,7 +10,6 @@ module.exports = {
     linkWithType: [ '@apostrophecms/any-page-type' ],
     // Should we write e.g. a reset style for the `figure` element?
     inlineStyles: true,
-    // contextual: true, TODO: FIX
     components: {
       widget: 'AposImageWidget'
     }
