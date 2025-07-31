@@ -156,6 +156,7 @@
         :doc-id="docId"
         :rendering="rendering"
         @edit="$emit('edit', i);"
+        @update="$emit('update', $event);"
       />
       <div
         class="
