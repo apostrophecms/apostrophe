@@ -294,17 +294,23 @@ async function uploadMedia (event) {
   }
 
   &.apos-is-dragging--over {
-    /* background-color: var(--a-white); */
+    background-color: var(--a-white);
 
     &::before {
       background-color: var(--a-primary-transparent-05);
+    }
+  }
+
+  &.apos-has-placeholder {
+    &.apos-is-dragging--over::before {
+     background-color: var(--a-primary-transparent-25);
     }
   }
 }
 
 .apos-media-uploader__inner {
   &::after {
-    /* @include apos-transition($duration: 0.3s); */
+    @include apos-transition($duration: 0.3s);
 
     & {
       z-index: $z-index-under;
