@@ -5,52 +5,16 @@ describe('Rich Text Widget', function () {
   let apos;
   this.timeout(t.timeout);
 
-  before(async function () {
-    apos = await t.create({
-      root: module,
-      modules: {
-        '@apostrophecms/page': {
-          options: {
-            park: [
-              {
-                title: 'Test Page',
-                type: 'rich-text-image-page',
-                slug: '/rich-text-image-page',
-                parkedId: 'rich-text-image-page'
-              }
-            ],
-            types: [
-              {
-                name: 'rich-text-image-page',
-                label: 'Rich Text Image Page'
-              }
-            ]
-          }
-        },
-        'rich-text-image-page': {
-          extend: '@apostrophecms/page-type',
-          fields: {
-            add: {
-              main: {
-                type: 'area',
-                options: {
-                  widgets: {
-                    '@apostrophecms/rich-text': {}
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    });
-  });
-
-  after(function() {
+  afterEach(function() {
     return t.destroy(apos);
   });
 
   it('should have rich text link types by default', async function () {
+    apos = await t.create({
+      root: module,
+      modules: {}
+    });
+
     const richText = apos.modules['@apostrophecms/rich-text-widget'];
 
     assert(richText.linkFields);
@@ -67,7 +31,6 @@ describe('Rich Text Widget', function () {
   });
 
   it('should support custom rich text link types', async function () {
-    await t.destroy(apos);
     apos = await t.create({
       root: module,
       modules: {
@@ -111,7 +74,6 @@ describe('Rich Text Widget', function () {
   });
 
   it('should support link schema management and html attributes', async function () {
-    await t.destroy(apos);
     apos = await t.create({
       root: module,
       modules: {
@@ -199,6 +161,45 @@ describe('Rich Text Widget', function () {
   });
 
   it('should add images for testing', async function() {
+    apos = await t.create({
+      root: module,
+      modules: {
+        '@apostrophecms/page': {
+          options: {
+            park: [
+              {
+                title: 'Test Page',
+                type: 'rich-text-image-page',
+                slug: '/rich-text-image-page',
+                parkedId: 'rich-text-image-page'
+              }
+            ],
+            types: [
+              {
+                name: 'rich-text-image-page',
+                label: 'Rich Text Image Page'
+              }
+            ]
+          }
+        },
+        'rich-text-image-page': {
+          extend: '@apostrophecms/page-type',
+          fields: {
+            add: {
+              main: {
+                type: 'area',
+                options: {
+                  widgets: {
+                    '@apostrophecms/rich-text': {}
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    });
+
     const req = apos.task.getReq();
     const base = apos.http.getBase();
 
