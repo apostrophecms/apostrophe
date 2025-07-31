@@ -251,9 +251,6 @@ async function uploadMedia (event) {
 }
 </script>
 <style>
-  body {
-    background-image: url("https://apos-a3-quick-image-upload.s3.us-east-1.amazonaws.com/apos-frontend/releases/07864494161773652/default/assets/background-da7cpP8q.png");
-  }
   .apos-is-highlighted .apos-media-uploader {
     /* stylelint-disable-next-line declaration-no-important */
     outline-color: transparent !important;
