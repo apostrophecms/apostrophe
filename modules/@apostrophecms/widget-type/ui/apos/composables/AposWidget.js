@@ -42,7 +42,7 @@ export function _getClasses(_modelValue, _moduleOptions) {
   };
 }
 
-export async function _renderContent(props, nextTick) {
+export async function _renderContent(props) {
   apos.bus.$emit('widget-rendering');
   const {
     aposLivePreview,
