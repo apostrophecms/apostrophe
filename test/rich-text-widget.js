@@ -202,7 +202,7 @@ describe('Rich Text Widget', function () {
     const req = apos.task.getReq();
     const base = apos.http.getBase();
 
-    // add image with alt attribute:
+    // add images with and without alt attributes:
     const image1 = await apos.image.insert(req, {
       _id: 'image-1:en:published',
       type: '@apostrophecms/image',
@@ -228,8 +228,6 @@ describe('Rich Text Widget', function () {
       },
       alt: 'Test Image 1'
     });
-
-    // add image without alt attribute:
     const image2 = await apos.image.insert(req, {
       _id: 'image-2:en:published',
       type: '@apostrophecms/image',
@@ -256,9 +254,7 @@ describe('Rich Text Widget', function () {
     });
 
     // update page with rich text widget containing images:
-
     const page = await apos.page.find(req, { slug: '/rich-text-image-page' }).toObject();
-
     page.main = {
       _id: 'area',
       metaType: 'area',
@@ -272,34 +268,27 @@ describe('Rich Text Widget', function () {
         }
       ]
     };
-
     await apos.page.update(req, page);
 
     // assert that alt attributes are present in the rendered HTML:
-
     const response1 = await fetch(`${base}/rich-text-image-page`, {
       method: 'GET'
     });
     const text1 = await response1.text();
-
     assert(text1.includes('alt="Test Image 1"'));
     assert(text1.includes('alt=""'));
 
     // update alt attributes:
-
     image1.alt = 'Updated Test Image 1';
     image2.alt = 'Updated Test Image 2';
-
     await apos.image.update(req, image1);
     await apos.image.update(req, image2);
 
     // re-fetch the page to check if the updated alt attributes are present:
-
     const response2 = await fetch(`${base}/rich-text-image-page`, {
       method: 'GET'
     });
     const text2 = await response2.text();
-
     assert(text2.includes('alt="Updated Test Image 1"'));
     assert(text2.includes('alt="Updated Test Image 2"'));
   });
