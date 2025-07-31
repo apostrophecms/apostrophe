@@ -276,8 +276,8 @@ describe('Rich Text Widget', function () {
       method: 'GET'
     });
     const text1 = await response1.text();
-    assert(text1.includes('alt="Test Image 1"'));
-    assert(text1.includes('alt=""'));
+    assert(text1.includes('src="/uploads/attachments/attachment-1-attachment-1.max.jpg" alt="Test Image 1"'));
+    assert(text1.includes('src="/uploads/attachments/attachment-2-attachment-2.max.jpg" alt=""'));
 
     // update alt attributes:
     image1.alt = 'Updated Test Image 1';
@@ -290,7 +290,7 @@ describe('Rich Text Widget', function () {
       method: 'GET'
     });
     const text2 = await response2.text();
-    assert(text2.includes('alt="Updated Test Image 1"'));
-    assert(text2.includes('alt="Updated Test Image 2"'));
+    assert(text2.includes('src="/uploads/attachments/attachment-1-attachment-1.max.jpg" alt="Updated Test Image 1"'));
+    assert(text2.includes('src="/uploads/attachments/attachment-2-attachment-2.max.jpg" alt="Updated Test Image 2"'));
   });
 });

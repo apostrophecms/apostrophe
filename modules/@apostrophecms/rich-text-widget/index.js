@@ -960,7 +960,7 @@ module.exports = {
               break;
             }
 
-            content = content.substring(0, src + 5) + doc.attachment._urls[self.apos.modules['@apostrophecms/image'].getLargestSize()] + content.substring(close + 1);
+            content = content.substring(0, src + 5) + '"' + doc.attachment._urls[self.apos.modules['@apostrophecms/image'].getLargestSize()] + '"' + content.substring(close + 1);
 
             const tagEnd = content.indexOf('>', left);
 
@@ -987,6 +987,7 @@ module.exports = {
             content = content.substring(0, left) + imgTag + content.substring(tagEnd + 1);
           }
         }
+        console.dir(content, { depth: 9 });
         return content;
       },
       // Validate the types provided for links, update labels derived from
