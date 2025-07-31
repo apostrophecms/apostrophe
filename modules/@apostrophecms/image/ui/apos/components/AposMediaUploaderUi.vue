@@ -2,10 +2,12 @@
   <label
     ref="mediaUploaderEl"
     class="apos-media-uploader"
+    :style="uploaderStyle"
     :class="{
       'apos-media-uploader--disabled': props.disabled,
       'apos-is-dragging': dragging,
-      'apos-is-dragging--over': dragover
+      'apos-is-dragging--over': dragover,
+      'apos-has-placeholder': hasPlaceholder
     }"
     @drop.prevent="uploadMedia"
     @dragover.prevent=""
@@ -71,6 +73,10 @@ const props = defineProps({
   accept: {
     type: String,
     default: 'gif,.jpg,.png,.svg,.webp,.jpeg'
+  },
+  placeholder: {
+    type: String,
+    default: null
   }
 });
 const emit = defineEmits([ 'media', 'upload' ]);
@@ -110,6 +116,20 @@ const dragging = computed(() => {
 
 const dragover = computed(() => {
   return dragOverCounter.value > 0;
+});
+
+const hasPlaceholder = computed(() => {
+  return Boolean(props.placeholder);
+});
+
+const uploaderStyle = computed(() => {
+  if (!props.placeholder) {
+    return {};
+  }
+
+  return {
+    'background-image': `url(${props.placeholder})`
+  };
 });
 
 /**
@@ -232,6 +252,7 @@ async function uploadMedia (event) {
 </script>
 <style>
   .apos-is-highlighted .apos-media-uploader {
+    /* stylelint-disable-next-line declaration-no-important */
     outline-color: transparent !important;
   }
 </style>
@@ -240,7 +261,9 @@ async function uploadMedia (event) {
   @include apos-button-reset();
 
   & {
+    position: relative;
     display: flex;
+    overflow: hidden;
     box-sizing: border-box;
     align-items: center;
     justify-content: center;
@@ -251,15 +274,34 @@ async function uploadMedia (event) {
     grid-row: 1 / 3;
     min-height: 350px;
     background-color: var(--a-base-10);
+    background-size: cover;
+  }
+
+  &::before {
+    content: '';
+    z-index: $z-index-base;
+    position: absolute;
+    inset: 0;
+    background: rgba(255 255 255 / 70%);
   }
 
   &.apos-is-dragging {
-    border: 1px solid var(--a-primary);
-    box-shadow: 0 0 0 3px var(--a-primary-transparent-50),
+    outline: 1px solid var(--a-primary);
+    box-shadow: 0 0 0 3px var(--a-primary-transparent-50);
   }
 
   &.apos-is-dragging--over {
-    background-color: var(--a-primary-transparent-05);
+    background-color: var(--a-white);
+
+    &::before {
+      background-color: var(--a-primary-transparent-05);
+    }
+  }
+
+  &.apos-has-placeholder {
+    &.apos-is-dragging--over::before {
+     background-color: var(--a-primary-transparent-25);
+    }
   }
 }
 
@@ -278,6 +320,7 @@ async function uploadMedia (event) {
 }
 
 .apos-media-uploader__inner {
+  z-index: $z-index-default;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -303,10 +346,10 @@ async function uploadMedia (event) {
 }
 
 :deep(.apos-media-uploader__btn) {
-  all: unset;
   @include apos-button-reset();
 
   & {
+    all: unset;
     color: var(--a-primary);
     font-weight: var(--a-weight-light);
     text-decoration: underline;
@@ -322,5 +365,4 @@ async function uploadMedia (event) {
   color: var(--a-background-inverted);
   font-size: var(--a-type-large);
 }
-
 </style>
