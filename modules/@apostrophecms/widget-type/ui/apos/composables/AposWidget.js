@@ -52,8 +52,7 @@ export async function _renderContent(props, nextTick) {
     _docId: props.docId,
     widget,
     areaFieldId: props.areaFieldId,
-    type: props.type,
-    livePreview: aposLivePreview
+    type: props.type
   };
   try {
     if (props.rendering && (isEqual(props.rendering.parameters, body))) {
@@ -64,7 +63,10 @@ export async function _renderContent(props, nextTick) {
     // have "busy" for clarity
     const result = await apos.http.post(`${apos.area.action}/render-widget?aposEdit=1&aposMode=${props.mode}`, {
       busy: !aposLivePreview,
-      body
+      body: {
+        ...body,
+        livePreview: aposLivePreview
+      }
     });
     if (result !== 'aposLivePreviewSchemaNotYetValid') {
       return result;
