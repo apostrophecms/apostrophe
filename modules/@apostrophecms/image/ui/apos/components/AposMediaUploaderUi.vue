@@ -6,7 +6,8 @@
     :class="{
       'apos-media-uploader--disabled': props.disabled,
       'apos-is-dragging': dragging,
-      'apos-is-dragging--over': dragover
+      'apos-is-dragging--over': dragover,
+      'apos-has-placeholder': hasPlaceholder
     }"
     @drop.prevent="uploadMedia"
     @dragover.prevent=""
@@ -115,6 +116,10 @@ const dragging = computed(() => {
 
 const dragover = computed(() => {
   return dragOverCounter.value > 0;
+});
+
+const hasPlaceholder = computed(() => {
+  return Boolean(props.placeholder);
 });
 
 const uploaderStyle = computed(() => {
@@ -246,6 +251,9 @@ async function uploadMedia (event) {
 }
 </script>
 <style>
+  body {
+    background-image: url("https://apos-a3-quick-image-upload.s3.us-east-1.amazonaws.com/apos-frontend/releases/07864494161773652/default/assets/background-da7cpP8q.png");
+  }
   .apos-is-highlighted .apos-media-uploader {
     /* stylelint-disable-next-line declaration-no-important */
     outline-color: transparent !important;
@@ -258,6 +266,7 @@ async function uploadMedia (event) {
   & {
     position: relative;
     display: flex;
+    overflow: hidden;
     box-sizing: border-box;
     align-items: center;
     justify-content: center;
@@ -281,17 +290,21 @@ async function uploadMedia (event) {
 
   &.apos-is-dragging {
     outline: 1px solid var(--a-primary);
-    box-shadow: 0 0 0 3px var(--a-primary-transparent-50),
+    box-shadow: 0 0 0 3px var(--a-primary-transparent-50);
   }
 
   &.apos-is-dragging--over {
-    background-color: var(--a-primary-transparent-05);
+    /* background-color: var(--a-white); */
+
+    &::before {
+      background-color: var(--a-primary-transparent-05);
+    }
   }
 }
 
 .apos-media-uploader__inner {
   &::after {
-    @include apos-transition($duration: 0.3s);
+    /* @include apos-transition($duration: 0.3s); */
 
     & {
       z-index: $z-index-under;
@@ -349,5 +362,4 @@ async function uploadMedia (event) {
   color: var(--a-background-inverted);
   font-size: var(--a-type-large);
 }
-
 </style>
