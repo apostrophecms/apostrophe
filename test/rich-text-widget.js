@@ -5,16 +5,52 @@ describe('Rich Text Widget', function () {
   let apos;
   this.timeout(t.timeout);
 
+  before(async function () {
+    apos = await t.create({
+      root: module,
+      modules: {
+        '@apostrophecms/page': {
+          options: {
+            park: [
+              {
+                title: 'Test Page',
+                type: 'rich-text-image-page',
+                slug: '/rich-text-image-page',
+                parkedId: 'rich-text-image-page'
+              }
+            ],
+            types: [
+              {
+                name: 'rich-text-image-page',
+                label: 'Rich Text Image Page'
+              }
+            ]
+          }
+        },
+        'rich-text-image-page': {
+          extend: '@apostrophecms/page-type',
+          fields: {
+            add: {
+              main: {
+                type: 'area',
+                options: {
+                  widgets: {
+                    '@apostrophecms/rich-text': {}
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    });
+  });
+
   after(function() {
     return t.destroy(apos);
   });
 
   it('should have rich text link types by default', async function () {
-    apos = await t.create({
-      root: module,
-      modules: {}
-    });
-
     const richText = apos.modules['@apostrophecms/rich-text-widget'];
 
     assert(richText.linkFields);
@@ -160,5 +196,111 @@ describe('Rich Text Widget', function () {
     assert.equal(attributes.a.includes('data-foo'), true);
     assert.equal(attributes.a.includes('data-bool'), true);
     assert.equal(attributes.a.includes('data-single-choice'), true);
+  });
+
+  it.only('should add images for testing', async function() {
+    const req = apos.task.getReq();
+    const base = apos.http.getBase();
+
+    // add image with alt attribute:
+    const image1 = await apos.image.insert(req, {
+      _id: 'image-1:en:published',
+      type: '@apostrophecms/image',
+      slug: 'image-1',
+      visibility: 'public',
+      attachment: {
+        _id: 'attachment-1',
+        crop: null,
+        group: 'images',
+        name: 'attachment-1',
+        title: 'Attachment 1',
+        extension: 'jpg',
+        type: 'attachment',
+        archivedDocIds: [],
+        length: 184317,
+        md5: '816e2fe1190b7aa81ed26d8479e26181',
+        width: 500,
+        height: 400,
+        landscape: true,
+        used: true,
+        utilized: true,
+        archived: false
+      },
+      alt: 'Test Image 1'
+    });
+
+    // add image without alt attribute:
+    const image2 = await apos.image.insert(req, {
+      _id: 'image-2:en:published',
+      type: '@apostrophecms/image',
+      slug: 'image-2',
+      visibility: 'public',
+      attachment: {
+        _id: 'attachment-2',
+        crop: null,
+        group: 'images',
+        name: 'attachment-2',
+        title: 'Attachment 2',
+        extension: 'jpg',
+        type: 'attachment',
+        archivedDocIds: [],
+        length: 184317,
+        md5: '816e2fe1190b7aa81ed26d8479e26182',
+        width: 500,
+        height: 400,
+        landscape: true,
+        used: true,
+        utilized: true,
+        archived: false
+      }
+    });
+
+    // update page with rich text widget containing images:
+
+    const page = await apos.page.find(req, { slug: '/rich-text-image-page' }).toObject();
+
+    page.main = {
+      _id: 'area',
+      metaType: 'area',
+      items: [
+        {
+          _id: 'widget',
+          metaType: 'widget',
+          type: '@apostrophecms/rich-text',
+          content: '<figure class="image-float-left"><img src="/api/v1/@apostrophecms/image/image-1/src" alt="Test Image 1"><figcaption></figcaption></figure><figure class="image-float-left"><img src="/api/v1/@apostrophecms/image/image-2/src" alt=""><figcaption></figcaption></figure>',
+          imageIds: [ image1.aposDocId, image2.aposDocId ]
+        }
+      ]
+    };
+
+    await apos.page.update(req, page);
+
+    // assert that alt attributes are present in the rendered HTML:
+
+    const response1 = await fetch(`${base}/rich-text-image-page`, {
+      method: 'GET'
+    });
+    const text1 = await response1.text();
+
+    assert(text1.includes('alt="Test Image 1"'));
+    assert(text1.includes('alt=""'));
+
+    // update alt attributes:
+
+    image1.alt = 'Updated Test Image 1';
+    image2.alt = 'Updated Test Image 2';
+
+    await apos.image.update(req, image1);
+    await apos.image.update(req, image2);
+
+    // re-fetch the page to check if the updated alt attributes are present:
+
+    const response2 = await fetch(`${base}/rich-text-image-page`, {
+      method: 'GET'
+    });
+    const text2 = await response2.text();
+
+    assert(text2.includes('alt="Updated Test Image 1"'));
+    assert(text2.includes('alt="Updated Test Image 2"'));
   });
 });
