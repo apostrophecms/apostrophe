@@ -42,7 +42,7 @@ export function _getClasses(_modelValue, _moduleOptions) {
   };
 }
 
-export async function _renderContent(props) {
+export async function _renderContent(props, nextTick) {
   apos.bus.$emit('widget-rendering');
   const {
     aposLivePreview,
@@ -53,22 +53,21 @@ export async function _renderContent(props) {
     widget,
     areaFieldId: props.areaFieldId,
     type: props.type,
-    livePreview: props.aposLivePreview
+    livePreview: aposLivePreview
   };
   try {
     if (props.rendering && (isEqual(props.rendering.parameters, body))) {
       return props.rendering.html;
-    } else {
-      // Don't use a placeholder here, it causes flickering in live preview
-      // mode. It is better to display the old until we display the new, we
-      // have "busy" for clarity
-      const result = await apos.http.post(`${apos.area.action}/render-widget?aposEdit=1&aposMode=${props.mode}`, {
-        busy: !props.aposLivePreview,
-        body
-      });
-      if (result !== 'aposLivePreviewSchemaNotYetValid') {
-        return result;
-      }
+    }
+    // Don't use a placeholder here, it causes flickering in live preview
+    // mode. It is better to display the old until we display the new, we
+    // have "busy" for clarity
+    const result = await apos.http.post(`${apos.area.action}/render-widget?aposEdit=1&aposMode=${props.mode}`, {
+      busy: !aposLivePreview,
+      body
+    });
+    if (result !== 'aposLivePreviewSchemaNotYetValid') {
+      return result;
     }
   } catch (e) {
     // eslint-disable-next-line no-console
