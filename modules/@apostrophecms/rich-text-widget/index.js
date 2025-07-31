@@ -987,7 +987,6 @@ module.exports = {
             content = content.substring(0, left) + imgTag + content.substring(tagEnd + 1);
           }
         }
-        console.dir(content, { depth: 9 });
         return content;
       },
       // Validate the types provided for links, update labels derived from
