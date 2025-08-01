@@ -104,10 +104,19 @@ module.exports = {
         fileGroup: 'images',
         required: true
       },
+      showAlt: {
+        type: 'boolean',
+        label: 'Show Alt?',
+        def: false
+      },
       alt: {
         type: 'string',
         label: 'apostrophe:altText',
-        help: 'apostrophe:altTextHelp'
+        help: 'apostrophe:altTextHelp',
+        if: {
+          'getOrdersCount()': 10,
+          showAlt: true
+        }
       },
       credit: {
         type: 'string',
@@ -131,6 +140,7 @@ module.exports = {
         fields: [
           'attachment',
           'title',
+          'showAlt',
           'alt',
           '_tags',
           'credit',
@@ -399,6 +409,12 @@ module.exports = {
   },
   methods(self) {
     return {
+      async getOrdersCount(req, { docId }) {
+        // simulates API response takes 500ms
+        await new Promise(resolve => setTimeout(resolve, 2500));
+        return 9;
+      },
+
       // This method is available as a template helper: apos.image.first
       //
       // Find the first image attachment referenced within an object that may
