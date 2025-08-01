@@ -4,13 +4,18 @@
 
 ### Adds
 
-* Adds any alt text found in an attribute to the media library attachment during import of rich text inline images by API
-* Adds `prependNodes` and `appendNodes` methods to every module. These methods allow you to inject HTML to every page using a `node` declaration.
+* Modules can now call `apos.area.addCreateWidgetOperation` to register a custom operation that invokes a modal and inserts the widget returned by that modal. These operations are offered as choices in all "add widget" menus, both regular and expanded.
+* `AposDocEditor` now accepts a `values` prop, which can be used to pass an object of initial values for some or all fields. Use of this prop is optional. It is not supported when editing existing documents.
+* `apos.doc.edit` now accepts an optional `values` object as the final parameter, containing initial values for some or all fields. This is supported only when editing existing documents.
+* When specifying a modal name to be executed, developers may now register "transformers" to be invoked first, using pipe syntax. For example, the modal name `aposSectionTemplateLibraryWidgetToDoc|AposDocEditor` will invoke the transformer `aposSectionTemplateLibraryWidgetToDoc` with the original props, and pass the returned result to `AposDocEditor`. Note that transformers are awaited. Transformers are registered in frontend admin UI code by passing a name and a function to `apos.ui.addTransformer`.
 
 ### Changes
 
+* A `clone-widget.js` file has been factored out, providing a universal way to return a clone of an existing widget which is distinct from the original.
+* Adds any alt text found in an attribute to the media library attachment during import of rich text inline images by API
+* Adds `prependNodes` and `appendNodes` methods to every module. These methods allow you to inject HTML to every page using a `node` declaration.
 * Changes handling of `order` and `groups` in the `admin-bar` module to respect, rather that reverse, the order of items
-* Interacting with the text inside a rich text widget will hide the widget controls to prevent awkawrd text selection.
+* Interacting with the text inside a rich text widget will hide the widget controls to prevent awkward text selection.
 
 ### Fixes
 

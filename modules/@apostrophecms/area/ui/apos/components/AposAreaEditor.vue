@@ -32,6 +32,7 @@
           :empty="true"
           :index="0"
           :options="options"
+          :field-id="fieldId"
           :max-reached="maxReached"
           :disabled="field && field.readOnly"
           :widget-options="options.widgets"
@@ -80,9 +81,9 @@
 
 <script>
 import { createId } from '@paralleldrive/cuid2';
-import { klona } from 'klona';
 import AposThemeMixin from 'Modules/@apostrophecms/ui/mixins/AposThemeMixin';
 import newInstance from 'apostrophe/modules/@apostrophecms/schema/lib/newInstance.js';
+import cloneWidget from 'Modules/@apostrophecms/area/lib/clone-widget.js';
 
 export default {
   name: 'AposAreaEditor',
@@ -546,12 +547,7 @@ export default {
       }
     },
     clone(index) {
-      const widget = klona(this.next[index]);
-      delete widget._id;
-      this.regenerateIds(
-        apos.modules[apos.area.widgetManagers[widget.type]].schema,
-        widget
-      );
+      const widget = cloneWidget(this.next[index]);
       this.insert({
         widget,
         index: index + 1
@@ -570,30 +566,6 @@ export default {
             clipboard
           });
         }
-      }
-    },
-    // Regenerate all array item, area, object and widget ids so they are considered
-    // new. Useful when copying a widget with nested content.
-    regenerateIds(schema, object) {
-      object._id = createId();
-      for (const field of schema) {
-        if (field.type === 'array') {
-          for (const item of (object[field.name] || [])) {
-            this.regenerateIds(field.schema, item);
-          }
-        } else if (field.type === 'object') {
-          this.regenerateIds(field.schema, object[field.name] || {});
-        } else if (field.type === 'area') {
-          if (object[field.name]) {
-            object[field.name]._id = createId();
-            for (const item of (object[field.name].items || [])) {
-              const schema = apos.modules[apos.area.widgetManagers[item.type]].schema;
-              this.regenerateIds(schema, item);
-            }
-          }
-        }
-        // We don't want to regenerate attachment ids. They correspond to
-        // actual files, and the reference count will update automatically
       }
     },
     async update(updated, { autosave = true, reverting = false } = {}) {
@@ -616,19 +588,25 @@ export default {
       });
       this.edited[updated._id] = true;
     },
-    // Add a widget into an area.
+    // Add a widget into an area. index is required, along
+    // with one and only one of name, widget or clipboard.
+    // If widget is passed it is inserted directly. If
+    // clipboard is passed it is cloned and inserted.
     async add({
       index,
       name,
+      widget,
       clipboard
     }) {
       if (clipboard) {
-        this.regenerateIds(
-          apos.modules[apos.area.widgetManagers[clipboard.type]].schema,
-          clipboard
-        );
+        clipboard = cloneWidget(clipboard);
         return this.insert({
           widget: clipboard,
+          index
+        });
+      } else if (widget) {
+        return this.insert({
+          widget,
           index
         });
       } else if (this.widgetIsContextual(name)) {

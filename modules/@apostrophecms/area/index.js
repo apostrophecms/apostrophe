@@ -88,6 +88,7 @@ module.exports = {
 
     self.enableBrowserData();
     self.addDeduplicateWidgetIdsMigration();
+    self.createWidgetOperations = [];
   },
   apiRoutes(self) {
     return {
@@ -799,7 +800,8 @@ module.exports = {
           widgetPreview,
           contextualWidgetDefaultData,
           widgetManagers,
-          action: self.action
+          action: self.action,
+          createWidgetOperations: self.createWidgetOperations
         };
       },
       async addDeduplicateWidgetIdsMigration() {
@@ -825,6 +827,9 @@ module.exports = {
             }
           });
         });
+      },
+      addCreateWidgetOperation(operation) {
+        self.createWidgetOperations.push(operation);
       }
     };
   },
