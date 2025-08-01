@@ -59,7 +59,8 @@ export default {
       }
     },
     fieldId: {
-      type: String
+      type: String,
+      required: true
     },
     tabbable: {
       type: Boolean,

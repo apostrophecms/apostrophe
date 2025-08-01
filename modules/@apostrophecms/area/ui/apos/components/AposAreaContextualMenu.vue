@@ -131,7 +131,8 @@ export default {
       }
     },
     fieldId: {
-      type: String
+      type: String,
+      required: true
     },
     menuId: {
       type: String,
@@ -241,7 +242,7 @@ export default {
           ...item.props,
           options: this.options,
           fieldId: this.fieldId
-        }
+        };
         this.$refs.contextMenu.hide();
         const widget = await apos.modal.execute(item.modal, props);
         if (widget) {

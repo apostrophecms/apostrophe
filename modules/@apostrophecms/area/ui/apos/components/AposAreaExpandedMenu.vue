@@ -1,4 +1,8 @@
 <template>
+  <!-- eslint can't figure out I am using a legit variable from v-for -->
+  <!-- eslint-disable vue/valid-v-for -->
+  <!-- use of v-if with v-for here is correct -->
+  <!-- eslint-disable vue/no-use-v-if-with-v-for -->
   <AposModal
     class="apos-area-menu--expanded"
     :modal="modal"
@@ -29,8 +33,8 @@
               ]"
             >
               <button
-                v-if="group.type === 'operations'"
                 v-for="(item, itemIndex) in group.operations"
+                v-if="group.type === 'operations'"
                 :key="`operation-{{itemIndex}}`"
                 :data-apos-focus-priority="itemIndex === 0 ? true : null"
                 class="apos-operation"
@@ -47,8 +51,8 @@
                 </p>
               </button>
               <button
-                v-else
                 v-for="(item, itemIndex) in group.widgets"
+                v-else
                 :key="`widget-{{itemIndex}}`"
                 :data-apos-focus-priority="itemIndex === 0 ? true : null"
                 class="apos-widget"
@@ -84,7 +88,10 @@
                 </p>
               </button>
             </div>
-            <hr class="apos-expanded-divider" v-if="group.type !== 'widgets'" />
+            <hr
+              v-if="group.type !== 'widgets'"
+              class="apos-expanded-divider"
+            >
           </div>
         </template>
       </AposModalBody>
@@ -121,6 +128,11 @@ export default {
       },
       groups: []
     };
+  },
+  computed: {
+    moduleOptions() {
+      return window.apos.area;
+    }
   },
   async mounted() {
     this.modal.active = true;
@@ -159,11 +171,6 @@ export default {
       ...this.getCreateWidgetOperationsGroups(),
       ...this.groups
     ];
-  },
-  computed: {
-    moduleOptions() {
-      return window.apos.area;
-    }
   },
   methods: {
     isValidColumn(count) {

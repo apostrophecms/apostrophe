@@ -224,7 +224,9 @@ export default {
         ...operation
       }));
     },
-    async handleClick({ action, modal, ignoreResult = false }) {
+    async handleClick({
+      action, modal, ignoreResult = false
+    }) {
       if (modal) {
         const result = await apos.modal.execute(modal, {
           widget: this.modelValue,
