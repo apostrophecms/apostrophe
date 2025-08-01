@@ -162,10 +162,7 @@ export default {
     },
 
     evaluateConditions() {
-      console.log('evaluateConditions', this.schema, this.docFields.data, this.externalConditionsResults);
-      console.trace();
       this.conditionalFields = this.getConditionalFields();
-      console.log('conditionalFields', this.conditionalFields);
     },
 
     // Overridden by components that split the fields into several AposSchemas
