@@ -14,10 +14,12 @@ export const getConditionTypesObject = () => Object
 // `docId` - the current docId (from prop or context)
 // `$t` - the i18n function (usually `this.$t`)
 export async function evaluateExternalConditions(schema, docId, $t) {
+  console.log('evaluateExternalConditions', schema, docId);
   const externalConditionsResults = getConditionTypesObject();
 
   for (const field of schema) {
     for (const conditionType of conditionTypes) {
+      console.log(field[conditionType]);
       if (field[conditionType]) {
         const externalConditionKeys = Object
           .entries(field[conditionType])
@@ -25,6 +27,7 @@ export async function evaluateExternalConditions(schema, docId, $t) {
           .filter(Boolean);
 
         const uniqExternalConditionKeys = [ ...new Set(externalConditionKeys) ];
+        console.log('uniqExternalConditionKeys', uniqExternalConditionKeys);
 
         try {
           const promises = uniqExternalConditionKeys
@@ -51,6 +54,7 @@ export async function evaluateExternalConditions(schema, docId, $t) {
       }
     }
   }
+  console.log('externalConditionsResults', externalConditionsResults);
   return externalConditionsResults;
 
   function getExternalConditionKeys([ key, val ], conditionType) {
@@ -66,6 +70,7 @@ export async function evaluateExternalConditions(schema, docId, $t) {
 }
 
 export async function evaluateExternalCondition(conditionKey, fieldId, docId) {
+  console.log('XHR');
   const { result } = await apos.http.get(
     `${apos.schema.action}/evaluate-external-condition`,
     {
@@ -115,6 +120,7 @@ export function getConditionalFields(
   values,
   externalConditionsResults
 ) {
+  console.log('getConditionalFields', schema, values, externalConditionsResults);
   const result = getConditionTypesObject();
 
   for (const field of schema) {
@@ -130,6 +136,7 @@ export function getConditionalFields(
     }
   }
 
+  console.log('result', result);
   return result;
 
   // Handle external conditions as a voter function.

@@ -78,7 +78,7 @@ export default {
     async evaluateExternalConditions() {
       this.externalConditionsResults = await evaluateExternalConditions(
         this.schema,
-        this.docId || this.docFields?.data?._docId,
+        this.docId || this.docFields?.data?._docId || this.docFields?.data?._id,
         this.$t
       );
     },
@@ -162,7 +162,10 @@ export default {
     },
 
     evaluateConditions() {
+      console.log('evaluateConditions', this.schema, this.docFields.data, this.externalConditionsResults);
+      console.trace();
       this.conditionalFields = this.getConditionalFields();
+      console.log('conditionalFields', this.conditionalFields);
     },
 
     // Overridden by components that split the fields into several AposSchemas

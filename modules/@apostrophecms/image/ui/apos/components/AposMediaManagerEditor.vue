@@ -87,6 +87,7 @@
         :trigger-validation="triggerValidation"
         :doc-id="docFields.data._id"
         :following-values="followingValues()"
+        :conditional-fields="conditionalFields"
         :server-errors="serverErrors"
         @validate="triggerValidate"
         @reset="$emit('modified', false)"
@@ -231,6 +232,7 @@ export default {
     'docFields.data': {
       deep: true,
       handler(newData, oldData) {
+        this.evaluateConditions();
         this.$nextTick(() => {
           // If either old or new state are an empty object, it's not
           // "modified."
@@ -252,13 +254,14 @@ export default {
         }
       }
     },
-    media(newVal) {
-      this.updateActiveDoc(newVal);
+    async media(newVal) {
+      await this.updateActiveDoc(newVal);
     }
   },
-  mounted() {
+  async mounted() {
     this.generateLipKey();
     this.$emit('modified', false);
+
   },
   methods: {
     moreMenuHandler(item) {
@@ -271,6 +274,8 @@ export default {
       this.restoreOnly = !!this.activeMedia.archived;
       this.original = klona(newMedia);
       this.docFields.data = klona(newMedia);
+      this.evaluateConditions();
+      await this.evaluateExternalConditions();
       this.generateLipKey();
       await this.unlock();
       // Distinguish between an actual doc and an empty placeholder
@@ -402,7 +407,7 @@ export default {
         }
 
         await this.cancel();
-        this.updateActiveDoc(this.activeMedia);
+        await this.updateActiveDoc(this.activeMedia);
       }
       apos.bus.$emit('admin-menu-click', {
         itemName: '@apostrophecms/i18n:localize',
