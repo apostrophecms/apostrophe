@@ -954,12 +954,37 @@ module.exports = {
             const left = content.lastIndexOf('<', i);
             const src = content.indexOf(' src="', left);
             const close = content.indexOf('"', src + 6);
-            if ((left !== -1) && (src !== -1) && (close !== -1)) {
-              content = content.substring(0, src + 5) + doc.attachment._urls[self.apos.modules['@apostrophecms/image'].getLargestSize()] + content.substring(close + 1);
-            } else {
+
+            if (left === -1 || src === -1 || close === -1) {
               // So we don't get stuck in an infinite loop
               break;
             }
+
+            content = content.substring(0, src + 5) + '"' + doc.attachment._urls[self.apos.modules['@apostrophecms/image'].getLargestSize()] + '"' + content.substring(close + 1);
+
+            const tagEnd = content.indexOf('>', left);
+
+            if (tagEnd === -1) {
+              continue;
+            }
+
+            let imgTag = content.substring(left, tagEnd + 1);
+
+            const altAttr = ' alt="';
+            const altIndex = imgTag.indexOf(altAttr);
+
+            if (altIndex === -1) {
+              continue;
+            }
+
+            const altValueStart = altIndex + altAttr.length;
+            const altValueEnd = imgTag.indexOf('"', altValueStart);
+
+            // Replace the existing alt value in the img tag
+            imgTag = imgTag.substring(0, altValueStart) + self.apos.util.escapeHtml(doc.alt || '') + imgTag.substring(altValueEnd);
+
+            // Replace the img tag in content
+            content = content.substring(0, left) + imgTag + content.substring(tagEnd + 1);
           }
         }
         return content;
