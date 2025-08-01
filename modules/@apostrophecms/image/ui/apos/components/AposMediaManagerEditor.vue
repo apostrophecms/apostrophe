@@ -258,10 +258,9 @@ export default {
       await this.updateActiveDoc(newVal);
     }
   },
-  async mounted() {
+  mounted() {
     this.generateLipKey();
     this.$emit('modified', false);
-
   },
   methods: {
     moreMenuHandler(item) {
