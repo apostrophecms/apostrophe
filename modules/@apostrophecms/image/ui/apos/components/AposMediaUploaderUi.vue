@@ -276,6 +276,7 @@ async function uploadMedia (event) {
   @include apos-button-reset();
 
   & {
+    font-family: var(--a-family-default);
     position: relative;
     display: flex;
     overflow: hidden;
