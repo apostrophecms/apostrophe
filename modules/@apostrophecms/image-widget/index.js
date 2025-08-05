@@ -7,12 +7,9 @@ module.exports = {
     dimensionAttrs: false,
     placeholder: true,
     initialModal: false,
-    placeholderClass: false,
-    placeholderImage: 'jpg',
     linkWithType: [ '@apostrophecms/any-page-type' ],
     // Should we write e.g. a reset style for the `figure` element?
     inlineStyles: true,
-    // contextual: true, TODO: FIX
     components: {
       widget: 'AposImageWidget'
     }
@@ -140,6 +137,8 @@ module.exports = {
     };
   },
   init(self) {
+    self.showPlaceholder = self.options.placeholder !== false;
+    self.options.placeholder = true;
     self.determineBestAssetUrl('placeholder');
   },
   handlers(self) {
@@ -178,6 +177,17 @@ module.exports = {
           }
           return self.apos.modules[type].options?.label ?? type;
         }
+      }
+    };
+  },
+  extendMethods(self) {
+    return {
+      getBrowserData(_super, req) {
+        return {
+          ..._super(req),
+          showPlaceholder: self.showPlaceholder,
+          placeholderUrl: self.options.placeholderUrl
+        };
       }
     };
   }

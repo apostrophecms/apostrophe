@@ -6,6 +6,7 @@
     <AposMediaUploaderUi
       :min-size="props.options?.minSize"
       :accept="accept"
+      :placeholder="placeholder"
       @upload="upload"
       @media="selectFromManager"
     />
@@ -25,8 +26,9 @@ import {
 import { useAposWidget } from 'Modules/@apostrophecms/widget-type/composables/AposWidget';
 import aposWidgetProps from 'Modules/@apostrophecms/widget-type/composables/AposWidgetProps';
 
-const moduleOptions = window.apos.modules['@apostrophecms/image'];
-const accept = moduleOptions.schema.find(field => field.name === 'attachment').accept;
+const imgModuleOptions = apos.modules['@apostrophecms/image'];
+const widgetModuleOptions = apos.modules['@apostrophecms/image-widget'];
+const accept = imgModuleOptions.schema.find(field => field.name === 'attachment').accept;
 
 const emit = defineEmits([ 'edit', 'update' ]);
 
@@ -39,6 +41,12 @@ const hasImage = computed(() => {
   return Boolean(props.modelValue?._image?.length);
 });
 
+const placeholder = computed(() => {
+  return widgetModuleOptions.showPlaceholder === false
+    ? null
+    : widgetModuleOptions.placeholderUrl;
+});
+
 watch(() => props.modelValue, async (newVal) => {
   if (hasImage.value) {
     await renderContent();
@@ -46,7 +54,8 @@ watch(() => props.modelValue, async (newVal) => {
 }, { immediate: true });
 
 async function selectFromManager() {
-  const modalItem = apos.modal.modals.find((modal) => modal.itemName === '@apostrophecms/image:manager');
+  const modalItem = apos.modal.modals
+    .find((modal) => modal.itemName === '@apostrophecms/image:manager');
   if (!modalItem) {
     return;
   }
@@ -151,7 +160,7 @@ async function upload(files = []) {
   }
 
   try {
-    const emptyDoc = await apos.http.post(moduleOptions.action, {
+    const emptyDoc = await apos.http.post(imgModuleOptions.action, {
       busy: true,
       body: {
         _newInstance: true
@@ -173,7 +182,7 @@ async function upload(files = []) {
       attachment
     });
 
-    const imgPiece = await apos.http.post(moduleOptions.action, {
+    const imgPiece = await apos.http.post(imgModuleOptions.action, {
       busy: true,
       body: imageData,
       draft: true

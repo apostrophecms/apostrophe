@@ -52,23 +52,24 @@ export async function _renderContent(props) {
     _docId: props.docId,
     widget,
     areaFieldId: props.areaFieldId,
-    type: props.type,
-    livePreview: props.aposLivePreview
+    type: props.type
   };
   try {
     if (props.rendering && (isEqual(props.rendering.parameters, body))) {
       return props.rendering.html;
-    } else {
-      // Don't use a placeholder here, it causes flickering in live preview
-      // mode. It is better to display the old until we display the new, we
-      // have "busy" for clarity
-      const result = await apos.http.post(`${apos.area.action}/render-widget?aposEdit=1&aposMode=${props.mode}`, {
-        busy: !props.aposLivePreview,
-        body
-      });
-      if (result !== 'aposLivePreviewSchemaNotYetValid') {
-        return result;
+    }
+    // Don't use a placeholder here, it causes flickering in live preview
+    // mode. It is better to display the old until we display the new, we
+    // have "busy" for clarity
+    const result = await apos.http.post(`${apos.area.action}/render-widget?aposEdit=1&aposMode=${props.mode}`, {
+      busy: !aposLivePreview,
+      body: {
+        ...body,
+        livePreview: aposLivePreview
       }
+    });
+    if (result !== 'aposLivePreviewSchemaNotYetValid') {
+      return result;
     }
   } catch (e) {
     // eslint-disable-next-line no-console
