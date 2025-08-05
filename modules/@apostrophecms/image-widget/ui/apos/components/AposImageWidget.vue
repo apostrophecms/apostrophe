@@ -42,7 +42,7 @@ const hasImage = computed(() => {
 });
 
 const placeholder = computed(() => {
-  return widgetModuleOptions.hidePlaceholder
+  return widgetModuleOptions.showPlaceholder === false
     ? null
     : widgetModuleOptions.placeholderUrl;
 });
