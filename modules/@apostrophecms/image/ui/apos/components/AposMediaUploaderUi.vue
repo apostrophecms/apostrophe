@@ -1,5 +1,5 @@
 <template>
-  <label
+  <div
     ref="mediaUploaderEl"
     class="apos-media-uploader"
     :style="uploaderStyle"
@@ -13,7 +13,7 @@
     @dragover.prevent=""
     @dragenter="dragOverEnter"
     @dragleave="dragOverLeave"
-    @drop="dragOverLeave"
+    @click.stop="openMedia"
   >
     <div class="apos-media-uploader__inner">
       <!-- if we want animations.. -->
@@ -48,12 +48,12 @@
       tabindex="-1"
       @input="uploadMedia"
     >
-  </label>
+  </div>
 </template>
 
 <script setup>
 import {
-  ref, inject, useTemplateRef, onMounted, onUnmounted, computed
+  ref, inject, useTemplateRef, onMounted, onUnmounted, computed, onBeforeUnmount
 } from 'vue';
 
 const $t = inject('i18n');
@@ -190,6 +190,10 @@ onMounted(() => {
   document.addEventListener('drop', dropListener);
 });
 
+onBeforeUnmount(() => {
+  unbindEmits();
+});
+
 onUnmounted(() => {
   document.removeEventListener('dragenter', dragEnterListener);
   document.removeEventListener('dragleave', dragLeaveListener);
@@ -199,16 +203,27 @@ onUnmounted(() => {
 /** Bind click events on links contained in translated texts */
 function bindEmits() {
   mediaUploaderEl.value.querySelectorAll('[data-apos-click]').forEach((el) => {
-    el.addEventListener('click', (event) => {
-      const action = event.currentTarget.getAttribute('data-apos-click');
-      if (action === 'openMedia') {
-        openMedia();
-      } else if (action === 'searchFile') {
-        searchFile();
-      }
-    });
+    el.addEventListener('click', btnClickEvent);
   });
 }
+
+/** Unbind click events on links contained in translated texts */
+function unbindEmits() {
+  mediaUploaderEl.value.querySelectorAll('[data-apos-click]').forEach((el) => {
+    el.removeEventListener('click', btnClickEvent);
+  });
+}
+
+/** Bind each button event */
+function btnClickEvent(event) {
+  event.stopPropagation();
+  const action = event.currentTarget.getAttribute('data-apos-click');
+  if (action === 'openMedia') {
+    openMedia();
+  } else if (action === 'searchFile') {
+    searchFile();
+  }
+};
 
 function openMedia() {
   emit('media');
@@ -226,7 +241,7 @@ function searchFile() {
  * @param {DragEvent} event - Dropped file event
  */
 async function uploadMedia (event) {
-  // Set `dragover` in case the media was dropped.
+  // Reset drag over counter when dropping file
   dragOverCounter.value = 0;
   const files = event.dataTransfer ? event.dataTransfer.files : event.target.files;
   if (!props.accept) {

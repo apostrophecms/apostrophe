@@ -54,7 +54,8 @@ watch(() => props.modelValue, async (newVal) => {
 }, { immediate: true });
 
 async function selectFromManager() {
-  const modalItem = apos.modal.modals.find((modal) => modal.itemName === '@apostrophecms/image:manager');
+  const modalItem = apos.modal.modals
+    .find((modal) => modal.itemName === '@apostrophecms/image:manager');
   if (!modalItem) {
     return;
   }
