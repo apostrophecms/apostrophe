@@ -48,14 +48,14 @@ export async function _renderContent(props) {
     aposLivePreview,
     ...widget
   } = props.modelValue;
-  const body = {
+  const parameters = {
     _docId: props.docId,
     widget,
     areaFieldId: props.areaFieldId,
     type: props.type
   };
   try {
-    if (props.rendering && (isEqual(props.rendering.parameters, body))) {
+    if (props.rendering && (isEqual(props.rendering.parameters, parameters))) {
       return props.rendering.html;
     }
     // Don't use a placeholder here, it causes flickering in live preview
@@ -64,7 +64,7 @@ export async function _renderContent(props) {
     const result = await apos.http.post(`${apos.area.action}/render-widget?aposEdit=1&aposMode=${props.mode}`, {
       busy: !aposLivePreview,
       body: {
-        ...body,
+        ...parameters,
         livePreview: aposLivePreview
       }
     });
