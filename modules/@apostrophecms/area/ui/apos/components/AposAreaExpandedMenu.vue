@@ -37,7 +37,7 @@
                 v-if="group.type === 'operations'"
                 :key="`operation-{{itemIndex}}`"
                 :data-apos-focus-priority="itemIndex === 0 ? true : null"
-                class="apos-operation"
+                class="apos-button apos-operation"
                 @click="operation(item)"
               >
                 <p class="apos-operation__label">
@@ -284,6 +284,22 @@ export default {
 </script>
 
 <style lang="scss" scoped>
+button.apos-operation {
+  @include apos-transition();
+  border-radius: var(--a-border-radius);
+  border: 1px solid var(--a-base-5);
+  color: var(--a-text-primary);
+  border-radius: var(--a-border-radius);
+  background-color: var(--a-base-9);
+  box-sizing: border-box;
+  width: 100%;
+  height: 70px;
+  cursor: pointer;
+  &:hover {
+    background-color: var(--a-base-8);
+  }
+}
+
 .apos-area-menu--expanded {
   @include type-base;
 }
