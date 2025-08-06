@@ -1,6 +1,6 @@
 # Changelog
 
-## UNRELEASED
+## 4.20.0 (2025-08-06)
 
 ### Adds
 
