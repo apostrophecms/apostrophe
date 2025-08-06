@@ -41,7 +41,7 @@ module.exports = {
           },
           {
             label: 'Center',
-            value: 'center'
+            value: 'apostrophe:layoutCenter'
           }
         ],
         def: 'center'
