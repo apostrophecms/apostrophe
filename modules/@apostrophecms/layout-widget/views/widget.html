@@ -1,0 +1,20 @@
+  <section 
+    class="layout-widget" 
+    style="--grid-columns: {{ data.options.steps }}"
+  >
+    {% if data.widget.columns.items.length %}
+      {% for item in data.widget.columns.items %}
+        <div 
+          style="
+            --column-start: {{ item.start }}; 
+            --column-span: {{ item.span }}; 
+            --justify: {{ item.justify }};
+            --align: {{ item.align }};
+        ">
+          {% area item, 'content' %}
+        </div>
+      {% endfor %}
+    {% else %}
+      {% area data.widget, 'columns' %}
+    {% endif %}
+  </section>
