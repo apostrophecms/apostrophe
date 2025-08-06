@@ -30,10 +30,15 @@ export default {
       return _getClasses(this.modelValue, this.moduleOptions);
     },
     async renderContent() {
-      this.rendered = await _renderContent(this.$props);
-      this.$nextTick(() => {
-        _emitWidgetRendered(this.$props);
-      });
+      const result = await _renderContent(this.$props);
+      if (Object.hasOwn(result, 'data')) {
+        this.rendered = result.data;
+      }
+      if (!result.error) {
+        this.$nextTick(() => {
+          _emitWidgetRendered(this.modelValue.aposLivePreview);
+        });
+      }
     }
   }
 };
