@@ -276,7 +276,6 @@ async function uploadMedia (event) {
   @include apos-button-reset();
 
   & {
-    font-family: var(--a-family-default);
     position: relative;
     display: flex;
     overflow: hidden;
@@ -285,7 +284,11 @@ async function uploadMedia (event) {
     justify-content: center;
     border-radius: var(--a-border-radius);
     outline: 1px dashed var(--a-base-5);
+
+    /* This margin is for test purpose, for `useWidgetFocus` */
+    margin: 3px;
     color: inherit;
+    font-family: var(--a-family-default);
     grid-column: 1 / 3;
     grid-row: 1 / 3;
     min-height: 350px;
