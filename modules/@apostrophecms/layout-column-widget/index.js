@@ -40,8 +40,8 @@ module.exports = {
             value: 'end'
           },
           {
-            label: 'Center',
-            value: 'apostrophe:layoutCenter'
+            label: 'apostrophe:layoutCenter',
+            value: 'center'
           }
         ],
         def: 'center'

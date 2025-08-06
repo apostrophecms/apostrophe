@@ -1,8 +1,8 @@
+{% if data.widget.columns.items.length %}
   <section 
     class="layout-widget" 
     style="--grid-columns: {{ data.options.steps }}"
   >
-    {% if data.widget.columns.items.length %}
       {% for item in data.widget.columns.items %}
         <div 
           style="
@@ -14,7 +14,7 @@
           {% area item, 'content' %}
         </div>
       {% endfor %}
-    {% else %}
-      {% area data.widget, 'columns' %}
-    {% endif %}
   </section>
+{% else %}
+  {% area data.widget, 'columns' %}
+{% endif %}
