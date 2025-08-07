@@ -47,6 +47,7 @@
       :disabled="props.disabled"
       tabindex="-1"
       @input="uploadMedia"
+      @click.stop
     >
   </div>
 </template>
