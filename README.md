@@ -79,6 +79,10 @@ ApostropheCMS provides powerful REST APIs for any frontend framework:
 - **[Apollo Starter Kit (Astro)](https://github.com/apostrophecms/starter-kit-astro-apollo)** - Headless site with visual editing
 - **[Essentials Starter Kit (Astro)](https://github.com/apostrophecms/starter-kit-astro-essentials)** - Minimal headless foundation
 
+### Hosting & Deployment
+
+Deploy anywhere Node.js runs, or choose [ApostropheCMS hosting](https://apostrophecms.com/hosting) for turnkey solutions with optimized performance and dedicated support.
+
 ## Built With Modern Tech
 
 - **[Node.js](https://nodejs.org/)** - JavaScript runtime for server-side development
