@@ -1,12 +1,12 @@
 {# area needs its own copy of the widget options as #}
 {# JSON, for adding new widgets #}
 
-<div class="apos-area {{ data._with.className }}" {%- if data.canEdit %} data-apos-area-newly-editable data-doc-id='{{ data.area._docId | jsonAttribute({ single: true }) }}' data-field-id='{{ data.field._id | jsonAttribute({ single: true }) }}' data-options='{{ apos.util.omit(data.options, 'area') | jsonAttribute({ single: true }) }}' data='{{ data.area | jsonAttribute({ single: true }) }}' data-choices='{{ data.choices | jsonAttribute({ single: true }) }}'{% endif %} {%- if data._with.style %} style="{{ data._with.style }}"{% endif %}>
+<div class="apos-area{{ (' ' + data._with.className) or '' }}" {%- if data.canEdit %} data-apos-area-newly-editable data-doc-id='{{ data.area._docId | jsonAttribute({ single: true }) }}' data-field-id='{{ data.field._id | jsonAttribute({ single: true }) }}' data-options='{{ apos.util.omit(data.options, 'area') | jsonAttribute({ single: true }) }}' data='{{ data.area | jsonAttribute({ single: true }) }}' data-choices='{{ data.choices | jsonAttribute({ single: true }) }}'{% endif %}{%- if data._with.style %} style="{{ data._with.style }}"{% endif %}>
   {%- for item in data.area.items -%}
     {%- set widgetOptions = data.options.widgets[item.type] or {} -%}
-    {% if data.options.widgetTemplate %}
+    {%- if data.options.widgetTemplate -%}
       {% include data.options.widgetTemplate %}
-    {% else %}
+    {%- else -%}
       {%- if data.canEdit -%}
         <div data-apos-widget="{{ item._id }}">
       {%- endif -%}
