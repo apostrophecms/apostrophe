@@ -97,13 +97,6 @@ export default {
       this.dragoverCount--;
       this.dragover = this.dragoverCount > 0;
     },
-    dragHandler (event) {
-      if (this.disabled) {
-        return;
-      }
-      event.preventDefault();
-      this.dragging = true;
-    },
     async uploadMedia (event) {
       try {
         apos.bus.$emit('busy', {
