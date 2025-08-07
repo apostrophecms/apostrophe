@@ -8,7 +8,7 @@ module.exports = {
   //   add: {
   //     move: {
   //       icon: 'move',
-  //       tooltip: 'apostrophe:move',
+  //       tooltip: 'Move',
   //       rawEvents: [ 'pointerdown', 'pointermove', 'pointerup' ]
   //     }
   //   }
