@@ -1,0 +1,12 @@
+{# Included directly from the `area.html` template.
+The area related `data.*` is available pluis `item` and `widgetOptions`. #}
+<div
+  {% if data.canEdit %}data-apos-widget="{{ item._id }}"{% endif %}
+  style="
+    --column-start: {{ item.start }}; 
+    --column-span: {{ item.span }}; 
+    --justify: {{ item.justify }};
+    --align: {{ item.align }};
+">
+  {% area item, 'content' %}
+</div>

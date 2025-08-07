@@ -19,6 +19,7 @@ module.exports = {
         type: 'area',
         options: {
           editorComponent: 'AposAreaLayoutEditor',
+          widgetTemplate: '@apostrophecms/layout-widget:item.html',
           widgets: {
             '@apostrophecms/layout-column': {}
           }

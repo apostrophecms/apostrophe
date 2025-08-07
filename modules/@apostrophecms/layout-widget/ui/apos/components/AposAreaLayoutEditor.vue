@@ -6,6 +6,7 @@
     :class="themeClass"
     @click="setFocusedArea(areaId, $event)"
   >
+    <h5>A message from the Layout Area Editor</h5>
     <div
       v-if="next.length === 0 && !foreign"
       class="apos-empty-area"
@@ -79,10 +80,10 @@
 </template>
 
 <script>
-import AposAreaEditorLogic from '../logic/AposAreaEditor.js';
+import AposAreaEditorLogic from 'Modules/@apostrophecms/area/logic/AposAreaEditor.js';
 
 export default {
-  name: 'AposAreaEditor',
+  name: 'AposAreaLayoutEditor',
   mixins: [ AposAreaEditorLogic ]
 };
 </script>
