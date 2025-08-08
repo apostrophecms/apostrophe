@@ -3,8 +3,6 @@ import createApp from 'Modules/@apostrophecms/ui/lib/vue';
 
 export default function() {
 
-  const component = apos.vueComponents.AposAreaEditor;
-
   let widgetsRendering = 0;
 
   apos.area.widgetOptions = [];
@@ -69,9 +67,18 @@ export default function() {
     const options = JSON.parse(el.getAttribute('data-options'));
     const data = JSON.parse(el.getAttribute('data'));
     const fieldId = el.getAttribute('data-field-id');
+    const moduleName = el.getAttribute('data-module');
     const choices = JSON.parse(el.getAttribute('data-choices'));
     const renderings = {};
     const _docId = data._docId;
+
+    let componentName = options.editorComponent || 'AposAreaEditor';
+    if (!apos.vueComponents[componentName]) {
+      // eslint-disable-next-line no-console
+      console.error(`Area Editor component "${componentName}" not found. Switching to default.`);
+      componentName = 'AposAreaEditor';
+    }
+    const component = apos.vueComponents[componentName];
 
     for (const widgetEl of el.querySelectorAll('[data-apos-widget]')) {
       const _id = widgetEl.getAttribute('data-apos-widget');
@@ -109,6 +116,7 @@ export default function() {
         choices,
         docId: _docId,
         fieldId,
+        moduleName,
         renderings
       });
 

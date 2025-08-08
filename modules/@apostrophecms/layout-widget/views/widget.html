@@ -1,20 +1,4 @@
-{% if data.widget.columns.items.length %}
-  <section 
-    class="layout-widget" 
-    style="--grid-columns: {{ data.options.steps }}"
-  >
-      {% for item in data.widget.columns.items %}
-        <div 
-          style="
-            --column-start: {{ item.start }}; 
-            --column-span: {{ item.span }}; 
-            --justify: {{ item.justify }};
-            --align: {{ item.align }};
-        ">
-          {% area item, 'content' %}
-        </div>
-      {% endfor %}
-  </section>
-{% else %}
-  {% area data.widget, 'columns' %}
-{% endif %}
+{% area data.widget, 'columns' with { 
+  style: '--grid-columns: ' + data.options.steps + ';', 
+  className: 'layout-widget' 
+} %}
