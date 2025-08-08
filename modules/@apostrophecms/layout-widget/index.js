@@ -5,7 +5,6 @@ module.exports = {
     steps: 12,
     minSpan: 1,
     defaultSpan: 4,
-    defaultJustify: 'stretch',
     mobile: {
       breakpoint: 480
     },
@@ -26,5 +25,22 @@ module.exports = {
         }
       }
     }
+  },
+  extendMethods(self) {
+    return {
+      getBrowserData(_super, req) {
+        const result = _super(req);
+        return {
+          ...result,
+          grid: {
+            steps: self.options.steps,
+            minSpan: self.options.minSpan,
+            defaultSpan: self.options.defaultSpan,
+            mobile: self.options.mobile,
+            tablet: self.options.tablet
+          }
+        };
+      }
+    };
   }
 };

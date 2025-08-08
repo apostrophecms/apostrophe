@@ -4,6 +4,12 @@
     :data-apos-area="areaId"
     class="apos-area"
     :class="themeClass"
+    :style="{
+      '--column-span': gridModuleOptions.steps,
+      '--column-start': 1,
+      '--justify': 'stretch',
+      '--align': 'stretch'
+    }"
     @click="setFocusedArea(areaId, $event)"
   >
     <h5>A message from the Layout Area Editor</h5>
@@ -43,38 +49,52 @@
       </template>
     </div>
     <div class="apos-areas-widgets-list">
-      <AposAreaWidget
-        v-for="(widget, i) in next"
-        :key="widget._id"
-        :area-id="areaId"
-        :widget="widget"
-        :meta="meta[widget._id]"
-        :generation="generation"
-        :i="i"
-        :options="options"
-        :next="next"
-        :following-values="followingValues"
-        :doc-id="docId"
-        :context-menu-options="contextMenuOptions"
-        :field-id="fieldId"
-        :field="field"
-        :disabled="field && field.readOnly"
-        :widget-hovered="hoveredWidget"
-        :non-foreign-widget-hovered="hoveredNonForeignWidget"
-        :widget-focused="focusedWidget"
-        :max-reached="maxReached"
-        :rendering="rendering(widget)"
-        @up="up"
-        @down="down"
-        @remove="remove"
-        @cut="cut"
-        @copy="copy"
-        @edit="edit"
-        @clone="clone"
-        @update="update"
-        @add="add"
-        @paste="paste"
-      />
+      <div
+        class="layout-widget"
+        :style="{ '--grid-columns': gridModuleOptions.steps }"
+      >
+        <div
+          v-for="(widget, i) in next"
+          :key="widget._id"
+          :style="{
+            '--column-start': widget.start,
+            '--column-span': widget.span,
+            '--justify': widget.justify,
+            '--align': widget.align
+          }"
+        >
+          <AposAreaWidget
+            :area-id="areaId"
+            :widget="widget"
+            :meta="meta[widget._id]"
+            :generation="generation"
+            :i="i"
+            :options="options"
+            :next="next"
+            :following-values="followingValues"
+            :doc-id="docId"
+            :context-menu-options="contextMenuOptions"
+            :field-id="fieldId"
+            :field="field"
+            :disabled="field && field.readOnly"
+            :widget-hovered="hoveredWidget"
+            :non-foreign-widget-hovered="hoveredNonForeignWidget"
+            :widget-focused="focusedWidget"
+            :max-reached="maxReached"
+            :rendering="rendering(widget)"
+            @up="up"
+            @down="down"
+            @remove="remove"
+            @cut="cut"
+            @copy="copy"
+            @edit="edit"
+            @clone="clone"
+            @update="update"
+            @add="add"
+            @paste="paste"
+          />
+        </div>
+      </div>
     </div>
   </div>
 </template>
@@ -84,7 +104,18 @@ import AposAreaEditorLogic from 'Modules/@apostrophecms/area/logic/AposAreaEdito
 
 export default {
   name: 'AposAreaLayoutEditor',
-  mixins: [ AposAreaEditorLogic ]
+  mixins: [ AposAreaEditorLogic ],
+  props: {
+    moduleName: {
+      type: String,
+      default: null
+    }
+  },
+  computed: {
+    gridModuleOptions() {
+      return window.apos.modules[this.moduleName]?.grid ?? {};
+    }
+  }
 };
 </script>
 

@@ -67,11 +67,12 @@ export default function() {
     const options = JSON.parse(el.getAttribute('data-options'));
     const data = JSON.parse(el.getAttribute('data'));
     const fieldId = el.getAttribute('data-field-id');
+    const moduleName = el.getAttribute('data-module');
     const choices = JSON.parse(el.getAttribute('data-choices'));
     const renderings = {};
     const _docId = data._docId;
 
-    let componentName = options.editorComponent;
+    let componentName = options.editorComponent || 'AposAreaEditor';
     if (!apos.vueComponents[componentName]) {
       // eslint-disable-next-line no-console
       console.error(`Area Editor component "${componentName}" not found. Switching to default.`);
@@ -115,6 +116,7 @@ export default function() {
         choices,
         docId: _docId,
         fieldId,
+        moduleName,
         renderings
       });
 
