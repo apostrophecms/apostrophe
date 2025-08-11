@@ -41,6 +41,8 @@ module.exports = {
     '@apostrophecms/search': {},
     '@apostrophecms/any-page-type': {},
     '@apostrophecms/area': {},
+    '@apostrophecms/layout-widget': {},
+    '@apostrophecms/layout-column-widget': {},
     '@apostrophecms/rich-text-widget': {},
     '@apostrophecms/html-widget': {},
     '@apostrophecms/color-field': {},
