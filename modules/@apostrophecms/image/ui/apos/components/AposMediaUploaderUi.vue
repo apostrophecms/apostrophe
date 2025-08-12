@@ -22,10 +22,12 @@
         :icon-size="70"
         :icon="props.icon"
       />
+      <!-- eslint-disable vue/no-v-html -->
       <p
         class="apos-media-uploader__instructions"
         v-html="instructionsTranslation"
       />
+      <!-- eslint-disable vue/no-v-html -->
       <p
         class="apos-media-uploader__infos"
         v-html="acceptTranslation"

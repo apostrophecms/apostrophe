@@ -11,6 +11,7 @@
       @media="selectFromManager"
     />
   </div>
+  <!-- eslint-disable vue/no-v-html -->
   <div
     v-else
     :class="getClasses"
