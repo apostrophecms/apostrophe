@@ -328,12 +328,12 @@ export default {
     },
     widgetLabel() {
       const moduleName = `${this.widget.type}-widget`;
-      const module = window.apos.modules[moduleName];
-      if (!module) {
+      const mod = window.apos.modules[moduleName];
+      if (!mod) {
         // eslint-disable-next-line no-console
         console.warn(`No ${moduleName} module found for widget type ${this.widget.type}`);
       }
-      return module.label;
+      return mod.label;
     },
     widgetOptions() {
       return this.widgets[this.widget.type];

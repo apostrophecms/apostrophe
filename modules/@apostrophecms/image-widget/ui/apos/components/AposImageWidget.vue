@@ -26,13 +26,14 @@ import {
 import { useAposWidget } from 'Modules/@apostrophecms/widget-type/composables/AposWidget';
 import aposWidgetProps from 'Modules/@apostrophecms/widget-type/composables/AposWidgetProps';
 
+const props = defineProps(aposWidgetProps);
+
 const imgModuleOptions = apos.modules['@apostrophecms/image'];
-const widgetModuleOptions = apos.modules['@apostrophecms/image-widget'];
+const widgetModuleOptions = apos.modules[`${props.type}-widget`];
 const accept = imgModuleOptions.schema.find(field => field.name === 'attachment').accept;
 
 const emit = defineEmits([ 'edit', 'update' ]);
 
-const props = defineProps(aposWidgetProps);
 const {
   getClasses, renderContent, rendered
 } = useAposWidget(props);
