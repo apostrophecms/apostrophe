@@ -13,7 +13,6 @@
     @dragover.prevent=""
     @dragenter="dragOverEnter"
     @dragleave="dragOverLeave"
-    @click.stop="openMedia"
   >
     <div class="apos-media-uploader__inner">
       <!-- if we want animations.. -->
@@ -285,9 +284,6 @@ async function uploadMedia (event) {
     justify-content: center;
     border-radius: var(--a-border-radius);
     outline: 1px dashed var(--a-base-5);
-
-    /* This margin is for test purpose, for `useWidgetFocus` */
-    margin: 3px;
     color: inherit;
     font-family: var(--a-family-default);
     grid-column: 1 / 3;
