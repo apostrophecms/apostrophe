@@ -92,7 +92,6 @@ async function selectFromManager() {
  * @returns {boolean} - boolean sayingi if image is valid
  */
 function checkImageValid(image) {
-  /* const aspectRatio = image.width / image.height; */
   const minSize = props.options.minSize;
   if (!minSize) {
     return true;
@@ -122,32 +121,35 @@ function checkImageValid(image) {
  * @returns {boolean} - Returns a boolean telling if the image is valid
  */
 async function checkFileValid(file) {
-  const isValid = await new Promise((resolve, reject) => {
-    if (!file) {
-      return resolve(false);
-    }
-    const reader = new FileReader();
-    reader.onload = (e) => {
+  if (!file) {
+    return false;
+  }
+
+  try {
+    const blobUrl = URL.createObjectURL(file);
+    const isValid = await new Promise((resolve, reject) => {
       const img = new Image();
-      img.onload = (evt) => {
-        resolve(checkImageValid(evt.target));
+      img.onload = (e) => {
+        URL.revokeObjectURL(blobUrl);
+        resolve(checkImageValid(e.target));
+      };
+      img.onerror = () => {
+        URL.revokeObjectURL(blobUrl);
+        reject(new Error());
       };
 
-      img.src = e.target.result; // Use the file data from FileReader
-    };
-    reader.onerror = () => {
-      apos.notify('apostrophe:uploadError', {
-        type: 'danger',
-        icon: 'alert-circle-icon',
-        dismiss: true
-      });
-      resolve(false);
-    };
+      img.src = blobUrl;
+    });
 
-    reader.readAsDataURL(file);
-  });
-
-  return isValid;
+    return isValid;
+  } catch (err) {
+    apos.notify('apostrophe:uploadError', {
+      type: 'danger',
+      icon: 'alert-circle-icon',
+      dismiss: true
+    });
+    return false;
+  }
 }
 
 /**
