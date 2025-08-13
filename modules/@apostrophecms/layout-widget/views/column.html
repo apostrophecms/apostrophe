@@ -1,12 +1,14 @@
 {# Included directly from the `area.html` template.
-The area related `data.*` is available pluis `item` and `widgetOptions`. #}
+The area related `data.*` is available plus `item` and `widgetOptions`. #}
+{%- if item.type != '@apostrophecms/layout-meta' -%}
 <div
   {% if data.canEdit %}data-apos-widget="{{ item._id }}"{% endif %}
   style="
-    --column-start: {{ item.start }}; 
-    --column-span: {{ item.span }}; 
-    --justify: {{ item.justify }};
-    --align: {{ item.align }};
+    --colstart: {{ item.desktop.colstart }}; 
+    --colspan: {{ item.desktop.colspan }}; 
+    --justify: {{ item.desktop.justify }};
+    --align: {{ item.desktop.align }};
 ">
   {% area item, 'content' %}
 </div>
+{%- endif -%}
