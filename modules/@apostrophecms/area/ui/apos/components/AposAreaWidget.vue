@@ -21,6 +21,7 @@
       @blur="removeKeyboardFocusHandler"
     >
       <div
+        v-if="!breadcrumbDisabled"
         ref="label"
         class="apos-area-widget-controls apos-area-widget__label"
         :class="labelsClasses"
@@ -75,8 +76,10 @@
             />
           </li>
         </ol>
+        <!-- TODO add support for breadcrumb aside horizontal controls -->
       </div>
       <div
+        v-if="!controlsDisabled"
         class="
           apos-area-widget-controls
           apos-area-widget-controls--add--top
@@ -104,6 +107,7 @@
         :class="{'apos-is-disabled': isFocused}"
       />
       <div
+        v-if="!controlsDisabled"
         class="apos-area-widget-controls apos-area-widget-controls--modify"
         :class="controlsClasses"
       >
@@ -158,6 +162,7 @@
         @edit="$emit('edit', i);"
       />
       <div
+        v-if="!controlsDisabled"
         class="
           apos-area-widget-controls
           apos-area-widget-controls--add
@@ -260,6 +265,14 @@ export default {
       }
     },
     disabled: {
+      type: Boolean,
+      default: false
+    },
+    controlsDisabled: {
+      type: Boolean,
+      default: false
+    },
+    breadcrumbDisabled: {
       type: Boolean,
       default: false
     },
@@ -461,7 +474,8 @@ export default {
     // Determine whether or not we should adjust the label based on its
     // position to the admin bar
     adjustUi() {
-      const { height: labelHeight } = this.$refs.label.getBoundingClientRect();
+      const { height: labelHeight } = this.$refs.label?.getBoundingClientRect() ??
+        { height: 0 };
       const { top: widgetTop } = this.$refs.widget.getBoundingClientRect();
       const adminBarHeight = window.apos.modules['@apostrophecms/admin-bar'].height;
       const offsetTop = widgetTop + window.scrollY;

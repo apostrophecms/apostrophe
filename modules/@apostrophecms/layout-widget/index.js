@@ -2,7 +2,7 @@ module.exports = {
   extend: '@apostrophecms/widget-type',
   options: {
     label: 'apostrophe:layout',
-    steps: 12,
+    columns: 12,
     minSpan: 1,
     defaultSpan: 4,
     mobile: {
@@ -10,21 +10,32 @@ module.exports = {
     },
     tablet: {
       breakpoint: 1024
-    }
+    },
+    gap: 0,
+    defaultGridHorizontalAlignment: null,
+    defaultGridVerticalAlignment: null,
+    defaultCellHorizontalAlignment: null,
+    defaultCellVerticalAlignment: null
   },
-  fields: {
-    add: {
-      columns: {
-        type: 'area',
-        options: {
-          editorComponent: 'AposAreaLayoutEditor',
-          widgetTemplate: '@apostrophecms/layout-widget:column.html',
-          widgets: {
-            '@apostrophecms/layout-column': {}
+  fields(self, options) {
+    return {
+      add: {
+        columns: {
+          type: 'area',
+          options: {
+            // Custom editor component for layout management
+            editorComponent: 'AposAreaLayoutEditor',
+            // Default widget template for columns so that grid items
+            // are direct descendants of the grid container
+            widgetTemplate: '@apostrophecms/layout-widget:column.html',
+            widgets: {
+              '@apostrophecms/layout-column': {},
+              '@apostrophecms/layout-meta': {}
+            }
           }
         }
       }
-    }
+    };
   },
   extendMethods(self) {
     return {
@@ -33,11 +44,16 @@ module.exports = {
         return {
           ...result,
           grid: {
-            steps: self.options.steps,
+            columns: self.options.columns,
             minSpan: self.options.minSpan,
             defaultSpan: self.options.defaultSpan,
             mobile: self.options.mobile,
-            tablet: self.options.tablet
+            tablet: self.options.tablet,
+            gap: self.options.gap,
+            defaultGridHorizontalAlignment: self.options.defaultGridHorizontalAlignment,
+            defaultGridVerticalAlignment: self.options.defaultGridVerticalAlignment,
+            defaultCellHorizontalAlignment: self.options.defaultCellHorizontalAlignment,
+            defaultCellVerticalAlignment: self.options.defaultCellVerticalAlignment
           }
         };
       }

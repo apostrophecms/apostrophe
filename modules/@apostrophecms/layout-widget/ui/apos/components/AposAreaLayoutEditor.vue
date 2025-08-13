@@ -5,8 +5,8 @@
     class="apos-area"
     :class="themeClass"
     :style="{
-      '--column-span': gridModuleOptions.steps,
-      '--column-start': 1,
+      '--colspan': gridModuleOptions.columns,
+      '--colstart': 1,
       '--justify': 'stretch',
       '--align': 'stretch'
     }"
@@ -49,20 +49,13 @@
       </template>
     </div>
     <div class="apos-areas-widgets-list">
-      <div
-        class="layout-widget"
-        :style="{ '--grid-columns': gridModuleOptions.steps }"
+      <AposGridManager
+        :options="gridModuleOptions"
+        :items="layoutColumnWidgets"
+        :meta="layoutMeta"
+        :mode="'manage'"
       >
-        <div
-          v-for="(widget, i) in next"
-          :key="widget._id"
-          :style="{
-            '--column-start': widget.start,
-            '--column-span': widget.span,
-            '--justify': widget.justify,
-            '--align': widget.align
-          }"
-        >
+        <template #item="{ item: widget, i }">
           <AposAreaWidget
             :area-id="areaId"
             :widget="widget"
@@ -82,6 +75,8 @@
             :widget-focused="focusedWidget"
             :max-reached="maxReached"
             :rendering="rendering(widget)"
+            :controls-disabled="true"
+            :breadcrumb-disabled="true"
             @up="up"
             @down="down"
             @remove="remove"
@@ -93,8 +88,8 @@
             @add="add"
             @paste="paste"
           />
-        </div>
-      </div>
+        </template>
+      </AposGridManager>
     </div>
   </div>
 </template>
@@ -114,6 +109,12 @@ export default {
   computed: {
     gridModuleOptions() {
       return window.apos.modules[this.moduleName]?.grid ?? {};
+    },
+    layoutColumnWidgets() {
+      return this.next.filter(w => w.type !== '@apostrophecms/layout-meta');
+    },
+    layoutMeta() {
+      return this.next.find(w => w.type === '@apostrophecms/layout-meta') ?? {};
     }
   }
 };

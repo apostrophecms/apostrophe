@@ -4,7 +4,7 @@
   grid-template-columns: repeat(var(--grid-columns, 12), 1fr);
 
   & > div {
-    grid-column: var(--column-start, auto) / span var(--column-span, 1);
+    grid-column: var(--colstart, auto) / span var(--colspan, 1);
     justify-self: var(--justify, center);
     /* stylelint-disable-next-line declaration-block-no-redundant-longhand-properties */
     align-self: var(--align, start);
