@@ -284,17 +284,18 @@ export default {
 </script>
 
 <style lang="scss" scoped>
-button.apos-operation {
+.apos-operation {
   @include apos-transition();
-  border-radius: var(--a-border-radius);
-  border: 1px solid var(--a-base-5);
-  color: var(--a-text-primary);
-  border-radius: var(--a-border-radius);
-  background-color: var(--a-base-9);
+
   box-sizing: border-box;
   width: 100%;
   height: 70px;
+  border-radius: var(--a-border-radius);
+  border: 1px solid var(--a-base-5);
+  color: var(--a-text-primary);
+  background-color: var(--a-base-9);
   cursor: pointer;
+
   &:hover {
     background-color: var(--a-base-8);
   }
