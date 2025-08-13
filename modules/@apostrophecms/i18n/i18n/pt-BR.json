@@ -247,6 +247,9 @@
   "imagePlaceholder": "Espaço reservado para imagem",
   "imageTag": "Tag de Imagem",
   "imageTags": "Tags de Imagem",
+  "imageUploadMsg": "Escolha entre {{ mediaLibrary }}, {{ yourDevice }} ou solte um arquivo aqui",
+  "imageUploadSupport": "Suporta os formatos {{ formats }} ou {{ last }} {{ upTo }}",
+  "imageUploadUpTo": "até {{ maxSize }}",
   "images": "Imagens",
   "inputFieldIsDisabled": "Este campo está desativado",
   "insertAndNew": "{{ saveLabel }} {{ typeLabel }} e crie um novo(a).",
@@ -322,6 +325,7 @@
   "mediaDimensions": "Dimensões: {{ width }} 𝗑 {{ height }}",
   "mediaFileSize": "Tamanho do Arquivo: {{ fileSize }}",
   "mediaKB": "{{ size }}KB",
+  "mediaLibrary": "biblioteca de mídia",
   "mediaLibraryEndReached": "Você atingiu o final da biblioteca de mídia.",
   "mediaMB": "{{ size }}MB",
   "mediaManagerErrorRestoring": "Erro ao Restaurar",
@@ -331,6 +335,7 @@
   "mergeCells": "Mesclar Células",
   "minLabel": "Mín:",
   "minSize": "Tamanho mínimo de {{ width }}x{{ height }}",
+  "minimumSize": "Tamanho mínimo de {{ width }} x {{ height }} px",
   "minUi": "Mín: {{ number }}",
   "modalBreadcrumbsDefaultLabel": "Defina uma etiqueta",
   "modalTabsError": "Erro",
@@ -627,5 +632,6 @@
   "willMoveImageToArchive": "Isso moverá a imagem para o arquivo.",
   "yes": "Sim",
   "yesLocalizeAndSwitchLocales": "Sim, localize esta página e mude de local",
-  "youTookControl": "Você assumiu o controle deste documento em outra guia ou janela. Um documento só pode ser editado em um lugar de cada vez."
+  "youTookControl": "Você assumiu o controle deste documento em outra guia ou janela. Um documento só pode ser editado em um lugar de cada vez.",
+  "yourDevice": "seu dispositivo"
 }

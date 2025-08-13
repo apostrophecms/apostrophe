@@ -11,6 +11,7 @@
       @media="selectFromManager"
     />
   </div>
+  <!-- eslint-disable vue/no-v-html -->
   <div
     v-else
     :class="getClasses"
@@ -86,10 +87,10 @@ async function selectFromManager() {
 }
 
 /**
- * @param {attachment} image - image or apostrophe attachment object
+ * @param {attachment} image - Image or apostrophe attachment object
  * @param {number} image.width
  * @param {number} image.height
- * @returns {boolean} - boolean sayingi if image is valid
+ * @returns {boolean} - Tells if the image is valid
  */
 function checkImageValid(image) {
   const minSize = props.options.minSize;
