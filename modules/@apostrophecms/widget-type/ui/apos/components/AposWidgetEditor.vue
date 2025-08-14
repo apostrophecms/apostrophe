@@ -231,8 +231,6 @@ export default {
   methods: {
     updateDocFields(value) {
       this.updateFieldErrors(value.fieldState);
-      this.logData('doc fields', this.docFields.data);
-      this.logData('value data', value.data);
       this.docFields.data = {
         ...this.docFields.data,
         ...value.data
@@ -336,21 +334,14 @@ export default {
           }
       );
     },
-    logData(msg, data) {
-      console.log(msg || data, data?._image?.[0]?._fields);
-    },
     getWidgetObject(props = {}) {
-      this.logData('getting', this.docFields.data);
       const widget = klona(this.docFields.data);
       widget._id = this.id || this.newId;
       widget.type = this.type;
-      const res = {
+      return {
         ...widget,
         ...props
       };
-
-      this.logData('after', res);
-      return res;
     },
     getPreviewWidgetObject() {
       if (!this.previewWidgetId) {
