@@ -604,12 +604,14 @@ export default {
           widget: clipboard,
           index
         });
-      } else if (widget) {
+      }
+      if (widget) {
         return this.insert({
           widget,
           index
         });
-      } else if (this.widgetIsContextual(name)) {
+      }
+      if (this.widgetIsContextual(name)) {
         return this.insert({
           widget: {
             type: name,
@@ -618,7 +620,8 @@ export default {
           },
           index
         });
-      } else if (!this.widgetHasInitialModal(name)) {
+      }
+      if (!this.widgetHasInitialModal(name)) {
         const widget = this.newWidget(name);
         return this.insert({
           widget: {
@@ -627,26 +630,26 @@ export default {
           },
           index
         });
-      } else {
-        const componentName = this.widgetEditorComponent(name);
-        apos.area.activeEditor = this;
-        const preview = this.widgetPreview(name, index, true);
-        const widget = await apos.modal.execute(componentName, {
-          modelValue: null,
-          options: this.widgetOptionsByType(name),
-          type: name,
-          docId: this.docId,
-          areaFieldId: this.fieldId,
-          parentFollowingValues: this.followingValues,
-          preview
+      }
+
+      const componentName = this.widgetEditorComponent(name);
+      apos.area.activeEditor = this;
+      const preview = this.widgetPreview(name, index, true);
+      const widget = await apos.modal.execute(componentName, {
+        modelValue: null,
+        options: this.widgetOptionsByType(name),
+        type: name,
+        docId: this.docId,
+        areaFieldId: this.fieldId,
+        parentFollowingValues: this.followingValues,
+        preview
+      });
+      apos.area.activeEditor = null;
+      if (widget) {
+        return this.insert({
+          widget,
+          index
         });
-        apos.area.activeEditor = null;
-        if (widget) {
-          return this.insert({
-            widget,
-            index
-          });
-        }
       }
     },
     widgetOptionsByType(name) {
