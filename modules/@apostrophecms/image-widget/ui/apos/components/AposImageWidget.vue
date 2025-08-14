@@ -24,11 +24,11 @@ import { klona } from 'klona';
 import {
   computed, watch
 } from 'vue';
-import { useAposWidget } from 'Modules/@apostrophecms/widget-type/composables/AposWidget';
-import aposWidgetProps from 'Modules/@apostrophecms/widget-type/composables/AposWidgetProps';
+import { useAposWidget } from 'Modules/@apostrophecms/widget-type/composables/AposWidget.js';
+import aposWidgetProps from 'Modules/@apostrophecms/widget-type/composables/AposWidgetProps.js';
+import { _postprocess } from 'Modules/@apostrophecms/modal/composables/AposEditor.js';
 
 const props = defineProps(aposWidgetProps);
-
 const imgModuleOptions = apos.modules['@apostrophecms/image'];
 const widgetModuleOptions = apos.modules[`${props.type}-widget`];
 const accept = imgModuleOptions.schema.find(field => field.name === 'attachment').accept;
@@ -79,10 +79,13 @@ async function selectFromManager() {
   apos.area.widgetOptions = apos.area.widgetOptions.slice(1);
 
   if (selectedImg) {
-    emit('update', {
+    const widgetData = {
       ...props.modelValue,
       _image: [ selectedImg ]
-    });
+    };
+    await _postprocess(widgetModuleOptions.schema, widgetData, props.options);
+
+    emit('update', widgetData);
   }
 }
 
@@ -171,7 +174,6 @@ async function upload(files = []) {
       },
       draft: true
     });
-
     const formData = new window.FormData();
     formData.append('file', file);
 
@@ -180,22 +182,22 @@ async function upload(files = []) {
       busy: true,
       body: formData
     });
-
     const imageData = Object.assign(emptyDoc, {
       title: attachment.title,
       attachment
     });
-
     const imgPiece = await apos.http.post(imgModuleOptions.action, {
       busy: true,
       body: imageData,
       draft: true
     });
-
-    emit('update', {
+    const widgetData = {
       ...props.modelValue,
       _image: [ imgPiece ]
-    });
+    };
+    await _postprocess(widgetModuleOptions.schema, widgetData, props.options);
+
+    emit('update', widgetData);
   } catch (e) {
     const msg = e.body?.message ? e.body.message : this.$t('apostrophe:uploadError');
     await apos.notify(msg, {
