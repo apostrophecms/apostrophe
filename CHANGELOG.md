@@ -6,6 +6,10 @@
 
 * Adds quick image upload UI to `@apostrophecms/image-widget`.
 
+### Fixes
+
+* Fixes the widget data being cloned to be saved before the `postprocess` method being called, which leads to a loss of data in `AposWidgetEditor` (like the autocrop data).
+
 ## 4.20.0 (2025-08-06)
 
 ### Adds
