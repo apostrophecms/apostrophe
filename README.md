@@ -72,16 +72,21 @@ Your new ApostropheCMS site will be available at `http://localhost:3000` with a 
 
 ### Prefer to Go Headless?
 
-ApostropheCMS provides powerful REST APIs for any frontend framework:
+**Get started with Astro integration** - the easiest way to build headless sites while keeping visual editing:
+
+- **[Apollo Starter Kit (Astro)](https://apostrophecms.com/starter-kits/apollo-starter-kit-for-astro-cms)** - Production-ready foundation with beautiful design system and rich content features
+- **[Essentials Starter Kit (Astro)](git clone https://github.com/apostrophecms/starter-kit-astro-essentials)** - Minimal, clean foundation for building custom designs from scratch
+
+Both starter kits provide headless CMS power with in-context editing, letting content creators edit directly on the live site while you build with modern frontend tools. Our Astro integration handles all the content fetching automatically—no REST API calls to write.
+
+**Desire a different frontend framework?** Use our REST APIs with React, Vue, Svelte, or any other framework:
 
 - **[REST API Documentation](https://docs.apostrophecms.org/reference/api/pieces.html)** - Complete API reference
-- **[Headless CMS Guide](https://docs.apostrophecms.org/guide/headless-cms.html)** - Integration walkthrough
-- **[Apollo Starter Kit (Astro)](https://github.com/apostrophecms/starter-kit-astro-apollo)** - Headless site with visual editing
-- **[Essentials Starter Kit (Astro)](https://github.com/apostrophecms/starter-kit-astro-essentials)** - Minimal headless foundation
+- **[Headless CMS Guide](https://docs.apostrophecms.org/guide/headless-cms.html)** - Integration walkthrough for any framework
 
 ### Hosting & Deployment
 
-Deploy anywhere Node.js runs, or choose [ApostropheCMS hosting](https://apostrophecms.com/hosting) for turnkey solutions with optimized performance and dedicated support.
+Choose [ApostropheCMS hosting](https://apostrophecms.com/hosting) for turnkey solutions with optimized performance and dedicated support, or deploy to [any platform where Node.js runs](https://docs.apostrophecms.org/guide/hosting.html).
 
 ## Built With Modern Tech
 
@@ -105,7 +110,6 @@ We welcome contributions from the community! Whether you're fixing bugs, adding 
 
 - **[Contribution Guide](https://github.com/apostrophecms/apostrophe/blob/main/CONTRIBUTING.md)** - How to contribute code, documentation, and feedback
 - **[Good First Issues](https://github.com/apostrophecms/apostrophe/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22)** - Perfect starting points for new contributors
-- **[Development Setup](https://docs.apostrophecms.org/guide/development-setup.html)** - Set up your local development environment
 
 
 ## Pro Features
@@ -116,9 +120,10 @@ We welcome contributions from the community! Whether you're fixing bugs, adding 
 - **🌍 Automated Translation** - AI-powered translation with DeepL, Google Translate, and Azure
 - **📊 Analytics & SEO** - Built-in SEO optimization and content analytics
 - **⚡ Performance Optimization** - Advanced caching, CDN integration, and performance monitoring
+- **🏢 Multisite Management** - Manage multiple sites from a single dashboard with shared resources
 - **💼 Professional Support** - Dedicated support, training, and consultation services
 
-[Contact us](https://apostrophecms.com/contact-us) to learn about pro licensing and support options.
+[Explore all the pro extensions](https://apostrophecms.com/extensions?autocomplete=&license=assembly&license=pro) and [sign up](https://app.apostrophecms.com/login) for a Pro license in our self-service Apostrophe Workspaces, or [contact us](https://apostrophecms.com/contact-us) to learn about licensing and support options.
 
 ## License
 
