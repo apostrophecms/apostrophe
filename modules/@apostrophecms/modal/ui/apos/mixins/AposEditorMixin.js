@@ -229,8 +229,8 @@ export default {
           continue;
         }
         const withType = relationship.field.withType;
-        const module = apos.modules[withType];
-        relationship.context[relationship.field.name] = (await apos.http.post(`${module.action}/${relationship.field.postprocessor}`, {
+        const mod = apos.modules[withType];
+        const response = await apos.http.post(`${mod.action}/${relationship.field.postprocessor}`, {
           qs: {
             aposMode: 'draft'
           },
@@ -242,7 +242,8 @@ export default {
             widgetOptions: apos.area.widgetOptions[0]
           },
           busy: true
-        })).relationship;
+        });
+        relationship.context[relationship.field.name] = response.relationship;
       }
       function findRelationships(schema, object) {
         let relationships = [];

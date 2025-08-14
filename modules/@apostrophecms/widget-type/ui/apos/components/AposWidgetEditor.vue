@@ -231,6 +231,8 @@ export default {
   methods: {
     updateDocFields(value) {
       this.updateFieldErrors(value.fieldState);
+      this.logData('doc fields', this.docFields.data);
+      this.logData('value data', value.data);
       this.docFields.data = {
         ...this.docFields.data,
         ...value.data
@@ -282,7 +284,6 @@ export default {
     async save() {
       this.triggerValidation = true;
       this.$nextTick(async () => {
-        const widget = this.getWidgetObject();
         if (this.errorCount > 0) {
           this.triggerValidation = false;
           await apos.notify('apostrophe:resolveErrorsBeforeSaving', {
@@ -311,6 +312,8 @@ export default {
           });
           return;
         }
+
+        const widget = this.getWidgetObject();
         this.saving = true;
         this.$emit('modal-result', widget);
         this.modal.showModal = false;
@@ -333,14 +336,21 @@ export default {
           }
       );
     },
+    logData(msg, data) {
+      console.log(msg || data, data?._image?.[0]?._fields);
+    },
     getWidgetObject(props = {}) {
+      this.logData('getting', this.docFields.data);
       const widget = klona(this.docFields.data);
       widget._id = this.id || this.newId;
       widget.type = this.type;
-      return {
+      const res = {
         ...widget,
         ...props
       };
+
+      this.logData('after', res);
+      return res;
     },
     getPreviewWidgetObject() {
       if (!this.previewWidgetId) {
