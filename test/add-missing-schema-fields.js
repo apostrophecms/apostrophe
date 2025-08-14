@@ -33,9 +33,11 @@ describe('add missing schema fields', function() {
               },
               body: {
                 type: 'area',
-                widgets: {
-                  hero: {},
-                  '@apostrophecms/rich-text': {}
+                options: {
+                  widgets: {
+                    hero: {},
+                    '@apostrophecms/rich-text': {}
+                  }
                 }
               }
             }
@@ -103,9 +105,11 @@ describe('add missing schema fields', function() {
               },
               body: {
                 type: 'area',
-                widgets: {
-                  hero: {},
-                  '@apostrophecms/rich-text': {}
+                options: {
+                  widgets: {
+                    hero: {},
+                    '@apostrophecms/rich-text': {}
+                  }
                 }
               },
               code: {
@@ -224,9 +228,11 @@ describe('add missing schema fields', function() {
               },
               body: {
                 type: 'area',
-                widgets: {
-                  hero: {},
-                  '@apostrophecms/rich-text': {}
+                options: {
+                  widgets: {
+                    hero: {},
+                    '@apostrophecms/rich-text': {}
+                  }
                 }
               },
               code: {

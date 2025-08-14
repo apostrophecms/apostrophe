@@ -622,10 +622,10 @@ export default {
         });
       }
       if (!this.widgetHasInitialModal(name)) {
-        const widget = this.newWidget(name);
+        const newWidget = this.newWidget(name);
         return this.insert({
           widget: {
-            ...widget,
+            ...newWidget,
             aposPlaceholder: this.widgetHasPlaceholder(name)
           },
           index
@@ -635,7 +635,7 @@ export default {
       const componentName = this.widgetEditorComponent(name);
       apos.area.activeEditor = this;
       const preview = this.widgetPreview(name, index, true);
-      const widget = await apos.modal.execute(componentName, {
+      const newWidget = await apos.modal.execute(componentName, {
         modelValue: null,
         options: this.widgetOptionsByType(name),
         type: name,
@@ -645,9 +645,9 @@ export default {
         preview
       });
       apos.area.activeEditor = null;
-      if (widget) {
+      if (newWidget) {
         return this.insert({
-          widget,
+          widget: newWidget,
           index
         });
       }
