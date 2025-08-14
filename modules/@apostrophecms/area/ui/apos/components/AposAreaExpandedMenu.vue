@@ -1,4 +1,8 @@
 <template>
+  <!-- eslint can't figure out I am using a legit variable from v-for -->
+  <!-- eslint-disable vue/valid-v-for -->
+  <!-- use of v-if with v-for here is correct -->
+  <!-- eslint-disable vue/no-use-v-if-with-v-for -->
   <AposModal
     class="apos-area-menu--expanded"
     :modal="modal"
@@ -29,8 +33,27 @@
               ]"
             >
               <button
+                v-for="(item, itemIndex) in group.operations"
+                v-if="group.type === 'operations'"
+                :key="`operation-{{itemIndex}}`"
+                :data-apos-focus-priority="itemIndex === 0 ? true : null"
+                class="apos-button apos-operation"
+                @click="operation(item)"
+              >
+                <p class="apos-operation__label">
+                  {{ $t(item.label) }}
+                </p>
+                <p
+                  v-if="item.description"
+                  class="apos-operation__help"
+                >
+                  {{ $t(item.description) }}
+                </p>
+              </button>
+              <button
                 v-for="(item, itemIndex) in group.widgets"
-                :key="itemIndex"
+                v-else
+                :key="`widget-{{itemIndex}}`"
                 :data-apos-focus-priority="itemIndex === 0 ? true : null"
                 class="apos-widget"
                 @click="add(item)"
@@ -65,6 +88,10 @@
                 </p>
               </button>
             </div>
+            <hr
+              v-if="group.type !== 'widgets'"
+              class="apos-expanded-divider"
+            >
           </div>
         </template>
       </AposModalBody>
@@ -76,6 +103,10 @@
 export default {
   name: 'AposAreaExpandedMenu',
   props: {
+    fieldId: {
+      type: String,
+      required: true
+    },
     options: {
       type: Object,
       required: true
@@ -97,6 +128,11 @@ export default {
       },
       groups: []
     };
+  },
+  computed: {
+    moduleOptions() {
+      return window.apos.area;
+    }
   },
   async mounted() {
     this.modal.active = true;
@@ -130,25 +166,38 @@ export default {
       );
     }
 
-    const clipboard = this.getClipboard();
-    this.groups = clipboard
-      ? [ clipboard ].concat(this.groups)
-      : this.groups;
+    this.groups = [
+      ...this.getClipboardGroups(),
+      ...this.getCreateWidgetOperationsGroups(),
+      ...this.groups
+    ];
   },
   methods: {
     isValidColumn(count) {
       return count ? +count > 1 && +count < 4 : true;
     },
-    getClipboard() {
+    getCreateWidgetOperationsGroups() {
+      const operations = this.moduleOptions.createWidgetOperations;
+      if (operations.length === 0) {
+        return [];
+      }
+      return [
+        {
+          type: 'operations',
+          operations
+        }
+      ];
+    },
+    getClipboardGroups() {
       const clipboard = apos.area.widgetClipboard.get();
       if (!clipboard) {
-        return null;
+        return [];
       }
 
       const widgets = this.groups.flatMap(group => Object.values(group.widgets));
       const matchingChoice = widgets.find(widget => widget.name === clipboard.type);
       if (!matchingChoice) {
-        return null;
+        return [];
       }
 
       const group = {
@@ -167,12 +216,13 @@ export default {
         columns: 1
       };
 
-      return group;
+      return [ group ];
     },
     createGroup(config) {
       const group = {
         columns: +config.columns || 3,
-        widgets: []
+        widgets: [],
+        type: 'widgets'
       };
 
       if (config.label) {
@@ -212,12 +262,45 @@ export default {
       };
       this.$emit('modal-result', data);
       this.modal.showModal = false;
+    },
+    async operation(item) {
+      const props = {
+        ...item.props,
+        options: this.options,
+        fieldId: this.fieldId
+      };
+      const widget = await apos.modal.execute(item.modal, props);
+      if (widget) {
+        const data = {
+          widget,
+          index: this.index
+        };
+        this.$emit('modal-result', data);
+        this.modal.showModal = false;
+      }
     }
   }
 };
 </script>
 
 <style lang="scss" scoped>
+.apos-operation {
+  @include apos-transition();
+
+  box-sizing: border-box;
+  width: 100%;
+  height: 70px;
+  border-radius: var(--a-border-radius);
+  border: 1px solid var(--a-base-5);
+  color: var(--a-text-primary);
+  background-color: var(--a-base-9);
+  cursor: pointer;
+
+  &:hover {
+    background-color: var(--a-base-8);
+  }
+}
+
 .apos-area-menu--expanded {
   @include type-base;
 }
@@ -362,5 +445,9 @@ export default {
 .apos-widget__label {
   line-height: 1.2;
   margin-bottom: 5px;
+}
+
+.apos-expanded-divider {
+  margin-top: 2em;
 }
 </style>
