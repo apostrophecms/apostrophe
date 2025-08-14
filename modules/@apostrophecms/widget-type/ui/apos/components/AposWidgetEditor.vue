@@ -229,14 +229,22 @@ export default {
     this.initPreview();
   },
   methods: {
-    updateDocFields(value) {
+    async updateDocFields(value) {
       this.updateFieldErrors(value.fieldState);
+      const oldDocFields = klona(this.docFields.data);
       this.docFields.data = {
         ...this.docFields.data,
         ...value.data
       };
       this.evaluateConditions();
       this.updatePreview();
+      try {
+        await this.postprocess(oldDocFields);
+      } catch (e) {
+        await this.handleSaveError(e, {
+          fallback: 'An error occurred updating the widget.'
+        });
+      }
     },
     initPreview() {
       if (!this.preview) {
@@ -302,15 +310,6 @@ export default {
             return;
           }
         }
-        try {
-          await this.postprocess();
-        } catch (e) {
-          await this.handleSaveError(e, {
-            fallback: 'An error occurred saving the widget.'
-          });
-          return;
-        }
-
         const widget = this.getWidgetObject();
         this.saving = true;
         this.$emit('modal-result', widget);
