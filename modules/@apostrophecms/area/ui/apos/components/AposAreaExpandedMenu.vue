@@ -285,6 +285,8 @@ export default {
 
 <style lang="scss" scoped>
 .apos-operation {
+  @include apos-transition();
+
   box-sizing: border-box;
   width: 100%;
   height: 70px;
@@ -297,7 +299,6 @@ export default {
   &:hover {
     background-color: var(--a-base-8);
   }
-  @include apos-transition();
 }
 
 .apos-area-menu--expanded {
