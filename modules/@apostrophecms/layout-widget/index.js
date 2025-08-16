@@ -3,7 +3,7 @@ module.exports = {
   options: {
     label: 'apostrophe:layout',
     columns: 12,
-    minSpan: 1,
+    minSpan: 2,
     defaultSpan: 4,
     mobile: {
       breakpoint: 480

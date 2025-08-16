@@ -74,6 +74,14 @@ module.exports = {
               type: 'integer',
               required: true
             },
+            rowstart: {
+              type: 'integer',
+              def: 1
+            },
+            rowspan: {
+              type: 'integer',
+              def: 1
+            },
             order: {
               type: 'integer',
               required: true
@@ -92,12 +100,16 @@ module.exports = {
             colspan: {
               type: 'integer'
             },
+            rowstart: {
+              type: 'integer',
+              def: 1
+            },
+            rowspan: {
+              type: 'integer',
+              def: 1
+            },
             order: {
               type: 'integer'
-            },
-            auto: {
-              type: 'boolean',
-              def: true
             },
             show: {
               type: 'boolean',
@@ -117,12 +129,16 @@ module.exports = {
             colspan: {
               type: 'integer'
             },
+            rowstart: {
+              type: 'integer',
+              def: 1
+            },
+            rowspan: {
+              type: 'integer',
+              def: 1
+            },
             order: {
               type: 'integer'
-            },
-            auto: {
-              type: 'boolean',
-              def: true
             },
             show: {
               type: 'boolean',

@@ -22,6 +22,10 @@ module.exports = {
           add: {
             rows: {
               type: 'integer'
+            },
+            auto: {
+              type: 'boolean',
+              def: true
             }
           }
         }
@@ -32,6 +36,10 @@ module.exports = {
           add: {
             rows: {
               type: 'integer'
+            },
+            auto: {
+              type: 'boolean',
+              def: true
             }
           }
         }

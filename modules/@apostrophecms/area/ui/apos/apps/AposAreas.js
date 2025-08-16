@@ -72,6 +72,9 @@ export default function() {
     const renderings = {};
     const _docId = data._docId;
 
+    const parentOptionsStr = el.getAttribute('data-parent-options');
+    const parentOptions = parentOptionsStr ? JSON.parse(parentOptionsStr) : null;
+
     let componentName = options.editorComponent || 'AposAreaEditor';
     if (!apos.vueComponents[componentName]) {
       // eslint-disable-next-line no-console
@@ -117,6 +120,7 @@ export default function() {
         docId: _docId,
         fieldId,
         moduleName,
+        parentOptions,
         renderings
       });
 

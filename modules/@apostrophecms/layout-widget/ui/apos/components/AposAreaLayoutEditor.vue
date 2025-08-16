@@ -12,7 +12,35 @@
     }"
     @click="setFocusedArea(areaId, $event)"
   >
-    <h5>A message from the Layout Area Editor</h5>
+    <div style="display: flex; align-items: center; justify-content: start; gap: 20px;">
+      <AposInputBoolean
+        v-model="layoutModes.manage"
+        :modifiers="[ 'small' ]"
+        :field="{
+          name: 'manage',
+          type: 'boolean',
+          toggle: {
+            'true': 'content',
+            'false': 'layout'
+          },
+          def: true,
+        }"
+      />
+      <!--       <AposInputSelect
+        v-model="layoutModes.device"
+        :modifiers="[ 'small' ]"
+        :field="{
+          name: 'device',
+          type: 'select',
+          choices: [
+            { label: $t('apostrophe:breakpointPreviewDesktop'), value: 'desktop' },
+            { label: $t('apostrophe:breakpointPreviewTablet'), value: 'tablet' },
+            { label: $t('apostrophe:breakpointPreviewMobile'), value: 'mobile' }
+          ],
+          def: 'desktop',
+        }"
+      /> -->
+    </div>
     <div
       v-if="next.length === 0 && !foreign"
       class="apos-empty-area"
@@ -53,7 +81,9 @@
         :options="gridModuleOptions"
         :items="layoutColumnWidgets"
         :meta="layoutMeta"
-        :mode="'manage'"
+        :layout-mode="layoutManageMode"
+        :device-mode="layoutModes.device.data"
+        @resize-end="onResizeEnd"
       >
         <template #item="{ item: widget, i }">
           <AposAreaWidget
@@ -95,6 +125,7 @@
 </template>
 
 <script>
+import defaults from 'lodash/defaults';
 import AposAreaEditorLogic from 'Modules/@apostrophecms/area/logic/AposAreaEditor.js';
 
 export default {
@@ -104,17 +135,84 @@ export default {
     moduleName: {
       type: String,
       default: null
+    },
+    parentOptions: {
+      type: Object,
+      default: () => ({})
     }
+  },
+  data() {
+    return {
+      layoutModes: {
+        device: {
+          data: 'desktop',
+          error: false
+        },
+        manage: {
+          data: true,
+          error: false
+        },
+        manageFocused: {
+          data: false,
+          error: false
+        }
+      }
+    };
   },
   computed: {
     gridModuleOptions() {
-      return window.apos.modules[this.moduleName]?.grid ?? {};
+      return Object.assign(
+        {},
+        window.apos.modules[this.moduleName]?.grid ?? {},
+        this.parentOptions
+      );
     },
     layoutColumnWidgets() {
       return this.next.filter(w => w.type !== '@apostrophecms/layout-meta');
     },
     layoutMeta() {
       return this.next.find(w => w.type === '@apostrophecms/layout-meta') ?? {};
+    },
+    layoutManageMode() {
+      if (this.layoutModes.manage.data) {
+        return 'view';
+      }
+      if (this.layoutModes.manageFocused.data) {
+        return 'focused';
+      }
+      return 'manage';
+    }
+  },
+  methods: {
+    onResizeEnd(itemPatches) {
+      if (!itemPatches?.length) {
+        return;
+      }
+      const items = new Map();
+
+      for (const patch of itemPatches) {
+        const item = this.next.find(w => w._id === patch._id);
+        if (!item) {
+          continue;
+        }
+        defaults(patch, item.desktop);
+        Object.assign(item.desktop, patch);
+        items.set(item._id, item);
+      }
+
+      // Sync immediate update
+      this.next = this.next.map((widget) => {
+        if (items.has(widget._id)) {
+          return items.get(widget._id);
+        }
+        return widget;
+      });
+
+      // The mixin update handler is async
+      for (const item of items.values()) {
+        // eslint-disable-next-line no-console
+        this.update(item).catch(console.error);
+      }
     }
   }
 };

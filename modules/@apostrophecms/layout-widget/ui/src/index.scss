@@ -2,6 +2,7 @@
 .layout-widget {
   display: grid;
   grid-template-columns: repeat(var(--grid-columns, 12), 1fr);
+  grid-gap: var(--grid-gap, 0);
 
   & > div {
     grid-column: var(--colstart, auto) / span var(--colspan, 1);
