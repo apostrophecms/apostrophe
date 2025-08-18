@@ -1,36 +1,25 @@
 import { debounce } from 'lodash';
 import { getResizeChangesX, validateResizeX } from './grid-state';
 
-export class GridManager {
+/**
+ * @typedef {{
+ *  id: string,
+ *  startX: number,
+ *  startY: number,
+ *  side: string,
+ *  id: string,
+ *  element: HTMLElement,
+ *  top: number,
+ *  left: number,
+ *  width: number,
+ *  height: number,
+ * }} GhostData
+ *
+ * @typedef {import('./grid-state').GridState} GridState
+ * @typedef {import('./grid-state').CurrentItem} CurrentItem
+ */
 
-  /**
-   * Handles resize events for a grid layout component.
-   *
-   * @typedef {{
-   *  $emit: (event: string, ...args: any[]) => void
-   * }} ComponentInstance
-   * @typedef {{
-   *  startX: number,
-   *  startY: number,
-   *  side: string,
-   *  id: string,
-   *  element: HTMLElement,
-   *  colstart: number,
-   *  colspan: number,
-   *  rowstart: number,
-   *  rowspan: number,
-   *  order: number,
-   *  justify: string,
-   *  align: string,
-   *  top: number,
-   *  left: number,
-   *  width: number,
-   *  height: number,
-   * }} GhostData
-   *
-   * @typedef {ReturnType<typeof import('./grid-state').itemsToState} GridState
-   * use this handler.
-   */
+export class GridManager {
   constructor() {
     this.rootElement = null;
     this.gridElement = null;
@@ -57,8 +46,8 @@ export class GridManager {
     document.addEventListener('scroll', this.onSceneResizeDebounced);
 
     // Initialize resize observer
-    // TODO: improve, it's quick and dirty and doesn't trigger
-    // always on resize.
+    // FIXME: improve, it's quick and dirty and doesn't trigger
+    // always on resize. Also we need to support the device preview apos feature.
     this.resizeObserver = new ResizeObserver(entries => {
       this.onSceneResizeDebounced(entries[0].contentRect);
     });
@@ -106,8 +95,8 @@ export class GridManager {
     const styles = [];
 
     for (let i = 1; i < columns; i++) {
-      // const left = i * (trackWidth + colGap) + 'px';
-      // styles.push({ left });
+      // Full gap support, adapting based on the gap size
+      // to avoid visual glitches.
       const left = i * trackWidth + (i - 1) * (colGap || 1) + 'px';
       styles.push({
         style: {
@@ -131,6 +120,11 @@ export class GridManager {
 
   /**
    * Handles item resizing ghost event.
+   * @param {Object} arg
+   * @param {GhostData} arg.data - The ghost data containing the item and its state.
+   * @param {GridState} arg.state - The current grid state.
+   * @param {CurrentItem} arg.item - The item being resized.
+   * @param {MouseEvent} event - The mouse event triggering the resize.
    */
   onGhostResize({
     data, state, item
@@ -149,10 +143,10 @@ export class GridManager {
 
   /**
    * Handles horizontal axis resizing of an ghost item.
-   *
-   * @param {GhostData} data
-   * @param {GridState} state
-   * @param {number} deltaX - The change in X position.
+   * @param {Object} arg
+   * @param {GhostData} arg.data
+   * @param {GridState} arg.state
+   * @param {number} arg.deltaX - The change in X position.
    */
   ghostResizeX({
     data, state, item
@@ -190,13 +184,17 @@ export class GridManager {
       direction,
       width,
       left,
-      colspan: validated.colspan,
-      colstart: validated.colstart
+      colstart: validated.colstart,
+      colspan: validated.colspan
     };
   }
 
   /**
    * Apply validated resize to all affected items.
+   * @param {Object} arg
+   * @param {GhostData} arg.data - The ghost data containing the item and its state.
+   * @param {GridState} arg.state - The current grid state.
+   * @param {CurrentItem} arg.item - The item being resized.
    */
   performItemResize({
     data, state, item
@@ -223,6 +221,20 @@ export class GridManager {
     // TODO: Implement row indicators when we implement 2d grid support
   }
 
+  /**
+   * Calculate the new ghost position and width based on the resize parameters.
+   * @param {Object} arg
+   * @param {string} arg.direction - The direction of the resize ('east' or 'west').
+   * @param {string} arg.side - The side of the ghost being resized ('east' or 'west').
+   * @param {CurrentItem} arg.item - The item being resized.
+   * @param {number} arg.newColspan - The new column span after resizing.
+   * @param {number} arg.newColstart - The new column start index after resizing.
+   * @param {number} arg.maxColumns - The maximum number of columns in the grid.
+   * @param {number} arg.elementLeft - The left position of the ghost element.
+   * @param {number} arg.elementWidth - The width of the ghost element.
+   * @returns {{width: number, left: number}} - The new width and left position
+   * of the ghost element.
+   */
   getDeltaGhostPositionX({
     direction,
     side,

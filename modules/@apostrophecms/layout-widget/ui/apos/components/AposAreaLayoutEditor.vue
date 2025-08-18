@@ -26,7 +26,7 @@
           def: true,
         }"
       />
-      <!--       <AposInputSelect
+      <!-- Device switch, next interations: <AposInputSelect
         v-model="layoutModes.device"
         :modifiers="[ 'small' ]"
         :field="{
@@ -84,6 +84,11 @@
         :layout-mode="layoutManageMode"
         :device-mode="layoutModes.device.data"
         @resize-end="onResizeEnd"
+        @add-first-item="onAddItem"
+        @add-fit-item="onAddFitItem"
+        @remove-item="onRemoveItem"
+        @patch-item="layoutPatchOne"
+        @patch-device-item="layoutPatchDevice"
       >
         <template #item="{ item: widget, i }">
           <AposAreaWidget
@@ -125,7 +130,6 @@
 </template>
 
 <script>
-import defaults from 'lodash/defaults';
 import AposAreaEditorLogic from 'Modules/@apostrophecms/area/logic/AposAreaEditor.js';
 
 export default {
@@ -168,50 +172,142 @@ export default {
       );
     },
     layoutColumnWidgets() {
-      return this.next.filter(w => w.type !== '@apostrophecms/layout-meta');
+      return this.next.filter(w => w.type !== this.layoutMetaWidgetName);
     },
     layoutMeta() {
-      return this.next.find(w => w.type === '@apostrophecms/layout-meta') ?? {};
+      return this.next.find(w => w.type === this.layoutMetaWidgetName) ?? {};
+    },
+    hasLayoutMeta() {
+      return this.next.some(w => w.type === this.layoutMetaWidgetName);
+    },
+    // TODO this can be possible sent by server options.
+    layoutMetaWidgetName() {
+      return '@apostrophecms/layout-meta';
+    },
+    layoutColumnWidgetName() {
+      return this.choices.find(c => c.name !== this.layoutMetaWidgetName)?.name;
     },
     layoutManageMode() {
       if (this.layoutModes.manage.data) {
         return 'view';
       }
       if (this.layoutModes.manageFocused.data) {
-        return 'focused';
+        return 'focus';
       }
       return 'manage';
+    },
+    layoutDeviceMode() {
+      return this.layoutModes.device.data || 'desktop';
+    }
+  },
+  watch: {
+    layoutManageMode(newMode, oldMode) {
+      if (newMode === 'view' && oldMode !== 'view') {
+        this.layoutSort();
+      }
+    }
+  },
+  mounted() {
+    if (!this.hasLayoutMeta) {
+      this.onCreateProvision();
     }
   },
   methods: {
-    onResizeEnd(itemPatches) {
-      if (!itemPatches?.length) {
-        return;
-      }
-      const items = new Map();
-
-      for (const patch of itemPatches) {
-        const item = this.next.find(w => w._id === patch._id);
-        if (!item) {
-          continue;
-        }
-        defaults(patch, item.desktop);
-        Object.assign(item.desktop, patch);
-        items.set(item._id, item);
-      }
-
-      // Sync immediate update
-      this.next = this.next.map((widget) => {
-        if (items.has(widget._id)) {
-          return items.get(widget._id);
-        }
-        return widget;
+    // Sort by the desktop order so that the auto-layout works correctly.
+    layoutSort() {
+      const sorted = this.layoutColumnWidgets.sort((a, b) => {
+        return (a.desktop.order || 0) - (b.desktop.order || 0);
       });
 
-      // The mixin update handler is async
-      for (const item of items.values()) {
-        // eslint-disable-next-line no-console
-        this.update(item).catch(console.error);
+      // FIXME: this doesn't work, the array is never updated in the DB.
+      this.next = [ this.layoutMeta, ...sorted ].filter(Boolean);
+    },
+    onResizeEnd(patchArr) {
+      if (!patchArr?.length) {
+        return;
+      }
+      this.layoutPatchMany(patchArr);
+    },
+    onCreateProvision() {
+      if (!this.layoutMetaWidgetName) {
+        throw new Error('No layout meta widget found.');
+      }
+      const meta = this.newWidget(this.layoutMetaWidgetName);
+      meta.columns = this.gridModuleOptions.columns;
+      this.insert({
+        widget: meta,
+        index: 0
+      });
+      this.layoutModes.manage.data = false;
+    },
+    onAddItem(patch) {
+      const widgetName = this.layoutColumnWidgetName;
+      if (!widgetName) {
+        throw new Error('No layout column widget found.');
+      }
+      const { _id, ...rest } = patch;
+      const widget = this.newWidget(widgetName);
+      Object.assign(widget[this.layoutDeviceMode], rest);
+      const insert = {
+        widget,
+        index: this.layoutColumnWidgets.length + 1
+      };
+      this.insert(insert);
+      return insert;
+    },
+    onAddFitItem(patchArr) {
+      const widgetName = this.layoutColumnWidgetName;
+      if (!widgetName) {
+        throw new Error('No layout column widget found.');
+      }
+      const insert = patchArr.find(patch => {
+        return !patch._id;
+      });
+      this.onAddItem(insert);
+      this.layoutPatchMany(patchArr);
+    },
+    onRemoveItem({ _id, patches }) {
+      const index = this.next.findIndex(w => w._id === _id);
+      if (index !== -1 && this.next[index].type === this.layoutColumnWidgetName) {
+        this.remove(index);
+      }
+      this.layoutPatchMany(patches);
+    },
+    layoutPatchDevice({
+      _id, device, patch
+    }) {
+      if (!_id || !device || !patch) {
+        return;
+      }
+      this.layoutPatchOne({
+        _id,
+        ...patch
+      }, device);
+    },
+    layoutPatchOne(patch, device) {
+      if (!patch || !patch._id) {
+        return;
+      }
+      const widget = this.next.find(w => w._id === patch._id);
+      if (widget?.type !== this.layoutColumnWidgetName) {
+        return;
+      }
+      // IMPORTANT: The patch carries the widget _id,
+      // this is not the same as the nested object _id in the widget.
+      // Be sure to keep the existing internal _id's intact.
+      const { _id, ...rest } = patch;
+      Object.assign(widget[device || this.layoutDeviceMode], rest);
+      // eslint-disable-next-line no-console
+      this.update(widget).catch(console.error);
+    },
+    layoutPatchMany(patchArr) {
+      const patches = patchArr.filter(patch => {
+        return patch._id &&
+          this.next.some(w => w._id === patch._id);
+      });
+
+      for (const patch of patches) {
+        this.layoutPatchOne(patch);
       }
     }
   }
@@ -234,5 +330,4 @@ export default {
     border-color: var(--a-primary);
   }
 }
-
 </style>

@@ -4,7 +4,7 @@ const alignSchema = {
     label: 'apostrophe:layoutJustify',
     choices: [
       {
-        label: 'apostrophe:layoutStretch',
+        label: 'apostrophe:layoutStretchHorizontal',
         value: 'stretch'
       },
       {
@@ -26,7 +26,7 @@ const alignSchema = {
     label: 'apostrophe:layoutAlign',
     choices: [
       {
-        label: 'apostrophe:layoutStretch',
+        label: 'apostrophe:layoutStretchVertical',
         value: 'stretch'
       },
       {
@@ -83,8 +83,7 @@ module.exports = {
               def: 1
             },
             order: {
-              type: 'integer',
-              required: true
+              type: 'integer'
             },
             ...alignSchema
           }

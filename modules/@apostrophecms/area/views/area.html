@@ -1,7 +1,33 @@
 {# area needs its own copy of the widget options as #}
 {# JSON, for adding new widgets #}
-
-<div class="apos-area{{ (' ' + data._with.className) if  data._with.className }}" {%- if data.canEdit %} data-apos-area-newly-editable data-doc-id='{{ data.area._docId | jsonAttribute({ single: true }) }}' data-module='{{ data.field.moduleName | jsonAttribute({ single: true }) }}' data-field-id='{{ data.field._id | jsonAttribute({ single: true }) }}' data-options='{{ apos.util.omit(data.options, 'area') | jsonAttribute({ single: true }) }}' data='{{ data.area | jsonAttribute({ single: true }) }}' data-choices='{{ data.choices | jsonAttribute({ single: true }) }}' data-parent-options='{{ data._with.parentOptions | jsonAttribute({ single: true }) }}'{% endif %}{%- if data._with.style %} style="{{ data._with.style }}"{% endif %}>
+{# 
+  Print attributes string from attrs object.
+  Examples: 
+  attrs({ one: "1", two: true, three: false }) -> one="1" two
+  attrs({ one: "1", two: true, three: false }, 'data-') -> data-one="1" data-three
+#}
+{%- macro _writeAttr(attrs, prefix = 'data-') -%}
+  {%- for key, value in attrs -%}
+    {{ " " }}{{ prefix + key }}={{ value | jsonAttribute({ single: true }) }}
+  {%- endfor -%}
+{%- endmacro -%}
+<div 
+  class="apos-area{{ (' ' + data._with.aspoClassName) if  data._with.aspoClassName }}"
+  {% if data.canEdit -%} 
+    data-apos-area-newly-editable 
+    data-doc-id='{{ data.area._docId | jsonAttribute({ single: true }) }}' 
+    data-module='{{ data.field.moduleName | jsonAttribute({ single: true }) }}' 
+    data-field-id='{{ data.field._id | jsonAttribute({ single: true }) }}' 
+    data-options='{{ apos.util.omit(data.options, "area") | jsonAttribute({ single: true }) }}' 
+    data='{{ data.area | jsonAttribute({ single: true }) }}' 
+    data-choices='{{ data.choices | jsonAttribute({ single: true }) }}' 
+    data-parent-options='{{ data._with.aposParentOptions | jsonAttribute({ single: true }) }}'
+  {%- endif -%}
+  {% if data._with.aposStyle %} style="{{ data._with.aposStyle }}"{% endif %}
+  {%- if data._with.aposAttrs -%} 
+    {{ _writeAttr(data._with.aposAttrs) }}
+  {%- endif -%}
+>
   {%- for item in data.area.items -%}
     {%- set widgetOptions = data.options.widgets[item.type] or {} -%}
     {%- if data.options.widgetTemplate -%}

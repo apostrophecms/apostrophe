@@ -2,12 +2,17 @@
 The area related `data.*` is available plus `item` and `widgetOptions`. #}
 {%- if item.type != '@apostrophecms/layout-meta' -%}
 <div
-  {% if data.canEdit %}data-apos-widget="{{ item._id }}"{% endif %}
+  {% if data.canEdit %} data-apos-widget="{{ item._id }}"{% endif %}
+  data-visible-tablet="{{ item.tablet.show }}"
+  data-visible-mobile="{{ item.mobile.show }}"
   style="
     --colstart: {{ item.desktop.colstart }}; 
     --colspan: {{ item.desktop.colspan }}; 
+    --rowstart: {{ item.desktop.rowstart }}; 
+    --rowspan: {{ item.desktop.rowspan }}; 
     --justify: {{ item.desktop.justify }};
     --align: {{ item.desktop.align }};
+    --order: {{ item.desktop.order }};
 ">
   {% area item, 'content' %}
 </div>

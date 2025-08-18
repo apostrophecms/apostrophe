@@ -6,14 +6,12 @@ module.exports = {
     minSpan: 2,
     defaultSpan: 4,
     mobile: {
-      breakpoint: 480
+      breakpoint: 600
     },
     tablet: {
       breakpoint: 1024
     },
     gap: 0,
-    defaultGridHorizontalAlignment: null,
-    defaultGridVerticalAlignment: null,
     defaultCellHorizontalAlignment: null,
     defaultCellVerticalAlignment: null
   },
@@ -50,12 +48,17 @@ module.exports = {
             mobile: self.options.mobile,
             tablet: self.options.tablet,
             gap: self.options.gap,
-            defaultGridHorizontalAlignment: self.options.defaultGridHorizontalAlignment,
-            defaultGridVerticalAlignment: self.options.defaultGridVerticalAlignment,
             defaultCellHorizontalAlignment: self.options.defaultCellHorizontalAlignment,
             defaultCellVerticalAlignment: self.options.defaultCellVerticalAlignment
           }
         };
+      }
+    };
+  },
+  helpers(self) {
+    return {
+      getLayoutMeta(widget) {
+        return widget?.columns?.items?.find(item => item.type === '@apostrophecms/layout-meta');
       }
     };
   }
