@@ -383,8 +383,8 @@ module.exports = {
               return;
             }
             // We're only rendering areas on the document, not ancestor or
-            // child page documents.
-            const regex = /^_(ancestors|children)|\._(ancestors|children)/;
+            // child page or related documents.
+            const regex = /^_|\._/;
             if (dotPath.match(regex)) {
               return;
             }
