@@ -3,9 +3,9 @@
 
 // Perform any postprocessing required by direct or nested schema fields
 // before the object can be saved
-export async function _postprocess(schema, data, widgetOptions/* , oldData */) {
+export async function _postprocess(schema, data, widgetOptions, fieldIds) {
   // Relationship fields may have postprocessors (e.g. autocropping)
-  const relationships = findRelationships(schema, data);
+  const relationships = findRelationships(schema, data, fieldIds);
 
   for (const relationship of relationships) {
     if (!(relationship.value && relationship.field.postprocessor)) {
@@ -26,16 +26,15 @@ export async function _postprocess(schema, data, widgetOptions/* , oldData */) {
       },
       busy: true
     });
-    console.log('response.relationship', response.relationship);
     relationship.context[relationship.field.name] = response.relationship;
   }
 }
 
-function findRelationships(schema, object, oldObject) {
+function findRelationships(schema, object, ids) {
   let relationships = [];
-  const oldRelationships = [];
   for (const field of schema) {
-    if (field.type === 'relationship') {
+    if (field.type === 'relationship' && ids.has(field._id)) {
+      console.log('field._id', ids, field._id);
       relationships.push({
         context: object,
         field,
@@ -55,5 +54,5 @@ function findRelationships(schema, object, oldObject) {
       ];
     }
   }
-  return [ relationships, oldRelationships ];
+  return relationships;
 }

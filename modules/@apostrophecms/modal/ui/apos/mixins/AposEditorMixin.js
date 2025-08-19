@@ -220,11 +220,12 @@ export default {
         this.triggerValidation = false;
       });
     },
-    async postprocess(oldData) {
+    async postprocess(fieldIds) {
       await _postprocess(
         this.schema,
         this.docFields.data,
-        apos.area.widgetOptions[0]
+        apos.area.widgetOptions[0],
+        fieldIds
       );
     }
   }
