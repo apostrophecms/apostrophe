@@ -275,6 +275,7 @@ export default {
       const newFieldState = { ...this.fieldState };
 
       let changeFound = false;
+      const changedTypes = new Set();
 
       this.next.hasErrors = false;
       this.next.fieldState = { ...this.fieldState };
@@ -296,22 +297,25 @@ export default {
             )
           ) {
             changeFound = true;
+            changedTypes.add(field.type);
+
             this.next.data[field.name] = this.fieldState[field.name].data;
           } else {
             this.next.data[field.name] = this.modelValue.data[field.name];
           }
         });
       if (
-        oldHasErrors !== this.next.hasErrors ||
-        oldFieldState !== newFieldState
+        oldHasErrors !== this.next.hasErrors
+        /* oldFieldState !== newFieldState */
       ) {
+        console.log('=====> weird change found <=====');
         // Otherwise the save button may never unlock
         changeFound = true;
       }
 
       if (changeFound) {
         // ... removes need for deep watch at parent level
-        this.$emit('update:model-value', { ...this.next });
+        this.$emit('update:model-value', { ...this.next }, { changedTypes });
       }
     },
     displayComponent({ name, hidden = false }) {

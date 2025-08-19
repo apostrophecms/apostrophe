@@ -224,8 +224,7 @@ export default {
       await _postprocess(
         this.schema,
         this.docFields.data,
-        apos.area.widgetOptions[0],
-        oldData
+        apos.area.widgetOptions[0]
       );
     }
   }

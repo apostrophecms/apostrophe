@@ -229,22 +229,25 @@ export default {
     this.initPreview();
   },
   methods: {
-    async updateDocFields(value) {
+    async updateDocFields(value, { changedTypes = new Set() } = {}) {
       this.updateFieldErrors(value.fieldState);
-      const oldDocFields = klona(this.docFields.data);
       this.docFields.data = {
         ...this.docFields.data,
         ...value.data
       };
+      console.log('changedTypes', changedTypes);
+      if (changedTypes.has('relationship')) {
+        try {
+          console.log('this.docFields.data', JSON.stringify(this.docFields.data?._image));
+          await this.postprocess();
+        } catch (e) {
+          await this.handleSaveError(e, {
+            fallback: 'An error occurred updating the widget.'
+          });
+        }
+      }
       this.evaluateConditions();
       this.updatePreview();
-      try {
-        await this.postprocess(oldDocFields);
-      } catch (e) {
-        await this.handleSaveError(e, {
-          fallback: 'An error occurred updating the widget.'
-        });
-      }
     },
     initPreview() {
       if (!this.preview) {
