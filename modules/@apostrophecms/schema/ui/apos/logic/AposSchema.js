@@ -270,12 +270,8 @@ export default {
         return;
       }
       const oldHasErrors = this.next.hasErrors;
-      // destructure these for non-linked comparison
-      const oldFieldState = { ...this.next.fieldState };
-      const newFieldState = { ...this.fieldState };
-
       let changeFound = false;
-      const changedTypes = new Set();
+      const changedFieldIds = new Set();
 
       this.next.hasErrors = false;
       this.next.fieldState = { ...this.fieldState };
@@ -297,25 +293,23 @@ export default {
             )
           ) {
             changeFound = true;
-            changedTypes.add(field.type);
+            changedFieldIds.add(field._id);
 
+            // fieldState never gets the relationships postprocessed data
+            // that's why it gets seen as different than next all the time
             this.next.data[field.name] = this.fieldState[field.name].data;
           } else {
             this.next.data[field.name] = this.modelValue.data[field.name];
           }
         });
-      if (
-        oldHasErrors !== this.next.hasErrors
-        /* oldFieldState !== newFieldState */
-      ) {
-        console.log('=====> weird change found <=====');
+      if (oldHasErrors !== this.next.hasErrors) {
         // Otherwise the save button may never unlock
         changeFound = true;
       }
 
       if (changeFound) {
         // ... removes need for deep watch at parent level
-        this.$emit('update:model-value', { ...this.next }, { changedTypes });
+        this.$emit('update:model-value', { ...this.next }, { changedFieldIds });
       }
     },
     displayComponent({ name, hidden = false }) {

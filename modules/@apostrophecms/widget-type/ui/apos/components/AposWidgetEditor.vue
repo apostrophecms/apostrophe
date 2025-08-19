@@ -229,22 +229,18 @@ export default {
     this.initPreview();
   },
   methods: {
-    async updateDocFields(value, { changedTypes = new Set() } = {}) {
+    async updateDocFields(value, { changedFieldIds = new Set() } = {}) {
       this.updateFieldErrors(value.fieldState);
       this.docFields.data = {
         ...this.docFields.data,
         ...value.data
       };
-      console.log('changedTypes', changedTypes);
-      if (changedTypes.has('relationship')) {
-        try {
-          console.log('this.docFields.data', JSON.stringify(this.docFields.data?._image));
-          await this.postprocess();
-        } catch (e) {
-          await this.handleSaveError(e, {
-            fallback: 'An error occurred updating the widget.'
-          });
-        }
+      try {
+        await this.postprocess(changedFieldIds);
+      } catch (e) {
+        await this.handleSaveError(e, {
+          fallback: 'An error occurred updating the widget.'
+        });
       }
       this.evaluateConditions();
       this.updatePreview();
