@@ -11,7 +11,7 @@
       :class="gridClasses"
       data-apos-test="aposLayoutContainer"
       :style="{
-        '--grid-columns': gridState.options.columns,
+        '--grid-columns': gridState.columns,
         '--grid-gap': gridState.options.gap,
       }"
       @mousemove="onMouseMove($event)"
@@ -52,7 +52,10 @@
             @mouseup="resetGhostData"
             @touchend="resetGhostData"
           />
-          <div class="apos-layout--item-action apos-layout__item-add-handle west">
+          <div
+            v-show="!hasMotion"
+            class="apos-layout--item-action apos-layout__item-add-handle west"
+          >
             <AposButton
               v-bind="buttonDefaults"
               tooltip="Add column before"
@@ -60,7 +63,10 @@
               @click="addItemFit({ item, side: 'west' })"
             />
           </div>
-          <div class="apos-layout--item-action apos-layout__item-add-handle east">
+          <div
+            v-show="!hasMotion"
+            class="apos-layout--item-action apos-layout__item-add-handle east"
+          >
             <AposButton
               v-bind="buttonDefaults"
               tooltip="Add column after"
@@ -68,7 +74,10 @@
               @click="addItemFit({ item, side: 'east' })"
             />
           </div>
-          <div class="apos-layout--item-action apos-layout__item-delete-handle">
+          <div
+            v-show="!hasMotion"
+            class="apos-layout--item-action apos-layout__item-delete-handle"
+          >
             <AposButton
               v-bind="buttonDefaults"
               icon="delete-icon"
@@ -76,7 +85,10 @@
               @click="removeItem(item)"
             />
           </div>
-          <div class="apos-layout--item-action apos-layout__item-align-actions">
+          <div
+            v-show="!hasMotion"
+            class="apos-layout--item-action apos-layout__item-align-actions"
+          >
             <div class="apos-layout__item-align-actions--row">
               <AposButton
                 v-bind="buttonDefaults"
@@ -156,6 +168,14 @@
               />
             </div>
           </div>
+          <button
+            v-show="!hasMotion"
+            class="apos-layout--item-action apos-layout__item-move-handle"
+            @mousedown="onStartMove(item, $event)"
+            @touchstart="onStartMove(item, $event)"
+            @mouseup="resetGhostData"
+            @touchend="resetGhostData"
+          />
         </div>
         <slot
           name="item"
@@ -187,7 +207,7 @@
         </div>
       </div>
       <div
-        v-if="isResizing"
+        v-if="hasMotion"
         :style="{
           left: ghostData.left + 'px',
           top: ghostData.top + 'px',
@@ -195,6 +215,16 @@
           height: ghostData.height + 'px'
         }"
         class="apos-layout__item-ghost"
+      />
+      <div
+        v-if="hasMotion && ghostData.snapLeft"
+        :style="{
+          left: ghostData.snapLeft + 'px',
+          top: ghostData.snapTop + 'px',
+          width: ghostData.width + 'px',
+          height: ghostData.height + 'px'
+        }"
+        class="apos-layout__item-ghost snap"
       />
       <div
         v-if="isManageMode"
@@ -262,13 +292,18 @@ export default {
         isMoving: false,
         startX: null,
         startY: null,
+        // mouse position inside the item at move start (px)
+        clickOffsetX: null,
+        clickOffsetY: null,
         side: null,
         id: null,
         element: null,
         top: null,
         left: null,
         width: null,
-        height: null
+        height: null,
+        snapTop: null,
+        snapLeft: null
       },
       // The current item computed changes.
       ghostDataWrite: {
@@ -279,7 +314,9 @@ export default {
         colstart: null,
         rowstart: null,
         rowspan: null,
-        order: null
+        order: null,
+        snapColstart: null,
+        snapRowstart: null
       },
       sceneResizeIndex: 0,
       addFirstOptions: {
@@ -339,9 +376,15 @@ export default {
     isResizing() {
       return this.ghostData.isResizing;
     },
+    isMoving() {
+      return this.ghostData.isMoving;
+    },
+    hasMotion() {
+      return this.isResizing || this.isMoving;
+    },
     columnIndicatorStyles() {
       return this.manager.getGridColumnIndicatorStyles(
-        this.gridState.options.columns,
+        this.gridState.columns,
         this.gridState.current.rows,
         // Here only to force recomputation of the grid styles
         this.sceneResizeIndex
@@ -389,17 +432,39 @@ export default {
       event.preventDefault();
       event.stopPropagation();
       const element = this.$refs.items.find(el => el.dataset.id === item._id);
-      const data = {
+      const itemData = this.gridState.lookup.get(item._id);
+      if (!itemData || !element) {
+        return;
+      }
+      const {
+        left, top, width, height
+      } = this.manager.getItemOriginalPosition(
+        element
+      );
+      // Placeholder for resize start logic
+      const ghostData = {
+        isResizing: true,
+        isMoving: false,
         startX: event.clientX,
         startY: event.clientY,
-        item,
-        axis: 'x',
         side,
-        element
+        id: itemData._id,
+        element,
+        top,
+        left,
+        width,
+        height
       };
-      this.handleResizeStart(data);
+      Object.assign(this.ghostData, ghostData);
+      this.ghostDataWrite.id = itemData._id;
+      this.ghostDataWrite.side = side;
+      this.ghostDataWrite.colspan = itemData.colspan;
+      this.ghostDataWrite.colstart = itemData.colstart;
+      this.ghostDataWrite.rowstart = itemData.rowstart ?? 1;
+      this.ghostDataWrite.rowspan = itemData.rowspan ?? 1;
+      this.ghostDataWrite.order = itemData.order;
     },
-    onMouseMove(event) {
+    onResize(event) {
       if (this.isResizing) {
         event.preventDefault();
         event.stopPropagation();
@@ -414,14 +479,91 @@ export default {
         this.ghostDataWrite.direction = direction ?? this.ghostDataWrite.direction;
       }
     },
+    onStartMove(item, event) {
+      event.preventDefault();
+      event.stopPropagation();
+      const element = this.$refs.items.find(el => el.dataset.id === item._id);
+      const itemData = this.gridState.lookup.get(item._id);
+      if (!itemData || !element) {
+        return;
+      }
+      const {
+        left, top, width, height
+      } = this.manager.getItemOriginalPosition(element);
+      this.ghostData = {
+        isResizing: false,
+        isMoving: true,
+        side: null,
+        startX: event.clientX,
+        startY: event.clientY,
+        clickOffsetX: null,
+        clickOffsetY: null,
+        id: itemData._id,
+        element,
+        top,
+        left,
+        width,
+        height
+      };
+
+      this.ghostDataWrite.id = itemData._id;
+      this.ghostDataWrite.side = null;
+      this.ghostDataWrite.direction = null;
+      this.ghostDataWrite.colspan = itemData.colspan;
+      this.ghostDataWrite.colstart = itemData.colstart;
+      this.ghostDataWrite.rowstart = itemData.rowstart ?? 1;
+      this.ghostDataWrite.rowspan = itemData.rowspan ?? 1;
+      this.ghostDataWrite.order = itemData.order;
+    },
+    onMove(event) {
+      if (!this.isMoving) {
+        return;
+      }
+      event.preventDefault();
+      event.stopPropagation();
+      const {
+        left, top, snapLeft, snapTop, colstart, rowstart, snapColstart, snapRowstart
+      } = this.manager.onGhostMove(
+        {
+          state: this.gridState,
+          data: this.ghostData,
+          item: this.gridState.lookup.get(this.ghostData.id)
+        },
+        event
+      );
+      this.ghostData.left = left ?? this.ghostData.left;
+      this.ghostData.top = top ?? this.ghostData.top;
+
+      if (typeof snapLeft === 'number' && typeof snapTop === 'number') {
+        this.ghostData.snapLeft = snapLeft;
+        this.ghostData.snapTop = snapTop;
+      }
+      if (colstart && rowstart) {
+        this.ghostDataWrite.colstart = colstart;
+        this.ghostDataWrite.rowstart = rowstart;
+      }
+      if (snapColstart && snapRowstart) {
+        this.ghostDataWrite.snapColstart = snapColstart;
+        this.ghostDataWrite.snapRowstart = snapRowstart;
+      }
+    },
+    onMouseMove(event) {
+      if (this.isResizing) {
+        this.onResize(event);
+      } else if (this.isMoving) {
+        this.onMove(event);
+      }
+    },
     onMouseUp(event) {
       if (this.isResizing) {
         this.emitResize();
-        this.resetGhostData();
+      }
+      if (this.isMoving) {
+        this.emitMove();
       }
     },
     onGlobalKeyDown(event) {
-      if (this.isResizing) {
+      if (this.isResizing || this.isMoving) {
         switch (event.key) {
           case 'Escape':
             this.resetGhostData();
@@ -429,47 +571,12 @@ export default {
           case 'Enter': {
             // Direction is set only when mouse is moved after the
             // initial capture of the resize start
-            this.emitResize();
-            this.resetGhostData();
+            this.isResizing && this.emitResize();
+            this.isMoving && this.emitMove();
             break;
           }
         }
       }
-    },
-    handleResizeStart(data) {
-      const itemData = this.gridState.current.items.find(
-        item => item._id === data.item._id
-      );
-      if (!itemData || !data.element) {
-        return;
-      }
-      const {
-        left, top, width, height
-      } = this.manager.getItemOriginalPosition(
-        data.element
-      );
-      // Placeholder for resize start logic
-      const ghostData = {
-        isResizing: true,
-        isMoving: false,
-        startX: data.startX,
-        startY: data.startY,
-        side: data.side,
-        id: data.item._id,
-        element: data.element,
-        top,
-        left,
-        width,
-        height
-      };
-      Object.assign(this.ghostData, ghostData);
-      this.ghostDataWrite.id = data.item._id;
-      this.ghostDataWrite.side = data.side;
-      this.ghostDataWrite.colspan = itemData.colspan;
-      this.ghostDataWrite.colstart = itemData.colstart;
-      this.ghostDataWrite.rowstart = itemData.rowstart ?? 1;
-      this.ghostDataWrite.rowspan = itemData.rowspan ?? 1;
-      this.ghostDataWrite.order = itemData.order;
     },
     resetGhostData() {
       Object.keys(this.ghostData).forEach(key => {
@@ -495,6 +602,20 @@ export default {
         }
       );
       this.$emit('resize-end', patches);
+      this.resetGhostData();
+    },
+    emitMove() {
+      console.log('Ghost data write:', { ...this.ghostDataWrite });
+      const patches = this.manager.performItemMove(
+        {
+          data: this.ghostDataWrite,
+          state: this.gridState,
+          item: this.gridState.lookup.get(this.ghostDataWrite.id)
+        }
+      );
+      console.log('Patches from move:', patches);
+      this.$emit('move-end', patches);
+      this.resetGhostData();
     },
     computeGhostResize(mouseEvent) {
       const {
@@ -756,6 +877,11 @@ to deliver management features */
   }
 }
 
+.apos-layout__item-move-handle {
+  inset: 70px 15px 0;
+  cursor: move;
+}
+
 .apos-layout__item-add-handle {
   top: 0;
   padding: 8px;
@@ -799,11 +925,16 @@ to deliver management features */
   height: 150px;
   // border: 1px dashed rgba($brand-blue, 0.4);
   inset: 0;
-  background-color: rgba($brand-blue, 0.3);
+  background-color: rgba($brand-blue, 0.2);
   border-radius: var(--a-border-radius);
   pointer-events: none;
   /* stylelint-disable-next-line time-min-milliseconds */
   transition: all 100ms ease-out;
+
+  &.snap {
+    border: 2px dashed rgba($brand-blue, 0.8);
+    background-color: transparent; //rgba($brand-blue, 0.6);
+  }
 }
 
 /* stylelint-disable-next-line media-feature-name-allowed-list */

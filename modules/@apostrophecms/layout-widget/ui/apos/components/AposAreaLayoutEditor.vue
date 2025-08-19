@@ -200,13 +200,6 @@ export default {
       return this.layoutModes.device.data || 'desktop';
     }
   },
-  watch: {
-    layoutManageMode(newMode, oldMode) {
-      if (newMode === 'view' && oldMode !== 'view') {
-        this.layoutSort();
-      }
-    }
-  },
   mounted() {
     if (!this.hasLayoutMeta) {
       this.onCreateProvision();
@@ -214,19 +207,32 @@ export default {
   },
   methods: {
     // Sort by the desktop order so that the auto-layout works correctly.
-    layoutSort() {
-      const sorted = this.layoutColumnWidgets.sort((a, b) => {
-        return (a.desktop.order || 0) - (b.desktop.order || 0);
-      });
+    // FIXME: not working, not supported by the backend somehow.
+    layoutSortAll() {
+      // const sorted = this.next.filter(w => w.type === this.layoutColumnWidgetName);
 
-      // FIXME: this doesn't work, the array is never updated in the DB.
-      this.next = [ this.layoutMeta, ...sorted ].filter(Boolean);
-    },
-    onResizeEnd(patchArr) {
-      if (!patchArr?.length) {
-        return;
-      }
-      this.layoutPatchMany(patchArr);
+      // sorted.sort((a, b) => {
+      //   return (a.desktop.order || 0) - (b.desktop.order || 0);
+      // });
+
+      // if (this.docId === window.apos.adminBar.contextId) {
+      // No need to clone - the event handler will do that.
+      // const patch = {
+      //   $pullAllById: {
+      //     [`@${this.id}.items`]: [
+      //       sorted.map(w => w._id)
+      //     ]
+      //   },
+      //   $push: {
+      //     [`@${this.id}.items`]: {
+      //       $each: [ ...sorted ]
+      //     }
+      //   }
+      // };
+      // apos.bus.$emit('context-edited', patch);
+      // }
+
+      // this.next = [ this.layoutMeta, ...sorted ];
     },
     onCreateProvision() {
       if (!this.layoutMetaWidgetName) {
@@ -255,6 +261,12 @@ export default {
       this.insert(insert);
       return insert;
     },
+    onResizeEnd(patchArr) {
+      if (!patchArr?.length) {
+        return;
+      }
+      this.layoutPatchMany(patchArr);
+    },
     onAddFitItem(patchArr) {
       const widgetName = this.layoutColumnWidgetName;
       if (!widgetName) {
@@ -265,6 +277,7 @@ export default {
       });
       this.onAddItem(insert);
       this.layoutPatchMany(patchArr);
+      this.layoutSortAll();
     },
     onRemoveItem({ _id, patches }) {
       const index = this.next.findIndex(w => w._id === _id);
@@ -272,6 +285,7 @@ export default {
         this.remove(index);
       }
       this.layoutPatchMany(patches);
+      this.layoutSortAll();
     },
     layoutPatchDevice({
       _id, device, patch

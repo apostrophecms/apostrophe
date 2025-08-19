@@ -2,6 +2,8 @@ module.exports = {
   extend: '@apostrophecms/widget-type',
   options: {
     label: 'apostrophe:layout',
+    initialModal: false,
+    skipOperations: [ 'edit' ],
     columns: 12,
     minSpan: 2,
     defaultSpan: 4,

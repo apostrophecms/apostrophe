@@ -76,7 +76,15 @@
             />
           </li>
         </ol>
-        <!-- TODO add support for breadcrumb aside horizontal controls -->
+        <!-- FIXME Bring widget controls data from the widget config -->
+        <ol
+          class="apos-area-widget__breadcrumbs"
+          style="margin-left: 10px;"
+        >
+          <li class="apos-area-widget__breadcrumb">
+            Look 'ma, horizontal controls!
+          </li>
+        </ol>
       </div>
       <div
         v-if="!controlsDisabled"
@@ -832,7 +840,8 @@ export default {
   .apos-area-widget__label {
     position: absolute;
     top: 0;
-    right: 0;
+    left: 0; // switch the root label position from right to left
+    // right: 0;
     display: flex;
     transform: translateY(-100%);
     transition: opacity 300ms ease;

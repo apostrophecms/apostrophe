@@ -114,6 +114,10 @@ module.exports = {
   options: {
     neverLoadSelf: true,
     initialModal: true,
+    // Disable (core) widget actions that are not relevant to this widget type.
+    // Available operations are 'edit', 'remove',
+    // 'up', 'down', 'cut', 'copy', 'clone'.
+    skipOperations: [],
     placeholder: false,
     placeholderClass: 'apos-placeholder',
     // two-thirds, half or full:
@@ -487,7 +491,8 @@ module.exports = {
           origin: self.options.origin,
           preview: self.options.preview,
           isExplicitOrigin: self.isExplicitOrigin,
-          widgetOperations: self.getAllowedWidgetOperations(req)
+          widgetOperations: self.getAllowedWidgetOperations(req),
+          skipOperations: self.options.skipOperations
         });
         return result;
       }

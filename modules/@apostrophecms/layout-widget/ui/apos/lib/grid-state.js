@@ -10,6 +10,8 @@
  *  rowstart: number,
  *  rowspan: number,
  *  order: number,
+ *  snapColstart?: number,
+ *  snapRowstart?: number,
  * }} GhostDataWrite
  *
  *
@@ -85,7 +87,7 @@ export function itemsToState({
     gap: [ 'manage', 'focus' ].includes(layoutMode) ? gap || '2px' : options.gap
   };
 
-  const positionsIndex = createPositionIndex(current.items);
+  const positionsIndex = createPositionIndex(current.items, current.rows);
   const lookup = new Map(current.items.map(item => [ item._id, item ]));
   const originalItems = new Map(items.map(item => [ item._id, item ]));
 
@@ -110,10 +112,9 @@ export function itemsToState({
  * @param {CurrentItem[]} items
  * @returns {Map<number, Map<number, string>>}
  */
-export function createPositionIndex(items) {
+export function createPositionIndex(items, rows) {
   const sorted = items.slice().sort((a, b) => a.order - b.order);
   const positionsIndex = new Map();
-  const rows = Math.max(...sorted.map(item => item.rowstart));
   for (let i = 1; i <= rows; i++) {
     positionsIndex.set(i, new Map());
   }
@@ -122,7 +123,7 @@ export function createPositionIndex(items) {
       colstart, colspan, rowstart
     } = item;
     for (let i = 0; i < colspan; i++) {
-      positionsIndex.get(rowstart).set(colstart + i, item._id);
+      positionsIndex.get(rowstart)?.set(colstart + i, item._id);
     }
   }
 
@@ -265,7 +266,7 @@ export function validateResizeX({
  *  colstart: number,
  * }[]}
  */
-export function getResizeChangesX({
+export function getResizeChanges({
   data, state, item
 }) {
   if (!item || !data.direction) {
@@ -373,6 +374,30 @@ export function getResizeChangesX({
 }
 
 /**
+ *
+ * @param {Object} arg
+ * @param {GhostDataWrite} arg.data - The ghost data containing the item
+ *  and its state.
+ * @param {GridState} arg.state - The current grid state.
+ * @param {CurrentItem} arg.item - The item being moved.
+ *
+ * @return {{
+ *  _id: string,
+ *  colstart?: number,
+ *  rowstart?: number,
+ *  order?: number
+ * }[]}
+ */
+export function getMoveChanges({
+  data, state, item
+}) {
+  if (!data.colstart || !data.rowstart) {
+    return [];
+  }
+
+}
+
+/**
  * Pass grid item, grid state and side (east or west) to answer if
  * a new item can be inserted in the given direction immediately
  * before or after the item.
@@ -401,7 +426,7 @@ export function canFitX({
     colstart, colspan, rowstart, rowspan
   } = item;
 
-  const maxColumns = state.columns || state.options.columns;
+  const maxColumns = state.columns;
   const maxRows = state.current.rows;
   const minSpan = state.options.minSpan || 1;
   const defaultColspan = state.options.defaultSpan || 1;
