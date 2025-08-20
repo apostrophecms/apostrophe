@@ -174,7 +174,7 @@ async function upload(files = []) {
       },
       draft: true
     });
-    const formData = new window.FormData();
+    const formData = new FormData();
     formData.append('file', file);
 
     // Make an async request to upload the image.
