@@ -39,7 +39,7 @@ export class GridManager {
    * @param {HTMLElement} gridElement
    * @param {(rect: DOMRectReadOnly | UIEvent) => void} onResize
    */
-  init(rootElement, gridElement, onResizeAndScroll = (rect) => {}) {
+  init(rootElement, gridElement, onResizeAndScroll = (rect) => { }) {
     this.rootElement = rootElement;
     this.gridElement = gridElement;
     this.onResizeAndScroll = onResizeAndScroll;
@@ -132,8 +132,12 @@ export class GridManager {
    *
    * @param {Object} args
    * @param {GridState} args.state - The current grid state.
-  * @param {HTMLElement[] | NodeListOf<HTMLElement>} args.refs -
-  *   The DOM refs of grid items (each with data-id attribute).
+   * @param {HTMLElement[] | NodeListOf<HTMLElement>} args.refs -
+   *   The DOM refs of grid items (each with data-id attribute).
+   *
+   * @deprecated
+   * We don't need to compute that anymore - the grid clone ensures
+   * the cell width and position is always correct.
    */
   getGridShimPositions({ state, refs }) {
     // Guard clauses
@@ -266,6 +270,23 @@ export class GridManager {
         left,
         width,
         height
+      });
+    }
+
+    return result;
+  }
+
+  /**
+   *
+   * @param {HTMLElement[]} refs
+   * @returns
+   */
+  getGridContentStyles(refs) {
+    const result = new Map();
+    for (const element of refs) {
+      result.set(element.dataset.id, {
+        width: element.offsetWidth + 'px',
+        height: element.offsetHeight + 'px'
       });
     }
 

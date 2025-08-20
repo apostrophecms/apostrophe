@@ -4,12 +4,53 @@
   is 90% of the time. -->
   <div
     ref="root"
-    class="apos-layout__root"
+    class="apos-layout"
   >
     <section
-      ref="grid"
+      class="apos-layout__grid"
       :class="gridClasses"
       data-apos-test="aposLayoutContainer"
+      :style="{
+        '--grid-columns': gridState.columns,
+        '--grid-gap': gridState.options.gap,
+      }"
+    >
+      <div
+        v-for="(item, i) in gridState.current.items"
+        :key="item._id"
+        ref="contentItems"
+        class="apos-layout__item"
+        role="gridcell"
+        data-apos-test="aposLayoutItem"
+        :data-id="`${ item._id }`"
+        :style="{
+          '--colstart': item.colstart,
+          '--colspan': item.colspan,
+          '--rowstart': item.rowstart,
+          '--rowspan': item.rowspan,
+          '--order': item.order,
+          '--justify': item.justify,
+          '--align': item.align,
+        }"
+      >
+        <div
+          data-content
+          class="apos-layout__item-content"
+        >
+          <slot
+            name="item"
+            :item="gridState.originalItems.get(item._id)"
+            :i="i"
+          />
+        </div>
+      </div>
+    </section>
+    <section
+      v-show="isManageMode"
+      ref="grid"
+      class="apos-layout__grid-clone"
+      :class="gridClasses"
+      data-apos-test="aposLayoutContainerClone"
       :style="{
         '--grid-columns': gridState.columns,
         '--grid-gap': gridState.options.gap,
@@ -17,7 +58,7 @@
       @mousemove="onMouseMove($event)"
     >
       <div
-        v-for="(item, i) in gridState.current.items"
+        v-for="(item) in gridState.current.items"
         :key="item._id"
         ref="items"
         class="apos-layout__item"
@@ -35,16 +76,9 @@
         }"
       >
         <div
-          v-if="isManageMode"
           data-shim
           :data-id="item._id"
           class="apos-layout__item-shim"
-          :style="{
-            left: shimPositionsMap.get(item._id)?.left + 'px',
-            top: shimPositionsMap.get(item._id)?.top + 'px',
-            width: shimPositionsMap.get(item._id)?.width + 'px',
-            height: shimPositionsMap.get(item._id)?.height + 'px',
-          }"
         >
           <button
             class="apos-layout--item-action apos-layout__item-resize-handle west"
@@ -185,11 +219,15 @@
             @touchend="resetGhostData"
           />
         </div>
-        <div class="apos-layout__item-content">
-          <slot
-            name="item"
-            :item="gridState.originalItems.get(item._id)"
-            :i="i"
+        <div
+          data-content
+          class="apos-layout__item-content"
+        >
+          <div
+            :style="{
+              width: gridContentStyles.get(item._id)?.width || '100%',
+              height: gridContentStyles.get(item._id)?.height || '100%'
+            }"
           />
         </div>
       </div>
@@ -326,6 +364,7 @@ export default {
         snapRowstart: null
       },
       sceneResizeIndex: 0,
+      cloneCalculateIndex: 0,
       addFirstOptions: {
         label: 'Add Column',
         icon: 'plus-icon',
@@ -341,13 +380,13 @@ export default {
         modifiers: [ 'round', 'tiny', 'icon-only' ],
         iconOnly: true,
         iconSize: 11
-      }
+      },
+      gridContentStyles: new Map()
     };
   },
   computed: {
     gridClasses() {
       return {
-        'apos-layout': true,
         manage: this.isManageMode,
         focused: this.isFocusedMode,
         'is-resizing': this.isResizing
@@ -397,17 +436,6 @@ export default {
         this.sceneResizeIndex
       );
     },
-    shimPositionsMap() {
-      // `sceneResizeIndex` can't be 0, it's here to ensure
-      // re-computation of the shim positions when required.
-      if (!this.$refs.items?.length || this.sceneResizeIndex < 0) {
-        return new Map();
-      }
-      return this.manager.getGridShimPositions({
-        state: this.gridState,
-        refs: this.$refs.items
-      });
-    },
     validInsertPositions() {
       return this.gridState.current.items.reduce((acc, item) => {
         acc[item._id] = {
@@ -427,7 +455,32 @@ export default {
       }, {});
     }
   },
-  mounted() {
+  watch: {
+    '$refs.contentItems'(newRefs) {
+      if (newRefs?.length) {
+        this.gridContentStyles = this.manager.getGridContentStyles(newRefs);
+      }
+    },
+    isManageMode(newValue) {
+      if (newValue) {
+        this.gridContentStyles = this.manager.getGridContentStyles(
+          this.$refs.contentItems
+        );
+      }
+    },
+    cloneCalculateIndex(newValue) {
+      if (newValue > 1) {
+        this.gridContentStyles = this.manager.getGridContentStyles(
+          this.$refs.contentItems
+        );
+      }
+    }
+  },
+  async mounted() {
+    document.addEventListener('keydown', this.onGlobalKeyDown);
+    document.addEventListener('mouseup', this.onMouseUp);
+    document.addEventListener('touchend', this.onMouseUp);
+    await this.$nextTick();
     this.manager.init(
       this.$refs.root,
       this.$refs.grid,
@@ -435,9 +488,10 @@ export default {
         this.sceneResizeIndex += 1;
       }
     );
-    document.addEventListener('keydown', this.onGlobalKeyDown);
-    document.addEventListener('mouseup', this.onMouseUp);
-    document.addEventListener('touchend', this.onMouseUp);
+    this.cloneCalculateIndex = 1;
+    this.gridContentStyles = this.manager.getGridContentStyles(
+      this.$refs.contentItems
+    );
   },
   unmounted() {
     document.removeEventListener('keydown', this.onGlobalKeyDown);
@@ -635,6 +689,7 @@ export default {
       console.log('Patches from move:', patches);
       this.$emit('move-end', patches);
       this.resetGhostData();
+      this.forceGridRecalculate();
     },
     computeGhostResize(mouseEvent) {
       const {
@@ -662,6 +717,7 @@ export default {
         colspan: this.gridState.options.defaultSpan,
         order: 0
       });
+      this.forceGridRecalculate();
     },
     addItemFit({ item, side }) {
       const fit = this.validInsertPositions[item._id]?.[side];
@@ -679,6 +735,7 @@ export default {
         state: this.gridState
       });
       this.$emit('add-fit-item', patches);
+      this.forceGridRecalculate();
     },
     removeItem(item) {
       const patches = getReorderPatch({
@@ -689,12 +746,14 @@ export default {
         _id: item._id,
         patches
       });
+      this.forceGridRecalculate();
     },
     patchItem(item, patch) {
       this.$emit('patch-item', {
         ...patch,
         _id: item._id
       });
+      this.forceGridRecalculate();
     },
     toggleDeviceVisibility(item, device) {
       const patch = {
@@ -705,6 +764,9 @@ export default {
         device,
         patch
       });
+    },
+    forceGridRecalculate() {
+      this.cloneCalculateIndex += 1;
     }
   }
 };
@@ -712,130 +774,161 @@ export default {
 
 <style lang="scss" scoped>
 /* The base grid styles, mimicking the default public behavior */
-.apos-layout {
+.apos-layout__grid {
   display: grid;
   grid-template-columns: repeat(var(--grid-columns, 12), 1fr);
   gap: var(--grid-gap);
-
-  &__item {
-    /* stylelint-disable-next-line declaration-block-no-redundant-longhand-properties */
-    align-self: var(--align, inherit);
-    order: var(--order, 0);
-    /* stylelint-disable-next-line declaration-block-no-redundant-longhand-properties */
-    grid-column: var(--colstart, auto) / span var(--colspan, 1);
-    grid-row: var(--rowstart, auto) / span var(--rowspan, 1);
-    /* stylelint-disable-next-line declaration-block-no-redundant-longhand-properties */
-    justify-self: var(--justify, inherit);
-  }
-}
-
-/* Management specific features, enhancing the grid/items
-to deliver management features */
-.apos-layout__root {
-  position: relative;
 }
 
 .apos-layout__item {
-  min-height: 150px;
-  opacity: 1;
-  transition: all 300ms ease;
-
-  &.is-resizing > .apos-layout__item {
-    opacity: 0.2;
-  }
-
-  &.is-resizing .apos-layout__item-shim {
-    background-color: rgba($brand-blue, 0.8);
-  }
+  /* stylelint-disable-next-line declaration-block-no-redundant-longhand-properties */
+  align-self: var(--align, inherit);
+  order: var(--order, 0);
+  /* stylelint-disable-next-line declaration-block-no-redundant-longhand-properties */
+  grid-column: var(--colstart, auto) / span var(--colspan, 1);
+  grid-row: var(--rowstart, auto) / span var(--rowspan, 1);
+  /* stylelint-disable-next-line declaration-block-no-redundant-longhand-properties */
+  justify-self: var(--justify, inherit);
 }
 
-.apos-layout.manage {
+/*
+  Management specific features, enhancing the grid/items
+  to deliver management features
+*/
+.apos-layout {
   position: relative;
 
-  & > .apos-layout__item {
+  &__grid-clone {
+    position: absolute;
+    inset: 0;
+    display: grid;
+    grid-template-columns: repeat(var(--grid-columns, 12), 1fr);
+    gap: var(--grid-gap);
+
+    & > .apos-layout__item {
+      place-self: stretch;
+      border-radius: var(--a-border-radius);
+    }
+
+    & > .apos-layout__item-content > *{
+      pointer-events: none;
+    }
+  }
+
+  &__grid.manage > &__item-content > *{
+    pointer-events: none;
+  }
+
+  &__grid-clone.manage > &__item {
+    position: relative;
+    min-height: 150px;
+    opacity: 1;
+    transition: all 300ms ease;
+
+    &.is-resizing > &__item {
+      opacity: 0.2;
+    }
+
+    &.is-resizing &__item-shim {
+      background-color: rgba($brand-blue, 0.8);
+    }
+  }
+
+  &__item-shim {
+    z-index: $z-index-widget-label;
+    position: absolute;
+    box-sizing: border-box;
+    border: 1px dashed rgba($brand-blue, 0.8);
+    transition: background-color 300ms ease;
+    inset: 0;
+    /* stylelint-disable-next-line declaration-no-important */
+    border-radius: var(--a-border-radius);
+    // background-color: rgba($brand-blue, 0.6);
+    background-color: rgba(#fff, 0.4);
+
+    &:hover {
+      background-color: rgba(#fff, 0.7);
+    }
+
+    &:hover:not(.is-resizing) > .apos-layout--item-action {
+      display: block;
+    }
+
+    // &.is-resizing {
+    //   can be used to style the shim when resizing
+    // }
+  }
+
+  &__item-synthetic {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    border: 1px dashed var(--a-brand-blue);
+    background-color: transparent;
     border-radius: var(--a-border-radius);
   }
 
-  & > .apos-layout__item-content > *{
-    pointer-events: none;
-  }
-}
-
-.apos-layout__grid-overlay {
-  position: absolute;
-  // Toggle to initially display or display on move/resize
-  display: none;
-  box-sizing: border-box;
-  border: 1px dashed rgba($brand-blue, 0.4);
-  inset: 0;
-  border-radius: var(--a-border-radius);
-
-  &.active {
-    display: block;
-    pointer-events: none;
-  }
-
-  & > .column-indicator {
+  &__grid-overlay {
     position: absolute;
-    top: 0;
-    bottom: 0;
+    // Toggle to initially display or display on move/resize
+    display: none;
     box-sizing: border-box;
-    width: 2px;
-    background-color: rgba($brand-blue, 0.4);
-    border-radius: 1px;
+    border: 1px dashed rgba($brand-blue, 0.4);
+    inset: 0;
+    border-radius: var(--a-border-radius);
+
+    &.active {
+      display: block;
+      pointer-events: none;
+    }
+
+    & > .column-indicator {
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      box-sizing: border-box;
+      width: 2px;
+      background-color: rgba($brand-blue, 0.4);
+      border-radius: 1px;
+    }
+
+    & > .column-indicator.gap {
+        border: 1px dashed rgba($brand-blue, 0.4);
+        background: repeating-linear-gradient(
+          45deg,
+          rgba($brand-blue, 0.4) 0 2px,  /* line thickness */
+          transparent 2px 12px            /* gap between lines */
+        );
+    }
   }
 
-   & > .column-indicator.gap {
-      border: 1px dashed rgba($brand-blue, 0.4);
-      background: repeating-linear-gradient(
-        45deg,
-        rgba($brand-blue, 0.4) 0 2px,  /* line thickness */
-        transparent 2px 12px            /* gap between lines */
-      );
-   }
-}
+  &__item-ghost {
+    z-index: $z-index-manager-toolbar;
+    position: absolute;
+    width: 500px;
+    height: 150px;
+    // border: 1px dashed rgba($brand-blue, 0.4);
+    inset: 0;
+    background-color: rgba($brand-blue, 0.2);
+    border-radius: var(--a-border-radius);
+    pointer-events: none;
+    /* stylelint-disable-next-line time-min-milliseconds */
+    transition: all 100ms ease-out;
 
-.apos-layout__item-shim {
-  z-index: $z-index-widget-label;
-  position: absolute;
-  box-sizing: border-box;
-  border: 1px dashed rgba($brand-blue, 0.8);
-  transition: background-color 300ms ease;
-  inset: 0;
-  /* stylelint-disable-next-line declaration-no-important */
-  border-radius: var(--a-border-radius);
-  // background-color: rgba($brand-blue, 0.6);
-  background-color: rgba(#fff, 0.4);
-
-  &:hover {
-    background-color: rgba(#fff, 0.7);
+    &.snap {
+      border: 2px dashed rgba($brand-blue, 0.8);
+      background-color: transparent; //rgba($brand-blue, 0.6);
+    }
   }
 
-  &:hover:not(.is-resizing) > .apos-layout--item-action {
-    display: block;
+  &--item-action {
+    position: absolute;
+    display: none;
+    border: none;
+    background-color: transparent;
+    cursor: pointer;
   }
-
-  // &.is-resizing {
-  //   can be used to style the shim when resizing
-  // }
-}
-
-.apos-layout__item-synthetic {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  height: 100%;
-  border: 1px dashed var(--a-brand-blue);
-  background-color: transparent;
-  border-radius: var(--a-border-radius);
-}
-
-.apos-layout--item-action {
-  position: absolute;
-  display: none;
-  border: none;
-  background-color: transparent;
-  cursor: pointer;
 }
 
 .apos-layout__item-resize-handle {
@@ -936,25 +1029,6 @@ to deliver management features */
     flex-direction: row;
     justify-content: center;
     gap: 4px;
-  }
-}
-
-.apos-layout__item-ghost {
-  z-index: $z-index-manager-toolbar;
-  position: absolute;
-  width: 500px;
-  height: 150px;
-  // border: 1px dashed rgba($brand-blue, 0.4);
-  inset: 0;
-  background-color: rgba($brand-blue, 0.2);
-  border-radius: var(--a-border-radius);
-  pointer-events: none;
-  /* stylelint-disable-next-line time-min-milliseconds */
-  transition: all 100ms ease-out;
-
-  &.snap {
-    border: 2px dashed rgba($brand-blue, 0.8);
-    background-color: transparent; //rgba($brand-blue, 0.6);
   }
 }
 
