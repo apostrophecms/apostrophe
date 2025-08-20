@@ -88,6 +88,7 @@ module.exports = {
 
     self.enableBrowserData();
     self.addDeduplicateWidgetIdsMigration();
+    self.createWidgetOperations = [];
   },
   apiRoutes(self) {
     return {
@@ -382,8 +383,8 @@ module.exports = {
               return;
             }
             // We're only rendering areas on the document, not ancestor or
-            // child page documents.
-            const regex = /^_(ancestors|children)|\._(ancestors|children)/;
+            // child page or related documents.
+            const regex = /^_|\._/;
             if (dotPath.match(regex)) {
               return;
             }
@@ -786,7 +787,6 @@ module.exports = {
             manager.options.initialModal !== false;
           contextualWidgetDefaultData[name] = manager.options.defaultData || {};
         });
-
         return {
           components: {
             editor: 'AposAreaEditor',
@@ -799,7 +799,8 @@ module.exports = {
           widgetPreview,
           contextualWidgetDefaultData,
           widgetManagers,
-          action: self.action
+          action: self.action,
+          createWidgetOperations: self.createWidgetOperations
         };
       },
       async addDeduplicateWidgetIdsMigration() {
@@ -825,6 +826,9 @@ module.exports = {
             }
           });
         });
+      },
+      addCreateWidgetOperation(operation) {
+        self.createWidgetOperations.push(operation);
       }
     };
   },
