@@ -52,8 +52,12 @@ export class GridManager {
     // Initialize resize observer
     // FIXME: improve, it's quick and dirty and doesn't trigger
     // always on resize. Also we need to support the device preview apos feature.
+    // This should probably live in the Vue component.
     this.resizeObserver = new ResizeObserver(entries => {
-      this.onSceneResizeDebounced(entries[0].contentRect);
+      // Because of hot-reloading, the grid manager may be re-initialized
+      // without the resize observer being properly cleaned up.
+      this.onSceneResizeDebounced &&
+        this.onSceneResizeDebounced(entries[0].contentRect);
     });
 
     this.resizeObserver.observe(window.document.body);
@@ -75,10 +79,10 @@ export class GridManager {
   /**
    * Get the original position of an item within a container.
    *
-   * @param {HTMLElement} item
+   * @param {HTMLElement} element
    */
-  getItemOriginalPosition(item) {
-    const rect = item.getBoundingClientRect();
+  getItemOriginalPosition(element) {
+    const rect = element.getBoundingClientRect();
     const containerRect = this.getGridBoundingRect();
     return {
       left: rect.left - containerRect.left,
@@ -120,6 +124,152 @@ export class GridManager {
     });
 
     return styles;
+  }
+
+  /**
+   * Returns a map of relative to the grid shim positions objects
+   * for each existing item in the grid.
+   *
+   * @param {Object} args
+   * @param {GridState} args.state - The current grid state.
+  * @param {HTMLElement[] | NodeListOf<HTMLElement>} args.refs -
+  *   The DOM refs of grid items (each with data-id attribute).
+   */
+  getGridShimPositions({ state, refs }) {
+    // Guard clauses
+    if (!state || !state.current || !this.gridElement || !refs || !refs.length) {
+      return new Map();
+    }
+
+    // Cache lookups
+    const containerRect = this.getGridBoundingRect();
+    const style = this.getGridComputedStyle();
+
+    // Grid metrics
+    const columns = Math.max(1, Number(state.columns) || 1);
+    const rowsCount = Math.max(1, Number(state.current.rows) || 1);
+    const colGap = parseFloat(style.columnGap || style.gap) || 0;
+    const rowGap = parseFloat(style.rowGap || style.gap) || 0;
+    const trackWidth = (containerRect.width - colGap * (columns - 1)) / columns;
+
+    // Build a quick map from id -> element and measure heights once
+    /** @type {Map<string, HTMLElement>} */
+    const elById = new Map();
+    /** @type {Map<string, number>} */
+    const heightById = new Map();
+
+    for (const el of refs) {
+      if (!el || !el.dataset) {
+        continue;
+      }
+      const id = el.dataset.id;
+      if (!id) {
+        continue;
+      }
+      elById.set(id, el);
+      // Read once; avoids repeated layout reads later
+      const rect = el.getBoundingClientRect();
+      heightById.set(id, rect.height);
+    }
+
+    // Prepare per-row heights (content-based). Start with zeros.
+    const rowHeights = new Array(rowsCount).fill(0);
+
+    // Helper to safely iterate items currently rendered
+    const currentItems = Array.isArray(state.current.items)
+      ? state.current.items
+      : [];
+
+    // Pass 1: single-row items define a lower bound for that row height
+    for (const it of currentItems) {
+      if (!it || it.rowstart == null || it.rowspan == null) {
+        continue;
+      }
+      const id = it._id;
+      if (!id || !heightById.has(id)) {
+        continue;
+      }
+      const r = Math.max(1, Math.min(rowsCount, it.rowstart)) - 1; // zero-based
+      const span = Math.max(1, it.rowspan);
+      if (span === 1) {
+        rowHeights[r] = Math.max(rowHeights[r], heightById.get(id));
+      }
+    }
+
+    // Pass 2: multi-row items distribute their height across spanned rows
+    // so that the sum of involved track heights (plus gaps) meets the measured height.
+    for (const it of currentItems) {
+      if (!it || it.rowstart == null || it.rowspan == null) {
+        continue;
+      }
+      const id = it._id;
+      if (!id || !heightById.has(id)) {
+        continue;
+      }
+      const start = Math.max(1, Math.min(rowsCount, it.rowstart)) - 1; // zero-based
+      const span = Math.max(1, it.rowspan);
+      if (span <= 1) {
+        continue;
+      }
+
+      const measured = heightById.get(id);
+      const availableRows = Math.min(span, rowsCount - start);
+      if (availableRows <= 0) {
+        continue;
+      }
+
+      const targetSum = Math.max(0, measured - rowGap * (availableRows - 1));
+      const perRow = targetSum / availableRows;
+      // Raise each spanned row to at least perRow
+      for (let k = 0; k < availableRows; k++) {
+        const idx = start + k;
+        rowHeights[idx] = Math.max(rowHeights[idx], perRow);
+      }
+    }
+
+    // Compute prefix sums for tops (accumulated row heights + gaps)
+    const rowTop = new Array(rowsCount).fill(0);
+    for (let r = 1; r < rowsCount; r++) {
+      rowTop[r] = rowTop[r - 1] + rowHeights[r - 1] + rowGap;
+    }
+
+    // Build result map: id -> { top, left, width, height }
+    const result = new Map();
+
+    for (const it of currentItems) {
+      if (!it || it._id == null) {
+        continue;
+      }
+      const id = it._id;
+      const colstart = Math.max(1, Math.min(columns, it.colstart || 1));
+      const colspan = Math.max(1, Math.min(columns - colstart + 1, it.colspan || 1));
+      const rowstart1 = Math.max(1, Math.min(rowsCount, it.rowstart || 1));
+      const rowspan1 = Math.max(1, Math.min(rowsCount - rowstart1 + 1, it.rowspan || 1));
+
+      const left = (colstart - 1) * (trackWidth + colGap);
+      const width = colspan * trackWidth + (colspan - 1) * colGap;
+
+      const top = rowTop[rowstart1 - 1] || 0;
+      // Always use the computed row track heights so that all items sharing
+      // the same rows have identical heights (matches CSS Grid behavior).
+      let height = 0;
+      for (let k = 0; k < rowspan1; k++) {
+        const rr = rowstart1 - 1 + k;
+        height += (rowHeights[rr] || 0);
+        if (k < rowspan1 - 1) {
+          height += rowGap;
+        }
+      }
+
+      result.set(id, {
+        top,
+        left,
+        width,
+        height
+      });
+    }
+
+    return result;
   }
 
   /**
@@ -476,8 +626,11 @@ export class GridManager {
       this.resizeObserver.disconnect();
       this.resizeObserver = null;
     }
-    document.removeEventListener('scroll', this.onSceneResizeDebounced);
-    this.onSceneResizeDebounced = null;
+    if (this.onSceneResizeDebounced) {
+      document.removeEventListener('scroll', this.onSceneResizeDebounced);
+      this.onSceneResizeDebounced.cancel();
+      this.onSceneResizeDebounced = null;
+    }
     this.rootElement = null;
     this.gridElement = null;
   }

@@ -36,7 +36,15 @@
       >
         <div
           v-if="isManageMode"
+          data-shim
+          :data-id="item._id"
           class="apos-layout__item-shim"
+          :style="{
+            left: shimPositionsMap.get(item._id)?.left + 'px',
+            top: shimPositionsMap.get(item._id)?.top + 'px',
+            width: shimPositionsMap.get(item._id)?.width + 'px',
+            height: shimPositionsMap.get(item._id)?.height + 'px',
+          }"
         >
           <button
             class="apos-layout--item-action apos-layout__item-resize-handle west"
@@ -177,15 +185,17 @@
             @touchend="resetGhostData"
           />
         </div>
-        <slot
-          name="item"
-          :item="gridState.originalItems.get(item._id)"
-          :i="i"
-        />
+        <div class="apos-layout__item-content">
+          <slot
+            name="item"
+            :item="gridState.originalItems.get(item._id)"
+            :i="i"
+          />
+        </div>
       </div>
       <div
-        v-if="gridState.current.items.length === 0 && meta._id"
-        class="apos-layout__item"
+        v-if="isManageMode && gridState.current.items.length === 0 && meta._id"
+        class="apos-layout__item apos-layout__item-synthetic"
         :style="{
           '--colstart': 1,
           '--colspan': gridState.options.defaultSpan,
@@ -196,15 +206,11 @@
           '--align': 'stretch',
         }"
       >
-        <div
-          class="apos-layout__item-shim apos-layout__item--add-first"
-        >
-          <AposButton
-            v-bind="addFirstOptions"
-            role="button"
-            @click="addItemFirst()"
-          />
-        </div>
+        <AposButton
+          v-bind="addFirstOptions"
+          role="button"
+          @click="addItemFirst()"
+        />
       </div>
       <div
         v-if="hasMotion"
@@ -247,6 +253,7 @@ import { GridManager } from '../lib/grid-manager.js';
 import {
   itemsToState, canFitX, getReorderPatch
 } from '../lib/grid-state.js';
+
 export default {
   name: 'AposGridManager',
   props: {
@@ -390,6 +397,17 @@ export default {
         this.sceneResizeIndex
       );
     },
+    shimPositionsMap() {
+      // `sceneResizeIndex` can't be 0, it's here to ensure
+      // re-computation of the shim positions when required.
+      if (!this.$refs.items?.length || this.sceneResizeIndex < 0) {
+        return new Map();
+      }
+      return this.manager.getGridShimPositions({
+        state: this.gridState,
+        refs: this.$refs.items
+      });
+    },
     validInsertPositions() {
       return this.gridState.current.items.reduce((acc, item) => {
         acc[item._id] = {
@@ -431,7 +449,8 @@ export default {
     onStartXResize(item, side, event) {
       event.preventDefault();
       event.stopPropagation();
-      const element = this.$refs.items.find(el => el.dataset.id === item._id);
+      const element = this.$refs.items.find(el => el.dataset.id === item._id)
+        .querySelector('[data-shim]');
       const itemData = this.gridState.lookup.get(item._id);
       if (!itemData || !element) {
         return;
@@ -482,7 +501,8 @@ export default {
     onStartMove(item, event) {
       event.preventDefault();
       event.stopPropagation();
-      const element = this.$refs.items.find(el => el.dataset.id === item._id);
+      const element = this.$refs.items.find(el => el.dataset.id === item._id)
+        .querySelector('[data-shim]');
       const itemData = this.gridState.lookup.get(item._id);
       if (!itemData || !element) {
         return;
@@ -605,7 +625,6 @@ export default {
       this.resetGhostData();
     },
     emitMove() {
-      console.log('Ghost data write:', { ...this.ghostDataWrite });
       const patches = this.manager.performItemMove(
         {
           data: this.ghostDataWrite,
@@ -717,7 +736,6 @@ to deliver management features */
 }
 
 .apos-layout__item {
-  position: relative;
   min-height: 150px;
   opacity: 1;
   transition: all 300ms ease;
@@ -738,7 +756,7 @@ to deliver management features */
     border-radius: var(--a-border-radius);
   }
 
-  & > .apos-layout__item > *{
+  & > .apos-layout__item-content > *{
     pointer-events: none;
   }
 }
@@ -746,7 +764,7 @@ to deliver management features */
 .apos-layout__grid-overlay {
   position: absolute;
   // Toggle to initially display or display on move/resize
-  // display: none;
+  display: none;
   box-sizing: border-box;
   border: 1px dashed rgba($brand-blue, 0.4);
   inset: 0;
@@ -780,15 +798,17 @@ to deliver management features */
 .apos-layout__item-shim {
   z-index: $z-index-widget-label;
   position: absolute;
+  box-sizing: border-box;
+  border: 1px dashed rgba($brand-blue, 0.8);
+  transition: background-color 300ms ease;
   inset: 0;
   /* stylelint-disable-next-line declaration-no-important */
-  pointer-events: all !important;
   border-radius: var(--a-border-radius);
-  background-color: rgba($brand-blue, 0.6);
-  transition: background-color 300ms ease;
+  // background-color: rgba($brand-blue, 0.6);
+  background-color: rgba(#fff, 0.4);
 
   &:hover {
-    border: 1px dashed rgba($brand-blue, 0.8);
+    background-color: rgba(#fff, 0.7);
   }
 
   &:hover:not(.is-resizing) > .apos-layout--item-action {
@@ -798,15 +818,16 @@ to deliver management features */
   // &.is-resizing {
   //   can be used to style the shim when resizing
   // }
+}
 
-  &.apos-layout__item--add-first {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border: 1px dashed var(--a-brand-blue);
-    background-color: transparent;
-    border-radius: var(--a-border-radius);
-  }
+.apos-layout__item-synthetic {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  border: 1px dashed var(--a-brand-blue);
+  background-color: transparent;
+  border-radius: var(--a-border-radius);
 }
 
 .apos-layout--item-action {
