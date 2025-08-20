@@ -117,8 +117,6 @@ export default {
   },
   watch: {
     next(after, before) {
-      console.log('after', after);
-      console.log('before', before);
       for (const doc of before) {
         this.subfields[doc._id] = doc._fields;
       }
