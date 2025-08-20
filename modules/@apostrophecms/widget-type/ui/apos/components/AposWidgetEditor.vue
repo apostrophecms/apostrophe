@@ -229,7 +229,7 @@ export default {
     this.initPreview();
   },
   methods: {
-    async updateDocFields(value) {
+    updateDocFields(value) {
       this.updateFieldErrors(value.fieldState);
       this.docFields.data = {
         ...this.docFields.data,
