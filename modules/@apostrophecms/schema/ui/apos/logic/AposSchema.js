@@ -271,7 +271,6 @@ export default {
       }
       const oldHasErrors = this.next.hasErrors;
       let changeFound = false;
-      const changedFieldIds = new Set();
 
       this.next.hasErrors = false;
       this.next.fieldState = { ...this.fieldState };
@@ -293,7 +292,6 @@ export default {
             )
           ) {
             changeFound = true;
-            changedFieldIds.add(field._id);
 
             // fieldState never gets the relationships postprocessed data
             // that's why it gets seen as different than next all the time
@@ -309,7 +307,7 @@ export default {
 
       if (changeFound) {
         // ... removes need for deep watch at parent level
-        this.$emit('update:model-value', { ...this.next }, { changedFieldIds });
+        this.$emit('update:model-value', { ...this.next });
       }
     },
     displayComponent({ name, hidden = false }) {

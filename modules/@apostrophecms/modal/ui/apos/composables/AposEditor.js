@@ -3,38 +3,51 @@
 
 // Perform any postprocessing required by direct or nested schema fields
 // before the object can be saved
-export async function _postprocess(schema, data, widgetOptions, fieldIds) {
+export async function _postprocess(schema, data, widgetOptions) {
   // Relationship fields may have postprocessors (e.g. autocropping)
-  const relationships = findRelationships(schema, data, fieldIds);
+  const relationships = _findRelationships(schema, data);
 
-  for (const relationship of relationships) {
-    if (!(relationship.value && relationship.field.postprocessor)) {
-      continue;
-    }
-    const withType = relationship.field.withType;
-    const mod = apos.modules[withType];
-    const response = await apos.http.post(`${mod.action}/${relationship.field.postprocessor}`, {
-      qs: {
-        aposMode: 'draft'
-      },
-      body: {
-        relationship: relationship.value,
-        // Pass the options of the widget currently being edited, some
-        // postprocessors need these
-        // (e.g. autocropping cares about widget aspectRatio)
-        widgetOptions
-      },
-      busy: true
-    });
-    relationship.context[relationship.field.name] = response.relationship;
+  for (const {
+    value, field, context
+  } of relationships) {
+    context[field.name] = await _getPostprocessedRelationship(
+      value,
+      field,
+      widgetOptions
+    );
   }
 }
 
-function findRelationships(schema, object, ids) {
+export async function _getPostprocessedRelationship(
+  value,
+  field,
+  widgetOptions
+) {
+  if (!field.postprocessor || !value) {
+    return value;
+  }
+  const mod = apos.modules[field.withType];
+  const response = await apos.http.post(`${mod.action}/${field.postprocessor}`, {
+    qs: {
+      aposMode: 'draft'
+    },
+    body: {
+      relationship: value,
+      // Pass the options of the widget currently being edited, some
+      // postprocessors need these
+      // (e.g. autocropping cares about widget aspectRatio)
+      widgetOptions
+    },
+    busy: true
+  });
+
+  return response.relationship;
+}
+
+function _findRelationships(schema, object) {
   let relationships = [];
   for (const field of schema) {
-    if (field.type === 'relationship' && ids.has(field._id)) {
-      console.log('field._id', ids, field._id);
+    if (field.type === 'relationship') {
       relationships.push({
         context: object,
         field,
@@ -44,13 +57,13 @@ function findRelationships(schema, object, ids) {
       for (const value of (object[field.name] || [])) {
         relationships = [
           ...relationships,
-          findRelationships(field.schema, value)
+          _findRelationships(field.schema, value)
         ];
       }
     } else if (field.type === 'object') {
       relationships = [
         ...relationships,
-        findRelationships(field.schema, object[field.name] || {})
+        _findRelationships(field.schema, object[field.name] || {})
       ];
     }
   }
