@@ -13,6 +13,7 @@
 ### Fixes
 
 * The `?render-areas=1` API feature now correctly disregards areas in separate documents loaded via relationship fields. Formerly their presence resulted in an error, not a rendering.
+* Make conditional fields work in Image Editor.
 
 ## 4.20.0 (2025-08-06)
 
@@ -38,7 +39,6 @@
 * You can now use checkboxes as filter `inputType`.
 * Fixed a regression that prevented multiple variations of `p` with different classes from being recognized again when reopening the rich text editor, even if they are all on the style menu. This was caused by knock-on effects of upstream changes in tiptap and prosemirror and our previous efforts to mitigate these. Those upstream changes were correct, but they did have certain side effects in ApostropheCMS. By more fully specifying the desired behavior, we have now fully corrected the issue at the ApostropheCMS level.
 * Correctly update alt attribute of images in rich text widgets.
-* Make conditional fields work in Image Editor.
 
 ### Security
 
