@@ -229,19 +229,12 @@ export default {
     this.initPreview();
   },
   methods: {
-    async updateDocFields(value, { changedFieldIds = new Set() } = {}) {
+    async updateDocFields(value) {
       this.updateFieldErrors(value.fieldState);
       this.docFields.data = {
         ...this.docFields.data,
         ...value.data
       };
-      try {
-        await this.postprocess(changedFieldIds);
-      } catch (e) {
-        await this.handleSaveError(e, {
-          fallback: 'An error occurred updating the widget.'
-        });
-      }
       this.evaluateConditions();
       this.updatePreview();
     },
