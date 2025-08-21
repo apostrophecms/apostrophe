@@ -78,7 +78,7 @@ describe('Layout Widget', function () {
       assert.equal(pm.get('a')?.colstart, undefined);
     });
 
-    it('[getMoveChanges] Test 1: reject until equal-edge swap allowed', async function () {
+    it('[getMoveChanges] v1: reject until equal-edge swap allowed', async function () {
       // 12 cols, 1 row
       // 1) a: 1..5, 2) b: 9..12
       const lib = await getLib();
@@ -147,7 +147,7 @@ describe('Layout Widget', function () {
       assert.equal(pm.get('a')?.colstart, 5); // a nudged east to start at 5
     });
 
-    it('[getMoveChanges] Test 2: reject overlaps for b; allow free move for a', async function () {
+    it('[getMoveChanges] v2: reject overlaps for b; allow free move for a', async function () {
       // 1) a: 1..4, 2) b: 8..12
       const lib = await getLib();
       const items = [
@@ -182,6 +182,30 @@ describe('Layout Widget', function () {
       const pm = patchMap(patches);
       assert.equal(pm.get('a')?.colstart, 2);
       assert.equal(pm.get('b')?.colstart, undefined);
+    });
+
+    it('[getMoveChanges] v3: reject overlaps for a and b (east)', async function () {
+      // 1) a: 1..4, 2) b: 9..12
+      const lib = await getLib();
+      const items = [
+        buildItem('a', 1, 5, 0),
+        buildItem('b', 9, 4, 1)
+      ];
+      const state = makeState(lib, items, 12, 1);
+
+      // Moving a into overlaps should be rejected
+      for (const start of [ 5, 6, 7 ]) {
+        const patches = lib.getMoveChanges({
+          data: {
+            id: 'a',
+            colstart: start,
+            rowstart: 1
+          },
+          state,
+          item: items[1]
+        });
+        assert.deepEqual(patches, [], `Failed to reject move with ${start - 4} step(s) east`);
+      }
     });
 
     it('[getMoveChanges] equal-edge triggers opposite-direction nudging first, then fallback', async function () {

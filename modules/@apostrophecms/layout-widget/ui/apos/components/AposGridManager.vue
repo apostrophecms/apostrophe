@@ -261,7 +261,7 @@
         class="apos-layout__item-ghost"
       />
       <div
-        v-if="hasMotion && ghostData.snapLeft"
+        v-if="hasMotion && typeof ghostData.snapLeft === 'number'"
         :style="{
           left: ghostData.snapLeft + 'px',
           top: ghostData.snapTop + 'px',
@@ -361,9 +361,7 @@ export default {
         colstart: null,
         rowstart: null,
         rowspan: null,
-        order: null,
-        snapColstart: null,
-        snapRowstart: null
+        order: null
       },
       moveDataIndex: null,
       // Recalculate the grid overlay styles
@@ -612,7 +610,7 @@ export default {
       event.preventDefault();
       event.stopPropagation();
       const {
-        left, top, snapLeft, snapTop, colstart, rowstart, snapColstart, snapRowstart
+        left, top, snapLeft, snapTop, colstart, rowstart
       } = this.manager.onGhostMove(
         {
           state: this.gridState,
@@ -631,10 +629,6 @@ export default {
       if (colstart && rowstart) {
         this.ghostDataWrite.colstart = colstart;
         this.ghostDataWrite.rowstart = rowstart;
-      }
-      if (snapColstart && snapRowstart) {
-        this.ghostDataWrite.snapColstart = snapColstart;
-        this.ghostDataWrite.snapRowstart = snapRowstart;
       }
     },
     onMouseMove(event) {
@@ -703,7 +697,6 @@ export default {
           index: this.moveDataIndex
         }
       );
-      console.log('Patches from move:', patches);
       this.$emit('move-end', patches);
       this.resetGhostData();
     },

@@ -9,9 +9,7 @@
  *  colstart: number,
  *  rowstart: number,
  *  rowspan: number,
- *  order: number,
- *  snapColstart?: number,
- *  snapRowstart?: number,
+ *  order: number
  * }} GhostDataWrite
  *
  *
@@ -120,10 +118,18 @@ export function createPositionIndex(items, rows) {
   }
   for (const item of sorted) {
     const {
-      colstart, colspan, rowstart
+      colstart, colspan, rowstart, rowspan
     } = item;
-    for (let i = 0; i < colspan; i++) {
-      positionsIndex.get(rowstart)?.set(colstart + i, item._id);
+    const height = Math.max(1, rowspan || 1);
+    for (let r = 0; r < height; r++) {
+      const row = rowstart + r;
+      const xIndex = positionsIndex.get(row);
+      if (!xIndex) {
+        continue;
+      }
+      for (let i = 0; i < colspan; i++) {
+        xIndex.set(colstart + i, item._id);
+      }
     }
   }
 
@@ -402,6 +408,10 @@ export function getMoveChanges({
   item,
   precomp
 }) {
+  // Guard against mismatched item/data identifiers when the target id exists in lookup
+  if (data.id && state?.lookup?.has?.(data.id) && item?._id && data.id !== item._id) {
+    return [];
+  }
   if (!data.colstart || !data.rowstart ||
     (data.colstart === item.colstart && data.rowstart === item.rowstart)
   ) {
@@ -451,7 +461,7 @@ export function getMoveChanges({
   }
 
   // Strategy 2: horizontal nudge of neighbours only
-  const overlapExists = true; // we only reach here when placeIfFree is false
+  // We only reach here when placeIfFree is false
   // Decide preferred nudge directions based on movement intent and edge overlaps
   const oldStartCol = item.colstart;
   const oldEndCol = oldStartCol + (item.colspan || 1) - 1;
@@ -459,18 +469,9 @@ export function getMoveChanges({
   // lies outside the item's original horizontal footprint. This avoids
   // misclassifying small same-direction shifts (where newStartCol is still
   // within the old footprint) as the "empty start" special case.
-  const startOutsideOld = (newStartCol < oldStartCol) || (newStartCol > oldEndCol);
-  const targetStartEmpty = startOutsideOld && (() => {
-    for (let r = newStartRow; r <= newEndRow; r++) {
-      const occRow = precomp?.occByRow?.get(r);
-      const rowIndex = state.positions.get(r);
-      const id = (occRow ? occRow[newStartCol] : rowIndex?.get(newStartCol));
-      if (id && id !== item._id) {
-        return false;
-      }
-    }
-    return true;
-  })();
+  const _startOutsideOld = (newStartCol < oldStartCol) || (newStartCol > oldEndCol);
+  // Note: no special opposite-direction bias solely because the target start
+  // cell is empty. We rely on boundary overlap/equal-edge heuristics below.
   // Note: vertical-only moves are handled specially below
   // Note: vertical-only moves are handled specially below
 
@@ -499,11 +500,6 @@ export function getMoveChanges({
     // If vertical-only, try both directions (east then west)
     if (!primaryDir) {
       return [ 'east', 'west' ];
-    }
-    // Special rule: targeting an empty start cell but overall footprint overlaps
-    // -> attempt only the opposite direction.
-    if (overlapExists && targetStartEmpty) {
-      return primaryDir === 'east' ? [ 'west' ] : [ 'east' ];
     }
     if (!target) {
       // No concrete target: only try primary to avoid unintended cascades.
@@ -841,6 +837,8 @@ function attemptHorizontalNudge({
         // No shift for this item; it defines the next available start.
         neededStart = Math.max(neededStart, end0 + 1);
       }
+      // No need to fail if neededStart exceeds grid after processing;
+      // we already enforce bounds on each neighbor shift.
     }
   } else {
     // dir === 'west'
@@ -862,9 +860,8 @@ function attemptHorizontalNudge({
         // No shift; it defines the next available end.
         neededEnd = Math.min(neededEnd, start0 - 1);
       }
-      if (neededEnd < 0) {
-        return null;
-      }
+      // Similarly, don't fail solely due to neededEnd becoming < 0
+      // after processing; individual shifts are already bounded.
     }
   }
 

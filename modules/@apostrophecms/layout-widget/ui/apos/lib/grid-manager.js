@@ -342,9 +342,7 @@ export class GridManager {
   *  snapLeft?: number,
   *  snapTop?: number,
   *  colstart?: number,
-  *  rowstart?: number,
-  *  snapColstart?: number,
-  *  snapRowstart?: number
+  *  rowstart?: number
   * }} - The new position of the ghost item and optional snap info.
    */
   onGhostMove({
@@ -392,12 +390,6 @@ export class GridManager {
     }
 
     // Compute optional snapping with minimal overhead.
-    // Uses cached grid metrics and the positions index to find the nearest
-    // valid cell start that can fit the moving item (ignoring the item itself).
-    // let snapLeft;
-    // let snapTop;
-    // let snapColstart;
-    // let snapRowstart;
     const style = this.getGridComputedStyle();
     const colGap = parseFloat(style.columnGap || style.gap) || 0;
     const rowGap = parseFloat(style.rowGap || style.gap) || 0;
@@ -423,68 +415,8 @@ export class GridManager {
     const colstart = c;
     const rowstart = r;
 
-    // // Fast validator: region must be empty or occupied by the moving item
-    // // in every spanned row.
-    // const positions = state.positions;
-    // const canPlaceAt = (rr, cc) => {
-    //   // bounds check
-    //   if (rr < 1 || rr > maxStartY || cc < 1 || cc > maxStartX) {
-    //     return false;
-    //   }
-    //   for (let ry = 0; ry < rowspan; ry++) {
-    //     const rowIndex = positions.get(rr + ry);
-    //     if (!rowIndex) {
-    //       // No occupancy recorded: free row segment
-    //       continue;
-    //     }
-    //     for (let cx = 0; cx < colspan; cx++) {
-    //       const occupant = rowIndex.get(cc + cx);
-    //       if (occupant && occupant !== item._id) {
-    //         return false;
-    //       }
-    //     }
-    //   }
-    //   return true;
-    // };
-
-    // // Search in expanding Manhattan rings around (r,c) for a valid spot.
-    // // With typical columns <= 12 and small row counts, this is cheap.
-    // let found = false;
-    // const maxCDelta = Math.max(0, maxStartX - 1);
-    // const maxRDelta = Math.min(3, Math.max(0, maxStartY - 1));
-    // for (let rd = 0; rd <= maxRDelta && !found; rd++) {
-    //   const rCandidates = rd === 0 ? [ r ] : [ r - rd, r + rd ];
-    //   for (let i = 0; i < rCandidates.length && !found; i++) {
-    //     const rr = rCandidates[i];
-    //     if (rr < 1 || rr > maxStartY) {
-    //       continue;
-    //     }
-    //     // Column scan from nearest outward
-    //     for (let cd = 0; cd <= maxCDelta; cd++) {
-    //       const cc1 = c - cd;
-    //       if (cc1 >= 1 && cc1 <= maxStartX && canPlaceAt(rr, cc1)) {
-    //         snapColstart = cc1; snapRowstart = rr; found = true; break;
-    //       }
-    //       if (cd === 0) {
-    //         continue; // avoid duplicate center
-    //       }
-    //       const cc2 = c + cd;
-    //       if (cc2 >= 1 && cc2 <= maxStartX && canPlaceAt(rr, cc2)) {
-    //         snapColstart = cc2; snapRowstart = rr; found = true; break;
-    //       }
-    //     }
-    //   }
-    // }
-
-    // if (found && snapColstart && snapRowstart) {
-    //   snapLeft = Math.round((snapColstart - 1) * stepX);
-    //   snapTop = Math.round((snapRowstart - 1) * stepY);
-    // }
-
     const snapLeft = Math.round((colstart - 1) * stepX);
     const snapTop = Math.round((rowstart - 1) * stepY);
-    const snapColstart = colstart;
-    const snapRowstart = rowstart;
 
     return {
       left,
@@ -492,9 +424,7 @@ export class GridManager {
       snapLeft,
       snapTop,
       colstart,
-      rowstart,
-      snapColstart,
-      snapRowstart
+      rowstart
     };
   }
 
