@@ -21,6 +21,7 @@
       @blur="removeKeyboardFocusHandler"
     >
       <div
+        v-if="!breadcrumbDisabled"
         ref="label"
         class="apos-area-widget-controls apos-area-widget__label"
         :class="labelsClasses"
@@ -75,8 +76,18 @@
             />
           </li>
         </ol>
+        <!-- FIXME Bring widget controls data from the widget config -->
+        <ol
+          class="apos-area-widget__breadcrumbs"
+          style="margin-left: 10px;"
+        >
+          <li class="apos-area-widget__breadcrumb">
+            Look 'ma, horizontal controls!
+          </li>
+        </ol>
       </div>
       <div
+        v-if="!controlsDisabled"
         class="
           apos-area-widget-controls
           apos-area-widget-controls--add--top
@@ -104,6 +115,7 @@
         :class="{'apos-is-disabled': isFocused}"
       />
       <div
+        v-if="!controlsDisabled"
         class="apos-area-widget-controls apos-area-widget-controls--modify"
         :class="controlsClasses"
       >
@@ -158,6 +170,7 @@
         @edit="$emit('edit', i);"
       />
       <div
+        v-if="!controlsDisabled"
         class="
           apos-area-widget-controls
           apos-area-widget-controls--add
@@ -260,6 +273,14 @@ export default {
       }
     },
     disabled: {
+      type: Boolean,
+      default: false
+    },
+    controlsDisabled: {
+      type: Boolean,
+      default: false
+    },
+    breadcrumbDisabled: {
       type: Boolean,
       default: false
     },
@@ -461,7 +482,8 @@ export default {
     // Determine whether or not we should adjust the label based on its
     // position to the admin bar
     adjustUi() {
-      const { height: labelHeight } = this.$refs.label.getBoundingClientRect();
+      const { height: labelHeight } = this.$refs.label?.getBoundingClientRect() ??
+        { height: 0 };
       const { top: widgetTop } = this.$refs.widget.getBoundingClientRect();
       const adminBarHeight = window.apos.modules['@apostrophecms/admin-bar'].height;
       const offsetTop = widgetTop + window.scrollY;
@@ -818,7 +840,8 @@ export default {
   .apos-area-widget__label {
     position: absolute;
     top: 0;
-    right: 0;
+    left: 0; // switch the root label position from right to left
+    // right: 0;
     display: flex;
     transform: translateY(-100%);
     transition: opacity 300ms ease;

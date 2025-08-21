@@ -5,14 +5,42 @@
     class="apos-area"
     :class="themeClass"
     :style="{
-      '--column-span': gridModuleOptions.steps,
-      '--column-start': 1,
+      '--colspan': gridModuleOptions.columns,
+      '--colstart': 1,
       '--justify': 'stretch',
       '--align': 'stretch'
     }"
     @click="setFocusedArea(areaId, $event)"
   >
-    <h5>A message from the Layout Area Editor</h5>
+    <div style="display: flex; align-items: center; justify-content: start; gap: 20px;">
+      <AposInputBoolean
+        v-model="layoutModes.manage"
+        :modifiers="[ 'small' ]"
+        :field="{
+          name: 'manage',
+          type: 'boolean',
+          toggle: {
+            'true': 'content',
+            'false': 'layout'
+          },
+          def: true,
+        }"
+      />
+      <!-- Device switch, next interations: <AposInputSelect
+        v-model="layoutModes.device"
+        :modifiers="[ 'small' ]"
+        :field="{
+          name: 'device',
+          type: 'select',
+          choices: [
+            { label: $t('apostrophe:breakpointPreviewDesktop'), value: 'desktop' },
+            { label: $t('apostrophe:breakpointPreviewTablet'), value: 'tablet' },
+            { label: $t('apostrophe:breakpointPreviewMobile'), value: 'mobile' }
+          ],
+          def: 'desktop',
+        }"
+      /> -->
+    </div>
     <div
       v-if="next.length === 0 && !foreign"
       class="apos-empty-area"
@@ -49,20 +77,21 @@
       </template>
     </div>
     <div class="apos-areas-widgets-list">
-      <div
-        class="layout-widget"
-        :style="{ '--grid-columns': gridModuleOptions.steps }"
+      <AposGridManager
+        :options="gridModuleOptions"
+        :items="layoutColumnWidgets"
+        :meta="layoutMeta"
+        :layout-mode="layoutManageMode"
+        :device-mode="layoutModes.device.data"
+        @resize-end="onResizeOrMoveEnd"
+        @move-end="onResizeOrMoveEnd"
+        @add-first-item="onAddItem"
+        @add-fit-item="onAddFitItem"
+        @remove-item="onRemoveItem"
+        @patch-item="layoutPatchOne"
+        @patch-device-item="layoutPatchDevice"
       >
-        <div
-          v-for="(widget, i) in next"
-          :key="widget._id"
-          :style="{
-            '--column-start': widget.start,
-            '--column-span': widget.span,
-            '--justify': widget.justify,
-            '--align': widget.align
-          }"
-        >
+        <template #item="{ item: widget, i }">
           <AposAreaWidget
             :area-id="areaId"
             :widget="widget"
@@ -82,6 +111,8 @@
             :widget-focused="focusedWidget"
             :max-reached="maxReached"
             :rendering="rendering(widget)"
+            :controls-disabled="true"
+            :breadcrumb-disabled="true"
             @up="up"
             @down="down"
             @remove="remove"
@@ -93,8 +124,8 @@
             @add="add"
             @paste="paste"
           />
-        </div>
-      </div>
+        </template>
+      </AposGridManager>
     </div>
   </div>
 </template>
@@ -109,11 +140,190 @@ export default {
     moduleName: {
       type: String,
       default: null
+    },
+    parentOptions: {
+      type: Object,
+      default: () => ({})
     }
+  },
+  data() {
+    return {
+      layoutModes: {
+        device: {
+          data: 'desktop',
+          error: false
+        },
+        manage: {
+          data: true,
+          error: false
+        },
+        manageFocused: {
+          data: false,
+          error: false
+        }
+      }
+    };
   },
   computed: {
     gridModuleOptions() {
-      return window.apos.modules[this.moduleName]?.grid ?? {};
+      return Object.assign(
+        {},
+        window.apos.modules[this.moduleName]?.grid ?? {},
+        this.parentOptions
+      );
+    },
+    layoutColumnWidgets() {
+      return this.next.filter(w => w.type !== this.layoutMetaWidgetName);
+    },
+    layoutMeta() {
+      return this.next.find(w => w.type === this.layoutMetaWidgetName) ?? {};
+    },
+    hasLayoutMeta() {
+      return this.next.some(w => w.type === this.layoutMetaWidgetName);
+    },
+    // TODO this can be possible sent by server options.
+    layoutMetaWidgetName() {
+      return '@apostrophecms/layout-meta';
+    },
+    layoutColumnWidgetName() {
+      return this.choices.find(c => c.name !== this.layoutMetaWidgetName)?.name;
+    },
+    layoutManageMode() {
+      if (this.layoutModes.manage.data) {
+        return 'view';
+      }
+      if (this.layoutModes.manageFocused.data) {
+        return 'focus';
+      }
+      return 'manage';
+    },
+    layoutDeviceMode() {
+      return this.layoutModes.device.data || 'desktop';
+    }
+  },
+  mounted() {
+    if (!this.hasLayoutMeta) {
+      this.onCreateProvision();
+    }
+  },
+  methods: {
+    // Sort by the desktop order so that the auto-layout works correctly.
+    // FIXME: not working, not supported by the backend somehow.
+    layoutSortAll() {
+      // const sorted = this.next.filter(w => w.type === this.layoutColumnWidgetName);
+
+      // sorted.sort((a, b) => {
+      //   return (a.desktop.order || 0) - (b.desktop.order || 0);
+      // });
+
+      // if (this.docId === window.apos.adminBar.contextId) {
+      // No need to clone - the event handler will do that.
+      // const patch = {
+      //   $pullAllById: {
+      //     [`@${this.id}.items`]: [
+      //       sorted.map(w => w._id)
+      //     ]
+      //   },
+      //   $push: {
+      //     [`@${this.id}.items`]: {
+      //       $each: [ ...sorted ]
+      //     }
+      //   }
+      // };
+      // apos.bus.$emit('context-edited', patch);
+      // }
+
+      // this.next = [ this.layoutMeta, ...sorted ];
+    },
+    onCreateProvision() {
+      if (!this.layoutMetaWidgetName) {
+        throw new Error('No layout meta widget found.');
+      }
+      const meta = this.newWidget(this.layoutMetaWidgetName);
+      meta.columns = this.gridModuleOptions.columns;
+      this.insert({
+        widget: meta,
+        index: 0
+      });
+      this.layoutModes.manage.data = false;
+    },
+    onAddItem(patch) {
+      const widgetName = this.layoutColumnWidgetName;
+      if (!widgetName) {
+        throw new Error('No layout column widget found.');
+      }
+      const { _id, ...rest } = patch;
+      const widget = this.newWidget(widgetName);
+      Object.assign(widget[this.layoutDeviceMode], rest);
+      const insert = {
+        widget,
+        index: this.layoutColumnWidgets.length + 1
+      };
+      this.insert(insert);
+      return insert;
+    },
+    onResizeOrMoveEnd(patchArr) {
+      if (!patchArr?.length) {
+        return;
+      }
+      this.layoutPatchMany(patchArr);
+    },
+    onAddFitItem(patchArr) {
+      const widgetName = this.layoutColumnWidgetName;
+      if (!widgetName) {
+        throw new Error('No layout column widget found.');
+      }
+      const insert = patchArr.find(patch => {
+        return !patch._id;
+      });
+      this.onAddItem(insert);
+      this.layoutPatchMany(patchArr);
+      this.layoutSortAll();
+    },
+    onRemoveItem({ _id, patches }) {
+      const index = this.next.findIndex(w => w._id === _id);
+      if (index !== -1 && this.next[index].type === this.layoutColumnWidgetName) {
+        this.remove(index);
+      }
+      this.layoutPatchMany(patches);
+      this.layoutSortAll();
+    },
+    layoutPatchDevice({
+      _id, device, patch
+    }) {
+      if (!_id || !device || !patch) {
+        return;
+      }
+      this.layoutPatchOne({
+        _id,
+        ...patch
+      }, device);
+    },
+    layoutPatchOne(patch, device) {
+      if (!patch || !patch._id) {
+        return;
+      }
+      const widget = this.next.find(w => w._id === patch._id);
+      if (widget?.type !== this.layoutColumnWidgetName) {
+        return;
+      }
+      // IMPORTANT: The patch carries the widget _id,
+      // this is not the same as the nested object _id in the widget.
+      // Be sure to keep the existing internal _id's intact.
+      const { _id, ...rest } = patch;
+      Object.assign(widget[device || this.layoutDeviceMode], rest);
+      // eslint-disable-next-line no-console
+      this.update(widget).catch(console.error);
+    },
+    layoutPatchMany(patchArr) {
+      const patches = patchArr.filter(patch => {
+        return patch._id &&
+          this.next.some(w => w._id === patch._id);
+      });
+
+      for (const patch of patches) {
+        this.layoutPatchOne(patch);
+      }
     }
   }
 };
@@ -135,5 +345,4 @@ export default {
     border-color: var(--a-primary);
   }
 }
-
 </style>
