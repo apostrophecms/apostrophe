@@ -184,7 +184,7 @@ describe('Layout Widget', function () {
       assert.equal(pm.get('b')?.colstart, undefined);
     });
 
-    it('[getMoveChanges] equal-edge triggers opposite-direction first, then fallback', async function () {
+    it('[getMoveChanges] equal-edge triggers opposite-direction nudging first, then fallback', async function () {
       // a: 1..4, b: 7..8. Move a -> colstart 5 (a new end 8 equals b end 8).
       const lib = await getLib();
       const items = [
@@ -206,6 +206,106 @@ describe('Layout Widget', function () {
       assert.equal(pm.get('a')?.colstart, 5);
       // Opposite-direction first -> b nudged west to 3..4
       assert.equal(pm.get('b')?.colstart, 3);
+    });
+
+    it('[getMoveChanges] overlapping may triggers opposite-direction nudging', async function () {
+      // a: 1..4, b: 5..9. Move a -> colstart 5 (a new end 8 equals b end 8).
+      const lib = await getLib();
+      const items = [
+        buildItem('a', 1, 4, 0),
+        buildItem('b', 5, 5, 1)
+      ];
+      const state = makeState(lib, items, 12, 1);
+      const patches = lib.getMoveChanges({
+        data: {
+          id: 'a',
+          colstart: 7,
+          rowstart: 1
+        },
+        state,
+        item: items[0]
+      });
+      const pm = patchMap(patches);
+      // a placed at 7..10
+      assert.equal(pm.get('a')?.colstart, 7);
+      // Opposite-direction fallback -> b nudged west to 2..6
+      assert.equal(pm.get('b')?.colstart, 2);
+    });
+
+    it('[getMoveChanges] same-direction east nudging any allowed tile', async function () {
+      // Same setup as above: a: 1..4, b: 5..9.
+      // Move a -> colstart 2 (a new end 5 overlaps b start 5 by one cell).
+      // Expect b to nudge east by one to start at 6.
+      const lib = await getLib();
+      const items = [
+        buildItem('a', 1, 4, 0),
+        buildItem('b', 5, 5, 1)
+      ];
+      const state = makeState(lib, items, 12, 1);
+      {
+        const patches = lib.getMoveChanges({
+          data: {
+            id: 'a',
+            colstart: 2,
+            rowstart: 1
+          },
+          state,
+          item: items[0]
+        });
+        const pm = patchMap(patches);
+        // a placed at 2..5
+        assert.equal(pm.get('a')?.colstart, 2, 'unable to move one tile east');
+        // Same-direction nudging east by one -> b to 6..10
+        assert.equal(pm.get('b')?.colstart, 6, 'unable to nudge b one tile east');
+      }
+      {
+        const patches = lib.getMoveChanges({
+          data: {
+            id: 'a',
+            colstart: 3,
+            rowstart: 1
+          },
+          state,
+          item: items[0]
+        });
+        const pm = patchMap(patches);
+        // a placed at 3..6
+        assert.equal(pm.get('a')?.colstart, 3, 'unable to move two tiles east');
+        // Same-direction nudging east by one -> b to 6..10
+        assert.equal(pm.get('b')?.colstart, 7, 'unable to nudge b two tiles east');
+      }
+      {
+        const patches = lib.getMoveChanges({
+          data: {
+            id: 'a',
+            colstart: 4,
+            rowstart: 1
+          },
+          state,
+          item: items[0]
+        });
+        const pm = patchMap(patches);
+        // a placed at 4..7
+        assert.equal(pm.get('a')?.colstart, 4, 'unable to move three tiles east');
+        // Same-direction nudging east by one -> b to 6..10
+        assert.equal(pm.get('b')?.colstart, 8, 'unable to nudge b three tiles east');
+      }
+      {
+        const patches = lib.getMoveChanges({
+          data: {
+            id: 'a',
+            colstart: 5,
+            rowstart: 1
+          },
+          state,
+          item: items[0]
+        });
+        const pm = patchMap(patches);
+        // a placed at 5..8 would push b past grid (to 9..13) -> reject
+        assert.equal(pm.get('a')?.colstart, undefined, 'failed to deny the move four tiles east');
+        // b remains unchanged when move is denied
+        assert.equal(pm.get('b')?.colstart, undefined, 'failed to deny the nudge b four tiles east');
+      }
     });
 
     it('[getMoveChanges] reject when nudging would exceed grid bounds', async function () {

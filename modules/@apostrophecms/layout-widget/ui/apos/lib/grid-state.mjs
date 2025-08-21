@@ -451,8 +451,27 @@ export function getMoveChanges({
   }
 
   // Strategy 2: horizontal nudge of neighbours only
+  const overlapExists = true; // we only reach here when placeIfFree is false
   // Decide preferred nudge directions based on movement intent and edge overlaps
   const oldStartCol = item.colstart;
+  const oldEndCol = oldStartCol + (item.colspan || 1) - 1;
+  // Check if the target start column is empty across all spanned rows AND
+  // lies outside the item's original horizontal footprint. This avoids
+  // misclassifying small same-direction shifts (where newStartCol is still
+  // within the old footprint) as the "empty start" special case.
+  const startOutsideOld = (newStartCol < oldStartCol) || (newStartCol > oldEndCol);
+  const targetStartEmpty = startOutsideOld && (() => {
+    for (let r = newStartRow; r <= newEndRow; r++) {
+      const occRow = precomp?.occByRow?.get(r);
+      const rowIndex = state.positions.get(r);
+      const id = (occRow ? occRow[newStartCol] : rowIndex?.get(newStartCol));
+      if (id && id !== item._id) {
+        return false;
+      }
+    }
+    return true;
+  })();
+  // Note: vertical-only moves are handled specially below
   // Note: vertical-only moves are handled specially below
 
   // Determine movement on X axis
@@ -481,9 +500,13 @@ export function getMoveChanges({
     if (!primaryDir) {
       return [ 'east', 'west' ];
     }
+    // Special rule: targeting an empty start cell but overall footprint overlaps
+    // -> attempt only the opposite direction.
+    if (overlapExists && targetStartEmpty) {
+      return primaryDir === 'east' ? [ 'west' ] : [ 'east' ];
+    }
     if (!target) {
-      // Be conservative: if we cannot pinpoint a target, only try the primary
-      // direction to avoid unintended opposite-direction cascades.
+      // No concrete target: only try primary to avoid unintended cascades.
       return primaryDir === 'east' ? [ 'east' ] : [ 'west' ];
     }
 
@@ -493,18 +516,26 @@ export function getMoveChanges({
     const tEnd = target.colstart + target.colspan - 1;
 
     if (primaryDir === 'east') {
-      // Only allow opposite-direction nudging when edges are equal.
+      // Not overlapping target end-bound -> primary only
+      if (ghostEnd < tEnd) {
+        return [ 'east' ];
+      }
+      // Equal-edge or overlapping past end-bound -> opposite first, then primary
       if (ghostEnd === tEnd) {
         return [ 'west', 'east' ];
       }
-      return [ 'east' ];
+      return [ 'west', 'east' ];
     } else {
       // primaryDir === 'west'
-      // Only allow opposite-direction nudging when edges are equal.
+      // Not overlapping target start-bound -> primary only
+      if (ghostStart > tStart) {
+        return [ 'west' ];
+      }
+      // Equal-edge or overlapping past start-bound -> opposite first, then primary
       if (ghostStart === tStart) {
         return [ 'east', 'west' ];
       }
-      return [ 'west' ];
+      return [ 'east', 'west' ];
     }
   })();
 
@@ -809,9 +840,6 @@ function attemptHorizontalNudge({
       } else {
         // No shift for this item; it defines the next available start.
         neededStart = Math.max(neededStart, end0 + 1);
-      }
-      if (neededStart > maxColumns) {
-        return null;
       }
     }
   } else {
