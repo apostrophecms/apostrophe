@@ -1,7 +1,7 @@
 import { klona } from 'klona';
 import AposInputMixin from 'Modules/@apostrophecms/schema/mixins/AposInputMixin';
 import newInstance from 'apostrophe/modules/@apostrophecms/schema/lib/newInstance.js';
-import { _getPostprocessedRelationship } from 'Modules/@apostrophecms/modal/composables/AposEditor.js';
+import { getPostprocessedRelationship } from 'Modules/@apostrophecms/piece-type/lib/postprocessRelationships.js';
 
 export default {
   name: 'AposInputRelationship',
@@ -157,7 +157,7 @@ export default {
       this.disabled = !!this.limitReached;
     },
     async updateSelected(items) {
-      this.next = await _getPostprocessedRelationship(
+      this.next = await getPostprocessedRelationship(
         items,
         this.field,
         this.widgetOptions
@@ -303,7 +303,7 @@ export default {
           : rel;
       });
 
-      this.next = await _getPostprocessedRelationship(
+      this.next = await getPostprocessedRelationship(
         updatedItems,
         this.field,
         this.widgetOptions

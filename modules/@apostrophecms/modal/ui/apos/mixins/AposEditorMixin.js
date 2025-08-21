@@ -18,7 +18,6 @@ import { klona } from 'klona';
 import {
   evaluateExternalConditions, getConditionalFields, getConditionTypesObject
 } from 'Modules/@apostrophecms/schema/lib/conditionalFields.js';
-import { _postprocess } from '../composables/AposEditor.js';
 
 export default {
   props: {

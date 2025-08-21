@@ -1,16 +1,13 @@
-// For now just moving postprocess logic here,
-// if needed we might move more from AposEditorMixin.js
-
 // Perform any postprocessing required by direct or nested schema fields
 // before the object can be saved
-export async function _postprocess(schema, data, widgetOptions) {
+export async function postprocessRelationships(schema, data, widgetOptions) {
   // Relationship fields may have postprocessors (e.g. autocropping)
-  const relationships = _findRelationships(schema, data);
+  const relationships = findRelationships(schema, data);
 
   for (const {
     value, field, context
   } of relationships) {
-    context[field.name] = await _getPostprocessedRelationship(
+    context[field.name] = await getPostprocessedRelationship(
       value,
       field,
       widgetOptions
@@ -18,7 +15,7 @@ export async function _postprocess(schema, data, widgetOptions) {
   }
 }
 
-export async function _getPostprocessedRelationship(
+export async function getPostprocessedRelationship(
   value,
   field,
   widgetOptions
@@ -44,7 +41,7 @@ export async function _getPostprocessedRelationship(
   return response.relationship;
 }
 
-function _findRelationships(schema, object) {
+function findRelationships(schema, object) {
   let relationships = [];
   for (const field of schema) {
     if (field.type === 'relationship') {
@@ -57,13 +54,13 @@ function _findRelationships(schema, object) {
       for (const value of (object[field.name] || [])) {
         relationships = [
           ...relationships,
-          _findRelationships(field.schema, value)
+          findRelationships(field.schema, value)
         ];
       }
     } else if (field.type === 'object') {
       relationships = [
         ...relationships,
-        _findRelationships(field.schema, object[field.name] || {})
+        findRelationships(field.schema, object[field.name] || {})
       ];
     }
   }

@@ -26,7 +26,7 @@ import {
 } from 'vue';
 import { useAposWidget } from 'Modules/@apostrophecms/widget-type/composables/AposWidget.js';
 import aposWidgetProps from 'Modules/@apostrophecms/widget-type/composables/AposWidgetProps.js';
-import { _postprocess } from 'Modules/@apostrophecms/modal/composables/AposEditor.js';
+import { postprocessRelationships } from 'Modules/@apostrophecms/piece-type/lib/postprocessRelationships.js';
 
 const props = defineProps(aposWidgetProps);
 const imgModuleOptions = apos.modules['@apostrophecms/image'];
@@ -83,7 +83,7 @@ async function selectFromManager() {
       ...props.modelValue,
       _image: [ selectedImg ]
     };
-    await _postprocess(widgetModuleOptions.schema, widgetData, props.options);
+    await postprocessRelationships(widgetModuleOptions.schema, widgetData, props.options);
 
     emit('update', widgetData);
   }
@@ -195,7 +195,7 @@ async function upload(files = []) {
       ...props.modelValue,
       _image: [ imgPiece ]
     };
-    await _postprocess(widgetModuleOptions.schema, widgetData, props.options);
+    await postprocessRelationships(widgetModuleOptions.schema, widgetData, props.options);
 
     emit('update', widgetData);
   } catch (e) {
