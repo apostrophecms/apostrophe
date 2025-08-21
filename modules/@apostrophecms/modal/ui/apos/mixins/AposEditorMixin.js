@@ -78,7 +78,7 @@ export default {
     async evaluateExternalConditions() {
       this.externalConditionsResults = await evaluateExternalConditions(
         this.schema,
-        this.docId || this.docFields?.data?._docId,
+        this.docId || this.docFields?.data?._docId || this.docFields?.data?._id,
         this.$t
       );
     },

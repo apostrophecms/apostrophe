@@ -13,6 +13,7 @@
 ### Fixes
 
 * The `?render-areas=1` API feature now correctly disregards areas in separate documents loaded via relationship fields. Formerly their presence resulted in an error, not a rendering.
+* Make conditional fields work in Image Editor.
 
 ## 4.20.0 (2025-08-06)
 
