@@ -22,7 +22,7 @@ import {
  * @typedef {import('./grid-state').GridState} GridState
  * @typedef {import('./grid-state').CurrentItem} CurrentItem
  */
-
+const noop = () => {};
 export class GridManager {
   constructor() {
     this.rootElement = null;
@@ -31,6 +31,9 @@ export class GridManager {
     this.gridBoundingRect = null;
     this.resizeObserver = null;
     this.onResizeAndScroll = null;
+    this.getGridColumnIndicatorStylesDebounced = noop;
+    this.onSceneResizeDebounced = noop;
+    this.onSceneScrollDebounced = noop;
   }
 
   /**
@@ -40,41 +43,52 @@ export class GridManager {
    * @param {(rect: DOMRectReadOnly | UIEvent) => void} onResize
    */
   init(rootElement, gridElement, onResizeAndScroll = (rect) => { }) {
+    // console.debug('GridManager initialized', rootElement, gridElement);
     this.rootElement = rootElement;
     this.gridElement = gridElement;
     this.onResizeAndScroll = onResizeAndScroll;
+    this.onSceneScrollDebounced = debounce(this.onSceneScroll, 100, {
+      leading: false,
+      trailing: true
+    });
     this.onSceneResizeDebounced = debounce(this.onSceneResize, 100, {
       leading: false,
       trailing: true
     });
-    document.addEventListener('scroll', this.onSceneResizeDebounced);
-
-    // Initialize resize observer
-    // FIXME: improve, it's quick and dirty and doesn't trigger
-    // always on resize. Also we need to support the device preview apos feature.
-    // This should probably live in the Vue component.
-    this.resizeObserver = new ResizeObserver(entries => {
-      // Because of hot-reloading, the grid manager may be re-initialized
-      // without the resize observer being properly cleaned up.
-      this.onSceneResizeDebounced &&
-        this.onSceneResizeDebounced(entries[0].contentRect);
-    });
-
-    this.resizeObserver.observe(window.document.body);
+    this.getGridColumnIndicatorStylesDebounced = debounce(
+      this.getGridColumnIndicatorStyles, 100, {
+        leading: false,
+        trailing: true
+      }
+    );
   }
 
   /**
    * @param {DOMRectReadOnly | UIEvent} contentRect
    */
   onSceneResize = (contentRect) => {
+    this.resetCachedContainerMetrics();
+    if (this.onResizeAndScroll) {
+      this.onResizeAndScroll('resize', contentRect);
+    }
+  };
+
+  /**
+   * @param {DOMRectReadOnly | UIEvent} contentRect
+   */
+  onSceneScroll = (event) => {
+    this.resetCachedContainerMetrics();
+    if (this.onResizeAndScroll) {
+      this.onResizeAndScroll('scroll', event);
+    }
+  };
+
+  resetCachedContainerMetrics() {
     this.gridComputedStyle = null; // Reset cached styles
     this.getGridComputedStyle(); // Re-fetch styles
     this.gridBoundingRect = null; // Reset cached bounding rect
     this.getGridBoundingRect(); // Re-fetch bounding rect
-    if (this.onResizeAndScroll) {
-      this.onResizeAndScroll(contentRect);
-    }
-  };
+  }
 
   /**
    * Get the original position of an item within a container.
@@ -92,7 +106,7 @@ export class GridManager {
     };
   }
 
-  getGridColumnIndicatorStyles(columns, rows) {
+  getGridColumnIndicatorStyles = (columns, rows) => {
     if (!this.gridElement) {
       return [];
     }
@@ -124,7 +138,7 @@ export class GridManager {
     });
 
     return styles;
-  }
+  };
 
   /**
    * Returns a map of relative to the grid shim positions objects
@@ -283,7 +297,7 @@ export class GridManager {
    */
   getGridContentStyles(refs) {
     const result = new Map();
-    for (const element of refs) {
+    for (const element of (refs || [])) {
       result.set(element.dataset.id, {
         width: element.offsetWidth + 'px',
         height: element.offsetHeight + 'px'
@@ -643,14 +657,17 @@ export class GridManager {
   }
 
   destroy() {
-    if (this.resizeObserver) {
-      this.resizeObserver.disconnect();
-      this.resizeObserver = null;
-    }
-    if (this.onSceneResizeDebounced) {
-      document.removeEventListener('scroll', this.onSceneResizeDebounced);
+    if (this.onSceneResizeDebounced?.cancel) {
       this.onSceneResizeDebounced.cancel();
-      this.onSceneResizeDebounced = null;
+      this.onSceneResizeDebounced = noop;
+    }
+    if (this.onSceneScrollDebounced?.cancel) {
+      this.onSceneScrollDebounced.cancel();
+      this.onSceneScrollDebounced = noop;
+    }
+    if (this.getGridColumnIndicatorStylesDebounced?.cancel) {
+      this.getGridColumnIndicatorStylesDebounced.cancel();
+      this.getGridColumnIndicatorStylesDebounced = noop;
     }
     this.rootElement = null;
     this.gridElement = null;

@@ -7,6 +7,7 @@
     class="apos-layout"
   >
     <section
+      ref="grid"
       class="apos-layout__grid"
       :class="gridClasses"
       data-apos-test="aposLayoutContainer"
@@ -47,7 +48,6 @@
     </section>
     <section
       v-show="isManageMode"
-      ref="grid"
       class="apos-layout__grid-clone"
       :class="gridClasses"
       data-apos-test="aposLayoutContainerClone"
@@ -363,7 +363,9 @@ export default {
         snapColstart: null,
         snapRowstart: null
       },
+      // Recalculate the grid overlay styles
       sceneResizeIndex: 0,
+      // Sync the grid content styles
       cloneCalculateIndex: 0,
       addFirstOptions: {
         label: 'Add Column',
@@ -380,8 +382,8 @@ export default {
         modifiers: [ 'round', 'tiny', 'icon-only' ],
         iconOnly: true,
         iconSize: 11
-      },
-      gridContentStyles: new Map()
+      }
+      // gridContentStyles: new Map()
     };
   },
   computed: {
@@ -395,7 +397,7 @@ export default {
     gridOverlayClasses() {
       return {
         'apos-layout__grid-overlay': true,
-        active: this.isResizing
+        active: this.hasMotion
       };
     },
     getItemsClasses() {
@@ -429,11 +431,21 @@ export default {
       return this.isResizing || this.isMoving;
     },
     columnIndicatorStyles() {
-      return this.manager.getGridColumnIndicatorStyles(
+      return this.manager.getGridColumnIndicatorStylesDebounced(
         this.gridState.columns,
         this.gridState.current.rows,
         // Here only to force recomputation of the grid styles
         this.sceneResizeIndex
+      );
+    },
+    gridContentStyles() {
+      if (!this.isManageMode) {
+        return new Map();
+      }
+      return this.manager.getGridContentStyles(
+        this.$refs.contentItems,
+        // Here only to force recomputation of the grid styles
+        this.cloneCalculateIndex
       );
     },
     validInsertPositions() {
@@ -455,56 +467,51 @@ export default {
       }, {});
     }
   },
-  watch: {
-    '$refs.contentItems'(newRefs) {
-      if (newRefs?.length) {
-        this.gridContentStyles = this.manager.getGridContentStyles(newRefs);
-      }
-    },
-    isManageMode(newValue) {
-      if (newValue) {
-        this.gridContentStyles = this.manager.getGridContentStyles(
-          this.$refs.contentItems
-        );
-      }
-    },
-    cloneCalculateIndex(newValue) {
-      if (newValue > 1) {
-        this.gridContentStyles = this.manager.getGridContentStyles(
-          this.$refs.contentItems
-        );
-      }
-    }
-  },
   async mounted() {
     document.addEventListener('keydown', this.onGlobalKeyDown);
     document.addEventListener('mouseup', this.onMouseUp);
     document.addEventListener('touchend', this.onMouseUp);
-    await this.$nextTick();
+
     this.manager.init(
       this.$refs.root,
       this.$refs.grid,
-      () => {
-        this.sceneResizeIndex += 1;
+      (type, obj) => {
+        if (type === 'resize') {
+          this.sceneResizeIndex += 1;
+          this.cloneCalculateIndex += 1;
+        } else if (type === 'scroll') {
+          this.sceneResizeIndex += 1;
+        }
       }
     );
-    this.cloneCalculateIndex = 1;
-    this.gridContentStyles = this.manager.getGridContentStyles(
-      this.$refs.contentItems
-    );
+
+    document.addEventListener('scroll', this.manager.onSceneScrollDebounced);
+    this.resizeObserver = new ResizeObserver(entries => {
+      // Because of hot-reloading, the grid manager may be re-initialized
+      // without the resize observer being properly cleaned up.
+      this.manager.onSceneResizeDebounced(entries);
+    });
+    this.resizeObserver.observe(this.$refs.grid);
+
+    await this.$nextTick();
+    this.cloneCalculateIndex += 1;
   },
   unmounted() {
     document.removeEventListener('keydown', this.onGlobalKeyDown);
     document.removeEventListener('mouseup', this.onMouseUp);
     document.removeEventListener('touchend', this.onMouseUp);
+    document.removeEventListener('scroll', this.manager.onSceneResizeDebounced);
+    if (this.resizeObserver) {
+      this.resizeObserver.disconnect();
+      this.resizeObserver = null;
+    }
     this.manager.destroy();
   },
   methods: {
     onStartXResize(item, side, event) {
       event.preventDefault();
       event.stopPropagation();
-      const element = this.$refs.items.find(el => el.dataset.id === item._id)
-        .querySelector('[data-shim]');
+      const element = this.$refs.items.find(el => el.dataset.id === item._id);
       const itemData = this.gridState.lookup.get(item._id);
       if (!itemData || !element) {
         return;
@@ -555,8 +562,7 @@ export default {
     onStartMove(item, event) {
       event.preventDefault();
       event.stopPropagation();
-      const element = this.$refs.items.find(el => el.dataset.id === item._id)
-        .querySelector('[data-shim]');
+      const element = this.$refs.items.find(el => el.dataset.id === item._id);
       const itemData = this.gridState.lookup.get(item._id);
       if (!itemData || !element) {
         return;
@@ -689,7 +695,6 @@ export default {
       console.log('Patches from move:', patches);
       this.$emit('move-end', patches);
       this.resetGhostData();
-      this.forceGridRecalculate();
     },
     computeGhostResize(mouseEvent) {
       const {
@@ -717,7 +722,6 @@ export default {
         colspan: this.gridState.options.defaultSpan,
         order: 0
       });
-      this.forceGridRecalculate();
     },
     addItemFit({ item, side }) {
       const fit = this.validInsertPositions[item._id]?.[side];
@@ -735,7 +739,6 @@ export default {
         state: this.gridState
       });
       this.$emit('add-fit-item', patches);
-      this.forceGridRecalculate();
     },
     removeItem(item) {
       const patches = getReorderPatch({
@@ -746,14 +749,12 @@ export default {
         _id: item._id,
         patches
       });
-      this.forceGridRecalculate();
     },
     patchItem(item, patch) {
       this.$emit('patch-item', {
         ...patch,
         _id: item._id
       });
-      this.forceGridRecalculate();
     },
     toggleDeviceVisibility(item, device) {
       const patch = {
@@ -764,9 +765,6 @@ export default {
         device,
         patch
       });
-    },
-    forceGridRecalculate() {
-      this.cloneCalculateIndex += 1;
     }
   }
 };

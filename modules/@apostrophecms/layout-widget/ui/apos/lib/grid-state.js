@@ -374,6 +374,12 @@ export function getResizeChanges({
 }
 
 /**
+ * Based on the current state, the ghost data and the item being moved,
+ * returns an array of patches that represent the changes to be applied
+ * to the grid items when the item is moved (including nudging
+ * neighboring items if necessary).
+ * If the positions are invalid or the item is not being moved,
+ * an empty array is returned.
  *
  * @param {Object} arg
  * @param {GhostDataWrite} arg.data - The ghost data containing the item
