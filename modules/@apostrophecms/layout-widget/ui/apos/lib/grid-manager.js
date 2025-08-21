@@ -1,7 +1,7 @@
 import { debounce } from 'lodash';
 import {
   getMoveChanges, getResizeChanges, validateResizeX
-} from './grid-state';
+} from './grid-state.mjs';
 
 /**
  * @typedef {{
@@ -19,8 +19,8 @@ import {
  *  height: number,
  * }} GhostData
  *
- * @typedef {import('./grid-state').GridState} GridState
- * @typedef {import('./grid-state').CurrentItem} CurrentItem
+ * @typedef {import('./grid-state.mjs').GridState} GridState
+ * @typedef {import('./grid-state.mjs').CurrentItem} CurrentItem
  */
 const noop = () => {};
 export class GridManager {
@@ -57,8 +57,8 @@ export class GridManager {
     });
     this.getGridColumnIndicatorStylesDebounced = debounce(
       this.getGridColumnIndicatorStyles, 100, {
-        leading: false,
-        trailing: true
+        leading: true,
+        trailing: false
       }
     );
   }
@@ -570,7 +570,7 @@ export class GridManager {
   }
 
   performItemMove({
-    data, state, item
+    data, state, item, index
   }) {
     if (!item) {
       return [];
@@ -579,7 +579,8 @@ export class GridManager {
     const patches = getMoveChanges({
       data,
       state,
-      item
+      item,
+      precomputedIndex: index
     });
 
     return patches;

@@ -83,7 +83,8 @@
         :meta="layoutMeta"
         :layout-mode="layoutManageMode"
         :device-mode="layoutModes.device.data"
-        @resize-end="onResizeEnd"
+        @resize-end="onResizeOrMoveEnd"
+        @move-end="onResizeOrMoveEnd"
         @add-first-item="onAddItem"
         @add-fit-item="onAddFitItem"
         @remove-item="onRemoveItem"
@@ -261,7 +262,7 @@ export default {
       this.insert(insert);
       return insert;
     },
-    onResizeEnd(patchArr) {
+    onResizeOrMoveEnd(patchArr) {
       if (!patchArr?.length) {
         return;
       }

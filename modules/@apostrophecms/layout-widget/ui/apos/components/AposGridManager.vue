@@ -289,8 +289,9 @@
 <script>
 import { GridManager } from '../lib/grid-manager.js';
 import {
-  itemsToState, canFitX, getReorderPatch
-} from '../lib/grid-state.js';
+  itemsToState, canFitX, getReorderPatch,
+  prepareMoveIndex
+} from '../lib/grid-state.mjs';
 
 export default {
   name: 'AposGridManager',
@@ -321,6 +322,7 @@ export default {
   },
   emits: [
     'resize-end',
+    'move-end',
     'add-first-item',
     'add-fit-item',
     'remove-item',
@@ -363,6 +365,7 @@ export default {
         snapColstart: null,
         snapRowstart: null
       },
+      moveDataIndex: null,
       // Recalculate the grid overlay styles
       sceneResizeIndex: 0,
       // Sync the grid content styles
@@ -431,21 +434,20 @@ export default {
       return this.isResizing || this.isMoving;
     },
     columnIndicatorStyles() {
+      if (this.sceneResizeIndex === 0) {
+        return new Map();
+      }
       return this.manager.getGridColumnIndicatorStylesDebounced(
         this.gridState.columns,
-        this.gridState.current.rows,
-        // Here only to force recomputation of the grid styles
-        this.sceneResizeIndex
-      );
+        this.gridState.current.rows
+      ) ?? [];
     },
     gridContentStyles() {
-      if (!this.isManageMode) {
+      if (!this.isManageMode || this.cloneCalculateIndex === 0) {
         return new Map();
       }
       return this.manager.getGridContentStyles(
-        this.$refs.contentItems,
-        // Here only to force recomputation of the grid styles
-        this.cloneCalculateIndex
+        this.$refs.contentItems
       );
     },
     validInsertPositions() {
@@ -495,6 +497,7 @@ export default {
 
     await this.$nextTick();
     this.cloneCalculateIndex += 1;
+    this.sceneResizeIndex += 1;
   },
   unmounted() {
     document.removeEventListener('keydown', this.onGlobalKeyDown);
@@ -572,7 +575,7 @@ export default {
       } = this.manager.getItemOriginalPosition(element);
       this.ghostData = {
         isResizing: false,
-        isMoving: true,
+        isMoving: false,
         side: null,
         startX: event.clientX,
         startY: event.clientY,
@@ -594,6 +597,13 @@ export default {
       this.ghostDataWrite.rowstart = itemData.rowstart ?? 1;
       this.ghostDataWrite.rowspan = itemData.rowspan ?? 1;
       this.ghostDataWrite.order = itemData.order;
+
+      this.ghostData.isMoving = true;
+
+      this.moveDataIndex = prepareMoveIndex({
+        item: this.ghostDataWrite,
+        state: this.gridState
+      });
     },
     onMove(event) {
       if (!this.isMoving) {
@@ -689,7 +699,8 @@ export default {
         {
           data: this.ghostDataWrite,
           state: this.gridState,
-          item: this.gridState.lookup.get(this.ghostDataWrite.id)
+          item: this.gridState.lookup.get(this.ghostDataWrite.id),
+          index: this.moveDataIndex
         }
       );
       console.log('Patches from move:', patches);
