@@ -1,6 +1,7 @@
 import { klona } from 'klona';
 import AposInputMixin from 'Modules/@apostrophecms/schema/mixins/AposInputMixin';
 import newInstance from 'apostrophe/modules/@apostrophecms/schema/lib/newInstance.js';
+import { getPostprocessedRelationship } from 'Modules/@apostrophecms/piece-type/lib/postprocessRelationships.js';
 
 export default {
   name: 'AposInputRelationship',
@@ -89,7 +90,7 @@ export default {
         customFields: [ 'help' ]
       };
     },
-    chooserComponent () {
+    chooserComponent() {
       return apos.modules[this.field.withType].components.managerModal;
     },
     disableUnpublished() {
@@ -107,8 +108,11 @@ export default {
 
       return widgetOptions.minSize || [];
     },
-    duplicate () {
+    duplicate() {
       return this.modelValue?.duplicate ? 'apos-input--error' : null;
+    },
+    widgetOptions() {
+      return apos.area.widgetOptions[0];
     }
   },
   watch: {
@@ -152,8 +156,12 @@ export default {
 
       this.disabled = !!this.limitReached;
     },
-    updateSelected(items) {
-      this.next = items;
+    async updateSelected(items) {
+      this.next = await getPostprocessedRelationship(
+        items,
+        this.field,
+        this.widgetOptions
+      );
     },
     async search(qs) {
       const action = apos.modules[this.field.withType].action;
@@ -269,6 +277,9 @@ export default {
         this.updateSelected(result);
       }
     },
+    getDefault() {
+      return newInstance(this.field.schema);
+    },
     async editRelationship (item) {
       const editor = this.field.editor || 'AposRelationshipEditor';
 
@@ -279,19 +290,24 @@ export default {
         'model-value': item._fields
       });
 
-      if (result) {
-        this.next = this.next.map((rel) => {
-          return rel._id === item._id
-            ? {
-              ...item,
-              _fields: result
-            }
-            : rel;
-        });
+      if (!result) {
+        return;
       }
-    },
-    getDefault() {
-      return newInstance(this.field.schema);
+
+      const updatedItems = this.next.map((rel) => {
+        return rel._id === item._id
+          ? {
+            ...item,
+            _fields: result
+          }
+          : rel;
+      });
+
+      this.next = await getPostprocessedRelationship(
+        updatedItems,
+        this.field,
+        this.widgetOptions
+      );
     }
   }
 };
