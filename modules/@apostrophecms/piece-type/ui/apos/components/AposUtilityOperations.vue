@@ -8,9 +8,9 @@
       :key="button.action"
       type="default"
       :icon-only="button.iconOnly"
-      :icon="button.icon || false"
+      :icon="button.icon || null"
       :label="button.label"
-      @click="handleUtilityOperation(button.action)"
+      @click="handleUtilityOperation(button)"
     />
     <AposContextMenu
       v-if="utilityOperations.menu.length"
