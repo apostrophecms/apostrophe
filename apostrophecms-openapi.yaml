@@ -1,11 +1,19 @@
-openapi: 3.0.3
+openapi: 3.1.0
 info:
   title: ApostropheCMS REST API
   description: |
+    **🚀 The headless CMS that developers actually want to use**
     **For production use:** Download this YAML file and update the server URL
     and cookie names to match your setup.
 
     The ApostropheCMS REST API allows you to create, read, update, and delete content programmatically.
+    Perfect for building modern websites, mobile apps, and any digital experience that needs flexible content management.
+
+    ## Quick Start Guide
+    1. **Authentication**: Use the login endpoint to get a bearer token or session cookie
+    2. **Get Content**: Start with `/@apostrophecms/page` to fetch your page structure
+    3. **Media Files**: Upload files via `/@apostrophecms/attachment/upload`
+    4. **Custom Content**: Create and manage your custom piece types (articles, events, etc.)
 
     ## Content Architecture
     ApostropheCMS uses a flexible "pieces" system for content types. While the core system provides
@@ -29,8 +37,10 @@ info:
 
     *Note: Custom piece types are defined in your project configuration and follow the same API patterns.*
 
-    ## Authentication
-    Most endpoints require authentication via session cookies or API keys.
+    ## Authentication Methods
+    - **Bearer Token**: Recommended for API clients and SPAs
+    - **Session Cookie**: For traditional web applications
+    - **API Key**: For server-to-server communication
 
     ## Rate Limiting
     API requests are rate-limited to prevent abuse. See response headers for current limits.
@@ -44,12 +54,34 @@ info:
     name: MIT
     url: https://github.com/apostrophecms/apostrophe/blob/main/LICENSE.md
 
+security:
+  - SessionAuth: []
+
 servers:
   - url: http://localhost:3000/api/v1
     description: Development server
   - url: https://your-site.com/api/v1
     description: Production server (not for online use)
 
+tags:
+  - name: "Authentication"
+    description: "🚀 Login, logout, and session management for API access - start here!"
+  - name: "Pages"
+    description: "🚀 Essential for headless sites - page structure, content, and navigation"
+  - name: "Users (Built-in)"
+    description: "Built-in user management and authentication"
+  - name: "Global Content (Built-in)"
+    description: "Site-wide settings and content that appears across pages"
+  - name: "Media (Built-in)"
+    description: "File uploads, image management, and media organization"
+  - name: "Attachments (Built-in)"
+    description: "File upload utilities and image processing"
+  - name: "Articles (Custom)"
+    description: "Example custom piece type - requires project configuration"
+  - name: "Events (Custom)"
+    description: "Example custom piece type - requires project configuration"
+  - name: "Internationalization"
+    description: "Multi-language support and locale management"
 
 components:
   securitySchemes:
@@ -58,7 +90,7 @@ components:
       in: query
       name: apikey
       description: |
-        API key for server-to-server communication.
+        **Server-to-server authentication** - API key for server-to-server communication.
         Use as query parameter: ?apikey=your-api-key-here
 
         Configure in app.js:
@@ -120,54 +152,59 @@ components:
     Page:
       name: page
       in: query
-      description: Page number for pagination
+      description: "Page number for pagination (1-based)"
       required: false
       schema:
         type: integer
         minimum: 1
         default: 1
+      example: 2
 
     PerPage:
       name: perPage
       in: query
-      description: Number of items per page
+      description: "Number of items per page"
       required: false
       schema:
         type: integer
         minimum: 1
         maximum: 100
         default: 10
+      example: 25
 
     Search:
       name: search
       in: query
-      description: Search term for filtering results
+      description: "Search term for filtering results"
       required: false
       schema:
         type: string
+      example: "headless cms"
 
     Autocomplete:
       name: autocomplete
       in: query
-      description: Partial word search for autocomplete functionality
+      description: "Partial word search for autocomplete functionality"
       required: false
       schema:
         type: string
+      example: "apost"
 
     AposMode:
       name: aposMode
       in: query
-      description: Request draft or published version
+      description: "Request draft or published version of content"
       required: false
       schema:
         type: string
         enum: [draft, published]
         default: published
+      example: "published"
 
     AposLocale:
       name: aposLocale
       in: query
-      description: Locale for internationalization
+      description: "Locale for internationalization (e.g., 'en', 'fr', 'es')"
       required: false
       schema:
         type: string
@@ -176,17 +213,18 @@ components:
     RenderAreas:
       name: render-areas
       in: query
-      description: Render area content as HTML instead of returning widget data
+      description: "💡 Render widget areas as HTML instead of returning raw widget data - useful for hybrid architectures"
       required: false
       schema:
         type: boolean
         default: false
+      example: true
 
     PageId:
       name: _id
       in: path
       required: true
-      description: Page document ID (can include mode and locale, e.g., id:en:published)
+      description: "Page document ID (can include mode and locale, e.g., id:en:published)"
       schema:
         type: string
         example: "ckitdo5oq004pu69kr6oxo6fr:en:published"
@@ -194,7 +232,7 @@ components:
     AllPages:
       name: all
       in: query
-      description: Include entire page tree regardless of depth
+      description: "Include entire page tree regardless of depth (use with caution for large sites)"
       schema:
         type: string
         enum: ["1"]
@@ -203,7 +241,7 @@ components:
     FlatResponse:
       name: flat
       in: query
-      description: Return pages in flat array instead of tree structure
+      description: "💡 Return pages in flat array instead of tree structure - easier for some use cases"
       schema:
         type: string
         enum: ["1"]
@@ -212,100 +250,102 @@ components:
     ChildrenParam:
       name: children
       in: query
-      description: Include children array in response
+      description: "Include children array in response (set to 'false' to exclude)"
       schema:
         type: string
         enum: ["false"]
       example: "false"
 
   schemas:
+    # Core content schemas
     PageTreeResponse:
       type: object
-      description: Home page with nested children structure
+      description: "Complete page data with nested children structure - perfect for building navigation"
       properties:
         _id:
           type: string
-          description: Unique document identifier
+          description: "Unique document identifier"
           example: "ckhdscx5900054z9k88uqs16w"
         orphan:
           type: boolean
-          description: Whether page is excluded from navigation
+          description: "Whether page is excluded from navigation menus"
           example: false
         visibility:
           type: string
           enum: [public, loginRequired, private]
-          description: Page visibility setting
+          description: "Page visibility setting - controls who can view this page"
           example: "public"
         type:
           type: string
-          description: Page type identifier
+          description: "Page type identifier (configured in your project)"
           example: "@apostrophecms/home-page"
         title:
           type: string
-          description: Page title
+          description: "Page title - used for navigation and SEO"
           example: "Home Page"
         slug:
           type: string
-          description: URL slug for the page
+          description: "URL slug for the page"
           example: "/"
         rank:
           type: integer
-          description: Order among sibling pages
+          description: "Order among sibling pages (for navigation sorting)"
           example: 0
         level:
           type: integer
-          description: Page tree depth level
+          description: "Page tree depth level (0 = home page)"
           example: 0
         path:
           type: string
-          description: Ancestor path of page IDs
+          description: "Ancestor path of page IDs"
           example: "ckhdscx5900054z9k88uqs16w"
         _url:
           type: string
           format: uri
-          description: Complete page URL
+          description: "Complete page URL - use this for links"
           example: "http://localhost:3000/"
         _ancestors:
           type: array
           items:
             $ref: '#/components/schemas/PageSummary'
-          description: Array of ancestor pages
+          description: "Array of ancestor pages (for breadcrumbs)"
         _children:
           type: array
           items:
             $ref: '#/components/schemas/PageTreeResponse'
-          description: Array of child pages
+          description: "Array of child pages (nested structure)"
         createdAt:
           type: string
           format: date-time
-          description: ISO date of creation
+          description: "ISO date of creation"
         updatedAt:
           type: string
           format: date-time
-          description: ISO date of last update
+          description: "ISO date of last update"
         archived:
           type: boolean
-          description: Whether page is archived
+          description: "Whether page is archived (hidden from normal views)"
           example: false
         historicUrls:
           type: array
           items:
             type: string
-          description: Previous URLs that redirect to this page
+          description: "Previous URLs that redirect to this page (SEO preservation)"
         metaType:
           type: string
           example: "doc"
         titleSortified:
           type: string
-          description: Sortable version of title
+          description: "Sortable version of title"
         updatedBy:
           $ref: '#/components/schemas/User'
         _edit:
           type: boolean
-          description: Edit permission flag
+          description: "Whether current user can edit this page"
 
     FlatPageResponse:
       type: object
+      description: "Pages returned as flat array instead of tree structure"
       properties:
         results:
           type: array
@@ -318,16 +358,16 @@ components:
                     type: array
                     items:
                       type: string
-                    description: Array of child page IDs (in flat response)
+                    description: "Array of child page IDs (in flat response)"
                   _ancestors:
                     type: array
                     items:
                       type: string
-                    description: Array of ancestor page IDs (in flat response)
+                    description: "Array of ancestor page IDs (in flat response)"
 
     PageSummary:
       type: object
-      description: Abbreviated page information for ancestors/references
+      description: "Abbreviated page information for ancestors/references"
       properties:
         _id:
           type: string
@@ -354,7 +394,7 @@ components:
       properties:
         _targetId:
           type: string
-          description: ID of target page for positioning (_home and _archive are convenience values)
+          description: "ID of target page for positioning (_home and _archive are convenience values)"
           example: "ckhdscx5900054z9k88uqs16w"
         _position:
           oneOf:
@@ -362,80 +402,81 @@ components:
               enum: [before, after, firstChild, lastChild]
             - type: integer
               minimum: 0
-          description: Position relative to target (string values) or child index (number)
+          description: "Position relative to target (string values) or child index (number)"
           example: "firstChild"
         _copyingId:
           type: string
-          description: Optional ID of existing page to copy properties from
+          description: "Optional ID of existing page to copy properties from"
         title:
           type: string
-          description: Page title
+          description: "Page title"
           example: "My New Page"
         slug:
           type: string
-          description: URL slug (auto-generated if not provided)
+          description: "URL slug (auto-generated if not provided)"
           example: "/my-new-page"
         type:
           type: string
-          description: Page type
+          description: "Page type (must be configured in your project)"
           example: "default-page"
         visibility:
           type: string
           enum: [public, loginRequired, private]
           default: public
-        # Add other fields based on your page types
+          description: "Who can view this page"
 
     PageUpdateRequest:
       type: object
       properties:
         _targetId:
           type: string
-          description: ID of target page for repositioning (required if moving page)
+          description: "ID of target page for repositioning (required if moving page)"
         _position:
           oneOf:
             - type: string
               enum: [before, after, firstChild, lastChild]
             - type: integer
               minimum: 0
-          description: New position (required if moving page)
+          description: "New position (required if moving page)"
         title:
           type: string
-          description: Updated page title
+          description: "Updated page title"
         slug:
           type: string
-          description: Updated URL slug
+          description: "Updated URL slug"
         visibility:
           type: string
           enum: [public, loginRequired, private]
+          description: "Updated visibility setting"
         updatedBy:
           $ref: '#/components/schemas/User'
 
     Area:
       type: object
-      description: Content area containing widgets
+      description: "Content area containing widgets - the building blocks of page content"
       properties:
         _id:
           type: string
-          example: "ckj0k0dy7000i2a68s1z8v4ky"  # Add examples
+          example: "ckj0k0dy7000i2a68s1z8v4ky"
         metaType:
           type: string
-          enum: [area]  # Make it an enum for precision
+          enum: [area]
           example: "area"
         items:
           type: array
-          description: "Array of widgets within this area"  # Add description
+          description: "Array of widgets within this area (rich text, images, etc.)"
           items:
             $ref: '#/components/schemas/Widget'
         _edit:
           type: boolean
-          description: "Whether area is in edit mode"  # Document this important property
+          description: "Whether area is in edit mode"
         _docId:
           type: string
           example: "ckj0k2i45001c7u9kky3tftx2"
 
     Widget:
       type: object
-      description: Content widget within an area
+      description: "Content widget within an area - represents a piece of structured content"
       properties:
         _id:
           type: string
@@ -444,6 +485,7 @@ components:
           enum: [widget]
         type:
           type: string
+          description: "Widget type (e.g., rich-text, image, custom widgets)"
           example: "@apostrophecms/rich-text"
         _edit:
           type: boolean
@@ -467,9 +509,13 @@ components:
               type: string
               description: "HTML content to import (images will be automatically imported)"
               example: "<p>Here is some text.</p>\n<img src=\"/my-image.jpg\" />"
-      additionalProperties: true
+            imageTags:
+              type: array
+              items:
+                type: string
+              description: "Array of existing @apostrophecms/image-tag piece _ids to apply to imported images"
+              example: ["tag-piece-id-1", "tag-piece-id-2"]
 
-    # Array Field
     ArrayField:
       type: array
       description: "Array field containing structured data items"
@@ -486,21 +532,21 @@ components:
           label: "The first one"
           count: 27
 
-    # Attachment Field
     AttachmentField:
       type: object
-      description: "File attachment with metadata and URLs"
+      description: "File attachment with metadata and URLs - result of file upload"
       properties:
         _id:
           type: string
           example: "ckhdsopzr0005rt9kn49eyzb5"
         crop:
-          type: string
-          nullable: true
+          anyOf:
+            - type: string
+            - type: 'null'
           description: "Crop settings for images"
         group:
           type: string
-          description: "File group classification"
+          description: "File group classification (images, office, etc.)"
           example: "images"
         createdAt:
           type: string
@@ -540,11 +586,11 @@ components:
           example: "f41217031f11e8483ee81e20782f51be"
         width:
           type: integer
-          description: "Image width in pixels"
+          description: "Image width in pixels (for images)"
           example: 2560
         height:
           type: integer
-          description: "Image height in pixels"
+          description: "Image height in pixels (for images)"
           example: 1922
         landscape:
           type: boolean
@@ -560,7 +606,7 @@ components:
           description: "Whether attachment is archived"
         _urls:
           type: object
-          description: "Available image sizes and URLs (for images only)"
+          description: "🚀 Available image sizes and URLs (for images only) - use these for responsive images!"
           properties:
             max:
               type: string
@@ -598,10 +644,9 @@ components:
           format: uri
           description: "Single URL for non-image files"
 
-    # Relationship Field
     RelationshipField:
       type: array
-      description: "Array of related documents"
+      description: "Array of related documents - links content together"
       items:
         type: object
         properties:
@@ -656,57 +701,83 @@ components:
             type: string
         additionalProperties: true
 
-    # Simple Field Types
+    PageDotNotationUpdate:
+      type: object
+      description: Keys may use Apostrophe dot notation to target nested content.
+      # allow keys like "a.b", "a.b.0.c"
+      propertyNames:
+        pattern: '^[a-zA-Z0-9_]+(?:\.[a-zA-Z0-9_]+|\.\d+)+$'
+      # values can be of common JSON types
+      additionalProperties:
+        oneOf:
+          - type: string
+          - type: number
+          - type: boolean
+          - type: object
+          - type: array
+          - type: 'null'
+
+    # Simple field types with examples
     BooleanField:
       type: boolean
+      description: "True/false value"
       example: true
 
     StringField:
       type: string
+      description: "Text string field"
       example: "String value"
 
     IntegerField:
       type: integer
+      description: "Whole number"
       example: 42
 
     FloatField:
       type: number
       format: float
+      description: "Decimal number"
       example: 8675.309
 
     DateField:
       type: string
       format: date
+      description: "Date in YYYY-MM-DD format"
       example: "2012-12-21"
 
     TimeField:
       type: string
       pattern: "^([0-1]?[0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9]$"
+      description: "Time in HH:MM:SS format"
       example: "00:13:22"
 
     EmailField:
       type: string
       format: email
+      description: "Valid email address"
       example: "jon@bonjovi.rocks"
 
     UrlField:
       type: string
       format: uri
+      description: "Valid URL"
       example: "http://apostrophecms.com"
 
     SlugField:
       type: string
       pattern: "^[a-z0-9-]+$"
+      description: "URL-friendly identifier (lowercase, numbers, hyphens only)"
       example: "slugified-string"
 
     ColorField:
       type: string
       pattern: "^#[0-9a-fA-F]{8}$"
+      description: "Color in hex format with alpha channel"
       example: "#9013feff"
 
     PasswordField:
       type: string
-      description: "Password field - should not contain sensitive passwords in responses"
+      description: "⚠️ Password field - should not contain sensitive passwords in responses"
       example: "don't use this for sensitive passwords"
 
     RangeField:
@@ -726,10 +797,9 @@ components:
         type: string
       example: ["med", "small"]
 
-    # Common SEO Fields (often used together)
     SEOFields:
       type: object
-      description: "Common SEO metadata fields"
+      description: "Common SEO metadata fields - important for search optimization"
       properties:
         seoTitle:
           $ref: '#/components/schemas/StringField'
@@ -741,45 +811,46 @@ components:
           $ref: '#/components/schemas/AttachmentField'
       additionalProperties: true
 
+    # Built-in piece types
     User:
       type: object
       description: |
-        Built-in user piece type
-        Developers can add custom fields to the userl piece type in their project configuration.
+        Built-in user piece type for account management.
+        💡 Developers can add custom fields to the user piece type in their project configuration.
       properties:
         _id:
           type: string
-          description: Unique identifier
+          description: "Unique identifier"
           example: "clx1234567890abcdef"
         title:
           type: string
-          description: User's display name
+          description: "User's display name"
           example: "John Developer"
         username:
           type: string
-          description: Login username
+          description: "Login username (must be unique)"
           example: "johndeveloper"
         email:
           type: string
           format: email
-          description: User's email address
+          description: "User's email address"
           example: "john@example.com"
         role:
           type: string
-          description: User role
+          description: "User role - determines permissions"
           enum: ["guest", "contributor", "editor", "admin"]
           example: "editor"
         disabled:
           type: boolean
-          description: Whether the user account is disabled
+          description: "Whether the user account is disabled"
           default: false
         archived:
           type: boolean
-          description: Whether the user is archived
+          description: "Whether the user is archived"
           default: false
         visibility:
           type: string
-          description: Visibility setting
+          description: "Visibility setting"
           enum: ["public", "loginRequired"]
           default: "loginRequired"
         type:
@@ -791,106 +862,98 @@ components:
         createdAt:
           type: string
           format: date-time
-          description: Account creation date
+          description: "Account creation date"
         updatedAt:
           type: string
           format: date-time
-          description: Last update date
+          description: "Last update date"
 
     Global:
       type: object
       description: |
         Built-in global content piece type for site-wide settings.
-        Developers can add custom fields to the global piece type in their project configuration.
+        💡 Developers can add custom fields to the global piece type in their project configuration.
       properties:
         _id:
           type: string
-          description: Unique identifier
+          description: "Unique identifier"
           example: "global"
         title:
           type: string
-          description: Default title field (can be customized)
+          description: "Default title field (can be customized)"
           example: "My ApostropheCMS Site"
         type:
           type: string
           example: "@apostrophecms/global"
-        # Example custom fields that might be added by developers:
-        # contactEmail:
-        #   type: string
-        #   format: email
-        #   description: Site contact email (example custom field)
-        # footerContent:
-        #   type: object
-        #   description: Rich text area for footer (example custom field)
 
     Attachment:
       type: object
-      description: File attachment information from upload endpoint
+      description: "File attachment information from upload endpoint"
       properties:
         _id:
           type: string
-          description: Unique attachment identifier
+          description: "Unique attachment identifier"
           example: "ckj0akbxa003vp39kfbxgb8zg"
         _url:
           type: string
-          description: URL to the original file
+          description: "URL to the original file"
           example: "https://example.net/uploads/attachments/ckj0akbxa003vp39kfbxgb8zg-blue-box.png"
         _urls:
           type: object
-          description: URLs for different image sizes (images only)
+          description: "URLs for different image sizes (images only)"
           additionalProperties:
             type: string
         name:
           type: string
-          description: Slugified filename
+          description: "Slugified filename"
           example: "blue-box"
         title:
           type: string
-          description: Sortified filename
+          description: "Sortified filename"
           example: "blue box"
         extension:
           type: string
-          description: File extension
+          description: "File extension"
           example: "png"
         type:
           type: string
           example: "attachment"
         group:
           type: string
-          description: File group type
+          description: "File group type"
           example: "images"
         length:
           type: integer
-          description: File size in bytes
+          description: "File size in bytes"
           example: 10497
         md5:
           type: string
-          description: MD5 checksum
+          description: "MD5 checksum"
           example: "630eeaaecd0bdc07c4a82eeca4c07588"
         width:
           type: integer
-          description: Image width in pixels (images only)
+          description: "Image width in pixels (images only)"
           example: 600
         height:
           type: integer
-          description: Image height in pixels (images only)
+          description: "Image height in pixels (images only)"
           example: 106
         landscape:
           type: boolean
-          description: Whether image is landscape orientation (images only)
+          description: "Whether image is landscape orientation (images only)"
         portrait:
           type: boolean
-          description: Whether image is portrait orientation (images only)
+          description: "Whether image is portrait orientation (images only)"
         docIds:
           type: array
           items:
             type: string
-          description: IDs of documents using this attachment
+          description: "IDs of documents using this attachment"
         archivedDocIds:
           type: array
           items:
             type: string
-          description: IDs of archived documents using this attachment
+          description: "IDs of archived documents using this attachment"
         createdAt:
           type: string
           format: date-time
@@ -900,15 +963,15 @@ components:
 
     Image:
       type: object
-      description: Built-in image/media piece type
+      description: "Built-in image/media piece type for managing photos and graphics"
       properties:
         _id:
           type: string
-          description: Unique identifier
+          description: "Unique identifier"
           example: "clx1234567890abcdef"
         title:
           type: string
-          description: Image title/alt text
+          description: "Image title/alt text"
           example: "Hero banner image"
         slug:
           type: string
@@ -925,7 +988,7 @@ components:
           default: "public"
         attachment:
           type: object
-          description: File attachment information
+          description: "File attachment information"
           properties:
             _id:
               type: string
@@ -937,19 +1000,19 @@ components:
               example: "jpg"
             length:
               type: integer
-              description: File size in bytes
+              description: "File size in bytes"
             url:
               type: string
-              description: Public URL to access the image
+              description: "Public URL to access the image"
               example: "/uploads/attachments/clx123/hero-banner.jpg"
         credit:
           type: string
-          description: Image credit or attribution
+          description: "Image credit or attribution"
         tags:
           type: array
           items:
             type: string
-          description: Image tags for organization
+          description: "Image tags for organization"
         createdAt:
           type: string
           format: date-time
@@ -959,15 +1022,15 @@ components:
 
     File:
       type: object
-      description: Built-in file piece type for general file uploads (PDFs, documents, etc.)
+      description: "Built-in file piece type for general file uploads (PDFs, documents, etc.)"
       properties:
         _id:
           type: string
-          description: Unique identifier
+          description: "Unique identifier"
           example: "clx1234567890abcdef"
         title:
           type: string
-          description: File title/description
+          description: "File title/description"
           example: "Company Brochure"
         slug:
           type: string
@@ -984,7 +1047,7 @@ components:
           default: "public"
         attachment:
           type: object
-          description: File attachment information
+          description: "File attachment information"
           properties:
             _id:
               type: string
@@ -996,19 +1059,19 @@ components:
               example: "pdf"
             length:
               type: integer
-              description: File size in bytes
+              description: "File size in bytes"
             url:
               type: string
-              description: Public URL to access the file
+              description: "Public URL to access the file"
               example: "/uploads/attachments/clx123/company-brochure.pdf"
         description:
           type: string
-          description: File description
+          description: "File description"
         tags:
           type: array
           items:
             type: string
-          description: File tags for organization
+          description: "File tags for organization"
         createdAt:
           type: string
           format: date-time
@@ -1018,18 +1081,18 @@ components:
 
     ImageTag:
       type: object
-      description: Built-in image tag piece type for organizing images
+      description: "Built-in image tag piece type for organizing images"
       properties:
         _id:
           type: string
           example: "clx1234567890abcdef"
         title:
           type: string
-          description: Tag name
+          description: "Tag name"
           example: "Hero Images"
         slug:
           type: string
-          description: URL-friendly tag name
+          description: "URL-friendly tag name"
           example: "hero-images"
         type:
           type: string
@@ -1046,18 +1109,18 @@ components:
 
     FileTag:
       type: object
-      description: Built-in file tag piece type for organizing files
+      description: "Built-in file tag piece type for organizing files"
       properties:
         _id:
           type: string
           example: "clx1234567890abcdef"
         title:
           type: string
-          description: Tag name
+          description: "Tag name"
           example: "Marketing Materials"
         slug:
           type: string
-          description: URL-friendly tag name
+          description: "URL-friendly tag name"
           example: "marketing-materials"
         type:
           type: string
@@ -1072,21 +1135,29 @@ components:
           type: string
           format: date-time
 
+    # Custom piece types (examples)
     Article:
       type: object
-      description: Example custom piece type - blog article (requires custom configuration)
+      description: |
+        Example custom piece type - blog article.
+        ⚠️ **Note**: Requires custom configuration in your ApostropheCMS project.
+
+        Perfect for:
+        - Blog posts and articles
+        - News content
+        - Editorial content
       properties:
         _id:
           type: string
-          description: Unique identifier
+          description: "Unique identifier"
           example: "clx1234567890abcdef"
         title:
           type: string
-          description: Article title
+          description: "Article title"
           example: "Getting Started with Headless CMS"
         slug:
           type: string
-          description: URL-friendly version of title
+          description: "URL-friendly version of title"
           example: "getting-started-headless-cms"
         type:
           type: string
@@ -1100,7 +1171,7 @@ components:
           default: "public"
         body:
           type: object
-          description: Rich text content area
+          description: "Rich text content area"
           properties:
             metaType:
               type: string
@@ -1109,23 +1180,23 @@ components:
               type: array
               items:
                 type: object
-                description: Content widgets (rich text, images, etc.)
+                description: "Content widgets (rich text, images, etc.)"
         publishedAt:
           type: string
           format: date-time
-          description: Publication date
+          description: "Publication date"
           example: "2024-12-15T10:30:00.000Z"
         tags:
           type: array
           items:
             type: string
-          description: Article tags
+          description: "Article tags"
           example: ["cms", "headless", "tutorial"]
         _author:
           type: array
           items:
             $ref: '#/components/schemas/User'
-          description: Article authors (relationship field)
+          description: "Article authors (relationship field)"
         createdAt:
           type: string
           format: date-time
@@ -1135,7 +1206,14 @@ components:
 
     Event:
       type: object
-      description: Example custom piece type - calendar event (requires custom configuration)
+      description: |
+        Example custom piece type - calendar event.
+        ⚠️ **Note**: Requires custom configuration in your ApostropheCMS project.
+
+        Perfect for:
+        - Calendar events
+        - Announcements
+        - Meetups and conferences
       properties:
         _id:
           type: string
@@ -1158,7 +1236,7 @@ components:
           default: "public"
         description:
           type: object
-          description: Rich text event description
+          description: "Rich text event description"
         startDate:
           type: string
           format: date-time
@@ -1174,7 +1252,7 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Image'
-          description: Event images (relationship field)
+          description: "Event images (relationship field)"
         createdAt:
           type: string
           format: date-time
@@ -1182,23 +1260,23 @@ components:
           type: string
           format: date-time
 
-    # Generic piece response structure
+    # API Response schemas
     PieceResponse:
       type: object
       properties:
         success:
           type: boolean
-          description: Whether the request was successful
+          description: "Whether the request was successful"
         data:
           type: object
-          description: The piece data
+          description: "The piece data"
         error:
           type: string
-          description: Error message if success is false
+          description: "Error message if success is false"
 
-    # API Response schemas
     PaginatedResponse:
       type: object
+      description: "Standard response format for list endpoints"
       properties:
         success:
           type: boolean
@@ -1209,37 +1287,37 @@ components:
               type: array
               items:
                 type: object
-                description: Array of pieces (type depends on endpoint)
+                description: "Array of pieces (type depends on endpoint)"
             pages:
               type: integer
-              description: Total number of pages
+              description: "Total number of pages"
             currentPage:
               type: integer
-              description: Current page number (1-based)
+              description: "Current page number (1-based)"
             total:
               type: integer
-              description: Total number of items across all pages
+              description: "Total number of items across all pages"
 
     CreatePieceRequest:
       type: object
-      description: Generic structure for creating any piece type
+      description: "Generic structure for creating any piece type"
       required:
         - title
       properties:
         title:
           type: string
-          description: Piece title (required for all piece types)
+          description: "Piece title (required for all piece types)"
         slug:
           type: string
-          description: URL slug (auto-generated from title if not provided)
+          description: "URL slug (auto-generated from title if not provided)"
         visibility:
           type: string
           enum: ["public", "loginRequired"]
-          description: Visibility setting
+          description: "Visibility setting"
           default: "public"
         archived:
           type: boolean
-          description: Whether the piece is archived
+          description: "Whether the piece is archived"
           default: false
 
     Error:
@@ -1247,11 +1325,12 @@ components:
       properties:
         error:
           type: string
-          description: Error message
+          description: "Error message"
         message:
           type: string
-          description: Detailed error message
+          description: "Detailed error message"
 
+    # i18n schemas
     LocalesResponse:
       type: object
       description: "Object containing all configured locales"
@@ -1274,7 +1353,6 @@ components:
           label: "French"
           _edit: false
 
-    # i18n Request Schemas
     LocaleRequest:
       type: object
       required:
@@ -1295,19 +1373,25 @@ components:
 
     SameHostnameResponse:
       type: object
+      additionalProperties: false
+      required: [redirectTo]
       properties:
         redirectTo:
           type: string
           description: "Path to redirect to within same hostname"
+          pattern: '^/(?!/).*'
           example: "/fr/page-slug"
 
     DifferentHostnameResponse:
       type: object
+      additionalProperties: false
+      required: [redirectTo]
       properties:
         redirectTo:
           type: string
           format: uri
           description: "Full URL to redirect to with cross-domain session token"
+          pattern: '^[A-Za-z][A-Za-z0-9+.-]*://'
           example: "https://fr.example.com/french-example-page?aposCrossDomainSessionToken=generated_token"
 
     ExistInLocaleRequest:
@@ -1357,7 +1441,7 @@ components:
 
   responses:
     BadRequest:
-      description: Bad request - invalid input parameters
+      description: "Bad request - invalid input parameters"
       content:
         application/json:
           schema:
@@ -1371,7 +1455,7 @@ components:
                 example: "The request could not be processed due to invalid input"
 
     Unauthorized:
-      description: Authentication required
+      description: "Authentication required"
       content:
         application/json:
           schema:
@@ -1385,7 +1469,7 @@ components:
                 example: "Authentication is required to access this resource"
 
     Forbidden:
-      description: Access forbidden - insufficient permissions
+      description: "Access forbidden - insufficient permissions"
       content:
         application/json:
           schema:
@@ -1399,7 +1483,7 @@ components:
                 example: "You do not have permission to perform this action"
 
     NotFound:
-      description: Resource not found
+      description: "Resource not found"
       content:
         application/json:
           schema:
@@ -1416,14 +1500,21 @@ paths:
   # Authentication endpoints
   /@apostrophecms/login/login:
     post:
-      summary: Login to get bearer token or session cookie
+      summary: "Login to get authentication token"
       description: |
-        Authenticate and receive either a bearer token or session cookie for subsequent API requests.
+        🚀 **Start here!** Authenticate and receive either a bearer token or session cookie for subsequent API requests.
 
-        - For bearer token: omit `session` field or set to `false`
-        - For session cookie: set `session` to `true` and include `credentials: 'include'` in fetch
+        **Perfect for:**
+        - Getting started with the API
+        - Setting up authentication for your app
+        - Testing API access
+
+        **Choose your authentication method:**
+        - **Bearer Token** (recommended): omit `session` field or set to `false`
+        - **Session Cookie**: set `session` to `true` and include `credentials: 'include'` in fetch
       tags:
         - Authentication
+      operationId: AuthLogin
       requestBody:
         required: true
         content:
@@ -1436,32 +1527,33 @@ paths:
               properties:
                 username:
                   type: string
-                  description: User's login username
+                  description: "User's login username"
                   example: "admin"
                 password:
                   type: string
                   format: password
-                  description: User's password
+                  description: "User's password"
                 session:
                   type: boolean
-                  description: Set to true to receive session cookie instead of bearer token
+                  description: "Set to true to receive session cookie instead of bearer token"
                   default: false
                   example: false
             examples:
               bearer_token:
-                summary: Request bearer token
+                summary: "Request bearer token (recommended)"
                 value:
                   username: "admin"
                   password: "your-password"
               session_cookie:
-                summary: Request session cookie
+                summary: "Request session cookie"
                 value:
                   username: "admin"
                   password: "your-password"
                   session: true
+      security: []
       responses:
         '200':
-          description: Login successful
+          description: "Login successful"
           content:
             application/json:
               schema:
@@ -1469,24 +1561,24 @@ paths:
                 properties:
                   token:
                     type: string
-                    description: Bearer token (only present when session is false/omitted)
+                    description: "Bearer token (only present when session is false/omitted)"
                     example: "random123Token456xyz"
               examples:
                 bearer_response:
-                  summary: Bearer token response
+                  summary: "Bearer token response"
                   value:
                     token: "random123Token456xyz"
                 session_response:
-                  summary: Session cookie response (token field not present)
+                  summary: "Session cookie response (token field not present)"
                   value: {}
           headers:
             Set-Cookie:
-              description: Session cookie (only when session=true)
+              description: "Session cookie (only when session=true)"
               schema:
                 type: string
                 example: "apostrophe.sid=s%3A...; Path=/; HttpOnly"
         '401':
-          description: Invalid credentials
+          description: "Invalid credentials"
           content:
             application/json:
               schema:
@@ -1496,21 +1588,22 @@ paths:
                     type: string
                     example: "Invalid credentials"
         '400':
-          description: Bad request - missing required fields
+          description: "Bad request - missing required fields"
 
   /@apostrophecms/login/logout:
     post:
-      summary: Logout and invalidate token/session
+      summary: "Logout and invalidate session"
       description: |
         End the current session or invalidate the bearer token.
 
-        - For bearer token: include Authorization header
-        - For session cookie: include credentials in request
+        **For bearer token**: include Authorization header
+        **For session cookie**: include credentials in request
       tags:
         - Authentication
+      operationId: AuthLogout
       responses:
         '200':
-          description: Logout successful
+          description: "Logout successful"
           content:
             application/json:
               schema:
@@ -1520,79 +1613,31 @@ paths:
                     type: boolean
                     example: true
         '401':
-          description: Not authenticated
+          description: "Not authenticated"
       security:
         - BearerAuth: []
         - SessionAuth: []
 
   /@apostrophecms/login/whoami:
-    get:
-      summary: Get current user information
-      description: |
-        Returns information about the currently authenticated user.
-
-        **Security note:** Only explicitly configured fields are returned, 
-        never the complete user object. This prevents accidental exposure 
-        of sensitive user data.
-      tags:
-        - Authentication
-      responses:
-        '200':
-          description: Current user information retrieved successfully
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  _id:
-                    type: string
-                    description: User's unique identifier
-                    example: "user123"
-                  username:
-                    type: string
-                    description: User's login username
-                    example: "john-doe"
-                  title:
-                    type: string
-                    description: User's display name
-                    example: "John Doe"
-                  email:
-                    type: string
-                    format: email
-                    description: User's email address (if configured in whoamiFields)
-                    example: "john@example.com"
-                additionalProperties: true
-                description: Additional fields based on whoamiFields configuration
-        '404':
-          description: User not authenticated
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  error:
-                    type: string
-                    example: "Not authenticated"
-      security:
-        - ApiKeyAuth: []
-        - BearerAuth: []
-        - SessionAuth: []
-
     post:
-      summary: Get current user information
+      summary: "Get current user information"
       description: |
         Returns information about the currently authenticated user.
 
-        **Note:** POST method is recommended for this endpoint.
+        **Perfect for:**
+        - Checking if authentication is working
+        - Getting user details for your app
+        - Validating permissions
 
         **Security note:** Only explicitly configured fields are returned, 
         never the complete user object. This prevents accidental exposure 
         of sensitive user data.
       tags:
         - Authentication
+      operationId: AuthWhoAmI
       responses:
         '200':
-          description: Current user information retrieved successfully
+          description: "Current user information retrieved successfully"
           content:
             application/json:
               schema:
@@ -1600,25 +1645,25 @@ paths:
                 properties:
                   _id:
                     type: string
-                    description: User's unique identifier
+                    description: "User's unique identifier"
                     example: "user123"
                   username:
                     type: string
-                    description: User's login username
+                    description: "User's login username"
                     example: "john-doe"
                   title:
                     type: string
-                    description: User's display name
+                    description: "User's display name"
                     example: "John Doe"
                   email:
                     type: string
                     format: email
-                    description: User's email address (if configured in whoamiFields)
+                    description: "User's email address (if configured in whoamiFields)"
                     example: "john@example.com"
                 additionalProperties: true
-                description: Additional fields based on whoamiFields configuration
+                description: "Additional fields based on whoamiFields configuration"
         '404':
-          description: User not authenticated
+          description: "User not authenticated"
           content:
             application/json:
               schema:
@@ -1633,16 +1678,22 @@ paths:
         - SessionAuth: []
 
   /@apostrophecms/login/context:
-    get:
-      summary: Get login context information
+    post:
+      summary: "Get login context information"
       description: |
         Returns login context information including environment and requirements.
         This endpoint provides information about the login system configuration.
+
+        **Useful for:**
+        - Understanding available login methods
+        - Checking if password reset is enabled
+        - Getting login system configuration
       tags:
         - Authentication
+      operationId: AuthContext
       responses:
         '200':
-          description: Login context retrieved successfully
+          description: "Login context retrieved successfully"
           content:
             application/json:
               schema:
@@ -1650,57 +1701,26 @@ paths:
                 properties:
                   localLogin:
                     type: boolean
-                    description: Whether local login is enabled
+                    description: "Whether local login is enabled"
                     example: true
                   passwordReset:
                     type: boolean
-                    description: Whether password reset is enabled
+                    description: "Whether password reset is enabled"
                     example: false
                   loginUrl:
                     type: string
-                    description: The configured login URL
+                    description: "The configured login URL"
                     example: "/login"
                 additionalProperties: true
-                description: Additional context based on configuration
-        '500':
-          description: Internal server error
+                description: "Additional context based on configuration"
+        '4XX':
+          description: Client error
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
-      security: []
-
-    post:
-      summary: Get login context information
-      description: |
-        Returns login context information including environment and requirements.
-        This endpoint provides information about the login system configuration.
-      tags:
-        - Authentication
-      responses:
-        '200':
-          description: Login context retrieved successfully
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  localLogin:
-                    type: boolean
-                    description: Whether local login is enabled
-                    example: true
-                  passwordReset:
-                    type: boolean
-                    description: Whether password reset is enabled
-                    example: false
-                  loginUrl:
-                    type: string
-                    description: The configured login URL
-                    example: "/login"
-                additionalProperties: true
-                description: Additional context based on configuration
         '500':
-          description: Internal server error
+          description: "Internal server error"
           content:
             application/json:
               schema:
@@ -1709,16 +1729,17 @@ paths:
 
   /@apostrophecms/login/resetRequest:
     post:
-      summary: Request password reset
+      summary: "Request password reset"
       description: |
         Initiates a password reset process by sending a reset link to the user's email address.
 
-        **Note:** This endpoint is only available when `passwordReset` is enabled in the login module configuration.
+        **⚠️ Note:** This endpoint is only available when `passwordReset` is enabled in the login module configuration.
 
-        The user will not be notified if the email check fails or if the email fails to send.
+        **Security feature:** The user will not be notified if the email check fails or if the email fails to send.
         However, debug information will be output in the server terminal.
       tags:
         - Authentication
+      operationId: AuthResetRequest
       requestBody:
         required: true
         content:
@@ -1731,11 +1752,11 @@ paths:
                 email:
                   type: string
                   format: email
-                  description: Email address of the user requesting password reset
+                  description: "Email address of the user requesting password reset"
                   example: "user@example.com"
       responses:
         '200':
-          description: Password reset request processed (always returns success for security)
+          description: "Password reset request processed (always returns success for security)"
           content:
             application/json:
               schema:
@@ -1748,13 +1769,13 @@ paths:
                     type: string
                     example: "If an account with that email exists, a password reset link has been sent."
         '400':
-          description: Bad request - missing or invalid email
+          description: "Bad request - missing or invalid email"
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
         '404':
-          description: Password reset not enabled
+          description: "Password reset not enabled"
           content:
             application/json:
               schema:
@@ -1767,15 +1788,16 @@ paths:
 
   /@apostrophecms/login/reset:
     post:
-      summary: Complete password reset
+      summary: "Complete password reset"
       description: |
         Completes a password reset using the token provided in the reset email.
 
-        **Note:** This endpoint is only available when `passwordReset` is enabled in the login module configuration.
+        **⚠️ Note:** This endpoint is only available when `passwordReset` is enabled in the login module configuration.
 
         Reset tokens are valid for the number of hours specified in `passwordResetHours` (default: 48 hours).
       tags:
         - Authentication
+      operationId: AuthReset
       requestBody:
         required: true
         content:
@@ -1788,16 +1810,16 @@ paths:
               properties:
                 token:
                   type: string
-                  description: Reset token from the password reset email
+                  description: "Reset token from the password reset email"
                   example: "reset-token-from-email"
                 password:
                   type: string
                   format: password
-                  description: New password for the user account
+                  description: "New password for the user account"
                   example: "new-secure-password"
       responses:
         '200':
-          description: Password reset completed successfully
+          description: "Password reset completed successfully"
           content:
             application/json:
               schema:
@@ -1810,13 +1832,13 @@ paths:
                     type: string
                     example: "Password has been reset successfully"
         '400':
-          description: Bad request - missing or invalid token/password
+          description: "Bad request - missing or invalid token/password"
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
         '404':
-          description: Password reset not enabled or invalid token
+          description: "Password reset not enabled or invalid token"
           content:
             application/json:
               schema:
@@ -1826,7 +1848,7 @@ paths:
                     type: string
                     example: "Invalid or expired reset token"
         '410':
-          description: Reset token expired
+          description: "Reset token expired"
           content:
             application/json:
               schema:
@@ -1840,21 +1862,29 @@ paths:
   # Page endpoints
   /@apostrophecms/page:
     get:
-      tags:
-        - Pages
-      summary: Get page tree
+      summary: "Get page tree"
       description: |
-        Fetch the home page and all other pages structured in the home page's `_children` property.
-        Returns the complete page hierarchy starting from the home page.
+        🚀 **Essential for headless sites!** Fetch your site's complete page structure and content.
+
+        **Perfect for:**
+        - Building navigation menus
+        - Getting all pages for static site generation  
+        - Fetching content for SPA routing
+        - Understanding your site structure
+
+        Returns the complete page hierarchy starting from the home page. Use `flat=1` to get pages in a flat array instead of nested structure.
       parameters:
         - $ref: '#/components/parameters/AllPages'
         - $ref: '#/components/parameters/FlatResponse'
         - $ref: '#/components/parameters/ChildrenParam'
         - $ref: '#/components/parameters/AposMode'
         - $ref: '#/components/parameters/AposLocale'
+      tags:
+        - Pages
+      operationId: PageGet
       responses:
         '200':
-          description: Page tree retrieved successfully
+          description: "Page tree retrieved successfully"
           content:
             application/json:
               schema:
@@ -1863,7 +1893,7 @@ paths:
                   - $ref: '#/components/schemas/FlatPageResponse'
               examples:
                 tree_response:
-                  summary: Tree structure response
+                  summary: "Nested page tree (default)"
                   value:
                     _id: "ckhdscx5900054z9k88uqs16w"
                     title: "Home Page"
@@ -1871,35 +1901,19 @@ paths:
                     type: "@apostrophecms/home-page"
                     _children: []
                 flat_response:
-                  summary: Flat array response
+                  summary: "Flat array response (with flat=1)"
                   value:
                     results: []
         '400':
-          description: Bad request - Invalid image ID format
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
+          $ref: '#/components/responses/BadRequest'
         '401':
-          description: Unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
+          $ref: '#/components/responses/Unauthorized'
         '403':
-          description: Forbidden
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
+          $ref: '#/components/responses/Forbidden'
         '404':
-          description: Page not found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
+          $ref: '#/components/responses/NotFound'
         '500':
-          description: Internal server error
+          description: "Internal server error"
           content:
             application/json:
               schema:
@@ -1911,12 +1925,16 @@ paths:
         - {} # Allows unauthenticated access if publicApiProjection is defined
 
     post:
-      tags:
-        - Pages
-      summary: Create new page
+      summary: "Create new page"
       description: |
         Insert a new page at the specified position in the page tree.
-        Requires `_targetId` and `_position` to determine placement.
+
+        **Perfect for:**
+        - Programmatically creating pages
+        - Building page management interfaces
+        - Migrating content from other systems
+
+        Requires `_targetId` and `_position` to determine placement in the page tree.
       parameters:
         - $ref: '#/components/parameters/AposMode'
         - $ref: '#/components/parameters/AposLocale'
@@ -1928,21 +1946,24 @@ paths:
               $ref: '#/components/schemas/PageCreateRequest'
             examples:
               new_page:
-                summary: Create new page as first child
+                summary: "Create new page as first child"
                 value:
                   title: "New Page"
                   _targetId: "ckhdscx5900054z9k88uqs16w"
                   _position: "firstChild"
               copy_page:
-                summary: Create page by copying existing one
+                summary: "Create page by copying existing one"
                 value:
                   title: "Copied Page"
                   _targetId: "_home"
                   _position: "lastChild"
                   _copyingId: "existing-page-id"
+      tags:
+        - Pages
+      operationId: PagePost
       responses:
         '201':
-          description: Page created successfully
+          description: "Page created successfully"
           content:
             application/json:
               schema:
@@ -1960,50 +1981,41 @@ paths:
 
   /@apostrophecms/page/{_id}:
     get:
-      tags:
-        - Pages
-      summary: Get single page
+      summary: "Get single page"
       description: |
-        Fetch a single page document by ID. The ID can include mode and locale
-        (e.g., `id:en:published`) or use query parameters to specify them.
+        Fetch a single page document by ID for detailed content access.
+
+        **Perfect for:**
+        - Getting page content for rendering
+        - Fetching specific page data
+        - Building page detail views
+
+        The ID can include mode and locale (e.g., `id:en:published`) or use query parameters to specify them.
       parameters:
         - $ref: '#/components/parameters/PageId'
         - $ref: '#/components/parameters/AposMode'
         - $ref: '#/components/parameters/AposLocale'
         - $ref: '#/components/parameters/RenderAreas'
+      tags:
+        - Pages
+      operationId: PageGetById
       responses:
         '200':
-          description: Page retrieved successfully
+          description: "Page retrieved successfully"
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/PageTreeResponse'
         '400':
-          description: Bad request - Invalid image ID format
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
+          $ref: '#/components/responses/BadRequest'
         '401':
-          description: Unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
+          $ref: '#/components/responses/Unauthorized'
         '403':
-          description: Forbidden
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
+          $ref: '#/components/responses/Forbidden'
         '404':
-          description: Page with that ID doesn't exist
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
+          $ref: '#/components/responses/NotFound'
         '500':
-          description: Internal server error
+          description: "Internal server error"
           content:
             application/json:
               schema:
@@ -2015,12 +2027,16 @@ paths:
         - {} # Allows unauthenticated access if publicApiProjection is defined
 
     put:
-      tags:
-        - Pages
-      summary: Replace page
+      summary: "Replace page"
       description: |
-        Completely replace a page document. Requires `_targetId` and `_position`
-        for page tree positioning.
+        Completely replace a page document.
+
+        **Use cases:**
+        - Complete page updates
+        - Moving pages in the tree structure
+        - Replacing page content entirely
+
+        Requires `_targetId` and `_position` for page tree positioning.
       parameters:
         - $ref: '#/components/parameters/PageId'
         - $ref: '#/components/parameters/AposMode'
@@ -2037,9 +2053,12 @@ paths:
                   required:
                     - _targetId
                     - _position
+      tags:
+        - Pages
+      operationId: PagePutById
       responses:
         '200':
-          description: Page replaced successfully
+          description: "Page replaced successfully"
           content:
             application/json:
               schema:
@@ -2058,13 +2077,16 @@ paths:
         - SessionAuth: []
 
     patch:
-      tags:
-        - Pages
-      summary: Update page
+      summary: "Update page"
       description: |
-        Partially update a page document. Can use MongoDB-style operators
-        and dot notation for nested properties. Include `_targetId` and `_position`
-        to move the page within the tree.
+        Partially update a page document.
+
+        **Perfect for:**
+        - Updating page titles or content
+        - Moving pages within the tree
+        - Making incremental changes
+
+        Can use MongoDB-style operators and dot notation for nested properties. Include `_targetId` and `_position` to move the page within the tree.
       parameters:
         - $ref: '#/components/parameters/PageId'
         - $ref: '#/components/parameters/AposMode'
@@ -2074,29 +2096,34 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/PageUpdateRequest'
+              oneOf:
+                - $ref: '#/components/schemas/PageUpdateRequest'
+                - $ref: '#/components/schemas/PageDotNotationUpdate'
             examples:
               update_title:
-                summary: Update page title only
+                summary: "Update page title only"
                 value:
                   title: "Updated Page Title"
               move_page:
-                summary: Move page to new position
+                summary: "Move page to new position"
                 value:
                   _targetId: "target-page-id"
                   _position: "after"
               archive_page:
-                summary: Move page to archive
+                summary: "Move page to archive"
                 value:
                   _targetId: "_archive"
                   _position: "lastChild"
               dot_notation:
-                summary: Update nested content with dot notation
+                summary: "Update nested content with dot notation"
                 value:
                   "description.items.0.content": "<p>Updated content</p>"
+      tags:
+        - Pages
+      operationId: PagePatchById
       responses:
         '200':
-          description: Page updated successfully
+          description: "Page updated successfully"
           content:
             application/json:
               schema:
@@ -2115,20 +2142,23 @@ paths:
         - SessionAuth: []
 
     delete:
-      tags:
-        - Pages
-      summary: Delete page
+      summary: "Delete page"
       description: |
-        **Permanently delete a page document.** This cannot be undone.
+        ⚠️ **Permanently delete a page document.** This cannot be undone.
 
-        Restrictions:
+        **Restrictions:**
         - Cannot delete home page
         - Cannot delete pages with children (delete children first)
         - Cannot delete draft if published version exists
+
+        **Use with caution!**
       parameters:
         - $ref: '#/components/parameters/PageId'
         - $ref: '#/components/parameters/AposMode'
         - $ref: '#/components/parameters/AposLocale'
+      tags:
+        - Pages
+      operationId: PageDeleteById
       responses:
         '200':
           description: Page deleted successfully
@@ -2160,15 +2190,27 @@ paths:
 
   /@apostrophecms/page/{_id}/publish:
     post:
-      tags:
-        - Pages
       summary: Publish page draft
       description: |
-        Publish an existing draft mode document. The `_id` can be from either
-        the draft or published version, or use the `aposDocId`.
+        **Advanced Feature**: Publish a draft page to make it live.
+
+        Moves a page from draft mode to published mode, making it visible
+        to public users. Essential for content workflows where editors
+        create drafts before publishing.
+
+        **Use cases:**
+        - Content approval workflows
+        - Scheduled publishing systems
+        - Editorial review processes
+
+        The `_id` can be from either the draft or published version, 
+        or you can use the `aposDocId` to reference the document.
       parameters:
         - $ref: '#/components/parameters/PageId'
         - $ref: '#/components/parameters/AposLocale'
+      tags:
+        - Pages
+      operationId: PagePublishById
       responses:
         '200':
           description: Page published successfully
@@ -2176,14 +2218,48 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/PageTreeResponse'
+              examples:
+                published_page:
+                  summary: "Successfully published page"
+                  value:
+                    _id: "ckhdscx5900054z9k88uqs16w:en:published"
+                    title: "My Published Page"
+                    slug: "/my-published-page"
+                    type: "default-page"
+                    _url: "https://example.com/my-published-page"
+                    updatedAt: "2024-12-18T10:30:00.000Z"
         '400':
-          $ref: '#/components/responses/BadRequest'
+          description: Bad request - cannot publish (e.g., validation errors)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                validation_error:
+                  summary: "Page validation failed"
+                  value:
+                    error: "Validation failed"
+                    message: "Page title is required before publishing"
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
-          $ref: '#/components/responses/Forbidden'
+          description: Forbidden - insufficient permissions to publish pages
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '404':
-          $ref: '#/components/responses/NotFound'
+          description: Page not found or no draft version exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                no_draft:
+                  summary: "No draft version to publish"
+                  value:
+                    error: "Not Found"
+                    message: "No draft version of this page exists"
       security:
         - ApiKeyAuth: []
         - BearerAuth: []
@@ -2191,8 +2267,6 @@ paths:
 
   /{_url}:
     get:
-      tags:
-        - Pages
       summary: Get rendered page content
       description: |
         Get a page's rendered HTML content. With `aposRefresh=1`, returns only
@@ -2212,6 +2286,9 @@ paths:
             type: string
             enum: ["1"]
           example: "1"
+      tags:
+        - Pages
+      operationId: UrlGet
       responses:
         '200':
           description: Page content retrieved successfully
@@ -2237,6 +2314,7 @@ paths:
         - $ref: '#/components/parameters/AposMode'
         - $ref: '#/components/parameters/AposLocale'
         - $ref: '#/components/parameters/RenderAreas'
+      operationId: UserGet
       responses:
         '200':
           description: Successful response
@@ -2310,6 +2388,7 @@ paths:
                 disabled:
                   type: boolean
                   default: false
+      operationId: UserPost
       responses:
         '201':
           description: User created successfully
@@ -2357,6 +2436,7 @@ paths:
         - $ref: '#/components/parameters/AposMode'
         - $ref: '#/components/parameters/AposLocale'
         - $ref: '#/components/parameters/RenderAreas'
+      operationId: UserGetById
       responses:
         '200':
           description: User retrieved successfully
@@ -2435,6 +2515,7 @@ paths:
                   enum: ["guest", "contributor", "editor", "admin"]
                 disabled:
                   type: boolean
+      operationId: UserPutById
       responses:
         '200':
           description: User updated
@@ -2501,7 +2582,8 @@ paths:
                   enum: ["guest", "contributor", "editor", "admin"]
                 disabled:
                   type: boolean
-              description: Only include fields to update
+              description: Only include fields to Update
+      operationId: UserPatchById
       responses:
         '200':
           description: User updated
@@ -2551,6 +2633,7 @@ paths:
             type: string
         - $ref: '#/components/parameters/AposMode'
         - $ref: '#/components/parameters/AposLocale'
+      operationId: UserDeleteById
       responses:
         '200':
           description: User deleted
@@ -2590,6 +2673,7 @@ paths:
           schema:
             type: string
         - $ref: '#/components/parameters/AposLocale'
+      operationId: UserPublishById
       responses:
         '200':
           description: User published
@@ -2624,6 +2708,7 @@ paths:
         - $ref: '#/components/parameters/AposMode'
         - $ref: '#/components/parameters/AposLocale'
         - $ref: '#/components/parameters/RenderAreas'
+      operationId: GlobalGet
       responses:
         '200':
           description: Global content retrieved
@@ -2631,6 +2716,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Global'
+        '4XX':
+          description: Client error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
       security:
         - ApiKeyAuth: []
         - BearerAuth: []
@@ -2657,6 +2748,7 @@ paths:
                   description: Site title
                 # Custom fields would be defined in project configuration
               description: Fields depend on project configuration
+      operationId: GlobalPut
       responses:
         '200':
           description: Global content updated
@@ -2708,6 +2800,7 @@ paths:
                 # Custom fields would be defined in project configuration
               description: Only include fields you want to update - other fields remain unchanged
               additionalProperties: true
+      operationId: GlobalPatch
       responses:
         '200':
           description: Global content partially updated
@@ -2754,6 +2847,7 @@ paths:
         - $ref: '#/components/parameters/AposMode'
         - $ref: '#/components/parameters/AposLocale'
         - $ref: '#/components/parameters/RenderAreas'
+      operationId: ImageGet
       responses:
         '200':
           description: Images retrieved successfully
@@ -2830,6 +2924,7 @@ paths:
                   type: string
                   description: Photo credit
                   example: "Photo by John Doe"
+      operationId: ImagePost
       responses:
         '201':
           description: Image created successfully
@@ -2874,6 +2969,7 @@ paths:
         - $ref: '#/components/parameters/AposMode'
         - $ref: '#/components/parameters/AposLocale'
         - $ref: '#/components/parameters/RenderAreas'
+      operationId: ImageGetById
       responses:
         '200':
           description: Image retrieved successfully
@@ -2948,6 +3044,7 @@ paths:
                   type: string
                 credit:
                   type: string
+      operationId: ImagePutById
       responses:
         '200':
           description: Image updated
@@ -3011,6 +3108,7 @@ paths:
                 credit:
                   type: string
               description: Only include fields to update
+      operationId: ImagePatchById
       responses:
         '200':
           description: Image updated
@@ -3060,6 +3158,7 @@ paths:
             type: string
         - $ref: '#/components/parameters/AposMode'
         - $ref: '#/components/parameters/AposLocale'
+      operationId: ImageDeleteById
       responses:
         '200':
           description: Image deleted
@@ -3099,6 +3198,7 @@ paths:
           schema:
             type: string
         - $ref: '#/components/parameters/AposLocale'
+      operationId: ImagePublishById
       responses:
         '200':
           description: Image published
@@ -3139,6 +3239,7 @@ paths:
         - $ref: '#/components/parameters/AposMode'
         - $ref: '#/components/parameters/AposLocale'
         - $ref: '#/components/parameters/RenderAreas'
+      operationId: FileGet
       responses:
         '200':
           description: Files retrieved successfully
@@ -3211,6 +3312,7 @@ paths:
                   type: string
                   description: File description
                   example: "Quarterly report PDF"
+      operationId: FilePost
       responses:
         '201':
           description: File created successfully
@@ -3255,6 +3357,7 @@ paths:
         - $ref: '#/components/parameters/AposMode'
         - $ref: '#/components/parameters/AposLocale'
         - $ref: '#/components/parameters/RenderAreas'
+      operationId: FileGetById
       responses:
         '200':
           description: File retrieved successfully
@@ -3327,6 +3430,7 @@ paths:
                   $ref: '#/components/schemas/Attachment'
                 description:
                   type: string
+      operationId: FilePutById
       responses:
         '200':
           description: File updated
@@ -3388,6 +3492,7 @@ paths:
                 description:
                   type: string
               description: Only include fields to update
+      operationId: FilePatchById
       responses:
         '200':
           description: File updated
@@ -3437,6 +3542,7 @@ paths:
             type: string
         - $ref: '#/components/parameters/AposMode'
         - $ref: '#/components/parameters/AposLocale'
+      operationId: FileDeleteById
       responses:
         '200':
           description: File deleted
@@ -3476,6 +3582,7 @@ paths:
           schema:
             type: string
         - $ref: '#/components/parameters/AposLocale'
+      operationId: FilePublishById
       responses:
         '200':
           description: File published
@@ -3513,6 +3620,7 @@ paths:
         - $ref: '#/components/parameters/AposMode'
         - $ref: '#/components/parameters/AposLocale'
         - $ref: '#/components/parameters/RenderAreas'
+      operationId: ImageTagGet
       responses:
         '200':
           description: Successful response
@@ -3588,6 +3696,7 @@ paths:
                   type: string
                   example: "hero-images"
                   description: URL-friendly identifier (auto-generated if not provided)
+      operationId: ImageTagPost
       responses:
         '201':
           description: Image tag created successfully
@@ -3629,6 +3738,7 @@ paths:
         - $ref: '#/components/parameters/AposMode'
         - $ref: '#/components/parameters/AposLocale'
         - $ref: '#/components/parameters/RenderAreas'
+      operationId: ImageTagGetById
       responses:
         '200':
           description: Image tag found
@@ -3697,6 +3807,7 @@ paths:
                   type: string
                 slug:
                   type: string
+      operationId: ImageTagPutById
       responses:
         '200':
           description: Image tag updated
@@ -3758,6 +3869,7 @@ paths:
                 slug:
                   type: string
               description: Only include fields to update
+      operationId: ImageTagPatchById
       responses:
         '200':
           description: Image tag updated
@@ -3807,6 +3919,7 @@ paths:
             type: string
         - $ref: '#/components/parameters/AposMode'
         - $ref: '#/components/parameters/AposLocale'
+      operationId: ImageTagDeleteById
       responses:
         '200':
           description: Image tag deleted
@@ -3846,6 +3959,7 @@ paths:
           schema:
             type: string
         - $ref: '#/components/parameters/AposLocale'
+      operationId: ImageTagPublishById
       responses:
         '200':
           description: Image tag published
@@ -3883,6 +3997,7 @@ paths:
         - $ref: '#/components/parameters/AposMode'
         - $ref: '#/components/parameters/AposLocale'
         - $ref: '#/components/parameters/RenderAreas'
+      operationId: FileTagGet
       responses:
         '200':
           description: Successful response
@@ -3958,6 +4073,7 @@ paths:
                   type: string
                   example: "marketing-materials"
                   description: URL-friendly identifier (auto-generated if not provided)
+      operationId: FileTagPost
       responses:
         '201':
           description: File tag created successfully
@@ -3999,6 +4115,7 @@ paths:
         - $ref: '#/components/parameters/AposMode'
         - $ref: '#/components/parameters/AposLocale'
         - $ref: '#/components/parameters/RenderAreas'
+      operationId: FileTagGetById
       responses:
         '200':
           description: File tag found
@@ -4068,6 +4185,7 @@ paths:
                   type: string
                 slug:
                   type: string
+      operationId: FileTagPutById
       responses:
         '200':
           description: File tag updated
@@ -4129,6 +4247,7 @@ paths:
                 slug:
                   type: string
               description: Only include fields to update
+      operationId: FileTagePatchById
       responses:
         '200':
           description: File tag updated
@@ -4178,6 +4297,7 @@ paths:
             type: string
         - $ref: '#/components/parameters/AposMode'
         - $ref: '#/components/parameters/AposLocale'
+      operationId: FileTagDeleteById
       responses:
         '200':
           description: File tag deleted
@@ -4217,6 +4337,7 @@ paths:
           schema:
             type: string
         - $ref: '#/components/parameters/AposLocale'
+      operationId: FileTagPublishById
       responses:
         '200':
           description: File tag published
@@ -4269,6 +4390,7 @@ paths:
             encoding:
               file:
                 contentType: image/*, application/pdf, application/*, text/*
+      operationId: AttachmentUpload
       responses:
         '200':
           description: File uploaded successfully
@@ -4361,6 +4483,7 @@ paths:
                       description: Height of the crop area (pixels)
                       example: 200
                       minimum: 1
+      operationId: AttachmentCrop
       responses:
         '200':
           description: Image cropped successfully
@@ -4442,6 +4565,7 @@ paths:
             type: string
             format: date
           example: "2024-12-15"
+      operationId: ArticleGet
       responses:
         '200':
           description: Successful response
@@ -4549,6 +4673,7 @@ paths:
                   type: string
                   enum: ["public", "loginRequired"]
                   default: "public"
+      operationId: ArticlePost
       responses:
         '201':
           description: Article created successfully
@@ -4590,6 +4715,7 @@ paths:
         - $ref: '#/components/parameters/AposMode'
         - $ref: '#/components/parameters/AposLocale'
         - $ref: '#/components/parameters/RenderAreas'
+      operationId: ArticleGetById
       responses:
         '200':
           description: Article found
@@ -4674,6 +4800,7 @@ paths:
                 visibility:
                   type: string
                   enum: ["public", "loginRequired"]
+      operationId: ArticlePutById
       responses:
         '200':
           description: Article updated
@@ -4751,6 +4878,7 @@ paths:
                   type: string
                   enum: ["public", "loginRequired"]
               description: Only include fields to update
+      operationId: ArticlePatchById
       responses:
         '200':
           description: Article updated
@@ -4800,6 +4928,7 @@ paths:
             type: string
         - $ref: '#/components/parameters/AposMode'
         - $ref: '#/components/parameters/AposLocale'
+      operationId: ArticleDeleteById
       responses:
         '200':
           description: Article deleted
@@ -4839,6 +4968,7 @@ paths:
           schema:
             type: string
         - $ref: '#/components/parameters/AposLocale'
+      operationId: ArticlePublishById
       responses:
         '200':
           description: Article published
@@ -4910,6 +5040,7 @@ paths:
           schema:
             type: string
           example: "clx1234567890abcdef"
+      operationId: EventGet
       responses:
         '200':
           description: Successful response
@@ -5009,6 +5140,7 @@ paths:
                   type: string
                   enum: ["public", "loginRequired"]
                   default: "public"
+      operationId: EventPost
       responses:
         '201':
           description: Event created successfully
@@ -5050,6 +5182,7 @@ paths:
         - $ref: '#/components/parameters/AposMode'
         - $ref: '#/components/parameters/AposLocale'
         - $ref: '#/components/parameters/RenderAreas'
+      operationId: EventGetById
       responses:
         '200':
           description: Event found
@@ -5108,6 +5241,7 @@ paths:
                 visibility:
                   type: string
                   enum: ["public", "loginRequired"]
+      operationId: EventPutById
       responses:
         '200':
           description: Event updated
@@ -5186,6 +5320,7 @@ paths:
                   type: string
                   enum: ["public", "loginRequired"]
               description: Only include fields to update
+      operationId: EventPatchById
       responses:
         '200':
           description: Event updated
@@ -5235,6 +5370,7 @@ paths:
             type: string
         - $ref: '#/components/parameters/AposMode'
         - $ref: '#/components/parameters/AposLocale'
+      operationId: EventDeleteById
       responses:
         '200':
           description: Event deleted
@@ -5274,6 +5410,7 @@ paths:
           schema:
             type: string
         - $ref: '#/components/parameters/AposLocale'
+      operationId: EventPublishById
       responses:
         '200':
           description: Event published
@@ -5306,6 +5443,7 @@ paths:
       description: |
         Returns information about all configured locales including labels and edit permissions.
         Authentication is required to access locale configuration data.
+      operationId: I18nLocalesGet
       responses:
         '200':
           description: Locales retrieved successfully
@@ -5393,6 +5531,7 @@ paths:
                   locale: "fr"
                   contextDocId: "cloydg3ka0005qcls5vmg8sb9"
                   clipboard: "exampleClipboardContent"
+      operationId: I18nLocalePost
       responses:
         '200':
           description: Locale path retrieved successfully
@@ -5464,6 +5603,7 @@ paths:
               ids: ["cloydg3ka0005qcls5vmg8sb9", "cloydg3ka0005qcls5vmg8sb8"]
               locale: "fr"
               mode: "published"
+      operationId: I18nExistsPost
       responses:
         '200':
           description: Document existence check completed successfully
