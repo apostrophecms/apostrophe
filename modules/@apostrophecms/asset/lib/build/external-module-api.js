@@ -717,16 +717,18 @@ function invoke() {
 
       const importIndex = [];
       for (const [ registerAs, importFrom ] of Object.entries(self.iconMap)) {
+        let importName = importFrom;
         if (!importIndex.includes(importFrom)) {
           if (importFrom.substring(0, 1) === '~') {
-            output.importCode += `import ${importFrom}Icon from '${importFrom.substring(1)}';\n`;
+            importName = self.apos.util.slugify(importFrom).replaceAll('-', '');
+            output.importCode += `import ${importName}Icon from '${importFrom.substring(1)}';\n`;
           } else {
             output.importCode +=
-                `import ${importFrom}Icon from '@apostrophecms/vue-material-design-icons/${importFrom}.vue';\n`;
+                `import ${importName}Icon from '@apostrophecms/vue-material-design-icons/${importFrom}.vue';\n`;
           }
           importIndex.push(importFrom);
         }
-        output.registerCode += `window.apos.iconComponents['${registerAs}'] = ${importFrom}Icon;\n`;
+        output.registerCode += `window.apos.iconComponents['${registerAs}'] = ${importName}Icon;\n`;
       }
 
       return output;

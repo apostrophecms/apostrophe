@@ -1183,9 +1183,9 @@ module.exports = (self) => {
         }
         destination[field.name] = actualDocs;
       }
-      // "min" and "required" are not enforced server-side for relationships because it is always possible
-      // for the related document to be removed independently at some point. This leads to too many
-      // edge cases and knock-on effects if enforced
+      // "min" and "required" are not enforced server-side for relationships because
+      // it is always possible for the related document to be removed independently
+      // at some point. This leads to too many edge cases and knock-on effects if enforced
       if (field.max && field.max < destination[field.name].length) {
         throw self.apos.error('max', `Maximum ${field.withType} required reached.`);
       }
