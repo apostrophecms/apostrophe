@@ -289,14 +289,16 @@ export default {
 .apos-operation {
   @include apos-transition();
 
-  box-sizing: border-box;
-  width: 100%;
-  height: 70px;
-  border-radius: var(--a-border-radius);
-  border: 1px solid var(--a-base-5);
-  color: var(--a-text-primary);
-  background-color: var(--a-base-9);
-  cursor: pointer;
+  & {
+    box-sizing: border-box;
+    width: 100%;
+    height: 70px;
+    border-radius: var(--a-border-radius);
+    border: 1px solid var(--a-base-5);
+    color: var(--a-text-primary);
+    background-color: var(--a-base-9);
+    cursor: pointer;
+  }
 
   &:hover {
     background-color: var(--a-base-8);
