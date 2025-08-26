@@ -17,6 +17,9 @@
 * Importing a custom icon from an npm module using a `~` path per the admin UI now works per the documentation, as long as the Vue component used for the icon is structured like those found in `@apostrophecms/vue-material-design-icons`.
 * The `button: true` flag works again for piece module utility operations. Previously the button appeared but did not trigger the desired operation.
 * Fixes the widget data being cloned to be saved before the `postprocess` method being called, which leads to a loss of data in `AposWidgetEditor` (like the autocrop data).
+* Fixes autocropping not working when uploading or selecting images from the new quick image upload UI.
+* In editors like `AposWidgetEditor` relationships are now post processed after they are updated in `AposInputRelationship` only for the relationship that has been updated. 
+It allows live preview to work well with it, it also avoids complexity and fixes updated data not being properly synced between the editor and the `AposSchema`.
 
 ### Changes
 
