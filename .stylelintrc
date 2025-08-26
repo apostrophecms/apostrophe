@@ -1,3 +1,11 @@
 {
-  "extends": "stylelint-config-apostrophe"
+  "extends": "stylelint-config-apostrophe",
+  "rules": {
+    "@apostrophecms/stylelint-no-mixed-decls": [
+      true,
+      {
+        "contain-nested": ["apos-transition"]
+      }
+    ]
+  }
 }
