@@ -136,7 +136,6 @@
     "form-data": "^4.0.4",
     "mocha": "^11.7.1",
     "nyc": "^15.1.0",
-    "replace-in-file": "^6.1.0",
     "stylelint": "^16.5.0",
     "stylelint-config-apostrophe": "^4.2.0"
   },
