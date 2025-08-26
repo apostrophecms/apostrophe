@@ -265,11 +265,14 @@ export default {
         this.$emit('reset');
       });
     },
-    updateNextAndEmit() {
+    async updateNextAndEmit() {
       if (!this.schemaReady) {
         return;
       }
+      // This fixes the issue of error validation arriving after input values change
+      await this.$nextTick();
       const oldHasErrors = this.next.hasErrors;
+      // destructure these for non-linked comparison
       let changeFound = false;
 
       this.next.hasErrors = false;

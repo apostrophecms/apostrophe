@@ -215,7 +215,7 @@ export default {
     },
     triggerValidate() {
       this.triggerValidation = true;
-      this.$nextTick(async () => {
+      this.$nextTick(() => {
         this.triggerValidation = false;
       });
     },
