@@ -715,6 +715,7 @@ components:
           - type: boolean
           - type: object
           - type: array
+            items: {}
           - type: 'null'
 
     # Simple field types with examples
@@ -2096,7 +2097,7 @@ paths:
         content:
           application/json:
             schema:
-              oneOf:
+              anyOf:
                 - $ref: '#/components/schemas/PageUpdateRequest'
                 - $ref: '#/components/schemas/PageDotNotationUpdate'
             examples:
