@@ -124,7 +124,7 @@
     "underscore.string": "^3.3.4",
     "uploadfs": "^1.25.1",
     "void-elements": "^3.1.0",
-    "vue": "^3.3.8",
+    "vue": "^3.5.20",
     "vue-advanced-cropper": "^2.8.8",
     "vue-loader": "^17.1.0",
     "vue-style-loader": "^4.1.3",
