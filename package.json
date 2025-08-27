@@ -6,7 +6,7 @@
   "scripts": {
     "pretest": "npm run lint",
     "test": "nyc mocha -t 10000 --ignore=test/assets.js && nyc mocha -t 10000 test/assets.js && mocha -t 1000 test/esm-project/esm.js",
-    "eslint": "eslint --ext .js,.vue .",
+    "eslint": "eslint .",
     "eslint-fix": "npm run eslint -- --fix",
     "i18n": "node scripts/lint-i18n",
     "stylelint": "stylelint modules/**/*.{scss,vue}",
@@ -132,6 +132,7 @@
     "xregexp": "^2.0.0"
   },
   "devDependencies": {
+    "eslint": "^9.34.0",
     "eslint-config-apostrophe": "github:apostrophecms/eslint-config-apostrophe#pro-8109-upgrade-dependencies",
     "form-data": "^4.0.4",
     "mocha": "^11.7.1",
