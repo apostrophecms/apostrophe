@@ -269,10 +269,11 @@ export default {
       if (!this.schemaReady) {
         return;
       }
-      // This fixes the issue of error validation arriving after input values change
-      await this.$nextTick();
       const oldHasErrors = this.next.hasErrors;
       // destructure these for non-linked comparison
+      const oldFieldState = { ...this.next.fieldState };
+      const newFieldState = { ...this.fieldState };
+
       let changeFound = false;
 
       this.next.hasErrors = false;
@@ -303,7 +304,10 @@ export default {
             this.next.data[field.name] = this.modelValue.data[field.name];
           }
         });
-      if (oldHasErrors !== this.next.hasErrors) {
+      if (
+        oldHasErrors !== this.next.hasErrors ||
+        oldFieldState !== newFieldState
+      ) {
         // Otherwise the save button may never unlock
         changeFound = true;
       }
