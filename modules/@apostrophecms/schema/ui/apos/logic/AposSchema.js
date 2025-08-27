@@ -1,5 +1,5 @@
-import { detectFieldChange } from 'Modules/@apostrophecms/schema/lib/detectChange';
 import { getConditionTypesObject } from '../lib/conditionalFields';
+import debounce from 'lodash/debounce';
 
 export default {
   name: 'AposSchema',
@@ -112,7 +112,8 @@ export default {
         fieldErrors: {}
       },
       fieldState: {},
-      fieldComponentMap: window.apos.schema.components.fields || {}
+      fieldComponentMap: window.apos.schema.components.fields || {},
+      updateNextAndEmitDebounced: debounce(this.updateNextAndEmit, 50)
     };
   },
   computed: {
@@ -130,10 +131,6 @@ export default {
               ...item,
               required
             },
-            value: {
-              data: this.modelValue.data[item.name]
-            },
-            serverError: this.serverErrors && this.serverErrors[item.name],
             modifiers: this.computeModifiers(item)
           }
         };
@@ -166,7 +163,17 @@ export default {
       return compareMetaState;
     }
   },
+  beforeUnmount() {
+    this.updateNextAndEmitDebounced.cancel();
+  },
   watch: {
+    fieldState: {
+      deep: 2,
+      handler() {
+        this.updateNextAndEmitDebounced();
+      },
+      flush: 'post'
+    },
     schema() {
       this.populateDocData();
     },
@@ -211,6 +218,7 @@ export default {
   created() {
     this.populateDocData();
   },
+
   methods: {
     emitValidate() {
       this.$emit('validate');
@@ -269,53 +277,17 @@ export default {
       if (!this.schemaReady) {
         return;
       }
-      const oldHasErrors = this.next.hasErrors;
-      // destructure these for non-linked comparison
-      const oldFieldState = { ...this.next.fieldState };
-      const newFieldState = { ...this.fieldState };
-
-      let changeFound = false;
-
-      this.next.hasErrors = false;
-      this.next.fieldState = { ...this.fieldState };
-
       this.schema
         .filter(field => this.displayComponent(field))
         .forEach(field => {
           if (this.fieldState[field.name].error) {
             this.next.hasErrors = true;
           }
-          // This simply check if a field has changed since it has been
-          // instantiated
-          if (
-            this.fieldState[field.name].data !== undefined &&
-            detectFieldChange(
-              field,
-              this.next.data[field.name],
-              this.fieldState[field.name].data
-            )
-          ) {
-            changeFound = true;
-
-            // fieldState never gets the relationships postprocessed data
-            // that's why it gets seen as different than next all the time
-            this.next.data[field.name] = this.fieldState[field.name].data;
-          } else {
-            this.next.data[field.name] = this.modelValue.data[field.name];
-          }
+          this.next.data[field.name] = this.fieldState[field.name].data;
         });
-      if (
-        oldHasErrors !== this.next.hasErrors ||
-        oldFieldState !== newFieldState
-      ) {
-        // Otherwise the save button may never unlock
-        changeFound = true;
-      }
 
-      if (changeFound) {
-        // ... removes need for deep watch at parent level
-        this.$emit('update:model-value', { ...this.next });
-      }
+      this.next.fieldState = { ...this.fieldState };
+      this.$emit('update:model-value', this.next);
     },
     displayComponent({ name, hidden = false }) {
       if (hidden === true) {
