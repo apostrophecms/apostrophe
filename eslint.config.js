@@ -1,5 +1,5 @@
+const apostrophe = require('eslint-config-apostrophe').default;
 const { defineConfig, globalIgnores } = require('eslint/config');
-const apostrophe = require('eslint-config-apostrophe');
 
 module.exports = defineConfig([
   globalIgnores([
@@ -10,10 +10,5 @@ module.exports = defineConfig([
     "test/apos-build",
     "coverage"
   ]),
-	{
-		files: ["**/*.js", "**/*.vue"],
-		plugins: {
-			apostrophe
-		}
-	}
+	apostrophe
 ]);
