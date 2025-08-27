@@ -1035,7 +1035,7 @@ module.exports = {
       //
       // - Set value of a meta property of a field inside of an array field
       // type:
-      // eslint-disable-next-line max-len
+
       // `apos.doc.setMeta(doc, 'my-module', arrayItemObject, 'city',
       // 'myMetaKey', 'myMetaValue');`
       //
@@ -1045,10 +1045,10 @@ module.exports = {
       //
       // - Dots in the `key` are treated as part of the key, dots in
       // `pathComponents` are treated as dot-path and are not altered:
-      // eslint-disable-next-line max-len
+
       // `apos.doc.setMeta(doc, 'my-module', 'address', 'city.name',
       // 'myMetaKey.with.dots', 'myMetaValue');`
-      // eslint-disable-next-line max-len
+
       // will set
       // `doc.aposMeta.address.aposMeta.city.name['my-module:myMetaKey.with.dots']:
       // 'myMetaValue'`.

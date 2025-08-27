@@ -1,5 +1,4 @@
 // Direct use of console is appropriate in tasks. -Tom
-/* eslint-disable no-console */
 
 const _ = require('lodash');
 const fs = require('fs');

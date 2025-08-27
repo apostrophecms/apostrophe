@@ -14,7 +14,7 @@ module.exports = function (apos) {
     // `console.log` documentation.
 
     log: function(...args) {
-      // eslint-disable-next-line no-console
+
       console.log(...logModule.formatLogByEnv(args));
     },
 
@@ -25,7 +25,7 @@ module.exports = function (apos) {
     // `console.log` documentation.
 
     info: function(...args) {
-      // eslint-disable-next-line no-console
+
       console.info(...logModule.formatLogByEnv(args));
     },
 
@@ -38,7 +38,7 @@ module.exports = function (apos) {
     // `console.log` documentation.
 
     debug: function(...args) {
-      // eslint-disable-next-line no-console
+
       console.debug(...logModule.formatLogByEnv(args));
     },
 
@@ -51,7 +51,7 @@ module.exports = function (apos) {
     // `console.error` documentation.
 
     error: function(...args) {
-      // eslint-disable-next-line no-console
+
       console.error(...logModule.formatLogByEnv(args));
     },
     // Log a warning. The default implementation wraps
@@ -67,7 +67,7 @@ module.exports = function (apos) {
     // `apos.util.error`.
 
     warn: function(...args) {
-      // eslint-disable-next-line no-console
+
       console.warn(...logModule.formatLogByEnv(args));
     },
 

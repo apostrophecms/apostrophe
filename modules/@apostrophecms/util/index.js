@@ -108,7 +108,7 @@ module.exports = {
           return str;
         }
         // XRegExp is different.
-        // eslint-disable-next-line no-useless-escape
+
         const r = '.(?=W*w*$)';
         const regex = new XRegExp(r, 'g');
         function tmpl(c) {
