@@ -132,7 +132,6 @@
     "xregexp": "^2.0.0"
   },
   "devDependencies": {
-    "eslint": "^9.34.0",
     "eslint-config-apostrophe": "github:apostrophecms/eslint-config-apostrophe#pro-8109-upgrade-dependencies",
     "form-data": "^4.0.4",
     "mocha": "^11.7.1",
