@@ -49,10 +49,9 @@
         :modifiers="fields[field.name].modifiers"
         :display-options="getDisplayOptions(field.name)"
         :trigger-validation="triggerValidation"
-        :server-error="fields[field.name].serverError"
+        :server-error="serverErrors[field.name]"
         :doc-id="docId"
         :generation="generation"
-        @update:model-value="updateNextAndEmit"
         @update-doc-data="onUpdateDocData"
         @validate="emitValidate()"
       />
