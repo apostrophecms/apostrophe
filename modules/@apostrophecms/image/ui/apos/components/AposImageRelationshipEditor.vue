@@ -159,7 +159,7 @@ export default {
       aspectRatioChoices,
       disableAspectRatio
     } = this.getAspectRatioData(widgetOptions);
-    const minSize = this.getMinSize(widgetOptions);
+    const minSize = this.widgetOptions.minSize || [];
     const image = this.getImage();
     const data = this.setDataValues(image);
 
@@ -441,9 +441,6 @@ export default {
     },
     switchPane(name) {
       this.currentTab = name;
-    },
-    getMinSize(widgetOptions = {}) {
-      return widgetOptions.minSize || [];
     },
     getAspectRatioData(widgetOptions = {}) {
       if (
