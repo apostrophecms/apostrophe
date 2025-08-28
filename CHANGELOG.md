@@ -1,5 +1,9 @@
 # Changelog
 
+## 2.227.12 (2025-08-28)
+
+* Work around a rare mongodb driver issue that affects unpacking very large, but not illegally large asset bundles (9MB, not 16MB).
+
 ## 2.227.11 (2025-04-23)
 
 * Update `jquery-ui` to 1.14 to address vulnerabilities fixed in [version 1.13](https://jqueryui.com/upgrade-guide/1.13). Note that this was never a vulnerability in practice with ApostropheCMS due to server-side validation.
