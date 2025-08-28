@@ -16,6 +16,7 @@
 * Make conditional fields work in Image Editor.
 * Importing a custom icon from an npm module using a `~` path per the admin UI now works per the documentation, as long as the Vue component used for the icon is structured like those found in `@apostrophecms/vue-material-design-icons`.
 * The `button: true` flag works again for piece module utility operations. Previously the button appeared but did not trigger the desired operation.
+* Fix the fact that area options `minSize` and `aspectRatio` weren't passed to the image cropper when coming directly from the area and the widget controls (without passing through the widget editor).
 
 ### Changes
 
