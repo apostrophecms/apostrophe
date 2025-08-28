@@ -219,6 +219,11 @@ export default {
         this.triggerValidation = false;
       });
     },
-    async postprocess() {}
+    async postprocess() {
+      // eslint-disable-next-line no-console
+      console.warn(
+        'The function postprocess from AposEditorMixin does not do anything anymore.\nRelationship postprocessing is made at input level in AposInputRelationship and in some cases globally like in AposImageWidget.'
+      );
+    }
   }
 };
