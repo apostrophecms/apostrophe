@@ -70,7 +70,7 @@ async function selectFromManager() {
 
   const [ selectedImg ] = (await apos.modal.execute(modalItem.componentName, {
     ...modalItem.props,
-    moduleName: props.type,
+    moduleName: '@apostrophecms/image',
     chosen: [],
     relationshipField: { max: 1 }
   })) || [];
