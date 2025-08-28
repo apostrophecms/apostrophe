@@ -50,7 +50,7 @@ describe('Login', function () {
     assert(context.env === 'test');
   });
 
-  it('should be able to insert test user', async function () {
+  it('should be able to insert test user', async function() {
     assert(apos.user.newInstance);
     const user = apos.user.newInstance();
     assert(user);
@@ -568,7 +568,7 @@ describe('Login', function () {
 
     {
       assert(Array.isArray(args));
-      const [template, data, opts] = args;
+      const [ template, data, opts ] = args;
       assert(template);
       assert.deepEqual(data.user._id, user._id);
       assert(data.user.passwordResetAt);
@@ -592,7 +592,7 @@ describe('Login', function () {
 
     {
       assert(Array.isArray(args));
-      const [template, data, opts] = args;
+      const [ template, data, opts ] = args;
       assert(template);
       assert.deepEqual(data.user._id, user._id);
       assert(data.user.passwordResetAt);
@@ -938,7 +938,7 @@ describe('Login', function () {
       }
     );
 
-    apos.modules['@apostrophecms/login'].options.whoamiFields = ['role'];
+    apos.modules['@apostrophecms/login'].options.whoamiFields = [ 'role' ];
 
     await apos.http.post(
       '/api/v1/@apostrophecms/login/login',
