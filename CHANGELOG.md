@@ -24,6 +24,7 @@ It allows live preview to work well with it, it also avoids complexity and fixes
 ### Changes
 
 * Rolled back a change in 4.16.0 that strictly enforced `required` and `min` for relationship fields. Because the related document can be archived or deleted at any time, it is misleading to offer such enforcement. Also, it greatly complicates adding these constraints to existing schemas, resulting in surprising and unwanted behaviors. Therefore it is better for these constraints to be soft constraints on the front end. `max` is still a hard constraint.
+* Updated dependencies to address deprecation warnings.
 
 ## 4.20.0 (2025-08-06)
 

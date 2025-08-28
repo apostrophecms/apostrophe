@@ -190,7 +190,7 @@ export default {
 
     conditionalFields: {
       handler(newVal, oldVal) {
-        // eslint-disable-next-line no-labels
+
         for (const [ conditionType, conditions ] of Object.entries(oldVal)) {
           for (const [ field, value ] of Object.entries(conditions)) {
             if (

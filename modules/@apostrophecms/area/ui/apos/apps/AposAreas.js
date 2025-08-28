@@ -1,4 +1,4 @@
-/* eslint-disable vue/one-component-per-file */
+
 import createApp from 'Modules/@apostrophecms/ui/lib/vue';
 
 export default function() {

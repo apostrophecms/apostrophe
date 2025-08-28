@@ -268,7 +268,7 @@ module.exports = {
           } catch (e) {
             // We can't afford to throw here, it would hang the response.
             e.message = 'Structured logging error: ' + e.message;
-            // eslint-disable-next-line no-console
+
             console.error(e);
           }
         }

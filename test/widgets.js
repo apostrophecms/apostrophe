@@ -259,7 +259,7 @@ describe('Widgets', function() {
       });
 
       it('should not render the placeholders on preview mode', async function() {
-        // eslint-disable-next-line no-unused-vars
+
         const { aposEdit, ...query } = req.query;
         const _nonEditingReq = {
           ...req,
@@ -353,7 +353,7 @@ describe('Widgets', function() {
         });
 
         it('should not render the placeholders on preview mode', async function() {
-          // eslint-disable-next-line no-unused-vars
+
           const { aposEdit, ...query } = req.query;
           const _nonEditingReq = {
             ...req,
