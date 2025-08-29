@@ -53,6 +53,33 @@ x-apostrophe:
     Spec versioning follows semver independently of CMS releases.
   isCore: true
 
+  # Used by the expander to control localization flags & nicer names.
+  pieceTypes:
+    standard:
+      - '@apostrophecms/image'
+      - '@apostrophecms/file'
+      - image-tag
+      - file-tag
+      # Add more standard pieces here
+    nonLocalizable:
+      - '@apostrophecms/user'
+      - '@apostrophecms/global'
+
+  marketingTags:
+    '@apostrophecms/image': Media
+    '@apostrophecms/file': Media
+    image-tag: Media
+    file-tag: Media
+    '@apostrophecms/user': Users
+    '@apostrophecms/global': Global Content
+
+  # 👇 fallback for any piece not listed above
+  defaultPieceMarketingTag: Custom
+
+  # adds the module name as a second tag
+  includeTechnicalTag: true
+
+
 security:
   - SessionAuth: []
 
@@ -77,6 +104,17 @@ tags:
     description: "File upload utilities and image processing"
   - name: "Internationalization"
     description: "Multi-language support and locale management"
+  - name: "Custom"
+    description: "Project-defined piece types (your own content models)"
+
+x-tagGroups:
+  - name: Start Here
+    tags: [Authentication]
+  - name: Content & Media
+    tags: [Pages, Global Content, Media, Attachments, Internationalization, Custom]
+  - name: People
+    tags: [Users]
+
 
 components:
   securitySchemes:
@@ -446,29 +484,6 @@ components:
         updatedBy:
           $ref: '#/components/schemas/User'
 
-    Area:
-      type: object
-      description: "Content area containing widgets - the building blocks of page content"
-      properties:
-        _id:
-          type: string
-          example: "ckj0k0dy7000i2a68s1z8v4ky"
-        metaType:
-          type: string
-          enum: [area]
-          example: "area"
-        items:
-          type: array
-          description: "Array of widgets within this area (rich text, images, etc.)"
-          items:
-            $ref: '#/components/schemas/Widget'
-        _edit:
-          type: boolean
-          description: "Whether area is in edit mode"
-        _docId:
-          type: string
-          example: "ckj0k2i45001c7u9kky3tftx2"
-
     Widget:
       type: object
       description: "Content widget within an area - represents a piece of structured content"
@@ -511,191 +526,6 @@ components:
               description: "Array of existing @apostrophecms/image-tag piece _ids to apply to imported images"
               example: ["tag-piece-id-1", "tag-piece-id-2"]
 
-    ArrayField:
-      type: array
-      description: "Array field containing structured data items"
-      items:
-        type: object
-        properties:
-          _id:
-            type: string
-            description: "Automatically generated ID for each array item"
-            example: "ckj0k15x4001h2a68staejzpj"
-        additionalProperties: true
-        example:
-          _id: "ckj0k15x4001h2a68staejzpj"
-          label: "The first one"
-          count: 27
-
-    AttachmentField:
-      type: object
-      description: "File attachment with metadata and URLs - result of file upload"
-      properties:
-        _id:
-          type: string
-          example: "ckhdsopzr0005rt9kn49eyzb5"
-        crop:
-          anyOf:
-            - type: string
-            - type: 'null'
-          description: "Crop settings for images"
-        group:
-          type: string
-          description: "File group classification (images, office, etc.)"
-          example: "images"
-        createdAt:
-          type: string
-          format: date-time
-          example: "2020-11-11T19:27:11.782Z"
-        name:
-          type: string
-          description: "Original filename without extension"
-          example: "double-rainbow"
-        title:
-          type: string
-          description: "Display title for the attachment"
-          example: "double rainbow"
-        extension:
-          type: string
-          description: "File extension"
-          example: "jpg"
-        type:
-          type: string
-          enum: [attachment]
-        docIds:
-          type: array
-          items:
-            type: string
-          description: "Documents that reference this attachment"
-        archivedDocIds:
-          type: array
-          items:
-            type: string
-        length:
-          type: integer
-          description: "File size in bytes"
-          example: 644584
-        md5:
-          type: string
-          description: "MD5 hash of the original file"
-          example: "f41217031f11e8483ee81e20782f51be"
-        width:
-          type: integer
-          description: "Image width in pixels (for images)"
-          example: 2560
-        height:
-          type: integer
-          description: "Image height in pixels (for images)"
-          example: 1922
-        landscape:
-          type: boolean
-          description: "Whether image is in landscape orientation"
-        used:
-          type: boolean
-          description: "Whether attachment is currently used"
-        utilized:
-          type: boolean
-          description: "Whether attachment is utilized"
-        archived:
-          type: boolean
-          description: "Whether attachment is archived"
-        _urls:
-          type: object
-          description: "🚀 Available image sizes and URLs (for images only) - use these for responsive images!"
-          properties:
-            max:
-              type: string
-              format: uri
-              example: "https://example.net/uploads/attachments/ckhdsopzr0005rt9kn49eyzb5-double-rainbow.max.jpg"
-            full:
-              type: string
-              format: uri
-              example: "https://example.net/uploads/attachments/ckhdsopzr0005rt9kn49eyzb5-double-rainbow.full.jpg"
-            two-thirds:
-              type: string
-              format: uri
-              example: "https://example.net/uploads/attachments/ckhdsopzr0005rt9kn49eyzb5-double-rainbow.two-thirds.jpg"
-            one-half:
-              type: string
-              format: uri
-              example: "https://example.net/uploads/attachments/ckhdsopzr0005rt9kn49eyzb5-double-rainbow.one-half.jpg"
-            one-third:
-              type: string
-              format: uri
-              example: "https://example.net/uploads/attachments/ckhdsopzr0005rt9kn49eyzb5-double-rainbow.one-third.jpg"
-            one-sixth:
-              type: string
-              format: uri
-              example: "https://example.net/uploads/attachments/ckhdsopzr0005rt9kn49eyzb5-double-rainbow.one-sixth.jpg"
-            original:
-              type: string
-              format: uri
-              example: "https://example.net/uploads/attachments/ckhdsopzr0005rt9kn49eyzb5-double-rainbow.jpg"
-          additionalProperties:
-            type: string
-            format: uri
-        _url:
-          type: string
-          format: uri
-          description: "Single URL for non-image files"
-
-    RelationshipField:
-      type: array
-      description: "Array of related documents - links content together"
-      items:
-        type: object
-        properties:
-          _id:
-            type: string
-            example: "ckitdkktu002bu69krdkdu2pj"
-          archived:
-            type: boolean
-          disabled:
-            type: boolean
-          type:
-            type: string
-            description: "Document type"
-            example: "@apostrophecms/user"
-          title:
-            type: string
-            example: "Alexander Hamilton"
-          slug:
-            type: string
-            example: "user-alexander-hamilton"
-          metaType:
-            type: string
-            enum: [doc]
-          createdAt:
-            type: string
-            format: date-time
-          updatedAt:
-            type: string
-            format: date-time
-          updatedBy:
-            type: object
-            properties:
-              _id:
-                type: string
-              firstName:
-                type: string
-              lastName:
-                type: string
-              username:
-                type: string
-          titleSortified:
-            type: string
-          highSearchText:
-            type: string
-          highSearchWords:
-            type: array
-            items:
-              type: string
-          lowSearchText:
-            type: string
-          searchSummary:
-            type: string
-        additionalProperties: true
-
     PageDotNotationUpdate:
       type: object
       description: Keys may use Apostrophe dot notation to target nested content.
@@ -713,99 +543,1255 @@ components:
             items: {}
           - type: 'null'
 
-    # Simple field types with examples
+    # Core schema fields
+
+    # Common options all fields can take
+    BaseField:
+      type: object
+      additionalProperties: false
+      properties:
+        type:
+          type: string
+          description: Apostrophe field type id (e.g., "float", "string", "boolean").
+        label:
+          type: string
+          description: Human-readable label for editors.
+        help:
+          type: string
+          description: Short helper text shown in the UI.
+        htmlHelp:
+          type: string
+          description: Rich helper text (HTML allowed by Apostrophe).
+        def:
+          description: Default value for this field (type varies by field).
+        required:
+          type: boolean
+          description: If true, value must be provided.
+        readOnly:
+          type: boolean
+          description: If true, UI should render as read-only (Apostrophe option).
+        hidden:
+          type: boolean
+          description: If true, hide in editor UI.
+        if:
+          $ref: '#/components/schemas/UiCondition'
+        requiredIf:
+          $ref: '#/components/schemas/UiCondition'
+      required: [ type, label ]
+
+    # Conditional schema
+    UiCondition:
+      type: object
+      additionalProperties: false
+      description: >
+        Apostrophe conditional used by `if` and `requiredIf`. Keys are field
+        paths (including `<` parent access and dot notation) or method calls
+        with `()`. Values are either simple equality (primitive) or an
+        operator object. Supports `$or` / `$and` groups. See OperatorObject.
+      properties:
+        $or:
+          type: array
+          description: Any condition group may pass. :contentReference[oaicite:1]{index=1}
+          items:
+            $ref: '#/components/schemas/UiCondition'
+        $and:
+          type: array
+          description: All condition groups must pass. (Redundant at the same level, but useful when nested with `$or`.) :contentReference[oaicite:2]{index=2}
+          items:
+            $ref: '#/components/schemas/UiCondition'
+      patternProperties:
+        # Field paths in the current modal, including dot notation:
+        # e.g. "priority", "assignee.length", "tasks.0.priority"
+        '^[A-Za-z_][\\w-]*(?:\\.(?:length|\\d+|[A-Za-z_][\\w-]*))*$':
+          $ref: '#/components/schemas/FieldPredicate'
+        # Parent/grandparent accessors using "<", "<<", "<<<", etc.:
+        # e.g. "<projectType", "<tasks.length", "<tasks.0.priority"
+        '^<+[A-Za-z_][\\w-]*(?:\\.(?:length|\\d+|[A-Za-z_][\\w-]*))*$':
+          $ref: '#/components/schemas/FieldPredicate'
+        # Method calls with optional module prefix:
+        # e.g. "isSponsored()", "grant:multipleFundingSources()"
+        '^(?:[A-Za-z0-9_-]+:)?[A-Za-z0-9_-]+\\(\\)$':
+          $ref: '#/components/schemas/FieldPredicate'
+      examples:
+        - priority: { $in: ['high', 'critical'] }
+          estimatedHours: { $gte: 20 }
+          'assignee.length': { $gt: 0 } # empty string caveat: use length or $ne '' :contentReference[oaicite:3]{index=3}
+        - $or:
+            - { seenMovie: true }
+            - { 'featuredMovie()': true } # method returns primitive; strict equality only :contentReference[oaicite:4]{index=4}
+
+    FieldPredicate:
+      description: A simple equality (primitive) or an OperatorObject. :contentReference[oaicite:5]{index=5}
+      oneOf:
+        - type: string
+        - type: number
+        - type: boolean
+        - type: 'null'
+        - $ref: '#/components/schemas/OperatorObject'
+
+    OperatorObject:
+      type: object
+      additionalProperties: false
+      description: >
+        MongoDB-style operators supported by Apostrophe conditions.
+        Note: `$eq` has special handling with arrays (see docs).
+        `$exists: true` means not null/undefined; empty string is truthy so use `$ne: ''` or check `.length`. :contentReference[oaicite:6]{index=6}
+      properties:
+        $eq: {}
+        $ne: {}
+        $gt:
+          type: number
+        $gte:
+          type: number
+        $lt:
+          type: number
+        $lte:
+          type: number
+        $in:
+          type: array
+          items: {}
+        $nin:
+          type: array
+          items: {}
+        $exists:
+          type: boolean
+      example:
+        $in: ['high', 'critical']
+
+    # Numeric ranges (reusable by float, integer, etc.)
+    NumericRangeOptions:
+      type: object
+      additionalProperties: false
+      properties:
+        min:
+          type: number
+          description: Minimum allowed value (inclusive).
+        max:
+          type: number
+          description: Maximum allowed value (inclusive)
+
+    # --- Shared Date and DateAndTime boundary mixins ---
+    DateBoundaryOptions:
+      type: object
+      additionalProperties: false
+      properties:
+        min:
+          type: string
+          format: date
+          description: Minimum allowed date (inclusive), ISO-8601 (YYYY-MM-DD).
+        max:
+          type: string
+          format: date
+          description: Maximum allowed date (inclusive), ISO-8601 (YYYY-MM-DD).
+
+    DateTimeBoundaryOptions:
+      type: object
+      additionalProperties: false
+      properties:
+        min:
+          type: string
+          format: date-time
+          description: Minimum allowed timestamp (inclusive), RFC 3339.
+        max:
+          type: string
+          format: date-time
+          description: Maximum allowed timestamp (inclusive), RFC 3339.
+
+    # --- Array type helpers ---
+    RelationshipEntry:
+      type: object
+      description: >
+        One relationship entry. Always includes the related document `_id`.
+        If you declared per-relationship `fields`, those values are stored
+        alongside `_id` here.
+      properties:
+        _id:
+          type: string
+          description: Id of the related document.
+      required: [ _id ]
+      additionalProperties: true
+
+    Fieldset:
+      type: object
+      additionalProperties: false
+      properties:
+        add:
+          type: object
+          additionalProperties:
+            $ref: '#/components/schemas/FieldDefinition'
+      required: [ add ]
+
+    FieldDefinition:
+      oneOf:
+        - $ref: '#/components/schemas/BooleanField'
+        - $ref: '#/components/schemas/StringField'
+        - $ref: '#/components/schemas/IntegerField'
+        - $ref: '#/components/schemas/FloatField'
+        - $ref: '#/components/schemas/SelectField'
+        - $ref: '#/components/schemas/RadioField'
+        - $ref: '#/components/schemas/CheckboxesField'
+        - $ref: '#/components/schemas/PasswordField'
+        - $ref: '#/components/schemas/ColorField'
+        - $ref: '#/components/schemas/DateField'
+        - $ref: '#/components/schemas/DateAndTimeField'
+        - $ref: '#/components/schemas/TimeField'
+        - $ref: '#/components/schemas/EmailField'
+        - $ref: '#/components/schemas/UrlField'
+        - $ref: '#/components/schemas/SlugField'
+        - $ref: '#/components/schemas/OembedField'
+        - $ref: '#/components/schemas/RangeField'
+        - $ref: '#/components/schemas/ObjectField'
+        - $ref: '#/components/schemas/ArrayField'
+        - $ref: '#/components/schemas/AreaField'
+        - $ref: '#/components/schemas/AttachmentField'
+        - $ref: '#/components/schemas/RelationshipField'
+        - $ref: '#/components/schemas/RelationshipReverseField'
+
+      discriminator:
+        propertyName: type
+        mapping:
+          boolean:        '#/components/schemas/BooleanField'
+          string:         '#/components/schemas/StringField'
+          integer:        '#/components/schemas/IntegerField'
+          float:          '#/components/schemas/FloatField'
+          select:         '#/components/schemas/SelectField'
+          radio:          '#/components/schemas/RadioField'
+          checkboxes:     '#/components/schemas/CheckboxesField'
+          password:       '#/components/schemas/PasswordField'
+          color:          '#/components/schemas/ColorField'
+          date:           '#/components/schemas/DateField'
+          dateAndTime:    '#/components/schemas/DateAndTimeField'
+          time:           '#/components/schemas/TimeField'
+          email:          '#/components/schemas/EmailField'
+          url:            '#/components/schemas/UrlField'
+          slug:           '#/components/schemas/SlugField'
+          oembed:         '#/components/schemas/OembedField'
+          range:          '#/components/schemas/RangeField'
+          object:         '#/components/schemas/ObjectField'
+          array:          '#/components/schemas/ArrayField'
+          area:           '#/components/schemas/AreaField'
+          attachment:     '#/components/schemas/AttachmentField'
+          relationship:   '#/components/schemas/RelationshipField'
+          relationshipReverse: '#/components/schemas/RelationshipReverseField'
+
+    # --- Field-definition objects ---
+    AreaField:
+      allOf:
+        - $ref: '#/components/schemas/BaseField'
+        - type: object
+          additionalProperties: false
+          properties:
+            type:
+              type: string
+              enum: [ area ]
+              description: Apostrophe field type id.
+            options:
+              $ref: '#/components/schemas/AreaOptions'
+            if:
+              $ref: '#/components/schemas/UiCondition'
+            requiredIf:
+              $ref: '#/components/schemas/UiCondition'
+          required: [ type, label, options ]
+          examples:
+            - type: area
+              label: "Main content"
+              options:
+                max: 3
+                expanded: true
+                widgets:
+                  "@apostrophecms/image": {}
+                  "@apostrophecms/rich-text":
+                    toolbar: [ "bold", "italic" ]
+                  "@apostrophecms/video": {}
+                  "@apostrophecms/html": {}
+                groups:
+                  basics:
+                    label: "Basic Content"
+                    columns: 3
+                    widgets:
+                      "@apostrophecms/rich-text": { toolbar: [ "bold" ] }
+                      "@apostrophecms/image": {}
+                  embeds:
+                    label: "Embeds"
+                    columns: 2
+                    widgets:
+                      "@apostrophecms/video": {}
+                      "@apostrophecms/html": {}
+
+    AreaOptions:
+      type: object
+      additionalProperties: false
+      properties:
+        widgets:
+          description: >
+            Allowed widget types for this area. Keys are widget module names
+            (e.g., "@apostrophecms/rich-text"). Values are per-widget options
+            that apply *only* in this area. 
+          type: object
+          additionalProperties:
+            type: object
+        groups:
+          description: >
+            Organize widgets into groups for the expanded preview menu.
+            Each group has a label, optional columns (1–4, default 3),
+            and its own widgets map (same shape as `widgets`). 
+          type: object
+          additionalProperties:
+            $ref: '#/components/schemas/AreaWidgetGroup'
+        max:
+          type: integer
+          description: Maximum number of widgets allowed in this area.
+        expanded:
+          type: boolean
+          description: Use the expanded preview menu UX.
+      required: [ widgets ]
+
+    AreaWidgetGroup:
+      type: object
+      additionalProperties: false
+      properties:
+        label:
+          type: string
+        columns:
+          type: integer
+          minimum: 1
+          maximum: 4
+          description: Number of widget previews per row (default 3).
+        widgets:
+          type: object
+          additionalProperties:
+            type: object
+      required: [ label, widgets ]
+
+    ArrayField:
+      allOf:
+        - $ref: '#/components/schemas/BaseField'
+        - type: object
+          additionalProperties: false
+          description: >
+            A repeatable list of objects, each with its own field schema.
+          properties:
+            type:
+              type: string
+              enum: [ array ]
+              description: Apostrophe field type id.
+            fields:
+              $ref: '#/components/schemas/Fieldset'
+            min:
+              type: integer
+              description: Minimum number of items (inclusive).
+            max:
+              type: integer
+              description: Maximum number of items (inclusive).
+            # Optional: a per-item label source (nice-to-have for editor UI)
+            titleField:
+              type: string
+              description: >
+                Field name in each item used as the item label in the UI.
+            if:
+              $ref: '#/components/schemas/UiCondition'
+            requiredIf:
+              $ref: '#/components/schemas/UiCondition'
+          required: [ type, label, fields ]
+          examples:
+            - type: array
+              label: "Tasks"
+              min: 0
+              max: 50
+              titleField: "title"
+              items:
+                type: object
+                properties:
+                  title:
+                    type: string
+                  priority:
+                    type: string
+              fields:
+                add:
+                  title:
+                    type: string
+                    label: "Task Title"
+                  priority:
+                    type: select
+                    label: "Priority"
+                    choices:
+                      - { label: "Low",  value: "low" }
+                      - { label: "High", value: "high" }
+
+    AttachmentField:
+      allOf:
+        - $ref: '#/components/schemas/BaseField'
+        - type: object
+          additionalProperties: false
+          description: >
+            Lets editors upload a single file (image, PDF, etc.). Use an ArrayField
+            of AttachmentField if you need multiple files.
+          properties:
+            type:
+              type: string
+              enum: [ attachment ]
+              description: Apostrophe field type id.
+            # Optional: narrow what the editor can pick/upload
+            accept:
+              oneOf:
+                - type: string
+                  description: >
+                    HTML "accept" string (e.g., "image/*,.pdf"). Use to limit by
+                    MIME type and/or extension.
+                - type: array
+                  items:
+                    type: string
+                  description: >
+                    List of MIME types and/or extensions (e.g., ["image/*", ".pdf"]).
+            maxSize:
+              type: integer
+              description: Optional max file size in bytes (documentation-only hint).
+            if:
+              $ref: '#/components/schemas/UiCondition'
+            requiredIf:
+              $ref: '#/components/schemas/UiCondition'
+          required: [ type, label ]
+          examples:
+            - type: attachment
+              label: "Resume (PDF)"
+              accept: [ ".pdf" ]
+              required: true
+            - type: attachment
+              label: "Hero Image"
+              accept: "image/*"
+
     BooleanField:
-      type: boolean
-      description: "True/false value"
-      example: true
+      allOf:
+        - $ref: '#/components/schemas/BaseField'
+        - type: object
+          additionalProperties: false
+          properties:
+            type:
+              type: string
+              enum: [ boolean ]
+              description: Apostrophe field type id.
+            def:
+              type: boolean
+              description: Default value shown in the editor UI.
+            toggle:
+              oneOf:
+                - type: boolean
+                  description: |
+                    If true, use the alternate "toggle" UI. Labels default to
+                    the field label and standard true/false text.
+                - type: object
+                  additionalProperties: false
+                  description: Configure custom labels for the toggle UI.
+                  properties:
+                    "true":
+                      type: string
+                      description: Label to display when value is true.
+                    "false":
+                      type: string
+                      description: Label to display when value is false.
+          required: [ type, label ]
+          examples:
+            - type: boolean
+              label: "Is this a special item?"
+              def: false
+            - type: boolean
+              label: "Show related articles?"
+              toggle:
+                "true": "Show related articles"
+                "false": "Hide related articles"
 
     StringField:
-      type: string
-      description: "Text string field"
-      example: "String value"
+      allOf:
+        - $ref: '#/components/schemas/BaseField'
+        - type: object
+          additionalProperties: false
+          properties:
+            type:
+              type: string
+              enum: [ string ]
+              description: Apostrophe field type id.
+            def:
+              type: string
+              description: Default value shown in the editor UI.
+            textarea:
+              type: boolean
+              description: If true, renders a multiline textarea UI.
+            min:
+              type: integer
+              description: Minimum number of characters allowed.
+            max:
+              type: integer
+              description: Maximum number of characters allowed.
+            pattern:
+              type: string
+              description: >
+                Regular expression (string form) to validate the input. 
+                Only matching values are allowed.
+            autocomplete:
+              type: string
+              description: >
+                Value of the HTML autocomplete attribute (see MDN).
+                Use `"off"` to disable autocomplete.
+            following:
+              oneOf:
+                - type: string
+                - type: array
+                  items:
+                    type: string
+              description: >
+                Field(s) to follow for automatic value generation. Supports
+                `<` prefixes to access parent fields.
+            followingIgnore:
+              oneOf:
+                - type: boolean
+                - type: array
+                  items:
+                    type: string
+              description: >
+                Controls which `following` values are ignored.
+            sortify:
+              type: boolean
+              description: >
+                If true, creates a parallel “sortified” version of this field
+                for case- and punctuation-insensitive sorting.
+          required: [ type, label ]
+          examples:
+            - type: string
+              label: "Dog Name"
+              def: "Fido"
+            - type: string
+              label: "Biography"
+              textarea: true
+              max: 800
+            - type: string
+              label: "Meta Description"
+              following: [ "title", "featured" ]
+              followingIgnore: [ "featured" ]
+              if:
+                featured: true
 
     IntegerField:
-      type: integer
-      description: "Whole number"
-      example: 42
+      allOf:
+        - $ref: '#/components/schemas/BaseField'
+        - $ref: '#/components/schemas/NumericRangeOptions'
+        - type: object
+          additionalProperties: false
+          properties:
+            type:
+              type: string
+              enum: [ integer ]
+              description: Apostrophe field type id.
+            def:
+              type: integer
+              description: Default integer value shown in the editor UI.
+          required: [ type, label ]
+          examples:
+            - type: integer
+              label: "Age"
+              min: 0
+              max: 120
+              def: 18
+            - type: integer
+              label: "Estimated Hours"
+              min: 1
+              max: 999
+
+    ObjectField:
+      allOf:
+        - $ref: '#/components/schemas/BaseField'
+        - type: object
+          additionalProperties: false
+          description: A nested object with its own field schema.
+          properties:
+            type:
+              type: string
+              enum: [ object ]
+            fields:
+              $ref: '#/components/schemas/Fieldset'   # { add: { ...field defs... } }
+            if:
+              $ref: '#/components/schemas/UiCondition'
+            requiredIf:
+              $ref: '#/components/schemas/UiCondition'
+          required: [ type, label, fields ]
 
     FloatField:
-      type: number
-      format: float
-      description: "Decimal number"
-      example: 8675.309
+      allOf:
+        - $ref: '#/components/schemas/BaseField'
+        - $ref: '#/components/schemas/NumericRangeOptions'
+        - type: object
+          additionalProperties: false
+          properties:
+            type:
+              type: string
+              enum: [ float ]
+            format:
+              type: string
+              enum: [ float ]
+              description: OpenAPI hint for tooling; always "float".
+            # Override def type to be number for floats
+            def:
+              type: number
+              format: float
+              description: Default decimal value.
+          examples:
+            - type: float
+              label: "Price (USD)"
+              help: "Enter a decimal price."
+              def: 0.0
+              min: 0
+              max: 99999.99
+              required: true
 
     DateField:
-      type: string
-      format: date
-      description: "Date in YYYY-MM-DD format"
-      example: "2012-12-21"
+      allOf:
+        - $ref: '#/components/schemas/BaseField'
+        - $ref: '#/components/schemas/DateBoundaryOptions'
+        - type: object
+          additionalProperties: false
+          properties:
+            type:
+              type: string
+              enum: [ date ]
+              description: Apostrophe field type id.
+            def:
+              type: string
+              format: date
+              description: Default date shown in the editor UI (YYYY-MM-DD).
+            if:
+              $ref: '#/components/schemas/UiCondition'
+            requiredIf:
+              $ref: '#/components/schemas/UiCondition'
+          required: [ type, label ]
+          examples:
+            - type: date
+              label: "Publish Date"
+              def: "2025-01-01"
+              min: "2020-01-01"
+              max: "2030-12-31"
+            - type: date
+              label: "Event Date"
+              if:
+                status: { $eq: "scheduled" }
 
-    TimeField:
-      type: string
-      pattern: "^([0-1]?[0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9]$"
-      description: "Time in HH:MM:SS format"
-      example: "00:13:22"
+    DateAndTimeField:
+      allOf:
+        - $ref: '#/components/schemas/BaseField'
+        - $ref: '#/components/schemas/DateTimeBoundaryOptions'
+        - type: object
+          additionalProperties: false
+          properties:
+            type:
+              type: string
+              enum: [ dateAndTime ]
+              description: Apostrophe field type id.
+            def:
+              type: string
+              format: date-time
+              description: >
+                Default timestamp in RFC 3339 format (e.g., 2025-08-29T13:00:00Z).
+            if:
+              $ref: '#/components/schemas/UiCondition'
+            requiredIf:
+              $ref: '#/components/schemas/UiCondition'
+          required: [ type, label ]
+          examples:
+            - type: dateAndTime
+              label: "Starts At"
+              def: "2025-08-29T13:00:00Z"
+              min: "2024-01-01T00:00:00Z"
+              max: "2026-12-31T23:59:59Z"
+            - type: dateAndTime
+              label: "Reminder At"
+              requiredIf:
+                remindersEnabled: true
 
     EmailField:
-      type: string
-      format: email
-      description: "Valid email address"
-      example: "jon@bonjovi.rocks"
+      allOf:
+        - $ref: '#/components/schemas/BaseField'
+        - type: object
+          additionalProperties: false
+          properties:
+            type:
+              type: string
+              enum: [ email ]
+              description: Apostrophe field type id.
+            def:
+              type: string
+              format: email
+              description: Default email address shown in the editor UI.
+            pattern:
+              type: string
+              description: >
+                Optional regex for stricter validation (in addition to HTML5
+                email validation).
+            autocomplete:
+              type: string
+              description: >
+                Value for the HTML autocomplete attribute. Common values are
+                "email" or "off".
+            if:
+              $ref: '#/components/schemas/UiCondition'
+            requiredIf:
+              $ref: '#/components/schemas/UiCondition'
+          required: [ type, label ]
+          examples:
+            - type: email
+              label: "Contact Email"
+              def: "info@example.com"
+            - type: email
+              label: "Support Email"
+              autocomplete: "email"
+              requiredIf:
+                supportEnabled: true
 
     UrlField:
-      type: string
-      format: uri
-      description: "Valid URL"
-      example: "http://apostrophecms.com"
+      allOf:
+        - $ref: '#/components/schemas/BaseField'
+        - type: object
+          additionalProperties: false
+          properties:
+            type:
+              type: string
+              enum: [ url ]
+              description: Apostrophe field type id.
+            def:
+              type: string
+              format: uri
+              description: Default URL shown in the editor UI.
+            pattern:
+              type: string
+              description: >
+                Optional regex for stricter validation of allowed URLs
+                (in addition to standard URI syntax).
+            autocomplete:
+              type: string
+              description: >
+                Value for the HTML autocomplete attribute. Common values
+                include "url" or "off".
+            if:
+              $ref: '#/components/schemas/UiCondition'
+            requiredIf:
+              $ref: '#/components/schemas/UiCondition'
+          required: [ type, label ]
+          examples:
+            - type: url
+              label: "Website"
+              def: "https://example.com"
+            - type: url
+              label: "LinkedIn Profile"
+              autocomplete: "url"
+              requiredIf:
+                hasLinkedIn: true
 
     SlugField:
-      type: string
-      pattern: "^[a-z0-9-]+$"
-      description: "URL-friendly identifier (lowercase, numbers, hyphens only)"
-      example: "slugified-string"
-
-    ColorField:
-      type: string
-      pattern: "^#[0-9a-fA-F]{8}$"
-      description: "Color in hex format with alpha channel"
-      example: "#9013feff"
+      allOf:
+        - $ref: '#/components/schemas/BaseField'
+        - type: object
+          additionalProperties: false
+          properties:
+            type:
+              type: string
+              enum: [ slug ]
+              description: Apostrophe field type id.
+            def:
+              type: string
+              description: Default slug value shown in the editor UI.
+            prefix:
+              type: string
+              description: >
+                Optional prefix automatically prepended when generating the slug.
+            source:
+              type: string
+              description: >
+                Name of the field this slug should follow (usually "title").
+                Works with `following`/`followingIgnore`.
+            unique:
+              type: boolean
+              description: >
+                If true, ensures slug is unique across docs of this type.
+            pattern:
+              type: string
+              description: >
+                Optional regex to further constrain allowed slugs.
+            if:
+              $ref: '#/components/schemas/UiCondition'
+            requiredIf:
+              $ref: '#/components/schemas/UiCondition'
+          required: [ type, label ]
+          examples:
+            - type: slug
+              label: "URL Slug"
+              source: "title"
+              unique: true
+              prefix: "blog/"
+            - type: slug
+              label: "Custom Slug"
+              def: "my-custom-page"
 
     PasswordField:
-      type: string
-      description: "⚠️ Password field - should not contain sensitive passwords in responses"
-      example: "don't use this for sensitive passwords"
+      allOf:
+        - $ref: '#/components/schemas/BaseField'
+        - type: object
+          additionalProperties: false
+          properties:
+            type:
+              type: string
+              enum: [ password ]
+              description: Apostrophe field type id.
+            def:
+              type: string
+              description: Default password value (generally not used).
+            min:
+              type: integer
+              description: Minimum number of characters required.
+            max:
+              type: integer
+              description: Maximum number of characters allowed.
+            pattern:
+              type: string
+              description: >
+                Regex to enforce password rules (e.g., at least one number).
+            autocomplete:
+              type: string
+              description: >
+                HTML autocomplete attribute, usually "new-password" or "current-password".
+            if:
+              $ref: '#/components/schemas/UiCondition'
+            requiredIf:
+              $ref: '#/components/schemas/UiCondition'
+          required: [ type, label ]
+          examples:
+            - type: password
+              label: "Account Password"
+              min: 8
+              autocomplete: "new-password"
+
+    ColorField:
+      allOf:
+        - $ref: '#/components/schemas/BaseField'
+        - type: object
+          additionalProperties: false
+          properties:
+            type:
+              type: string
+              enum: [ color ]
+              description: Apostrophe field type id.
+            def:
+              type: string
+              pattern: "^#(?:[0-9a-fA-F]{3}){1,2}$"
+              description: Default hex color (e.g. "#ff0000").
+            if:
+              $ref: '#/components/schemas/UiCondition'
+            requiredIf:
+              $ref: '#/components/schemas/UiCondition'
+          required: [ type, label ]
+          examples:
+            - type: color
+              label: "Theme Color"
+              def: "#336699"
 
     RangeField:
-      type: integer
-      description: "Numeric value within a specified range"
-      example: 21
+      allOf:
+        - $ref: '#/components/schemas/BaseField'
+        - $ref: '#/components/schemas/NumericRangeOptions'
+        - type: object
+          additionalProperties: false
+          properties:
+            type:
+              type: string
+              enum: [ range ]
+              description: Apostrophe field type id.
+            def:
+              type: number
+              description: Default slider value in the editor UI.
+            step:
+              type: number
+              description: >
+                Increment step for the slider. If omitted, defaults to 1.
+            min:
+              type: number
+              description: Minimum value for the slider.
+            max:
+              type: number
+              description: Maximum value for the slider.
+            if:
+              $ref: '#/components/schemas/UiCondition'
+            requiredIf:
+              $ref: '#/components/schemas/UiCondition'
+          required: [ type, label ]
+          examples:
+            - type: range
+              label: "Satisfaction"
+              min: 1
+              max: 10
+              step: 1
+              def: 5
+            - type: range
+              label: "Volume"
+              min: 0
+              max: 100
+              step: 5
+              def: 50
+
+    RelationshipField:
+      allOf:
+        - $ref: '#/components/schemas/BaseField'
+        - type: object
+          additionalProperties: false
+          description: >
+            Relate this document to one or more docs of another type (pieces/pages).
+            Use `max: 1` for a single-select join; omit `max` (or set >1) for multi-select.
+          properties:
+            type:
+              type: string
+              enum: [ relationship ]
+              description: Apostrophe field type id.
+            withType:
+              type: string
+              description: >
+                Module name of the related doc type (e.g., "article", "@apostrophecms/image").
+            min:
+              type: integer
+              description: Minimum number of related docs required (inclusive).
+            max:
+              type: integer
+              description: Maximum number of related docs allowed (inclusive).
+            fields:
+              $ref: '#/components/schemas/Fieldset'
+            # Cursor builders applied when fetching related docs (project, sort, etc.)
+            builders:
+              type: object
+              additionalProperties: true
+              description: >
+                Apostrophe cursor builders for the related query
+                (e.g., { project: { title: 1 }, sort: { title: 1 } }).
+            if:
+              $ref: '#/components/schemas/UiCondition'
+            requiredIf:
+              $ref: '#/components/schemas/UiCondition'
+          required: [ type, label, withType ]
+          examples:
+            - type: relationship
+              label: "Author"
+              withType: "person"
+              max: 1
+              builders:
+                project: { title: 1, _url: 1 }
+            - type: relationship
+              label: "Related Articles"
+              withType: "article"
+              min: 0
+              max: 5
+              fields:
+                add:
+                  relationshipRole:
+                    type: "select"
+                    label: "Role"
+                    choices:
+                      - { label: "Primary", value: "primary" }
+                      - { label: "Secondary", value: "secondary" }
+              builders:
+                project: { title: 1, _url: 1 }
+                sort: { title: 1 }
+
+    RelationshipReverseField:
+      allOf:
+        - $ref: '#/components/schemas/BaseField'
+        - type: object
+          additionalProperties: false
+          description: >
+            Read-only reverse side of a forward `relationship` field defined on
+            another type. Use this to show “referenced by” links without storing
+            ids here.
+          properties:
+            type:
+              type: string
+              enum: [ relationshipReverse ]
+              description: Apostrophe field type id.
+            withType:
+              type: string
+              description: Module name that holds the forward relationship.
+            reverseOf:
+              type: string
+              description: >
+                Name of the forward relationship field on `withType`
+                (e.g., "_authors" on "article").
+            builders:
+              type: object
+              additionalProperties: true
+              description: Cursor builders applied when populating the reverse join.
+            if:
+              $ref: '#/components/schemas/UiCondition'
+            requiredIf:
+              $ref: '#/components/schemas/UiCondition'
+          required: [ type, label, withType, reverseOf ]
+          examples:
+            - type: relationshipReverse
+              label: "Articles referencing this person"
+              withType: "article"
+              reverseOf: "_authors"
+              builders:
+                project: { title: 1, _url: 1 }
 
     SelectField:
-      type: string
-      description: "Selected value from predefined options"
-      example: "selected value"
+      allOf:
+        - $ref: '#/components/schemas/BaseField'
+        - type: object
+          additionalProperties: false
+          properties:
+            type:
+              type: string
+              enum: [ select ]
+              description: Apostrophe field type id.
+            # default value in the editor UI
+            def:
+              oneOf:
+                - type: string
+                - type: number
+                - type: boolean
+                - type: array
+                  items:
+                    oneOf:
+                      - type: string
+                      - type: number
+                      - type: boolean
+              description: >
+                Default value. If `multiple: true`, this should be an array.
+            multiple:
+              type: boolean
+              description: Allow selecting multiple values (stores an array).
+            # Static choices OR dynamic choices via a method name string
+            choices:
+              oneOf:
+                - type: array
+                  description: Static choices for the select dropdown.
+                  items:
+                    $ref: '#/components/schemas/SelectChoice'
+                - type: string
+                  description: >
+                    Name of a method that returns choices (e.g. "sponsorNames").
+                    May be "module:method" to reference another module.
+            following:
+              oneOf:
+                - type: string
+                - type: array
+                  items:
+                    type: string
+              description: >
+                Populate dynamically based on other fields’ values (supports `<` parent prefixes).
+            followingIgnore:
+              oneOf:
+                - type: boolean
+                - type: array
+                  items:
+                    type: string
+              description: >
+                Ignore some or all followed fields when generating values.
+          required: [ type, label ]
+          examples:
+            - type: select
+              label: "Task Priority"
+              choices:
+                - { label: "Low", value: "low" }
+                - { label: "Medium", value: "medium" }
+                - { label: "High", value: "high" }
+                - { label: "Critical", value: "critical" }
+              def: "medium"
+            - type: select
+              label: "Tags"
+              multiple: true
+              choices:
+                - { label: "News", value: "news" }
+                - { label: "Blog", value: "blog" }
+                - { label: "Events", value: "events" }
+              def: [ "news", "events" ]
+            - type: select
+              label: "Sponsor"
+              choices: "sponsorNames"   # dynamic choices by method
+              following: [ "<projectType" ]
+
+    SelectChoice:
+      type: object
+      additionalProperties: false
+      properties:
+        label:
+          type: string
+          description: Human-friendly label shown in UI.
+        value:
+          oneOf:
+            - type: string
+            - type: number
+            - type: boolean
+          description: The stored value for this choice.
+        disabled:
+          type: boolean
+          description: If true, show but disable this option.
+      required: [ label, value ]
+
+    RadioField:
+      allOf:
+        - $ref: '#/components/schemas/BaseField'
+        - type: object
+          additionalProperties: false
+          properties:
+            type:
+              type: string
+              enum: [ radio ]
+              description: Apostrophe field type id.
+            def:
+              oneOf:
+                - type: string
+                - type: number
+                - type: boolean
+              description: Default selected value.
+            choices:
+              oneOf:
+                - type: array
+                  description: Static choices to render as radio buttons.
+                  items:
+                    $ref: '#/components/schemas/SelectChoice'
+                - type: string
+                  description: >
+                    Method name that provides choices (e.g. "statusChoices").
+            following:
+              oneOf:
+                - type: string
+                - type: array
+                  items:
+                    type: string
+              description: >
+                Populate dynamically based on other fields (supports `<` parent prefixes).
+            followingIgnore:
+              oneOf:
+                - type: boolean
+                - type: array
+                  items:
+                    type: string
+              description: >
+                Ignore some or all followed fields when generating values.
+            if:
+              $ref: '#/components/schemas/UiCondition'
+            requiredIf:
+              $ref: '#/components/schemas/UiCondition'
+          required: [ type, label, choices ]
+          examples:
+            - type: radio
+              label: "Priority"
+              choices:
+                - { label: "Low", value: "low" }
+                - { label: "High", value: "high" }
+              def: "low"
+            - type: radio
+              label: "Status"
+              choices: "statusChoices"   # dynamic
 
     CheckboxesField:
-      type: array
-      description: "Array of selected checkbox values"
-      items:
-        type: string
-      example: ["med", "small"]
+      allOf:
+        - $ref: '#/components/schemas/BaseField'
+        - type: object
+          additionalProperties: false
+          properties:
+            type:
+              type: string
+              enum: [ checkboxes ]
+              description: Apostrophe field type id.
+            def:
+              type: array
+              items:
+                oneOf:
+                  - type: string
+                  - type: number
+                  - type: boolean
+              description: Default selected values.
+            choices:
+              oneOf:
+                - type: array
+                  description: Static choices for the checkboxes.
+                  items:
+                    $ref: '#/components/schemas/SelectChoice'
+                - type: string
+                  description: >
+                    Method name that provides choices dynamically.
+            following:
+              oneOf:
+                - type: string
+                - type: array
+                  items:
+                    type: string
+              description: >
+                Populate dynamically based on other fields (supports `<` parent prefixes).
+            followingIgnore:
+              oneOf:
+                - type: boolean
+                - type: array
+                  items:
+                    type: string
+              description: >
+                Ignore some or all followed fields when generating values.
+            if:
+              $ref: '#/components/schemas/UiCondition'
+            requiredIf:
+              $ref: '#/components/schemas/UiCondition'
+          required: [ type, label, choices ]
+          examples:
+            - type: checkboxes
+              label: "Tags"
+              choices:
+                - { label: "News", value: "news" }
+                - { label: "Blog", value: "blog" }
+                - { label: "Events", value: "events" }
+              def: [ "news", "events" ]
 
-    SEOFields:
-      type: object
-      description: "Common SEO metadata fields - important for search optimization"
-      properties:
-        seoTitle:
-          $ref: '#/components/schemas/StringField'
-        seoDescription:
-          $ref: '#/components/schemas/StringField'
-        seoKeywords:
-          $ref: '#/components/schemas/StringField'
-        seoImage:
-          $ref: '#/components/schemas/AttachmentField'
-      additionalProperties: true
+    TimeField:
+      allOf:
+        - $ref: '#/components/schemas/BaseField'
+        - type: object
+          additionalProperties: false
+          properties:
+            type:
+              type: string
+              enum: [ time ]
+              description: Apostrophe field type id.
+            def:
+              type: string
+              pattern: "^(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d$"
+              description: >
+                Default value in HH:MM:SS (24-hour). If not set and not
+                required, defaults to the current time.
+            if:
+              $ref: '#/components/schemas/UiCondition'
+            requiredIf:
+              $ref: '#/components/schemas/UiCondition'
+          required: [ type, label ]
+          examples:
+            - type: time
+              label: "Event Time"
+              def: "14:30:00"
+            - type: time
+              label: "Reminder Time"
+
+    OembedField:
+      allOf:
+        - $ref: '#/components/schemas/BaseField'
+        - type: object
+          additionalProperties: false
+          properties:
+            type:
+              type: string
+              enum: [ oembed ]
+              description: Apostrophe field type id.
+            if:
+              $ref: '#/components/schemas/UiCondition'
+            requiredIf:
+              $ref: '#/components/schemas/UiCondition'
+          required: [ type, label ]
+          description: >
+            Lets editors paste a media URL from an oEmbed-compatible host.
+            The editor shows an immediate preview once a valid URL is entered.
+            Stored value is an object snapshot (url/title/thumbnail).
+          examples:
+            - type: oembed
+              label: "Featured video"
 
     # Built-in piece types
     User:
@@ -1309,6 +2295,240 @@ components:
             type: string
           description: "Array of aposDocId values for the documents"
           example: ["cloydg3ka0005qcls5vmg8sb9", "cloydg3ka0005qcls5vmg8sb8"]
+
+    AposPrimitives:
+      $id: https://example.com/apostrophe/primitives
+      $schema: https://json-schema.org/draft/2020-12/schema
+      description: >
+        Reusable primitive data shapes for ApostropheCMS document payloads.
+        Use these in content models; keep field-definition objects separate.
+
+      $defs:
+        # ── strings ──
+        AposString:
+          type: string
+
+        AposStringArray:
+          type: array
+          items: { $ref: '#/components/schemas/AposPrimitives/$defs/AposString' }
+
+        AposSlug:
+          type: string
+          pattern: '^[a-z0-9][a-z0-9-]*$'
+          description: >
+            Slug string stored in the document, usually lowercase and URL-safe
+            (e.g. "my-article", "blog/my-custom-page").
+
+        AposEmail:
+          type: string
+          format: email
+          description: >
+            A valid email address per RFC 5322, as stored in documents and returned via the API.
+
+        AposURI:
+          type: string
+          format: uri
+          description: >
+            A valid absolute URL (RFC 3986). Usually stored with protocol,
+            e.g., "https://example.com".
+
+        AposPassword:
+          type: string
+          description: >
+            Password string as entered. Apostrophe typically hashes this
+            before storage; API usage depends on context.
+
+        # Dates/times (serialize as strings)
+        AposDateTime:
+          type: string
+          format: date-time
+          description: ISO-8601 calendar date (YYYY-MM-DD).
+
+        AposDate:
+          type: string
+          format: date
+          description: RFC 3339 timestamp (e.g., 2025-08-29T13:00:00Z).
+
+        AposTime:
+          type: string
+          pattern: "^(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d$"
+          description: >
+            Time string stored in documents, always in HH:MM:SS (24-hour).
+
+        # ── numbers ──
+        AposInteger:
+          type: integer
+
+        AposIntegerArray:
+          type: array
+          items: { $ref: '#/components/schemas/AposPrimitives/$defs/AposInteger' }
+
+        AposFloat:        # use for JS number / Mongo double/decimal payloads
+          type: number
+
+        AposFloatArray:
+          type: array
+          items: { $ref: '#/components/schemas/AposPrimitives/$defs/AposFloat' }
+
+        AposRange:
+          type: number
+          description: >
+            Stored numeric value selected via the slider (integer or float,
+            depending on configuration).
+
+        # ── booleans ──
+        AposBoolean:
+          type: boolean
+
+        AposBooleanArray:
+          type: array
+          items: { $ref: '#/components/schemas/AposPrimitives/$defs/AposBoolean' }
+
+        # ── Selections ──
+        AposRadio:
+          oneOf:
+            - type: string
+            - type: number
+            - type: boolean
+          description: >
+            The stored value for a radio field (one of the choice values).
+
+        AposCheckboxes:
+          type: array
+          items:
+            oneOf:
+              - type: string
+              - type: number
+              - type: boolean
+          description: >
+            The stored values for a checkboxes field. Each item is one of the
+            configured choice values.
+
+        # ── Complex shapes ──
+        AposOembed:
+          type: object
+          additionalProperties: false
+          properties:
+            url:
+              type: string
+              format: uri
+              description: Original media URL saved by the editor.
+            title:
+              type: string
+              description: Title snapshot from the oEmbed response at save time.
+            thumbnail:
+              type: string
+              format: uri
+              description: Thumbnail URL snapshot from the oEmbed response at save time.
+          required: [ url ]
+          description: >
+            Data stored on the document: a snapshot of the oEmbed resource.
+            Fetch full embed HTML at runtime via GET
+            `/api/v1/@apostrophecms/oembed/query?url=<media-url>`.
+
+        AposArea:
+          type: object
+          additionalProperties: false
+          properties:
+            items:
+              type: array
+              items:
+                $ref: '#/components/schemas/Widget'
+          required: [ items ]
+          description: >
+            The value saved on the doc: an object with an `items` array of widgets.
+
+                # --- Data value (what’s stored on the doc) ---
+
+        AposAttachment:
+          type: object
+          description: >
+            Attachment metadata saved on the document. Extra fields may be present
+            depending on project config and file type (e.g., image dimensions).
+          additionalProperties: true
+          properties:
+            _id:
+              type: string
+              description: Internal id of the uploaded file.
+            name:
+              type: string
+              description: Basename without extension.
+            extension:
+              type: string
+              description: File extension (e.g., "pdf", "png").
+            mimeType:
+              type: string
+              description: MIME type (e.g., "application/pdf", "image/png").
+            group:
+              type: string
+              description: Broad file group (e.g., "images", "office", "video", "audio", "generic").
+            size:
+              type: integer
+              description: File size in bytes.
+            width:
+              type: integer
+              description: Image width in pixels (if applicable).
+            height:
+              type: integer
+              description: Image height in pixels (if applicable).
+          required: [ _id ]
+
+        AposRelationship:
+          description: >
+            The stored value of a relationship field. For multi-select joins, this
+            is an array of entries. For `max: 1`, treat it as either a single entry
+            or null. An entry always contains at least the related `_id`; additional
+            keys may appear if `fields` were defined.
+          oneOf:
+            - $ref: '#/components/schemas/RelationshipEntry'
+            - type: "null"
+            - type: array
+              items:
+                $ref: '#/components/schemas/RelationshipEntry'
+
+        AposRelationshipReverse:
+          type: array
+          items:
+            $ref: '#/components/schemas/RelationshipEntry'
+          description: >
+            Populated reverse relationships at read time. Not persisted on this document;
+            useful in responses.
+
+        # ── IDs & generic JSON ──
+        AposObjectId:
+          type: string
+          pattern: '^[a-fA-F0-9]{24}$'
+          description: MongoDB ObjectId (24 hex chars)
+
+        AposObjectIdArray:
+          type: array
+          items: { $ref: '#/components/schemas/AposPrimitives/$defs/AposObjectId' }
+
+        AposJSON:         # bag-of-properties (areas, widgets often nest objects)
+          type: object
+          additionalProperties: true
+
+        AposJSONArray:
+          type: array
+          items: { $ref: '#/components/schemas/AposPrimitives/$defs/AposJSON' }
+
+        # ── helpers for “nullable” values (OAS 3.1 / JSON Schema) ───────────────
+        # Use via allOf/oneOf or inline when needed.
+        NullableString:
+          type: [string, 'null']
+
+        NullableInteger:
+          type: [integer, 'null']
+
+        NullableNumber:
+          type: [number, 'null']
+
+        NullableBoolean:
+          type: [boolean, 'null']
+
+        NullableObjectId:
+          type: [string, 'null']
+          pattern: '^[a-fA-F0-9]{24}$'
 
   responses:
     BadRequest:
