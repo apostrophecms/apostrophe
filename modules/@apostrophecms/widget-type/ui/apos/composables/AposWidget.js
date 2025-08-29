@@ -3,7 +3,7 @@ import {
   ref, unref, computed, nextTick
 } from 'vue';
 
-// When modifyin this file, verify that `AposWidgetMixin.js` still works
+// When modifying this file, verify that `AposWidgetMixin.js` still works
 export function useAposWidget(props) {
   const rendered = ref('...');
 

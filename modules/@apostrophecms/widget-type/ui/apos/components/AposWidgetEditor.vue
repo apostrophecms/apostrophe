@@ -282,7 +282,6 @@ export default {
     async save() {
       this.triggerValidation = true;
       this.$nextTick(async () => {
-        const widget = this.getWidgetObject();
         if (this.errorCount > 0) {
           this.triggerValidation = false;
           await apos.notify('apostrophe:resolveErrorsBeforeSaving', {
@@ -303,14 +302,7 @@ export default {
             return;
           }
         }
-        try {
-          await this.postprocess();
-        } catch (e) {
-          await this.handleSaveError(e, {
-            fallback: 'An error occurred saving the widget.'
-          });
-          return;
-        }
+        const widget = this.getWidgetObject();
         this.saving = true;
         this.$emit('modal-result', widget);
         this.modal.showModal = false;

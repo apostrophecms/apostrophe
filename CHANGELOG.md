@@ -9,6 +9,7 @@
 * `apos.doc.edit` now accepts an optional `values` object as the final parameter, containing initial values for some or all fields. This is supported only when editing existing documents.
 * When specifying a modal name to be executed, developers may now register "transformers" to be invoked first, using pipe syntax. For example, the modal name `aposSectionTemplateLibraryWidgetToDoc|AposDocEditor` will invoke the transformer `aposSectionTemplateLibraryWidgetToDoc` with the original props, and pass the returned result to `AposDocEditor`. Note that transformers are awaited. Transformers are registered in frontend admin UI code by passing a name and a function to `apos.ui.addTransformer`.
 * Adds quick image upload UI to `@apostrophecms/image-widget`.
+* Makes autocropping work when uploading or selecting images from the new quick image upload UI.
 
 ### Fixes
 
@@ -17,10 +18,14 @@
 * Importing a custom icon from an npm module using a `~` path per the admin UI now works per the documentation, as long as the Vue component used for the icon is structured like those found in `@apostrophecms/vue-material-design-icons`.
 * The `button: true` flag works again for piece module utility operations. Previously the button appeared but did not trigger the desired operation.
 * Fix the fact that area options `minSize` and `aspectRatio` weren't passed to the image cropper when coming directly from the area and the widget controls (without passing through the widget editor).
+* Fixes the widget data being cloned to be saved before the `postprocess` method being called, which leads to a loss of data in `AposWidgetEditor` (like the autocrop data).
+* In editors like `AposWidgetEditor` relationships are now post processed after they are updated in `AposInputRelationship` only for the relationship that has been updated. 
+It allows live preview to work well with it, it also avoids complexity and fixes updated data not being properly synced between the editor and the `AposSchema`.
 
 ### Changes
 
 * Rolled back a change in 4.16.0 that strictly enforced `required` and `min` for relationship fields. Because the related document can be archived or deleted at any time, it is misleading to offer such enforcement. Also, it greatly complicates adding these constraints to existing schemas, resulting in surprising and unwanted behaviors. Therefore it is better for these constraints to be soft constraints on the front end. `max` is still a hard constraint.
+* The `@apostrophecms/login/whoami` route now accepts both `POST` (recommended) and `GET` requests. Previously, it only supported `GET`. This maintains backwards compatibility while aligning with the documentation’s recommendation to use `POST`.
 
 ## 4.20.0 (2025-08-06)
 
