@@ -1,5 +1,9 @@
 # Changelog
 
+## 2.227.12 (2025-08-28)
+
+* Bump dependency on `emulate-mongo-2-driver` to address an incompatibility that has cropped up upstream in a recent update of the mongodb driver.
+
 ## 2.227.11 (2025-04-23)
 
 * Update `jquery-ui` to 1.14 to address vulnerabilities fixed in [version 1.13](https://jqueryui.com/upgrade-guide/1.13). Note that this was never a vulnerability in practice with ApostropheCMS due to server-side validation.
