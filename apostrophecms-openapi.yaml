@@ -13,7 +13,7 @@ info:
     1. **Authentication**: Use the login endpoint to get a bearer token or session cookie
     2. **Get Content**: Start with `/@apostrophecms/page` to fetch your page structure
     3. **Media Files**: Upload files via `/@apostrophecms/attachment/upload`
-    4. **Custom Content**: Create and manage your custom piece types (articles, events, etc.)
+    4. **Internationalization**: Use `/@apostrophecms/i18n` to localize your content
 
     ## Content Architecture
     ApostropheCMS uses a flexible "pieces" system for content types. While the core system provides
@@ -30,13 +30,6 @@ info:
     - `@apostrophecms/image-tag` - Tags for organizing images
     - `@apostrophecms/file-tag` - Tags for organizing files
 
-    ## Common Custom Piece Types 
-    The examples in this API documentation use common piece types that projects typically implement:
-    - `article` - Blog posts and content pages
-    - `event` - Calendar events and announcements
-
-    *Note: Custom piece types are defined in your project configuration and follow the same API patterns.*
-
     ## Authentication Methods
     - **Bearer Token**: Recommended for API clients and SPAs
     - **Session Cookie**: For traditional web applications
@@ -45,7 +38,7 @@ info:
     ## Rate Limiting
     API requests are rate-limited to prevent abuse. See response headers for current limits.
 
-  version: 4.0.0
+  version: 1.0.0
   contact:
     name: ApostropheCMS Support
     url: https://apostrophecms.com
@@ -53,6 +46,12 @@ info:
   license:
     name: MIT
     url: https://github.com/apostrophecms/apostrophe/blob/main/LICENSE.md
+
+x-apostrophe:
+  cmsVersion: ">=4.20.0"
+  notes: |
+    Spec versioning follows semver independently of CMS releases.
+  isCore: true
 
 security:
   - SessionAuth: []
@@ -68,18 +67,14 @@ tags:
     description: "🚀 Login, logout, and session management for API access - start here!"
   - name: "Pages"
     description: "🚀 Essential for headless sites - page structure, content, and navigation"
-  - name: "Users (Built-in)"
+  - name: "Users"
     description: "Built-in user management and authentication"
-  - name: "Global Content (Built-in)"
+  - name: "Global Content"
     description: "Site-wide settings and content that appears across pages"
-  - name: "Media (Built-in)"
+  - name: "Media"
     description: "File uploads, image management, and media organization"
-  - name: "Attachments (Built-in)"
+  - name: "Attachments"
     description: "File upload utilities and image processing"
-  - name: "Articles (Custom)"
-    description: "Example custom piece type - requires project configuration"
-  - name: "Events (Custom)"
-    description: "Example custom piece type - requires project configuration"
   - name: "Internationalization"
     description: "Multi-language support and locale management"
 
@@ -1136,131 +1131,6 @@ components:
           type: string
           format: date-time
 
-    # Custom piece types (examples)
-    Article:
-      type: object
-      description: |
-        Example custom piece type - blog article.
-        ⚠️ **Note**: Requires custom configuration in your ApostropheCMS project.
-
-        Perfect for:
-        - Blog posts and articles
-        - News content
-        - Editorial content
-      properties:
-        _id:
-          type: string
-          description: "Unique identifier"
-          example: "clx1234567890abcdef"
-        title:
-          type: string
-          description: "Article title"
-          example: "Getting Started with Headless CMS"
-        slug:
-          type: string
-          description: "URL-friendly version of title"
-          example: "getting-started-headless-cms"
-        type:
-          type: string
-          example: "article"
-        archived:
-          type: boolean
-          default: false
-        visibility:
-          type: string
-          enum: ["public", "loginRequired"]
-          default: "public"
-        body:
-          type: object
-          description: "Rich text content area"
-          properties:
-            metaType:
-              type: string
-              example: "area"
-            items:
-              type: array
-              items:
-                type: object
-                description: "Content widgets (rich text, images, etc.)"
-        publishedAt:
-          type: string
-          format: date-time
-          description: "Publication date"
-          example: "2024-12-15T10:30:00.000Z"
-        tags:
-          type: array
-          items:
-            type: string
-          description: "Article tags"
-          example: ["cms", "headless", "tutorial"]
-        _author:
-          type: array
-          items:
-            $ref: '#/components/schemas/User'
-          description: "Article authors (relationship field)"
-        createdAt:
-          type: string
-          format: date-time
-        updatedAt:
-          type: string
-          format: date-time
-
-    Event:
-      type: object
-      description: |
-        Example custom piece type - calendar event.
-        ⚠️ **Note**: Requires custom configuration in your ApostropheCMS project.
-
-        Perfect for:
-        - Calendar events
-        - Announcements
-        - Meetups and conferences
-      properties:
-        _id:
-          type: string
-          example: "clx1234567890abcdef"
-        title:
-          type: string
-          example: "ApostropheCMS Meetup"
-        slug:
-          type: string
-          example: "apostrophecms-meetup"
-        type:
-          type: string
-          example: "event"
-        archived:
-          type: boolean
-          default: false
-        visibility:
-          type: string
-          enum: ["public", "loginRequired"]
-          default: "public"
-        description:
-          type: object
-          description: "Rich text event description"
-        startDate:
-          type: string
-          format: date-time
-          example: "2024-12-20T18:00:00.000Z"
-        endDate:
-          type: string
-          format: date-time
-          example: "2024-12-20T20:00:00.000Z"
-        location:
-          type: string
-          example: "123 Developer Street, Tech City"
-        _image:
-          type: array
-          items:
-            $ref: '#/components/schemas/Image'
-          description: "Event images (relationship field)"
-        createdAt:
-          type: string
-          format: date-time
-        updatedAt:
-          type: string
-          format: date-time
-
     # API Response schemas
     PieceResponse:
       type: object
@@ -1619,115 +1489,6 @@ paths:
         - BearerAuth: []
         - SessionAuth: []
 
-  /@apostrophecms/login/whoami:
-    post:
-      summary: "Get current user information"
-      description: |
-        Returns information about the currently authenticated user.
-
-        **Perfect for:**
-        - Checking if authentication is working
-        - Getting user details for your app
-        - Validating permissions
-
-        **Security note:** Only explicitly configured fields are returned, 
-        never the complete user object. This prevents accidental exposure 
-        of sensitive user data.
-      tags:
-        - Authentication
-      operationId: AuthWhoAmI
-      responses:
-        '200':
-          description: "Current user information retrieved successfully"
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  _id:
-                    type: string
-                    description: "User's unique identifier"
-                    example: "user123"
-                  username:
-                    type: string
-                    description: "User's login username"
-                    example: "john-doe"
-                  title:
-                    type: string
-                    description: "User's display name"
-                    example: "John Doe"
-                  email:
-                    type: string
-                    format: email
-                    description: "User's email address (if configured in whoamiFields)"
-                    example: "john@example.com"
-                additionalProperties: true
-                description: "Additional fields based on whoamiFields configuration"
-        '404':
-          description: "User not authenticated"
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  error:
-                    type: string
-                    example: "Not authenticated"
-      security:
-        - ApiKeyAuth: []
-        - BearerAuth: []
-        - SessionAuth: []
-
-  /@apostrophecms/login/context:
-    post:
-      summary: "Get login context information"
-      description: |
-        Returns login context information including environment and requirements.
-        This endpoint provides information about the login system configuration.
-
-        **Useful for:**
-        - Understanding available login methods
-        - Checking if password reset is enabled
-        - Getting login system configuration
-      tags:
-        - Authentication
-      operationId: AuthContext
-      responses:
-        '200':
-          description: "Login context retrieved successfully"
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  localLogin:
-                    type: boolean
-                    description: "Whether local login is enabled"
-                    example: true
-                  passwordReset:
-                    type: boolean
-                    description: "Whether password reset is enabled"
-                    example: false
-                  loginUrl:
-                    type: string
-                    description: "The configured login URL"
-                    example: "/login"
-                additionalProperties: true
-                description: "Additional context based on configuration"
-        '4XX':
-          description: Client error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '500':
-          description: "Internal server error"
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-      security: []
-
   /@apostrophecms/login/resetRequest:
     post:
       summary: "Request password reset"
@@ -1860,6 +1621,178 @@ paths:
                     example: "Reset token has expired"
       security: []
 
+  /@apostrophecms/login/whoami:
+    get:
+      summary: "Get current user information"
+      deprecated: true
+      description: |
+        **⚠️ DEPRECATED:** This GET endpoint is deprecated due to caching issues.
+        Use the POST method instead.
+
+        Returns information about the currently authenticated user.
+
+        **Security note:** Only explicitly configured fields are returned,
+        never the complete user object. This prevents accidental exposure
+        of sensitive user data.
+      tags:
+        - Authentication
+      operationId: AuthWhoAmI
+      responses:
+        '200':
+          description: "Current user information retrieved successfully"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  _id:
+                    type: string
+                    description: "User's unique identifier"
+                    example: "user123"
+                  username:
+                    type: string
+                    description: "User's login username"
+                    example: "john-doe"
+                  title:
+                    type: string
+                    description: "User's display name"
+                    example: "John Doe"
+                  email:
+                    type: string
+                    format: email
+                    description: "User's email address (if configured in whoamiFields)"
+                    example: "john@example.com"
+                additionalProperties: true
+                description: "Additional fields based on whoamiFields configuration"
+        '404':
+          description: "User not authenticated"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Not authenticated"
+      security:
+        - ApiKeyAuth: []
+        - BearerAuth: []
+        - SessionAuth: []
+
+    post:
+      summary: "Get current user information"
+      description: |
+        Returns information about the currently authenticated user.
+
+        **Note:** POST method is recommended for this endpoint to avoid caching issues.
+
+        **Perfect for:**
+        - Checking if authentication is working
+        - Getting user details for your app
+        - Validating permissions
+
+        **Security note:** Only explicitly configured fields are returned, 
+        never the complete user object. This prevents accidental exposure 
+        of sensitive user data.
+      tags:
+        - Authentication
+      operationId: AuthWhoAmIPost
+      responses:
+        '200':
+          description: "Current user information retrieved successfully"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  _id:
+                    type: string
+                    description: "User's unique identifier"
+                    example: "user123"
+                  username:
+                    type: string
+                    description: "User's login username"
+                    example: "john-doe"
+                  title:
+                    type: string
+                    description: "User's display name"
+                    example: "John Doe"
+                  email:
+                    type: string
+                    format: email
+                    description: "User's email address (if configured in whoamiFields)"
+                    example: "john@example.com"
+                additionalProperties: true
+                description: "Additional fields based on whoamiFields configuration"
+        '404':
+          description: "User not authenticated"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Not authenticated"
+      security:
+        - ApiKeyAuth: []
+        - BearerAuth: []
+        - SessionAuth: []
+
+  /@apostrophecms/login/context:
+    get:
+      summary: "Get login context information"
+      deprecated: true
+      description: |
+        **⚠️ DEPRECATED:** This GET endpoint is deprecated due to caching issues.
+        Use the POST method instead.
+
+        Returns login context information including environment and requirements.
+        This endpoint provides information about the login system configuration.
+
+        **Useful for:**
+        - Understanding available login methods
+        - Checking if password reset is enabled
+        - Getting login system configuration
+      tags:
+        - Authentication
+      operationId: AuthContext
+      responses:
+        '200':
+          description: "Login context retrieved successfully"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  localLogin:
+                    type: boolean
+                    description: "Whether local login is enabled"
+                    example: true
+                  passwordReset:
+                    type: boolean
+                    description: "Whether password reset is enabled"
+                    example: false
+                  loginUrl:
+                    type: string
+                    description: "The configured login URL"
+                    example: "/login"
+                additionalProperties: true
+                description: "Additional context based on configuration"
+        '4XX':
+          description: Client error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: "Internal server error"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      security: []
+
   # Page endpoints
   /@apostrophecms/page:
     get:
@@ -1869,7 +1802,7 @@ paths:
 
         **Perfect for:**
         - Building navigation menus
-        - Getting all pages for static site generation  
+        - Getting all pages for static site generation
         - Fetching content for SPA routing
         - Understanding your site structure
 
@@ -2307,7 +2240,7 @@ paths:
       summary: Get users
       description: Retrieve users (requires admin permissions)
       tags:
-        - Users (Built-in)
+        - Users
       parameters:
         - $ref: '#/components/parameters/Page'
         - $ref: '#/components/parameters/PerPage'
@@ -2352,7 +2285,7 @@ paths:
       summary: Create user
       description: Create a new user account (requires admin permissions)
       tags:
-        - Users (Built-in)
+        - Users
       parameters:
         - $ref: '#/components/parameters/AposMode'
         - $ref: '#/components/parameters/AposLocale'
@@ -2425,7 +2358,7 @@ paths:
       summary: Get single user
       description: Retrieve a specific user by ID (requires appropriate permissions)
       tags:
-        - Users (Built-in)
+        - Users
       parameters:
         - name: id
           in: path
@@ -2484,7 +2417,7 @@ paths:
       summary: Replace user
       description: Completely replace a user document
       tags:
-        - Users (Built-in)
+        - Users
       parameters:
         - name: id
           in: path
@@ -2557,7 +2490,7 @@ paths:
       summary: Update user fields
       description: Update specific fields of a user
       tags:
-        - Users (Built-in)
+        - Users
       parameters:
         - name: id
           in: path
@@ -2625,7 +2558,7 @@ paths:
       summary: Delete user
       description: Permanently delete a user
       tags:
-        - Users (Built-in)
+        - Users
       parameters:
         - name: id
           in: path
@@ -2666,7 +2599,7 @@ paths:
       summary: Publish user draft
       description: Publish the draft version of a user
       tags:
-        - Users (Built-in)
+        - Users
       parameters:
         - name: id
           in: path
@@ -2704,7 +2637,7 @@ paths:
       summary: Get global content
       description: Retrieve site-wide global content and settings
       tags:
-        - Global Content (Built-in)
+        - Global Content
       parameters:
         - $ref: '#/components/parameters/AposMode'
         - $ref: '#/components/parameters/AposLocale'
@@ -2733,7 +2666,7 @@ paths:
       summary: Update global content
       description: Update site-wide global content (requires editor permissions)
       tags:
-        - Global Content (Built-in)
+        - Global Content
       parameters:
         - $ref: '#/components/parameters/AposMode'
         - $ref: '#/components/parameters/AposLocale'
@@ -2784,7 +2717,7 @@ paths:
       summary: Partially update global content
       description: Update specific fields in global content without affecting others (requires editor permissions)
       tags:
-        - Global Content (Built-in)
+        - Global Content
       parameters:
         - $ref: '#/components/parameters/AposMode'
         - $ref: '#/components/parameters/AposLocale'
@@ -2840,7 +2773,7 @@ paths:
         Authentication is required for all requests other than GET requests 
         for images with defined publicApiProjection.
       tags:
-        - Media (Built-in)
+        - Media
       parameters:
         - $ref: '#/components/parameters/Page'
         - $ref: '#/components/parameters/PerPage'
@@ -2897,7 +2830,7 @@ paths:
       summary: Create image
       description: Create a new image document (requires prior attachment upload)
       tags:
-        - Media (Built-in)
+        - Media
       parameters:
         - $ref: '#/components/parameters/AposMode'
         - $ref: '#/components/parameters/AposLocale'
@@ -2958,7 +2891,7 @@ paths:
         Authentication is required for all requests other than GET requests 
         for images with defined publicApiProjection.
       tags:
-        - Media (Built-in)
+        - Media
       parameters:
         - name: id
           in: path
@@ -3018,7 +2951,7 @@ paths:
       summary: Replace image
       description: Completely replace an image document
       tags:
-        - Media (Built-in)
+        - Media
       parameters:
         - name: id
           in: path
@@ -3086,7 +3019,7 @@ paths:
       summary: Update image fields
       description: Update specific fields of an image
       tags:
-        - Media (Built-in)
+        - Media
       parameters:
         - name: id
           in: path
@@ -3150,7 +3083,7 @@ paths:
       summary: Delete image
       description: Permanently delete an image
       tags:
-        - Media (Built-in)
+        - Media
       parameters:
         - name: id
           in: path
@@ -3191,7 +3124,7 @@ paths:
       summary: Publish image draft
       description: Publish the draft version of an image
       tags:
-        - Media (Built-in)
+        - Media
       parameters:
         - name: id
           in: path
@@ -3232,7 +3165,7 @@ paths:
         Authentication is required for all requests other than GET requests
         for files with defined publicApiProjection.
       tags:
-        - Media (Built-in)
+        - Media
       parameters:
         - $ref: '#/components/parameters/Page'
         - $ref: '#/components/parameters/PerPage'
@@ -3289,7 +3222,7 @@ paths:
       summary: Create file
       description: Create a new file document (requires prior attachment upload)
       tags:
-        - Media (Built-in)
+        - Media
       parameters:
         - $ref: '#/components/parameters/AposMode'
         - $ref: '#/components/parameters/AposLocale'
@@ -3346,7 +3279,7 @@ paths:
         Authentication is required for all requests other than GET requests 
         for files with defined publicApiProjection.
       tags:
-        - Media (Built-in)
+        - Media
       parameters:
         - name: id
           in: path
@@ -3406,7 +3339,7 @@ paths:
       summary: Replace file
       description: Completely replace a file document
       tags:
-        - Media (Built-in)
+        - Media
       parameters:
         - name: id
           in: path
@@ -3472,7 +3405,7 @@ paths:
       summary: Update file fields
       description: Update specific fields of a file
       tags:
-        - Media (Built-in)
+        - Media
       parameters:
         - name: id
           in: path
@@ -3534,7 +3467,7 @@ paths:
       summary: Delete file
       description: Permanently delete a file
       tags:
-        - Media (Built-in)
+        - Media
       parameters:
         - name: id
           in: path
@@ -3575,7 +3508,7 @@ paths:
       summary: Publish file draft
       description: Publish the draft version of a file
       tags:
-        - Media (Built-in)
+        - Media
       parameters:
         - name: id
           in: path
@@ -3613,7 +3546,7 @@ paths:
       summary: Get image tags
       description: Retrieve image tags for organizing images
       tags:
-        - Media (Built-in)
+        - Media
       parameters:
         - $ref: '#/components/parameters/Page'
         - $ref: '#/components/parameters/PerPage'
@@ -3676,7 +3609,7 @@ paths:
       summary: Create image tag
       description: Create a new image tag for organizing images
       tags:
-        - Media (Built-in)
+        - Media
       parameters:
         - $ref: '#/components/parameters/AposMode'
         - $ref: '#/components/parameters/AposLocale'
@@ -3727,7 +3660,7 @@ paths:
       summary: Get single image tag
       description: Retrieve a specific image tag by ID
       tags:
-        - Media (Built-in)
+        - Media
       parameters:
         - name: id
           in: path
@@ -3786,7 +3719,7 @@ paths:
       summary: Replace image tag
       description: Completely replace an image tag document
       tags:
-        - Media (Built-in)
+        - Media
       parameters:
         - name: id
           in: path
@@ -3849,7 +3782,7 @@ paths:
       summary: Update image tag fields
       description: Update specific fields of an image tag
       tags:
-        - Media (Built-in)
+        - Media
       parameters:
         - name: id
           in: path
@@ -3911,7 +3844,7 @@ paths:
       summary: Delete image tag
       description: Permanently delete an image tag
       tags:
-        - Media (Built-in)
+        - Media
       parameters:
         - name: id
           in: path
@@ -3952,7 +3885,7 @@ paths:
       summary: Publish image tag draft
       description: Publish the draft version of an image tag
       tags:
-        - Media (Built-in)
+        - Media
       parameters:
         - name: id
           in: path
@@ -3990,7 +3923,7 @@ paths:
       summary: Get file tags
       description: Retrieve file tags for organizing files
       tags:
-        - Media (Built-in)
+        - Media
       parameters:
         - $ref: '#/components/parameters/Page'
         - $ref: '#/components/parameters/PerPage'
@@ -4053,7 +3986,7 @@ paths:
       summary: Create file tag
       description: Create a new file tag for organizing files
       tags:
-        - Media (Built-in)
+        - Media
       parameters:
         - $ref: '#/components/parameters/AposMode'
         - $ref: '#/components/parameters/AposLocale'
@@ -4104,7 +4037,7 @@ paths:
       summary: Get single file tag
       description: Retrieve a specific file tag by ID
       tags:
-        - Media (Built-in)
+        - Media
       parameters:
         - name: id
           in: path
@@ -4164,7 +4097,7 @@ paths:
       summary: Replace file tag
       description: Completely replace a file tag document
       tags:
-        - Media (Built-in)
+        - Media
       parameters:
         - name: id
           in: path
@@ -4227,7 +4160,7 @@ paths:
       summary: Update file tag fields
       description: Update specific fields of a file tag
       tags:
-        - Media (Built-in)
+        - Media
       parameters:
         - name: id
           in: path
@@ -4289,7 +4222,7 @@ paths:
       summary: Delete file tag
       description: Permanently delete a file tag
       tags:
-        - Media (Built-in)
+        - Media
       parameters:
         - name: id
           in: path
@@ -4330,7 +4263,7 @@ paths:
       summary: Publish file tag draft
       description: Publish the draft version of a file tag
       tags:
-        - Media (Built-in)
+        - Media
       parameters:
         - name: id
           in: path
@@ -4371,7 +4304,7 @@ paths:
         to create image or file documents. Uses multipart/form-data encoding with the 
         file uploaded under the name 'file'.
       tags:
-        - Attachments (Built-in)
+        - Attachments
       parameters:
         - $ref: '#/components/parameters/AposMode'
         - $ref: '#/components/parameters/AposLocale'
@@ -4437,7 +4370,7 @@ paths:
         The newly uploaded image file will be stored with a filename using the 
         crop properties: {_id}-{name}.{top}.{left}.{width}.{height}.{extension}
       tags:
-        - Attachments (Built-in)
+        - Attachments
       parameters:
         - $ref: '#/components/parameters/AposMode'
         - $ref: '#/components/parameters/AposLocale'
@@ -4514,919 +4447,6 @@ paths:
                 $ref: '#/components/schemas/Error'
         '422':
           description: Unprocessable entity - crop coordinates exceed image bounds
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-      security:
-        - ApiKeyAuth: []
-        - BearerAuth: []
-        - SessionAuth: []
-
-  /article:
-    get:
-      summary: Get articles
-      description: Retrieve blog articles (custom piece type)
-      tags:
-        - Articles (Custom)
-      parameters:
-        - $ref: '#/components/parameters/Page'
-        - $ref: '#/components/parameters/PerPage'
-        - $ref: '#/components/parameters/Search'
-        - $ref: '#/components/parameters/AposMode'
-        - $ref: '#/components/parameters/AposLocale'
-        - $ref: '#/components/parameters/RenderAreas'
-        # Custom query parameters for articles
-        - name: tags
-          in: query
-          description: Filter by article tags
-          schema:
-            type: array
-            items:
-              type: string
-          style: form
-          explode: true
-          example: ["cms", "tutorial"]
-        - name: _author
-          in: query
-          description: Filter by author ID
-          schema:
-            type: string
-          example: "clx1234567890abcdef"
-        - name: author
-          in: query
-          description: Filter by author slug
-          schema:
-            type: string
-          example: "john-doe"
-        - name: publishedAt
-          in: query
-          description: Filter by publication date
-          schema:
-            type: string
-            format: date
-          example: "2024-12-15"
-      operationId: ArticleGet
-      responses:
-        '200':
-          description: Successful response
-          content:
-            application/json:
-              schema:
-                allOf:
-                  - $ref: '#/components/schemas/PaginatedResponse'
-                  - type: object
-                    properties:
-                      results:
-                        type: array
-                        items:
-                          $ref: '#/components/schemas/Article'
-        '400':
-          description: Bad request - Invalid file ID format
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '401':
-          description: Unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '403':
-          description: Forbidden
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '404':
-          description: File not found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '500':
-          description: Internal server error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-      security:
-        - ApiKeyAuth: []
-        - BearerAuth: []
-        - SessionAuth: []
-        - {} # Allows unauthenticated access if publicApiProjection is defined
-
-    post:
-      summary: Create article
-      description: Create a new blog article
-      tags:
-        - Articles (Custom)
-      parameters:
-        - $ref: '#/components/parameters/AposMode'
-        - $ref: '#/components/parameters/AposLocale'
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required:
-                - title
-              properties:
-                title:
-                  type: string
-                  example: "Getting Started with Headless CMS"
-                slug:
-                  type: string
-                  example: "getting-started-headless-cms"
-                  description: Auto-generated from title if not provided
-                body:
-                  type: object
-                  description: Rich text content area
-                  properties:
-                    metaType:
-                      type: string
-                      example: "area"
-                    items:
-                      type: array
-                      items:
-                        type: object
-                        description: Content widgets (rich text, images, etc.)
-                publishedAt:
-                  type: string
-                  format: date-time
-                  description: Publication date
-                  example: "2024-12-15T10:30:00.000Z"
-                tags:
-                  type: array
-                  items:
-                    type: string
-                  description: Article tags
-                  example: ["cms", "headless", "tutorial"]
-                _author:
-                  type: array
-                  items:
-                    type: string
-                  description: Author IDs (relationship field)
-                  example: ["clx1234567890abcdef"]
-                visibility:
-                  type: string
-                  enum: ["public", "loginRequired"]
-                  default: "public"
-      operationId: ArticlePost
-      responses:
-        '201':
-          description: Article created successfully
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Article'
-        '400':
-          description: Bad request - validation errors
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '401':
-          description: Unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-      security:
-        - ApiKeyAuth: []
-        - BearerAuth: []
-        - SessionAuth: []
-
-  /article/{id}:
-    get:
-      summary: Get single article
-      description: Retrieve a specific article by ID
-      tags:
-        - Articles (Custom)
-      parameters:
-        - name: id
-          in: path
-          required: true
-          description: Article ID
-          schema:
-            type: string
-            example: "clx1234567890abcdef"
-        - $ref: '#/components/parameters/AposMode'
-        - $ref: '#/components/parameters/AposLocale'
-        - $ref: '#/components/parameters/RenderAreas'
-      operationId: ArticleGetById
-      responses:
-        '200':
-          description: Article found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Article'
-        '400':
-          description: Bad request - Invalid file ID format
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '401':
-          description: Unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '403':
-          description: Forbidden
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '404':
-          description: File not found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '500':
-          description: Internal server error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-      security:
-        - ApiKeyAuth: []
-        - BearerAuth: []
-        - SessionAuth: []
-
-    put:
-      summary: Replace article
-      description: Completely replace an article document
-      tags:
-        - Articles (Custom)
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: string
-        - $ref: '#/components/parameters/AposMode'
-        - $ref: '#/components/parameters/AposLocale'
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required:
-                - title
-              properties:
-                title:
-                  type: string
-                slug:
-                  type: string
-                body:
-                  type: object
-                publishedAt:
-                  type: string
-                  format: date-time
-                tags:
-                  type: array
-                  items:
-                    type: string
-                _author:
-                  type: array
-                  items:
-                    type: string
-                visibility:
-                  type: string
-                  enum: ["public", "loginRequired"]
-      operationId: ArticlePutById
-      responses:
-        '200':
-          description: Article updated
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Article'
-        '400':
-          description: Bad request
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '401':
-          description: Unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '403':
-          description: Forbidden
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '404':
-          description: Article not found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-      security:
-        - ApiKeyAuth: []
-        - BearerAuth: []
-        - SessionAuth: []
-
-    patch:
-      summary: Update article fields
-      description: Update specific fields of an article
-      tags:
-        - Articles (Custom)
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: string
-        - $ref: '#/components/parameters/AposMode'
-        - $ref: '#/components/parameters/AposLocale'
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                title:
-                  type: string
-                slug:
-                  type: string
-                body:
-                  type: object
-                publishedAt:
-                  type: string
-                  format: date-time
-                tags:
-                  type: array
-                  items:
-                    type: string
-                _author:
-                  type: array
-                  items:
-                    type: string
-                visibility:
-                  type: string
-                  enum: ["public", "loginRequired"]
-              description: Only include fields to update
-      operationId: ArticlePatchById
-      responses:
-        '200':
-          description: Article updated
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Article'
-        '400':
-          description: Bad request
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '401':
-          description: Unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '403':
-          description: Forbidden
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '404':
-          description: Article not found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-      security:
-        - ApiKeyAuth: []
-        - BearerAuth: []
-        - SessionAuth: []
-
-    delete:
-      summary: Delete article
-      description: Permanently delete an article
-      tags:
-        - Articles (Custom)
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: string
-        - $ref: '#/components/parameters/AposMode'
-        - $ref: '#/components/parameters/AposLocale'
-      operationId: ArticleDeleteById
-      responses:
-        '200':
-          description: Article deleted
-        '401':
-          description: Unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '403':
-          description: Forbidden
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '404':
-          description: Article not found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-      security:
-        - ApiKeyAuth: []
-        - BearerAuth: []
-        - SessionAuth: []
-
-  /article/{id}/publish:
-    post:
-      summary: Publish article draft
-      description: Publish the draft version of an article
-      tags:
-        - Articles (Custom)
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: string
-        - $ref: '#/components/parameters/AposLocale'
-      operationId: ArticlePublishById
-      responses:
-        '200':
-          description: Article published
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Article'
-        '401':
-          description: Unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '404':
-          description: Article not found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-      security:
-        - ApiKeyAuth: []
-        - BearerAuth: []
-        - SessionAuth: []
-
-  /event:
-    get:
-      summary: Get events
-      description: Retrieve calendar events (custom piece type)
-      tags:
-        - Events (Custom)
-      parameters:
-        - $ref: '#/components/parameters/Page'
-        - $ref: '#/components/parameters/PerPage'
-        - $ref: '#/components/parameters/Search'
-        - $ref: '#/components/parameters/AposMode'
-        - $ref: '#/components/parameters/AposLocale'
-        - $ref: '#/components/parameters/RenderAreas'
-        # Custom query parameters for events
-        - name: startDate
-          in: query
-          description: Filter events by start date (exact match)
-          schema:
-            type: string
-            format: date
-          example: "2024-12-20"
-        - name: startDateFrom
-          in: query
-          description: Filter events starting from this date
-          schema:
-            type: string
-            format: date
-          example: "2024-12-01"
-        - name: startDateTo
-          in: query
-          description: Filter events starting before this date
-          schema:
-            type: string
-            format: date
-          example: "2024-12-31"
-        - name: location
-          in: query
-          description: Filter by event location
-          schema:
-            type: string
-          example: "Tech City"
-        - name: _image
-          in: query
-          description: Filter by image ID
-          schema:
-            type: string
-          example: "clx1234567890abcdef"
-      operationId: EventGet
-      responses:
-        '200':
-          description: Successful response
-          content:
-            application/json:
-              schema:
-                allOf:
-                  - $ref: '#/components/schemas/PaginatedResponse'
-                  - type: object
-                    properties:
-                      results:
-                        type: array
-                        items:
-                          $ref: '#/components/schemas/Event'
-        '400':
-          description: Bad request - Invalid file ID format
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '401':
-          description: Unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '403':
-          description: Forbidden
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '404':
-          description: File not found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '500':
-          description: Internal server error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-      security:
-        - ApiKeyAuth: []
-        - BearerAuth: []
-        - SessionAuth: []
-        - {} # Allows unauthenticated access if publicApiProjection is defined
-
-    post:
-      summary: Create event
-      description: Create a new calendar event
-      tags:
-        - Events (Custom)
-      parameters:
-        - $ref: '#/components/parameters/AposMode'
-        - $ref: '#/components/parameters/AposLocale'
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required:
-                - title
-                - startDate
-              properties:
-                title:
-                  type: string
-                  example: "ApostropheCMS Meetup"
-                slug:
-                  type: string
-                  example: "apostrophecms-meetup"
-                  description: Auto-generated from title if not provided
-                description:
-                  type: object
-                  description: Rich text event description
-                startDate:
-                  type: string
-                  format: date-time
-                  example: "2024-12-20T18:00:00.000Z"
-                endDate:
-                  type: string
-                  format: date-time
-                  example: "2024-12-20T20:00:00.000Z"
-                location:
-                  type: string
-                  example: "123 Developer Street, Tech City"
-                _image:
-                  type: array
-                  items:
-                    type: string
-                  description: Event image IDs (relationship field)
-                  example: ["clx1234567890abcdef"]
-                visibility:
-                  type: string
-                  enum: ["public", "loginRequired"]
-                  default: "public"
-      operationId: EventPost
-      responses:
-        '201':
-          description: Event created successfully
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Event'
-        '400':
-          description: Bad request - validation errors
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '401':
-          description: Unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-      security:
-        - ApiKeyAuth: []
-        - BearerAuth: []
-        - SessionAuth: []
-
-  /event/{id}:
-    get:
-      summary: Get single event
-      description: Retrieve a specific event by ID
-      tags:
-        - Events (Custom)
-      parameters:
-        - name: id
-          in: path
-          required: true
-          description: Event ID
-          schema:
-            type: string
-            example: "clx1234567890abcdef"
-        - $ref: '#/components/parameters/AposMode'
-        - $ref: '#/components/parameters/AposLocale'
-        - $ref: '#/components/parameters/RenderAreas'
-      operationId: EventGetById
-      responses:
-        '200':
-          description: Event found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Event'
-        '404':
-          description: Event not found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-
-    put:
-      summary: Replace event
-      description: Completely replace an event document
-      tags:
-        - Events (Custom)
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: string
-        - $ref: '#/components/parameters/AposMode'
-        - $ref: '#/components/parameters/AposLocale'
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required:
-                - title
-                - startDate
-              properties:
-                title:
-                  type: string
-                slug:
-                  type: string
-                description:
-                  type: object
-                startDate:
-                  type: string
-                  format: date-time
-                endDate:
-                  type: string
-                  format: date-time
-                location:
-                  type: string
-                _image:
-                  type: array
-                  items:
-                    type: string
-                visibility:
-                  type: string
-                  enum: ["public", "loginRequired"]
-      operationId: EventPutById
-      responses:
-        '200':
-          description: Event updated
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Event'
-        '400':
-          description: Bad request
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '401':
-          description: Unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '403':
-          description: Forbidden
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '404':
-          description: Event not found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-      security:
-        - ApiKeyAuth: []
-        - BearerAuth: []
-        - SessionAuth: []
-
-    patch:
-      summary: Update event fields
-      description: Update specific fields of an event
-      tags:
-        - Events (Custom)
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: string
-        - $ref: '#/components/parameters/AposMode'
-        - $ref: '#/components/parameters/AposLocale'
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                title:
-                  type: string
-                slug:
-                  type: string
-                description:
-                  type: object
-                startDate:
-                  type: string
-                  format: date-time
-                endDate:
-                  type: string
-                  format: date-time
-                location:
-                  type: string
-                _image:
-                  type: array
-                  items:
-                    type: string
-                visibility:
-                  type: string
-                  enum: ["public", "loginRequired"]
-              description: Only include fields to update
-      operationId: EventPatchById
-      responses:
-        '200':
-          description: Event updated
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Event'
-        '400':
-          description: Bad request
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '401':
-          description: Unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '403':
-          description: Forbidden
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '404':
-          description: Event not found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-      security:
-        - ApiKeyAuth: []
-        - BearerAuth: []
-        - SessionAuth: []
-
-    delete:
-      summary: Delete event
-      description: Permanently delete an event
-      tags:
-        - Events (Custom)
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: string
-        - $ref: '#/components/parameters/AposMode'
-        - $ref: '#/components/parameters/AposLocale'
-      operationId: EventDeleteById
-      responses:
-        '200':
-          description: Event deleted
-        '401':
-          description: Unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '403':
-          description: Forbidden
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '404':
-          description: Event not found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-      security:
-        - ApiKeyAuth: []
-        - BearerAuth: []
-        - SessionAuth: []
-
-  /event/{id}/publish:
-    post:
-      summary: Publish event draft
-      description: Publish the draft version of an event
-      tags:
-        - Events (Custom)
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: string
-        - $ref: '#/components/parameters/AposLocale'
-      operationId: EventPublishById
-      responses:
-        '200':
-          description: Event published
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Event'
-        '401':
-          description: Unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '404':
-          description: Event not found
           content:
             application/json:
               schema:

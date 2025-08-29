@@ -1,0 +1,409 @@
+<div align="center">
+  <img src="https://raw.githubusercontent.com/apostrophecms/apostrophe/main/logo.svg" alt="ApostropheCMS logo" width="80" height="80">
+
+  <h1>ApostropheCMS OpenAPI Specification</h1>
+  
+  <p>
+    <a aria-label="Apostrophe logo" href="https://docs.apostrophecms.org">
+      <img src="https://img.shields.io/badge/MADE%20FOR%20ApostropheCMS-000000.svg?style=for-the-badge&logo=Apostrophe&labelColor=6516dd">
+    </a>
+    <a aria-label="Join the community on Discord" href="http://chat.apostrophecms.org">
+      <img alt="" src="https://img.shields.io/discord/517772094482677790?color=5865f2&label=Join%20the%20Discord&logo=discord&logoColor=fff&labelColor=000&style=for-the-badge&logoWidth=20">
+    </a>
+    <a aria-label="License" href="https://github.com/apostrophecms/apostrophecms-openapi/blob/main/LICENSE.md">
+      <img alt="" src="https://img.shields.io/static/v1?style=for-the-badge&labelColor=000000&label=License&message=MIT&color=3DA639">
+    </a>
+  </p>
+</div>
+
+**Build robust integrations with confidence** using the official OpenAPI 3.1 specification for the ApostropheCMS REST API. Generate type-safe SDKs, explore endpoints interactively, and accelerate development with standardized API documentation.
+
+## Why ApostropheCMS OpenAPI?
+
+- **🚀 Rapid SDK Generation**: Create client libraries in TypeScript, PHP, Python, Java, and more
+- **📚 Interactive Documentation**: Explore and test API endpoints with built-in Swagger UI
+- **🛠️ Developer Experience**: Type-safe client code with auto-completion and validation
+- **⚡ Headless Ready**: Perfect for modern frontend frameworks and mobile applications
+- **🎯 Standards Compliant**: OpenAPI 3.1 specification for maximum tool compatibility
+- **🔍 API Discovery**: Comprehensive endpoint documentation with examples and schemas
+
+> ⚠️ **Important**: This repository contains the API specification, not ApostropheCMS itself. For the CMS, visit the [main ApostropheCMS repository](https://github.com/apostrophecms/apostrophe).
+
+## What's Included
+
+### Core Specification
+- **`apostrophecms-openapi.yaml`** - Complete, validated OpenAPI spec covering all core, public facing ApostropheCMS REST API endpoints
+- **Interactive documentation** with request/response examples
+- **Authentication schemas** for API keys and bearer tokens
+- **Comprehensive error responses** and status codes
+
+### Examples
+- **`examples/apostrophecms-piece-examples.yaml`** - Sample piece types (articles, events) for learning and prototyping
+- **Generated SDKs** in multiple languages with usage examples
+- **Integration patterns** for common use cases
+
+## Quick Start
+
+### View Interactive Documentation
+
+To explore the API with Swagger UI, first install the dependencies with `npm install` and then:
+
+```bash
+# Core ApostropheCMS API
+npm run docs:open
+
+# or
+
+# Example piece types
+npm run example-docs:open
+```
+
+This opens an interactive browser interface where you can test your project endpoints, view schemas, and understand the API structure.
+
+### Generate Your First SDK
+
+Generate a JavaScript/TypeScript client (requires Java runtime):
+
+```bash
+npm run generate:typescript
+```
+
+Use the generated client in your Node.js project:
+
+```javascript
+// Works with both JavaScript and TypeScript
+import { Configuration, DefaultApi } from './examples/typescript';
+
+const config = new Configuration({
+  basePath: 'http://localhost:3000/api/v1',
+  apiKey: 'your-api-key-here'
+});
+
+const api = new DefaultApi(config);
+
+// Fetch all pages
+const pages = await api.getApostrophecmsPage();
+console.log(pages.data);
+
+// Create a new page
+const newPage = await api.postApostrophecmsPage({
+  title: 'Welcome Page',
+  type: 'default-page',
+  slug: 'welcome'
+});
+```
+
+## SDK Generation
+
+### JavaScript/TypeScript
+
+Generate a client that works with both JavaScript and TypeScript projects:
+
+```bash
+npm run generate:typescript
+```
+
+**Features:**
+- Works in both JavaScript and TypeScript projects
+- Axios-based HTTP client with modern async/await
+- Optional type safety when using TypeScript
+- Automatic request/response validation
+
+**Node.js usage (JavaScript):**
+```javascript
+const { Configuration, DefaultApi } = require('./examples/typescript');
+
+const config = new Configuration({
+  basePath: 'http://localhost:3000/api/v1',
+  apiKey: process.env.APOS_API_KEY
+});
+
+const api = new DefaultApi(config);
+
+// Fetch and display all pages
+async function getAllPages() {
+  try {
+    const pages = await api.getApostrophecmsPage();
+    console.log('Pages:', pages.data);
+  } catch (error) {
+    console.error('Error:', error.response?.data || error.message);
+  }
+}
+```
+
+### PHP
+
+Generate a PHP client for traditional web applications and WordPress migrations:
+
+```bash
+npx @openapitools/openapi-generator-cli generate \
+  -i apostrophecms-openapi.yaml \
+  -g php \
+  -o ./examples/php \
+  --additional-properties=packageName=ApostropheCMS
+```
+
+**Perfect for:**
+- WordPress to ApostropheCMS migrations
+- Traditional LAMP stack integrations
+- Legacy system connections
+
+### Python
+
+Generate a Python client for data processing and enterprise integrations:
+
+```bash
+npm run generate:python
+```
+
+**Usage example:**
+```python
+import apostrophecms_client
+from apostrophecms_client.api import default_api
+
+# Perfect for data migration scripts
+configuration = apostrophecms_client.Configuration(
+    host="http://localhost:3000/api/v1",
+    api_key={'ApiKeyAuth': 'your-api-key'}
+)
+
+with apostrophecms_client.ApiClient(configuration) as api_client:
+    api_instance = default_api.DefaultApi(api_client)
+    pages = api_instance.get_apostrophecms_page()
+    
+    # Process pages for analytics or migration
+    for page in pages.results:
+        print(f"Processing: {page.title}")
+```
+
+**Ideal for:**
+- Content migration and ETL processes
+- Data analysis and reporting
+- Enterprise system integrations
+- Automation scripts
+
+### Other Languages
+
+Generate clients for any language supported by an [OpenAPI Generator](https://openapi-generator.tech/docs/generators/):
+
+```bash
+# Java
+npx @openapitools/openapi-generator-cli generate \
+  -i apostrophecms-openapi.yaml \
+  -g java \
+  -o ./examples/java \
+  --additional-properties=groupId=com.apostrophecms,artifactId=apostrophecms-client
+
+# C#
+npx @openapitools/openapi-generator-cli generate \
+  -i apostrophecms-openapi.yaml \
+  -g csharp \
+  -o ./examples/csharp
+
+# PHP
+npx @openapitools/openapi-generator-cli generate \
+  -i apostrophecms-openapi.yaml \
+  -g php \
+  -o ./examples/php
+```
+
+## Use Cases
+
+**Modern Frontend Development**: Build React, Vue, or Angular applications with generated JavaScript/TypeScript clients.
+
+**Node.js Backend Services**: Create API integration layers and microservices using the generated client.
+
+**Traditional Web Applications**: Use PHP clients for existing LAMP stack projects or WordPress migrations.
+
+**Data Processing & Analytics**: Leverage Python clients for content analysis, reporting, and ETL processes.
+
+**API Testing**: Use the specification for automated testing, contract validation, and API mocking.
+
+**Documentation**: Generate comprehensive API documentation for your development team.
+
+## Validation & Testing
+
+Ensure specification quality with built-in validation:
+
+```bash
+# Validate OpenAPI structure
+npm run validate
+
+# Lint against best practices
+npm run lint
+
+# Run both validation and linting
+npm run test
+```
+
+The specification uses [Spectral](https://stoplight.io/open-source/spectral/) for comprehensive linting and follows OpenAPI best practices for consistency and reliability. Different OpenAPI validators may show varying warnings since each tool enforces its own additional rules beyond the core specification.
+
+## API Mocking
+
+Use the specification for local development and testing:
+
+```bash
+# Install Prism globally
+npm install -g @stoplight/prism-cli
+
+# Start a mock server
+prism mock apostrophecms-openapi.yaml
+
+# Mock server runs at http://localhost:4010
+```
+
+This creates a fully functional mock API server that returns example responses, perfect for frontend development before your backend is ready.
+
+## Authentication
+
+The API supports multiple authentication methods:
+
+### API Keys
+```javascript
+const config = new Configuration({
+  basePath: 'http://localhost:3000/api/v1',
+  apiKey: 'your-api-key-here'
+});
+```
+
+### Bearer Tokens
+```javascript
+const config = new Configuration({
+  basePath: 'http://localhost:3000/api/v1',
+  accessToken: 'your-jwt-token'
+});
+```
+
+### Session-based Authentication
+For browser-based applications, you can use standard session cookies alongside the API.
+
+## Versioning
+
+- **Specification Version**: Follows semantic versioning (current: `1.0.0`)
+- **API Compatibility**: The `x-apostrophe.cmsVersion` field indicates compatible ApostropheCMS versions
+- **Breaking Changes**: Major version updates indicate breaking API changes
+
+## Advanced Usage
+
+### Custom Configuration
+
+Override default client configuration:
+
+```javascript
+// Works in both JavaScript and TypeScript
+const config = new Configuration({
+  basePath: 'https://your-cms.com/api/v1',
+  apiKey: 'your-api-key',
+  // Custom timeout
+  timeout: 10000,
+  // Custom headers
+  defaultHeaders: {
+    'Custom-Header': 'value'
+  }
+});
+```
+
+### Error Handling
+
+Handle API errors gracefully:
+
+```javascript
+try {
+  const page = await api.getApostrophecmsPageById('page-id');
+} catch (error) {
+  if (error.response?.status === 404) {
+    console.log('Page not found');
+  } else if (error.response?.status === 401) {
+    console.log('Authentication required');
+  } else {
+    console.error('API Error:', error.message);
+  }
+}
+```
+
+### Pagination
+
+Handle paginated responses:
+
+```javascript
+const fetchAllPages = async () => {
+  let page = 1;
+  const allPages = [];
+  
+  while (true) {
+    const response = await api.getApostrophecmsPage(page, 50);
+    allPages.push(...response.data.results);
+    
+    if (response.data.results.length < 50) break;
+    page++;
+  }
+  
+  return allPages;
+};
+```
+
+## File Structure
+
+```
+├── apostrophecms-openapi.yaml     # Core API specification
+├── examples/
+│   ├── apostrophecms-piece-examples.yaml  # Example piece types
+│   ├── typescript/                # Generated TypeScript SDK
+│   └── php/                    # Generated PHP SDKgenerated SDKs
+├── scripts/
+│   ├── serve-docs.js             # Swagger UI server
+│   └── serve-example-docs.js     # Example docs server
+└── package.json                  # Build scripts and dependencies
+```
+
+## Scripts Reference
+
+| Script | Description |
+|--------|-------------|
+| `npm run docs:open` | Open interactive API documentation |
+| `npm run example-docs:open` | Open example piece documentation |
+| `npm run validate` | Validate OpenAPI specification |
+| `npm run lint` | Lint specification with Spectral |
+| `npm run test` | Run validation and linting |
+| `npm run generate:typescript` | Generate TypeScript SDK |
+| `npm run generate:python` | Generate Python SDK |
+| `npm run generate:php` | Generate PHP SDK |
+
+---
+
+## Contributing
+
+We welcome contributions to improve the specification:
+
+1. **Fork the repository** and create a feature branch
+2. **Make your changes** to the OpenAPI specification
+3. **Run tests** with `npm test` to ensure validity
+4. **Submit a pull request** with a clear description
+
+Please ensure all changes:
+- Follow OpenAPI 3.1 standards
+- Include appropriate examples
+- Pass validation and linting
+- Update documentation if needed
+
+## Getting Started with ApostropheCMS
+
+New to ApostropheCMS? Check out these resources:
+
+- **[ApostropheCMS Documentation](https://docs.apostrophecms.org/)** - Complete CMS guide
+- **[REST API Tutorial](https://docs.apostrophecms.org/guide/rest-api.html)** - Learn the API basics
+- **[Headless CMS Guide](https://docs.apostrophecms.org/guide/headless.html)** - Building decoupled applications
+
+## Community & Support
+
+- **[Discord Community](https://discord.com/invite/HwntQpADJr)** - Get help from other developers
+- **[GitHub Issues](https://github.com/apostrophecms/apostrophecms-openapi/issues)** - Report bugs or request features
+- **[Documentation](https://docs.apostrophecms.org/)** - Comprehensive guides and API reference
+- **[Professional Support](https://apostrophecms.com/contact-us)** - Enterprise support and consulting
+
+---
+
+<div>
+  <p>Made with ❤️ by the <a href="https://apostrophecms.com">ApostropheCMS</a> team. <strong>Found this useful? <a href="https://github.com/apostrophecms/apostrophecms-openapi">Give us a star on GitHub!</a> ⭐</strong>
+  </p>
+</div>

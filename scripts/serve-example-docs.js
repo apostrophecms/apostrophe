@@ -21,7 +21,7 @@ app.use('/styles', express.static(path.join(__dirname, '../styles'), {
 
 // Serve the OpenAPI spec
 app.get('/openapi.yaml', (req, res) => {
-  res.sendFile(path.join(__dirname, '../apostrophecms-openapi.yaml'));
+  res.sendFile(path.join(__dirname, '../examples/apostrophecms-piece-examples.yaml'));
 });
 
 // Serve a custom HTML page
