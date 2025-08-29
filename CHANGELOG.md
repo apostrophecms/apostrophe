@@ -2,7 +2,7 @@
 
 ## 2.227.12 (2025-08-28)
 
-* Work around a rare mongodb driver issue that affects unpacking very large, but not illegally large asset bundles (9MB, not 16MB).
+* Bump dependency on `emulate-mongo-2-driver` to address an incompatibility that has cropped up upstream in a recent update of the mongodb driver.
 
 ## 2.227.11 (2025-04-23)
 
