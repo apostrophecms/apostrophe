@@ -6,6 +6,7 @@
     :disabled="count <= 0"
     :tooltip="tooltip"
     :icon-only="true"
+    :action="action"
     @click="open"
   >
     <template #label>
@@ -21,6 +22,12 @@
 <script>
 export default {
   name: 'AposSubmittedDraftIcon',
+  props: {
+    action: {
+      type: String,
+      required: true
+    }
+  },
   data() {
     return {
       count: 0
