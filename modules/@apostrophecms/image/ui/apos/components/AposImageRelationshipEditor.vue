@@ -159,7 +159,7 @@ export default {
       aspectRatioChoices,
       disableAspectRatio
     } = this.getAspectRatioData(widgetOptions);
-    const minSize = this.widgetOptions.minSize || [];
+    const minSize = widgetOptions.minSize || [];
     const image = this.getImage();
     const data = this.setDataValues(image);
 
