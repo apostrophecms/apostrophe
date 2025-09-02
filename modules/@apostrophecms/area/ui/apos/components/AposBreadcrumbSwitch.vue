@@ -1,8 +1,6 @@
 <template>
   <fieldset class="apos-breadcrumb-switch">
     <div>
-      <!-- <input type="radio" id="html" name="fav_language" value="HTML"> -->
-      <!-- <label for="html">HTML</label><br> -->
       <label
         v-for="choice in choices"
         :key="choice.value"
@@ -60,9 +58,6 @@ export default {
         name: this.name,
         value: this.next
       });
-      // console.log('eee');
-      // console.log(event);
-      // console.log('updating', this.next);
     }
   }
 };
@@ -93,7 +88,6 @@ export default {
   }
 
   input[type="radio"] {
-    // Code to hide the input
     clip: rect(0 0 0 0);
     clip-path: inset(100%);
     height: 1px;
@@ -125,7 +119,7 @@ export default {
       position: relative;
       margin-left: .0625em;
       letter-spacing: 0.5px;
-      color: #3e4963;
+      color: var(--a-base-1);
       text-align: center;
       transition: background-color .5s ease;
       box-sizing: border-box;
