@@ -54,7 +54,7 @@ export async function _renderContent(props) {
     ...widget
   } = props.modelValue;
   const parameters = {
-    _docId: props.docId,
+    // _docId: props.docId,
     widget,
     areaFieldId: props.areaFieldId,
     type: props.type

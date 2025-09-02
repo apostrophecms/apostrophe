@@ -1,6 +1,8 @@
 export default {
   // NOTE: docId is always null, investigate if needed
-  docId: String,
+  // docId is null with a reason (at least for now).
+  // It affects the "foreign" checks in area/widget-area editors.
+  // docId: String,
   type: String,
   areaFieldId: String,
   modelValue: Object,
