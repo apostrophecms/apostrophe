@@ -841,6 +841,7 @@ export default {
     position: absolute;
     box-sizing: border-box;
     border: 1px dashed rgba($brand-blue, 0.8);
+    border: 1px solid var(--a-primary);
     transition: background-color 300ms ease;
     inset: 0;
     /* stylelint-disable-next-line declaration-no-important */
@@ -947,7 +948,8 @@ export default {
     height: 30px;
     max-width: 3px;
     max-height: 30px;
-    border-radius: 2px;
+    border-radius: 4px;
+    border: 1.5px solid var(--a-primary);
     box-shadow: 0 1px 3px var(--a-primary);
     background-color: var(--a-background-primary);
     transform: translate(-50%, -50%);
@@ -972,6 +974,7 @@ export default {
     width: 4px;
     height: 40px;
     max-width: 4px;
+    background-color: var(--a-primary);
     max-height: 40px;
   }
 
