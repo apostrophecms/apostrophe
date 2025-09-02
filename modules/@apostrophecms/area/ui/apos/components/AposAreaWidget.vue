@@ -78,12 +78,26 @@
         </ol>
         <!-- FIXME Bring widget controls data from the widget config -->
         <ol
-          class="apos-area-widget__breadcrumbs"
+          class="apos-area-widget__breadcrumbs apos-area-widget__breadcrumbs--switch"
           style="margin-left: 10px;"
         >
           <li class="apos-area-widget__breadcrumb">
-            Look 'ma, horizontal controls!
+            <AposBreadcrumbSwitch
+              :choices="[
+                { label: 'Content', value: 'content' },
+                { label: 'Layout', value: 'layout' }
+              ]"
+              name="switch"
+              value="layout"
+              @update="foo"
+            />
           </li>
+          <AposIndicator
+            icon="information-outline-icon"
+            fill-color="var(--a-primary)"
+            tooltip="Use Content mode to edit your widgets and Layout mode to modify your columns"
+            class="apos-area-widget__breadcrumbs-switch__info"
+          />
         </ol>
       </div>
       <div
@@ -199,10 +213,14 @@
 
 <script>
 import AposIndicator from 'Modules/@apostrophecms/ui/components/AposIndicator.vue';
+import AposBreadcrumbSwitch from 'Modules/@apostrophecms/area/components/AposBreadcrumbSwitch.vue';
 
 export default {
   name: 'AposAreaWidget',
-  components: { AposIndicator },
+  components: {
+    AposIndicator,
+    AposBreadcrumbSwitch
+  },
   props: {
     widgetHovered: {
       type: String,
@@ -463,6 +481,9 @@ export default {
     apos.bus.$off('widget-focus-parent', this.focusParent);
   },
   methods: {
+    foo(update) {
+      console.log(`name: ${update.name}, value: ${update.value}`);
+    },
     getFocusForMenu({ menuId, isOpen }) {
       if (
         (
@@ -603,6 +624,29 @@ export default {
 </script>
 
 <style lang="scss" scoped>
+.apos-area-widget__breadcrumbs.apos-area-widget__breadcrumbs--switch {
+  padding: 4px;
+  border: 1px solid var(--a-primary-transparent-25);
+  background-color: var(--a-white);
+
+  .apos-area-widget__breadcrumb,
+  :deep(.apos-breadcrumb-switch),
+  :deep(.apos-breadcrumb-switch > div) {
+    height: 100%;
+  }
+
+  .apos-area-widget__breadcrumb {
+    padding: 0;
+  }
+
+}
+
+.apos-area-widget__breadcrumbs-switch__info {
+  position: absolute;
+  transform: translateX(50%);
+  right: -10px;
+}
+
 @mixin showButton() {
   transform: scale(1.15);
   background-size: 150% 100%;
@@ -857,6 +901,8 @@ export default {
 
     & {
       display: flex;
+      height: 32px;
+      box-sizing: border-box;
       align-items: center;
       margin: 0 0 8px;
       padding: 4px 6px;
