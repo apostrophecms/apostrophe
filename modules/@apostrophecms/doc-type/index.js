@@ -2491,7 +2491,7 @@ module.exports = {
                     area._edit = true;
                   }
 
-                  area._docId = doc._id;
+                  area._docId = doc._docId || ((doc.metaType === 'doc') ? doc._id : null);
                   for (const item of area.items) {
                     if (area._edit) {
                       // Keep propagating ._edit so a widget can be passed
@@ -2499,7 +2499,7 @@ module.exports = {
                       // -Tom
                       item._edit = true;
                     }
-                    item._docId = doc._id;
+                    item._docId = area._docId;
                     if (!widgetsByType[item.type]) {
                       widgetsByType[item.type] = [];
                     }
@@ -2512,7 +2512,7 @@ module.exports = {
               // be edited in context
               for (const info of arrayItemsInfo) {
                 const arrayItem = info.arrayItem;
-                arrayItem._docId = doc._docId || doc._id;
+                arrayItem._docId = doc._docId || ((doc.metaType === 'doc') ? doc._id : null);
                 arrayItem._edit = doc._edit;
               }
             }

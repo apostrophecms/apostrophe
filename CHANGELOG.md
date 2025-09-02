@@ -21,6 +21,7 @@
 * Fixes the widget data being cloned to be saved before the `postprocess` method being called, which leads to a loss of data in `AposWidgetEditor` (like the autocrop data).
 * In editors like `AposWidgetEditor` relationships are now post processed after they are updated in `AposInputRelationship` only for the relationship that has been updated. 
 It allows live preview to work well with it, it also avoids complexity and fixes updated data not being properly synced between the editor and the `AposSchema`.
+* Deeply nested widgets can now be edited properly via the editor dialog box. This longstanding issue did not affect on-page editing.
 
 ### Changes
 
