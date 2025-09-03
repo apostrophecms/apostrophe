@@ -2,7 +2,7 @@
   <img src="https://raw.githubusercontent.com/apostrophecms/apostrophe/main/logo.svg" alt="ApostropheCMS logo" width="80" height="80">
 
   <h1>ApostropheCMS OpenAPI Specification</h1>
-  
+
   <p>
     <a aria-label="Apostrophe logo" href="https://docs.apostrophecms.org">
       <img src="https://img.shields.io/badge/MADE%20FOR%20ApostropheCMS-000000.svg?style=for-the-badge&logo=Apostrophe&labelColor=6516dd">
@@ -39,8 +39,7 @@
 
 ### Examples
 - **`examples/apostrophecms-piece-examples.yaml`** - Sample piece types (articles, events) for learning and prototyping
-- **Generated SDKs** in multiple languages with usage examples
-- **Integration patterns** for common use cases
+- **`examples/typescript/`** - Pre-generated TypeScript SDK with comprehensive documentation
 
 ## Quick Start
 
@@ -62,164 +61,152 @@ This opens an interactive browser interface where you can test your project endp
 
 ### Generate Your First SDK
 
-Generate a JavaScript/TypeScript client (requires Java runtime):
+1. Generate a JavaScript/TypeScript client (requires Java runtime):
 
-```bash
-npm run generate:typescript
+    ```bash
+    npm run generate:typescript
+    ```
+
+This will create an SDK folder for Typescript in your `examples` folder. You can leave it in that location, or move it to a more accessible location.
+
+2. In the `typescript` folder, run:
+
+    ``` bash
+    npm install
+    npm run build
+    ```
+
+> 📚 **Rich Documentation Included**: The generated TypeScript SDK comes with complete API documentation in the `docs/` folder, plus a comprehensive README with examples for every endpoint. This is created by the generator.
+
+3. Install the generated client in your project using the full (not relative) path:
+
+    ```bash
+    npm install /Volume/development/apostrophecms-openapi/examples/typescript
+    ```
+4. Start your local ApostropheCMS project
+
+5. Use it:
+
+```ts
+import 'dotenv/config';
+import { Configuration, PagesApi, UsersApi } from 'apostrophecms-client';
+
+const config = new Configuration({
+  basePath: process.env.APOSTROPHE_BASE_URL || 'http://localhost:3000/api/v1',
+  apiKey: process.env.APOSTROPHE_API_KEY || 'your-api-key-here'
+});
+
+// Resource‑scoped clients
+const pages = new PagesApi(config);
+const users = new UsersApi(config);
+
+async function run() {
+  // --- Pages ---
+  // GET /@apostrophecms/page (page tree)
+  const tree = await pages.pageGet();
+  console.log('Page tree:', tree.data);
+
+  // POST /@apostrophecms/page (create)
+  const createdPage = await pages.pagePost({
+    title: 'Welcome Page',
+    type: 'default-page',
+    slug: 'welcome'
+  });
+  console.log('Created page:', createdPage.data);
+
+  // --- Users ---
+  // GET /@apostrophecms/user (list)
+  const userList = await users.userList();
+  console.log('Users:', userList.data);
+
+  // POST /@apostrophecms/user (create)
+  const createdUser = await users.userCreate({
+    title: 'api-user',
+    username: 'api-user',
+    password: 'Str0ng!',
+    role: 'admin', // or 'edit', 'guest', etc.
+    email: 'api-user@email.com'
+  });
+  console.log('Created user:', createdUser.data);
+}
+
+run().catch(err => {
+  console.error(err?.response?.data ?? err.message);
+});
 ```
 
-Use the generated client in your Node.js project:
+## Authentication
 
+The API supports multiple authentication methods:
+
+### API Keys
 ```javascript
-// Works with both JavaScript and TypeScript
-import { Configuration, DefaultApi } from './examples/typescript';
-
 const config = new Configuration({
   basePath: 'http://localhost:3000/api/v1',
   apiKey: 'your-api-key-here'
 });
+```
 
-const api = new DefaultApi(config);
-
-// Fetch all pages
-const pages = await api.getApostrophecmsPage();
-console.log(pages.data);
-
-// Create a new page
-const newPage = await api.postApostrophecmsPage({
-  title: 'Welcome Page',
-  type: 'default-page',
-  slug: 'welcome'
+### Bearer Tokens
+```javascript
+const config = new Configuration({
+  basePath: 'http://localhost:3000/api/v1',
+  accessToken: 'your-jwt-token'
 });
 ```
 
+### Session-based Authentication
+For browser-based applications, you can use standard session cookies alongside the API.
+```javascript
+const cfg = new Configuration({ basePath, accessToken: process.env.APOS_BEARER });
+```
+
+* **API key** (query string): pass `apiKey` into `Configuration({ apiKey: '…' })`
+* **Bearer token**: pass `accessToken` into `Configuration({ accessToken: '…' })`
+* **Session/cookie**: run in an environment that includes the session cookie and enable `withCredentials` (axios) if needed
+
 ## SDK Generation
 
-### JavaScript/TypeScript
+These scripts wrap the OpenAPI Generator (requires a Java runtime). Adjust paths/options as needed.
 
-Generate a client that works with both JavaScript and TypeScript projects:
+### TypeScript / JavaScript (axios)
 
 ```bash
 npm run generate:typescript
 ```
 
-**Features:**
-- Works in both JavaScript and TypeScript projects
-- Axios-based HTTP client with modern async/await
-- Optional type safety when using TypeScript
-- Automatic request/response validation
+**What you get**
 
-**Node.js usage (JavaScript):**
-```javascript
-const { Configuration, DefaultApi } = require('./examples/typescript');
+* Works in JS **and** TS projects
+* axios‑based HTTP client (modern `async/await`)
+* Typed request/response models in TypeScript
 
-const config = new Configuration({
-  basePath: 'http://localhost:3000/api/v1',
-  apiKey: process.env.APOS_API_KEY
-});
-
-const api = new DefaultApi(config);
-
-// Fetch and display all pages
-async function getAllPages() {
-  try {
-    const pages = await api.getApostrophecmsPage();
-    console.log('Pages:', pages.data);
-  } catch (error) {
-    console.error('Error:', error.response?.data || error.message);
-  }
-}
-```
-
-### PHP
-
-Generate a PHP client for traditional web applications and WordPress migrations:
+### PHP (target WordPress migrations & LAMP)
 
 ```bash
-npx @openapitools/openapi-generator-cli generate \
-  -i apostrophecms-openapi.yaml \
-  -g php \
-  -o ./examples/php \
-  --additional-properties=packageName=ApostropheCMS
+npm run generate:php
 ```
 
-**Perfect for:**
-- WordPress to ApostropheCMS migrations
-- Traditional LAMP stack integrations
-- Legacy system connections
+**What you get**
 
-### Python
+* Composer‑friendly PHP client
+* Good fit for WordPress → ApostropheCMS migration scripts
+* Server‑rendered apps and legacy integrations
 
-Generate a Python client for data processing and enterprise integrations:
+### Python (ETL & scripting)
 
 ```bash
 npm run generate:python
 ```
 
-**Usage example:**
-```python
-import apostrophecms_client
-from apostrophecms_client.api import default_api
+**What you get**
 
-# Perfect for data migration scripts
-configuration = apostrophecms_client.Configuration(
-    host="http://localhost:3000/api/v1",
-    api_key={'ApiKeyAuth': 'your-api-key'}
-)
+* Easy scripting for data migration/ETL
+* Strong fit for analytics/reporting or ops automation
 
-with apostrophecms_client.ApiClient(configuration) as api_client:
-    api_instance = default_api.DefaultApi(api_client)
-    pages = api_instance.get_apostrophecms_page()
-    
-    # Process pages for analytics or migration
-    for page in pages.results:
-        print(f"Processing: {page.title}")
-```
+### Other languages
 
-**Ideal for:**
-- Content migration and ETL processes
-- Data analysis and reporting
-- Enterprise system integrations
-- Automation scripts
-
-### Other Languages
-
-Generate clients for any language supported by an [OpenAPI Generator](https://openapi-generator.tech/docs/generators/):
-
-```bash
-# Java
-npx @openapitools/openapi-generator-cli generate \
-  -i apostrophecms-openapi.yaml \
-  -g java \
-  -o ./examples/java \
-  --additional-properties=groupId=com.apostrophecms,artifactId=apostrophecms-client
-
-# C#
-npx @openapitools/openapi-generator-cli generate \
-  -i apostrophecms-openapi.yaml \
-  -g csharp \
-  -o ./examples/csharp
-
-# PHP
-npx @openapitools/openapi-generator-cli generate \
-  -i apostrophecms-openapi.yaml \
-  -g php \
-  -o ./examples/php
-```
-
-## Use Cases
-
-**Modern Frontend Development**: Build React, Vue, or Angular applications with generated JavaScript/TypeScript clients.
-
-**Node.js Backend Services**: Create API integration layers and microservices using the generated client.
-
-**Traditional Web Applications**: Use PHP clients for existing LAMP stack projects or WordPress migrations.
-
-**Data Processing & Analytics**: Leverage Python clients for content analysis, reporting, and ETL processes.
-
-**API Testing**: Use the specification for automated testing, contract validation, and API mocking.
-
-**Documentation**: Generate comprehensive API documentation for your development team.
+See all supported generators: [https://openapi-generator.tech/docs/generators/](https://openapi-generator.tech/docs/generators/)
 
 ## Validation & Testing
 
@@ -253,29 +240,6 @@ prism mock apostrophecms-openapi.yaml
 ```
 
 This creates a fully functional mock API server that returns example responses, perfect for frontend development before your backend is ready.
-
-## Authentication
-
-The API supports multiple authentication methods:
-
-### API Keys
-```javascript
-const config = new Configuration({
-  basePath: 'http://localhost:3000/api/v1',
-  apiKey: 'your-api-key-here'
-});
-```
-
-### Bearer Tokens
-```javascript
-const config = new Configuration({
-  basePath: 'http://localhost:3000/api/v1',
-  accessToken: 'your-jwt-token'
-});
-```
-
-### Session-based Authentication
-For browser-based applications, you can use standard session cookies alongside the API.
 
 ## Versioning
 
@@ -329,15 +293,15 @@ Handle paginated responses:
 const fetchAllPages = async () => {
   let page = 1;
   const allPages = [];
-  
+
   while (true) {
     const response = await api.getApostrophecmsPage(page, 50);
     allPages.push(...response.data.results);
-    
+
     if (response.data.results.length < 50) break;
     page++;
   }
-  
+
   return allPages;
 };
 ```
@@ -348,8 +312,7 @@ const fetchAllPages = async () => {
 ├── apostrophecms-openapi.yaml     # Core API specification
 ├── examples/
 │   ├── apostrophecms-piece-examples.yaml  # Example piece types
-│   ├── typescript/                # Generated TypeScript SDK
-│   └── php/                    # Generated PHP SDKgenerated SDKs
+│   └── typescript/                # Generated TypeScript SDK
 ├── scripts/
 │   ├── serve-docs.js             # Swagger UI server
 │   └── serve-example-docs.js     # Example docs server

@@ -10,11 +10,10 @@
     "example-docs:open": "node scripts/serve-example-docs.js --open",
     "validate": "swagger-cli validate apostrophecms-openapi.yaml",
     "lint": "spectral lint apostrophecms-openapi.yaml",
+    "test": "npm run validate && npm run lint",
     "generate:typescript": "openapi-generator-cli generate -i apostrophecms-openapi.yaml -g typescript-axios -o ./examples/typescript --additional-properties=npmName=apostrophecms-client,supportsES6=true",
     "generate:python": "openapi-generator-cli generate -i apostrophecms-openapi.yaml -g python -o ./examples/python --additional-properties=packageName=apostrophecms_client",
-    "generate:php": "openapi-generator-cli generate -i apostrophecms-openapi.yaml -g php -o ./examples/php --additional-properties=packageName=ApostropheCMS,invokerPackage=ApostropheCMS,composerVendorName=apostrophecms,composerPackageName=api-client",
-    "generate:examples": "npm run generate:typescript && npm run generate:python && npm run generate:php",
-    "test": "npm run validate && npm run lint"
+    "generate:php": "openapi-generator-cli generate -i apostrophecms-openapi.yaml -g php -o ./examples/php --additional-properties=packageName=ApostropheCMS,invokerPackage=ApostropheCMS,composerVendorName=apostrophecms,composerPackageName=api-client"
   },
   "keywords": [
     "openapi",
