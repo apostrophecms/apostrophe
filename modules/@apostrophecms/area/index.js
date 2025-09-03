@@ -191,6 +191,7 @@ module.exports = {
       // interface regardless of whether `options.widgets` or `options.groups`
       // was used.
       getWidgets(options) {
+        // Keep in sync with client-side implementation
         let widgets = options.widgets || {};
 
         if (options.groups) {
