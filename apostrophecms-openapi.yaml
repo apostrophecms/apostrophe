@@ -63,9 +63,10 @@ x-apostrophe:
     standard:
       - '@apostrophecms/image'
       - '@apostrophecms/file'
-      - image-tag
-      - file-tag
-      # Add more standard pieces here
+      - '@apostrophecms/image-tag'
+      - '@apostrophecms/file-tag'
+      - '@apostrophecms/submitted-draft'
+
     nonLocalizable:
       - '@apostrophecms/user'
       - '@apostrophecms/global'
@@ -73,10 +74,11 @@ x-apostrophe:
   marketingTags:
     '@apostrophecms/image': Media
     '@apostrophecms/file': Media
-    image-tag: Media
-    file-tag: Media
+    '@apostrophecms/image-tag': Media
+    '@apostrophecms/file-tag': Media
     '@apostrophecms/user': Users
     '@apostrophecms/global': Global Content
+    '@apostrophecms/submitted-draft': Submitted Draft
 
   # 👇 fallback for any piece not listed above
   defaultPieceMarketingTag: Custom
@@ -85,6 +87,7 @@ x-apostrophe:
   includeTechnicalTag: true
 
 security:
+  # adds session authentication as the default
   - SessionAuth: []
 
 servers:
@@ -94,30 +97,30 @@ servers:
     description: Production server (not for online use)
 
 tags:
-  - name: "Authentication"
-    description: "🚀 Login, logout, and session management for API access - start here!"
-  - name: "Pages"
-    description: "🚀 Essential for headless sites - page structure, content, and navigation"
-  - name: "Users"
-    description: "Built-in user management and authentication"
-  - name: "Global Content"
-    description: "Site-wide settings and content that appears across pages"
-  - name: "Submitted Drafts"
-    description: "Draft submission workflow and review queue management"
-  - name: "Media"
-    description: "File uploads, image management, and media organization"
-  - name: "Attachments"
-    description: "File upload utilities and image processing"
-  - name: "Internationalization"
-    description: "Multi-language support and locale management"
-  - name: "Custom"
-    description: "Project-defined piece types (your own content models)"
+  - name: Authentication
+    description: 🚀 Login, logout, and session management for API access - start here!
+  - name: Pages
+    description: 🚀 Essential for headless sites - page structure, content, and navigation
+  - name: Users
+    description: Built-in user management and authentication
+  - name: Global Content
+    description: Site-wide settings and content that appears across pages
+  - name: Submitted Drafts
+    description: Draft submission workflow and review queue management
+  - name: Media
+    description: File uploads, image management, and media organization
+  - name: Attachments
+    description: File upload utilities and image processing
+  - name: Internationalization
+    description: Multi-language support and locale management
+  - name: Custom
+    description: Project-defined piece types (your own content models)
 
 x-tagGroups:
   - name: Start Here
     tags: [Authentication]
   - name: Content & Media
-    tags: [Pages, Global Content, Media, Attachments]
+    tags: [Pages, Global Content, Submitted Draft, Media, Attachments]
   - name: People
     tags: [Users]
   - name: Internationalization
@@ -150,9 +153,6 @@ components:
       type: http
       scheme: bearer
       description: |
-        ⚠️ **Security Note:** Only use test credentials in this online sandbox.
-        Real credentials should never be entered in public documentation.
-
         Bearer token authentication (recommended for API clients).
 
         **Step 1:** Use the `POST /@apostrophecms/login/login` endpoint below with:
@@ -172,8 +172,7 @@ components:
       in: cookie
       name: project-shortname.sid
       description: |
-        ⚠️ **For testing after download only:** Change "project-shortname" in the `SessionAuth` to your actual 
-        ApostropheCMS shortname (e.g., "myapp.sid").
+        ⚠️ **For testing after download only:** Change "project-shortname" in the `SessionAuth` to your actual ApostropheCMS shortname (e.g., "myapp.sid").
 
         💡 This authentication won't work when testing in the online ApostropheCMS sandbox. However, you can use the login route to set a cookie you can examine in your browser DevTools.
         It will be named `project-shortname.sid`.
@@ -187,14 +186,13 @@ components:
         }
         ```
 
-        **Step 2:** Copy the session cookie value from your browser's dev tools 
+        **Step 2:** Copy the session cookie value from your browser's dev tools
         and paste it into the "Value" field above.
-
   parameters:
     Page:
       name: page
       in: query
-      description: "Page number for pagination (1-based)"
+      description: Page number for pagination (1-based)
       required: false
       schema:
         type: integer
@@ -205,7 +203,7 @@ components:
     PerPage:
       name: perPage
       in: query
-      description: "Number of items per page"
+      description: Number of items per page
       required: false
       schema:
         type: integer
@@ -217,7 +215,7 @@ components:
     Search:
       name: search
       in: query
-      description: "Search term for filtering results"
+      description: Search term for filtering results
       required: false
       schema:
         type: string
@@ -226,7 +224,7 @@ components:
     Autocomplete:
       name: autocomplete
       in: query
-      description: "Partial word search for autocomplete functionality"
+      description: Partial word search for autocomplete functionality
       required: false
       schema:
         type: string
@@ -235,7 +233,7 @@ components:
     AposMode:
       name: aposMode
       in: query
-      description: "Request draft or published version of content"
+      description: Request draft or published version of content
       required: false
       schema:
         type: string
@@ -246,7 +244,7 @@ components:
     AposLocale:
       name: aposLocale
       in: query
-      description: "Locale for internationalization (e.g., 'en', 'fr', 'es')"
+      description: Locale for internationalization (e.g., 'en', 'fr', 'es')
       required: false
       schema:
         type: string
@@ -265,7 +263,7 @@ components:
     RenderAreas:
       name: render-areas
       in: query
-      description: "💡 Render widget areas as HTML instead of returning raw widget data - useful for hybrid architectures"
+      description: 💡 Render widget areas as HTML instead of returning raw widget data - useful for hybrid architectures
       required: false
       schema:
         type: boolean
@@ -276,7 +274,7 @@ components:
       name: _id
       in: path
       required: true
-      description: "Document ID (can include mode and locale, e.g., id:en:published)"
+      description: Document ID (can include mode and locale, e.g., id:en:published)
       schema:
         type: string
         example: "ckitdo5oq004pu69kr6oxo6fr:en:published"
@@ -284,7 +282,7 @@ components:
     AllPages:
       name: all
       in: query
-      description: "Include entire page tree regardless of depth (use with caution for large sites)"
+      description: Include entire page tree regardless of depth (use with caution for large sites)
       schema:
         type: string
         enum: ["1"]
@@ -293,7 +291,7 @@ components:
     FlatResponse:
       name: flat
       in: query
-      description: "💡 Return pages in flat array instead of tree structure - easier for some use cases"
+      description: 💡 Return pages in flat array instead of tree structure - easier for some use cases
       schema:
         type: string
         enum: ["1"]
@@ -302,7 +300,7 @@ components:
     ChildrenParam:
       name: children
       in: query
-      description: "Include children array in response (set to 'false' to exclude)"
+      description: Include children array in response (set to 'false' to exclude)
       schema:
         type: string
         enum: ["false"]
@@ -311,59 +309,46 @@ components:
   schemas:
     _Overview_Fields:
       type: object
-      description: '# Field Types (editor-facing)
+      description: |
+        # Field Types (editor-facing)
 
         - `StringField` — basic text
-
         - `IntegerField`, `FloatField` — numbers
-
         - `SelectField`, `RadioField`, `CheckboxesField` — choices
-
         - `AreaField`, `ArrayField`, `ObjectField`
-
         - `AttachmentField`, `RelationshipField`, `RelationshipReverseField`
 
-
         👉 See also: **FieldDefinition** (discriminator: `type`).
-
-        '
       externalDocs:
         description: ApostropheCMS Field Guide
         url: https://docs.apostrophecms.org/reference/field-types/
       title: _Overview_Fields
+
     _Overview_Primitives:
       type: object
-      description: '# Content Primitives (payload-level)
-
+      description: |
+        # Content Primitives (payload-level)
 
         These are the “data atoms” for requests and responses.
 
         - `AposString`, `AposSlug`, `AposUrl`, `AposEmail`
-
         - `AposDateTime`, `AposDate`, `AposTime`
-
         - Arrays: `AposStringArray`, `AposIntegerArray`, etc.
 
-
         👉 Defined under **AposPrimitives**.
-
-        '
       title: _Overview_Primitives
+
     _Overview_Advanced:
       type: object
-      description: '# Advanced / Internal
-
+      description: |
+        # Advanced / Internal
 
         Used by OpenAPI for schema defs:
-
         - `UiCondition` (for `if`/`requiredIf`)
-
         - `OperatorObject` (query operators)
-
         - `AreaOptions`, `ArrayOptions`, and other config helpers
-
-        '
       title: _Overview_Advanced
+
     AreaField:
       allOf:
       - $ref: '#/components/schemas/BaseField'
@@ -420,16 +405,15 @@ components:
       additionalProperties: false
       properties:
         widgets:
-          description: "Allowed widget types for this area. Keys are widget module names\
-            \ (e.g., \"@apostrophecms/rich-text\"). Values are per-widget options that\
-            \ apply *only* in this area. \n"
+          description: |
+            Allowed widget types for this area. Keys are widget module names (e.g., "@apostrophecms/rich-text"). Values are per-widget options that apply *only* in this area.
           type: object
           additionalProperties:
             type: object
         groups:
-          description: "Organize widgets into groups for the expanded preview menu.\
-            \ Each group has a label, optional columns (1–4, default 3), and its own\
-            \ widgets map (same shape as `widgets`). \n"
+          description: |
+            Organize widgets into groups for the expanded preview menu.
+            Each group has a label, optional columns (1–4, default 3), and its own widgets map (same shape as `widgets`).
           type: object
           additionalProperties:
             $ref: '#/components/schemas/AreaWidgetGroup'
@@ -466,9 +450,7 @@ components:
       - $ref: '#/components/schemas/BaseField'
       - type: object
         additionalProperties: false
-        description: 'A repeatable list of objects, each with its own field schema.
-
-          '
+        description: A repeatable list of objects, each with its own field schema.
         properties:
           type:
             type: string
@@ -485,9 +467,7 @@ components:
             description: Maximum number of items (inclusive).
           titleField:
             type: string
-            description: 'Field name in each item used as the item label in the UI.
-
-              '
+            description: Field name in each item used as the item label in the UI.
           if:
             $ref: '#/components/schemas/UiCondition'
           requiredIf:
@@ -528,10 +508,9 @@ components:
       - $ref: '#/components/schemas/BaseField'
       - type: object
         additionalProperties: false
-        description: 'Lets editors upload a single file (image, PDF, etc.). Use an ArrayField
-          of AttachmentField if you need multiple files.
-
-          '
+        description: |
+          Lets editors upload a single file (image, PDF, etc.).
+          Use an ArrayField of AttachmentField if you need multiple files.
         properties:
           type:
             type: string
@@ -541,17 +520,12 @@ components:
           accept:
             oneOf:
             - type: string
-              description: 'HTML "accept" string (e.g., "image/*,.pdf"). Use to limit
-                by MIME type and/or extension.
-
-                '
+              description: HTML "accept" string (e.g., "image/*,.pdf"). Use to limitby MIME type and/or extension.
             - type: array
               items:
                 type: string
-              description: 'List of MIME types and/or extensions (e.g., ["image/*",
+              description: List of MIME types and/or extensions (e.g., ["image/*",
                 ".pdf"]).
-
-                '
           maxSize:
             type: integer
             description: Optional max file size in bytes (documentation-only hint).
@@ -589,11 +563,9 @@ components:
           toggle:
             oneOf:
             - type: boolean
-              description: 'If true, use the alternate "toggle" UI. Labels default to
-
-                the field label and standard true/false text.
-
-                '
+              description: |
+                If true, use the alternate "toggle" UI. 
+                Labels default to the field label and standard true/false text.
             - type: object
               additionalProperties: false
               description: Configure custom labels for the toggle UI.
@@ -643,28 +615,21 @@ components:
               items:
                 $ref: '#/components/schemas/SelectChoice'
             - type: string
-              description: 'Method name that provides choices dynamically.
-
-                '
+              description: Method name that provides choices dynamically.
           following:
             oneOf:
             - type: string
             - type: array
               items:
                 type: string
-            description: 'Populate dynamically based on other fields (supports `<` parent
-              prefixes).
-
-              '
+            description: Populate dynamically based on other fields (supports `<` parent prefixes).
           followingIgnore:
             oneOf:
             - type: boolean
             - type: array
               items:
                 type: string
-            description: 'Ignore some or all followed fields when generating values.
-
-              '
+            description: Ignore some or all followed fields when generating values.
           if:
             $ref: '#/components/schemas/UiCondition'
           requiredIf:
@@ -764,9 +729,7 @@ components:
           def:
             type: string
             format: date-time
-            description: 'Default timestamp in RFC 3339 format (e.g., 2025-08-29T13:00:00Z).
-
-              '
+            description: Default timestamp in RFC 3339 format (e.g., 2025-08-29T13:00:00Z).
           if:
             $ref: '#/components/schemas/UiCondition'
           requiredIf:
@@ -802,16 +765,12 @@ components:
             description: Default email address shown in the editor UI.
           pattern:
             type: string
-            description: 'Optional regex for stricter validation (in addition to HTML5
+            description: Optional regex for stricter validation (in addition to HTML5
               email validation).
-
-              '
           autocomplete:
             type: string
-            description: 'Value for the HTML autocomplete attribute. Common values are
+            description: Value for the HTML autocomplete attribute. Common values are
               "email" or "off".
-
-              '
           if:
             $ref: '#/components/schemas/UiCondition'
           requiredIf:
@@ -927,11 +886,10 @@ components:
         required:
         - type
         - label
-        description: 'Lets editors paste a media URL from an oEmbed-compatible host.
-          The editor shows an immediate preview once a valid URL is entered. Stored
-          value is an object snapshot (url/title/thumbnail).
-
-          '
+        description: |
+          Lets editors paste a media URL from an oEmbed-compatible host.
+          The editor shows an immediate preview once a valid URL is entered.
+          Stored value is an object snapshot (url/title/thumbnail).
         examples:
         - type: oembed
           label: Featured video
@@ -958,14 +916,10 @@ components:
             description: Maximum number of characters allowed.
           pattern:
             type: string
-            description: 'Regex to enforce password rules (e.g., at least one number).
-
-              '
+            description: Regex to enforce password rules (e.g., at least one number).
           autocomplete:
             type: string
-            description: 'HTML autocomplete attribute, usually "new-password" or "current-password".
-
-              '
+            description: HTML autocomplete attribute, usually "new-password" or "current-password".
           if:
             $ref: '#/components/schemas/UiCondition'
           requiredIf:
@@ -1003,28 +957,21 @@ components:
               items:
                 $ref: '#/components/schemas/SelectChoice'
             - type: string
-              description: 'Method name that provides choices (e.g. "statusChoices").
-
-                '
+              description: Method name that provides choices (e.g. "statusChoices").
           following:
             oneOf:
             - type: string
             - type: array
               items:
                 type: string
-            description: 'Populate dynamically based on other fields (supports `<` parent
-              prefixes).
-
-              '
+            description: Populate dynamically based on other fields (supports `<` parent prefixes).
           followingIgnore:
             oneOf:
             - type: boolean
             - type: array
               items:
                 type: string
-            description: 'Ignore some or all followed fields when generating values.
-
-              '
+            description: Ignore some or all followed fields when generating values.
           if:
             $ref: '#/components/schemas/UiCondition'
           requiredIf:
@@ -1063,9 +1010,7 @@ components:
             description: Default slider value in the editor UI.
           step:
             type: number
-            description: 'Increment step for the slider. If omitted, defaults to 1.
-
-              '
+            description: Increment step for the slider. If omitted, defaults to 1.
           min:
             type: number
             description: Minimum value for the slider.
@@ -1098,10 +1043,9 @@ components:
       - $ref: '#/components/schemas/BaseField'
       - type: object
         additionalProperties: false
-        description: 'Relate this document to one or more docs of another type (pieces/pages).
+        description: |
+          Relate this document to one or more docs of another type (pieces/pages).
           Use `max: 1` for a single-select join; omit `max` (or set >1) for multi-select.
-
-          '
         properties:
           type:
             type: string
@@ -1110,9 +1054,7 @@ components:
             description: Apostrophe field type id.
           withType:
             type: string
-            description: 'Module name of the related doc type (e.g., "article", "@apostrophecms/image").
-
-              '
+            description: Module name of the related doc type (e.g., "article", "@apostrophecms/image").
           min:
             type: integer
             description: Minimum number of related docs required (inclusive).
@@ -1124,10 +1066,8 @@ components:
           builders:
             type: object
             additionalProperties: true
-            description: 'Apostrophe cursor builders for the related query (e.g., {
-              project: { title: 1 }, sort: { title: 1 } }).
-
-              '
+            description: |
+              Apostrophe cursor builders for the related query (e.g., {project: { title: 1 }, sort: { title: 1 } }).
           if:
             $ref: '#/components/schemas/UiCondition'
           requiredIf:
@@ -1172,11 +1112,9 @@ components:
       - $ref: '#/components/schemas/BaseField'
       - type: object
         additionalProperties: false
-        description: 'Read-only reverse side of a forward `relationship` field defined
-          on another type. Use this to show “referenced by” links without storing ids
-          here.
-
-          '
+        description: |
+          Read-only reverse side of a forward `relationship` field defined on another type.
+          Use this to show “referenced by” links without storing ids here.
         properties:
           type:
             type: string
@@ -1188,10 +1126,8 @@ components:
             description: Module name that holds the forward relationship.
           reverseOf:
             type: string
-            description: 'Name of the forward relationship field on `withType` (e.g.,
-              "_authors" on "article").
-
-              '
+            description: |
+              Name of the forward relationship field on `withType` (e.g.,"_authors" on "article").
           builders:
             type: object
             additionalProperties: true
@@ -1237,9 +1173,8 @@ components:
                 - type: string
                 - type: number
                 - type: boolean
-            description: 'Default value. If `multiple: true`, this should be an array.
-
-              '
+            description: |
+              Default value. If `multiple: true`, this should be an array.
           multiple:
             type: boolean
             description: Allow selecting multiple values (stores an array).
@@ -1250,29 +1185,23 @@ components:
               items:
                 $ref: '#/components/schemas/SelectChoice'
             - type: string
-              description: 'Name of a method that returns choices (e.g. "sponsorNames").
+              description: |
+                Name of a method that returns choices (e.g. "sponsorNames").
                 May be "module:method" to reference another module.
-
-                '
           following:
             oneOf:
             - type: string
             - type: array
               items:
                 type: string
-            description: 'Populate dynamically based on other fields’ values (supports
-              `<` parent prefixes).
-
-              '
+            description: Populate dynamically based on other fields’ values (supports `<` parent prefixes).
           followingIgnore:
             oneOf:
             - type: boolean
             - type: array
               items:
                 type: string
-            description: 'Ignore some or all followed fields when generating values.
-
-              '
+            description: Ignore some or all followed fields when generating values.
         required:
         - type
         - label
@@ -1344,26 +1273,18 @@ components:
             description: Default slug value shown in the editor UI.
           prefix:
             type: string
-            description: 'Optional prefix automatically prepended when generating the
-              slug.
-
-              '
+            description: Optional prefix automatically prepended when generating the slug.
           source:
             type: string
-            description: 'Name of the field this slug should follow (usually "title").
+            description: |
+              Name of the field this slug should follow (usually "title").
               Works with `following`/`followingIgnore`.
-
-              '
           unique:
             type: boolean
-            description: 'If true, ensures slug is unique across docs of this type.
-
-              '
+            description: If true, ensures slug is unique across docs of this type.
           pattern:
             type: string
-            description: 'Optional regex to further constrain allowed slugs.
-
-              '
+            description: Optional regex to further constrain allowed slugs.
           if:
             $ref: '#/components/schemas/UiCondition'
           requiredIf:
@@ -1406,41 +1327,30 @@ components:
             description: Maximum number of characters allowed.
           pattern:
             type: string
-            description: 'Regular expression (string form) to validate the input.  Only
-              matching values are allowed.
-
-              '
+            description: |
+              Regular expression (string form) to validate the input.
+              Only matching values are allowed.
           autocomplete:
             type: string
-            description: 'Value of the HTML autocomplete attribute (see MDN). Use `"off"`
-              to disable autocomplete.
-
-              '
+            description: |
+              Value of the HTML autocomplete attribute (see MDN). Use `"off"` to disable autocomplete.
           following:
             oneOf:
             - type: string
             - type: array
               items:
                 type: string
-            description: 'Field(s) to follow for automatic value generation. Supports
-              `<` prefixes to access parent fields.
-
-              '
+            description: Field(s) to follow for automatic value generation. Supports `<` prefixes to access parent fields.
           followingIgnore:
             oneOf:
             - type: boolean
             - type: array
               items:
                 type: string
-            description: 'Controls which `following` values are ignored.
-
-              '
+            description: Controls which `following` values are ignored.
           sortify:
             type: boolean
-            description: 'If true, creates a parallel “sortified” version of this field
-              for case- and punctuation-insensitive sorting.
-
-              '
+            description: If true, creates a parallel “sortified” version of this field for case- and punctuation-insensitive sorting.
         required:
         - type
         - label
@@ -1476,10 +1386,9 @@ components:
           def:
             type: string
             pattern: ^(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d$
-            description: 'Default value in HH:MM:SS (24-hour). If not set and not required,
-              defaults to the current time.
-
-              '
+            description: |
+              Default value in HH:MM:SS (24-hour).
+              If not set and not required, defaults to the current time.
           if:
             $ref: '#/components/schemas/UiCondition'
           requiredIf:
@@ -1511,16 +1420,10 @@ components:
             description: Default URL shown in the editor UI.
           pattern:
             type: string
-            description: 'Optional regex for stricter validation of allowed URLs (in
-              addition to standard URI syntax).
-
-              '
+            description: Optional regex for stricter validation of allowed URLs (in addition to standard URI syntax).
           autocomplete:
             type: string
-            description: 'Value for the HTML autocomplete attribute. Common values include
-              "url" or "off".
-
-              '
+            description: Value for the HTML autocomplete attribute. Common values include "url" or "off".
           if:
             $ref: '#/components/schemas/UiCondition'
           requiredIf:
@@ -1781,11 +1684,9 @@ components:
       title: Page
     User:
       type: object
-      description: 'Built-in user piece type for account management.
-
+      description: |
+        Built-in user piece type for account management.
         💡 Developers can add custom fields to the user piece type in their project configuration.
-
-        '
       properties:
         _id:
           type: string
@@ -1845,12 +1746,10 @@ components:
       title: User
     Global:
       type: object
-      description: 'Built-in global content piece type for site-wide settings.
-
+      description: |
+        'Built-in global content piece type for site-wide settings.
         💡 Developers can add custom fields to the global piece type in their project
         configuration.
-
-        '
       properties:
         _id:
           type: string
@@ -2750,12 +2649,10 @@ components:
     UiCondition:
       type: object
       additionalProperties: false
-      description: 'Apostrophe conditional used by `if` and `requiredIf`. Keys are field
-        paths (including `<` parent access and dot notation) or method calls with `()`.
-        Values are either simple equality (primitive) or an operator object. Supports
-        `$or` / `$and` groups. See OperatorObject.
-
-        '
+      description: |
+        'Apostrophe conditional used by `if` and `requiredIf`.
+        Keys are field paths (including `<` parent access and dot notation) or method calls with `()`.
+        Values are either simple equality (primitive) or an operator object. Supports `$or` / `$and` groups. See OperatorObject.
       properties:
         $or:
           type: array
@@ -2800,12 +2697,11 @@ components:
     OperatorObject:
       type: object
       additionalProperties: false
-      description: 'MongoDB-style operators supported by Apostrophe conditions. Note:
-        `$eq` has special handling with arrays (see docs). `$exists: true` means not
-        null/undefined; empty string is truthy so use `$ne: ''''` or check `.length`.
-        :contentReference[oaicite:6]{index=6}
-
-        '
+      description: |
+        MongoDB-style operators supported by Apostrophe conditions.
+        Note:
+          `$eq` has special handling with arrays (see docs).
+          `$exists: true` means not null/undefined; empty string is truthy so use `$ne: ''''` or check `.length`.
       properties:
         $eq: {}
         $ne: {}
@@ -2869,11 +2765,9 @@ components:
       title: DateTimeBoundaryOptions
     RelationshipEntry:
       type: object
-      description: 'One relationship entry. Always includes the related document `_id`.
-        If you declared per-relationship `fields`, those values are stored alongside
-        `_id` here.
-
-        '
+      description: |
+        One relationship entry. Always includes the related document `_id`.
+        If you declared per-relationship `fields`, those values are stored alongside `_id` here.
       properties:
         _id:
           type: string
@@ -2948,10 +2842,9 @@ components:
     AposPrimitives:
       $id: https://example.com/apostrophe/primitives
       $schema: https://json-schema.org/draft/2020-12/schema
-      description: 'Reusable primitive data shapes for ApostropheCMS document payloads.
+      description: |
+        Reusable primitive data shapes for ApostropheCMS document payloads.
         Use these in content models; keep field-definition objects separate.
-
-        '
       $defs:
         AposString:
           type: string
@@ -2962,30 +2855,20 @@ components:
         AposSlug:
           type: string
           pattern: ^[a-z0-9][a-z0-9-]*$
-          description: 'Slug string stored in the document, usually lowercase and URL-safe
-            (e.g. "my-article", "blog/my-custom-page").
-
-            '
+          description: Slug string stored in the document, usually lowercase and URL-safe (e.g. "my-article", "blog/my-custom-page").
         AposEmail:
           type: string
           format: email
-          description: 'A valid email address per RFC 5322, as stored in documents and
-            returned via the API.
-
-            '
+          description: A valid email address per RFC 5322, as stored in documents and returned via the API.
         AposURI:
           type: string
           format: uri
-          description: 'A valid absolute URL (RFC 3986). Usually stored with protocol,
-            e.g., "https://example.com".
-
-            '
+          description: |
+            A valid absolute URL (RFC 3986).
+            Usually stored with protocol, e.g., "https://example.com".
         AposPassword:
           type: string
-          description: 'Password string as entered. Apostrophe typically hashes this
-            before storage; API usage depends on context.
-
-            '
+          description: Password string as entered. Apostrophe typically hashes thisbefore storage; API usage depends on context.
         AposDateTime:
           type: string
           format: date-time
@@ -2997,9 +2880,7 @@ components:
         AposTime:
           type: string
           pattern: ^(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d$
-          description: 'Time string stored in documents, always in HH:MM:SS (24-hour).
-
-            '
+          description: Time string stored in documents, always in HH:MM:SS (24-hour).
         AposInteger:
           type: integer
         AposIntegerArray:
@@ -3014,10 +2895,7 @@ components:
             $ref: '#/components/schemas/AposPrimitives/$defs/AposFloat'
         AposRange:
           type: number
-          description: 'Stored numeric value selected via the slider (integer or float,
-            depending on configuration).
-
-            '
+          description: Stored numeric value selected via the slider (integer or float, depending on configuration).
         AposBoolean:
           type: boolean
         AposBooleanArray:
@@ -3029,9 +2907,7 @@ components:
           - type: string
           - type: number
           - type: boolean
-          description: 'The stored value for a radio field (one of the choice values).
-
-            '
+          description: The stored value for a radio field (one of the choice values).
         AposCheckboxes:
           type: array
           items:
@@ -3039,10 +2915,7 @@ components:
             - type: string
             - type: number
             - type: boolean
-          description: 'The stored values for a checkboxes field. Each item is one of
-            the configured choice values.
-
-            '
+          description: The stored values for a checkboxes field. Each item is one of the configured choice values.
         AposOembed:
           type: object
           additionalProperties: false
@@ -3060,10 +2933,9 @@ components:
               description: Thumbnail URL snapshot from the oEmbed response at save time.
           required:
           - url
-          description: 'Data stored on the document: a snapshot of the oEmbed resource.
+          description: |
+            Data stored on the document: a snapshot of the oEmbed resource.
             Fetch full embed HTML at runtime via GET `/api/v1/@apostrophecms/oembed/query?url=<media-url>`.
-
-            '
         AposArea:
           type: object
           additionalProperties: false
@@ -3074,14 +2946,14 @@ components:
                 $ref: '#/components/schemas/Widget'
           required:
           - items
-          description: "The value saved on the doc: an object with an `items` array\
-            \ of widgets.\n\n    # --- Data value (what’s stored on the doc) ---\n"
+          description: |
+            The value saved on the doc: an object with an `items` array of widgets.
+              # --- Data value (what’s stored on the doc) ---
         AposAttachment:
           type: object
-          description: 'Attachment metadata saved on the document. Extra fields may
-            be present depending on project config and file type (e.g., image dimensions).
-
-            '
+          description: |
+            Attachment metadata saved on the document.
+            Extra fields maybe present depending on project config and file type (e.g., image dimensions).
           additionalProperties: true
           properties:
             _id:
@@ -3112,12 +2984,10 @@ components:
           required:
           - _id
         AposRelationship:
-          description: 'The stored value of a relationship field. For multi-select joins,
-            this is an array of entries. For `max: 1`, treat it as either a single entry
-            or null. An entry always contains at least the related `_id`; additional
-            keys may appear if `fields` were defined.
-
-            '
+          description: |
+            The stored value of a relationship field. For multi-select joins,this is an array of entries.
+            For `max: 1`, treat it as either a single entry or null.
+            An entry always contains at least the related `_id`; additional keys may appear if `fields` were defined.
           oneOf:
           - $ref: '#/components/schemas/RelationshipEntry'
           - type: 'null'
@@ -3128,10 +2998,7 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/RelationshipEntry'
-          description: 'Populated reverse relationships at read time. Not persisted
-            on this document; useful in responses.
-
-            '
+          description: Populated reverse relationships at read time. Not persistedon this document; useful in responses.
         AposObjectId:
           type: string
           pattern: ^[a-fA-F0-9]{24}$
@@ -3173,7 +3040,7 @@ components:
 
   responses:
     BadRequest:
-      description: "Bad request - invalid input parameters"
+      description: Bad request - invalid input parameters
       content:
         application/json:
           schema:
@@ -3187,7 +3054,7 @@ components:
                 example: "The request could not be processed due to invalid input"
 
     Unauthorized:
-      description: "Authentication required"
+      description: Authentication required
       content:
         application/json:
           schema:
@@ -3201,7 +3068,7 @@ components:
                 example: "Authentication is required to access this resource"
 
     Forbidden:
-      description: "Access forbidden - insufficient permissions"
+      description: Access forbidden - insufficient permissions
       content:
         application/json:
           schema:
@@ -3215,7 +3082,7 @@ components:
                 example: "You do not have permission to perform this action"
 
     NotFound:
-      description: "Resource not found"
+      description: Resource not found
       content:
         application/json:
           schema:
@@ -3229,7 +3096,7 @@ components:
                 example: "The requested resource could not be found"
 
     InternalServerError:
-      description: "Internal server error"
+      description: Internal server error
       content:
         application/json:
           schema:
@@ -3243,7 +3110,7 @@ components:
                 example: "An unexpected error occurred while processing the request"
 
     PieceOperationSuccess:
-      description: "Operation completed successfully"
+      description: Operation completed successfully
       content:
         application/json:
           schema:
@@ -3287,15 +3154,15 @@ paths:
               properties:
                 username:
                   type: string
-                  description: "User's login username"
+                  description: User's login username
                   example: "admin"
                 password:
                   type: string
                   format: password
-                  description: "User's password"
+                  description: User's password
                 session:
                   type: boolean
-                  description: "Set to true to receive session cookie instead of bearer token"
+                  description: Set to true to receive session cookie instead of bearer token
                   default: false
                   example: false
             examples:
@@ -3312,7 +3179,7 @@ paths:
                   session: true
       responses:
         '200':
-          description: "Login successful"
+          description: Login successful
           content:
             application/json:
               schema:
@@ -3320,7 +3187,7 @@ paths:
                 properties:
                   token:
                     type: string
-                    description: "Bearer token (only present when session is false/omitted)"
+                    description: Bearer token (only present when session is false/omitted)
                     example: "random123Token456xyz"
               examples:
                 bearer_response:
@@ -3332,7 +3199,7 @@ paths:
                   value: {}
           headers:
             Set-Cookie:
-              description: "Session cookie (only when session=true)"
+              description: Session cookie (only when session=true)
               schema:
                 type: string
                 example: "apostrophe.sid=s%3A...; Path=/; HttpOnly"
@@ -3357,7 +3224,7 @@ paths:
       operationId: AuthLogout
       responses:
         '200':
-          description: "Logout successful"
+          description: Logout successful
           content:
             application/json:
               schema:
@@ -3400,11 +3267,11 @@ paths:
                 email:
                   type: string
                   format: email
-                  description: "Email address of the user requesting password reset"
+                  description: Email address of the user requesting password reset
                   example: "user@example.com"
       responses:
         '200':
-          description: "Password reset request processed (always returns success for security)"
+          description: Password reset request processed (always returns success for security)
           content:
             application/json:
               schema:
@@ -3448,16 +3315,16 @@ paths:
               properties:
                 token:
                   type: string
-                  description: "Reset token from the password reset email"
+                  description: Reset token from the password reset email
                   example: "reset-token-from-email"
                 password:
                   type: string
                   format: password
-                  description: "New password for the user account"
+                  description: New password for the user account
                   example: "new-secure-password"
       responses:
         '200':
-          description: "Password reset completed successfully"
+          description: Password reset completed successfully
           content:
             application/json:
               schema:
@@ -3474,7 +3341,7 @@ paths:
         '404':
           $ref: '#/components/responses/NotFound'
         '410':
-          description: "Reset token expired"
+          description: Reset token expired
           content:
             application/json:
               schema:
@@ -3505,7 +3372,7 @@ paths:
       operationId: AuthWhoAmI
       responses:
         '200':
-          description: "Current user information retrieved successfully"
+          description: Current user information retrieved successfully
           content:
             application/json:
               schema:
@@ -3513,23 +3380,23 @@ paths:
                 properties:
                   _id:
                     type: string
-                    description: "User's unique identifier"
+                    description: User's unique identifier
                     example: "user123"
                   username:
                     type: string
-                    description: "User's login username"
+                    description: User's login username
                     example: "john-doe"
                   title:
                     type: string
-                    description: "User's display name"
+                    description: User's display name
                     example: "John Doe"
                   email:
                     type: string
                     format: email
-                    description: "User's email address (if configured in whoamiFields)"
+                    description: User's email address (if configured in whoamiFields)
                     example: "john@example.com"
                 additionalProperties: true
-                description: "Additional fields based on whoamiFields configuration"
+                description: Additional fields based on whoamiFields configuration
         '401':
           $ref: '#/components/responses/Unauthorized'
         '404':
@@ -3561,7 +3428,7 @@ paths:
       operationId: AuthWhoAmIPost
       responses:
         '200':
-          description: "Current user information retrieved successfully"
+          description: Current user information retrieved successfully
           content:
             application/json:
               schema:
@@ -3569,23 +3436,23 @@ paths:
                 properties:
                   _id:
                     type: string
-                    description: "User's unique identifier"
+                    description: User's unique identifier
                     example: "user123"
                   username:
                     type: string
-                    description: "User's login username"
+                    description: User's login username
                     example: "john-doe"
                   title:
                     type: string
-                    description: "User's display name"
+                    description: User's display name
                     example: "John Doe"
                   email:
                     type: string
                     format: email
-                    description: "User's email address (if configured in whoamiFields)"
+                    description: User's email address (if configured in whoamiFields)
                     example: "john@example.com"
                 additionalProperties: true
-                description: "Additional fields based on whoamiFields configuration"
+                description: Additional fields based on whoamiFields configuration
         '401':
           $ref: '#/components/responses/Unauthorized'
         '404':
@@ -3617,7 +3484,7 @@ paths:
       operationId: AuthContext
       responses:
         '200':
-          description: "Login context retrieved successfully"
+          description: Login context retrieved successfully
           content:
             application/json:
               schema:
@@ -3625,18 +3492,18 @@ paths:
                 properties:
                   localLogin:
                     type: boolean
-                    description: "Whether local login is enabled"
+                    description: Whether local login is enabled
                     example: true
                   passwordReset:
                     type: boolean
-                    description: "Whether password reset is enabled"
+                    description: Whether password reset is enabled
                     example: false
                   loginUrl:
                     type: string
-                    description: "The configured login URL"
+                    description: The configured login URL
                     example: "/login"
                 additionalProperties: true
-                description: "Additional context based on configuration"
+                description: Additional context based on configuration
         '400':
           $ref: '#/components/responses/BadRequest'
         '500':
@@ -3660,7 +3527,7 @@ paths:
       operationId: AuthContextPost
       responses:
         '200':
-          description: "Login context retrieved successfully"
+          description: Login context retrieved successfully
           content:
             application/json:
               schema:
@@ -3668,18 +3535,18 @@ paths:
                 properties:
                   localLogin:
                     type: boolean
-                    description: "Whether local login is enabled"
+                    description: Whether local login is enabled
                     example: true
                   passwordReset:
                     type: boolean
-                    description: "Whether password reset is enabled"
+                    description: Whether password reset is enabled
                     example: false
                   loginUrl:
                     type: string
-                    description: "The configured login URL"
+                    description: The configured login URL
                     example: "/login"
                 additionalProperties: true
-                description: "Additional context based on configuration"
+                description: Additional context based on configuration"
         '400':
           $ref: '#/components/responses/BadRequest'
         '500':
