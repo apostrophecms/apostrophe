@@ -35,7 +35,7 @@
  *  - items (array of instances of @apostrophecms/layout-column-widget)
  *  - meta (instance of @apostrophecms/layout-meta-widget, optional)
  *  - options (Browser options of @apostsrophecms/layout-widget)
- *  - layoutMode (string, either 'manage', 'focus' or 'preview')
+ *  - layoutMode (string, either 'layout', 'focus' or 'content')
  *  - deviceMode (string, either 'desktop', 'tablet' or 'mobile')
  *
  * @param {Object} params
@@ -82,7 +82,7 @@ export function itemsToState({
   const resolvedOptions = {
     ...options,
     columns: meta.columns || options.columns,
-    gap: [ 'manage', 'focus' ].includes(layoutMode) ? gap || '2px' : options.gap
+    gap: [ 'layout', 'focus' ].includes(layoutMode) ? gap || '2px' : options.gap
   };
 
   const positionsIndex = createPositionIndex(current.items, current.rows);

@@ -12,35 +12,6 @@
     }"
     @click="setFocusedArea(areaId, $event)"
   >
-    <div style="display: flex; align-items: center; justify-content: start; gap: 20px;">
-      <AposInputBoolean
-        v-model="layoutModes.manage"
-        :modifiers="[ 'small' ]"
-        :field="{
-          name: 'manage',
-          type: 'boolean',
-          toggle: {
-            'true': 'content',
-            'false': 'layout'
-          },
-          def: true,
-        }"
-      />
-      <!-- Device switch, next interations: <AposInputSelect
-        v-model="layoutModes.device"
-        :modifiers="[ 'small' ]"
-        :field="{
-          name: 'device',
-          type: 'select',
-          choices: [
-            { label: $t('apostrophe:breakpointPreviewDesktop'), value: 'desktop' },
-            { label: $t('apostrophe:breakpointPreviewTablet'), value: 'tablet' },
-            { label: $t('apostrophe:breakpointPreviewMobile'), value: 'mobile' }
-          ],
-          def: 'desktop',
-        }"
-      /> -->
-    </div>
     <div
       v-if="next.length === 0 && !foreign"
       class="apos-empty-area"
@@ -81,8 +52,8 @@
         :options="gridModuleOptions"
         :items="layoutColumnWidgets"
         :meta="layoutMeta"
-        :layout-mode="layoutManageMode"
-        :device-mode="layoutModes.device.data"
+        :layout-mode="layoutMode"
+        :device-mode="layoutDeviceMode"
         @resize-end="onResizeOrMoveEnd"
         @move-end="onResizeOrMoveEnd"
         @add-first-item="onAddItem"
@@ -112,7 +83,7 @@
             :max-reached="maxReached"
             :rendering="rendering(widget)"
             :controls-disabled="true"
-            :breadcrumb-disabled="true"
+            :breadcrumb-disabled="layoutMode !== 'content'"
             @up="up"
             @down="down"
             @remove="remove"
@@ -148,20 +119,8 @@ export default {
   },
   data() {
     return {
-      layoutModes: {
-        device: {
-          data: 'desktop',
-          error: false
-        },
-        manage: {
-          data: true,
-          error: false
-        },
-        manageFocused: {
-          data: false,
-          error: false
-        }
-      }
+      layoutMode: 'content',
+      layoutDeviceMode: 'desktop'
     };
   },
   computed: {
@@ -187,53 +146,55 @@ export default {
     },
     layoutColumnWidgetName() {
       return this.choices.find(c => c.name !== this.layoutMetaWidgetName)?.name;
-    },
-    layoutManageMode() {
-      if (this.layoutModes.manage.data) {
-        return 'view';
-      }
-      if (this.layoutModes.manageFocused.data) {
-        return 'focus';
-      }
-      return 'manage';
-    },
-    layoutDeviceMode() {
-      return this.layoutModes.device.data || 'desktop';
     }
   },
   mounted() {
+    apos.bus.$on('widget-breadcrumb-operation', this.executeWidgetOperation);
     if (!this.hasLayoutMeta) {
       this.onCreateProvision();
     }
   },
+  unmounted() {
+    apos.bus.$off('widget-breadcrumb-operation', this.executeWidgetOperation);
+  },
   methods: {
-    // Sort by the desktop order so that the auto-layout works correctly.
-    // FIXME: not working, not supported by the backend somehow.
-    layoutSortAll() {
-      // const sorted = this.next.filter(w => w.type === this.layoutColumnWidgetName);
-
-      // sorted.sort((a, b) => {
-      //   return (a.desktop.order || 0) - (b.desktop.order || 0);
-      // });
-
-      // if (this.docId === window.apos.adminBar.contextId) {
-      // No need to clone - the event handler will do that.
-      // const patch = {
-      //   $pullAllById: {
-      //     [`@${this.id}.items`]: [
-      //       sorted.map(w => w._id)
-      //     ]
-      //   },
-      //   $push: {
-      //     [`@${this.id}.items`]: {
-      //       $each: [ ...sorted ]
-      //     }
-      //   }
-      // };
-      // apos.bus.$emit('context-edited', patch);
-      // }
-
-      // this.next = [ this.layoutMeta, ...sorted ];
+    // FIXME: find out why we apos.bus.$emit emits once, but listeners are called twice.
+    // FIXME: Finish implementing the context menu editor (edit column settings)
+    executeWidgetOperation(update) {
+      switch (update.name) {
+        case 'layout':
+          this.onToggleLayoutMode(update);
+          break;
+        case 'layoutColDelete':
+          this.onRemoveLayoutColumn(update);
+          break;
+        default:
+          break;
+      }
+    },
+    onToggleLayoutMode(update) {
+      if (!update._id || update._id !== this.parentOptions?.widgetId) {
+        return;
+      }
+      // console.log('onToggleLayoutMode',
+      //   update, this.parentOptions?.widgetId, update.name !== 'layoutColDelete',
+      //   this.$options.name
+      // );
+      this.layoutMode = update.value;
+    },
+    onRemoveLayoutColumn({ _id }) {
+      const widgetIndex = this.next.findIndex(w => w._id === _id);
+      if (
+        widgetIndex < 0 ||
+        this.next[widgetIndex].type !== this.layoutColumnWidgetName
+      ) {
+        return;
+      }
+      // console.log('onRemoveLayoutColumn',
+      //   widgetIndex,
+      //   this.$options.name
+      // );
+      return this.remove(widgetIndex);
     },
     onCreateProvision() {
       if (!this.layoutMetaWidgetName) {
@@ -245,7 +206,7 @@ export default {
         widget: meta,
         index: 0
       });
-      this.layoutModes.manage.data = false;
+      this.layoutMode = 'layout';
     },
     onAddItem(patch) {
       const widgetName = this.layoutColumnWidgetName;
@@ -278,7 +239,6 @@ export default {
       });
       this.onAddItem(insert);
       this.layoutPatchMany(patchArr);
-      this.layoutSortAll();
     },
     onRemoveItem({ _id, patches }) {
       const index = this.next.findIndex(w => w._id === _id);
@@ -286,7 +246,6 @@ export default {
         this.remove(index);
       }
       this.layoutPatchMany(patches);
-      this.layoutSortAll();
     },
     layoutPatchDevice({
       _id, device, patch

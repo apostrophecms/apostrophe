@@ -8,7 +8,7 @@
     ' --justify-items: ' + (data.options.defaultCellHorizontalAlignment) + ';' +
     ' --align-items: ' + (data.options.defaultCellVerticalAlignment) + ';', 
   aspoClassName: 'layout-widget',
-  aposParentOptions: data.options,
+  aposParentOptions: data.options | merge({ widgetId: data.widget._id }),
   aposAttrs: {
     'tablet-auto': meta.tablet.auto,
     'mobile-auto': meta.mobile.auto

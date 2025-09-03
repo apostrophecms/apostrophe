@@ -51,15 +51,22 @@ module.exports = {
     label: 'apostrophe:layoutColumn',
     operationsInBreadcrumb: true
   },
-  // widgetOperations: {
-  //   add: {
-  //     move: {
-  //       icon: 'move',
-  //       tooltip: 'Move',
-  //       rawEvents: [ 'pointerdown', 'pointermove', 'pointerup' ]
-  //     }
-  //   }
-  // },
+  widgetOperations(self, options) {
+    return {
+      add: {
+        layoutColConfig: {
+          placement: 'breadcrumb',
+          icon: 'cog-icon',
+          tooltip: 'Use Content mode to edit your widgets and Layout mode to modify your columns'
+        },
+        layoutColDelete: {
+          placement: 'breadcrumb',
+          icon: 'delete-icon',
+          tooltip: 'Use Content mode to edit your widgets and Layout mode to modify your columns'
+        }
+      }
+    };
+  },
   fields: {
     add: {
       desktop: {

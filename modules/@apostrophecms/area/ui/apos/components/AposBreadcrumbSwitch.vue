@@ -4,7 +4,6 @@
       <label
         v-for="choice in choices"
         :key="choice.value"
-        :for="choice.value"
       >
         <input
           :id="choice.value"
@@ -54,9 +53,10 @@ export default {
   methods: {
     update(event) {
       this.next = event.target.value;
+      const payload = this.choices.find(choice => choice.value === this.next);
       this.$emit('update', {
-        name: this.name,
-        value: this.next
+        ...payload,
+        name: this.name
       });
     }
   }
@@ -66,8 +66,8 @@ export default {
 <style lang="scss" scoped>
 .apos-breadcrumb-switch {
   position: relative;
-  padding: 0;
   margin: 0;
+  padding: 0;
   border: none;
 
   :focus {
@@ -79,26 +79,29 @@ export default {
     display: flex;
     flex-wrap: wrap;
     justify-content: center;
+
     label:first-child span {
       left: -1px;
     }
+
     label:last-child span {
       right: -1px;
     }
   }
 
   input[type="radio"] {
+    position: absolute;
+    overflow: hidden;
+    width: 1px;
+    height: 1px;
     clip: rect(0 0 0 0);
     clip-path: inset(100%);
-    height: 1px;
-    overflow: hidden;
-    position: absolute;
     white-space: nowrap;
-    width: 1px;
+
     &:checked + span {
       box-shadow: 0 0 0 1px var(--a-primary-dark-15);
       background-color: var(--a-primary-transparent-90);
-      z-index: 1;
+      z-index: $z-index-default;
       color: var(--a-text-inverted);
     }
   }
@@ -112,19 +115,19 @@ export default {
     }
 
     span {
-      height: 100%;
-      display: inline-flex;
-      align-items: center;
-      cursor: pointer;
       position: relative;
-      margin-left: .0625em;
-      letter-spacing: 0.5px;
+      display: inline-flex;
+      box-sizing: border-box;
+      align-items: center;
+      height: 100%;
+      margin-left: .063em;
+      padding: 0 8px;
       color: var(--a-base-1);
       text-align: center;
-      transition: background-color .5s ease;
-      box-sizing: border-box;
+      transition: background-color 500ms ease;
+      cursor: pointer;
+      letter-spacing: 0.5px;
       border-radius: 4px;
-      padding: 0 8px;
     }
   }
 }

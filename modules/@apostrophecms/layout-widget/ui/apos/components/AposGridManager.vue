@@ -309,11 +309,11 @@ export default {
       default: () => ({})
     },
     /**
-     * The mode of the grid manager, which can be 'manage', 'focus', 'view'
+     * The mode of the grid manager, which can be 'layout', 'focus', 'content'
      */
     layoutMode: {
       type: String,
-      default: 'manage'
+      default: 'content'
     },
     deviceMode: {
       type: String,
@@ -417,7 +417,7 @@ export default {
       });
     },
     isManageMode() {
-      return [ 'manage', 'focus' ].includes(this.layoutMode);
+      return [ 'layout', 'focus' ].includes(this.layoutMode);
     },
     isFocusedMode() {
       return this.layoutMode === 'focus';
@@ -840,7 +840,6 @@ export default {
     z-index: $z-index-widget-label;
     position: absolute;
     box-sizing: border-box;
-    border: 1px dashed rgba($brand-blue, 0.8);
     border: 1px solid var(--a-primary);
     transition: background-color 300ms ease;
     inset: 0;

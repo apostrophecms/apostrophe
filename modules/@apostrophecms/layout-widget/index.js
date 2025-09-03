@@ -17,6 +17,33 @@ module.exports = {
     defaultCellHorizontalAlignment: null,
     defaultCellVerticalAlignment: null
   },
+  widgetOperations(self, options) {
+    return {
+      add: {
+        layout: {
+          placement: 'breadcrumb',
+          type: 'switch',
+          choices: [
+            {
+              label: 'Content',
+              value: 'content'
+            },
+            {
+              label: 'Layout',
+              value: 'layout'
+            }
+          ],
+          def: 'content'
+        },
+        layoutHelp: {
+          placement: 'breadcrumb',
+          type: 'info',
+          icon: 'information-outline-icon',
+          tooltip: 'Use Content mode to edit your widgets and Layout mode to modify your columns'
+        }
+      }
+    };
+  },
   fields(self, options) {
     return {
       add: {

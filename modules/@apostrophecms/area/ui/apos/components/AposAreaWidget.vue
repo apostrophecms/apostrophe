@@ -76,28 +76,34 @@
             />
           </li>
         </ol>
-        <!-- FIXME Bring widget controls data from the widget config -->
         <ol
+          v-if="widgetBreadcrumbActions.length > 0"
           class="apos-area-widget__breadcrumbs apos-area-widget__breadcrumbs--switch"
           style="margin-left: 10px;"
         >
           <li class="apos-area-widget__breadcrumb">
-            <AposBreadcrumbSwitch
-              :choices="[
-                { label: 'Content', value: 'content' },
-                { label: 'Layout', value: 'layout' }
-              ]"
-              name="switch"
-              value="layout"
-              @update="foo"
+            <component
+              :is="operation.component"
+              v-for="operation in widgetBreadcrumbActions"
+              :key="operation.key"
+              v-bind="operation.props"
+              v-on="operation.listeners"
             />
           </li>
-          <AposIndicator
-            icon="information-outline-icon"
-            fill-color="var(--a-primary)"
-            tooltip="Use Content mode to edit your widgets and Layout mode to modify your columns"
-            class="apos-area-widget__breadcrumbs-switch__info"
-          />
+        </ol>
+        <ol
+          v-if="widgetBreadcrumbInfos.length > 0"
+          class="apos-area-widget__breadcrumbs apos-area-widget__breadcrumbs--info"
+        >
+          <li>
+            <component
+              :is="operation.component"
+              v-for="operation in widgetBreadcrumbInfos"
+              :key="`info-${operation.key}`"
+              v-bind="operation.props"
+              v-on="operation.listeners"
+            />
+          </li>
         </ol>
       </div>
       <div
@@ -345,6 +351,18 @@ export default {
     };
   },
   computed: {
+    operationButtonDefault() {
+      return {
+        iconOnly: true,
+        icon: 'plus-icon',
+        type: 'group',
+        modifiers: [ 'small', 'inline' ],
+        role: 'menuitem',
+        class: 'apos-area-modify-controls__button',
+        iconSize: 16,
+        disableFocus: !this.isFocused
+      };
+    },
     // Passed only to the preview layer (custom preview components).
     followingValuesWithParent() {
       return Object.entries(this.followingValues || {})
@@ -383,12 +401,32 @@ export default {
     moduleOptions() {
       return window.apos.area;
     },
+    widgetModuleOptions() {
+      return apos.modules[this.moduleOptions?.widgetManagers[this.widget?.type]] ?? {};
+    },
+    widgetBreadcrumbOperations() {
+      return (this.widgetModuleOptions.widgetBreadcrumbOperations || [])
+        .map((operation) => ({
+          component: this.getOperationComponent(operation),
+          props: this.getOperationProps(operation),
+          listeners: this.getOperationListeners(operation),
+          key: operation.action || operation.name,
+          type: operation.type
+        }));
+    },
+    widgetBreadcrumbActions() {
+      return this.widgetBreadcrumbOperations.filter(op => op.type !== 'info');
+    },
+    widgetBreadcrumbInfos() {
+      return this.widgetBreadcrumbOperations.filter(op => op.type === 'info');
+    },
     isFocused() {
       if (this.isSuppressed) {
         return false;
       }
 
       const isWidgetFocused = this.widgetFocused === this.widget._id;
+      // FIXME: move to the watcher?
       if (isWidgetFocused) {
         document.addEventListener('click', this.unfocus);
       }
@@ -481,8 +519,86 @@ export default {
     apos.bus.$off('widget-focus-parent', this.focusParent);
   },
   methods: {
-    foo(update) {
-      console.log(`name: ${update.name}, value: ${update.value}`);
+    getOperationComponent(operation) {
+      if (operation.type === 'info') {
+        return 'AposIndicator';
+      }
+      if (operation.type === 'switch') {
+        return 'AposBreadcrumbSwitch';
+      }
+      return 'AposButton';
+    },
+    getOperationProps(operation) {
+      if (operation.type === 'info') {
+        return {
+          // class: 'apos-area-widget__breadcrumbs-switch__info',
+          fillColor: 'var(--a-primary)',
+          icon: operation.icon,
+          tooltip: operation.tooltip
+        };
+      }
+
+      if (operation.type === 'switch') {
+        return {
+          name: operation.name,
+          choices: operation.choices,
+          value: operation.def,
+          class: 'apos-area-modify-controls__button--switch'
+        };
+      }
+
+      // Button by default
+      return {
+        ...this.operationButtonDefault,
+        icon: operation.icon,
+        action: operation.action,
+        tooltip: operation.tooltip || null
+      };
+    },
+    getOperationListeners(operation) {
+      const listeners = {};
+      if (operation.type === 'info') {
+        return listeners;
+      }
+      if (operation.type === 'switch') {
+        listeners.update = (payload) => {
+          this.emitOperation(operation, payload);
+        };
+      } else {
+        listeners.click = () => {
+          this.handleOperationClick(operation);
+        };
+      }
+      return listeners;
+    },
+    async handleOperationClick(operation) {
+      const { modal } = operation;
+      if (modal) {
+        const result = await apos.modal.execute(modal, {
+          widget: this.widget,
+          widgetSchema: this.widgetModuleOptions.schema
+        });
+        if (result) {
+          // TODO: make sure the update method from
+          // modules/@apostrophecms/area/ui/apos/components/AposAreaEditor.vue
+          // does the job and does not mess with the widget type and _id:
+          this.$emit('update', result);
+        }
+        return;
+      }
+
+      this.emitOperation(operation);
+    },
+    emitOperation(operation, payload = {}) {
+      if (operation.action) {
+        this.$emit(operation.action, this.i);
+      } else {
+        apos.bus.$emit('widget-breadcrumb-operation', {
+          ...payload,
+          ...operation,
+          _id: this.widget._id
+        });
+      }
     },
     getFocusForMenu({ menuId, isOpen }) {
       if (
@@ -639,12 +755,28 @@ export default {
     padding: 0;
   }
 
+  > li {
+    display: flex;
+    align-items: center;
+    margin: 0;
+    padding: 0;
+
+  }
 }
 
-.apos-area-widget__breadcrumbs-switch__info {
-  position: absolute;
-  transform: translateX(50%);
-  right: -10px;
+.apos-area-widget__breadcrumbs.apos-area-widget__breadcrumbs--info {
+  display: flex;
+  border: none;
+  background-color: transparent;
+
+  > li {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    margin: 0;
+    padding: 0;
+
+  }
 }
 
 @mixin showButton() {
@@ -901,13 +1033,13 @@ export default {
 
     & {
       display: flex;
-      height: 32px;
       box-sizing: border-box;
       align-items: center;
+      height: 32px;
       margin: 0 0 8px;
       padding: 4px 6px;
-      background-color: var(--a-background-primary);
       border: 1px solid var(--a-primary-transparent-50);
+      background-color: var(--a-background-primary);
       border-radius: 8px;
     }
   }
