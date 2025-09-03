@@ -11,13 +11,6 @@ yarn-error.log*
 .npm
 .yarn-integrity
 
-# Generated SDKs and examples
-examples/
-test-sdk/
-generated/
-dist/
-build/
-
 # IDE and Editor files
 .vscode/
 .idea/
