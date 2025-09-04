@@ -1686,6 +1686,10 @@ components:
       type: object
       description: |
         Built-in user piece type for account management.
+
+        **Base Properties**: Inherited from @apostrophecms/piece-type
+        **User-Specific Properties**: title, username, email, role, disabled
+
         💡 Developers can add custom fields to the user piece type in their project configuration.
       properties:
         _id:
@@ -1748,6 +1752,7 @@ components:
       type: object
       description: |
         'Built-in global content piece type for site-wide settings.
+
         💡 Developers can add custom fields to the global piece type in their project
         configuration.
       properties:
@@ -4524,10 +4529,6 @@ paths:
       summary: List users
       description: Retrieve a list of users with optional filtering, sorting, and pagination
       operationId: UserList
-      parameters:
-        - $ref: '#/components/parameters/AposMode'
-        - $ref: '#/components/parameters/AposLocale'
-        - $ref: '#/components/parameters/RenderAreas'
       responses:
         '200':
           description: Successful response
@@ -5320,7 +5321,6 @@ paths:
       parameters:
         - $ref: '#/components/parameters/AposMode'
         - $ref: '#/components/parameters/AposLocale'
-        - $ref: '#/components/parameters/RenderAreas'
       responses:
         '200':
           description: Successful response
