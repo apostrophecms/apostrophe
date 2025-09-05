@@ -400,6 +400,7 @@ components:
                   '@apostrophecms/video': {}
                   '@apostrophecms/html': {}
       title: AreaField
+
     AreaOptions:
       type: object
       additionalProperties: false
@@ -426,6 +427,7 @@ components:
       required:
       - widgets
       title: AreaOptions
+
     AreaWidgetGroup:
       type: object
       additionalProperties: false
@@ -445,6 +447,7 @@ components:
       - label
       - widgets
       title: AreaWidgetGroup
+
     ArrayField:
       allOf:
       - $ref: '#/components/schemas/BaseField'
@@ -503,6 +506,7 @@ components:
                 - label: High
                   value: high
       title: ArrayField
+
     AttachmentField:
       allOf:
       - $ref: '#/components/schemas/BaseField'
@@ -546,6 +550,7 @@ components:
           label: Hero Image
           accept: image/*
       title: AttachmentField
+
     BooleanField:
       allOf:
       - $ref: '#/components/schemas/BaseField'
@@ -589,6 +594,7 @@ components:
             'true': Show related articles
             'false': Hide related articles
       title: BooleanField
+
     CheckboxesField:
       allOf:
       - $ref: '#/components/schemas/BaseField'
@@ -2259,6 +2265,31 @@ components:
           description: Optional clipboard content for cross-domain situations
           example: exampleClipboardContent
       title: LocaleRequest
+    PageLocaleResult:
+      type: object
+      properties:
+        _id:
+          type: string
+          description: |
+          Document ID with locale and mode (format: docId:locale:mode)
+          example: "s9gjqtw1ok7wxvewdu78xnes:en:published"
+        aposLocale:
+          type: string
+          description: |
+          Locale identifier with mode (format: locale:mode)
+          example: "en:published"
+      required:
+        - _id
+        - aposLocale
+    PageLocalesResponse:
+      type: object
+      properties:
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/PageLocaleResult'
+      required:
+        - results
     SameHostnameResponse:
       type: object
       additionalProperties: false
@@ -3657,7 +3688,7 @@ paths:
                   _position: "lastChild"
                   _copyingId: "existing-page-id"
       responses:
-        '201':
+        '200':
           description: Page created successfully
           content:
             application/json:
@@ -3698,13 +3729,18 @@ paths:
                   example: ["page1-id", "page2-id"]
       responses:
         '200':
-          description: Pages archived successfully
+          description: Archive job started successfully
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/Page'
+                type: object
+                properties:
+                  jobId:
+                    type: string
+                    description: ID of the background job processing the archive operation
+                    example: "b4kef9mgstbi5trzsw5dyfqm"
+                required:
+                  - jobId
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
@@ -4181,10 +4217,26 @@ paths:
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  type: string
-                example: ["en", "es", "fr", "de"]
+                type: object
+                properties:
+                  results:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        _id:
+                          type: string
+                          description: Document ID with locale and mode
+                          example: "s9gjqtw1ok7wxvewdu78xnes:en:published"
+                        aposLocale:
+                          type: string
+                          description: Locale identifier with mode
+                          example: "en:published"
+                      required:
+                        - _id
+                        - aposLocale
+                required:
+                  - results
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
@@ -4611,7 +4663,7 @@ paths:
                   description: Whether the user account is disabled
                   default: false
       responses:
-        '201':
+        '200':
           description: User created successfully
           content:
             application/json:
@@ -4643,13 +4695,18 @@ paths:
       operationId: UserArchive
       responses:
         '200':
-          description: Users archived successfully
+          description: Archive job started successfully
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/User'
+                type: object
+                properties:
+                  jobId:
+                    type: string
+                    description: ID of the background job processing the archive operation
+                    example: "b4kef9mgstbi5trzsw5dyfqm"
+                required:
+                  - jobId
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
@@ -5434,11 +5491,18 @@ paths:
       operationId: GlobalArchive
       responses:
         '200':
-          description: Global archived successfully
+          description: Archive job started successfully
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Global'
+                type: object
+                properties:
+                  jobId:
+                    type: string
+                    description: ID of the background job processing the archive operation
+                    example: "b4kef9mgstbi5trzsw5dyfqm"
+                required:
+                  - jobId
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
@@ -5980,7 +6044,7 @@ paths:
                   description: Photo credit
                   example: "Photo by John Doe"
       responses:
-        '201':
+        '200':
           description: Image created successfully
           content:
             application/json:
@@ -6020,13 +6084,18 @@ paths:
                   description: Array of image IDs to archive
       responses:
         '200':
-          description: Images archived successfully
+          description: Archive job started successfully
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/Image'
+                type: object
+                properties:
+                  jobId:
+                    type: string
+                    description: ID of the background job processing the archive operation
+                    example: "b4kef9mgstbi5trzsw5dyfqm"
+                required:
+                  - jobId
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
@@ -6907,7 +6976,7 @@ paths:
                   description: File description
                   example: "Quarterly report PDF"
       responses:
-        '201':
+        '200':
           description: File created successfully
           content:
             application/json:
@@ -6935,13 +7004,18 @@ paths:
       operationId: FileArchive
       responses:
         '200':
-          description: Files archived successfully
+          description: Archive job started successfully
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/FileObject'
+                type: object
+                properties:
+                  jobId:
+                    type: string
+                    description: ID of the background job processing the archive operation
+                    example: "b4kef9mgstbi5trzsw5dyfqm"
+                required:
+                  - jobId
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
@@ -7595,7 +7669,7 @@ paths:
                   example: "hero-images"
                   description: URL-friendly identifier (auto-generated if not provided)
       responses:
-        '201':
+        '200':
           description: Image tag created successfully
           content:
             application/json:
@@ -7623,13 +7697,18 @@ paths:
       operationId: ImageTagArchive
       responses:
         '200':
-          description: Image tags archived successfully
+          description: Archive job started successfully
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/ImageTag'
+                type: object
+                properties:
+                  jobId:
+                    type: string
+                    description: ID of the background job processing the archive operation
+                    example: "b4kef9mgstbi5trzsw5dyfqm"
+                required:
+                  - jobId
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
