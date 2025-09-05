@@ -5,6 +5,11 @@
 ### Adds
 
 * Custom operations registered with `addCreateWidgetOperation` can now specify an `ifTypesIntersect` property containing an array of widget type names. If the area in question allows at least one, the operation is offered.
+* The login-requirements tests were updated to include tests for the `uponSubmit` filter
+
+### Fixes
+
+* Fixes a bug in the login `uponSubmit` filter where a user could login without meeting the requirement.
 
 ## 4.21.0 (2025-09-03)
 

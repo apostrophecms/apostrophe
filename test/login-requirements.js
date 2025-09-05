@@ -7,8 +7,16 @@ describe('Login', function() {
 
   const extraSecretErr = 'extra secret incorrect';
   const captchaErr = 'captcha code incorrect';
+  const uponSubmitErr = 'uponSubmit incorrect';
 
   this.timeout(20000);
+
+  this.beforeEach(async function() {
+    if (apos && apos.modules && apos.modules['@apostrophecms/login']) {
+      const loginModule = apos.modules['@apostrophecms/login'];
+      await loginModule.clearLoginAttempts('HarryPutter');
+    }
+  });
 
   after(function() {
     return t.destroy(apos);
@@ -34,6 +42,20 @@ describe('Login', function() {
                   async verify(req, data) {
                     if (data !== 'xyz') {
                       throw self.apos.error('invalid', captchaErr);
+                    }
+                  }
+                },
+
+                UponSubmit: {
+                  phase: 'uponSubmit',
+                  async props(req) {
+                    return {
+                      hint: 'abc'
+                    };
+                  },
+                  async verify(req, data) {
+                    if (data !== 'abc') {
+                      throw self.apos.error('invalid', uponSubmitErr);
                     }
                   }
                 },
@@ -114,7 +136,10 @@ describe('Login', function() {
           body: {
             username: 'HarryPutter',
             password: 'crookshanks',
-            session: true
+            session: true,
+            requirements: {
+              UponSubmit: 'abc'
+            }
           },
           jar
         }
@@ -161,7 +186,8 @@ describe('Login', function() {
             password: 'crookshanks',
             session: true,
             requirements: {
-              WeakCaptcha: 'abc'
+              WeakCaptcha: 'abc',
+              UponSubmit: 'abc'
             }
           },
           jar
@@ -172,6 +198,116 @@ describe('Login', function() {
       assert(e.status === 400);
       assert.strictEqual(e.body.message, captchaErr);
       assert.strictEqual(e.body.data.requirement, 'WeakCaptcha');
+    }
+
+    // Make sure it really didn't work
+    page = await apos.http.get(
+      '/',
+      {
+        jar
+      }
+    );
+
+    assert(page.match(/logged out/));
+  });
+
+  it('should not be able to login a user without meeting an uponSubmit requirement', async function() {
+
+    const jar = apos.http.jar();
+
+    // establish session
+    let page = await apos.http.get(
+      '/',
+      {
+        jar
+      }
+    );
+
+    assert(page.match(/logged out/));
+
+    const context = await apos.http.post(
+      '/api/v1/@apostrophecms/login/context',
+      {
+        method: 'POST',
+        body: {},
+        jar
+      }
+    );
+    assert(context.requirementProps);
+    assert(context.requirementProps.UponSubmit);
+    assert(context.requirementProps.WeakCaptcha);
+    assert.strictEqual(context.requirementProps.UponSubmit.hint, 'abc');
+
+    try {
+      await apos.http.post(
+        '/api/v1/@apostrophecms/login/login',
+        {
+          method: 'POST',
+          body: {
+            username: 'HarryPutter',
+            password: 'crookshanks',
+            session: true,
+            requirements: {
+              WeakCaptcha: 'xyz'
+            }
+          },
+          jar
+        }
+      );
+      assert(false);
+    } catch (e) {
+      assert(e.status === 400);
+      assert.strictEqual(e.body.message, uponSubmitErr);
+      assert.strictEqual(e.body.data.requirement, 'UponSubmit');
+    }
+
+    // Make sure it really didn't work
+    page = await apos.http.get(
+      '/',
+      {
+        jar
+      }
+    );
+
+    assert(page.match(/logged out/));
+  });
+
+  it('should not be able to login a user with the wrong value for a uponSubmit requirement', async function() {
+
+    const jar = apos.http.jar();
+
+    // establish session
+    let page = await apos.http.get(
+      '/',
+      {
+        jar
+      }
+    );
+
+    assert(page.match(/logged out/));
+
+    try {
+      await apos.http.post(
+        '/api/v1/@apostrophecms/login/login',
+        {
+          method: 'POST',
+          body: {
+            username: 'HarryPutter',
+            password: 'crookshanks',
+            session: true,
+            requirements: {
+              WeakCaptcha: 'xyz',
+              UponSubmit: 'xyz'
+            }
+          },
+          jar
+        }
+      );
+      assert(false);
+    } catch (e) {
+      assert(e.status === 400);
+      assert.strictEqual(e.body.message, uponSubmitErr);
+      assert.strictEqual(e.body.data.requirement, 'UponSubmit');
     }
 
     // Make sure it really didn't work
@@ -211,7 +347,8 @@ describe('Login', function() {
           password: 'crookshanks',
           session: true,
           requirements: {
-            WeakCaptcha: 'xyz'
+            WeakCaptcha: 'xyz',
+            UponSubmit: 'abc'
           }
         },
         jar
@@ -276,7 +413,8 @@ describe('Login', function() {
           password: 'crookshanks',
           session: true,
           requirements: {
-            WeakCaptcha: 'xyz'
+            WeakCaptcha: 'xyz',
+            UponSubmit: 'abc'
           }
         },
         jar

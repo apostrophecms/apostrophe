@@ -884,7 +884,7 @@ module.exports = {
 
         return {
           earlyRequirements: Object.fromEntries(requirements.filter(([ , requirement ]) => requirement.phase === 'beforeSubmit')),
-          onTimeRequirements: Object.fromEntries(requirements.filter(requirement => requirement.phase === 'uponSubmit')),
+          onTimeRequirements: Object.fromEntries(requirements.filter(([ , requirement ]) => requirement.phase === 'uponSubmit')),
           lateRequirements: Object.fromEntries(requirements.filter(([ , requirement ]) => requirement.phase === 'afterPasswordVerified'))
         };
       },
