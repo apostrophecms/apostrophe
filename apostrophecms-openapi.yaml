@@ -3892,10 +3892,18 @@ paths:
       description: |
         ⚠️ **Permanently delete a page document.** This cannot be undone.
 
+        **Important**: This endpoint should be used to delete the draft version of a page. If the page has been published, you should unpublish it first using the unpublish endpoint
+        to ensure complete removal.
+
+        **Recommended deletion workflow**:
+        1. Unpublish the page (removes published version)
+        2. Delete the page (removes draft version)
+
         **Restrictions:**
         - Cannot delete home page
         - Cannot delete pages with children (delete children first)
         - Cannot delete draft if published version exists
+        ⚠️ **Permanently delete a page document.** This cannot be undone.
 
         **Use with caution!**
       operationId: PageDeleteById
