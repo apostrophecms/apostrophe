@@ -57,12 +57,14 @@ module.exports = {
         layoutColConfig: {
           placement: 'breadcrumb',
           icon: 'cog-icon',
-          tooltip: 'Use Content mode to edit your widgets and Layout mode to modify your columns'
+          tooltip: 'Configure column',
+          type: 'menu',
+          modal: 'AposLayoutColControlDialog'
         },
         layoutColDelete: {
           placement: 'breadcrumb',
           icon: 'delete-icon',
-          tooltip: 'Use Content mode to edit your widgets and Layout mode to modify your columns'
+          tooltip: 'Delete column'
         }
       }
     };
@@ -119,6 +121,8 @@ module.exports = {
             },
             show: {
               type: 'boolean',
+              label: 'Visible on tablet',
+              help: `Less than ${this.options?.breakpoints?.tablet || 900}px`,
               def: true
             },
             ...alignSchema
@@ -148,6 +152,8 @@ module.exports = {
             },
             show: {
               type: 'boolean',
+              label: 'Visible on mobile',
+              help: `Less than ${this.options?.breakpoints?.mobile || 600}px`,
               def: true
             },
             ...alignSchema

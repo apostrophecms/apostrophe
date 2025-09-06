@@ -50,7 +50,7 @@
           @item-clicked="menuItemClicked"
           @set-arrow="setArrow"
         >
-          <slot />
+          <slot :close="hide" />
         </AposContextMenuDialog>
       </div>
     </div>

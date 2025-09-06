@@ -154,13 +154,23 @@ export default {
       this.onCreateProvision();
     }
   },
-  unmounted() {
+  beforeUnmount() {
     apos.bus.$off('widget-breadcrumb-operation', this.executeWidgetOperation);
   },
   methods: {
     // FIXME: find out why we apos.bus.$emit emits once, but listeners are called twice.
     // FIXME: Finish implementing the context menu editor (edit column settings)
     executeWidgetOperation(update) {
+      // isConnected is supported in all modern browsers (2020+).
+      //  It's the easiest way to check if the component is still in the DOM.
+      // Here we eliminate leftover bus listeners from unmounted components, that happens
+      // sometimes (mostly in development mode) when entering Edit mode with existing
+      // area editors on the page.
+      if (this.$el?.isConnected === false) {
+        apos.bus.$off('widget-breadcrumb-operation', this.executeWidgetOperation);
+        this.unbindEventListeners();
+        return;
+      }
       switch (update.name) {
         case 'layout':
           this.onToggleLayoutMode(update);
@@ -176,10 +186,6 @@ export default {
       if (!update._id || update._id !== this.parentOptions?.widgetId) {
         return;
       }
-      // console.log('onToggleLayoutMode',
-      //   update, this.parentOptions?.widgetId, update.name !== 'layoutColDelete',
-      //   this.$options.name
-      // );
       this.layoutMode = update.value;
     },
     onRemoveLayoutColumn({ _id }) {
@@ -190,10 +196,6 @@ export default {
       ) {
         return;
       }
-      // console.log('onRemoveLayoutColumn',
-      //   widgetIndex,
-      //   this.$options.name
-      // );
       return this.remove(widgetIndex);
     },
     onCreateProvision() {

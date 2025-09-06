@@ -138,9 +138,10 @@
 // must be met in the widget data for this operation to appear.
 // - `placement`: Either `standard`, `breadcrumb` or `all`. Defaults to
 // `standard`.
-// - `type`: Either `info`, `switch`, or undefined. If `info`, the operation
-// appears as a non-interactive informational item in the breadcrumb.
-// If `switch`, the operation appears as a toggle switch in the breadcrumb.
+// - `type`: Either `info`, `switch`, `menu` or undefined. If `info`, the operation
+//   appears as a non-interactive informational item in the breadcrumb.
+//   If `switch`, the operation appears as a toggle switch in the breadcrumb. When
+//   `menu`, the operation appears as a button that opens an inline modal.
 // - `choices`: For `switch` type operations, an array of choices
 // with `label` and `value` properties. The value will be set on the widget
 // when the user selects that choice.

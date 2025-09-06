@@ -61,6 +61,8 @@
             class="apos-area-widget__breadcrumb"
             data-apos-widget-breadcrumb="0"
           >
+            <!-- FIXME: Label double click still executes widget editor
+             when edit disabled. Fix when the disable routine is in final state. -->
             <AposButton
               type="quiet"
               :label="foreign ? {
@@ -78,7 +80,7 @@
         </ol>
         <ol
           v-if="widgetBreadcrumbActions.length > 0"
-          class="apos-area-widget__breadcrumbs apos-area-widget__breadcrumbs--switch"
+          class="apos-area-widget__breadcrumbs apos-area-widget__breadcrumbs--action"
           style="margin-left: 10px;"
         >
           <li class="apos-area-widget__breadcrumb">
@@ -87,8 +89,18 @@
               v-for="operation in widgetBreadcrumbActions"
               :key="operation.key"
               v-bind="operation.props"
+              v-slot="slotProps"
               v-on="operation.listeners"
-            />
+            >
+              <component
+                :is="operation.modal"
+                v-if="operation.type === 'menu' && operation.modal"
+                :widget="widget"
+                :widget-schema="widgetModuleOptions.schema"
+                @update="$emit('update', $event)"
+                @close="slotProps.close"
+              />
+            </component>
           </li>
         </ol>
         <ol
@@ -411,7 +423,8 @@ export default {
           props: this.getOperationProps(operation),
           listeners: this.getOperationListeners(operation),
           key: operation.action || operation.name,
-          type: operation.type
+          type: operation.type,
+          modal: operation.modal || null
         }));
     },
     widgetBreadcrumbActions() {
@@ -426,7 +439,7 @@ export default {
       }
 
       const isWidgetFocused = this.widgetFocused === this.widget._id;
-      // FIXME: move to the watcher?
+      // FIXME: this is a memory leak, move to a watcher?
       if (isWidgetFocused) {
         document.addEventListener('click', this.unfocus);
       }
@@ -526,6 +539,9 @@ export default {
       if (operation.type === 'switch') {
         return 'AposBreadcrumbSwitch';
       }
+      if (operation.type === 'menu') {
+        return 'AposContextMenu';
+      }
       return 'AposButton';
     },
     getOperationProps(operation) {
@@ -543,7 +559,17 @@ export default {
           name: operation.name,
           choices: operation.choices,
           value: operation.def,
-          class: 'apos-area-modify-controls__button--switch'
+          class: 'apos-area-widget--switch'
+        };
+      }
+
+      if (operation.type === 'menu') {
+        return {
+          button: {
+            ...this.operationButtonDefault,
+            icon: operation.icon
+          },
+          tooltip: operation.tooltip || null
         };
       }
 
@@ -557,23 +583,53 @@ export default {
     },
     getOperationListeners(operation) {
       const listeners = {};
+      let setFocus = true;
+      let handleClick = true;
       if (operation.type === 'info') {
         return listeners;
       }
       if (operation.type === 'switch') {
+        setFocus = true;
+        handleClick = false;
         listeners.update = (payload) => {
           this.emitOperation(operation, payload);
         };
-      } else {
-        listeners.click = () => {
-          this.handleOperationClick(operation);
+      }
+      if (operation.type === 'menu') {
+        setFocus = false;
+        handleClick = false;
+        // no-op, the modal is handled in the slot
+        // and should emit 'update' when done
+        listeners.open = (e) => {
+          this.getFocus(e, this.widget._id);
         };
       }
+      if (operation.action === 'remove') {
+        setFocus = false;
+      }
+
+      if (!handleClick) {
+        return listeners;
+      }
+
+      if (!listeners.click) {
+        listeners.click = (e) => {
+          this.handleOperationClick(operation);
+          setFocus && this.getFocus(e, this.widget._id);
+        };
+      } else if (setFocus) {
+        const originalClick = listeners.click;
+        listeners.click = (e) => {
+          originalClick(e);
+          this.getFocus(e, this.widget._id);
+        };
+      }
+
       return listeners;
     },
     async handleOperationClick(operation) {
       const { modal } = operation;
-      if (modal) {
+      if (modal && operation.type !== 'menu') {
         const result = await apos.modal.execute(modal, {
           widget: this.widget,
           widgetSchema: this.widgetModuleOptions.schema
@@ -740,12 +796,13 @@ export default {
 </script>
 
 <style lang="scss" scoped>
-.apos-area-widget__breadcrumbs.apos-area-widget__breadcrumbs--switch {
+.apos-area-widget__breadcrumbs.apos-area-widget__breadcrumbs--action {
   padding: 4px;
   border: 1px solid var(--a-primary-transparent-25);
   background-color: var(--a-white);
 
   .apos-area-widget__breadcrumb,
+  .apos-area-widget--switch,
   :deep(.apos-breadcrumb-switch),
   :deep(.apos-breadcrumb-switch > div) {
     height: 100%;
