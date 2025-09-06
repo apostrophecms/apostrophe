@@ -3544,7 +3544,10 @@ paths:
           $ref: '#/components/responses/BadRequest'
         '500':
           $ref: '#/components/responses/InternalServerError'
-      security: []
+      security:
+        - ApiKeyAuth: []
+        - BearerAuth: []
+        - SessionAuth: []
 
     post:
       tags:
@@ -3587,7 +3590,10 @@ paths:
           $ref: '#/components/responses/BadRequest'
         '500':
           $ref: '#/components/responses/InternalServerError'
-      security: []
+      security:
+        - ApiKeyAuth: []
+        - BearerAuth: []
+        - SessionAuth: []
 
   # Page endpoints
   /@apostrophecms/page:
