@@ -2,6 +2,13 @@
 module.exports = {
   'account-box-icon': 'AccountBox',
   'alert-circle-icon': 'AlertCircle',
+  'alignh-stretch-icon': 'StretchToPage',
+  'alignh-center-icon': 'AlignHorizontalCenter',
+  'alignh-left-icon': 'AlignHorizontalLeft',
+  'alignh-right-icon': 'AlignHorizontalRight',
+  'alignv-bottom-icon': 'AlignVerticalBottom',
+  'alignv-center-icon': 'AlignVerticalCenter',
+  'alignv-top-icon': 'AlignVerticalTop',
   'alpha-x-icon': 'AlphaX',
   'anchor-icon': 'Anchor',
   'apple-keyboard-caps': 'AppleKeyboardCaps',

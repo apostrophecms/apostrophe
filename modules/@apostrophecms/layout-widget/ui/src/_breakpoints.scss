@@ -1,0 +1,9 @@
+// Breakpoint configuration for the layout widget. Override by overriding 
+// this file on a project level or with Sass `@use`, e.g.:
+// @use './breakpoints' with (
+//   $layout-breakpoint-mobile: 640px,
+//   $layout-breakpoint-tablet: 1024px
+// );
+
+$layout-breakpoint-mobile: 600px !default;
+$layout-breakpoint-tablet: 1024px !default;

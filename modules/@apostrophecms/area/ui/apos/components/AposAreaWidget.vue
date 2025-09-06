@@ -21,6 +21,7 @@
       @blur="removeKeyboardFocusHandler"
     >
       <div
+        v-if="!breadcrumbDisabled"
         ref="label"
         class="apos-area-widget-controls apos-area-widget__label"
         :class="labelsClasses"
@@ -60,6 +61,8 @@
             class="apos-area-widget__breadcrumb"
             data-apos-widget-breadcrumb="0"
           >
+            <!-- FIXME: Label double click still executes widget editor
+             when edit disabled. Fix when the disable routine is in final state. -->
             <AposButton
               type="quiet"
               :label="foreign ? {
@@ -75,8 +78,48 @@
             />
           </li>
         </ol>
+        <ol
+          v-if="widgetBreadcrumbActions.length > 0"
+          class="apos-area-widget__breadcrumbs apos-area-widget__breadcrumbs--action"
+          style="margin-left: 10px;"
+        >
+          <li class="apos-area-widget__breadcrumb">
+            <component
+              :is="operation.component"
+              v-for="operation in widgetBreadcrumbActions"
+              :key="operation.key"
+              v-bind="operation.props"
+              v-slot="slotProps"
+              v-on="operation.listeners"
+            >
+              <component
+                :is="operation.modal"
+                v-if="operation.type === 'menu' && operation.modal"
+                :widget="widget"
+                :widget-schema="widgetModuleOptions.schema"
+                @update="$emit('update', $event)"
+                @close="slotProps.close"
+              />
+            </component>
+          </li>
+        </ol>
+        <ol
+          v-if="widgetBreadcrumbInfos.length > 0"
+          class="apos-area-widget__breadcrumbs apos-area-widget__breadcrumbs--info"
+        >
+          <li>
+            <component
+              :is="operation.component"
+              v-for="operation in widgetBreadcrumbInfos"
+              :key="`info-${operation.key}`"
+              v-bind="operation.props"
+              v-on="operation.listeners"
+            />
+          </li>
+        </ol>
       </div>
       <div
+        v-if="!controlsDisabled"
         class="
           apos-area-widget-controls
           apos-area-widget-controls--add--top
@@ -104,6 +147,7 @@
         :class="{'apos-is-disabled': isFocused}"
       />
       <div
+        v-if="!controlsDisabled"
         class="apos-area-widget-controls apos-area-widget-controls--modify"
         :class="controlsClasses"
       >
@@ -158,6 +202,7 @@
         @edit="$emit('edit', i);"
       />
       <div
+        v-if="!controlsDisabled"
         class="
           apos-area-widget-controls
           apos-area-widget-controls--add
@@ -186,10 +231,14 @@
 
 <script>
 import AposIndicator from 'Modules/@apostrophecms/ui/components/AposIndicator.vue';
+import AposBreadcrumbSwitch from 'Modules/@apostrophecms/area/components/AposBreadcrumbSwitch.vue';
 
 export default {
   name: 'AposAreaWidget',
-  components: { AposIndicator },
+  components: {
+    AposIndicator,
+    AposBreadcrumbSwitch
+  },
   props: {
     widgetHovered: {
       type: String,
@@ -263,6 +312,14 @@ export default {
       type: Boolean,
       default: false
     },
+    controlsDisabled: {
+      type: Boolean,
+      default: false
+    },
+    breadcrumbDisabled: {
+      type: Boolean,
+      default: false
+    },
     generation: {
       type: Number,
       required: false,
@@ -306,6 +363,18 @@ export default {
     };
   },
   computed: {
+    operationButtonDefault() {
+      return {
+        iconOnly: true,
+        icon: 'plus-icon',
+        type: 'group',
+        modifiers: [ 'small', 'inline' ],
+        role: 'menuitem',
+        class: 'apos-area-modify-controls__button',
+        iconSize: 16,
+        disableFocus: !this.isFocused
+      };
+    },
     // Passed only to the preview layer (custom preview components).
     followingValuesWithParent() {
       return Object.entries(this.followingValues || {})
@@ -344,12 +413,33 @@ export default {
     moduleOptions() {
       return window.apos.area;
     },
+    widgetModuleOptions() {
+      return apos.modules[this.moduleOptions?.widgetManagers[this.widget?.type]] ?? {};
+    },
+    widgetBreadcrumbOperations() {
+      return (this.widgetModuleOptions.widgetBreadcrumbOperations || [])
+        .map((operation) => ({
+          component: this.getOperationComponent(operation),
+          props: this.getOperationProps(operation),
+          listeners: this.getOperationListeners(operation),
+          key: operation.action || operation.name,
+          type: operation.type,
+          modal: operation.modal || null
+        }));
+    },
+    widgetBreadcrumbActions() {
+      return this.widgetBreadcrumbOperations.filter(op => op.type !== 'info');
+    },
+    widgetBreadcrumbInfos() {
+      return this.widgetBreadcrumbOperations.filter(op => op.type === 'info');
+    },
     isFocused() {
       if (this.isSuppressed) {
         return false;
       }
 
       const isWidgetFocused = this.widgetFocused === this.widget._id;
+      // FIXME: this is a memory leak, move to a watcher?
       if (isWidgetFocused) {
         document.addEventListener('click', this.unfocus);
       }
@@ -442,6 +532,130 @@ export default {
     apos.bus.$off('widget-focus-parent', this.focusParent);
   },
   methods: {
+    getOperationComponent(operation) {
+      if (operation.type === 'info') {
+        return 'AposIndicator';
+      }
+      if (operation.type === 'switch') {
+        return 'AposBreadcrumbSwitch';
+      }
+      if (operation.type === 'menu') {
+        return 'AposContextMenu';
+      }
+      return 'AposButton';
+    },
+    getOperationProps(operation) {
+      if (operation.type === 'info') {
+        return {
+          // class: 'apos-area-widget__breadcrumbs-switch__info',
+          fillColor: 'var(--a-primary)',
+          icon: operation.icon,
+          tooltip: operation.tooltip
+        };
+      }
+
+      if (operation.type === 'switch') {
+        return {
+          name: operation.name,
+          choices: operation.choices,
+          value: operation.def,
+          class: 'apos-area-widget--switch'
+        };
+      }
+
+      if (operation.type === 'menu') {
+        return {
+          button: {
+            ...this.operationButtonDefault,
+            icon: operation.icon
+          },
+          tooltip: operation.tooltip || null
+        };
+      }
+
+      // Button by default
+      return {
+        ...this.operationButtonDefault,
+        icon: operation.icon,
+        action: operation.action,
+        tooltip: operation.tooltip || null
+      };
+    },
+    getOperationListeners(operation) {
+      const listeners = {};
+      let setFocus = true;
+      let handleClick = true;
+      if (operation.type === 'info') {
+        return listeners;
+      }
+      if (operation.type === 'switch') {
+        setFocus = true;
+        handleClick = false;
+        listeners.update = (payload) => {
+          this.emitOperation(operation, payload);
+        };
+      }
+      if (operation.type === 'menu') {
+        setFocus = false;
+        handleClick = false;
+        // no-op, the modal is handled in the slot
+        // and should emit 'update' when done
+        listeners.open = (e) => {
+          this.getFocus(e, this.widget._id);
+        };
+      }
+      if (operation.action === 'remove') {
+        setFocus = false;
+      }
+
+      if (!handleClick) {
+        return listeners;
+      }
+
+      if (!listeners.click) {
+        listeners.click = (e) => {
+          this.handleOperationClick(operation);
+          setFocus && this.getFocus(e, this.widget._id);
+        };
+      } else if (setFocus) {
+        const originalClick = listeners.click;
+        listeners.click = (e) => {
+          originalClick(e);
+          this.getFocus(e, this.widget._id);
+        };
+      }
+
+      return listeners;
+    },
+    async handleOperationClick(operation) {
+      const { modal } = operation;
+      if (modal && operation.type !== 'menu') {
+        const result = await apos.modal.execute(modal, {
+          widget: this.widget,
+          widgetSchema: this.widgetModuleOptions.schema
+        });
+        if (result) {
+          // TODO: make sure the update method from
+          // modules/@apostrophecms/area/ui/apos/components/AposAreaEditor.vue
+          // does the job and does not mess with the widget type and _id:
+          this.$emit('update', result);
+        }
+        return;
+      }
+
+      this.emitOperation(operation);
+    },
+    emitOperation(operation, payload = {}) {
+      if (operation.action) {
+        this.$emit(operation.action, this.i);
+      } else {
+        apos.bus.$emit('widget-breadcrumb-operation', {
+          ...payload,
+          ...operation,
+          _id: this.widget._id
+        });
+      }
+    },
     getFocusForMenu({ menuId, isOpen }) {
       if (
         (
@@ -461,7 +675,8 @@ export default {
     // Determine whether or not we should adjust the label based on its
     // position to the admin bar
     adjustUi() {
-      const { height: labelHeight } = this.$refs.label.getBoundingClientRect();
+      const { height: labelHeight } = this.$refs.label?.getBoundingClientRect() ??
+        { height: 0 };
       const { top: widgetTop } = this.$refs.widget.getBoundingClientRect();
       const adminBarHeight = window.apos.modules['@apostrophecms/admin-bar'].height;
       const offsetTop = widgetTop + window.scrollY;
@@ -581,6 +796,46 @@ export default {
 </script>
 
 <style lang="scss" scoped>
+.apos-area-widget__breadcrumbs.apos-area-widget__breadcrumbs--action {
+  padding: 4px;
+  border: 1px solid var(--a-primary-transparent-25);
+  background-color: var(--a-white);
+
+  .apos-area-widget__breadcrumb,
+  .apos-area-widget--switch,
+  :deep(.apos-breadcrumb-switch),
+  :deep(.apos-breadcrumb-switch > div) {
+    height: 100%;
+  }
+
+  .apos-area-widget__breadcrumb {
+    padding: 0;
+  }
+
+  > li {
+    display: flex;
+    align-items: center;
+    margin: 0;
+    padding: 0;
+
+  }
+}
+
+.apos-area-widget__breadcrumbs.apos-area-widget__breadcrumbs--info {
+  display: flex;
+  border: none;
+  background-color: transparent;
+
+  > li {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    margin: 0;
+    padding: 0;
+
+  }
+}
+
 @mixin showButton() {
   transform: scale(1.15);
   background-size: 150% 100%;
@@ -818,7 +1073,8 @@ export default {
   .apos-area-widget__label {
     position: absolute;
     top: 0;
-    right: 0;
+    left: 0; // switch the root label position from right to left
+    // right: 0;
     display: flex;
     transform: translateY(-100%);
     transition: opacity 300ms ease;
@@ -834,11 +1090,13 @@ export default {
 
     & {
       display: flex;
+      box-sizing: border-box;
       align-items: center;
+      height: 32px;
       margin: 0 0 8px;
       padding: 4px 6px;
-      background-color: var(--a-background-primary);
       border: 1px solid var(--a-primary-transparent-50);
+      background-color: var(--a-background-primary);
       border-radius: 8px;
     }
   }
