@@ -47,11 +47,10 @@ export const useModalStore = defineStore('modal', () => {
   // Listens for keystrokes globally, but delivers them only
   // if "el" is currently in the topmost modal (if any)
   function onKeyDown(el, fn) {
-    if (!
-      (
-        (el instanceof Element) &&
+    if (!(
+      (el instanceof Element) &&
         ((typeof fn) === 'function')
-      )
+    )
     ) {
       throw new Error('pass el, fn where el is your DOM element');
     }
