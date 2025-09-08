@@ -4781,42 +4781,6 @@ paths:
         - BearerAuth: []
         - SessionAuth: []
 
-  /@apostrophecms/user/unique-username:
-    post:
-      tags:
-        - Users
-      summary: Check username uniqueness
-      description: Verify if a username is available and unique in the system
-      operationId: UserUniqueUsername
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required:
-                - username
-              properties:
-                username:
-                  type: string
-                  description: Username to check for uniqueness
-                  example: "johndoe"
-      responses:
-        '200':
-          description: Username is available and unique
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '409':
-          description: Conflict - username already exists
-        '500':
-          $ref: '#/components/responses/InternalServerError'
-      security:
-        - ApiKeyAuth: []
-        - BearerAuth: []
-        - SessionAuth: []
-
   /@apostrophecms/user/{_id}:
     delete:
       tags:
