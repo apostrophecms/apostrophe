@@ -188,6 +188,7 @@ components:
 
         **Step 2:** Copy the session cookie value from your browser's dev tools
         and paste it into the "Value" field above.
+
   parameters:
     Page:
       name: page
@@ -3093,7 +3094,6 @@ components:
           pattern: ^[a-fA-F0-9]{24}$
       title: AposPrimitives
 
-
   responses:
     BadRequest:
       description: Bad request - invalid input parameters
@@ -5345,7 +5345,6 @@ paths:
         - ApiKeyAuth: []
         - BearerAuth: []
         - SessionAuth: []
-        - {}  # Allows unauthenticated access to global content
 
     post:
       tags:
@@ -5463,6 +5462,10 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '500':
           $ref: '#/components/responses/InternalServerError'
+      security:
+        - ApiKeyAuth: []
+        - BearerAuth: []
+        - SessionAuth: []
 
   /@apostrophecms/global/localize:
     post:
@@ -5486,6 +5489,10 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '500':
           $ref: '#/components/responses/InternalServerError'
+      security:
+        - ApiKeyAuth: []
+        - BearerAuth: []
+        - SessionAuth: []
 
   /@apostrophecms/global/publish:
     post:
@@ -5509,6 +5516,10 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '500':
           $ref: '#/components/responses/InternalServerError'
+      security:
+        - ApiKeyAuth: []
+        - BearerAuth: []
+        - SessionAuth: []
 
   /@apostrophecms/global/restore:
     post:
@@ -5532,6 +5543,10 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '500':
           $ref: '#/components/responses/InternalServerError'
+      security:
+        - ApiKeyAuth: []
+        - BearerAuth: []
+        - SessionAuth: []
 
   /@apostrophecms/global/{_id}:
     delete:
@@ -5559,6 +5574,10 @@ paths:
           $ref: '#/components/responses/NotFound'
         '500':
           $ref: '#/components/responses/InternalServerError'
+      security:
+        - ApiKeyAuth: []
+        - BearerAuth: []
+        - SessionAuth: []
 
     get:
       tags:
@@ -5585,6 +5604,10 @@ paths:
           $ref: '#/components/responses/NotFound'
         '500':
           $ref: '#/components/responses/InternalServerError'
+      security:
+        - ApiKeyAuth: []
+        - BearerAuth: []
+        - SessionAuth: []
 
     patch:
       tags:
@@ -5651,6 +5674,10 @@ paths:
           $ref: '#/components/responses/NotFound'
         '500':
           $ref: '#/components/responses/InternalServerError'
+      security:
+        - ApiKeyAuth: []
+        - BearerAuth: []
+        - SessionAuth: []
 
   /@apostrophecms/global/{_id}/dismiss-submission:
     post:
@@ -5678,6 +5705,10 @@ paths:
           $ref: '#/components/responses/NotFound'
         '500':
           $ref: '#/components/responses/InternalServerError'
+      security:
+        - ApiKeyAuth: []
+        - BearerAuth: []
+        - SessionAuth: []
 
   /@apostrophecms/global/{_id}/locale/{toLocale}:
     get:
@@ -5706,6 +5737,10 @@ paths:
           $ref: '#/components/responses/NotFound'
         '500':
           $ref: '#/components/responses/InternalServerError'
+      security:
+        - ApiKeyAuth: []
+        - BearerAuth: []
+        - SessionAuth: []
 
   /@apostrophecms/global/{_id}/locales:
     get:
@@ -5736,6 +5771,10 @@ paths:
           $ref: '#/components/responses/NotFound'
         '500':
           $ref: '#/components/responses/InternalServerError'
+      security:
+        - ApiKeyAuth: []
+        - BearerAuth: []
+        - SessionAuth: []
 
   /@apostrophecms/global/{_id}/localize:
     post:
@@ -5763,6 +5802,10 @@ paths:
           $ref: '#/components/responses/NotFound'
         '500':
           $ref: '#/components/responses/InternalServerError'
+      security:
+        - ApiKeyAuth: []
+        - BearerAuth: []
+        - SessionAuth: []
 
   /@apostrophecms/global/{_id}/publish:
     post:
@@ -5790,6 +5833,10 @@ paths:
           $ref: '#/components/responses/NotFound'
         '500':
           $ref: '#/components/responses/InternalServerError'
+      security:
+        - ApiKeyAuth: []
+        - BearerAuth: []
+        - SessionAuth: []
 
   /@apostrophecms/global/{_id}/revert-draft-to-published:
     post:
@@ -5817,6 +5864,10 @@ paths:
           $ref: '#/components/responses/NotFound'
         '500':
           $ref: '#/components/responses/InternalServerError'
+      security:
+        - ApiKeyAuth: []
+        - BearerAuth: []
+        - SessionAuth: []
 
   /@apostrophecms/global/{_id}/revert-published-to-previous:
     post:
@@ -5844,6 +5895,10 @@ paths:
           $ref: '#/components/responses/NotFound'
         '500':
           $ref: '#/components/responses/InternalServerError'
+      security:
+        - ApiKeyAuth: []
+        - BearerAuth: []
+        - SessionAuth: []
 
   /@apostrophecms/global/{_id}/share:
     post:
@@ -5871,6 +5926,10 @@ paths:
           $ref: '#/components/responses/NotFound'
         '500':
           $ref: '#/components/responses/InternalServerError'
+      security:
+        - ApiKeyAuth: []
+        - BearerAuth: []
+        - SessionAuth: []
 
   /@apostrophecms/global/{_id}/submit:
     post:
@@ -5898,6 +5957,10 @@ paths:
           $ref: '#/components/responses/NotFound'
         '500':
           $ref: '#/components/responses/InternalServerError'
+      security:
+        - ApiKeyAuth: []
+        - BearerAuth: []
+        - SessionAuth: []
 
   /@apostrophecms/global/{_id}/unpublish:
     post:
@@ -5925,6 +5988,10 @@ paths:
           $ref: '#/components/responses/NotFound'
         '500':
           $ref: '#/components/responses/InternalServerError'
+      security:
+        - ApiKeyAuth: []
+        - BearerAuth: []
+        - SessionAuth: []
 
   # Image
   /@apostrophecms/image:
