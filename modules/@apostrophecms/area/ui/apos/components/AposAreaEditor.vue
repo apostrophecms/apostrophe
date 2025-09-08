@@ -83,6 +83,7 @@
 import { createId } from '@paralleldrive/cuid2';
 import AposThemeMixin from 'Modules/@apostrophecms/ui/mixins/AposThemeMixin';
 import newInstance from 'apostrophe/modules/@apostrophecms/schema/lib/newInstance.js';
+import { useModalStore } from 'Modules/@apostrophecms/ui/stores/modal';
 import cloneWidget from 'Modules/@apostrophecms/area/lib/clone-widget.js';
 
 export default {
@@ -247,6 +248,7 @@ export default {
     }
   },
   mounted() {
+    this.modalStore = useModalStore();
     this.bindEventListeners();
   },
   beforeUnmount() {
@@ -257,23 +259,23 @@ export default {
       apos.bus.$on('area-updated', this.areaUpdatedHandler);
       apos.bus.$on('widget-hover', this.updateWidgetHovered);
       apos.bus.$on('widget-focus', this.updateWidgetFocused);
+      this.modalStore.onKeyDown(this.$el, this.focusParentEvent);
       apos.bus.$on('command-menu-area-copy-widget', this.handleCopy);
       apos.bus.$on('command-menu-area-cut-widget', this.handleCut);
       apos.bus.$on('command-menu-area-duplicate-widget', this.handleDuplicate);
       apos.bus.$on('command-menu-area-paste-widget', this.handlePaste);
       apos.bus.$on('command-menu-area-remove-widget', this.handleRemove);
-      window.addEventListener('keydown', this.focusParentEvent);
     },
     unbindEventListeners() {
       apos.bus.$off('area-updated', this.areaUpdatedHandler);
       apos.bus.$off('widget-hover', this.updateWidgetHovered);
       apos.bus.$off('widget-focus', this.updateWidgetFocused);
+      this.modalStore.offKeyDown(this.focusParentEvent);
       apos.bus.$off('command-menu-area-copy-widget', this.handleCopy);
       apos.bus.$off('command-menu-area-cut-widget', this.handleCut);
       apos.bus.$off('command-menu-area-duplicate-widget', this.handleDuplicate);
       apos.bus.$off('command-menu-area-paste-widget', this.handlePaste);
       apos.bus.$off('command-menu-area-remove-widget', this.handleRemove);
-      window.removeEventListener('keydown', this.focusParentEvent);
     },
     isInsideContentEditable() {
       return document.activeElement.closest('[contenteditable]') !== null;

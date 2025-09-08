@@ -174,7 +174,8 @@ export default {
     async create() {
       const doc = await apos.modal.execute(this.moduleOptions.components.editorModal, {
         moduleName: this.moduleName,
-        filterValues: this.filterValues
+        filterValues: this.filterValues,
+        hasRelationshipField: !!this.relationshipField
       });
       if (!doc) {
         // Cancel clicked

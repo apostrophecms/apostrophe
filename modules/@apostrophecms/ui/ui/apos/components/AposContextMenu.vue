@@ -69,6 +69,11 @@ import { createId } from '@paralleldrive/cuid2';
 import { useAposTheme } from '../composables/AposTheme.js';
 import { useFocusTrap } from '../composables/AposFocusTrap.js';
 
+import { useModalStore } from 'Modules/@apostrophecms/ui/stores/modal';
+
+let modalStore = null;
+let modalDepth = null;
+
 const props = defineProps({
   richTextMenu: {
     type: Boolean,
@@ -253,6 +258,8 @@ const { themeClass } = useAposTheme();
 onMounted(() => {
   apos.bus.$on('context-menu-toggled', hideWhenOtherOpen);
   apos.bus.$on('close-context-menus', hideContextMenu);
+  modalStore = useModalStore();
+  modalDepth = modalStore.getDepth();
 });
 
 onBeforeUnmount(() => {
@@ -268,7 +275,7 @@ function getMenuOffset() {
 }
 
 function hideWhenOtherOpen({ menuId }) {
-  if (props.menuId !== menuId) {
+  if ((modalDepth === modalStore.getDepth()) && (props.menuId !== menuId)) {
     otherMenuOpened.value = true;
     hide();
   }
@@ -280,7 +287,10 @@ function setIconToCenterTo(el) {
   }
 }
 
-function hideContextMenu(type = 'contextMenu') {
+function hideContextMenu(type) {
+  if (modalDepth !== modalStore.getDepth()) {
+    return;
+  }
   if (type === 'richText' && props.richTextMenu) {
     hide();
   }
@@ -342,6 +352,7 @@ function buttonClicked(e) {
   }
   otherMenuOpened.value = false;
   apos.bus.$emit('context-menu-toggled', {
+    modalDepth,
     menuId: props.menuId,
     isOpen: isOpen.value
   });
@@ -430,6 +441,9 @@ const ignoreInputTypes = [
  * @param {KeyboardEvent} event
  */
 function handleKeyboard(event) {
+  if (modalDepth !== modalStore.getDepth()) {
+    return;
+  }
   if (event.key !== 'Escape' || !isOpen.value) {
     return;
   }
