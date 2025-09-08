@@ -95,6 +95,7 @@
 
 <script>
 import { createId } from '@paralleldrive/cuid2';
+import filterCreateWidgetOperations from '../lib/filter-create-widget-operations.js';
 
 export default {
   name: 'AposAreaContextualMenu',
@@ -201,7 +202,8 @@ export default {
         return [];
       }
       const menu = [ ...this.contextMenuOptions.menu ];
-      for (const createWidgetOperation of this.moduleOptions.createWidgetOperations) {
+      const createWidgetOperations = filterCreateWidgetOperations(this.moduleOptions, this.options);
+      for (const createWidgetOperation of createWidgetOperations) {
         menu.unshift({
           type: 'operation',
           ...createWidgetOperation
@@ -329,6 +331,7 @@ export default {
         this.$refs[name][0].querySelector('button').focus();
       }
     }
+
   }
 };
 </script>

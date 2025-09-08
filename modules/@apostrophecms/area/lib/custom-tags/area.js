@@ -69,7 +69,7 @@ module.exports = function(self) {
           items: []
         };
         doc[name] = area;
-        const docId = doc._docId || doc._id;
+        const docId = doc._docId || ((doc.metaType === 'doc') ? doc._id : null);
         if (docId) {
           let mainDoc = await self.apos.doc.db.findOne({ _id: docId });
           if (!mainDoc) {

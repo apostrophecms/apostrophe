@@ -100,6 +100,8 @@
 </template>
 
 <script>
+import filterCreateWidgetOperations from '../lib/filter-create-widget-operations.js';
+
 export default {
   name: 'AposAreaExpandedMenu',
   props: {
@@ -177,7 +179,7 @@ export default {
       return count ? +count > 1 && +count < 4 : true;
     },
     getCreateWidgetOperationsGroups() {
-      const operations = this.moduleOptions.createWidgetOperations;
+      const operations = filterCreateWidgetOperations(this.moduleOptions, this.options);
       if (operations.length === 0) {
         return [];
       }
