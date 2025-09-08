@@ -6,6 +6,10 @@
 
 * Custom operations registered with `addCreateWidgetOperation` can now specify an `ifTypesIntersect` property containing an array of widget type names. If the area in question allows at least one, the operation is offered.
 
+### Changes
+
+* Redirects to URLs containing accent marks and other non-ascii characters now behave as expected with Astro. Pre-encoding the URLs exactly the way `res.redirect` would before passing them to Astro prevents an error in Astro and allows the redirect to succeed.
+
 ## 4.21.0 (2025-09-03)
 
 ### Adds
