@@ -343,10 +343,14 @@ module.exports = (self) => {
           // Support one or many
           if (Array.isArray(value)) {
             return _.map(value, function (v) {
-              return self.apos.launder.select(v, field.choices, field.def);
+              return (typeof field.choices) === 'string'
+                ? self.apos.launder.string(v, field.def)
+                : self.apos.launder.select(v, field.choices, field.def);
             });
           } else {
-            return [ self.apos.launder.select(value, field.choices, field.def) ];
+            return (typeof field.choices) === 'string'
+              ? self.apos.launder.string(value, field.def)
+              : self.apos.launder.select(value, field.choices, field.def);
           }
         },
         choices: async function () {
@@ -398,7 +402,9 @@ module.exports = (self) => {
           // Support one or many
           if (Array.isArray(value)) {
             return _.map(value, function (v) {
-              return self.apos.launder.select(v, field.choices, null);
+              return (typeof field.choices) === 'string'
+                ? self.apos.launder.string(v, null)
+                : self.apos.launder.select(v, field.choices, null);
             });
           } else {
             value = (typeof field.choices) === 'string'
@@ -1177,12 +1183,9 @@ module.exports = (self) => {
         }
         destination[field.name] = actualDocs;
       }
-      if (field.required && (destination[field.name].length === 0)) {
-        throw self.apos.error('required');
-      }
-      if (field.min && field.min > destination[field.name].length) {
-        throw self.apos.error('min', `Minimum ${field.withType} required not reached.`);
-      }
+      // "min" and "required" are not enforced server-side for relationships because
+      // it is always possible for the related document to be removed independently
+      // at some point. This leads to too many edge cases and knock-on effects if enforced
       if (field.max && field.max < destination[field.name].length) {
         throw self.apos.error('max', `Maximum ${field.withType} required reached.`);
       }

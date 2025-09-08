@@ -70,6 +70,7 @@ module.exports = {
   'help-circle-icon': 'HelpCircle',
   'image-edit-outline': 'ImageEditOutline',
   'image-icon': 'Image',
+  'image-plus-icon': 'ImagePlus',
   'image-size-select-actual-icon': 'ImageSizeSelectActual',
   'information-icon': 'Information',
   'information-outline-icon': 'InformationOutline',

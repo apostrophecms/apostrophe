@@ -159,12 +159,11 @@ module.exports = {
       post: {
         upload: [
           self.canUpload,
-          require('connect-multiparty')(),
+          require('multer')({ dest: require('os').tmpdir() }).single('file'),
           async function (req) {
             try {
-              // The name attribute could be anything because of how fileupload
-              // controls work; we don't really care.
-              const file = Object.values(req.files || {})[0];
+              // The file comes from multer middleware
+              const file = req.file;
 
               if (!file) {
                 throw self.apos.error('invalid');
@@ -175,11 +174,11 @@ module.exports = {
 
               return attachment;
             } finally {
-              for (const file of (Object.values(req.files || {}))) {
+              if (req.file) {
                 try {
-                  fs.unlinkSync(file.path);
+                  fs.unlinkSync(req.file.path);
                 } catch (e) {
-                  self.apos.util.warn(`Uploaded temporary file ${file.path} was already removed, this should have been the responsibility of the upload route`);
+                  self.apos.util.warn(`Uploaded temporary file ${req.file.path} was already removed, this should have been the responsibility of the upload route`);
                 }
               }
             }
@@ -393,7 +392,9 @@ module.exports = {
       // object, suitable for passing to the `url` API and for use as the value
       // of a `type: 'attachment'` schema field.
       async insert(req, file, options = {}) {
-        let extension = path.extname(file.name);
+        // Handle both multer (originalname) and connect-multiparty (name) formats
+        const fileName = file.originalname || file.name;
+        let extension = path.extname(fileName);
         if (extension && extension.length) {
           extension = extension.substr(1);
         }
@@ -420,9 +421,9 @@ module.exports = {
           _id: options.attachmentId ?? self.apos.util.generateId(),
           group: group.name,
           createdAt: new Date(),
-          name: self.apos.util.slugify(path.basename(file.name, path.extname(file.name))),
+          name: self.apos.util.slugify(path.basename(fileName, path.extname(fileName))),
           title: self.apos.util.sortify(
-            path.basename(file.name, path.extname(file.name))
+            path.basename(fileName, path.extname(fileName))
           ),
           extension,
           type: 'attachment',
@@ -1187,7 +1188,8 @@ module.exports = {
           // for bc
           uploadsUrl: self.uploadfs.getUrl(),
           croppable: self.croppable,
-          sized: self.sized
+          sized: self.sized,
+          maxSize: self.options.maxSize
         };
       },
       // Middleware method used when only those with attachment privileges

@@ -7,6 +7,7 @@
     :data-area-label="widgetLabel"
     :data-apos-widget-foreign="foreign ? 1 : 0"
     :data-apos-widget-id="widget._id"
+    tabindex="0"
   >
     <div
       ref="wrapper"
@@ -24,7 +25,10 @@
         class="apos-area-widget-controls apos-area-widget__label"
         :class="labelsClasses"
       >
-        <ol class="apos-area-widget__breadcrumbs">
+        <ol
+          class="apos-area-widget__breadcrumbs"
+          @click="isSuppressingWidgetControls = false"
+        >
           <li
             class="
               apos-area-widget__breadcrumb
@@ -87,6 +91,7 @@
           :index="i"
           :widget-options="widgets"
           :options="options"
+          :field-id="fieldId"
           :disabled="disabled"
           :tabbable="isHovered || isFocused"
           :menu-id="`${widget._id}-widget-menu-top`"
@@ -112,6 +117,7 @@
           :max-reached="maxReached"
           :tabbable="isFocused"
           :model-value="widget"
+          :widget-options="widgetOptions"
           @up="$emit('up', i);"
           @remove="$emit('remove', i);"
           @edit="$emit('edit', i);"
@@ -134,6 +140,7 @@
         :doc-id="docId"
         :focused="isFocused"
         @update="$emit('update', $event)"
+        @suppress-widget-controls="isSuppressingWidgetControls = true"
       />
       <component
         :is="widgetComponent(widget.type)"
@@ -151,6 +158,7 @@
         :doc-id="docId"
         :rendering="rendering"
         @edit="$emit('edit', i);"
+        @update="$emit('update', $event);"
       />
       <div
         class="
@@ -167,6 +175,7 @@
           :index="i + 1"
           :widget-options="widgets"
           :options="options"
+          :field-id="fieldId"
           :disabled="disabled"
           :tabbable="isHovered || isFocused"
           :menu-id="`${widget._id}-widget-menu-bottom`"
@@ -276,19 +285,22 @@ export default {
     'copy',
     'update',
     'add',
-    'changed'
+    'changed',
+    'paste'
   ],
   data() {
     return {
       mounted: false, // hack around needing DOM to be rendered for computed classes
       isSuppressed: false,
       menuOpen: null,
+      isSuppressingWidgetControls: false,
       classes: {
         show: 'apos-is-visible',
         open: 'apos-is-open',
         focus: 'apos-is-focused',
         highlight: 'apos-is-highlighted',
-        adjust: 'apos-is-ui-adjusted'
+        adjust: 'apos-is-ui-adjusted',
+        suppressWidgetControls: 'apos-is-suppressing-widget-controls'
       },
       breadcrumbs: {
         $lastEl: null,
@@ -319,12 +331,12 @@ export default {
     },
     widgetLabel() {
       const moduleName = `${this.widget.type}-widget`;
-      const module = window.apos.modules[moduleName];
-      if (!module) {
+      const mod = window.apos.modules[moduleName];
+      if (!mod) {
         // eslint-disable-next-line no-console
         console.warn(`No ${moduleName} module found for widget type ${this.widget.type}`);
       }
-      return module.label;
+      return mod.label;
     },
     widgetOptions() {
       return this.widgets[this.widget.type];
@@ -339,12 +351,14 @@ export default {
     isFocused() {
       if (this.isSuppressed) {
         return false;
-      } else {
-        if (this.widgetFocused === this.widget._id) {
-          document.addEventListener('click', this.unfocus);
-        }
-        return this.widgetFocused === this.widget._id;
       }
+
+      const isWidgetFocused = this.widgetFocused === this.widget._id;
+      if (isWidgetFocused) {
+        document.addEventListener('click', this.unfocus);
+      }
+
+      return isWidgetFocused;
     },
     isHovered() {
       return this.widgetHovered === this.widget._id;
@@ -358,7 +372,8 @@ export default {
     },
     controlsClasses() {
       return {
-        [this.classes.show]: this.isFocused
+        [this.classes.show]: this.isFocused,
+        [this.classes.suppressWidgetControls]: this.isSuppressingWidgetControls
       };
     },
     containerClasses() {
@@ -394,6 +409,7 @@ export default {
       } else {
         this.menuOpen = null;
         this.$refs.wrapper.removeEventListener('keydown', this.handleKeyboardUnfocus);
+        this.isSuppressingWidgetControls = false;
       }
     }
   },
@@ -422,7 +438,7 @@ export default {
       // If another widget was in focus (because the user clicked the "add"
       // menu, for example), and this widget was created, give the new widget
       // focus.
-      apos.bus.$emit('widget-focus', this.widget._id);
+      apos.bus.$emit('widget-focus', { _id: this.widget._id });
     }
   },
   unmounted() {
@@ -430,7 +446,6 @@ export default {
     apos.bus.$off('widget-focus-parent', this.focusParent);
   },
   methods: {
-
     getFocusForMenu({ menuId, isOpen }) {
       if (
         (
@@ -473,18 +488,18 @@ export default {
         const $parent = this.getParent();
         // .. And have a parent
         if ($parent) {
-          apos.bus.$emit('widget-focus', $parent.dataset.areaWidget);
+          apos.bus.$emit('widget-focus', { _id: $parent.dataset.areaWidget });
         }
       }
     },
 
     // Ask the parent AposAreaEditor to make us focused
-    getFocus(e, id) {
+    getFocus(e, _id) {
       if (e) {
         e.stopPropagation();
       }
       this.isSuppressed = false;
-      apos.bus.$emit('widget-focus', id);
+      apos.bus.$emit('widget-focus', { _id });
     },
 
     // Our widget was hovered
@@ -512,7 +527,7 @@ export default {
       if (!this.$el.contains(event.target)) {
         this.isSuppressed = true;
         document.removeEventListener('click', this.unfocus);
-        apos.bus.$emit('widget-focus', null);
+        apos.bus.$emit('widget-focus', { _id: null });
       }
     },
 
@@ -880,7 +895,7 @@ export default {
     }
   }
 
-  .apos-is-visible,
+  .apos-is-visible:not(.apos-is-suppressing-widget-controls),
   .apos-is-focused {
     opacity: 1;
     pointer-events: auto;

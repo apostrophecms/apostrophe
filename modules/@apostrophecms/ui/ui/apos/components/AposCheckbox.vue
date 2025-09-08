@@ -30,13 +30,21 @@
         :size="10"
       />
     </span>
-    <span
+    <div
       v-if="choice.label"
       :class="{'apos-sr-only': field.hideLabel }"
       class="apos-choice-label-text"
     >
-      {{ $t(choice.label) }}
-    </span>
+      <span>
+        {{ $t(choice.label) }}
+      </span>
+      <!-- eslint-disable vue/no-v-html -->
+      <p
+        v-if="(choice.help || choice.htmlHelp)"
+        class="apos-choice-label-text--help apos-field__help"
+        v-html="$t(choice.help || choice.htmlHelp)"
+      />
+    </div>
   </label>
 </template>
 
@@ -104,7 +112,23 @@ export default {
 </script>
 
 <style lang="scss" scoped>
-  .apos-input-indicator {
-    border-radius: 3px;
+.apos-input-indicator {
+  border-radius: 3px;
+}
+
+.apos-choice-label-text {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: baseline;
+}
+
+.apos-field__help {
+  @include type-base;
+
+  & {
+    margin: 0 0 $spacing-base;
+    line-height: var(--a-line-tall);
+    color: var(--a-base-3);
   }
+}
 </style>

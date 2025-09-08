@@ -210,6 +210,7 @@ const menuResizeObserver = new ResizeObserver((entries) => {
 
 defineExpose({
   hide,
+  show,
   setDropdownPosition
 });
 
@@ -302,7 +303,9 @@ async function hide(e) {
   if (!isOpen.value) {
     return;
   }
-  menuResizeObserver.unobserve(dropdownContent.value);
+  if (dropdownContent.value) {
+    menuResizeObserver.unobserve(dropdownContent.value);
+  }
   isOpen.value = false;
   await nextTick();
   emit('close', e);

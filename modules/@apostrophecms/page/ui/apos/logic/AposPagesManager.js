@@ -398,6 +398,7 @@ export default {
           pageTree = pageTree._children;
         }
 
+        pageTree = filterValidPages(pageTree);
         formatPage(pageTree);
 
         if (!pageTree.length && pageTree.length !== 0) {
@@ -416,12 +417,37 @@ export default {
           page.forEach(formatPage);
           return;
         }
+        if (!page._id) {
+          return;
+        }
 
         self.pagesFlat.push(klona(page));
 
         if (Array.isArray(page._children)) {
           page._children.forEach(formatPage);
         }
+      }
+
+      function filterValidPages(page) {
+        if (Array.isArray(page)) {
+          return page.map(filterValidPages).filter(p => p._id);
+        }
+        const result = {};
+        if (!self.moduleOptions.validPageTypes.includes(page.type)) {
+          return result;
+        }
+
+        Object.assign(result, page);
+
+        result._children = [];
+        for (const child of page._children || []) {
+          const filteredChild = filterValidPages(child);
+          if (filteredChild._id) {
+            result._children.push(filteredChild);
+          }
+        }
+
+        return result;
       }
     },
     getAllPagesTotal () {

@@ -1,7 +1,7 @@
 const t = require('../test-lib/test.js');
 const assert = require('assert').strict;
 
-describe('Login', function() {
+describe('Login', function () {
   let apos;
   let resetUserId;
   let resetToken;
@@ -31,13 +31,13 @@ describe('Login', function() {
     });
   });
 
-  after(function() {
+  after(function () {
     return t.destroy(apos);
   });
 
   // EXISTENCE
 
-  it('should initialize', async function() {
+  it('should initialize', async function () {
     assert(apos);
 
     assert(apos.modules['@apostrophecms/login']);
@@ -117,7 +117,7 @@ describe('Login', function() {
     await loginModule.clearLoginAttempts(username);
   });
 
-  it('should be able to login a user with their username', async function() {
+  it('should be able to login a user with their username', async function () {
     const getLoggedInCookieValue =
       jar => jar.toJSON().cookies.find(cookie => cookie.key === `${apos.options.shortName}.loggedIn`).value;
 
@@ -182,7 +182,7 @@ describe('Login', function() {
     assert(getLoggedInCookieValue(jar) === 'false');
   });
 
-  it('should be able to login a user with their email', async function() {
+  it('should be able to login a user with their email', async function () {
 
     const jar = apos.http.jar();
 
@@ -242,7 +242,7 @@ describe('Login', function() {
     assert(page.match(/logged out/));
   });
 
-  it('changing a user\'s password should invalidate sessions for that user', async function() {
+  it('changing a user\'s password should invalidate sessions for that user', async function () {
 
     const jar = apos.http.jar();
 
@@ -356,7 +356,7 @@ describe('Login', function() {
 
   });
 
-  it('changing a user\'s password should invalidate bearer tokens for that user', async function() {
+  it('changing a user\'s password should invalidate bearer tokens for that user', async function () {
 
     // Log in
     let response = await apos.http.post('/api/v1/@apostrophecms/login/login', {
@@ -425,7 +425,7 @@ describe('Login', function() {
 
   });
 
-  it('api key should beat session when both are present', async function() {
+  it('api key should beat session when both are present', async function () {
     const jar = apos.http.jar();
     await apos.http.post(
       '/api/v1/@apostrophecms/login/login',
@@ -463,7 +463,7 @@ describe('Login', function() {
     assert(page2.match(/System Task/));
   });
 
-  it('should validate POST /login/reset-request', async function() {
+  it('should validate POST /login/reset-request', async function () {
     const jar = apos.http.jar();
     await apos.http.get(
       '/',
@@ -485,7 +485,7 @@ describe('Login', function() {
     });
   });
 
-  it('should hide sensitive exceptions POST /login/reset-request', async function() {
+  it('should hide sensitive exceptions POST /login/reset-request', async function () {
     let log;
     const orig = apos.util.error;
     apos.util.error = (m) => {
@@ -532,7 +532,7 @@ describe('Login', function() {
     apos.util.error = orig;
   });
 
-  it('should reset password POST /login/reset-request (request)', async function() {
+  it('should reset password POST /login/reset-request (request)', async function () {
     let args;
     const orig = apos.login.email;
     apos.login.email = (req, ...a) => {
@@ -610,7 +610,7 @@ describe('Login', function() {
     apos.login.email = orig;
   });
 
-  it('should reset password GET /login/reset (validate)', async function() {
+  it('should reset password GET /login/reset (validate)', async function () {
     const user = await apos.doc.db.findOne({ _id: resetUserId });
 
     // Fail
@@ -667,7 +667,7 @@ describe('Login', function() {
     );
   });
 
-  it('should reset password POST /login/reset (validate & reset)', async function() {
+  it('should reset password POST /login/reset (validate & reset)', async function () {
     const jar = apos.http.jar();
     const user = await apos.doc.db.findOne({ _id: resetUserId });
     await apos.http.get(
@@ -798,7 +798,7 @@ describe('Login', function() {
     assert(page.match(/logged in/));
   });
 
-  it('should find user by reset data', async function() {
+  it('should find user by reset data', async function () {
     let user = apos.user.newInstance();
     user.title = 'getResetUser';
     user.email = 'getResetUser@example.com';
@@ -866,5 +866,136 @@ describe('Login', function() {
         message: 'notfound'
       }
     );
+  });
+
+  it('should return an error with code 404 at GET login/whoami when user is not logged in', async function () {
+    try {
+      const jar = apos.http.jar();
+      await apos.http.get(
+        '/',
+        {
+          jar
+        }
+      );
+      await apos.http.post('/api/v1/@apostrophecms/login/whoami',
+        {
+          method: 'POST',
+          body: {
+            session: true
+          },
+          jar
+        }
+      );
+      assert.fail('Expected error but got success');
+    } catch (err) {
+      assert.strictEqual(err.status, 404);
+    }
+  });
+
+  it('should return user data at GET login/whoami when user is logged in', async function () {
+
+    const jar = apos.http.jar();
+    await apos.http.get(
+      '/',
+      {
+        jar
+      }
+    );
+
+    await apos.http.post(
+      '/api/v1/@apostrophecms/login/login',
+      {
+        method: 'POST',
+        body: {
+          username: 'HarryPutter',
+          password: 'AnotherLovelyPassword',
+          session: true
+        },
+        jar
+      }
+    );
+
+    const whoamiResponse = await apos.http.post('/api/v1/@apostrophecms/login/whoami', {
+      method: 'POST',
+      body: {
+        session: true
+      },
+      jar
+    });
+    assert.ok(whoamiResponse._id);
+    assert.strictEqual(whoamiResponse.username, 'HarryPutter');
+    assert.strictEqual(whoamiResponse.title, 'Extra Cool Putter');
+    assert.strictEqual(whoamiResponse.email, 'hputter@aol.com');
+  });
+
+  it('should return user data with additional whoamiFields if explicitly added to the login module options when user is logged in', async function () {
+
+    const jar = apos.http.jar();
+    await apos.http.get(
+      '/',
+      {
+        jar
+      }
+    );
+
+    apos.modules['@apostrophecms/login'].options.whoamiFields = [ 'role' ];
+
+    await apos.http.post(
+      '/api/v1/@apostrophecms/login/login',
+      {
+        method: 'POST',
+        body: {
+          username: 'HarryPutter',
+          password: 'AnotherLovelyPassword',
+          session: true
+        },
+        jar
+      }
+    );
+
+    const whoamiResponse = await apos.http.post('/api/v1/@apostrophecms/login/whoami', {
+      method: 'POST',
+      body: {
+        session: true
+      },
+      jar
+    });
+    assert.strictEqual(whoamiResponse.role, 'admin');
+  });
+
+  it('should not return user data with additional whoamiFields if not explicitly added to the login module options when user is logged in', async function () {
+
+    const jar = apos.http.jar();
+    await apos.http.get(
+      '/',
+      {
+        jar
+      }
+    );
+
+    // Reset the whoamiFields to default (empty)
+    apos.modules['@apostrophecms/login'].options.whoamiFields = [];
+
+    await apos.http.post(
+      '/api/v1/@apostrophecms/login/login',
+      {
+        method: 'POST',
+        body: {
+          username: 'HarryPutter',
+          password: 'AnotherLovelyPassword',
+          session: true
+        },
+        jar
+      }
+    );
+
+    const whoamiResponse = await apos.http.post('/api/v1/@apostrophecms/login/whoami', {
+      method: 'POST',
+      body: {
+        session: true
+      },
+      jar
+    });
+    assert.ok(!('role' in whoamiResponse));
   });
 });

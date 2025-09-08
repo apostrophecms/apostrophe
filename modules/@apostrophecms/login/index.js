@@ -69,7 +69,9 @@ module.exports = {
       allowedAttempts: 3,
       perMinutes: 1,
       lockoutMinutes: 1
-    }
+    },
+    minimumWhoamiFields: [ '_id', 'username', 'title', 'email' ],
+    whoamiFields: []
   },
   async init(self) {
     self.passport = new Passport();
@@ -90,7 +92,7 @@ module.exports = {
           // rather than ever being stored literally
           self.apos.user.addSecret('passwordReset');
         },
-        async checkForUser () {
+        async checkForUser() {
           await self.checkForUserAndAlert();
         }
       }
@@ -146,7 +148,7 @@ module.exports = {
           }
           if (req.session) {
             const destroySession = () => {
-              return require('util').promisify(function(callback) {
+              return require('util').promisify(function (callback) {
                 // Be thorough, nothing in the session potentially
                 // related to the login should survive logout
                 return req.session.destroy(callback);
@@ -257,6 +259,9 @@ module.exports = {
         async context(req) {
           return self.getContext(req);
         },
+        async whoami(req) {
+          return self.getWhoami(req);
+        },
         ...self.isPasswordResetEnabled() && {
           async resetRequest(req) {
             const wait = (t = 2000) => Promise.delay(t);
@@ -351,6 +356,9 @@ module.exports = {
         // it should be accessed via POST because the result
         // may differ by individual user session and should not
         // be cached
+        async whoami(req) {
+          return self.getWhoami(req);
+        },
         async context(req) {
           return self.getContext(req);
         },
@@ -400,6 +408,29 @@ module.exports = {
           version: aposPackage.version || '3',
           requirementProps
         };
+      },
+
+      // Implements the whoami route, which provides
+      // information about the user that is currently
+      // logged in
+      async getWhoami(req) {
+        if (!req.user) {
+          throw self.apos.error('notfound');
+        }
+
+        const fields = new Set([
+          ...self.options.minimumWhoamiFields,
+          ...self.options.whoamiFields
+        ]);
+        const user = {};
+
+        for (const field of fields) {
+          if (req.user[field] !== undefined) {
+            user[field] = req.user[field];
+          }
+        }
+
+        return user;
       },
 
       // return the loginUrl option
@@ -785,7 +816,7 @@ module.exports = {
             self.apos.structuredLog.getRequestId(req)
           );
           if (!user) {
-          // For security reasons we may not tell the user which case applies
+            // For security reasons we may not tell the user which case applies
             throw self.apos.error('invalid', req.t('apostrophe:loginPageBadCredentials'));
           }
 
@@ -827,7 +858,7 @@ module.exports = {
               userId: user._id,
               expires: new Date(
                 new Date().getTime() +
-                  (self.options.bearerTokens.lifetime || (86400 * 7 * 2)) * 1000
+                (self.options.bearerTokens.lifetime || (86400 * 7 * 2)) * 1000
               )
             });
 
@@ -866,14 +897,14 @@ module.exports = {
           req.res.cookie(cookieName, 'true');
         }
         const passportLogin = (user) => {
-          return require('util').promisify(function(user, callback) {
+          return require('util').promisify(function (user, callback) {
             return req.login(user, callback);
           })(user);
         };
         await passportLogin(user);
       },
 
-      async addLoginAttempt (
+      async addLoginAttempt(
         username,
         attempts,
         namespace = loginAttemptsNamespace
@@ -899,7 +930,7 @@ module.exports = {
         }
       },
 
-      async checkLoginAttempts (username, namespace = loginAttemptsNamespace) {
+      async checkLoginAttempts(username, namespace = loginAttemptsNamespace) {
         const cachedAttempts = await self.apos.cache.get(namespace, username);
         const { allowedAttempts } = self.options.throttle;
 
@@ -923,7 +954,7 @@ module.exports = {
         };
       },
 
-      async clearLoginAttempts (username, namespace = loginAttemptsNamespace) {
+      async clearLoginAttempts(username, namespace = loginAttemptsNamespace) {
         await self.apos.cache.delete(namespace, username);
       },
 

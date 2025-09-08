@@ -265,7 +265,7 @@ export default {
         this.$emit('reset');
       });
     },
-    updateNextAndEmit() {
+    async updateNextAndEmit() {
       if (!this.schemaReady) {
         return;
       }
@@ -296,6 +296,9 @@ export default {
             )
           ) {
             changeFound = true;
+
+            // fieldState never gets the relationships postprocessed data
+            // that's why it gets seen as different than next all the time
             this.next.data[field.name] = this.fieldState[field.name].data;
           } else {
             this.next.data[field.name] = this.modelValue.data[field.name];

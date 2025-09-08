@@ -236,6 +236,30 @@ module.exports = {
               `${self.__meta.name}:archive-selected`,
               `${self.__meta.name}:exit-manager`
             ]
+          },
+          '@apostrophecms/command-menu:general': {
+            label: 'apostrophe:commandMenuGeneral',
+            commands: [
+              '@apostrophecms/command-menu:show-shortcut-list'
+            ]
+          }
+        },
+        [`${self.__meta.name}:editor`]: {
+          '@apostrophecms/command-menu:content': {
+            label: 'apostrophe:commandMenuContent',
+            commands: [
+              '@apostrophecms/area:cut-widget',
+              '@apostrophecms/area:copy-widget',
+              '@apostrophecms/area:paste-widget',
+              '@apostrophecms/area:duplicate-widget',
+              '@apostrophecms/area:remove-widget'
+            ]
+          },
+          '@apostrophecms/command-menu:general': {
+            label: 'apostrophe:commandMenuGeneral',
+            commands: [
+              '@apostrophecms/command-menu:show-shortcut-list'
+            ]
           }
         }
       }
@@ -333,16 +357,14 @@ module.exports = {
 
             // populates totalPages when perPage is present
             await query.toCount();
-
             const docs = await query.toArray();
 
+            const choices = query.get('choicesResults');
             return {
               results: docs.map(doc => manager.removeForbiddenFields(req, doc)),
               pages: query.get('totalPages'),
               currentPage: query.get('page') || 1,
-              ...(query.get('choicesResults') && {
-                choices: query.get('choicesResults')
-              })
+              ...choices && { choices }
             };
           }
 
@@ -2628,7 +2650,7 @@ database.`);
         }
         const slug = argv._[1];
         const count = await self.apos.doc.db
-          .updateOne({ slug }, { $unset: { parked: 1 } });
+          .updateMany({ slug }, { $unset: { parked: 1 } });
         if (!count) {
           throw 'No page with that slug was found.';
         }
@@ -3260,31 +3282,38 @@ database.`);
         });
       },
       composeFilters() {
-        self.filters = Object.keys(self.filters)
-          .map(name => ({
+        // TODO: keep in sync with doc-type/index.js composeFilters
+        self.filters = Object.entries(self.filters)
+          .map(([ name, filter ]) => ({
             name,
-            ...self.filters[name],
-            inputType: self.filters[name].inputType || 'select'
+            ...filter,
+            inputType: filter.inputType || 'select'
           }));
 
         // Add a null choice if not already added or set to `required`
         self.filters.forEach((filter) => {
-          if (filter.choices) {
+          if (Array.isArray(filter.choices)) {
             if (
               !filter.required &&
-              filter.choices &&
               !filter.choices.find((choice) => choice.value === null)
             ) {
               filter.def = null;
-              filter.choices.push({
-                value: null,
-                label: 'apostrophe:none'
-              });
+              filter.choices = filter.inputType === 'checkbox'
+                ? filter.choices
+                : filter.choices.concat({
+                  value: null,
+                  label: 'apostrophe:none'
+                });
             }
           } else {
             // Dynamic choices from the REST API, but
             // we need a label for "no opinion"
-            filter.nullLabel = 'apostrophe:filterMenuChooseOne';
+            filter.nullLabel = filter.inputType === 'radio'
+              ? 'apostrophe:any'
+              : 'apostrophe:filterMenuChooseOne';
+          }
+          if (filter.inputType === 'checkbox') {
+            filter.def = [];
           }
         });
       },

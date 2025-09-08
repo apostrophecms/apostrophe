@@ -20,7 +20,7 @@
         v-else
         :id="getChoiceId(uid, choice.value)"
         :key="choice.value"
-        v-model="modelValue.data"
+        v-model="next"
         :for="getChoiceId(uid, choice.value)"
         :choice="choice"
         :field="field"

@@ -72,6 +72,7 @@
           :is="item.options.component"
           v-if="item.options.component"
           :key="`${item.name}.component`"
+          :action="item.action"
         />
         <AposButton
           v-else

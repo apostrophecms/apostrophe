@@ -15,9 +15,100 @@
 
 ### Adds
 
+* Custom operations registered with `addCreateWidgetOperation` can now specify an `ifTypesIntersect` property containing an array of widget type names. If the area in question allows at least one, the operation is offered.
+
+### Changes
+
+* Redirects to URLs containing accent marks and other non-ascii characters now behave as expected with Astro. Pre-encoding the URLs exactly the way `res.redirect` would before passing them to Astro prevents an error in Astro and allows the redirect to succeed.
+
+## 4.21.0 (2025-09-03)
+
+### Adds
+
+* Modules can now call `apos.area.addCreateWidgetOperation` to register a custom operation that invokes a modal and inserts the widget returned by that modal. These operations are offered as choices in all "add widget" menus, both regular and expanded.
+* `AposDocEditor` now accepts a `values` prop, which can be used to pass an object of initial values for some or all fields. Use of this prop is optional. It is not supported when editing existing documents.
+* `apos.doc.edit` now accepts an optional `values` object as the final parameter, containing initial values for some or all fields. This is supported only when editing existing documents.
+* When specifying a modal name to be executed, developers may now register "transformers" to be invoked first, using pipe syntax. For example, the modal name `aposSectionTemplateLibraryWidgetToDoc|AposDocEditor` will invoke the transformer `aposSectionTemplateLibraryWidgetToDoc` with the original props, and pass the returned result to `AposDocEditor`. Note that transformers are awaited. Transformers are registered in frontend admin UI code by passing a name and a function to `apos.ui.addTransformer`.
+* Adds quick image upload UI to `@apostrophecms/image-widget`.
+* Makes autocropping work when uploading or selecting images from the new quick image upload UI.
+
+### Fixes
+
+* The `?render-areas=1` API feature now correctly disregards areas in separate documents loaded via relationship fields. Formerly their presence resulted in an error, not a rendering.
+* Make conditional fields work in Image Editor.
+* Importing a custom icon from an npm module using a `~` path per the admin UI now works per the documentation, as long as the Vue component used for the icon is structured like those found in `@apostrophecms/vue-material-design-icons`.
+* The `button: true` flag works again for piece module utility operations. Previously the button appeared but did not trigger the desired operation.
+* Fix the fact that area options `minSize` and `aspectRatio` weren't passed to the image cropper when coming directly from the area and the widget controls (without passing through the widget editor).
+* Fixes the widget data being cloned to be saved before the `postprocess` method being called, which leads to a loss of data in `AposWidgetEditor` (like the autocrop data).
+* In editors like `AposWidgetEditor` relationships are now post processed after they are updated in `AposInputRelationship` only for the relationship that has been updated. 
+It allows live preview to work well with it, it also avoids complexity and fixes updated data not being properly synced between the editor and the `AposSchema`.
+* Deeply nested widgets can now be edited properly via the editor dialog box. This longstanding issue did not affect on-page editing.
+
+### Changes
+
+* Rolled back a change in 4.16.0 that strictly enforced `required` and `min` for relationship fields. Because the related document can be archived or deleted at any time, it is misleading to offer such enforcement. Also, it greatly complicates adding these constraints to existing schemas, resulting in surprising and unwanted behaviors. Therefore it is better for these constraints to be soft constraints on the front end. `max` is still a hard constraint.
+* The `@apostrophecms/login/whoami` route now accepts both `POST` (recommended) and `GET` requests. Previously, it only supported `GET`. This maintains backwards compatibility while aligning with the documentation’s recommendation to use `POST`.
+
+## 4.20.0 (2025-08-06)
+
+### Adds
+
+* Adds any alt text found in an attribute to the media library attachment during import of rich text inline images by API
+* Adds `prependNodes` and `appendNodes` methods to every module. These methods allow you to inject HTML to every page using a `node` declaration.
+
+### Changes
+
+* A `clone-widget.js` file has been factored out, providing a universal way to return a clone of an existing widget which is distinct from the original.
+* Adds any alt text found in an attribute to the media library attachment during import of rich text inline images by API
+* Adds `prependNodes` and `appendNodes` methods to every module. These methods allow you to inject HTML to every page using a `node` declaration.
+* Changes handling of `order` and `groups` in the `admin-bar` module to respect, rather that reverse, the order of items
+* Interacting with the text inside a rich text widget will hide the widget controls to prevent awkward text selection.
+
+### Fixes
+
+* Let the `@apostrophecms/page:unpark` task unpark all parked pages with the given slug, not just the first one.
+* Exclude unknown page types from the page manager.
+* Remove multiple calls to render-widget when switch to edit mode.
+* Resolved an issue affecting `withRelationships` with two or more steps. This issue could cause a document to appear to be related to the same document more than once.
+* You can now use checkboxes as filter `inputType`.
+* Fixed a regression that prevented multiple variations of `p` with different classes from being recognized again when reopening the rich text editor, even if they are all on the style menu. This was caused by knock-on effects of upstream changes in tiptap and prosemirror and our previous efforts to mitigate these. Those upstream changes were correct, but they did have certain side effects in ApostropheCMS. By more fully specifying the desired behavior, we have now fully corrected the issue at the ApostropheCMS level.
+* Correctly update alt attribute of images in rich text widgets.
+
+### Security
+
+* Clear an npm audit warning by replacing `connect-multiparty` with `multer`. Thanks to [Radhakrishnan Mohan](https://github.com/RadhaKrishnan) for this contribution.
+* To be clear, this was never an actual security vulnerability. The CVE in question is disputed, and for good reasons. However, since `connect-multiparty` is no longer maintained, it makes sense to move to `multer`.
+
+## 4.19.0 (2025-07-09)
+
+### Adds
+
+* Implemented GET /api/v1/@apostrophecms/login/whoami route such that it returns the details of the currently logged in user; added the route to the login module.
+  Thanks to [sombitganguly](https://github.com/sombitganguly) for this contribution.
+* Adds keyboard shortcuts for manipulating widgets in areas. Includes Cut, Copy, Paste, Delete, and Duplicate.
+* Automatic translation now supports a disclaimer and an help text for the checkbox. You can now set the disclaimer by setting `automaticTranslationDisclaimer` `i18n` key and the help text by setting `automaticTranslationCheckboxHelp` `i18n` key.
+* Adds dynamic choices working with piece manager filters.
+* Allow `import.imageTags` (array of image tag IDs) to be passed to the rich text widget when importing (see <https://docs.apostrophecms.org/reference/api/rich-text.html#importing-inline-images>).
+* Adds a new way to make `GET` requests with a large query string. It can become a `POST` request containing the key `__aposGetWithQuery` in its body.
+A middleware checks for this key and converts the request back to a `GET` request with the right `req.query` property.
+* Adds a new batch operation to tag images.
+
+### Changes
+
+### Fixes
+
+* Add missing Pages manager shortcuts list helper.
+* Improve the `isEmpty` method of the rich text widget to take into account the HTML blocks (`<figure>` and `<table>`) that are not empty but do not contain any plain text.
+* Fixed admin bar item ordering to correctly respect the precedence hierarchy: groups (when leader is positioned) > explicit order array > groups (when leader has positioning options) > individual `last`/`after` options.
+* (Backward compatibility break) Conditional field that depends on already hidden field is also hidden, again.
+
+## 4.18.0 (2025-06-11)
+
+### Adds
+
 * Adds MongoDB-style support (comparison operators) for conditional fields and all systems that use conditions. Conditional fields now have access to the `following` values from the parent schema fields.
 * Add `followingIgnore` option to the `string` field schema. A boolean `true` results in all `following` values being ignored (not attempted to be used as a value for the field). When array of strings, the UI will ignore every item that matches a `following` field name.
-* Adds link configuration to the `@apostrophecms/image-widget` UI and a new option `linkWithType` to control what document types can be linked to. Opt-out of the widget inline styles (reset) by setting `inlineStyles: false` in the widget configuration or contextual options (area). 
+* Adds link configuration to the `@apostrophecms/image-widget` UI and a new option `linkWithType` to control what document types can be linked to. Opt-out of the widget inline styles (reset) by setting `inlineStyles: false` in the widget configuration or contextual options (area).
 * Use the link configuration of the Rich Text widget for image links too. It respects the existing `linkWithType` Rich Text option and uses the same schema (`linkFields`) used for text links. The fields from that schema can opt-in for specific tiptap extension now via a field property `extensions` (array) with possible array values `Link` and/or `Image`. You still need to specify the `htmlAttribute` property (the name of the attribute to be added to the link tag) in the schema when adding more fields. If the `extensions` property is not set, the field will be applied for both tiptap extensions.
 * Adds body style support for breakpoint preview mode. Created new `[data-apos-refreshable-body]` div inside the container during breapoint preview.
 Switch body attributes to this new div to keep supporting body styles in breakpoint preview mode.
@@ -2365,6 +2456,7 @@ myColorField: {
 ## 3.0.0-beta.3.1 - 2021-06-07
 
 ### Breaks
+
 * This backwards compatibility break actually occurred in 3.0.0-beta.3 and was not documented at that time, but it is important to know that the following Rich Text tool names have been updated to match Tiptap2's convention:
 -- `bullet_list` -> `bulletList`
 -- `ordered_list` -> `orderedList`
@@ -2451,6 +2543,7 @@ The `nlbr` and `nlp` Nunjucks filters marked their output as safe to preserve th
 * The rich text editor now supports specifying a `styles` array with no `p` tags properly. A newly added rich text widget initially contains an element with the first style, rather than always a paragraph. If no styles are configured, a `p` tag is assumed. Thanks to Stepan Jakl for reporting the issue.
 
 ### Changes
+
 * Editor modal's Save button (publish / save draft / submit) now updated to use the `AposSplitButton` component. Editors can choose from several follow-up actions that occur after save, including creating another piece of content of the same type, being taken to the in-context version of the document, or being returned to the manager. Editor's selection is saved in localstorage, creating a remembered preference per content type.
 
 ## 3.0.0-beta.1.1 - 2021-05-07

@@ -20,6 +20,9 @@ export default () => {
   // edited or created as part of selecting documents of its type for
   // a relationship.
   //
+  // For new documents, a `values` object may optionally be passed. Its properties
+  // override the defaults for any matching schema fields.
+  //
   // On success, returns the new or updated document. If the modal is cancelled,
   // `undefined` is returned. Be sure to `await` the result.
   apos.doc.edit = async ({
@@ -27,7 +30,8 @@ export default () => {
     _id,
     copyOfId,
     copyOf,
-    hasRelationshipField
+    hasRelationshipField,
+    values
   }) => {
     if (!type) {
       throw new Error('You must specify the type of document to edit.');
@@ -47,7 +51,8 @@ export default () => {
       moduleName: type,
       docId: _id,
       copyOfId,
-      hasRelationshipField
+      hasRelationshipField,
+      values
     });
   };
   // If you don't care about the returned value, you can emit an

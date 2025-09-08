@@ -123,29 +123,6 @@ module.exports = {
     origin: null,
     preview: true
   },
-  handlers(self) {
-    return {
-      'apostrophe:modulesRegistered': {
-        composeWidgetOperations() {
-          self.widgetOperations = Object.entries(self.widgetOperations)
-            .map(([ name, operation ]) => {
-              if (!operation.label || !operation.modal) {
-                throw self.apos.error('invalid', 'widgetOperations requires label and modal properties.');
-              }
-
-              if (operation.secondaryLevel !== true && !operation.icon) {
-                throw self.apos.error('invalid', 'widgetOperations requires the icon property at primary level.');
-              }
-
-              return {
-                name,
-                ...operation
-              };
-            });
-        }
-      }
-    };
-  },
   init(self) {
     self.isExplicitOrigin = self.options.origin !== null;
     self.options.origin = self.options.origin || 'right';
@@ -170,6 +147,7 @@ module.exports = {
     self.label = self.options.label;
 
     self.composeSchema();
+    self.composeWidgetOperations();
 
     self.apos.area.setWidgetManager(self.name, self);
 
@@ -187,6 +165,7 @@ module.exports = {
   },
   methods(self) {
     return {
+
       composeSchema() {
         self.schema = self.apos.schema.compose({
           addFields: self.apos.schema.fieldsToArray(`Module ${self.__meta.name}`, self.fields),
@@ -201,6 +180,24 @@ module.exports = {
             throw new Error('Widget type ' + self.name + ': the field name ' + field.name + ' is forbidden');
           }
         });
+      },
+
+      composeWidgetOperations() {
+        self.widgetOperations = Object.entries(self.widgetOperations)
+          .map(([ name, operation ]) => {
+            if (!operation.label || !operation.modal) {
+              throw self.apos.error('invalid', 'widgetOperations requires label and modal properties.');
+            }
+
+            if (operation.secondaryLevel !== true && !operation.icon) {
+              throw self.apos.error('invalid', 'widgetOperations requires the icon property at primary level.');
+            }
+
+            return {
+              name,
+              ...operation
+            };
+          });
       },
 
       // Returns markup for the widget. Invoked via `{% widget ... %}` in the

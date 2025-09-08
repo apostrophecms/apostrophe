@@ -1,4 +1,4 @@
-const multiparty = require('connect-multiparty');
+const multer = require('multer');
 const util = require('util');
 const {
   readFile, open, unlink
@@ -17,10 +17,10 @@ module.exports = (self) => ({
 
   bigUploadMiddleware({ authorize } = {}) {
     return (req, res, next) => {
-      // Chain the multiparty middleware to handle normal uploads
+      // Chain the multer middleware to handle normal uploads
       // as chunks (more efficient than base64 etc)
-      const multipartyFn = multiparty();
-      return multipartyFn(req, res, () => {
+      const multerFn = multer({ dest: require('os').tmpdir() }).any();
+      return multerFn(req, res, () => {
         return body(req, res, next);
       });
     };
@@ -56,10 +56,10 @@ module.exports = (self) => ({
           });
         }
       } finally {
-        // Clean up multiparty temporary files
-        for (const { path } of Object.values(origFiles || {})) {
+        // Clean up multer temporary files
+        for (const file of (origFiles || [])) {
           try {
-            await unlink(path);
+            await unlink(file.path);
           } catch (e) {
             // OK if it is already gone
           }
@@ -136,7 +136,7 @@ module.exports = (self) => ({
       if ((chunk < 0) || (chunk >= info.chunks)) {
         throw self.apos.error('invalid', 'chunk out of range');
       }
-      const file = req.files.chunk;
+      const file = req.files.find(f => f.fieldname === 'chunk') || req.files[0];
       const ufs = self.getBigUploadFs();
       const ufsPath = `/big-uploads/${id}-${n}-${chunk}`;
       await ufs.copyIn(file.path, ufsPath);

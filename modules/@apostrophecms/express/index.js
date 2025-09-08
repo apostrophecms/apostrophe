@@ -159,6 +159,7 @@ const expressBearerToken = require('express-bearer-token');
 const cors = require('cors');
 const Promise = require('bluebird');
 const expressCacheOnDemand = require('express-cache-on-demand');
+const encodeUrl = require('encodeurl');
 
 module.exports = {
   async init(self) {
@@ -275,7 +276,11 @@ module.exports = {
           // not us
           // Per Express handling of 1 arg versus 2
           const status = args.length > 1 ? args[0] : 302;
-          const url = args[args.length - 1];
+          let url = args[args.length - 1];
+          // The URL needs to be encoded exactly as Express would do it,
+          // so that frontends like Astro (which don't do it for us) don't bomb
+          // attempting to issue the redirect
+          url = encodeUrl(url);
           return res.send({
             redirect: true,
             url,
@@ -417,7 +422,23 @@ module.exports = {
       bodyParserJson: bodyParser.json({
         limit: '16mb',
         ...(self.options.bodyParser && self.options.bodyParser.json)
-      })
+      }),
+      // Supports POST that are supposed to be GET requests
+      // when the query string is too big, we convert it back to GET here.
+      convertPostToGetWithQuery(req, res, next) {
+        if (req.method === 'POST' && req.body?.__aposGetWithQuery) {
+          req.method = 'GET';
+          req.query = {
+            ...req.query,
+            ...req.body.__aposGetWithQuery
+          };
+          delete req.body;
+          const [ url ] = req.url.split('?');
+          req.url = `${url}?${qs.stringify(req.query)}`;
+        }
+
+        return next();
+      }
     };
   },
 

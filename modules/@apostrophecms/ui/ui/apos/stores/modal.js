@@ -106,6 +106,12 @@ export const useModalStore = defineStore('modal', () => {
   }
 
   async function execute(componentName, props) {
+    const pipeline = componentName.split('|');
+    componentName = pipeline.pop();
+    const transformers = pipeline;
+    for (const transformer of transformers) {
+      props = await apos.ui.transformers[transformer](props);
+    }
     return new Promise((resolve) => {
       const item = {
         id: `modal:${createId()}`,
