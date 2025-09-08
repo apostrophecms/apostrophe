@@ -323,7 +323,6 @@ components:
         description: ApostropheCMS Field Guide
         url: https://docs.apostrophecms.org/reference/field-types/
       title: _Overview_Fields
-
     _Overview_Primitives:
       type: object
       description: |
@@ -337,7 +336,6 @@ components:
 
         👉 Defined under **AposPrimitives**.
       title: _Overview_Primitives
-
     _Overview_Advanced:
       type: object
       description: |
@@ -348,7 +346,6 @@ components:
         - `OperatorObject` (query operators)
         - `AreaOptions`, `ArrayOptions`, and other config helpers
       title: _Overview_Advanced
-
     AreaField:
       allOf:
       - $ref: '#/components/schemas/BaseField'
@@ -400,7 +397,6 @@ components:
                   '@apostrophecms/video': {}
                   '@apostrophecms/html': {}
       title: AreaField
-
     AreaOptions:
       type: object
       additionalProperties: false
@@ -427,7 +423,6 @@ components:
       required:
       - widgets
       title: AreaOptions
-
     AreaWidgetGroup:
       type: object
       additionalProperties: false
@@ -447,7 +442,6 @@ components:
       - label
       - widgets
       title: AreaWidgetGroup
-
     ArrayField:
       allOf:
       - $ref: '#/components/schemas/BaseField'
@@ -506,7 +500,6 @@ components:
                 - label: High
                   value: high
       title: ArrayField
-
     AttachmentField:
       allOf:
       - $ref: '#/components/schemas/BaseField'
@@ -550,7 +543,6 @@ components:
           label: Hero Image
           accept: image/*
       title: AttachmentField
-
     BooleanField:
       allOf:
       - $ref: '#/components/schemas/BaseField'
@@ -594,7 +586,6 @@ components:
             'true': Show related articles
             'false': Hide related articles
       title: BooleanField
-
     CheckboxesField:
       allOf:
       - $ref: '#/components/schemas/BaseField'
@@ -1768,12 +1759,41 @@ components:
           example: global
         title:
           type: string
-          description: Default title field (can be customized)
-          example: My ApostropheCMS Site
+          description: Default title field
+          readOnly: true
+          example: global
+        slug:
+          type: string
+          description: Default slug field
+          readOnly: true
+          example: global
         type:
           type: string
           example: '@apostrophecms/global'
+          readOnly: true
+      additionalProperties: true
       title: Global
+    GlobalPatch:
+      type: object
+      description: |
+        Allows for patching of costom user added fields.
+        It blocks the modification of the title, slu, and type fields.
+      properties:
+        title:
+          type: string
+          description: Default title field
+          readOnly: true
+          example: global
+        slug:
+          type: string
+          description: Default slug field
+          readOnly: true
+          example: global
+        type:
+          type: string
+          example: '@apostrophecms/global'
+          readOnly: true
+      additionalProperties: true
     Attachment:
       type: object
       description: File attachment information from upload endpoint
@@ -5570,10 +5590,20 @@ paths:
       tags:
         - Global Content
       summary: Update global document
-      description: Partially update a specific global document by ID using PATCH semantics
+      description: |
+        Partially update a specific global document by ID using PATCH semantics.
+        Writes must target the draft mode.
       operationId: GlobalPatchById
       parameters:
         - $ref: '#/components/parameters/DocumentId'
+        - $ref: '#/components/parameters/AposMode'
+        - $ref: '#/components/parameters/AposLocale'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GlobalPatch'
       responses:
         '200':
           description: Global updated successfully
