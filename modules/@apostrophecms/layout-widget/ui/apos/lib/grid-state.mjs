@@ -463,18 +463,6 @@ export function getMoveChanges({
   // We only reach here when placeIfFree is false
   // Decide preferred nudge directions based on movement intent and edge overlaps
   const oldStartCol = item.colstart;
-  const oldEndCol = oldStartCol + (item.colspan || 1) - 1;
-  // Check if the target start column is empty across all spanned rows AND
-  // lies outside the item's original horizontal footprint. This avoids
-  // misclassifying small same-direction shifts (where newStartCol is still
-  // within the old footprint) as the "empty start" special case.
-  const _startOutsideOld = (newStartCol < oldStartCol) || (newStartCol > oldEndCol);
-  // Note: no special opposite-direction bias solely because the target start
-  // cell is empty. We rely on boundary overlap/equal-edge heuristics below.
-  // Note: vertical-only moves are handled specially below
-  // Note: vertical-only moves are handled specially below
-
-  // Determine movement on X axis
   let primaryDir;
   if (newStartCol > oldStartCol) {
     primaryDir = 'east';
@@ -496,12 +484,10 @@ export function getMoveChanges({
 
   // Decide attempt order according to the rules
   const tryDirs = (() => {
-    // If vertical-only, try both directions (east then west)
     if (!primaryDir) {
       return [ 'east', 'west' ];
     }
     if (!target) {
-      // No concrete target: only try primary to avoid unintended cascades.
       return primaryDir === 'east' ? [ 'east' ] : [ 'west' ];
     }
 
@@ -511,22 +497,17 @@ export function getMoveChanges({
     const tEnd = target.colstart + target.colspan - 1;
 
     if (primaryDir === 'east') {
-      // Not overlapping target end-bound -> primary only
       if (ghostEnd < tEnd) {
         return [ 'east' ];
       }
-      // Equal-edge or overlapping past end-bound -> opposite first, then primary
       if (ghostEnd === tEnd) {
         return [ 'west', 'east' ];
       }
       return [ 'west', 'east' ];
     } else {
-      // primaryDir === 'west'
-      // Not overlapping target start-bound -> primary only
       if (ghostStart > tStart) {
         return [ 'west' ];
       }
-      // Equal-edge or overlapping past start-bound -> opposite first, then primary
       if (ghostStart === tStart) {
         return [ 'east', 'west' ];
       }
@@ -940,7 +921,7 @@ export function prepareMoveIndex({ state, item }) { // eslint-disable-line no-un
 
   for (let r = 1; r <= maxRows; r++) {
     const arr = occByRow.get(r);
-    const east = new Int32Array(maxColumns + 2); // +2 for sentinel ease
+    const east = new Int32Array(maxColumns + 2);
     const west = new Int32Array(maxColumns + 2);
     // East: next index >= i that is occupied (or 0 if none)
     let next = 0;
@@ -1000,86 +981,6 @@ export function prepareMoveIndex({ state, item }) { // eslint-disable-line no-un
     segmentsByRow,
     maxColumns,
     maxRows
-  };
-}
-
-/**
- * Pass grid item, grid state and side (east or west) to answer if
- * a new item can be inserted in the given direction immediately
- * before or after the item.
- *
- * @param {Object} arg - The parameters for checking fit.
- * @param {CurrentItem} arg.item - The item to check against.
- * @param {string} arg.side - The side to check ('east' or 'west').
- * @param {GridState} arg.state - The current grid state.
- * @returns {{
- *  result: boolean,
- *  colstart: number,
- *  colspan: number
- * }} - An object indicating if the item can fit and its position.
- */
-export function canFitX({
-  item, side, state
-}) {
-  if (!item) {
-    return {
-      result: false,
-      colstart: 0,
-      colspan: 0
-    };
-  }
-  const {
-    colstart, colspan, rowstart, rowspan
-  } = item;
-
-  const maxColumns = state.columns;
-  const maxRows = state.current.rows;
-  const minSpan = state.options.minSpan || 1;
-  const defaultColspan = state.options.defaultSpan || 1;
-
-  // Directional scanning setup
-  const endCell = colstart + colspan - 1;
-  const rows = Array.from({ length: Math.max(1, rowspan) }, (_, i) => rowstart + i)
-    .filter(r => r >= 1 && r <= maxRows);
-  const positions = state.positions;
-  const step = side === 'west' ? -1 : 1;
-  let cursor = side === 'west' ? (colstart - 1) : (endCell + 1);
-
-  // Count contiguous empty cells aligned across all spanned rows
-  let available = 0;
-  while (cursor >= 1 && cursor <= maxColumns) {
-    let free = true;
-    for (const r of rows) {
-      const xIndex = positions.get(r);
-      if (xIndex && xIndex.has(cursor)) {
-        free = false;
-        break;
-      }
-    }
-    if (!free) {
-      break;
-    }
-    available += 1;
-    cursor += step;
-  }
-
-  if (available < minSpan) {
-    return {
-      result: false,
-      colstart: 0,
-      colspan: 0
-    };
-  }
-
-  const chosen = Math.min(defaultColspan, available);
-  const start = side === 'east'
-    ? (endCell + 1)
-    : (colstart - chosen);
-
-  return {
-    result: true,
-    colstart: start,
-    colspan: chosen
   };
 }
 
@@ -1165,4 +1066,129 @@ export function getReorderPatch({
   });
 
   return patches;
+}
+
+/**
+ * Compute synthetic insertion slots for the current device state.
+ * Each slot represents a potential position where a new item could be placed.
+ * Constraints:
+ *  - rowspan is always 1
+ *  - colspan is clamped to [minSpan, defaultSpan]
+ *  - choose the largest possible span that fits the contiguous empty segment
+ *  - one synthetic per contiguous empty segment (leftmost aligned)
+ *
+ * The returned items include an `_id`, `synthetic: true`, positioning
+ * properties, and an `order` number computed to align with the grid's
+ * deterministic ordering so CSS order works as expected.
+ *
+ * @param {import('./grid-state.mjs').GridState} state
+ * @returns {Array<{
+ *  _id: string,
+ *  synthetic: true,
+ *  colstart: number,
+ *  colspan: number,
+ *  rowstart: number,
+ *  rowspan: 1,
+ *  order: number,
+ *  align: string,
+ *  justify: string
+ * }>} synthetic items
+ */
+export function computeSyntheticSlots(state) {
+  if (!state || !state.current) {
+    return [];
+  }
+  const maxRows = Math.max(1, Number(state.current.rows) || 1);
+  const maxColumns = Math.max(1, Number(state.columns) || 1);
+  const minSpan = Math.max(1, Number(state.options?.minSpan) || 1);
+  const defaultSpan = Math.max(1, Number(state.options?.defaultSpan) || 1);
+
+  // Collect raw synthetic slot drafts before assigning order
+  const syntheticDrafts = [];
+
+  for (let r = 1; r <= maxRows; r++) {
+    const xIndex = state.positions.get(r);
+    let c = 1;
+    const isFreeAt = (col) => !(xIndex && xIndex.has(col));
+    while (c <= maxColumns) {
+      const occupied = !isFreeAt(c);
+      if (occupied) {
+        c += 1;
+        continue;
+      }
+      const start = c;
+      while (c <= maxColumns && isFreeAt(c)) {
+        c += 1;
+      }
+      const end = c - 1;
+      let cur = start;
+      while (cur <= end) {
+        const remaining = end - cur + 1;
+        if (remaining < minSpan) {
+          break;
+        }
+        const span = Math.min(defaultSpan, remaining);
+        const id = `syn-r${r}-c${cur}-w${span}`;
+        syntheticDrafts.push({
+          _id: id,
+          synthetic: true,
+          colstart: cur,
+          colspan: span,
+          rowstart: r,
+          rowspan: 1,
+          // placeholders; will compute order below
+          order: Number.MAX_SAFE_INTEGER,
+          align: 'stretch',
+          justify: 'stretch'
+        });
+        cur += span;
+      }
+    }
+  }
+
+  if (!syntheticDrafts.length) {
+    return [];
+  }
+
+  // Compute a deterministic order for synthetic items alongside existing ones
+  const existing = (state.current?.items || []).map(it => ({
+    _id: it._id,
+    rowstart: it.rowstart ?? 1,
+    colstart: it.colstart ?? 1,
+    order: typeof it.order === 'number' ? it.order : Number.MAX_SAFE_INTEGER,
+    isSynthetic: false
+  }));
+  const drafts = syntheticDrafts.map(s => ({
+    _id: s._id,
+    rowstart: s.rowstart,
+    colstart: s.colstart,
+    order: Number.MAX_SAFE_INTEGER,
+    isSynthetic: true
+  }));
+  const merged = existing.concat(drafts);
+  merged.sort((a, b) => {
+    if (a.rowstart !== b.rowstart) {
+      return a.rowstart - b.rowstart;
+    }
+    if (a.colstart !== b.colstart) {
+      return a.colstart - b.colstart;
+    }
+    if (a.order !== b.order) {
+      return a.order - b.order;
+    }
+    return 0;
+  });
+
+  // Assign order index to synthetic based on merged order
+  const orderById = new Map();
+  merged.forEach((it, index) => {
+    if (it.isSynthetic) {
+      orderById.set(it._id, index);
+    }
+  });
+
+  return syntheticDrafts.map(s => ({
+    ...s,
+    order: orderById.get(s._id) ?? Number.MAX_SAFE_INTEGER
+  }));
 }

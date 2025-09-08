@@ -56,28 +56,6 @@
           @mouseup="resetGhostData"
           @touchend="resetGhostData"
         />
-        <!-- <div
-          v-show="!hasMotion"
-          class="apos-layout--item-action apos-layout__item-add-handle west"
-        >
-          <AposButton
-            v-bind="buttonDefaults"
-            tooltip="Add column before"
-            :disabled="validInsertPositions[item._id].west.result === false"
-            @click="addItemFit({ item, side: 'west' })"
-          />
-        </div> -->
-        <div
-          v-show="!hasMotion"
-          class="apos-layout--item-action apos-layout__item-add-handle east"
-        >
-          <AposButton
-            v-bind="buttonDefaults"
-            tooltip="Add column after"
-            :disabled="validInsertPositions[item._id].east.result === false"
-            @click="addItemFit({ item, side: 'east' })"
-          />
-        </div>
         <div
           v-show="!hasMotion"
           class="apos-layout--item-action apos-layout__item-delete-handle"
@@ -102,25 +80,25 @@
         />
       </div>
     </div>
-    <div
-      v-if="gridState.current.items.length === 0 && metaId"
-      class="apos-layout__item apos-layout__item-synthetic"
-      :style="{
-        '--colstart': 1,
-        '--colspan': gridState.options.defaultSpan,
-        '--rowstart': 1,
-        '--rowspan': 1,
-        '--order': 0,
-        '--justify': 'stretch',
-        '--align': 'stretch',
-      }"
-    >
-      <AposButton
-        v-bind="addFirstOptions"
+    <!-- Synthetic tiles overlay (click-to-add). Visual only; no resize/move handles. -->
+    <template v-if="showSynthetic">
+      <div
+        v-for="slot in syntheticItems"
+        :key="slot._id"
+        class="apos-layout__item apos-layout__item-synthetic"
         role="button"
-        @click="addItemFirst()"
+        :style="{
+          '--colstart': slot.colstart,
+          '--colspan': slot.colspan,
+          '--rowstart': slot.rowstart,
+          '--rowspan': 1,
+          '--order': slot.order,
+          '--justify': 'stretch',
+          '--align': 'stretch'
+        }"
+        @click="onAddSynthetic(slot)"
       />
-    </div>
+    </template>
     <div
       v-if="hasMotion"
       :style="{
@@ -156,7 +134,7 @@
 <script>
 import { GridManager } from '../lib/grid-manager.js';
 import {
-  canFitX, getReorderPatch, prepareMoveIndex
+  getReorderPatch, prepareMoveIndex
 } from '../lib/grid-state.mjs';
 
 export default {
@@ -173,6 +151,10 @@ export default {
     metaId: {
       type: String,
       default: null
+    },
+    syntheticItems: {
+      type: Array,
+      default: () => []
     }
   },
   emits: [
@@ -284,6 +266,11 @@ export default {
     hasMotion() {
       return this.isResizing || this.isMoving;
     },
+    showSynthetic() {
+      return Array.isArray(this.syntheticItems) &&
+        this.syntheticItems.length > 0 &&
+        this.hasMotion === false;
+    },
     columnIndicatorStyles() {
       if (this.sceneResizeIndex === 0) {
         return new Map();
@@ -300,24 +287,6 @@ export default {
       return this.manager.getGridContentStyles(
         this.$parent.$refs.contentItems
       );
-    },
-    validInsertPositions() {
-      return this.gridState.current.items.reduce((acc, item) => {
-        acc[item._id] = {
-          _id: item._id,
-          east: canFitX({
-            item,
-            side: 'east',
-            state: this.gridState
-          }),
-          west: canFitX({
-            item,
-            side: 'west',
-            state: this.gridState
-          })
-        };
-        return acc;
-      }, {});
     }
   },
   async mounted() {
@@ -362,6 +331,19 @@ export default {
     this.manager.destroy();
   },
   methods: {
+    onAddSynthetic(slot) {
+      const newItem = {
+        colstart: slot.colstart,
+        colspan: slot.colspan,
+        rowstart: slot.rowstart,
+        rowspan: 1
+      };
+      const patches = getReorderPatch({
+        item: newItem,
+        state: this.gridState
+      });
+      this.$emit('add-fit-item', patches);
+    },
     onStartResize(item, side, event) {
       event.preventDefault();
       event.stopPropagation();
@@ -587,23 +569,6 @@ export default {
         order: 0
       });
     },
-    addItemFit({ item, side }) {
-      const fit = this.validInsertPositions[item._id]?.[side];
-      if (!fit?.result) {
-        return;
-      }
-      const newItem = {
-        colstart: fit.colstart,
-        colspan: fit.colspan,
-        rowstart: item.rowstart ?? 1,
-        rowspan: 1
-      };
-      const patches = getReorderPatch({
-        item: newItem,
-        state: this.gridState
-      });
-      this.$emit('add-fit-item', patches);
-    },
     removeItem(item) {
       const patches = getReorderPatch({
         deleted: { _id: item._id },
@@ -709,13 +674,23 @@ export default {
   }
 
   &__item-synthetic {
+    position: relative;
     display: flex;
     align-items: center;
     justify-content: center;
     height: 100%;
-    border: 1px dashed var(--a-brand-blue);
-    background-color: transparent;
+    border: 1px dashed var(--a-base-5);
+    background-color: var(--a-base-2);
     border-radius: var(--a-border-radius);
+    color: var(--a-base-7);
+    cursor: pointer;
+    transition: opacity 200ms ease;
+
+    &::before {
+      content: '+';
+      font-size: 1.5rem;
+      line-height: 1;
+    }
   }
 
   &__grid-overlay {
@@ -873,24 +848,9 @@ export default {
   cursor: move;
 }
 
-.apos-layout__item-add-handle {
-  top: 0;
-  padding: 8px;
-
-  &.east {
-    right: 0;
-  }
-
-  &.west {
-    // top: 50%;
-    left: 0;
-    // transform: translateY(-50%);
-  }
-}
-
 .apos-layout__item-delete-handle {
   top: 0;
-  right: 22px;
+  right: 0;
   padding: 8px;
 }
 

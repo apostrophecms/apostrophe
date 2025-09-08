@@ -6,6 +6,7 @@
     <section
       ref="grid"
       class="apos-layout__grid"
+      :class="gridClasses"
       data-apos-test="aposLayoutContainer"
       :style="{
         '--grid-columns': gridState.columns,
@@ -13,7 +14,7 @@
       }"
     >
       <div
-        v-for="(item, i) in gridState.current.items"
+        v-for="(item, i) in renderItems"
         :key="item._id"
         ref="contentItems"
         class="apos-layout__item"
@@ -34,17 +35,31 @@
           data-content
           class="apos-layout__item-content"
         >
-          <slot
-            name="item"
-            :item="gridState.originalItems.get(item._id)"
-            :i="i"
-          />
+          <template v-if="!item.synthetic">
+            <slot
+              name="item"
+              :item="gridState.originalItems.get(item._id)"
+              :i="i"
+            />
+          </template>
+          <template v-else>
+            <div
+              class="apos-layout__item-synthetic"
+            >
+              <slot
+                name="synthetic"
+                :item="item"
+                :i="i"
+              />
+            </div>
+          </template>
         </div>
       </div>
     </section>
     <AposGridManager
       v-if="isManageMode"
       :grid-state="gridState"
+      :synthetic-items="syntheticItems"
       :meta-id="meta._id"
       @resize-start="isResizing = true"
       @resize-end="$emit('resize-end', $event); isResizing = false"
@@ -58,7 +73,7 @@
 </template>
 
 <script>
-import { itemsToState } from '../lib/grid-state.mjs';
+import { itemsToState, computeSyntheticSlots } from '../lib/grid-state.mjs';
 
 export default {
   name: 'AposGridLayout',
@@ -110,6 +125,24 @@ export default {
         deviceMode: this.deviceMode
       });
     },
+    syntheticItems() {
+      if (!this.isManageMode) {
+        return [];
+      }
+      const slots = computeSyntheticSlots(this.gridState);
+      return slots;
+    },
+    renderItems() {
+      if (!this.syntheticItems.length) {
+        return this.gridState.current.items;
+      }
+      // Merge and sort by order to ensure CSS order consistency
+      const merged = [
+        ...this.gridState.current.items,
+        ...this.syntheticItems
+      ];
+      return merged.sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+    },
     isManageMode() {
       return [ 'layout', 'focus' ].includes(this.layoutMode);
     },
@@ -147,6 +180,10 @@ export default {
   justify-self: var(--justify, inherit);
 }
 
+.apos-layout__item-content {
+  min-height: 150px;
+}
+
 /*
   Management specific features, enhancing the grid/items
   to deliver management features
@@ -154,8 +191,12 @@ export default {
 .apos-layout {
   position: relative;
 
-  &__grid.manage > &__item-content > *{
+  &__grid.manage > .apos-layout__item > *{
     pointer-events: none;
+  }
+
+  &__item-synthetic {
+    height: 100%;
   }
 }
 
