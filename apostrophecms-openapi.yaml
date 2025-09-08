@@ -4803,24 +4803,13 @@ paths:
                   example: "johndoe"
       responses:
         '200':
-          description: Username uniqueness check completed
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  available:
-                    type: boolean
-                    description: Whether the username is available
-                    example: true
-                  username:
-                    type: string
-                    description: The username that was checked
-                    example: "johndoe"
+          description: Username is available and unique
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
           $ref: '#/components/responses/Unauthorized'
+        '409':
+          description: Conflict - username already exists
         '500':
           $ref: '#/components/responses/InternalServerError'
       security:
