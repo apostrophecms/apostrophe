@@ -26,7 +26,7 @@ All URIs are relative to *http://localhost:3000/api/v1*
 |[**submittedDraftUnpublishById**](#submitteddraftunpublishbyid) | **POST** /@apostrophecms/submitted-draft/{_id}/unpublish | Unpublish submitted draft|
 
 # **submittedDraftArchive**
-> SubmittedDraftArchive200Response submittedDraftArchive()
+> SubmittedDraftArchive200Response submittedDraftArchive(bulkOperationRequest)
 
 Archive multiple submitted drafts, removing them from active review queues while preserving data
 
@@ -35,17 +35,25 @@ Archive multiple submitted drafts, removing them from active review queues while
 ```typescript
 import {
     SubmittedDraftsApi,
-    Configuration
+    Configuration,
+    BulkOperationRequest
 } from 'apostrophecms-client';
 
 const configuration = new Configuration();
 const apiInstance = new SubmittedDraftsApi(configuration);
 
-const { status, data } = await apiInstance.submittedDraftArchive();
+let bulkOperationRequest: BulkOperationRequest; //
+
+const { status, data } = await apiInstance.submittedDraftArchive(
+    bulkOperationRequest
+);
 ```
 
 ### Parameters
-This endpoint does not have any parameters.
+
+|Name | Type | Description  | Notes|
+|------------- | ------------- | ------------- | -------------|
+| **bulkOperationRequest** | **BulkOperationRequest**|  | |
 
 
 ### Return type
@@ -58,7 +66,7 @@ This endpoint does not have any parameters.
 
 ### HTTP request headers
 
- - **Content-Type**: Not defined
+ - **Content-Type**: application/json
  - **Accept**: application/json
 
 
@@ -559,7 +567,7 @@ const { status, data } = await apiInstance.submittedDraftPatchById(
 
 ### Authorization
 
-[SessionAuth](../README.md#SessionAuth)
+[SessionAuth](../README.md#SessionAuth), [ApiKeyAuth](../README.md#ApiKeyAuth), [BearerAuth](../README.md#BearerAuth)
 
 ### HTTP request headers
 
@@ -805,7 +813,7 @@ const { status, data } = await apiInstance.submittedDraftPutById(
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
 # **submittedDraftRestore**
-> SubmittedDraftRestore200Response submittedDraftRestore()
+> SubmittedDraftRestore200Response submittedDraftRestore(bulkOperationRequest)
 
 Restore previously archived submitted drafts, returning them to active review queues
 
@@ -814,17 +822,25 @@ Restore previously archived submitted drafts, returning them to active review qu
 ```typescript
 import {
     SubmittedDraftsApi,
-    Configuration
+    Configuration,
+    BulkOperationRequest
 } from 'apostrophecms-client';
 
 const configuration = new Configuration();
 const apiInstance = new SubmittedDraftsApi(configuration);
 
-const { status, data } = await apiInstance.submittedDraftRestore();
+let bulkOperationRequest: BulkOperationRequest; //
+
+const { status, data } = await apiInstance.submittedDraftRestore(
+    bulkOperationRequest
+);
 ```
 
 ### Parameters
-This endpoint does not have any parameters.
+
+|Name | Type | Description  | Notes|
+|------------- | ------------- | ------------- | -------------|
+| **bulkOperationRequest** | **BulkOperationRequest**|  | |
 
 
 ### Return type
@@ -837,7 +853,7 @@ This endpoint does not have any parameters.
 
 ### HTTP request headers
 
- - **Content-Type**: Not defined
+ - **Content-Type**: application/json
  - **Accept**: application/json
 
 

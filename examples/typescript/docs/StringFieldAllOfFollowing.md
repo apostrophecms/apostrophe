@@ -1,6 +1,6 @@
 # StringFieldAllOfFollowing
 
-Field(s) to follow for automatic value generation. Supports `<` prefixes to access parent fields. 
+Field(s) to follow for automatic value generation. Supports `<` prefixes to access parent fields.
 
 ## Properties
 

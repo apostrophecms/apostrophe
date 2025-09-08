@@ -18,7 +18,7 @@ Name | Type | Description | Notes
 **fields** | [**Fieldset**](Fieldset.md) |  | [default to undefined]
 **min** | **number** | Minimum number of items (inclusive). | [optional] [default to undefined]
 **max** | **number** | Maximum number of items (inclusive). | [optional] [default to undefined]
-**titleField** | **string** | Field name in each item used as the item label in the UI.  | [optional] [default to undefined]
+**titleField** | **string** | Field name in each item used as the item label in the UI. | [optional] [default to undefined]
 
 ## Example
 

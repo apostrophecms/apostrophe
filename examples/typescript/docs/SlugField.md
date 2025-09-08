@@ -15,10 +15,10 @@ Name | Type | Description | Notes
 **hidden** | **boolean** | If true, hide in editor UI. | [optional] [default to undefined]
 **_if** | [**UiCondition**](UiCondition.md) |  | [optional] [default to undefined]
 **requiredIf** | [**UiCondition**](UiCondition.md) |  | [optional] [default to undefined]
-**prefix** | **string** | Optional prefix automatically prepended when generating the slug.  | [optional] [default to undefined]
+**prefix** | **string** | Optional prefix automatically prepended when generating the slug. | [optional] [default to undefined]
 **source** | **string** | Name of the field this slug should follow (usually \&quot;title\&quot;). Works with &#x60;following&#x60;/&#x60;followingIgnore&#x60;.  | [optional] [default to undefined]
-**unique** | **boolean** | If true, ensures slug is unique across docs of this type.  | [optional] [default to undefined]
-**pattern** | **string** | Optional regex to further constrain allowed slugs.  | [optional] [default to undefined]
+**unique** | **boolean** | If true, ensures slug is unique across docs of this type. | [optional] [default to undefined]
+**pattern** | **string** | Optional regex to further constrain allowed slugs. | [optional] [default to undefined]
 
 ## Example
 

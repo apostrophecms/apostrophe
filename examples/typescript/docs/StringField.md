@@ -18,11 +18,11 @@ Name | Type | Description | Notes
 **textarea** | **boolean** | If true, renders a multiline textarea UI. | [optional] [default to undefined]
 **min** | **number** | Minimum number of characters allowed. | [optional] [default to undefined]
 **max** | **number** | Maximum number of characters allowed. | [optional] [default to undefined]
-**pattern** | **string** | Regular expression (string form) to validate the input.  Only matching values are allowed.  | [optional] [default to undefined]
+**pattern** | **string** | Regular expression (string form) to validate the input. Only matching values are allowed.  | [optional] [default to undefined]
 **autocomplete** | **string** | Value of the HTML autocomplete attribute (see MDN). Use &#x60;\&quot;off\&quot;&#x60; to disable autocomplete.  | [optional] [default to undefined]
 **following** | [**StringFieldAllOfFollowing**](StringFieldAllOfFollowing.md) |  | [optional] [default to undefined]
 **followingIgnore** | [**StringFieldAllOfFollowingIgnore**](StringFieldAllOfFollowingIgnore.md) |  | [optional] [default to undefined]
-**sortify** | **boolean** | If true, creates a parallel “sortified” version of this field for case- and punctuation-insensitive sorting.  | [optional] [default to undefined]
+**sortify** | **boolean** | If true, creates a parallel “sortified” version of this field for case- and punctuation-insensitive sorting. | [optional] [default to undefined]
 
 ## Example
 

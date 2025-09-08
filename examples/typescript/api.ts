@@ -143,13 +143,13 @@ export interface AreaOptions {
     [key: string]: any;
 
     /**
-     * Allowed widget types for this area. Keys are widget module names (e.g., \"@apostrophecms/rich-text\"). Values are per-widget options that apply *only* in this area.  
+     * Allowed widget types for this area. Keys are widget module names (e.g., \"@apostrophecms/rich-text\"). Values are per-widget options that apply *only* in this area. 
      * @type {{ [key: string]: object; }}
      * @memberof AreaOptions
      */
     'widgets': { [key: string]: object; };
     /**
-     * Organize widgets into groups for the expanded preview menu. Each group has a label, optional columns (1–4, default 3), and its own widgets map (same shape as `widgets`).  
+     * Organize widgets into groups for the expanded preview menu. Each group has a label, optional columns (1–4, default 3), and its own widgets map (same shape as `widgets`). 
      * @type {{ [key: string]: AreaWidgetGroup; }}
      * @memberof AreaOptions
      */
@@ -279,7 +279,7 @@ export interface ArrayField {
      */
     'max'?: number;
     /**
-     * Field name in each item used as the item label in the UI. 
+     * Field name in each item used as the item label in the UI.
      * @type {string}
      * @memberof ArrayField
      */
@@ -573,6 +573,33 @@ export interface AuthContext200Response {
      * The configured login URL
      * @type {string}
      * @memberof AuthContext200Response
+     */
+    'loginUrl'?: string;
+}
+/**
+ * Additional context based on configuration\"
+ * @export
+ * @interface AuthContextPost200Response
+ */
+export interface AuthContextPost200Response {
+    [key: string]: any;
+
+    /**
+     * Whether local login is enabled
+     * @type {boolean}
+     * @memberof AuthContextPost200Response
+     */
+    'localLogin'?: boolean;
+    /**
+     * Whether password reset is enabled
+     * @type {boolean}
+     * @memberof AuthContextPost200Response
+     */
+    'passwordReset'?: boolean;
+    /**
+     * The configured login URL
+     * @type {string}
+     * @memberof AuthContextPost200Response
      */
     'loginUrl'?: string;
 }
@@ -922,6 +949,44 @@ export interface BooleanFieldAllOfToggleOneOf {
 /**
  * 
  * @export
+ * @interface BulkOperationRequest
+ */
+export interface BulkOperationRequest {
+    /**
+     * Array of document IDs to operate on
+     * @type {Array<string>}
+     * @memberof BulkOperationRequest
+     */
+    '_ids': Array<string>;
+}
+/**
+ * 
+ * @export
+ * @interface BulkOperationResponse
+ */
+export interface BulkOperationResponse {
+    /**
+     * 
+     * @type {boolean}
+     * @memberof BulkOperationResponse
+     */
+    'success'?: boolean;
+    /**
+     * Number of documents affected
+     * @type {number}
+     * @memberof BulkOperationResponse
+     */
+    'modified'?: number;
+    /**
+     * 
+     * @type {Array<string>}
+     * @memberof BulkOperationResponse
+     */
+    'errors'?: Array<string>;
+}
+/**
+ * 
+ * @export
  * @interface CheckboxesField
  */
 export interface CheckboxesField {
@@ -1025,14 +1090,14 @@ export type CheckboxesFieldAllOfDef = boolean | number | string;
 
 /**
  * @type CheckboxesFieldAllOfFollowing
- * Populate dynamically based on other fields (supports `<` parent prefixes). 
+ * Populate dynamically based on other fields (supports `<` parent prefixes).
  * @export
  */
 export type CheckboxesFieldAllOfFollowing = Array<string> | string;
 
 /**
  * @type CheckboxesFieldAllOfFollowingIgnore
- * Ignore some or all followed fields when generating values. 
+ * Ignore some or all followed fields when generating values.
  * @export
  */
 export type CheckboxesFieldAllOfFollowingIgnore = Array<string> | boolean;
@@ -1181,7 +1246,7 @@ export interface DateAndTimeField {
      */
     'htmlHelp'?: string;
     /**
-     * Default timestamp in RFC 3339 format (e.g., 2025-08-29T13:00:00Z). 
+     * Default timestamp in RFC 3339 format (e.g., 2025-08-29T13:00:00Z).
      * @type {string}
      * @memberof DateAndTimeField
      */
@@ -1446,13 +1511,13 @@ export interface EmailField {
      */
     'requiredIf'?: UiCondition;
     /**
-     * Optional regex for stricter validation (in addition to HTML5 email validation). 
+     * Optional regex for stricter validation (in addition to HTML5 email validation).
      * @type {string}
      * @memberof EmailField
      */
     'pattern'?: string;
     /**
-     * Value for the HTML autocomplete attribute. Common values are \"email\" or \"off\". 
+     * Value for the HTML autocomplete attribute. Common values are \"email\" or \"off\".
      * @type {string}
      * @memberof EmailField
      */
@@ -1790,19 +1855,6 @@ export interface FileTag {
 /**
  * 
  * @export
- * @interface FileTagArchiveRequest
- */
-export interface FileTagArchiveRequest {
-    /**
-     * Array of file tag IDs to archive
-     * @type {Array<string>}
-     * @memberof FileTagArchiveRequest
-     */
-    '_ids'?: Array<string>;
-}
-/**
- * 
- * @export
  * @interface FileTagGet200Response
  */
 export interface FileTagGet200Response {
@@ -1931,19 +1983,6 @@ export interface FileTagPutByIdRequest {
      * @memberof FileTagPutByIdRequest
      */
     'color'?: string;
-}
-/**
- * 
- * @export
- * @interface FileTagRestoreRequest
- */
-export interface FileTagRestoreRequest {
-    /**
-     * Array of file tag IDs to restore
-     * @type {Array<string>}
-     * @memberof FileTagRestoreRequest
-     */
-    '_ids'?: Array<string>;
 }
 /**
  * Pages returned as flat array instead of tree structure
@@ -2192,11 +2231,13 @@ export const FloatFieldFormatEnum = {
 export type FloatFieldFormatEnum = typeof FloatFieldFormatEnum[keyof typeof FloatFieldFormatEnum];
 
 /**
- * Built-in global content piece type for site-wide settings. 💡 Developers can add custom fields to the global piece type in their project configuration. 
+ * \'Built-in global content piece type for site-wide settings.  💡 Developers can add custom fields to the global piece type in their project configuration. 
  * @export
  * @interface Global
  */
 export interface Global {
+    [key: string]: any;
+
     /**
      * Unique identifier
      * @type {string}
@@ -2204,15 +2245,73 @@ export interface Global {
      */
     '_id'?: string;
     /**
-     * Default title field (can be customized)
+     * Default title field
      * @type {string}
      * @memberof Global
      */
     'title'?: string;
     /**
+     * Default slug field
+     * @type {string}
+     * @memberof Global
+     */
+    'slug'?: string;
+    /**
      * 
      * @type {string}
      * @memberof Global
+     */
+    'type'?: string;
+}
+/**
+ * 
+ * @export
+ * @interface GlobalGet200Response
+ */
+export interface GlobalGet200Response {
+    /**
+     * 
+     * @type {boolean}
+     * @memberof GlobalGet200Response
+     */
+    'success'?: boolean;
+    /**
+     * 
+     * @type {PaginatedResponseData}
+     * @memberof GlobalGet200Response
+     */
+    'data'?: PaginatedResponseData;
+    /**
+     * 
+     * @type {Array<Global>}
+     * @memberof GlobalGet200Response
+     */
+    'results'?: Array<Global>;
+}
+/**
+ * Allows for patching of costom user added fields. It blocks the modification of the title, slu, and type fields. 
+ * @export
+ * @interface GlobalPatch
+ */
+export interface GlobalPatch {
+    [key: string]: any;
+
+    /**
+     * Default title field
+     * @type {string}
+     * @memberof GlobalPatch
+     */
+    'title'?: string;
+    /**
+     * Default slug field
+     * @type {string}
+     * @memberof GlobalPatch
+     */
+    'slug'?: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof GlobalPatch
      */
     'type'?: string;
 }
@@ -2416,19 +2515,6 @@ export const ImageVisibilityEnum = {
 export type ImageVisibilityEnum = typeof ImageVisibilityEnum[keyof typeof ImageVisibilityEnum];
 
 /**
- * 
- * @export
- * @interface ImageArchiveRequest
- */
-export interface ImageArchiveRequest {
-    /**
-     * Array of image IDs to archive
-     * @type {Array<string>}
-     * @memberof ImageArchiveRequest
-     */
-    '_ids'?: Array<string>;
-}
-/**
  * File attachment information
  * @export
  * @interface ImageAttachment
@@ -2631,19 +2717,6 @@ export interface ImagePublishRequest {
      * Array of image IDs to publish
      * @type {Array<string>}
      * @memberof ImagePublishRequest
-     */
-    '_ids'?: Array<string>;
-}
-/**
- * 
- * @export
- * @interface ImageRestoreRequest
- */
-export interface ImageRestoreRequest {
-    /**
-     * Array of image IDs to restore
-     * @type {Array<string>}
-     * @memberof ImageRestoreRequest
      */
     '_ids'?: Array<string>;
 }
@@ -3198,7 +3271,7 @@ export const OembedFieldTypeEnum = {
 export type OembedFieldTypeEnum = typeof OembedFieldTypeEnum[keyof typeof OembedFieldTypeEnum];
 
 /**
- * MongoDB-style operators supported by Apostrophe conditions. Note: `$eq` has special handling with arrays (see docs). `$exists: true` means not null/undefined; empty string is truthy so use `$ne: \'\'` or check `.length`. :contentReference[oaicite:6]{index=6} 
+ * MongoDB-style operators supported by Apostrophe conditions. Note:   `$eq` has special handling with arrays (see docs).   `$exists: true` means not null/undefined; empty string is truthy so use `$ne: \'\'\'\'` or check `.length`. 
  * @export
  * @interface OperatorObject
  */
@@ -3443,6 +3516,19 @@ export type PageVisibilityEnum = typeof PageVisibilityEnum[keyof typeof PageVisi
 /**
  * 
  * @export
+ * @interface PageArchive200Response
+ */
+export interface PageArchive200Response {
+    /**
+     * ID of the background job processing the archive operation
+     * @type {string}
+     * @memberof PageArchive200Response
+     */
+    'jobId': string;
+}
+/**
+ * 
+ * @export
  * @interface PageArchiveRequest
  */
 export interface PageArchiveRequest {
@@ -3555,6 +3641,70 @@ export type PageDotNotationUpdateValue = Array<any> | boolean | number | object 
  */
 export type PageGet200Response = FlatPageResponse | PageTreeResponse;
 
+/**
+ * 
+ * @export
+ * @interface PageGetLocalesById200Response
+ */
+export interface PageGetLocalesById200Response {
+    /**
+     * 
+     * @type {Array<PageGetLocalesById200ResponseResultsInner>}
+     * @memberof PageGetLocalesById200Response
+     */
+    'results': Array<PageGetLocalesById200ResponseResultsInner>;
+}
+/**
+ * 
+ * @export
+ * @interface PageGetLocalesById200ResponseResultsInner
+ */
+export interface PageGetLocalesById200ResponseResultsInner {
+    /**
+     * Document ID with locale and mode
+     * @type {string}
+     * @memberof PageGetLocalesById200ResponseResultsInner
+     */
+    '_id': string;
+    /**
+     * Locale identifier with mode
+     * @type {string}
+     * @memberof PageGetLocalesById200ResponseResultsInner
+     */
+    'aposLocale': string;
+}
+/**
+ * 
+ * @export
+ * @interface PageLocaleResult
+ */
+export interface PageLocaleResult {
+    /**
+     * 
+     * @type {string}
+     * @memberof PageLocaleResult
+     */
+    '_id': string;
+    /**
+     * 
+     * @type {string}
+     * @memberof PageLocaleResult
+     */
+    'aposLocale': string;
+}
+/**
+ * 
+ * @export
+ * @interface PageLocalesResponse
+ */
+export interface PageLocalesResponse {
+    /**
+     * 
+     * @type {Array<PageLocaleResult>}
+     * @memberof PageLocalesResponse
+     */
+    'results': Array<PageLocaleResult>;
+}
 /**
  * 
  * @export
@@ -3766,19 +3916,6 @@ export const PagePutByIdRequestVisibilityEnum = {
 
 export type PagePutByIdRequestVisibilityEnum = typeof PagePutByIdRequestVisibilityEnum[keyof typeof PagePutByIdRequestVisibilityEnum];
 
-/**
- * 
- * @export
- * @interface PageRestoreRequest
- */
-export interface PageRestoreRequest {
-    /**
-     * Array of page IDs to restore
-     * @type {Array<string>}
-     * @memberof PageRestoreRequest
-     */
-    '_ids'?: Array<string>;
-}
 /**
  * SEO metadata for the page
  * @export
@@ -4245,13 +4382,13 @@ export interface PasswordField {
      */
     'max'?: number;
     /**
-     * Regex to enforce password rules (e.g., at least one number). 
+     * Regex to enforce password rules (e.g., at least one number).
      * @type {string}
      * @memberof PasswordField
      */
     'pattern'?: string;
     /**
-     * HTML autocomplete attribute, usually \"new-password\" or \"current-password\". 
+     * HTML autocomplete attribute, usually \"new-password\" or \"current-password\".
      * @type {string}
      * @memberof PasswordField
      */
@@ -4396,14 +4533,14 @@ export type RadioFieldAllOfDef = boolean | number | string;
 
 /**
  * @type RadioFieldAllOfFollowing
- * Populate dynamically based on other fields (supports `<` parent prefixes). 
+ * Populate dynamically based on other fields (supports `<` parent prefixes).
  * @export
  */
 export type RadioFieldAllOfFollowing = Array<string> | string;
 
 /**
  * @type RadioFieldAllOfFollowingIgnore
- * Ignore some or all followed fields when generating values. 
+ * Ignore some or all followed fields when generating values.
  * @export
  */
 export type RadioFieldAllOfFollowingIgnore = Array<string> | boolean;
@@ -4487,7 +4624,7 @@ export interface RangeField {
      */
     'max'?: number;
     /**
-     * Increment step for the slider. If omitted, defaults to 1. 
+     * Increment step for the slider. If omitted, defaults to 1.
      * @type {number}
      * @memberof RangeField
      */
@@ -4582,7 +4719,7 @@ export interface RelationshipField {
      */
     'requiredIf'?: UiCondition;
     /**
-     * Module name of the related doc type (e.g., \"article\", \"@apostrophecms/image\"). 
+     * Module name of the related doc type (e.g., \"article\", \"@apostrophecms/image\").
      * @type {string}
      * @memberof RelationshipField
      */
@@ -4606,7 +4743,7 @@ export interface RelationshipField {
      */
     'fields'?: Fieldset;
     /**
-     * Apostrophe cursor builders for the related query (e.g., { project: { title: 1 }, sort: { title: 1 } }). 
+     * Apostrophe cursor builders for the related query (e.g., {project: { title: 1 }, sort: { title: 1 } }). 
      * @type {{ [key: string]: any; }}
      * @memberof RelationshipField
      */
@@ -4692,7 +4829,7 @@ export interface RelationshipReverseField {
      */
     'withType': string;
     /**
-     * Name of the forward relationship field on `withType` (e.g., \"_authors\" on \"article\"). 
+     * Name of the forward relationship field on `withType` (e.g.,\"_authors\" on \"article\"). 
      * @type {string}
      * @memberof RelationshipReverseField
      */
@@ -4873,14 +5010,14 @@ export type SelectFieldAllOfDef = Array<CheckboxesFieldAllOfDef> | boolean | num
 
 /**
  * @type SelectFieldAllOfFollowing
- * Populate dynamically based on other fields’ values (supports `<` parent prefixes). 
+ * Populate dynamically based on other fields’ values (supports `<` parent prefixes).
  * @export
  */
 export type SelectFieldAllOfFollowing = Array<string> | string;
 
 /**
  * @type SelectFieldAllOfFollowingIgnore
- * Ignore some or all followed fields when generating values. 
+ * Ignore some or all followed fields when generating values.
  * @export
  */
 export type SelectFieldAllOfFollowingIgnore = Array<string> | boolean;
@@ -4952,7 +5089,7 @@ export interface SlugField {
      */
     'requiredIf'?: UiCondition;
     /**
-     * Optional prefix automatically prepended when generating the slug. 
+     * Optional prefix automatically prepended when generating the slug.
      * @type {string}
      * @memberof SlugField
      */
@@ -4964,13 +5101,13 @@ export interface SlugField {
      */
     'source'?: string;
     /**
-     * If true, ensures slug is unique across docs of this type. 
+     * If true, ensures slug is unique across docs of this type.
      * @type {boolean}
      * @memberof SlugField
      */
     'unique'?: boolean;
     /**
-     * Optional regex to further constrain allowed slugs. 
+     * Optional regex to further constrain allowed slugs.
      * @type {string}
      * @memberof SlugField
      */
@@ -5068,7 +5205,7 @@ export interface StringField {
      */
     'max'?: number;
     /**
-     * Regular expression (string form) to validate the input.  Only matching values are allowed. 
+     * Regular expression (string form) to validate the input. Only matching values are allowed. 
      * @type {string}
      * @memberof StringField
      */
@@ -5092,7 +5229,7 @@ export interface StringField {
      */
     'followingIgnore'?: StringFieldAllOfFollowingIgnore;
     /**
-     * If true, creates a parallel “sortified” version of this field for case- and punctuation-insensitive sorting. 
+     * If true, creates a parallel “sortified” version of this field for case- and punctuation-insensitive sorting.
      * @type {boolean}
      * @memberof StringField
      */
@@ -5107,14 +5244,14 @@ export type StringFieldTypeEnum = typeof StringFieldTypeEnum[keyof typeof String
 
 /**
  * @type StringFieldAllOfFollowing
- * Field(s) to follow for automatic value generation. Supports `<` prefixes to access parent fields. 
+ * Field(s) to follow for automatic value generation. Supports `<` prefixes to access parent fields.
  * @export
  */
 export type StringFieldAllOfFollowing = Array<string> | string;
 
 /**
  * @type StringFieldAllOfFollowingIgnore
- * Controls which `following` values are ignored. 
+ * Controls which `following` values are ignored.
  * @export
  */
 export type StringFieldAllOfFollowingIgnore = Array<string> | boolean;
@@ -5565,7 +5702,7 @@ export const TimeFieldTypeEnum = {
 export type TimeFieldTypeEnum = typeof TimeFieldTypeEnum[keyof typeof TimeFieldTypeEnum];
 
 /**
- * Apostrophe conditional used by `if` and `requiredIf`. Keys are field paths (including `<` parent access and dot notation) or method calls with `()`. Values are either simple equality (primitive) or an operator object. Supports `$or` / `$and` groups. See OperatorObject. 
+ * \'Apostrophe conditional used by `if` and `requiredIf`. Keys are field paths (including `<` parent access and dot notation) or method calls with `()`. Values are either simple equality (primitive) or an operator object. Supports `$or` / `$and` groups. See OperatorObject. 
  * @export
  * @interface UiCondition
  */
@@ -5652,13 +5789,13 @@ export interface UrlField {
      */
     'requiredIf'?: UiCondition;
     /**
-     * Optional regex for stricter validation of allowed URLs (in addition to standard URI syntax). 
+     * Optional regex for stricter validation of allowed URLs (in addition to standard URI syntax).
      * @type {string}
      * @memberof UrlField
      */
     'pattern'?: string;
     /**
-     * Value for the HTML autocomplete attribute. Common values include \"url\" or \"off\". 
+     * Value for the HTML autocomplete attribute. Common values include \"url\" or \"off\".
      * @type {string}
      * @memberof UrlField
      */
@@ -5672,7 +5809,7 @@ export const UrlFieldTypeEnum = {
 export type UrlFieldTypeEnum = typeof UrlFieldTypeEnum[keyof typeof UrlFieldTypeEnum];
 
 /**
- * Built-in user piece type for account management. 💡 Developers can add custom fields to the user piece type in their project configuration. 
+ * Built-in user piece type for account management.  **Base Properties**: Inherited from @apostrophecms/piece-type **User-Specific Properties**: title, username, email, role, disabled  💡 Developers can add custom fields to the user piece type in their project configuration. 
  * @export
  * @interface User
  */
@@ -5937,38 +6074,6 @@ export interface UserPutByIdRequest {
      * @memberof UserPutByIdRequest
      */
     'disabled'?: boolean;
-}
-/**
- * 
- * @export
- * @interface UserUniqueUsername200Response
- */
-export interface UserUniqueUsername200Response {
-    /**
-     * Whether the username is available
-     * @type {boolean}
-     * @memberof UserUniqueUsername200Response
-     */
-    'available'?: boolean;
-    /**
-     * The username that was checked
-     * @type {string}
-     * @memberof UserUniqueUsername200Response
-     */
-    'username'?: string;
-}
-/**
- * 
- * @export
- * @interface UserUniqueUsernameRequest
- */
-export interface UserUniqueUsernameRequest {
-    /**
-     * Username to check for uniqueness
-     * @type {string}
-     * @memberof UserUniqueUsernameRequest
-     */
-    'username': string;
 }
 /**
  * Content widget within an area - represents a piece of structured content
@@ -6330,6 +6435,15 @@ export const AuthenticationApiAxiosParamCreator = function (configuration?: Conf
             const localVarHeaderParameter = {} as any;
             const localVarQueryParameter = {} as any;
 
+            // authentication SessionAuth required
+
+            // authentication ApiKeyAuth required
+            await setApiKeyToObject(localVarQueryParameter, "apikey", configuration)
+
+            // authentication BearerAuth required
+            // http bearer authentication required
+            await setBearerAuthToObject(localVarHeaderParameter, configuration)
+
 
     
             setSearchParams(localVarUrlObj, localVarQueryParameter);
@@ -6359,6 +6473,15 @@ export const AuthenticationApiAxiosParamCreator = function (configuration?: Conf
             const localVarRequestOptions = { method: 'POST', ...baseOptions, ...options};
             const localVarHeaderParameter = {} as any;
             const localVarQueryParameter = {} as any;
+
+            // authentication SessionAuth required
+
+            // authentication ApiKeyAuth required
+            await setApiKeyToObject(localVarQueryParameter, "apikey", configuration)
+
+            // authentication BearerAuth required
+            // http bearer authentication required
+            await setBearerAuthToObject(localVarHeaderParameter, configuration)
 
 
     
@@ -6626,7 +6749,7 @@ export const AuthenticationApiFp = function(configuration?: Configuration) {
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        async authContextPost(options?: RawAxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<AuthContext200Response>> {
+        async authContextPost(options?: RawAxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<AuthContextPost200Response>> {
             const localVarAxiosArgs = await localVarAxiosParamCreator.authContextPost(options);
             const localVarOperationServerIndex = configuration?.serverIndex ?? 0;
             const localVarOperationServerBasePath = operationServerMap['AuthenticationApi.authContextPost']?.[localVarOperationServerIndex]?.url;
@@ -6734,7 +6857,7 @@ export const AuthenticationApiFactory = function (configuration?: Configuration,
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        authContextPost(options?: RawAxiosRequestConfig): AxiosPromise<AuthContext200Response> {
+        authContextPost(options?: RawAxiosRequestConfig): AxiosPromise<AuthContextPost200Response> {
             return localVarFp.authContextPost(options).then((request) => request(axios, basePath));
         },
         /**
@@ -6910,10 +7033,13 @@ export const GlobalContentApiAxiosParamCreator = function (configuration?: Confi
         /**
          * Archive the global document, making it inactive while preserving its data
          * @summary Archive global document
+         * @param {BulkOperationRequest} bulkOperationRequest 
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        globalArchive: async (options: RawAxiosRequestConfig = {}): Promise<RequestArgs> => {
+        globalArchive: async (bulkOperationRequest: BulkOperationRequest, options: RawAxiosRequestConfig = {}): Promise<RequestArgs> => {
+            // verify required parameter 'bulkOperationRequest' is not null or undefined
+            assertParamExists('globalArchive', 'bulkOperationRequest', bulkOperationRequest)
             const localVarPath = `/@apostrophecms/global/archive`;
             // use dummy base URL string because the URL constructor only accepts absolute URLs.
             const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
@@ -6928,11 +7054,21 @@ export const GlobalContentApiAxiosParamCreator = function (configuration?: Confi
 
             // authentication SessionAuth required
 
+            // authentication ApiKeyAuth required
+            await setApiKeyToObject(localVarQueryParameter, "apikey", configuration)
+
+            // authentication BearerAuth required
+            // http bearer authentication required
+            await setBearerAuthToObject(localVarHeaderParameter, configuration)
+
 
     
+            localVarHeaderParameter['Content-Type'] = 'application/json';
+
             setSearchParams(localVarUrlObj, localVarQueryParameter);
             let headersFromBaseOptions = baseOptions && baseOptions.headers ? baseOptions.headers : {};
             localVarRequestOptions.headers = {...localVarHeaderParameter, ...headersFromBaseOptions, ...options.headers};
+            localVarRequestOptions.data = serializeDataIfNeeded(bulkOperationRequest, localVarRequestOptions, configuration)
 
             return {
                 url: toPathString(localVarUrlObj),
@@ -6963,6 +7099,13 @@ export const GlobalContentApiAxiosParamCreator = function (configuration?: Confi
             const localVarQueryParameter = {} as any;
 
             // authentication SessionAuth required
+
+            // authentication ApiKeyAuth required
+            await setApiKeyToObject(localVarQueryParameter, "apikey", configuration)
+
+            // authentication BearerAuth required
+            // http bearer authentication required
+            await setBearerAuthToObject(localVarHeaderParameter, configuration)
 
 
     
@@ -7000,6 +7143,13 @@ export const GlobalContentApiAxiosParamCreator = function (configuration?: Confi
 
             // authentication SessionAuth required
 
+            // authentication ApiKeyAuth required
+            await setApiKeyToObject(localVarQueryParameter, "apikey", configuration)
+
+            // authentication BearerAuth required
+            // http bearer authentication required
+            await setBearerAuthToObject(localVarHeaderParameter, configuration)
+
 
     
             setSearchParams(localVarUrlObj, localVarQueryParameter);
@@ -7016,11 +7166,10 @@ export const GlobalContentApiAxiosParamCreator = function (configuration?: Confi
          * @summary Get global content
          * @param {GlobalGetAposModeEnum} [aposMode] Request draft or published version of content
          * @param {string} [aposLocale] Locale for internationalization (e.g., \&#39;en\&#39;, \&#39;fr\&#39;, \&#39;es\&#39;)
-         * @param {boolean} [renderAreas] 💡 Render widget areas as HTML instead of returning raw widget data - useful for hybrid architectures
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        globalGet: async (aposMode?: GlobalGetAposModeEnum, aposLocale?: string, renderAreas?: boolean, options: RawAxiosRequestConfig = {}): Promise<RequestArgs> => {
+        globalGet: async (aposMode?: GlobalGetAposModeEnum, aposLocale?: string, options: RawAxiosRequestConfig = {}): Promise<RequestArgs> => {
             const localVarPath = `/@apostrophecms/global`;
             // use dummy base URL string because the URL constructor only accepts absolute URLs.
             const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
@@ -7048,10 +7197,6 @@ export const GlobalContentApiAxiosParamCreator = function (configuration?: Confi
 
             if (aposLocale !== undefined) {
                 localVarQueryParameter['aposLocale'] = aposLocale;
-            }
-
-            if (renderAreas !== undefined) {
-                localVarQueryParameter['render-areas'] = renderAreas;
             }
 
 
@@ -7089,6 +7234,13 @@ export const GlobalContentApiAxiosParamCreator = function (configuration?: Confi
             const localVarQueryParameter = {} as any;
 
             // authentication SessionAuth required
+
+            // authentication ApiKeyAuth required
+            await setApiKeyToObject(localVarQueryParameter, "apikey", configuration)
+
+            // authentication BearerAuth required
+            // http bearer authentication required
+            await setBearerAuthToObject(localVarHeaderParameter, configuration)
 
 
     
@@ -7130,6 +7282,13 @@ export const GlobalContentApiAxiosParamCreator = function (configuration?: Confi
 
             // authentication SessionAuth required
 
+            // authentication ApiKeyAuth required
+            await setApiKeyToObject(localVarQueryParameter, "apikey", configuration)
+
+            // authentication BearerAuth required
+            // http bearer authentication required
+            await setBearerAuthToObject(localVarHeaderParameter, configuration)
+
 
     
             setSearchParams(localVarUrlObj, localVarQueryParameter);
@@ -7166,6 +7325,13 @@ export const GlobalContentApiAxiosParamCreator = function (configuration?: Confi
 
             // authentication SessionAuth required
 
+            // authentication ApiKeyAuth required
+            await setApiKeyToObject(localVarQueryParameter, "apikey", configuration)
+
+            // authentication BearerAuth required
+            // http bearer authentication required
+            await setBearerAuthToObject(localVarHeaderParameter, configuration)
+
 
     
             setSearchParams(localVarUrlObj, localVarQueryParameter);
@@ -7197,6 +7363,13 @@ export const GlobalContentApiAxiosParamCreator = function (configuration?: Confi
             const localVarQueryParameter = {} as any;
 
             // authentication SessionAuth required
+
+            // authentication ApiKeyAuth required
+            await setApiKeyToObject(localVarQueryParameter, "apikey", configuration)
+
+            // authentication BearerAuth required
+            // http bearer authentication required
+            await setBearerAuthToObject(localVarHeaderParameter, configuration)
 
 
     
@@ -7234,6 +7407,13 @@ export const GlobalContentApiAxiosParamCreator = function (configuration?: Confi
 
             // authentication SessionAuth required
 
+            // authentication ApiKeyAuth required
+            await setApiKeyToObject(localVarQueryParameter, "apikey", configuration)
+
+            // authentication BearerAuth required
+            // http bearer authentication required
+            await setBearerAuthToObject(localVarHeaderParameter, configuration)
+
 
     
             setSearchParams(localVarUrlObj, localVarQueryParameter);
@@ -7246,15 +7426,20 @@ export const GlobalContentApiAxiosParamCreator = function (configuration?: Confi
             };
         },
         /**
-         * Partially update a specific global document by ID using PATCH semantics
+         * Partially update a specific global document by ID using PATCH semantics. Writes must target the draft mode. 
          * @summary Update global document
          * @param {string} id Document ID (can include mode and locale, e.g., id:en:published)
+         * @param {GlobalPatch} globalPatch 
+         * @param {GlobalPatchByIdAposModeEnum} [aposMode] Request draft or published version of content
+         * @param {string} [aposLocale] Locale for internationalization (e.g., \&#39;en\&#39;, \&#39;fr\&#39;, \&#39;es\&#39;)
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        globalPatchById: async (id: string, options: RawAxiosRequestConfig = {}): Promise<RequestArgs> => {
+        globalPatchById: async (id: string, globalPatch: GlobalPatch, aposMode?: GlobalPatchByIdAposModeEnum, aposLocale?: string, options: RawAxiosRequestConfig = {}): Promise<RequestArgs> => {
             // verify required parameter 'id' is not null or undefined
             assertParamExists('globalPatchById', 'id', id)
+            // verify required parameter 'globalPatch' is not null or undefined
+            assertParamExists('globalPatchById', 'globalPatch', globalPatch)
             const localVarPath = `/@apostrophecms/global/{_id}`
                 .replace(`{${"_id"}}`, encodeURIComponent(String(id)));
             // use dummy base URL string because the URL constructor only accepts absolute URLs.
@@ -7270,11 +7455,29 @@ export const GlobalContentApiAxiosParamCreator = function (configuration?: Confi
 
             // authentication SessionAuth required
 
+            // authentication ApiKeyAuth required
+            await setApiKeyToObject(localVarQueryParameter, "apikey", configuration)
+
+            // authentication BearerAuth required
+            // http bearer authentication required
+            await setBearerAuthToObject(localVarHeaderParameter, configuration)
+
+            if (aposMode !== undefined) {
+                localVarQueryParameter['aposMode'] = aposMode;
+            }
+
+            if (aposLocale !== undefined) {
+                localVarQueryParameter['aposLocale'] = aposLocale;
+            }
+
 
     
+            localVarHeaderParameter['Content-Type'] = 'application/json';
+
             setSearchParams(localVarUrlObj, localVarQueryParameter);
             let headersFromBaseOptions = baseOptions && baseOptions.headers ? baseOptions.headers : {};
             localVarRequestOptions.headers = {...localVarHeaderParameter, ...headersFromBaseOptions, ...options.headers};
+            localVarRequestOptions.data = serializeDataIfNeeded(globalPatch, localVarRequestOptions, configuration)
 
             return {
                 url: toPathString(localVarUrlObj),
@@ -7357,6 +7560,13 @@ export const GlobalContentApiAxiosParamCreator = function (configuration?: Confi
 
             // authentication SessionAuth required
 
+            // authentication ApiKeyAuth required
+            await setApiKeyToObject(localVarQueryParameter, "apikey", configuration)
+
+            // authentication BearerAuth required
+            // http bearer authentication required
+            await setBearerAuthToObject(localVarHeaderParameter, configuration)
+
 
     
             setSearchParams(localVarUrlObj, localVarQueryParameter);
@@ -7392,6 +7602,13 @@ export const GlobalContentApiAxiosParamCreator = function (configuration?: Confi
             const localVarQueryParameter = {} as any;
 
             // authentication SessionAuth required
+
+            // authentication ApiKeyAuth required
+            await setApiKeyToObject(localVarQueryParameter, "apikey", configuration)
+
+            // authentication BearerAuth required
+            // http bearer authentication required
+            await setBearerAuthToObject(localVarHeaderParameter, configuration)
 
 
     
@@ -7429,6 +7646,13 @@ export const GlobalContentApiAxiosParamCreator = function (configuration?: Confi
 
             // authentication SessionAuth required
 
+            // authentication ApiKeyAuth required
+            await setApiKeyToObject(localVarQueryParameter, "apikey", configuration)
+
+            // authentication BearerAuth required
+            // http bearer authentication required
+            await setBearerAuthToObject(localVarHeaderParameter, configuration)
+
 
     
             setSearchParams(localVarUrlObj, localVarQueryParameter);
@@ -7443,10 +7667,13 @@ export const GlobalContentApiAxiosParamCreator = function (configuration?: Confi
         /**
          * Restore a previously archived global document, making it active again
          * @summary Restore global document
+         * @param {BulkOperationRequest} bulkOperationRequest 
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        globalRestore: async (options: RawAxiosRequestConfig = {}): Promise<RequestArgs> => {
+        globalRestore: async (bulkOperationRequest: BulkOperationRequest, options: RawAxiosRequestConfig = {}): Promise<RequestArgs> => {
+            // verify required parameter 'bulkOperationRequest' is not null or undefined
+            assertParamExists('globalRestore', 'bulkOperationRequest', bulkOperationRequest)
             const localVarPath = `/@apostrophecms/global/restore`;
             // use dummy base URL string because the URL constructor only accepts absolute URLs.
             const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
@@ -7461,11 +7688,21 @@ export const GlobalContentApiAxiosParamCreator = function (configuration?: Confi
 
             // authentication SessionAuth required
 
+            // authentication ApiKeyAuth required
+            await setApiKeyToObject(localVarQueryParameter, "apikey", configuration)
+
+            // authentication BearerAuth required
+            // http bearer authentication required
+            await setBearerAuthToObject(localVarHeaderParameter, configuration)
+
 
     
+            localVarHeaderParameter['Content-Type'] = 'application/json';
+
             setSearchParams(localVarUrlObj, localVarQueryParameter);
             let headersFromBaseOptions = baseOptions && baseOptions.headers ? baseOptions.headers : {};
             localVarRequestOptions.headers = {...localVarHeaderParameter, ...headersFromBaseOptions, ...options.headers};
+            localVarRequestOptions.data = serializeDataIfNeeded(bulkOperationRequest, localVarRequestOptions, configuration)
 
             return {
                 url: toPathString(localVarUrlObj),
@@ -7496,6 +7733,13 @@ export const GlobalContentApiAxiosParamCreator = function (configuration?: Confi
             const localVarQueryParameter = {} as any;
 
             // authentication SessionAuth required
+
+            // authentication ApiKeyAuth required
+            await setApiKeyToObject(localVarQueryParameter, "apikey", configuration)
+
+            // authentication BearerAuth required
+            // http bearer authentication required
+            await setBearerAuthToObject(localVarHeaderParameter, configuration)
 
 
     
@@ -7533,6 +7777,13 @@ export const GlobalContentApiAxiosParamCreator = function (configuration?: Confi
 
             // authentication SessionAuth required
 
+            // authentication ApiKeyAuth required
+            await setApiKeyToObject(localVarQueryParameter, "apikey", configuration)
+
+            // authentication BearerAuth required
+            // http bearer authentication required
+            await setBearerAuthToObject(localVarHeaderParameter, configuration)
+
 
     
             setSearchParams(localVarUrlObj, localVarQueryParameter);
@@ -7568,6 +7819,13 @@ export const GlobalContentApiAxiosParamCreator = function (configuration?: Confi
             const localVarQueryParameter = {} as any;
 
             // authentication SessionAuth required
+
+            // authentication ApiKeyAuth required
+            await setApiKeyToObject(localVarQueryParameter, "apikey", configuration)
+
+            // authentication BearerAuth required
+            // http bearer authentication required
+            await setBearerAuthToObject(localVarHeaderParameter, configuration)
 
 
     
@@ -7605,6 +7863,13 @@ export const GlobalContentApiAxiosParamCreator = function (configuration?: Confi
 
             // authentication SessionAuth required
 
+            // authentication ApiKeyAuth required
+            await setApiKeyToObject(localVarQueryParameter, "apikey", configuration)
+
+            // authentication BearerAuth required
+            // http bearer authentication required
+            await setBearerAuthToObject(localVarHeaderParameter, configuration)
+
 
     
             setSearchParams(localVarUrlObj, localVarQueryParameter);
@@ -7641,6 +7906,13 @@ export const GlobalContentApiAxiosParamCreator = function (configuration?: Confi
 
             // authentication SessionAuth required
 
+            // authentication ApiKeyAuth required
+            await setApiKeyToObject(localVarQueryParameter, "apikey", configuration)
+
+            // authentication BearerAuth required
+            // http bearer authentication required
+            await setBearerAuthToObject(localVarHeaderParameter, configuration)
+
 
     
             setSearchParams(localVarUrlObj, localVarQueryParameter);
@@ -7665,11 +7937,12 @@ export const GlobalContentApiFp = function(configuration?: Configuration) {
         /**
          * Archive the global document, making it inactive while preserving its data
          * @summary Archive global document
+         * @param {BulkOperationRequest} bulkOperationRequest 
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        async globalArchive(options?: RawAxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<Global>> {
-            const localVarAxiosArgs = await localVarAxiosParamCreator.globalArchive(options);
+        async globalArchive(bulkOperationRequest: BulkOperationRequest, options?: RawAxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<PageArchive200Response>> {
+            const localVarAxiosArgs = await localVarAxiosParamCreator.globalArchive(bulkOperationRequest, options);
             const localVarOperationServerIndex = configuration?.serverIndex ?? 0;
             const localVarOperationServerBasePath = operationServerMap['GlobalContentApi.globalArchive']?.[localVarOperationServerIndex]?.url;
             return (axios, basePath) => createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration)(axios, localVarOperationServerBasePath || basePath);
@@ -7705,12 +7978,11 @@ export const GlobalContentApiFp = function(configuration?: Configuration) {
          * @summary Get global content
          * @param {GlobalGetAposModeEnum} [aposMode] Request draft or published version of content
          * @param {string} [aposLocale] Locale for internationalization (e.g., \&#39;en\&#39;, \&#39;fr\&#39;, \&#39;es\&#39;)
-         * @param {boolean} [renderAreas] 💡 Render widget areas as HTML instead of returning raw widget data - useful for hybrid architectures
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        async globalGet(aposMode?: GlobalGetAposModeEnum, aposLocale?: string, renderAreas?: boolean, options?: RawAxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<Global>> {
-            const localVarAxiosArgs = await localVarAxiosParamCreator.globalGet(aposMode, aposLocale, renderAreas, options);
+        async globalGet(aposMode?: GlobalGetAposModeEnum, aposLocale?: string, options?: RawAxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<GlobalGet200Response>> {
+            const localVarAxiosArgs = await localVarAxiosParamCreator.globalGet(aposMode, aposLocale, options);
             const localVarOperationServerIndex = configuration?.serverIndex ?? 0;
             const localVarOperationServerBasePath = operationServerMap['GlobalContentApi.globalGet']?.[localVarOperationServerIndex]?.url;
             return (axios, basePath) => createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration)(axios, localVarOperationServerBasePath || basePath);
@@ -7781,14 +8053,17 @@ export const GlobalContentApiFp = function(configuration?: Configuration) {
             return (axios, basePath) => createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration)(axios, localVarOperationServerBasePath || basePath);
         },
         /**
-         * Partially update a specific global document by ID using PATCH semantics
+         * Partially update a specific global document by ID using PATCH semantics. Writes must target the draft mode. 
          * @summary Update global document
          * @param {string} id Document ID (can include mode and locale, e.g., id:en:published)
+         * @param {GlobalPatch} globalPatch 
+         * @param {GlobalPatchByIdAposModeEnum} [aposMode] Request draft or published version of content
+         * @param {string} [aposLocale] Locale for internationalization (e.g., \&#39;en\&#39;, \&#39;fr\&#39;, \&#39;es\&#39;)
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        async globalPatchById(id: string, options?: RawAxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<Global>> {
-            const localVarAxiosArgs = await localVarAxiosParamCreator.globalPatchById(id, options);
+        async globalPatchById(id: string, globalPatch: GlobalPatch, aposMode?: GlobalPatchByIdAposModeEnum, aposLocale?: string, options?: RawAxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<Global>> {
+            const localVarAxiosArgs = await localVarAxiosParamCreator.globalPatchById(id, globalPatch, aposMode, aposLocale, options);
             const localVarOperationServerIndex = configuration?.serverIndex ?? 0;
             const localVarOperationServerBasePath = operationServerMap['GlobalContentApi.globalPatchById']?.[localVarOperationServerIndex]?.url;
             return (axios, basePath) => createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration)(axios, localVarOperationServerBasePath || basePath);
@@ -7849,11 +8124,12 @@ export const GlobalContentApiFp = function(configuration?: Configuration) {
         /**
          * Restore a previously archived global document, making it active again
          * @summary Restore global document
+         * @param {BulkOperationRequest} bulkOperationRequest 
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        async globalRestore(options?: RawAxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<Global>> {
-            const localVarAxiosArgs = await localVarAxiosParamCreator.globalRestore(options);
+        async globalRestore(bulkOperationRequest: BulkOperationRequest, options?: RawAxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<Global>> {
+            const localVarAxiosArgs = await localVarAxiosParamCreator.globalRestore(bulkOperationRequest, options);
             const localVarOperationServerIndex = configuration?.serverIndex ?? 0;
             const localVarOperationServerBasePath = operationServerMap['GlobalContentApi.globalRestore']?.[localVarOperationServerIndex]?.url;
             return (axios, basePath) => createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration)(axios, localVarOperationServerBasePath || basePath);
@@ -7936,11 +8212,12 @@ export const GlobalContentApiFactory = function (configuration?: Configuration, 
         /**
          * Archive the global document, making it inactive while preserving its data
          * @summary Archive global document
+         * @param {BulkOperationRequest} bulkOperationRequest 
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        globalArchive(options?: RawAxiosRequestConfig): AxiosPromise<Global> {
-            return localVarFp.globalArchive(options).then((request) => request(axios, basePath));
+        globalArchive(bulkOperationRequest: BulkOperationRequest, options?: RawAxiosRequestConfig): AxiosPromise<PageArchive200Response> {
+            return localVarFp.globalArchive(bulkOperationRequest, options).then((request) => request(axios, basePath));
         },
         /**
          * Permanently delete a specific global document by ID (requires appropriate permissions)
@@ -7967,12 +8244,11 @@ export const GlobalContentApiFactory = function (configuration?: Configuration, 
          * @summary Get global content
          * @param {GlobalGetAposModeEnum} [aposMode] Request draft or published version of content
          * @param {string} [aposLocale] Locale for internationalization (e.g., \&#39;en\&#39;, \&#39;fr\&#39;, \&#39;es\&#39;)
-         * @param {boolean} [renderAreas] 💡 Render widget areas as HTML instead of returning raw widget data - useful for hybrid architectures
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        globalGet(aposMode?: GlobalGetAposModeEnum, aposLocale?: string, renderAreas?: boolean, options?: RawAxiosRequestConfig): AxiosPromise<Global> {
-            return localVarFp.globalGet(aposMode, aposLocale, renderAreas, options).then((request) => request(axios, basePath));
+        globalGet(aposMode?: GlobalGetAposModeEnum, aposLocale?: string, options?: RawAxiosRequestConfig): AxiosPromise<GlobalGet200Response> {
+            return localVarFp.globalGet(aposMode, aposLocale, options).then((request) => request(axios, basePath));
         },
         /**
          * Retrieve a specific global document by ID (requires appropriate permissions)
@@ -8025,14 +8301,17 @@ export const GlobalContentApiFactory = function (configuration?: Configuration, 
             return localVarFp.globalLocalizeById(id, options).then((request) => request(axios, basePath));
         },
         /**
-         * Partially update a specific global document by ID using PATCH semantics
+         * Partially update a specific global document by ID using PATCH semantics. Writes must target the draft mode. 
          * @summary Update global document
          * @param {string} id Document ID (can include mode and locale, e.g., id:en:published)
+         * @param {GlobalPatch} globalPatch 
+         * @param {GlobalPatchByIdAposModeEnum} [aposMode] Request draft or published version of content
+         * @param {string} [aposLocale] Locale for internationalization (e.g., \&#39;en\&#39;, \&#39;fr\&#39;, \&#39;es\&#39;)
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        globalPatchById(id: string, options?: RawAxiosRequestConfig): AxiosPromise<Global> {
-            return localVarFp.globalPatchById(id, options).then((request) => request(axios, basePath));
+        globalPatchById(id: string, globalPatch: GlobalPatch, aposMode?: GlobalPatchByIdAposModeEnum, aposLocale?: string, options?: RawAxiosRequestConfig): AxiosPromise<Global> {
+            return localVarFp.globalPatchById(id, globalPatch, aposMode, aposLocale, options).then((request) => request(axios, basePath));
         },
         /**
          * Update global site configuration and content (requires editor permissions or higher)
@@ -8078,11 +8357,12 @@ export const GlobalContentApiFactory = function (configuration?: Configuration, 
         /**
          * Restore a previously archived global document, making it active again
          * @summary Restore global document
+         * @param {BulkOperationRequest} bulkOperationRequest 
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        globalRestore(options?: RawAxiosRequestConfig): AxiosPromise<Global> {
-            return localVarFp.globalRestore(options).then((request) => request(axios, basePath));
+        globalRestore(bulkOperationRequest: BulkOperationRequest, options?: RawAxiosRequestConfig): AxiosPromise<Global> {
+            return localVarFp.globalRestore(bulkOperationRequest, options).then((request) => request(axios, basePath));
         },
         /**
          * Revert the draft version of the specified global document back to its published state
@@ -8147,12 +8427,13 @@ export class GlobalContentApi extends BaseAPI {
     /**
      * Archive the global document, making it inactive while preserving its data
      * @summary Archive global document
+     * @param {BulkOperationRequest} bulkOperationRequest 
      * @param {*} [options] Override http request option.
      * @throws {RequiredError}
      * @memberof GlobalContentApi
      */
-    public globalArchive(options?: RawAxiosRequestConfig) {
-        return GlobalContentApiFp(this.configuration).globalArchive(options).then((request) => request(this.axios, this.basePath));
+    public globalArchive(bulkOperationRequest: BulkOperationRequest, options?: RawAxiosRequestConfig) {
+        return GlobalContentApiFp(this.configuration).globalArchive(bulkOperationRequest, options).then((request) => request(this.axios, this.basePath));
     }
 
     /**
@@ -8184,13 +8465,12 @@ export class GlobalContentApi extends BaseAPI {
      * @summary Get global content
      * @param {GlobalGetAposModeEnum} [aposMode] Request draft or published version of content
      * @param {string} [aposLocale] Locale for internationalization (e.g., \&#39;en\&#39;, \&#39;fr\&#39;, \&#39;es\&#39;)
-     * @param {boolean} [renderAreas] 💡 Render widget areas as HTML instead of returning raw widget data - useful for hybrid architectures
      * @param {*} [options] Override http request option.
      * @throws {RequiredError}
      * @memberof GlobalContentApi
      */
-    public globalGet(aposMode?: GlobalGetAposModeEnum, aposLocale?: string, renderAreas?: boolean, options?: RawAxiosRequestConfig) {
-        return GlobalContentApiFp(this.configuration).globalGet(aposMode, aposLocale, renderAreas, options).then((request) => request(this.axios, this.basePath));
+    public globalGet(aposMode?: GlobalGetAposModeEnum, aposLocale?: string, options?: RawAxiosRequestConfig) {
+        return GlobalContentApiFp(this.configuration).globalGet(aposMode, aposLocale, options).then((request) => request(this.axios, this.basePath));
     }
 
     /**
@@ -8254,15 +8534,18 @@ export class GlobalContentApi extends BaseAPI {
     }
 
     /**
-     * Partially update a specific global document by ID using PATCH semantics
+     * Partially update a specific global document by ID using PATCH semantics. Writes must target the draft mode. 
      * @summary Update global document
      * @param {string} id Document ID (can include mode and locale, e.g., id:en:published)
+     * @param {GlobalPatch} globalPatch 
+     * @param {GlobalPatchByIdAposModeEnum} [aposMode] Request draft or published version of content
+     * @param {string} [aposLocale] Locale for internationalization (e.g., \&#39;en\&#39;, \&#39;fr\&#39;, \&#39;es\&#39;)
      * @param {*} [options] Override http request option.
      * @throws {RequiredError}
      * @memberof GlobalContentApi
      */
-    public globalPatchById(id: string, options?: RawAxiosRequestConfig) {
-        return GlobalContentApiFp(this.configuration).globalPatchById(id, options).then((request) => request(this.axios, this.basePath));
+    public globalPatchById(id: string, globalPatch: GlobalPatch, aposMode?: GlobalPatchByIdAposModeEnum, aposLocale?: string, options?: RawAxiosRequestConfig) {
+        return GlobalContentApiFp(this.configuration).globalPatchById(id, globalPatch, aposMode, aposLocale, options).then((request) => request(this.axios, this.basePath));
     }
 
     /**
@@ -8317,12 +8600,13 @@ export class GlobalContentApi extends BaseAPI {
     /**
      * Restore a previously archived global document, making it active again
      * @summary Restore global document
+     * @param {BulkOperationRequest} bulkOperationRequest 
      * @param {*} [options] Override http request option.
      * @throws {RequiredError}
      * @memberof GlobalContentApi
      */
-    public globalRestore(options?: RawAxiosRequestConfig) {
-        return GlobalContentApiFp(this.configuration).globalRestore(options).then((request) => request(this.axios, this.basePath));
+    public globalRestore(bulkOperationRequest: BulkOperationRequest, options?: RawAxiosRequestConfig) {
+        return GlobalContentApiFp(this.configuration).globalRestore(bulkOperationRequest, options).then((request) => request(this.axios, this.basePath));
     }
 
     /**
@@ -8394,6 +8678,14 @@ export const GlobalGetAposModeEnum = {
     Published: 'published'
 } as const;
 export type GlobalGetAposModeEnum = typeof GlobalGetAposModeEnum[keyof typeof GlobalGetAposModeEnum];
+/**
+ * @export
+ */
+export const GlobalPatchByIdAposModeEnum = {
+    Draft: 'draft',
+    Published: 'published'
+} as const;
+export type GlobalPatchByIdAposModeEnum = typeof GlobalPatchByIdAposModeEnum[keyof typeof GlobalPatchByIdAposModeEnum];
 /**
  * @export
  */
@@ -8502,6 +8794,8 @@ export const InternationalizationApiAxiosParamCreator = function (configuration?
             const localVarRequestOptions = { method: 'POST', ...baseOptions, ...options};
             const localVarHeaderParameter = {} as any;
             const localVarQueryParameter = {} as any;
+
+            // authentication SessionAuth required
 
             // authentication ApiKeyAuth required
             await setApiKeyToObject(localVarQueryParameter, "apikey", configuration)
@@ -8745,10 +9039,13 @@ export const MediaApiAxiosParamCreator = function (configuration?: Configuration
         /**
          * Archive multiple files, making them inactive while preserving their data
          * @summary Archive files
+         * @param {BulkOperationRequest} bulkOperationRequest 
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        fileArchive: async (options: RawAxiosRequestConfig = {}): Promise<RequestArgs> => {
+        fileArchive: async (bulkOperationRequest: BulkOperationRequest, options: RawAxiosRequestConfig = {}): Promise<RequestArgs> => {
+            // verify required parameter 'bulkOperationRequest' is not null or undefined
+            assertParamExists('fileArchive', 'bulkOperationRequest', bulkOperationRequest)
             const localVarPath = `/@apostrophecms/file/archive`;
             // use dummy base URL string because the URL constructor only accepts absolute URLs.
             const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
@@ -8772,9 +9069,12 @@ export const MediaApiAxiosParamCreator = function (configuration?: Configuration
 
 
     
+            localVarHeaderParameter['Content-Type'] = 'application/json';
+
             setSearchParams(localVarUrlObj, localVarQueryParameter);
             let headersFromBaseOptions = baseOptions && baseOptions.headers ? baseOptions.headers : {};
             localVarRequestOptions.headers = {...localVarHeaderParameter, ...headersFromBaseOptions, ...options.headers};
+            localVarRequestOptions.data = serializeDataIfNeeded(bulkOperationRequest, localVarRequestOptions, configuration)
 
             return {
                 url: toPathString(localVarUrlObj),
@@ -9434,10 +9734,13 @@ export const MediaApiAxiosParamCreator = function (configuration?: Configuration
         /**
          * Restore previously archived files, making them active again
          * @summary Restore files
+         * @param {BulkOperationRequest} bulkOperationRequest 
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        fileRestore: async (options: RawAxiosRequestConfig = {}): Promise<RequestArgs> => {
+        fileRestore: async (bulkOperationRequest: BulkOperationRequest, options: RawAxiosRequestConfig = {}): Promise<RequestArgs> => {
+            // verify required parameter 'bulkOperationRequest' is not null or undefined
+            assertParamExists('fileRestore', 'bulkOperationRequest', bulkOperationRequest)
             const localVarPath = `/@apostrophecms/file/restore`;
             // use dummy base URL string because the URL constructor only accepts absolute URLs.
             const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
@@ -9461,9 +9764,12 @@ export const MediaApiAxiosParamCreator = function (configuration?: Configuration
 
 
     
+            localVarHeaderParameter['Content-Type'] = 'application/json';
+
             setSearchParams(localVarUrlObj, localVarQueryParameter);
             let headersFromBaseOptions = baseOptions && baseOptions.headers ? baseOptions.headers : {};
             localVarRequestOptions.headers = {...localVarHeaderParameter, ...headersFromBaseOptions, ...options.headers};
+            localVarRequestOptions.data = serializeDataIfNeeded(bulkOperationRequest, localVarRequestOptions, configuration)
 
             return {
                 url: toPathString(localVarUrlObj),
@@ -9645,13 +9951,13 @@ export const MediaApiAxiosParamCreator = function (configuration?: Configuration
         /**
          * Archive multiple file tags, making them inactive while preserving their data
          * @summary Archive file tags
-         * @param {FileTagArchiveRequest} fileTagArchiveRequest 
+         * @param {BulkOperationRequest} bulkOperationRequest 
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        fileTagArchive: async (fileTagArchiveRequest: FileTagArchiveRequest, options: RawAxiosRequestConfig = {}): Promise<RequestArgs> => {
-            // verify required parameter 'fileTagArchiveRequest' is not null or undefined
-            assertParamExists('fileTagArchive', 'fileTagArchiveRequest', fileTagArchiveRequest)
+        fileTagArchive: async (bulkOperationRequest: BulkOperationRequest, options: RawAxiosRequestConfig = {}): Promise<RequestArgs> => {
+            // verify required parameter 'bulkOperationRequest' is not null or undefined
+            assertParamExists('fileTagArchive', 'bulkOperationRequest', bulkOperationRequest)
             const localVarPath = `/@apostrophecms/file-tag/archive`;
             // use dummy base URL string because the URL constructor only accepts absolute URLs.
             const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
@@ -9680,7 +9986,7 @@ export const MediaApiAxiosParamCreator = function (configuration?: Configuration
             setSearchParams(localVarUrlObj, localVarQueryParameter);
             let headersFromBaseOptions = baseOptions && baseOptions.headers ? baseOptions.headers : {};
             localVarRequestOptions.headers = {...localVarHeaderParameter, ...headersFromBaseOptions, ...options.headers};
-            localVarRequestOptions.data = serializeDataIfNeeded(fileTagArchiveRequest, localVarRequestOptions, configuration)
+            localVarRequestOptions.data = serializeDataIfNeeded(bulkOperationRequest, localVarRequestOptions, configuration)
 
             return {
                 url: toPathString(localVarUrlObj),
@@ -10328,13 +10634,13 @@ export const MediaApiAxiosParamCreator = function (configuration?: Configuration
         /**
          * Restore previously archived file tags, making them active again
          * @summary Restore file tags
-         * @param {FileTagRestoreRequest} fileTagRestoreRequest 
+         * @param {BulkOperationRequest} bulkOperationRequest 
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        fileTagRestore: async (fileTagRestoreRequest: FileTagRestoreRequest, options: RawAxiosRequestConfig = {}): Promise<RequestArgs> => {
-            // verify required parameter 'fileTagRestoreRequest' is not null or undefined
-            assertParamExists('fileTagRestore', 'fileTagRestoreRequest', fileTagRestoreRequest)
+        fileTagRestore: async (bulkOperationRequest: BulkOperationRequest, options: RawAxiosRequestConfig = {}): Promise<RequestArgs> => {
+            // verify required parameter 'bulkOperationRequest' is not null or undefined
+            assertParamExists('fileTagRestore', 'bulkOperationRequest', bulkOperationRequest)
             const localVarPath = `/@apostrophecms/file-tag/restore`;
             // use dummy base URL string because the URL constructor only accepts absolute URLs.
             const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
@@ -10363,7 +10669,7 @@ export const MediaApiAxiosParamCreator = function (configuration?: Configuration
             setSearchParams(localVarUrlObj, localVarQueryParameter);
             let headersFromBaseOptions = baseOptions && baseOptions.headers ? baseOptions.headers : {};
             localVarRequestOptions.headers = {...localVarHeaderParameter, ...headersFromBaseOptions, ...options.headers};
-            localVarRequestOptions.data = serializeDataIfNeeded(fileTagRestoreRequest, localVarRequestOptions, configuration)
+            localVarRequestOptions.data = serializeDataIfNeeded(bulkOperationRequest, localVarRequestOptions, configuration)
 
             return {
                 url: toPathString(localVarUrlObj),
@@ -10631,13 +10937,13 @@ export const MediaApiAxiosParamCreator = function (configuration?: Configuration
         /**
          * Archive multiple images, making them inactive while preserving their data
          * @summary Archive images
-         * @param {ImageArchiveRequest} imageArchiveRequest 
+         * @param {BulkOperationRequest} bulkOperationRequest 
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        imageArchive: async (imageArchiveRequest: ImageArchiveRequest, options: RawAxiosRequestConfig = {}): Promise<RequestArgs> => {
-            // verify required parameter 'imageArchiveRequest' is not null or undefined
-            assertParamExists('imageArchive', 'imageArchiveRequest', imageArchiveRequest)
+        imageArchive: async (bulkOperationRequest: BulkOperationRequest, options: RawAxiosRequestConfig = {}): Promise<RequestArgs> => {
+            // verify required parameter 'bulkOperationRequest' is not null or undefined
+            assertParamExists('imageArchive', 'bulkOperationRequest', bulkOperationRequest)
             const localVarPath = `/@apostrophecms/image/archive`;
             // use dummy base URL string because the URL constructor only accepts absolute URLs.
             const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
@@ -10666,7 +10972,7 @@ export const MediaApiAxiosParamCreator = function (configuration?: Configuration
             setSearchParams(localVarUrlObj, localVarQueryParameter);
             let headersFromBaseOptions = baseOptions && baseOptions.headers ? baseOptions.headers : {};
             localVarRequestOptions.headers = {...localVarHeaderParameter, ...headersFromBaseOptions, ...options.headers};
-            localVarRequestOptions.data = serializeDataIfNeeded(imageArchiveRequest, localVarRequestOptions, configuration)
+            localVarRequestOptions.data = serializeDataIfNeeded(bulkOperationRequest, localVarRequestOptions, configuration)
 
             return {
                 url: toPathString(localVarUrlObj),
@@ -11437,13 +11743,13 @@ export const MediaApiAxiosParamCreator = function (configuration?: Configuration
         /**
          * Restore previously archived images, making them active again
          * @summary Restore images
-         * @param {ImageRestoreRequest} imageRestoreRequest 
+         * @param {BulkOperationRequest} bulkOperationRequest 
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        imageRestore: async (imageRestoreRequest: ImageRestoreRequest, options: RawAxiosRequestConfig = {}): Promise<RequestArgs> => {
-            // verify required parameter 'imageRestoreRequest' is not null or undefined
-            assertParamExists('imageRestore', 'imageRestoreRequest', imageRestoreRequest)
+        imageRestore: async (bulkOperationRequest: BulkOperationRequest, options: RawAxiosRequestConfig = {}): Promise<RequestArgs> => {
+            // verify required parameter 'bulkOperationRequest' is not null or undefined
+            assertParamExists('imageRestore', 'bulkOperationRequest', bulkOperationRequest)
             const localVarPath = `/@apostrophecms/image/restore`;
             // use dummy base URL string because the URL constructor only accepts absolute URLs.
             const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
@@ -11472,7 +11778,7 @@ export const MediaApiAxiosParamCreator = function (configuration?: Configuration
             setSearchParams(localVarUrlObj, localVarQueryParameter);
             let headersFromBaseOptions = baseOptions && baseOptions.headers ? baseOptions.headers : {};
             localVarRequestOptions.headers = {...localVarHeaderParameter, ...headersFromBaseOptions, ...options.headers};
-            localVarRequestOptions.data = serializeDataIfNeeded(imageRestoreRequest, localVarRequestOptions, configuration)
+            localVarRequestOptions.data = serializeDataIfNeeded(bulkOperationRequest, localVarRequestOptions, configuration)
 
             return {
                 url: toPathString(localVarUrlObj),
@@ -11699,10 +12005,13 @@ export const MediaApiAxiosParamCreator = function (configuration?: Configuration
         /**
          * Archive multiple image tags, making them inactive while preserving their data
          * @summary Archive image tags
+         * @param {BulkOperationRequest} bulkOperationRequest 
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        imageTagArchive: async (options: RawAxiosRequestConfig = {}): Promise<RequestArgs> => {
+        imageTagArchive: async (bulkOperationRequest: BulkOperationRequest, options: RawAxiosRequestConfig = {}): Promise<RequestArgs> => {
+            // verify required parameter 'bulkOperationRequest' is not null or undefined
+            assertParamExists('imageTagArchive', 'bulkOperationRequest', bulkOperationRequest)
             const localVarPath = `/@apostrophecms/image-tag/archive`;
             // use dummy base URL string because the URL constructor only accepts absolute URLs.
             const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
@@ -11726,9 +12035,12 @@ export const MediaApiAxiosParamCreator = function (configuration?: Configuration
 
 
     
+            localVarHeaderParameter['Content-Type'] = 'application/json';
+
             setSearchParams(localVarUrlObj, localVarQueryParameter);
             let headersFromBaseOptions = baseOptions && baseOptions.headers ? baseOptions.headers : {};
             localVarRequestOptions.headers = {...localVarHeaderParameter, ...headersFromBaseOptions, ...options.headers};
+            localVarRequestOptions.data = serializeDataIfNeeded(bulkOperationRequest, localVarRequestOptions, configuration)
 
             return {
                 url: toPathString(localVarUrlObj),
@@ -12378,10 +12690,13 @@ export const MediaApiAxiosParamCreator = function (configuration?: Configuration
         /**
          * Restore previously archived image tags, making them active again
          * @summary Restore image tags
+         * @param {BulkOperationRequest} bulkOperationRequest 
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        imageTagRestore: async (options: RawAxiosRequestConfig = {}): Promise<RequestArgs> => {
+        imageTagRestore: async (bulkOperationRequest: BulkOperationRequest, options: RawAxiosRequestConfig = {}): Promise<RequestArgs> => {
+            // verify required parameter 'bulkOperationRequest' is not null or undefined
+            assertParamExists('imageTagRestore', 'bulkOperationRequest', bulkOperationRequest)
             const localVarPath = `/@apostrophecms/image-tag/restore`;
             // use dummy base URL string because the URL constructor only accepts absolute URLs.
             const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
@@ -12405,9 +12720,12 @@ export const MediaApiAxiosParamCreator = function (configuration?: Configuration
 
 
     
+            localVarHeaderParameter['Content-Type'] = 'application/json';
+
             setSearchParams(localVarUrlObj, localVarQueryParameter);
             let headersFromBaseOptions = baseOptions && baseOptions.headers ? baseOptions.headers : {};
             localVarRequestOptions.headers = {...localVarHeaderParameter, ...headersFromBaseOptions, ...options.headers};
+            localVarRequestOptions.data = serializeDataIfNeeded(bulkOperationRequest, localVarRequestOptions, configuration)
 
             return {
                 url: toPathString(localVarUrlObj),
@@ -12685,11 +13003,12 @@ export const MediaApiFp = function(configuration?: Configuration) {
         /**
          * Archive multiple files, making them inactive while preserving their data
          * @summary Archive files
+         * @param {BulkOperationRequest} bulkOperationRequest 
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        async fileArchive(options?: RawAxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<Array<FileObject>>> {
-            const localVarAxiosArgs = await localVarAxiosParamCreator.fileArchive(options);
+        async fileArchive(bulkOperationRequest: BulkOperationRequest, options?: RawAxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<PageArchive200Response>> {
+            const localVarAxiosArgs = await localVarAxiosParamCreator.fileArchive(bulkOperationRequest, options);
             const localVarOperationServerIndex = configuration?.serverIndex ?? 0;
             const localVarOperationServerBasePath = operationServerMap['MediaApi.fileArchive']?.[localVarOperationServerIndex]?.url;
             return (axios, basePath) => createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration)(axios, localVarOperationServerBasePath || basePath);
@@ -12883,11 +13202,12 @@ export const MediaApiFp = function(configuration?: Configuration) {
         /**
          * Restore previously archived files, making them active again
          * @summary Restore files
+         * @param {BulkOperationRequest} bulkOperationRequest 
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        async fileRestore(options?: RawAxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<Array<FileObject>>> {
-            const localVarAxiosArgs = await localVarAxiosParamCreator.fileRestore(options);
+        async fileRestore(bulkOperationRequest: BulkOperationRequest, options?: RawAxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<Array<FileObject>>> {
+            const localVarAxiosArgs = await localVarAxiosParamCreator.fileRestore(bulkOperationRequest, options);
             const localVarOperationServerIndex = configuration?.serverIndex ?? 0;
             const localVarOperationServerBasePath = operationServerMap['MediaApi.fileRestore']?.[localVarOperationServerIndex]?.url;
             return (axios, basePath) => createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration)(axios, localVarOperationServerBasePath || basePath);
@@ -12947,12 +13267,12 @@ export const MediaApiFp = function(configuration?: Configuration) {
         /**
          * Archive multiple file tags, making them inactive while preserving their data
          * @summary Archive file tags
-         * @param {FileTagArchiveRequest} fileTagArchiveRequest 
+         * @param {BulkOperationRequest} bulkOperationRequest 
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        async fileTagArchive(fileTagArchiveRequest: FileTagArchiveRequest, options?: RawAxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<Array<FileTag>>> {
-            const localVarAxiosArgs = await localVarAxiosParamCreator.fileTagArchive(fileTagArchiveRequest, options);
+        async fileTagArchive(bulkOperationRequest: BulkOperationRequest, options?: RawAxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<Array<FileTag>>> {
+            const localVarAxiosArgs = await localVarAxiosParamCreator.fileTagArchive(bulkOperationRequest, options);
             const localVarOperationServerIndex = configuration?.serverIndex ?? 0;
             const localVarOperationServerBasePath = operationServerMap['MediaApi.fileTagArchive']?.[localVarOperationServerIndex]?.url;
             return (axios, basePath) => createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration)(axios, localVarOperationServerBasePath || basePath);
@@ -13143,12 +13463,12 @@ export const MediaApiFp = function(configuration?: Configuration) {
         /**
          * Restore previously archived file tags, making them active again
          * @summary Restore file tags
-         * @param {FileTagRestoreRequest} fileTagRestoreRequest 
+         * @param {BulkOperationRequest} bulkOperationRequest 
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        async fileTagRestore(fileTagRestoreRequest: FileTagRestoreRequest, options?: RawAxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<Array<FileTag>>> {
-            const localVarAxiosArgs = await localVarAxiosParamCreator.fileTagRestore(fileTagRestoreRequest, options);
+        async fileTagRestore(bulkOperationRequest: BulkOperationRequest, options?: RawAxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<Array<FileTag>>> {
+            const localVarAxiosArgs = await localVarAxiosParamCreator.fileTagRestore(bulkOperationRequest, options);
             const localVarOperationServerIndex = configuration?.serverIndex ?? 0;
             const localVarOperationServerBasePath = operationServerMap['MediaApi.fileTagRestore']?.[localVarOperationServerIndex]?.url;
             return (axios, basePath) => createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration)(axios, localVarOperationServerBasePath || basePath);
@@ -13234,12 +13554,12 @@ export const MediaApiFp = function(configuration?: Configuration) {
         /**
          * Archive multiple images, making them inactive while preserving their data
          * @summary Archive images
-         * @param {ImageArchiveRequest} imageArchiveRequest 
+         * @param {BulkOperationRequest} bulkOperationRequest 
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        async imageArchive(imageArchiveRequest: ImageArchiveRequest, options?: RawAxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<Array<Image>>> {
-            const localVarAxiosArgs = await localVarAxiosParamCreator.imageArchive(imageArchiveRequest, options);
+        async imageArchive(bulkOperationRequest: BulkOperationRequest, options?: RawAxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<PageArchive200Response>> {
+            const localVarAxiosArgs = await localVarAxiosParamCreator.imageArchive(bulkOperationRequest, options);
             const localVarOperationServerIndex = configuration?.serverIndex ?? 0;
             const localVarOperationServerBasePath = operationServerMap['MediaApi.imageArchive']?.[localVarOperationServerIndex]?.url;
             return (axios, basePath) => createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration)(axios, localVarOperationServerBasePath || basePath);
@@ -13463,12 +13783,12 @@ export const MediaApiFp = function(configuration?: Configuration) {
         /**
          * Restore previously archived images, making them active again
          * @summary Restore images
-         * @param {ImageRestoreRequest} imageRestoreRequest 
+         * @param {BulkOperationRequest} bulkOperationRequest 
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        async imageRestore(imageRestoreRequest: ImageRestoreRequest, options?: RawAxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<Array<Image>>> {
-            const localVarAxiosArgs = await localVarAxiosParamCreator.imageRestore(imageRestoreRequest, options);
+        async imageRestore(bulkOperationRequest: BulkOperationRequest, options?: RawAxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<Array<Image>>> {
+            const localVarAxiosArgs = await localVarAxiosParamCreator.imageRestore(bulkOperationRequest, options);
             const localVarOperationServerIndex = configuration?.serverIndex ?? 0;
             const localVarOperationServerBasePath = operationServerMap['MediaApi.imageRestore']?.[localVarOperationServerIndex]?.url;
             return (axios, basePath) => createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration)(axios, localVarOperationServerBasePath || basePath);
@@ -13541,11 +13861,12 @@ export const MediaApiFp = function(configuration?: Configuration) {
         /**
          * Archive multiple image tags, making them inactive while preserving their data
          * @summary Archive image tags
+         * @param {BulkOperationRequest} bulkOperationRequest 
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        async imageTagArchive(options?: RawAxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<Array<ImageTag>>> {
-            const localVarAxiosArgs = await localVarAxiosParamCreator.imageTagArchive(options);
+        async imageTagArchive(bulkOperationRequest: BulkOperationRequest, options?: RawAxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<PageArchive200Response>> {
+            const localVarAxiosArgs = await localVarAxiosParamCreator.imageTagArchive(bulkOperationRequest, options);
             const localVarOperationServerIndex = configuration?.serverIndex ?? 0;
             const localVarOperationServerBasePath = operationServerMap['MediaApi.imageTagArchive']?.[localVarOperationServerIndex]?.url;
             return (axios, basePath) => createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration)(axios, localVarOperationServerBasePath || basePath);
@@ -13737,11 +14058,12 @@ export const MediaApiFp = function(configuration?: Configuration) {
         /**
          * Restore previously archived image tags, making them active again
          * @summary Restore image tags
+         * @param {BulkOperationRequest} bulkOperationRequest 
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        async imageTagRestore(options?: RawAxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<Array<ImageTag>>> {
-            const localVarAxiosArgs = await localVarAxiosParamCreator.imageTagRestore(options);
+        async imageTagRestore(bulkOperationRequest: BulkOperationRequest, options?: RawAxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<Array<ImageTag>>> {
+            const localVarAxiosArgs = await localVarAxiosParamCreator.imageTagRestore(bulkOperationRequest, options);
             const localVarOperationServerIndex = configuration?.serverIndex ?? 0;
             const localVarOperationServerBasePath = operationServerMap['MediaApi.imageTagRestore']?.[localVarOperationServerIndex]?.url;
             return (axios, basePath) => createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration)(axios, localVarOperationServerBasePath || basePath);
@@ -13837,11 +14159,12 @@ export const MediaApiFactory = function (configuration?: Configuration, basePath
         /**
          * Archive multiple files, making them inactive while preserving their data
          * @summary Archive files
+         * @param {BulkOperationRequest} bulkOperationRequest 
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        fileArchive(options?: RawAxiosRequestConfig): AxiosPromise<Array<FileObject>> {
-            return localVarFp.fileArchive(options).then((request) => request(axios, basePath));
+        fileArchive(bulkOperationRequest: BulkOperationRequest, options?: RawAxiosRequestConfig): AxiosPromise<PageArchive200Response> {
+            return localVarFp.fileArchive(bulkOperationRequest, options).then((request) => request(axios, basePath));
         },
         /**
          * Permanently delete a specific file by ID (requires appropriate permissions)
@@ -13993,11 +14316,12 @@ export const MediaApiFactory = function (configuration?: Configuration, basePath
         /**
          * Restore previously archived files, making them active again
          * @summary Restore files
+         * @param {BulkOperationRequest} bulkOperationRequest 
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        fileRestore(options?: RawAxiosRequestConfig): AxiosPromise<Array<FileObject>> {
-            return localVarFp.fileRestore(options).then((request) => request(axios, basePath));
+        fileRestore(bulkOperationRequest: BulkOperationRequest, options?: RawAxiosRequestConfig): AxiosPromise<Array<FileObject>> {
+            return localVarFp.fileRestore(bulkOperationRequest, options).then((request) => request(axios, basePath));
         },
         /**
          * Revert the draft version of the specified file back to its published state
@@ -14042,12 +14366,12 @@ export const MediaApiFactory = function (configuration?: Configuration, basePath
         /**
          * Archive multiple file tags, making them inactive while preserving their data
          * @summary Archive file tags
-         * @param {FileTagArchiveRequest} fileTagArchiveRequest 
+         * @param {BulkOperationRequest} bulkOperationRequest 
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        fileTagArchive(fileTagArchiveRequest: FileTagArchiveRequest, options?: RawAxiosRequestConfig): AxiosPromise<Array<FileTag>> {
-            return localVarFp.fileTagArchive(fileTagArchiveRequest, options).then((request) => request(axios, basePath));
+        fileTagArchive(bulkOperationRequest: BulkOperationRequest, options?: RawAxiosRequestConfig): AxiosPromise<Array<FileTag>> {
+            return localVarFp.fileTagArchive(bulkOperationRequest, options).then((request) => request(axios, basePath));
         },
         /**
          * Permanently delete a specific file tag by ID (requires appropriate permissions)
@@ -14196,12 +14520,12 @@ export const MediaApiFactory = function (configuration?: Configuration, basePath
         /**
          * Restore previously archived file tags, making them active again
          * @summary Restore file tags
-         * @param {FileTagRestoreRequest} fileTagRestoreRequest 
+         * @param {BulkOperationRequest} bulkOperationRequest 
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        fileTagRestore(fileTagRestoreRequest: FileTagRestoreRequest, options?: RawAxiosRequestConfig): AxiosPromise<Array<FileTag>> {
-            return localVarFp.fileTagRestore(fileTagRestoreRequest, options).then((request) => request(axios, basePath));
+        fileTagRestore(bulkOperationRequest: BulkOperationRequest, options?: RawAxiosRequestConfig): AxiosPromise<Array<FileTag>> {
+            return localVarFp.fileTagRestore(bulkOperationRequest, options).then((request) => request(axios, basePath));
         },
         /**
          * Revert the draft version of the specified file tag back to its published state
@@ -14266,12 +14590,12 @@ export const MediaApiFactory = function (configuration?: Configuration, basePath
         /**
          * Archive multiple images, making them inactive while preserving their data
          * @summary Archive images
-         * @param {ImageArchiveRequest} imageArchiveRequest 
+         * @param {BulkOperationRequest} bulkOperationRequest 
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        imageArchive(imageArchiveRequest: ImageArchiveRequest, options?: RawAxiosRequestConfig): AxiosPromise<Array<Image>> {
-            return localVarFp.imageArchive(imageArchiveRequest, options).then((request) => request(axios, basePath));
+        imageArchive(bulkOperationRequest: BulkOperationRequest, options?: RawAxiosRequestConfig): AxiosPromise<PageArchive200Response> {
+            return localVarFp.imageArchive(bulkOperationRequest, options).then((request) => request(axios, basePath));
         },
         /**
          * Automatically crop uploaded images using intelligent cropping algorithms
@@ -14447,12 +14771,12 @@ export const MediaApiFactory = function (configuration?: Configuration, basePath
         /**
          * Restore previously archived images, making them active again
          * @summary Restore images
-         * @param {ImageRestoreRequest} imageRestoreRequest 
+         * @param {BulkOperationRequest} bulkOperationRequest 
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        imageRestore(imageRestoreRequest: ImageRestoreRequest, options?: RawAxiosRequestConfig): AxiosPromise<Array<Image>> {
-            return localVarFp.imageRestore(imageRestoreRequest, options).then((request) => request(axios, basePath));
+        imageRestore(bulkOperationRequest: BulkOperationRequest, options?: RawAxiosRequestConfig): AxiosPromise<Array<Image>> {
+            return localVarFp.imageRestore(bulkOperationRequest, options).then((request) => request(axios, basePath));
         },
         /**
          * Revert the draft version of the specified image document back to its published state
@@ -14507,11 +14831,12 @@ export const MediaApiFactory = function (configuration?: Configuration, basePath
         /**
          * Archive multiple image tags, making them inactive while preserving their data
          * @summary Archive image tags
+         * @param {BulkOperationRequest} bulkOperationRequest 
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        imageTagArchive(options?: RawAxiosRequestConfig): AxiosPromise<Array<ImageTag>> {
-            return localVarFp.imageTagArchive(options).then((request) => request(axios, basePath));
+        imageTagArchive(bulkOperationRequest: BulkOperationRequest, options?: RawAxiosRequestConfig): AxiosPromise<PageArchive200Response> {
+            return localVarFp.imageTagArchive(bulkOperationRequest, options).then((request) => request(axios, basePath));
         },
         /**
          * Permanently delete a specific image tag by ID (requires appropriate permissions)
@@ -14661,11 +14986,12 @@ export const MediaApiFactory = function (configuration?: Configuration, basePath
         /**
          * Restore previously archived image tags, making them active again
          * @summary Restore image tags
+         * @param {BulkOperationRequest} bulkOperationRequest 
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        imageTagRestore(options?: RawAxiosRequestConfig): AxiosPromise<Array<ImageTag>> {
-            return localVarFp.imageTagRestore(options).then((request) => request(axios, basePath));
+        imageTagRestore(bulkOperationRequest: BulkOperationRequest, options?: RawAxiosRequestConfig): AxiosPromise<Array<ImageTag>> {
+            return localVarFp.imageTagRestore(bulkOperationRequest, options).then((request) => request(axios, basePath));
         },
         /**
          * Revert the draft version of the specified image tag back to its published state
@@ -14740,12 +15066,13 @@ export class MediaApi extends BaseAPI {
     /**
      * Archive multiple files, making them inactive while preserving their data
      * @summary Archive files
+     * @param {BulkOperationRequest} bulkOperationRequest 
      * @param {*} [options] Override http request option.
      * @throws {RequiredError}
      * @memberof MediaApi
      */
-    public fileArchive(options?: RawAxiosRequestConfig) {
-        return MediaApiFp(this.configuration).fileArchive(options).then((request) => request(this.axios, this.basePath));
+    public fileArchive(bulkOperationRequest: BulkOperationRequest, options?: RawAxiosRequestConfig) {
+        return MediaApiFp(this.configuration).fileArchive(bulkOperationRequest, options).then((request) => request(this.axios, this.basePath));
     }
 
     /**
@@ -14924,12 +15251,13 @@ export class MediaApi extends BaseAPI {
     /**
      * Restore previously archived files, making them active again
      * @summary Restore files
+     * @param {BulkOperationRequest} bulkOperationRequest 
      * @param {*} [options] Override http request option.
      * @throws {RequiredError}
      * @memberof MediaApi
      */
-    public fileRestore(options?: RawAxiosRequestConfig) {
-        return MediaApiFp(this.configuration).fileRestore(options).then((request) => request(this.axios, this.basePath));
+    public fileRestore(bulkOperationRequest: BulkOperationRequest, options?: RawAxiosRequestConfig) {
+        return MediaApiFp(this.configuration).fileRestore(bulkOperationRequest, options).then((request) => request(this.axios, this.basePath));
     }
 
     /**
@@ -14983,13 +15311,13 @@ export class MediaApi extends BaseAPI {
     /**
      * Archive multiple file tags, making them inactive while preserving their data
      * @summary Archive file tags
-     * @param {FileTagArchiveRequest} fileTagArchiveRequest 
+     * @param {BulkOperationRequest} bulkOperationRequest 
      * @param {*} [options] Override http request option.
      * @throws {RequiredError}
      * @memberof MediaApi
      */
-    public fileTagArchive(fileTagArchiveRequest: FileTagArchiveRequest, options?: RawAxiosRequestConfig) {
-        return MediaApiFp(this.configuration).fileTagArchive(fileTagArchiveRequest, options).then((request) => request(this.axios, this.basePath));
+    public fileTagArchive(bulkOperationRequest: BulkOperationRequest, options?: RawAxiosRequestConfig) {
+        return MediaApiFp(this.configuration).fileTagArchive(bulkOperationRequest, options).then((request) => request(this.axios, this.basePath));
     }
 
     /**
@@ -15165,13 +15493,13 @@ export class MediaApi extends BaseAPI {
     /**
      * Restore previously archived file tags, making them active again
      * @summary Restore file tags
-     * @param {FileTagRestoreRequest} fileTagRestoreRequest 
+     * @param {BulkOperationRequest} bulkOperationRequest 
      * @param {*} [options] Override http request option.
      * @throws {RequiredError}
      * @memberof MediaApi
      */
-    public fileTagRestore(fileTagRestoreRequest: FileTagRestoreRequest, options?: RawAxiosRequestConfig) {
-        return MediaApiFp(this.configuration).fileTagRestore(fileTagRestoreRequest, options).then((request) => request(this.axios, this.basePath));
+    public fileTagRestore(bulkOperationRequest: BulkOperationRequest, options?: RawAxiosRequestConfig) {
+        return MediaApiFp(this.configuration).fileTagRestore(bulkOperationRequest, options).then((request) => request(this.axios, this.basePath));
     }
 
     /**
@@ -15249,13 +15577,13 @@ export class MediaApi extends BaseAPI {
     /**
      * Archive multiple images, making them inactive while preserving their data
      * @summary Archive images
-     * @param {ImageArchiveRequest} imageArchiveRequest 
+     * @param {BulkOperationRequest} bulkOperationRequest 
      * @param {*} [options] Override http request option.
      * @throws {RequiredError}
      * @memberof MediaApi
      */
-    public imageArchive(imageArchiveRequest: ImageArchiveRequest, options?: RawAxiosRequestConfig) {
-        return MediaApiFp(this.configuration).imageArchive(imageArchiveRequest, options).then((request) => request(this.axios, this.basePath));
+    public imageArchive(bulkOperationRequest: BulkOperationRequest, options?: RawAxiosRequestConfig) {
+        return MediaApiFp(this.configuration).imageArchive(bulkOperationRequest, options).then((request) => request(this.axios, this.basePath));
     }
 
     /**
@@ -15462,13 +15790,13 @@ export class MediaApi extends BaseAPI {
     /**
      * Restore previously archived images, making them active again
      * @summary Restore images
-     * @param {ImageRestoreRequest} imageRestoreRequest 
+     * @param {BulkOperationRequest} bulkOperationRequest 
      * @param {*} [options] Override http request option.
      * @throws {RequiredError}
      * @memberof MediaApi
      */
-    public imageRestore(imageRestoreRequest: ImageRestoreRequest, options?: RawAxiosRequestConfig) {
-        return MediaApiFp(this.configuration).imageRestore(imageRestoreRequest, options).then((request) => request(this.axios, this.basePath));
+    public imageRestore(bulkOperationRequest: BulkOperationRequest, options?: RawAxiosRequestConfig) {
+        return MediaApiFp(this.configuration).imageRestore(bulkOperationRequest, options).then((request) => request(this.axios, this.basePath));
     }
 
     /**
@@ -15534,12 +15862,13 @@ export class MediaApi extends BaseAPI {
     /**
      * Archive multiple image tags, making them inactive while preserving their data
      * @summary Archive image tags
+     * @param {BulkOperationRequest} bulkOperationRequest 
      * @param {*} [options] Override http request option.
      * @throws {RequiredError}
      * @memberof MediaApi
      */
-    public imageTagArchive(options?: RawAxiosRequestConfig) {
-        return MediaApiFp(this.configuration).imageTagArchive(options).then((request) => request(this.axios, this.basePath));
+    public imageTagArchive(bulkOperationRequest: BulkOperationRequest, options?: RawAxiosRequestConfig) {
+        return MediaApiFp(this.configuration).imageTagArchive(bulkOperationRequest, options).then((request) => request(this.axios, this.basePath));
     }
 
     /**
@@ -15716,12 +16045,13 @@ export class MediaApi extends BaseAPI {
     /**
      * Restore previously archived image tags, making them active again
      * @summary Restore image tags
+     * @param {BulkOperationRequest} bulkOperationRequest 
      * @param {*} [options] Override http request option.
      * @throws {RequiredError}
      * @memberof MediaApi
      */
-    public imageTagRestore(options?: RawAxiosRequestConfig) {
-        return MediaApiFp(this.configuration).imageTagRestore(options).then((request) => request(this.axios, this.basePath));
+    public imageTagRestore(bulkOperationRequest: BulkOperationRequest, options?: RawAxiosRequestConfig) {
+        return MediaApiFp(this.configuration).imageTagRestore(bulkOperationRequest, options).then((request) => request(this.axios, this.basePath));
     }
 
     /**
@@ -16041,7 +16371,7 @@ export const PagesApiAxiosParamCreator = function (configuration?: Configuration
             };
         },
         /**
-         * ⚠️ **Permanently delete a page document.** This cannot be undone.  **Restrictions:** - Cannot delete home page - Cannot delete pages with children (delete children first) - Cannot delete draft if published version exists  **Use with caution!** 
+         * ⚠️ **Permanently delete a page document.** This cannot be undone.  **Important**: This endpoint should be used to delete the draft version of a page. If the page has been published, you should unpublish it first using the unpublish endpoint to ensure complete removal.  **Recommended deletion workflow**: 1. Unpublish the page (removes published version) 2. Delete the page (removes draft version)  **Restrictions:** - Cannot delete home page - Cannot delete pages with children (delete children first) - Cannot delete draft if published version exists ⚠️ **Permanently delete a page document.** This cannot be undone.  **Use with caution!** 
          * @summary Delete page
          * @param {string} id Document ID (can include mode and locale, e.g., id:en:published)
          * @param {PageDeleteByIdAposModeEnum} [aposMode] Request draft or published version of content
@@ -16716,13 +17046,13 @@ export const PagesApiAxiosParamCreator = function (configuration?: Configuration
         /**
          * Restore previously archived pages in bulk, making them active again in the page tree
          * @summary Restore pages
-         * @param {PageRestoreRequest} pageRestoreRequest 
+         * @param {BulkOperationRequest} bulkOperationRequest 
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        pageRestore: async (pageRestoreRequest: PageRestoreRequest, options: RawAxiosRequestConfig = {}): Promise<RequestArgs> => {
-            // verify required parameter 'pageRestoreRequest' is not null or undefined
-            assertParamExists('pageRestore', 'pageRestoreRequest', pageRestoreRequest)
+        pageRestore: async (bulkOperationRequest: BulkOperationRequest, options: RawAxiosRequestConfig = {}): Promise<RequestArgs> => {
+            // verify required parameter 'bulkOperationRequest' is not null or undefined
+            assertParamExists('pageRestore', 'bulkOperationRequest', bulkOperationRequest)
             const localVarPath = `/@apostrophecms/page/restore`;
             // use dummy base URL string because the URL constructor only accepts absolute URLs.
             const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
@@ -16751,7 +17081,7 @@ export const PagesApiAxiosParamCreator = function (configuration?: Configuration
             setSearchParams(localVarUrlObj, localVarQueryParameter);
             let headersFromBaseOptions = baseOptions && baseOptions.headers ? baseOptions.headers : {};
             localVarRequestOptions.headers = {...localVarHeaderParameter, ...headersFromBaseOptions, ...options.headers};
-            localVarRequestOptions.data = serializeDataIfNeeded(pageRestoreRequest, localVarRequestOptions, configuration)
+            localVarRequestOptions.data = serializeDataIfNeeded(bulkOperationRequest, localVarRequestOptions, configuration)
 
             return {
                 url: toPathString(localVarUrlObj),
@@ -16931,60 +17261,6 @@ export const PagesApiAxiosParamCreator = function (configuration?: Configuration
             };
         },
         /**
-         * Get page suggestions for navigation or linking purposes, likely returning pages that match search criteria
-         * @summary Get page suggestions
-         * @param {PageSuggestAposModeEnum} [aposMode] Request draft or published version of content
-         * @param {string} [aposLocale] Locale for internationalization (e.g., \&#39;en\&#39;, \&#39;fr\&#39;, \&#39;es\&#39;)
-         * @param {string} [q] Search query for page suggestions
-         * @param {*} [options] Override http request option.
-         * @throws {RequiredError}
-         */
-        pageSuggest: async (aposMode?: PageSuggestAposModeEnum, aposLocale?: string, q?: string, options: RawAxiosRequestConfig = {}): Promise<RequestArgs> => {
-            const localVarPath = `/@apostrophecms/page/suggest`;
-            // use dummy base URL string because the URL constructor only accepts absolute URLs.
-            const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
-            let baseOptions;
-            if (configuration) {
-                baseOptions = configuration.baseOptions;
-            }
-
-            const localVarRequestOptions = { method: 'GET', ...baseOptions, ...options};
-            const localVarHeaderParameter = {} as any;
-            const localVarQueryParameter = {} as any;
-
-            // authentication SessionAuth required
-
-            // authentication ApiKeyAuth required
-            await setApiKeyToObject(localVarQueryParameter, "apikey", configuration)
-
-            // authentication BearerAuth required
-            // http bearer authentication required
-            await setBearerAuthToObject(localVarHeaderParameter, configuration)
-
-            if (aposMode !== undefined) {
-                localVarQueryParameter['aposMode'] = aposMode;
-            }
-
-            if (aposLocale !== undefined) {
-                localVarQueryParameter['aposLocale'] = aposLocale;
-            }
-
-            if (q !== undefined) {
-                localVarQueryParameter['q'] = q;
-            }
-
-
-    
-            setSearchParams(localVarUrlObj, localVarQueryParameter);
-            let headersFromBaseOptions = baseOptions && baseOptions.headers ? baseOptions.headers : {};
-            localVarRequestOptions.headers = {...localVarHeaderParameter, ...headersFromBaseOptions, ...options.headers};
-
-            return {
-                url: toPathString(localVarUrlObj),
-                options: localVarRequestOptions,
-            };
-        },
-        /**
          * Unpublish the specified page, removing it from public visibility while preserving the content
          * @summary Unpublish page
          * @param {string} id Document ID (can include mode and locale, e.g., id:en:published)
@@ -17037,54 +17313,6 @@ export const PagesApiAxiosParamCreator = function (configuration?: Configuration
                 options: localVarRequestOptions,
             };
         },
-        /**
-         * Get a page\'s rendered HTML content. With `aposRefresh=1`, returns only the refreshable content without the full page layout (used by Apostrophe UI). 
-         * @summary Get rendered page content
-         * @param {string} url Page URL path
-         * @param {UrlGetAposRefreshEnum} [aposRefresh] Return only refreshable content without full layout
-         * @param {*} [options] Override http request option.
-         * @throws {RequiredError}
-         */
-        urlGet: async (url: string, aposRefresh?: UrlGetAposRefreshEnum, options: RawAxiosRequestConfig = {}): Promise<RequestArgs> => {
-            // verify required parameter 'url' is not null or undefined
-            assertParamExists('urlGet', 'url', url)
-            const localVarPath = `/{_url}`
-                .replace(`{${"_url"}}`, encodeURIComponent(String(url)));
-            // use dummy base URL string because the URL constructor only accepts absolute URLs.
-            const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
-            let baseOptions;
-            if (configuration) {
-                baseOptions = configuration.baseOptions;
-            }
-
-            const localVarRequestOptions = { method: 'GET', ...baseOptions, ...options};
-            const localVarHeaderParameter = {} as any;
-            const localVarQueryParameter = {} as any;
-
-            // authentication SessionAuth required
-
-            // authentication ApiKeyAuth required
-            await setApiKeyToObject(localVarQueryParameter, "apikey", configuration)
-
-            // authentication BearerAuth required
-            // http bearer authentication required
-            await setBearerAuthToObject(localVarHeaderParameter, configuration)
-
-            if (aposRefresh !== undefined) {
-                localVarQueryParameter['aposRefresh'] = aposRefresh;
-            }
-
-
-    
-            setSearchParams(localVarUrlObj, localVarQueryParameter);
-            let headersFromBaseOptions = baseOptions && baseOptions.headers ? baseOptions.headers : {};
-            localVarRequestOptions.headers = {...localVarHeaderParameter, ...headersFromBaseOptions, ...options.headers};
-
-            return {
-                url: toPathString(localVarUrlObj),
-                options: localVarRequestOptions,
-            };
-        },
     }
 };
 
@@ -17102,14 +17330,14 @@ export const PagesApiFp = function(configuration?: Configuration) {
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        async pageArchive(pageArchiveRequest: PageArchiveRequest, options?: RawAxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<Array<Page>>> {
+        async pageArchive(pageArchiveRequest: PageArchiveRequest, options?: RawAxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<PageArchive200Response>> {
             const localVarAxiosArgs = await localVarAxiosParamCreator.pageArchive(pageArchiveRequest, options);
             const localVarOperationServerIndex = configuration?.serverIndex ?? 0;
             const localVarOperationServerBasePath = operationServerMap['PagesApi.pageArchive']?.[localVarOperationServerIndex]?.url;
             return (axios, basePath) => createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration)(axios, localVarOperationServerBasePath || basePath);
         },
         /**
-         * ⚠️ **Permanently delete a page document.** This cannot be undone.  **Restrictions:** - Cannot delete home page - Cannot delete pages with children (delete children first) - Cannot delete draft if published version exists  **Use with caution!** 
+         * ⚠️ **Permanently delete a page document.** This cannot be undone.  **Important**: This endpoint should be used to delete the draft version of a page. If the page has been published, you should unpublish it first using the unpublish endpoint to ensure complete removal.  **Recommended deletion workflow**: 1. Unpublish the page (removes published version) 2. Delete the page (removes draft version)  **Restrictions:** - Cannot delete home page - Cannot delete pages with children (delete children first) - Cannot delete draft if published version exists ⚠️ **Permanently delete a page document.** This cannot be undone.  **Use with caution!** 
          * @summary Delete page
          * @param {string} id Document ID (can include mode and locale, e.g., id:en:published)
          * @param {PageDeleteByIdAposModeEnum} [aposMode] Request draft or published version of content
@@ -17190,7 +17418,7 @@ export const PagesApiFp = function(configuration?: Configuration) {
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        async pageGetLocalesById(id: string, options?: RawAxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<Array<string>>> {
+        async pageGetLocalesById(id: string, options?: RawAxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<PageGetLocalesById200Response>> {
             const localVarAxiosArgs = await localVarAxiosParamCreator.pageGetLocalesById(id, options);
             const localVarOperationServerIndex = configuration?.serverIndex ?? 0;
             const localVarOperationServerBasePath = operationServerMap['PagesApi.pageGetLocalesById']?.[localVarOperationServerIndex]?.url;
@@ -17301,12 +17529,12 @@ export const PagesApiFp = function(configuration?: Configuration) {
         /**
          * Restore previously archived pages in bulk, making them active again in the page tree
          * @summary Restore pages
-         * @param {PageRestoreRequest} pageRestoreRequest 
+         * @param {BulkOperationRequest} bulkOperationRequest 
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        async pageRestore(pageRestoreRequest: PageRestoreRequest, options?: RawAxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<Array<Page>>> {
-            const localVarAxiosArgs = await localVarAxiosParamCreator.pageRestore(pageRestoreRequest, options);
+        async pageRestore(bulkOperationRequest: BulkOperationRequest, options?: RawAxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<Array<Page>>> {
+            const localVarAxiosArgs = await localVarAxiosParamCreator.pageRestore(bulkOperationRequest, options);
             const localVarOperationServerIndex = configuration?.serverIndex ?? 0;
             const localVarOperationServerBasePath = operationServerMap['PagesApi.pageRestore']?.[localVarOperationServerIndex]?.url;
             return (axios, basePath) => createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration)(axios, localVarOperationServerBasePath || basePath);
@@ -17364,21 +17592,6 @@ export const PagesApiFp = function(configuration?: Configuration) {
             return (axios, basePath) => createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration)(axios, localVarOperationServerBasePath || basePath);
         },
         /**
-         * Get page suggestions for navigation or linking purposes, likely returning pages that match search criteria
-         * @summary Get page suggestions
-         * @param {PageSuggestAposModeEnum} [aposMode] Request draft or published version of content
-         * @param {string} [aposLocale] Locale for internationalization (e.g., \&#39;en\&#39;, \&#39;fr\&#39;, \&#39;es\&#39;)
-         * @param {string} [q] Search query for page suggestions
-         * @param {*} [options] Override http request option.
-         * @throws {RequiredError}
-         */
-        async pageSuggest(aposMode?: PageSuggestAposModeEnum, aposLocale?: string, q?: string, options?: RawAxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<Array<Page>>> {
-            const localVarAxiosArgs = await localVarAxiosParamCreator.pageSuggest(aposMode, aposLocale, q, options);
-            const localVarOperationServerIndex = configuration?.serverIndex ?? 0;
-            const localVarOperationServerBasePath = operationServerMap['PagesApi.pageSuggest']?.[localVarOperationServerIndex]?.url;
-            return (axios, basePath) => createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration)(axios, localVarOperationServerBasePath || basePath);
-        },
-        /**
          * Unpublish the specified page, removing it from public visibility while preserving the content
          * @summary Unpublish page
          * @param {string} id Document ID (can include mode and locale, e.g., id:en:published)
@@ -17391,20 +17604,6 @@ export const PagesApiFp = function(configuration?: Configuration) {
             const localVarAxiosArgs = await localVarAxiosParamCreator.pageUnpublishById(id, aposMode, aposLocale, options);
             const localVarOperationServerIndex = configuration?.serverIndex ?? 0;
             const localVarOperationServerBasePath = operationServerMap['PagesApi.pageUnpublishById']?.[localVarOperationServerIndex]?.url;
-            return (axios, basePath) => createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration)(axios, localVarOperationServerBasePath || basePath);
-        },
-        /**
-         * Get a page\'s rendered HTML content. With `aposRefresh=1`, returns only the refreshable content without the full page layout (used by Apostrophe UI). 
-         * @summary Get rendered page content
-         * @param {string} url Page URL path
-         * @param {UrlGetAposRefreshEnum} [aposRefresh] Return only refreshable content without full layout
-         * @param {*} [options] Override http request option.
-         * @throws {RequiredError}
-         */
-        async urlGet(url: string, aposRefresh?: UrlGetAposRefreshEnum, options?: RawAxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<string>> {
-            const localVarAxiosArgs = await localVarAxiosParamCreator.urlGet(url, aposRefresh, options);
-            const localVarOperationServerIndex = configuration?.serverIndex ?? 0;
-            const localVarOperationServerBasePath = operationServerMap['PagesApi.urlGet']?.[localVarOperationServerIndex]?.url;
             return (axios, basePath) => createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration)(axios, localVarOperationServerBasePath || basePath);
         },
     }
@@ -17424,11 +17623,11 @@ export const PagesApiFactory = function (configuration?: Configuration, basePath
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        pageArchive(pageArchiveRequest: PageArchiveRequest, options?: RawAxiosRequestConfig): AxiosPromise<Array<Page>> {
+        pageArchive(pageArchiveRequest: PageArchiveRequest, options?: RawAxiosRequestConfig): AxiosPromise<PageArchive200Response> {
             return localVarFp.pageArchive(pageArchiveRequest, options).then((request) => request(axios, basePath));
         },
         /**
-         * ⚠️ **Permanently delete a page document.** This cannot be undone.  **Restrictions:** - Cannot delete home page - Cannot delete pages with children (delete children first) - Cannot delete draft if published version exists  **Use with caution!** 
+         * ⚠️ **Permanently delete a page document.** This cannot be undone.  **Important**: This endpoint should be used to delete the draft version of a page. If the page has been published, you should unpublish it first using the unpublish endpoint to ensure complete removal.  **Recommended deletion workflow**: 1. Unpublish the page (removes published version) 2. Delete the page (removes draft version)  **Restrictions:** - Cannot delete home page - Cannot delete pages with children (delete children first) - Cannot delete draft if published version exists ⚠️ **Permanently delete a page document.** This cannot be undone.  **Use with caution!** 
          * @summary Delete page
          * @param {string} id Document ID (can include mode and locale, e.g., id:en:published)
          * @param {PageDeleteByIdAposModeEnum} [aposMode] Request draft or published version of content
@@ -17494,7 +17693,7 @@ export const PagesApiFactory = function (configuration?: Configuration, basePath
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        pageGetLocalesById(id: string, options?: RawAxiosRequestConfig): AxiosPromise<Array<string>> {
+        pageGetLocalesById(id: string, options?: RawAxiosRequestConfig): AxiosPromise<PageGetLocalesById200Response> {
             return localVarFp.pageGetLocalesById(id, options).then((request) => request(axios, basePath));
         },
         /**
@@ -17581,12 +17780,12 @@ export const PagesApiFactory = function (configuration?: Configuration, basePath
         /**
          * Restore previously archived pages in bulk, making them active again in the page tree
          * @summary Restore pages
-         * @param {PageRestoreRequest} pageRestoreRequest 
+         * @param {BulkOperationRequest} bulkOperationRequest 
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        pageRestore(pageRestoreRequest: PageRestoreRequest, options?: RawAxiosRequestConfig): AxiosPromise<Array<Page>> {
-            return localVarFp.pageRestore(pageRestoreRequest, options).then((request) => request(axios, basePath));
+        pageRestore(bulkOperationRequest: BulkOperationRequest, options?: RawAxiosRequestConfig): AxiosPromise<Array<Page>> {
+            return localVarFp.pageRestore(bulkOperationRequest, options).then((request) => request(axios, basePath));
         },
         /**
          * Revert the draft version of the specified page back to its published state
@@ -17629,18 +17828,6 @@ export const PagesApiFactory = function (configuration?: Configuration, basePath
             return localVarFp.pageSubmitById(id, options).then((request) => request(axios, basePath));
         },
         /**
-         * Get page suggestions for navigation or linking purposes, likely returning pages that match search criteria
-         * @summary Get page suggestions
-         * @param {PageSuggestAposModeEnum} [aposMode] Request draft or published version of content
-         * @param {string} [aposLocale] Locale for internationalization (e.g., \&#39;en\&#39;, \&#39;fr\&#39;, \&#39;es\&#39;)
-         * @param {string} [q] Search query for page suggestions
-         * @param {*} [options] Override http request option.
-         * @throws {RequiredError}
-         */
-        pageSuggest(aposMode?: PageSuggestAposModeEnum, aposLocale?: string, q?: string, options?: RawAxiosRequestConfig): AxiosPromise<Array<Page>> {
-            return localVarFp.pageSuggest(aposMode, aposLocale, q, options).then((request) => request(axios, basePath));
-        },
-        /**
          * Unpublish the specified page, removing it from public visibility while preserving the content
          * @summary Unpublish page
          * @param {string} id Document ID (can include mode and locale, e.g., id:en:published)
@@ -17651,17 +17838,6 @@ export const PagesApiFactory = function (configuration?: Configuration, basePath
          */
         pageUnpublishById(id: string, aposMode?: PageUnpublishByIdAposModeEnum, aposLocale?: string, options?: RawAxiosRequestConfig): AxiosPromise<Page> {
             return localVarFp.pageUnpublishById(id, aposMode, aposLocale, options).then((request) => request(axios, basePath));
-        },
-        /**
-         * Get a page\'s rendered HTML content. With `aposRefresh=1`, returns only the refreshable content without the full page layout (used by Apostrophe UI). 
-         * @summary Get rendered page content
-         * @param {string} url Page URL path
-         * @param {UrlGetAposRefreshEnum} [aposRefresh] Return only refreshable content without full layout
-         * @param {*} [options] Override http request option.
-         * @throws {RequiredError}
-         */
-        urlGet(url: string, aposRefresh?: UrlGetAposRefreshEnum, options?: RawAxiosRequestConfig): AxiosPromise<string> {
-            return localVarFp.urlGet(url, aposRefresh, options).then((request) => request(axios, basePath));
         },
     };
 };
@@ -17686,7 +17862,7 @@ export class PagesApi extends BaseAPI {
     }
 
     /**
-     * ⚠️ **Permanently delete a page document.** This cannot be undone.  **Restrictions:** - Cannot delete home page - Cannot delete pages with children (delete children first) - Cannot delete draft if published version exists  **Use with caution!** 
+     * ⚠️ **Permanently delete a page document.** This cannot be undone.  **Important**: This endpoint should be used to delete the draft version of a page. If the page has been published, you should unpublish it first using the unpublish endpoint to ensure complete removal.  **Recommended deletion workflow**: 1. Unpublish the page (removes published version) 2. Delete the page (removes draft version)  **Restrictions:** - Cannot delete home page - Cannot delete pages with children (delete children first) - Cannot delete draft if published version exists ⚠️ **Permanently delete a page document.** This cannot be undone.  **Use with caution!** 
      * @summary Delete page
      * @param {string} id Document ID (can include mode and locale, e.g., id:en:published)
      * @param {PageDeleteByIdAposModeEnum} [aposMode] Request draft or published version of content
@@ -17865,13 +18041,13 @@ export class PagesApi extends BaseAPI {
     /**
      * Restore previously archived pages in bulk, making them active again in the page tree
      * @summary Restore pages
-     * @param {PageRestoreRequest} pageRestoreRequest 
+     * @param {BulkOperationRequest} bulkOperationRequest 
      * @param {*} [options] Override http request option.
      * @throws {RequiredError}
      * @memberof PagesApi
      */
-    public pageRestore(pageRestoreRequest: PageRestoreRequest, options?: RawAxiosRequestConfig) {
-        return PagesApiFp(this.configuration).pageRestore(pageRestoreRequest, options).then((request) => request(this.axios, this.basePath));
+    public pageRestore(bulkOperationRequest: BulkOperationRequest, options?: RawAxiosRequestConfig) {
+        return PagesApiFp(this.configuration).pageRestore(bulkOperationRequest, options).then((request) => request(this.axios, this.basePath));
     }
 
     /**
@@ -17923,20 +18099,6 @@ export class PagesApi extends BaseAPI {
     }
 
     /**
-     * Get page suggestions for navigation or linking purposes, likely returning pages that match search criteria
-     * @summary Get page suggestions
-     * @param {PageSuggestAposModeEnum} [aposMode] Request draft or published version of content
-     * @param {string} [aposLocale] Locale for internationalization (e.g., \&#39;en\&#39;, \&#39;fr\&#39;, \&#39;es\&#39;)
-     * @param {string} [q] Search query for page suggestions
-     * @param {*} [options] Override http request option.
-     * @throws {RequiredError}
-     * @memberof PagesApi
-     */
-    public pageSuggest(aposMode?: PageSuggestAposModeEnum, aposLocale?: string, q?: string, options?: RawAxiosRequestConfig) {
-        return PagesApiFp(this.configuration).pageSuggest(aposMode, aposLocale, q, options).then((request) => request(this.axios, this.basePath));
-    }
-
-    /**
      * Unpublish the specified page, removing it from public visibility while preserving the content
      * @summary Unpublish page
      * @param {string} id Document ID (can include mode and locale, e.g., id:en:published)
@@ -17948,19 +18110,6 @@ export class PagesApi extends BaseAPI {
      */
     public pageUnpublishById(id: string, aposMode?: PageUnpublishByIdAposModeEnum, aposLocale?: string, options?: RawAxiosRequestConfig) {
         return PagesApiFp(this.configuration).pageUnpublishById(id, aposMode, aposLocale, options).then((request) => request(this.axios, this.basePath));
-    }
-
-    /**
-     * Get a page\'s rendered HTML content. With `aposRefresh=1`, returns only the refreshable content without the full page layout (used by Apostrophe UI). 
-     * @summary Get rendered page content
-     * @param {string} url Page URL path
-     * @param {UrlGetAposRefreshEnum} [aposRefresh] Return only refreshable content without full layout
-     * @param {*} [options] Override http request option.
-     * @throws {RequiredError}
-     * @memberof PagesApi
-     */
-    public urlGet(url: string, aposRefresh?: UrlGetAposRefreshEnum, options?: RawAxiosRequestConfig) {
-        return PagesApiFp(this.configuration).urlGet(url, aposRefresh, options).then((request) => request(this.axios, this.basePath));
     }
 }
 
@@ -18036,26 +18185,11 @@ export type PagePutByIdAposModeEnum = typeof PagePutByIdAposModeEnum[keyof typeo
 /**
  * @export
  */
-export const PageSuggestAposModeEnum = {
-    Draft: 'draft',
-    Published: 'published'
-} as const;
-export type PageSuggestAposModeEnum = typeof PageSuggestAposModeEnum[keyof typeof PageSuggestAposModeEnum];
-/**
- * @export
- */
 export const PageUnpublishByIdAposModeEnum = {
     Draft: 'draft',
     Published: 'published'
 } as const;
 export type PageUnpublishByIdAposModeEnum = typeof PageUnpublishByIdAposModeEnum[keyof typeof PageUnpublishByIdAposModeEnum];
-/**
- * @export
- */
-export const UrlGetAposRefreshEnum = {
-    _1: '1'
-} as const;
-export type UrlGetAposRefreshEnum = typeof UrlGetAposRefreshEnum[keyof typeof UrlGetAposRefreshEnum];
 
 
 /**
@@ -18067,10 +18201,13 @@ export const SubmittedDraftsApiAxiosParamCreator = function (configuration?: Con
         /**
          * Archive multiple submitted drafts, removing them from active review queues while preserving data
          * @summary Archive submitted drafts
+         * @param {BulkOperationRequest} bulkOperationRequest 
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        submittedDraftArchive: async (options: RawAxiosRequestConfig = {}): Promise<RequestArgs> => {
+        submittedDraftArchive: async (bulkOperationRequest: BulkOperationRequest, options: RawAxiosRequestConfig = {}): Promise<RequestArgs> => {
+            // verify required parameter 'bulkOperationRequest' is not null or undefined
+            assertParamExists('submittedDraftArchive', 'bulkOperationRequest', bulkOperationRequest)
             const localVarPath = `/@apostrophecms/submitted-draft/archive`;
             // use dummy base URL string because the URL constructor only accepts absolute URLs.
             const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
@@ -18087,9 +18224,12 @@ export const SubmittedDraftsApiAxiosParamCreator = function (configuration?: Con
 
 
     
+            localVarHeaderParameter['Content-Type'] = 'application/json';
+
             setSearchParams(localVarUrlObj, localVarQueryParameter);
             let headersFromBaseOptions = baseOptions && baseOptions.headers ? baseOptions.headers : {};
             localVarRequestOptions.headers = {...localVarHeaderParameter, ...headersFromBaseOptions, ...options.headers};
+            localVarRequestOptions.data = serializeDataIfNeeded(bulkOperationRequest, localVarRequestOptions, configuration)
 
             return {
                 url: toPathString(localVarUrlObj),
@@ -18430,6 +18570,13 @@ export const SubmittedDraftsApiAxiosParamCreator = function (configuration?: Con
 
             // authentication SessionAuth required
 
+            // authentication ApiKeyAuth required
+            await setApiKeyToObject(localVarQueryParameter, "apikey", configuration)
+
+            // authentication BearerAuth required
+            // http bearer authentication required
+            await setBearerAuthToObject(localVarHeaderParameter, configuration)
+
 
     
             localVarHeaderParameter['Content-Type'] = 'application/json';
@@ -18612,10 +18759,13 @@ export const SubmittedDraftsApiAxiosParamCreator = function (configuration?: Con
         /**
          * Restore previously archived submitted drafts, returning them to active review queues
          * @summary Restore submitted drafts
+         * @param {BulkOperationRequest} bulkOperationRequest 
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        submittedDraftRestore: async (options: RawAxiosRequestConfig = {}): Promise<RequestArgs> => {
+        submittedDraftRestore: async (bulkOperationRequest: BulkOperationRequest, options: RawAxiosRequestConfig = {}): Promise<RequestArgs> => {
+            // verify required parameter 'bulkOperationRequest' is not null or undefined
+            assertParamExists('submittedDraftRestore', 'bulkOperationRequest', bulkOperationRequest)
             const localVarPath = `/@apostrophecms/submitted-draft/restore`;
             // use dummy base URL string because the URL constructor only accepts absolute URLs.
             const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
@@ -18632,9 +18782,12 @@ export const SubmittedDraftsApiAxiosParamCreator = function (configuration?: Con
 
 
     
+            localVarHeaderParameter['Content-Type'] = 'application/json';
+
             setSearchParams(localVarUrlObj, localVarQueryParameter);
             let headersFromBaseOptions = baseOptions && baseOptions.headers ? baseOptions.headers : {};
             localVarRequestOptions.headers = {...localVarHeaderParameter, ...headersFromBaseOptions, ...options.headers};
+            localVarRequestOptions.data = serializeDataIfNeeded(bulkOperationRequest, localVarRequestOptions, configuration)
 
             return {
                 url: toPathString(localVarUrlObj),
@@ -18834,11 +18987,12 @@ export const SubmittedDraftsApiFp = function(configuration?: Configuration) {
         /**
          * Archive multiple submitted drafts, removing them from active review queues while preserving data
          * @summary Archive submitted drafts
+         * @param {BulkOperationRequest} bulkOperationRequest 
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        async submittedDraftArchive(options?: RawAxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<SubmittedDraftArchive200Response>> {
-            const localVarAxiosArgs = await localVarAxiosParamCreator.submittedDraftArchive(options);
+        async submittedDraftArchive(bulkOperationRequest: BulkOperationRequest, options?: RawAxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<SubmittedDraftArchive200Response>> {
+            const localVarAxiosArgs = await localVarAxiosParamCreator.submittedDraftArchive(bulkOperationRequest, options);
             const localVarOperationServerIndex = configuration?.serverIndex ?? 0;
             const localVarOperationServerBasePath = operationServerMap['SubmittedDraftsApi.submittedDraftArchive']?.[localVarOperationServerIndex]?.url;
             return (axios, basePath) => createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration)(axios, localVarOperationServerBasePath || basePath);
@@ -19020,11 +19174,12 @@ export const SubmittedDraftsApiFp = function(configuration?: Configuration) {
         /**
          * Restore previously archived submitted drafts, returning them to active review queues
          * @summary Restore submitted drafts
+         * @param {BulkOperationRequest} bulkOperationRequest 
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        async submittedDraftRestore(options?: RawAxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<SubmittedDraftRestore200Response>> {
-            const localVarAxiosArgs = await localVarAxiosParamCreator.submittedDraftRestore(options);
+        async submittedDraftRestore(bulkOperationRequest: BulkOperationRequest, options?: RawAxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<SubmittedDraftRestore200Response>> {
+            const localVarAxiosArgs = await localVarAxiosParamCreator.submittedDraftRestore(bulkOperationRequest, options);
             const localVarOperationServerIndex = configuration?.serverIndex ?? 0;
             const localVarOperationServerBasePath = operationServerMap['SubmittedDraftsApi.submittedDraftRestore']?.[localVarOperationServerIndex]?.url;
             return (axios, basePath) => createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration)(axios, localVarOperationServerBasePath || basePath);
@@ -19107,11 +19262,12 @@ export const SubmittedDraftsApiFactory = function (configuration?: Configuration
         /**
          * Archive multiple submitted drafts, removing them from active review queues while preserving data
          * @summary Archive submitted drafts
+         * @param {BulkOperationRequest} bulkOperationRequest 
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        submittedDraftArchive(options?: RawAxiosRequestConfig): AxiosPromise<SubmittedDraftArchive200Response> {
-            return localVarFp.submittedDraftArchive(options).then((request) => request(axios, basePath));
+        submittedDraftArchive(bulkOperationRequest: BulkOperationRequest, options?: RawAxiosRequestConfig): AxiosPromise<SubmittedDraftArchive200Response> {
+            return localVarFp.submittedDraftArchive(bulkOperationRequest, options).then((request) => request(axios, basePath));
         },
         /**
          * Permanently delete a specific submitted draft by ID (requires appropriate permissions)
@@ -19251,11 +19407,12 @@ export const SubmittedDraftsApiFactory = function (configuration?: Configuration
         /**
          * Restore previously archived submitted drafts, returning them to active review queues
          * @summary Restore submitted drafts
+         * @param {BulkOperationRequest} bulkOperationRequest 
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        submittedDraftRestore(options?: RawAxiosRequestConfig): AxiosPromise<SubmittedDraftRestore200Response> {
-            return localVarFp.submittedDraftRestore(options).then((request) => request(axios, basePath));
+        submittedDraftRestore(bulkOperationRequest: BulkOperationRequest, options?: RawAxiosRequestConfig): AxiosPromise<SubmittedDraftRestore200Response> {
+            return localVarFp.submittedDraftRestore(bulkOperationRequest, options).then((request) => request(axios, basePath));
         },
         /**
          * Revert the draft version of the specified submitted draft back to its published state
@@ -19320,12 +19477,13 @@ export class SubmittedDraftsApi extends BaseAPI {
     /**
      * Archive multiple submitted drafts, removing them from active review queues while preserving data
      * @summary Archive submitted drafts
+     * @param {BulkOperationRequest} bulkOperationRequest 
      * @param {*} [options] Override http request option.
      * @throws {RequiredError}
      * @memberof SubmittedDraftsApi
      */
-    public submittedDraftArchive(options?: RawAxiosRequestConfig) {
-        return SubmittedDraftsApiFp(this.configuration).submittedDraftArchive(options).then((request) => request(this.axios, this.basePath));
+    public submittedDraftArchive(bulkOperationRequest: BulkOperationRequest, options?: RawAxiosRequestConfig) {
+        return SubmittedDraftsApiFp(this.configuration).submittedDraftArchive(bulkOperationRequest, options).then((request) => request(this.axios, this.basePath));
     }
 
     /**
@@ -19492,12 +19650,13 @@ export class SubmittedDraftsApi extends BaseAPI {
     /**
      * Restore previously archived submitted drafts, returning them to active review queues
      * @summary Restore submitted drafts
+     * @param {BulkOperationRequest} bulkOperationRequest 
      * @param {*} [options] Override http request option.
      * @throws {RequiredError}
      * @memberof SubmittedDraftsApi
      */
-    public submittedDraftRestore(options?: RawAxiosRequestConfig) {
-        return SubmittedDraftsApiFp(this.configuration).submittedDraftRestore(options).then((request) => request(this.axios, this.basePath));
+    public submittedDraftRestore(bulkOperationRequest: BulkOperationRequest, options?: RawAxiosRequestConfig) {
+        return SubmittedDraftsApiFp(this.configuration).submittedDraftRestore(bulkOperationRequest, options).then((request) => request(this.axios, this.basePath));
     }
 
     /**
@@ -19916,13 +20075,10 @@ export const UsersApiAxiosParamCreator = function (configuration?: Configuration
         /**
          * Retrieve a list of users with optional filtering, sorting, and pagination
          * @summary List users
-         * @param {UserListAposModeEnum} [aposMode] Request draft or published version of content
-         * @param {string} [aposLocale] Locale for internationalization (e.g., \&#39;en\&#39;, \&#39;fr\&#39;, \&#39;es\&#39;)
-         * @param {boolean} [renderAreas] 💡 Render widget areas as HTML instead of returning raw widget data - useful for hybrid architectures
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        userList: async (aposMode?: UserListAposModeEnum, aposLocale?: string, renderAreas?: boolean, options: RawAxiosRequestConfig = {}): Promise<RequestArgs> => {
+        userList: async (options: RawAxiosRequestConfig = {}): Promise<RequestArgs> => {
             const localVarPath = `/@apostrophecms/user`;
             // use dummy base URL string because the URL constructor only accepts absolute URLs.
             const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
@@ -19943,18 +20099,6 @@ export const UsersApiAxiosParamCreator = function (configuration?: Configuration
             // authentication BearerAuth required
             // http bearer authentication required
             await setBearerAuthToObject(localVarHeaderParameter, configuration)
-
-            if (aposMode !== undefined) {
-                localVarQueryParameter['aposMode'] = aposMode;
-            }
-
-            if (aposLocale !== undefined) {
-                localVarQueryParameter['aposLocale'] = aposLocale;
-            }
-
-            if (renderAreas !== undefined) {
-                localVarQueryParameter['render-areas'] = renderAreas;
-            }
 
 
     
@@ -20252,10 +20396,13 @@ export const UsersApiAxiosParamCreator = function (configuration?: Configuration
         /**
          * Restore previously archived users, making them active again
          * @summary Restore users
+         * @param {BulkOperationRequest} bulkOperationRequest 
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        userRestore: async (options: RawAxiosRequestConfig = {}): Promise<RequestArgs> => {
+        userRestore: async (bulkOperationRequest: BulkOperationRequest, options: RawAxiosRequestConfig = {}): Promise<RequestArgs> => {
+            // verify required parameter 'bulkOperationRequest' is not null or undefined
+            assertParamExists('userRestore', 'bulkOperationRequest', bulkOperationRequest)
             const localVarPath = `/@apostrophecms/user/restore`;
             // use dummy base URL string because the URL constructor only accepts absolute URLs.
             const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
@@ -20279,9 +20426,12 @@ export const UsersApiAxiosParamCreator = function (configuration?: Configuration
 
 
     
+            localVarHeaderParameter['Content-Type'] = 'application/json';
+
             setSearchParams(localVarUrlObj, localVarQueryParameter);
             let headersFromBaseOptions = baseOptions && baseOptions.headers ? baseOptions.headers : {};
             localVarRequestOptions.headers = {...localVarHeaderParameter, ...headersFromBaseOptions, ...options.headers};
+            localVarRequestOptions.data = serializeDataIfNeeded(bulkOperationRequest, localVarRequestOptions, configuration)
 
             return {
                 url: toPathString(localVarUrlObj),
@@ -20461,51 +20611,6 @@ export const UsersApiAxiosParamCreator = function (configuration?: Configuration
             };
         },
         /**
-         * Verify if a username is available and unique in the system
-         * @summary Check username uniqueness
-         * @param {UserUniqueUsernameRequest} userUniqueUsernameRequest 
-         * @param {*} [options] Override http request option.
-         * @throws {RequiredError}
-         */
-        userUniqueUsername: async (userUniqueUsernameRequest: UserUniqueUsernameRequest, options: RawAxiosRequestConfig = {}): Promise<RequestArgs> => {
-            // verify required parameter 'userUniqueUsernameRequest' is not null or undefined
-            assertParamExists('userUniqueUsername', 'userUniqueUsernameRequest', userUniqueUsernameRequest)
-            const localVarPath = `/@apostrophecms/user/unique-username`;
-            // use dummy base URL string because the URL constructor only accepts absolute URLs.
-            const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
-            let baseOptions;
-            if (configuration) {
-                baseOptions = configuration.baseOptions;
-            }
-
-            const localVarRequestOptions = { method: 'POST', ...baseOptions, ...options};
-            const localVarHeaderParameter = {} as any;
-            const localVarQueryParameter = {} as any;
-
-            // authentication SessionAuth required
-
-            // authentication ApiKeyAuth required
-            await setApiKeyToObject(localVarQueryParameter, "apikey", configuration)
-
-            // authentication BearerAuth required
-            // http bearer authentication required
-            await setBearerAuthToObject(localVarHeaderParameter, configuration)
-
-
-    
-            localVarHeaderParameter['Content-Type'] = 'application/json';
-
-            setSearchParams(localVarUrlObj, localVarQueryParameter);
-            let headersFromBaseOptions = baseOptions && baseOptions.headers ? baseOptions.headers : {};
-            localVarRequestOptions.headers = {...localVarHeaderParameter, ...headersFromBaseOptions, ...options.headers};
-            localVarRequestOptions.data = serializeDataIfNeeded(userUniqueUsernameRequest, localVarRequestOptions, configuration)
-
-            return {
-                url: toPathString(localVarUrlObj),
-                options: localVarRequestOptions,
-            };
-        },
-        /**
          * Unpublish the specified user, removing them from public visibility while preserving the content
          * @summary Unpublish user
          * @param {string} id Document ID (can include mode and locale, e.g., id:en:published)
@@ -20564,7 +20669,7 @@ export const UsersApiFp = function(configuration?: Configuration) {
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        async userArchive(options?: RawAxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<Array<User>>> {
+        async userArchive(options?: RawAxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<PageArchive200Response>> {
             const localVarAxiosArgs = await localVarAxiosParamCreator.userArchive(options);
             const localVarOperationServerIndex = configuration?.serverIndex ?? 0;
             const localVarOperationServerBasePath = operationServerMap['UsersApi.userArchive']?.[localVarOperationServerIndex]?.url;
@@ -20657,14 +20762,11 @@ export const UsersApiFp = function(configuration?: Configuration) {
         /**
          * Retrieve a list of users with optional filtering, sorting, and pagination
          * @summary List users
-         * @param {UserListAposModeEnum} [aposMode] Request draft or published version of content
-         * @param {string} [aposLocale] Locale for internationalization (e.g., \&#39;en\&#39;, \&#39;fr\&#39;, \&#39;es\&#39;)
-         * @param {boolean} [renderAreas] 💡 Render widget areas as HTML instead of returning raw widget data - useful for hybrid architectures
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        async userList(aposMode?: UserListAposModeEnum, aposLocale?: string, renderAreas?: boolean, options?: RawAxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<UserList200Response>> {
-            const localVarAxiosArgs = await localVarAxiosParamCreator.userList(aposMode, aposLocale, renderAreas, options);
+        async userList(options?: RawAxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<UserList200Response>> {
+            const localVarAxiosArgs = await localVarAxiosParamCreator.userList(options);
             const localVarOperationServerIndex = configuration?.serverIndex ?? 0;
             const localVarOperationServerBasePath = operationServerMap['UsersApi.userList']?.[localVarOperationServerIndex]?.url;
             return (axios, basePath) => createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration)(axios, localVarOperationServerBasePath || basePath);
@@ -20754,11 +20856,12 @@ export const UsersApiFp = function(configuration?: Configuration) {
         /**
          * Restore previously archived users, making them active again
          * @summary Restore users
+         * @param {BulkOperationRequest} bulkOperationRequest 
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        async userRestore(options?: RawAxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<Array<User>>> {
-            const localVarAxiosArgs = await localVarAxiosParamCreator.userRestore(options);
+        async userRestore(bulkOperationRequest: BulkOperationRequest, options?: RawAxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<Array<User>>> {
+            const localVarAxiosArgs = await localVarAxiosParamCreator.userRestore(bulkOperationRequest, options);
             const localVarOperationServerIndex = configuration?.serverIndex ?? 0;
             const localVarOperationServerBasePath = operationServerMap['UsersApi.userRestore']?.[localVarOperationServerIndex]?.url;
             return (axios, basePath) => createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration)(axios, localVarOperationServerBasePath || basePath);
@@ -20816,19 +20919,6 @@ export const UsersApiFp = function(configuration?: Configuration) {
             return (axios, basePath) => createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration)(axios, localVarOperationServerBasePath || basePath);
         },
         /**
-         * Verify if a username is available and unique in the system
-         * @summary Check username uniqueness
-         * @param {UserUniqueUsernameRequest} userUniqueUsernameRequest 
-         * @param {*} [options] Override http request option.
-         * @throws {RequiredError}
-         */
-        async userUniqueUsername(userUniqueUsernameRequest: UserUniqueUsernameRequest, options?: RawAxiosRequestConfig): Promise<(axios?: AxiosInstance, basePath?: string) => AxiosPromise<UserUniqueUsername200Response>> {
-            const localVarAxiosArgs = await localVarAxiosParamCreator.userUniqueUsername(userUniqueUsernameRequest, options);
-            const localVarOperationServerIndex = configuration?.serverIndex ?? 0;
-            const localVarOperationServerBasePath = operationServerMap['UsersApi.userUniqueUsername']?.[localVarOperationServerIndex]?.url;
-            return (axios, basePath) => createRequestFunction(localVarAxiosArgs, globalAxios, BASE_PATH, configuration)(axios, localVarOperationServerBasePath || basePath);
-        },
-        /**
          * Unpublish the specified user, removing them from public visibility while preserving the content
          * @summary Unpublish user
          * @param {string} id Document ID (can include mode and locale, e.g., id:en:published)
@@ -20857,7 +20947,7 @@ export const UsersApiFactory = function (configuration?: Configuration, basePath
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        userArchive(options?: RawAxiosRequestConfig): AxiosPromise<Array<User>> {
+        userArchive(options?: RawAxiosRequestConfig): AxiosPromise<PageArchive200Response> {
             return localVarFp.userArchive(options).then((request) => request(axios, basePath));
         },
         /**
@@ -20929,14 +21019,11 @@ export const UsersApiFactory = function (configuration?: Configuration, basePath
         /**
          * Retrieve a list of users with optional filtering, sorting, and pagination
          * @summary List users
-         * @param {UserListAposModeEnum} [aposMode] Request draft or published version of content
-         * @param {string} [aposLocale] Locale for internationalization (e.g., \&#39;en\&#39;, \&#39;fr\&#39;, \&#39;es\&#39;)
-         * @param {boolean} [renderAreas] 💡 Render widget areas as HTML instead of returning raw widget data - useful for hybrid architectures
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        userList(aposMode?: UserListAposModeEnum, aposLocale?: string, renderAreas?: boolean, options?: RawAxiosRequestConfig): AxiosPromise<UserList200Response> {
-            return localVarFp.userList(aposMode, aposLocale, renderAreas, options).then((request) => request(axios, basePath));
+        userList(options?: RawAxiosRequestConfig): AxiosPromise<UserList200Response> {
+            return localVarFp.userList(options).then((request) => request(axios, basePath));
         },
         /**
          * Create or update localized versions of users for different languages/regions
@@ -21005,11 +21092,12 @@ export const UsersApiFactory = function (configuration?: Configuration, basePath
         /**
          * Restore previously archived users, making them active again
          * @summary Restore users
+         * @param {BulkOperationRequest} bulkOperationRequest 
          * @param {*} [options] Override http request option.
          * @throws {RequiredError}
          */
-        userRestore(options?: RawAxiosRequestConfig): AxiosPromise<Array<User>> {
-            return localVarFp.userRestore(options).then((request) => request(axios, basePath));
+        userRestore(bulkOperationRequest: BulkOperationRequest, options?: RawAxiosRequestConfig): AxiosPromise<Array<User>> {
+            return localVarFp.userRestore(bulkOperationRequest, options).then((request) => request(axios, basePath));
         },
         /**
          * Revert the draft version of the specified user back to its published state
@@ -21050,16 +21138,6 @@ export const UsersApiFactory = function (configuration?: Configuration, basePath
          */
         userSubmitById(id: string, options?: RawAxiosRequestConfig): AxiosPromise<User> {
             return localVarFp.userSubmitById(id, options).then((request) => request(axios, basePath));
-        },
-        /**
-         * Verify if a username is available and unique in the system
-         * @summary Check username uniqueness
-         * @param {UserUniqueUsernameRequest} userUniqueUsernameRequest 
-         * @param {*} [options] Override http request option.
-         * @throws {RequiredError}
-         */
-        userUniqueUsername(userUniqueUsernameRequest: UserUniqueUsernameRequest, options?: RawAxiosRequestConfig): AxiosPromise<UserUniqueUsername200Response> {
-            return localVarFp.userUniqueUsername(userUniqueUsernameRequest, options).then((request) => request(axios, basePath));
         },
         /**
          * Unpublish the specified user, removing them from public visibility while preserving the content
@@ -21173,15 +21251,12 @@ export class UsersApi extends BaseAPI {
     /**
      * Retrieve a list of users with optional filtering, sorting, and pagination
      * @summary List users
-     * @param {UserListAposModeEnum} [aposMode] Request draft or published version of content
-     * @param {string} [aposLocale] Locale for internationalization (e.g., \&#39;en\&#39;, \&#39;fr\&#39;, \&#39;es\&#39;)
-     * @param {boolean} [renderAreas] 💡 Render widget areas as HTML instead of returning raw widget data - useful for hybrid architectures
      * @param {*} [options] Override http request option.
      * @throws {RequiredError}
      * @memberof UsersApi
      */
-    public userList(aposMode?: UserListAposModeEnum, aposLocale?: string, renderAreas?: boolean, options?: RawAxiosRequestConfig) {
-        return UsersApiFp(this.configuration).userList(aposMode, aposLocale, renderAreas, options).then((request) => request(this.axios, this.basePath));
+    public userList(options?: RawAxiosRequestConfig) {
+        return UsersApiFp(this.configuration).userList(options).then((request) => request(this.axios, this.basePath));
     }
 
     /**
@@ -21263,12 +21338,13 @@ export class UsersApi extends BaseAPI {
     /**
      * Restore previously archived users, making them active again
      * @summary Restore users
+     * @param {BulkOperationRequest} bulkOperationRequest 
      * @param {*} [options] Override http request option.
      * @throws {RequiredError}
      * @memberof UsersApi
      */
-    public userRestore(options?: RawAxiosRequestConfig) {
-        return UsersApiFp(this.configuration).userRestore(options).then((request) => request(this.axios, this.basePath));
+    public userRestore(bulkOperationRequest: BulkOperationRequest, options?: RawAxiosRequestConfig) {
+        return UsersApiFp(this.configuration).userRestore(bulkOperationRequest, options).then((request) => request(this.axios, this.basePath));
     }
 
     /**
@@ -21320,18 +21396,6 @@ export class UsersApi extends BaseAPI {
     }
 
     /**
-     * Verify if a username is available and unique in the system
-     * @summary Check username uniqueness
-     * @param {UserUniqueUsernameRequest} userUniqueUsernameRequest 
-     * @param {*} [options] Override http request option.
-     * @throws {RequiredError}
-     * @memberof UsersApi
-     */
-    public userUniqueUsername(userUniqueUsernameRequest: UserUniqueUsernameRequest, options?: RawAxiosRequestConfig) {
-        return UsersApiFp(this.configuration).userUniqueUsername(userUniqueUsernameRequest, options).then((request) => request(this.axios, this.basePath));
-    }
-
-    /**
      * Unpublish the specified user, removing them from public visibility while preserving the content
      * @summary Unpublish user
      * @param {string} id Document ID (can include mode and locale, e.g., id:en:published)
@@ -21360,14 +21424,6 @@ export const UserGetByIdAposModeEnum = {
     Published: 'published'
 } as const;
 export type UserGetByIdAposModeEnum = typeof UserGetByIdAposModeEnum[keyof typeof UserGetByIdAposModeEnum];
-/**
- * @export
- */
-export const UserListAposModeEnum = {
-    Draft: 'draft',
-    Published: 'published'
-} as const;
-export type UserListAposModeEnum = typeof UserListAposModeEnum[keyof typeof UserListAposModeEnum];
 /**
  * @export
  */

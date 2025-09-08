@@ -17,7 +17,7 @@ Name | Type | Description | Notes
 **requiredIf** | [**UiCondition**](UiCondition.md) |  | [optional] [default to undefined]
 **min** | **number** | Minimum value for the slider. | [optional] [default to undefined]
 **max** | **number** | Maximum value for the slider. | [optional] [default to undefined]
-**step** | **number** | Increment step for the slider. If omitted, defaults to 1.  | [optional] [default to undefined]
+**step** | **number** | Increment step for the slider. If omitted, defaults to 1. | [optional] [default to undefined]
 
 ## Example
 

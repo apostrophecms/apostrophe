@@ -15,8 +15,8 @@ Name | Type | Description | Notes
 **hidden** | **boolean** | If true, hide in editor UI. | [optional] [default to undefined]
 **_if** | [**UiCondition**](UiCondition.md) |  | [optional] [default to undefined]
 **requiredIf** | [**UiCondition**](UiCondition.md) |  | [optional] [default to undefined]
-**pattern** | **string** | Optional regex for stricter validation (in addition to HTML5 email validation).  | [optional] [default to undefined]
-**autocomplete** | **string** | Value for the HTML autocomplete attribute. Common values are \&quot;email\&quot; or \&quot;off\&quot;.  | [optional] [default to undefined]
+**pattern** | **string** | Optional regex for stricter validation (in addition to HTML5 email validation). | [optional] [default to undefined]
+**autocomplete** | **string** | Value for the HTML autocomplete attribute. Common values are \&quot;email\&quot; or \&quot;off\&quot;. | [optional] [default to undefined]
 
 ## Example
 

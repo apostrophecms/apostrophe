@@ -23,11 +23,10 @@ All URIs are relative to *http://localhost:3000/api/v1*
 |[**userRevertPublishedToPreviousById**](#userrevertpublishedtopreviousbyid) | **POST** /@apostrophecms/user/{_id}/revert-published-to-previous | Revert published to previous|
 |[**userShareById**](#usersharebyid) | **POST** /@apostrophecms/user/{_id}/share | Share user|
 |[**userSubmitById**](#usersubmitbyid) | **POST** /@apostrophecms/user/{_id}/submit | Submit user|
-|[**userUniqueUsername**](#useruniqueusername) | **POST** /@apostrophecms/user/unique-username | Check username uniqueness|
 |[**userUnpublishById**](#userunpublishbyid) | **POST** /@apostrophecms/user/{_id}/unpublish | Unpublish user|
 
 # **userArchive**
-> Array<User> userArchive()
+> PageArchive200Response userArchive()
 
 Archive multiple users, making them inactive while preserving their data
 
@@ -51,7 +50,7 @@ This endpoint does not have any parameters.
 
 ### Return type
 
-**Array<User>**
+**PageArchive200Response**
 
 ### Authorization
 
@@ -66,7 +65,7 @@ This endpoint does not have any parameters.
 ### HTTP response details
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
-|**200** | Users archived successfully |  -  |
+|**200** | Archive job started successfully |  -  |
 |**400** | Bad request - invalid input parameters |  -  |
 |**401** | Authentication required |  -  |
 |**403** | Access forbidden - insufficient permissions |  -  |
@@ -128,7 +127,7 @@ const { status, data } = await apiInstance.userCreate(
 ### HTTP response details
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
-|**201** | User created successfully |  -  |
+|**200** | User created successfully |  -  |
 |**400** | Bad request - invalid input parameters |  -  |
 |**401** | Authentication required |  -  |
 |**403** | Access forbidden - insufficient permissions |  -  |
@@ -444,24 +443,11 @@ import {
 const configuration = new Configuration();
 const apiInstance = new UsersApi(configuration);
 
-let aposMode: 'draft' | 'published'; //Request draft or published version of content (optional) (default to 'published')
-let aposLocale: string; //Locale for internationalization (e.g., \'en\', \'fr\', \'es\') (optional) (default to undefined)
-let renderAreas: boolean; //💡 Render widget areas as HTML instead of returning raw widget data - useful for hybrid architectures (optional) (default to false)
-
-const { status, data } = await apiInstance.userList(
-    aposMode,
-    aposLocale,
-    renderAreas
-);
+const { status, data } = await apiInstance.userList();
 ```
 
 ### Parameters
-
-|Name | Type | Description  | Notes|
-|------------- | ------------- | ------------- | -------------|
-| **aposMode** | [**&#39;draft&#39; | &#39;published&#39;**]**Array<&#39;draft&#39; &#124; &#39;published&#39;>** | Request draft or published version of content | (optional) defaults to 'published'|
-| **aposLocale** | [**string**] | Locale for internationalization (e.g., \&#39;en\&#39;, \&#39;fr\&#39;, \&#39;es\&#39;) | (optional) defaults to undefined|
-| **renderAreas** | [**boolean**] | 💡 Render widget areas as HTML instead of returning raw widget data - useful for hybrid architectures | (optional) defaults to false|
+This endpoint does not have any parameters.
 
 
 ### Return type
@@ -828,7 +814,7 @@ const { status, data } = await apiInstance.userPutById(
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
 # **userRestore**
-> Array<User> userRestore()
+> Array<User> userRestore(bulkOperationRequest)
 
 Restore previously archived users, making them active again
 
@@ -837,17 +823,25 @@ Restore previously archived users, making them active again
 ```typescript
 import {
     UsersApi,
-    Configuration
+    Configuration,
+    BulkOperationRequest
 } from 'apostrophecms-client';
 
 const configuration = new Configuration();
 const apiInstance = new UsersApi(configuration);
 
-const { status, data } = await apiInstance.userRestore();
+let bulkOperationRequest: BulkOperationRequest; //
+
+const { status, data } = await apiInstance.userRestore(
+    bulkOperationRequest
+);
 ```
 
 ### Parameters
-This endpoint does not have any parameters.
+
+|Name | Type | Description  | Notes|
+|------------- | ------------- | ------------- | -------------|
+| **bulkOperationRequest** | **BulkOperationRequest**|  | |
 
 
 ### Return type
@@ -860,7 +854,7 @@ This endpoint does not have any parameters.
 
 ### HTTP request headers
 
- - **Content-Type**: Not defined
+ - **Content-Type**: application/json
  - **Accept**: application/json
 
 
@@ -1095,61 +1089,6 @@ const { status, data } = await apiInstance.userSubmitById(
 |**401** | Authentication required |  -  |
 |**403** | Access forbidden - insufficient permissions |  -  |
 |**404** | Resource not found |  -  |
-|**500** | Internal server error |  -  |
-
-[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
-
-# **userUniqueUsername**
-> UserUniqueUsername200Response userUniqueUsername(userUniqueUsernameRequest)
-
-Verify if a username is available and unique in the system
-
-### Example
-
-```typescript
-import {
-    UsersApi,
-    Configuration,
-    UserUniqueUsernameRequest
-} from 'apostrophecms-client';
-
-const configuration = new Configuration();
-const apiInstance = new UsersApi(configuration);
-
-let userUniqueUsernameRequest: UserUniqueUsernameRequest; //
-
-const { status, data } = await apiInstance.userUniqueUsername(
-    userUniqueUsernameRequest
-);
-```
-
-### Parameters
-
-|Name | Type | Description  | Notes|
-|------------- | ------------- | ------------- | -------------|
-| **userUniqueUsernameRequest** | **UserUniqueUsernameRequest**|  | |
-
-
-### Return type
-
-**UserUniqueUsername200Response**
-
-### Authorization
-
-[SessionAuth](../README.md#SessionAuth), [ApiKeyAuth](../README.md#ApiKeyAuth), [BearerAuth](../README.md#BearerAuth)
-
-### HTTP request headers
-
- - **Content-Type**: application/json
- - **Accept**: application/json
-
-
-### HTTP response details
-| Status code | Description | Response headers |
-|-------------|-------------|------------------|
-|**200** | Username uniqueness check completed |  -  |
-|**400** | Bad request - invalid input parameters |  -  |
-|**401** | Authentication required |  -  |
 |**500** | Internal server error |  -  |
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)

@@ -1,6 +1,6 @@
 # SelectFieldAllOfFollowing
 
-Populate dynamically based on other fields’ values (supports `<` parent prefixes). 
+Populate dynamically based on other fields’ values (supports `<` parent prefixes).
 
 ## Properties
 

@@ -1,18 +1,19 @@
-# CheckboxesFieldAllOfFollowing
+# PageArchive200Response
 
-Populate dynamically based on other fields (supports `<` parent prefixes).
 
 ## Properties
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
+**jobId** | **string** | ID of the background job processing the archive operation | [default to undefined]
 
 ## Example
 
 ```typescript
-import { CheckboxesFieldAllOfFollowing } from 'apostrophecms-client';
+import { PageArchive200Response } from 'apostrophecms-client';
 
-const instance: CheckboxesFieldAllOfFollowing = {
+const instance: PageArchive200Response = {
+    jobId,
 };
 ```
 

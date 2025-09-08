@@ -42,7 +42,7 @@ This endpoint does not have any parameters.
 
 ### Authorization
 
-No authorization required
+[SessionAuth](../README.md#SessionAuth), [ApiKeyAuth](../README.md#ApiKeyAuth), [BearerAuth](../README.md#BearerAuth)
 
 ### HTTP request headers
 
@@ -60,7 +60,7 @@ No authorization required
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
 # **authContextPost**
-> AuthContext200Response authContextPost()
+> AuthContextPost200Response authContextPost()
 
 Returns login context information including environment and requirements. This endpoint provides information about the login system configuration.  **Note:** POST method is recommended for this endpoint to avoid caching issues.  **Useful for:** - Understanding available login methods - Checking if password reset is enabled - Getting login system configuration 
 
@@ -84,11 +84,11 @@ This endpoint does not have any parameters.
 
 ### Return type
 
-**AuthContext200Response**
+**AuthContextPost200Response**
 
 ### Authorization
 
-No authorization required
+[SessionAuth](../README.md#SessionAuth), [ApiKeyAuth](../README.md#ApiKeyAuth), [BearerAuth](../README.md#BearerAuth)
 
 ### HTTP request headers
 

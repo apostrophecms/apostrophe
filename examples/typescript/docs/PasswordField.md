@@ -17,8 +17,8 @@ Name | Type | Description | Notes
 **requiredIf** | [**UiCondition**](UiCondition.md) |  | [optional] [default to undefined]
 **min** | **number** | Minimum number of characters required. | [optional] [default to undefined]
 **max** | **number** | Maximum number of characters allowed. | [optional] [default to undefined]
-**pattern** | **string** | Regex to enforce password rules (e.g., at least one number).  | [optional] [default to undefined]
-**autocomplete** | **string** | HTML autocomplete attribute, usually \&quot;new-password\&quot; or \&quot;current-password\&quot;.  | [optional] [default to undefined]
+**pattern** | **string** | Regex to enforce password rules (e.g., at least one number). | [optional] [default to undefined]
+**autocomplete** | **string** | HTML autocomplete attribute, usually \&quot;new-password\&quot; or \&quot;current-password\&quot;. | [optional] [default to undefined]
 
 ## Example
 

@@ -1,6 +1,6 @@
 # SelectFieldAllOfFollowingIgnore
 
-Ignore some or all followed fields when generating values. 
+Ignore some or all followed fields when generating values.
 
 ## Properties
 

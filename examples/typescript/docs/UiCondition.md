@@ -1,6 +1,6 @@
 # UiCondition
 
-Apostrophe conditional used by `if` and `requiredIf`. Keys are field paths (including `<` parent access and dot notation) or method calls with `()`. Values are either simple equality (primitive) or an operator object. Supports `$or` / `$and` groups. See OperatorObject. 
+\'Apostrophe conditional used by `if` and `requiredIf`. Keys are field paths (including `<` parent access and dot notation) or method calls with `()`. Values are either simple equality (primitive) or an operator object. Supports `$or` / `$and` groups. See OperatorObject. 
 
 ## Properties
 

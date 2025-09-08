@@ -1,18 +1,19 @@
-# CheckboxesFieldAllOfFollowing
+# PageLocalesResponse
 
-Populate dynamically based on other fields (supports `<` parent prefixes).
 
 ## Properties
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
+**results** | [**Array&lt;PageLocaleResult&gt;**](PageLocaleResult.md) |  | [default to undefined]
 
 ## Example
 
 ```typescript
-import { CheckboxesFieldAllOfFollowing } from 'apostrophecms-client';
+import { PageLocalesResponse } from 'apostrophecms-client';
 
-const instance: CheckboxesFieldAllOfFollowing = {
+const instance: PageLocalesResponse = {
+    results,
 };
 ```
 

@@ -9,7 +9,7 @@ Name | Type | Description | Notes
 **label** | **string** | Human-readable label for editors. | [default to undefined]
 **help** | **string** | Short helper text shown in the UI. | [optional] [default to undefined]
 **htmlHelp** | **string** | Rich helper text (HTML allowed by Apostrophe). | [optional] [default to undefined]
-**def** | **string** | Default timestamp in RFC 3339 format (e.g., 2025-08-29T13:00:00Z).  | [optional] [default to undefined]
+**def** | **string** | Default timestamp in RFC 3339 format (e.g., 2025-08-29T13:00:00Z). | [optional] [default to undefined]
 **required** | **boolean** | If true, value must be provided. | [optional] [default to undefined]
 **readOnly** | **boolean** | If true, UI should render as read-only (Apostrophe option). | [optional] [default to undefined]
 **hidden** | **boolean** | If true, hide in editor UI. | [optional] [default to undefined]

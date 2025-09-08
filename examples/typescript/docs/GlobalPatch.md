@@ -1,12 +1,11 @@
-# Global
+# GlobalPatch
 
-\'Built-in global content piece type for site-wide settings.  💡 Developers can add custom fields to the global piece type in their project configuration. 
+Allows for patching of costom user added fields. It blocks the modification of the title, slu, and type fields. 
 
 ## Properties
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**_id** | **string** | Unique identifier | [optional] [default to undefined]
 **title** | **string** | Default title field | [optional] [readonly] [default to undefined]
 **slug** | **string** | Default slug field | [optional] [readonly] [default to undefined]
 **type** | **string** |  | [optional] [readonly] [default to undefined]
@@ -14,10 +13,9 @@ Name | Type | Description | Notes
 ## Example
 
 ```typescript
-import { Global } from 'apostrophecms-client';
+import { GlobalPatch } from 'apostrophecms-client';
 
-const instance: Global = {
-    _id,
+const instance: GlobalPatch = {
     title,
     slug,
     type,

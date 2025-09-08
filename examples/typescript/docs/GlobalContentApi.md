@@ -26,7 +26,7 @@ All URIs are relative to *http://localhost:3000/api/v1*
 |[**globalUnpublishById**](#globalunpublishbyid) | **POST** /@apostrophecms/global/{_id}/unpublish | Unpublish global document|
 
 # **globalArchive**
-> Global globalArchive()
+> PageArchive200Response globalArchive(bulkOperationRequest)
 
 Archive the global document, making it inactive while preserving its data
 
@@ -35,37 +35,45 @@ Archive the global document, making it inactive while preserving its data
 ```typescript
 import {
     GlobalContentApi,
-    Configuration
+    Configuration,
+    BulkOperationRequest
 } from 'apostrophecms-client';
 
 const configuration = new Configuration();
 const apiInstance = new GlobalContentApi(configuration);
 
-const { status, data } = await apiInstance.globalArchive();
+let bulkOperationRequest: BulkOperationRequest; //
+
+const { status, data } = await apiInstance.globalArchive(
+    bulkOperationRequest
+);
 ```
 
 ### Parameters
-This endpoint does not have any parameters.
+
+|Name | Type | Description  | Notes|
+|------------- | ------------- | ------------- | -------------|
+| **bulkOperationRequest** | **BulkOperationRequest**|  | |
 
 
 ### Return type
 
-**Global**
+**PageArchive200Response**
 
 ### Authorization
 
-[SessionAuth](../README.md#SessionAuth)
+[SessionAuth](../README.md#SessionAuth), [ApiKeyAuth](../README.md#ApiKeyAuth), [BearerAuth](../README.md#BearerAuth)
 
 ### HTTP request headers
 
- - **Content-Type**: Not defined
+ - **Content-Type**: application/json
  - **Accept**: application/json
 
 
 ### HTTP response details
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
-|**200** | Global archived successfully |  -  |
+|**200** | Archive job started successfully |  -  |
 |**400** | Bad request - invalid input parameters |  -  |
 |**401** | Authentication required |  -  |
 |**403** | Access forbidden - insufficient permissions |  -  |
@@ -109,7 +117,7 @@ const { status, data } = await apiInstance.globalDeleteById(
 
 ### Authorization
 
-[SessionAuth](../README.md#SessionAuth)
+[SessionAuth](../README.md#SessionAuth), [ApiKeyAuth](../README.md#ApiKeyAuth), [BearerAuth](../README.md#BearerAuth)
 
 ### HTTP request headers
 
@@ -165,7 +173,7 @@ const { status, data } = await apiInstance.globalDismissSubmissionById(
 
 ### Authorization
 
-[SessionAuth](../README.md#SessionAuth)
+[SessionAuth](../README.md#SessionAuth), [ApiKeyAuth](../README.md#ApiKeyAuth), [BearerAuth](../README.md#BearerAuth)
 
 ### HTTP request headers
 
@@ -186,7 +194,7 @@ const { status, data } = await apiInstance.globalDismissSubmissionById(
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
 # **globalGet**
-> Global globalGet()
+> GlobalGet200Response globalGet()
 
 Retrieve global site configuration and content that appears across all pages
 
@@ -203,12 +211,10 @@ const apiInstance = new GlobalContentApi(configuration);
 
 let aposMode: 'draft' | 'published'; //Request draft or published version of content (optional) (default to 'published')
 let aposLocale: string; //Locale for internationalization (e.g., \'en\', \'fr\', \'es\') (optional) (default to undefined)
-let renderAreas: boolean; //💡 Render widget areas as HTML instead of returning raw widget data - useful for hybrid architectures (optional) (default to false)
 
 const { status, data } = await apiInstance.globalGet(
     aposMode,
-    aposLocale,
-    renderAreas
+    aposLocale
 );
 ```
 
@@ -218,12 +224,11 @@ const { status, data } = await apiInstance.globalGet(
 |------------- | ------------- | ------------- | -------------|
 | **aposMode** | [**&#39;draft&#39; | &#39;published&#39;**]**Array<&#39;draft&#39; &#124; &#39;published&#39;>** | Request draft or published version of content | (optional) defaults to 'published'|
 | **aposLocale** | [**string**] | Locale for internationalization (e.g., \&#39;en\&#39;, \&#39;fr\&#39;, \&#39;es\&#39;) | (optional) defaults to undefined|
-| **renderAreas** | [**boolean**] | 💡 Render widget areas as HTML instead of returning raw widget data - useful for hybrid architectures | (optional) defaults to false|
 
 
 ### Return type
 
-**Global**
+**GlobalGet200Response**
 
 ### Authorization
 
@@ -280,7 +285,7 @@ const { status, data } = await apiInstance.globalGetById(
 
 ### Authorization
 
-[SessionAuth](../README.md#SessionAuth)
+[SessionAuth](../README.md#SessionAuth), [ApiKeyAuth](../README.md#ApiKeyAuth), [BearerAuth](../README.md#BearerAuth)
 
 ### HTTP request headers
 
@@ -339,7 +344,7 @@ const { status, data } = await apiInstance.globalGetLocaleById(
 
 ### Authorization
 
-[SessionAuth](../README.md#SessionAuth)
+[SessionAuth](../README.md#SessionAuth), [ApiKeyAuth](../README.md#ApiKeyAuth), [BearerAuth](../README.md#BearerAuth)
 
 ### HTTP request headers
 
@@ -395,7 +400,7 @@ const { status, data } = await apiInstance.globalGetLocalesById(
 
 ### Authorization
 
-[SessionAuth](../README.md#SessionAuth)
+[SessionAuth](../README.md#SessionAuth), [ApiKeyAuth](../README.md#ApiKeyAuth), [BearerAuth](../README.md#BearerAuth)
 
 ### HTTP request headers
 
@@ -444,7 +449,7 @@ This endpoint does not have any parameters.
 
 ### Authorization
 
-[SessionAuth](../README.md#SessionAuth)
+[SessionAuth](../README.md#SessionAuth), [ApiKeyAuth](../README.md#ApiKeyAuth), [BearerAuth](../README.md#BearerAuth)
 
 ### HTTP request headers
 
@@ -499,7 +504,7 @@ const { status, data } = await apiInstance.globalLocalizeById(
 
 ### Authorization
 
-[SessionAuth](../README.md#SessionAuth)
+[SessionAuth](../README.md#SessionAuth), [ApiKeyAuth](../README.md#ApiKeyAuth), [BearerAuth](../README.md#BearerAuth)
 
 ### HTTP request headers
 
@@ -520,25 +525,32 @@ const { status, data } = await apiInstance.globalLocalizeById(
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
 # **globalPatchById**
-> Global globalPatchById()
+> Global globalPatchById(globalPatch)
 
-Partially update a specific global document by ID using PATCH semantics
+Partially update a specific global document by ID using PATCH semantics. Writes must target the draft mode. 
 
 ### Example
 
 ```typescript
 import {
     GlobalContentApi,
-    Configuration
+    Configuration,
+    GlobalPatch
 } from 'apostrophecms-client';
 
 const configuration = new Configuration();
 const apiInstance = new GlobalContentApi(configuration);
 
 let id: string; //Document ID (can include mode and locale, e.g., id:en:published) (default to undefined)
+let globalPatch: GlobalPatch; //
+let aposMode: 'draft' | 'published'; //Request draft or published version of content (optional) (default to 'published')
+let aposLocale: string; //Locale for internationalization (e.g., \'en\', \'fr\', \'es\') (optional) (default to undefined)
 
 const { status, data } = await apiInstance.globalPatchById(
-    id
+    id,
+    globalPatch,
+    aposMode,
+    aposLocale
 );
 ```
 
@@ -546,7 +558,10 @@ const { status, data } = await apiInstance.globalPatchById(
 
 |Name | Type | Description  | Notes|
 |------------- | ------------- | ------------- | -------------|
+| **globalPatch** | **GlobalPatch**|  | |
 | **id** | [**string**] | Document ID (can include mode and locale, e.g., id:en:published) | defaults to undefined|
+| **aposMode** | [**&#39;draft&#39; | &#39;published&#39;**]**Array<&#39;draft&#39; &#124; &#39;published&#39;>** | Request draft or published version of content | (optional) defaults to 'published'|
+| **aposLocale** | [**string**] | Locale for internationalization (e.g., \&#39;en\&#39;, \&#39;fr\&#39;, \&#39;es\&#39;) | (optional) defaults to undefined|
 
 
 ### Return type
@@ -555,11 +570,11 @@ const { status, data } = await apiInstance.globalPatchById(
 
 ### Authorization
 
-[SessionAuth](../README.md#SessionAuth)
+[SessionAuth](../README.md#SessionAuth), [ApiKeyAuth](../README.md#ApiKeyAuth), [BearerAuth](../README.md#BearerAuth)
 
 ### HTTP request headers
 
- - **Content-Type**: Not defined
+ - **Content-Type**: application/json
  - **Accept**: application/json
 
 
@@ -666,7 +681,7 @@ This endpoint does not have any parameters.
 
 ### Authorization
 
-[SessionAuth](../README.md#SessionAuth)
+[SessionAuth](../README.md#SessionAuth), [ApiKeyAuth](../README.md#ApiKeyAuth), [BearerAuth](../README.md#BearerAuth)
 
 ### HTTP request headers
 
@@ -721,7 +736,7 @@ const { status, data } = await apiInstance.globalPublishById(
 
 ### Authorization
 
-[SessionAuth](../README.md#SessionAuth)
+[SessionAuth](../README.md#SessionAuth), [ApiKeyAuth](../README.md#ApiKeyAuth), [BearerAuth](../README.md#BearerAuth)
 
 ### HTTP request headers
 
@@ -777,7 +792,7 @@ const { status, data } = await apiInstance.globalPutById(
 
 ### Authorization
 
-[SessionAuth](../README.md#SessionAuth)
+[SessionAuth](../README.md#SessionAuth), [ApiKeyAuth](../README.md#ApiKeyAuth), [BearerAuth](../README.md#BearerAuth)
 
 ### HTTP request headers
 
@@ -798,7 +813,7 @@ const { status, data } = await apiInstance.globalPutById(
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
 # **globalRestore**
-> Global globalRestore()
+> Global globalRestore(bulkOperationRequest)
 
 Restore a previously archived global document, making it active again
 
@@ -807,17 +822,25 @@ Restore a previously archived global document, making it active again
 ```typescript
 import {
     GlobalContentApi,
-    Configuration
+    Configuration,
+    BulkOperationRequest
 } from 'apostrophecms-client';
 
 const configuration = new Configuration();
 const apiInstance = new GlobalContentApi(configuration);
 
-const { status, data } = await apiInstance.globalRestore();
+let bulkOperationRequest: BulkOperationRequest; //
+
+const { status, data } = await apiInstance.globalRestore(
+    bulkOperationRequest
+);
 ```
 
 ### Parameters
-This endpoint does not have any parameters.
+
+|Name | Type | Description  | Notes|
+|------------- | ------------- | ------------- | -------------|
+| **bulkOperationRequest** | **BulkOperationRequest**|  | |
 
 
 ### Return type
@@ -826,11 +849,11 @@ This endpoint does not have any parameters.
 
 ### Authorization
 
-[SessionAuth](../README.md#SessionAuth)
+[SessionAuth](../README.md#SessionAuth), [ApiKeyAuth](../README.md#ApiKeyAuth), [BearerAuth](../README.md#BearerAuth)
 
 ### HTTP request headers
 
- - **Content-Type**: Not defined
+ - **Content-Type**: application/json
  - **Accept**: application/json
 
 
@@ -881,7 +904,7 @@ const { status, data } = await apiInstance.globalRevertDraftToPublishedById(
 
 ### Authorization
 
-[SessionAuth](../README.md#SessionAuth)
+[SessionAuth](../README.md#SessionAuth), [ApiKeyAuth](../README.md#ApiKeyAuth), [BearerAuth](../README.md#BearerAuth)
 
 ### HTTP request headers
 
@@ -937,7 +960,7 @@ const { status, data } = await apiInstance.globalRevertPublishedToPreviousById(
 
 ### Authorization
 
-[SessionAuth](../README.md#SessionAuth)
+[SessionAuth](../README.md#SessionAuth), [ApiKeyAuth](../README.md#ApiKeyAuth), [BearerAuth](../README.md#BearerAuth)
 
 ### HTTP request headers
 
@@ -993,7 +1016,7 @@ const { status, data } = await apiInstance.globalShareById(
 
 ### Authorization
 
-[SessionAuth](../README.md#SessionAuth)
+[SessionAuth](../README.md#SessionAuth), [ApiKeyAuth](../README.md#ApiKeyAuth), [BearerAuth](../README.md#BearerAuth)
 
 ### HTTP request headers
 
@@ -1049,7 +1072,7 @@ const { status, data } = await apiInstance.globalSubmitById(
 
 ### Authorization
 
-[SessionAuth](../README.md#SessionAuth)
+[SessionAuth](../README.md#SessionAuth), [ApiKeyAuth](../README.md#ApiKeyAuth), [BearerAuth](../README.md#BearerAuth)
 
 ### HTTP request headers
 
@@ -1105,7 +1128,7 @@ const { status, data } = await apiInstance.globalUnpublishById(
 
 ### Authorization
 
-[SessionAuth](../README.md#SessionAuth)
+[SessionAuth](../README.md#SessionAuth), [ApiKeyAuth](../README.md#ApiKeyAuth), [BearerAuth](../README.md#BearerAuth)
 
 ### HTTP request headers
 

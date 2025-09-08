@@ -15,8 +15,8 @@ Name | Type | Description | Notes
 **hidden** | **boolean** | If true, hide in editor UI. | [optional] [default to undefined]
 **_if** | [**UiCondition**](UiCondition.md) |  | [optional] [default to undefined]
 **requiredIf** | [**UiCondition**](UiCondition.md) |  | [optional] [default to undefined]
-**pattern** | **string** | Optional regex for stricter validation of allowed URLs (in addition to standard URI syntax).  | [optional] [default to undefined]
-**autocomplete** | **string** | Value for the HTML autocomplete attribute. Common values include \&quot;url\&quot; or \&quot;off\&quot;.  | [optional] [default to undefined]
+**pattern** | **string** | Optional regex for stricter validation of allowed URLs (in addition to standard URI syntax). | [optional] [default to undefined]
+**autocomplete** | **string** | Value for the HTML autocomplete attribute. Common values include \&quot;url\&quot; or \&quot;off\&quot;. | [optional] [default to undefined]
 
 ## Example
 

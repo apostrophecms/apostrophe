@@ -89,7 +89,7 @@ All URIs are relative to *http://localhost:3000/api/v1*
 |[**imageUnpublishById**](#imageunpublishbyid) | **POST** /@apostrophecms/image/{_id}/unpublish | Unpublish image document|
 
 # **fileArchive**
-> Array<FileObject> fileArchive()
+> PageArchive200Response fileArchive(bulkOperationRequest)
 
 Archive multiple files, making them inactive while preserving their data
 
@@ -98,22 +98,30 @@ Archive multiple files, making them inactive while preserving their data
 ```typescript
 import {
     MediaApi,
-    Configuration
+    Configuration,
+    BulkOperationRequest
 } from 'apostrophecms-client';
 
 const configuration = new Configuration();
 const apiInstance = new MediaApi(configuration);
 
-const { status, data } = await apiInstance.fileArchive();
+let bulkOperationRequest: BulkOperationRequest; //
+
+const { status, data } = await apiInstance.fileArchive(
+    bulkOperationRequest
+);
 ```
 
 ### Parameters
-This endpoint does not have any parameters.
+
+|Name | Type | Description  | Notes|
+|------------- | ------------- | ------------- | -------------|
+| **bulkOperationRequest** | **BulkOperationRequest**|  | |
 
 
 ### Return type
 
-**Array<FileObject>**
+**PageArchive200Response**
 
 ### Authorization
 
@@ -121,14 +129,14 @@ This endpoint does not have any parameters.
 
 ### HTTP request headers
 
- - **Content-Type**: Not defined
+ - **Content-Type**: application/json
  - **Accept**: application/json
 
 
 ### HTTP response details
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
-|**200** | Files archived successfully |  -  |
+|**200** | Archive job started successfully |  -  |
 |**400** | Bad request - invalid input parameters |  -  |
 |**401** | Authentication required |  -  |
 |**403** | Access forbidden - insufficient permissions |  -  |
@@ -728,7 +736,7 @@ const { status, data } = await apiInstance.filePost(
 ### HTTP response details
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
-|**201** | File created successfully |  -  |
+|**200** | File created successfully |  -  |
 |**400** | Bad request - invalid input parameters |  -  |
 |**401** | Authentication required |  -  |
 |**403** | Access forbidden - insufficient permissions |  -  |
@@ -907,7 +915,7 @@ const { status, data } = await apiInstance.filePutById(
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
 # **fileRestore**
-> Array<FileObject> fileRestore()
+> Array<FileObject> fileRestore(bulkOperationRequest)
 
 Restore previously archived files, making them active again
 
@@ -916,17 +924,25 @@ Restore previously archived files, making them active again
 ```typescript
 import {
     MediaApi,
-    Configuration
+    Configuration,
+    BulkOperationRequest
 } from 'apostrophecms-client';
 
 const configuration = new Configuration();
 const apiInstance = new MediaApi(configuration);
 
-const { status, data } = await apiInstance.fileRestore();
+let bulkOperationRequest: BulkOperationRequest; //
+
+const { status, data } = await apiInstance.fileRestore(
+    bulkOperationRequest
+);
 ```
 
 ### Parameters
-This endpoint does not have any parameters.
+
+|Name | Type | Description  | Notes|
+|------------- | ------------- | ------------- | -------------|
+| **bulkOperationRequest** | **BulkOperationRequest**|  | |
 
 
 ### Return type
@@ -939,7 +955,7 @@ This endpoint does not have any parameters.
 
 ### HTTP request headers
 
- - **Content-Type**: Not defined
+ - **Content-Type**: application/json
  - **Accept**: application/json
 
 
@@ -1179,7 +1195,7 @@ const { status, data } = await apiInstance.fileSubmitById(
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
 # **fileTagArchive**
-> Array<FileTag> fileTagArchive(fileTagArchiveRequest)
+> Array<FileTag> fileTagArchive(bulkOperationRequest)
 
 Archive multiple file tags, making them inactive while preserving their data
 
@@ -1189,16 +1205,16 @@ Archive multiple file tags, making them inactive while preserving their data
 import {
     MediaApi,
     Configuration,
-    FileTagArchiveRequest
+    BulkOperationRequest
 } from 'apostrophecms-client';
 
 const configuration = new Configuration();
 const apiInstance = new MediaApi(configuration);
 
-let fileTagArchiveRequest: FileTagArchiveRequest; //
+let bulkOperationRequest: BulkOperationRequest; //
 
 const { status, data } = await apiInstance.fileTagArchive(
-    fileTagArchiveRequest
+    bulkOperationRequest
 );
 ```
 
@@ -1206,7 +1222,7 @@ const { status, data } = await apiInstance.fileTagArchive(
 
 |Name | Type | Description  | Notes|
 |------------- | ------------- | ------------- | -------------|
-| **fileTagArchiveRequest** | **FileTagArchiveRequest**|  | |
+| **bulkOperationRequest** | **BulkOperationRequest**|  | |
 
 
 ### Return type
@@ -2005,7 +2021,7 @@ const { status, data } = await apiInstance.fileTagPutById(
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
 # **fileTagRestore**
-> Array<FileTag> fileTagRestore(fileTagRestoreRequest)
+> Array<FileTag> fileTagRestore(bulkOperationRequest)
 
 Restore previously archived file tags, making them active again
 
@@ -2015,16 +2031,16 @@ Restore previously archived file tags, making them active again
 import {
     MediaApi,
     Configuration,
-    FileTagRestoreRequest
+    BulkOperationRequest
 } from 'apostrophecms-client';
 
 const configuration = new Configuration();
 const apiInstance = new MediaApi(configuration);
 
-let fileTagRestoreRequest: FileTagRestoreRequest; //
+let bulkOperationRequest: BulkOperationRequest; //
 
 const { status, data } = await apiInstance.fileTagRestore(
-    fileTagRestoreRequest
+    bulkOperationRequest
 );
 ```
 
@@ -2032,7 +2048,7 @@ const { status, data } = await apiInstance.fileTagRestore(
 
 |Name | Type | Description  | Notes|
 |------------- | ------------- | ------------- | -------------|
-| **fileTagRestoreRequest** | **FileTagRestoreRequest**|  | |
+| **bulkOperationRequest** | **BulkOperationRequest**|  | |
 
 
 ### Return type
@@ -2397,7 +2413,7 @@ const { status, data } = await apiInstance.fileUnpublishById(
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
 # **imageArchive**
-> Array<Image> imageArchive(imageArchiveRequest)
+> PageArchive200Response imageArchive(bulkOperationRequest)
 
 Archive multiple images, making them inactive while preserving their data
 
@@ -2407,16 +2423,16 @@ Archive multiple images, making them inactive while preserving their data
 import {
     MediaApi,
     Configuration,
-    ImageArchiveRequest
+    BulkOperationRequest
 } from 'apostrophecms-client';
 
 const configuration = new Configuration();
 const apiInstance = new MediaApi(configuration);
 
-let imageArchiveRequest: ImageArchiveRequest; //
+let bulkOperationRequest: BulkOperationRequest; //
 
 const { status, data } = await apiInstance.imageArchive(
-    imageArchiveRequest
+    bulkOperationRequest
 );
 ```
 
@@ -2424,12 +2440,12 @@ const { status, data } = await apiInstance.imageArchive(
 
 |Name | Type | Description  | Notes|
 |------------- | ------------- | ------------- | -------------|
-| **imageArchiveRequest** | **ImageArchiveRequest**|  | |
+| **bulkOperationRequest** | **BulkOperationRequest**|  | |
 
 
 ### Return type
 
-**Array<Image>**
+**PageArchive200Response**
 
 ### Authorization
 
@@ -2444,7 +2460,7 @@ const { status, data } = await apiInstance.imageArchive(
 ### HTTP response details
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
-|**200** | Images archived successfully |  -  |
+|**200** | Archive job started successfully |  -  |
 |**400** | Bad request - invalid input parameters |  -  |
 |**401** | Authentication required |  -  |
 |**403** | Access forbidden - insufficient permissions |  -  |
@@ -3171,7 +3187,7 @@ const { status, data } = await apiInstance.imagePost(
 ### HTTP response details
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
-|**201** | Image created successfully |  -  |
+|**200** | Image created successfully |  -  |
 |**400** | Bad request - invalid input parameters |  -  |
 |**401** | Authentication required |  -  |
 |**403** | Access forbidden - insufficient permissions |  -  |
@@ -3358,7 +3374,7 @@ const { status, data } = await apiInstance.imagePutById(
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
 # **imageRestore**
-> Array<Image> imageRestore(imageRestoreRequest)
+> Array<Image> imageRestore(bulkOperationRequest)
 
 Restore previously archived images, making them active again
 
@@ -3368,16 +3384,16 @@ Restore previously archived images, making them active again
 import {
     MediaApi,
     Configuration,
-    ImageRestoreRequest
+    BulkOperationRequest
 } from 'apostrophecms-client';
 
 const configuration = new Configuration();
 const apiInstance = new MediaApi(configuration);
 
-let imageRestoreRequest: ImageRestoreRequest; //
+let bulkOperationRequest: BulkOperationRequest; //
 
 const { status, data } = await apiInstance.imageRestore(
-    imageRestoreRequest
+    bulkOperationRequest
 );
 ```
 
@@ -3385,7 +3401,7 @@ const { status, data } = await apiInstance.imageRestore(
 
 |Name | Type | Description  | Notes|
 |------------- | ------------- | ------------- | -------------|
-| **imageRestoreRequest** | **ImageRestoreRequest**|  | |
+| **bulkOperationRequest** | **BulkOperationRequest**|  | |
 
 
 ### Return type
@@ -3694,7 +3710,7 @@ const { status, data } = await apiInstance.imageTag(
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
 # **imageTagArchive**
-> Array<ImageTag> imageTagArchive()
+> PageArchive200Response imageTagArchive(bulkOperationRequest)
 
 Archive multiple image tags, making them inactive while preserving their data
 
@@ -3703,22 +3719,30 @@ Archive multiple image tags, making them inactive while preserving their data
 ```typescript
 import {
     MediaApi,
-    Configuration
+    Configuration,
+    BulkOperationRequest
 } from 'apostrophecms-client';
 
 const configuration = new Configuration();
 const apiInstance = new MediaApi(configuration);
 
-const { status, data } = await apiInstance.imageTagArchive();
+let bulkOperationRequest: BulkOperationRequest; //
+
+const { status, data } = await apiInstance.imageTagArchive(
+    bulkOperationRequest
+);
 ```
 
 ### Parameters
-This endpoint does not have any parameters.
+
+|Name | Type | Description  | Notes|
+|------------- | ------------- | ------------- | -------------|
+| **bulkOperationRequest** | **BulkOperationRequest**|  | |
 
 
 ### Return type
 
-**Array<ImageTag>**
+**PageArchive200Response**
 
 ### Authorization
 
@@ -3726,14 +3750,14 @@ This endpoint does not have any parameters.
 
 ### HTTP request headers
 
- - **Content-Type**: Not defined
+ - **Content-Type**: application/json
  - **Accept**: application/json
 
 
 ### HTTP response details
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
-|**200** | Image tags archived successfully |  -  |
+|**200** | Archive job started successfully |  -  |
 |**400** | Bad request - invalid input parameters |  -  |
 |**401** | Authentication required |  -  |
 |**403** | Access forbidden - insufficient permissions |  -  |
@@ -4328,7 +4352,7 @@ const { status, data } = await apiInstance.imageTagPost(
 ### HTTP response details
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
-|**201** | Image tag created successfully |  -  |
+|**200** | Image tag created successfully |  -  |
 |**400** | Bad request - invalid input parameters |  -  |
 |**401** | Authentication required |  -  |
 |**403** | Access forbidden - insufficient permissions |  -  |
@@ -4507,7 +4531,7 @@ const { status, data } = await apiInstance.imageTagPutById(
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
 # **imageTagRestore**
-> Array<ImageTag> imageTagRestore()
+> Array<ImageTag> imageTagRestore(bulkOperationRequest)
 
 Restore previously archived image tags, making them active again
 
@@ -4516,17 +4540,25 @@ Restore previously archived image tags, making them active again
 ```typescript
 import {
     MediaApi,
-    Configuration
+    Configuration,
+    BulkOperationRequest
 } from 'apostrophecms-client';
 
 const configuration = new Configuration();
 const apiInstance = new MediaApi(configuration);
 
-const { status, data } = await apiInstance.imageTagRestore();
+let bulkOperationRequest: BulkOperationRequest; //
+
+const { status, data } = await apiInstance.imageTagRestore(
+    bulkOperationRequest
+);
 ```
 
 ### Parameters
-This endpoint does not have any parameters.
+
+|Name | Type | Description  | Notes|
+|------------- | ------------- | ------------- | -------------|
+| **bulkOperationRequest** | **BulkOperationRequest**|  | |
 
 
 ### Return type
@@ -4539,7 +4571,7 @@ This endpoint does not have any parameters.
 
 ### HTTP request headers
 
- - **Content-Type**: Not defined
+ - **Content-Type**: application/json
  - **Accept**: application/json
 
 

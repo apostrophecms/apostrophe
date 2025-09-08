@@ -1,6 +1,6 @@
 # RadioFieldAllOfFollowing
 
-Populate dynamically based on other fields (supports `<` parent prefixes). 
+Populate dynamically based on other fields (supports `<` parent prefixes).
 
 ## Properties
 

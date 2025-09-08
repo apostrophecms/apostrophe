@@ -1,6 +1,6 @@
 # StringFieldAllOfFollowingIgnore
 
-Controls which `following` values are ignored. 
+Controls which `following` values are ignored.
 
 ## Properties
 

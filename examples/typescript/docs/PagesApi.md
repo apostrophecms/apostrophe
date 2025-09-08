@@ -23,12 +23,10 @@ All URIs are relative to *http://localhost:3000/api/v1*
 |[**pageRevertPublishedToPreviousById**](#pagerevertpublishedtopreviousbyid) | **POST** /@apostrophecms/page/{_id}/revert-published-to-previous | Revert published to previous|
 |[**pageShareById**](#pagesharebyid) | **POST** /@apostrophecms/page/{_id}/share | Share page|
 |[**pageSubmitById**](#pagesubmitbyid) | **POST** /@apostrophecms/page/{_id}/submit | Submit page|
-|[**pageSuggest**](#pagesuggest) | **GET** /@apostrophecms/page/suggest | Get page suggestions|
 |[**pageUnpublishById**](#pageunpublishbyid) | **POST** /@apostrophecms/page/{_id}/unpublish | Unpublish page|
-|[**urlGet**](#urlget) | **GET** /{_url} | Get rendered page content|
 
 # **pageArchive**
-> Array<Page> pageArchive(pageArchiveRequest)
+> PageArchive200Response pageArchive(pageArchiveRequest)
 
 Archive pages in bulk, making them inactive while preserving their data in the page tree
 
@@ -60,7 +58,7 @@ const { status, data } = await apiInstance.pageArchive(
 
 ### Return type
 
-**Array<Page>**
+**PageArchive200Response**
 
 ### Authorization
 
@@ -75,7 +73,7 @@ const { status, data } = await apiInstance.pageArchive(
 ### HTTP response details
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
-|**200** | Pages archived successfully |  -  |
+|**200** | Archive job started successfully |  -  |
 |**400** | Bad request - invalid input parameters |  -  |
 |**401** | Authentication required |  -  |
 |**403** | Access forbidden - insufficient permissions |  -  |
@@ -86,7 +84,7 @@ const { status, data } = await apiInstance.pageArchive(
 # **pageDeleteById**
 > Page pageDeleteById()
 
-⚠️ **Permanently delete a page document.** This cannot be undone.  **Restrictions:** - Cannot delete home page - Cannot delete pages with children (delete children first) - Cannot delete draft if published version exists  **Use with caution!** 
+⚠️ **Permanently delete a page document.** This cannot be undone.  **Important**: This endpoint should be used to delete the draft version of a page. If the page has been published, you should unpublish it first using the unpublish endpoint to ensure complete removal.  **Recommended deletion workflow**: 1. Unpublish the page (removes published version) 2. Delete the page (removes draft version)  **Restrictions:** - Cannot delete home page - Cannot delete pages with children (delete children first) - Cannot delete draft if published version exists ⚠️ **Permanently delete a page document.** This cannot be undone.  **Use with caution!** 
 
 ### Example
 
@@ -394,7 +392,7 @@ const { status, data } = await apiInstance.pageGetLocaleById(
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
 # **pageGetLocalesById**
-> Array<string> pageGetLocalesById()
+> PageGetLocalesById200Response pageGetLocalesById()
 
 Retrieve all available locales for the specified page
 
@@ -425,7 +423,7 @@ const { status, data } = await apiInstance.pageGetLocalesById(
 
 ### Return type
 
-**Array<string>**
+**PageGetLocalesById200Response**
 
 ### Authorization
 
@@ -685,7 +683,7 @@ const { status, data } = await apiInstance.pagePost(
 ### HTTP response details
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
-|**201** | Page created successfully |  -  |
+|**200** | Page created successfully |  -  |
 |**400** | Bad request - invalid input parameters |  -  |
 |**401** | Authentication required |  -  |
 |**403** | Access forbidden - insufficient permissions |  -  |
@@ -878,7 +876,7 @@ const { status, data } = await apiInstance.pagePutById(
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
 # **pageRestore**
-> Array<Page> pageRestore(pageRestoreRequest)
+> Array<Page> pageRestore(bulkOperationRequest)
 
 Restore previously archived pages in bulk, making them active again in the page tree
 
@@ -888,16 +886,16 @@ Restore previously archived pages in bulk, making them active again in the page 
 import {
     PagesApi,
     Configuration,
-    PageRestoreRequest
+    BulkOperationRequest
 } from 'apostrophecms-client';
 
 const configuration = new Configuration();
 const apiInstance = new PagesApi(configuration);
 
-let pageRestoreRequest: PageRestoreRequest; //
+let bulkOperationRequest: BulkOperationRequest; //
 
 const { status, data } = await apiInstance.pageRestore(
-    pageRestoreRequest
+    bulkOperationRequest
 );
 ```
 
@@ -905,7 +903,7 @@ const { status, data } = await apiInstance.pageRestore(
 
 |Name | Type | Description  | Notes|
 |------------- | ------------- | ------------- | -------------|
-| **pageRestoreRequest** | **PageRestoreRequest**|  | |
+| **bulkOperationRequest** | **BulkOperationRequest**|  | |
 
 
 ### Return type
@@ -1157,68 +1155,6 @@ const { status, data } = await apiInstance.pageSubmitById(
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
-# **pageSuggest**
-> Array<Page> pageSuggest()
-
-Get page suggestions for navigation or linking purposes, likely returning pages that match search criteria
-
-### Example
-
-```typescript
-import {
-    PagesApi,
-    Configuration
-} from 'apostrophecms-client';
-
-const configuration = new Configuration();
-const apiInstance = new PagesApi(configuration);
-
-let aposMode: 'draft' | 'published'; //Request draft or published version of content (optional) (default to 'published')
-let aposLocale: string; //Locale for internationalization (e.g., \'en\', \'fr\', \'es\') (optional) (default to undefined)
-let q: string; //Search query for page suggestions (optional) (default to undefined)
-
-const { status, data } = await apiInstance.pageSuggest(
-    aposMode,
-    aposLocale,
-    q
-);
-```
-
-### Parameters
-
-|Name | Type | Description  | Notes|
-|------------- | ------------- | ------------- | -------------|
-| **aposMode** | [**&#39;draft&#39; | &#39;published&#39;**]**Array<&#39;draft&#39; &#124; &#39;published&#39;>** | Request draft or published version of content | (optional) defaults to 'published'|
-| **aposLocale** | [**string**] | Locale for internationalization (e.g., \&#39;en\&#39;, \&#39;fr\&#39;, \&#39;es\&#39;) | (optional) defaults to undefined|
-| **q** | [**string**] | Search query for page suggestions | (optional) defaults to undefined|
-
-
-### Return type
-
-**Array<Page>**
-
-### Authorization
-
-[SessionAuth](../README.md#SessionAuth), [ApiKeyAuth](../README.md#ApiKeyAuth), [BearerAuth](../README.md#BearerAuth)
-
-### HTTP request headers
-
- - **Content-Type**: Not defined
- - **Accept**: application/json
-
-
-### HTTP response details
-| Status code | Description | Response headers |
-|-------------|-------------|------------------|
-|**200** | Page suggestions retrieved successfully |  -  |
-|**400** | Bad request - invalid input parameters |  -  |
-|**401** | Authentication required |  -  |
-|**403** | Access forbidden - insufficient permissions |  -  |
-|**404** | Resource not found |  -  |
-|**500** | Internal server error |  -  |
-
-[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
-
 # **pageUnpublishById**
 > Page pageUnpublishById()
 
@@ -1276,62 +1212,6 @@ const { status, data } = await apiInstance.pageUnpublishById(
 |**400** | Bad request - invalid input parameters |  -  |
 |**401** | Authentication required |  -  |
 |**403** | Access forbidden - insufficient permissions |  -  |
-|**404** | Resource not found |  -  |
-|**500** | Internal server error |  -  |
-
-[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
-
-# **urlGet**
-> string urlGet()
-
-Get a page\'s rendered HTML content. With `aposRefresh=1`, returns only the refreshable content without the full page layout (used by Apostrophe UI). 
-
-### Example
-
-```typescript
-import {
-    PagesApi,
-    Configuration
-} from 'apostrophecms-client';
-
-const configuration = new Configuration();
-const apiInstance = new PagesApi(configuration);
-
-let url: string; //Page URL path (default to undefined)
-let aposRefresh: '1'; //Return only refreshable content without full layout (optional) (default to undefined)
-
-const { status, data } = await apiInstance.urlGet(
-    url,
-    aposRefresh
-);
-```
-
-### Parameters
-
-|Name | Type | Description  | Notes|
-|------------- | ------------- | ------------- | -------------|
-| **url** | [**string**] | Page URL path | defaults to undefined|
-| **aposRefresh** | [**&#39;1&#39;**]**Array<&#39;1&#39;>** | Return only refreshable content without full layout | (optional) defaults to undefined|
-
-
-### Return type
-
-**string**
-
-### Authorization
-
-[SessionAuth](../README.md#SessionAuth), [ApiKeyAuth](../README.md#ApiKeyAuth), [BearerAuth](../README.md#BearerAuth)
-
-### HTTP request headers
-
- - **Content-Type**: Not defined
- - **Accept**: text/html, application/json
-
-
-### HTTP response details
-| Status code | Description | Response headers |
-|-------------|-------------|------------------|
-|**200** | Page content retrieved successfully |  -  |
 |**404** | Resource not found |  -  |
 |**500** | Internal server error |  -  |
 

@@ -1,18 +1,19 @@
-# CheckboxesFieldAllOfFollowing
+# BulkOperationRequest
 
-Populate dynamically based on other fields (supports `<` parent prefixes).
 
 ## Properties
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
+**_ids** | **Array&lt;string&gt;** | Array of document IDs to operate on | [default to undefined]
 
 ## Example
 
 ```typescript
-import { CheckboxesFieldAllOfFollowing } from 'apostrophecms-client';
+import { BulkOperationRequest } from 'apostrophecms-client';
 
-const instance: CheckboxesFieldAllOfFollowing = {
+const instance: BulkOperationRequest = {
+    _ids,
 };
 ```
 

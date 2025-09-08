@@ -1,6 +1,6 @@
 # OperatorObject
 
-MongoDB-style operators supported by Apostrophe conditions. Note: `$eq` has special handling with arrays (see docs). `$exists: true` means not null/undefined; empty string is truthy so use `$ne: \'\'` or check `.length`. :contentReference[oaicite:6]{index=6} 
+MongoDB-style operators supported by Apostrophe conditions. Note:   `$eq` has special handling with arrays (see docs).   `$exists: true` means not null/undefined; empty string is truthy so use `$ne: \'\'\'\'` or check `.length`. 
 
 ## Properties
 

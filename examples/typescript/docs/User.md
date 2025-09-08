@@ -1,6 +1,6 @@
 # User
 
-Built-in user piece type for account management. 💡 Developers can add custom fields to the user piece type in their project configuration. 
+Built-in user piece type for account management.  **Base Properties**: Inherited from @apostrophecms/piece-type **User-Specific Properties**: title, username, email, role, disabled  💡 Developers can add custom fields to the user piece type in their project configuration. 
 
 ## Properties
 

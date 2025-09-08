@@ -16,7 +16,7 @@ Name | Type | Description | Notes
 **_if** | [**UiCondition**](UiCondition.md) |  | [optional] [default to undefined]
 **requiredIf** | [**UiCondition**](UiCondition.md) |  | [optional] [default to undefined]
 **withType** | **string** | Module name that holds the forward relationship. | [default to undefined]
-**reverseOf** | **string** | Name of the forward relationship field on &#x60;withType&#x60; (e.g., \&quot;_authors\&quot; on \&quot;article\&quot;).  | [default to undefined]
+**reverseOf** | **string** | Name of the forward relationship field on &#x60;withType&#x60; (e.g.,\&quot;_authors\&quot; on \&quot;article\&quot;).  | [default to undefined]
 **builders** | **{ [key: string]: any; }** | Cursor builders applied when populating the reverse join. | [optional] [default to undefined]
 
 ## Example

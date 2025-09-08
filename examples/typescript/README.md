@@ -186,9 +186,7 @@ Class | Method | HTTP request | Description
 *PagesApi* | [**pageRevertPublishedToPreviousById**](docs/PagesApi.md#pagerevertpublishedtopreviousbyid) | **POST** /@apostrophecms/page/{_id}/revert-published-to-previous | Revert published to previous
 *PagesApi* | [**pageShareById**](docs/PagesApi.md#pagesharebyid) | **POST** /@apostrophecms/page/{_id}/share | Share page
 *PagesApi* | [**pageSubmitById**](docs/PagesApi.md#pagesubmitbyid) | **POST** /@apostrophecms/page/{_id}/submit | Submit page
-*PagesApi* | [**pageSuggest**](docs/PagesApi.md#pagesuggest) | **GET** /@apostrophecms/page/suggest | Get page suggestions
 *PagesApi* | [**pageUnpublishById**](docs/PagesApi.md#pageunpublishbyid) | **POST** /@apostrophecms/page/{_id}/unpublish | Unpublish page
-*PagesApi* | [**urlGet**](docs/PagesApi.md#urlget) | **GET** /{_url} | Get rendered page content
 *SubmittedDraftsApi* | [**submittedDraftArchive**](docs/SubmittedDraftsApi.md#submitteddraftarchive) | **POST** /@apostrophecms/submitted-draft/archive | Archive submitted drafts
 *SubmittedDraftsApi* | [**submittedDraftDeleteById**](docs/SubmittedDraftsApi.md#submitteddraftdeletebyid) | **DELETE** /@apostrophecms/submitted-draft/{_id} | Delete submitted draft
 *SubmittedDraftsApi* | [**submittedDraftDismissSubmissionById**](docs/SubmittedDraftsApi.md#submitteddraftdismisssubmissionbyid) | **POST** /@apostrophecms/submitted-draft/{_id}/dismiss-submission | Dismiss submission
@@ -228,7 +226,6 @@ Class | Method | HTTP request | Description
 *UsersApi* | [**userRevertPublishedToPreviousById**](docs/UsersApi.md#userrevertpublishedtopreviousbyid) | **POST** /@apostrophecms/user/{_id}/revert-published-to-previous | Revert published to previous
 *UsersApi* | [**userShareById**](docs/UsersApi.md#usersharebyid) | **POST** /@apostrophecms/user/{_id}/share | Share user
 *UsersApi* | [**userSubmitById**](docs/UsersApi.md#usersubmitbyid) | **POST** /@apostrophecms/user/{_id}/submit | Submit user
-*UsersApi* | [**userUniqueUsername**](docs/UsersApi.md#useruniqueusername) | **POST** /@apostrophecms/user/unique-username | Check username uniqueness
 *UsersApi* | [**userUnpublishById**](docs/UsersApi.md#userunpublishbyid) | **POST** /@apostrophecms/user/{_id}/unpublish | Unpublish user
 
 
@@ -245,6 +242,7 @@ Class | Method | HTTP request | Description
  - [AttachmentField](docs/AttachmentField.md)
  - [AttachmentFieldAllOfAccept](docs/AttachmentFieldAllOfAccept.md)
  - [AuthContext200Response](docs/AuthContext200Response.md)
+ - [AuthContextPost200Response](docs/AuthContextPost200Response.md)
  - [AuthLogin200Response](docs/AuthLogin200Response.md)
  - [AuthLoginRequest](docs/AuthLoginRequest.md)
  - [AuthLogout200Response](docs/AuthLogout200Response.md)
@@ -258,6 +256,8 @@ Class | Method | HTTP request | Description
  - [BooleanField](docs/BooleanField.md)
  - [BooleanFieldAllOfToggle](docs/BooleanFieldAllOfToggle.md)
  - [BooleanFieldAllOfToggleOneOf](docs/BooleanFieldAllOfToggleOneOf.md)
+ - [BulkOperationRequest](docs/BulkOperationRequest.md)
+ - [BulkOperationResponse](docs/BulkOperationResponse.md)
  - [CheckboxesField](docs/CheckboxesField.md)
  - [CheckboxesFieldAllOfChoices](docs/CheckboxesFieldAllOfChoices.md)
  - [CheckboxesFieldAllOfDef](docs/CheckboxesFieldAllOfDef.md)
@@ -282,25 +282,24 @@ Class | Method | HTTP request | Description
  - [FilePatchByIdRequest](docs/FilePatchByIdRequest.md)
  - [FilePostRequest](docs/FilePostRequest.md)
  - [FileTag](docs/FileTag.md)
- - [FileTagArchiveRequest](docs/FileTagArchiveRequest.md)
  - [FileTagGet200Response](docs/FileTagGet200Response.md)
  - [FileTagLocalizeRequest](docs/FileTagLocalizeRequest.md)
  - [FileTagPatchByIdRequest](docs/FileTagPatchByIdRequest.md)
  - [FileTagPostRequest](docs/FileTagPostRequest.md)
  - [FileTagPublishRequest](docs/FileTagPublishRequest.md)
  - [FileTagPutByIdRequest](docs/FileTagPutByIdRequest.md)
- - [FileTagRestoreRequest](docs/FileTagRestoreRequest.md)
  - [FlatPageResponse](docs/FlatPageResponse.md)
  - [FlatPageResponseResultsInner](docs/FlatPageResponseResultsInner.md)
  - [FloatField](docs/FloatField.md)
  - [Global](docs/Global.md)
+ - [GlobalGet200Response](docs/GlobalGet200Response.md)
+ - [GlobalPatch](docs/GlobalPatch.md)
  - [GlobalPostRequest](docs/GlobalPostRequest.md)
  - [GlobalPostRequestContactInfo](docs/GlobalPostRequestContactInfo.md)
  - [GlobalPostRequestSiteSettings](docs/GlobalPostRequestSiteSettings.md)
  - [GlobalPostRequestSocialMedia](docs/GlobalPostRequestSocialMedia.md)
  - [I18nLocalePost200Response](docs/I18nLocalePost200Response.md)
  - [Image](docs/Image.md)
- - [ImageArchiveRequest](docs/ImageArchiveRequest.md)
  - [ImageAttachment](docs/ImageAttachment.md)
  - [ImageAutocropRequest](docs/ImageAutocropRequest.md)
  - [ImageGet200Response](docs/ImageGet200Response.md)
@@ -309,7 +308,6 @@ Class | Method | HTTP request | Description
  - [ImagePatchByIdRequest](docs/ImagePatchByIdRequest.md)
  - [ImagePostRequest](docs/ImagePostRequest.md)
  - [ImagePublishRequest](docs/ImagePublishRequest.md)
- - [ImageRestoreRequest](docs/ImageRestoreRequest.md)
  - [ImageTag](docs/ImageTag.md)
  - [ImageTagGet200Response](docs/ImageTagGet200Response.md)
  - [ImageTagPatchByIdRequest](docs/ImageTagPatchByIdRequest.md)
@@ -329,12 +327,17 @@ Class | Method | HTTP request | Description
  - [OembedField](docs/OembedField.md)
  - [OperatorObject](docs/OperatorObject.md)
  - [Page](docs/Page.md)
+ - [PageArchive200Response](docs/PageArchive200Response.md)
  - [PageArchiveRequest](docs/PageArchiveRequest.md)
  - [PageCreateRequest](docs/PageCreateRequest.md)
  - [PageCreateRequestPosition](docs/PageCreateRequestPosition.md)
  - [PageDeleteById400Response](docs/PageDeleteById400Response.md)
  - [PageDotNotationUpdateValue](docs/PageDotNotationUpdateValue.md)
  - [PageGet200Response](docs/PageGet200Response.md)
+ - [PageGetLocalesById200Response](docs/PageGetLocalesById200Response.md)
+ - [PageGetLocalesById200ResponseResultsInner](docs/PageGetLocalesById200ResponseResultsInner.md)
+ - [PageLocaleResult](docs/PageLocaleResult.md)
+ - [PageLocalesResponse](docs/PageLocalesResponse.md)
  - [PageLocalizeByIdRequest](docs/PageLocalizeByIdRequest.md)
  - [PageLocalizeRequest](docs/PageLocalizeRequest.md)
  - [PageMain](docs/PageMain.md)
@@ -342,7 +345,6 @@ Class | Method | HTTP request | Description
  - [PagePatchByIdRequest](docs/PagePatchByIdRequest.md)
  - [PagePublishRequest](docs/PagePublishRequest.md)
  - [PagePutByIdRequest](docs/PagePutByIdRequest.md)
- - [PageRestoreRequest](docs/PageRestoreRequest.md)
  - [PageSeoFields](docs/PageSeoFields.md)
  - [PageSeoFieldsOgImage](docs/PageSeoFieldsOgImage.md)
  - [PageSeoFieldsOgImageAttachment](docs/PageSeoFieldsOgImageAttachment.md)
@@ -392,8 +394,6 @@ Class | Method | HTTP request | Description
  - [UserList200Response](docs/UserList200Response.md)
  - [UserPatchByIdRequest](docs/UserPatchByIdRequest.md)
  - [UserPutByIdRequest](docs/UserPutByIdRequest.md)
- - [UserUniqueUsername200Response](docs/UserUniqueUsername200Response.md)
- - [UserUniqueUsernameRequest](docs/UserUniqueUsernameRequest.md)
  - [Widget](docs/Widget.md)
  - [WidgetImport](docs/WidgetImport.md)
 
