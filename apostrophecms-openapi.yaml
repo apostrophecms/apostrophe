@@ -2833,6 +2833,29 @@ components:
       - _id
       additionalProperties: true
       title: RelationshipEntry
+    BulkOperationRequest:
+      type: object
+      properties:
+        _ids:
+          type: array
+          items:
+            type: string
+          description: Array of document IDs to operate on
+          example: ["doc1:en:draft", "doc2:en:published"]
+      required:
+        - _ids
+    BulkOperationResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        modified:
+          type: integer
+          description: Number of documents affected
+        errors:
+          type: array
+          items:
+            type: string
     Fieldset:
       type: object
       additionalProperties: false
@@ -3880,14 +3903,7 @@ paths:
         content:
           application/json:
             schema:
-              type: object
-              properties:
-                _ids:
-                  type: array
-                  items:
-                    type: string
-                  description: Array of page IDs to restore
-                  example: ["page1-id", "page2-id"]
+              $ref: '#/components/schemas/BulkOperationRequest'
       responses:
         '200':
           description: Pages restored successfully
@@ -4737,6 +4753,12 @@ paths:
       summary: Restore users
       description: Restore previously archived users, making them active again
       operationId: UserRestore
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BulkOperationRequest'
       responses:
         '200':
           description: Users restored successfully
@@ -5448,6 +5470,12 @@ paths:
       summary: Archive global document
       description: Archive the global document, making it inactive while preserving its data
       operationId: GlobalArchive
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BulkOperationRequest'
       responses:
         '200':
           description: Archive job started successfully
@@ -5536,6 +5564,12 @@ paths:
       summary: Restore global document
       description: Restore a previously archived global document, making it active again
       operationId: GlobalRestore
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BulkOperationRequest'
       responses:
         '200':
           description: Global restored successfully
@@ -6112,13 +6146,7 @@ paths:
         content:
           application/json:
             schema:
-              type: object
-              properties:
-                _ids:
-                  type: array
-                  items:
-                    type: string
-                  description: Array of image IDs to archive
+              $ref: '#/components/schemas/BulkOperationRequest'
       responses:
         '200':
           description: Archive job started successfully
@@ -6289,13 +6317,7 @@ paths:
         content:
           application/json:
             schema:
-              type: object
-              properties:
-                _ids:
-                  type: array
-                  items:
-                    type: string
-                  description: Array of image IDs to restore
+              $ref: '#/components/schemas/BulkOperationRequest'
       responses:
         '200':
           description: Images restored successfully
@@ -7039,6 +7061,12 @@ paths:
       summary: Archive files
       description: Archive multiple files, making them inactive while preserving their data
       operationId: FileArchive
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BulkOperationRequest'
       responses:
         '200':
           description: Archive job started successfully
@@ -7131,6 +7159,12 @@ paths:
       summary: Restore files
       description: Restore previously archived files, making them active again
       operationId: FileRestore
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BulkOperationRequest'
       responses:
         '200':
           description: Files restored successfully
@@ -7732,6 +7766,12 @@ paths:
       summary: Archive image tags
       description: Archive multiple image tags, making them inactive while preserving their data
       operationId: ImageTagArchive
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BulkOperationRequest'
       responses:
         '200':
           description: Archive job started successfully
@@ -7824,6 +7864,12 @@ paths:
       summary: Restore image tags
       description: Restore previously archived image tags, making them active again
       operationId: ImageTagRestore
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BulkOperationRequest'
       responses:
         '200':
           description: Image tags restored successfully
@@ -8425,13 +8471,7 @@ paths:
         content:
           application/json:
             schema:
-              type: object
-              properties:
-                _ids:
-                  type: array
-                  items:
-                    type: string
-                  description: Array of file tag IDs to archive
+              $ref: '#/components/schemas/BulkOperationRequest'
       responses:
         '200':
           description: File tags archived successfully
@@ -8552,13 +8592,7 @@ paths:
         content:
           application/json:
             schema:
-              type: object
-              properties:
-                _ids:
-                  type: array
-                  items:
-                    type: string
-                  description: Array of file tag IDs to restore
+              $ref: '#/components/schemas/BulkOperationRequest'
       responses:
         '200':
           description: File tags restored successfully
@@ -9178,6 +9212,12 @@ paths:
       summary: Archive submitted drafts
       description: Archive multiple submitted drafts, removing them from active review queues while preserving data
       operationId: SubmittedDraftArchive
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BulkOperationRequest'
       responses:
         '200':
           description: Submitted drafts archived successfully
@@ -9262,6 +9302,12 @@ paths:
       summary: Restore submitted drafts
       description: Restore previously archived submitted drafts, returning them to active review queues
       operationId: SubmittedDraftRestore
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BulkOperationRequest'
       responses:
         '200':
           description: Submitted drafts restored successfully
