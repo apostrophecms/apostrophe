@@ -2,29 +2,67 @@ module.exports = {
   extend: '@apostrophecms/widget-type',
   options: {
     label: 'apostrophe:layout',
-    steps: 12,
-    minSpan: 1,
+    initialModal: false,
+    skipOperations: [ 'edit' ],
+    columns: 12,
+    minSpan: 2,
     defaultSpan: 4,
     mobile: {
-      breakpoint: 480
+      breakpoint: 600
     },
     tablet: {
       breakpoint: 1024
-    }
+    },
+    gap: 0,
+    defaultCellHorizontalAlignment: null,
+    defaultCellVerticalAlignment: null
   },
-  fields: {
-    add: {
-      columns: {
-        type: 'area',
-        options: {
-          editorComponent: 'AposAreaLayoutEditor',
-          widgetTemplate: '@apostrophecms/layout-widget:column.html',
-          widgets: {
-            '@apostrophecms/layout-column': {}
+  widgetOperations(self, options) {
+    return {
+      add: {
+        layout: {
+          placement: 'breadcrumb',
+          type: 'switch',
+          choices: [
+            {
+              label: 'Content',
+              value: 'content'
+            },
+            {
+              label: 'Layout',
+              value: 'layout'
+            }
+          ],
+          def: 'content'
+        },
+        layoutHelp: {
+          placement: 'breadcrumb',
+          type: 'info',
+          icon: 'information-outline-icon',
+          tooltip: 'Use Content mode to edit your widgets and Layout mode to modify your columns'
+        }
+      }
+    };
+  },
+  fields(self, options) {
+    return {
+      add: {
+        columns: {
+          type: 'area',
+          options: {
+            // Custom editor component for layout management
+            editorComponent: 'AposAreaLayoutEditor',
+            // Default widget template for columns so that grid items
+            // are direct descendants of the grid container
+            widgetTemplate: '@apostrophecms/layout-widget:column.html',
+            widgets: {
+              '@apostrophecms/layout-column': {},
+              '@apostrophecms/layout-meta': {}
+            }
           }
         }
       }
-    }
+    };
   },
   extendMethods(self) {
     return {
@@ -33,13 +71,23 @@ module.exports = {
         return {
           ...result,
           grid: {
-            steps: self.options.steps,
+            columns: self.options.columns,
             minSpan: self.options.minSpan,
             defaultSpan: self.options.defaultSpan,
             mobile: self.options.mobile,
-            tablet: self.options.tablet
+            tablet: self.options.tablet,
+            gap: self.options.gap,
+            defaultCellHorizontalAlignment: self.options.defaultCellHorizontalAlignment,
+            defaultCellVerticalAlignment: self.options.defaultCellVerticalAlignment
           }
         };
+      }
+    };
+  },
+  helpers(self) {
+    return {
+      getLayoutMeta(widget) {
+        return widget?.columns?.items?.find(item => item.type === '@apostrophecms/layout-meta');
       }
     };
   }

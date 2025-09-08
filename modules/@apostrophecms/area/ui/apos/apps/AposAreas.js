@@ -64,13 +64,16 @@ export default function() {
   }
 
   function createAreaApp(el) {
-    const options = JSON.parse(el.getAttribute('data-options'));
-    const data = JSON.parse(el.getAttribute('data'));
+    const options = JSON.parse(el.getAttribute('data-options')) || {};
+    const data = JSON.parse(el.getAttribute('data')) || {};
     const fieldId = el.getAttribute('data-field-id');
     const moduleName = el.getAttribute('data-module');
     const choices = JSON.parse(el.getAttribute('data-choices'));
     const renderings = {};
     const _docId = data._docId;
+
+    const parentOptionsStr = el.getAttribute('data-parent-options');
+    const parentOptions = parentOptionsStr ? JSON.parse(parentOptionsStr) : null;
 
     let componentName = options.editorComponent || 'AposAreaEditor';
     if (!apos.vueComponents[componentName]) {
@@ -117,6 +120,7 @@ export default function() {
         docId: _docId,
         fieldId,
         moduleName,
+        parentOptions,
         renderings
       });
 
