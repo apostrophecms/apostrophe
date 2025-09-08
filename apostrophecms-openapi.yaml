@@ -5336,7 +5336,15 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Global'
+                allOf:
+                  - $ref: '#/components/schemas/PaginatedResponse'
+                  - type: object
+                    properties:
+                      results:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Global'
+
         '401':
           $ref: '#/components/responses/Unauthorized'
         '404':
