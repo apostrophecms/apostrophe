@@ -43,10 +43,6 @@ export default {
     widgetSchema: {
       type: Array,
       default: () => []
-    },
-    modalData: {
-      type: Object,
-      default: () => ({})
     }
   },
   emits: [ 'update', 'close' ],

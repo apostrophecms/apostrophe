@@ -1,327 +1,184 @@
 <template>
-  <!-- FIXME: This component has to be split in pure grid and manager components.
-  It's a must have in order to deliver performance when not in manage mode, which
-  is 90% of the time. -->
-  <div
-    ref="root"
-    class="apos-layout"
+  <section
+    class="apos-layout__grid-clone"
+    :class="gridClasses"
+    data-apos-test="aposLayoutContainerClone"
+    :style="{
+      '--grid-columns': gridState.columns,
+      '--grid-gap': gridState.options.gap,
+    }"
+    @mousemove="onMouseMove($event)"
   >
-    <section
-      ref="grid"
-      class="apos-layout__grid"
-      :class="gridClasses"
-      data-apos-test="aposLayoutContainer"
+    <div
+      v-for="(item) in gridState.current.items"
+      :key="item._id"
+      ref="items"
+      class="apos-layout__item"
+      role="gridcell"
+      data-apos-test="aposLayoutItem"
+      :data-id="item._id"
       :style="{
-        '--grid-columns': gridState.columns,
-        '--grid-gap': gridState.options.gap,
+        '--colstart': item.colstart,
+        '--colspan': item.colspan,
+        '--rowstart': item.rowstart,
+        '--rowspan': item.rowspan,
+        '--order': item.order,
+        '--justify': item.justify,
+        '--align': item.align,
       }"
     >
       <div
-        v-for="(item, i) in gridState.current.items"
-        :key="item._id"
-        ref="contentItems"
-        class="apos-layout__item"
-        role="gridcell"
-        data-apos-test="aposLayoutItem"
-        :data-id="`${ item._id }`"
-        :style="{
-          '--colstart': item.colstart,
-          '--colspan': item.colspan,
-          '--rowstart': item.rowstart,
-          '--rowspan': item.rowspan,
-          '--order': item.order,
-          '--justify': item.justify,
-          '--align': item.align,
-        }"
-      >
-        <div
-          data-content
-          class="apos-layout__item-content"
-        >
-          <slot
-            name="item"
-            :item="gridState.originalItems.get(item._id)"
-            :i="i"
-          />
-        </div>
-      </div>
-    </section>
-    <section
-      v-show="isManageMode"
-      class="apos-layout__grid-clone"
-      :class="gridClasses"
-      data-apos-test="aposLayoutContainerClone"
-      :style="{
-        '--grid-columns': gridState.columns,
-        '--grid-gap': gridState.options.gap,
-      }"
-      @mousemove="onMouseMove($event)"
-    >
-      <div
-        v-for="(item) in gridState.current.items"
-        :key="item._id"
-        ref="items"
-        class="apos-layout__item"
-        role="gridcell"
-        data-apos-test="aposLayoutItem"
+        data-shim
         :data-id="item._id"
-        :style="{
-          '--colstart': item.colstart,
-          '--colspan': item.colspan,
-          '--rowstart': item.rowstart,
-          '--rowspan': item.rowspan,
-          '--order': item.order,
-          '--justify': item.justify,
-          '--align': item.align,
-        }"
+        class="apos-layout__item-shim"
       >
-        <div
-          data-shim
-          :data-id="item._id"
-          class="apos-layout__item-shim"
+        <button
+          v-show="!hasMotion"
+          class="apos-layout--item-action apos-layout__item-move-handle"
+          @mousedown="onStartMove(item, $event)"
+          @touchstart="onStartMove(item, $event)"
+          @mouseup="resetGhostData"
+          @touchend="resetGhostData"
+        />
+        <button
+          v-show="!hasMotion || ghostData.id === item._id"
+          class="apos-layout--item-action apos-layout__item-resize-handle nw"
+          @mousedown="onStartResize(item, 'west', $event)"
+          @touchstart="onStartResize(item, 'west', $event)"
+          @mouseup="resetGhostData"
+          @touchend="resetGhostData"
+        />
+        <button
+          v-show="!hasMotion || ghostData.id === item._id"
+          class="apos-layout--item-action apos-layout__item-resize-handle se"
+          @mousedown="onStartResize(item, 'east', $event)"
+          @touchstart="onStartResize(item, 'east', $event)"
+          @mouseup="resetGhostData"
+          @touchend="resetGhostData"
+        />
+        <!-- <div
+          v-show="!hasMotion"
+          class="apos-layout--item-action apos-layout__item-add-handle west"
         >
-          <button
-            class="apos-layout--item-action apos-layout__item-resize-handle west"
-            @mousedown="onStartXResize(item, 'west', $event)"
-            @touchstart="onStartXResize(item, 'west', $event)"
-            @mouseup="resetGhostData"
-            @touchend="resetGhostData"
+          <AposButton
+            v-bind="buttonDefaults"
+            tooltip="Add column before"
+            :disabled="validInsertPositions[item._id].west.result === false"
+            @click="addItemFit({ item, side: 'west' })"
           />
-          <button
-            class="apos-layout--item-action apos-layout__item-resize-handle east"
-            @mousedown="onStartXResize(item, 'east', $event)"
-            @touchstart="onStartXResize(item, 'east', $event)"
-            @mouseup="resetGhostData"
-            @touchend="resetGhostData"
-          />
-          <div
-            v-show="!hasMotion"
-            class="apos-layout--item-action apos-layout__item-add-handle west"
-          >
-            <AposButton
-              v-bind="buttonDefaults"
-              tooltip="Add column before"
-              :disabled="validInsertPositions[item._id].west.result === false"
-              @click="addItemFit({ item, side: 'west' })"
-            />
-          </div>
-          <div
-            v-show="!hasMotion"
-            class="apos-layout--item-action apos-layout__item-add-handle east"
-          >
-            <AposButton
-              v-bind="buttonDefaults"
-              tooltip="Add column after"
-              :disabled="validInsertPositions[item._id].east.result === false"
-              @click="addItemFit({ item, side: 'east' })"
-            />
-          </div>
-          <div
-            v-show="!hasMotion"
-            class="apos-layout--item-action apos-layout__item-delete-handle"
-          >
-            <AposButton
-              v-bind="buttonDefaults"
-              icon="delete-icon"
-              :modifiers="[ 'round', 'tiny', 'icon-only', 'danger' ]"
-              @click="removeItem(item)"
-            />
-          </div>
-          <div
-            v-show="!hasMotion"
-            class="apos-layout--item-action apos-layout__item-align-actions"
-          >
-            <div class="apos-layout__item-align-actions--row">
-              <AposButton
-                v-bind="buttonDefaults"
-                :tooltip="$t('apostrophe:layoutLeft')"
-                icon="alignh-left-icon"
-                :modifiers="[ 'tiny', 'icon-only' ]"
-                @click="patchItem(item, { justify: 'start' })"
-              />
-              <AposButton
-                v-bind="buttonDefaults"
-                :tooltip="$t('apostrophe:layoutCenter')"
-                icon="alignh-center-icon"
-                :modifiers="[ 'tiny', 'icon-only' ]"
-                @click="patchItem(item, { justify: 'center' })"
-              />
-              <AposButton
-                v-bind="buttonDefaults"
-                :tooltip="$t('apostrophe:layoutRight')"
-                icon="alignh-right-icon"
-                :modifiers="[ 'tiny', 'icon-only' ]"
-                @click="patchItem(item, { justify: 'end' })"
-              />
-              <AposButton
-                v-bind="buttonDefaults"
-                :tooltip="$t('apostrophe:layoutStretchHorizontal')"
-                icon="alignh-stretch-icon"
-                :modifiers="[ 'tiny', 'icon-only' ]"
-                @click="patchItem(item, { justify: 'stretch' })"
-              />
-            </div>
-            <div class="apos-layout__item-align-actions--row">
-              <AposButton
-                v-bind="buttonDefaults"
-                :tooltip="$t('apostrophe:layoutTop')"
-                icon="alignv-top-icon"
-                :modifiers="[ 'tiny', 'icon-only' ]"
-                @click="patchItem(item, { align: 'start' })"
-              />
-              <AposButton
-                v-bind="buttonDefaults"
-                :tooltip="$t('apostrophe:layoutMiddle')"
-                icon="alignv-center-icon"
-                :modifiers="[ 'tiny', 'icon-only' ]"
-                @click="patchItem(item, { align: 'center' })"
-              />
-              <AposButton
-                v-bind="buttonDefaults"
-                :tooltip="$t('apostrophe:layoutBottom')"
-                icon="alignv-bottom-icon"
-                :modifiers="[ 'tiny', 'icon-only' ]"
-                @click="patchItem(item, { align: 'end' })"
-              />
-              <AposButton
-                v-bind="buttonDefaults"
-                :tooltip="$t('apostrophe:layoutStretchVertical')"
-                icon="alignh-stretch-icon"
-                :modifiers="[ 'tiny', 'icon-only' ]"
-                @click="patchItem(item, { align: 'stretch' })"
-              />
-            </div>
-            <div class="apos-layout__item-align-actions--row">
-              <AposButton
-                v-bind="buttonDefaults"
-                :tooltip="$t('apostrophe:layoutTabletShow')"
-                icon="tablet-icon"
-                :style="{ opacity: item.tablet.show ? 1 : 0.6 }"
-                :modifiers="[ 'tiny', 'icon-only' ]"
-                @click="toggleDeviceVisibility(item, 'tablet')"
-              />
-              <AposButton
-                v-bind="buttonDefaults"
-                :tooltip="$t('apostrophe:layoutMobileShow')"
-                icon="cellphone-icon"
-                :style="{ opacity: item.mobile.show ? 1 : 0.6 }"
-                :modifiers="[ 'tiny', 'icon-only' ]"
-                @click="toggleDeviceVisibility(item, 'mobile')"
-              />
-            </div>
-          </div>
-          <button
-            v-show="!hasMotion"
-            class="apos-layout--item-action apos-layout__item-move-handle"
-            @mousedown="onStartMove(item, $event)"
-            @touchstart="onStartMove(item, $event)"
-            @mouseup="resetGhostData"
-            @touchend="resetGhostData"
+        </div> -->
+        <div
+          v-show="!hasMotion"
+          class="apos-layout--item-action apos-layout__item-add-handle east"
+        >
+          <AposButton
+            v-bind="buttonDefaults"
+            tooltip="Add column after"
+            :disabled="validInsertPositions[item._id].east.result === false"
+            @click="addItemFit({ item, side: 'east' })"
           />
         </div>
         <div
-          data-content
-          class="apos-layout__item-content"
+          v-show="!hasMotion"
+          class="apos-layout--item-action apos-layout__item-delete-handle"
         >
-          <div
-            :style="{
-              width: gridContentStyles.get(item._id)?.width || '100%',
-              height: gridContentStyles.get(item._id)?.height || '100%'
-            }"
+          <AposButton
+            v-bind="buttonDefaults"
+            icon="delete-icon"
+            :modifiers="[ 'round', 'tiny', 'icon-only', 'danger' ]"
+            @click="removeItem(item)"
           />
         </div>
       </div>
       <div
-        v-if="isManageMode && gridState.current.items.length === 0 && meta._id"
-        class="apos-layout__item apos-layout__item-synthetic"
-        :style="{
-          '--colstart': 1,
-          '--colspan': gridState.options.defaultSpan,
-          '--rowstart': 1,
-          '--rowspan': 1,
-          '--order': 0,
-          '--justify': 'stretch',
-          '--align': 'stretch',
-        }"
-      >
-        <AposButton
-          v-bind="addFirstOptions"
-          role="button"
-          @click="addItemFirst()"
-        />
-      </div>
-      <div
-        v-if="hasMotion"
-        :style="{
-          left: ghostData.left + 'px',
-          top: ghostData.top + 'px',
-          width: ghostData.width + 'px',
-          height: ghostData.height + 'px'
-        }"
-        class="apos-layout__item-ghost"
-      />
-      <div
-        v-if="hasMotion && typeof ghostData.snapLeft === 'number'"
-        :style="{
-          left: ghostData.snapLeft + 'px',
-          top: ghostData.snapTop + 'px',
-          width: ghostData.width + 'px',
-          height: ghostData.height + 'px'
-        }"
-        class="apos-layout__item-ghost snap"
-      />
-      <div
-        v-if="isManageMode"
-        :class="gridOverlayClasses"
+        data-content
+        class="apos-layout__item-content"
       >
         <div
-          v-for="(item, i) in columnIndicatorStyles"
-          :key="i"
-          class="column-indicator"
-          :class="item.class"
-          :style="item.style"
+          :style="{
+            width: gridContentStyles.get(item._id)?.width || '100%',
+            height: gridContentStyles.get(item._id)?.height || '100%'
+          }"
         />
       </div>
-    </section>
-  </div>
+    </div>
+    <div
+      v-if="gridState.current.items.length === 0 && metaId"
+      class="apos-layout__item apos-layout__item-synthetic"
+      :style="{
+        '--colstart': 1,
+        '--colspan': gridState.options.defaultSpan,
+        '--rowstart': 1,
+        '--rowspan': 1,
+        '--order': 0,
+        '--justify': 'stretch',
+        '--align': 'stretch',
+      }"
+    >
+      <AposButton
+        v-bind="addFirstOptions"
+        role="button"
+        @click="addItemFirst()"
+      />
+    </div>
+    <div
+      v-if="hasMotion"
+      :style="{
+        left: ghostData.left + 'px',
+        top: ghostData.top + 'px',
+        width: ghostData.width + 'px',
+        height: ghostData.height + 'px'
+      }"
+      class="apos-layout__item-ghost"
+    />
+    <div
+      v-if="hasMotion && typeof ghostData.snapLeft === 'number'"
+      :style="{
+        left: ghostData.snapLeft + 'px',
+        top: ghostData.snapTop + 'px',
+        width: ghostData.width + 'px',
+        height: ghostData.height + 'px'
+      }"
+      class="apos-layout__item-ghost snap"
+    />
+    <div :class="gridOverlayClasses">
+      <div
+        v-for="(item, i) in columnIndicatorStyles"
+        :key="i"
+        class="column-indicator"
+        :class="item.class"
+        :style="item.style"
+      />
+    </div>
+  </section>
 </template>
 
 <script>
 import { GridManager } from '../lib/grid-manager.js';
 import {
-  itemsToState, canFitX, getReorderPatch,
-  prepareMoveIndex
+  canFitX, getReorderPatch, prepareMoveIndex
 } from '../lib/grid-state.mjs';
 
 export default {
   name: 'AposGridManager',
   props: {
-    options: {
-      type: Object,
-      required: true
-    },
-    items: {
-      type: Array,
-      required: true
-    },
-    meta: {
-      type: Object,
-      default: () => ({})
-    },
     /**
-     * The mode of the grid manager, which can be 'layout', 'focus', 'content'
+     * The full grid state as produced by itemsToState()
+     * @type {import('../lib/grid-state.mjs').GridState}
      */
-    layoutMode: {
-      type: String,
-      default: 'content'
+    gridState: {
+      type: Object,
+      required: true
     },
-    deviceMode: {
+    metaId: {
       type: String,
-      default: 'desktop'
+      default: null
     }
   },
   emits: [
+    'resize-start',
     'resize-end',
+    'move-start',
     'move-end',
     'add-first-item',
     'add-fit-item',
@@ -388,11 +245,18 @@ export default {
     };
   },
   computed: {
+    layoutMode() {
+      return this.gridState.layoutMode;
+    },
+    deviceMode() {
+      return this.gridState.deviceMode;
+    },
     gridClasses() {
       return {
-        manage: this.isManageMode,
+        manage: true,
         focused: this.isFocusedMode,
-        'is-resizing': this.isResizing
+        'is-resizing': this.isResizing,
+        'is-moving': this.isMoving
       };
     },
     gridOverlayClasses() {
@@ -404,20 +268,9 @@ export default {
     getItemsClasses() {
       return this.items.map(item => ({
         'apos-layout__item': true,
-        'is-resizing': this.isResizing && this.ghostData.id === item._id
+        'is-resizing': this.isResizing && this.ghostData.id === item._id,
+        'is-moving': this.isMoving && this.ghostData.id === item._id
       }));
-    },
-    gridState() {
-      return itemsToState({
-        items: this.items,
-        options: this.options,
-        meta: this.meta,
-        layoutMode: this.layoutMode,
-        deviceMode: this.deviceMode
-      });
-    },
-    isManageMode() {
-      return [ 'layout', 'focus' ].includes(this.layoutMode);
     },
     isFocusedMode() {
       return this.layoutMode === 'focus';
@@ -441,11 +294,11 @@ export default {
       ) ?? [];
     },
     gridContentStyles() {
-      if (!this.isManageMode || this.cloneCalculateIndex === 0) {
+      if (this.cloneCalculateIndex === 0) {
         return new Map();
       }
       return this.manager.getGridContentStyles(
-        this.$refs.contentItems
+        this.$parent.$refs.contentItems
       );
     },
     validInsertPositions() {
@@ -473,8 +326,8 @@ export default {
     document.addEventListener('touchend', this.onMouseUp);
 
     this.manager.init(
-      this.$refs.root,
-      this.$refs.grid,
+      this.$parent.$refs.root,
+      this.$parent.$refs.grid,
       (type, obj) => {
         if (type === 'resize') {
           this.sceneResizeIndex += 1;
@@ -491,7 +344,7 @@ export default {
       // without the resize observer being properly cleaned up.
       this.manager.onSceneResizeDebounced(entries);
     });
-    this.resizeObserver.observe(this.$refs.grid);
+    this.resizeObserver.observe(this.$parent.$refs.grid);
 
     await this.$nextTick();
     this.cloneCalculateIndex += 1;
@@ -509,7 +362,7 @@ export default {
     this.manager.destroy();
   },
   methods: {
-    onStartXResize(item, side, event) {
+    onStartResize(item, side, event) {
       event.preventDefault();
       event.stopPropagation();
       const element = this.$refs.items.find(el => el.dataset.id === item._id);
@@ -517,6 +370,10 @@ export default {
       if (!itemData || !element) {
         return;
       }
+      this.$emit('resize-start', {
+        item: itemData,
+        side
+      });
       const {
         left, top, width, height
       } = this.manager.getItemOriginalPosition(
@@ -568,6 +425,9 @@ export default {
       if (!itemData || !element) {
         return;
       }
+      this.$emit('move-start', {
+        item: itemData
+      });
       const {
         left, top, width, height
       } = this.manager.getItemOriginalPosition(element);
@@ -776,12 +636,6 @@ export default {
 
 <style lang="scss" scoped>
 /* The base grid styles, mimicking the default public behavior */
-.apos-layout__grid {
-  display: grid;
-  grid-template-columns: repeat(var(--grid-columns, 12), 1fr);
-  gap: var(--grid-gap);
-}
-
 .apos-layout__item {
   /* stylelint-disable-next-line declaration-block-no-redundant-longhand-properties */
   align-self: var(--align, inherit);
@@ -798,8 +652,6 @@ export default {
   to deliver management features
 */
 .apos-layout {
-  position: relative;
-
   &__grid-clone {
     position: absolute;
     inset: 0;
@@ -815,10 +667,6 @@ export default {
     & > .apos-layout__item-content > *{
       pointer-events: none;
     }
-  }
-
-  &__grid.manage > &__item-content > *{
-    pointer-events: none;
   }
 
   &__grid-clone.manage > &__item {
@@ -843,7 +691,6 @@ export default {
     border: 1px solid var(--a-primary);
     transition: background-color 300ms ease;
     inset: 0;
-    /* stylelint-disable-next-line declaration-no-important */
     border-radius: var(--a-border-radius);
     // background-color: rgba($brand-blue, 0.6);
     background-color: rgba(#fff, 0.4);
@@ -934,69 +781,95 @@ export default {
 }
 
 .apos-layout__item-resize-handle {
-  top: 0;
-  bottom: 0;
-  width: 8px;
+  width: 22px;
+  height: 100%;
 
-  &::before {
-    content: '';
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    width: 3px;
-    height: 30px;
-    max-width: 3px;
-    max-height: 30px;
-    border-radius: 4px;
-    border: 1.5px solid var(--a-primary);
-    box-shadow: 0 1px 3px var(--a-primary);
-    background-color: var(--a-background-primary);
-    transform: translate(-50%, -50%);
-    transition: max-width 300ms ease, max-height 400ms ease;
-  }
-
+  &::before,
   &::after {
     content: '';
     position: absolute;
-    top: 50%;
-    left: 50%;
-    width: 1px;
-    height: 15px;
-    max-width: 1px;
-    max-height: 15px;
-    border-radius: 1px;
-    background-color: var(--a-primary);
-    transform: translate(-50%, -50%);
+    width: 0;
+    height: 0;
+    pointer-events: none;
   }
 
-  &:hover::before {
-    width: 4px;
-    height: 40px;
-    max-width: 4px;
-    background-color: var(--a-primary);
-    max-height: 40px;
-  }
-
-  &:hover::after {
-    width: 2px;
-    height: 21px;
-    max-width: 2px;
-    max-height: 21px;
-  }
-
-  &.east {
+  // south-east corner
+  &.se {
     right: 0;
+    bottom: 0;
+    // cursor: nwse-resize;
     cursor: col-resize;
+
+    // Outer triangle (stroke)
+    &::before {
+      right: 0;
+      bottom: 0;
+      border-bottom: 16px solid var(--a-primary);
+      border-left: 16px solid transparent;
+      filter: drop-shadow(0 1px 2px rgb(0 0 0 / 15%));
+    }
+
+    // Inner triangle (fill)
+    &::after {
+      right: 1px;
+      bottom: 1px;
+      border-bottom: 14px solid var(--a-background-primary);
+      border-left: 14px solid transparent;
+    }
+
+    &:hover::before {
+      border-bottom-width: 18px;
+      border-left-width: 18px;
+    }
+
+    &:hover::after {
+      right: 2px;
+      bottom: 2px;
+      border-bottom-width: 16px;
+      border-left-width: 16px;
+    }
   }
 
-  &.west {
+  // north-west corner
+  &.nw {
+    top: 0;
     left: 0;
+    // cursor: nwse-resize;
     cursor: col-resize;
+
+    // Outer triangle (stroke)
+    &::before {
+      top: 0;
+      left: 0;
+      border-top: 16px solid var(--a-primary);
+      border-right: 16px solid transparent;
+      filter: drop-shadow(0 1px 2px rgb(0 0 0 / 15%));
+    }
+
+    // Inner triangle (fill)
+    &::after {
+      top: 1px;
+      left: 1px;
+      border-top: 14px solid var(--a-background-primary);
+      border-right: 14px solid transparent;
+    }
+
+    &:hover::before {
+      border-top-width: 18px;
+      border-right-width: 18px;
+    }
+
+    &:hover::after {
+      top: 2px;
+      left: 2px;
+      border-top-width: 16px;
+      border-right-width: 16px;
+    }
   }
 }
 
 .apos-layout__item-move-handle {
-  inset: 70px 15px 0;
+  inset: 0 22px;
   cursor: move;
 }
 
@@ -1019,21 +892,6 @@ export default {
   top: 0;
   right: 22px;
   padding: 8px;
-}
-
-.apos-layout__item-align-actions {
-  top: 0;
-  left: 50%;
-  transform: translateX(-50%);
-  display: none;
-  padding: 8px;
-
-  &--row {
-    display: flex;
-    flex-direction: row;
-    justify-content: center;
-    gap: 4px;
-  }
 }
 
 /* stylelint-disable-next-line media-feature-name-allowed-list */

@@ -1,6 +1,5 @@
 /**
  *
- *
  * @typedef {{
  *  id: string,
  *  side: string,

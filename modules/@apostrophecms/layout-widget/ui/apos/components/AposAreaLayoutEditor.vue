@@ -48,7 +48,7 @@
       </template>
     </div>
     <div class="apos-areas-widgets-list">
-      <AposGridManager
+      <AposGridLayout
         :options="gridModuleOptions"
         :items="layoutColumnWidgets"
         :meta="layoutMeta"
@@ -96,7 +96,7 @@
             @paste="paste"
           />
         </template>
-      </AposGridManager>
+      </AposGridLayout>
     </div>
   </div>
 </template>
@@ -140,7 +140,7 @@ export default {
     hasLayoutMeta() {
       return this.next.some(w => w.type === this.layoutMetaWidgetName);
     },
-    // TODO this can be possible sent by server options.
+    // TODO this can be possibly sent by server options.
     layoutMetaWidgetName() {
       return '@apostrophecms/layout-meta';
     },
@@ -158,11 +158,12 @@ export default {
     apos.bus.$off('widget-breadcrumb-operation', this.executeWidgetOperation);
   },
   methods: {
-    // FIXME: find out why we apos.bus.$emit emits once, but listeners are called twice.
-    // FIXME: Finish implementing the context menu editor (edit column settings)
+    // While switching to Edit mode, areaEditors are mounted twice in a quick
+    // succession. This leads to duplicate event listeners on the bus.
+    // See the little trick below to avoid that.
     executeWidgetOperation(update) {
       // isConnected is supported in all modern browsers (2020+).
-      //  It's the easiest way to check if the component is still in the DOM.
+      // It's the easiest way to check if the component is still in the DOM.
       // Here we eliminate leftover bus listeners from unmounted components, that happens
       // sometimes (mostly in development mode) when entering Edit mode with existing
       // area editors on the page.

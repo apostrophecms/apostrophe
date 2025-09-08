@@ -155,7 +155,6 @@
 // See also `skipOperations` option for a way to disable core operations
 // such as edit or remove.
 
-const { stripIndent } = require('common-tags');
 const _ = require('lodash');
 
 module.exports = {
@@ -474,24 +473,6 @@ module.exports = {
         return false;
       },
 
-      // override to add CSS classes to the outer wrapper div of the widget.
-      // TODO: Remove in the 4.x major version.
-      getWidgetWrapperClasses(widget) {
-        self.apos.util.warnDev(stripIndent`
-          The getWidgetWrapperClasses method is deprecated and will be removed in the next
-          major version. The method in 3.x simply returns an empty array.`);
-        return [];
-      },
-
-      // Override to add CSS classes to the div of the widget itself.
-      // TODO: Remove in the 4.x major version.
-      getWidgetClasses(widget) {
-        self.apos.util.warnDev(stripIndent`
-          The getWidgetClasses method is deprecated and will be removed in the next major
-          version. The method in 3.x simply returns an empty array.`);
-        return [];
-      },
-
       validateWidgetBreadcrumbOperation(name, operation) {
         if (operation.type === 'switch' && !operation.choices?.length) {
           throw self.apos.error('invalid',
@@ -514,6 +495,12 @@ module.exports = {
         if ([ 'breadcrumb', 'all' ].includes(operation.placement)) {
           self.validateWidgetBreadcrumbOperation(name, operation);
         }
+        if (operation.type === 'menu' && !operation.modal) {
+          throw self.apos.error('invalid',
+            `widgetOperation "${name}" of type "menu" requires a modal property.`
+          );
+        }
+
         if (operation.placement === 'breadcrumb') {
           return;
         }
