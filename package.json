@@ -71,6 +71,7 @@
     "csv-parse": "^5.6.0",
     "dayjs": "^1.9.8",
     "dompurify": "^3.2.5",
+    "encodeurl": "^2.0.0",
     "express": "^4.16.4",
     "express-bearer-token": "^3.0.0",
     "express-cache-on-demand": "^1.0.3",
