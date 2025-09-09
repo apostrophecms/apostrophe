@@ -186,22 +186,6 @@ module.exports = {
     self.addLegacyMigrations();
     await self.ensureSafe();
   },
-  apiRoutes(self) {
-    return {
-      post: {
-        async uniqueUsername(req) {
-          const username = self.apos.launder.string(req.body.username);
-          const user = self.find(req, { username }).project({
-            _id: 1,
-            username: 1
-          }).toObject();
-          if (user) {
-            throw self.apos.error('conflict');
-          }
-        }
-      }
-    };
-  },
   handlers(self) {
     return {
       beforeInsert: {
