@@ -272,6 +272,7 @@
   "layoutBottom": "Bottom",
   "layoutTabletShow": "Visible on tablet",
   "layoutMobileShow": "Visible on mobile",
+  "layoutTogggleTooltip": "Use Content mode to edit your widgets and Layout mode to modify your columns",
   "leavePageDescription": "The content you're trying to edit belongs to another document and must be edited there.\nChanges made to {{ oldTitle }} are saved automatically.",
   "leavePageHeading": "Leave {{ oldTitle }} to edit {{ newTitle }}?",
   "linkHrefHelp": "Write the full URL, beginning with https:// or http://",

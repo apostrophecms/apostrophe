@@ -104,6 +104,163 @@ export function itemsToState({
 }
 
 /**
+ * Generate items for a new row. Attempt to fit the entire space, while
+ * restricting each item's colspan to at least minColspan and ideally
+ * defaultColspan (or anything between). Rowspan is always 1 and order
+ * is sequential.
+ *
+ * @param {number} columns
+ * @param {Object} [options]
+ * @param {number} [options.minColspan]
+ * @param {number} [options.defaultColspan]
+ * @param {number} [options.row] The current row number (1-based)
+ *
+ * @returns {Pick<
+ *    CurrentItem,
+ *   'rowstart' | 'rowspan' | 'colstart' | 'colspan' | 'order'
+ * >[]
+ * }
+ */
+export function provisionRow(columns, {
+  minColspan = 2, defaultColspan = 3, row = 1
+} = {}) {
+  // Normalize inputs
+  const C = Math.max(1, Math.floor(Number(columns) || 1));
+  const min = Math.max(1, Math.floor(Number(minColspan) || 1));
+  const ideal = Math.max(min, Math.floor(Number(defaultColspan) || min));
+
+  // If columns are fewer than min, fall back to a single full-width item
+  if (C <= min) {
+    return [
+      {
+        rowstart: row,
+        rowspan: 1,
+        colstart: 1,
+        colspan: C,
+        order: 0
+      }
+    ];
+  }
+
+  // Choose the number of items n in [1..floor(C/min)] that best matches the
+  // desired (near ideal) span while filling the row exactly. We evaluate a
+  // small scoring function to bias toward:
+  //  - average span close to `ideal`
+  //  - exact division (no remainder)
+  //  - n close to C/ideal
+  const nMax = Math.max(1, Math.floor(C / min));
+  const targetN = Math.max(1, Math.round(C / ideal));
+  let best = null; // { n, base, rem, score }
+
+  for (let n = 1; n <= nMax; n++) {
+    const base = Math.floor(C / n);
+    if (base < min) {
+      continue;
+    }
+    const rem = C - base * n; // number of items that will get +1
+    const avg = base + (rem / n);
+    const closeness = Math.abs(avg - ideal);
+    const evenPenalty = rem === 0 ? 0 : 0.05;
+    const nPenalty = Math.abs(n - targetN) / targetN * 0.1;
+    // light penalty for very many items (usability)
+    const densityPenalty = n > 8 ? (n - 8) * 0.02 : 0;
+    const score = closeness + evenPenalty + nPenalty + densityPenalty;
+
+    if (!best || score < best.score ||
+      (score === best.score && (rem < best.rem ||
+        (rem === best.rem && Math.abs(n - targetN) < Math.abs(best.n - targetN))))) {
+      best = {
+        n,
+        base,
+        rem,
+        score
+      };
+    }
+  }
+
+  if (!best) {
+    // Fallback to a single item spanning the whole row
+    return [
+      {
+        rowstart: row,
+        rowspan: 1,
+        colstart: 1,
+        colspan: C,
+        order: 0
+      }
+    ];
+  }
+
+  const {
+    n, base, rem
+  } = best;
+  // Start with equal base widths, then distribute the remainder symmetrically
+  const sizes = new Array(n).fill(base);
+  let r = rem;
+
+  if (n === 1) {
+    sizes[0] = C;
+  } else if (n % 2 === 1) {
+    // Odd: center-first, then mirror outward in pairs
+    const c = Math.floor(n / 2);
+    if (r > 0) {
+      sizes[c] += 1; r -= 1;
+    }
+    for (let k = 1; r >= 2 && (c - k) >= 0 && (c + k) < n; k++) {
+      sizes[c - k] += 1;
+      sizes[c + k] += 1;
+      r -= 2;
+    }
+    if (r === 1) {
+      // Last unmatched extra: place toward the side that keeps sizes near ideal
+      const leftIdx = 0;
+      const rightIdx = n - 1;
+      const leftDelta = Math.abs((sizes[leftIdx] + 1) - ideal);
+      const rightDelta = Math.abs((sizes[rightIdx] + 1) - ideal);
+      const addLeft = leftDelta <= rightDelta;
+      sizes[addLeft ? leftIdx : rightIdx] += 1;
+      r = 0;
+    }
+  } else {
+    // Even: two centers as the first symmetric pair, then expand outward
+    const rc = n / 2; // right center index
+    const lc = rc - 1; // left center index
+    for (let k = 0; r >= 2 && (lc - k) >= 0 && (rc + k) < n; k++) {
+      sizes[lc - k] += 1;
+      sizes[rc + k] += 1;
+      r -= 2;
+    }
+    if (r === 1) {
+      // Bias to the side that yields closer-to-ideal span
+      const leftIdx = Math.max(0, lc - Math.ceil((n - 2) / 2));
+      const rightIdx = Math.min(n - 1, rc + Math.ceil((n - 2) / 2));
+      const leftDelta = Math.abs((sizes[leftIdx] + 1) - ideal);
+      const rightDelta = Math.abs((sizes[rightIdx] + 1) - ideal);
+      const addLeft = leftDelta <= rightDelta;
+      sizes[addLeft ? leftIdx : rightIdx] += 1;
+      r = 0;
+    }
+  }
+
+  // Build the items left-to-right
+  const items = [];
+  let colstart = 1;
+  for (let i = 0; i < n; i++) {
+    const span = sizes[i];
+    items.push({
+      rowstart: row,
+      rowspan: 1,
+      colstart,
+      colspan: span,
+      order: i
+    });
+    colstart += span;
+  }
+
+  return items;
+}
+
+/**
  * Create a 2d map (rows x columns) to store items positions
  *
  * @param {CurrentItem[]} items

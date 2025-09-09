@@ -103,6 +103,7 @@
 
 <script>
 import AposAreaEditorLogic from 'Modules/@apostrophecms/area/logic/AposAreaEditor.js';
+import { provisionRow } from '../lib/grid-state.mjs';
 
 export default {
   name: 'AposAreaLayoutEditor',
@@ -199,10 +200,15 @@ export default {
       }
       return this.remove(widgetIndex);
     },
-    onCreateProvision() {
+    async onCreateProvision() {
       if (!this.layoutMetaWidgetName) {
         throw new Error('No layout meta widget found.');
       }
+
+      if (this.hasLayoutMeta) {
+        return;
+      }
+
       const meta = this.newWidget(this.layoutMetaWidgetName);
       meta.columns = this.gridModuleOptions.columns;
       this.insert({
@@ -210,6 +216,27 @@ export default {
         index: 0
       });
       this.layoutMode = 'layout';
+
+      const items = provisionRow(meta.columns, {
+        minColspan: this.gridModuleOptions.minSpan,
+        defaultColspan: this.gridModuleOptions.defaultSpan,
+        row: 1
+      });
+
+      for (const [ index, item ] of items.entries()) {
+        const widget = this.newWidget(this.layoutColumnWidgetName);
+        Object.assign(widget[this.layoutDeviceMode], {
+          colspan: item.colspan,
+          colstart: item.colstart,
+          rowstart: item.rowstart,
+          rowspan: item.rowspan,
+          order: item.order
+        });
+        this.insert({
+          widget,
+          index: index + 1
+        });
+      }
     },
     onAddItem(patch) {
       const widgetName = this.layoutColumnWidgetName;
