@@ -42,13 +42,10 @@
   }
 
   /* 
-    Last visible child spans full width, but only when the number of 
-    visible children is odd. 
-    Use “of S” to count only [data-visible-tablet="true"] siblings.
-    Chain both pseudos on the same element (no whitespace between them).
-    Do not reformat the selector or it will break.
+    The backend should mark last odd items as full width to avoid
+    weird spacing at the end of rows.
   */
-  .layout-widget[data-tablet-auto="true"] > div:nth-last-child(1 of [data-visible-tablet="true"]):nth-child(odd of [data-visible-tablet="true"]) { 
+  .layout-widget[data-tablet-auto="true"] > [data-full-tablet="true"] { 
     grid-column: 1 / span 2; 
   }
 

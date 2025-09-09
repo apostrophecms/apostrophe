@@ -88,6 +88,24 @@ module.exports = {
     return {
       getLayoutMeta(widget) {
         return widget?.columns?.items?.find(item => item.type === '@apostrophecms/layout-meta');
+      },
+      detectLastTabletFullWidthItem(widgets) {
+        if (!Array.isArray(widgets)) {
+          return;
+        }
+        const meta = widgets.find(widget => widget.type === '@apostrophecms/layout-meta');
+        if (!meta?.tablet?.auto) {
+          return;
+        }
+        const items = widgets.filter(widget => widget.type !== '@apostrophecms/layout-meta');
+        if (items.length % 2 === 0) {
+          return;
+        }
+        items.sort((a, b) =>
+          (a.tablet.order || a.desktop.order) - (b.tablet.order || b.desktop.order)
+        );
+        console.log('Last tablet full width item ID:', items);
+        return items[items.length - 1]._id;
       }
     };
   }
