@@ -574,14 +574,14 @@ export class GridManager {
   }
 
   getGridComputedStyle() {
-    if (!this.gridComputedStyle) {
+    if (!this.gridComputedStyle && this.gridElement) {
       this.gridComputedStyle = getComputedStyle(this.gridElement);
     }
     return this.gridComputedStyle;
   }
 
   getGridBoundingRect() {
-    if (!this.gridBoundingRect) {
+    if (!this.gridBoundingRect && this.gridElement) {
       this.gridBoundingRect = this.gridElement.getBoundingClientRect();
     }
     return this.gridBoundingRect;

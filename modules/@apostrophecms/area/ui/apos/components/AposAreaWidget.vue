@@ -556,6 +556,7 @@ export default {
 
       if (operation.type === 'switch') {
         return {
+          widgetId: this.widget._id,
           name: operation.name,
           choices: operation.choices,
           value: operation.def,
