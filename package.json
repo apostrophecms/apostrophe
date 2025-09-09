@@ -122,7 +122,7 @@
     "tiny-emitter": "^2.1.0",
     "tough-cookie": "^4.0.0",
     "underscore.string": "^3.3.4",
-    "uploadfs": "github:apostrophecms/uploadfs#pro-8109-upgrade-dependencies",
+    "uploadfs": "^1.25.1",
     "void-elements": "^3.1.0",
     "vue": "^3.3.8",
     "vue-advanced-cropper": "^2.8.8",
@@ -133,7 +133,7 @@
     "xregexp": "^2.0.0"
   },
   "devDependencies": {
-    "eslint-config-apostrophe": "github:apostrophecms/eslint-config-apostrophe#pro-8109-upgrade-dependencies",
+    "eslint-config-apostrophe": "^6.0.0",
     "form-data": "^4.0.4",
     "mocha": "^11.7.1",
     "nyc": "^17.1.0",
