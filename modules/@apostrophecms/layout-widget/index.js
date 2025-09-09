@@ -102,7 +102,7 @@ module.exports = {
           return;
         }
         items.sort((a, b) =>
-          (a.tablet.order || a.desktop.order) - (b.tablet.order || b.desktop.order)
+          (a.tablet.order ?? a.desktop.order) - (b.tablet.order ?? b.desktop.order)
         );
         return items[items.length - 1]._id;
       }
