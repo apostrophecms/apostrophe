@@ -104,7 +104,6 @@ module.exports = {
         items.sort((a, b) =>
           (a.tablet.order || a.desktop.order) - (b.tablet.order || b.desktop.order)
         );
-        console.log('Last tablet full width item ID:', items);
         return items[items.length - 1]._id;
       }
     };
