@@ -4,7 +4,19 @@
     "@apostrophecms/stylelint-no-mixed-decls": [
       true,
       {
-        "contain-nested": [ "apos-transition" ]
+        "contain-nested": [
+          "type-base",
+          "type-help",
+          "type-small",
+          "type-label",
+          "type-large",
+          "type-title",
+          "type-display",
+          "apos-input",
+          "link-primary",
+          "apos-transition",
+          "apos-button-reset"
+        ]
       }
     ]
   }
