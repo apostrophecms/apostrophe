@@ -78,7 +78,7 @@
 // Example:
 // ```sh
 // # same as the `filter` example above
-// eslint-disable-next-line max-len
+
 // export
 // APOS_FILTER_LOGS='*:severity:warn,error;@apostrophecms/login:events:incorrect-username,
 // incorrect-password'

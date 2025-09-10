@@ -1,5 +1,4 @@
 // Direct use of console is appropriate in tasks. -Tom
-/* eslint-disable no-console */
 
 const fs = require('fs');
 const sep = require('path').sep;

@@ -752,7 +752,7 @@ async function apostrophe(options, telemetry, rootSpan) {
           if (self.argv[`ignore-${name}`]) {
             return;
           }
-          /* eslint-disable-next-line no-console */
+
           console.warn(message);
         }
       }
