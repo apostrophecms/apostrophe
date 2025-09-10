@@ -125,10 +125,13 @@ export default {
     };
   },
   computed: {
+    layoutModuleOptions() {
+      return window.apos.modules[this.moduleName] || {};
+    },
     gridModuleOptions() {
       return Object.assign(
         {},
-        window.apos.modules[this.moduleName]?.grid ?? {},
+        this.layoutModuleOptions.grid ?? {},
         this.parentOptions
       );
     },
@@ -141,12 +144,11 @@ export default {
     hasLayoutMeta() {
       return this.next.some(w => w.type === this.layoutMetaWidgetName);
     },
-    // TODO this can be possibly sent by server options.
     layoutMetaWidgetName() {
-      return '@apostrophecms/layout-meta';
+      return this.layoutModuleOptions.metaWidgetName;
     },
     layoutColumnWidgetName() {
-      return this.choices.find(c => c.name !== this.layoutMetaWidgetName)?.name;
+      return this.layoutModuleOptions.columnWidgetName;
     }
   },
   mounted() {

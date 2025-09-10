@@ -6,7 +6,6 @@
         :key="choice.value"
       >
         <input
-          :id="choice.value"
           v-model="store.data.value"
           :value="choice.value"
           type="radio"
@@ -136,5 +135,4 @@ export default {
     }
   }
 }
-
 </style>

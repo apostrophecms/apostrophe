@@ -64,6 +64,21 @@ module.exports = {
       }
     };
   },
+  init(self) {
+    self.metaWidgetName = '@apostrophecms/layout-meta';
+    self.columnWidgetName = '@apostrophecms/layout-column';
+  },
+  handlers(self) {
+    return {
+      'apostrophe:modulesRegistered': {
+        validateAndIdentifyTypes() {
+          const { meta, column } = self.validateAndIdentifyTypes();
+          self.metaWidgetName = meta;
+          self.columnWidgetName = column;
+        }
+      }
+    };
+  },
   extendMethods(self) {
     return {
       getBrowserData(_super, req) {
@@ -79,7 +94,90 @@ module.exports = {
             gap: self.options.gap,
             defaultCellHorizontalAlignment: self.options.defaultCellHorizontalAlignment,
             defaultCellVerticalAlignment: self.options.defaultCellVerticalAlignment
+          },
+          metaWidgetName: self.metaWidgetName,
+          columnWidgetName: self.columnWidgetName
+        };
+      }
+    };
+  },
+  methods(self) {
+    return {
+      validateAndIdentifyTypes() {
+        if (self.options.columns < 2) {
+          throw new Error('The layout widget must have at least 2 columns.');
+        }
+        if (self.options.minSpan < 1) {
+          throw new Error('The layout widget must have a minimum span of at least 1.');
+        }
+        if (self.options.minSpan > self.options.columns) {
+          throw new Error('The layout widget cannot have a minimum span greater than the number of columns.');
+        }
+        if (self.options.defaultSpan < self.options.minSpan) {
+          throw new Error('The layout widget cannot have a default span less than the minimum span.');
+        }
+        if (self.options.defaultSpan > self.options.columns) {
+          throw new Error('The layout widget cannot have a default span greater than the number of columns.');
+        }
+
+        const columnsField = self.schema.find(field => field.name === 'columns');
+        if (!columnsField || columnsField.type !== 'area') {
+          throw new Error('The layout widget must have a "columns" field of type "area".');
+        }
+
+        const widgetTypes = Object.keys(columnsField.options?.widgets || {});
+        if (widgetTypes.length !== 2) {
+          throw new Error(
+            `The layout widget "columns" area must have exactly two widget types, it has ${widgetTypes.length}.`
+          );
+        }
+
+        const check = {
+          '@apostrophecms/layout-column': false,
+          '@apostrophecms/layout-meta': false
+        };
+        const targetTypes = Object.keys(check);
+        const targetModuleTypes = targetTypes.map(type => `${type}-widget`);
+        for (const widgetType of widgetTypes) {
+          if (targetTypes.includes(widgetType)) {
+            check[widgetType] = widgetType;
+            continue;
           }
+          const type = `${widgetType}-widget`;
+          const m = self.apos.modules[type];
+          if (!m) {
+            throw new Error(`The layout widget "columns" area has an unknown widget type: ${type}.`);
+          }
+          const meta = m.__meta.chain
+            .find(item => targetModuleTypes.includes(item.name));
+          if (meta) {
+            const mappedType = targetTypes[targetModuleTypes.indexOf(meta.name)];
+            check[mappedType] = widgetType;
+            continue;
+          }
+        }
+        if (!check['@apostrophecms/layout-column']) {
+          throw new Error(
+            'The layout widget "columns" area must have a widget type or a subtype of "@apostrophecms/layout-column"'
+          );
+        }
+
+        if (!check['@apostrophecms/layout-meta']) {
+          throw new Error(
+            'The layout widget "columns" area must have a widget type or a subtype of "@apostrophecms/layout-meta"'
+          );
+        }
+
+        if (!columnsField.options.editorComponent) {
+          columnsField.options.editorComponent = 'AposAreaLayoutEditor';
+        }
+        if (!columnsField.options.widgetTemplate) {
+          columnsField.options.widgetTemplate = '@apostrophecms/layout-widget:column.html';
+        }
+
+        return {
+          meta: check['@apostrophecms/layout-meta'],
+          column: check['@apostrophecms/layout-column']
         };
       }
     };
@@ -87,17 +185,17 @@ module.exports = {
   helpers(self) {
     return {
       getLayoutMeta(widget) {
-        return widget?.columns?.items?.find(item => item.type === '@apostrophecms/layout-meta');
+        return widget?.columns?.items?.find(item => item.type === self.metaWidgetName);
       },
       detectLastTabletFullWidthItem(widgets) {
         if (!Array.isArray(widgets)) {
           return;
         }
-        const meta = widgets.find(widget => widget.type === '@apostrophecms/layout-meta');
+        const meta = widgets.find(widget => widget.type === self.metaWidgetName);
         if (!meta?.tablet?.auto) {
           return;
         }
-        const items = widgets.filter(widget => widget.type !== '@apostrophecms/layout-meta');
+        const items = widgets.filter(widget => widget.type === self.columnWidgetName);
         if (items.length % 2 === 0) {
           return;
         }
