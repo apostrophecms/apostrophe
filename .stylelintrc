@@ -4,7 +4,7 @@
     "@apostrophecms/stylelint-no-mixed-decls": [
       true,
       {
-        "contain-nested": ["apos-transition"]
+        "contain-nested": [ "apos-transition" ]
       }
     ]
   }
