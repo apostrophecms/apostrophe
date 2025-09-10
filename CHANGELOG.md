@@ -20,6 +20,7 @@
 
 * Redirects to URLs containing accent marks and other non-ascii characters now behave as expected with Astro. Pre-encoding the URLs exactly the way `res.redirect` would before passing them to Astro prevents an error in Astro and allows the redirect to succeed.
 * Removes the non-functional `uniqueUsername` route from the `user` module
+* Modifies the `annotateAreaForExternalFront()` method of the `@apostrophecms/template` module to accept a per-module `annotateWidgetForExternalFront()` method. This allows widgets to send project-level options alongside the per-area options to external frontends.
 * Updated dependencies to address deprecation warnings.
 
 
