@@ -432,8 +432,8 @@ module.exports = {
             const parse = config.parse
               ? config.parse
               : function (parser, nodes, lexer) {
-              // Default parser gets comma separated arguments,
-              // assumes no body
+                // Default parser gets comma separated arguments,
+                // assumes no body
 
                 // get the tag token
                 const token = parser.nextToken();
@@ -696,7 +696,7 @@ module.exports = {
           _.extend(args, data);
 
           if (req.aposError) {
-          // A 500-worthy error occurred already, i.e. in `pageBeforeSend`
+            // A 500-worthy error occurred already, i.e. in `pageBeforeSend`
             telemetry.handleError(span, req.aposError);
             span.end();
             return error(req.aposError);
@@ -739,8 +739,8 @@ module.exports = {
             span.setStatus({ code: telemetry.api.SpanStatusCode.OK });
             return content;
           } catch (e) {
-          // The page template threw an exception. Log where it
-          // occurred for easier debugging
+            // The page template threw an exception. Log where it
+            // occurred for easier debugging
             telemetry.handleError(span, e);
             return error(e);
           } finally {
@@ -1301,10 +1301,29 @@ module.exports = {
             label: options.addLabel || manager.label || `No label for ${name}`
           };
         }).filter(choice => !!choice);
+
         area.items ||= [];
-        if (area._docId) {
-          for (const item of area.items) {
+        for (const item of area.items) {
+          // Add _docId if area has one
+          if (area._docId) {
             item._docId = area._docId;
+          }
+
+          // Annotate each individual widget with its options
+          // Each widget must elect into this through a
+          // `annotateWidgetForExternalFront() method.
+          if (item.type) {
+            const moduleName = `${item.type}-widget`;
+            const module = self.apos.modules[moduleName];
+
+            if (module && module.annotateWidgetForExternalFront) {
+              const widgetOptions = module.annotateWidgetForExternalFront(module);
+
+              // Add options directly to the widget item
+              if (widgetOptions && Object.keys(widgetOptions).length > 0) {
+                item._options = widgetOptions;
+              }
+            }
           }
         }
       }
