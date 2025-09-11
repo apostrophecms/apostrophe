@@ -57,14 +57,13 @@ module.exports = {
         layoutColConfig: {
           placement: 'breadcrumb',
           icon: 'cog-icon',
-          tooltip: 'Configure column',
           type: 'menu',
           modal: 'AposLayoutColControlDialog'
         },
         layoutColDelete: {
           placement: 'breadcrumb',
           icon: 'delete-icon',
-          tooltip: 'Delete column'
+          tooltip: 'apostrophe:delete'
         }
       }
     };

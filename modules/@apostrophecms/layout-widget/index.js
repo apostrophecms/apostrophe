@@ -39,7 +39,7 @@ module.exports = {
           placement: 'breadcrumb',
           type: 'info',
           icon: 'information-outline-icon',
-          tooltip: 'Use Content mode to edit your widgets and Layout mode to modify your columns'
+          tooltip: 'apostrophe:layoutTogggleTooltip'
         }
       }
     };

@@ -402,6 +402,193 @@ describe('Layout Widget', function () {
       assert.equal(pm.get('a')?.colstart, 5);
     });
   });
+
+  describe('Provisioning', function () {
+    it('[provisionRow] smoke and symmetry cases', async function () {
+      const { provisionRow } = await getLib();
+      const cases = [
+        {
+          C: 12,
+          min: 2,
+          ideal: 3,
+          expect: [ 3, 3, 3, 3 ]
+        },
+        {
+          C: 10,
+          min: 2,
+          ideal: 3,
+          expect: [ 3, 4, 3 ]
+        },
+        {
+          C: 11,
+          min: 2,
+          ideal: 3,
+          expect: [ 3, 3, 3, 2 ]
+        },
+        {
+          C: 7,
+          min: 2,
+          ideal: 3,
+          expect: [ 4, 3 ]
+        },
+        {
+          C: 5,
+          min: 2,
+          ideal: 3,
+          expect: [ 3, 2 ]
+        },
+        {
+          C: 4,
+          min: 2,
+          ideal: 3,
+          expect: [ 4 ]
+        },
+        {
+          C: 3,
+          min: 2,
+          ideal: 3,
+          expect: [ 3 ]
+        },
+        {
+          C: 2,
+          min: 2,
+          ideal: 3,
+          expect: [ 2 ]
+        },
+        {
+          C: 1,
+          min: 2,
+          ideal: 3,
+          expect: [ 1 ]
+        }
+      ];
+
+      for (const t of cases) {
+        const items = provisionRow(t.C, {
+          minColspan: t.min,
+          defaultColspan: t.ideal,
+          row: 1
+        });
+        const spans = items.map(i => i.colspan);
+        const sum = spans.reduce((a, b) => a + b, 0);
+        // Fills entire row
+        assert.equal(sum, t.C, `sum != columns for C=${t.C}`);
+        // Expected distribution
+        assert.deepEqual(
+          spans,
+          t.expect,
+          `unexpected spans for C=${t.C} -> ${JSON.stringify(spans)}`
+        );
+        // Sequential colstart and order
+        let col = 1;
+        items.forEach((it, idx) => {
+          assert.equal(it.rowstart, 1);
+          assert.equal(it.rowspan, 1);
+          assert.equal(it.order, idx);
+          assert.equal(it.colstart, col);
+          col += it.colspan;
+        });
+      }
+    });
+
+    it('[provisionRow] default < min coerces toward min-sized tiles', async function () {
+      const { provisionRow } = await getLib();
+      const C = 12;
+      const items = provisionRow(C, {
+        minColspan: 3,
+        defaultColspan: 2,
+        row: 2
+      });
+      const spans = items.map(i => i.colspan);
+      const sum = spans.reduce((a, b) => a + b, 0);
+      assert.equal(sum, C);
+      spans.forEach(s => assert.ok(s >= 3));
+      assert.ok(spans.every(s => s >= 3 && s <= 4));
+      items.forEach((it, idx) => {
+        assert.equal(it.rowstart, 2);
+        assert.equal(it.order, idx);
+      });
+    });
+
+    it('[provisionRow] min = 1 and ideal = 1 yields 1-wide tiles', async function () {
+      const { provisionRow } = await getLib();
+      const C = 5;
+      const items = provisionRow(C, {
+        minColspan: 1,
+        defaultColspan: 1,
+        row: 3
+      });
+      const spans = items.map(i => i.colspan);
+      assert.deepEqual(spans, [ 1, 1, 1, 1, 1 ]);
+      items.forEach((it, idx) => {
+        assert.equal(it.rowstart, 3);
+        assert.equal(it.rowspan, 1);
+        assert.equal(it.order, idx);
+      });
+    });
+
+    it('[provisionRow] columns less than min -> single full-width item', async function () {
+      const { provisionRow } = await getLib();
+      const C = 2;
+      const items = provisionRow(C, {
+        minColspan: 3,
+        defaultColspan: 4,
+        row: 4
+      });
+      assert.equal(items.length, 1);
+      assert.equal(items[0].colspan, 2);
+      assert.equal(items[0].rowstart, 4);
+      assert.equal(items[0].rowspan, 1);
+      assert.equal(items[0].colstart, 1);
+      assert.equal(items[0].order, 0);
+    });
+
+    it('[provisionRow] large columns with ideal 3 produce repeated 3s', async function () {
+      const { provisionRow } = await getLib();
+      const C = 24;
+      const items = provisionRow(C, {
+        minColspan: 2,
+        defaultColspan: 3,
+        row: 5
+      });
+      const spans = items.map(i => i.colspan);
+      const sum = spans.reduce((a, b) => a + b, 0);
+      assert.equal(sum, C);
+      assert.ok(spans.every(s => s === 3));
+      let c = 1;
+      items.forEach((it) => {
+        assert.equal(it.colstart, c);
+        c += it.colspan;
+      });
+    });
+
+    it('[provisionRow] odd columns with min 3 ideal 4 have limited spread', async function () {
+      const { provisionRow } = await getLib();
+      const C = 13;
+      const items = provisionRow(C, {
+        minColspan: 3,
+        defaultColspan: 4,
+        row: 6
+      });
+      const spans = items.map(i => i.colspan);
+      const sum = spans.reduce((a, b) => a + b, 0);
+      assert.equal(sum, C);
+      spans.forEach(s => assert.ok(s >= 3));
+      const minS = Math.min(...spans);
+      const maxS = Math.max(...spans);
+      assert.ok(maxS - minS <= 2);
+    });
+
+    it('[provisionRow] supports string columns input', async function () {
+      const { provisionRow } = await getLib();
+      const items = provisionRow('12', {
+        minColspan: 2,
+        defaultColspan: 3
+      });
+      const spans = items.map(i => i.colspan);
+      assert.equal(spans.reduce((a, b) => a + b, 0), 12);
+    });
+  });
 });
 
 function buildItem(id, colstart, colspan, order, rowstart = 1, rowspan = 1) {
