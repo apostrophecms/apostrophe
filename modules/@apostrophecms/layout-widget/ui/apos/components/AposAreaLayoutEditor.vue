@@ -219,7 +219,6 @@ export default {
         index: 0
       });
       this.layoutMode = 'layout';
-      // apos.widget.update(this.parentOptions?.widgetId, 'layout:switch', 'layout');
       this.updateWidgetStore(this.parentOptions?.widgetId, 'layout:switch', 'layout');
 
       const items = provisionRow(meta.columns, {
