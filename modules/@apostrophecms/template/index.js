@@ -1319,7 +1319,7 @@ module.exports = {
             const module = self.apos.modules[moduleName];
 
             if (module && module.annotateWidgetForExternalFront) {
-              const widgetOptions = module.annotateWidgetForExternalFront(module);
+              const widgetOptions = module.annotateWidgetForExternalFront();
 
               // Add options directly to the widget item
               if (widgetOptions && Object.keys(widgetOptions).length > 0) {
