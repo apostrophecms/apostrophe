@@ -1,3 +1,23 @@
 {
-  "extends": "stylelint-config-apostrophe"
+  "extends": "stylelint-config-apostrophe",
+  "rules": {
+    "@apostrophecms/stylelint-no-mixed-decls": [
+      true,
+      {
+        "contain-nested": [
+          "type-base",
+          "type-help",
+          "type-small",
+          "type-label",
+          "type-large",
+          "type-title",
+          "type-display",
+          "apos-input",
+          "link-primary",
+          "apos-transition",
+          "apos-button-reset"
+        ]
+      }
+    ]
+  }
 }
