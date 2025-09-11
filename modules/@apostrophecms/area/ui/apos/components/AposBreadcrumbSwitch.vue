@@ -7,7 +7,7 @@
       >
         <input
           :id="choice.value"
-          v-model="next"
+          v-model="store.data.value"
           :value="choice.value"
           type="radio"
           :name="name"
@@ -20,10 +20,16 @@
 </template>
 
 <script>
+import { useWidgetStore } from 'Modules/@apostrophecms/ui/stores/widget.js';
+
 export default {
   name: 'AposBreadcrumbSwitch',
   components: { },
   props: {
+    widgetId: {
+      type: String,
+      default: null
+    },
     choices: {
       type: Array,
       required: true
@@ -41,14 +47,17 @@ export default {
     'update'
   ],
   data() {
+    const name = `${this.name}:switch`;
+    const widgetStore = useWidgetStore();
     return {
-      next: this.value || null
+      next: this.value || null,
+      storeRemove: widgetStore.remove,
+      store: widgetStore.getOrSet(this.widgetId, name, this.value || null),
+      namespace: name
     };
   },
-  computed: {},
-  watch: {
-  },
-  mounted() {
+  unmounted() {
+    this.storeRemove(this.widgetId, this.namespace);
   },
   methods: {
     update(event) {
