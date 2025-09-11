@@ -5,13 +5,19 @@
 ### Adds
 
 * Custom operations registered with `addCreateWidgetOperation` can now specify an `ifTypesIntersect` property containing an array of widget type names. If the area in question allows at least one, the operation is offered.
+* The login-requirements tests were updated to include tests for the `uponSubmit` filter
 * Add `prependNodes` and `appendNodes` calls for `main`.
+
+### Fixes
+
+* Fixes a bug in the login `uponSubmit` filter where a user could login without meeting the requirement.
 
 ### Changes
 
 * Redirects to URLs containing accent marks and other non-ascii characters now behave as expected with Astro. Pre-encoding the URLs exactly the way `res.redirect` would before passing them to Astro prevents an error in Astro and allows the redirect to succeed.
 * Removes the non-functional `uniqueUsername` route from the `user` module
 * Updated dependencies to address deprecation warnings.
+
 
 ## 4.21.0 (2025-09-03)
 
