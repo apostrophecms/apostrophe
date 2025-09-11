@@ -202,7 +202,10 @@ export default {
         return [];
       }
       const menu = [ ...this.contextMenuOptions.menu ];
-      const createWidgetOperations = filterCreateWidgetOperations(this.moduleOptions, this.options);
+      const createWidgetOperations = filterCreateWidgetOperations(
+        this.moduleOptions,
+        this.options
+      );
       for (const createWidgetOperation of createWidgetOperations) {
         menu.unshift({
           type: 'operation',
