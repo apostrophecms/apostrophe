@@ -20,6 +20,8 @@
 </template>
 
 <script>
+import { useWidgetStore } from 'Modules/@apostrophecms/ui/stores/widget.js';
+
 export default {
   name: 'AposBreadcrumbSwitch',
   components: { },
@@ -46,14 +48,16 @@ export default {
   ],
   data() {
     const name = `${this.name}:switch`;
+    const widgetStore = useWidgetStore();
     return {
       next: this.value || null,
-      store: window.apos.widget.getOrSet(this.widgetId, name, this.value || null),
+      storeRemove: widgetStore.remove,
+      store: widgetStore.getOrSet(this.widgetId, name, this.value || null),
       namespace: name
     };
   },
   unmounted() {
-    window.apos.widget.remove(this.widgetId, this.namespace);
+    this.storeRemove(this.widgetId, this.namespace);
   },
   methods: {
     update(event) {

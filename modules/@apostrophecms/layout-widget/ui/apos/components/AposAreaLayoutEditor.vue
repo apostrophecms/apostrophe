@@ -103,6 +103,7 @@
 
 <script>
 import AposAreaEditorLogic from 'Modules/@apostrophecms/area/logic/AposAreaEditor.js';
+import { useWidgetStore } from 'Modules/@apostrophecms/ui/stores/widget.js';
 import { provisionRow } from '../lib/grid-state.mjs';
 
 export default {
@@ -119,9 +120,11 @@ export default {
     }
   },
   data() {
+    const store = useWidgetStore();
     return {
       layoutMode: 'content',
-      layoutDeviceMode: 'desktop'
+      layoutDeviceMode: 'desktop',
+      updateWidgetStore: store.update,
     };
   },
   computed: {
@@ -216,7 +219,8 @@ export default {
         index: 0
       });
       this.layoutMode = 'layout';
-      apos.widget.update(this.parentOptions?.widgetId, 'layout:switch', 'layout');
+      // apos.widget.update(this.parentOptions?.widgetId, 'layout:switch', 'layout');
+      this.updateWidgetStore(this.parentOptions?.widgetId, 'layout:switch', 'layout');
 
       const items = provisionRow(meta.columns, {
         minColspan: this.gridModuleOptions.minSpan,
