@@ -401,6 +401,62 @@ describe('Layout Widget', function () {
       assert.equal(pm.get('b')?.colstart, 1);
       assert.equal(pm.get('a')?.colstart, 5);
     });
+
+    it('[previewMoveChanges] mirrors getMoveChanges moving item placement (free move)', async function () {
+      const lib = await getLib();
+      const items = [
+        buildItem('a', 1, 3, 0),
+        buildItem('b', 6, 2, 1)
+      ];
+      const state = makeState(lib, items, 12, 1);
+      const target = {
+        id: 'b',
+        colstart: 4,
+        rowstart: 1
+      };
+      const preview = lib.previewMoveChanges({
+        data: target,
+        state,
+        item: items[1]
+      });
+      assert.equal(preview?.colstart, 4);
+      const full = lib.getMoveChanges({
+        data: target,
+        state,
+        item: items[1]
+      });
+      const pm = patchMap(full);
+      assert.equal(pm.get('b')?.colstart, preview.colstart);
+    });
+
+    it('[previewMoveChanges] mirrors nudged placement on overlap scenario', async function () {
+      const lib = await getLib();
+      // a: 1..4, b: 5..9. Move a to colstart 2 (nudges b east)
+      const items = [
+        buildItem('a', 1, 4, 0),
+        buildItem('b', 5, 5, 1)
+      ];
+      const state = makeState(lib, items, 12, 1);
+      const target = {
+        id: 'a',
+        colstart: 2,
+        rowstart: 1
+      };
+      const preview = lib.previewMoveChanges({
+        data: target,
+        state,
+        item: items[0]
+      });
+      // preview should allow the move and report new colstart 2
+      assert.equal(preview?.colstart, 2);
+      const full = lib.getMoveChanges({
+        data: target,
+        state,
+        item: items[0]
+      });
+      const pm = patchMap(full);
+      assert.equal(pm.get('a')?.colstart, preview.colstart);
+    });
   });
 
   describe('Provisioning', function () {
