@@ -1242,6 +1242,8 @@ module.exports = {
         data.appendHead = self.injectNodes(req, 'append-head');
         data.prependBody = self.injectNodes(req, 'prepend-body');
         data.appendBody = self.injectNodes(req, 'append-body');
+        data.prependMain = self.injectNodes(req, 'prepend-main');
+        data.appendMain = self.injectNodes(req, 'append-main');
 
         return data;
       },
