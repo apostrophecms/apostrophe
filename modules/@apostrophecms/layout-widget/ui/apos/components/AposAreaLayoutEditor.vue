@@ -124,7 +124,7 @@ export default {
     return {
       layoutMode: 'content',
       layoutDeviceMode: 'desktop',
-      updateWidgetStore: store.update,
+      updateWidgetStore: store.update
     };
   },
   computed: {
