@@ -6,6 +6,7 @@
 
 * Custom operations registered with `addCreateWidgetOperation` can now specify an `ifTypesIntersect` property containing an array of widget type names. If the area in question allows at least one, the operation is offered.
 * Add `prependNodes` and `appendNodes` calls for `main`.
+* Add options for pieces to change the title, message and icon of the empty state block.
 
 ### Changes
 
