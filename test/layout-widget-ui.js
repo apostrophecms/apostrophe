@@ -5,8 +5,7 @@ const getLib = async () => import(
 
 describe('Layout Widget', function () {
 
-  describe('UI State', function () {
-
+  describe('Move (grid-state)', function () {
     it('[getMoveChanges] should return no patches for no changes', async function () {
       const { getMoveChanges } = await getLib();
       const state = {
@@ -459,7 +458,237 @@ describe('Layout Widget', function () {
     });
   });
 
-  describe('Provisioning', function () {
+  describe('Resize (grid-state)', function () {
+    it('[validateResizeX] shrinking from east keeps colstart', async function () {
+      const lib = await getLib();
+      // spans 2..7
+      const item = buildItem('a', 2, 6, 0);
+      const state = makeState(lib, [ item ], 12, 1);
+      const validated = lib.validateResizeX({
+        item,
+        side: 'east',
+        direction: 'east',
+        // shrink by 2
+        newColspan: 4,
+        positionsIndex: state.positions,
+        maxColumns: state.columns,
+        minSpan: 1
+      });
+      // colstart unchanged, colspan reduced
+      assert.equal(validated.colstart, 2);
+      assert.equal(validated.colspan, 4);
+    });
+
+    it('[validateResizeX] shrinking from west shifts colstart right', async function () {
+      const lib = await getLib();
+      // 5..8
+      const item = buildItem('a', 5, 4, 0);
+      const state = makeState(lib, [ item ], 12, 1);
+      const validated = lib.validateResizeX({
+        item,
+        side: 'west',
+        direction: 'west',
+        // shrink by 2 keeping east edge fixed
+        newColspan: 2,
+        positionsIndex: state.positions,
+        maxColumns: state.columns,
+        minSpan: 1
+      });
+      // East edge was 8, new span 2 => colstart 7
+      assert.equal(validated.colstart, 7);
+      assert.equal(validated.colspan, 2);
+    });
+
+    it('[validateResizeX] shrinking below minSpan clamps and adjusts start (west)', async function () {
+      const lib = await getLib();
+      // 5..9
+      const item = buildItem('a', 5, 5, 0);
+      const state = makeState(lib, [ item ], 12, 1);
+      const validated = lib.validateResizeX({
+        item,
+        side: 'west',
+        direction: 'west',
+        // below minSpan 3
+        newColspan: 1,
+        positionsIndex: state.positions,
+        maxColumns: state.columns,
+        minSpan: 3
+      });
+      // Clamp to 3 -> shrink by 2; east edge 9 => new start 7
+      assert.equal(validated.colspan, 3);
+      assert.equal(validated.colstart, 7);
+    });
+
+    it('[validateResizeX] expand east within free space', async function () {
+      const lib = await getLib();
+      // 1..3
+      const item = buildItem('a', 1, 3, 0);
+      const state = makeState(lib, [ item ], 12, 1);
+      const validated = lib.validateResizeX({
+        item,
+        side: 'east',
+        direction: 'east',
+        newColspan: 8,
+        positionsIndex: state.positions,
+        maxColumns: state.columns,
+        minSpan: 1
+      });
+      assert.equal(validated.colstart, 1);
+      assert.equal(validated.colspan, 8);
+    });
+
+    it('[validateResizeX] expand east clamped at grid edge', async function () {
+      const lib = await getLib();
+      // 1..5
+      const item = buildItem('a', 1, 5, 0);
+      const state = makeState(lib, [ item ], 12, 1);
+      const validated = lib.validateResizeX({
+        item,
+        side: 'east',
+        direction: 'east',
+        // request beyond grid edge
+        newColspan: 15,
+        positionsIndex: state.positions,
+        maxColumns: state.columns,
+        minSpan: 1
+      });
+      // can fill entire row
+      assert.equal(validated.colspan, 12);
+      assert.equal(validated.colstart, 1);
+    });
+
+    it('[validateResizeX] expand west limited by neighbor and boundary', async function () {
+      const lib = await getLib();
+      // 5..7 target
+      const a = buildItem('a', 5, 3, 0);
+      // occupies 1..2 leaves 3..4 free
+      const blocker = buildItem('b', 1, 2, 1);
+      const state = makeState(lib, [ a, blocker ], 12, 1);
+      const validated = lib.validateResizeX({
+        item: a,
+        side: 'west',
+        direction: 'west',
+        // request more than available (only cols 3..7 usable)
+        newColspan: 10,
+        positionsIndex: state.positions,
+        maxColumns: state.columns,
+        minSpan: 1
+      });
+      // Free cells west of a: 3 & 4 -> 2 extra => final span 5, start 3
+      assert.equal(validated.colspan, 5);
+      assert.equal(validated.colstart, 3);
+    });
+
+    it('[getResizeChanges] shrink returns only item patch', async function () {
+      const lib = await getLib();
+      const a = buildItem('a', 2, 6, 0);
+      const state = makeState(lib, [ a ], 12, 1);
+      const patches = lib.getResizeChanges({
+        data: {
+          id: 'a',
+          side: 'east',
+          direction: 'east',
+          colspan: 4,
+          colstart: 2,
+          rowstart: 1,
+          rowspan: 1,
+          order: 0
+        },
+        state,
+        item: a
+      });
+      assert.equal(patches.length, 1);
+      const p = patches[0];
+      assert.equal(p._id, 'a');
+      assert.equal(p.colspan, 4);
+      assert.equal(p.colstart, 2);
+    });
+
+    it('[getResizeChanges] east expansion nudges single neighbor', async function () {
+      const lib = await getLib();
+      // 1..4
+      const a = buildItem('a', 1, 4, 0);
+      // 5..8
+      const b = buildItem('b', 5, 4, 1);
+      const state = makeState(lib, [ a, b ], 12, 1);
+      const patches = lib.getResizeChanges({
+        data: {
+          id: 'a',
+          side: 'east',
+          direction: 'east',
+          // expand by 1
+          colspan: 5,
+          colstart: 1,
+          rowstart: 1,
+          rowspan: 1,
+          order: 0
+        },
+        state,
+        item: a
+      });
+      const pm = patchMap(patches);
+      assert.equal(pm.get('a')?.colspan, 5);
+      assert.equal(pm.get('a')?.colstart, 1);
+      assert.equal(pm.get('b')?.colstart, 6, 'neighbor not nudged east by 1');
+    });
+
+    it('[getResizeChanges] east expansion cascades two neighbors (clamping at edge)', async function () {
+      const lib = await getLib();
+      const a = buildItem('a', 1, 4, 0); // 1..4
+      const b = buildItem('b', 5, 4, 1); // 5..8
+      const c = buildItem('c', 9, 4, 2); // 9..12 (edge)
+      const state = makeState(lib, [ a, b, c ], 12, 1);
+      const patches = lib.getResizeChanges({
+        data: {
+          id: 'a',
+          side: 'east',
+          direction: 'east',
+          // expand 1
+          colspan: 5,
+          colstart: 1,
+          rowstart: 1,
+          rowspan: 1,
+          order: 0
+        },
+        state,
+        item: a
+      });
+      const pm = patchMap(patches);
+      assert.equal(pm.get('a')?.colspan, 5);
+      assert.equal(pm.get('b')?.colstart, 6, 'b should shift east by 1');
+      // c cannot move east (already at edge), algorithm clamps -> stays 9
+      assert.equal(pm.get('c')?.colstart, 9);
+    });
+
+    it('[getResizeChanges] west expansion nudges neighbor west', async function () {
+      const lib = await getLib();
+      const a = buildItem('a', 5, 3, 0); // 5..7
+      const left = buildItem('b', 1, 3, 1); // 1..3
+      const state = makeState(lib, [ a, left ], 12, 1);
+      const patches = lib.getResizeChanges({
+        data: {
+          id: 'a',
+          side: 'west',
+          direction: 'west',
+          colspan: 5, // expand by 2 into cols 3-4
+          colstart: 3,
+          rowstart: 1,
+          rowspan: 1,
+          order: 0
+        },
+        state,
+        item: a
+      });
+      const pm = patchMap(patches);
+      assert.equal(pm.get('a')?.colspan, 5);
+      assert.equal(pm.get('a')?.colstart, 3);
+      // left neighbor shifts west by 0? Only 1 free cell (col 4) so needs shift
+      // It has original start 1 so cannot move further west -> clamped to 1
+      assert.equal(pm.get('b')?.colstart, 1);
+    });
+  });
+
+  describe('Provisioning (grid-state)', function () {
     it('[provisionRow] smoke and symmetry cases', async function () {
       const { provisionRow } = await getLib();
       const cases = [

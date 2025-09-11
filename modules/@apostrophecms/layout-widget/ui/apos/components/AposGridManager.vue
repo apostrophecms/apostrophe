@@ -224,7 +224,8 @@ export default {
         iconOnly: true,
         iconSize: 11
       },
-      onMoveDebounced: throttle(this.onMove, 10)
+      onMoveDebounced: throttle(this.onMove, 10),
+      onResizeDebounced: throttle(this.onResize, 10)
       // gridContentStyles: new Map()
     };
   },
@@ -478,7 +479,7 @@ export default {
     },
     onMouseMove(event) {
       if (this.isResizing) {
-        this.onResize(event);
+        this.onResizeDebounced(event);
       } else if (this.isMoving) {
         this.onMoveDebounced(event);
       }
