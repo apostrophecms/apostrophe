@@ -1,6 +1,6 @@
-import { debounce } from 'lodash';
+import { throttle } from 'lodash';
 import {
-  getMoveChanges, getResizeChanges, validateResizeX
+  getMoveChanges, getResizeChanges, validateResizeX, previewMoveChanges, prepareMoveIndex
 } from './grid-state.mjs';
 
 /**
@@ -47,18 +47,18 @@ export class GridManager {
     this.rootElement = rootElement;
     this.gridElement = gridElement;
     this.onResizeAndScroll = onResizeAndScroll;
-    this.onSceneScrollDebounced = debounce(this.onSceneScroll, 100, {
-      leading: false,
+    this.onSceneScrollDebounced = throttle(this.onSceneScroll, 100, {
+      leading: true,
       trailing: true
     });
-    this.onSceneResizeDebounced = debounce(this.onSceneResize, 100, {
-      leading: false,
+    this.onSceneResizeDebounced = throttle(this.onSceneResize, 100, {
+      leading: true,
       trailing: true
     });
-    this.getGridColumnIndicatorStylesDebounced = debounce(
+    this.getGridColumnIndicatorStylesDebounced = throttle(
       this.getGridColumnIndicatorStyles, 100, {
         leading: true,
-        trailing: false
+        trailing: true
       }
     );
   }
@@ -346,7 +346,7 @@ export class GridManager {
   * }} - The new position of the ghost item and optional snap info.
    */
   onGhostMove({
-    data, state, item
+    data, state, item, precomp
   }, event) {
     // Fast computation of position relative to the grid container, keeping the
     // entire ghost within bounds. Avoids layout thrash by using cached
@@ -411,9 +411,36 @@ export class GridManager {
     c = Math.max(1, Math.min(c, maxStartX));
     r = Math.max(1, Math.min(r, maxStartY));
 
-    // Record the raw nearest snap indices (no collision checks)
-    const colstart = c;
-    const rowstart = r;
+    // Optimistic desired snap indices
+    let colstart = c;
+    let rowstart = r;
+
+    // Collision-aware preview: compute once per throttle tick. We reuse a cached
+    // precomputation prepared at drag start (or lazily here) to keep this fast.
+    if (state && item && item._id) {
+      const preview = previewMoveChanges({
+        data: {
+          id: item._id,
+          colstart,
+          rowstart
+        },
+        state,
+        item,
+        precomp: precomp || prepareMoveIndex({
+          state,
+          item
+        })
+      });
+      if (preview) {
+        colstart = preview.colstart;
+        rowstart = preview.rowstart;
+      } else {
+        // Invalid move at this location: snapping should represent the
+        // actual persisted outcome (no-op), not an invalid target.
+        colstart = item.colstart || colstart;
+        rowstart = item.rowstart || rowstart;
+      }
+    }
 
     const snapLeft = Math.round((colstart - 1) * stepX);
     const snapTop = Math.round((rowstart - 1) * stepY);
@@ -500,17 +527,16 @@ export class GridManager {
   }
 
   performItemMove({
-    data, state, item, index
+    data, state, item, precomp
   }) {
     if (!item) {
       return [];
     }
-
     const patches = getMoveChanges({
       data,
       state,
       item,
-      precomputedIndex: index
+      precomp
     });
 
     return patches;

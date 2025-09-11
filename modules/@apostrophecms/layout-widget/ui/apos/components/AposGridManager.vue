@@ -132,6 +132,7 @@
 </template>
 
 <script>
+import { throttle } from 'lodash';
 import { GridManager } from '../lib/grid-manager.js';
 import {
   getReorderPatch, prepareMoveIndex
@@ -202,7 +203,7 @@ export default {
         rowspan: null,
         order: null
       },
-      moveDataIndex: null,
+      movePrecomp: null,
       // Recalculate the grid overlay styles
       sceneResizeIndex: 0,
       // Sync the grid content styles
@@ -222,7 +223,9 @@ export default {
         modifiers: [ 'round', 'tiny', 'icon-only' ],
         iconOnly: true,
         iconSize: 11
-      }
+      },
+      onMoveDebounced: throttle(this.onMove, 10),
+      onResizeDebounced: throttle(this.onResize, 10)
       // gridContentStyles: new Map()
     };
   },
@@ -319,7 +322,7 @@ export default {
     this.cloneCalculateIndex += 1;
     this.sceneResizeIndex += 1;
   },
-  unmounted() {
+  beforeUnmount() {
     document.removeEventListener('keydown', this.onGlobalKeyDown);
     document.removeEventListener('mouseup', this.onMouseUp);
     document.removeEventListener('touchend', this.onMouseUp);
@@ -329,6 +332,9 @@ export default {
       this.resizeObserver = null;
     }
     this.manager.destroy();
+    if (this.onMoveDebounced?.cancel) {
+      this.onMoveDebounced.cancel();
+    }
   },
   methods: {
     onAddSynthetic(slot) {
@@ -440,7 +446,7 @@ export default {
 
       this.ghostData.isMoving = true;
 
-      this.moveDataIndex = prepareMoveIndex({
+      this.movePrecomp = prepareMoveIndex({
         item: this.ghostDataWrite,
         state: this.gridState
       });
@@ -453,14 +459,12 @@ export default {
       event.stopPropagation();
       const {
         left, top, snapLeft, snapTop, colstart, rowstart
-      } = this.manager.onGhostMove(
-        {
-          state: this.gridState,
-          data: this.ghostData,
-          item: this.gridState.lookup.get(this.ghostData.id)
-        },
-        event
-      );
+      } = this.manager.onGhostMove({
+        state: this.gridState,
+        data: this.ghostData,
+        item: this.gridState.lookup.get(this.ghostData.id),
+        precomp: this.movePrecomp
+      }, event);
       this.ghostData.left = left ?? this.ghostData.left;
       this.ghostData.top = top ?? this.ghostData.top;
 
@@ -475,9 +479,9 @@ export default {
     },
     onMouseMove(event) {
       if (this.isResizing) {
-        this.onResize(event);
+        this.onResizeDebounced(event);
       } else if (this.isMoving) {
-        this.onMove(event);
+        this.onMoveDebounced(event);
       }
     },
     onMouseUp(event) {
@@ -531,14 +535,12 @@ export default {
       this.resetGhostData();
     },
     emitMove() {
-      const patches = this.manager.performItemMove(
-        {
-          data: this.ghostDataWrite,
-          state: this.gridState,
-          item: this.gridState.lookup.get(this.ghostDataWrite.id),
-          index: this.moveDataIndex
-        }
-      );
+      const patches = this.manager.performItemMove({
+        data: this.ghostDataWrite,
+        state: this.gridState,
+        item: this.gridState.lookup.get(this.ghostDataWrite.id),
+        precomp: this.movePrecomp
+      });
       this.$emit('move-end', patches);
       this.resetGhostData();
     },
@@ -732,17 +734,17 @@ export default {
     position: absolute;
     width: 500px;
     height: 150px;
-    // border: 1px dashed rgba($brand-blue, 0.4);
     inset: 0;
     background-color: rgba($brand-blue, 0.2);
     border-radius: var(--a-border-radius);
     pointer-events: none;
-    /* stylelint-disable-next-line time-min-milliseconds */
-    transition: all 100ms ease-out;
+    transition: all 200ms ease-out;
 
     &.snap {
-      border: 2px dashed rgba($brand-blue, 0.8);
-      background-color: transparent; //rgba($brand-blue, 0.6);
+      border: none;
+      outline: 2px dashed rgba($brand-blue, 0.8);
+      // outline-offset: -1px;
+      background-color: transparent;
     }
   }
 
@@ -856,7 +858,7 @@ export default {
 
 /* stylelint-disable-next-line media-feature-name-allowed-list */
 @media (prefers-reduced-motion: no-preference) {
-  .apos-layout {
+  .apos-layout__grid-clone {
     transition: all 300ms ease;
   }
 }

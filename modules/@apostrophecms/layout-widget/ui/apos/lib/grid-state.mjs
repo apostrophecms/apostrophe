@@ -564,14 +564,79 @@ export function getMoveChanges({
   item,
   precomp
 }) {
+  const decided = decideMove({
+    data,
+    state,
+    item,
+    precomp
+  });
+  if (!decided) {
+    return [];
+  }
+  const { posPatches } = decided;
+  const orderPatches = computeOrderPatches({
+    state,
+    posPatches
+  });
+  return mergePositionAndOrderPatches(posPatches, orderPatches);
+}
+
+/**
+ * Lightweight preview version of move calculations for high-frequency ghost snapping.
+ * Returns only the prospective colstart/rowstart for the moving item (no ordering or
+ * neighbor patches) or null if the move would be rejected. This shares the exact
+ * decision logic with getMoveChanges via decideMove to avoid divergence.
+ *
+ * @param {Object} arg
+ * @param {GhostDataWrite} arg.data
+ * @param {GridState} arg.state
+ * @param {CurrentItem} arg.item
+ * @param {Object} [arg.precomp]
+ * @returns {{ _id: string, colstart: number, rowstart: number } | null}
+ */
+export function previewMoveChanges({
+  data,
+  state,
+  item,
+  precomp
+}) {
+  const decided = decideMove({
+    data,
+    state,
+    item,
+    precomp,
+    preview: true
+  });
+  if (!decided) {
+    return null;
+  }
+  // Moving item patch always first in our construction
+  const moving = decided.posPatches.find(p => p._id === item._id);
+  return moving
+    ? {
+      _id: moving._id,
+      colstart: moving.colstart,
+      rowstart: moving.rowstart
+    }
+    : null;
+}
+
+// Core move decision logic (position-only).
+// Used by both getMoveChanges and previewMoveChanges.
+function decideMove({
+  data,
+  state,
+  item,
+  precomp
+}) {
   // Guard against mismatched item/data identifiers when the target id exists in lookup
   if (data.id && state?.lookup?.has?.(data.id) && item?._id && data.id !== item._id) {
-    return [];
+    return null;
   }
   if (!data.colstart || !data.rowstart ||
     (data.colstart === item.colstart && data.rowstart === item.rowstart)
   ) {
-    return [];
+    return null;
   }
   const maxColumns = state.columns;
   const maxRows = state.current?.rows || 1;
@@ -590,7 +655,7 @@ export function getMoveChanges({
     newStartRow >= 1 && newEndRow <= maxRows
   );
   if (!inGrid) {
-    return [];
+    return null;
   }
 
   // Strategy 1: place if destination is completely free (ignoring the moving item itself)
@@ -602,18 +667,15 @@ export function getMoveChanges({
     precomp
   });
   if (placeIfFree) {
-    const posPatches = [
-      {
-        _id: item._id,
-        colstart: newStartCol,
-        rowstart: newStartRow
-      }
-    ];
-    const orderPatches = computeOrderPatches({
-      state,
-      posPatches
-    });
-    return mergePositionAndOrderPatches(posPatches, orderPatches);
+    return {
+      posPatches: [
+        {
+          _id: item._id,
+          colstart: newStartCol,
+          rowstart: newStartRow
+        }
+      ]
+    };
   }
 
   // Strategy 2: horizontal nudge of neighbours only
@@ -682,25 +744,22 @@ export function getMoveChanges({
       precomp
     });
     if (patches) {
-      // Success: include moved item position and recompute ordering
-      const posPatches = [
-        {
-          _id: item._id,
-          colstart: newStartCol,
-          rowstart: newStartRow
-        },
-        ...patches
-      ];
-      const orderPatches = computeOrderPatches({
-        state,
-        posPatches
-      });
-      return mergePositionAndOrderPatches(posPatches, orderPatches);
+      // Success: include moved item position
+      return {
+        posPatches: [
+          {
+            _id: item._id,
+            colstart: newStartCol,
+            rowstart: newStartRow
+          },
+          ...patches
+        ]
+      };
     }
   }
 
   // No strategy succeeded
-  return [];
+  return null;
 }
 /**
  * Compute order patches for all items based on current state but with
