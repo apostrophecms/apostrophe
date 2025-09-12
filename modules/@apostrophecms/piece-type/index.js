@@ -1295,6 +1295,7 @@ module.exports = {
           managerModal: self.getComponentName('managerModal', 'AposDocsManager')
         });
         browserOptions.managerApiProjection = self.getManagerApiProjection(req);
+        browserOptions.emptyState = self.options.emptyState;
 
         return browserOptions;
       },
