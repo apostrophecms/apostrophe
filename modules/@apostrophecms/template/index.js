@@ -1289,7 +1289,7 @@ module.exports = {
       // and `choices` properties, and guaranteeing that `items` exists,
       // at least as an empty array.
 
-      annotateAreaForExternalFront(field, area) {
+      async annotateAreaForExternalFront(field, area) {
         area.field = field;
         area.options = field.options;
         // Really widget configurations, but the method name is already set in
@@ -1312,22 +1312,24 @@ module.exports = {
           }
 
           // Annotate each individual widget with its options
-          // Each widget must elect into this through a
+          // Each widget must elect into this by creating an
           // `annotateWidgetForExternalFront() method.
-          if (item.type) {
-            const moduleName = `${item.type}-widget`;
-            const module = self.apos.modules[moduleName];
+          const manager = self.apos.area.getManager?.(item.type) ||
+            self.apos.area.widgetManagers?.[item.type];
 
-            if (module && module.annotateWidgetForExternalFront) {
-              const widgetOptions = module.annotateWidgetForExternalFront();
-
-              // Add options directly to the widget item
-              if (widgetOptions && Object.keys(widgetOptions).length > 0) {
-                item._options = widgetOptions;
-              }
-            }
+          let widgetOptions = {};
+          if (manager && typeof manager.annotateWidgetForExternalFront === 'function') {
+            widgetOptions = await manager.annotateWidgetForExternalFront(
+              item, area
+            ) || {};
+          };
+          if (widgetOptions && Object.keys(widgetOptions).length > 0) {
+            item._options = widgetOptions;
           }
         }
+      },
+      annotateWidgetForExternalFront() {
+        return {};
       }
     };
   }
