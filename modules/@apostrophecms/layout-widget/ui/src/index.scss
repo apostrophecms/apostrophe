@@ -1,7 +1,7 @@
 // Breakpoints (Sass, build-time). CSS custom properties cannot be used in
 // @media/@container conditions at runtime, so expose !default Sass vars.
 // Variables live in a separate file to allow clean overrides upstream.
-@use './breakpoints' as bp;
+@import './breakpoints';
 // Height-based breakpoints intentionally omitted due to stylelint policy and
 // limited real-world usage. Add if your config allows and you truly need them.
 
@@ -27,7 +27,7 @@
 
 // Tablet rules. Override $layout-breakpoint-tablet to change.
 /* stylelint-disable-next-line media-feature-name-allowed-list */
-@media screen and (min-width: bp.$layout-breakpoint-mobile + 1px) and (max-width: bp.$layout-breakpoint-tablet) {
+@media screen and (min-width: $layout-breakpoint-mobile + 1px) and (max-width: $layout-breakpoint-tablet) {
     /* Auto mode: ignore device vars, just 2 per row */
   .layout-widget[data-tablet-auto="true"] {
     grid-template-columns: repeat(2, 1fr);
@@ -71,7 +71,7 @@
 
 // Mobile rules. Override $layout-breakpoint-mobile to change.
 /* stylelint-disable-next-line media-feature-name-allowed-list */
-@media screen and (max-width: bp.$layout-breakpoint-mobile) {
+@media screen and (max-width: $layout-breakpoint-mobile) {
   .layout-widget {
     grid-template-columns: 1fr;
 
