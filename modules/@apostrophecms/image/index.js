@@ -378,7 +378,7 @@ module.exports = {
           try {
             const image = await self.find(req, {
               aposDocId: req.params.imageId
-            }).locale(null).toObject();
+            }).toObject();
             if (!image) {
               return res.status(404).send('notfound');
             }
