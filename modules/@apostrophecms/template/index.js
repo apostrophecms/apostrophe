@@ -1319,17 +1319,12 @@ module.exports = {
 
           let widgetOptions = {};
           if (manager && typeof manager.annotateWidgetForExternalFront === 'function') {
-            widgetOptions = await manager.annotateWidgetForExternalFront(
-              item, area
-            ) || {};
+            widgetOptions = await manager.annotateWidgetForExternalFront() || {};
           };
           if (widgetOptions && Object.keys(widgetOptions).length > 0) {
             item._options = widgetOptions;
           }
         }
-      },
-      annotateWidgetForExternalFront() {
-        return {};
       }
     };
   }
