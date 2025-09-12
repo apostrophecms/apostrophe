@@ -1317,9 +1317,8 @@ module.exports = {
           const manager = self.apos.area.getManager?.(item.type) ||
             self.apos.area.widgetManagers?.[item.type];
 
-          let widgetOptions = {};
-          widgetOptions = await manager.annotateWidgetForExternalFront() || {};
-          if (widgetOptions && Object.keys(widgetOptions).length > 0) {
+          const widgetOptions = await manager.annotateWidgetForExternalFront() || {};
+          if (Object.keys(widgetOptions).length > 0) {
             item._options = widgetOptions;
           }
         }
