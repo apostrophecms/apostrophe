@@ -12,6 +12,10 @@
 
 * Fixes a bug in the login `uponSubmit` filter where a user could login without meeting the requirement.
 
+### Fixes
+
+* Resolve inline image URLs correctly when in edit mode and not in the default locale.
+
 ### Changes
 
 * Redirects to URLs containing accent marks and other non-ascii characters now behave as expected with Astro. Pre-encoding the URLs exactly the way `res.redirect` would before passing them to Astro prevents an error in Astro and allows the redirect to succeed.
