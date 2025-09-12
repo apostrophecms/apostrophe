@@ -1318,9 +1318,7 @@ module.exports = {
             self.apos.area.widgetManagers?.[item.type];
 
           let widgetOptions = {};
-          if (manager && typeof manager.annotateWidgetForExternalFront === 'function') {
-            widgetOptions = await manager.annotateWidgetForExternalFront() || {};
-          };
+          widgetOptions = await manager.annotateWidgetForExternalFront() || {};
           if (widgetOptions && Object.keys(widgetOptions).length > 0) {
             item._options = widgetOptions;
           }
