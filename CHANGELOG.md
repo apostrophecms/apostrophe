@@ -22,6 +22,7 @@
 * Removes the non-functional `uniqueUsername` route from the `user` module
 * Updated dependencies to address deprecation warnings.
 
+* Modifies the `annotateAreaForExternalFront()` method of the `@apostrophecms/template` module to accept a per-module `annotateWidgetForExternalFront()` method. This allows widgets to send project-level options alongside the per-area options to external frontends.
 
 ## 4.21.0 (2025-09-03)
 

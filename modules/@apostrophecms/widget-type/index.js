@@ -449,7 +449,12 @@ module.exports = {
           }
           return true;
         });
+      },
+
+      annotateWidgetForExternalFront() {
+        return {};
       }
+
     };
   },
   extendMethods(self) {
