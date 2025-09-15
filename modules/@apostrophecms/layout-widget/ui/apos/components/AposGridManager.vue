@@ -58,13 +58,19 @@
         />
         <div
           v-show="!hasMotion"
-          class="apos-layout--item-action apos-layout__item-delete-handle"
+          class="apos-layout--item-action apos-layout__item-operations-handle"
         >
-          <AposButton
-            v-bind="buttonDefaults"
-            icon="delete-icon"
-            :modifiers="[ 'round', 'tiny', 'icon-only', 'danger' ]"
-            @click="removeItem(item)"
+          <!-- Show breadcrumb operations, no support for actions, just our custom
+         expected operations - remove and update -->
+          <AposBreadcrumbOperations
+            v-if="opstate.operations?.length > 0"
+            :i="item.__naturalIndex"
+            :widget="item"
+            :options="opstate.options"
+            :is-focused="true"
+            :skip-info="true"
+            :disabled="opstate.disabled"
+            @update="updateItem"
           />
         </div>
       </div>
@@ -156,6 +162,11 @@ export default {
     syntheticItems: {
       type: Array,
       default: () => []
+    },
+    // Related to the widget operation state
+    opstate: {
+      type: Object,
+      default: () => ({})
     }
   },
   emits: [
@@ -163,11 +174,9 @@ export default {
     'resize-end',
     'move-start',
     'move-end',
-    'add-first-item',
     'add-fit-item',
     'remove-item',
-    'patch-item',
-    'patch-device-item'
+    'patch-item'
   ],
   data() {
     return {
@@ -351,8 +360,6 @@ export default {
       this.$emit('add-fit-item', patches);
     },
     onStartResize(item, side, event) {
-      event.preventDefault();
-      event.stopPropagation();
       const element = this.$refs.items.find(el => el.dataset.id === item._id);
       const itemData = this.gridState.lookup.get(item._id);
       if (!itemData || !element) {
@@ -392,8 +399,6 @@ export default {
     },
     onResize(event) {
       if (this.isResizing) {
-        event.preventDefault();
-        event.stopPropagation();
         const {
           left, width, colspan, colstart, direction
         } = this.computeGhostResize(event);
@@ -406,8 +411,6 @@ export default {
       }
     },
     onStartMove(item, event) {
-      event.preventDefault();
-      event.stopPropagation();
       const element = this.$refs.items.find(el => el.dataset.id === item._id);
       const itemData = this.gridState.lookup.get(item._id);
       if (!itemData || !element) {
@@ -455,8 +458,6 @@ export default {
       if (!this.isMoving) {
         return;
       }
-      event.preventDefault();
-      event.stopPropagation();
       const {
         left, top, snapLeft, snapTop, colstart, rowstart
       } = this.manager.onGhostMove({
@@ -564,37 +565,26 @@ export default {
         colstart
       };
     },
-    addItemFirst() {
-      this.$emit('add-first-item', {
-        colstart: 1,
-        colspan: this.gridState.options.defaultSpan,
-        order: 0
-      });
-    },
-    removeItem(item) {
-      const patches = getReorderPatch({
-        deleted: { _id: item._id },
-        state: this.gridState
-      });
-      this.$emit('remove-item', {
-        _id: item._id,
-        patches
-      });
+    updateItem(data) {
+      const { align, justify } = (data[this.gridState.deviceMode] || {});
+      const patch = {
+        mobile: {
+          show: data.mobile?.show ?? true
+        },
+        tablet: {
+          show: data.tablet?.show ?? true
+        }
+      };
+      patch[this.gridState.deviceMode] ||= {};
+      patch[this.gridState.deviceMode].align = align;
+      patch[this.gridState.deviceMode].justify = justify;
+      this.patchItem(data, patch);
     },
     patchItem(item, patch) {
       this.$emit('patch-item', {
         ...patch,
-        _id: item._id
-      });
-    },
-    toggleDeviceVisibility(item, device) {
-      const patch = {
-        show: !item[device].show
-      };
-      this.$emit('patch-device-item', {
         _id: item._id,
-        device,
-        patch
+        __naturalIndex: item.__naturalIndex
       });
     }
   }
@@ -621,8 +611,8 @@ export default {
 .apos-layout {
   &__grid-clone {
     position: absolute;
-    inset: 0;
     display: grid;
+    inset: 0;
     grid-template-columns: repeat(var(--grid-columns, 12), 1fr);
     gap: var(--grid-gap);
 
@@ -850,10 +840,16 @@ export default {
   cursor: move;
 }
 
-.apos-layout__item-delete-handle {
+.apos-layout__item-operations-handle {
+  z-index: $z-index-modal;
   top: 0;
   right: 0;
+  display: block;
   padding: 8px;
+
+  :deep(.apos-context-menu__dropdown-content) {
+    z-index: $z-index-modal;
+  }
 }
 
 /* stylelint-disable-next-line media-feature-name-allowed-list */

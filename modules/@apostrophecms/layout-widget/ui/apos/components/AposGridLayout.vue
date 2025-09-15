@@ -61,13 +61,13 @@
       :grid-state="gridState"
       :synthetic-items="syntheticItems"
       :meta-id="meta._id"
+      :opstate="opstate"
       @resize-start="isResizing = true"
       @resize-end="$emit('resize-end', $event); isResizing = false"
       @move-start="isMoving = true"
       @move-end="$emit('move-end', $event); isMoving = false"
-      @add-first-item="$emit('add-first-item', $event)"
       @add-fit-item="$emit('add-fit-item', $event)"
-      @remove-item="$emit('remove-item', $event)"
+      @patch-item="$emit('patch-item', $event)"
     />
   </div>
 </template>
@@ -100,13 +100,18 @@ export default {
     deviceMode: {
       type: String,
       default: 'desktop'
+    },
+    // Related to the widget operation state
+    opstate: {
+      type: Object,
+      default: () => ({})
     }
   },
   emits: [
     'resize-end',
     'move-end',
-    'add-first-item',
     'add-fit-item',
+    'patch-item',
     'remove-item'
   ],
   data() {

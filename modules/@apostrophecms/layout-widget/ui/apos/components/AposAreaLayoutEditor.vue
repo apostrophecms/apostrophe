@@ -54,21 +54,23 @@
         :meta="layoutMeta"
         :layout-mode="layoutMode"
         :device-mode="layoutDeviceMode"
+        :opstate="{
+          options: options,
+          disabled: field && field.readOnly,
+          operations: layoutBreadcrumbOperations || []
+        }"
         @resize-end="onResizeOrMoveEnd"
         @move-end="onResizeOrMoveEnd"
-        @add-first-item="onAddItem"
         @add-fit-item="onAddFitItem"
-        @remove-item="onRemoveItem"
-        @patch-item="layoutPatchOne"
-        @patch-device-item="layoutPatchDevice"
+        @patch-item="layoutPatchFull"
       >
-        <template #item="{ item: widget, i }">
+        <template #item="{ item: widget }">
           <AposAreaWidget
             :area-id="areaId"
             :widget="widget"
             :meta="meta[widget._id]"
             :generation="generation"
-            :i="i"
+            :i="widget.__naturalIndex"
             :options="options"
             :next="next"
             :following-values="followingValues"
@@ -83,7 +85,7 @@
             :max-reached="maxReached"
             :rendering="rendering(widget)"
             :controls-disabled="true"
-            :breadcrumb-disabled="layoutMode !== 'content'"
+            :breadcrumb-disabled="true"
             @up="up"
             @down="down"
             @remove="remove"
@@ -139,7 +141,17 @@ export default {
       );
     },
     layoutColumnWidgets() {
-      return this.next.filter(w => w.type !== this.layoutMetaWidgetName);
+      return this.next
+        .map((w, index) => {
+          return {
+            ...w,
+            __naturalIndex: index
+          };
+        })
+        .filter(w => w.type !== this.layoutMetaWidgetName);
+    },
+    layoutBreadcrumbOperations() {
+      return (this.layoutModuleOptions.widgetBreadcrumbOperations || []);
     },
     layoutMeta() {
       return this.next.find(w => w.type === this.layoutMetaWidgetName) ?? {};
@@ -220,8 +232,8 @@ export default {
         widget: meta,
         index: 0
       });
-      this.layoutMode = 'layout';
-      this.updateWidgetStore(this.parentOptions?.widgetId, 'layout:switch', 'layout');
+      this.layoutMode = 'content';
+      this.updateWidgetStore(this.parentOptions?.widgetId, 'layout:switch', 'content');
 
       const items = provisionRow(meta.columns, {
         minColspan: this.gridModuleOptions.minSpan,
@@ -283,17 +295,7 @@ export default {
       }
       this.layoutPatchMany(patches);
     },
-    layoutPatchDevice({
-      _id, device, patch
-    }) {
-      if (!_id || !device || !patch) {
-        return;
-      }
-      this.layoutPatchOne({
-        _id,
-        ...patch
-      }, device);
-    },
+    // Apply a partial widget patch, for only the current device mode
     layoutPatchOne(patch, device) {
       if (!patch || !patch._id) {
         return;
@@ -319,6 +321,24 @@ export default {
       for (const patch of patches) {
         this.layoutPatchOne(patch);
       }
+    },
+    // Apply a full widget patch, including nested objects
+    layoutPatchFull(patch) {
+      const widget = this.next.find(w => w._id === patch._id);
+      if (widget?.type !== this.layoutColumnWidgetName) {
+        return;
+      }
+
+      const {
+        _id, desktop = {}, tablet = {}, mobile = {}, ...rest
+      } = patch;
+      Object.assign(widget, rest);
+      Object.assign(widget.desktop, desktop);
+      Object.assign(widget.tablet, tablet);
+      Object.assign(widget.mobile, mobile);
+
+      // eslint-disable-next-line no-console
+      this.update(widget).catch(console.error);
     }
   }
 };
