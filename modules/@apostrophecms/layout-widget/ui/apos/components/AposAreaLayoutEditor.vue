@@ -171,6 +171,7 @@ export default {
     if (!this.hasLayoutMeta) {
       this.onCreateProvision();
     }
+    this.updateWidgetStore(this.parentOptions?.widgetId, 'layout:switch', this.layoutMode);
   },
   beforeUnmount() {
     apos.bus.$off('widget-breadcrumb-operation', this.executeWidgetOperation);

@@ -405,9 +405,21 @@ export class GridManager {
     const maxStartX = Math.max(1, columns - colspan + 1);
     const maxStartY = Math.max(1, rows - rowspan + 1);
 
-    // Initial nearest indices from current pixel position
-    let c = Math.round(left / stepX) + 1;
-    let r = Math.round(top / stepY) + 1;
+    // Initial nearest indices with custom snap threshold.
+    const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
+    const tMoveOpt = (
+      state?.options?.snapThresholdMove ?? state?.options?.snapThreshold ?? 0.6
+    );
+    const tMove = Number(tMoveOpt);
+    const tMoveClamped = clamp(
+      Number.isFinite(tMove) ? tMove : 0.6,
+      0.05,
+      0.95
+    );
+    const shiftX = (1 - tMoveClamped) * stepX;
+    const shiftY = (1 - tMoveClamped) * stepY;
+    let c = Math.floor((left + shiftX) / stepX) + 1;
+    let r = Math.floor((top + shiftY) / stepY) + 1;
     c = Math.max(1, Math.min(c, maxStartX));
     r = Math.max(1, Math.min(r, maxStartY));
 
@@ -470,7 +482,20 @@ export class GridManager {
     const columnWidth = containerRect.width / state.columns;
     const direction = deltaX > 0 ? 'east' : 'west';
     const directionCorrection = data.side === direction ? 1 : -1;
-    const deltaColspan = Math.round(Math.abs(deltaX) / columnWidth) * directionCorrection;
+    const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
+    const tResizeOpt = (
+      state?.options?.snapThresholdResize ?? state?.options?.snapThreshold ?? 0.5
+    );
+    const tResize = Number(tResizeOpt);
+    const SNAP_THRESHOLD = clamp(
+      Number.isFinite(tResize) ? tResize : 0.5,
+      0.05,
+      0.95
+    );
+    const deltaSteps = Math.floor(
+      (Math.abs(deltaX) + (1 - SNAP_THRESHOLD) * columnWidth) / columnWidth
+    );
+    const deltaColspan = deltaSteps * directionCorrection;
     const desired = Math.max(
       state.options.minSpan,
       Math.min(item.colspan + deltaColspan, state.columns)
