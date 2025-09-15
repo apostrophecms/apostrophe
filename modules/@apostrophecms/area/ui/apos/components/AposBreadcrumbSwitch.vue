@@ -2,14 +2,16 @@
   <fieldset class="apos-breadcrumb-switch">
     <div>
       <label
-        v-for="choice in choices"
+        v-for="choice in enhancedChoices"
         :key="choice.value"
+        :for="choice.id"
       >
         <input
+          :id="choice.id"
           v-model="store.data.value"
           :value="choice.value"
           type="radio"
-          :name="name"
+          :name="uniqueName"
           @input="update"
         >
         <span>{{ choice.label }}</span>
@@ -54,6 +56,17 @@ export default {
       store: widgetStore.getOrSet(this.widgetId, name, this.value || null),
       namespace: name
     };
+  },
+  computed: {
+    uniqueName() {
+      return `${this.name}-${this.widgetId}`;
+    },
+    enhancedChoices() {
+      return this.choices.map(choice => ({
+        ...choice,
+        id: `${this.uniqueName}-${choice.value}`
+      }));
+    }
   },
   unmounted() {
     this.storeRemove(this.widgetId, this.namespace);
