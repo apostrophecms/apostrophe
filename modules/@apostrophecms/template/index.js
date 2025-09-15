@@ -1318,9 +1318,7 @@ module.exports = {
             self.apos.area.widgetManagers?.[item.type];
 
           const widgetOptions = await manager.annotateWidgetForExternalFront() || {};
-          if (Object.keys(widgetOptions).length > 0) {
-            item._options = widgetOptions;
-          }
+          item._options = widgetOptions;
         }
       }
     };
