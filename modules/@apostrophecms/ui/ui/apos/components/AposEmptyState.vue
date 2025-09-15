@@ -8,7 +8,7 @@
         :icon="emptyState.icon"
         class="apos-empty-state__indicator"
         icon-color="var(--a-base-3)"
-        :icon-size="32"
+        :icon-size="48"
       />
     </div>
     <p
@@ -47,18 +47,23 @@ export default {
   }
 
   .apos-empty-state__icon {
-    margin-bottom: 20px;
+    margin-bottom: 10px;
   }
 
   .apos-empty-state__title {
     @include type-title;
 
     & {
-      margin: 0 0 10px;
+      margin: 0;
     }
   }
 
   .apos-empty-state__message {
     @include type-large;
+
+    & {
+      text-align: center;
+      margin-top: 5px;
+    }
   }
 </style>

@@ -62,6 +62,12 @@ export default {
   }
 }
 
+.apos-modal__body-inner {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
 .apos-modal__body--flex {
   display: flex;
   flex-direction: column;
@@ -83,6 +89,10 @@ export default {
   display: flex;
   justify-content: space-between;
   padding: 20px;
+}
+
+.apos-modal__body-main {
+  height: 100%;
 }
 
 // TODO responsibilty of this setting might change

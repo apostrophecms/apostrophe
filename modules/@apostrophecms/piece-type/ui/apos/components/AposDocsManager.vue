@@ -584,7 +584,6 @@ export default {
     justify-content: center;
     width: 100%;
     height: 100%;
-    margin-top: 130px;
   }
 
   .apos-pieces-manager__relationship__rail {
