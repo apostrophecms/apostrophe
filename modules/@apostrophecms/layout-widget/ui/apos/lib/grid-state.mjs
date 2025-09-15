@@ -81,7 +81,9 @@ export function itemsToState({
   const resolvedOptions = {
     ...options,
     columns: meta.columns || options.columns,
-    gap: [ 'layout', 'focus' ].includes(layoutMode) ? gap || '2px' : options.gap
+    gap: [ 'layout', 'focus' ].includes(layoutMode) ? gap || '2px' : options.gap,
+    snapThresholdMove: 0.7,
+    snapThreshold: 0.5
   };
 
   const positionsIndex = createPositionIndex(current.items, current.rows);
