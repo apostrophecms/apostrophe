@@ -1289,7 +1289,7 @@ module.exports = {
       // and `choices` properties, and guaranteeing that `items` exists,
       // at least as an empty array.
 
-      async annotateAreaForExternalFront(field, area) {
+      annotateAreaForExternalFront(field, area) {
         area.field = field;
         area.options = field.options;
         // Really widget configurations, but the method name is already set in
@@ -1317,7 +1317,7 @@ module.exports = {
           const manager = self.apos.area.getManager?.(item.type) ||
             self.apos.area.widgetManagers?.[item.type];
 
-          const widgetOptions = await manager.annotateWidgetForExternalFront() || {};
+          const widgetOptions = manager.annotateWidgetForExternalFront() || {};
           item._options = widgetOptions;
         }
       }
