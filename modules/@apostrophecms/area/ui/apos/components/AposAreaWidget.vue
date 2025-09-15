@@ -78,45 +78,17 @@
             />
           </li>
         </ol>
-        <ol
-          v-if="widgetBreadcrumbActions.length > 0"
-          class="apos-area-widget__breadcrumbs apos-area-widget__breadcrumbs--action"
-          style="margin-left: 10px;"
-        >
-          <li class="apos-area-widget__breadcrumb">
-            <component
-              :is="operation.component"
-              v-for="operation in widgetBreadcrumbActions"
-              :key="operation.key"
-              v-bind="operation.props"
-              v-slot="slotProps"
-              v-on="operation.listeners"
-            >
-              <component
-                :is="operation.modal"
-                v-if="operation.type === 'menu' && operation.modal"
-                :widget="widget"
-                :widget-schema="widgetModuleOptions.schema"
-                @update="$emit('update', $event)"
-                @close="slotProps.close"
-              />
-            </component>
-          </li>
-        </ol>
-        <ol
-          v-if="widgetBreadcrumbInfos.length > 0"
-          class="apos-area-widget__breadcrumbs apos-area-widget__breadcrumbs--info"
-        >
-          <li>
-            <component
-              :is="operation.component"
-              v-for="operation in widgetBreadcrumbInfos"
-              :key="`info-${operation.key}`"
-              v-bind="operation.props"
-              v-on="operation.listeners"
-            />
-          </li>
-        </ol>
+        <AposBreadcrumbOperations
+          v-if="widgetBreadcrumbOperations.length > 0"
+          :i="i"
+          :widget="widget"
+          :options="options"
+          :disabled="disabled"
+          :is-focused="isFocused"
+          @widget-focus="getFocus"
+          @update="$emit('update', $event)"
+          @operation="onBreadcrumbOperation"
+        />
       </div>
       <div
         v-if="!controlsDisabled"
@@ -417,21 +389,7 @@ export default {
       return apos.modules[this.moduleOptions?.widgetManagers[this.widget?.type]] ?? {};
     },
     widgetBreadcrumbOperations() {
-      return (this.widgetModuleOptions.widgetBreadcrumbOperations || [])
-        .map((operation) => ({
-          component: this.getOperationComponent(operation),
-          props: this.getOperationProps(operation),
-          listeners: this.getOperationListeners(operation),
-          key: operation.action || operation.name,
-          type: operation.type,
-          modal: operation.modal || null
-        }));
-    },
-    widgetBreadcrumbActions() {
-      return this.widgetBreadcrumbOperations.filter(op => op.type !== 'info');
-    },
-    widgetBreadcrumbInfos() {
-      return this.widgetBreadcrumbOperations.filter(op => op.type === 'info');
+      return (this.widgetModuleOptions.widgetBreadcrumbOperations || []);
     },
     isFocused() {
       if (this.isSuppressed) {
@@ -532,130 +490,10 @@ export default {
     apos.bus.$off('widget-focus-parent', this.focusParent);
   },
   methods: {
-    getOperationComponent(operation) {
-      if (operation.type === 'info') {
-        return 'AposIndicator';
-      }
-      if (operation.type === 'switch') {
-        return 'AposBreadcrumbSwitch';
-      }
-      if (operation.type === 'menu') {
-        return 'AposContextMenu';
-      }
-      return 'AposButton';
-    },
-    getOperationProps(operation) {
-      if (operation.type === 'info') {
-        return {
-          // class: 'apos-area-widget__breadcrumbs-switch__info',
-          fillColor: 'var(--a-primary)',
-          icon: operation.icon,
-          tooltip: operation.tooltip
-        };
-      }
-
-      if (operation.type === 'switch') {
-        return {
-          widgetId: this.widget._id,
-          name: operation.name,
-          choices: operation.choices,
-          value: operation.def,
-          class: 'apos-area-widget--switch'
-        };
-      }
-
-      if (operation.type === 'menu') {
-        return {
-          button: {
-            ...this.operationButtonDefault,
-            icon: operation.icon
-          },
-          tooltip: operation.tooltip || null
-        };
-      }
-
-      // Button by default
-      return {
-        ...this.operationButtonDefault,
-        icon: operation.icon,
-        action: operation.action,
-        tooltip: operation.tooltip || null
-      };
-    },
-    getOperationListeners(operation) {
-      const listeners = {};
-      let setFocus = true;
-      let handleClick = true;
-      if (operation.type === 'info') {
-        return listeners;
-      }
-      if (operation.type === 'switch') {
-        setFocus = true;
-        handleClick = false;
-        listeners.update = (payload) => {
-          this.emitOperation(operation, payload);
-        };
-      }
-      if (operation.type === 'menu') {
-        setFocus = false;
-        handleClick = false;
-        // no-op, the modal is handled in the slot
-        // and should emit 'update' when done
-        listeners.open = (e) => {
-          this.getFocus(e, this.widget._id);
-        };
-      }
-      if (operation.action === 'remove') {
-        setFocus = false;
-      }
-
-      if (!handleClick) {
-        return listeners;
-      }
-
-      if (!listeners.click) {
-        listeners.click = (e) => {
-          this.handleOperationClick(operation);
-          setFocus && this.getFocus(e, this.widget._id);
-        };
-      } else if (setFocus) {
-        const originalClick = listeners.click;
-        listeners.click = (e) => {
-          originalClick(e);
-          this.getFocus(e, this.widget._id);
-        };
-      }
-
-      return listeners;
-    },
-    async handleOperationClick(operation) {
-      const { modal } = operation;
-      if (modal && operation.type !== 'menu') {
-        const result = await apos.modal.execute(modal, {
-          widget: this.widget,
-          widgetSchema: this.widgetModuleOptions.schema
-        });
-        if (result) {
-          // TODO: make sure the update method from
-          // modules/@apostrophecms/area/ui/apos/components/AposAreaEditor.vue
-          // does the job and does not mess with the widget type and _id:
-          this.$emit('update', result);
-        }
-        return;
-      }
-
-      this.emitOperation(operation);
-    },
-    emitOperation(operation, payload = {}) {
-      if (operation.action) {
-        this.$emit(operation.action, this.i);
-      } else {
-        apos.bus.$emit('widget-breadcrumb-operation', {
-          ...payload,
-          ...operation,
-          _id: this.widget._id
-        });
-      }
+    // Emits same actions as the Standard operations,
+    // e.g ('edit', i), ('remove', i), etc.
+    onBreadcrumbOperation({ name, payload }) {
+      this.$emit(name, payload);
     },
     getFocusForMenu({ menuId, isOpen }) {
       if (
