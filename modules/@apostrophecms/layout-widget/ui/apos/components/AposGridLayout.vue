@@ -3,8 +3,10 @@
     ref="root"
     class="apos-layout"
   >
-    <section
+    <TransitionGroup
       ref="grid"
+      name="apos-grid"
+      tag="section"
       class="apos-layout__grid"
       :class="gridClasses"
       data-apos-test="aposLayoutContainer"
@@ -55,7 +57,7 @@
           </template>
         </div>
       </div>
-    </section>
+    </TransitionGroup>
     <AposGridManager
       v-if="isManageMode"
       :grid-state="gridState"
@@ -66,6 +68,8 @@
       @resize-end="$emit('resize-end', $event); isResizing = false"
       @move-start="isMoving = true"
       @move-end="$emit('move-end', $event); isMoving = false"
+      @preview-move="onPreviewMove"
+      @preview-clear="onPreviewClear"
       @add-fit-item="$emit('add-fit-item', $event)"
       @patch-item="$emit('patch-item', $event)"
     />
@@ -117,7 +121,12 @@ export default {
   data() {
     return {
       isResizing: false,
-      isMoving: false
+      isMoving: false,
+      // Live preview from manager: patches to apply to items for render-only
+      preview: {
+        patches: null,
+        key: null
+      }
     };
   },
   computed: {
@@ -138,12 +147,16 @@ export default {
       return slots;
     },
     renderItems() {
-      if (!this.syntheticItems.length) {
-        return this.gridState.current.items;
+      const base = this.gridState.current.items;
+      // Apply live preview patches if present (render-only)
+      if (Array.isArray(this.preview.patches) && this.preview.patches.length) {
+        return this.applyPreviewPatches(base, this.preview.patches);
       }
-      // Merge and sort by order to ensure CSS order consistency
+      if (!this.syntheticItems.length) {
+        return base;
+      }
       const merged = [
-        ...this.gridState.current.items,
+        ...base,
         ...this.syntheticItems
       ];
       return merged.sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
@@ -161,6 +174,61 @@ export default {
         'is-resizing': this.isResizing,
         'is-moving': this.isMoving
       };
+    }
+  },
+  methods: {
+    onPreviewMove({ patches, key }) {
+      if (!Array.isArray(patches) || !patches.length) {
+        this.onPreviewClear();
+        return;
+      }
+      if (this.preview.key === key) {
+        return;
+      }
+      this.preview = {
+        patches,
+        key
+      };
+    },
+    onPreviewClear() {
+      if (this.preview.patches || this.preview.key) {
+        this.preview = {
+          patches: null,
+          key: null
+        };
+      }
+    },
+    applyPreviewPatches(items, patches) {
+      // Map items by _id for quick lookup
+      const map = new Map(items.map((it, idx) => [ it._id, {
+        it,
+        idx
+      } ]));
+      const out = items.map(it => ({ ...it }));
+      for (const p of patches) {
+        const ref = map.get(p._id);
+        if (!ref) {
+          continue;
+        }
+        const target = out[ref.idx];
+        // Only apply layout-related fields present in the patch
+        if ('colstart' in p) {
+          target.colstart = p.colstart;
+        }
+        if ('rowstart' in p) {
+          target.rowstart = p.rowstart;
+        }
+        if ('colspan' in p) {
+          target.colspan = p.colspan;
+        }
+        if ('rowspan' in p) {
+          target.rowspan = p.rowspan;
+        }
+        if ('order' in p) {
+          target.order = p.order;
+        }
+      }
+      return out;
     }
   }
 };
@@ -207,9 +275,19 @@ export default {
 
 /* stylelint-disable-next-line media-feature-name-allowed-list */
 @media (prefers-reduced-motion: no-preference) {
-  .apos-layout__grid {
-    transition: all 300ms ease;
+  /* TransitionGroup move/enter/leave animations for grid items */
+  .apos-grid-move {
+    transition: transform 200ms ease;
+  }
+
+  .apos-grid-enter-active,
+  .apos-grid-leave-active {
+    transition: opacity 200ms ease;
+  }
+
+  .apos-grid-enter-from,
+  .apos-grid-leave-to {
+    opacity: 0.01;
   }
 }
-
 </style>

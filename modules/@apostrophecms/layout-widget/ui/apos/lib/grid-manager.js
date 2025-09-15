@@ -405,9 +405,13 @@ export class GridManager {
     const maxStartX = Math.max(1, columns - colspan + 1);
     const maxStartY = Math.max(1, rows - rowspan + 1);
 
-    // Initial nearest indices from current pixel position
-    let c = Math.round(left / stepX) + 1;
-    let r = Math.round(top / stepY) + 1;
+    // Initial nearest indices with custom snap threshold.
+    // You must move ~90% into the next track before snapping to it.
+    const SNAP_THRESHOLD = 0.9;
+    const shiftX = (1 - SNAP_THRESHOLD) * stepX;
+    const shiftY = (1 - SNAP_THRESHOLD) * stepY;
+    let c = Math.floor((left + shiftX) / stepX) + 1;
+    let r = Math.floor((top + shiftY) / stepY) + 1;
     c = Math.max(1, Math.min(c, maxStartX));
     r = Math.max(1, Math.min(r, maxStartY));
 
@@ -470,7 +474,12 @@ export class GridManager {
     const columnWidth = containerRect.width / state.columns;
     const direction = deltaX > 0 ? 'east' : 'west';
     const directionCorrection = data.side === direction ? 1 : -1;
-    const deltaColspan = Math.round(Math.abs(deltaX) / columnWidth) * directionCorrection;
+    // Apply 90% snapping threshold for resize steps as well
+    const SNAP_THRESHOLD = 0.9;
+    const deltaSteps = Math.floor(
+      (Math.abs(deltaX) + (1 - SNAP_THRESHOLD) * columnWidth) / columnWidth
+    );
+    const deltaColspan = deltaSteps * directionCorrection;
     const desired = Math.max(
       state.options.minSpan,
       Math.min(item.colspan + deltaColspan, state.columns)

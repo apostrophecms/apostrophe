@@ -28,6 +28,7 @@
       }"
     >
       <div
+        v-if="!isMoving"
         data-shim
         :data-id="item._id"
         class="apos-layout__item-shim"
@@ -174,6 +175,9 @@ export default {
     'resize-end',
     'move-start',
     'move-end',
+    // New: live preview events for layout rendering
+    'preview-move',
+    'preview-clear',
     'add-fit-item',
     'remove-item',
     'patch-item'
@@ -234,8 +238,8 @@ export default {
         iconSize: 11
       },
       onMoveDebounced: throttle(this.onMove, 10),
-      onResizeDebounced: throttle(this.onResize, 10)
-      // gridContentStyles: new Map()
+      onResizeDebounced: throttle(this.onResize, 10),
+      lastPreviewKey: null
     };
   },
   computed: {
@@ -306,9 +310,13 @@ export default {
     document.addEventListener('mouseup', this.onMouseUp);
     document.addEventListener('touchend', this.onMouseUp);
 
+    const rootEl = this.$parent.$refs.root?.$el || this.$parent.$refs.root;
+    const gridRef = this.$parent.$refs.grid;
+    const gridEl = gridRef && gridRef.$el ? gridRef.$el : gridRef;
+
     this.manager.init(
-      this.$parent.$refs.root,
-      this.$parent.$refs.grid,
+      rootEl,
+      gridEl,
       (type, obj) => {
         if (type === 'resize') {
           this.sceneResizeIndex += 1;
@@ -325,7 +333,9 @@ export default {
       // without the resize observer being properly cleaned up.
       this.manager.onSceneResizeDebounced(entries);
     });
-    this.resizeObserver.observe(this.$parent.$refs.grid);
+    if (gridEl) {
+      this.resizeObserver.observe(gridEl);
+    }
 
     await this.$nextTick();
     this.cloneCalculateIndex += 1;
@@ -476,6 +486,36 @@ export default {
       if (colstart && rowstart) {
         this.ghostDataWrite.colstart = colstart;
         this.ghostDataWrite.rowstart = rowstart;
+        // Emit preview of would-be state when snap target changes
+        const newKey = `${colstart}:${rowstart}`;
+        if (
+          typeof this.ghostData.snapLeft === 'number' &&
+          typeof this.ghostData.snapTop === 'number'
+        ) {
+          if (this.lastPreviewKey !== newKey) {
+            const patches = this.manager.performItemMove({
+              data: this.ghostDataWrite,
+              state: this.gridState,
+              item: this.gridState.lookup.get(this.ghostDataWrite.id),
+              precomp: this.movePrecomp
+            });
+            if (Array.isArray(patches) && patches.length) {
+              this.$emit('preview-move', {
+                patches,
+                key: newKey
+              });
+              this.lastPreviewKey = newKey;
+            } else if (this.lastPreviewKey) {
+              // No effective change -> clear existing preview
+              this.$emit('preview-clear');
+              this.lastPreviewKey = null;
+            }
+          }
+        } else if (this.lastPreviewKey) {
+          // Lost snapping -> clear preview
+          this.$emit('preview-clear');
+          this.lastPreviewKey = null;
+        }
       }
     },
     onMouseMove(event) {
@@ -510,6 +550,11 @@ export default {
       }
     },
     resetGhostData() {
+      // Always clear any preview when ghost state resets
+      if (this.lastPreviewKey) {
+        this.$emit('preview-clear');
+        this.lastPreviewKey = null;
+      }
       Object.keys(this.ghostData).forEach(key => {
         this.ghostData[key] = typeof this.ghostData[key] === 'boolean'
           ? false
