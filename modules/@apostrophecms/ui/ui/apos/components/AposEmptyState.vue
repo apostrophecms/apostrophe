@@ -62,8 +62,8 @@ export default {
     @include type-large;
 
     & {
-      text-align: center;
       margin-top: 5px;
+      text-align: center;
     }
   }
 </style>
