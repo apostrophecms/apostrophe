@@ -28,7 +28,7 @@
       }"
     >
       <div
-        v-if="!isMoving"
+        v-if="!hasMotion"
         data-shim
         :data-id="item._id"
         class="apos-layout__item-shim"
@@ -418,6 +418,33 @@ export default {
         this.ghostDataWrite.colstart = colstart ?? this.ghostDataWrite.colstart;
         this.ghostDataWrite.colspan = colspan ?? this.ghostDataWrite.colspan;
         this.ghostDataWrite.direction = direction ?? this.ghostDataWrite.direction;
+
+        // Live preview of resize result when direction is known
+        if (this.ghostDataWrite.direction && this.ghostDataWrite.id) {
+          const newKey = `${this.ghostDataWrite.colstart}:${this.ghostDataWrite.colspan}:${this.ghostDataWrite.direction}`;
+          if (this.lastPreviewKey !== newKey) {
+            const patches = this.manager.performItemResize({
+              data: this.ghostDataWrite,
+              state: this.gridState,
+              item: this.gridState.lookup.get(this.ghostDataWrite.id)
+            });
+            if (Array.isArray(patches) && patches.length) {
+              this.$emit('preview-move', { // reuse same preview channel
+                patches,
+                key: newKey
+              });
+              this.lastPreviewKey = newKey;
+            } else if (this.lastPreviewKey) {
+              // No effective change, clear existing preview
+              this.$emit('preview-clear');
+              this.lastPreviewKey = null;
+            }
+          }
+        } else if (this.lastPreviewKey) {
+          // Lost direction (e.g., mouse returned to start), clear preview
+          this.$emit('preview-clear');
+          this.lastPreviewKey = null;
+        }
       }
     },
     onStartMove(item, event) {
@@ -506,13 +533,13 @@ export default {
               });
               this.lastPreviewKey = newKey;
             } else if (this.lastPreviewKey) {
-              // No effective change -> clear existing preview
+              // No effective change, clear existing preview
               this.$emit('preview-clear');
               this.lastPreviewKey = null;
             }
           }
         } else if (this.lastPreviewKey) {
-          // Lost snapping -> clear preview
+          // Lost snapping, clear preview
           this.$emit('preview-clear');
           this.lastPreviewKey = null;
         }
