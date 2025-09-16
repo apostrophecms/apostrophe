@@ -3321,7 +3321,7 @@ paths:
         - BearerAuth: []
         - SessionAuth: []
 
-  /@apostrophecms/login/resetRequest:
+  /@apostrophecms/login/reset-request:
     post:
       tags:
         - Authentication
