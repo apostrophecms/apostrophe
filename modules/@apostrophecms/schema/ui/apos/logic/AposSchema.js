@@ -81,7 +81,7 @@ export default {
     serverErrors: {
       type: Object,
       default() {
-        return null;
+        return {};
       }
     },
     displayOptions: {
