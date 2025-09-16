@@ -6615,7 +6615,7 @@ export const AuthenticationApiAxiosParamCreator = function (configuration?: Conf
         authResetRequest: async (authResetRequestRequest: AuthResetRequestRequest, options: RawAxiosRequestConfig = {}): Promise<RequestArgs> => {
             // verify required parameter 'authResetRequestRequest' is not null or undefined
             assertParamExists('authResetRequest', 'authResetRequestRequest', authResetRequestRequest)
-            const localVarPath = `/@apostrophecms/login/resetRequest`;
+            const localVarPath = `/@apostrophecms/login/reset-request`;
             // use dummy base URL string because the URL constructor only accepts absolute URLs.
             const localVarUrlObj = new URL(localVarPath, DUMMY_BASE_URL);
             let baseOptions;

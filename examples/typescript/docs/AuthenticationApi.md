@@ -9,7 +9,7 @@ All URIs are relative to *http://localhost:3000/api/v1*
 |[**authLogin**](#authlogin) | **POST** /@apostrophecms/login/login | Login to get authentication token|
 |[**authLogout**](#authlogout) | **POST** /@apostrophecms/login/logout | Logout and invalidate session|
 |[**authReset**](#authreset) | **POST** /@apostrophecms/login/reset | Complete password reset|
-|[**authResetRequest**](#authresetrequest) | **POST** /@apostrophecms/login/resetRequest | Request password reset|
+|[**authResetRequest**](#authresetrequest) | **POST** /@apostrophecms/login/reset-request | Request password reset|
 |[**authWhoAmI**](#authwhoami) | **GET** /@apostrophecms/login/whoami | Get current user information|
 |[**authWhoAmIPost**](#authwhoamipost) | **POST** /@apostrophecms/login/whoami | Get current user information|
 

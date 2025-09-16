@@ -58,7 +58,7 @@ Class | Method | HTTP request | Description
 *AuthenticationApi* | [**authLogin**](docs/AuthenticationApi.md#authlogin) | **POST** /@apostrophecms/login/login | Login to get authentication token
 *AuthenticationApi* | [**authLogout**](docs/AuthenticationApi.md#authlogout) | **POST** /@apostrophecms/login/logout | Logout and invalidate session
 *AuthenticationApi* | [**authReset**](docs/AuthenticationApi.md#authreset) | **POST** /@apostrophecms/login/reset | Complete password reset
-*AuthenticationApi* | [**authResetRequest**](docs/AuthenticationApi.md#authresetrequest) | **POST** /@apostrophecms/login/resetRequest | Request password reset
+*AuthenticationApi* | [**authResetRequest**](docs/AuthenticationApi.md#authresetrequest) | **POST** /@apostrophecms/login/reset-request | Request password reset
 *AuthenticationApi* | [**authWhoAmI**](docs/AuthenticationApi.md#authwhoami) | **GET** /@apostrophecms/login/whoami | Get current user information
 *AuthenticationApi* | [**authWhoAmIPost**](docs/AuthenticationApi.md#authwhoamipost) | **POST** /@apostrophecms/login/whoami | Get current user information
 *GlobalContentApi* | [**globalArchive**](docs/GlobalContentApi.md#globalarchive) | **POST** /@apostrophecms/global/archive | Archive global document
