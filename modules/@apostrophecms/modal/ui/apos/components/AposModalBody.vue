@@ -62,6 +62,16 @@ export default {
   }
 }
 
+.apos-modal__body-inner {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.apos-modal__body-main {
+  flex-grow: 1;
+}
+
 .apos-modal__body--flex {
   display: flex;
   flex-direction: column;

@@ -50,6 +50,7 @@ module.exports = {
   'drag-icon': 'Apps',
   'eye-icon': 'Eye',
   'file-document-icon': 'FileDocument',
+  'file-document-multiple-outline-icon': 'FileDocumentMultipleOutline',
   'file-tree-icon': 'FileTree',
   'flare-icon': 'Flare',
   'format-align-center-icon': 'FormatAlignCenter',
