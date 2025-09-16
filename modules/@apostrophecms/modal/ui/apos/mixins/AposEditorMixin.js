@@ -31,7 +31,7 @@ export default {
       docFields: {
         data: {}
       },
-      serverErrors: null,
+      serverErrors: {},
       restoreOnly: false,
       readOnly: false,
       changed: [],
