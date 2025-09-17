@@ -13,7 +13,7 @@ module.exports = {
     tablet: {
       breakpoint: 1024
     },
-    gap: 0,
+    gap: '1.5rem',
     defaultCellHorizontalAlignment: null,
     defaultCellVerticalAlignment: null
   },
