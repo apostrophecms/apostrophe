@@ -319,6 +319,7 @@ export default {
       isSuppressed: false,
       menuOpen: null,
       isSuppressingWidgetControls: false,
+      hasClickOutsideListener: false, // Track if click-outside listener is active
       classes: {
         show: 'apos-is-visible',
         open: 'apos-is-open',
@@ -396,13 +397,7 @@ export default {
         return false;
       }
 
-      const isWidgetFocused = this.widgetFocused === this.widget._id;
-      // FIXME: this is a memory leak, move to a watcher?
-      if (isWidgetFocused) {
-        document.addEventListener('click', this.unfocus);
-      }
-
-      return isWidgetFocused;
+      return this.widgetFocused === this.widget._id;
     },
     isHovered() {
       return this.widgetHovered === this.widget._id;
@@ -450,10 +445,12 @@ export default {
     isFocused(newVal) {
       if (newVal) {
         this.$refs.wrapper.addEventListener('keydown', this.handleKeyboardUnfocus);
+        this.addClickOutsideListener();
       } else {
         this.menuOpen = null;
         this.$refs.wrapper.removeEventListener('keydown', this.handleKeyboardUnfocus);
         this.isSuppressingWidgetControls = false;
+        this.removeClickOutsideListener();
       }
     }
   },
@@ -488,6 +485,8 @@ export default {
   unmounted() {
     // Remove the focus parent listener when unmounted
     apos.bus.$off('widget-focus-parent', this.focusParent);
+    // Ensure click-outside listener is cleaned up
+    this.removeClickOutsideListener();
   },
   methods: {
     // Emits same actions as the Standard operations,
@@ -576,9 +575,21 @@ export default {
     unfocus(event) {
       if (!this.$el.contains(event.target)) {
         this.isSuppressed = true;
-        document.removeEventListener('click', this.unfocus);
+        this.removeClickOutsideListener();
         apos.bus.$emit('widget-focus', { _id: null });
       }
+    },
+
+    addClickOutsideListener() {
+      if (!this.hasClickOutsideListener) {
+        document.addEventListener('click', this.unfocus);
+        this.hasClickOutsideListener = true;
+      }
+    },
+
+    removeClickOutsideListener() {
+      document.removeEventListener('click', this.unfocus);
+      this.hasClickOutsideListener = false;
     },
 
     handleKeyboardFocus($event) {
