@@ -703,9 +703,10 @@ export default {
 </script>
 
 <style lang="scss" scoped>
-$resizeUIWidth: 12px;
-$resizeUIHeight: 32px;
-$resizeButtonWidth: 4px;
+$resize-ui-width: 12px;
+$resize-ui-height: 32px;
+$resize-button-width: 4px;
+
 /* The base grid styles, mimicking the default public behavior */
 .apos-layout__item {
   /* stylelint-disable-next-line declaration-block-no-redundant-longhand-properties */
@@ -848,7 +849,6 @@ $resizeButtonWidth: 4px;
     &.snap {
       border: none;
       outline: 2px dashed rgba($brand-blue, 0.8);
-      // outline-offset: -1px;
       background-color: transparent;
     }
   }
@@ -866,28 +866,27 @@ $resizeButtonWidth: 4px;
   position: absolute;
   top: 0;
   display: block;
+  width: $resize-button-width;
   height: 100%;
-  width: $resizeButtonWidth;
   background-color: var(--a-primary);
   opacity: 0;
 }
 
 .apos-layout__item-resize-handle {
-  $anchorSize: 8px;
+  $anchor-size: 8px;
   
-  width: $resizeButtonWidth;
+  width: $resize-button-width;
   height: 100%;
 
   // The before/after els draw square resize handles
   &::before,
   &::after {
-    z-index: 1;
+    z-index: $z-index-default;
     content: '';
     position: absolute;
-    width: $anchorSize;
-    height: $anchorSize;
+    width: $anchor-size;
+    height: $anchor-size;
     outline: 1px solid var(--a-primary);
-    background-color: var(--a-primary);
     background-color: var(--a-primary-light-80);
     pointer-events: none;
   }
@@ -901,41 +900,43 @@ $resizeButtonWidth: 4px;
 
   // south-east corner
   &.se {
-    right: -1 * (math.div($resizeButtonWidth, 2));
+    right: -1 * (math.div($resize-button-width, 2));
     bottom: 0;
     cursor: grab;
 
     .apos-layout__item-resize-handle-highlight-bar {
-      right: -1 * (math.div($resizeButtonWidth, 2) - 1);
+      right: -1 * (math.div($resize-button-width, 2) - 1);
     }
 
     &::before,
     &::after {
-      right: -1 * (math.div($anchorSize, 2) - 1);
+      right: -1 * (math.div($anchor-size, 2) - 1);
     }
+
     &::before {
-      top: -1 * math.div($anchorSize, 2);
+      top: -1 * math.div($anchor-size, 2);
     }
 
     &::after {
-      bottom: -1 * math.div($anchorSize, 2);
+      bottom: -1 * math.div($anchor-size, 2);
     }
   }
 
   // north-west corner
   &.nw {
     top: 0;
-    left: -1 * (math.div($resizeButtonWidth, 2));
+    left: -1 * (math.div($resize-button-width, 2));
     cursor: grab;
 
     .apos-layout__item-resize-handle-highlight-bar {
-      left: -1 * (math.div($resizeButtonWidth, 2) - 1);
+      left: -1 * (math.div($resize-button-width, 2) - 1);
     }
 
     &::before,
     &::after {
       left: -1 * (math.div($anchorSize, 2) - 1);
     }
+
     &::before {
       top: -1 * math.div($anchorSize, 2);
     }
@@ -967,8 +968,8 @@ $resizeButtonWidth: 4px;
   pointer-events: none;
   position: absolute;
   top: 0;
-  width: $resizeUIWidth;
-  height: $resizeUIHeight;
+  width: $resize-ui-width;
+  height: $resize-ui-height;
   opacity: 0;
   border: 1px solid var(--a-primary-transparent-25);
   background-color: var(--a-white);
@@ -977,11 +978,11 @@ $resizeButtonWidth: 4px;
 }
 
 .se .apos-layout__item-resize-handle-icon {
-  right: -1 * ($resizeUIWidth * 0.64);
+  right: -1 * ($resize-ui-width * 0.64);
 }
 
 .nw .apos-layout__item-resize-handle-icon {
-  left: -1 * ($resizeUIWidth * 0.64);
+  left: -1 * ($resize-ui-width * 0.64);
 }
 
 .apos-layout__item-operations-handle {
