@@ -933,15 +933,15 @@ $resize-button-width: 4px;
 
     &::before,
     &::after {
-      left: -1 * (math.div($anchorSize, 2) - 1);
+      left: -1 * (math.div($anchor-size, 2) - 1);
     }
 
     &::before {
-      top: -1 * math.div($anchorSize, 2);
+      top: -1 * math.div($anchor-size, 2);
     }
 
     &::after {
-      bottom: -1 * math.div($anchorSize, 2);
+      bottom: -1 * math.div($anchor-size, 2);
     }
   }
 }
