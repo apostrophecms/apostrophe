@@ -240,6 +240,13 @@ export default {
   display: grid;
   grid-template-columns: repeat(var(--grid-columns, 12), 1fr);
   gap: var(--grid-gap);
+
+  // todo ack not working
+  // want the grabbing cursor during move/resizing
+  &.is-moving,
+  &.is-resizing {
+    cursor: grabbing;
+  }
 }
 
 .apos-layout__item {

@@ -40,7 +40,14 @@
           @touchstart="onStartMove(item, $event)"
           @mouseup="resetGhostData"
           @touchend="resetGhostData"
-        />
+        >
+          <AposIndicator
+            icon="cursor-move-icon"
+            :icon-size="16"
+            icon-color="var(--a-base-1)"
+            class="apos-layout__item-move-handle-icon"
+          />
+        </button>
         <button
           v-show="!hasMotion || ghostData.id === item._id"
           class="apos-layout--item-action apos-layout__item-resize-handle nw"
@@ -48,7 +55,17 @@
           @touchstart="onStartResize(item, 'west', $event)"
           @mouseup="resetGhostData"
           @touchend="resetGhostData"
-        />
+          @mousemove="positionResizeUI"
+        >
+          <span class="apos-layout__item-resize-handle-highlight-bar" />
+          <AposIndicator
+            icon="drag-vertical-icon"
+            :icon-size="20"
+            icon-color="var(--a-base-1)"
+            class="apos-layout__item-resize-handle-icon"
+            data-resize-ui="west"
+          />
+        </button>
         <button
           v-show="!hasMotion || ghostData.id === item._id"
           class="apos-layout--item-action apos-layout__item-resize-handle se"
@@ -56,7 +73,17 @@
           @touchstart="onStartResize(item, 'east', $event)"
           @mouseup="resetGhostData"
           @touchend="resetGhostData"
-        />
+          @mousemove="positionResizeUI"
+        >
+          <span class="apos-layout__item-resize-handle-highlight-bar" />
+          <AposIndicator
+            icon="drag-vertical-icon"
+            :icon-size="20"
+            icon-color="var(--a-base-1)"
+            class="apos-layout__item-resize-handle-icon"
+            data-resize-ui="east"
+          />
+        </button>
         <div
           v-show="!hasMotion"
           class="apos-layout--item-action apos-layout__item-operations-handle"
@@ -658,12 +685,27 @@ export default {
         _id: item._id,
         __naturalIndex: item.__naturalIndex
       });
+    },
+    positionResizeUI(e) {
+      const rect = e.target.getBoundingClientRect();
+      const y = e.clientY - rect.top;
+      const grip = e.target.querySelector('[data-resize-ui]');
+      if (grip) {
+        const height = grip.getBoundingClientRect().height;
+        grip.style.top = `${y - (height / 2)}px`;
+      } else {
+        // todo should never be missing!
+        console.log('missing grip');
+      }
     }
   }
 };
 </script>
 
 <style lang="scss" scoped>
+$resizeUIWidth: 12px;
+$resizeUIHeight: 32px;
+$resizeButtonWidth: 4px;
 /* The base grid styles, mimicking the default public behavior */
 .apos-layout__item {
   /* stylelint-disable-next-line declaration-block-no-redundant-longhand-properties */
@@ -701,7 +743,6 @@ export default {
   &__grid-clone.manage > &__item {
     position: relative;
     min-height: 150px;
-    opacity: 1;
     transition: all 300ms ease;
 
     &.is-resizing > &__item {
@@ -717,12 +758,9 @@ export default {
     z-index: $z-index-widget-label;
     position: absolute;
     box-sizing: border-box;
-    border: 1px solid var(--a-primary);
+    border: 1px solid var(--a-primary-transparent-50);
     transition: background-color 300ms ease;
     inset: 0;
-    border-radius: var(--a-border-radius);
-    // background-color: rgba($brand-blue, 0.6);
-    background-color: rgba(#fff, 0.4);
 
     &:hover {
       background-color: rgba(#fff, 0.7);
@@ -743,12 +781,17 @@ export default {
     align-items: center;
     justify-content: center;
     height: 100%;
-    border: 1px dashed var(--a-base-5);
-    background-color: var(--a-base-2);
+    border: 1px dashed var(--a-primary-light-40);
+    background-color: var(--a-primary-transparent-15);
     border-radius: var(--a-border-radius);
-    color: var(--a-base-7);
+    color: var(--a-primary);
+    opacity: 0;
     cursor: pointer;
     transition: opacity 200ms ease;
+
+    &:hover {
+      opacity: 1;
+    }
 
     &::before {
       content: '+';
@@ -819,97 +862,126 @@ export default {
   }
 }
 
+.apos-layout__item-resize-handle-highlight-bar {
+  position: absolute;
+  top: 0;
+  display: block;
+  height: 100%;
+  width: $resizeButtonWidth;
+  background-color: var(--a-primary);
+  opacity: 0;
+}
+
 .apos-layout__item-resize-handle {
-  width: 22px;
+  $anchorSize: 8px;
+  
+  width: $resizeButtonWidth;
   height: 100%;
 
+  // The before/after els draw square resize handles
   &::before,
   &::after {
+    z-index: 1;
     content: '';
     position: absolute;
-    width: 0;
-    height: 0;
+    width: $anchorSize;
+    height: $anchorSize;
+    outline: 1px solid var(--a-primary);
+    background-color: var(--a-primary);
+    background-color: var(--a-primary-light-80);
     pointer-events: none;
+  }
+
+  &:hover {
+    .apos-layout__item-resize-handle-icon,
+    .apos-layout__item-resize-handle-highlight-bar {
+      opacity: 1;
+    }
   }
 
   // south-east corner
   &.se {
-    right: 0;
+    right: -1 * (math.div($resizeButtonWidth, 2));
     bottom: 0;
-    // cursor: nwse-resize;
-    cursor: col-resize;
+    cursor: grab;
 
-    // Outer triangle (stroke)
-    &::before {
-      right: 0;
-      bottom: 0;
-      border-bottom: 16px solid var(--a-primary);
-      border-left: 16px solid transparent;
-      filter: drop-shadow(0 1px 2px rgb(0 0 0 / 15%));
+    .apos-layout__item-resize-handle-highlight-bar {
+      right: -1 * (math.div($resizeButtonWidth, 2) - 1);
     }
 
-    // Inner triangle (fill)
+    &::before,
     &::after {
-      right: 1px;
-      bottom: 1px;
-      border-bottom: 14px solid var(--a-background-primary);
-      border-left: 14px solid transparent;
+      right: -1 * (math.div($anchorSize, 2) - 1);
+    }
+    &::before {
+      top: -1 * math.div($anchorSize, 2);
     }
 
-    &:hover::before {
-      border-bottom-width: 18px;
-      border-left-width: 18px;
-    }
-
-    &:hover::after {
-      right: 2px;
-      bottom: 2px;
-      border-bottom-width: 16px;
-      border-left-width: 16px;
+    &::after {
+      bottom: -1 * math.div($anchorSize, 2);
     }
   }
 
   // north-west corner
   &.nw {
     top: 0;
-    left: 0;
-    // cursor: nwse-resize;
-    cursor: col-resize;
+    left: -1 * (math.div($resizeButtonWidth, 2));
+    cursor: grab;
 
-    // Outer triangle (stroke)
-    &::before {
-      top: 0;
-      left: 0;
-      border-top: 16px solid var(--a-primary);
-      border-right: 16px solid transparent;
-      filter: drop-shadow(0 1px 2px rgb(0 0 0 / 15%));
+    .apos-layout__item-resize-handle-highlight-bar {
+      left: -1 * (math.div($resizeButtonWidth, 2) - 1);
     }
 
-    // Inner triangle (fill)
+    &::before,
     &::after {
-      top: 1px;
-      left: 1px;
-      border-top: 14px solid var(--a-background-primary);
-      border-right: 14px solid transparent;
+      left: -1 * (math.div($anchorSize, 2) - 1);
+    }
+    &::before {
+      top: -1 * math.div($anchorSize, 2);
     }
 
-    &:hover::before {
-      border-top-width: 18px;
-      border-right-width: 18px;
-    }
-
-    &:hover::after {
-      top: 2px;
-      left: 2px;
-      border-top-width: 16px;
-      border-right-width: 16px;
+    &::after {
+      bottom: -1 * math.div($anchorSize, 2);
     }
   }
 }
 
 .apos-layout__item-move-handle {
-  inset: 0 22px;
-  cursor: move;
+  inset: 0 4px;
+  cursor: grab;
+}
+
+.apos-layout__item-move-handle-icon {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  width: 30px;
+  height: 30px;
+  border: 1px solid var(--a-primary-transparent-25);
+  background-color: var(--a-white);
+  border-radius: var(--a-border-radius);
+  box-shadow: var(--a-box-shadow);
+}
+
+.apos-layout__item-resize-handle-icon {
+  pointer-events: none;
+  position: absolute;
+  top: 0;
+  width: $resizeUIWidth;
+  height: $resizeUIHeight;
+  opacity: 0;
+  border: 1px solid var(--a-primary-transparent-25);
+  background-color: var(--a-white);
+  border-radius: var(--a-border-radius);
+  box-shadow: var(--a-box-shadow);
+}
+
+.se .apos-layout__item-resize-handle-icon {
+  right: -1 * ($resizeUIWidth * 0.64);
+}
+
+.nw .apos-layout__item-resize-handle-icon {
+  left: -1 * ($resizeUIWidth * 0.64);
 }
 
 .apos-layout__item-operations-handle {
