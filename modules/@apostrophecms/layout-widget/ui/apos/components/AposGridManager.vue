@@ -695,7 +695,6 @@ export default {
         grip.style.top = `${y - (height / 2)}px`;
       } else {
         // todo should never be missing!
-        console.log('missing grip');
       }
     }
   }
@@ -874,7 +873,7 @@ $resize-button-width: 4px;
 
 .apos-layout__item-resize-handle {
   $anchor-size: 8px;
-  
+
   width: $resize-button-width;
   height: 100%;
 
