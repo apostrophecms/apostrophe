@@ -28,7 +28,7 @@
       }"
     >
       <div
-        v-if="!hasMotion"
+        v-if="!isMoving"
         data-shim
         :data-id="item._id"
         class="apos-layout__item-shim"
@@ -98,6 +98,7 @@
             :is-focused="true"
             :skip-info="true"
             :disabled="opstate.disabled"
+            :teleport-modals="true"
             @update="updateItem"
           />
         </div>
@@ -202,7 +203,6 @@ export default {
     'resize-end',
     'move-start',
     'move-end',
-    // New: live preview events for layout rendering
     'preview-move',
     'preview-clear',
     'add-fit-item',
@@ -435,44 +435,19 @@ export default {
       this.ghostDataWrite.order = itemData.order;
     },
     onResize(event) {
-      if (this.isResizing) {
-        const {
-          left, width, colspan, colstart, direction
-        } = this.computeGhostResize(event);
-        this.ghostData.left = left ?? this.ghostData.left;
-        this.ghostData.width = width ?? this.ghostData.width;
-
-        this.ghostDataWrite.colstart = colstart ?? this.ghostDataWrite.colstart;
-        this.ghostDataWrite.colspan = colspan ?? this.ghostDataWrite.colspan;
-        this.ghostDataWrite.direction = direction ?? this.ghostDataWrite.direction;
-
-        // Live preview of resize result when direction is known
-        if (this.ghostDataWrite.direction && this.ghostDataWrite.id) {
-          const newKey = `${this.ghostDataWrite.colstart}:${this.ghostDataWrite.colspan}:${this.ghostDataWrite.direction}`;
-          if (this.lastPreviewKey !== newKey) {
-            const patches = this.manager.performItemResize({
-              data: this.ghostDataWrite,
-              state: this.gridState,
-              item: this.gridState.lookup.get(this.ghostDataWrite.id)
-            });
-            if (Array.isArray(patches) && patches.length) {
-              this.$emit('preview-move', { // reuse same preview channel
-                patches,
-                key: newKey
-              });
-              this.lastPreviewKey = newKey;
-            } else if (this.lastPreviewKey) {
-              // No effective change, clear existing preview
-              this.$emit('preview-clear');
-              this.lastPreviewKey = null;
-            }
-          }
-        } else if (this.lastPreviewKey) {
-          // Lost direction (e.g., mouse returned to start), clear preview
-          this.$emit('preview-clear');
-          this.lastPreviewKey = null;
-        }
+      if (!this.isResizing) {
+        return;
       }
+
+      const {
+        left, width, colspan, colstart, direction
+      } = this.computeGhostResize(event);
+      this.ghostData.left = left ?? this.ghostData.left;
+      this.ghostData.width = width ?? this.ghostData.width;
+
+      this.ghostDataWrite.colstart = colstart ?? this.ghostDataWrite.colstart;
+      this.ghostDataWrite.colspan = colspan ?? this.ghostDataWrite.colspan;
+      this.ghostDataWrite.direction = direction ?? this.ghostDataWrite.direction;
     },
     onStartMove(item, event) {
       const element = this.$refs.items.find(el => el.dataset.id === item._id);
@@ -730,6 +705,11 @@ $resize-button-width: 4px;
     grid-template-columns: repeat(var(--grid-columns, 12), 1fr);
     gap: var(--grid-gap);
 
+    &.is-moving,
+    &.is-resizing {
+      cursor: grabbing;
+    }
+
     & > .apos-layout__item {
       place-self: stretch;
       border-radius: var(--a-border-radius);
@@ -769,10 +749,6 @@ $resize-button-width: 4px;
     &:hover:not(.is-resizing) > .apos-layout--item-action {
       display: block;
     }
-
-    // &.is-resizing {
-    //   can be used to style the shim when resizing
-    // }
   }
 
   &__item-synthetic {
@@ -985,15 +961,10 @@ $resize-button-width: 4px;
 }
 
 .apos-layout__item-operations-handle {
-  z-index: $z-index-modal;
   top: 0;
   right: 0;
   display: block;
   padding: 8px;
-
-  :deep(.apos-context-menu__dropdown-content) {
-    z-index: $z-index-modal;
-  }
 }
 
 /* stylelint-disable-next-line media-feature-name-allowed-list */
