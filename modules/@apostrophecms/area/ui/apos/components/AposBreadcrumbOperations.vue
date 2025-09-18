@@ -85,6 +85,11 @@ export default {
     skipInfo: {
       type: Boolean,
       default: false
+    },
+    // Whether to teleport menu modals to the end of the document body.
+    teleportModals: {
+      type: Boolean,
+      default: false
     }
   },
   emits: [
@@ -94,7 +99,6 @@ export default {
   ],
   data() {
     return {
-      isSuppressed: false,
       widgets: this.options.widgets || {}
     };
   },
@@ -183,7 +187,8 @@ export default {
             ...this.operationButtonDefault,
             icon: operation.icon
           },
-          tooltip: operation.tooltip || null
+          tooltip: operation.tooltip || null,
+          teleportContent: this.teleportModals
         };
       }
 
