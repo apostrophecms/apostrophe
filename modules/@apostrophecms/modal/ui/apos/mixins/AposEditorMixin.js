@@ -31,7 +31,7 @@ export default {
       docFields: {
         data: {}
       },
-      serverErrors: null,
+      serverErrors: {},
       restoreOnly: false,
       readOnly: false,
       changed: [],
@@ -181,7 +181,7 @@ export default {
     async handleSaveError(e, { fallback }) {
       // eslint-disable-next-line no-console
       console.error(e);
-      if (e.body && e.body.data && e.body.data.errors) {
+      if (e.body?.data?.errors) {
         const serverErrors = {};
         let first;
         e.body.data.errors.forEach(e => {
