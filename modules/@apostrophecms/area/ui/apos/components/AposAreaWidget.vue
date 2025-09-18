@@ -284,6 +284,7 @@ export default {
       type: Boolean,
       default: false
     },
+    // Disable controls or breadcrumbs independently
     controlsDisabled: {
       type: Boolean,
       default: false
@@ -291,6 +292,11 @@ export default {
     breadcrumbDisabled: {
       type: Boolean,
       default: false
+    },
+    // Whether or not this widget should be focused
+    shouldFocus: {
+      type: Boolean,
+      default: true
     },
     generation: {
       type: Number,
@@ -336,18 +342,6 @@ export default {
     };
   },
   computed: {
-    operationButtonDefault() {
-      return {
-        iconOnly: true,
-        icon: 'plus-icon',
-        type: 'group',
-        modifiers: [ 'small', 'inline' ],
-        role: 'menuitem',
-        class: 'apos-area-modify-controls__button',
-        iconSize: 16,
-        disableFocus: !this.isFocused
-      };
-    },
     // Passed only to the preview layer (custom preview components).
     followingValuesWithParent() {
       return Object.entries(this.followingValues || {})
@@ -393,7 +387,7 @@ export default {
       return (this.widgetModuleOptions.widgetBreadcrumbOperations || []);
     },
     isFocused() {
-      if (this.isSuppressed) {
+      if (this.isSuppressed || !this.shouldFocus) {
         return false;
       }
 

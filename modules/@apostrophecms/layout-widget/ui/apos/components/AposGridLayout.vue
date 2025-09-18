@@ -264,6 +264,10 @@ export default {
 .apos-layout {
   position: relative;
 
+  &__grid.manage > .apos-layout__item {
+    pointer-events: none;
+  }
+
   &__grid.manage > .apos-layout__item > *{
     pointer-events: none;
   }
