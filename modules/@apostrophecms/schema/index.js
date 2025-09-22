@@ -2099,22 +2099,17 @@ module.exports = {
       async getChoicesForQueryBuilder(field, query) {
         const req = self.apos.task.getReq();
         const allChoices = await self.getChoices(req, field);
-        console.log('allChoices', allChoices);
         const values = await query.toDistinct(field.name);
-        console.log('values', values);
 
         const choices = values
           .filter(Boolean)
           .map(value => {
             const choice = _.find(allChoices, { value });
-            console.log('choice', choice);
             return {
               value,
               label: choice && (choice.label || value)
             };
           });
-
-        console.log('choices', choices);
 
         self.apos.util.insensitiveSortByProperty(choices, 'label');
 
