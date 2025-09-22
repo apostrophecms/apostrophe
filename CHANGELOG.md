@@ -11,6 +11,7 @@
 ### Fixes
 
 * Fixes a bug in the login `uponSubmit` filter where a user could login without meeting the requirement.
+* Fixes pieces filters when values from optional fields are falsy.
 
 ### Fixes
 
