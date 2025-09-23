@@ -273,6 +273,7 @@ export default {
       if (!this.schemaReady) {
         return;
       }
+      this.next.hasErrors = false;
       this.schema
         .filter(field => this.displayComponent(field))
         .forEach(field => {
