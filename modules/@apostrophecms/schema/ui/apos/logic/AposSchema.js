@@ -111,7 +111,7 @@ export default {
         fieldErrors: {}
       },
       fieldState: {},
-      fieldComponentMap: window.apos.schema.components.fields || {},
+      fieldComponentMap: window.apos.schema.components.fields || {}
     };
   },
   computed: {
@@ -166,7 +166,7 @@ export default {
     fieldState: {
       deep: 2,
       handler() {
-        this.updateNextAndEmit()
+        this.updateNextAndEmit();
       },
       flush: 'post'
     },
