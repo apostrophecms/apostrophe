@@ -2,7 +2,7 @@ openapi: 3.1.0
 info:
   title: ApostropheCMS REST API
   description: |
-    **🚀 The headless CMS that developers actually want to use**
+    **🚀 Developer freedom. Editor happiness. Intentional design.**
 
     **For production use:** Download this YAML file and update the server URL
     and cookie names to match your setup.
