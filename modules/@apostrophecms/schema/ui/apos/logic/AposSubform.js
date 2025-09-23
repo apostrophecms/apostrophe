@@ -111,15 +111,16 @@ export default {
     },
     async submit() {
       this.triggerValidation = true;
-      this.$nextTick(async () => {
-        if (this.docFields.hasErrors) {
-          this.triggerValidation = false;
-          return;
-        }
-        this.$emit('submit', {
-          name: this.subform.name,
-          values: this.docFields.data
-        });
+      await this.$nextTick();
+      this.triggerValidation = false;
+
+      if (this.docFields.hasErrors) {
+        return;
+      }
+
+      this.$emit('submit', {
+        name: this.subform.name,
+        values: this.docFields.data
       });
     },
     async cancel() {
