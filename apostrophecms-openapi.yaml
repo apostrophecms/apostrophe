@@ -275,10 +275,31 @@ components:
       name: _id
       in: path
       required: true
-      description: Document ID (can include mode and locale, e.g., id:en:published)
+      description: Computed document ID (can include mode and locale, e.g., id:en:published)
       schema:
         type: string
+        pattern: '^[a-zA-Z0-9]+:[a-z]{2}(-[A-Z]{2})?:(draft|published)$'
         example: "ckitdo5oq004pu69kr6oxo6fr:en:published"
+
+    AposDocId:
+      name: aposDocId
+      in: path
+      required: true
+      description: ApostropheCMS document identifier
+      schema:
+        type: string
+        pattern: '^[a-zA-Z0-9]+$'
+        example: "ckitdo5oq004pu69kr6oxo6fr"
+
+    ImageDocId:
+      name: imageId
+      in: path
+      required: true
+      description: ApostropheCMS document identifier for an image
+      schema:
+        type: string
+        pattern: '^[a-zA-Z0-9]+$'
+        example: "ck9x8v7w2000001l6h8q9d5f0"
 
     AllPages:
       name: all
@@ -6778,7 +6799,7 @@ paths:
         - BearerAuth: []
         - SessionAuth: []
 
-  /@apostrophecms/image/{_id}/src:
+  /@apostrophecms/image/{imageId}/src:
     get:
       tags:
         - Media
@@ -6786,7 +6807,7 @@ paths:
       description: Retrieve the source URL for a specific image, with optional size and format parameters
       operationId: ImageGetSrcById
       parameters:
-        - $ref: '#/components/parameters/DocumentId'
+        - $ref: '#/components/parameters/ImageDocId'
         - name: size
           in: query
           description: Image size variant

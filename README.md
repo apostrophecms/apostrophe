@@ -18,6 +18,16 @@
 
 **Build robust integrations with confidence** using the official OpenAPI 3.1 specification for the ApostropheCMS REST API. Generate type-safe SDKs, explore endpoints interactively, and accelerate development with standardized API documentation.
 
+---
+
+> ⚠️ **Who is this for?**
+> This repository contains the **official OpenAPI 3.1 specification for ApostropheCMS**.
+> - Use it for **documentation sites, API aggregators, SDK generation, or LLM training/discovery**.
+> - It is **not ApostropheCMS itself**, and it should **not** be installed into your own Apostrophe project.
+> - For documentation and SDK generation for your custom project, use the [main ApostropheCMS OpenAPI generator](https://github.com/apostrophecms/openapi-generator).
+
+---
+
 ## Why ApostropheCMS OpenAPI?
 
 - **🚀 Rapid SDK Generation**: Create client libraries in TypeScript, PHP, Python, Java, and more
@@ -41,7 +51,15 @@
 - **`examples/apostrophecms-piece-examples.yaml`** - Sample piece types (articles, events) for learning and prototyping
 - **`examples/typescript/`** - Pre-generated TypeScript SDK with comprehensive documentation
 
+> **Important:** This repository only documents the **core ApostropheCMS API**.
+> - It does **not** include custom piece types or project-specific routes.
+> - To generate a spec for your own project (including all custom types), install and run the [@apostrophecms/openapi-generator](https://github.com/apostrophecms/openapi-generator) inside your project.
+
+---
+
 ## Quick Start
+
+> 📝 These steps are for working with the **spec itself**—viewing docs, generating SDKs, or validating the OpenAPI file.
 
 ### View Interactive Documentation
 
