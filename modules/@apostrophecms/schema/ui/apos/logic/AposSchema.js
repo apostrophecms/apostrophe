@@ -1,5 +1,4 @@
 import { getConditionTypesObject } from '../lib/conditionalFields';
-import debounce from 'lodash/debounce';
 
 export default {
   name: 'AposSchema',
@@ -113,7 +112,6 @@ export default {
       },
       fieldState: {},
       fieldComponentMap: window.apos.schema.components.fields || {},
-      updateNextAndEmitDebounced: debounce(this.updateNextAndEmit, 50)
     };
   },
   computed: {
@@ -131,6 +129,7 @@ export default {
               ...item,
               required
             },
+            serverError: this.serverErrors && this.serverErrors[item.name],
             modifiers: this.computeModifiers(item)
           }
         };
@@ -163,14 +162,11 @@ export default {
       return compareMetaState;
     }
   },
-  beforeUnmount() {
-    this.updateNextAndEmitDebounced.cancel();
-  },
   watch: {
     fieldState: {
       deep: 2,
       handler() {
-        this.updateNextAndEmitDebounced();
+        this.updateNextAndEmit()
       },
       flush: 'post'
     },
