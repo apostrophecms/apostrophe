@@ -1,0 +1,26 @@
+{
+  "root": true,
+  "env": {
+    "es2022": true,
+    "node": true
+  },
+  "parserOptions": {
+    "ecmaVersion": "latest",
+    "sourceType": "module"
+  },
+  "extends": ["standard"],
+  "plugins": ["jsdoc"],
+  "rules": {
+    "jsdoc/require-jsdoc": [
+      "warn",
+      {
+        "publicOnly": true,
+        "require": {
+          "FunctionDeclaration": true,
+          "MethodDefinition": true
+        }
+      }
+    ],
+    "jsdoc/require-returns-description": "off"
+  }
+}
