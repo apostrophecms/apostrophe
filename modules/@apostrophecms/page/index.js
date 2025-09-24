@@ -179,14 +179,15 @@ module.exports = {
           },
           shortcut: 'C'
         },
-        [`${self.__meta.name}:search`]: {
-          type: 'item',
-          label: 'apostrophe:commandMenuSearch',
-          action: {
-            type: 'command-menu-manager-focus-search'
-          },
-          shortcut: 'Ctrl+F Meta+F'
-        },
+        // NOTE: there is no search in the page manager
+        // [`${self.__meta.name}:search`]: {
+        //   type: 'item',
+        //   label: 'apostrophe:commandMenuSearch',
+        //   action: {
+        //     type: 'command-menu-manager-focus-search'
+        //   },
+        //   shortcut: 'Ctrl+F Meta+F'
+        // },
         [`${self.__meta.name}:select-all`]: {
           type: 'item',
           label: 'apostrophe:commandMenuSelectAll',

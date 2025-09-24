@@ -17,6 +17,7 @@
 ### Fixes
 
 * Resolve inline image URLs correctly when in edit mode and not in the default locale.
+* Using `CTRL+F` or `CMD+F` in the page manager now works.
 
 ### Changes
 
