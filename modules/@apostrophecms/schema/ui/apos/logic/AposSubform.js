@@ -109,18 +109,18 @@ export default {
       this.docFields = value;
       this.evaluateConditions();
     },
-    async submit() {
+    submit() {
       this.triggerValidation = true;
-      await this.$nextTick();
-      this.triggerValidation = false;
+      this.$nextTick(() => {
+        if (this.docFields.hasErrors) {
+          this.triggerValidation = false;
+          return;
+        }
 
-      if (this.docFields.hasErrors) {
-        return;
-      }
-
-      this.$emit('submit', {
-        name: this.subform.name,
-        values: this.docFields.data
+        this.$emit('submit', {
+          name: this.subform.name,
+          values: this.docFields.data
+        });
       });
     },
     async cancel() {
