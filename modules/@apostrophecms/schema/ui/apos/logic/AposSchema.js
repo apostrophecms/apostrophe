@@ -284,7 +284,7 @@ export default {
         });
 
       this.next.fieldState = { ...this.fieldState };
-      this.$emit('update:model-value', this.next);
+      this.$emit('update:model-value', { ...this.next });
     },
     displayComponent({ name, hidden = false }) {
       if (hidden === true) {
