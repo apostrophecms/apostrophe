@@ -538,6 +538,7 @@ export default {
 
     // Ask the parent AposAreaEditor to make us focused
     getFocus(e, _id) {
+      console.log('=====> get focus ', _id)
       if (e) {
         e.stopPropagation();
       }
@@ -606,7 +607,9 @@ export default {
       if (!this.mounted) {
         return false;
       }
-      return this.$el.parentNode ? apos.util.closest(this.$el.parentNode, '[data-area-widget]') : false;
+      return this.$el.parentNode
+        ? apos.util.closest(this.$el.parentNode, '[data-area-widget]')
+        : false;
     },
 
     // Hacky way to get the parents tree of a widget

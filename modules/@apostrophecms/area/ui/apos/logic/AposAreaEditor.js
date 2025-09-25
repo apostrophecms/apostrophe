@@ -206,6 +206,7 @@ export default {
       this.setFocusedArea(null, null);
     },
     setFocusedArea(areaId, event) {
+      console.log('areaId', areaId)
       if (event) {
         // prevent parent areas from changing the focusedArea
         event.stopPropagation();
@@ -276,10 +277,19 @@ export default {
       }
     },
     focusParentEvent(event) {
+      console.log('=====> focus parent <=====')
       if (event.metaKey && event.keyCode === 8) {
         // meta + backspace
         apos.bus.$emit('widget-focus-parent', this.focusedWidget);
       }
+    },
+    focusFirstWidget() {
+      if (!this.next.length) {
+        return
+      }
+
+      console.log('this.next', this.next)
+      this.updateWidgetFocused({_id: this.next[0]._id})
     },
     updateWidgetHovered({ _id, nonForeignId }) {
       this.hoveredWidget = _id;

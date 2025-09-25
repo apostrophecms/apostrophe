@@ -12,6 +12,7 @@
     }"
     @click="setFocusedArea(areaId, $event)"
   >
+    toto
     <div
       v-if="next.length === 0 && !foreign"
       class="apos-empty-area"
@@ -59,6 +60,7 @@
           disabled: field && field.readOnly,
           operations: layoutBreadcrumbOperations || []
         }"
+        @click="setFocusedArea(areaId, $event, true)"
         @resize-end="onResizeOrMoveEnd"
         @move-end="onResizeOrMoveEnd"
         @add-fit-item="onAddFitItem"
