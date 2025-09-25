@@ -60,7 +60,6 @@
           disabled: field && field.readOnly,
           operations: layoutBreadcrumbOperations || []
         }"
-        @click="setFocusedArea(areaId, $event, true)"
         @resize-end="onResizeOrMoveEnd"
         @move-end="onResizeOrMoveEnd"
         @add-fit-item="onAddFitItem"
@@ -82,7 +81,6 @@
             :field="field"
             :disabled="field && field.readOnly"
             :widget-hovered="hoveredWidget"
-            :non-foreign-widget-hovered="hoveredNonForeignWidget"
             :widget-focused="focusedWidget"
             :max-reached="maxReached"
             :rendering="rendering(widget)"

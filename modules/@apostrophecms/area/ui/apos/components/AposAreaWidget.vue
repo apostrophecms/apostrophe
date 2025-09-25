@@ -202,6 +202,8 @@
 </template>
 
 <script>
+import { mapState, mapActions } from 'pinia';
+import { useWidgetStore } from 'Modules/@apostrophecms/ui/stores/widget';
 import AposIndicator from 'Modules/@apostrophecms/ui/components/AposIndicator.vue';
 import AposBreadcrumbSwitch from 'Modules/@apostrophecms/area/components/AposBreadcrumbSwitch.vue';
 
@@ -212,24 +214,16 @@ export default {
     AposBreadcrumbSwitch
   },
   props: {
-    widgetHovered: {
-      type: String,
-      default: null
-    },
-    nonForeignWidgetHovered: {
-      type: String,
-      default: null
-    },
-    widgetFocused: {
-      type: String,
-      default: null
-    },
     docId: {
       type: String,
       required: false,
       default() {
         return null;
       }
+    },
+    areaId: {
+      type: String,
+      required: true
     },
     i: {
       type: Number,
@@ -342,6 +336,11 @@ export default {
     };
   },
   computed: {
+    ...mapState(useWidgetStore, [
+      'focusedWidget',
+      'hoveredWidget',
+      'hoveredNonForeignWidget'
+    ]),
     // Passed only to the preview layer (custom preview components).
     followingValuesWithParent() {
       return Object.entries(this.followingValues || {})
@@ -391,14 +390,14 @@ export default {
         return false;
       }
 
-      return this.widgetFocused === this.widget._id;
+      return this.focusedWidget === this.widget._id;
     },
     isHovered() {
-      return this.widgetHovered === this.widget._id;
+      return this.hoveredWidget === this.widget._id;
     },
     isHighlighted() {
       const $parent = this.getParent();
-      return $parent && $parent.dataset.areaWidget === this.widgetFocused;
+      return $parent && $parent.dataset.areaWidget === this.focusedWidget;
     },
     nonForeignHovered() {
       return this.nonForeignWidgetHovered === this.widget._id;
@@ -469,11 +468,11 @@ export default {
 
     this.getBreadcrumbs();
 
-    if (this.widgetFocused) {
+    if (this.focusedWidget) {
       // If another widget was in focus (because the user clicked the "add"
       // menu, for example), and this widget was created, give the new widget
       // focus.
-      apos.bus.$emit('widget-focus', { _id: this.widget._id });
+      this.setFocusedWidget(this.widget._id, this.areaId);
     }
   },
   unmounted() {
@@ -483,6 +482,7 @@ export default {
     this.removeClickOutsideListener();
   },
   methods: {
+    ...mapActions(useWidgetStore, [ 'setFocusedWidget', 'setHoveredWidget' ]),
     // Emits same actions as the Standard operations,
     // e.g ('edit', i), ('remove', i), etc.
     onBreadcrumbOperation({ name, payload }) {
@@ -531,19 +531,18 @@ export default {
         const $parent = this.getParent();
         // .. And have a parent
         if ($parent) {
-          apos.bus.$emit('widget-focus', { _id: $parent.dataset.areaWidget });
+          this.setFocusedWidget($parent.dataset.areaWidget, this.areaId);
         }
       }
     },
 
     // Ask the parent AposAreaEditor to make us focused
     getFocus(e, _id) {
-      console.log('=====> get focus ', _id)
       if (e) {
         e.stopPropagation();
       }
       this.isSuppressed = false;
-      apos.bus.$emit('widget-focus', { _id });
+      this.setFocusedWidget(_id, this.areaId);
     },
 
     // Our widget was hovered
@@ -553,25 +552,24 @@ export default {
       }
       const closest = this.foreign && this.$el.closest('[data-apos-widget-foreign="0"]');
       const closestId = closest && closest.getAttribute('data-apos-widget-id');
-      apos.bus.$emit('widget-hover', {
-        _id: this.widget._id,
-        nonForeignId: this.foreign ? closestId : null
-      });
+
+      this.setHoveredWidget(
+        this.widget._id,
+        this.foreign ? closestId : null
+      );
     },
 
     mouseleave() {
       if (this.isHovered) {
-        apos.bus.$emit('widget-hover', {
-          _id: null,
-          nonForeignId: null
-        });
+        this.setHoveredWidget(null, null);
       }
     },
     unfocus(event) {
       if (!this.$el.contains(event.target)) {
         this.isSuppressed = true;
         this.removeClickOutsideListener();
-        apos.bus.$emit('widget-focus', { _id: null });
+
+        this.setFocusedWidget(null, this.areaId);
       }
     },
 

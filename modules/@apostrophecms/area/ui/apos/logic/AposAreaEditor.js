@@ -2,6 +2,8 @@ import { createId } from '@paralleldrive/cuid2';
 import { klona } from 'klona';
 import AposThemeMixin from 'Modules/@apostrophecms/ui/mixins/AposThemeMixin';
 import newInstance from 'apostrophe/modules/@apostrophecms/schema/lib/newInstance.js';
+import { useWidgetStore } from 'Modules/@apostrophecms/ui/stores/widget';
+import { mapState } from 'pinia';
 
 export default {
   mixins: [ AposThemeMixin ],
@@ -80,7 +82,6 @@ export default {
       next: this.getValidItems(),
       hoveredWidget: null,
       hoveredNonForeignWidget: null,
-      focusedWidget: null,
       contextMenuOptions: {
         menu: this.choices
       },
@@ -89,6 +90,7 @@ export default {
     };
   },
   computed: {
+    ...mapState(useWidgetStore, [ 'focusedWidget', 'focusedArea' ]),
     isEmptySingleton() {
       return this.next.length === 0 &&
         this.options.widgets &&
@@ -125,7 +127,7 @@ export default {
         return -1;
       }
 
-      return this.next.findIndex(widget => widget._id === window.apos.focusedWidget);
+      return this.next.findIndex(widget => widget._id === this.focusedWidget);
     }
   },
   watch: {
@@ -170,10 +172,9 @@ export default {
     this.unbindEventListeners();
   },
   methods: {
+    ...mapActions(useWidgetStore, [ 'setFocusedArea', 'setFocusedWidget' ]),
     bindEventListeners() {
       apos.bus.$on('area-updated', this.areaUpdatedHandler);
-      apos.bus.$on('widget-hover', this.updateWidgetHovered);
-      apos.bus.$on('widget-focus', this.updateWidgetFocused);
       apos.bus.$on('command-menu-area-copy-widget', this.handleCopy);
       apos.bus.$on('command-menu-area-cut-widget', this.handleCut);
       apos.bus.$on('command-menu-area-duplicate-widget', this.handleDuplicate);
@@ -183,8 +184,6 @@ export default {
     },
     unbindEventListeners() {
       apos.bus.$off('area-updated', this.areaUpdatedHandler);
-      apos.bus.$off('widget-hover', this.updateWidgetHovered);
-      apos.bus.$off('widget-focus', this.updateWidgetFocused);
       apos.bus.$off('command-menu-area-copy-widget', this.handleCopy);
       apos.bus.$off('command-menu-area-cut-widget', this.handleCut);
       apos.bus.$off('command-menu-area-duplicate-widget', this.handleDuplicate);
@@ -196,23 +195,14 @@ export default {
       return document.activeElement.closest('[contenteditable]') !== null;
     },
     isInsideFocusedArea() {
-      return window.apos.focusedArea === this.areaId;
+      return this.focusedArea === this.areaId;
     },
     resetFocusedArea() {
-      if (window.apos.focusedArea !== this.areaId) {
+      if (this.focusedArea !== this.areaId) {
         return;
       }
 
       this.setFocusedArea(null, null);
-    },
-    setFocusedArea(areaId, event) {
-      console.log('areaId', areaId)
-      if (event) {
-        // prevent parent areas from changing the focusedArea
-        event.stopPropagation();
-      }
-
-      window.apos.focusedArea = areaId;
     },
     handleCopy() {
       if (
@@ -277,61 +267,47 @@ export default {
       }
     },
     focusParentEvent(event) {
-      console.log('=====> focus parent <=====')
       if (event.metaKey && event.keyCode === 8) {
         // meta + backspace
         apos.bus.$emit('widget-focus-parent', this.focusedWidget);
       }
     },
-    focusFirstWidget() {
-      if (!this.next.length) {
-        return
-      }
-
-      console.log('this.next', this.next)
-      this.updateWidgetFocused({_id: this.next[0]._id})
-    },
-    updateWidgetHovered({ _id, nonForeignId }) {
-      this.hoveredWidget = _id;
-      this.hoveredNonForeignWidget = nonForeignId;
-    },
-    updateWidgetFocused({ _id, scrollIntoView = false }) {
-      this.focusedWidget = _id;
-      // Attached to window so that modals can see the area is active
-      window.apos.focusedWidget = _id;
-
-      // We want what's next to run only once
-      // for the area containing the focusedWidget
-      // and not for all areas present on the page
-      if (this.focusedWidgetIndex === -1) {
-        return;
-      }
-
-      this.setFocusedArea(this.areaId, null);
-
-      if (scrollIntoView) {
-        this.$nextTick(() => {
-          const $el = document.querySelector(`[data-apos-widget-id="${_id}"]`);
-          if (!$el) {
-            return;
-          }
-
-          const headerHeight = window.apos.adminBar.height;
-          const bufferSpace = 40;
-          const targetTop = $el.getBoundingClientRect().top;
-          const scrollPos = targetTop - headerHeight - bufferSpace;
-
-          window.scrollBy({
-            top: scrollPos,
-            behavior: 'smooth'
-          });
-
-          $el.focus({
-            preventScroll: true
-          });
-        });
-      }
-    },
+    /* setFocusedWidget({ _id, scrollIntoView = false }) { */
+    /*   this.focusedWidget = _id; */
+    /**/
+    /*   // We want what's next to run only once */
+    /*   // for the area containing the focusedWidget */
+    /*   // and not for all areas present on the page */
+    /*   // Needed because we use bus event that triggers all apos areas, not needed when using the store */
+    /*   if (this.focusedWidgetIndex === -1) { */
+    /*     return; */
+    /*   } */
+    /**/
+    /*   this.setFocusedArea(this.areaId, null); */
+    /**/
+    /*   if (scrollIntoView) { */
+    /*     this.$nextTick(() => { */
+    /*       const $el = document.querySelector(`[data-apos-widget-id="${_id}"]`); */
+    /*       if (!$el) { */
+    /*         return; */
+    /*       } */
+    /**/
+    /*       const headerHeight = window.apos.adminBar.height; */
+    /*       const bufferSpace = 40; */
+    /*       const targetTop = $el.getBoundingClientRect().top; */
+    /*       const scrollPos = targetTop - headerHeight - bufferSpace; */
+    /**/
+    /*       window.scrollBy({ */
+    /*         top: scrollPos, */
+    /*         behavior: 'smooth' */
+    /*       }); */
+    /**/
+    /*       $el.focus({ */
+    /*         preventScroll: true */
+    /*       }); */
+    /*     }); */
+    /*   } */
+    /* }, */
     async up(i) {
       if (this.docId === window.apos.adminBar.contextId) {
         apos.bus.$emit('context-edited', {
