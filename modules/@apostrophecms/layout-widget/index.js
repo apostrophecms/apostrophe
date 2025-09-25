@@ -228,20 +228,29 @@ module.exports = {
         try {
           const postcss = require('postcss');
           const cssnano = require('cssnano');
-          const mobilePreview = require('postcss-viewport-to-container-toggle');
+          const assetOptions = self.apos.asset.breakpointPreviewMode || {};
 
-          const resultApos = await postcss([
-            mobilePreview({
-              modifierAttr: 'data-breakpoint-preview-mode',
-              debug: self.apos.adminBar.breakpointPreviewMode?.debug === true,
-              transform: self.apos.adminBar.breakpointPreviewMode?.transform || null
-            }),
+          const resultPublic = await postcss([
             cssnano({
               preset: 'default'
             })
           ]).process(cssContent, { from: undefined });
 
-          const resultPublic = await postcss([
+          if (assetOptions.enable !== true) {
+            return {
+              apos: resultPublic.css,
+              public: resultPublic.css
+            };
+          }
+
+          const mobilePreview = require('postcss-viewport-to-container-toggle');
+
+          const resultApos = await postcss([
+            mobilePreview({
+              modifierAttr: 'data-breakpoint-preview-mode',
+              debug: assetOptions.debug === true,
+              transform: assetOptions.transform || null
+            }),
             cssnano({
               preset: 'default'
             })
