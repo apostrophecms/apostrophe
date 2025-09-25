@@ -2,6 +2,7 @@
   <div
     v-click-outside-element="resetFocusedArea"
     :data-apos-area="areaId"
+    data-tablet-full="true"
     class="apos-area"
     :class="themeClass"
     :style="{

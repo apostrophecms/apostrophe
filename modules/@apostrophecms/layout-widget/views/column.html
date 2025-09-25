@@ -6,7 +6,7 @@ The area related `data.*` is available plus `item` and `widgetOptions`. #}
   {% if data.canEdit %} data-apos-widget="{{ item._id }}"{% endif %}
   data-visible-tablet="{{ item.tablet.show }}"
   data-visible-mobile="{{ item.mobile.show }}"
-  {% if lastId and item._id === lastId %}data-full-tablet="true"{% endif %}
+  {% if lastId and item._id === lastId %}data-tablet-full="true"{% endif %}
   style="
     --colstart: {{ item.desktop.colstart }}; 
     --colspan: {{ item.desktop.colspan }}; 
