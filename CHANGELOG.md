@@ -1,5 +1,13 @@
 # Changelog
 
+## 4.21.1 (2025-09-26)
+
+### Adds
+
+* The `exit` option to the main `apostrophe()` function now supports the new string value `exit: 'throw'`. If this value is specified and the apostrophe startup procedure fails with an error, the actual error is re-thrown for the benefit of the caller.
+* For backwards compatibility, the existing `exit: false` option to the main `apostrophe()` function is still supported, but now logs the error that took place before returning `undefined` as before. This is more useful than the previous behavior, but `exit: 'throw'` is the more logical choice if you need to avoid a process exit.
+* The default behavior is still to log the error and exit the process, which isthe only sensible move in most single-site projects.
+
 ## 4.21.0 (2025-09-03)
 
 ### Adds
