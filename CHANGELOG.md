@@ -13,9 +13,6 @@
 
 * Fixes a bug in the login `uponSubmit` filter where a user could login without meeting the requirement.
 * Fixes pieces filters when values from optional fields are falsy.
-
-### Fixes
-
 * Resolve inline image URLs correctly when in edit mode and not in the default locale.
 * Using `CTRL+F` or `CMD+F` in the page manager now works.
 
@@ -25,6 +22,14 @@
 * Removes the non-functional `uniqueUsername` route from the `user` module
 * Modifies the `annotateAreaForExternalFront()` method of the `@apostrophecms/template` module to accept a per-module `annotateWidgetForExternalFront()` method. This allows widgets to send project-level options alongside the per-area options to external frontends.
 * Updated dependencies to address deprecation warnings.
+
+## 4.21.1 (2025-09-26)
+
+### Adds
+
+* The `exit` option to the main `apostrophe()` function now supports the new string value `exit: 'throw'`. If this value is specified and the apostrophe startup procedure fails with an error, the actual error is re-thrown for the benefit of the caller.
+* For backwards compatibility, the existing `exit: false` option to the main `apostrophe()` function is still supported, but now logs the error that took place before returning `undefined` as before. This is more useful than the previous behavior, but `exit: 'throw'` is the more logical choice if you need to avoid a process exit.
+* The default behavior is still to log the error and exit the process, which isthe only sensible move in most single-site projects.
 
 ## 4.21.0 (2025-09-03)
 
