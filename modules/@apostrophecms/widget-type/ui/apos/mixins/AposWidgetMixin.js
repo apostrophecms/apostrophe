@@ -31,8 +31,10 @@ export default {
   },
   watch: {
     modelValue: {
-      handler() {
-        this.renderContent();
+      handler(widget) {
+        if (widget.type !== '@apostrophecms/layout-column') {
+          this.renderContent();
+        }
       }
     }
   },
@@ -76,7 +78,6 @@ export default {
               livePreview: aposLivePreview
             }
           });
-          //
           if (result !== 'aposLivePreviewSchemaNotYetValid') {
             this.rendered = result;
           }
