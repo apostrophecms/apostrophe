@@ -272,42 +272,6 @@ export default {
         apos.bus.$emit('widget-focus-parent', this.focusedWidget);
       }
     },
-    /* setFocusedWidget({ _id, scrollIntoView = false }) { */
-    /*   this.focusedWidget = _id; */
-    /**/
-    /*   // We want what's next to run only once */
-    /*   // for the area containing the focusedWidget */
-    /*   // and not for all areas present on the page */
-    /*   // Needed because we use bus event that triggers all apos areas, not needed when using the store */
-    /*   if (this.focusedWidgetIndex === -1) { */
-    /*     return; */
-    /*   } */
-    /**/
-    /*   this.setFocusedArea(this.areaId, null); */
-    /**/
-    /*   if (scrollIntoView) { */
-    /*     this.$nextTick(() => { */
-    /*       const $el = document.querySelector(`[data-apos-widget-id="${_id}"]`); */
-    /*       if (!$el) { */
-    /*         return; */
-    /*       } */
-    /**/
-    /*       const headerHeight = window.apos.adminBar.height; */
-    /*       const bufferSpace = 40; */
-    /*       const targetTop = $el.getBoundingClientRect().top; */
-    /*       const scrollPos = targetTop - headerHeight - bufferSpace; */
-    /**/
-    /*       window.scrollBy({ */
-    /*         top: scrollPos, */
-    /*         behavior: 'smooth' */
-    /*       }); */
-    /**/
-    /*       $el.focus({ */
-    /*         preventScroll: true */
-    /*       }); */
-    /*     }); */
-    /*   } */
-    /* }, */
     async up(i) {
       if (this.docId === window.apos.adminBar.contextId) {
         apos.bus.$emit('context-edited', {
