@@ -73,7 +73,7 @@ export const useWidgetStore = defineStore('widget', () => {
     return get(id, namespace) || set(id, namespace, data);
   }
 
-  function update(id, namespace, data) {
+  function updateWidget(id, namespace, data) {
     if (!refs.value[toId(id, namespace)]) {
       return null;
     }
@@ -100,7 +100,7 @@ export const useWidgetStore = defineStore('widget', () => {
     get,
     set,
     getOrSet,
-    update,
+    updateWidget,
     remove
   };
 });

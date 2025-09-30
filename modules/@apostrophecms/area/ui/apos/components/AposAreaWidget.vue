@@ -537,12 +537,12 @@ export default {
     },
 
     // Ask the parent AposAreaEditor to make us focused
-    getFocus(e, _id) {
+    getFocus(e, widgetId) {
       if (e) {
         e.stopPropagation();
       }
       this.isSuppressed = false;
-      this.setFocusedWidget(_id, this.areaId);
+      this.setFocusedWidget(widgetId, this.areaId);
     },
 
     // Our widget was hovered

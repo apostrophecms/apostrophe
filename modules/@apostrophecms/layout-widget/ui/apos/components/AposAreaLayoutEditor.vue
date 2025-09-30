@@ -59,6 +59,7 @@
           disabled: field && field.readOnly,
           operations: layoutBreadcrumbOperations || []
         }"
+        @click="clickOnGrid"
         @resize-end="onResizeOrMoveEnd"
         @move-end="onResizeOrMoveEnd"
         @add-fit-item="onAddFitItem"
@@ -104,6 +105,7 @@
 </template>
 
 <script>
+import { mapActions } from 'pinia';
 import AposAreaEditorLogic from 'Modules/@apostrophecms/area/logic/AposAreaEditor.js';
 import { useWidgetStore } from 'Modules/@apostrophecms/ui/stores/widget.js';
 import { provisionRow } from '../lib/grid-state.mjs';
@@ -122,11 +124,9 @@ export default {
     }
   },
   data() {
-    const store = useWidgetStore();
     return {
       layoutMode: 'content',
-      layoutDeviceMode: 'desktop',
-      updateWidgetStore: store.update
+      layoutDeviceMode: 'desktop'
     };
   },
   computed: {
@@ -171,12 +171,20 @@ export default {
     if (!this.hasLayoutMeta) {
       this.onCreateProvision();
     }
-    this.updateWidgetStore(this.parentOptions?.widgetId, 'layout:switch', this.layoutMode);
+    this.updateWidget(this.parentOptions?.widgetId, 'layout:switch', this.layoutMode);
   },
   beforeUnmount() {
     apos.bus.$off('widget-breadcrumb-operation', this.executeWidgetOperation);
   },
   methods: {
+    ...mapActions(useWidgetStore, [ 'updateWidget' ]),
+    clickOnGrid() {
+      console.log('this.parentOptions.widgetId', this.parentOptions.widgetId);
+      console.log('this.areaId', this.areaId);
+      if (this.parentOptions.widgetId) {
+        this.setFocusedWidget(this.parentOptions.widgetId, this.areaId);
+      }
+    },
     // While switching to Edit mode, areaEditors are mounted twice in a quick
     // succession. This leads to duplicate event listeners on the bus.
     // See the little trick below to avoid that.
@@ -234,7 +242,7 @@ export default {
         index: 0
       });
       this.layoutMode = 'content';
-      this.updateWidgetStore(this.parentOptions?.widgetId, 'layout:switch', 'content');
+      this.updateWidget(this.parentOptions?.widgetId, 'layout:switch', 'content');
 
       const items = provisionRow(meta.columns, {
         minColspan: this.gridModuleOptions.minSpan,
