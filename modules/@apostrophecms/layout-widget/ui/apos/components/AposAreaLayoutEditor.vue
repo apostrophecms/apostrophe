@@ -12,7 +12,6 @@
     }"
     @click="setFocusedArea(areaId, $event)"
   >
-    toto
     <div
       v-if="next.length === 0 && !foreign"
       class="apos-empty-area"
