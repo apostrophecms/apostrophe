@@ -22,12 +22,12 @@ export const useWidgetStore = defineStore('widget', () => {
     hoveredNonForeignWidget.value = nonForeignId;
   }
 
-  function setFocusedWidget(id, areaId, { scrollTo = false }) {
+  async function setFocusedWidget(id, areaId, { scrollTo = false } = {}) {
     focusedWidget.value = id;
-    focusedArea.value = areaId;
+    setFocusedArea(areaId);
 
     if (scrollTo) {
-
+      await scrollToWidget(id, { awaitNextTick: true });
     }
   }
 

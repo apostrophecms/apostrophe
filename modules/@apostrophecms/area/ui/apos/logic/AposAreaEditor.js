@@ -356,15 +356,12 @@ export default {
         ...this.next.slice(0, i),
         ...this.next.slice(i + 1)
       ];
+
       const focusNext = this.next[i - 1] || this.next[i];
 
       if (focusNext) {
-        apos.bus.$emit('widget-focus', {
-          _id: focusNext._id,
-          scrollIntoView: true
-        });
+        this.setFocusedWidget(focusNext._id, this.areaId, { scrollTo: true });
       }
-
     },
     async cut(i) {
       apos.area.widgetClipboard.set(this.next[i]);
@@ -512,6 +509,7 @@ export default {
           [`@${updated._id}`]: updated
         });
       }
+
       this.next = this.next.map((widget) => {
         if (widget._id === updated._id) {
           return updated;
@@ -620,10 +618,7 @@ export default {
       if (this.widgetIsContextual(widget.type)) {
         this.edit(index);
       }
-      apos.bus.$emit('widget-focus', {
-        _id: widget._id,
-        scrollIntoView: true
-      });
+      this.setFocusedWidget(widget._id, this.areaId, { scrollTo: true });
     },
     widgetIsContextual(type) {
       return this.moduleOptions.widgetIsContextual[type];
