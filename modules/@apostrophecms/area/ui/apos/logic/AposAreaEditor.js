@@ -3,7 +3,7 @@ import { klona } from 'klona';
 import AposThemeMixin from 'Modules/@apostrophecms/ui/mixins/AposThemeMixin';
 import newInstance from 'apostrophe/modules/@apostrophecms/schema/lib/newInstance.js';
 import { useWidgetStore } from 'Modules/@apostrophecms/ui/stores/widget';
-import { mapState } from 'pinia';
+import { mapState, mapActions } from 'pinia';
 
 export default {
   mixins: [ AposThemeMixin ],
