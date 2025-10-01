@@ -134,6 +134,7 @@
 import { debounceAsync, asyncTaskQueue } from 'Modules/@apostrophecms/ui/utils';
 import AposModifiedMixin from 'Modules/@apostrophecms/ui/mixins/AposModifiedMixin';
 import AposDocsManagerMixin from 'Modules/@apostrophecms/modal/mixins/AposDocsManagerMixin';
+import { computeMinSizes } from 'apostrophe/lib/image.js';
 
 const DEBOUNCE_TIMEOUT = 500;
 
@@ -473,9 +474,10 @@ export default {
       this.items.unshift(piece);
     },
     async completeUploading(images) {
+      console.log('AposMediaManager.vue - completeUploading');
       this.uploaded = true;
       const [ widgetOptions = {} ] = apos.area.widgetOptions;
-      const { minWidth, minHeight } = this.computeMinSizes(
+      const { minWidth, minHeight } = computeMinSizes(
         widgetOptions.minSize,
         widgetOptions.aspectRatio
       );
@@ -536,48 +538,6 @@ export default {
         if (!this.editing && imgIds.length === 1) {
           this.updateEditing(imgIds[0]);
         }
-      }
-    },
-    computeMinSizes([ minWidth, minHeight ] = [], [ widthRatio, heightRatio ] = []) {
-      const aspectRatio = widthRatio / heightRatio;
-
-      console.log('minWidth', minWidth);
-      console.log('minHeight', minHeight);
-      console.log('aspectRatio', aspectRatio);
-
-      if (!aspectRatio) {
-        return {
-          minWidth,
-          minHeight
-        };
-      }
-
-      // If ratio wants a square,
-      // we simply take the higher min size
-      if (aspectRatio === 1) {
-        const higherValue = minWidth > minHeight
-          ? minWidth
-          : minHeight;
-
-        return {
-          minWidth: higherValue,
-          minHeight: higherValue
-        };
-      }
-
-      const minSizeRatio = minHeight / minWidth;
-      const ratio = minSizeRatio * aspectRatio;
-
-      if (ratio > 1) {
-        return {
-          minWidth: Math.round(minHeight * aspectRatio),
-          minHeight
-        };
-      } else if (ratio < 1) {
-        return {
-          minWidth,
-          minHeight: Math.round(minWidth / aspectRatio)
-        };
       }
     },
     clearSelected() {

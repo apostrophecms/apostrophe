@@ -123,6 +123,7 @@
 import AposModifiedMixin from 'Modules/@apostrophecms/ui/mixins/AposModifiedMixin';
 import { detectDocChange } from 'Modules/@apostrophecms/schema/lib/detectChange';
 import getAspectRatios from '../lib/aspectRatios';
+import imageLib from 'apostrophe/lib/image.js';
 
 export default {
   name: 'AposImageRelationshipEditor',
@@ -262,35 +263,12 @@ export default {
         return;
       }
 
-      const [ minWidth, minHeight ] = this.minSize;
+      console.log('AposImageRelationshipEditor - computeMinSizes');
 
-      if (!this.aspectRatio) {
-        this.minWidth = minWidth;
-        this.minHeight = minHeight;
+      const { minWidth, minHeight } = imageLib.computeMinSizes(this.minSize, this.aspectRatio);
 
-        return;
-      }
-
-      // If ratio wants a square,
-      // we simply take the higher min size of the image
-      if (this.aspectRatio === 1) {
-        const higherValue = minWidth > minHeight ? minWidth : minHeight;
-        this.minWidth = higherValue;
-        this.minHeight = higherValue;
-
-        return;
-      }
-
-      const minSizeRatio = minHeight / minWidth;
-      const ratio = minSizeRatio * this.aspectRatio;
-
-      if (ratio > 1) {
-        this.minWidth = Math.round(minHeight * this.aspectRatio);
-        this.minHeight = minHeight;
-      } else if (ratio < 1) {
-        this.minWidth = minWidth;
-        this.minHeight = Math.round(minWidth / this.aspectRatio);
-      }
+      this.minWidth = minWidth;
+      this.minHeight = minHeight;
     },
     setDataValues(image) {
       if (

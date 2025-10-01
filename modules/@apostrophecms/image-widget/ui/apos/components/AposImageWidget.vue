@@ -27,6 +27,7 @@ import {
 import { useAposWidget } from 'Modules/@apostrophecms/widget-type/composables/AposWidget.js';
 import aposWidgetProps from 'Modules/@apostrophecms/widget-type/composables/AposWidgetProps.js';
 import { postprocessRelationships } from 'Modules/@apostrophecms/piece-type/lib/postprocessRelationships.js';
+import { computeMinSizes } from 'apostrophe/lib/image.js';
 
 const props = defineProps(aposWidgetProps);
 const imgModuleOptions = apos.modules['@apostrophecms/image'];
@@ -96,7 +97,7 @@ async function selectFromManager() {
  * @returns {boolean} - Tells if the image is valid
  */
 function checkImageValid(image) {
-  console.log('checkImageValid', props.options);
+  console.log('AposImageWidget.vue - checkImageValid');
   if (!props.options.minSize) {
     return true;
   }
@@ -124,49 +125,6 @@ function checkImageValid(image) {
 
   return true;
 }
-
-function computeMinSizes([ minWidth, minHeight ] = [], [ widthRatio, heightRatio ] = []) {
-  const aspectRatio = widthRatio / heightRatio;
-
-  console.log('minWidth', minWidth);
-  console.log('minHeight', minHeight);
-  console.log('aspectRatio', aspectRatio);
-
-  if (!aspectRatio) {
-    return {
-      minWidth,
-      minHeight
-    };
-  }
-
-  // If ratio wants a square,
-  // we simply take the higher min size
-  if (aspectRatio === 1) {
-    const higherValue = minWidth > minHeight
-      ? minWidth
-      : minHeight;
-
-    return {
-      minWidth: higherValue,
-      minHeight: higherValue
-    };
-  }
-
-  const minSizeRatio = minHeight / minWidth;
-  const ratio = minSizeRatio * aspectRatio;
-
-  if (ratio > 1) {
-    return {
-      minWidth: Math.round(minHeight * aspectRatio),
-      minHeight
-    };
-  } else if (ratio < 1) {
-    return {
-      minWidth,
-      minHeight: Math.round(minWidth / aspectRatio)
-    };
-  }
-};
 
 /**
  * @param {File} file - File uploaded by user
