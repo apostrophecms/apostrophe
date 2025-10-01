@@ -175,23 +175,6 @@ module.exports = {
     origin: null,
     preview: true
   },
-  handlers(self) {
-    return {
-      'apostrophe:modulesRegistered': {
-        composeWidgetOperations() {
-          self.widgetOperations = Object.entries(self.widgetOperations)
-            .map(([ name, operation ]) => {
-              self.validateWidgetOperation(name, operation);
-
-              return {
-                name,
-                ...operation
-              };
-            });
-        }
-      }
-    };
-  },
   init(self) {
     self.isExplicitOrigin = self.options.origin !== null;
     self.options.origin = self.options.origin || 'right';
@@ -216,6 +199,7 @@ module.exports = {
     self.label = self.options.label;
 
     self.composeSchema();
+    self.composeWidgetOperations();
 
     self.apos.area.setWidgetManager(self.name, self);
 
@@ -233,6 +217,7 @@ module.exports = {
   },
   methods(self) {
     return {
+
       composeSchema() {
         self.schema = self.apos.schema.compose({
           addFields: self.apos.schema.fieldsToArray(`Module ${self.__meta.name}`, self.fields),
@@ -247,6 +232,18 @@ module.exports = {
             throw new Error('Widget type ' + self.name + ': the field name ' + field.name + ' is forbidden');
           }
         });
+      },
+
+      composeWidgetOperations() {
+        self.widgetOperations = Object.entries(self.widgetOperations)
+          .map(([ name, operation ]) => {
+            self.validateWidgetOperation(name, operation);
+
+            return {
+              name,
+              ...operation
+            };
+          });
       },
 
       // Returns markup for the widget. Invoked via `{% widget ... %}` in the
@@ -538,7 +535,6 @@ module.exports = {
           return true;
         });
       },
-
       getWidgetOperations(req) {
         return self.getAllowedWidgetOperations(req).filter(({ placement }) => {
           return !placement || [ 'standard', 'all' ].includes(placement);
@@ -548,6 +544,10 @@ module.exports = {
         return self.getAllowedWidgetOperations(req).filter(({ placement }) => {
           return [ 'breadcrumb', 'all' ].includes(placement);
         });
+      },
+
+      annotateWidgetForExternalFront() {
+        return {};
       }
     };
   },
@@ -604,7 +604,7 @@ module.exports = {
               // because the purpose of this task is to
               // write something to stdout. Should
               // not become an apos.util.log call. -Tom
-              // eslint-disable-next-line no-console
+
               console.log(doc.slug + ':' + dotPath);
             }
           }

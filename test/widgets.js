@@ -259,7 +259,7 @@ describe('Widgets', function() {
       });
 
       it('should not render the placeholders on preview mode', async function() {
-        // eslint-disable-next-line no-unused-vars
+
         const { aposEdit, ...query } = req.query;
         const _nonEditingReq = {
           ...req,
@@ -273,33 +273,6 @@ describe('Widgets', function() {
     });
 
     const mediaWidgetTypeToAssertion = {
-      image: {
-        placeholderUrlOverride: '/modules/@apostrophecms/my-image-widget/placeholder.webp',
-        assertAposPlaceholderTrue(document) {
-          const imgNodes = document.querySelectorAll('img');
-          assert(imgNodes.length === 1);
-          assert(imgNodes[0].classList.contains('image-widget-placeholder'));
-          assert(imgNodes[0].alt === 'Image placeholder');
-          assert(imgNodes[0].src === '/apos-frontend/default/modules/@apostrophecms/image-widget/placeholder.jpg');
-        },
-        assertPreviewMode(document) {
-          const imgNodes = document.querySelectorAll('img');
-
-          assert(imgNodes.length === 0);
-        },
-        assertFalsyPlaceholderUrl(document) {
-          const imgNodes = document.querySelectorAll('img');
-          assert(imgNodes.length === 0);
-        },
-        assertPlaceholderUrlOverride(document) {
-          const imgNodes = document.querySelectorAll('img');
-
-          assert(imgNodes.length === 1);
-          assert(imgNodes[0].classList.contains('image-widget-placeholder'));
-          assert(imgNodes[0].alt === 'Image placeholder');
-          assert(imgNodes[0].src === '/apos-frontend/default/modules/@apostrophecms/my-image-widget/placeholder.webp');
-        }
-      },
       video: {
         placeholderUrlOverride: 'https://vimeo.com/57946935',
         assertAposPlaceholderTrue(document) {
@@ -380,7 +353,7 @@ describe('Widgets', function() {
         });
 
         it('should not render the placeholders on preview mode', async function() {
-          // eslint-disable-next-line no-unused-vars
+
           const { aposEdit, ...query } = req.query;
           const _nonEditingReq = {
             ...req,

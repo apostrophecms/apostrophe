@@ -1,23 +1,28 @@
 <template>
   <div class="apos-empty-state">
+    <div
+      v-if="emptyState.icon"
+      class="apos-empty-state__icon"
+    >
+      <AposIndicator
+        :icon="emptyState.icon"
+        class="apos-empty-state__indicator"
+        icon-color="var(--a-base-3)"
+        :icon-size="48"
+      />
+    </div>
     <p
       v-if="emptyState.title"
-      class="apos-title"
+      class="apos-empty-state__title"
     >
       {{ $t(emptyState.title) }}
     </p>
     <p
       v-if="emptyState.message"
-      class="apos-hint"
+      class="apos-empty-state__message"
     >
       {{ $t(emptyState.message) }}
     </p>
-    <div
-      v-if="emptyState.emoji"
-      class="apos-emoji"
-    >
-      {{ emptyState.emoji }}
-    </div>
   </div>
 </template>
 
@@ -38,30 +43,27 @@ export default {
     display: flex;
     flex-direction: column;
     align-items: center;
+    max-width: 450px;
   }
 
-  .apos-title {
+  .apos-empty-state__icon {
+    margin-bottom: 10px;
+  }
+
+  .apos-empty-state__title {
     @include type-title;
 
     & {
-      margin: 0 0 10px;
+      margin: 0;
     }
   }
 
-  .apos-hint {
-    @include type-base;
+  .apos-empty-state__message {
+    @include type-large;
 
     & {
-      font-style: italic;
-      line-height: var(--a-line-tallest);
-      color: var(--a-base-1);
+      margin-top: 5px;
       text-align: center;
     }
-  }
-
-  .apos-emoji {
-    // Variable sizes are less important for icons.
-    /* stylelint-disable-next-line declaration-property-unit-allowed-list */
-    font-size: 34px;
   }
 </style>

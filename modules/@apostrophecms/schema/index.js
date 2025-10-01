@@ -2101,13 +2101,15 @@ module.exports = {
         const allChoices = await self.getChoices(req, field);
         const values = await query.toDistinct(field.name);
 
-        const choices = _.map(values, function (value) {
-          const choice = _.find(allChoices, { value });
-          return {
-            value,
-            label: choice && (choice.label || value)
-          };
-        });
+        const choices = values
+          .filter(Boolean)
+          .map(value => {
+            const choice = _.find(allChoices, { value });
+            return {
+              value,
+              label: choice && (choice.label || value)
+            };
+          });
 
         self.apos.util.insensitiveSortByProperty(choices, 'label');
 

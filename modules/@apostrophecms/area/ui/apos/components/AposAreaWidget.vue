@@ -106,6 +106,7 @@
           :index="i"
           :widget-options="widgets"
           :options="options"
+          :field-id="fieldId"
           :disabled="disabled"
           :tabbable="isHovered || isFocused"
           :menu-id="`${widget._id}-widget-menu-top`"
@@ -132,6 +133,7 @@
           :max-reached="maxReached"
           :tabbable="isFocused"
           :model-value="widget"
+          :widget-options="widgetOptions"
           @up="$emit('up', i);"
           @remove="$emit('remove', i);"
           @edit="$emit('edit', i);"
@@ -172,6 +174,7 @@
         :doc-id="docId"
         :rendering="rendering"
         @edit="$emit('edit', i);"
+        @update="$emit('update', $event);"
       />
       <div
         v-if="!controlsDisabled"
@@ -189,6 +192,7 @@
           :index="i + 1"
           :widget-options="widgets"
           :options="options"
+          :field-id="fieldId"
           :disabled="disabled"
           :tabbable="isHovered || isFocused"
           :menu-id="`${widget._id}-widget-menu-bottom`"
@@ -363,12 +367,12 @@ export default {
     },
     widgetLabel() {
       const moduleName = `${this.widget.type}-widget`;
-      const module = window.apos.modules[moduleName];
-      if (!module) {
+      const mod = window.apos.modules[moduleName];
+      if (!mod) {
         // eslint-disable-next-line no-console
         console.warn(`No ${moduleName} module found for widget type ${this.widget.type}`);
       }
-      return module.label;
+      return mod.label;
     },
     widgetOptions() {
       return this.widgets[this.widget.type];
