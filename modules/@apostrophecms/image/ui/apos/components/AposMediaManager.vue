@@ -475,19 +475,30 @@ export default {
     async completeUploading(images) {
       this.uploaded = true;
       const [ widgetOptions = {} ] = apos.area.widgetOptions;
-      const [ width, height ] = widgetOptions.minSize || [];
+      const { minWidth, minHeight } = this.computeMinSizes(
+        widgetOptions.minSize,
+        widgetOptions.aspectRatio
+      );
       let minSizeError = false;
 
       // Filter out images that are too small
       const uploaded = images.filter(image => {
-        if (width && image.attachment?.width && width > image.attachment.width) {
+        if (
+          minWidth &&
+          image.attachment?.width &&
+          minWidth > image.attachment.width
+        ) {
           minSizeError = true;
           if (this.editing?._id === image._id) {
             this.updateEditing(null);
           }
           return false;
         }
-        if (height && image.attachment?.height && height > image.attachment.height) {
+        if (
+          minHeight &&
+          image.attachment?.height &&
+          minHeight > image.attachment.height
+        ) {
           minSizeError = true;
           if (this.editing?._id === image._id) {
             this.updateEditing(null);
@@ -512,8 +523,8 @@ export default {
           icon: 'alert-circle-icon',
           dismiss: true,
           interpolate: {
-            width,
-            height
+            width: minWidth,
+            heigh: minHeight
           }
         });
       }
@@ -525,6 +536,48 @@ export default {
         if (!this.editing && imgIds.length === 1) {
           this.updateEditing(imgIds[0]);
         }
+      }
+    },
+    computeMinSizes([ minWidth, minHeight ] = [], [ widthRatio, heightRatio ] = []) {
+      const aspectRatio = widthRatio / heightRatio;
+
+      console.log('minWidth', minWidth);
+      console.log('minHeight', minHeight);
+      console.log('aspectRatio', aspectRatio);
+
+      if (!aspectRatio) {
+        return {
+          minWidth,
+          minHeight
+        };
+      }
+
+      // If ratio wants a square,
+      // we simply take the higher min size
+      if (aspectRatio === 1) {
+        const higherValue = minWidth > minHeight
+          ? minWidth
+          : minHeight;
+
+        return {
+          minWidth: higherValue,
+          minHeight: higherValue
+        };
+      }
+
+      const minSizeRatio = minHeight / minWidth;
+      const ratio = minSizeRatio * aspectRatio;
+
+      if (ratio > 1) {
+        return {
+          minWidth: Math.round(minHeight * aspectRatio),
+          minHeight
+        };
+      } else if (ratio < 1) {
+        return {
+          minWidth,
+          minHeight: Math.round(minWidth / aspectRatio)
+        };
       }
     },
     clearSelected() {
