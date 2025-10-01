@@ -1,4 +1,5 @@
 <template>
+  <!-- onTab only triggered when not teleported -->
   <section
     ref="contextMenuRef"
     class="apos-context-menu"
@@ -31,8 +32,9 @@
         @icon="setIconToCenterTo"
         @click.stop="buttonClicked($event)"
       />
+      <!-- Regular dropdown (default behavior) -->
       <div
-        v-if="isOpen"
+        v-if="isOpen && !teleportContent"
         v-bind="menuAttrs"
         ref="dropdownContent"
         v-click-outside-element="hide"
@@ -50,16 +52,49 @@
           @item-clicked="menuItemClicked"
           @set-arrow="setArrow"
         >
-          <slot />
+          <slot :close="hide" />
         </AposContextMenuDialog>
       </div>
+
+      <!-- Teleported dropdown (solves complex z-index situations) -->
+      <Teleport
+        v-if="isOpen && teleportContent"
+        to="body"
+      >
+        <div
+          v-bind="menuAttrs"
+          ref="dropdownContent"
+          v-click-outside-element="hide"
+          :style="teleportedStyle"
+          :class="[
+            'apos-context-menu__dropdown-content',
+            'apos-context-menu__dropdown-content--teleported',
+            ...popoverClass
+          ]"
+          @keydown.tab="onTab"
+          @keydown.esc="handleKeyboard"
+        >
+          <AposContextMenuDialog
+            :menu-placement="placement"
+            :class-list="classList"
+            :menu="menu"
+            :active-item="activeItem"
+            :is-open="isOpen"
+            :has-tip="hasTip"
+            @item-clicked="menuItemClicked"
+            @set-arrow="setArrow"
+          >
+            <slot :close="hide" />
+          </AposContextMenuDialog>
+        </div>
+      </Teleport>
     </div>
   </section>
 </template>
 
 <script setup>
 import {
-  ref, computed, onMounted, onBeforeUnmount, nextTick, useSlots
+  ref, computed, onMounted, onBeforeUnmount, nextTick, useSlots, watch
 } from 'vue';
 import {
   computePosition, offset, shift, flip, arrow
@@ -163,6 +198,11 @@ const props = defineProps({
   hasTip: {
     type: Boolean,
     default: true
+  },
+  // When true, teleports dropdown content to `body`
+  teleportContent: {
+    type: Boolean,
+    default: false
   }
 });
 
@@ -185,6 +225,7 @@ const arrowEl = ref(null);
 const iconToCenterTo = ref(null);
 const mOffset = getMenuOffset();
 const otherMenuOpened = ref(false);
+const positionUpdateScheduled = ref(false);
 
 const {
   onTab, runTrap, hasRunningTrap, resetTrap
@@ -248,6 +289,15 @@ const menuAttrs = computed(() => {
   };
 });
 
+const teleportedStyle = computed(() => {
+  // For teleported content, we need to ensure positioning is always fresh
+  // The positioning is already calculated correctly by setDropdownPosition
+  return {
+    ...dropdownContentStyle.value,
+    zIndex: '2003' // $z-index-notifications from SCSS
+  };
+});
+
 const { themeClass } = useAposTheme();
 
 onMounted(() => {
@@ -258,6 +308,9 @@ onMounted(() => {
 onBeforeUnmount(() => {
   apos.bus.$off('context-menu-toggled', hideWhenOtherOpen);
   apos.bus.$off('close-context-menus', hideContextMenu);
+  if (positionUpdateScheduled.value) {
+    cancelAnimationFrame(positionUpdateScheduled.value);
+  }
 });
 
 function getMenuOffset() {
@@ -297,13 +350,24 @@ async function hide(e) {
     menuResizeObserver.unobserve(dropdownContent.value);
   }
   isOpen.value = false;
+  // Clear any scheduled position updates
+  positionUpdateScheduled.value = false;
   await nextTick();
   emit('close', e);
   if (props.trapFocus) {
     resetTrap();
   }
-  window.removeEventListener('resize', setDropdownPosition);
-  window.removeEventListener('scroll', setDropdownPosition);
+
+  const positionHandler = props.teleportContent
+    ? throttledPositionUpdate
+    : setDropdownPosition;
+
+  window.removeEventListener('resize', positionHandler);
+  window.removeEventListener('scroll', positionHandler);
+  // Remove document scroll listener for teleported content
+  if (props.teleportContent) {
+    document.removeEventListener('scroll', positionHandler, true);
+  }
   contextMenuRef.value?.addEventListener('keydown', handleKeyboard);
   if (!otherMenuOpened.value && !props.trapFocus) {
     dropdown.value.querySelector('[tabindex]').focus();
@@ -319,12 +383,20 @@ async function show(e) {
   emit('open', e);
   setDropdownPosition();
   menuResizeObserver.observe(dropdownContent.value);
-  window.addEventListener('resize', setDropdownPosition);
-  window.addEventListener('scroll', setDropdownPosition);
-  contextMenuRef.value?.addEventListener('keydown', handleKeyboard);
-  if (props.trapFocus && !hasRunningTrap.value) {
-    await runTrap(dropdownContent);
+
+  const positionHandler = props.teleportContent
+    ? throttledPositionUpdate
+    : setDropdownPosition;
+
+  window.addEventListener('resize', positionHandler);
+  // For teleported content, also listen to scroll events on all scrollable ancestors
+  if (props.teleportContent) {
+    document.addEventListener('scroll', positionHandler, true);
+  } else {
+    window.addEventListener('scroll', positionHandler);
   }
+  contextMenuRef.value?.addEventListener('keydown', handleKeyboard);
+  // Focus trap is now handled by watcher
   if (!props.trapFocus) {
     dropdownContent.value.querySelector('[tabindex]')?.focus();
   }
@@ -332,6 +404,33 @@ async function show(e) {
   if (props.centerTipEl) {
     setIconToCenterTo(props.centerTipEl.$el);
   }
+}
+// Watch for dropdownContent changes and isOpen, re-run trap if needed
+watch([
+  () => dropdownContent.value,
+  () => isOpen.value
+], async ([ content, open ]) => {
+  if (props.trapFocus && open && content && !hasRunningTrap.value) {
+    await runTrap(dropdownContent);
+  }
+  if ((!open || !content) && hasRunningTrap.value) {
+    resetTrap();
+  }
+});
+
+// Throttled position update function for better performance
+// Ensures only one position update is scheduled per frame
+function throttledPositionUpdate() {
+  if (!isOpen.value || positionUpdateScheduled.value) {
+    return;
+  }
+  positionUpdateScheduled.value = true;
+  requestAnimationFrame(() => {
+    positionUpdateScheduled.value = false;
+    if (isOpen.value) {
+      setDropdownPosition();
+    }
+  });
 }
 
 function buttonClicked(e) {
@@ -472,6 +571,12 @@ function handleKeyboard(event) {
   &[aria-hidden='false'] {
     visibility: visible;
     opacity: 1;
+  }
+
+  &--teleported {
+    z-index: $z-index-notifications;
+
+    /* Keep position: absolute (inherited) so it positions relative to the document */
   }
 }
 

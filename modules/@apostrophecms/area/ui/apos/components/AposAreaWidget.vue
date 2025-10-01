@@ -21,6 +21,7 @@
       @blur="removeKeyboardFocusHandler"
     >
       <div
+        v-if="!breadcrumbDisabled"
         ref="label"
         class="apos-area-widget-controls apos-area-widget__label"
         :class="labelsClasses"
@@ -60,6 +61,8 @@
             class="apos-area-widget__breadcrumb"
             data-apos-widget-breadcrumb="0"
           >
+            <!-- FIXME: Label double click still executes widget editor
+             when edit disabled. Fix when the disable routine is in final state. -->
             <AposButton
               type="quiet"
               :label="foreign ? {
@@ -75,8 +78,20 @@
             />
           </li>
         </ol>
+        <AposBreadcrumbOperations
+          v-if="widgetBreadcrumbOperations.length > 0"
+          :i="i"
+          :widget="widget"
+          :options="options"
+          :disabled="disabled"
+          :is-focused="isFocused"
+          @widget-focus="getFocus"
+          @update="$emit('update', $event)"
+          @operation="onBreadcrumbOperation"
+        />
       </div>
       <div
+        v-if="!controlsDisabled"
         class="
           apos-area-widget-controls
           apos-area-widget-controls--add--top
@@ -105,6 +120,7 @@
         :class="{'apos-is-disabled': isFocused}"
       />
       <div
+        v-if="!controlsDisabled"
         class="apos-area-widget-controls apos-area-widget-controls--modify"
         :class="controlsClasses"
       >
@@ -161,6 +177,7 @@
         @update="$emit('update', $event);"
       />
       <div
+        v-if="!controlsDisabled"
         class="
           apos-area-widget-controls
           apos-area-widget-controls--add
@@ -190,10 +207,14 @@
 
 <script>
 import AposIndicator from 'Modules/@apostrophecms/ui/components/AposIndicator.vue';
+import AposBreadcrumbSwitch from 'Modules/@apostrophecms/area/components/AposBreadcrumbSwitch.vue';
 
 export default {
   name: 'AposAreaWidget',
-  components: { AposIndicator },
+  components: {
+    AposIndicator,
+    AposBreadcrumbSwitch
+  },
   props: {
     widgetHovered: {
       type: String,
@@ -267,6 +288,20 @@ export default {
       type: Boolean,
       default: false
     },
+    // Disable controls or breadcrumbs independently
+    controlsDisabled: {
+      type: Boolean,
+      default: false
+    },
+    breadcrumbDisabled: {
+      type: Boolean,
+      default: false
+    },
+    // Whether or not this widget should be focused
+    shouldFocus: {
+      type: Boolean,
+      default: true
+    },
     generation: {
       type: Number,
       required: false,
@@ -294,6 +329,7 @@ export default {
       isSuppressed: false,
       menuOpen: null,
       isSuppressingWidgetControls: false,
+      hasClickOutsideListener: false, // Track if click-outside listener is active
       classes: {
         show: 'apos-is-visible',
         open: 'apos-is-open',
@@ -348,17 +384,18 @@ export default {
     moduleOptions() {
       return window.apos.area;
     },
+    widgetModuleOptions() {
+      return apos.modules[this.moduleOptions?.widgetManagers[this.widget?.type]] ?? {};
+    },
+    widgetBreadcrumbOperations() {
+      return (this.widgetModuleOptions.widgetBreadcrumbOperations || []);
+    },
     isFocused() {
-      if (this.isSuppressed) {
+      if (this.isSuppressed || !this.shouldFocus) {
         return false;
       }
 
-      const isWidgetFocused = this.widgetFocused === this.widget._id;
-      if (isWidgetFocused) {
-        document.addEventListener('click', this.unfocus);
-      }
-
-      return isWidgetFocused;
+      return this.widgetFocused === this.widget._id;
     },
     isHovered() {
       return this.widgetHovered === this.widget._id;
@@ -406,10 +443,12 @@ export default {
     isFocused(newVal) {
       if (newVal) {
         this.$refs.wrapper.addEventListener('keydown', this.handleKeyboardUnfocus);
+        this.addClickOutsideListener();
       } else {
         this.menuOpen = null;
         this.$refs.wrapper.removeEventListener('keydown', this.handleKeyboardUnfocus);
         this.isSuppressingWidgetControls = false;
+        this.removeClickOutsideListener();
       }
     }
   },
@@ -444,8 +483,15 @@ export default {
   unmounted() {
     // Remove the focus parent listener when unmounted
     apos.bus.$off('widget-focus-parent', this.focusParent);
+    // Ensure click-outside listener is cleaned up
+    this.removeClickOutsideListener();
   },
   methods: {
+    // Emits same actions as the Standard operations,
+    // e.g ('edit', i), ('remove', i), etc.
+    onBreadcrumbOperation({ name, payload }) {
+      this.$emit(name, payload);
+    },
     getFocusForMenu({ menuId, isOpen }) {
       if (
         (
@@ -465,7 +511,8 @@ export default {
     // Determine whether or not we should adjust the label based on its
     // position to the admin bar
     adjustUi() {
-      const { height: labelHeight } = this.$refs.label.getBoundingClientRect();
+      const { height: labelHeight } = this.$refs.label?.getBoundingClientRect() ??
+        { height: 0 };
       const { top: widgetTop } = this.$refs.widget.getBoundingClientRect();
       const adminBarHeight = window.apos.modules['@apostrophecms/admin-bar'].height;
       const offsetTop = widgetTop + window.scrollY;
@@ -526,9 +573,21 @@ export default {
     unfocus(event) {
       if (!this.$el.contains(event.target)) {
         this.isSuppressed = true;
-        document.removeEventListener('click', this.unfocus);
+        this.removeClickOutsideListener();
         apos.bus.$emit('widget-focus', { _id: null });
       }
+    },
+
+    addClickOutsideListener() {
+      if (!this.hasClickOutsideListener) {
+        document.addEventListener('click', this.unfocus);
+        this.hasClickOutsideListener = true;
+      }
+    },
+
+    removeClickOutsideListener() {
+      document.removeEventListener('click', this.unfocus);
+      this.hasClickOutsideListener = false;
     },
 
     handleKeyboardFocus($event) {
@@ -585,6 +644,46 @@ export default {
 </script>
 
 <style lang="scss" scoped>
+.apos-area-widget__breadcrumbs.apos-area-widget__breadcrumbs--action {
+  padding: 4px;
+  border: 1px solid var(--a-primary-transparent-25);
+  background-color: var(--a-white);
+
+  .apos-area-widget__breadcrumb,
+  .apos-area-widget--switch,
+  :deep(.apos-breadcrumb-switch),
+  :deep(.apos-breadcrumb-switch > div) {
+    height: 100%;
+  }
+
+  .apos-area-widget__breadcrumb {
+    padding: 0;
+  }
+
+  > li {
+    display: flex;
+    align-items: center;
+    margin: 0;
+    padding: 0;
+
+  }
+}
+
+.apos-area-widget__breadcrumbs.apos-area-widget__breadcrumbs--info {
+  display: flex;
+  border: none;
+  background-color: transparent;
+
+  > li {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    margin: 0;
+    padding: 0;
+
+  }
+}
+
 @mixin showButton() {
   transform: scale(1.15);
   background-size: 150% 100%;
@@ -822,7 +921,8 @@ export default {
   .apos-area-widget__label {
     position: absolute;
     top: 0;
-    right: 0;
+    left: 0; // switch the root label position from right to left
+    // right: 0;
     display: flex;
     transform: translateY(-100%);
     transition: opacity 300ms ease;
@@ -838,11 +938,13 @@ export default {
 
     & {
       display: flex;
+      box-sizing: border-box;
       align-items: center;
+      height: 32px;
       margin: 0 0 8px;
       padding: 4px 6px;
-      background-color: var(--a-background-primary);
       border: 1px solid var(--a-primary-transparent-50);
+      background-color: var(--a-background-primary);
       border-radius: 8px;
     }
   }
