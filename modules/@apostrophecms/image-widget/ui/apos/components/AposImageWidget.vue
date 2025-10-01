@@ -96,22 +96,27 @@ async function selectFromManager() {
  * @returns {boolean} - Tells if the image is valid
  */
 function checkImageValid(image) {
-  const minSize = props.options.minSize;
-  if (!minSize) {
+  console.log('checkImageValid', props.options);
+  if (!props.options.minSize) {
     return true;
   }
 
+  const { minWidth, minHeight } = computeMinSizes(
+    props.options.minSize,
+    props.options.aspectRatio
+  );
+
   if (
-    (minSize[0] && image.width < minSize[0]) ||
-    (minSize[1] && image.height < minSize[1])
+    (minWidth && image.width < minWidth) ||
+    (minHeight && image.height < minHeight)
   ) {
     apos.notify('apostrophe:minimumSize', {
       type: 'danger',
       icon: 'alert-circle-icon',
       dismiss: true,
       interpolate: {
-        width: minSize[0],
-        height: minSize[1]
+        width: minWidth,
+        height: minHeight
       }
     });
     return false;
@@ -119,6 +124,49 @@ function checkImageValid(image) {
 
   return true;
 }
+
+function computeMinSizes([ minWidth, minHeight ] = [], [ widthRatio, heightRatio ] = []) {
+  const aspectRatio = widthRatio / heightRatio;
+
+  console.log('minWidth', minWidth);
+  console.log('minHeight', minHeight);
+  console.log('aspectRatio', aspectRatio);
+
+  if (!aspectRatio) {
+    return {
+      minWidth,
+      minHeight
+    };
+  }
+
+  // If ratio wants a square,
+  // we simply take the higher min size
+  if (aspectRatio === 1) {
+    const higherValue = minWidth > minHeight
+      ? minWidth
+      : minHeight;
+
+    return {
+      minWidth: higherValue,
+      minHeight: higherValue
+    };
+  }
+
+  const minSizeRatio = minHeight / minWidth;
+  const ratio = minSizeRatio * aspectRatio;
+
+  if (ratio > 1) {
+    return {
+      minWidth: Math.round(minHeight * aspectRatio),
+      minHeight
+    };
+  } else if (ratio < 1) {
+    return {
+      minWidth,
+      minHeight: Math.round(minWidth / aspectRatio)
+    };
+  }
+};
 
 /**
  * @param {File} file - File uploaded by user
