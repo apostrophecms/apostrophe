@@ -477,7 +477,7 @@ export default {
       console.log('AposMediaManager.vue - completeUploading');
       this.uploaded = true;
       const [ widgetOptions = {} ] = apos.area.widgetOptions;
-      const { minWidth, minHeight } = computeMinSizes(
+      const { minWidth: width, minHeight: height } = computeMinSizes(
         widgetOptions.minSize,
         widgetOptions.aspectRatio
       );
@@ -485,22 +485,14 @@ export default {
 
       // Filter out images that are too small
       const uploaded = images.filter(image => {
-        if (
-          minWidth &&
-          image.attachment?.width &&
-          minWidth > image.attachment.width
-        ) {
+        if (width && image.attachment?.width && width > image.attachment.width) {
           minSizeError = true;
           if (this.editing?._id === image._id) {
             this.updateEditing(null);
           }
           return false;
         }
-        if (
-          minHeight &&
-          image.attachment?.height &&
-          minHeight > image.attachment.height
-        ) {
+        if (height && image.attachment?.height && height > image.attachment.height) {
           minSizeError = true;
           if (this.editing?._id === image._id) {
             this.updateEditing(null);
@@ -525,8 +517,8 @@ export default {
           icon: 'alert-circle-icon',
           dismiss: true,
           interpolate: {
-            width: minWidth,
-            heigh: minHeight
+            width,
+            height
           }
         });
       }
