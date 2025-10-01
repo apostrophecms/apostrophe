@@ -202,7 +202,7 @@ export default {
         return;
       }
 
-      this.setFocusedArea(null, null);
+      this.setFocusedArea(null);
     },
     handleCopy() {
       if (

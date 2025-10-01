@@ -24,9 +24,9 @@ export const useWidgetStore = defineStore('widget', () => {
 
   async function setFocusedWidget(id, areaId, { scrollTo = false } = {}) {
     focusedWidget.value = id;
-    setFocusedArea(areaId);
+    setFocusedArea(id ? areaId : null);
 
-    if (scrollTo) {
+    if (id && scrollTo) {
       await scrollToWidget(id, { awaitNextTick: true });
     }
   }

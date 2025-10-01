@@ -179,8 +179,6 @@ export default {
   methods: {
     ...mapActions(useWidgetStore, [ 'updateWidget' ]),
     clickOnGrid() {
-      console.log('this.parentOptions.widgetId', this.parentOptions.widgetId);
-      console.log('this.areaId', this.areaId);
       if (this.parentOptions.widgetId) {
         this.setFocusedWidget(this.parentOptions.widgetId, this.areaId);
       }
