@@ -134,6 +134,7 @@
 import { debounceAsync, asyncTaskQueue } from 'Modules/@apostrophecms/ui/utils';
 import AposModifiedMixin from 'Modules/@apostrophecms/ui/mixins/AposModifiedMixin';
 import AposDocsManagerMixin from 'Modules/@apostrophecms/modal/mixins/AposDocsManagerMixin';
+import { computeMinSizes } from 'apostrophe/lib/image.js';
 
 const DEBOUNCE_TIMEOUT = 500;
 
@@ -473,9 +474,13 @@ export default {
       this.items.unshift(piece);
     },
     async completeUploading(images) {
+      console.log('AposMediaManager.vue - completeUploading');
       this.uploaded = true;
       const [ widgetOptions = {} ] = apos.area.widgetOptions;
-      const [ width, height ] = widgetOptions.minSize || [];
+      const { minWidth: width, minHeight: height } = computeMinSizes(
+        widgetOptions.minSize,
+        widgetOptions.aspectRatio
+      );
       let minSizeError = false;
 
       // Filter out images that are too small
