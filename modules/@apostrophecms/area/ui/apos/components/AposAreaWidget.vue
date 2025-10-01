@@ -316,7 +316,6 @@ export default {
   data() {
     return {
       mounted: false, // hack around needing DOM to be rendered for computed classes
-      isSuppressed: false,
       menuOpen: null,
       isSuppressingWidgetControls: false,
       hasClickOutsideListener: false, // Track if click-outside listener is active
@@ -386,7 +385,7 @@ export default {
       return (this.widgetModuleOptions.widgetBreadcrumbOperations || []);
     },
     isFocused() {
-      if (this.isSuppressed || !this.shouldFocus) {
+      if (!this.shouldFocus) {
         return false;
       }
 
@@ -566,10 +565,9 @@ export default {
     },
     unfocus(event) {
       if (!this.$el.contains(event.target)) {
-        this.isSuppressed = true;
         this.removeClickOutsideListener();
 
-        this.setFocusedWidget(null, this.areaId);
+        this.setFocusedWidget(null, null);
       }
     },
 
