@@ -46,7 +46,7 @@
             ({{ locale.name }})
           </span>
           <span
-            v-if="hideLocalized"
+            v-if="showLocalized"
             class="apos-locale-picker__localized"
             :class="{ 'apos-state-is-localized': isLocalized(locale) }"
           />
@@ -54,7 +54,7 @@
       </li>
     </ul>
     <div
-      v-if="hideLocalized"
+      v-if="showLocalized"
       class="apos-locales-picker__available"
     >
       <p class="apos-locales-picker__available-desc">
@@ -98,9 +98,9 @@ const props = defineProps({
     type: Boolean,
     default: false
   },
-  hideLocalized: {
+  showLocalized: {
     type: Boolean,
-    default: false
+    default: true
   }
 });
 

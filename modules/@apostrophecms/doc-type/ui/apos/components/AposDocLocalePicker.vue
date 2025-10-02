@@ -20,7 +20,7 @@
         :forbidden="forbidden"
         :forbidden-tooltip="forbiddenTooltip"
         :is-open="isOpen"
-        :hide-localized="hideLocalized"
+        :show-localized="showLocalized"
         @switch-locale="switchLocale"
       />
     </AposContextMenu>
@@ -53,9 +53,9 @@ const props = defineProps({
     type: Boolean,
     required: true
   },
-  hideLocalized: {
+  showLocalized: {
     type: Boolean,
-    default: false
+    default: true
   }
 });
 
