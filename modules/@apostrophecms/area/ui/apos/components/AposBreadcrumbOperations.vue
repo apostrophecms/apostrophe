@@ -48,6 +48,8 @@
 </template>
 
 <script>
+import { useWidgetStore } from 'Modules/@apostrophecms/ui/stores/widget';
+import { mapActions } from 'pinia';
 import AposIndicator from 'Modules/@apostrophecms/ui/components/AposIndicator.vue';
 import AposBreadcrumbSwitch from 'Modules/@apostrophecms/area/components/AposBreadcrumbSwitch.vue';
 
@@ -149,6 +151,7 @@ export default {
     }
   },
   methods: {
+    ...mapActions(useWidgetStore, [ 'setFocusedWidget' ]),
     getOperationComponent(operation) {
       if (operation.type === 'info') {
         return 'AposIndicator';
