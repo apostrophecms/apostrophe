@@ -523,13 +523,13 @@ module.exports = {
       // the `user` object.
       // `attempts`,  `ip` and `requestId` are optional, sent for only logging
       // needs. They won't be available with passport.
-
       async verifyLogin(username, password, attempts = 0, ip, requestId) {
         const req = self.apos.task.getReq();
+        const loginName = self.normalizeLoginName(username);
         const user = await self.apos.user.find(req, {
           $or: [
-            { username },
-            { email: username }
+            { username: loginName },
+            { email: loginName }
           ],
           disabled: { $ne: true }
         }).toObject();
@@ -981,6 +981,13 @@ module.exports = {
             required: true
           })
           );
+      },
+
+      normalizeLoginName(usernameOrEmail) {
+        if (!self.options.caseInsensitive) {
+          return usernameOrEmail;
+        }
+        return usernameOrEmail.toLowerCase();
       }
     };
   },
