@@ -42,7 +42,7 @@
             </label>
             <AposSelect
               :selected="aspectRatio"
-              :choices="aspectRatios"
+              :choices="aspectRatioChoices"
               :disabled="disableAspectRatio"
               @change="updateAspectRatio"
             />
@@ -140,7 +140,11 @@ export default {
     },
     widgetSchema: {
       type: Array,
-      default: () => ([])
+      default: () => []
+    },
+    widgetOptions: {
+      type: Object,
+      default: null
     },
     item: {
       type: Object,
@@ -149,8 +153,13 @@ export default {
   },
   emits: [ 'modal-result' ],
   data() {
-    const { aspectRatio, disableAspectRatio } = this.getAspectRatioFromConfig();
-    const minSize = this.getMinSize();
+    const widgetOptions = this.getWidgetOptions();
+    const {
+      aspectRatio,
+      aspectRatioChoices,
+      disableAspectRatio
+    } = this.getAspectRatioData(widgetOptions);
+    const minSize = widgetOptions.minSize || [];
     const image = this.getImage();
     const data = this.setDataValues(image);
 
@@ -173,7 +182,7 @@ export default {
       },
       currentTab: null,
       aspectRatio,
-      aspectRatios: getAspectRatios(this.$t('apostrophe:aspectRatioFree')),
+      aspectRatioChoices,
       disableAspectRatio,
       minSize,
       correctingSizes: false,
@@ -201,6 +210,14 @@ export default {
     this.computeMinSizes();
   },
   methods: {
+    getWidgetOptions() {
+      if (this.widgetOptions) {
+        return this.widgetOptions;
+      }
+
+      const [ widgetOptions = {} ] = apos.area.widgetOptions || [];
+      return widgetOptions;
+    },
     getImage() {
       return this.item || this.widget?._image?.[0];
     },
@@ -254,8 +271,8 @@ export default {
         return;
       }
 
-      // If ratio wants a square, we simply take the higher min size of the
-      // image
+      // If ratio wants a square,
+      // we simply take the higher min size of the image
       if (this.aspectRatio === 1) {
         const higherValue = minWidth > minHeight ? minWidth : minHeight;
         this.minWidth = higherValue;
@@ -425,28 +442,33 @@ export default {
     switchPane(name) {
       this.currentTab = name;
     },
-    getAspectRatioFromConfig() {
-      const [ widgetOptions = {} ] = apos.area.widgetOptions || [];
-
-      return widgetOptions.aspectRatio && widgetOptions.aspectRatio.length === 2
-        ? {
-          aspectRatio: widgetOptions.aspectRatio[0] / widgetOptions.aspectRatio[1],
-          disableAspectRatio: true
-        }
-        : {
+    getAspectRatioData(widgetOptions = {}) {
+      if (
+        !Array.isArray(widgetOptions.aspectRatio) ||
+        widgetOptions.aspectRatio.length !== 2
+      ) {
+        return {
           aspectRatio: null,
-          disableAspectRatio: false
+          disableAspectRatio: false,
+          aspectRatioChoices: getAspectRatios(this.$t('apostrophe:aspectRatioFree'))
         };
+      }
+
+      const [ x, y ] = widgetOptions.aspectRatio;
+      const aspectRatio = x / y;
+      return {
+        aspectRatio,
+        disableAspectRatio: true,
+        aspectRatioChoices: [ {
+          label: `${x}:${y}`,
+          value: aspectRatio
+        } ]
+      };
     },
     updateAspectRatio(value) {
       this.aspectRatio = value;
       this.computeMaxSizes();
       this.computeMinSizes();
-    },
-    getMinSize() {
-      const [ widgetOptions = {} ] = apos.area.widgetOptions;
-
-      return widgetOptions.minSize || [];
     },
     computeAspectRatio(value, name) {
       if (!this.aspectRatio) {

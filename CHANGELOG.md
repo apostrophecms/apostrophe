@@ -4,13 +4,75 @@
 
 ### Adds
 
+* Custom operations registered with `addCreateWidgetOperation` can now specify an `ifTypesIntersect` property containing an array of widget type names. If the area in question allows at least one, the operation is offered.
+* The login-requirements tests were updated to include tests for the `uponSubmit` filter
+* Add `prependNodes` and `appendNodes` calls for `main`.
+* Add options for pieces to change the title, message and icon of the empty state block.
+
+### Fixes
+
+* Fixes a bug in the login `uponSubmit` filter where a user could login without meeting the requirement.
+* Fixes pieces filters when values from optional fields are falsy.
+* Resolve inline image URLs correctly when in edit mode and not in the default locale.
+* Using `CTRL+F` or `CMD+F` in the page manager now works.
+
+### Changes
+
+* Redirects to URLs containing accent marks and other non-ascii characters now behave as expected with Astro. Pre-encoding the URLs exactly the way `res.redirect` would before passing them to Astro prevents an error in Astro and allows the redirect to succeed.
+* Removes the non-functional `uniqueUsername` route from the `user` module
+* Modifies the `annotateAreaForExternalFront()` method of the `@apostrophecms/template` module to accept a per-module `annotateWidgetForExternalFront()` method. This allows widgets to send project-level options alongside the per-area options to external frontends.
+* Updated dependencies to address deprecation warnings.
+
+## 4.21.1 (2025-09-26)
+
+### Adds
+
+* The `exit` option to the main `apostrophe()` function now supports the new string value `exit: 'throw'`. If this value is specified and the apostrophe startup procedure fails with an error, the actual error is re-thrown for the benefit of the caller.
+* For backwards compatibility, the existing `exit: false` option to the main `apostrophe()` function is still supported, but now logs the error that took place before returning `undefined` as before. This is more useful than the previous behavior, but `exit: 'throw'` is the more logical choice if you need to avoid a process exit.
+* The default behavior is still to log the error and exit the process, which isthe only sensible move in most single-site projects.
+
+## 4.21.0 (2025-09-03)
+
+### Adds
+
+* Modules can now call `apos.area.addCreateWidgetOperation` to register a custom operation that invokes a modal and inserts the widget returned by that modal. These operations are offered as choices in all "add widget" menus, both regular and expanded.
+* `AposDocEditor` now accepts a `values` prop, which can be used to pass an object of initial values for some or all fields. Use of this prop is optional. It is not supported when editing existing documents.
+* `apos.doc.edit` now accepts an optional `values` object as the final parameter, containing initial values for some or all fields. This is supported only when editing existing documents.
+* When specifying a modal name to be executed, developers may now register "transformers" to be invoked first, using pipe syntax. For example, the modal name `aposSectionTemplateLibraryWidgetToDoc|AposDocEditor` will invoke the transformer `aposSectionTemplateLibraryWidgetToDoc` with the original props, and pass the returned result to `AposDocEditor`. Note that transformers are awaited. Transformers are registered in frontend admin UI code by passing a name and a function to `apos.ui.addTransformer`.
+* Adds quick image upload UI to `@apostrophecms/image-widget`.
+* Makes autocropping work when uploading or selecting images from the new quick image upload UI.
+
+### Fixes
+
+* The `?render-areas=1` API feature now correctly disregards areas in separate documents loaded via relationship fields. Formerly their presence resulted in an error, not a rendering.
+* Make conditional fields work in Image Editor.
+* Importing a custom icon from an npm module using a `~` path per the admin UI now works per the documentation, as long as the Vue component used for the icon is structured like those found in `@apostrophecms/vue-material-design-icons`.
+* The `button: true` flag works again for piece module utility operations. Previously the button appeared but did not trigger the desired operation.
+* Fix the fact that area options `minSize` and `aspectRatio` weren't passed to the image cropper when coming directly from the area and the widget controls (without passing through the widget editor).
+* Fixes the widget data being cloned to be saved before the `postprocess` method being called, which leads to a loss of data in `AposWidgetEditor` (like the autocrop data).
+* In editors like `AposWidgetEditor` relationships are now post processed after they are updated in `AposInputRelationship` only for the relationship that has been updated. 
+It allows live preview to work well with it, it also avoids complexity and fixes updated data not being properly synced between the editor and the `AposSchema`.
+* Deeply nested widgets can now be edited properly via the editor dialog box. This longstanding issue did not affect on-page editing.
+
+### Changes
+
+* Rolled back a change in 4.16.0 that strictly enforced `required` and `min` for relationship fields. Because the related document can be archived or deleted at any time, it is misleading to offer such enforcement. Also, it greatly complicates adding these constraints to existing schemas, resulting in surprising and unwanted behaviors. Therefore it is better for these constraints to be soft constraints on the front end. `max` is still a hard constraint.
+* The `@apostrophecms/login/whoami` route now accepts both `POST` (recommended) and `GET` requests. Previously, it only supported `GET`. This maintains backwards compatibility while aligning with the documentation’s recommendation to use `POST`.
+
+## 4.20.0 (2025-08-06)
+
+### Adds
+
 * Adds any alt text found in an attribute to the media library attachment during import of rich text inline images by API
 * Adds `prependNodes` and `appendNodes` methods to every module. These methods allow you to inject HTML to every page using a `node` declaration.
 
 ### Changes
 
+* A `clone-widget.js` file has been factored out, providing a universal way to return a clone of an existing widget which is distinct from the original.
+* Adds any alt text found in an attribute to the media library attachment during import of rich text inline images by API
+* Adds `prependNodes` and `appendNodes` methods to every module. These methods allow you to inject HTML to every page using a `node` declaration.
 * Changes handling of `order` and `groups` in the `admin-bar` module to respect, rather that reverse, the order of items
-* Interacting with the text inside a rich text widget will hide the widget controls to prevent awkawrd text selection.
+* Interacting with the text inside a rich text widget will hide the widget controls to prevent awkward text selection.
 
 ### Fixes
 

@@ -249,6 +249,9 @@
   "imagePlaceholder": "Image placeholder",
   "imageTag": "Image Tag",
   "imageTags": "Image Tags",
+  "imageUploadMsg": "Choose from the {{ mediaLibrary }}, {{ yourDevice }}, or drop a file here",
+  "imageUploadSupport": "Supports {{ formats }} or {{ last }} formats{{ upTo }}",
+  "imageUploadUpTo": "up to {{ maxSize }}",
   "images": "Images",
   "inputFieldIsDisabled": "This field is disabled",
   "insertAndNew": "{{ saveLabel }} {{ typeLabel }} and create a new one.",
@@ -339,6 +342,7 @@
   "mediaDimensions": "Dimensions: {{ width }} 𝗑 {{ height }}",
   "mediaFileSize": "File Size: {{ fileSize }}",
   "mediaKB": "{{ size }}KB",
+  "mediaLibrary": "media library",
   "mediaLibraryEndReached": "You've reached the end of the media library.",
   "mediaMB": "{{ size }}MB",
   "mediaManagerErrorRestoring": "Error Restoring",
@@ -348,6 +352,7 @@
   "mergeCells": "Merge Cells",
   "minLabel": "Min:",
   "minSize": "Min size of {{ width }}x{{ height }}",
+  "minimumSize": "Minimum size of {{ width }} x {{ height }} px",
   "minUi": "Min: {{ number }}",
   "modalBreadcrumbsDefaultLabel": "Set a label",
   "modalTabsError": "Error",
@@ -646,5 +651,6 @@
   "willMoveImageToArchive": "This will move the image to the archive.",
   "yes": "Yes",
   "yesLocalizeAndSwitchLocales": "Yes, localize this page and switch locales",
-  "youTookControl": "You took control of this document in another tab or window. A document can only be edited in one place at a time."
+  "youTookControl": "You took control of this document in another tab or window. A document can only be edited in one place at a time.",
+  "yourDevice": "your device"
 }

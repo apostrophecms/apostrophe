@@ -50,7 +50,7 @@ export default options => {
           parseHTML: element => {
             const src = element.querySelector('img')?.getAttribute('src');
 
-            const components = src.split('/');
+            const components = src.replace(/\?.*$/, '').split('/');
             if (components.length < 2) {
               return false;
             }
@@ -116,6 +116,7 @@ export default options => {
     },
 
     renderHTML({ HTMLAttributes }) {
+      const locale = apos.getActiveLocale();
       const result = [
         'figure',
         mergeAttributes(
@@ -127,7 +128,7 @@ export default options => {
       ];
       // Conditionally add the link
       const imgAttrs = {
-        src: `${apos.modules['@apostrophecms/image'].action}/${HTMLAttributes.imageId}/src`,
+        src: `${apos.modules['@apostrophecms/image'].action}/${HTMLAttributes.imageId}/src?aposLocale=${locale}&aposMode=draft`,
         alt: HTMLAttributes.alt,
         draggable: false,
         contenteditable: false
@@ -176,6 +177,7 @@ export default options => {
       return ({
         editor, node, getPos, HTMLAttributes, decorations
       }) => {
+        const locale = apos.getActiveLocale();
         const defaultWrapperClass = editor.isEditable
           ? 'ProseMirror-selectednode'
           : '';
@@ -196,7 +198,7 @@ export default options => {
 
         // Create the image element
         const img = document.createElement('img');
-        img.src = `${apos.modules['@apostrophecms/image'].action}/${node.attrs.imageId}/src`;
+        img.src = `${apos.modules['@apostrophecms/image'].action}/${node.attrs.imageId}/src?aposLocale=${locale}&aposMode=draft`;
         if (HTMLAttributes.alt) {
           img.alt = HTMLAttributes.alt;
         }
@@ -257,7 +259,7 @@ export default options => {
             }
             img.alt = updatedNode.attrs.alt;
             img.src = updatedNode.attrs.imageId
-              ? `${apos.modules['@apostrophecms/image'].action}/${updatedNode.attrs.imageId}/src`
+              ? `${apos.modules['@apostrophecms/image'].action}/${updatedNode.attrs.imageId}/src?aposLocale=${locale}&aposMode=draft`
               : '';
             figcaption.innerText = updatedNode.attrs.caption || '';
 

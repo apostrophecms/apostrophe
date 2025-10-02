@@ -182,6 +182,14 @@ export default {
     modalData: {
       type: Object,
       required: true
+    },
+    // Optional. If present, properties of this object
+    // override the defaults for the corresponding fields.
+    // Currently supported only for new instances, not
+    // existing or copied instances
+    values: {
+      type: Object,
+      default: null
     }
   },
   emits: [ 'modal-result' ],
@@ -473,6 +481,9 @@ export default {
       if (newInstance && newInstance.type !== this.docType) {
         this.docType = newInstance.type;
       }
+      if (this.values) {
+        Object.assign(newInstance, this.values);
+      }
       this.docFields.data = newInstance;
       const slugField = this.schema.find(field => field.name === 'slug');
       if (slugField) {
@@ -626,7 +637,6 @@ export default {
 
       let doc;
       try {
-        await this.postprocess();
         doc = await requestMethod(route, {
           busy: true,
           body,

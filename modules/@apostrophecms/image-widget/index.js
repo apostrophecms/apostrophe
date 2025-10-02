@@ -6,11 +6,13 @@ module.exports = {
     icon: 'image-icon',
     dimensionAttrs: false,
     placeholder: true,
-    placeholderClass: false,
-    placeholderImage: 'jpg',
+    initialModal: false,
     linkWithType: [ '@apostrophecms/any-page-type' ],
     // Should we write e.g. a reset style for the `figure` element?
-    inlineStyles: true
+    inlineStyles: true,
+    components: {
+      widget: 'AposImageWidget'
+    }
   },
   widgetOperations(self, options) {
     const {
@@ -135,6 +137,8 @@ module.exports = {
     };
   },
   init(self) {
+    self.showPlaceholder = self.options.placeholder !== false;
+    self.options.placeholder = true;
     self.determineBestAssetUrl('placeholder');
   },
   handlers(self) {
@@ -173,6 +177,17 @@ module.exports = {
           }
           return self.apos.modules[type].options?.label ?? type;
         }
+      }
+    };
+  },
+  extendMethods(self) {
+    return {
+      getBrowserData(_super, req) {
+        return {
+          ..._super(req),
+          showPlaceholder: self.showPlaceholder,
+          placeholderUrl: self.options.placeholderUrl
+        };
       }
     };
   }

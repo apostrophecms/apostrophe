@@ -64,7 +64,7 @@ export function detectFieldChange(field, v1, v2) {
       const newObject = {};
       for (const [ key, val ] of Object.entries(o)) {
         if (key === '_docId') {
-          newObject._docId = o._docId.replace(/:.*$/, '');
+          newObject._docId = (o._docId == null) ? null : o._docId.replace(/:.*$/, '');
         } else if (key === '_id') {
           // So draft and published can be compared
           newObject._id = o._id.replace(/:[\w-]+:[\w]+$/, '');

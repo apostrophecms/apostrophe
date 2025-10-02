@@ -247,6 +247,9 @@
   "imagePlaceholder": "Zástupný symbol obrázka",
   "imageTag": "Značku obrázku",
   "imageTags": "Značky obrázkov",
+  "imageUploadMsg": "Vyberte si z {{ mediaLibrary }}, {{ yourDevice }} alebo sem presuňte súbor",
+  "imageUploadSupport": "Podporuje formáty {{ formats }} alebo {{ last }} {{ upTo }}",
+  "imageUploadUpTo": "až do {{ maxSize }}",
   "images": "Obrázky",
   "inputFieldIsDisabled": "Toto pole je zakázané",
   "insertAndNew": "{{ saveLabel }} {{ typeLabel }} a vytvorte nový.",
@@ -322,6 +325,7 @@
   "mediaDimensions": "Rozmery: {{ width }} 𝗑 {{ height }}",
   "mediaFileSize": "Veľkosť súboru: {{ fileSize }}",
   "mediaKB": "{{ size }}KB",
+  "mediaLibrary": "mediálna knižnica",
   "mediaLibraryEndReached": "Dosiahli ste koniec mediálnej knižnice.",
   "mediaMB": "{{ size }}MB",
   "mediaManagerErrorRestoring": "Chyba pri obnove",
@@ -331,6 +335,7 @@
   "mergeCells": "Zlúčiť bunky",
   "minLabel": "Min:",
   "minSize": "Minimálna veľkosť {{ width }}x{{ height }}",
+  "minimumSize": "Minimálna veľkosť {{ šírka }} x {{ výška }} px",
   "minUi": "Min: {{ number }}",
   "modalBreadcrumbsDefaultLabel": "Nastaviť názov",
   "modalTabsError": "Chyba",
@@ -627,5 +632,6 @@
   "willMoveImageToArchive": "Tým sa obrázok presunie do archívu.",
   "yes": "Áno",
   "yesLocalizeAndSwitchLocales": "Áno, preložte túto stránku a prepnite jazykovú mutáciu",
-  "youTookControl": "Nad týmto dokumentom ste prevzali kontrolu na inej karte alebo v inom okne. Dokument je možné naraz upravovať iba na jednom mieste."
+  "youTookControl": "Nad týmto dokumentom ste prevzali kontrolu na inej karte alebo v inom okne. Dokument je možné naraz upravovať iba na jednom mieste.",
+  "yourDevice": "vaše zariadenie"
 }
