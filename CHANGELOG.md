@@ -1,5 +1,15 @@
 # Changelog
 
+## UNRELEASED
+
+### Adds
+
+* Add locale picker in the page and piece manager modals.
+
+### Fixes
+
+### Changes
+
 ## 4.22.0 (2025-10-01)
 
 ### Adds

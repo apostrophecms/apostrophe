@@ -21,6 +21,18 @@
         @click="confirmAndCancel"
       />
     </template>
+    <template
+      v-if="showLocalePicker"
+      #localeDisplay
+    >
+      <AposDocLocalePicker
+        :locale="modalData.locale"
+        :module-options="moduleOptions"
+        :is-modified="false"
+        :hide-localized="true"
+        @switch-locale="switchLocale"
+      />
+    </template>
     <template #primaryControls>
       <AposUtilityOperations
         :module-options="moduleOptions"
