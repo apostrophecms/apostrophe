@@ -378,6 +378,14 @@ module.exports = {
       }
     };
   },
+  tasks(self, options) {
+    return {
+      'case-insensitive': {
+        usage: 'Migrate all users with case insensitive username and email',
+        task: self.caseInsensitiveTask
+      }
+    };
+  },
   methods(self) {
     return {
 
@@ -808,7 +816,7 @@ module.exports = {
           await self.verifyRequirements(req, onTimeRequirements);
 
           // send log information
-          const user = await self.apos.login.verifyLogin(
+          const user = await self.verifyLogin(
             username,
             password,
             logAttempts,
@@ -988,6 +996,34 @@ module.exports = {
           return usernameOrEmail;
         }
         return usernameOrEmail.toLowerCase();
+      },
+      async caseInsensitiveTask() {
+        /* const req = self.apos.task.getReq(); */
+
+        /* self.apos.migration.add('login-case-insensitive', async () => { */
+        /* }); */
+        await self.apos.migration.eachDoc({ type: '@apostrophecms/user' }, 5, async (doc) => {
+          const usernameLower = doc.username.toLowerCase();
+          console.log('doc', {
+            username: doc.username,
+            usernameLower
+          });
+          if (usernameLower !== doc.username) {
+            const existingUsername = await self.apos.doc.db.findOne({
+              type: '@apostrophecms/user',
+              username: usernameLower
+            }, {
+              _id: 1,
+              username: 1
+            });
+
+            console.log('existingUsername', existingUsername);
+          }
+
+          /* return self.apos.doc.db.replaceOne({ */
+          /*   _id: doc._id */
+          /* }, doc); */
+        });
       }
     };
   },
