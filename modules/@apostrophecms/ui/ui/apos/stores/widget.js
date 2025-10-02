@@ -27,15 +27,12 @@ export const useWidgetStore = defineStore('widget', () => {
     setFocusedArea(id ? areaId : null);
 
     if (id && scrollTo) {
+      await nextTick();
       await scrollToWidget(id, { awaitNextTick: true });
     }
   }
 
-  async function scrollToWidget(id, { awaitNextTick = false }) {
-    if (awaitNextTick) {
-      await nextTick();
-    }
-
+  async function scrollToWidget(id) {
     const $el = document.querySelector(`[data-apos-widget-id="${id}"]`);
     if (!$el) {
       return;
