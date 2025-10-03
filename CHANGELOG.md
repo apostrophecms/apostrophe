@@ -1,5 +1,11 @@
 # Changelog
 
+## UNRELEASED
+
+### Adds
+
+* Basic support for the `render-areas=inline` query parameter in the REST API when using Astro as an external frontend, provided the Astro project has the corresponding route.
+
 ## 4.22.0 (2025-10-01)
 
 ### Adds

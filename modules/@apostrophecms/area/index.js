@@ -337,7 +337,29 @@ module.exports = {
           // just use the helpers
           self.apos.attachment.all(area, { annotate: true });
         }
-        if (inline) {
+        if (self.apos.externalFrontKey) {
+          const response = await fetch(`${self.apos.baseUrl}/api/apos-to-astro/render-area`, {
+            method: 'POST',
+            headers: {
+              'apos-external-front-key': self.apos.externalFrontKey
+            },
+            body: JSON.stringify({
+              area
+            })
+          });
+          if (response.status >= 400) {
+            throw response;
+          }
+          const result = await response.json();
+          if (inline) {
+            for (let i = 0; (i < result.area.items.length); i++) {
+              area.items[i]._rendered = result.area.items[i]._rendered;
+            }
+            return null;
+          } else {
+            return result.area.items.map(item => item._rendered).join('\n');
+          }
+        } else if (inline) {
           for (const item of area.items) {
             item._rendered = await self.renderWidget(
               req,
@@ -347,17 +369,18 @@ module.exports = {
             );
           }
           return null;
+        } else {
+          return self.render(req, 'area', {
+            // TODO filter area to exclude big relationship objects, but
+            // not so sloppy this time please
+            area,
+            field,
+            options,
+            choices,
+            _with,
+            canEdit
+          });
         }
-        return self.render(req, 'area', {
-          // TODO filter area to exclude big relationship objects, but
-          // not so sloppy this time please
-          area,
-          field,
-          options,
-          choices,
-          _with,
-          canEdit
-        });
       },
       // Replace documents' area objects with rendered HTML for each area.
       // This is used by GET requests including the `render-areas` query
@@ -373,6 +396,10 @@ module.exports = {
         let index = 0;
         // Loop over the docs in the array passed in.
         for (const doc of within) {
+          if (self.apos.externalFrontKey) {
+            self.apos.template.annotateDocForExternalFront(doc);
+          }
+
           const rendered = [];
 
           const areasToRender = {};
