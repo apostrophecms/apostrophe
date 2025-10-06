@@ -267,8 +267,8 @@ export default {
 
       const { minWidth, minHeight } = imageLib.computeMinSizes(this.minSize, this.aspectRatio);
 
-      this.minWidth = minWidth;
-      this.minHeight = minHeight;
+      this.minWidth = Math.round(minWidth);
+      this.minHeight = Math.round(minHeight);
     },
     setDataValues(image) {
       if (
