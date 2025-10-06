@@ -687,6 +687,7 @@ export default {
     emitResize() {
       // No resize direction, nothing to emit
       if (!this.ghostDataWrite.direction) {
+        this.resetGhostData();
         return;
       }
 
