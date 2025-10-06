@@ -35,6 +35,7 @@
       <template v-else>
         <AposAreaMenu
           :context-menu-options="contextMenuOptions"
+          :field-id="fieldId"
           :empty="true"
           :index="0"
           :options="options"
@@ -105,7 +106,7 @@
 </template>
 
 <script>
-import { mapActions } from 'pinia';
+import { mapActions, mapState } from 'pinia';
 import AposAreaEditorLogic from 'Modules/@apostrophecms/area/logic/AposAreaEditor.js';
 import { useWidgetStore } from 'Modules/@apostrophecms/ui/stores/widget.js';
 import { provisionRow } from '../lib/grid-state.mjs';
@@ -130,6 +131,10 @@ export default {
     };
   },
   computed: {
+    ...mapState(useWidgetStore, {
+      focusedWidgetState: state => state.focusedWidget,
+      hoveredWidgetState: state => state.hoveredWidget
+    }),
     layoutModuleOptions() {
       return window.apos.modules[this.moduleName] || {};
     },
@@ -150,6 +155,9 @@ export default {
         })
         .filter(w => w.type !== this.layoutMetaWidgetName);
     },
+    layoutColumnWidgetIds() {
+      return this.layoutColumnWidgets.map(w => w._id);
+    },
     layoutBreadcrumbOperations() {
       return (this.layoutModuleOptions.widgetBreadcrumbOperations || []);
     },
@@ -166,6 +174,21 @@ export default {
       return this.layoutModuleOptions.columnWidgetName;
     }
   },
+  watch: {
+    focusedWidgetState(widgetId) {
+      if (this.layoutColumnWidgetIds.includes(widgetId)) {
+        this.clickOnGrid();
+      }
+    },
+    hoveredWidgetState(widgetId) {
+      if (
+        this.parentOptions.widgetId &&
+        this.layoutColumnWidgetIds.includes(widgetId)
+      ) {
+        this.setHoveredWidget(this.parentOptions.widgetId, null);
+      }
+    }
+  },
   mounted() {
     apos.bus.$on('widget-breadcrumb-operation', this.executeWidgetOperation);
     if (!this.hasLayoutMeta) {
@@ -177,7 +200,7 @@ export default {
     apos.bus.$off('widget-breadcrumb-operation', this.executeWidgetOperation);
   },
   methods: {
-    ...mapActions(useWidgetStore, [ 'updateWidget' ]),
+    ...mapActions(useWidgetStore, ['updateWidget', 'setHoveredWidget']),
     clickOnGrid() {
       if (this.parentOptions.widgetId) {
         this.setFocusedWidget(this.parentOptions.widgetId, this.areaId);
@@ -262,6 +285,9 @@ export default {
           index: index + 1
         });
       }
+
+      await this.$nextTick();
+      this.clickOnGrid();
     },
     onAddItem(patch) {
       const widgetName = this.layoutColumnWidgetName;
