@@ -1,5 +1,9 @@
 # Changelog
 
+## UNRELEASED
+
+* Fix min size calculation for image widgets configured with an aspect ratio.
+
 ## 4.22.0 (2025-10-01)
 
 ### Adds
