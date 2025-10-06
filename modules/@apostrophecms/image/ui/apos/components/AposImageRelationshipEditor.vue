@@ -57,8 +57,8 @@
           >
             {{
               $t('apostrophe:minSize', {
-                width: minSize[0] || '???',
-                height: minSize[1] || '???'
+                width: minWidth || '???',
+                height: minHeight || '???'
               })
             }}
           </div>
@@ -263,9 +263,10 @@ export default {
         return;
       }
 
-      console.log('AposImageRelationshipEditor - computeMinSizes');
-
-      const { minWidth, minHeight } = imageLib.computeMinSizes(this.minSize, this.aspectRatio);
+      const { minWidth, minHeight } = imageLib.computeMinSizes(
+        this.minSize,
+        this.aspectRatio
+      );
 
       this.minWidth = Math.round(minWidth);
       this.minHeight = Math.round(minHeight);

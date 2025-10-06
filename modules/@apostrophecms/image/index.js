@@ -727,12 +727,21 @@ module.exports = {
   queries(self, query) {
     return {
       builders: {
+        aspectRatio: {
+          launder(a) {
+            if (!Array.isArray(a)) {
+              return undefined;
+            }
+            if (a.length !== 2) {
+              return undefined;
+            }
+            return [ self.apos.launder.integer(a[0]), self.apos.launder.integer(a[1]) ];
+          }
+        },
         minSize: {
           finalize() {
             const minSize = query.get('minSize');
-            const aspectRatio = query.req.query.aspectRatio;
-            console.log('image/index.js - queryBuilder - minSize', minSize);
-            console.log('image/index.js - queryBuilder - aspectRatio', aspectRatio);
+            const aspectRatio = query.get('aspectRatio');
             if (!minSize) {
               return;
             }

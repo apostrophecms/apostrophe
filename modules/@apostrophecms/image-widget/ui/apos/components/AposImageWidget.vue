@@ -97,7 +97,6 @@ async function selectFromManager() {
  * @returns {boolean} - Tells if the image is valid
  */
 function checkImageValid(image) {
-  console.log('AposImageWidget.vue - checkImageValid');
   if (!props.options.minSize) {
     return true;
   }

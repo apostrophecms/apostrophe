@@ -474,7 +474,6 @@ export default {
       this.items.unshift(piece);
     },
     async completeUploading(images) {
-      console.log('AposMediaManager.vue - completeUploading');
       this.uploaded = true;
       const [ widgetOptions = {} ] = apos.area.widgetOptions;
       const { minWidth: width, minHeight: height } = computeMinSizes(
