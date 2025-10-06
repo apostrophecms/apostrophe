@@ -49,13 +49,14 @@
           />
         </button>
         <button
-          v-show="!hasMotion || ghostData.id === item._id"
+          v-show="!hasMotion"
           class="apos-layout--item-action apos-layout__item-resize-handle nw"
           @mousedown="onStartResize(item, 'west', $event)"
           @touchstart="onStartResize(item, 'west', $event)"
+          @mouseenter="positionResizeUI"
+          @mousemove="positionResizeUI"
           @mouseup="resetGhostData"
           @touchend="resetGhostData"
-          @mousemove="positionResizeUI"
         >
           <span class="apos-layout__item-resize-handle-highlight-bar" />
           <AposIndicator
@@ -67,13 +68,14 @@
           />
         </button>
         <button
-          v-show="!hasMotion || ghostData.id === item._id"
+          v-show="!hasMotion"
           class="apos-layout--item-action apos-layout__item-resize-handle se"
           @mousedown="onStartResize(item, 'east', $event)"
           @touchstart="onStartResize(item, 'east', $event)"
+          @mouseenter="positionResizeUI"
+          @mousemove="positionResizeUI"
           @mouseup="resetGhostData"
           @touchend="resetGhostData"
-          @mousemove="positionResizeUI"
         >
           <span class="apos-layout__item-resize-handle-highlight-bar" />
           <AposIndicator
@@ -143,7 +145,76 @@
         height: ghostData.height + 'px'
       }"
       class="apos-layout__item-ghost"
-    />
+    >
+      <div
+        v-if="ghostData.id"
+        class="apos-layout__item-shim apos-layout__item-shim--ghost"
+        :class="{
+          'is-resizing': isResizing,
+          'is-moving': isMoving
+        }"
+      >
+        <button
+          v-if="isMoving"
+          type="button"
+          class="apos-layout--item-action apos-layout__item-move-handle apos-layout--item-action--ghost"
+          disabled
+          aria-hidden="true"
+          tabindex="-1"
+        >
+          <AposIndicator
+            icon="cursor-move-icon"
+            :icon-size="16"
+            icon-color="var(--a-base-1)"
+            class="apos-layout__item-move-handle-icon"
+          />
+        </button>
+        <button
+          v-if="isResizing"
+          type="button"
+          class="apos-layout--item-action apos-layout__item-resize-handle nw apos-layout__item-resize-handle--ghost"
+          disabled
+          aria-hidden="true"
+          tabindex="-1"
+        >
+          <span
+            v-show="ghostData.side === 'west'"
+            class="apos-layout__item-resize-handle-highlight-bar"
+          />
+          <AposIndicator
+            icon="drag-vertical-icon"
+            :icon-size="20"
+            icon-color="var(--a-base-1)"
+            class="apos-layout__item-resize-handle-icon"
+            data-resize-ui="west"
+            v-show="ghostData.side === 'west'"
+            :style="ghostResizeIndicatorStyle('west')"
+          />
+        </button>
+        <button
+          v-if="isResizing"
+          type="button"
+          class="apos-layout--item-action apos-layout__item-resize-handle se apos-layout__item-resize-handle--ghost"
+          disabled
+          aria-hidden="true"
+          tabindex="-1"
+        >
+          <span
+            v-show="ghostData.side === 'east'"
+            class="apos-layout__item-resize-handle-highlight-bar"
+          />
+          <AposIndicator
+            icon="drag-vertical-icon"
+            :icon-size="20"
+            icon-color="var(--a-base-1)"
+            class="apos-layout__item-resize-handle-icon"
+            data-resize-ui="east"
+            v-show="ghostData.side === 'east'"
+            :style="ghostResizeIndicatorStyle('east')"
+          />
+        </button>
+      </div>
+    </div>
     <div
       v-if="hasMotion && typeof ghostData.snapLeft === 'number'"
       :style="{
@@ -172,6 +243,8 @@ import { GridManager } from '../lib/grid-manager.js';
 import {
   getReorderPatch, prepareMoveIndex
 } from '../lib/grid-state.mjs';
+
+const RESIZE_ICON_HEIGHT = 32;
 
 export default {
   name: 'AposGridManager',
@@ -266,7 +339,11 @@ export default {
       },
       onMoveDebounced: throttle(this.onMove, 10),
       onResizeDebounced: throttle(this.onResize, 10),
-      lastPreviewKey: null
+      lastPreviewKey: null,
+      ghostHandleOffsets: {
+        west: null,
+        east: null
+      }
     };
   },
   computed: {
@@ -433,6 +510,12 @@ export default {
       this.ghostDataWrite.rowstart = itemData.rowstart ?? 1;
       this.ghostDataWrite.rowspan = itemData.rowspan ?? 1;
       this.ghostDataWrite.order = itemData.order;
+
+      this.resetGhostHandleOffsets();
+      const pointerY = this.getPointerClientY(event);
+      if (typeof pointerY === 'number') {
+        this.updateGhostResizeGrip(side, pointerY);
+      }
     },
     onResize(event) {
       if (!this.isResizing) {
@@ -448,6 +531,11 @@ export default {
       this.ghostDataWrite.colstart = colstart ?? this.ghostDataWrite.colstart;
       this.ghostDataWrite.colspan = colspan ?? this.ghostDataWrite.colspan;
       this.ghostDataWrite.direction = direction ?? this.ghostDataWrite.direction;
+
+      const pointerY = this.getPointerClientY(event);
+      if (typeof pointerY === 'number' && this.ghostData.side) {
+        this.updateGhostResizeGrip(this.ghostData.side, pointerY);
+      }
     },
     onStartMove(item, event) {
       const element = this.$refs.items.find(el => el.dataset.id === item._id);
@@ -492,6 +580,8 @@ export default {
         item: this.ghostDataWrite,
         state: this.gridState
       });
+
+      this.resetGhostHandleOffsets();
     },
     onMove(event) {
       if (!this.isMoving) {
@@ -592,6 +682,7 @@ export default {
       Object.keys(this.ghostDataWrite).forEach(key => {
         this.ghostDataWrite[key] = null;
       });
+      this.resetGhostHandleOffsets();
     },
     emitResize() {
       // No resize direction, nothing to emit
@@ -671,6 +762,65 @@ export default {
       } else {
         // todo should never be missing!
       }
+    },
+    resetGhostHandleOffsets() {
+      this.ghostHandleOffsets.west = null;
+      this.ghostHandleOffsets.east = null;
+    },
+    updateGhostResizeGrip(side, pointerY) {
+      const key = side === 'west' ? 'west' : 'east';
+      if (typeof pointerY !== 'number') {
+        return;
+      }
+      const height = this.ghostData.height ?? 0;
+      if (!height && !this.ghostData.element) {
+        return;
+      }
+      const effectiveHeight = height || this.ghostData.element.getBoundingClientRect().height;
+      const containerRect = this.manager.getGridBoundingRect?.();
+      const containerTop = containerRect?.top ?? 0;
+      const itemTop = this.ghostData.top ?? 0;
+      const pointerWithinItem = pointerY - containerTop - itemTop;
+      const offset = Math.min(
+        Math.max(pointerWithinItem, 0),
+        effectiveHeight
+      );
+      this.ghostHandleOffsets[key] = offset;
+    },
+    ghostResizeIndicatorStyle(side) {
+      const key = side === 'west' ? 'west' : 'east';
+      const fallbackHeight = this.ghostData.height ??
+        this.ghostData.element?.getBoundingClientRect().height ??
+        RESIZE_ICON_HEIGHT;
+      const offset = this.ghostHandleOffsets[key];
+      if (offset == null) {
+        return {};
+      }
+      const availableHeight = fallbackHeight ?? RESIZE_ICON_HEIGHT;
+      const halfIcon = RESIZE_ICON_HEIGHT / 2;
+      const maxTop = availableHeight > RESIZE_ICON_HEIGHT
+        ? availableHeight - RESIZE_ICON_HEIGHT
+        : 0;
+      const top = Math.min(
+        Math.max(offset - halfIcon, 0),
+        maxTop
+      );
+      return {
+        top: `${top}px`
+      };
+    },
+    getPointerClientY(event) {
+      if (!event) {
+        return null;
+      }
+      if (typeof event.clientY === 'number') {
+        return event.clientY;
+      }
+      const touch = event.touches?.[0] || event.changedTouches?.[0];
+      if (touch && typeof touch.clientY === 'number') {
+        return touch.clientY;
+      }
+      return null;
     }
   }
 };
@@ -828,6 +978,24 @@ $resize-button-width: 4px;
     }
   }
 
+  &__item-ghost > .apos-layout__item-shim--ghost {
+    position: absolute;
+    inset: 0;
+    border: 1px solid var(--a-primary-transparent-50);
+    border-radius: var(--a-border-radius);
+    background-color: transparent;
+    pointer-events: none;
+  }
+
+  &__item-ghost > .apos-layout__item-shim--ghost.is-resizing {
+    background-color: rgba($brand-blue, 0.15);
+  }
+
+  &__item-ghost > .apos-layout__item-shim--ghost .apos-layout--item-action {
+    display: block;
+    pointer-events: none;
+  }
+
   &--item-action {
     position: absolute;
     display: none;
@@ -835,6 +1003,19 @@ $resize-button-width: 4px;
     background-color: transparent;
     cursor: pointer;
   }
+}
+
+.apos-layout__item-shim--ghost.is-moving .apos-layout__item-move-handle-icon {
+  opacity: 1;
+}
+
+.apos-layout__item-shim--ghost.is-resizing .apos-layout__item-resize-handle--ghost .apos-layout__item-resize-handle-highlight-bar,
+.apos-layout__item-shim--ghost.is-resizing .apos-layout__item-resize-handle--ghost .apos-layout__item-resize-handle-icon {
+  opacity: 1;
+}
+
+.apos-layout__item-resize-handle--ghost {
+  pointer-events: none;
 }
 
 .apos-layout__item-resize-handle-highlight-bar {
