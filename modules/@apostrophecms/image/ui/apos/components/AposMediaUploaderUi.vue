@@ -108,8 +108,8 @@ if (props.minSize?.[0] && props.minSize?.[1]) {
   );
 
   minSizeTranslation = $t('apostrophe:minimumSize', {
-    width: minWidth,
-    height: minHeight
+    width: Math.round(minWidth),
+    height: Math.round(minHeight)
   });
 } else {
   minSizeTranslation = $t('apostrophe:minimumSize', {

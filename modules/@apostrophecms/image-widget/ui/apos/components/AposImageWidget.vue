@@ -116,8 +116,8 @@ function checkImageValid(image) {
       icon: 'alert-circle-icon',
       dismiss: true,
       interpolate: {
-        width: minWidth,
-        height: minHeight
+        width: Math.round(minWidth),
+        height: Math.round(minHeight)
       }
     });
     return false;

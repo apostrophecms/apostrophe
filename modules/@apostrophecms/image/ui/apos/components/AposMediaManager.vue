@@ -526,8 +526,8 @@ export default {
           icon: 'alert-circle-icon',
           dismiss: true,
           interpolate: {
-            width,
-            height
+            width: Math.round(width),
+            height: Math.round(height)
           }
         });
       }
