@@ -476,30 +476,40 @@ export default {
     async completeUploading(images) {
       this.uploaded = true;
       const [ widgetOptions = {} ] = apos.area.widgetOptions;
-      const { minWidth: width, minHeight: height } = computeMinSizes(
-        widgetOptions.minSize,
-        widgetOptions.aspectRatio
-      );
-      let minSizeError = false;
 
-      // Filter out images that are too small
-      const uploaded = images.filter(image => {
-        if (width && image.attachment?.width && width > image.attachment.width) {
-          minSizeError = true;
-          if (this.editing?._id === image._id) {
-            this.updateEditing(null);
+      let uploaded = images;
+      let minSizeError = false;
+      let width;
+      let height;
+
+      if (widgetOptions.minSize) {
+        const { minWidth, minHeight } = computeMinSizes(
+          widgetOptions.minSize,
+          widgetOptions.aspectRatio
+        );
+
+        width = minWidth;
+        height = minHeight;
+
+        // Filter out images that are too small
+        uploaded = images.filter(image => {
+          if (width && image.attachment?.width && width > image.attachment.width) {
+            minSizeError = true;
+            if (this.editing?._id === image._id) {
+              this.updateEditing(null);
+            }
+            return false;
           }
-          return false;
-        }
-        if (height && image.attachment?.height && height > image.attachment.height) {
-          minSizeError = true;
-          if (this.editing?._id === image._id) {
-            this.updateEditing(null);
+          if (height && image.attachment?.height && height > image.attachment.height) {
+            minSizeError = true;
+            if (this.editing?._id === image._id) {
+              this.updateEditing(null);
+            }
+            return false;
           }
-          return false;
-        }
-        return true;
-      });
+          return true;
+        });
+      }
       const imgIds = uploaded.map(image => image._id);
 
       this.items = this.items.map(item => {
