@@ -477,39 +477,47 @@ export default {
       this.uploaded = true;
       const [ widgetOptions = {} ] = apos.area.widgetOptions;
 
-      let uploaded = images;
-      let minSizeError = false;
-      let width;
-      let height;
+      let uploaded = [];
 
-      if (widgetOptions.minSize) {
+      if (!widgetOptions.minSize) {
+        uploaded = images;
+      } else {
+        // Filter out images that are too small
         const { minWidth, minHeight } = computeMinSizes(
           widgetOptions.minSize,
           widgetOptions.aspectRatio
         );
 
-        width = minWidth;
-        height = minHeight;
+        let minSizeError = false;
 
-        // Filter out images that are too small
-        uploaded = images.filter(image => {
-          if (width && image.attachment?.width && width > image.attachment.width) {
+        for (const image of images) {
+          const imageWidth = image.attachment?.width;
+          const imageHeight = image.attachment?.height;
+
+          if (imageWidth < minWidth || imageHeight < minHeight) {
             minSizeError = true;
             if (this.editing?._id === image._id) {
               this.updateEditing(null);
             }
-            return false;
+            continue;
           }
-          if (height && image.attachment?.height && height > image.attachment.height) {
-            minSizeError = true;
-            if (this.editing?._id === image._id) {
-              this.updateEditing(null);
+
+          uploaded.push(image);
+        }
+
+        if (minSizeError) {
+          await apos.notify('apostrophe:minSize', {
+            type: 'danger',
+            icon: 'alert-circle-icon',
+            dismiss: true,
+            interpolate: {
+              width: Math.round(minWidth),
+              height: Math.round(minHeight)
             }
-            return false;
-          }
-          return true;
-        });
+          });
+        }
       }
+
       const imgIds = uploaded.map(image => image._id);
 
       this.items = this.items.map(item => {
@@ -520,17 +528,6 @@ export default {
       })
         .filter(image => (!!image && !image.__placeholder));
 
-      if (minSizeError) {
-        await apos.notify('apostrophe:minSize', {
-          type: 'danger',
-          icon: 'alert-circle-icon',
-          dismiss: true,
-          interpolate: {
-            width: Math.round(width),
-            height: Math.round(height)
-          }
-        });
-      }
       if (Array.isArray(imgIds) && imgIds.length) {
         const checked = this.checked.concat(imgIds);
         this.checked = checked.slice(0, this.relationshipField?.max || checked.length);
