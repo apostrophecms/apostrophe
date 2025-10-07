@@ -132,10 +132,6 @@ export default {
     };
   },
   computed: {
-    ...mapState(useWidgetStore, {
-      focusedWidgetState: state => state.focusedWidget,
-      hoveredWidgetState: state => state.hoveredWidget
-    }),
     layoutModuleOptions() {
       return window.apos.modules[this.moduleName] || {};
     },
@@ -161,7 +157,10 @@ export default {
     },
     layoutColumnWidgetDeepIds() {
       const ids = [];
-      walkWidgets(this.layoutColumnWidgets, w => ids.push(w._id));
+      walkWidgets(
+        this.layoutColumnWidgets,
+        w => ids.push(w._id)
+      );
 
       return ids;
     },
@@ -185,10 +184,11 @@ export default {
     // Steal the columns focus, set it on the layout widget instead.
     // Additionally send "emphasized" state to the central store
     // to keep the breadcrumb label visible, when children are focused.
-    focusedWidgetState(widgetId) {
+    async focusedWidget(widgetId) {
       if (!this.parentOptions.widgetId) {
         return;
       }
+      await this.$nextTick();
       if (this.layoutColumnWidgetIds.includes(widgetId)) {
         this.clickOnGrid();
         this.removeEmphasizedWidget(this.parentOptions.widgetId);
@@ -197,11 +197,12 @@ export default {
 
       if (this.layoutColumnWidgetDeepIds.includes(widgetId)) {
         this.addEmphasizedWidget(this.parentOptions.widgetId);
+      } else {
+        this.removeEmphasizedWidget(this.parentOptions.widgetId);
       }
-      this.removeEmphasizedWidget(this.parentOptions.widgetId);
     },
     // Steal the columns hover, set it on the layout widget instead.
-    hoveredWidgetState(widgetId) {
+    hoveredWidget(widgetId) {
       if (
         this.parentOptions.widgetId &&
         this.layoutColumnWidgetIds.includes(widgetId)
