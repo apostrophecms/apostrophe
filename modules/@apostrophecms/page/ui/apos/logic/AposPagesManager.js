@@ -577,8 +577,8 @@ export default {
       }
       if (
         docIds ||
-        !doc.aposLocale || // TODO: check localeSwitched?
-        doc.aposLocale.split(':')[0] === this.modalData.locale // TODO: check localeSwitched?
+        !doc.aposLocale ||
+        doc.aposLocale.split(':')[0] === this.modalData.locale
       ) {
         await this.getPages();
         this.getAllPagesTotal();
