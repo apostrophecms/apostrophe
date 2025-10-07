@@ -291,11 +291,6 @@ export default {
       type: Boolean,
       default: false
     },
-    // Whether or not this widget should be focused
-    shouldFocus: {
-      type: Boolean,
-      default: true
-    },
     generation: {
       type: Number,
       required: false,
@@ -390,10 +385,6 @@ export default {
       return (this.widgetModuleOptions.widgetBreadcrumbOperations || []);
     },
     isFocused() {
-      if (!this.shouldFocus) {
-        return false;
-      }
-
       return this.focusedWidget === this.widget._id;
     },
     isHovered() {

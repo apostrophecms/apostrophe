@@ -85,7 +85,6 @@
             :widget-focused="focusedWidget"
             :max-reached="maxReached"
             :rendering="rendering(widget)"
-            :should-focus="false"
             :controls-disabled="true"
             :breadcrumb-disabled="true"
             @up="up"

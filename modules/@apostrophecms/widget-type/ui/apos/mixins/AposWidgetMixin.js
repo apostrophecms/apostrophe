@@ -13,9 +13,7 @@ export default {
   watch: {
     modelValue: {
       handler(widget) {
-        if (widget.type !== '@apostrophecms/layout-column') {
-          this.renderContent();
-        }
+        this.renderContent();
       }
     }
   },
