@@ -5,6 +5,7 @@
   >
     <AposMediaUploaderUi
       :min-size="props.options?.minSize"
+      :aspect-ratio="props.options?.aspectRatio"
       :accept="accept"
       :placeholder="placeholder"
       @upload="upload"
