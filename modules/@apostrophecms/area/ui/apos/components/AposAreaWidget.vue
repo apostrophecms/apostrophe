@@ -343,7 +343,7 @@ export default {
       'focusedWidget',
       'hoveredWidget',
       'hoveredNonForeignWidget',
-      'emphasizedWidgets',
+      'emphasizedWidgets'
     ]),
     // Passed only to the preview layer (custom preview components).
     followingValuesWithParent() {

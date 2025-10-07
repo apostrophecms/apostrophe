@@ -1,21 +1,21 @@
 // Walk through an object and invoke the iterator function for every widget found
 // within areas. This is a lightweight, performance-optimized version that focuses
-// only on finding and iterating over widgets. It uses a stack-based approach 
+// only on finding and iterating over widgets. It uses a stack-based approach
 // instead of recursion for better performance with deeply nested structures.
 //
 // Usage: walkWidgets(obj, (widget) => { ... })
 //
 // Note: The order in which widgets are visited is not guaranteed. The implementation
-// uses a stack-based traversal for performance with deeply nested structures, 
-// which may process widgets in a different order than they appear in 
+// uses a stack-based traversal for performance with deeply nested structures,
+// which may process widgets in a different order than they appear in
 // the document structure.
 
 /**
- * Walk through an object and invoke the iterator function 
+ * Walk through an object and invoke the iterator function
  * for every widget found.
- * 
- * @param {Object|Object[]} obj 
- * @param {(widget: Record<string, any> & { metaType: 'widget' }) => void} iterator 
+ *
+ * @param {Object|Object[]} obj
+ * @param {(widget: Record<string, any> & { metaType: 'widget' }) => void} iterator
  * @returns void
  */
 export default function walkWidgets(obj, iterator) {

@@ -182,12 +182,12 @@
             class="apos-layout__item-resize-handle-highlight-bar"
           />
           <AposIndicator
+            v-show="ghostData.side === 'west'"
             icon="drag-vertical-icon"
             :icon-size="20"
             icon-color="var(--a-base-1)"
             class="apos-layout__item-resize-handle-icon"
             data-resize-ui="west"
-            v-show="ghostData.side === 'west'"
             :style="ghostResizeIndicatorStyle('west')"
           />
         </button>
@@ -204,12 +204,12 @@
             class="apos-layout__item-resize-handle-highlight-bar"
           />
           <AposIndicator
+            v-show="ghostData.side === 'east'"
             icon="drag-vertical-icon"
             :icon-size="20"
             icon-color="var(--a-base-1)"
             class="apos-layout__item-resize-handle-icon"
             data-resize-ui="east"
-            v-show="ghostData.side === 'east'"
             :style="ghostResizeIndicatorStyle('east')"
           />
         </button>
@@ -777,7 +777,9 @@ export default {
       if (!height && !this.ghostData.element) {
         return;
       }
-      const effectiveHeight = height || this.ghostData.element.getBoundingClientRect().height;
+      const effectiveHeight = height || this.ghostData.element
+        .getBoundingClientRect()
+        ?.height || RESIZE_ICON_HEIGHT;
       const containerRect = this.manager.getGridBoundingRect?.();
       const containerTop = containerRect?.top ?? 0;
       const itemTop = this.ghostData.top ?? 0;

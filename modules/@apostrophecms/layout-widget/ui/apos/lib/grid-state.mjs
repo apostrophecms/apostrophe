@@ -1105,7 +1105,7 @@ function attemptHorizontalNudge({
  *  // id per col for each row, current item removed
  * }}
  */
-export function prepareMoveIndex({ state, item }) { // eslint-disable-line no-unused-vars
+export function prepareMoveIndex({ state, item }) {
   const maxColumns = state.columns;
   const maxRows = state.current?.rows || 1;
   const positions = state.positions;

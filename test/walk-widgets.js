@@ -7,13 +7,13 @@ describe('walkWidgets', function() {
   it('should handle null and undefined inputs gracefully', async function() {
     const { default: walkWidgets } = await getWalkLib();
     const actual = [];
-    
+
     walkWidgets(null, (widget) => actual.push(widget));
     assert.deepEqual(actual, []);
-    
+
     walkWidgets(undefined, (widget) => actual.push(widget));
     assert.deepEqual(actual, []);
-    
+
     walkWidgets({}, (widget) => actual.push(widget));
     assert.deepEqual(actual, []);
   });
@@ -32,7 +32,7 @@ describe('walkWidgets', function() {
         ]
       }
     };
-    
+
     // Should not throw when iterator is not a function
     walkWidgets(doc, null);
     walkWidgets(doc, undefined);
@@ -58,10 +58,10 @@ describe('walkWidgets', function() {
         ]
       }
     };
-    
+
     const actual = [];
     walkWidgets(doc, (widget) => actual.push(widget._id));
-    
+
     assert.equal(actual.length, 2);
     assert.ok(actual.includes('widget1'));
     assert.ok(actual.includes('widget2'));
@@ -91,10 +91,10 @@ describe('walkWidgets', function() {
         ]
       }
     };
-    
+
     const actual = [];
     walkWidgets(doc, (widget) => actual.push(widget._id));
-    
+
     assert.deepEqual(actual, [ 'widget1', 'widget2' ]);
   });
 
@@ -138,10 +138,10 @@ describe('walkWidgets', function() {
         ]
       }
     };
-    
+
     const actual = [];
     walkWidgets(doc, (widget) => actual.push(widget._id));
-    
+
     assert.deepEqual(actual, [ 'widget1', 'widget2', 'widget3' ]);
   });
 
@@ -177,10 +177,10 @@ describe('walkWidgets', function() {
         }
       ]
     };
-    
+
     const actual = [];
     walkWidgets(doc, (widget) => actual.push(widget._id));
-    
+
     assert.deepEqual(actual, [ 'widget1', 'widget2' ]);
   });
 
@@ -214,10 +214,10 @@ describe('walkWidgets', function() {
         ]
       }
     };
-    
+
     const actual = [];
     walkWidgets(doc, (widget) => actual.push(widget._id));
-    
+
     assert.equal(actual.length, 2);
     assert.ok(actual.includes('widget1'));
     assert.ok(actual.includes('widget2'));
@@ -235,10 +235,10 @@ describe('walkWidgets', function() {
         // No items property
       }
     };
-    
+
     const actual = [];
     walkWidgets(doc, (widget) => actual.push(widget));
-    
+
     assert.deepEqual(actual, []);
   });
 
@@ -303,10 +303,10 @@ describe('walkWidgets', function() {
         ]
       }
     };
-    
+
     const actual = [];
     walkWidgets(doc, (widget) => actual.push(widget._id));
-    
+
     // Order is not guaranteed due to stack-based traversal
     assert.equal(actual.length, 5);
     assert.ok(actual.includes('widget1'));
@@ -337,14 +337,14 @@ describe('walkWidgets', function() {
         ]
       }
     };
-    
+
     const types = [];
     const ids = [];
     walkWidgets(doc, (widget) => {
       types.push(widget.type);
       ids.push(widget._id);
     });
-    
+
     assert.equal(types.length, 2);
     assert.ok(types.includes('rich-text'));
     assert.ok(types.includes('image'));
@@ -365,10 +365,10 @@ describe('walkWidgets', function() {
         }))
       }
     };
-    
+
     const actual = [];
     walkWidgets(doc, (widget) => actual.push(widget._id));
-    
+
     assert.equal(actual.length, 100);
     assert.ok(actual.includes('widget0'));
     assert.ok(actual.includes('widget99'));
@@ -376,7 +376,7 @@ describe('walkWidgets', function() {
 
   it('should handle very deep nesting without stack overflow', async function() {
     const { default: walkWidgets } = await getWalkLib();
-    
+
     // Create a deeply nested structure (20 levels)
     let current = {
       metaType: 'area',
@@ -388,7 +388,7 @@ describe('walkWidgets', function() {
         }
       ]
     };
-    
+
     for (let i = 0; i < 20; i++) {
       current = {
         nested: {
@@ -400,13 +400,13 @@ describe('walkWidgets', function() {
         }
       };
     }
-    
+
     const doc = { root: current };
     const actual = [];
-    
+
     // Should not throw stack overflow
     walkWidgets(doc, (widget) => actual.push(widget._id));
-    
+
     assert.deepEqual(actual, [ 'deepWidget' ]);
   });
 
@@ -430,10 +430,10 @@ describe('walkWidgets', function() {
         }
       ]
     };
-    
+
     const actual = [];
     walkWidgets(doc, (widget) => actual.push(widget._id));
-    
+
     assert.deepEqual(actual, [ 'widget1' ]);
   });
 
@@ -467,10 +467,10 @@ describe('walkWidgets', function() {
         ]
       }
     };
-    
+
     const actual = [];
     walkWidgets(doc, (widget) => actual.push(widget._id));
-    
+
     assert.deepEqual(actual, [ 'widget1', 'widget2' ]);
   });
 
@@ -494,14 +494,14 @@ describe('walkWidgets', function() {
         ]
       }
     };
-    
+
     walkWidgets(doc, () => count++);
     assert.equal(count, 2);
   });
 
   it('should handle an array of objects', async function() {
     const { default: walkWidgets } = await getWalkLib();
-    
+
     // Simulate passing area.items directly instead of the whole doc
     const items = [
       {
@@ -535,10 +535,10 @@ describe('walkWidgets', function() {
         _id: 'widget4'
       }
     ];
-    
+
     const actual = [];
     walkWidgets(items, (widget) => actual.push(widget._id));
-    
+
     // Should find all widgets including nested ones, regardless of order
     assert.equal(actual.length, 4);
     assert.ok(actual.includes('widget1'));
