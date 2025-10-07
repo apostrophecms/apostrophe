@@ -218,10 +218,12 @@ module.exports = {
         const mobileBreakpointPlus = mobileBreakpoint + 1;
         const tabletBreakpoint = self.options.tablet?.breakpoint || 1024;
         const tabletBreakpointPlus = tabletBreakpoint + 1;
-        cssContent = cssContent.replace(/\{\$mobile\}/g, mobileBreakpoint);
-        cssContent = cssContent.replace(/\{\$mobile-plus\}/g, mobileBreakpointPlus);
-        cssContent = cssContent.replace(/\{\$tablet\}/g, tabletBreakpoint);
-        cssContent = cssContent.replace(/\{\$tablet-plus\}/g, tabletBreakpointPlus);
+        cssContent = cssContent
+          .replace(/\{\$mobile\}/g, mobileBreakpoint)
+          .replace(/\{\$mobile-plus\}/g, mobileBreakpointPlus)
+          .replace(/\{\$tablet\}/g, tabletBreakpoint)
+          .replace(/\{\$tablet-plus\}/g, tabletBreakpointPlus);
+
         return self.processCss(cssContent);
       },
       async processCss(cssContent) {
@@ -250,18 +252,19 @@ module.exports = {
               modifierAttr: 'data-breakpoint-preview-mode',
               debug: assetOptions.debug === true,
               transform: assetOptions.transform || null
-            }),
-            cssnano({
-              preset: 'default'
             })
-          ]).process(cssContent, { from: undefined });
+          ]).process(resultPublic.css, { from: undefined });
 
           return {
             apos: resultApos.css,
             public: resultPublic.css
           };
         } catch (error) {
-          const errorTrace = error.stack ? error.stack.split('\n').slice(1).join('\n') : '';
+          const errorTrace = error.stack
+            ? error.stack
+              .split('\n')
+              .slice(1)
+            : [];
           self.logWarn('inline-css-minify-failed', error.message, {
             error: errorTrace
           });
