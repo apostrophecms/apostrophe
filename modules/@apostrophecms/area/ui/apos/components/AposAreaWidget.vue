@@ -342,7 +342,8 @@ export default {
     ...mapState(useWidgetStore, [
       'focusedWidget',
       'hoveredWidget',
-      'hoveredNonForeignWidget'
+      'hoveredNonForeignWidget',
+      'emphasizedWidgets',
     ]),
     // Passed only to the preview layer (custom preview components).
     followingValuesWithParent() {
@@ -402,6 +403,11 @@ export default {
       const $parent = this.getParent();
       return $parent && $parent.dataset.areaWidget === this.focusedWidget;
     },
+    // New emphasis state for widgets. It shows the breadcrumb label
+    // even when not hovered or focused.
+    isEmphasized() {
+      return this.emphasizedWidgets.has(this.widget._id);
+    },
     nonForeignHovered() {
       return this.nonForeignWidgetHovered === this.widget._id;
     },
@@ -423,7 +429,7 @@ export default {
     },
     labelsClasses() {
       return {
-        [this.classes.show]: this.isHovered || this.isFocused
+        [this.classes.show]: this.isHovered || this.isFocused || this.isEmphasized
       };
     },
     addClasses() {

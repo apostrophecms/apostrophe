@@ -108,6 +108,7 @@
 <script>
 import { mapActions, mapState } from 'pinia';
 import AposAreaEditorLogic from 'Modules/@apostrophecms/area/logic/AposAreaEditor.js';
+import walkWidgets from 'Modules/@apostrophecms/area/lib/walk-widgets.js';
 import { useWidgetStore } from 'Modules/@apostrophecms/ui/stores/widget.js';
 import { provisionRow } from '../lib/grid-state.mjs';
 
@@ -158,6 +159,12 @@ export default {
     layoutColumnWidgetIds() {
       return this.layoutColumnWidgets.map(w => w._id);
     },
+    layoutColumnWidgetDeepIds() {
+      const ids = [];
+      walkWidgets(this.layoutColumnWidgets, w => ids.push(w._id));
+
+      return ids;
+    },
     layoutBreadcrumbOperations() {
       return (this.layoutModuleOptions.widgetBreadcrumbOperations || []);
     },
@@ -175,11 +182,25 @@ export default {
     }
   },
   watch: {
+    // Steal the columns focus, set it on the layout widget instead.
+    // Additionally send "emphasized" state to the central store
+    // to keep the breadcrumb label visible, when children are focused.
     focusedWidgetState(widgetId) {
+      if (!this.parentOptions.widgetId) {
+        return;
+      }
       if (this.layoutColumnWidgetIds.includes(widgetId)) {
         this.clickOnGrid();
+        this.removeEmphasizedWidget(this.parentOptions.widgetId);
+        return;
       }
+
+      if (this.layoutColumnWidgetDeepIds.includes(widgetId)) {
+        this.addEmphasizedWidget(this.parentOptions.widgetId);
+      }
+      this.removeEmphasizedWidget(this.parentOptions.widgetId);
     },
+    // Steal the columns hover, set it on the layout widget instead.
     hoveredWidgetState(widgetId) {
       if (
         this.parentOptions.widgetId &&
@@ -200,7 +221,12 @@ export default {
     apos.bus.$off('widget-breadcrumb-operation', this.executeWidgetOperation);
   },
   methods: {
-    ...mapActions(useWidgetStore, ['updateWidget', 'setHoveredWidget']),
+    ...mapActions(useWidgetStore, [
+      'updateWidget',
+      'setHoveredWidget',
+      'addEmphasizedWidget',
+      'removeEmphasizedWidget'
+    ]),
     clickOnGrid() {
       if (this.parentOptions.widgetId) {
         this.setFocusedWidget(this.parentOptions.widgetId, this.areaId);

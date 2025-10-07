@@ -3,6 +3,7 @@ import { ref, nextTick } from 'vue';
 
 export const useWidgetStore = defineStore('widget', () => {
   const refs = ref({});
+  const emphasizedWidgets = ref(new Set());
   const focusedWidget = ref(null);
   const focusedArea = ref(null);
   const hoveredWidget = ref(null);
@@ -15,6 +16,14 @@ export const useWidgetStore = defineStore('widget', () => {
     }
 
     focusedArea.value = id;
+  }
+
+  function addEmphasizedWidget(id) {
+    emphasizedWidgets.value.add(id);
+  }
+
+  function removeEmphasizedWidget(id) {
+    emphasizedWidgets.value.delete(id);
   }
 
   function setHoveredWidget(id, nonForeignId) {
@@ -85,10 +94,13 @@ export const useWidgetStore = defineStore('widget', () => {
 
   return {
     refs,
+    emphasizedWidgets,
     focusedWidget,
     focusedArea,
     hoveredWidget,
     hoveredNonForeignWidget,
+    addEmphasizedWidget,
+    removeEmphasizedWidget,
     setHoveredWidget,
     setFocusedArea,
     setFocusedWidget,
