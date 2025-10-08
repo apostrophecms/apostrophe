@@ -35,6 +35,7 @@
       <template v-else>
         <AposAreaMenu
           :context-menu-options="contextMenuOptions"
+          :field-id="fieldId"
           :empty="true"
           :index="0"
           :options="options"
@@ -84,7 +85,6 @@
             :widget-focused="focusedWidget"
             :max-reached="maxReached"
             :rendering="rendering(widget)"
-            :should-focus="false"
             :controls-disabled="true"
             :breadcrumb-disabled="true"
             @up="up"
@@ -107,6 +107,7 @@
 <script>
 import { mapActions } from 'pinia';
 import AposAreaEditorLogic from 'Modules/@apostrophecms/area/logic/AposAreaEditor.js';
+import walkWidgets from 'Modules/@apostrophecms/area/lib/walk-widgets.js';
 import { useWidgetStore } from 'Modules/@apostrophecms/ui/stores/widget.js';
 import { provisionRow } from '../lib/grid-state.mjs';
 
@@ -150,6 +151,18 @@ export default {
         })
         .filter(w => w.type !== this.layoutMetaWidgetName);
     },
+    layoutColumnWidgetIds() {
+      return this.layoutColumnWidgets.map(w => w._id);
+    },
+    layoutColumnWidgetDeepIds() {
+      const ids = [];
+      walkWidgets(
+        this.layoutColumnWidgets,
+        w => ids.push(w._id)
+      );
+
+      return ids;
+    },
     layoutBreadcrumbOperations() {
       return (this.layoutModuleOptions.widgetBreadcrumbOperations || []);
     },
@@ -166,6 +179,37 @@ export default {
       return this.layoutModuleOptions.columnWidgetName;
     }
   },
+  watch: {
+    // Steal the columns focus, set it on the layout widget instead.
+    // Additionally send "emphasized" state to the central store
+    // to keep the breadcrumb label visible, when children are focused.
+    async focusedWidget(widgetId) {
+      if (!this.parentOptions.widgetId) {
+        return;
+      }
+      await this.$nextTick();
+      if (this.layoutColumnWidgetIds.includes(widgetId)) {
+        this.clickOnGrid();
+        this.removeEmphasizedWidget(this.parentOptions.widgetId);
+        return;
+      }
+
+      if (this.layoutColumnWidgetDeepIds.includes(widgetId)) {
+        this.addEmphasizedWidget(this.parentOptions.widgetId);
+      } else {
+        this.removeEmphasizedWidget(this.parentOptions.widgetId);
+      }
+    },
+    // Steal the columns hover, set it on the layout widget instead.
+    hoveredWidget(widgetId) {
+      if (
+        this.parentOptions.widgetId &&
+        this.layoutColumnWidgetIds.includes(widgetId)
+      ) {
+        this.setHoveredWidget(this.parentOptions.widgetId, this.areaId);
+      }
+    }
+  },
   mounted() {
     apos.bus.$on('widget-breadcrumb-operation', this.executeWidgetOperation);
     if (!this.hasLayoutMeta) {
@@ -177,7 +221,12 @@ export default {
     apos.bus.$off('widget-breadcrumb-operation', this.executeWidgetOperation);
   },
   methods: {
-    ...mapActions(useWidgetStore, [ 'updateWidget' ]),
+    ...mapActions(useWidgetStore, [
+      'updateWidget',
+      'setHoveredWidget',
+      'addEmphasizedWidget',
+      'removeEmphasizedWidget'
+    ]),
     clickOnGrid() {
       if (this.parentOptions.widgetId) {
         this.setFocusedWidget(this.parentOptions.widgetId, this.areaId);
@@ -262,6 +311,9 @@ export default {
           index: index + 1
         });
       }
+
+      await this.$nextTick();
+      this.clickOnGrid();
     },
     onAddItem(patch) {
       const widgetName = this.layoutColumnWidgetName;

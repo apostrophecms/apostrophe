@@ -80,7 +80,6 @@ export default {
       addWidgetType: null,
       areaId: createId(),
       next: this.getValidItems(),
-      hoveredWidget: null,
       hoveredNonForeignWidget: null,
       contextMenuOptions: {
         menu: this.choices
@@ -90,7 +89,7 @@ export default {
     };
   },
   computed: {
-    ...mapState(useWidgetStore, [ 'focusedWidget', 'focusedArea' ]),
+    ...mapState(useWidgetStore, [ 'focusedWidget', 'hoveredWidget', 'focusedArea' ]),
     isEmptySingleton() {
       return this.next.length === 0 &&
         this.options.widgets &&
