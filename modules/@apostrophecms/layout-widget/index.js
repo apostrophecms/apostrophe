@@ -9,7 +9,7 @@ module.exports = {
     skipOperations: [ 'edit' ],
     columns: 12,
     minSpan: 2,
-    defaultSpan: 4,
+    defaultSpan: 6,
     mobile: {
       breakpoint: 600
     },
