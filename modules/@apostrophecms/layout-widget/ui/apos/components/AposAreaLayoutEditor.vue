@@ -59,7 +59,7 @@
         :opstate="{
           options: options,
           disabled: field && field.readOnly,
-          operations: layoutBreadcrumbOperations || []
+          operations: layoutBreadcrumbOperations
         }"
         @click="clickOnGrid"
         @resize-end="onResizeOrMoveEnd"
@@ -69,6 +69,7 @@
       >
         <template #item="{ item: widget }">
           <AposAreaWidget
+            :key="widget._id"
             :area-id="areaId"
             :widget="widget"
             :meta="meta[widget._id]"
@@ -127,6 +128,7 @@ export default {
   },
   data() {
     return {
+      // 'layout' | 'focus' | 'content'
       layoutMode: 'content',
       layoutDeviceMode: 'desktop'
     };
@@ -142,13 +144,29 @@ export default {
         this.parentOptions
       );
     },
+    // Meta storage is not yet implemented, return a default meta object
+    layoutMeta() {
+      return {
+        columns: this.gridModuleOptions.columns,
+        desktop: {
+          rows: 1
+        },
+        tablet: {
+          rows: 1,
+          auto: true
+        },
+        mobile: {
+          rows: 1,
+          auto: true
+        }
+      };
+    },
     layoutColumnWidgets() {
       return this.next
         .map((w, index) => {
           w.__naturalIndex = index;
           return w;
-        })
-        .filter(w => w.type !== this.layoutMetaWidgetName);
+        });
     },
     layoutColumnWidgetIds() {
       return this.layoutColumnWidgets.map(w => w._id);
@@ -165,14 +183,8 @@ export default {
     layoutBreadcrumbOperations() {
       return (this.layoutModuleOptions.widgetBreadcrumbOperations || []);
     },
-    layoutMeta() {
-      return this.next.find(w => w.type === this.layoutMetaWidgetName) ?? {};
-    },
-    hasLayoutMeta() {
-      return this.next.some(w => w.type === this.layoutMetaWidgetName);
-    },
-    layoutMetaWidgetName() {
-      return this.layoutModuleOptions.metaWidgetName;
+    hasLayoutColumnWidgets() {
+      return this.layoutColumnWidgets.length > 0;
     },
     layoutColumnWidgetName() {
       return this.layoutModuleOptions.columnWidgetName;
@@ -211,7 +223,7 @@ export default {
   },
   mounted() {
     apos.bus.$on('widget-breadcrumb-operation', this.executeWidgetOperation);
-    if (!this.hasLayoutMeta) {
+    if (!this.hasLayoutColumnWidgets) {
       this.onCreateProvision();
     }
     this.updateWidget(this.parentOptions?.widgetId, 'layout:switch', this.layoutMode);
@@ -273,24 +285,14 @@ export default {
       return this.remove(widgetIndex);
     },
     async onCreateProvision() {
-      if (!this.layoutMetaWidgetName) {
-        throw new Error('No layout meta widget found.');
-      }
-
-      if (this.hasLayoutMeta) {
+      if (this.hasLayoutColumnWidgets) {
         return;
       }
 
-      const meta = this.newWidget(this.layoutMetaWidgetName);
-      meta.columns = this.gridModuleOptions.columns;
-      this.insert({
-        widget: meta,
-        index: 0
-      });
       this.layoutMode = 'content';
       this.updateWidget(this.parentOptions?.widgetId, 'layout:switch', 'content');
 
-      const items = provisionRow(meta.columns, {
+      const items = provisionRow(this.gridModuleOptions.columns, {
         minColspan: this.gridModuleOptions.minSpan,
         defaultColspan: this.gridModuleOptions.defaultSpan,
         row: 1
@@ -307,7 +309,7 @@ export default {
         });
         this.insert({
           widget,
-          index: index + 1
+          index
         });
       }
 
@@ -324,7 +326,7 @@ export default {
       Object.assign(widget[this.layoutDeviceMode], rest);
       const insert = {
         widget,
-        index: this.layoutColumnWidgets.length + 1
+        index: this.layoutColumnWidgets.length
       };
       this.insert(insert);
       return insert;

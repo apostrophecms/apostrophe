@@ -19,7 +19,8 @@ module.exports = {
     gap: '1.5rem',
     defaultCellHorizontalAlignment: null,
     defaultCellVerticalAlignment: null,
-    injectStyles: true
+    injectStyles: true,
+    minifyStyles: true
   },
   widgetOperations(self, options) {
     return {
@@ -60,8 +61,7 @@ module.exports = {
             // are direct descendants of the grid container
             widgetTemplate: '@apostrophecms/layout-widget:column.html',
             widgets: {
-              '@apostrophecms/layout-column': {},
-              '@apostrophecms/layout-meta': {}
+              '@apostrophecms/layout-column': {}
             }
           }
         }
@@ -69,7 +69,6 @@ module.exports = {
     };
   },
   async init(self) {
-    self.metaWidgetName = '@apostrophecms/layout-meta';
     self.columnWidgetName = '@apostrophecms/layout-column';
 
     if (
@@ -84,8 +83,7 @@ module.exports = {
     return {
       'apostrophe:modulesRegistered': {
         validateAndIdentifyTypes() {
-          const { meta, column } = self.validateAndIdentifyTypes();
-          self.metaWidgetName = meta;
+          const { column } = self.validateAndIdentifyTypes();
           self.columnWidgetName = column;
         }
       }
@@ -107,7 +105,6 @@ module.exports = {
             defaultCellHorizontalAlignment: self.options.defaultCellHorizontalAlignment,
             defaultCellVerticalAlignment: self.options.defaultCellVerticalAlignment
           },
-          metaWidgetName: self.metaWidgetName,
           columnWidgetName: self.columnWidgetName
         };
       }
@@ -157,21 +154,20 @@ module.exports = {
         }
 
         const widgetTypes = Object.keys(columnsField.options?.widgets || {});
-        if (widgetTypes.length !== 2) {
+        if (widgetTypes.length !== 1) {
           throw new Error(
-            `The layout widget "columns" area must have exactly two widget types, it has ${widgetTypes.length}.`
+            `The layout widget "columns" area must have exactly one widget type, it has ${widgetTypes.length}.`
           );
         }
 
-        const check = {
-          '@apostrophecms/layout-column': false,
-          '@apostrophecms/layout-meta': false
+        const hasTypes = {
+          [self.columnWidgetName]: false
         };
-        const targetTypes = Object.keys(check);
+        const targetTypes = Object.keys(hasTypes);
         const targetModuleTypes = targetTypes.map(type => `${type}-widget`);
         for (const widgetType of widgetTypes) {
           if (targetTypes.includes(widgetType)) {
-            check[widgetType] = widgetType;
+            hasTypes[widgetType] = widgetType;
             continue;
           }
           const type = `${widgetType}-widget`;
@@ -183,22 +179,17 @@ module.exports = {
             .find(item => targetModuleTypes.includes(item.name));
           if (meta) {
             const mappedType = targetTypes[targetModuleTypes.indexOf(meta.name)];
-            check[mappedType] = widgetType;
+            hasTypes[mappedType] = widgetType;
             continue;
           }
         }
-        if (!check['@apostrophecms/layout-column']) {
+        if (!hasTypes[self.columnWidgetName]) {
           throw new Error(
-            'The layout widget "columns" area must have a widget type or a subtype of "@apostrophecms/layout-column"'
+            `The layout widget "columns" area must have a widget type or a subtype of "${self.columnWidgetName}"`
           );
         }
 
-        if (!check['@apostrophecms/layout-meta']) {
-          throw new Error(
-            'The layout widget "columns" area must have a widget type or a subtype of "@apostrophecms/layout-meta"'
-          );
-        }
-
+        // Force critical options on the columns area in case of a subclassing
         if (!columnsField.options.editorComponent) {
           columnsField.options.editorComponent = 'AposAreaLayoutEditor';
         }
@@ -207,8 +198,7 @@ module.exports = {
         }
 
         return {
-          meta: check['@apostrophecms/layout-meta'],
-          column: check['@apostrophecms/layout-column']
+          column: hasTypes[self.columnWidgetName]
         };
       },
       async loadAndProcessStyles() {
@@ -230,13 +220,17 @@ module.exports = {
         try {
           const postcss = require('postcss');
           const cssnano = require('cssnano');
-          const options = self.apos.asset.breakpointPreviewMode || {};
+          const options = self.apos.asset.options.breakpointPreviewMode || {};
+          let resultPublic = { css: cssContent };
 
-          const resultPublic = await postcss([
-            cssnano({
-              preset: 'default'
-            })
-          ]).process(cssContent, { from: undefined });
+          // A way to debug the css
+          if (self.options.minifyStyles !== false) {
+            resultPublic = await postcss([
+              cssnano({
+                preset: 'default'
+              })
+            ]).process(cssContent, { from: undefined });
+          }
 
           if (options.enable !== true) {
             return {
@@ -247,13 +241,23 @@ module.exports = {
 
           const mobilePreview = require('postcss-viewport-to-container-toggle');
 
+          // A separate pass for admin with the plain content - can't minify
+          // twice, should minify the mobile preview output as well.
           const resultApos = await postcss([
             mobilePreview({
               modifierAttr: 'data-breakpoint-preview-mode',
               debug: options.debug === true,
               transform: options.transform || null
-            })
-          ]).process(resultPublic.css, { from: undefined });
+            }),
+            ...(self.options.minifyStyles === false
+              ? []
+              : [
+                cssnano({
+                  preset: 'default'
+                })
+              ]
+            )
+          ]).process(cssContent, { from: undefined });
 
           return {
             apos: resultApos.css,
@@ -278,15 +282,8 @@ module.exports = {
   },
   helpers(self) {
     return {
-      getLayoutMeta(widget) {
-        return widget?.columns?.items?.find(item => item.type === self.metaWidgetName);
-      },
       detectLastTabletFullWidthItem(widgets) {
         if (!Array.isArray(widgets)) {
-          return;
-        }
-        const meta = widgets.find(widget => widget.type === self.metaWidgetName);
-        if (!meta?.tablet?.auto) {
           return;
         }
         const items = widgets.filter(widget => widget.type === self.columnWidgetName);

@@ -1,8 +1,7 @@
 <template>
   <ol
     v-if="widgetBreadcrumbActions.length > 0"
-    class="apos-area-widget__breadcrumbs apos-area-widget__breadcrumbs--action"
-    style="margin-left: 10px;"
+    class="apos-breadcrumb-operations apos-area-widget__breadcrumbs apos-area-widget__breadcrumbs--action"
     data-apos-test="widget-breadcrumb-actions"
   >
     <li class="apos-area-widget__breadcrumb">
@@ -11,10 +10,10 @@
         v-for="operation in widgetBreadcrumbActions"
         :key="operation.key"
         v-slot="slotProps"
+        v-bind="operation.props"
         :data-apos-test-name="operation.name"
         :data-apos-test-action="operation.action"
         :data-apos-test-type="operation.type"
-        v-bind="operation.props"
         v-on="operation.listeners"
       >
         <component
@@ -50,15 +49,9 @@
 <script>
 import { useWidgetStore } from 'Modules/@apostrophecms/ui/stores/widget';
 import { mapActions } from 'pinia';
-import AposIndicator from 'Modules/@apostrophecms/ui/components/AposIndicator.vue';
-import AposBreadcrumbSwitch from 'Modules/@apostrophecms/area/components/AposBreadcrumbSwitch.vue';
 
 export default {
   name: 'AposBreadcrumbOperations',
-  components: {
-    AposIndicator,
-    AposBreadcrumbSwitch
-  },
   props: {
     i: {
       type: Number,
@@ -167,7 +160,6 @@ export default {
     getOperationProps(operation) {
       if (operation.type === 'info') {
         return {
-          // class: 'apos-area-widget__breadcrumbs-switch__info',
           fillColor: 'var(--a-primary)',
           icon: operation.icon,
           tooltip: operation.tooltip
@@ -195,7 +187,6 @@ export default {
         };
       }
 
-      // Button by default
       return {
         ...this.operationButtonDefault,
         icon: operation.icon,
@@ -205,47 +196,32 @@ export default {
     },
     getOperationListeners(operation) {
       const listeners = {};
-      let setFocus = true;
-      let handleClick = true;
+      const handleClick = [ 'info', undefined ].includes(operation.type);
+      const setFocus = [ 'info', 'switch', undefined ].includes(operation.type) &&
+        operation.action !== 'remove';
+
       if (operation.type === 'info') {
         return listeners;
       }
       if (operation.type === 'switch') {
-        setFocus = true;
-        handleClick = false;
         listeners.update = (payload) => {
           this.emitOperation(operation, payload);
         };
       }
       if (operation.type === 'menu') {
-        setFocus = false;
-        handleClick = false;
-        // no-op, the modal is handled in the slot
-        // and should emit 'update' when done
         listeners.open = (e) => {
           this.getFocus(e, this.widget._id);
         };
-      }
-      if (operation.action === 'remove') {
-        setFocus = false;
       }
 
       if (!handleClick) {
         return listeners;
       }
 
-      if (!listeners.click) {
-        listeners.click = (e) => {
-          this.handleOperationClick(operation);
-          setFocus && this.getFocus(e, this.widget._id);
-        };
-      } else if (setFocus) {
-        const originalClick = listeners.click;
-        listeners.click = (e) => {
-          originalClick(e);
-          this.getFocus(e, this.widget._id);
-        };
-      }
+      listeners.click = (e) => {
+        this.handleOperationClick(operation);
+        setFocus && this.getFocus(e, this.widget._id);
+      };
 
       return listeners;
     },
@@ -287,7 +263,10 @@ export default {
 </script>
 
 <style lang="scss" scoped>
-// Limit breadcrumb styles to the control buttons, not modal content
+.apos-breadcrumb-operations {
+  /* stylelint-disable-next-line declaration-no-important */
+  margin-left: 10px !important;
+}
 
 .apos-area-widget__breadcrumbs.apos-area-widget__breadcrumbs--action {
   padding: 4px;
@@ -353,7 +332,6 @@ export default {
   transition: background-color 300ms var(--a-transition-timing-bounce);
 }
 
-// FIXME: this also overrides the modal button (when menu type is used)
 .apos-area-widget__breadcrumb,
 .apos-area-widget__breadcrumb :deep(.apos-button__content) {
   @include type-help;

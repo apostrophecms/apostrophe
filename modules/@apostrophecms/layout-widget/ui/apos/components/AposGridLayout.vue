@@ -64,14 +64,14 @@
       :synthetic-items="syntheticItems"
       :meta-id="meta._id"
       :opstate="opstate"
-      @resize-start="isResizing = true"
-      @resize-end="$emit('resize-end', $event); isResizing = false"
-      @move-start="isMoving = true"
-      @move-end="$emit('move-end', $event); isMoving = false"
+      @resize-start="onResizeStart"
+      @resize-end="onResizeEnd"
+      @move-start="onMoveStart"
+      @move-end="onMoveEnd"
       @preview-move="onPreviewMove"
       @preview-clear="onPreviewClear"
-      @add-fit-item="$emit('add-fit-item', $event)"
-      @patch-item="$emit('patch-item', $event)"
+      @add-fit-item="onAddFitItem"
+      @patch-item="onPatchItem"
     />
   </div>
 </template>
@@ -177,6 +177,26 @@ export default {
     }
   },
   methods: {
+    onResizeStart() {
+      this.isResizing = true;
+    },
+    onResizeEnd(event) {
+      this.isResizing = false;
+      this.$emit('resize-end', event);
+    },
+    onMoveStart() {
+      this.isMoving = true;
+    },
+    onMoveEnd(event) {
+      this.isMoving = false;
+      this.$emit('move-end', event);
+    },
+    onAddFitItem(event) {
+      this.$emit('add-fit-item', event);
+    },
+    onPatchItem(event) {
+      this.$emit('patch-item', event);
+    },
     onPreviewMove({ patches, key }) {
       if (!Array.isArray(patches) || !patches.length) {
         this.onPreviewClear();

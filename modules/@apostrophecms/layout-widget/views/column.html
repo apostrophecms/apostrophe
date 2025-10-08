@@ -1,6 +1,5 @@
 {# Included directly from the `area.html` template.
 The area related `data.*` is available plus `item` and `widgetOptions`. #}
-{%- if item.type != '@apostrophecms/layout-meta' -%}
 {%- set lastId = apos.modules['@apostrophecms/layout-widget'].detectLastTabletFullWidthItem(data.area.items) -%}
 <div
   {% if data.canEdit %} data-apos-widget="{{ item._id }}"{% endif %}
@@ -18,4 +17,3 @@ The area related `data.*` is available plus `item` and `widgetOptions`. #}
 ">
   {% area item, 'content' %}
 </div>
-{%- endif -%}
