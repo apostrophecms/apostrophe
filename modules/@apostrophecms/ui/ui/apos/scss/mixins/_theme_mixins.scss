@@ -28,6 +28,7 @@ $input-color-disabled: var(--a-base-4);
   --a-primary-dark-10: #{color.mix(#000, $color, 10%)};
   --a-primary-dark-15: #{color.mix(#000, $color, 15%)};
   --a-primary-light-40: #{color.mix(#fff, $color, 40%)};
+  --a-primary-light-80: #{color.mix(#fff, $color, 80%)};
 }
 
 //Application Styles
