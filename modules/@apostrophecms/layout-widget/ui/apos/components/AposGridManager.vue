@@ -769,26 +769,21 @@ export default {
       this.ghostHandleOffsets.east = null;
     },
     updateGhostResizeGrip(side, pointerY) {
-      const key = side === 'west' ? 'west' : 'east';
       if (typeof pointerY !== 'number') {
         return;
       }
-      const height = this.ghostData.height ?? 0;
-      if (!height && !this.ghostData.element) {
+      const effectiveHeight = this.ghostData.height ||
+        this.ghostData.element?.getBoundingClientRect();
+      if (!effectiveHeight) {
         return;
       }
-      const effectiveHeight = height || this.ghostData.element
-        .getBoundingClientRect()
-        ?.height || RESIZE_ICON_HEIGHT;
-      const containerRect = this.manager.getGridBoundingRect?.();
-      const containerTop = containerRect?.top ?? 0;
+      const containerTop = this.manager.getGridBoundingRect()?.top ?? 0;
       const itemTop = this.ghostData.top ?? 0;
       const pointerWithinItem = pointerY - containerTop - itemTop;
-      const offset = Math.min(
+      this.ghostHandleOffsets[side] = Math.min(
         Math.max(pointerWithinItem, 0),
         effectiveHeight
       );
-      this.ghostHandleOffsets[key] = offset;
     },
     ghostResizeIndicatorStyle(side) {
       const key = side === 'west' ? 'west' : 'east';

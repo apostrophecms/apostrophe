@@ -206,7 +206,7 @@ export default {
         this.parentOptions.widgetId &&
         this.layoutColumnWidgetIds.includes(widgetId)
       ) {
-        this.setHoveredWidget(this.parentOptions.widgetId, null);
+        this.setHoveredWidget(this.parentOptions.widgetId, this.areaId);
       }
     }
   },
