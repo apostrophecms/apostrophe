@@ -350,7 +350,16 @@ async function apostrophe(options, telemetry, rootSpan) {
 
     return self;
   } catch (e) {
-    if (options.exit !== false) {
+    if (options.exit === false) {
+      console.error('apostrophe: error occurred during startup, continuing:');
+      console.error(e);
+      // returns undefined, for legacy reasons
+    } else if (options.exit === 'throw') {
+      // A more sensible approach for those who want to do something
+      // if initialization fails
+      throw e;
+    } else {
+      // Longstanding default behavior
       console.error(e);
       await self._exit(1, e);
     }
