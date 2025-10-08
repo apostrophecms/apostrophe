@@ -230,7 +230,7 @@ module.exports = {
         try {
           const postcss = require('postcss');
           const cssnano = require('cssnano');
-          const assetOptions = self.apos.asset.breakpointPreviewMode || {};
+          const options = self.apos.asset.breakpointPreviewMode || {};
 
           const resultPublic = await postcss([
             cssnano({
@@ -238,7 +238,7 @@ module.exports = {
             })
           ]).process(cssContent, { from: undefined });
 
-          if (assetOptions.enable !== true) {
+          if (options.enable !== true) {
             return {
               apos: resultPublic.css,
               public: resultPublic.css
@@ -250,8 +250,8 @@ module.exports = {
           const resultApos = await postcss([
             mobilePreview({
               modifierAttr: 'data-breakpoint-preview-mode',
-              debug: assetOptions.debug === true,
-              transform: assetOptions.transform || null
+              debug: options.debug === true,
+              transform: options.transform || null
             })
           ]).process(resultPublic.css, { from: undefined });
 
