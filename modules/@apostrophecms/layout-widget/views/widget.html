@@ -1,16 +1,15 @@
-{%- set meta = apos.modules[data.widget.type + '-widget'].getLayoutMeta(data.widget) -%}
 {% area data.widget, 'columns' with { 
-  aposStyle: '--grid-columns: ' + (meta.columns or data.options.columns) + ';' + 
-    ' --grid-gap: ' + (data.options.gap or '0') + ';' + 
-    ' --grid-rows: ' + meta.desktop.rows  + ';' + 
-    ' --mobile-grid-rows: ' + meta.mobile.rows + ';' +
-    ' --tablet-grid-rows: ' + meta.mobile.rwos + ';' + 
-    ' --justify-items: ' + (data.options.defaultCellHorizontalAlignment) + ';' +
-    ' --align-items: ' + (data.options.defaultCellVerticalAlignment) + ';', 
+  aposStyle: '--grid-columns: ' + (data.options.columns or data.manager.options.columns) + ';' + 
+    ' --grid-gap: ' + (data.options.gap or data.manager.options.gap or '0') + ';' + 
+    ' --grid-rows: auto;' + 
+    ' --mobile-grid-rows: auto;' +
+    ' --tablet-grid-rows: auto;' + 
+    ' --justify-items: ' + (data.options.defaultCellHorizontalAlignment or data.manager.options.defaultCellHorizontalAlignment or 'stretch') + ';' +
+    ' --align-items: ' + (data.options.defaultCellVerticalAlignment or data.manager.options.defaultCellVerticalAlignment or 'stretch') + ';', 
   aspoClassName: 'layout-widget',
   aposParentOptions: data.options | merge({ widgetId: data.widget._id }),
   aposAttrs: {
-    'tablet-auto': meta.tablet.auto,
-    'mobile-auto': meta.mobile.auto
+    'tablet-auto': true,
+    'mobile-auto': true
   }
 } %}
