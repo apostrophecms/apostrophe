@@ -1,5 +1,11 @@
 # Changelog
 
+## UNRELEASED
+
+### Changes
+
+* Refactors complex logic from `AposSchema` that handle data updates to simplifies it.
+
 ## 4.22.0 (2025-10-01)
 
 ### Adds
