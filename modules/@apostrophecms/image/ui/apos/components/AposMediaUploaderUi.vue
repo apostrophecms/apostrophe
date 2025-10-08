@@ -101,7 +101,7 @@ const instructionsTranslation = $t('apostrophe:imageUploadMsg', {
 
 let minSizeTranslation;
 
-if (props.minSize?.[0] && props.minSize?.[1]) {
+if (props.minSize) {
   const { minWidth, minHeight } = computeMinSizes(
     props.minSize,
     props.aspectRatio
