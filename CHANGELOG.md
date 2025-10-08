@@ -5,6 +5,7 @@
 ### Changes
 
 * Refactors complex logic from `AposSchema` that handle data updates to simplifies it.
+* Enable `/api/v1/@apostrophecms/login/logout` and `/api/v1/@apostrophecms/login/whoami` routes when `localLogin` is `false`.
 
 ## 4.22.0 (2025-10-01)
 
