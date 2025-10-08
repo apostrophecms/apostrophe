@@ -121,21 +121,8 @@ module.exports = {
     };
   },
   apiRoutes(self) {
-    if (!self.options.localLogin) {
-      return {};
-    }
-    return {
+    const routes = {
       post: {
-        async login(req) {
-          // Don't make verify functions worry about whether this object
-          // is present, just the value of their own sub-property
-          req.body.requirements = req.body.requirements || {};
-          if (req.body.incompleteToken) {
-            return self.finalizeIncompleteLogin(req);
-          } else {
-            return self.initialLogin(req);
-          }
-        },
         async logout(req) {
           if (!req.user) {
             throw self.apos.error('forbidden', req.t('apostrophe:logOutNotLoggedIn'));
@@ -166,6 +153,38 @@ module.exports = {
 
             // TODO: get cookie name from config
             req.res.cookie(`${self.apos.shortName}.${loggedInCookieName}`, 'false');
+          }
+        },
+        async whoami(req) {
+          return self.getWhoami(req);
+        }
+      },
+      get: {
+        // For bc this route is still available via GET, however
+        // it should be accessed via POST because the result
+        // may differ by individual user session and should not
+        // be cached
+        async whoami(req) {
+          return self.getWhoami(req);
+        }
+      }
+    };
+
+    if (!self.options.localLogin) {
+      return routes;
+    }
+
+    return {
+      post: {
+        ...routes.post,
+        async login(req) {
+          // Don't make verify functions worry about whether this object
+          // is present, just the value of their own sub-property
+          req.body.requirements = req.body.requirements || {};
+          if (req.body.incompleteToken) {
+            return self.finalizeIncompleteLogin(req);
+          } else {
+            return self.initialLogin(req);
           }
         },
         // invokes the `props(req, user)` function for the requirement
@@ -259,9 +278,6 @@ module.exports = {
         async context(req) {
           return self.getContext(req);
         },
-        async whoami(req) {
-          return self.getWhoami(req);
-        },
         ...self.isPasswordResetEnabled() && {
           async resetRequest(req) {
             const wait = (t = 2000) => Promise.delay(t);
@@ -352,13 +368,11 @@ module.exports = {
         }
       },
       get: {
+        ...routes.get,
         // For bc this route is still available via GET, however
         // it should be accessed via POST because the result
         // may differ by individual user session and should not
         // be cached
-        async whoami(req) {
-          return self.getWhoami(req);
-        },
         async context(req) {
           return self.getContext(req);
         },
