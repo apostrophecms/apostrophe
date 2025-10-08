@@ -69,6 +69,7 @@
       >
         <template #item="{ item: widget }">
           <AposAreaWidget
+            :key="widget._id"
             :area-id="areaId"
             :widget="widget"
             :meta="meta[widget._id]"
