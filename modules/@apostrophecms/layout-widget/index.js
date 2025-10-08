@@ -1,3 +1,6 @@
+const path = require('node:path');
+const fs = require('node:fs');
+
 module.exports = {
   extend: '@apostrophecms/widget-type',
   options: {
@@ -15,7 +18,8 @@ module.exports = {
     },
     gap: '1.5rem',
     defaultCellHorizontalAlignment: null,
-    defaultCellVerticalAlignment: null
+    defaultCellVerticalAlignment: null,
+    injectStyles: true
   },
   widgetOperations(self, options) {
     return {
@@ -64,9 +68,17 @@ module.exports = {
       }
     };
   },
-  init(self) {
+  async init(self) {
     self.metaWidgetName = '@apostrophecms/layout-meta';
     self.columnWidgetName = '@apostrophecms/layout-column';
+
+    if (
+      self.__meta.name === '@apostrophecms/layout-widget' &&
+      self.options.injectStyles !== false
+    ) {
+      self.stylesContent = await self.loadAndProcessStyles();
+      self.appendNodes('head', 'publicCssNodes');
+    }
   },
   handlers(self) {
     return {
@@ -103,6 +115,25 @@ module.exports = {
   },
   methods(self) {
     return {
+      publicCssNodes(req) {
+        return [
+          {
+            comment: ' Layout styles '
+          },
+          {
+            name: 'style',
+            attrs: { type: 'text/css' },
+            body: [
+              {
+                raw: self.stylesContent[req.scene] || self.stylesContent.public
+              }
+            ]
+          },
+          {
+            comment: ' End Layout styles '
+          }
+        ];
+      },
       validateAndIdentifyTypes() {
         if (self.options.columns < 2) {
           throw new Error('The layout widget must have at least 2 columns.');
@@ -179,6 +210,69 @@ module.exports = {
           meta: check['@apostrophecms/layout-meta'],
           column: check['@apostrophecms/layout-column']
         };
+      },
+      async loadAndProcessStyles() {
+        const cssFilePath = path.join(__dirname, 'ui', 'src', 'layout.css');
+        let cssContent = fs.readFileSync(cssFilePath, 'utf8');
+        const mobileBreakpoint = self.options.mobile?.breakpoint || 600;
+        const mobileBreakpointPlus = mobileBreakpoint + 1;
+        const tabletBreakpoint = self.options.tablet?.breakpoint || 1024;
+        const tabletBreakpointPlus = tabletBreakpoint + 1;
+        cssContent = cssContent
+          .replace(/\{\$mobile\}/g, mobileBreakpoint)
+          .replace(/\{\$mobile-plus\}/g, mobileBreakpointPlus)
+          .replace(/\{\$tablet\}/g, tabletBreakpoint)
+          .replace(/\{\$tablet-plus\}/g, tabletBreakpointPlus);
+
+        return self.processCss(cssContent);
+      },
+      async processCss(cssContent) {
+        try {
+          const postcss = require('postcss');
+          const cssnano = require('cssnano');
+          const options = self.apos.asset.breakpointPreviewMode || {};
+
+          const resultPublic = await postcss([
+            cssnano({
+              preset: 'default'
+            })
+          ]).process(cssContent, { from: undefined });
+
+          if (options.enable !== true) {
+            return {
+              apos: resultPublic.css,
+              public: resultPublic.css
+            };
+          }
+
+          const mobilePreview = require('postcss-viewport-to-container-toggle');
+
+          const resultApos = await postcss([
+            mobilePreview({
+              modifierAttr: 'data-breakpoint-preview-mode',
+              debug: options.debug === true,
+              transform: options.transform || null
+            })
+          ]).process(resultPublic.css, { from: undefined });
+
+          return {
+            apos: resultApos.css,
+            public: resultPublic.css
+          };
+        } catch (error) {
+          const errorTrace = error.stack
+            ? error.stack
+              .split('\n')
+              .slice(1)
+            : [];
+          self.logWarn('inline-css-minify-failed', error.message, {
+            error: errorTrace
+          });
+          return {
+            apos: cssContent,
+            public: cssContent
+          };
+        }
       }
     };
   },
