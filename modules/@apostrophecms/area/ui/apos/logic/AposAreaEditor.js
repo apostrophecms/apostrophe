@@ -1,7 +1,9 @@
 import { createId } from '@paralleldrive/cuid2';
+import { mapState, mapActions } from 'pinia';
 import AposThemeMixin from 'Modules/@apostrophecms/ui/mixins/AposThemeMixin';
 import newInstance from 'apostrophe/modules/@apostrophecms/schema/lib/newInstance.js';
 import cloneWidget from 'Modules/@apostrophecms/area/lib/clone-widget.js';
+import { useWidgetStore } from 'Modules/@apostrophecms/ui/stores/widget';
 
 export default {
   mixins: [ AposThemeMixin ],
@@ -78,9 +80,7 @@ export default {
       addWidgetType: null,
       areaId: createId(),
       next: this.getValidItems(),
-      hoveredWidget: null,
       hoveredNonForeignWidget: null,
-      focusedWidget: null,
       contextMenuOptions: {
         menu: this.choices
       },
@@ -89,6 +89,7 @@ export default {
     };
   },
   computed: {
+    ...mapState(useWidgetStore, [ 'focusedWidget', 'hoveredWidget', 'focusedArea' ]),
     isEmptySingleton() {
       return this.next.length === 0 &&
         this.options.widgets &&
@@ -125,7 +126,7 @@ export default {
         return -1;
       }
 
-      return this.next.findIndex(widget => widget._id === window.apos.focusedWidget);
+      return this.next.findIndex(widget => widget._id === this.focusedWidget);
     }
   },
   watch: {
@@ -170,10 +171,9 @@ export default {
     this.unbindEventListeners();
   },
   methods: {
+    ...mapActions(useWidgetStore, [ 'setFocusedArea', 'setFocusedWidget' ]),
     bindEventListeners() {
       apos.bus.$on('area-updated', this.areaUpdatedHandler);
-      apos.bus.$on('widget-hover', this.updateWidgetHovered);
-      apos.bus.$on('widget-focus', this.updateWidgetFocused);
       apos.bus.$on('command-menu-area-copy-widget', this.handleCopy);
       apos.bus.$on('command-menu-area-cut-widget', this.handleCut);
       apos.bus.$on('command-menu-area-duplicate-widget', this.handleDuplicate);
@@ -183,8 +183,6 @@ export default {
     },
     unbindEventListeners() {
       apos.bus.$off('area-updated', this.areaUpdatedHandler);
-      apos.bus.$off('widget-hover', this.updateWidgetHovered);
-      apos.bus.$off('widget-focus', this.updateWidgetFocused);
       apos.bus.$off('command-menu-area-copy-widget', this.handleCopy);
       apos.bus.$off('command-menu-area-cut-widget', this.handleCut);
       apos.bus.$off('command-menu-area-duplicate-widget', this.handleDuplicate);
@@ -196,22 +194,14 @@ export default {
       return document.activeElement.closest('[contenteditable]') !== null;
     },
     isInsideFocusedArea() {
-      return window.apos.focusedArea === this.areaId;
+      return this.focusedArea === this.areaId;
     },
     resetFocusedArea() {
-      if (window.apos.focusedArea !== this.areaId) {
+      if (this.focusedArea !== this.areaId) {
         return;
       }
 
-      this.setFocusedArea(null, null);
-    },
-    setFocusedArea(areaId, event) {
-      if (event) {
-        // prevent parent areas from changing the focusedArea
-        event.stopPropagation();
-      }
-
-      window.apos.focusedArea = areaId;
+      this.setFocusedArea(null);
     },
     handleCopy() {
       if (
@@ -281,47 +271,6 @@ export default {
         apos.bus.$emit('widget-focus-parent', this.focusedWidget);
       }
     },
-    updateWidgetHovered({ _id, nonForeignId }) {
-      this.hoveredWidget = _id;
-      this.hoveredNonForeignWidget = nonForeignId;
-    },
-    updateWidgetFocused({ _id, scrollIntoView = false }) {
-      this.focusedWidget = _id;
-      // Attached to window so that modals can see the area is active
-      window.apos.focusedWidget = _id;
-
-      // We want what's next to run only once
-      // for the area containing the focusedWidget
-      // and not for all areas present on the page
-      if (this.focusedWidgetIndex === -1) {
-        return;
-      }
-
-      this.setFocusedArea(this.areaId, null);
-
-      if (scrollIntoView) {
-        this.$nextTick(() => {
-          const $el = document.querySelector(`[data-apos-widget-id="${_id}"]`);
-          if (!$el) {
-            return;
-          }
-
-          const headerHeight = window.apos.adminBar.height;
-          const bufferSpace = 40;
-          const targetTop = $el.getBoundingClientRect().top;
-          const scrollPos = targetTop - headerHeight - bufferSpace;
-
-          window.scrollBy({
-            top: scrollPos,
-            behavior: 'smooth'
-          });
-
-          $el.focus({
-            preventScroll: true
-          });
-        });
-      }
-    },
     async up(i) {
       if (this.docId === window.apos.adminBar.contextId) {
         apos.bus.$emit('context-edited', {
@@ -370,15 +319,12 @@ export default {
         ...this.next.slice(0, i),
         ...this.next.slice(i + 1)
       ];
+
       const focusNext = this.next[i - 1] || this.next[i];
 
       if (focusNext) {
-        apos.bus.$emit('widget-focus', {
-          _id: focusNext._id,
-          scrollIntoView: true
-        });
+        this.setFocusedWidget(focusNext._id, this.areaId, { scrollTo: true });
       }
-
     },
     async cut(i) {
       apos.area.widgetClipboard.set(this.next[i]);
@@ -497,6 +443,7 @@ export default {
           [`@${updated._id}`]: updated
         });
       }
+
       this.next = this.next.map((widget) => {
         if (widget._id === updated._id) {
           return updated;
@@ -613,10 +560,7 @@ export default {
       if (this.widgetIsContextual(widget.type)) {
         this.edit(index);
       }
-      apos.bus.$emit('widget-focus', {
-        _id: widget._id,
-        scrollIntoView: true
-      });
+      this.setFocusedWidget(widget._id, this.areaId, { scrollTo: true });
     },
     widgetIsContextual(type) {
       return this.moduleOptions.widgetIsContextual[type];

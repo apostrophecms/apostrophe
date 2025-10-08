@@ -36,6 +36,7 @@
       <template v-else>
         <AposAreaMenu
           :context-menu-options="contextMenuOptions"
+          :field-id="fieldId"
           :empty="true"
           :index="0"
           :options="options"
@@ -60,6 +61,7 @@
           disabled: field && field.readOnly,
           operations: layoutBreadcrumbOperations || []
         }"
+        @click="clickOnGrid"
         @resize-end="onResizeOrMoveEnd"
         @move-end="onResizeOrMoveEnd"
         @add-fit-item="onAddFitItem"
@@ -81,11 +83,9 @@
             :field="field"
             :disabled="field && field.readOnly"
             :widget-hovered="hoveredWidget"
-            :non-foreign-widget-hovered="hoveredNonForeignWidget"
             :widget-focused="focusedWidget"
             :max-reached="maxReached"
             :rendering="rendering(widget)"
-            :should-focus="false"
             :controls-disabled="true"
             :breadcrumb-disabled="true"
             @up="up"
@@ -106,7 +106,9 @@
 </template>
 
 <script>
+import { mapActions } from 'pinia';
 import AposAreaEditorLogic from 'Modules/@apostrophecms/area/logic/AposAreaEditor.js';
+import walkWidgets from 'Modules/@apostrophecms/area/lib/walk-widgets.js';
 import { useWidgetStore } from 'Modules/@apostrophecms/ui/stores/widget.js';
 import { provisionRow } from '../lib/grid-state.mjs';
 
@@ -124,11 +126,9 @@ export default {
     }
   },
   data() {
-    const store = useWidgetStore();
     return {
       layoutMode: 'content',
-      layoutDeviceMode: 'desktop',
-      updateWidgetStore: store.update
+      layoutDeviceMode: 'desktop'
     };
   },
   computed: {
@@ -152,6 +152,18 @@ export default {
         })
         .filter(w => w.type !== this.layoutMetaWidgetName);
     },
+    layoutColumnWidgetIds() {
+      return this.layoutColumnWidgets.map(w => w._id);
+    },
+    layoutColumnWidgetDeepIds() {
+      const ids = [];
+      walkWidgets(
+        this.layoutColumnWidgets,
+        w => ids.push(w._id)
+      );
+
+      return ids;
+    },
     layoutBreadcrumbOperations() {
       return (this.layoutModuleOptions.widgetBreadcrumbOperations || []);
     },
@@ -168,17 +180,59 @@ export default {
       return this.layoutModuleOptions.columnWidgetName;
     }
   },
+  watch: {
+    // Steal the columns focus, set it on the layout widget instead.
+    // Additionally send "emphasized" state to the central store
+    // to keep the breadcrumb label visible, when children are focused.
+    async focusedWidget(widgetId) {
+      if (!this.parentOptions.widgetId) {
+        return;
+      }
+      await this.$nextTick();
+      if (this.layoutColumnWidgetIds.includes(widgetId)) {
+        this.clickOnGrid();
+        this.removeEmphasizedWidget(this.parentOptions.widgetId);
+        return;
+      }
+
+      if (this.layoutColumnWidgetDeepIds.includes(widgetId)) {
+        this.addEmphasizedWidget(this.parentOptions.widgetId);
+      } else {
+        this.removeEmphasizedWidget(this.parentOptions.widgetId);
+      }
+    },
+    // Steal the columns hover, set it on the layout widget instead.
+    hoveredWidget(widgetId) {
+      if (
+        this.parentOptions.widgetId &&
+        this.layoutColumnWidgetIds.includes(widgetId)
+      ) {
+        this.setHoveredWidget(this.parentOptions.widgetId, this.areaId);
+      }
+    }
+  },
   mounted() {
     apos.bus.$on('widget-breadcrumb-operation', this.executeWidgetOperation);
     if (!this.hasLayoutMeta) {
       this.onCreateProvision();
     }
-    this.updateWidgetStore(this.parentOptions?.widgetId, 'layout:switch', this.layoutMode);
+    this.updateWidget(this.parentOptions?.widgetId, 'layout:switch', this.layoutMode);
   },
   beforeUnmount() {
     apos.bus.$off('widget-breadcrumb-operation', this.executeWidgetOperation);
   },
   methods: {
+    ...mapActions(useWidgetStore, [
+      'updateWidget',
+      'setHoveredWidget',
+      'addEmphasizedWidget',
+      'removeEmphasizedWidget'
+    ]),
+    clickOnGrid() {
+      if (this.parentOptions.widgetId) {
+        this.setFocusedWidget(this.parentOptions.widgetId, this.areaId);
+      }
+    },
     // While switching to Edit mode, areaEditors are mounted twice in a quick
     // succession. This leads to duplicate event listeners on the bus.
     // See the little trick below to avoid that.
@@ -236,7 +290,7 @@ export default {
         index: 0
       });
       this.layoutMode = 'content';
-      this.updateWidgetStore(this.parentOptions?.widgetId, 'layout:switch', 'content');
+      this.updateWidget(this.parentOptions?.widgetId, 'layout:switch', 'content');
 
       const items = provisionRow(meta.columns, {
         minColspan: this.gridModuleOptions.minSpan,
@@ -258,6 +312,9 @@ export default {
           index: index + 1
         });
       }
+
+      await this.$nextTick();
+      this.clickOnGrid();
     },
     onAddItem(patch) {
       const widgetName = this.layoutColumnWidgetName;
