@@ -14,7 +14,7 @@
           :name="uniqueName"
           @input="update"
         >
-        <span>{{ choice.label }}</span>
+        <span>{{ $t(choice.label) }}</span>
       </label>
     </div>
   </fieldset>

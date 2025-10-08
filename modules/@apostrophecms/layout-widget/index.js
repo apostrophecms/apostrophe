@@ -29,11 +29,11 @@ module.exports = {
           type: 'switch',
           choices: [
             {
-              label: 'Content',
+              label: 'apostrophe:editContent',
               value: 'content'
             },
             {
-              label: 'Layout',
+              label: 'apostrophe:editColumns',
               value: 'layout'
             }
           ],
