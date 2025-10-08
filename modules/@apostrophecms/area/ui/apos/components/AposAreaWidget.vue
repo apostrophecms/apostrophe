@@ -74,7 +74,7 @@
               :modifiers="['no-motion']"
               :disable-focus="!(isHovered || isFocused)"
               @click="foreign ? $emit('edit', i) : null"
-              @dblclick="(!foreign && !isContextual) ? $emit('edit', i) : null"
+              @dblclick="(!foreign && !isContextual && !shouldSkipEdit) ? $emit('edit', i) : null"
             />
           </li>
         </ol>
@@ -376,6 +376,9 @@ export default {
     },
     widgetBreadcrumbOperations() {
       return (this.widgetModuleOptions.widgetBreadcrumbOperations || []);
+    },
+    shouldSkipEdit() {
+      return this.widgetModuleOptions.skipOperations?.includes('edit') ?? false;
     },
     isFocused() {
       return this.focusedWidget === this.widget._id;
