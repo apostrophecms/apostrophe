@@ -145,10 +145,8 @@ export default {
     layoutColumnWidgets() {
       return this.next
         .map((w, index) => {
-          return {
-            ...w,
-            __naturalIndex: index
-          };
+          w.__naturalIndex = index;
+          return w;
         })
         .filter(w => w.type !== this.layoutMetaWidgetName);
     },
