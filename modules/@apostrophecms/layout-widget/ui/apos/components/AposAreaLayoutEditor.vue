@@ -59,7 +59,7 @@
         :opstate="{
           options: options,
           disabled: field && field.readOnly,
-          operations: layoutBreadcrumbOperations || []
+          operations: layoutBreadcrumbOperations
         }"
         @click="clickOnGrid"
         @resize-end="onResizeOrMoveEnd"

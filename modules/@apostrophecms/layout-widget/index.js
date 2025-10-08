@@ -163,15 +163,15 @@ module.exports = {
           );
         }
 
-        const check = {
-          '@apostrophecms/layout-column': false,
-          '@apostrophecms/layout-meta': false
+        const hasTypes = {
+          [self.metaWidgetName]: false,
+          [self.columnWidgetName]: false
         };
-        const targetTypes = Object.keys(check);
+        const targetTypes = Object.keys(hasTypes);
         const targetModuleTypes = targetTypes.map(type => `${type}-widget`);
         for (const widgetType of widgetTypes) {
           if (targetTypes.includes(widgetType)) {
-            check[widgetType] = widgetType;
+            hasTypes[widgetType] = widgetType;
             continue;
           }
           const type = `${widgetType}-widget`;
@@ -183,22 +183,23 @@ module.exports = {
             .find(item => targetModuleTypes.includes(item.name));
           if (meta) {
             const mappedType = targetTypes[targetModuleTypes.indexOf(meta.name)];
-            check[mappedType] = widgetType;
+            hasTypes[mappedType] = widgetType;
             continue;
           }
         }
-        if (!check['@apostrophecms/layout-column']) {
+        if (!hasTypes[self.columnWidgetName]) {
           throw new Error(
-            'The layout widget "columns" area must have a widget type or a subtype of "@apostrophecms/layout-column"'
+            `The layout widget "columns" area must have a widget type or a subtype of "${self.columnWidgetName}"`
           );
         }
 
-        if (!check['@apostrophecms/layout-meta']) {
+        if (!hasTypes[self.metaWidgetName]) {
           throw new Error(
-            'The layout widget "columns" area must have a widget type or a subtype of "@apostrophecms/layout-meta"'
+            `The layout widget "columns" area must have a widget type or a subtype of "${self.metaWidgetName}"`
           );
         }
 
+        // Force critical options on the columns area in case of a subclassing
         if (!columnsField.options.editorComponent) {
           columnsField.options.editorComponent = 'AposAreaLayoutEditor';
         }
@@ -207,8 +208,8 @@ module.exports = {
         }
 
         return {
-          meta: check['@apostrophecms/layout-meta'],
-          column: check['@apostrophecms/layout-column']
+          meta: hasTypes[self.metaWidgetName],
+          column: hasTypes[self.columnWidgetName]
         };
       },
       async loadAndProcessStyles() {

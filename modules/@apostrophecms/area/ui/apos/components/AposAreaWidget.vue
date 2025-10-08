@@ -208,15 +208,9 @@
 <script>
 import { mapState, mapActions } from 'pinia';
 import { useWidgetStore } from 'Modules/@apostrophecms/ui/stores/widget';
-import AposIndicator from 'Modules/@apostrophecms/ui/components/AposIndicator.vue';
-import AposBreadcrumbSwitch from 'Modules/@apostrophecms/area/components/AposBreadcrumbSwitch.vue';
 
 export default {
   name: 'AposAreaWidget',
-  components: {
-    AposIndicator,
-    AposBreadcrumbSwitch
-  },
   props: {
     docId: {
       type: String,
@@ -282,7 +276,6 @@ export default {
       type: Boolean,
       default: false
     },
-    // Disable controls or breadcrumbs independently
     controlsDisabled: {
       type: Boolean,
       default: false
@@ -317,7 +310,7 @@ export default {
       mounted: false, // hack around needing DOM to be rendered for computed classes
       menuOpen: null,
       isSuppressingWidgetControls: false,
-      hasClickOutsideListener: false, // Track if click-outside listener is active
+      hasClickOutsideListener: false,
       classes: {
         show: 'apos-is-visible',
         open: 'apos-is-open',
@@ -478,7 +471,6 @@ export default {
   unmounted() {
     // Remove the focus parent listener when unmounted
     apos.bus.$off('widget-focus-parent', this.focusParent);
-    // Ensure click-outside listener is cleaned up
     this.removeClickOutsideListener();
   },
   methods: {
@@ -700,301 +692,299 @@ export default {
   }
 }
 
-  .apos-area-widget-guard {
-    position: absolute;
+.apos-area-widget-guard {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.apos-area-widget-guard.apos-is-disabled {
+  pointer-events: none;
+}
+
+.apos-area-widget-wrapper {
+  position: relative;
+}
+
+.apos-area-widget-inner {
+  position: relative;
+  min-height: 50px;
+  border-radius: var(--a-border-radius);
+  outline: 1px solid transparent;
+  transition: outline 200ms ease;
+
+  &:focus {
+    box-shadow: 0 0 11px 1px var(--a-primary-transparent-25);
+    outline: 1px dashed var(--a-primary-transparent-50);
+    outline-offset: 2px;
+  }
+
+  &.apos-is-highlighted {
+    outline: 1px dashed var(--a-primary-transparent-50);
+  }
+
+  &.apos-is-focused {
+    outline: 1px dashed var(--a-primary);
+
+    &:deep(.apos-rich-text-editor__editor.apos-is-visually-empty) {
+      box-shadow: none;
+    }
+  }
+
+  &.apos-is-ui-adjusted {
+    .apos-area-widget-controls--modify {
+      top: 0;
+      transform: translate3d(-10px, 50px, 0);
+    }
+
+    .apos-area-widget__label {
+      transform: translate(-10px, 10px);
+    }
+  }
+
+  .apos-area-widget-inner &::after {
+    display: none;
+  }
+
+  .apos-area-widget-inner &::before {
+    z-index: $z-index-under;
     top: 0;
     left: 0;
     width: 100%;
     height: 100%;
-  }
-
-  .apos-area-widget-guard.apos-is-disabled {
+    outline: 1px solid var(--a-base-1);
+    outline-offset: -1px;
+    background-color: var(--a-base-5);
     pointer-events: none;
   }
 
-  .apos-area-widget-wrapper {
-    position: relative;
+  .apos-area-widget-inner &.apos-is-focused::before,
+  .apos-area-widget-inner &.apos-is-highlighted::before {
+    z-index: $z-index-default;
+  }
+}
+
+.apos-area-widget-inner .apos-area-widget-inner {
+  &.apos-is-highlighted::before {
+    opacity: 0.1;
   }
 
-  .apos-area-widget-inner {
-    position: relative;
-    min-height: 50px;
-    border-radius: var(--a-border-radius);
-    outline: 1px solid transparent;
-    transition: outline 200ms ease;
+  &.apos-is-focused::before {
+    opacity: 0.15;
+  }
+}
 
-    &:focus {
-      box-shadow: 0 0 11px 1px var(--a-primary-transparent-25);
-      outline: 1px dashed var(--a-primary-transparent-50);
-      outline-offset: 2px;
-    }
+.apos-area-widget-controls {
+  z-index: $z-index-widget-controls;
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+  transition: all 300ms ease;
 
-    &.apos-is-highlighted {
-      outline: 1px dashed var(--a-primary-transparent-50);
-    }
-
-    &.apos-is-focused {
-      outline: 1px dashed var(--a-primary);
-
-      &:deep(.apos-rich-text-editor__editor.apos-is-visually-empty) {
-        box-shadow: none;
-      }
-    }
-
-    &.apos-is-ui-adjusted {
-      .apos-area-widget-controls--modify {
-        top: 0;
-        transform: translate3d(-10px, 50px, 0);
-      }
-
-      .apos-area-widget__label {
-        transform: translate(-10px, 10px);
-      }
-    }
-
-    .apos-area-widget-inner &::after {
-      display: none;
-    }
-
-    .apos-area-widget-inner &::before {
-      z-index: $z-index-under;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      outline: 1px solid var(--a-base-1);
-      outline-offset: -1px;
-      background-color: var(--a-base-5);
-      pointer-events: none;
-    }
-
-    .apos-area-widget-inner &.apos-is-focused::before,
-    .apos-area-widget-inner &.apos-is-highlighted::before {
-      z-index: $z-index-default;
-    }
+  &.apos-area-widget__label {
+    z-index: $z-index-widget-label;
   }
 
-  .apos-area-widget-inner .apos-area-widget-inner {
-    &.apos-is-highlighted::before {
-      opacity: 0.1;
-    }
-
-    &.apos-is-focused::before {
-      opacity: 0.15;
-    }
-  }
-
-  .apos-area-widget-controls {
-    z-index: $z-index-widget-controls;
-    position: absolute;
-    opacity: 0;
-    pointer-events: none;
-    transition: all 300ms ease;
-
-    &.apos-area-widget__label {
-      z-index: $z-index-widget-label;
-    }
-
-    &.apos-is-focused {
-      z-index: $z-index-widget-focused-controls;
-    }
-  }
-
-  .apos-area-widget-controls--modify {
+  &.apos-is-focused {
     z-index: $z-index-widget-focused-controls;
-    top: 50%;
-    right: 0;
-    transform: translate3d(-10px, -50%, 0);
+  }
+}
 
-    :deep(.apos-button-group__inner) {
-      border: 1px solid var(--a-primary-transparent-25);
-      box-shadow: var(--a-box-shadow);
-    }
+.apos-area-widget-controls--modify {
+  z-index: $z-index-widget-focused-controls;
+  top: 50%;
+  right: 0;
+  transform: translate3d(-10px, -50%, 0);
 
-    :deep(.apos-button-group) .apos-button {
-      width: 32px;
-      height: 32px;
-      padding: 0;
-      border: none;
-      border-radius: var(--a-border-radius);
+  :deep(.apos-button-group__inner) {
+    border: 1px solid var(--a-primary-transparent-25);
+    box-shadow: var(--a-box-shadow);
+  }
+
+  :deep(.apos-button-group) .apos-button {
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    border: none;
+    border-radius: var(--a-border-radius);
+    background-color: transparent;
+    color: var(--a-base-1);
+
+    &:hover[disabled] {
       background-color: transparent;
-      color: var(--a-base-1);
+    }
 
-      &:hover[disabled] {
-        background-color: transparent;
-      }
+    &:hover:not([disabled]), &:active:not([disabled]), &:focus:not([disabled]) {
+      background-color: var(--a-primary-transparent-10);
+      color: var(--a-primary);
+    }
 
-      &:hover:not([disabled]), &:active:not([disabled]), &:focus:not([disabled]) {
-        background-color: var(--a-primary-transparent-10);
-        color: var(--a-primary);
-      }
+    &:focus:not([disabled])::after {
+      background-color: transparent;
+    }
 
-      &:focus:not([disabled])::after {
-        background-color: transparent;
-      }
+    &[disabled] {
+      color: var(--a-base-6);
+    }
+  }
+}
 
-      &[disabled] {
-        color: var(--a-base-6);
-      }
+.apos-area-widget-controls--add {
+  top: 0;
+  left: 50%;
+  transform: translate(-50%, -50%);
+
+  &.apos-area-widget-controls--add--top.apos-is-open--menu-top,
+  &.apos-area-widget-controls--add--bottom.apos-is-open--menu-bottom {
+    z-index: $z-index-area-schema-ui;
+  }
+}
+
+.apos-area-widget-controls--add {
+  &.apos-area-widget-controls--add--top.apos-is-open--menu-top,
+  &.apos-area-widget-controls--add--bottom.apos-is-open--menu-bottom {
+
+    /* stylelint-disable-next-line max-nesting-depth */
+    :deep(.apos-button__wrapper .apos-button:not([disabled])) {
+      @include showButton;
+    }
+  }
+}
+
+.apos-area-widget-controls--add {
+  :deep(.apos-button__wrapper) {
+    padding: 8px;
+
+    &:hover .apos-button:not([disabled]) {
+      @include showButton;
     }
   }
 
-  .apos-area-widget-controls--add {
-    top: 0;
-    left: 50%;
-    transform: translate(-50%, -50%);
-
-    &.apos-area-widget-controls--add--top.apos-is-open--menu-top,
-    &.apos-area-widget-controls--add--bottom.apos-is-open--menu-bottom {
-      z-index: $z-index-area-schema-ui;
-    }
+  :deep(.apos-button__icon) {
+    margin-right: 0;
   }
 
-  .apos-area-widget-controls--add {
-    &.apos-area-widget-controls--add--top.apos-is-open--menu-top,
-    &.apos-area-widget-controls--add--bottom.apos-is-open--menu-bottom {
-
-      /* stylelint-disable-next-line max-nesting-depth */
-      :deep(.apos-button__wrapper .apos-button:not([disabled])) {
-        @include showButton;
-      }
-    }
+  :deep(.apos-button__label) {
+    display: inline-block;
+    overflow: hidden;
+    font-size: var(--a-type-small);
+    transition: max-width 200ms var(--a-transition-timing-bounce);
+    max-width: 0;
+    max-height: 0;
+    white-space: nowrap;
   }
 
-  .apos-area-widget-controls--add {
-    :deep(.apos-button__wrapper) {
-      padding: 8px;
-
-      &:hover .apos-button:not([disabled]) {
-        @include showButton;
-      }
-    }
-
-    :deep(.apos-button__icon) {
-      margin-right: 0;
-    }
-
-    :deep(.apos-button__label) {
-      display: inline-block;
-      overflow: hidden;
-      font-size: var(--a-type-small);
-      transition: max-width 200ms var(--a-transition-timing-bounce);
-      max-width: 0;
-      max-height: 0;
-      white-space: nowrap;
-    }
-
-    :deep(.apos-button) {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 5px;
-      transition: all 200ms var(--a-transition-timing-bounce);
-      background-image: linear-gradient(
-        45deg,
-        var(--a-primary),
-        var(--a-primary-dark-15),
-        var(--a-primary-light-40),
-        var(--a-primary)
-      );
-      background-size: 200% 100%;
-      border-radius: 12px;
-    }
-  }
-
-  .apos-area-widget-controls--add--bottom {
-    top: auto;
-    bottom: 0;
-    transform: translate(-50%, 50%);
-  }
-
-  .apos-area-widget-inner :deep(.apos-context-menu__popup.apos-is-visible) {
-    top: calc(100% + 20px);
-    left: 50%;
-    transform: translate(-50%, 0);
-  }
-
-  .apos-area-widget__label {
-    position: absolute;
-    top: 0;
-    left: 0; // switch the root label position from right to left
-    // right: 0;
+  :deep(.apos-button) {
     display: flex;
-    transform: translateY(-100%);
-    transition: opacity 300ms ease;
+    align-items: center;
+    justify-content: center;
+    padding: 5px;
+    transition: all 200ms var(--a-transition-timing-bounce);
+    background-image: linear-gradient(
+      45deg,
+      var(--a-primary),
+      var(--a-primary-dark-15),
+      var(--a-primary-light-40),
+      var(--a-primary)
+    );
+    background-size: 200% 100%;
+    border-radius: 12px;
   }
+}
 
-  .apos-area-widget-inner .apos-area-widget-inner .apos-area-widget__label {
-    right: auto;
-    left: 0;
+.apos-area-widget-controls--add--bottom {
+  top: auto;
+  bottom: 0;
+  transform: translate(-50%, 50%);
+}
+
+.apos-area-widget-inner :deep(.apos-context-menu__popup.apos-is-visible) {
+  top: calc(100% + 20px);
+  left: 50%;
+  transform: translate(-50%, 0);
+}
+
+.apos-area-widget__label {
+  position: absolute;
+  top: 0;
+  left: 0;
+  display: flex;
+  transform: translateY(-100%);
+  transition: opacity 300ms ease;
+}
+
+.apos-area-widget-inner .apos-area-widget-inner .apos-area-widget__label {
+  right: auto;
+  left: 0;
+}
+
+.apos-area-widget__breadcrumbs {
+  @include apos-list-reset();
+
+  & {
+    display: flex;
+    box-sizing: border-box;
+    align-items: center;
+    height: 32px;
+    margin: 0 0 8px;
+    padding: 4px 6px;
+    border: 1px solid var(--a-primary-transparent-50);
+    background-color: var(--a-background-primary);
+    border-radius: 8px;
   }
+}
 
-  .apos-area-widget__breadcrumbs {
-    @include apos-list-reset();
+.apos-area-widget__breadcrumb,
+.apos-area-widget__breadcrumb :deep(.apos-button__content) {
+  @include type-help;
 
-    & {
-      display: flex;
-      box-sizing: border-box;
-      align-items: center;
-      height: 32px;
-      margin: 0 0 8px;
-      padding: 4px 6px;
-      border: 1px solid var(--a-primary-transparent-50);
-      background-color: var(--a-background-primary);
-      border-radius: 8px;
-    }
-  }
-
-  .apos-area-widget__breadcrumb,
-  .apos-area-widget__breadcrumb :deep(.apos-button__content) {
-    @include type-help;
-
-    & {
-      padding: 2px;
-      white-space: nowrap;
-      color: var(--a-base-1);
-      transition: background-color 300ms var(--a-transition-timing-bounce);
-    }
-  }
-
-  .apos-area-widget__breadcrumbs:hover .apos-area-widget__breadcrumb,
-  .apos-area-widget__breadcrumbs:hover .apos-area-widget__breadcrumb
-    :deep(.apos-button__content) {
-    color: var(--a-text-primary);
-  }
-
-  .apos-area-widget__breadcrumb--widget-icon {
-    margin-right: 2px;
-    padding: 3px 2px 2px;
-    color: var(--a-primary);
-    transition: background-color 300ms var(--a-transition-timing-bounce);
-    background-color: var(--a-primary-transparent-10);
-    border-radius: 4px;
-  }
-
-  .apos-area-widget__breadcrumbs:hover .apos-area-widget__breadcrumb--widget-icon {
-    background-color: var(--a-primary-transparent-25);
-  }
-
-  .apos-area-widget__breadcrumb--icon {
+  & {
     padding: 2px;
-    color: var(--a-text-primary);
+    white-space: nowrap;
+    color: var(--a-base-1);
+    transition: background-color 300ms var(--a-transition-timing-bounce);
   }
+}
 
-  .apos-area-widget__breadcrumb :deep(.apos-button) {
-    color: var(--a-primary-dark-10);
+.apos-area-widget__breadcrumbs:hover .apos-area-widget__breadcrumb,
+.apos-area-widget__breadcrumbs:hover .apos-area-widget__breadcrumb
+  :deep(.apos-button__content) {
+  color: var(--a-text-primary);
+}
 
-    &:hover, &:active, &:focus {
-      .apos-button__content {
-        color: var(--a-primary);
-      }
+.apos-area-widget__breadcrumb--widget-icon {
+  margin-right: 2px;
+  padding: 3px 2px 2px;
+  color: var(--a-primary);
+  transition: background-color 300ms var(--a-transition-timing-bounce);
+  background-color: var(--a-primary-transparent-10);
+  border-radius: 4px;
+}
+
+.apos-area-widget__breadcrumbs:hover .apos-area-widget__breadcrumb--widget-icon {
+  background-color: var(--a-primary-transparent-25);
+}
+
+.apos-area-widget__breadcrumb--icon {
+  padding: 2px;
+  color: var(--a-text-primary);
+}
+
+.apos-area-widget__breadcrumb :deep(.apos-button) {
+  color: var(--a-primary-dark-10);
+
+  &:hover, &:active, &:focus {
+    .apos-button__content {
+      color: var(--a-primary);
     }
   }
+}
 
-  .apos-is-visible:not(.apos-is-suppressing-widget-controls),
-  .apos-is-focused {
-    opacity: 1;
-    pointer-events: auto;
-  }
-
+.apos-is-visible:not(.apos-is-suppressing-widget-controls),
+.apos-is-focused {
+  opacity: 1;
+  pointer-events: auto;
+}
 </style>
