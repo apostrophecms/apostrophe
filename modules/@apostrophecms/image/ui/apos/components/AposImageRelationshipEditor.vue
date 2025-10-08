@@ -123,7 +123,7 @@
 import AposModifiedMixin from 'Modules/@apostrophecms/ui/mixins/AposModifiedMixin';
 import { detectDocChange } from 'Modules/@apostrophecms/schema/lib/detectChange';
 import getAspectRatios from '../lib/aspectRatios';
-import imageLib from 'apostrophe/lib/image.js';
+import { computeMinSizes } from 'apostrophe/lib/image.js';
 
 export default {
   name: 'AposImageRelationshipEditor',
@@ -263,7 +263,7 @@ export default {
         return;
       }
 
-      const { minWidth, minHeight } = imageLib.computeMinSizes(
+      const { minWidth, minHeight } = computeMinSizes(
         this.minSize,
         this.aspectRatio
       );

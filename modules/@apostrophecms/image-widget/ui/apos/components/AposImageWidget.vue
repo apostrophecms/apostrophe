@@ -98,7 +98,7 @@ async function selectFromManager() {
  * @returns {boolean} - Tells if the image is valid
  */
 function checkImageValid(image) {
-  if (!props.options.minSize) {
+  if (!props.options?.minSize) {
     return true;
   }
 
