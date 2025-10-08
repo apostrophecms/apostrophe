@@ -1,4 +1,5 @@
 const _ = require('lodash');
+const { computeMinSizes } = require('../../../lib/image');
 
 // A subclass of `@apostrophecms/piece-type`, `@apostrophecms/image`
 // establishes a library of uploaded images in formats suitable for use on the
@@ -726,12 +727,27 @@ module.exports = {
   queries(self, query) {
     return {
       builders: {
+        aspectRatio: {
+          launder(a) {
+            if (!Array.isArray(a)) {
+              return undefined;
+            }
+            if (a.length !== 2) {
+              return undefined;
+            }
+            return [ self.apos.launder.integer(a[0]), self.apos.launder.integer(a[1]) ];
+          }
+        },
         minSize: {
           finalize() {
             const minSize = query.get('minSize');
+            const aspectRatio = query.get('aspectRatio');
             if (!minSize) {
               return;
             }
+
+            const { minWidth, minHeight } = computeMinSizes(minSize, aspectRatio);
+
             const $nin = Object
               .keys(self.apos.attachment.sized)
               .filter(key => self.apos.attachment.sized[key]);
@@ -741,8 +757,8 @@ module.exports = {
                   'attachment.extension': { $nin }
                 },
                 {
-                  'attachment.width': { $gte: minSize[0] },
-                  'attachment.height': { $gte: minSize[1] }
+                  'attachment.width': { $gte: minWidth },
+                  'attachment.height': { $gte: minHeight }
                 }
               ]
             };

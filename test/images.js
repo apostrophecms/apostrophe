@@ -454,3 +454,105 @@ describe('Images', function() {
     })).editable;
   }
 });
+
+describe('Image Lib', function() {
+  const imageLib = require('../lib/image.js');
+
+  describe('computeMinSizes', function() {
+    it('should return the min sizes if no aspect ratio is provided', function() {
+      const result1 = imageLib.computeMinSizes([ 200, 100 ]);
+      const result2 = imageLib.computeMinSizes([ 100, 200 ], 0); // ignore 0
+
+      assert.deepEqual(result1, {
+        minWidth: 200,
+        minHeight: 100
+      });
+      assert.deepEqual(result2, {
+        minWidth: 100,
+        minHeight: 200
+      });
+    });
+
+    it('should return the higher value for square aspect ratio', function() {
+      const result1 = imageLib.computeMinSizes([ 200, 100 ], 1);
+      const result2 = imageLib.computeMinSizes([ 100, 200 ], 1);
+
+      assert.deepEqual(result1, {
+        minWidth: 200,
+        minHeight: 200
+      });
+      assert.deepEqual(result2, {
+        minWidth: 200,
+        minHeight: 200
+      });
+    });
+
+    it('should compute the min sizes for a wider aspect ratio', function() {
+      const result1 = imageLib.computeMinSizes([ 1000, 300 ], [ 3, 1 ]);
+      const result2 = imageLib.computeMinSizes([ 500, 2000 ], [ 3, 1 ]);
+      const result3 = imageLib.computeMinSizes([ 100, 100 ], [ 3, 1 ]);
+      const result4 = imageLib.computeMinSizes([ 30, 50 ], [ 3, 1 ]);
+      const result5 = imageLib.computeMinSizes([ 600, 1800 ], [ 3, 1 ]);
+      const result6 = imageLib.computeMinSizes([ 1800, 600 ], [ 3, 1 ]);
+
+      assert.deepEqual(result1, {
+        minWidth: 1000,
+        minHeight: 1000 / 3
+      });
+      assert.deepEqual(result2, {
+        minWidth: 6000,
+        minHeight: 2000
+      });
+      assert.deepEqual(result3, {
+        minWidth: 300,
+        minHeight: 100
+      });
+      assert.deepEqual(result4, {
+        minWidth: 150,
+        minHeight: 50
+      });
+      assert.deepEqual(result5, {
+        minWidth: 5400,
+        minHeight: 1800
+      });
+      assert.deepEqual(result6, {
+        minWidth: 1800,
+        minHeight: 600
+      });
+    });
+
+    it('should compute the min sizes for a taller aspect ratio', function() {
+      const result1 = imageLib.computeMinSizes([ 1000, 300 ], [ 1, 3 ]);
+      const result2 = imageLib.computeMinSizes([ 500, 2000 ], [ 1, 3 ]);
+      const result3 = imageLib.computeMinSizes([ 100, 100 ], [ 1, 3 ]);
+      const result4 = imageLib.computeMinSizes([ 30, 50 ], [ 1, 3 ]);
+      const result5 = imageLib.computeMinSizes([ 600, 1800 ], [ 1, 3 ]);
+      const result6 = imageLib.computeMinSizes([ 1800, 600 ], [ 1, 3 ]);
+
+      assert.deepEqual(result1, {
+        minWidth: 1000,
+        minHeight: 3000
+      });
+      assert.deepEqual(result2, {
+        minWidth: 2000 / 3,
+        minHeight: 2000
+      });
+      assert.deepEqual(result3, {
+        minWidth: 100,
+        minHeight: 300
+      });
+      assert.deepEqual(result4, {
+        minWidth: 30,
+        minHeight: 90
+      });
+      assert.deepEqual(result5, {
+        minWidth: 600,
+        minHeight: 1800
+      });
+      assert.deepEqual(result6, {
+        minWidth: 1800,
+        minHeight: 5400
+      });
+    });
+  });
+});

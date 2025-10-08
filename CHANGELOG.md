@@ -6,6 +6,10 @@
 
 * Refactors complex logic from `AposSchema` that handle data updates to simplifies it.
 
+### Fixes
+
+* Fix min size calculation for image widgets configured with an aspect ratio.
+
 ## 4.22.0 (2025-10-01)
 
 ### Adds
