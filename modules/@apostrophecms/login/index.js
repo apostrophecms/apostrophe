@@ -623,6 +623,7 @@ module.exports = {
       // - username/email AND reset token
       // `resetToken` can be `false` or `string`. Passing any other type
       // will be converted to string and used for searching the user.
+      // Sould we normalize here too?
       async getPasswordResetUser(usernameOrEmail, resetToken = false) {
         if (!self.isPasswordResetEnabled()) {
           return null;
@@ -793,10 +794,12 @@ module.exports = {
       // are `requirements` that require password verification occur first,
       // return an incomplete token.
       async initialLogin(req) {
-        const username = self.apos.launder.string(req.body.username);
+        const username = self.normalizeLoginName(
+          self.apos.launder.string(req.body.username)
+        );
         const password = self.apos.launder.string(req.body.password);
 
-        if (!(username && password)) {
+        if (!username || !password) {
           throw self.apos.error('invalid', req.t('apostrophe:loginPageBothRequired'));
         }
 
@@ -967,7 +970,10 @@ module.exports = {
       },
 
       async clearLoginAttempts(username, namespace = loginAttemptsNamespace) {
-        await self.apos.cache.delete(namespace, username);
+        await self.apos.cache.delete(
+          namespace,
+          self.normalizeLoginName(username)
+        );
       },
 
       addToAdminBar() {
@@ -1023,8 +1029,12 @@ module.exports = {
           if (!shouldUpdateUsername && !shouldUpdateEmail) {
             return;
           }
-
           const existingUsername = await self.apos.doc.db.findOne({
+            _id: {
+              $not: {
+                $eq: user._id
+              }
+            },
             username: usernameLower,
             type: '@apostrophecms/user'
           }, {
