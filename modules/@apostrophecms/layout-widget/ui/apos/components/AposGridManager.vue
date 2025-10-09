@@ -885,7 +885,6 @@ $resize-button-width: 4px;
   &__grid-clone.manage > &__item {
     position: relative;
     min-height: 150px;
-    // transition: all 300ms ease;
 
     &.is-resizing > &__item {
       opacity: 0.2;
@@ -901,7 +900,6 @@ $resize-button-width: 4px;
     position: absolute;
     box-sizing: border-box;
     border: 1px solid var(--a-primary-transparent-50);
-    // transition: background-color 300ms ease;
     inset: 0;
     background-color: rgba(#fff, 0.7);
 
@@ -942,17 +940,6 @@ $resize-button-width: 4px;
       background-color: #ff9d9833;
       color: var(--a-base-3);
       cursor: not-allowed;
-
-      &::before {
-        text-align: center;
-        text-transform: uppercase;
-        writing-mode: vertical-rl;
-        letter-spacing: 1px;
-        font-weight: var(--a-weight-bold);
-        text-orientation: upright;
-        content: attr(data-message);
-        font-size: var(--a-type-smaller);
-      }
     }
   }
 
