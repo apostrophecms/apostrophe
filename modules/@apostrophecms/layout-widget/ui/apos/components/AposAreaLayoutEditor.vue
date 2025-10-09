@@ -62,6 +62,8 @@
           operations: layoutBreadcrumbOperations
         }"
         @click="clickOnGrid"
+        @resize-start="emphasizeGrid"
+        @move-start="emphasizeGrid"
         @resize-end="onResizeOrMoveEnd"
         @move-end="onResizeOrMoveEnd"
         @add-fit-item="onAddFitItem"
@@ -201,14 +203,14 @@ export default {
       await this.$nextTick();
       if (this.layoutColumnWidgetIds.includes(widgetId)) {
         this.clickOnGrid();
-        this.removeEmphasizedWidget(this.parentOptions.widgetId);
+        this.deEmphasizeGrid();
         return;
       }
 
       if (this.layoutColumnWidgetDeepIds.includes(widgetId)) {
-        this.addEmphasizedWidget(this.parentOptions.widgetId);
+        this.emphasizeGrid();
       } else {
-        this.removeEmphasizedWidget(this.parentOptions.widgetId);
+        this.deEmphasizeGrid();
       }
     },
     // Steal the columns hover, set it on the layout widget instead.
@@ -241,6 +243,16 @@ export default {
     clickOnGrid() {
       if (this.parentOptions.widgetId) {
         this.setFocusedWidget(this.parentOptions.widgetId, this.areaId);
+      }
+    },
+    emphasizeGrid() {
+      if (this.parentOptions.widgetId) {
+        this.addEmphasizedWidget(this.parentOptions.widgetId);
+      }
+    },
+    deEmphasizeGrid() {
+      if (this.parentOptions.widgetId) {
+        this.removeEmphasizedWidget(this.parentOptions.widgetId);
       }
     },
     // While switching to Edit mode, areaEditors are mounted twice in a quick

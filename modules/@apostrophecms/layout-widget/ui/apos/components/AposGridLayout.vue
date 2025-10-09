@@ -112,7 +112,9 @@ export default {
     }
   },
   emits: [
+    'resize-start',
     'resize-end',
+    'move-start',
     'move-end',
     'add-fit-item',
     'patch-item',
@@ -179,6 +181,7 @@ export default {
   methods: {
     onResizeStart() {
       this.isResizing = true;
+      this.$emit('resize-start');
     },
     onResizeEnd(event) {
       this.isResizing = false;
@@ -186,6 +189,7 @@ export default {
     },
     onMoveStart() {
       this.isMoving = true;
+      this.$emit('move-start');
     },
     onMoveEnd(event) {
       this.isMoving = false;

@@ -286,7 +286,7 @@ module.exports = {
         if (!Array.isArray(widgets)) {
           return;
         }
-        const items = widgets.filter(widget => widget.type === self.columnWidgetName);
+        const items = widgets.filter(widget => widget.tablet.show);
         if (items.length % 2 === 0) {
           return;
         }
