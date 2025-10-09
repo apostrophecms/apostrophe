@@ -291,8 +291,8 @@ export default {
 
   &__grid.manage :deep(.apos-area),
   &__grid.manage :deep(.apos-empty-area) {
-    padding-bottom: 0;
     padding-top: 0;
+    padding-bottom: 0;
   }
 
   &__grid.manage :deep(.apos-layout__item-content),

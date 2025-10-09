@@ -867,6 +867,7 @@ $resize-button-width: 4px;
     &.is-resizing {
       cursor: grabbing;
 
+      // stylelint-disable max-nesting-depth
       .apos-layout__item {
         background-color: rgba(#fff, 0.7);
       }
@@ -935,11 +936,20 @@ $resize-button-width: 4px;
       font-size: 1.5rem;
       line-height: 1;
     }
+
     &--toosmall {
-      border: none;
-      background-color: #ff9d9833;
-      color: var(--a-base-3);
-      cursor: not-allowed;
+      $notallowed: #ff9d9833;
+
+      & {
+        border: none;
+        background-color: $notallowed;
+        color: var(--a-base-3);
+        cursor: not-allowed;
+
+        &::before {
+          content: ''
+        }
+      }
     }
   }
 
