@@ -225,6 +225,12 @@ module.exports = {
               userId: doc._id
             });
           }
+        },
+        async normalizeLoginInfo(req, doc, options) {
+          doc.username = self.apos.login.normalizeLoginName(doc.username);
+          if (doc.email) {
+            doc.email = self.apos.login.normalizeLoginName(doc.email);
+          }
         }
       },
       // Reflect email and username changes in the safe after deduplicating in
@@ -314,12 +320,12 @@ module.exports = {
         // unique and sparse indexes which prevent duplication.
         const safeUser = {
           _id: doc._id,
-          username: doc.username,
+          username: self.apos.login.normalizeLoginName(doc.username),
           updatedAt: new Date()
         };
 
         if (doc.email) {
-          safeUser.email = doc.email;
+          safeUser.email = self.apos.login.normalizeLoginName(doc.email);
         }
 
         await self.hashPassword(doc, safeUser);
