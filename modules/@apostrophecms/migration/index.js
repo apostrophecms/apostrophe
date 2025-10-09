@@ -238,6 +238,15 @@ module.exports = {
       // Perform the actual migrations. Implementation of
       // the @apostrophecms/migration:migrate task
       async migrate(options) {
+        if (
+          self.apos.isTask() &&
+          self.apos.argv._[0] === `${self.__meta.name}:add-missing-schema-fields`
+        ) {
+          // Skip migrations
+          // if we are running @apostrophecms/migration:add-missing-schema-fields task
+          return;
+        }
+
         await self.emit('before');
         if (self.apos.isNew) {
           // Since the site is brand new (zero documents), we may assume
@@ -307,6 +316,10 @@ module.exports = {
         // and automatically detect whether any work
         // must be done
         task: () => {}
+      },
+      addMissingSchemaFields: {
+        usage: 'Add missing schema fields to existing database documents',
+        task: self.addMissingSchemaFields
       }
     };
   }
