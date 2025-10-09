@@ -67,16 +67,21 @@ module.exports = {
       // migration, wrap them with the `await apos.global.busy(myFunction)` API.
       // Note that this API involves a significant startup delay to allow
       // existing requests to terminate.
-      add(name, migrationFn, options) {
-        if (!options) {
-          options = {};
-        }
+      add(name, migrationFn, options = {}) {
         self.migrations.push({
           name,
           options,
           fn: migrationFn
         });
       },
+
+      // Cancel a migration previously ran by removing it from the database
+      // Should not be used most of the time, except when some options change and
+      // that the migration should be run again.
+      async cancel(name) {
+        return self.db.deleteOne({ _id: name });
+      },
+
       // Invoke the iterator function once for each doc in the aposDocs
       // collection. If only two arguments are given, `limit` is assumed to be 1
       // (only one doc may be processed at a time).
