@@ -22,6 +22,18 @@
         @click="confirmAndCancel"
       />
     </template>
+    <template
+      v-if="showLocalePicker"
+      #localeDisplay
+    >
+      <AposDocLocalePicker
+        :locale="modalData.locale"
+        :module-options="moduleOptions"
+        :is-modified="false"
+        :show-localized="false"
+        @switch-locale="switchLocale"
+      />
+    </template>
     <template #primaryControls>
       <AposUtilityOperations
         :module-options="moduleOptions"
@@ -132,7 +144,7 @@
 </template>
 
 <script>
-import { mapState } from 'pinia';
+import { mapActions, mapState } from 'pinia';
 import AposDocsManagerMixin from 'Modules/@apostrophecms/modal/mixins/AposDocsManagerMixin';
 import AposModifiedMixin from 'Modules/@apostrophecms/ui/mixins/AposModifiedMixin';
 import AposPublishMixin from 'Modules/@apostrophecms/ui/mixins/AposPublishMixin';
@@ -177,11 +189,12 @@ export default {
       allPiecesSelection: {
         isSelected: false,
         total: 0
-      }
+      },
+      localeSwitched: this.modalData.hasContextLocale
     };
   },
   computed: {
-    ...mapState(useModalStore, [ 'activeModal' ]),
+    ...mapState(useModalStore, [ 'activeModal', 'updateModalData' ]),
     moduleOptions() {
       return window.apos.modules[this.moduleName];
     },
@@ -281,6 +294,7 @@ export default {
     apos.bus.$off('command-menu-manager-close', this.confirmAndCancel);
   },
   methods: {
+    ...mapActions(useModalStore, [ 'updateModalData' ]),
     async create() {
       await this.edit(null);
     },
@@ -570,6 +584,18 @@ export default {
           this.checked = this.checked.filter(checkedId => !ids.includes(checkedId));
         }
       }
+    },
+    async switchLocale({ locale, localized }) {
+      this.updateModalData(this.modalData.id, { locale });
+      this.localeSwitched = locale !== apos.i18n.locale;
+
+      this.currentPage = 1;
+
+      await this.managePieces();
+      await this.manageAllPiecesTotal();
+      this.headers = this.computeHeaders();
+
+      this.setCheckedDocs([]);
     }
   }
 };

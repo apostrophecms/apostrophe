@@ -46,13 +46,17 @@
             ({{ locale.name }})
           </span>
           <span
+            v-if="showLocalized"
             class="apos-locale-picker__localized"
             :class="{ 'apos-state-is-localized': isLocalized(locale) }"
           />
         </button>
       </li>
     </ul>
-    <div class="apos-locales-picker__available">
+    <div
+      v-if="showLocalized"
+      class="apos-locales-picker__available"
+    >
       <p class="apos-locales-picker__available-desc">
         {{ $t('apostrophe:documentExistsInLocales') }}
       </p>
@@ -93,6 +97,10 @@ const props = defineProps({
   isOpen: {
     type: Boolean,
     default: false
+  },
+  showLocalized: {
+    type: Boolean,
+    default: true
   }
 });
 

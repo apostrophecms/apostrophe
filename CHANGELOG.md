@@ -2,6 +2,12 @@
 
 ## UNRELEASED
 
+### Adds
+
+* Add locale picker in the page and piece manager modals.
+
+### Fixes
+
 ### Changes
 
 * Refactors complex logic from `AposSchema` that handle data updates to simplifies it.
