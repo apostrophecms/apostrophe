@@ -57,6 +57,7 @@ module.exports = {
       username: 'apostrophe:enterUsername',
       password: 'apostrophe:enterPassword'
     },
+    caseInsensitive: false,
     localLogin: true,
     passwordReset: false,
     passwordResetHours: 48,
@@ -94,6 +95,9 @@ module.exports = {
         },
         async checkForUser() {
           await self.checkForUserAndAlert();
+        },
+        async manageLoginCaseInsensitiveMigration() {
+          await self.manageLoginCaseInsensitiveMigration();
         }
       }
     };
@@ -997,33 +1001,75 @@ module.exports = {
         }
         return usernameOrEmail.toLowerCase();
       },
-      async caseInsensitiveTask() {
-        /* const req = self.apos.task.getReq(); */
 
-        /* self.apos.migration.add('login-case-insensitive', async () => { */
-        /* }); */
-        await self.apos.migration.eachDoc({ type: '@apostrophecms/user' }, 5, async (doc) => {
-          const usernameLower = doc.username.toLowerCase();
-          console.log('doc', {
-            username: doc.username,
-            usernameLower
+      async manageLoginCaseInsensitiveMigration() {
+        if (self.options.caseInsensitive) {
+          self.apos.migration.add('login-case-insensitive', async () => {
+            await self.caseInsensitiveTask();
           });
-          if (usernameLower !== doc.username) {
-            const existingUsername = await self.apos.doc.db.findOne({
-              type: '@apostrophecms/user',
-              username: usernameLower
-            }, {
-              _id: 1,
-              username: 1
-            });
+        } else {
+          self.apos.migration.cancel('login-case-insensitive');
+        }
+      },
 
-            console.log('existingUsername', existingUsername);
+      async caseInsensitiveTask() {
+        const duplicatedUsernames = [];
+        await self.apos.migration.eachDoc({ type: '@apostrophecms/user' }, 1, async (user) => {
+          const usernameLower = user.username.toLowerCase();
+          const emailLower = user.email?.toLowerCase();
+          const shouldUpdateUsername = user.username !== usernameLower;
+          const shouldUpdateEmail = user.email && user.email !== emailLower;
+
+          if (!shouldUpdateUsername && !shouldUpdateEmail) {
+            return;
           }
 
-          /* return self.apos.doc.db.replaceOne({ */
-          /*   _id: doc._id */
-          /* }, doc); */
+          const existingUsername = await self.apos.doc.db.findOne({
+            username: usernameLower,
+            type: '@apostrophecms/user'
+          }, {
+            projection: {
+              _id: 1,
+              username: 1,
+              email: 1
+            }
+          });
+
+          if (existingUsername) {
+            duplicatedUsernames.push({
+              _id: user._id,
+              username: user.username,
+              email: user.email
+            });
+            return;
+          }
+
+          await self.apos.doc.db.updateOne(
+            { _id: user._id },
+            {
+              $set: {
+                username: usernameLower,
+                ...shouldUpdateEmail && { email: emailLower }
+              }
+            }
+          );
+          if (shouldUpdateUsername) {
+            await self.apos.user.safe.updateOne(
+              { _id: user._id },
+              {
+                $set: {
+                  username: usernameLower
+                }
+              }
+            );
+          }
         });
+
+        self.logError(
+          'conflicting-usernames',
+          'Some usernames changed in lowercase already exist for other users, please fix it or they won\'t be able to log anymore',
+          { failed: duplicatedUsernames }
+        );
       }
     };
   },
