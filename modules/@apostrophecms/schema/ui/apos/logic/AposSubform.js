@@ -109,13 +109,14 @@ export default {
       this.docFields = value;
       this.evaluateConditions();
     },
-    async submit() {
+    submit() {
       this.triggerValidation = true;
-      this.$nextTick(async () => {
+      this.$nextTick(() => {
         if (this.docFields.hasErrors) {
           this.triggerValidation = false;
           return;
         }
+
         this.$emit('submit', {
           name: this.subform.name,
           values: this.docFields.data
