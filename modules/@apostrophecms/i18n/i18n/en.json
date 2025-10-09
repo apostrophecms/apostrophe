@@ -88,6 +88,7 @@
   "close": "Close",
   "closeGlobal": "Close Global Site Settings",
   "collapseAll": "Collapse all",
+  "columnTooSmall": "Too small to add column",
   "commandMenuArchiveSelected": "Archive selected",
   "commandMenuContent": "Content",
   "commandMenuCreateNew": "Create new {{ type }}",

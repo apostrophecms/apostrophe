@@ -123,6 +123,7 @@
         v-for="slot in syntheticItems"
         :key="slot._id"
         class="apos-layout__item apos-layout__item-synthetic"
+        :class="[{'apos-layout__item-synthetic--toosmall': slot.toosmall}]"
         role="button"
         :style="{
           '--colstart': slot.colstart,
@@ -133,8 +134,17 @@
           '--justify': 'stretch',
           '--align': 'stretch'
         }"
-        @click="onAddSynthetic(slot)"
-      />
+        @click="slot.toosmall ? null : onAddSynthetic(slot)"
+      >
+        <AposIndicator
+          v-if="slot.toosmall"
+          icon="cancel-icon"
+          icon-color="var(--a-danger)"
+          icon-size="24"
+          :tooltip="'apostrophe:columnTooSmall'"
+          class="apos-admin-bar__title__indicator"
+        />
+      </div>
     </template>
     <div
       v-if="hasMotion"
@@ -856,6 +866,10 @@ $resize-button-width: 4px;
     &.is-moving,
     &.is-resizing {
       cursor: grabbing;
+
+      .apos-layout__item {
+        background-color: rgba(#fff, 0.7);
+      }
     }
 
     & > .apos-layout__item {
@@ -871,7 +885,7 @@ $resize-button-width: 4px;
   &__grid-clone.manage > &__item {
     position: relative;
     min-height: 150px;
-    transition: all 300ms ease;
+    // transition: all 300ms ease;
 
     &.is-resizing > &__item {
       opacity: 0.2;
@@ -887,11 +901,12 @@ $resize-button-width: 4px;
     position: absolute;
     box-sizing: border-box;
     border: 1px solid var(--a-primary-transparent-50);
-    transition: background-color 300ms ease;
+    // transition: background-color 300ms ease;
     inset: 0;
+    background-color: rgba(#fff, 0.7);
 
     &:hover {
-      background-color: rgba(#fff, 0.7);
+      background-color: rgba(#000, 0.3);
     }
 
     &:hover:not(.is-resizing) > .apos-layout--item-action {
@@ -921,6 +936,23 @@ $resize-button-width: 4px;
       content: '+';
       font-size: 1.5rem;
       line-height: 1;
+    }
+    &--toosmall {
+      border: none;
+      background-color: #ff9d9833;
+      color: var(--a-base-3);
+      cursor: not-allowed;
+
+      &::before {
+        text-align: center;
+        text-transform: uppercase;
+        writing-mode: vertical-rl;
+        letter-spacing: 1px;
+        font-weight: var(--a-weight-bold);
+        text-orientation: upright;
+        content: attr(data-message);
+        font-size: var(--a-type-smaller);
+      }
     }
   }
 

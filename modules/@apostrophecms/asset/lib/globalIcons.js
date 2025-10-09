@@ -26,6 +26,7 @@ module.exports = {
   'arrow-up-icon': 'ArrowUp',
   'binoculars-icon': 'Binoculars',
   'calendar-icon': 'Calendar',
+  'cancel-icon': 'Cancel',
   'cellphone-icon': 'Cellphone',
   'check-all-icon': 'CheckAll',
   'check-bold-icon': 'CheckBold',

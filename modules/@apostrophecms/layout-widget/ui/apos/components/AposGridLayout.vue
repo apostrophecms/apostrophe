@@ -47,6 +47,7 @@
           <template v-else>
             <div
               class="apos-layout__item-synthetic"
+              :class="[{'apos-layout__item-synthetic--toosmall': item.toosmall}]"
             >
               <slot
                 name="synthetic"
@@ -287,6 +288,32 @@ export default {
 */
 .apos-layout {
   position: relative;
+
+  &__grid.manage :deep(.apos-area),
+  &__grid.manage :deep(.apos-empty-area) {
+    padding-bottom: 0;
+    padding-top: 0;
+  }
+
+  &__grid.manage :deep(.apos-layout__item-content),
+  &__grid.manage :deep(.apos-area-widget-wrapper),
+  &__grid.manage :deep(.apos-area-widget-inner),
+  &__grid.manage :deep(.apos-area-widget-inner > div),
+  &__grid.manage :deep(.apos-area),
+  &__grid.manage :deep(.apos-empty-area) {
+    height: 100%;
+  }
+
+  &__grid.manage :deep(.apos-empty-area::before) {
+    position: absolute;
+    text-align: center;
+    // TODO How do we internationlize this at this depth?
+    content: 'Empty column. Click "Edit Content" to add widgets.';
+  }
+
+  &__grid.manage :deep(.apos-area-menu .apos-button) {
+    display: none;
+  }
 
   &__grid.manage > .apos-layout__item {
     pointer-events: none;
