@@ -1142,6 +1142,7 @@ $resize-button-width: 4px;
 .apos-layout__item-operations-handle {
   :deep([data-operation-id="layoutColMove"] span) {
     cursor: grab;
+
     &:active {
       cursor: grabbing;
     }
