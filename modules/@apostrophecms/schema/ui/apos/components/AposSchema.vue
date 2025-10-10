@@ -52,7 +52,6 @@
         :server-error="fields[field.name].serverError"
         :doc-id="docId"
         :generation="generation"
-        @update:model-value="updateNextAndEmit"
         @update-doc-data="onUpdateDocData"
         @validate="emitValidate()"
       />
