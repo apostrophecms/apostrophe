@@ -40,14 +40,7 @@
           @touchstart="onStartMove(item, $event)"
           @mouseup="resetGhostData"
           @touchend="resetGhostData"
-        >
-          <AposIndicator
-            icon="cursor-move-icon"
-            :icon-size="16"
-            icon-color="var(--a-base-1)"
-            class="apos-layout__item-move-handle-icon"
-          />
-        </button>
+        />
         <button
           v-show="!hasMotion"
           class="apos-layout--item-action apos-layout__item-resize-handle nw"
@@ -761,7 +754,7 @@ export default {
         const height = grip.getBoundingClientRect().height;
         grip.style.top = `${y - (height / 2)}px`;
       } else {
-        // todo should never be missing!
+        // should never be missing!
       }
     },
     resetGhostHandleOffsets() {
@@ -1109,7 +1102,7 @@ $resize-button-width: 4px;
 .apos-layout__item-move-handle-icon {
   position: absolute;
   top: 8px;
-  left: 100px;
+  left: 8px;
   width: 30px;
   height: 30px;
   border: 1px solid var(--a-primary-transparent-25);
@@ -1144,6 +1137,12 @@ $resize-button-width: 4px;
   left: 0;
   display: block;
   padding: 8px;
+}
+
+.apos-layout__item-operations-handle {
+  :deep([data-operation-id="layoutColMove"]) {
+    cursor: grab;
+  }
 }
 
 /* stylelint-disable-next-line media-feature-name-allowed-list */
