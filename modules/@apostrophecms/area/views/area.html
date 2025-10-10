@@ -4,7 +4,7 @@
   Print attributes string from attrs object.
   Examples: 
   attrs({ one: "1", two: true, three: false }) -> one="1" two
-  attrs({ one: "1", two: true, three: false }, 'data-') -> data-one="1" data-three
+  attrs({ one: "1", two: true, three: false }, 'data-') -> data-one="1" data-two
 #}
 {%- macro _writeAttr(attrs, prefix = 'data-') -%}
   {%- for key, value in attrs -%}
@@ -12,7 +12,7 @@
   {%- endfor -%}
 {%- endmacro -%}
 <div 
-  class="apos-area{{ (' ' + data._with.aspoClassName) if  data._with.aspoClassName }}"
+  class="apos-area{{ (' ' + data._with.aposClassName) if  data._with.aposClassName }}"
   {% if data.canEdit -%} 
     data-apos-area-newly-editable 
     data-doc-id='{{ data.area._docId | jsonAttribute({ single: true }) }}' 

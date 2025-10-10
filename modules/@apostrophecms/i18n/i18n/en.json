@@ -266,6 +266,8 @@
   "layout": "Layout",
   "layoutAlign": "Vertical alignment",
   "layoutColumn": "Layout Column",
+  "layoutColumnEmptyArea": "Empty column. Click \"Edit Content\" to add widgets.",
+  "layoutColumnTooSmall": "Too small to add column",
   "layoutJustify": "Horizontal alignment",
   "layoutStretchHorizontal": "Stretch (horizontal)",
   "layoutStretchVertical": "Stretch (vertical)",
