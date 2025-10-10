@@ -64,6 +64,10 @@ module.exports = {
           placement: 'breadcrumb',
           icon: 'delete-icon',
           tooltip: 'apostrophe:delete'
+        },
+        layoutColMove: {
+          placement: 'breadcrumb',
+          icon: 'cursor-move-icon'
         }
       }
     };

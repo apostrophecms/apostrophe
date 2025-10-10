@@ -11,6 +11,7 @@
         :key="operation.key"
         v-slot="slotProps"
         v-bind="operation.props"
+        :data-operation-id="operation.key"
         :data-apos-test-name="operation.name"
         :data-apos-test-action="operation.action"
         :data-apos-test-type="operation.type"
