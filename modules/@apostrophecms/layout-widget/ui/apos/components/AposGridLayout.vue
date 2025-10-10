@@ -2,6 +2,7 @@
   <div
     ref="root"
     class="apos-layout"
+    :style="rootCssVars"
   >
     <TransitionGroup
       ref="grid"
@@ -141,6 +142,15 @@ export default {
         layoutMode: this.layoutMode,
         deviceMode: this.deviceMode
       });
+    },
+    rootCssVars() {
+      // Escape quotes and backslashes for CSS content property
+      const text = this.$t('apostrophe:layoutColumnEmptyArea')
+        .replace(/\\/g, '\\\\')
+        .replace(/'/g, '\\\'');
+      return {
+        '--empty-area-text': `'${text}'`
+      };
     },
     syntheticItems() {
       if (!this.isManageMode) {
@@ -307,8 +317,7 @@ export default {
   &__grid.manage :deep(.apos-empty-area::before) {
     position: absolute;
     text-align: center;
-    // TODO How do we internationlize this at this depth?
-    content: 'Empty column. Click "Edit Content" to add widgets.';
+    content: var(--empty-area-text);
   }
 
   &__grid.manage :deep(.apos-area-menu .apos-button) {

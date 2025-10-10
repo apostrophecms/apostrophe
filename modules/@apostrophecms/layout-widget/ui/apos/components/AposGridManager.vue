@@ -141,7 +141,7 @@
           icon="cancel-icon"
           icon-color="var(--a-danger)"
           icon-size="24"
-          :tooltip="'apostrophe:columnTooSmall'"
+          :tooltip="'apostrophe:layoutColumnTooSmall'"
           class="apos-admin-bar__title__indicator"
         />
       </div>
