@@ -5,6 +5,7 @@
 ### Adds
 
 * Support for the `render-areas` query parameter in the REST API when using Astro as an external frontend, provided the Astro project has the corresponding route. This allows section template library previews to work in Astro projects.
+* Made `self.apos.externalFrontKey` available, simplifying API calls back to Astro.
 
 ### Changes
 
