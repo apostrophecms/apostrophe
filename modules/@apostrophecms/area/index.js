@@ -1,5 +1,6 @@
 const _ = require('lodash');
 const { stripIndent } = require('common-tags');
+const cheerio = require('cheerio');
 
 // An area is a series of zero or more widgets, in which users can add
 // and remove widgets and drag them to reorder them. This module implements
@@ -338,7 +339,11 @@ module.exports = {
           self.apos.attachment.all(area, { annotate: true });
         }
         if (self.apos.externalFrontKey) {
-          const response = await fetch(`${self.apos.baseUrl}/api/apos-to-astro/render-area`, {
+          // Astro can render components or return JSON but not both, at least not without
+          // using its experimental container API which would potentially not have the same
+          // configuration as the main Astro project. So we let Astro be Astro, then we pull out
+          // the individual renderings with Cheerio. -Tom
+          const response = await fetch(`${self.apos.baseUrl}/api/apos-external-front/render-area`, {
             method: 'POST',
             headers: {
               'apos-external-front-key': self.apos.externalFrontKey
@@ -350,14 +355,18 @@ module.exports = {
           if (response.status >= 400) {
             throw response;
           }
-          const result = await response.json();
+          const html = await response.text();
+          const $ = cheerio.load(`<div id="root">${html}</div>`);
           if (inline) {
-            for (let i = 0; (i < result.area.items.length); i++) {
-              area.items[i]._rendered = result.area.items[i]._rendered;
+            for (let i = 0; (i < area.items.length); i++) {
+              area.items[i]._rendered = $(`#root [data-widget-id="${area.items[i]._id}"]`).html() || '';
             }
             return null;
           } else {
-            return result.area.items.map(item => item._rendered).join('\n');
+            const $children = $('#root [data-widget-id]');
+            return $children.map(function() {
+              return $(this).html();
+            }).join('\n');
           }
         } else if (inline) {
           for (const item of area.items) {
