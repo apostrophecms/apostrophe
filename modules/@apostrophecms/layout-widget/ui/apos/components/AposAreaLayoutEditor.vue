@@ -193,19 +193,12 @@ export default {
     }
   },
   watch: {
-    // Steal the columns focus, set it on the layout widget instead.
-    // Additionally send "emphasized" state to the central store
-    // to keep the breadcrumb label visible, when children are focused.
+    // Intercept the columns focus, and emphasize the layout widget instead.
     async focusedWidget(widgetId) {
       if (!this.parentOptions.widgetId) {
         return;
       }
       await this.$nextTick();
-      if (this.layoutColumnWidgetIds.includes(widgetId)) {
-        this.clickOnGrid();
-        this.deEmphasizeGrid();
-        return;
-      }
 
       if (this.layoutColumnWidgetDeepIds.includes(widgetId)) {
         this.emphasizeGrid();
