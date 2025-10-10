@@ -277,6 +277,28 @@ module.exports = {
             public: cssContent
           };
         }
+      },
+      annotateWidgetForExternalFront() {
+        const {
+          columns,
+          minSpan,
+          defaultSpan,
+          mobile,
+          tablet,
+          gap,
+          defaultCellHorizontalAlignment,
+          defaultCellVerticalAlignment
+        } = self.options;
+        return {
+          columns,
+          minSpan,
+          defaultSpan,
+          mobile,
+          tablet,
+          gap,
+          defaultCellHorizontalAlignment,
+          defaultCellVerticalAlignment
+        };
       }
     };
   },
