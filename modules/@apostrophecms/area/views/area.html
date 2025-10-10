@@ -12,7 +12,7 @@
   {%- endfor -%}
 {%- endmacro -%}
 <div 
-  class="apos-area{{ (' ' + data._with.aspoClassName) if  data._with.aspoClassName }}"
+  class="apos-area{{ (' ' + data._with.aposClassName) if  data._with.aposClassName }}"
   {% if data.canEdit -%} 
     data-apos-area-newly-editable 
     data-doc-id='{{ data.area._docId | jsonAttribute({ single: true }) }}' 
