@@ -104,12 +104,6 @@
         class="apos-area-widget-guard"
         :class="{'apos-is-disabled': isFocused}"
       />
-      <!-- <div
-        ref="sticky"
-        :style="stickyStyles"
-        class="apos-area-widget-controls__sticky-container"
-      > -->
-      <!-- <div class="dummy" ref="dummyTop" style="height: 1px; width: 1px;"/> -->
       <div
         ref="modifyControls"
         :style="stickyControlsStyles"
@@ -136,7 +130,6 @@
           @update="$emit('update', $event)"
         />
       </div>
-      <!-- </div> -->
 
       <!-- Still used for contextual editing components -->
       <component
@@ -170,7 +163,6 @@
         @edit="$emit('edit', i);"
         @update="$emit('update', $event);"
       />
-      <!-- <div class="dummy" ref="dummyBottom" style="height: 1px; width: 1px;"/> -->
       <div
         class="
           apos-area-widget-controls
@@ -200,9 +192,6 @@
 </template>
 
 <script>
-import {
-  computePosition, offset, shift, flip, arrow, autoPlacement
-} from '@floating-ui/dom';
 import AposIndicator from 'Modules/@apostrophecms/ui/components/AposIndicator.vue';
 
 export default {
@@ -439,6 +428,8 @@ export default {
         this.$refs.wrapper.removeEventListener('keydown', this.handleKeyboardUnfocus);
         this.isSuppressingWidgetControls = false;
       }
+      // Helps get scroll tracking unstuck on new/modified widgets
+      this.scrollTicking = false;
     }
   },
   created() {
@@ -453,7 +444,6 @@ export default {
   },
   mounted() {
     this.mounted = true;
-    // console.log(this.$refs.wrapper);
     // AposAreaEditor is listening for keyboard input that triggers
     // a 'focus my parent' plea
     apos.bus.$on('widget-focus-parent', this.focusParent);
@@ -711,13 +701,6 @@ export default {
 </script>
 
 <style lang="scss" scoped>
-.apos-area-widget-controls__sticky-container {
-  z-index: 1;
-  position: absolute;
-  // top: 20px;
-  right: 20px;
-  // height: calc(100% - 40px);
-}
 
 @mixin showButton() {
   transform: scale(1.15);
@@ -844,12 +827,6 @@ export default {
     top: 20px;
     right: 20px;
     transition: opacity 300ms ease;
-
-    &--fixed {
-      top: 0;
-      left: 0;
-      width: 100%;
-    }
 
     :deep(.apos-button-group__inner) {
       border: 1px solid var(--a-primary-transparent-25);
