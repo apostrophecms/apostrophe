@@ -6,6 +6,78 @@ const getLib = async () => import(
 describe('Layout Widget', function () {
 
   describe('Move (grid-state)', function () {
+    it('[computeGhostMoveSnap] basic column-based snapping (no collisions)', async function () {
+      const lib = await getLib();
+      const items = [
+        buildItem('a', 1, 2, 0)
+      ];
+      const state = makeState(lib, items, 12, 1);
+      const columns = 12;
+      const rows = 1;
+      // Assume track width 100px, no gap -> stepX = 100
+      const stepX = 100;
+      const stepY = 100; // unused for row=1
+      const item = items[0];
+      // Threshold default ~0.6 -> shift = (1 - 0.6) * 100 = 40
+      // Positions near 0 should snap to colstart 1
+      let snap = lib.computeGhostMoveSnap({
+        left: 0,
+        top: 0,
+        state,
+        item,
+        columns,
+        rows,
+        stepX,
+        stepY
+      });
+      assert.equal(snap.colstart, 1);
+      // At left=61, (61+40)/100=1.01 -> floor=1 -> +1 => col 2
+      snap = lib.computeGhostMoveSnap({
+        left: 61,
+        top: 0,
+        state,
+        item,
+        columns,
+        rows,
+        stepX,
+        stepY
+      });
+      assert.equal(snap.colstart, 2);
+    });
+    it('[computeGhostMoveSnap] respects custom threshold', async function () {
+      const lib = await getLib();
+      const items = [ buildItem('a', 1, 1, 0) ];
+      const state = makeState(lib, items, 12, 1);
+      const stepX = 100;
+      const item = items[0];
+      // With threshold=0.9 -> shift = 10px
+      // - at left=89: (89+10)/100=0.99 floor=0 -> col 1
+      // - at left=90: (90+10)/100=1.0 floor=1 -> +1 => col 2
+      let snap = lib.computeGhostMoveSnap({
+        left: 89,
+        top: 0,
+        state,
+        item,
+        columns: 12,
+        rows: 1,
+        stepX,
+        stepY: 100,
+        threshold: 0.9
+      });
+      assert.equal(snap.colstart, 1);
+      snap = lib.computeGhostMoveSnap({
+        left: 90,
+        top: 0,
+        state,
+        item,
+        columns: 12,
+        rows: 1,
+        stepX,
+        stepY: 100,
+        threshold: 0.9
+      });
+      assert.equal(snap.colstart, 2);
+    });
     it('[getMoveChanges] should return no patches for no changes', async function () {
       const { getMoveChanges } = await getLib();
       const state = {

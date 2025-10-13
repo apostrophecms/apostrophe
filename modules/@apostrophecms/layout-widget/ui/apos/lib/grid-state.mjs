@@ -606,8 +606,7 @@ export function previewMoveChanges({
     data,
     state,
     item,
-    precomp,
-    preview: true
+    precomp
   });
   if (!decided) {
     return null;
@@ -621,6 +620,102 @@ export function previewMoveChanges({
       rowstart: moving.rowstart
     }
     : null;
+}
+
+/**
+ * Compute ghost snapping target (columns/rows and pixel offsets) for a move.
+ * Stateless and DOM-free: caller must provide stepX/stepY (track + gap size).
+ * Mirrors the previous implementation in GridManager.onGhostMove.
+ *
+ * Note: This only refactors existing behavior; it does not change the
+ * collision model or snapping semantics.
+ *
+ * @param {Object} arg
+ * @param {number} arg.left - Current ghost left (px) relative to grid container.
+ * @param {number} arg.top - Current ghost top (px) relative to grid container.
+ * @param {import('./grid-state.mjs').GridState} arg.state - Current grid state.
+ * @param {import('./grid-state.mjs').CurrentItem} arg.item - Moving item.
+ * @param {Object} [arg.precomp] - Optional precomputed move index.
+ * @param {number} arg.columns - Number of columns.
+ * @param {number} arg.rows - Number of rows.
+ * @param {number} arg.stepX - Column track size incl. gap (px).
+ * @param {number} arg.stepY - Row track size incl. gap (px).
+ * @param {number} [arg.threshold] - Snap threshold [0..1], defaults to 0.6 if missing.
+ * @returns {{
+ *  colstart: number,
+ *  rowstart: number,
+ *  snapLeft: number,
+ *  snapTop: number
+ * } | null}
+ */
+export function computeGhostMoveSnap({
+  left,
+  top,
+  state,
+  item,
+  precomp,
+  columns,
+  rows,
+  stepX,
+  stepY,
+  threshold
+}) {
+  if (!state || !item) {
+    return null;
+  }
+  const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
+  const colspan = Math.max(1, item.colspan || 1);
+  const rowspan = Math.max(1, item.rowspan || 1);
+  const maxStartX = Math.max(1, columns - colspan + 1);
+  const maxStartY = Math.max(1, rows - rowspan + 1);
+
+  const t = Number(threshold ?? 0.6);
+  const tClamped = clamp(Number.isFinite(t) ? t : 0.6, 0.05, 0.95);
+  const shiftX = (1 - tClamped) * stepX;
+  const shiftY = (1 - tClamped) * stepY;
+
+  let c = Math.floor((left + shiftX) / stepX) + 1;
+  let r = Math.floor((top + shiftY) / stepY) + 1;
+  c = Math.max(1, Math.min(c, maxStartX));
+  r = Math.max(1, Math.min(r, maxStartY));
+
+  let colstart = c;
+  let rowstart = r;
+
+  // Collision-aware preview to ensure snap target reflects valid placement
+  if (item && item._id) {
+    const preview = previewMoveChanges({
+      data: {
+        id: item._id,
+        colstart,
+        rowstart
+      },
+      state,
+      item,
+      precomp: precomp || prepareMoveIndex({
+        state,
+        item
+      })
+    });
+    if (preview) {
+      colstart = preview.colstart;
+      rowstart = preview.rowstart;
+    } else {
+      // Invalid move -> snap to current item position
+      colstart = item.colstart ?? colstart;
+      rowstart = item.rowstart ?? rowstart;
+    }
+  }
+
+  const snapLeft = Math.round((colstart - 1) * stepX);
+  const snapTop = Math.round((rowstart - 1) * stepY);
+
+  return {
+    colstart,
+    rowstart,
+    snapLeft,
+    snapTop
+  };
 }
 
 // Core move decision logic (position-only).

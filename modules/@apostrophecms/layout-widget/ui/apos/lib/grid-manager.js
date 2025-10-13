@@ -1,6 +1,9 @@
 import { throttle } from 'lodash';
 import {
-  getMoveChanges, getResizeChanges, validateResizeX, previewMoveChanges, prepareMoveIndex
+  getMoveChanges,
+  getResizeChanges,
+  validateResizeX,
+  computeGhostMoveSnap
 } from './grid-state.mjs';
 
 /**
@@ -390,7 +393,7 @@ export class GridManager {
       };
     }
 
-    // Compute optional snapping with minimal overhead.
+    // Compute optional snapping with minimal overhead via stateless helper.
     const style = this.getGridComputedStyle();
     const colGap = parseFloat(style.columnGap || style.gap) || 0;
     const rowGap = parseFloat(style.rowGap || style.gap) || 0;
@@ -400,71 +403,28 @@ export class GridManager {
     const trackHeight = (containerRect.height - rowGap * (rows - 1)) / rows;
     const stepX = trackWidth + colGap;
     const stepY = trackHeight + rowGap;
+    const tMoveOpt = state?.options?.snapThresholdMove;
 
-    const colspan = Math.max(1, item.colspan || 1);
-    const rowspan = Math.max(1, item.rowspan || 1);
-    const maxStartX = Math.max(1, columns - colspan + 1);
-    const maxStartY = Math.max(1, rows - rowspan + 1);
-
-    // Initial nearest indices with custom snap threshold.
-    const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
-    const tMoveOpt = (
-      state?.options?.snapThresholdMove ?? 0.6
-    );
-    const tMove = Number(tMoveOpt);
-    const tMoveClamped = clamp(
-      Number.isFinite(tMove) ? tMove : 0.6,
-      0.05,
-      0.95
-    );
-    const shiftX = (1 - tMoveClamped) * stepX;
-    const shiftY = (1 - tMoveClamped) * stepY;
-    let c = Math.floor((left + shiftX) / stepX) + 1;
-    let r = Math.floor((top + shiftY) / stepY) + 1;
-    c = Math.max(1, Math.min(c, maxStartX));
-    r = Math.max(1, Math.min(r, maxStartY));
-
-    // Optimistic desired snap indices
-    let colstart = c;
-    let rowstart = r;
-
-    // Collision-aware preview: compute once per throttle tick. We reuse a cached
-    // precomputation prepared at drag start (or lazily here) to keep this fast.
-    if (state && item && item._id) {
-      const preview = previewMoveChanges({
-        data: {
-          id: item._id,
-          colstart,
-          rowstart
-        },
-        state,
-        item,
-        precomp: precomp || prepareMoveIndex({
-          state,
-          item
-        })
-      });
-      if (preview) {
-        colstart = preview.colstart;
-        rowstart = preview.rowstart;
-      } else {
-        // Invalid move at this location: snapping should represent the
-        // actual persisted outcome (no-op), not an invalid target.
-        colstart = item.colstart || colstart;
-        rowstart = item.rowstart || rowstart;
-      }
-    }
-
-    const snapLeft = Math.round((colstart - 1) * stepX);
-    const snapTop = Math.round((rowstart - 1) * stepY);
+    const snap = computeGhostMoveSnap({
+      left,
+      top,
+      state,
+      item,
+      precomp,
+      columns,
+      rows,
+      stepX,
+      stepY,
+      threshold: tMoveOpt
+    }) || {};
 
     return {
       left,
       top,
-      snapLeft,
-      snapTop,
-      colstart,
-      rowstart
+      snapLeft: snap.snapLeft,
+      snapTop: snap.snapTop,
+      colstart: snap.colstart,
+      rowstart: snap.rowstart
     };
   }
 
