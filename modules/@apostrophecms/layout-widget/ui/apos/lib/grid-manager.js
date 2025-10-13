@@ -4,7 +4,8 @@ import {
   getResizeChanges,
   validateResizeX,
   computeGhostMoveSnap,
-  prepareMoveIndex
+  prepareMoveIndex,
+  shouldComputeMoveSnap
 } from './grid-state.mjs';
 
 /**
@@ -353,14 +354,10 @@ export class GridManager {
   onGhostMove({
     data, state, item, precomp
   }, event) {
-    // Fast computation of position relative to the grid container, keeping the
-    // entire ghost within bounds. Avoids layout thrash by using cached
-    // container rect and known ghost dimensions from `data`.
     const containerRect = this.getGridBoundingRect();
     const elWidth = data.width || data.element.offsetWidth;
     const elHeight = data.height || data.element.offsetHeight;
 
-    // Lazily compute the cursor offset within the item on first move.
     if (data.clickOffsetX == null || data.clickOffsetY == null) {
       data.clickOffsetX = Math.min(
         Math.max(0, data.startX - containerRect.left - data.left),
@@ -394,7 +391,6 @@ export class GridManager {
       };
     }
 
-    // Compute optional snapping with minimal overhead via stateless helper.
     const style = this.getGridComputedStyle();
     const colGap = parseFloat(style.columnGap || style.gap) || 0;
     const rowGap = parseFloat(style.rowGap || style.gap) || 0;
@@ -408,7 +404,6 @@ export class GridManager {
 
     // Memoize precomputed move index across a drag
     if (!precomp && data) {
-      // Build once per drag, invalidate if item changes
       if (!data._movePrecomp || data._movePrecompFor !== item?._id) {
         data._movePrecomp = prepareMoveIndex({
           state,
@@ -417,6 +412,35 @@ export class GridManager {
         data._movePrecompFor = item?._id;
       }
       precomp = data._movePrecomp;
+    }
+
+    // Fast early bailout: skip recompute when signature unchanged
+    const bail = shouldComputeMoveSnap({
+      left,
+      top,
+      state,
+      item,
+      columns,
+      rows,
+      stepX,
+      stepY,
+      threshold: tMoveOpt,
+      prevMemo: data?.moveSnapMemo || null
+    });
+
+    if (
+      !bail.compute &&
+      typeof data?.snapLeft === 'number' &&
+      typeof data?.snapTop === 'number'
+    ) {
+      return {
+        left,
+        top,
+        snapLeft: data.snapLeft,
+        snapTop: data.snapTop,
+        colstart: null,
+        rowstart: null
+      };
     }
 
     const snap = computeGhostMoveSnap({
@@ -431,6 +455,11 @@ export class GridManager {
       stepY,
       threshold: tMoveOpt
     }) || {};
+
+    // Store latest memo and snap so future frames can bail early
+    if (bail.memo) {
+      data.moveSnapMemo = bail.memo;
+    }
 
     return {
       left,

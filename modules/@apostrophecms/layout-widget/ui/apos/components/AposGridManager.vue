@@ -248,7 +248,6 @@
 </template>
 
 <script>
-import { throttle } from 'lodash';
 import { GridManager } from '../lib/grid-manager.js';
 import {
   getReorderPatch, prepareMoveIndex
@@ -313,7 +312,8 @@ export default {
         width: null,
         height: null,
         snapTop: null,
-        snapLeft: null
+        snapLeft: null,
+        moveSnapMemo: null
       },
       // The current item computed changes.
       ghostDataWrite: {
@@ -347,13 +347,14 @@ export default {
         iconOnly: true,
         iconSize: 11
       },
-      onMoveDebounced: throttle(this.onMove, 10),
-      onResizeDebounced: throttle(this.onResize, 10),
       lastPreviewKey: null,
       ghostHandleOffsets: {
         west: null,
         east: null
-      }
+      },
+      // RAF coalescing
+      rafId: null,
+      lastEvent: null
     };
   },
   computed: {
@@ -465,9 +466,11 @@ export default {
       this.resizeObserver = null;
     }
     this.manager.destroy();
-    if (this.onMoveDebounced?.cancel) {
-      this.onMoveDebounced.cancel();
+    if (this.rafId) {
+      cancelAnimationFrame(this.rafId);
+      this.rafId = null;
     }
+    this.lastEvent = null;
   },
   methods: {
     onAddSynthetic(slot) {
@@ -648,11 +651,26 @@ export default {
       }
     },
     onMouseMove(event) {
-      if (this.isResizing) {
-        this.onResizeDebounced(event);
-      } else if (this.isMoving) {
-        this.onMoveDebounced(event);
+      if (!this.isResizing && !this.isMoving) {
+        return;
       }
+      this.lastEvent = event;
+      if (this.rafId) {
+        return;
+      }
+      this.rafId = requestAnimationFrame(() => {
+        this.rafId = null;
+        const ev = this.lastEvent;
+        this.lastEvent = null;
+        if (!ev) {
+          return;
+        }
+        if (this.isResizing) {
+          this.onResize(ev);
+        } else if (this.isMoving) {
+          this.onMove(ev);
+        }
+      });
     },
     onMouseUp(event) {
       if (this.isResizing) {
@@ -679,7 +697,11 @@ export default {
       }
     },
     resetGhostData() {
-      // Always clear any preview when ghost state resets
+      if (this.rafId) {
+        cancelAnimationFrame(this.rafId);
+        this.rafId = null;
+      }
+      this.lastEvent = null;
       if (this.lastPreviewKey) {
         this.$emit('preview-clear');
         this.lastPreviewKey = null;

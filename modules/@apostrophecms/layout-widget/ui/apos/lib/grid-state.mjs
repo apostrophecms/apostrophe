@@ -791,6 +791,125 @@ export function computeGhostMoveSnap({
   };
 }
 
+/**
+ * Fast, stateless bailout to decide whether we need to recompute move snapping.
+ * Computes a coarse signature made of:
+ *  - coarse column and row buckets (track-based)
+ *  - hovered neighbor segment id on the leading edge (if any)
+ *  - movement direction (east/west/null)
+ *  - whether the pointer is on the swap side of the hovered neighbor threshold
+ * If this signature hasn't changed since the last call (prevMemo), higher-level
+ * code can skip calling computeGhostMoveSnap without observable behavior change.
+ *
+ * Returns an object with:
+ *  - compute: boolean -> true if signature changed or prev missing
+ *  - memo: string -> the new signature to store for next comparison
+ *
+ * Note: This function is stateless and does no caching; callers store memo.
+ *
+ * @param {Object} arg
+ * @param {number} arg.left
+ * @param {number} arg.top
+ * @param {import('./grid-state.mjs').GridState} arg.state
+ * @param {import('./grid-state.mjs').CurrentItem} arg.item
+ * @param {number} arg.columns
+ * @param {number} arg.rows
+ * @param {number} arg.stepX
+ * @param {number} arg.stepY
+ * @param {number} [arg.threshold]
+ * @param {string} [arg.prevMemo]
+ * @returns {{ compute: boolean, memo: string }}
+ */
+export function shouldComputeMoveSnap({
+  left,
+  top,
+  state,
+  item,
+  columns,
+  rows,
+  stepX,
+  stepY,
+  threshold,
+  prevMemo
+}) {
+  const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
+  const colspan = Math.max(1, item?.colspan || 1);
+  const rowspan = Math.max(1, item?.rowspan || 1);
+  const maxStartX = Math.max(1, columns - colspan + 1);
+  const maxStartY = Math.max(1, rows - rowspan + 1);
+
+  const t = Number(threshold ?? 0.6);
+  const tClamped = clamp(Number.isFinite(t) ? t : 0.6, 0.05, 0.95);
+  const shiftX = (1 - tClamped) * stepX;
+  const shiftY = (1 - tClamped) * stepY;
+
+  let c = Math.floor((left + shiftX) / stepX) + 1;
+  let r = Math.floor((top + shiftY) / stepY) + 1;
+  c = Math.max(1, Math.min(c, maxStartX));
+  r = Math.max(1, Math.min(r, maxStartY));
+
+  // Direction based on coarse col delta relative to original item
+  let dir = null;
+  if (item?.colstart != null) {
+    if (c > item.colstart) {
+      dir = 'east';
+    } else if (c < item.colstart) {
+      dir = 'west';
+    }
+  }
+
+  // Leading edge and hovered neighbor segment at that row for swap-side check
+  // Build contiguous segments from positions for row r
+  let hoveredId = '-';
+  let onSwapSide = 0;
+  const widthPx = colspan * stepX;
+  const leadPx = dir === 'west' ? left : (left + widthPx);
+  const hoverCol = Math.max(1, Math.min(columns, Math.floor(leadPx / stepX) + 1));
+  const rowIndex = state.positions?.get?.(r);
+  if (rowIndex) {
+    // Walk to find containing segment for hoverCol
+    let segStart = 0;
+    let segEnd = 0;
+    let segId = null;
+    // Expand outward from hoverCol to identify contiguous id block
+    const idAt = (col) => rowIndex.get(col) || null;
+    const centerId = idAt(hoverCol);
+    if (centerId && centerId !== item._id) {
+      segId = centerId;
+      // walk left
+      segStart = hoverCol;
+      while (segStart - 1 >= 1 && idAt(segStart - 1) === segId) {
+        segStart -= 1;
+      }
+      // walk right
+      segEnd = hoverCol;
+      while (segEnd + 1 <= columns && idAt(segEnd + 1) === segId) {
+        segEnd += 1;
+      }
+      hoveredId = segId;
+
+      // Compute flip boundary in px based on neighbor width
+      const nStart = segStart;
+      const nEnd = segEnd;
+      const neighborStartPx = (nStart - 1) * stepX;
+      const neighborEndPx = nEnd * stepX;
+      const neighborWidthPx = (nEnd - nStart + 1) * stepX;
+      const flipPx = dir === 'west'
+        ? (neighborEndPx - (tClamped * neighborWidthPx))
+        : (neighborStartPx + (tClamped * neighborWidthPx));
+      onSwapSide = (dir === 'west')
+        ? (leadPx <= flipPx ? 1 : 0)
+        : (leadPx >= flipPx ? 1 : 0);
+    }
+  }
+
+  const memo = `${r}|${c}|${hoveredId}|${dir || '-'}|${onSwapSide}`;
+  return {
+    compute: memo !== prevMemo,
+    memo
+  };
+}
+
 // Core move decision logic (position-only).
 // Used by both getMoveChanges and previewMoveChanges.
 function decideMove({

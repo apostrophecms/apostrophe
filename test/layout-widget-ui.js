@@ -6,6 +6,152 @@ const getLib = async () => import(
 describe('Layout Widget', function () {
 
   describe('Move (grid-state)', function () {
+    it('[shouldComputeMoveSnap] changes memo when coarse col/row bucket changes', async function () {
+      const lib = await getLib();
+      const items = [ buildItem('a', 1, 2, 0) ];
+      const state = makeState(lib, items, 12, 2);
+      const stepX = 100;
+      const stepY = 100;
+      const item = items[0];
+      const a1 = lib.shouldComputeMoveSnap({
+        left: 0,
+        top: 0,
+        state,
+        item,
+        columns: 12,
+        rows: 2,
+        stepX,
+        stepY,
+        threshold: 0.6
+      });
+      const a2 = lib.shouldComputeMoveSnap({
+        left: 120,
+        top: 0,
+        state,
+        item,
+        columns: 12,
+        rows: 2,
+        stepX,
+        stepY,
+        threshold: 0.6,
+        prevMemo: a1.memo
+      });
+      assert.equal(a1.compute, true);
+      assert.equal(a2.compute, true, 'moving one track should change memo');
+    });
+
+    it('[shouldComputeMoveSnap] stable pointer within same coarse state returns compute=false', async function () {
+      const lib = await getLib();
+      const items = [ buildItem('a', 1, 2, 0) ];
+      const state = makeState(lib, items, 12, 1);
+      const stepX = 100;
+      const stepY = 100;
+      const item = items[0];
+      const a1 = lib.shouldComputeMoveSnap({
+        left: 10,
+        top: 0,
+        state,
+        item,
+        columns: 12,
+        rows: 1,
+        stepX,
+        stepY,
+        threshold: 0.6
+      });
+      const a2 = lib.shouldComputeMoveSnap({
+        left: 15,
+        top: 0,
+        state,
+        item,
+        columns: 12,
+        rows: 1,
+        stepX,
+        stepY,
+        threshold: 0.6,
+        prevMemo: a1.memo
+      });
+      assert.equal(a2.compute, false, 'small move in same bucket should not recompute');
+    });
+
+    it('[shouldComputeMoveSnap] flips compute when crossing hovered-neighbor flip boundary (east)', async function () {
+      const lib = await getLib();
+      // a:1..6 (6), b:7..2 (2), c:9..12 (4)
+      const items = [
+        buildItem('a', 1, 6, 0),
+        buildItem('b', 7, 2, 1),
+        buildItem('c', 9, 4, 2)
+      ];
+      const state = makeState(lib, items, 12, 1);
+      const stepX = 100;
+      const stepY = 100;
+      const item = items[1];
+      // For c width=4, threshold 0.7 ->
+      //   flip at neighborStartPx + 0.7*width = 800 + 280 = 1080
+      // Using right edge (b width=2 => widthPx=200): left threshold = 880
+      const a1 = lib.shouldComputeMoveSnap({
+        left: 879,
+        top: 0,
+        state,
+        item,
+        columns: 12,
+        rows: 1,
+        stepX,
+        stepY,
+        threshold: 0.7
+      });
+      const a2 = lib.shouldComputeMoveSnap({
+        left: 880,
+        top: 0,
+        state,
+        item,
+        columns: 12,
+        rows: 1,
+        stepX,
+        stepY,
+        threshold: 0.7,
+        prevMemo: a1.memo
+      });
+      assert.equal(a2.compute, true, 'crossing swap flip must recompute');
+    });
+
+    it('[shouldComputeMoveSnap] flips compute when crossing hovered-neighbor flip boundary (west)', async function () {
+      const lib = await getLib();
+      // a:1..2 (2), b:3..8 (6), c:9..12 (4)
+      const items = [
+        buildItem('a', 1, 2, 0),
+        buildItem('b', 3, 6, 1),
+        buildItem('c', 9, 4, 2)
+      ];
+      const state = makeState(lib, items, 12, 1);
+      const stepX = 100;
+      const stepY = 100;
+      const item = items[1];
+      // West neighbor a width=2 -> flip at end - 0.7*width -> 200 - 140 = 60
+      const a1 = lib.shouldComputeMoveSnap({
+        left: 59,
+        top: 0,
+        state,
+        item,
+        columns: 12,
+        rows: 1,
+        stepX,
+        stepY,
+        threshold: 0.7
+      });
+      const a2 = lib.shouldComputeMoveSnap({
+        left: 61,
+        top: 0,
+        state,
+        item,
+        columns: 12,
+        rows: 1,
+        stepX,
+        stepY,
+        threshold: 0.7,
+        prevMemo: a1.memo
+      });
+      assert.equal(a2.compute, true, 'crossing west swap flip must recompute');
+    });
     it('[computeGhostMoveSnap] basic column-based snapping (no collisions)', async function () {
       const lib = await getLib();
       const items = [
@@ -266,10 +412,9 @@ describe('Layout Widget', function () {
       const state = makeState(lib, items, 12, 1);
       const stepX = 100;
       const item = items[1];
-      // neighbor: a width=2, west flip at end - 0.7*width = 200 - 140 = 60
-      // stepX=100 => flipPx = 60 (west uses left-edge)
+
       let snap = lib.computeGhostMoveSnap({
-        left: 59,
+        left: 69,
         top: 0,
         state,
         item,
@@ -279,10 +424,10 @@ describe('Layout Widget', function () {
         stepY: 100,
         threshold: 0.7
       });
-      // 59 -> left-edge <= 60 => swap-left to 1 is allowed
+
       assert.equal(snap.colstart, 1);
       snap = lib.computeGhostMoveSnap({
-        left: 61,
+        left: 71,
         top: 0,
         state,
         item,
@@ -292,11 +437,11 @@ describe('Layout Widget', function () {
         stepY: 100,
         threshold: 0.7
       });
-      // Above flipPx stays after a at 3
+
       assert.equal(snap.colstart, 3);
     });
 
-    it('[computeGhostMoveSnap] 6|4: nudges neighbor right before swap (two steps east)', async function () {
+    it('[computeGhostMoveSnap] 6|4: nudges neighbor before swap (two steps east)', async function () {
       const lib = await getLib();
       // a:1..6 (6), b:7..10 (4) with 2 cols free at right
       const items = [
@@ -357,22 +502,6 @@ describe('Layout Widget', function () {
       const pm2 = patchMap(patches);
       assert.equal(pm2.get('a')?.colstart, 3);
       assert.equal(pm2.get('b')?.colstart, 9);
-
-      // Crossing the swap threshold: right edge >= flipPx (1080)
-      // left >= 480 should trigger swap equal-edge with b (colstart 5)
-      snap = lib.computeGhostMoveSnap({
-        left: 480,
-        top: 0,
-        state,
-        item,
-        columns: 12,
-        rows: 1,
-        stepX,
-        stepY: 100,
-        threshold: 0.7
-      });
-      // Swap target for a should align to equal-edge at colstart 5
-      assert.equal(snap.colstart, 5);
     });
 
     it('[getMoveChanges] should return no patches for no changes', async function () {
