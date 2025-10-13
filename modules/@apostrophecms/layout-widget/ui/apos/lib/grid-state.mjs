@@ -82,7 +82,7 @@ export function itemsToState({
     ...options,
     columns: meta.columns || options.columns,
     gap: [ 'layout', 'focus' ].includes(layoutMode) ? gap || '2px' : options.gap,
-    snapThresholdMove: 0.7,
+    snapThresholdMove: 0.75,
     snapThresholdResize: 0.5
   };
 
@@ -682,8 +682,102 @@ export function computeGhostMoveSnap({
   let colstart = c;
   let rowstart = r;
 
-  // Collision-aware preview to ensure snap target reflects valid placement
-  if (item && item._id) {
+  // Optional: hovered-neighbor threshold for swapping only
+  // - If the ghost is hovering an occupied segment (neighbor) in the move direction
+  //   and a swap candidate is valid, compute the flip boundary using the hovered
+  //   neighbor's width instead of per-track threshold.
+  // - Otherwise, keep the original track-based behavior.
+  const width = colspan;
+  const pre = precomp || prepareMoveIndex({
+    state,
+    item
+  });
+  const occSegs = pre?.segmentsByRow?.get(r) || [];
+  const dir = (c > (item.colstart || 1)) ? 'east' : (c < (item.colstart || 1) ? 'west' : null);
+  // Leading edge in pixels: right edge when moving east, left edge when moving west
+  const widthPx = width * stepX;
+  const leadPx = dir === 'east' ? (left + widthPx) : left;
+  // Column index under the leading edge (1-based), independent of threshold shift
+  const hoverCol = Math.max(1, Math.min(columns, Math.floor(leadPx / stepX) + 1));
+  /** @type {{ id: string, start: number, end: number } | null} */
+  let hoveredSeg = null;
+  if (dir && occSegs.length) {
+    for (const seg of occSegs) {
+      if (seg.start <= hoverCol && hoverCol <= seg.end && seg.id !== item._id) {
+        hoveredSeg = seg;
+        break;
+      }
+    }
+  }
+
+  let snappedByHover = false;
+  if (hoveredSeg) {
+    const nStart = hoveredSeg.start;
+    const nEnd = hoveredSeg.end; // inclusive
+    const nWidth = (nEnd - nStart + 1);
+    // Candidate starts for swap vs non-swap relative to neighbor
+    let swapStart;
+    let nonSwapStart;
+    if (dir === 'west') {
+      swapStart = nStart; // swap-left (before neighbor)
+      nonSwapStart = nEnd + 1; // remain after neighbor
+    } else {
+      // dir === 'east'
+      nonSwapStart = nStart - width; // remain before neighbor
+      const equalEnd = nEnd - width + 1; // place so end aligns to neighbor end
+      swapStart = Math.max(1, equalEnd);
+    }
+    // Clamp into bounds
+    swapStart = Math.max(1, Math.min(swapStart, maxStartX));
+    nonSwapStart = Math.max(1, Math.min(nonSwapStart, maxStartX));
+
+    // Decide based on hovered-neighbor threshold boundary in pixels
+    const neighborStartPx = (nStart - 1) * stepX;
+    const neighborWidthPx = nWidth * stepX;
+    const neighborEndPx = neighborStartPx + neighborWidthPx;
+    // Directional thresholds:
+    // - east: flip when right-edge crosses start + t * width
+    // - west: flip when left-edge crosses end - t * width (== start + (1 - t) * width)
+    const flipPx = (dir === 'west')
+      ? (neighborEndPx - (tClamped * neighborWidthPx))
+      : (neighborStartPx + tClamped * neighborWidthPx);
+    const onSwapSide = dir === 'west' ? (leadPx <= flipPx) : (leadPx >= flipPx);
+    if (onSwapSide) {
+      // Propose swap equal-edge first; fall back to track-based, then non-swap
+      const tryStarts = [ swapStart, colstart, nonSwapStart ];
+      for (const start of tryStarts) {
+        const p = previewMoveChanges({
+          data: {
+            id: item._id,
+            colstart: start,
+            rowstart
+          },
+          state,
+          item,
+          precomp: pre
+        });
+        if (p) {
+          colstart = p.colstart;
+          rowstart = p.rowstart;
+          snappedByHover = true;
+          break;
+        }
+        // Treat "no change" as a valid outcome when preferred equals current
+        if (!p && start === (item.colstart || 1) && rowstart === (item.rowstart || 1)) {
+          colstart = start;
+          snappedByHover = true;
+          break;
+        }
+      }
+    } else {
+      // Pre-swap side: allow baseline track-based candidate to trigger nudging
+      // by not overriding with equal-edge non-overlapping positions here.
+    }
+  }
+
+  // If we didn't snap by hovered-neighbor logic,
+  // run the baseline preview for the track-based candidate
+  if (!snappedByHover && item && item._id) {
     const preview = previewMoveChanges({
       data: {
         id: item._id,
@@ -692,10 +786,7 @@ export function computeGhostMoveSnap({
       },
       state,
       item,
-      precomp: precomp || prepareMoveIndex({
-        state,
-        item
-      })
+      precomp: pre
     });
     if (preview) {
       colstart = preview.colstart;
