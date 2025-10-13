@@ -3,7 +3,8 @@ import {
   getMoveChanges,
   getResizeChanges,
   validateResizeX,
-  computeGhostMoveSnap
+  computeGhostMoveSnap,
+  prepareMoveIndex
 } from './grid-state.mjs';
 
 /**
@@ -405,6 +406,19 @@ export class GridManager {
     const stepY = trackHeight + rowGap;
     const tMoveOpt = state?.options?.snapThresholdMove;
 
+    // Memoize precomputed move index across a drag
+    if (!precomp && data) {
+      // Build once per drag, invalidate if item changes
+      if (!data._movePrecomp || data._movePrecompFor !== item?._id) {
+        data._movePrecomp = prepareMoveIndex({
+          state,
+          item
+        });
+        data._movePrecompFor = item?._id;
+      }
+      precomp = data._movePrecomp;
+    }
+
     const snap = computeGhostMoveSnap({
       left,
       top,
@@ -517,6 +531,10 @@ export class GridManager {
   }) {
     if (!item) {
       return [];
+    }
+    // Reuse precomp from drag if present
+    if (!precomp && data?._movePrecomp && data._movePrecompFor === item?._id) {
+      precomp = data._movePrecomp;
     }
     const patches = getMoveChanges({
       data,
