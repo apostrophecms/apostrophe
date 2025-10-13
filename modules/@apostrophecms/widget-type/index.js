@@ -149,8 +149,11 @@
 // the toolbar, accessed by clicking a "more" icon. This is only supported
 // for standard placement.
 // - `tooltip`: The tooltip to show on hover.
-// - `action`: A valid core action (e.g. remove, edit, etc.) to be
+// - `action`: A valid core (e.g. remove, edit, etc.) or custom action to be
 // emitted when the operation is clicked. In effect only if no modal is specified.
+// - `rawEvents`: An array of raw DOM events to listen for and emit to the parent
+// component. In effect only if no type and an action is specified. See layout
+// widget for an example. This option works only for breadcrumb operations.
 //
 // See also `skipOperations` option for a way to disable core operations
 // such as edit or remove.
@@ -486,6 +489,11 @@ module.exports = {
             `widgetOperation "${name}" requires an icon property.`
           );
         }
+        if (typeof operation.rawEvents !== 'undefined' && !Array.isArray(operation.rawEvents)) {
+          throw self.apos.error('invalid',
+            `widgetOperation "${name}" rawEvents property must be an array if specified.`
+          );
+        }
       },
 
       validateWidgetOperation(name, operation) {
@@ -511,6 +519,12 @@ module.exports = {
         if (operation.type === 'info') {
           throw self.apos.error('invalid',
             `widgetOperation "${name}" of type "info" is only allowed for breadcrumb placement.`
+          );
+        }
+
+        if (operation.rawEvents) {
+          throw self.apos.error('invalid',
+            `widgetOperation "${name}" with rawEvents is only allowed for breadcrumb placement.`
           );
         }
 

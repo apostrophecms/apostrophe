@@ -66,8 +66,10 @@ module.exports = {
           tooltip: 'apostrophe:delete'
         },
         layoutColMove: {
+          action: 'move',
           placement: 'breadcrumb',
-          icon: 'cursor-move-icon'
+          icon: 'cursor-move-icon',
+          rawEvents: [ 'mousedown', 'touchstart' ]
         }
       }
     };

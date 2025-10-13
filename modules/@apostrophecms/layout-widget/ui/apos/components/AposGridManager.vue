@@ -84,7 +84,7 @@
           class="apos-layout--item-action apos-layout__item-operations-handle"
         >
           <!-- Show breadcrumb operations, no support for actions, just our custom
-         expected operations - remove and update -->
+         expected operations - remove, update and move raw events -->
           <AposBreadcrumbOperations
             v-if="opstate.operations?.length > 0"
             :i="item.__naturalIndex"
@@ -95,6 +95,7 @@
             :disabled="opstate.disabled"
             :teleport-modals="true"
             @update="updateItem"
+            @operation="onBreadcrumbOperation(item, $event)"
           />
         </div>
       </div>
@@ -453,6 +454,14 @@ export default {
     }
   },
   methods: {
+    onBreadcrumbOperation(item, operation) {
+      if (
+        operation.name === 'move' &&
+        [ 'mousedown', 'touchstart' ].includes(operation.data.eventName)
+      ) {
+        this.onStartMove(item, operation.data.event);
+      }
+    },
     onAddSynthetic(slot) {
       const newItem = {
         colstart: slot.colstart,
@@ -1140,7 +1149,7 @@ $resize-button-width: 4px;
 }
 
 .apos-layout__item-operations-handle {
-  :deep([data-operation-id="layoutColMove"] span) {
+  :deep([data-operation-id="move"] span) {
     cursor: grab;
 
     &:active {

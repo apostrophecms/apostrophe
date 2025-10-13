@@ -215,6 +215,20 @@ export default {
         };
       }
 
+      if (operation.rawEvents?.length) {
+        // raw events such as mouseover, mouseout, mouseup, etc.
+        operation.rawEvents.forEach((raw) => {
+          listeners[raw] = (event) => {
+            this.emitOperation(operation, {
+              event,
+              eventName: raw
+            });
+          };
+        });
+
+        return listeners;
+      }
+
       if (!handleClick) {
         return listeners;
       }
@@ -242,10 +256,15 @@ export default {
       this.emitOperation(operation);
     },
     emitOperation(operation, payload = {}) {
-      if (operation.action) {
+      if (operation.action || operation.rawEvents?.length) {
         this.$emit('operation', {
           name: operation.action,
-          payload: this.i
+          payload: this.i,
+          data: {
+            ...payload,
+            ...operation,
+            _id: this.widget._id
+          }
         });
       } else {
         apos.bus.$emit('widget-breadcrumb-operation', {
