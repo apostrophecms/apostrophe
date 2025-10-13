@@ -83,7 +83,7 @@ export function itemsToState({
     columns: meta.columns || options.columns,
     gap: [ 'layout', 'focus' ].includes(layoutMode) ? gap || '2px' : options.gap,
     snapThresholdMove: 0.7,
-    snapThreshold: 0.5
+    snapThresholdResize: 0.5
   };
 
   const positionsIndex = createPositionIndex(current.items, current.rows);

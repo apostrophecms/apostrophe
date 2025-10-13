@@ -408,7 +408,7 @@ export class GridManager {
     // Initial nearest indices with custom snap threshold.
     const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
     const tMoveOpt = (
-      state?.options?.snapThresholdMove ?? state?.options?.snapThreshold ?? 0.6
+      state?.options?.snapThresholdMove ?? 0.6
     );
     const tMove = Number(tMoveOpt);
     const tMoveClamped = clamp(
@@ -484,7 +484,7 @@ export class GridManager {
     const directionCorrection = data.side === direction ? 1 : -1;
     const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
     const tResizeOpt = (
-      state?.options?.snapThresholdResize ?? state?.options?.snapThreshold ?? 0.5
+      state?.options?.snapThresholdResize ?? 0.5
     );
     const tResize = Number(tResizeOpt);
     const SNAP_THRESHOLD = clamp(
