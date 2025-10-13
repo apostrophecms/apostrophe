@@ -104,7 +104,15 @@
         class="apos-area-widget-guard"
         :class="{'apos-is-disabled': isFocused}"
       />
+      <!-- <div
+        ref="sticky"
+        :style="stickyStyles"
+        class="apos-area-widget-controls__sticky-container"
+      > -->
+      <!-- <div class="dummy" ref="dummyTop" style="height: 1px; width: 1px;"/> -->
       <div
+        ref="modifyControls"
+        :style="stickyControlsStyles"
         class="apos-area-widget-controls apos-area-widget-controls--modify"
         :class="controlsClasses"
       >
@@ -128,6 +136,8 @@
           @update="$emit('update', $event)"
         />
       </div>
+      <!-- </div> -->
+
       <!-- Still used for contextual editing components -->
       <component
         :is="widgetEditorComponent(widget.type)"
@@ -160,6 +170,7 @@
         @edit="$emit('edit', i);"
         @update="$emit('update', $event);"
       />
+      <!-- <div class="dummy" ref="dummyBottom" style="height: 1px; width: 1px;"/> -->
       <div
         class="
           apos-area-widget-controls
@@ -189,6 +200,9 @@
 </template>
 
 <script>
+import {
+  computePosition, offset, shift, flip, arrow, autoPlacement
+} from '@floating-ui/dom';
 import AposIndicator from 'Modules/@apostrophecms/ui/components/AposIndicator.vue';
 
 export default {
@@ -289,6 +303,7 @@ export default {
     'paste'
   ],
   data() {
+    const controlsMargin = 20;
     return {
       mounted: false, // hack around needing DOM to be rendered for computed classes
       isSuppressed: false,
@@ -306,7 +321,20 @@ export default {
         $lastEl: null,
         list: []
       },
-      widgets: this.options.widgets || {}
+      widgets: this.options.widgets || {},
+      adminBarHeight: undefined,
+      controlsHeight: undefined,
+      lastResizeTop: undefined,
+      scrollTicking: false,
+      resizeTicking: false,
+      shiftTolerance: 10,
+      controlsMargin,
+      stickyControlsStyles: {},
+      defaultControlsStyles: {
+        position: 'absolute',
+        top: `${controlsMargin}px`,
+        right: `${controlsMargin}px`
+      }
     };
   },
   computed: {
@@ -425,6 +453,7 @@ export default {
   },
   mounted() {
     this.mounted = true;
+    // console.log(this.$refs.wrapper);
     // AposAreaEditor is listening for keyboard input that triggers
     // a 'focus my parent' plea
     apos.bus.$on('widget-focus-parent', this.focusParent);
@@ -440,12 +469,109 @@ export default {
       // focus.
       apos.bus.$emit('widget-focus', { _id: this.widget._id });
     }
+
+    this.$nextTick(() => {
+      this.adminBarHeight = window.apos.adminBar.height;
+      this.controlsHeight = this.$refs.modifyControls.getBoundingClientRect().height;
+      window.addEventListener('scroll', this.stickyControlsScroll);
+      window.addEventListener('resize', this.stickyControlsResize);
+    });
+
   },
   unmounted() {
     // Remove the focus parent listener when unmounted
     apos.bus.$off('widget-focus-parent', this.focusParent);
+    window.removeEventListener('scroll', this.stickyControlsScroll);
+    window.removeEventListener('resize', this.stickyControlsResize);
   },
   methods: {
+    stickyControlsResize() {
+      if (!this.resizeTicking) {
+        this.resizeTicking = true;
+        requestAnimationFrame(() => {
+          const widgetRect = this.$refs.wrapper.getBoundingClientRect();
+
+          // If widget shifts more than tolerable don't try to track it
+          if (Math.abs(this.lastResizeTop - widgetRect.top) > this.shiftTolerance) {
+            this.stickyControlsStyles = { ...this.defaultControlsStyles };
+          } else {
+            if (this.stickyControlsStyles.position === 'fixed') {
+              this.stickyControlsStyles.right =
+                `${window.innerWidth - (widgetRect.left + widgetRect.width) + this.controlsMargin}px`;
+            }
+          }
+
+          this.lastResizeTop = widgetRect.top;
+          this.resizeTicking = false;
+        });
+      }
+    },
+    stickyControlsScroll() {
+      if (!this.scrollTicking) {
+        window.requestAnimationFrame(() => {
+          const widgetRect = this.$refs.wrapper.getBoundingClientRect();
+          const windowHeight = window.innerHeight;
+          const visibleHeight =
+            Math.min(widgetRect.bottom, windowHeight) - Math.max(widgetRect.top, 0);
+          let newStyles;
+
+          // Controls height is within 15% of the height of the widget
+          const controlsTooTallRelative = this.controlsHeight / widgetRect.height > 0.85;
+
+          // Controls are taller than widget
+          const controlsExceedWidget = widgetRect.height < this.controlsHeight;
+
+          // Repositioning in these cases feels unexpected
+          if (controlsTooTallRelative || controlsExceedWidget) {
+            return;
+          }
+
+          // Widget is under admin bar
+          if (widgetRect.top <= this.adminBarHeight) {
+
+            // Widget bottom is approaching admin bar,
+            // position controls absolutely to the bottom
+            if (
+              visibleHeight <=
+                this.controlsHeight + this.adminBarHeight + (this.controlsMargin * 3)
+            ) {
+              newStyles = {
+                position: 'absolute',
+                bottom: `${this.controlsMargin * 2}px`,
+                top: 'auto',
+                right: `${this.controlsMargin}px`
+              };
+
+            // Widget top is above admin bar,
+            // apply custom sticky position
+            } else {
+              newStyles = {
+                position: 'fixed',
+                top: `${this.controlsMargin + this.adminBarHeight}px`,
+                right: `${window.innerWidth - (widgetRect.left + widgetRect.width) + this.controlsMargin}px`
+              };
+            }
+
+          // Controls don't need positioning
+          } else {
+            newStyles = { ...this.defaultControlsStyles };
+          }
+
+          // Only update if styles changed
+          if (
+            Object.keys(newStyles).some(
+              key => this.stickyControlsStyles[key] !== newStyles[key]
+            )
+          ) {
+            this.stickyControlsStyles = newStyles;
+          }
+
+          this.scrollTicking = false;
+        });
+
+        this.scrollTicking = true;
+      }
+    },
     getFocusForMenu({ menuId, isOpen }) {
       if (
         (
@@ -585,6 +711,14 @@ export default {
 </script>
 
 <style lang="scss" scoped>
+.apos-area-widget-controls__sticky-container {
+  z-index: 1;
+  position: absolute;
+  // top: 20px;
+  right: 20px;
+  // height: calc(100% - 40px);
+}
+
 @mixin showButton() {
   transform: scale(1.15);
   background-size: 150% 100%;
@@ -647,12 +781,12 @@ export default {
     }
 
     &.apos-is-ui-adjusted {
-      .apos-area-widget-controls--modify {
-        top: 0;
-        transform: translate3d(-10px, 50px, 0);
+      & > .apos-area-widget-controls--modify {
+        top: 40px;
+        transform: translate3d(0, 40px, 0);
       }
 
-      .apos-area-widget__label {
+      & > .apos-area-widget__label {
         transform: translate(-10px, 10px);
       }
     }
@@ -706,10 +840,16 @@ export default {
   }
 
   .apos-area-widget-controls--modify {
-    z-index: $z-index-widget-focused-controls;
-    top: 50%;
-    right: 0;
-    transform: translate3d(-10px, -50%, 0);
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    transition: opacity 300ms ease;
+
+    &--fixed {
+      top: 0;
+      left: 0;
+      width: 100%;
+    }
 
     :deep(.apos-button-group__inner) {
       border: 1px solid var(--a-primary-transparent-25);
