@@ -336,14 +336,15 @@ export class GridManager {
    * @param {GhostData} arg.data - The ghost data containing the item and its state.
    * @param {GridState} arg.state - The current grid state.
    * @param {CurrentItem} arg.item - The item being moved.
-  * @returns {{
-  *  left: number,
-  *  top: number,
-  *  snapLeft?: number,
-  *  snapTop?: number,
-  *  colstart?: number,
-  *  rowstart?: number
-  * }} - The new position of the ghost item and optional snap info.
+   * @param {Object} arg.precomp - precomputation for move preview.
+   * @returns {{
+   *  left: number,
+   *  top: number,
+   *  snapLeft?: number,
+   *  snapTop?: number,
+   *  colstart?: number,
+   *  rowstart?: number
+   * }} - The new position of the ghost item and optional snap info.
    */
   onGhostMove({
     data, state, item, precomp
