@@ -1250,4 +1250,11 @@ $resize-button-width: 4px;
   padding: 8px;
 }
 
+/* stylelint-disable-next-line media-feature-name-allowed-list */
+@media (prefers-reduced-motion: no-preference) {
+  .apos-layout__grid-clone.is-moving {
+    transition: transform 200ms ease;
+  }
+}
+
 </style>
