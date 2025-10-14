@@ -194,7 +194,7 @@ export default {
       const items = this.gridState.current.items
         .filter(widget => widget.tablet.show);
       if (items.length % 2 === 0) {
-        return;
+        return {};
       }
       items.sort((a, b) =>
         (a.tablet.order ?? a.order) - (b.tablet.order ?? b.order)
