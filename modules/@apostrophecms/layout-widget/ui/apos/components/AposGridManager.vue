@@ -1133,6 +1133,10 @@ $resize-button-width: 4px;
   opacity: 0;
 }
 
+.apos-layout--item-action :deep(.apos-area-widget__breadcrumbs.apos-breadcrumb-operations) {
+  margin-left: 0;
+}
+
 .apos-layout__item-resize-handle {
   $anchor-size: 8px;
 

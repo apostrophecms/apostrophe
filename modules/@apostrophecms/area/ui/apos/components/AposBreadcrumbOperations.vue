@@ -283,9 +283,8 @@ export default {
 </script>
 
 <style lang="scss" scoped>
-.apos-breadcrumb-operations {
-  /* stylelint-disable-next-line declaration-no-important */
-  margin-left: 10px !important;
+.apos-area-widget__breadcrumbs.apos-breadcrumb-operations {
+  margin-left: 10px;
 }
 
 .apos-area-widget__breadcrumbs.apos-area-widget__breadcrumbs--action {
