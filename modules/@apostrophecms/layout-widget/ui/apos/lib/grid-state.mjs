@@ -112,7 +112,7 @@ export function itemsToState({
     ...options,
     columns: meta.columns || options.columns,
     gap: [ 'layout', 'focus' ].includes(layoutMode) ? gap || '2px' : options.gap,
-    snapThresholdMove: 0.75,
+    snapThresholdMove: 0.4,
     snapThresholdResize: 0.5
   };
 
