@@ -5,6 +5,7 @@
   >
     <AposMediaUploaderUi
       :min-size="props.options?.minSize"
+      :aspect-ratio="props.options?.aspectRatio"
       :accept="accept"
       :placeholder="placeholder"
       @upload="upload"
@@ -27,6 +28,7 @@ import {
 import { useAposWidget } from 'Modules/@apostrophecms/widget-type/composables/AposWidget.js';
 import aposWidgetProps from 'Modules/@apostrophecms/widget-type/composables/AposWidgetProps.js';
 import { postprocessRelationships } from 'Modules/@apostrophecms/piece-type/lib/postprocessRelationships.js';
+import { computeMinSizes } from 'apostrophe/lib/image.js';
 
 const props = defineProps(aposWidgetProps);
 const imgModuleOptions = apos.modules['@apostrophecms/image'];
@@ -96,22 +98,26 @@ async function selectFromManager() {
  * @returns {boolean} - Tells if the image is valid
  */
 function checkImageValid(image) {
-  const minSize = props.options.minSize;
-  if (!minSize) {
+  if (!props.options?.minSize) {
     return true;
   }
 
+  const { minWidth, minHeight } = computeMinSizes(
+    props.options.minSize,
+    props.options.aspectRatio
+  );
+
   if (
-    (minSize[0] && image.width < minSize[0]) ||
-    (minSize[1] && image.height < minSize[1])
+    (minWidth && image.width < minWidth) ||
+    (minHeight && image.height < minHeight)
   ) {
     apos.notify('apostrophe:minimumSize', {
       type: 'danger',
       icon: 'alert-circle-icon',
       dismiss: true,
       interpolate: {
-        width: minSize[0],
-        height: minSize[1]
+        width: Math.round(minWidth),
+        height: Math.round(minHeight)
       }
     });
     return false;
