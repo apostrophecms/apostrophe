@@ -10,7 +10,7 @@
     @mousemove="onMouseMove($event)"
   >
     <div
-      v-for="(item) in gridState.current.items"
+      v-for="(item) in managerItems"
       :key="item._id"
       ref="items"
       class="apos-layout__item"
@@ -134,7 +134,7 @@
           v-if="slot.toosmall"
           icon="cancel-icon"
           icon-color="var(--a-danger)"
-          icon-size="24"
+          :icon-size="24"
           :tooltip="'apostrophe:layoutColumnTooSmall'"
           class="apos-admin-bar__title__indicator"
         />
@@ -242,7 +242,6 @@
 </template>
 
 <script>
-import { throttle } from 'lodash';
 import { GridManager } from '../lib/grid-manager.js';
 import {
   getReorderPatch, prepareMoveIndex
@@ -273,6 +272,14 @@ export default {
     opstate: {
       type: Object,
       default: () => ({})
+    },
+    // Preview state for synchronizing manager with layout during moves
+    preview: {
+      type: Object,
+      default: () => ({
+        patches: null,
+        key: null
+      })
     }
   },
   emits: [
@@ -307,7 +314,8 @@ export default {
         width: null,
         height: null,
         snapTop: null,
-        snapLeft: null
+        snapLeft: null,
+        moveSnapMemo: null
       },
       // The current item computed changes.
       ghostDataWrite: {
@@ -341,13 +349,14 @@ export default {
         iconOnly: true,
         iconSize: 11
       },
-      onMoveDebounced: throttle(this.onMove, 10),
-      onResizeDebounced: throttle(this.onResize, 10),
       lastPreviewKey: null,
       ghostHandleOffsets: {
         west: null,
         east: null
-      }
+      },
+      // RAF coalescing
+      rafId: null,
+      lastEvent: null
     };
   },
   computed: {
@@ -356,6 +365,19 @@ export default {
     },
     deviceMode() {
       return this.gridState.deviceMode;
+    },
+    // Apply preview patches to manager items to keep them synchronized with layout grid
+    managerItems() {
+      const base = this.gridState.current.items;
+      // Apply live preview patches if present (same logic as AposGridLayout)
+      if (
+        this.isMoving &&
+        Array.isArray(this.preview.patches) &&
+        this.preview.patches.length
+      ) {
+        return this.applyPreviewPatches(base, this.preview.patches);
+      }
+      return base;
     },
     gridClasses() {
       return {
@@ -459,9 +481,11 @@ export default {
       this.resizeObserver = null;
     }
     this.manager.destroy();
-    if (this.onMoveDebounced?.cancel) {
-      this.onMoveDebounced.cancel();
+    if (this.rafId) {
+      cancelAnimationFrame(this.rafId);
+      this.rafId = null;
     }
+    this.lastEvent = null;
   },
   methods: {
     onBreadcrumbOperation(item, operation) {
@@ -650,11 +674,26 @@ export default {
       }
     },
     onMouseMove(event) {
-      if (this.isResizing) {
-        this.onResizeDebounced(event);
-      } else if (this.isMoving) {
-        this.onMoveDebounced(event);
+      if (!this.isResizing && !this.isMoving) {
+        return;
       }
+      this.lastEvent = event;
+      if (this.rafId) {
+        return;
+      }
+      this.rafId = requestAnimationFrame(() => {
+        this.rafId = null;
+        const ev = this.lastEvent;
+        this.lastEvent = null;
+        if (!ev) {
+          return;
+        }
+        if (this.isResizing) {
+          this.onResize(ev);
+        } else if (this.isMoving) {
+          this.onMove(ev);
+        }
+      });
     },
     onMouseUp(event) {
       if (this.isResizing) {
@@ -681,7 +720,11 @@ export default {
       }
     },
     resetGhostData() {
-      // Always clear any preview when ghost state resets
+      if (this.rafId) {
+        cancelAnimationFrame(this.rafId);
+        this.rafId = null;
+      }
+      this.lastEvent = null;
       if (this.lastPreviewKey) {
         this.$emit('preview-clear');
         this.lastPreviewKey = null;
@@ -831,6 +874,38 @@ export default {
         return touch.clientY;
       }
       return null;
+    },
+    applyPreviewPatches(items, patches) {
+      // Map items by _id for quick lookup
+      const map = new Map(items.map((it, idx) => [ it._id, {
+        it,
+        idx
+      } ]));
+      const out = items.map(it => ({ ...it }));
+      for (const p of patches) {
+        const ref = map.get(p._id);
+        if (!ref) {
+          continue;
+        }
+        const target = out[ref.idx];
+        // Only apply layout-related fields present in the patch
+        if ('colstart' in p) {
+          target.colstart = p.colstart;
+        }
+        if ('rowstart' in p) {
+          target.rowstart = p.rowstart;
+        }
+        if ('colspan' in p) {
+          target.colspan = p.colspan;
+        }
+        if ('rowspan' in p) {
+          target.rowspan = p.rowspan;
+        }
+        if ('order' in p) {
+          target.order = p.order;
+        }
+      }
+      return out;
     }
   }
 };
@@ -863,7 +938,8 @@ $resize-button-width: 4px;
     display: grid;
     inset: 0;
     grid-template-columns: repeat(var(--grid-columns, 12), 1fr);
-    gap: var(--grid-gap);
+    grid-template-rows: repeat(var(--grid-rows), auto);
+    grid-gap: var(--grid-gap, 0);
 
     &.is-moving,
     &.is-resizing {
@@ -1189,8 +1265,8 @@ $resize-button-width: 4px;
 
 /* stylelint-disable-next-line media-feature-name-allowed-list */
 @media (prefers-reduced-motion: no-preference) {
-  .apos-layout__grid-clone {
-    transition: all 300ms ease;
+  .apos-layout__grid-clone.is-moving {
+    transition: transform 200ms ease;
   }
 }
 

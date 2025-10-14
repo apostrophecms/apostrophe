@@ -6,6 +6,504 @@ const getLib = async () => import(
 describe('Layout Widget', function () {
 
   describe('Move (grid-state)', function () {
+    it('[shouldComputeMoveSnap] changes memo when coarse col/row bucket changes', async function () {
+      const lib = await getLib();
+      const items = [ buildItem('a', 1, 2, 0) ];
+      const state = makeState(lib, items, 12, 2);
+      const stepX = 100;
+      const stepY = 100;
+      const item = items[0];
+      const a1 = lib.shouldComputeMoveSnap({
+        left: 0,
+        top: 0,
+        state,
+        item,
+        columns: 12,
+        rows: 2,
+        stepX,
+        stepY,
+        threshold: 0.6
+      });
+      const a2 = lib.shouldComputeMoveSnap({
+        left: 120,
+        top: 0,
+        state,
+        item,
+        columns: 12,
+        rows: 2,
+        stepX,
+        stepY,
+        threshold: 0.6,
+        prevMemo: a1.memo
+      });
+      assert.equal(a1.compute, true);
+      assert.equal(a2.compute, true, 'moving one track should change memo');
+    });
+
+    it('[shouldComputeMoveSnap] stable pointer within same coarse state returns compute=false', async function () {
+      const lib = await getLib();
+      const items = [ buildItem('a', 1, 2, 0) ];
+      const state = makeState(lib, items, 12, 1);
+      const stepX = 100;
+      const stepY = 100;
+      const item = items[0];
+      const a1 = lib.shouldComputeMoveSnap({
+        left: 10,
+        top: 0,
+        state,
+        item,
+        columns: 12,
+        rows: 1,
+        stepX,
+        stepY,
+        threshold: 0.6
+      });
+      const a2 = lib.shouldComputeMoveSnap({
+        left: 15,
+        top: 0,
+        state,
+        item,
+        columns: 12,
+        rows: 1,
+        stepX,
+        stepY,
+        threshold: 0.6,
+        prevMemo: a1.memo
+      });
+      assert.equal(a2.compute, false, 'small move in same bucket should not recompute');
+    });
+
+    it('[shouldComputeMoveSnap] flips compute when crossing hovered-neighbor flip boundary (east)', async function () {
+      const lib = await getLib();
+      // a:1..6 (6), b:7..2 (2), c:9..12 (4)
+      const items = [
+        buildItem('a', 1, 6, 0),
+        buildItem('b', 7, 2, 1),
+        buildItem('c', 9, 4, 2)
+      ];
+      const state = makeState(lib, items, 12, 1);
+      const stepX = 100;
+      const stepY = 100;
+      const item = items[1];
+      // For c width=4, threshold 0.7 ->
+      //   flip at neighborStartPx + 0.7*width = 800 + 280 = 1080
+      // Using right edge (b width=2 => widthPx=200): left threshold = 880
+      const a1 = lib.shouldComputeMoveSnap({
+        left: 879,
+        top: 0,
+        state,
+        item,
+        columns: 12,
+        rows: 1,
+        stepX,
+        stepY,
+        threshold: 0.7
+      });
+      const a2 = lib.shouldComputeMoveSnap({
+        left: 880,
+        top: 0,
+        state,
+        item,
+        columns: 12,
+        rows: 1,
+        stepX,
+        stepY,
+        threshold: 0.7,
+        prevMemo: a1.memo
+      });
+      assert.equal(a2.compute, true, 'crossing swap flip must recompute');
+    });
+
+    it('[shouldComputeMoveSnap] flips compute when crossing hovered-neighbor flip boundary (west)', async function () {
+      const lib = await getLib();
+      // a:1..2 (2), b:3..8 (6), c:9..12 (4)
+      const items = [
+        buildItem('a', 1, 2, 0),
+        buildItem('b', 3, 6, 1),
+        buildItem('c', 9, 4, 2)
+      ];
+      const state = makeState(lib, items, 12, 1);
+      const stepX = 100;
+      const stepY = 100;
+      const item = items[1];
+      // West neighbor a width=2 -> flip at end - 0.7*width -> 200 - 140 = 60
+      const a1 = lib.shouldComputeMoveSnap({
+        left: 59,
+        top: 0,
+        state,
+        item,
+        columns: 12,
+        rows: 1,
+        stepX,
+        stepY,
+        threshold: 0.7
+      });
+      const a2 = lib.shouldComputeMoveSnap({
+        left: 61,
+        top: 0,
+        state,
+        item,
+        columns: 12,
+        rows: 1,
+        stepX,
+        stepY,
+        threshold: 0.7,
+        prevMemo: a1.memo
+      });
+      assert.equal(a2.compute, true, 'crossing west swap flip must recompute');
+    });
+    it('[computeGhostMoveSnap] basic column-based snapping (no collisions)', async function () {
+      const lib = await getLib();
+      const items = [
+        buildItem('a', 1, 2, 0)
+      ];
+      const state = makeState(lib, items, 12, 1);
+      const columns = 12;
+      const rows = 1;
+      // Assume track width 100px, no gap -> stepX = 100
+      const stepX = 100;
+      const stepY = 100; // unused for row=1
+      const item = items[0];
+      // Threshold default ~0.6 -> shift = (1 - 0.6) * 100 = 40
+      // Positions near 0 should snap to colstart 1
+      let snap = lib.computeGhostMoveSnap({
+        left: 0,
+        top: 0,
+        state,
+        item,
+        columns,
+        rows,
+        stepX,
+        stepY
+      });
+      assert.equal(snap.colstart, 1);
+      // At left=61, (61+40)/100=1.01 -> floor=1 -> +1 => col 2
+      snap = lib.computeGhostMoveSnap({
+        left: 61,
+        top: 0,
+        state,
+        item,
+        columns,
+        rows,
+        stepX,
+        stepY
+      });
+      assert.equal(snap.colstart, 2);
+    });
+    it('[computeGhostMoveSnap] respects custom threshold', async function () {
+      const lib = await getLib();
+      const items = [ buildItem('a', 1, 1, 0) ];
+      const state = makeState(lib, items, 12, 1);
+      const stepX = 100;
+      const item = items[0];
+      // With threshold=0.9 -> shift = 10px
+      // - at left=89: (89+10)/100=0.99 floor=0 -> col 1
+      // - at left=90: (90+10)/100=1.0 floor=1 -> +1 => col 2
+      let snap = lib.computeGhostMoveSnap({
+        left: 89,
+        top: 0,
+        state,
+        item,
+        columns: 12,
+        rows: 1,
+        stepX,
+        stepY: 100,
+        threshold: 0.9
+      });
+      assert.equal(snap.colstart, 1);
+      snap = lib.computeGhostMoveSnap({
+        left: 90,
+        top: 0,
+        state,
+        item,
+        columns: 12,
+        rows: 1,
+        stepX,
+        stepY: 100,
+        threshold: 0.9
+      });
+      assert.equal(snap.colstart, 2);
+    });
+    it('[computeGhostMoveSnap] 6|2|4: moving middle (2) into right (4) stays before when no space', async function () {
+      const lib = await getLib();
+      // a:1..6 (6), b:7..8 (2), c:9..12 (4)
+      const items = [
+        buildItem('a', 1, 6, 0),
+        buildItem('b', 7, 2, 1),
+        buildItem('c', 9, 4, 2)
+      ];
+      const state = makeState(lib, items, 12, 1);
+      const stepX = 100;
+      const item = items[1]; // move b
+      // Start entering c area slightly but after-snap is impossible (edge packed)
+      const leftIntoC = (9 - 1) * stepX + 10; // 10px into c
+      const snap = lib.computeGhostMoveSnap({
+        left: leftIntoC,
+        top: 0,
+        state,
+        item,
+        columns: 12,
+        rows: 1,
+        stepX,
+        stepY: 100
+      });
+      // Should remain before c => colstart 7
+      assert.equal(snap.colstart, 7);
+    });
+    it('[computeGhostMoveSnap] 6|2|4: moving middle (2) into left (6) stays after when no space', async function () {
+      const lib = await getLib();
+      // a:1..6 (6), b:7..8 (2), c:9..12 (4)
+      const items = [
+        buildItem('a', 1, 6, 0),
+        buildItem('b', 7, 2, 1),
+        buildItem('c', 9, 4, 2)
+      ];
+      const state = makeState(lib, items, 12, 1);
+      const stepX = 100;
+      const item = items[1]; // move b
+      // Enter a area slightly but before-snap is impossible (packed)
+      const leftIntoA = (6 - 1) * stepX - 10; // just 10px before a's end
+      const snap = lib.computeGhostMoveSnap({
+        left: leftIntoA,
+        top: 0,
+        state,
+        item,
+        columns: 12,
+        rows: 1,
+        stepX,
+        stepY: 100
+      });
+      // Should remain after a => colstart 7
+      assert.equal(snap.colstart, 7);
+    });
+
+    it('[computeGhostMoveSnap] 6|2|4 swap right flips at hovered-neighbor threshold (t=0.7)', async function () {
+      const lib = await getLib();
+      const items = [
+        buildItem('a', 1, 6, 0),
+        buildItem('b', 7, 2, 1),
+        buildItem('c', 9, 4, 2)
+      ];
+      const state = makeState(lib, items, 12, 1);
+      const stepX = 100; // px per column
+      const item = items[1];
+      // neighbor: c width=4 -> flip at 0.7*4 cols from c start
+      // stepX=100 => flipPx = 800 + 0.7*400 = 1080
+      // Using leading edge (east: right edge). Item width=2 => widthPx=200
+      // Swap when left + 200 >= 1080 -> left >= 880
+      let snap = lib.computeGhostMoveSnap({
+        left: 879,
+        top: 0,
+        state,
+        item,
+        columns: 12,
+        rows: 1,
+        stepX,
+        stepY: 100,
+        threshold: 0.7
+      });
+      // 879 -> right edge 1079 < 1080 => stay before c
+      assert.equal(snap.colstart, 7);
+      snap = lib.computeGhostMoveSnap({
+        left: 880,
+        top: 0,
+        state,
+        item,
+        columns: 12,
+        rows: 1,
+        stepX,
+        stepY: 100,
+        threshold: 0.7
+      });
+      // 880 -> right edge 1080 => swap-right to equal-edge at 11
+      assert.equal(snap.colstart, 11);
+    });
+
+    it('[computeGhostMoveSnap] 6|2|4 swap left flips at hovered-neighbor threshold (t=0.7)', async function () {
+      const lib = await getLib();
+      const items = [
+        buildItem('a', 1, 6, 0),
+        buildItem('b', 7, 2, 1),
+        buildItem('c', 9, 4, 2)
+      ];
+      const state = makeState(lib, items, 12, 1);
+      const stepX = 100;
+      const item = items[1];
+      // neighbor: a width=6 -> west flip at end - 0.7*width = 600 - 420 = 180
+      // stepX=100 => flipPx = 180 (west uses left-edge)
+      let snap = lib.computeGhostMoveSnap({
+        left: 179,
+        top: 0,
+        state,
+        item,
+        columns: 12,
+        rows: 1,
+        stepX,
+        stepY: 100,
+        threshold: 0.7
+      });
+      // 179 -> left-edge <= 180 => swap-left to 1
+      assert.equal(snap.colstart, 1);
+      snap = lib.computeGhostMoveSnap({
+        left: 181,
+        top: 0,
+        state,
+        item,
+        columns: 12,
+        rows: 1,
+        stepX,
+        stepY: 100,
+        threshold: 0.7
+      });
+      // 181 -> above neighbor flip => stay after a at colstart 7
+      assert.equal(snap.colstart, 7);
+    });
+
+    it('[computeGhostMoveSnap] 2|6|4 swap right flips at hovered-neighbor threshold (t=0.7)', async function () {
+      const lib = await getLib();
+      // a:1..2 (2), b:3..8 (6), c:9..12 (4)
+      const items = [
+        buildItem('a', 1, 2, 0),
+        buildItem('b', 3, 6, 1),
+        buildItem('c', 9, 4, 2)
+      ];
+      const state = makeState(lib, items, 12, 1);
+      const stepX = 100;
+      const item = items[1]; // move b (6 wide)
+      // neighbor: c width=4, flipPx = 800 + 0.7*400 = 1080
+      // Using leading edge (east: right edge)
+      // b width=6 => widthPx=600; left threshold=480
+      let snap = lib.computeGhostMoveSnap({
+        left: 479,
+        top: 0,
+        state,
+        item,
+        columns: 12,
+        rows: 1,
+        stepX,
+        stepY: 100,
+        threshold: 0.7
+      });
+      // 479 -> right edge 1079 < 1080 => stay before c at colstart 3
+      assert.equal(snap.colstart, 3);
+      snap = lib.computeGhostMoveSnap({
+        left: 480,
+        top: 0,
+        state,
+        item,
+        columns: 12,
+        rows: 1,
+        stepX,
+        stepY: 100,
+        threshold: 0.7
+      });
+      // 480 -> right edge 1080 => swap-right to equal-edge at colstart 7
+      assert.equal(snap.colstart, 7);
+    });
+
+    it('[computeGhostMoveSnap] 2|6|4 west swap flips at hovered-neighbor threshold (t=0.7)', async function () {
+      const lib = await getLib();
+      // a:1..2 (2), b:3..8 (6), c:9..12 (4)
+      const items = [
+        buildItem('a', 1, 2, 0),
+        buildItem('b', 3, 6, 1),
+        buildItem('c', 9, 4, 2)
+      ];
+      const state = makeState(lib, items, 12, 1);
+      const stepX = 100;
+      const item = items[1];
+
+      let snap = lib.computeGhostMoveSnap({
+        left: 69,
+        top: 0,
+        state,
+        item,
+        columns: 12,
+        rows: 1,
+        stepX,
+        stepY: 100,
+        threshold: 0.7
+      });
+
+      assert.equal(snap.colstart, 1);
+      snap = lib.computeGhostMoveSnap({
+        left: 71,
+        top: 0,
+        state,
+        item,
+        columns: 12,
+        rows: 1,
+        stepX,
+        stepY: 100,
+        threshold: 0.7
+      });
+
+      assert.equal(snap.colstart, 3);
+    });
+
+    it('[computeGhostMoveSnap] 6|4: nudges neighbor before swap (two steps east)', async function () {
+      const lib = await getLib();
+      // a:1..6 (6), b:7..10 (4) with 2 cols free at right
+      const items = [
+        buildItem('a', 1, 6, 0),
+        buildItem('b', 7, 4, 1)
+      ];
+      const state = makeState(lib, items, 12, 1);
+      const stepX = 100;
+      const item = items[0]; // move the 6-wide left item
+
+      // Step 1: move so colstart becomes 2 (left ~60)
+      let snap = lib.computeGhostMoveSnap({
+        left: 60,
+        top: 0,
+        state,
+        item,
+        columns: 12,
+        rows: 1,
+        stepX,
+        stepY: 100
+      });
+      assert.equal(snap.colstart, 2);
+      // Dropping here should nudge the 4 from 7 -> 8
+      let patches = lib.getMoveChanges({
+        data: {
+          id: 'a',
+          colstart: 2,
+          rowstart: 1
+        },
+        state,
+        item
+      });
+      const pm1 = patchMap(patches);
+      assert.equal(pm1.get('a')?.colstart, 2);
+      assert.equal(pm1.get('b')?.colstart, 8);
+
+      // Step 2: move so colstart becomes 3 (left ~160)
+      snap = lib.computeGhostMoveSnap({
+        left: 160,
+        top: 0,
+        state,
+        item,
+        columns: 12,
+        rows: 1,
+        stepX,
+        stepY: 100
+      });
+      assert.equal(snap.colstart, 3);
+      patches = lib.getMoveChanges({
+        data: {
+          id: 'a',
+          colstart: 3,
+          rowstart: 1
+        },
+        state,
+        item
+      });
+      const pm2 = patchMap(patches);
+      assert.equal(pm2.get('a')?.colstart, 3);
+      assert.equal(pm2.get('b')?.colstart, 9);
+    });
+
     it('[getMoveChanges] should return no patches for no changes', async function () {
       const { getMoveChanges } = await getLib();
       const state = {

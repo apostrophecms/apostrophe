@@ -27,20 +27,50 @@
  *
  * @typedef {ReturnType<typeof itemsToState>} GridState
  * @typedef {ReturnType<typeof createPositionIndex>} PositionIndex
+ *
+ * @typedef {{
+ *  columns: number
+ *  desktop: {
+ *    rows: number,
+ *  },
+ *  tablet: {
+ *    rows: number,
+ *    auto: boolean
+ *  },
+ *  mobile: {
+ *    rows: number,
+ *    auto: boolean
+ *  }
+ * }} LayoutMeta
+ *
+ * @typedef {{
+ *   columns: number,
+ *   gap: string,
+ *   minSpan: number,
+ *   defaultSpan: number,
+ *   mobile: {
+ *     breakpoint: number
+ *   },
+ *   tablet: {
+ *     breakpoint: number
+ *   },
+ *   defaultCellHorizontalAlignment: string,
+ *   defaultCellVerticalAlignment: string
+ * }} LayoutOptions
  */
 
 /**
  * Accepts:
  *  - items (array of instances of @apostrophecms/layout-column-widget)
- *  - meta (instance of @apostrophecms/layout-meta-widget, optional)
+ *  - meta (total columns and per-device rows/auto)
  *  - options (Browser options of @apostsrophecms/layout-widget)
  *  - layoutMode (string, either 'layout', 'focus' or 'content')
  *  - deviceMode (string, either 'desktop', 'tablet' or 'mobile')
  *
  * @param {Object} params
  * @param {CurrentItem[]} params.items - The items to be converted to state.
- * @param {Object} params.meta - The meta information for the grid.
- * @param {Object} params.options - The options for the grid.
+ * @param {LayoutMeta} params.meta - The meta information for the grid.
+ * @param {LayoutOptions} params.options - The options for the grid.
  * @param {string} params.layoutMode - The layout mode of the grid.
  * @param {string} params.deviceMode - The device mode for the grid.
  */
@@ -82,8 +112,8 @@ export function itemsToState({
     ...options,
     columns: meta.columns || options.columns,
     gap: [ 'layout', 'focus' ].includes(layoutMode) ? gap || '2px' : options.gap,
-    snapThresholdMove: 0.7,
-    snapThreshold: 0.5
+    snapThresholdMove: 0.4,
+    snapThresholdResize: 0.5
   };
 
   const positionsIndex = createPositionIndex(current.items, current.rows);
@@ -606,8 +636,7 @@ export function previewMoveChanges({
     data,
     state,
     item,
-    precomp,
-    preview: true
+    precomp
   });
   if (!decided) {
     return null;
@@ -621,6 +650,294 @@ export function previewMoveChanges({
       rowstart: moving.rowstart
     }
     : null;
+}
+
+/**
+ * Compute ghost snapping target (columns/rows and pixel offsets) for a move.
+ * Stateless and DOM-free: caller must provide stepX/stepY (track + gap size).
+ *
+ * @param {Object} arg
+ * @param {number} arg.left - Current ghost left (px) relative to grid container.
+ * @param {number} arg.top - Current ghost top (px) relative to grid container.
+ * @param {import('./grid-state.mjs').GridState} arg.state - Current grid state.
+ * @param {import('./grid-state.mjs').CurrentItem} arg.item - Moving item.
+ * @param {Object} [arg.precomp] - Optional precomputed move index.
+ * @param {number} arg.columns - Number of columns.
+ * @param {number} arg.rows - Number of rows.
+ * @param {number} arg.stepX - Column track size incl. gap (px).
+ * @param {number} arg.stepY - Row track size incl. gap (px).
+ * @param {number} [arg.threshold] - Snap threshold [0..1], defaults to 0.6 if missing.
+ * @returns {{
+ *  colstart: number,
+ *  rowstart: number,
+ *  snapLeft: number,
+ *  snapTop: number
+ * } | null}
+ */
+export function computeGhostMoveSnap({
+  left,
+  top,
+  state,
+  item,
+  precomp,
+  columns,
+  rows,
+  stepX,
+  stepY,
+  threshold
+}) {
+  if (!state || !item) {
+    return null;
+  }
+  const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
+  const colspan = Math.max(1, item.colspan || 1);
+  const rowspan = Math.max(1, item.rowspan || 1);
+  const maxStartX = Math.max(1, columns - colspan + 1);
+  const maxStartY = Math.max(1, rows - rowspan + 1);
+
+  const t = Number(threshold ?? 0.6);
+  const tClamped = clamp(Number.isFinite(t) ? t : 0.6, 0.05, 0.95);
+  const shiftX = (1 - tClamped) * stepX;
+  const shiftY = (1 - tClamped) * stepY;
+
+  let c = Math.floor((left + shiftX) / stepX) + 1;
+  let r = Math.floor((top + shiftY) / stepY) + 1;
+  c = Math.max(1, Math.min(c, maxStartX));
+  r = Math.max(1, Math.min(r, maxStartY));
+
+  let colstart = c;
+  let rowstart = r;
+
+  // Hovered-neighbor threshold for swapping only
+  // - If the ghost is hovering an occupied segment (neighbor) in the move direction
+  //   and a swap candidate is valid, compute the flip boundary using the hovered
+  //   neighbor's width instead of per-track threshold.
+  // - Otherwise, use the faster track-based behavior.
+  const width = colspan;
+  const pre = precomp || prepareMoveIndex({
+    state,
+    item
+  });
+  const occSegs = pre?.segmentsByRow?.get(r) || [];
+  const dir = (c > (item.colstart || 1))
+    ? 'east'
+    : (c < (item.colstart || 1) ? 'west' : null);
+  // Leading edge in pixels: right edge when moving east, left edge when moving west
+  const widthPx = width * stepX;
+  const leadPx = dir === 'east' ? (left + widthPx) : left;
+  // Column index under the leading edge (1-based), independent of threshold shift
+  const hoverCol = Math.max(1, Math.min(columns, Math.floor(leadPx / stepX) + 1));
+  /** @type {{ id: string, start: number, end: number } | null} */
+  let hoveredSeg = null;
+  if (dir && occSegs.length) {
+    for (const seg of occSegs) {
+      if (seg.start <= hoverCol && hoverCol <= seg.end && seg.id !== item._id) {
+        hoveredSeg = seg;
+        break;
+      }
+    }
+  }
+
+  let validated = false;
+  if (hoveredSeg) {
+    const nStart = hoveredSeg.start;
+    const nEnd = hoveredSeg.end;
+    const nWidth = (nEnd - nStart + 1);
+    let swapStart;
+    if (dir === 'west') {
+      // swap-left (before neighbor)
+      swapStart = nStart;
+    } else {
+      // dir === 'east',  place so end aligns to neighbor end
+      const equalEnd = nEnd - width + 1;
+      swapStart = Math.max(1, equalEnd);
+    }
+    // Clamp into bounds
+    swapStart = Math.max(1, Math.min(swapStart, maxStartX));
+
+    // Decide based on hovered-neighbor threshold boundary in pixels
+    const neighborStartPx = (nStart - 1) * stepX;
+    const neighborWidthPx = nWidth * stepX;
+    const neighborEndPx = neighborStartPx + neighborWidthPx;
+    // Directional thresholds:
+    // - east: flip when right-edge crosses start + t * width
+    // - west: flip when left-edge crosses end - t * width (== start + (1 - t) * width)
+    const flipPx = (dir === 'west')
+      ? (neighborEndPx - (tClamped * neighborWidthPx))
+      : (neighborStartPx + tClamped * neighborWidthPx);
+    const onSwapSide = dir === 'west' ? (leadPx <= flipPx) : (leadPx >= flipPx);
+    if (onSwapSide) {
+      const p = previewMoveChanges({
+        data: {
+          id: item._id,
+          colstart: swapStart,
+          rowstart
+        },
+        state,
+        item,
+        precomp: pre
+      });
+      if (p) {
+        colstart = p.colstart;
+        rowstart = p.rowstart;
+        validated = true;
+      }
+    }
+  }
+
+  // Validate the final candidate once with preview to ensure consistency
+  // with drop-time logic. This is at most one call per mousemove.
+  if (!validated && item && item._id) {
+    const preview = previewMoveChanges({
+      data: {
+        id: item._id,
+        colstart,
+        rowstart
+      },
+      state,
+      item,
+      precomp: pre
+    });
+    if (preview) {
+      colstart = preview.colstart;
+      rowstart = preview.rowstart;
+      validated = true;
+    } else {
+      // Invalid move -> snap to current item position
+      colstart = item.colstart ?? colstart;
+      rowstart = item.rowstart ?? rowstart;
+      validated = true;
+    }
+  }
+
+  const snapLeft = Math.round((colstart - 1) * stepX);
+  const snapTop = Math.round((rowstart - 1) * stepY);
+
+  return {
+    colstart,
+    rowstart,
+    snapLeft,
+    snapTop
+  };
+}
+
+/**
+ * Fast, stateless bailout to decide whether we need to recompute move snapping.
+ * Computes a coarse signature made of:
+ *  - coarse column and row buckets (track-based)
+ *  - hovered neighbor segment id on the leading edge (if any)
+ *  - movement direction (east/west/null)
+ *  - whether the pointer is on the swap side of the hovered neighbor threshold
+ * If this signature hasn't changed since the last call (prevMemo), higher-level
+ * code can skip calling computeGhostMoveSnap without observable behavior change.
+ *
+ * Returns an object with:
+ *  - compute: boolean -> true if signature changed or prev missing
+ *  - memo: string -> the new signature to store for next comparison
+ *
+ * Note: This function is stateless and does no caching; callers store memo.
+ *
+ * @param {Object} arg
+ * @param {number} arg.left
+ * @param {number} arg.top
+ * @param {import('./grid-state.mjs').GridState} arg.state
+ * @param {import('./grid-state.mjs').CurrentItem} arg.item
+ * @param {number} arg.columns
+ * @param {number} arg.rows
+ * @param {number} arg.stepX
+ * @param {number} arg.stepY
+ * @param {number} [arg.threshold]
+ * @param {string} [arg.prevMemo]
+ * @returns {{ compute: boolean, memo: string }}
+ */
+export function shouldComputeMoveSnap({
+  left,
+  top,
+  state,
+  item,
+  columns,
+  rows,
+  stepX,
+  stepY,
+  threshold,
+  prevMemo
+}) {
+  const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
+  const colspan = Math.max(1, item?.colspan || 1);
+  const rowspan = Math.max(1, item?.rowspan || 1);
+  const maxStartX = Math.max(1, columns - colspan + 1);
+  const maxStartY = Math.max(1, rows - rowspan + 1);
+
+  const t = Number(threshold ?? 0.6);
+  const tClamped = clamp(Number.isFinite(t) ? t : 0.6, 0.05, 0.95);
+  const shiftX = (1 - tClamped) * stepX;
+  const shiftY = (1 - tClamped) * stepY;
+
+  let c = Math.floor((left + shiftX) / stepX) + 1;
+  let r = Math.floor((top + shiftY) / stepY) + 1;
+  c = Math.max(1, Math.min(c, maxStartX));
+  r = Math.max(1, Math.min(r, maxStartY));
+
+  // Direction based on coarse col delta relative to original item
+  let dir = null;
+  if (item?.colstart != null) {
+    if (c > item.colstart) {
+      dir = 'east';
+    } else if (c < item.colstart) {
+      dir = 'west';
+    }
+  }
+
+  // Leading edge and hovered neighbor segment at that row for swap-side check
+  // Build contiguous segments from positions for row r
+  let hoveredId = '-';
+  let onSwapSide = 0;
+  const widthPx = colspan * stepX;
+  const leadPx = dir === 'west' ? left : (left + widthPx);
+  const hoverCol = Math.max(1, Math.min(columns, Math.floor(leadPx / stepX) + 1));
+  const rowIndex = state.positions?.get?.(r);
+  if (rowIndex) {
+    // Walk to find containing segment for hoverCol
+    let segStart = 0;
+    let segEnd = 0;
+    let segId = null;
+    // Expand outward from hoverCol to identify contiguous id block
+    const idAt = (col) => rowIndex.get(col) || null;
+    const centerId = idAt(hoverCol);
+    if (centerId && centerId !== item._id) {
+      segId = centerId;
+      // walk left
+      segStart = hoverCol;
+      while (segStart - 1 >= 1 && idAt(segStart - 1) === segId) {
+        segStart -= 1;
+      }
+      // walk right
+      segEnd = hoverCol;
+      while (segEnd + 1 <= columns && idAt(segEnd + 1) === segId) {
+        segEnd += 1;
+      }
+      hoveredId = segId;
+
+      // Compute flip boundary in px based on neighbor width
+      const nStart = segStart;
+      const nEnd = segEnd;
+      const neighborStartPx = (nStart - 1) * stepX;
+      const neighborEndPx = nEnd * stepX;
+      const neighborWidthPx = (nEnd - nStart + 1) * stepX;
+      const flipPx = dir === 'west'
+        ? (neighborEndPx - (tClamped * neighborWidthPx))
+        : (neighborStartPx + (tClamped * neighborWidthPx));
+      onSwapSide = (dir === 'west')
+        ? (leadPx <= flipPx ? 1 : 0)
+        : (leadPx >= flipPx ? 1 : 0);
+    }
+  }
+
+  const memo = `${r}|${c}|${hoveredId}|${dir || '-'}|${onSwapSide}`;
+  return {
+    compute: memo !== prevMemo,
+    memo
+  };
 }
 
 // Core move decision logic (position-only).

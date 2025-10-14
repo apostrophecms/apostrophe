@@ -43,7 +43,6 @@ module.exports = {
     '@apostrophecms/area': {},
     '@apostrophecms/layout-widget': {},
     '@apostrophecms/layout-column-widget': {},
-    '@apostrophecms/layout-meta-widget': {},
     '@apostrophecms/rich-text-widget': {},
     '@apostrophecms/html-widget': {},
     '@apostrophecms/color-field': {},

@@ -1,6 +1,11 @@
 import { throttle } from 'lodash';
 import {
-  getMoveChanges, getResizeChanges, validateResizeX, previewMoveChanges, prepareMoveIndex
+  getMoveChanges,
+  getResizeChanges,
+  validateResizeX,
+  computeGhostMoveSnap,
+  prepareMoveIndex,
+  shouldComputeMoveSnap
 } from './grid-state.mjs';
 
 /**
@@ -336,26 +341,23 @@ export class GridManager {
    * @param {GhostData} arg.data - The ghost data containing the item and its state.
    * @param {GridState} arg.state - The current grid state.
    * @param {CurrentItem} arg.item - The item being moved.
-  * @returns {{
-  *  left: number,
-  *  top: number,
-  *  snapLeft?: number,
-  *  snapTop?: number,
-  *  colstart?: number,
-  *  rowstart?: number
-  * }} - The new position of the ghost item and optional snap info.
+   * @param {Object} arg.precomp - precomputation for move preview.
+   * @returns {{
+   *  left: number,
+   *  top: number,
+   *  snapLeft?: number,
+   *  snapTop?: number,
+   *  colstart?: number,
+   *  rowstart?: number
+   * }} - The new position of the ghost item and optional snap info.
    */
   onGhostMove({
     data, state, item, precomp
   }, event) {
-    // Fast computation of position relative to the grid container, keeping the
-    // entire ghost within bounds. Avoids layout thrash by using cached
-    // container rect and known ghost dimensions from `data`.
     const containerRect = this.getGridBoundingRect();
     const elWidth = data.width || data.element.offsetWidth;
     const elHeight = data.height || data.element.offsetHeight;
 
-    // Lazily compute the cursor offset within the item on first move.
     if (data.clickOffsetX == null || data.clickOffsetY == null) {
       data.clickOffsetX = Math.min(
         Math.max(0, data.startX - containerRect.left - data.left),
@@ -389,7 +391,6 @@ export class GridManager {
       };
     }
 
-    // Compute optional snapping with minimal overhead.
     const style = this.getGridComputedStyle();
     const colGap = parseFloat(style.columnGap || style.gap) || 0;
     const rowGap = parseFloat(style.rowGap || style.gap) || 0;
@@ -399,71 +400,74 @@ export class GridManager {
     const trackHeight = (containerRect.height - rowGap * (rows - 1)) / rows;
     const stepX = trackWidth + colGap;
     const stepY = trackHeight + rowGap;
+    const tMoveOpt = state?.options?.snapThresholdMove;
 
-    const colspan = Math.max(1, item.colspan || 1);
-    const rowspan = Math.max(1, item.rowspan || 1);
-    const maxStartX = Math.max(1, columns - colspan + 1);
-    const maxStartY = Math.max(1, rows - rowspan + 1);
-
-    // Initial nearest indices with custom snap threshold.
-    const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
-    const tMoveOpt = (
-      state?.options?.snapThresholdMove ?? state?.options?.snapThreshold ?? 0.6
-    );
-    const tMove = Number(tMoveOpt);
-    const tMoveClamped = clamp(
-      Number.isFinite(tMove) ? tMove : 0.6,
-      0.05,
-      0.95
-    );
-    const shiftX = (1 - tMoveClamped) * stepX;
-    const shiftY = (1 - tMoveClamped) * stepY;
-    let c = Math.floor((left + shiftX) / stepX) + 1;
-    let r = Math.floor((top + shiftY) / stepY) + 1;
-    c = Math.max(1, Math.min(c, maxStartX));
-    r = Math.max(1, Math.min(r, maxStartY));
-
-    // Optimistic desired snap indices
-    let colstart = c;
-    let rowstart = r;
-
-    // Collision-aware preview: compute once per throttle tick. We reuse a cached
-    // precomputation prepared at drag start (or lazily here) to keep this fast.
-    if (state && item && item._id) {
-      const preview = previewMoveChanges({
-        data: {
-          id: item._id,
-          colstart,
-          rowstart
-        },
-        state,
-        item,
-        precomp: precomp || prepareMoveIndex({
+    // Memoize precomputed move index across a drag
+    if (!precomp && data) {
+      if (!data._movePrecomp || data._movePrecompFor !== item?._id) {
+        data._movePrecomp = prepareMoveIndex({
           state,
           item
-        })
-      });
-      if (preview) {
-        colstart = preview.colstart;
-        rowstart = preview.rowstart;
-      } else {
-        // Invalid move at this location: snapping should represent the
-        // actual persisted outcome (no-op), not an invalid target.
-        colstart = item.colstart || colstart;
-        rowstart = item.rowstart || rowstart;
+        });
+        data._movePrecompFor = item?._id;
       }
+      precomp = data._movePrecomp;
     }
 
-    const snapLeft = Math.round((colstart - 1) * stepX);
-    const snapTop = Math.round((rowstart - 1) * stepY);
+    // Fast early bailout: skip recompute when signature unchanged
+    const bail = shouldComputeMoveSnap({
+      left,
+      top,
+      state,
+      item,
+      columns,
+      rows,
+      stepX,
+      stepY,
+      threshold: tMoveOpt,
+      prevMemo: data?.moveSnapMemo || null
+    });
+
+    if (
+      !bail.compute &&
+      typeof data?.snapLeft === 'number' &&
+      typeof data?.snapTop === 'number'
+    ) {
+      return {
+        left,
+        top,
+        snapLeft: data.snapLeft,
+        snapTop: data.snapTop,
+        colstart: null,
+        rowstart: null
+      };
+    }
+
+    const snap = computeGhostMoveSnap({
+      left,
+      top,
+      state,
+      item,
+      precomp,
+      columns,
+      rows,
+      stepX,
+      stepY,
+      threshold: tMoveOpt
+    }) || {};
+
+    // Store latest memo and snap so future frames can bail early
+    if (bail.memo) {
+      data.moveSnapMemo = bail.memo;
+    }
 
     return {
       left,
       top,
-      snapLeft,
-      snapTop,
-      colstart,
-      rowstart
+      snapLeft: snap.snapLeft,
+      snapTop: snap.snapTop,
+      colstart: snap.colstart,
+      rowstart: snap.rowstart
     };
   }
 
@@ -484,7 +488,7 @@ export class GridManager {
     const directionCorrection = data.side === direction ? 1 : -1;
     const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
     const tResizeOpt = (
-      state?.options?.snapThresholdResize ?? state?.options?.snapThreshold ?? 0.5
+      state?.options?.snapThresholdResize ?? 0.5
     );
     const tResize = Number(tResizeOpt);
     const SNAP_THRESHOLD = clamp(
@@ -556,6 +560,10 @@ export class GridManager {
   }) {
     if (!item) {
       return [];
+    }
+    // Reuse precomp from drag if present
+    if (!precomp && data?._movePrecomp && data._movePrecompFor === item?._id) {
+      precomp = data._movePrecomp;
     }
     const patches = getMoveChanges({
       data,
