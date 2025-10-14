@@ -14,9 +14,6 @@
 ### Fixes
 
 * The `render-areas` query parameter now works correctly with areas nested in array items.
-
-### Fixes
-
 * Fix min size calculation for image widgets configured with an aspect ratio.
 
 ## 4.22.0 (2025-10-01)
