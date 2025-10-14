@@ -10,7 +10,7 @@
     @mousemove="onMouseMove($event)"
   >
     <div
-      v-for="(item) in gridState.current.items"
+      v-for="(item) in managerItems"
       :key="item._id"
       ref="items"
       class="apos-layout__item"
@@ -278,6 +278,14 @@ export default {
     opstate: {
       type: Object,
       default: () => ({})
+    },
+    // Preview state for synchronizing manager with layout during moves
+    preview: {
+      type: Object,
+      default: () => ({
+        patches: null,
+        key: null
+      })
     }
   },
   emits: [
@@ -363,6 +371,19 @@ export default {
     },
     deviceMode() {
       return this.gridState.deviceMode;
+    },
+    // Apply preview patches to manager items to keep them synchronized with layout grid
+    managerItems() {
+      const base = this.gridState.current.items;
+      // Apply live preview patches if present (same logic as AposGridLayout)
+      if (
+        this.isMoving &&
+        Array.isArray(this.preview.patches) &&
+        this.preview.patches.length
+      ) {
+        return this.applyPreviewPatches(base, this.preview.patches);
+      }
+      return base;
     },
     gridClasses() {
       return {
@@ -851,6 +872,38 @@ export default {
         return touch.clientY;
       }
       return null;
+    },
+    applyPreviewPatches(items, patches) {
+      // Map items by _id for quick lookup
+      const map = new Map(items.map((it, idx) => [ it._id, {
+        it,
+        idx
+      } ]));
+      const out = items.map(it => ({ ...it }));
+      for (const p of patches) {
+        const ref = map.get(p._id);
+        if (!ref) {
+          continue;
+        }
+        const target = out[ref.idx];
+        // Only apply layout-related fields present in the patch
+        if ('colstart' in p) {
+          target.colstart = p.colstart;
+        }
+        if ('rowstart' in p) {
+          target.rowstart = p.rowstart;
+        }
+        if ('colspan' in p) {
+          target.colspan = p.colspan;
+        }
+        if ('rowspan' in p) {
+          target.rowspan = p.rowspan;
+        }
+        if ('order' in p) {
+          target.order = p.order;
+        }
+      }
+      return out;
     }
   }
 };
@@ -1195,13 +1248,6 @@ $resize-button-width: 4px;
   right: 0;
   display: block;
   padding: 8px;
-}
-
-/* stylelint-disable-next-line media-feature-name-allowed-list */
-@media (prefers-reduced-motion: no-preference) {
-  .apos-layout__grid-clone {
-    transition: all 300ms ease;
-  }
 }
 
 </style>

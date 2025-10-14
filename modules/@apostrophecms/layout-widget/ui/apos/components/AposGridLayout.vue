@@ -66,6 +66,7 @@
       :synthetic-items="syntheticItems"
       :meta-id="meta._id"
       :opstate="opstate"
+      :preview="preview"
       @resize-start="onResizeStart"
       @resize-end="onResizeEnd"
       @move-start="onMoveStart"
