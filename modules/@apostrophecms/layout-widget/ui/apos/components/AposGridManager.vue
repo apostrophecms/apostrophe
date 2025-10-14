@@ -936,7 +936,8 @@ $resize-button-width: 4px;
     display: grid;
     inset: 0;
     grid-template-columns: repeat(var(--grid-columns, 12), 1fr);
-    gap: var(--grid-gap);
+    grid-template-rows: repeat(var(--grid-rows), auto);
+    grid-gap: var(--grid-gap, 0);
 
     &.is-moving,
     &.is-resizing {

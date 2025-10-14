@@ -11,9 +11,16 @@
       class="apos-layout__grid"
       :class="gridClasses"
       data-apos-test="aposLayoutContainer"
+      data-tablet-auto="true"
+      data-mobile-auto="true"
       :style="{
         '--grid-columns': gridState.columns,
-        '--grid-gap': gridState.options.gap,
+        '--grid-gap': gridState.options.gap || '0',
+        '--grid-rows': 'auto',
+        '--mobile-grid-rows': 'auto',
+        '--tablet-grid-rows': 'auto',
+        '--justify-items': gridState.options.defaultCellHorizontalAlignment || 'stretch',
+        '--align-items': gridState.options.defaultCellVerticalAlignment || 'stretch',
       }"
     >
       <div
@@ -23,6 +30,7 @@
         class="apos-layout__item"
         role="gridcell"
         data-apos-test="aposLayoutItem"
+        :data-tablet-full="tabletFullItems[item._id] || false"
         :data-id="`${ item._id }`"
         :style="{
           '--colstart': item.colstart,
@@ -163,7 +171,11 @@ export default {
     renderItems() {
       const base = this.gridState.current.items;
       // Apply live preview patches if present (render-only)
-      if (Array.isArray(this.preview.patches) && this.preview.patches.length) {
+      if (
+        this.isManageMode &&
+        Array.isArray(this.preview.patches) &&
+        this.preview.patches.length
+      ) {
         return this.applyPreviewPatches(base, this.preview.patches);
       }
       if (!this.syntheticItems.length) {
@@ -174,6 +186,23 @@ export default {
         ...this.syntheticItems
       ];
       return merged.sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+    },
+    tabletFullItems() {
+      if (this.isManageMode) {
+        return {};
+      }
+      const items = this.gridState.current.items
+        .filter(widget => widget.tablet.show);
+      if (items.length % 2 === 0) {
+        return;
+      }
+      items.sort((a, b) =>
+        (a.tablet.order ?? a.order) - (b.tablet.order ?? b.order)
+      );
+      const lastId = items[items.length - 1]._id;
+      return {
+        [lastId]: true
+      };
     },
     isManageMode() {
       return [ 'layout', 'focus' ].includes(this.layoutMode);
@@ -275,7 +304,11 @@ export default {
 .apos-layout__grid {
   display: grid;
   grid-template-columns: repeat(var(--grid-columns, 12), 1fr);
-  gap: var(--grid-gap);
+  grid-template-rows: repeat(var(--grid-rows), auto);
+  grid-gap: var(--grid-gap, 0);
+  justify-items: var(--justify-items);
+  /* stylelint-disable-next-line declaration-block-no-redundant-longhand-properties */
+  align-items: var(--align-items);
 }
 
 .apos-layout__item {
@@ -354,6 +387,89 @@ export default {
   .apos-grid-enter-from,
   .apos-grid-leave-to {
     opacity: 0.01;
+  }
+}
+
+/* Tablet rules. Override mobile/tablet breakpoint options to change. */
+
+/* Only apply when not in manage mode */
+/* stylelint-disable-next-line media-feature-name-allowed-list */
+@media screen and (width >= 601px) and (width <= 1024px) {
+  /* Auto mode: ignore device vars, just 2 per row */
+  .apos-layout__grid:not(.manage)[data-tablet-auto="true"] {
+    grid-template-columns: repeat(2, 1fr);
+
+    --grid-rows: auto;
+  }
+
+  .apos-layout__grid:not(.manage)[data-tablet-auto="true"] > .apos-layout__item {
+    grid-column: auto / span 1;
+    grid-row: auto / span 1;
+    order: var(--order, 0);
+  }
+
+  /*
+    The backend should mark last odd items as full width to avoid
+    weird spacing at the end of rows.
+  */
+  .apos-layout__grid:not(.manage)[data-tablet-auto="true"] > .apos-layout__item[data-tablet-full="true"] {
+    grid-column: 1 / span 2;
+  }
+
+  /* Manual mode: use configured columns and device vars */
+  .apos-layout__grid:not(.manage)[data-tablet-auto="false"] {
+    --grid-rows: var(--tablet-rows, var(--grid-rows));
+  }
+
+  .apos-layout__grid:not(.manage)[data-tablet-auto="false"] > .apos-layout__item {
+    grid-column: var(--tablet-colstart, auto) / span var(--tablet-colspan, 1);
+    grid-row: var(--tablet-rowstart, auto) / span var(--tablet-rowspan, 1);
+    justify-self: var(--tablet-justify);
+    /* stylelint-disable-next-line declaration-block-no-redundant-longhand-properties */
+    align-self: var(--tablet-align);
+    order: var(--tablet-order, var(--order, 0));
+  }
+
+  /* Hide items not visible on tablet */
+  .apos-layout__grid:not(.manage) > .apos-layout__item[data-visible-tablet="false"] {
+    display: none;
+  }
+}
+
+/* Mobile rules. Override mobile breakpoint option to change. */
+
+/* Only apply when not in manage mode */
+/* stylelint-disable-next-line media-feature-name-allowed-list */
+@media screen and (width <= 600px) {
+  .apos-layout__grid:not(.manage) {
+    grid-template-columns: 1fr;
+
+    --grid-rows: auto;
+  }
+
+  .apos-layout__grid:not(.manage)[data-mobile-auto="true"] > .apos-layout__item {
+    grid-column: auto / span 1;
+    grid-row: auto / span 1;
+    order: var(--order, 0);
+  }
+
+  /* Manual mode: use configured columns and device vars */
+  .apos-layout__grid:not(.manage)[data-mobile-auto="false"] {
+    --grid-rows: var(--mobile-rows, var(--grid-rows));
+  }
+
+  .apos-layout__grid:not(.manage)[data-mobile-auto="false"] > .apos-layout__item {
+    grid-column: var(--mobile-colstart, auto) / span var(--mobile-colspan, 1);
+    grid-row: var(--mobile-rowstart, auto) / span var(--mobile-rowspan, 1);
+    justify-self: var(--mobile-justify);
+    /* stylelint-disable-next-line declaration-block-no-redundant-longhand-properties */
+    align-self: var(--mobile-align);
+    order: var(--mobile-order, var(--order, 0));
+  }
+
+  /* Hide items not visible on mobile */
+  .apos-layout__grid:not(.manage) > .apos-layout__item[data-visible-mobile="false"] {
+    display: none;
   }
 }
 </style>
