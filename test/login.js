@@ -1187,4 +1187,221 @@ describe('Case Sensitivity', function() {
       assert.deepEqual(actual, expected);
     });
   });
+
+  describe('Case Insensitive', function() {
+    let apos;
+
+    this.timeout(20000);
+
+    before(async function () {
+      apos = await t.create({
+        root: module,
+        modules: {
+          '@apostrophecms/login': {
+            options: {
+              caseInsensitive: true
+            }
+          }
+        }
+      });
+    });
+
+    beforeEach(async function() {
+      await apos.doc.db.deleteMany({
+        type: '@apostrophecms/user'
+      });
+      await apos.user.safe.deleteMany();
+    });
+
+    after(function () {
+      return t.destroy(apos);
+    });
+
+    it('should normalize users insertion in docs and safe collections in lowecase', async function() {
+      const req = apos.task.getReq();
+      const users = [
+        {
+          title: 'ViRus',
+          username: 'ViRus',
+          password: 'password',
+          email: 'VirUs@gmail.com',
+          role: 'admin'
+        },
+        {
+          title: 'toto',
+          username: 'ToTo',
+          password: 'password',
+          email: 'toto@gmail.com',
+          role: 'admin'
+        },
+        {
+          title: 'tata',
+          username: 'tata',
+          password: 'password',
+          email: 'TaTa@gmail.com',
+          role: 'admin'
+        },
+        {
+          title: 'Conflict',
+          username: 'Conflict',
+          password: 'password',
+          email: 'conflict@gmail.com',
+          role: 'admin'
+        }
+      ];
+      const userConflicting = {
+        title: 'Conflict',
+        username: 'conflict',
+        password: 'password',
+        email: 'conflict2@gmail.com',
+        role: 'admin'
+      };
+
+      for (const user of users) {
+        await apos.user.insert(req, user);
+      }
+
+      const inserted = await apos.doc.db
+        .find({ type: '@apostrophecms/user' })
+        .project({
+          _id: 0,
+          username: 1,
+          email: 1
+        })
+        .sort({ username: 1 })
+        .toArray();
+
+      const safe = (await apos.user.safe
+        .find({})
+        .project({
+          _id: 0,
+          username: 1
+        })
+        .sort({ username: 1 })
+        .toArray());
+
+      let conflictError = false;
+      try {
+        await apos.user.insert(req, userConflicting);
+      } catch (err) {
+        conflictError = true;
+      }
+
+      const actual = {
+        inserted,
+        safe,
+        conflictError
+      };
+
+      const expected = {
+        inserted: [
+          {
+            username: 'conflict',
+            email: 'conflict@gmail.com'
+          },
+          {
+            username: 'tata',
+            email: 'tata@gmail.com'
+          },
+          {
+            username: 'toto',
+            email: 'toto@gmail.com'
+          },
+          {
+            username: 'virus',
+            email: 'virus@gmail.com'
+          }
+        ],
+        safe: [
+          { username: 'conflict' },
+          { username: 'tata' },
+          { username: 'toto' },
+          { username: 'virus' }
+        ],
+        conflictError: true
+      };
+
+      assert.deepEqual(actual, expected);
+    });
+
+    it('should normalize login username / email in lowercase during connection', async function() {
+      const req = apos.task.getReq();
+      const jar = apos.http.jar();
+      await apos.http.get(
+        '/',
+        {
+          jar
+        }
+      );
+
+      const users = [
+        {
+          title: 'toto',
+          username: 'ToTo',
+          password: 'password',
+          email: 'toto@gmail.com',
+          role: 'admin'
+        },
+        {
+          title: 'tata',
+          username: 'tata',
+          password: 'password',
+          email: 'TaTa@gmail.com',
+          role: 'admin'
+        }
+      ];
+
+      for (const user of users) {
+        await apos.user.insert(req, user);
+      }
+
+      let totoLoginError = false;
+      try {
+        await apos.http.post(
+          '/api/v1/@apostrophecms/login/login',
+          {
+            method: 'POST',
+            body: {
+              username: 'ToTO',
+              password: 'password',
+              session: true
+            },
+            jar
+          }
+        );
+      } catch (err) {
+        totoLoginError = true;
+      }
+
+      let tataLoginError = false;
+      try {
+        await apos.http.post(
+          '/api/v1/@apostrophecms/login/login',
+          {
+            method: 'POST',
+            body: {
+              username: 'TATA@gmail.COm',
+              password: 'password',
+              session: true
+            },
+            jar
+          }
+        );
+      } catch (err) {
+        tataLoginError = true;
+      }
+
+      const actual = {
+        totoLoginError,
+        tataLoginError
+      };
+
+      const expected = {
+        totoLoginError: false,
+        tataLoginError: false
+      };
+
+      assert.deepEqual(actual, expected);
+    });
+  });
 });
