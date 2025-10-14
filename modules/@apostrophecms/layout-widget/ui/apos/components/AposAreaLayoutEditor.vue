@@ -62,6 +62,8 @@
           operations: layoutBreadcrumbOperations
         }"
         @click="clickOnGrid"
+        @resize-start="emphasizeGrid"
+        @move-start="emphasizeGrid"
         @resize-end="onResizeOrMoveEnd"
         @move-end="onResizeOrMoveEnd"
         @add-fit-item="onAddFitItem"
@@ -191,24 +193,17 @@ export default {
     }
   },
   watch: {
-    // Steal the columns focus, set it on the layout widget instead.
-    // Additionally send "emphasized" state to the central store
-    // to keep the breadcrumb label visible, when children are focused.
+    // Intercept the columns focus, and emphasize the layout widget instead.
     async focusedWidget(widgetId) {
       if (!this.parentOptions.widgetId) {
         return;
       }
       await this.$nextTick();
-      if (this.layoutColumnWidgetIds.includes(widgetId)) {
-        this.clickOnGrid();
-        this.removeEmphasizedWidget(this.parentOptions.widgetId);
-        return;
-      }
 
       if (this.layoutColumnWidgetDeepIds.includes(widgetId)) {
-        this.addEmphasizedWidget(this.parentOptions.widgetId);
+        this.emphasizeGrid();
       } else {
-        this.removeEmphasizedWidget(this.parentOptions.widgetId);
+        this.deEmphasizeGrid();
       }
     },
     // Steal the columns hover, set it on the layout widget instead.
@@ -241,6 +236,16 @@ export default {
     clickOnGrid() {
       if (this.parentOptions.widgetId) {
         this.setFocusedWidget(this.parentOptions.widgetId, this.areaId);
+      }
+    },
+    emphasizeGrid() {
+      if (this.parentOptions.widgetId) {
+        this.addEmphasizedWidget(this.parentOptions.widgetId);
+      }
+    },
+    deEmphasizeGrid() {
+      if (this.parentOptions.widgetId) {
+        this.removeEmphasizedWidget(this.parentOptions.widgetId);
       }
     },
     // While switching to Edit mode, areaEditors are mounted twice in a quick

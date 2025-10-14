@@ -1342,14 +1342,12 @@ export function computeSyntheticSlots(state) {
       let cur = start;
       while (cur <= end) {
         const remaining = end - cur + 1;
-        if (remaining < minSpan) {
-          break;
-        }
         const span = Math.min(defaultSpan, remaining);
         const id = `syn-r${r}-c${cur}-w${span}`;
         syntheticDrafts.push({
           _id: id,
           synthetic: true,
+          toosmall: remaining < minSpan,
           colstart: cur,
           colspan: span,
           rowstart: r,
