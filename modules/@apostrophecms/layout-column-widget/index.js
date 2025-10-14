@@ -54,6 +54,12 @@ module.exports = {
   widgetOperations(self, options) {
     return {
       add: {
+        layoutColMove: {
+          action: 'move',
+          placement: 'breadcrumb',
+          icon: 'cursor-move-icon',
+          rawEvents: [ 'mousedown', 'touchstart' ]
+        },
         layoutColConfig: {
           placement: 'breadcrumb',
           icon: 'cog-icon',
@@ -64,12 +70,6 @@ module.exports = {
           placement: 'breadcrumb',
           icon: 'delete-icon',
           tooltip: 'apostrophe:delete'
-        },
-        layoutColMove: {
-          action: 'move',
-          placement: 'breadcrumb',
-          icon: 'cursor-move-icon',
-          rawEvents: [ 'mousedown', 'touchstart' ]
         }
       }
     };

@@ -1111,7 +1111,7 @@ $resize-button-width: 4px;
 .apos-layout__item-move-handle-icon {
   position: absolute;
   top: 8px;
-  left: 8px;
+  left: 16px;
   width: 30px;
   height: 30px;
   border: 1px solid var(--a-primary-transparent-25);
