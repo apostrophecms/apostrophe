@@ -27,20 +27,50 @@
  *
  * @typedef {ReturnType<typeof itemsToState>} GridState
  * @typedef {ReturnType<typeof createPositionIndex>} PositionIndex
+ *
+ * @typedef {{
+ *  columns: number
+ *  desktop: {
+ *    rows: number,
+ *  },
+ *  tablet: {
+ *    rows: number,
+ *    auto: boolean
+ *  },
+ *  mobile: {
+ *    rows: number,
+ *    auto: boolean
+ *  }
+ * }} LayoutMeta
+ *
+ * @typedef {{
+ *   columns: number,
+ *   gap: string,
+ *   minSpan: number,
+ *   defaultSpan: number,
+ *   mobile: {
+ *     breakpoint: number
+ *   },
+ *   tablet: {
+ *     breakpoint: number
+ *   },
+ *   defaultCellHorizontalAlignment: string,
+ *   defaultCellVerticalAlignment: string
+ * }} LayoutOptions
  */
 
 /**
  * Accepts:
  *  - items (array of instances of @apostrophecms/layout-column-widget)
- *  - meta (instance of @apostrophecms/layout-meta-widget, optional)
+ *  - meta (total columns and per-device rows/auto)
  *  - options (Browser options of @apostsrophecms/layout-widget)
  *  - layoutMode (string, either 'layout', 'focus' or 'content')
  *  - deviceMode (string, either 'desktop', 'tablet' or 'mobile')
  *
  * @param {Object} params
  * @param {CurrentItem[]} params.items - The items to be converted to state.
- * @param {Object} params.meta - The meta information for the grid.
- * @param {Object} params.options - The options for the grid.
+ * @param {LayoutMeta} params.meta - The meta information for the grid.
+ * @param {LayoutOptions} params.options - The options for the grid.
  * @param {string} params.layoutMode - The layout mode of the grid.
  * @param {string} params.deviceMode - The device mode for the grid.
  */
