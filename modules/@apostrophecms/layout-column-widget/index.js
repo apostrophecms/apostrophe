@@ -54,6 +54,12 @@ module.exports = {
   widgetOperations(self, options) {
     return {
       add: {
+        layoutColMove: {
+          action: 'move',
+          placement: 'breadcrumb',
+          icon: 'cursor-move-icon',
+          rawEvents: [ 'mousedown', 'touchstart' ]
+        },
         layoutColConfig: {
           placement: 'breadcrumb',
           icon: 'cog-icon',

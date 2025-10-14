@@ -40,14 +40,7 @@
           @touchstart="onStartMove(item, $event)"
           @mouseup="resetGhostData"
           @touchend="resetGhostData"
-        >
-          <AposIndicator
-            icon="cursor-move-icon"
-            :icon-size="16"
-            icon-color="var(--a-base-1)"
-            class="apos-layout__item-move-handle-icon"
-          />
-        </button>
+        />
         <button
           v-show="!hasMotion"
           class="apos-layout--item-action apos-layout__item-resize-handle nw"
@@ -91,7 +84,7 @@
           class="apos-layout--item-action apos-layout__item-operations-handle"
         >
           <!-- Show breadcrumb operations, no support for actions, just our custom
-         expected operations - remove and update -->
+         expected operations - remove, update and move raw events -->
           <AposBreadcrumbOperations
             v-if="opstate.operations?.length > 0"
             :i="item.__naturalIndex"
@@ -102,6 +95,7 @@
             :disabled="opstate.disabled"
             :teleport-modals="true"
             @update="updateItem"
+            @operation="onBreadcrumbOperation(item, $event)"
           />
         </div>
       </div>
@@ -470,6 +464,14 @@ export default {
     }
   },
   methods: {
+    onBreadcrumbOperation(item, operation) {
+      if (
+        operation.name === 'move' &&
+        [ 'mousedown', 'touchstart' ].includes(operation.data.eventName)
+      ) {
+        this.onStartMove(item, operation.data.event);
+      }
+    },
     onAddSynthetic(slot) {
       const newItem = {
         colstart: slot.colstart,
@@ -771,7 +773,7 @@ export default {
         const height = grip.getBoundingClientRect().height;
         grip.style.top = `${y - (height / 2)}px`;
       } else {
-        // todo should never be missing!
+        // should never be missing!
       }
     },
     resetGhostHandleOffsets() {
@@ -1138,7 +1140,7 @@ $resize-button-width: 4px;
 .apos-layout__item-move-handle-icon {
   position: absolute;
   top: 8px;
-  left: 8px;
+  left: 16px;
   width: 30px;
   height: 30px;
   border: 1px solid var(--a-primary-transparent-25);
@@ -1170,9 +1172,19 @@ $resize-button-width: 4px;
 
 .apos-layout__item-operations-handle {
   top: 0;
-  right: 0;
+  left: 0;
   display: block;
   padding: 8px;
+}
+
+.apos-layout__item-operations-handle {
+  :deep([data-operation-id="move"] span) {
+    cursor: grab;
+
+    &:active {
+      cursor: grabbing;
+    }
+  }
 }
 
 /* stylelint-disable-next-line media-feature-name-allowed-list */
