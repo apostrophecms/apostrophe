@@ -390,12 +390,8 @@ export default {
   }
 }
 
-/* Tablet rules. Override mobile/tablet breakpoint options to change. */
-
-/* Only apply when not in manage mode */
 /* stylelint-disable-next-line media-feature-name-allowed-list */
 @media screen and (width >= 601px) and (width <= 1024px) {
-  /* Auto mode: ignore device vars, just 2 per row */
   .apos-layout__grid:not(.manage)[data-tablet-auto="true"] {
     grid-template-columns: repeat(2, 1fr);
 
@@ -408,15 +404,10 @@ export default {
     order: var(--order, 0);
   }
 
-  /*
-    The backend should mark last odd items as full width to avoid
-    weird spacing at the end of rows.
-  */
   .apos-layout__grid:not(.manage)[data-tablet-auto="true"] > .apos-layout__item[data-tablet-full="true"] {
     grid-column: 1 / span 2;
   }
 
-  /* Manual mode: use configured columns and device vars */
   .apos-layout__grid:not(.manage)[data-tablet-auto="false"] {
     --grid-rows: var(--tablet-rows, var(--grid-rows));
   }
@@ -436,9 +427,6 @@ export default {
   }
 }
 
-/* Mobile rules. Override mobile breakpoint option to change. */
-
-/* Only apply when not in manage mode */
 /* stylelint-disable-next-line media-feature-name-allowed-list */
 @media screen and (width <= 600px) {
   .apos-layout__grid:not(.manage) {
