@@ -225,12 +225,6 @@ module.exports = {
               userId: doc._id
             });
           }
-        },
-        async normalizeLoginInfo(req, doc, options) {
-          doc.username = self.apos.login.normalizeLoginName(doc.username);
-          if (doc.email) {
-            doc.email = self.apos.login.normalizeLoginName(doc.email);
-          }
         }
       },
       // Reflect email and username changes in the safe after deduplicating in
