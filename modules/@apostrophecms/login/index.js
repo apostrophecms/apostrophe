@@ -970,10 +970,7 @@ module.exports = {
       },
 
       async clearLoginAttempts(username, namespace = loginAttemptsNamespace) {
-        await self.apos.cache.delete(
-          namespace,
-          self.normalizeLoginName(username)
-        );
+        await self.apos.cache.delete(namespace, username);
       },
 
       addToAdminBar() {
@@ -1077,7 +1074,7 @@ module.exports = {
 
         self.logError(
           'conflicting-usernames',
-          'Some usernames changed in lowercase already exist for other users, please fix it or they won\'t be able to log anymore',
+          'Some usernames changed in lowercase already exist for other users, please fix it or they won\'t be able to log in anymore',
           { failed: duplicatedUsernames }
         );
       }
