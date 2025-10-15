@@ -10,6 +10,7 @@
 ### Changes
 
 * Refactored complex logic regarding data updates in `AposSchema`.
+* Cleaned up `annotateAreaForExternalFront` logic and added context so developers understand the reason if it fails due to a widget type with no matching module in the project.
 
 ### Fixes
 
