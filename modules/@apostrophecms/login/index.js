@@ -1002,7 +1002,7 @@ module.exports = {
       },
 
       normalizeLoginName(usernameOrEmail) {
-        if (!self.options.caseInsensitive) {
+        if (typeof usernameOrEmail !== 'string' || !self.options.caseInsensitive) {
           return usernameOrEmail;
         }
         return usernameOrEmail.toLowerCase();
