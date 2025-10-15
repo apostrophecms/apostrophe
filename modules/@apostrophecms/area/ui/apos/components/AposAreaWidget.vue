@@ -314,14 +314,21 @@ export default {
       adminBarHeight: undefined,
       controlsHeight: undefined,
       lastResizeTop: undefined,
+      totalUiOffset: undefined,
       scrollTicking: false,
       resizeTicking: false,
       shiftTolerance: 10,
       controlsMargin,
       stickyControlsStyles: {},
-      defaultControlsStyles: {
+      stickyStylesDefault: {
         position: 'absolute',
         top: `${controlsMargin}px`,
+        right: `${controlsMargin}px`
+      },
+      stickyStylesBottom: {
+        position: 'absolute',
+        bottom: `${controlsMargin * 2}px`,
+        top: 'auto',
         right: `${controlsMargin}px`
       }
     };
@@ -463,6 +470,12 @@ export default {
     this.$nextTick(() => {
       this.adminBarHeight = window.apos.adminBar.height;
       this.controlsHeight = this.$refs.modifyControls.getBoundingClientRect().height;
+
+      // The height of elements we need to account for when re-attaching the controls
+      // to the bottom of the widget.
+      // controlMargin * 3 = top/bottom padding + padding for next widget's label
+      this.totalUiOffset =
+            this.controlsHeight + this.adminBarHeight + (this.controlsMargin * 3);
       window.addEventListener('scroll', this.stickyControlsScroll);
       window.addEventListener('resize', this.stickyControlsResize);
     });
@@ -475,22 +488,41 @@ export default {
     window.removeEventListener('resize', this.stickyControlsResize);
   },
   methods: {
+    updateStickyStyles(newStyles) {
+      // Only update if styles changed
+      if (
+        Object.keys(newStyles).some(
+          key => this.stickyControlsStyles[key] !== newStyles[key]
+        )
+      ) {
+        this.stickyControlsStyles = { ...newStyles };
+      }
+    },
+    stickyStylesFloating(widgetRect) {
+      return {
+        position: 'fixed',
+        top: `${this.controlsMargin + this.adminBarHeight}px`,
+        right: `${window.innerWidth - (widgetRect.left + widgetRect.width) + this.controlsMargin}px`
+      };
+    },
     stickyControlsResize() {
       if (!this.resizeTicking) {
         this.resizeTicking = true;
         requestAnimationFrame(() => {
           const widgetRect = this.$refs.wrapper.getBoundingClientRect();
+          let newStyles = {};
 
           // If widget shifts more than tolerable don't try to track it
           if (Math.abs(this.lastResizeTop - widgetRect.top) > this.shiftTolerance) {
-            this.stickyControlsStyles = { ...this.defaultControlsStyles };
+            newStyles = this.stickyStylesDefault;
           } else {
+            // Controls are floating, recalc styles with new `right`
             if (this.stickyControlsStyles.position === 'fixed') {
-              this.stickyControlsStyles.right =
-                `${window.innerWidth - (widgetRect.left + widgetRect.width) + this.controlsMargin}px`;
+              newStyles = this.stickyStylesFloating(widgetRect);
             }
           }
 
+          this.updateStickyStyles(newStyles);
           this.lastResizeTop = widgetRect.top;
           this.resizeTicking = false;
         });
@@ -498,7 +530,7 @@ export default {
     },
     stickyControlsScroll() {
       if (!this.scrollTicking) {
-        window.requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
           const widgetRect = this.$refs.wrapper.getBoundingClientRect();
           const windowHeight = window.innerHeight;
           const visibleHeight =
@@ -513,6 +545,7 @@ export default {
 
           // Repositioning in these cases feels unexpected
           if (controlsTooTallRelative || controlsExceedWidget) {
+            this.scrollTicking = false;
             return;
           }
 
@@ -521,41 +554,20 @@ export default {
 
             // Widget bottom is approaching admin bar,
             // position controls absolutely to the bottom
-            if (
-              visibleHeight <=
-                this.controlsHeight + this.adminBarHeight + (this.controlsMargin * 3)
-            ) {
-              newStyles = {
-                position: 'absolute',
-                bottom: `${this.controlsMargin * 2}px`,
-                top: 'auto',
-                right: `${this.controlsMargin}px`
-              };
+            if (visibleHeight <= this.totalUiOffset) {
+              newStyles = this.stickyStylesBottom;
 
-            // Widget top is above admin bar,
-            // apply custom sticky position
+            // Widget top is above admin bar, apply custom sticky position
             } else {
-              newStyles = {
-                position: 'fixed',
-                top: `${this.controlsMargin + this.adminBarHeight}px`,
-                right: `${window.innerWidth - (widgetRect.left + widgetRect.width) + this.controlsMargin}px`
-              };
+              newStyles = this.stickyStylesFloating(widgetRect);
             }
 
           // Controls don't need positioning
           } else {
-            newStyles = { ...this.defaultControlsStyles };
+            newStyles = this.stickyStylesDefault;
           }
 
-          // Only update if styles changed
-          if (
-            Object.keys(newStyles).some(
-              key => this.stickyControlsStyles[key] !== newStyles[key]
-            )
-          ) {
-            this.stickyControlsStyles = newStyles;
-          }
-
+          this.updateStickyStyles(newStyles);
           this.scrollTicking = false;
         });
 
