@@ -109,6 +109,7 @@
         :style="stickyControlsStyles"
         class="apos-area-widget-controls apos-area-widget-controls--modify"
         :class="controlsClasses"
+        data-apos-test="modifyControls"
       >
         <AposWidgetControls
           v-if="!foreign"
@@ -499,10 +500,11 @@ export default {
       }
     },
     stickyStylesFloating(widgetRect) {
+      const viewportWidth = document.documentElement.clientWidth;
       return {
         position: 'fixed',
         top: `${this.controlsMargin + this.adminBarHeight}px`,
-        right: `${window.innerWidth - (widgetRect.left + widgetRect.width) + this.controlsMargin}px`
+        right: `${viewportWidth - (widgetRect.left + widgetRect.width) + this.controlsMargin}px`
       };
     },
     stickyControlsResize() {
