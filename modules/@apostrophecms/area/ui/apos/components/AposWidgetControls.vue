@@ -215,10 +215,9 @@ export default {
             return false;
           }
         }
-        if (secondaryLevel) {
-          return operation.secondaryLevel;
-        }
-        return !operation.secondaryLevel;
+        return secondaryLevel
+          ? operation.secondaryLevel
+          : !operation.secondaryLevel;
       }).map(operation => ({
         action: operation.action || operation.name,
         ...operation
@@ -227,6 +226,8 @@ export default {
     async handleClick({
       action, modal, ignoreResult = false
     }) {
+      console.log('action', action);
+      console.log('modal', modal);
       if (modal) {
         const result = await apos.modal.execute(modal, {
           widget: this.modelValue,

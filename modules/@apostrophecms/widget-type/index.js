@@ -163,6 +163,50 @@ module.exports = {
       self.neverLoad = [ ...new Set(self.neverLoad) ];
     }
   },
+
+  widgetOperations(self, options) {
+    console.log('options', options);
+    return {
+      add: {
+        nudgeUp: {
+          label: 'apostrophe:nudgeUp',
+          icon: 'arrow-up-icon',
+          tooltip: 'apostrophe:nudgeUp',
+          action: 'up',
+          native: true
+        },
+        nudgeDown: {
+          label: 'apostrophe:nudgeDown',
+          icon: 'arrow-up-icon',
+          tooltip: 'apostrophe:nudgeDown',
+          action: 'down',
+          native: true
+        },
+        ...!options.contextual && {
+          edit: {
+            label: 'apostrophe:edit',
+            icon: 'pencil-icon',
+            tootip: 'apostrophe:editWidget',
+            action: 'edit',
+            native: true
+          }
+        },
+        cut: {
+          label: 'apostrophe:cut',
+          icon: 'content-cut-icon',
+          action: 'cut',
+          native: true
+        },
+        copy: {
+          label: 'apostrophe:copy',
+          icon: 'content-copy-icon',
+          action: 'copy',
+          native: true
+        }
+      }
+    };
+  },
+
   methods(self) {
     return {
 
@@ -185,7 +229,7 @@ module.exports = {
       composeWidgetOperations() {
         self.widgetOperations = Object.entries(self.widgetOperations)
           .map(([ name, operation ]) => {
-            if (!operation.label || !operation.modal) {
+            if (!operation.label || (!operation.native && !operation.modal)) {
               throw self.apos.error('invalid', 'widgetOperations requires label and modal properties.');
             }
 
