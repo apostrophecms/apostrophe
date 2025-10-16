@@ -1025,32 +1025,24 @@ module.exports = {
             return;
           }
 
-          try {
-            if (shouldUpdateUsername) {
-              await self.apos.user.safe.updateOne(
-                { _id: user._id },
-                {
-                  $set: {
-                    username: normalizedUsername
-                  }
-                }
-              );
+          const criteria = {
+            $set: {
+              ...shouldUpdateUsername && { username: normalizedUsername },
+              ...shouldUpdateEmail && { email: normalizedEmail }
             }
-            await self.apos.doc.db.updateOne(
-              { _id: user._id },
-              {
-                $set: {
-                  username: normalizedUsername,
-                  ...shouldUpdateEmail && { email: normalizedEmail }
-                }
-              }
-            );
+          };
+          try {
+            await self.apos.user.safe.updateOne({ _id: user._id }, criteria);
+            await self.apos.doc.db.updateOne({ _id: user._id }, criteria);
           } catch (err) {
             if (self.apos.doc.isUniqueError(err)) {
               duplicatedUsernames.push({
-                _id: user._id,
-                username: user.username,
-                email: user.email
+                user: {
+                  _id: user._id,
+                  username: user.username,
+                  email: user.email
+                },
+                conflictingFields: err.keyValue
               });
               return;
             }
@@ -1061,7 +1053,7 @@ module.exports = {
         if (duplicatedUsernames.length) {
           self.logError(
             'conflicting-usernames',
-            'Some usernames changed in lowercase already exist for other users, please fix it or they won\'t be able to log in anymore',
+            'Some usernames or emails changed in lowercase already exist for other users, please fix it or they won\'t be able to log in anymore',
             { failed: duplicatedUsernames }
           );
         }
