@@ -212,13 +212,16 @@ export default {
       };
     },
     emptyDisplay() {
+      const docModule = apos.modules[this.moduleName];
+      if (docModule?.emptyState) {
+        return docModule.emptyState;
+      }
       return {
+        icon: 'file-document-multiple-outline-icon',
         title: {
           key: 'apostrophe:noTypeFound',
           type: this.$t(this.moduleLabels.plural || this.moduleLabels.singular)
-        },
-        message: '',
-        emoji: '📄'
+        }
       };
     },
     disableUnpublished() {
@@ -583,7 +586,6 @@ export default {
     justify-content: center;
     width: 100%;
     height: 100%;
-    margin-top: 130px;
   }
 
   .apos-pieces-manager__relationship__rail {

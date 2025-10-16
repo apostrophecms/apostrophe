@@ -432,8 +432,8 @@ module.exports = {
             const parse = config.parse
               ? config.parse
               : function (parser, nodes, lexer) {
-              // Default parser gets comma separated arguments,
-              // assumes no body
+                // Default parser gets comma separated arguments,
+                // assumes no body
 
                 // get the tag token
                 const token = parser.nextToken();
@@ -696,7 +696,7 @@ module.exports = {
           _.extend(args, data);
 
           if (req.aposError) {
-          // A 500-worthy error occurred already, i.e. in `pageBeforeSend`
+            // A 500-worthy error occurred already, i.e. in `pageBeforeSend`
             telemetry.handleError(span, req.aposError);
             span.end();
             return error(req.aposError);
@@ -739,8 +739,8 @@ module.exports = {
             span.setStatus({ code: telemetry.api.SpanStatusCode.OK });
             return content;
           } catch (e) {
-          // The page template threw an exception. Log where it
-          // occurred for easier debugging
+            // The page template threw an exception. Log where it
+            // occurred for easier debugging
             telemetry.handleError(span, e);
             return error(e);
           } finally {
@@ -1242,6 +1242,8 @@ module.exports = {
         data.appendHead = self.injectNodes(req, 'append-head');
         data.prependBody = self.injectNodes(req, 'prepend-body');
         data.appendBody = self.injectNodes(req, 'append-body');
+        data.prependMain = self.injectNodes(req, 'prepend-main');
+        data.appendMain = self.injectNodes(req, 'append-main');
 
         return data;
       },
@@ -1301,10 +1303,24 @@ module.exports = {
             label: options.addLabel || manager.label || `No label for ${name}`
           };
         }).filter(choice => !!choice);
+
         area.items ||= [];
-        if (area._docId) {
-          for (const item of area.items) {
+        for (const item of area.items) {
+          // Add _docId if area has one
+          if (area._docId) {
             item._docId = area._docId;
+          }
+
+          // Annotate each individual widget with its options
+          // Each widget must elect into this by creating an
+          // `annotateWidgetForExternalFront() method.
+          const manager = self.apos.area.getWidgetManager(item.type);
+          if (manager) {
+            const widgetOptions = manager.annotateWidgetForExternalFront();
+            item._options = widgetOptions;
+          } else {
+            self.apos.area.warnMissingWidgetType(item.type);
+            throw self.apos.error('invalid', 'Missing widget type');
           }
         }
       }

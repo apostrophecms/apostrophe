@@ -36,8 +36,10 @@
     <div data-apos-refreshable>
       {% block beforeMain %}{% endblock %}
       {% block mainAnchor %}<a name="main"></a>{% endblock %}
+      {% component '@apostrophecms/template:inject' with { where: 'main', end: 'prepend', when: 'hmr' } %}
       {% component '@apostrophecms/template:inject' with { where: 'main', end: 'prepend' } %}
       {% block main %}{% endblock %}
+      {% component '@apostrophecms/template:inject' with { where: 'main', end: 'append', when: 'hmr' } %}
       {% component '@apostrophecms/template:inject' with { where: 'main', end: 'append' } %}
       {% block afterMain %}{% endblock %}
     </div>
