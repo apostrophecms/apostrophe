@@ -84,6 +84,7 @@ module.exports = {
     self.enableBrowserData();
     await self.enableBearerTokens();
     self.addToAdminBar();
+    self.addCaseInsensitiveMigration();
   },
   handlers(self) {
     return {
@@ -95,9 +96,6 @@ module.exports = {
         },
         async checkForUser() {
           await self.checkForUserAndAlert();
-        },
-        async manageLoginCaseInsensitiveMigration() {
-          await self.manageLoginCaseInsensitiveMigration();
         }
       }
     };
@@ -998,85 +996,75 @@ module.exports = {
           );
       },
 
-      normalizeLoginName(usernameOrEmail) {
-        if (typeof usernameOrEmail !== 'string' || !self.options.caseInsensitive) {
+      normalizeLoginName(usernameOrEmail, {
+        caseInsensitive = self.options.caseInsensitive
+      } = {}) {
+        if (typeof usernameOrEmail !== 'string' || !caseInsensitive) {
           return usernameOrEmail;
         }
         return usernameOrEmail.toLowerCase();
       },
 
-      async manageLoginCaseInsensitiveMigration() {
+      async addCaseInsensitiveMigration() {
         if (self.options.caseInsensitive) {
-          self.apos.migration.add('login-case-insensitive', async () => {
-            await self.caseInsensitiveTask();
-          });
-        } else {
-          self.apos.migration.cancel('login-case-insensitive');
+          self.apos.migration.add('login-case-insensitive', self.caseInsensitiveTask);
         }
       },
 
       async caseInsensitiveTask() {
         const duplicatedUsernames = [];
         await self.apos.migration.eachDoc({ type: '@apostrophecms/user' }, 1, async (user) => {
-          const usernameLower = user.username.toLowerCase();
-          const emailLower = user.email?.toLowerCase();
-          const shouldUpdateUsername = user.username !== usernameLower;
-          const shouldUpdateEmail = user.email && user.email !== emailLower;
+          const normalizedUsername = self.apos.login
+            .normalizeLoginName(user.username, { caseInsensitive: true });
+          const normalizedEmail = self.apos.login
+            .normalizeLoginName(user.email, { caseInsensitive: true });
 
+          const shouldUpdateUsername = user.username !== normalizedUsername;
+          const shouldUpdateEmail = user.email && user.email !== normalizedEmail;
           if (!shouldUpdateUsername && !shouldUpdateEmail) {
             return;
           }
-          const existingUsername = await self.apos.doc.db.findOne({
-            _id: {
-              $not: {
-                $eq: user._id
-              }
-            },
-            username: usernameLower,
-            type: '@apostrophecms/user'
-          }, {
-            projection: {
-              _id: 1,
-              username: 1,
-              email: 1
-            }
-          });
 
-          if (existingUsername) {
-            duplicatedUsernames.push({
-              _id: user._id,
-              username: user.username,
-              email: user.email
-            });
-            return;
-          }
-
-          await self.apos.doc.db.updateOne(
-            { _id: user._id },
-            {
-              $set: {
-                username: usernameLower,
-                ...shouldUpdateEmail && { email: emailLower }
-              }
+          try {
+            if (shouldUpdateUsername) {
+              await self.apos.user.safe.updateOne(
+                { _id: user._id },
+                {
+                  $set: {
+                    username: normalizedUsername
+                  }
+                }
+              );
             }
-          );
-          if (shouldUpdateUsername) {
-            await self.apos.user.safe.updateOne(
+            await self.apos.doc.db.updateOne(
               { _id: user._id },
               {
                 $set: {
-                  username: usernameLower
+                  username: normalizedUsername,
+                  ...shouldUpdateEmail && { email: normalizedEmail }
                 }
               }
             );
+          } catch (err) {
+            if (self.apos.doc.isUniqueError(err)) {
+              duplicatedUsernames.push({
+                _id: user._id,
+                username: user.username,
+                email: user.email
+              });
+              return;
+            }
+            throw err;
           }
         });
 
-        self.logError(
-          'conflicting-usernames',
-          'Some usernames changed in lowercase already exist for other users, please fix it or they won\'t be able to log in anymore',
-          { failed: duplicatedUsernames }
-        );
+        if (duplicatedUsernames.length) {
+          self.logError(
+            'conflicting-usernames',
+            'Some usernames changed in lowercase already exist for other users, please fix it or they won\'t be able to log in anymore',
+            { failed: duplicatedUsernames }
+          );
+        }
       }
     };
   },

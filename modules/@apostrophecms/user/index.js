@@ -234,6 +234,7 @@ module.exports = {
       // Reflect email and username changes in the safe after deduplicating in
       // the piece
       afterArchive: {
+
         async updateSafe(req, piece) {
           await self.insertOrUpdateSafe(req, piece, 'update');
         }
