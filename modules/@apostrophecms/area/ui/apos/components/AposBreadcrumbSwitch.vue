@@ -5,6 +5,7 @@
         v-for="choice in enhancedChoices"
         :key="choice.value"
         :for="choice.id"
+        :data-apos-test="`bcswitch:${choice.value}`"
       >
         <input
           :id="choice.id"

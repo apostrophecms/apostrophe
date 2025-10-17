@@ -31,6 +31,8 @@
         role="gridcell"
         data-apos-test="aposLayoutItem"
         :data-tablet-full="tabletFullItems[item._id] || false"
+        :data-visible-tablet="item.tablet?.show"
+        :data-visible-mobile="item.mobile?.show"
         :data-id="`${ item._id }`"
         :style="{
           '--colstart': item.colstart,

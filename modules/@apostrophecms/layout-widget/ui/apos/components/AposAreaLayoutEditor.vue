@@ -61,6 +61,7 @@
           disabled: field && field.readOnly,
           operations: layoutBreadcrumbOperations
         }"
+        data-apos-test="theGridLayout"
         @click="clickOnGrid"
         @resize-start="emphasizeGrid"
         @move-start="emphasizeGrid"

@@ -15,7 +15,7 @@
       ref="items"
       class="apos-layout__item"
       role="gridcell"
-      data-apos-test="aposLayoutItem"
+      data-apos-test="aposManageLayoutItem"
       :data-id="item._id"
       :style="{
         '--colstart': item.colstart,
@@ -36,6 +36,7 @@
         <button
           v-show="!hasMotion"
           class="apos-layout--item-action apos-layout__item-move-handle"
+          data-apos-test="moveHandle"
           @mousedown="onStartMove(item, $event)"
           @touchstart="onStartMove(item, $event)"
           @mouseup="resetGhostData"
@@ -44,6 +45,7 @@
         <button
           v-show="!hasMotion"
           class="apos-layout--item-action apos-layout__item-resize-handle nw"
+          data-apos-test="resizeHandleWest"
           @mousedown="onStartResize(item, 'west', $event)"
           @touchstart="onStartResize(item, 'west', $event)"
           @mouseenter="positionResizeUI"
@@ -63,6 +65,7 @@
         <button
           v-show="!hasMotion"
           class="apos-layout--item-action apos-layout__item-resize-handle se"
+          data-apos-test="resizeHandleEast"
           @mousedown="onStartResize(item, 'east', $event)"
           @touchstart="onStartResize(item, 'east', $event)"
           @mouseenter="positionResizeUI"
@@ -82,6 +85,7 @@
         <div
           v-show="!hasMotion"
           class="apos-layout--item-action apos-layout__item-operations-handle"
+          data-apos-test="layout-operations"
         >
           <!-- Show breadcrumb operations, no support for actions, just our custom
          expected operations - remove, update and move raw events -->
@@ -113,11 +117,12 @@
     </div>
     <!-- Synthetic tiles overlay (click-to-add). Visual only; no resize/move handles. -->
     <template v-if="showSynthetic">
-      <div
+      <button
         v-for="slot in syntheticItems"
         :key="slot._id"
         class="apos-layout__item apos-layout__item-synthetic"
         :class="[{'apos-layout__item-synthetic--toosmall': slot.toosmall}]"
+        :data-apos-test="`${slot.toosmall ? 'syntheticTooSmall' : 'syntheticSlot'}`"
         role="button"
         :style="{
           '--colstart': slot.colstart,
@@ -138,7 +143,7 @@
           :tooltip="'apostrophe:layoutColumnTooSmall'"
           class="apos-admin-bar__title__indicator"
         />
-      </div>
+      </button>
     </template>
     <div
       v-if="hasMotion"
@@ -981,6 +986,7 @@ $resize-button-width: 4px;
     border: 1px solid var(--a-primary-transparent-50);
     inset: 0;
     background-color: rgba(#fff, 0.7);
+    transition: background-color 200ms ease-out;
 
     &:hover {
       background-color: rgba(#000, 0.3);
@@ -991,18 +997,25 @@ $resize-button-width: 4px;
     }
   }
 
+  // Contains button reset styles
   &__item-synthetic {
     position: relative;
     display: flex;
     align-items: center;
     justify-content: center;
     height: 100%;
+    margin: 0;
+    padding: 0;
     border: 1px dashed var(--a-primary-light-40);
     background-color: var(--a-primary-transparent-15);
     border-radius: var(--a-border-radius);
     color: var(--a-primary);
+    font-family: inherit;
+    font-size: inherit;
+    text-align: center;
     opacity: 0;
     cursor: pointer;
+    appearance: none;
     transition: opacity 200ms ease;
 
     &:hover {
