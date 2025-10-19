@@ -134,6 +134,7 @@
 import { debounceAsync, asyncTaskQueue } from 'Modules/@apostrophecms/ui/utils';
 import AposModifiedMixin from 'Modules/@apostrophecms/ui/mixins/AposModifiedMixin';
 import AposDocsManagerMixin from 'Modules/@apostrophecms/modal/mixins/AposDocsManagerMixin';
+import { computeMinSizes } from 'apostrophe/lib/image.js';
 
 const DEBOUNCE_TIMEOUT = 500;
 
@@ -475,27 +476,48 @@ export default {
     async completeUploading(images) {
       this.uploaded = true;
       const [ widgetOptions = {} ] = apos.area.widgetOptions;
-      const [ width, height ] = widgetOptions.minSize || [];
-      let minSizeError = false;
 
-      // Filter out images that are too small
-      const uploaded = images.filter(image => {
-        if (width && image.attachment?.width && width > image.attachment.width) {
-          minSizeError = true;
-          if (this.editing?._id === image._id) {
-            this.updateEditing(null);
+      let uploaded = [];
+
+      if (!widgetOptions.minSize) {
+        uploaded = images;
+      } else {
+        // Filter out images that are too small
+        const { minWidth, minHeight } = computeMinSizes(
+          widgetOptions.minSize,
+          widgetOptions.aspectRatio
+        );
+
+        let minSizeError = false;
+
+        for (const image of images) {
+          const imageWidth = image.attachment?.width;
+          const imageHeight = image.attachment?.height;
+
+          if (imageWidth < minWidth || imageHeight < minHeight) {
+            minSizeError = true;
+            if (this.editing?._id === image._id) {
+              this.updateEditing(null);
+            }
+            continue;
           }
-          return false;
+
+          uploaded.push(image);
         }
-        if (height && image.attachment?.height && height > image.attachment.height) {
-          minSizeError = true;
-          if (this.editing?._id === image._id) {
-            this.updateEditing(null);
-          }
-          return false;
+
+        if (minSizeError) {
+          await apos.notify('apostrophe:minSize', {
+            type: 'danger',
+            icon: 'alert-circle-icon',
+            dismiss: true,
+            interpolate: {
+              width: Math.round(minWidth),
+              height: Math.round(minHeight)
+            }
+          });
         }
-        return true;
-      });
+      }
+
       const imgIds = uploaded.map(image => image._id);
 
       this.items = this.items.map(item => {
@@ -506,17 +528,6 @@ export default {
       })
         .filter(image => (!!image && !image.__placeholder));
 
-      if (minSizeError) {
-        await apos.notify('apostrophe:minSize', {
-          type: 'danger',
-          icon: 'alert-circle-icon',
-          dismiss: true,
-          interpolate: {
-            width,
-            height
-          }
-        });
-      }
       if (Array.isArray(imgIds) && imgIds.length) {
         const checked = this.checked.concat(imgIds);
         this.checked = checked.slice(0, this.relationshipField?.max || checked.length);

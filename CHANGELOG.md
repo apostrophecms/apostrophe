@@ -4,6 +4,23 @@
 
 ### Adds
 
+* Support for the `render-areas` query parameter in the REST API when using Astro as an external frontend, provided the Astro project has the corresponding route. This allows section template library previews to work in Astro projects. For ease of migration, if Astro cannot satisfy the request, ApostropheCMS will also attempt to render the widget natively.
+* Made `self.apos.externalFrontKey` available, simplifying API calls back to Astro.
+
+### Changes
+
+* Refactored complex logic regarding data updates in `AposSchema`.
+* Cleaned up `annotateAreaForExternalFront` logic and added context so developers understand the reason if it fails due to a widget type with no matching module in the project.
+
+### Fixes
+
+* The `render-areas` query parameter now works correctly with areas nested in array items.
+* Fix min size calculation for image widgets configured with an aspect ratio.
+
+## 4.22.0 (2025-10-01)
+
+### Adds
+
 * Custom operations registered with `addCreateWidgetOperation` can now specify an `ifTypesIntersect` property containing an array of widget type names. If the area in question allows at least one, the operation is offered.
 * The login-requirements tests were updated to include tests for the `uponSubmit` filter
 * Add `prependNodes` and `appendNodes` calls for `main`.
