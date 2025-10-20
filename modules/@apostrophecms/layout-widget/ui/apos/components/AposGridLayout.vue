@@ -354,6 +354,7 @@ export default {
     position: absolute;
     text-align: center;
     content: var(--empty-area-text);
+    font-family: var(--a-family-default);
   }
 
   &__grid.manage :deep(.apos-area-menu .apos-button) {
