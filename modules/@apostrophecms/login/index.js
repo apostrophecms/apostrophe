@@ -1053,7 +1053,7 @@ module.exports = {
         if (duplicatedUsernames.length) {
           self.logError(
             'conflicting-usernames',
-            'Some usernames or emails changed to lowercase already exist for other users, please fix it or they won\'t be able to log in anymore',
+            'Accounts with certain usernames and/or emails would be in conflict with other accounts if changed to lowercase. Please review the following usernames and emails and address them manually.',
             { failed: duplicatedUsernames }
           );
         }
