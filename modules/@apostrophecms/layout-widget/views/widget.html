@@ -1,0 +1,15 @@
+{% area data.widget, 'columns' with { 
+  aposStyle: '--grid-columns: ' + (data.options.columns or data.manager.options.columns) + ';' + 
+    ' --grid-gap: ' + (data.options.gap or data.manager.options.gap or '0') + ';' + 
+    ' --grid-rows: auto;' + 
+    ' --mobile-grid-rows: auto;' +
+    ' --tablet-grid-rows: auto;' + 
+    ' --justify-items: ' + (data.options.defaultCellHorizontalAlignment or data.manager.options.defaultCellHorizontalAlignment or 'stretch') + ';' +
+    ' --align-items: ' + (data.options.defaultCellVerticalAlignment or data.manager.options.defaultCellVerticalAlignment or 'stretch') + ';', 
+  aposClassName: 'layout-widget',
+  aposParentOptions: data.options | merge({ widgetId: data.widget._id }),
+  aposAttrs: {
+    'tablet-auto': true,
+    'mobile-auto': true
+  }
+} %}
