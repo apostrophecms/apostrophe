@@ -165,7 +165,6 @@ module.exports = {
   },
 
   widgetOperations(self, options) {
-    console.log('options', options);
     return {
       add: {
         nudgeUp: {
@@ -173,13 +172,19 @@ module.exports = {
           icon: 'arrow-up-icon',
           tooltip: 'apostrophe:nudgeUp',
           action: 'up',
+          disabledIfData: {
+            first: true
+          },
           native: true
         },
         nudgeDown: {
           label: 'apostrophe:nudgeDown',
-          icon: 'arrow-up-icon',
+          icon: 'arrow-down-icon',
           tooltip: 'apostrophe:nudgeDown',
           action: 'down',
+          disabledIfData: {
+            last: true
+          },
           native: true
         },
         ...!options.contextual && {
@@ -195,12 +200,24 @@ module.exports = {
           label: 'apostrophe:cut',
           icon: 'content-cut-icon',
           action: 'cut',
+          secondaryLevel: true,
           native: true
         },
         copy: {
           label: 'apostrophe:copy',
           icon: 'content-copy-icon',
           action: 'copy',
+          secondaryLevel: true,
+          native: true
+        },
+        clone: {
+          label: 'apostrophe:duplicate',
+          icon: 'content-duplicate-icon',
+          action: 'clone',
+          disabledIfData: {
+            maxReached: true
+          },
+          secondaryLevel: true,
           native: true
         }
       }

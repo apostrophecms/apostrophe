@@ -92,57 +92,67 @@ export default {
       const controls = [];
 
       // Move up
-      controls.push({
-        ...this.widgetDefaultControl,
-        label: 'apostrophe:nudgeUp',
-        icon: 'arrow-up-icon',
-        disabled: this.first || this.disabled,
-        tooltip: {
-          content: this.first || this.disabled ? null : 'apostrophe:nudgeUp',
-          placement: 'left'
-        },
-        action: 'up'
-      });
+      /* controls.push({ */
+      /*   ...this.widgetDefaultControl, */
+      /*   label: 'apostrophe:nudgeUp', */
+      /*   icon: 'arrow-up-icon', */
+      /*   disabled: this.first || this.disabled, */
+      /*   tooltip: { */
+      /*     content: this.first || this.disabled ? null : 'apostrophe:nudgeUp', */
+      /*     placement: 'left' */
+      /*   }, */
+      /*   action: 'up' */
+      /* }); */
 
       // Move down
-      controls.push({
-        ...this.widgetDefaultControl,
-        label: 'apostrophe:nudgeDown',
-        icon: 'arrow-down-icon',
-        disabled: this.last || this.disabled,
-        tooltip: {
-          content: this.last || this.disabled ? null : 'apostrophe:nudgeDown',
-          placement: 'left'
-        },
-        action: 'down'
-      });
+      /* controls.push({ */
+      /*   ...this.widgetDefaultControl, */
+      /*   label: 'apostrophe:nudgeDown', */
+      /*   icon: 'arrow-down-icon', */
+      /*   disabled: this.last || this.disabled, */
+      /*   tooltip: { */
+      /*     content: this.last || this.disabled ? null : 'apostrophe:nudgeDown', */
+      /*     placement: 'left' */
+      /*   }, */
+      /*   action: 'down' */
+      /* }); */
 
       // Edit
-      if (!this.options.contextual) {
-        controls.push({
-          ...this.widgetDefaultControl,
-          label: 'apostrophe:edit',
-          icon: 'pencil-icon',
-          disabled: this.disabled,
-          tooltip: {
-            content: 'apostrophe:editWidget',
-            placement: 'left'
-          },
-          action: 'edit'
-        });
-      }
+      /* if (!this.options.contextual) { */
+      /*   controls.push({ */
+      /*     ...this.widgetDefaultControl, */
+      /*     label: 'apostrophe:edit', */
+      /*     icon: 'pencil-icon', */
+      /*     disabled: this.disabled, */
+      /*     tooltip: { */
+      /*       content: 'apostrophe:editWidget', */
+      /*       placement: 'left' */
+      /*     }, */
+      /*     action: 'edit' */
+      /*   }); */
+      /* } */
 
       // Custom widget operations displayed in the primary controls
       controls.push(
-        ...this.widgetPrimaryOperations.map(operation => ({
-          ...this.widgetDefaultControl,
-          ...operation,
-          disabled: this.disabled,
-          tooltip: {
-            content: operation.label,
-            placement: 'left'
+        ...this.widgetPrimaryOperations.map(operation => {
+          const disabled = this.disabled ||
+            (operation.disabledIfData && checkIfConditions(this.$props, operation.disabledIfData));
+
+          if (operation.disabledIfData) {
+            console.log('this.$props', this.$props);
+            console.log('operation.label', operation.label);
+            console.log('disabled', disabled);
           }
-        }))
+          return {
+            ...this.widgetDefaultControl,
+            ...operation,
+            disabled,
+            tooltip: {
+              content: !disabled && operation.label,
+              placement: 'left'
+            }
+          };
+        })
       );
 
       return controls;
@@ -210,14 +220,18 @@ export default {
       const moduleOptions = apos.modules[apos.area.widgetManagers[this.modelValue.type]];
       const { widgetOperations = [] } = moduleOptions || {};
       return widgetOperations.filter(operation => {
+        if (
+          (secondaryLevel && !operation.secondaryLevel) ||
+          (!secondaryLevel && operation.secondaryLevel)
+        ) {
+          return false;
+        }
         if (operation.if) {
           if (!checkIfConditions(this.modelValue, operation.if)) {
             return false;
           }
         }
-        return secondaryLevel
-          ? operation.secondaryLevel
-          : !operation.secondaryLevel;
+        return operation;
       }).map(operation => ({
         action: operation.action || operation.name,
         ...operation
