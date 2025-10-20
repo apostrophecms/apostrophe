@@ -122,8 +122,11 @@
       />
       <div
         v-if="!controlsDisabled"
-        class="apos-area-widget-controls apos-area-widget-controls--modify"
+        ref="modifyControls"
+        :style="stickyControlsStyles"
         :class="controlsClasses"
+        class="apos-area-widget-controls apos-area-widget-controls--modify"
+        data-apos-test="modifyControls"
       >
         <AposWidgetControls
           v-if="!foreign"
@@ -145,6 +148,7 @@
           @update="$emit('update', $event)"
         />
       </div>
+
       <!-- Still used for contextual editing components -->
       <component
         :is="widgetEditorComponent(widget.type)"
@@ -307,6 +311,7 @@ export default {
     'paste'
   ],
   data() {
+    const controlsMargin = 20;
     return {
       mounted: false, // hack around needing DOM to be rendered for computed classes
       menuOpen: null,
@@ -324,7 +329,27 @@ export default {
         $lastEl: null,
         list: []
       },
-      widgets: this.options.widgets || {}
+      widgets: this.options.widgets || {},
+      adminBarHeight: undefined,
+      controlsHeight: undefined,
+      lastResizeTop: undefined,
+      totalUiOffset: undefined,
+      scrollTicking: false,
+      resizeTicking: false,
+      shiftTolerance: 10,
+      controlsMargin,
+      stickyControlsStyles: {},
+      stickyStylesDefault: {
+        position: 'absolute',
+        top: `${controlsMargin}px`,
+        right: `${controlsMargin}px`
+      },
+      stickyStylesBottom: {
+        position: 'absolute',
+        bottom: `${controlsMargin * 2}px`,
+        top: 'auto',
+        right: `${controlsMargin}px`
+      }
     };
   },
   computed: {
@@ -442,6 +467,8 @@ export default {
         this.isSuppressingWidgetControls = false;
         this.removeClickOutsideListener();
       }
+      // Helps get scroll tracking unstuck on new/modified widgets
+      this.scrollTicking = false;
     }
   },
   created() {
@@ -471,11 +498,26 @@ export default {
       // focus.
       this.setFocusedWidget(this.widget._id, this.areaId);
     }
+
+    this.$nextTick(() => {
+      this.adminBarHeight = window.apos.adminBar.height;
+      this.controlsHeight = this.$refs.modifyControls.getBoundingClientRect().height;
+
+      // The height of elements we need to account for when re-attaching the controls
+      // to the bottom of the widget.
+      // controlMargin * 3 = top/bottom padding + padding for next widget's label
+      this.totalUiOffset =
+            this.controlsHeight + this.adminBarHeight + (this.controlsMargin * 3);
+      window.addEventListener('scroll', this.stickyControlsScroll);
+      window.addEventListener('resize', this.stickyControlsResize);
+    });
+
   },
   unmounted() {
     // Remove the focus parent listener when unmounted
     apos.bus.$off('widget-focus-parent', this.focusParent);
-    this.removeClickOutsideListener();
+    window.removeEventListener('scroll', this.stickyControlsScroll);
+    window.removeEventListener('resize', this.stickyControlsResize);
   },
   methods: {
     ...mapActions(useWidgetStore, [ 'setFocusedWidget', 'setHoveredWidget' ]),
@@ -483,6 +525,93 @@ export default {
     // e.g ('edit', i), ('remove', i), etc.
     onBreadcrumbOperation({ name, payload }) {
       this.$emit(name, payload);
+    },
+    updateStickyStyles(newStyles) {
+      // Only update if styles changed
+      if (
+        Object.keys(newStyles).some(
+          key => this.stickyControlsStyles[key] !== newStyles[key]
+        )
+      ) {
+        this.stickyControlsStyles = { ...newStyles };
+      }
+    },
+    stickyStylesFloating(widgetRect) {
+      const viewportWidth = document.documentElement.clientWidth;
+      return {
+        position: 'fixed',
+        top: `${this.controlsMargin + this.adminBarHeight}px`,
+        right: `${viewportWidth - (widgetRect.left + widgetRect.width) + this.controlsMargin}px`
+      };
+    },
+    stickyControlsResize() {
+      if (!this.resizeTicking) {
+        this.resizeTicking = true;
+        requestAnimationFrame(() => {
+          const widgetRect = this.$refs.wrapper.getBoundingClientRect();
+          let newStyles = {};
+
+          // If widget shifts more than tolerable don't try to track it
+          if (Math.abs(this.lastResizeTop - widgetRect.top) > this.shiftTolerance) {
+            newStyles = this.stickyStylesDefault;
+          } else {
+            // Controls are floating, recalc styles with new `right`
+            if (this.stickyControlsStyles.position === 'fixed') {
+              newStyles = this.stickyStylesFloating(widgetRect);
+            }
+          }
+
+          this.updateStickyStyles(newStyles);
+          this.lastResizeTop = widgetRect.top;
+          this.resizeTicking = false;
+        });
+      }
+    },
+    stickyControlsScroll() {
+      if (!this.scrollTicking) {
+        requestAnimationFrame(() => {
+          const widgetRect = this.$refs.wrapper.getBoundingClientRect();
+          const windowHeight = window.innerHeight;
+          const visibleHeight =
+            Math.min(widgetRect.bottom, windowHeight) - Math.max(widgetRect.top, 0);
+          let newStyles;
+
+          // Controls height is within 15% of the height of the widget
+          const controlsTooTallRelative = this.controlsHeight / widgetRect.height > 0.85;
+
+          // Controls are taller than widget
+          const controlsExceedWidget = widgetRect.height < this.controlsHeight;
+
+          // Repositioning in these cases feels unexpected
+          if (controlsTooTallRelative || controlsExceedWidget) {
+            this.scrollTicking = false;
+            return;
+          }
+
+          // Widget is under admin bar
+          if (widgetRect.top <= this.adminBarHeight) {
+
+            // Widget bottom is approaching admin bar,
+            // position controls absolutely to the bottom
+            if (visibleHeight <= this.totalUiOffset) {
+              newStyles = this.stickyStylesBottom;
+
+            // Widget top is above admin bar, apply custom sticky position
+            } else {
+              newStyles = this.stickyStylesFloating(widgetRect);
+            }
+
+          // Controls don't need positioning
+          } else {
+            newStyles = this.stickyStylesDefault;
+          }
+
+          this.updateStickyStyles(newStyles);
+          this.scrollTicking = false;
+        });
+
+        this.scrollTicking = true;
+      }
     },
     getFocusForMenu({ menuId, isOpen }) {
       if (
@@ -737,14 +866,65 @@ export default {
     }
   }
 
+  .apos-area-widget-inner &::after {
+    display: none;
+  }
+
+  .apos-area-widget-inner &::before {
+    z-index: $z-index-under;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    outline: 1px solid var(--a-base-1);
+    outline-offset: -1px;
+    background-color: var(--a-base-5);
+    pointer-events: none;
+  }
+
+  .apos-area-widget-inner &.apos-is-focused::before,
+  .apos-area-widget-inner &.apos-is-highlighted::before {
+    z-index: $z-index-default;
+  }
+}
+
+.apos-area-widget-inner .apos-area-widget-inner {
+  &.apos-is-highlighted::before {
+    opacity: 0.1;
+  }
+
+  &.apos-is-focused::before {
+    opacity: 0.15;
+  }
+}
+
+.apos-area-widget-controls {
+  z-index: $z-index-widget-controls;
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+  transition: all 300ms ease;
+
+  &.apos-is-highlighted {
+    outline: 1px dashed var(--a-primary-transparent-50);
+  }
+
+  &.apos-is-focused {
+    outline: 1px dashed var(--a-primary);
+
+    &:deep(.apos-rich-text-editor__editor.apos-is-visually-empty) {
+      box-shadow: none;
+    }
+  }
+
   &.apos-is-ui-adjusted {
-    .apos-area-widget-controls--modify {
-      top: 0;
-      transform: translate3d(-10px, 50px, 0);
+    & > .apos-area-widget-controls--modify {
+      top: $spacing-quadruple;
+      transform: translate3d(0, $spacing-quadruple, 0);
     }
 
-    .apos-area-widget__label {
-      transform: translate(-10px, 10px);
+    & > .apos-area-widget__label {
+      transform: translate(-$spacing-base, $spacing-base);
     }
   }
 
@@ -797,10 +977,24 @@ export default {
 }
 
 .apos-area-widget-controls--modify {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  transition: opacity 300ms ease;
+
+  &.apos-area-widget__label {
+    z-index: $z-index-widget-label;
+  }
+
+  &.apos-is-focused {
+    z-index: $z-index-widget-focused-controls;
+  }
+}
+
+.apos-area-widget-controls--modify {
   z-index: $z-index-widget-focused-controls;
-  top: 50%;
-  right: 0;
-  transform: translate3d(-10px, -50%, 0);
+  top: $spacing-double;
+  right: $spacing-double;
 
   :deep(.apos-button-group__inner) {
     border: 1px solid var(--a-primary-transparent-25);

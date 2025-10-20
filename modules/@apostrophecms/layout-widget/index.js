@@ -5,6 +5,7 @@ module.exports = {
   extend: '@apostrophecms/widget-type',
   options: {
     label: 'apostrophe:layout',
+    icon: 'view-column-icon',
     initialModal: false,
     skipOperations: [ 'edit' ],
     columns: 12,
