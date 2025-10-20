@@ -226,8 +226,6 @@ export default {
     async handleClick({
       action, modal, ignoreResult = false
     }) {
-      console.log('action', action);
-      console.log('modal', modal);
       if (modal) {
         const result = await apos.modal.execute(modal, {
           widget: this.modelValue,
