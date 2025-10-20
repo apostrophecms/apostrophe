@@ -352,9 +352,9 @@ export default {
 
   &__grid.manage :deep(.apos-empty-area::before) {
     position: absolute;
+    font-family: var(--a-family-default);
     text-align: center;
     content: var(--empty-area-text);
-    font-family: var(--a-family-default);
   }
 
   &__grid.manage :deep(.apos-area-menu .apos-button) {
