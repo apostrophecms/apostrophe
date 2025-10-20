@@ -866,17 +866,6 @@ export default {
     }
   }
 
-  &.apos-is-ui-adjusted {
-    .apos-area-widget-controls--modify {
-      top: 0;
-      transform: translate3d(-10px, 50px, 0);
-    }
-
-    .apos-area-widget__label {
-      transform: translate(-10px, 10px);
-    }
-  }
-
   .apos-area-widget-inner &::after {
     display: none;
   }
@@ -930,12 +919,12 @@ export default {
 
   &.apos-is-ui-adjusted {
     & > .apos-area-widget-controls--modify {
-      top: 40px;
-      transform: translate3d(0, 40px, 0);
+      top: $spacing-quadruple;
+      transform: translate3d(0, $spacing-quadruple, 0);
     }
 
     & > .apos-area-widget__label {
-      transform: translate(-10px, 10px);
+      transform: translate(-$spacing-base, $spacing-base);
     }
   }
 
@@ -1004,9 +993,8 @@ export default {
 
 .apos-area-widget-controls--modify {
   z-index: $z-index-widget-focused-controls;
-  top: 50%;
-  right: 0;
-  transform: translate3d(-10px, -50%, 0);
+  top: $spacing-double;
+  right: $spacing-double;
 
   :deep(.apos-button-group__inner) {
     border: 1px solid var(--a-primary-transparent-25);
