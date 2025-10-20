@@ -1070,7 +1070,7 @@ describe('Case Sensitivity', function() {
       assert.deepEqual(actual, expected);
     });
 
-    it.only('should migrate usernames and emails to lowercase when running the caseInsensitiveTask method', async function() {
+    it('should migrate usernames and emails to lowercase when running the caseInsensitiveTask method', async function() {
       const logError = apos.login.logError;
       const errorLogs = {};
       apos.login.logError = (name, text, data) => {
@@ -1147,6 +1147,7 @@ describe('Case Sensitivity', function() {
         errorLogs
       };
 
+      const errorFailed = errorLogs['conflicting-usernames'].data.failed[0];
       const expected = {
         inserted: [
           {
@@ -1194,7 +1195,7 @@ describe('Case Sensitivity', function() {
         ],
         errorLogs: {
           'conflicting-usernames': {
-            text: 'Some usernames or emails changed to lowercase already exist for other users, please fix it or they won\'t be able to log in anymore',
+            text: 'Accounts with certain usernames and/or emails would be in conflict with other accounts if changed to lowercase. Please review the following usernames and emails and address them manually.',
             data: {
               failed: [
                 {
@@ -1202,7 +1203,7 @@ describe('Case Sensitivity', function() {
                     username: 'conflict'
                   },
                   user: {
-                    _id: errorLogs['conflicting-usernames'].data.failed[0].user._id,
+                    _id: errorFailed.user._id,
                     email: 'conflict@gmail.com',
                     username: 'Conflict'
                   }
