@@ -1,0 +1,97 @@
+.layout-widget {
+  display: grid;
+  grid-template-columns: repeat(var(--grid-columns, 12), 1fr);
+  grid-template-rows: repeat(var(--grid-rows), auto);
+  grid-gap: var(--grid-gap, 0);
+  justify-items: var(--justify-items);
+  /* stylelint-disable-next-line declaration-block-no-redundant-longhand-properties */
+  align-items: var(--align-items);
+}
+
+.layout-widget > div {
+  grid-column: var(--colstart, auto) / span var(--colspan, 1);
+  grid-row: var(--rowstart, auto) / span var(--rowspan, 1);
+  justify-self: var(--justify);
+  /* stylelint-disable-next-line declaration-block-no-redundant-longhand-properties */
+  align-self: var(--align);
+  order: var(--order, 0);
+}
+
+/* Tablet rules. Override $layout-breakpoint-tablet to change. */
+/* stylelint-disable-next-line media-feature-name-allowed-list */
+@media screen and (min-width: {$mobile-plus}px) and (max-width: {$tablet}px) {
+  /* Auto mode: ignore device vars, just 2 per row */
+  .layout-widget[data-tablet-auto="true"] {
+    grid-template-columns: repeat(2, 1fr);
+
+    --grid-rows: auto;
+  }
+
+  .layout-widget[data-tablet-auto="true"] > div {
+    grid-column: auto / span 1;
+    grid-row: auto / span 1;
+    order: var(--order, 0);
+  }
+
+  /* 
+    The backend should mark last odd items as full width to avoid
+    weird spacing at the end of rows.
+  */
+  .layout-widget[data-tablet-auto="true"] > [data-tablet-full="true"] { 
+    grid-column: 1 / span 2; 
+  }
+
+  /* Manual mode: use configured columns and device vars */
+  .layout-widget[data-tablet-auto="false"] {
+    --grid-rows: var(--tablet-rows, var(--grid-rows));
+  }
+
+  .layout-widget[data-tablet-auto="false"] > div {
+    grid-column: var(--tablet-colstart, auto) / span var(--tablet-colspan, 1);
+    grid-row: var(--tablet-rowstart, auto) / span var(--tablet-rowspan, 1);
+    justify-self: var(--tablet-justify);
+    /* stylelint-disable-next-line declaration-block-no-redundant-longhand-properties */
+    align-self: var(--tablet-align);
+    order: var(--tablet-order, var(--order, 0));
+  }
+
+  /* Hide items not visible on tablet */
+  .layout-widget > [data-visible-tablet="false"] { 
+    display: none; 
+  }
+}
+
+/* Mobile rules. Override $layout-breakpoint-mobile to change. */
+/* stylelint-disable-next-line media-feature-name-allowed-list */
+@media screen and (max-width: {$mobile}px) {
+  .layout-widget {
+    grid-template-columns: 1fr;
+
+    --grid-rows: auto;
+  }
+
+  .layout-widget[data-mobile-auto="true"] > div {
+    grid-column: auto / span 1;
+    grid-row: auto / span 1;
+    order: var(--order, 0);
+  }
+
+  /* Manual mode: use configured columns and device vars */
+  .layout-widget[data-mobile-auto="false"] {
+    --grid-rows: var(--mobile-rows, var(--grid-rows));
+  }
+
+  .layout-widget[data-mobile-auto="false"] > div {
+    grid-column: var(--mobile-colstart, auto) / span var(--mobile-colspan, 1);
+    grid-row: var(--mobile-rowstart, auto) / span var(--mobile-rowspan, 1);
+    justify-self: var(--mobile-justify);
+    /* stylelint-disable-next-line declaration-block-no-redundant-longhand-properties */
+    align-self: var(--mobile-align);
+    order: var(--mobile-order, var(--order, 0));
+  }
+
+  /* Hide items not visible on mobile */
+  .layout-widget > [data-visible-mobile="false"] { 
+    display: none; 
+  }
+}

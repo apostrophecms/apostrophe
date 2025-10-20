@@ -105,8 +105,59 @@
 // Lists all of the places where this widget is used on the site. This is very
 // useful if you are debugging a change and need to test all of the different
 // ways a widget has been used, or are wondering if you can safely remove one.
+//
+// ## Widget operations
+//
+// Widget operations are buttons that appear in the widget toolbar
+// (or in the breadcrumb when the widget is selected) that perform
+// actions related to the widget. For instance, the image widget
+// provides an "Adjust Image" operation that opens a modal allowing
+// you to crop or resize the image.
+//
+// See the `widgetOperations` configuration of the image widget module
+// for an example use of widget operations with "standard" placement.
+//
+// Widget operations can be restricted to users with a given permission,
+// and can be made to appear only when certain conditions are met,
+// such as the presence of an image in an image widget.
+//
+// Widget operations can be placed in the standard toolbar or in the breadcrumb
+// area at the top of the editing interface. Breadcrumb operations can also
+// include switches and informational items that do not appear as buttons.
+//
+// Valid properties of a widget operation:
+// - `label`: The label of the operation, also used as a tooltip. Required
+// for standard placement.
+// - `icon`: The icon for the operation, e.g. `image-edit-outline`. Required
+// (except for "switch" types).
+// - `modal`: The name of the modal component to open when the operation
+// is invoked. Required for standard placement.
+// - `permission`: An object with `action` and `type` properties
+// specifying a permission that the user must have to see this operation.
+// - `if`: A standard schema `if` clause specifying conditions that
+// must be met in the widget data for this operation to appear.
+// - `placement`: Either `standard`, `breadcrumb` or `all`. Defaults to
+// `standard`.
+// - `type`: Either `info`, `switch`, `menu` or undefined. If `info`, the operation
+//   appears as a non-interactive informational item in the breadcrumb.
+//   If `switch`, the operation appears as a toggle switch in the breadcrumb. When
+//   `menu`, the operation appears as a button that opens an inline modal.
+// - `choices`: For `switch` type operations, an array of choices
+// with `label` and `value` properties. The value will be set on the widget
+// when the user selects that choice.
+// - `secondaryLevel`: If true, the operation appears in a secondary level of
+// the toolbar, accessed by clicking a "more" icon. This is only supported
+// for standard placement.
+// - `tooltip`: The tooltip to show on hover.
+// - `action`: A valid core (e.g. remove, edit, etc.) or custom action to be
+// emitted when the operation is clicked. In effect only if no modal is specified.
+// - `rawEvents`: An array of raw DOM events to listen for and emit to the parent
+// component. In effect only if no type and an action is specified. See layout
+// widget for an example. This option works only for breadcrumb operations.
+//
+// See also `skipOperations` option for a way to disable core operations
+// such as edit or remove.
 
-const { stripIndent } = require('common-tags');
 const _ = require('lodash');
 
 module.exports = {
@@ -114,6 +165,10 @@ module.exports = {
   options: {
     neverLoadSelf: true,
     initialModal: true,
+    // Disable (core) widget actions that are not relevant to this widget type.
+    // Available operations are 'edit', 'remove',
+    // 'up', 'down', 'cut', 'copy', 'clone'.
+    skipOperations: [],
     placeholder: false,
     placeholderClass: 'apos-placeholder',
     // two-thirds, half or full:
@@ -253,6 +308,7 @@ module.exports = {
             if (operation.secondaryLevel !== true && !operation.icon) {
               throw self.apos.error('invalid', 'widgetOperations requires the icon property at primary level.');
             }
+            self.validateWidgetOperation(name, operation);
 
             return {
               name,
@@ -485,22 +541,72 @@ module.exports = {
         return false;
       },
 
-      // override to add CSS classes to the outer wrapper div of the widget.
-      // TODO: Remove in the 4.x major version.
-      getWidgetWrapperClasses(widget) {
-        self.apos.util.warnDev(stripIndent`
-          The getWidgetWrapperClasses method is deprecated and will be removed in the next
-          major version. The method in 3.x simply returns an empty array.`);
-        return [];
+      validateWidgetBreadcrumbOperation(name, operation) {
+        if (operation.type === 'switch' && !operation.choices?.length) {
+          throw self.apos.error('invalid',
+            `widgetOperation "${name}" of type "switch" requires a non-empty choices array.`
+          );
+        }
+        if (operation.type === 'info' && operation.modal) {
+          throw self.apos.error('invalid',
+            `widgetOperation "${name}" of type "info" cannot have a modal property.`
+          );
+        }
+        if (!operation.type && !operation.icon) {
+          throw self.apos.error('invalid',
+            `widgetOperation "${name}" requires an icon property.`
+          );
+        }
+        if (typeof operation.rawEvents !== 'undefined' && !Array.isArray(operation.rawEvents)) {
+          throw self.apos.error('invalid',
+            `widgetOperation "${name}" rawEvents property must be an array if specified.`
+          );
+        }
       },
 
-      // Override to add CSS classes to the div of the widget itself.
-      // TODO: Remove in the 4.x major version.
-      getWidgetClasses(widget) {
-        self.apos.util.warnDev(stripIndent`
-          The getWidgetClasses method is deprecated and will be removed in the next major
-          version. The method in 3.x simply returns an empty array.`);
-        return [];
+      validateWidgetOperation(name, operation) {
+        if ([ 'breadcrumb', 'all' ].includes(operation.placement)) {
+          self.validateWidgetBreadcrumbOperation(name, operation);
+        }
+        if (operation.type === 'menu' && !operation.modal) {
+          throw self.apos.error('invalid',
+            `widgetOperation "${name}" of type "menu" requires a modal property.`
+          );
+        }
+
+        if (operation.placement === 'breadcrumb') {
+          return;
+        }
+
+        if (operation.type === 'switch') {
+          throw self.apos.error('invalid',
+            `widgetOperation "${name}" of type "switch" is only allowed for breadcrumb placement.`
+          );
+        }
+
+        if (operation.type === 'info') {
+          throw self.apos.error('invalid',
+            `widgetOperation "${name}" of type "info" is only allowed for breadcrumb placement.`
+          );
+        }
+
+        if (operation.rawEvents) {
+          throw self.apos.error('invalid',
+            `widgetOperation "${name}" with rawEvents is only allowed for breadcrumb placement.`
+          );
+        }
+
+        if (!operation.label || !operation.modal) {
+          throw self.apos.error('invalid',
+            `widgetOperation "${name}" requires label and modal properties.`
+          );
+        }
+
+        if (operation.secondaryLevel !== true && !operation.icon) {
+          throw self.apos.error('invalid',
+            `widgetOperation "${name}" requires the icon property at primary level.`
+          );
+        }
       },
 
       getAllowedWidgetOperations(req) {
@@ -511,11 +617,20 @@ module.exports = {
           return true;
         });
       },
+      getWidgetOperations(req) {
+        return self.getAllowedWidgetOperations(req).filter(({ placement }) => {
+          return !placement || [ 'standard', 'all' ].includes(placement);
+        });
+      },
+      getWidgetBreadcrumbOperations(req) {
+        return self.getAllowedWidgetOperations(req).filter(({ placement }) => {
+          return [ 'breadcrumb', 'all' ].includes(placement);
+        });
+      },
 
       annotateWidgetForExternalFront() {
         return {};
       }
-
     };
   },
   extendMethods(self) {
@@ -550,7 +665,9 @@ module.exports = {
           origin: self.options.origin,
           preview: self.options.preview,
           isExplicitOrigin: self.isExplicitOrigin,
-          widgetOperations: self.getAllowedWidgetOperations(req)
+          widgetOperations: self.getWidgetOperations(req),
+          widgetBreadcrumbOperations: self.getWidgetBreadcrumbOperations(req),
+          skipOperations: self.options.skipOperations
         });
         return result;
       }
