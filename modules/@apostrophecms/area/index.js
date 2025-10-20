@@ -271,7 +271,9 @@ module.exports = {
           self.missingWidgetTypes = {};
         }
         if (!self.missingWidgetTypes[name]) {
-          self.apos.util.error('WARNING: widget type ' + name + ' exists in content but is not configured');
+          self.apos.util.error(`WARNING: widget type ${name} exists in your database but is not configured.\n` +
+            `You probably do not have a ${name}-widget module in your project.`
+          );
           self.missingWidgetTypes[name] = true;
         }
       },

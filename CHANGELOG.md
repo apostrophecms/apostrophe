@@ -6,11 +6,15 @@
 
 * Support for the `render-areas` query parameter in the REST API when using Astro as an external frontend, provided the Astro project has the corresponding route. This allows section template library previews to work in Astro projects. For ease of migration, if Astro cannot satisfy the request, ApostropheCMS will also attempt to render the widget natively.
 * Made `self.apos.externalFrontKey` available, simplifying API calls back to Astro.
+* Layout widget for dynamic grid layouts.
+* `widgetOperations` support for `placement: 'breadcrumb'` to add operations to the breadcrumb menu of widgets. Extend the widget operations configuration to support various features when in the breadcrumb menu.
+* Area template (Nunjucks) support for `aposStyle`, `aposClassName`, `aposParentOptions` and `aposAttrs` contextual named variables (`with {}` syntax).
 * New login option `caseInsensitive` to force login usernames and emails to be case insensitive. New task `login-case-insensitive` udpating all login names / email to lowercase, used by a new migration when switching ton `caseInsensitive`.
 
 ### Changes
 
 * Refactored complex logic regarding data updates in `AposSchema`.
+* Cleaned up `annotateAreaForExternalFront` logic and added context so developers understand the reason if it fails due to a widget type with no matching module in the project.
 
 ### Fixes
 
