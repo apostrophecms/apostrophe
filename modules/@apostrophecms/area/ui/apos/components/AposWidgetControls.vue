@@ -89,117 +89,48 @@ export default {
       };
     },
     widgetPrimaryControls() {
-      const controls = [];
-
-      // Move up
-      /* controls.push({ */
-      /*   ...this.widgetDefaultControl, */
-      /*   label: 'apostrophe:nudgeUp', */
-      /*   icon: 'arrow-up-icon', */
-      /*   disabled: this.first || this.disabled, */
-      /*   tooltip: { */
-      /*     content: this.first || this.disabled ? null : 'apostrophe:nudgeUp', */
-      /*     placement: 'left' */
-      /*   }, */
-      /*   action: 'up' */
-      /* }); */
-
-      // Move down
-      /* controls.push({ */
-      /*   ...this.widgetDefaultControl, */
-      /*   label: 'apostrophe:nudgeDown', */
-      /*   icon: 'arrow-down-icon', */
-      /*   disabled: this.last || this.disabled, */
-      /*   tooltip: { */
-      /*     content: this.last || this.disabled ? null : 'apostrophe:nudgeDown', */
-      /*     placement: 'left' */
-      /*   }, */
-      /*   action: 'down' */
-      /* }); */
-
-      // Edit
-      /* if (!this.options.contextual) { */
-      /*   controls.push({ */
-      /*     ...this.widgetDefaultControl, */
-      /*     label: 'apostrophe:edit', */
-      /*     icon: 'pencil-icon', */
-      /*     disabled: this.disabled, */
-      /*     tooltip: { */
-      /*       content: 'apostrophe:editWidget', */
-      /*       placement: 'left' */
-      /*     }, */
-      /*     action: 'edit' */
-      /*   }); */
-      /* } */
-
       // Custom widget operations displayed in the primary controls
-      controls.push(
-        ...this.widgetPrimaryOperations.map(operation => {
-          const disabled = this.disabled ||
-            (operation.disabledIfData && checkIfConditions(this.$props, operation.disabledIfData));
+      return this.widgetPrimaryOperations.map(operation => {
+        const disabled = this.disabled ||
+            (operation.disabledIfData &&
+              checkIfConditions(this.$props, operation.disabledIfData));
 
-          if (operation.disabledIfData) {
-            console.log('this.$props', this.$props);
-            console.log('operation.label', operation.label);
-            console.log('disabled', disabled);
+        return {
+          ...this.widgetDefaultControl,
+          ...operation,
+          disabled,
+          tooltip: {
+            content: !disabled && operation.label,
+            placement: 'left'
           }
-          return {
-            ...this.widgetDefaultControl,
-            ...operation,
-            disabled,
-            tooltip: {
-              content: !disabled && operation.label,
-              placement: 'left'
-            }
-          };
-        })
-      );
-
-      return controls.filter(control => (
-        !this.widgetSkipControlsMap.get(control.action) &&
-          !this.widgetSkipControlsMap.get(control.name)
-      ));
+        };
+      });
     },
     widgetSecondaryControls() {
-      const controls = [];
+      const renderOperation = (operation) => {
+        const disabled = this.disabled ||
+            (operation.disabledIfData &&
+            checkIfConditions(this.$props, operation.disabledIfData));
 
-      // Cut
-      controls.push({
-        label: 'apostrophe:cut',
-        icon: 'content-cut-icon',
-        action: 'cut'
-      });
+        return {
+          ...operation,
+          modifiers: [
+            ...disabled ? [ 'disabled' ] : []
+          ]
+        };
+      };
+      const controls = this.widgetNativeSecondaryOperations.map(renderOperation);
 
-      // Copy
-      controls.push({
-        label: 'apostrophe:copy',
-        icon: 'content-copy-icon',
-        action: 'copy'
-      });
-
-      // Clone
-      controls.push({
-        label: 'apostrophe:duplicate',
-        icon: 'content-duplicate-icon',
-        action: 'clone',
-        modifiers: [
-          ...(this.disabled || this.maxReached) ? [ 'disabled' ] : []
-        ]
-      });
-
-      if (this.widgetSecondaryOperations.length) {
-        controls.push({
-          separator: true
-        });
+      if (!this.widgetCustomSecondaryOperations.length) {
+        return controls;
       }
 
-      // Custom widget operations displayed in the secondary controls
-      controls.push(...this.widgetSecondaryOperations);
+      controls.push({
+        separator: true
+      });
 
-      return controls.filter(control => (
-        !this.widgetSkipControlsMap.get(control.action) &&
-          !this.widgetSkipControlsMap.get(control.name)
-      ));
+      // Custom widget operations displayed in the secondary controls
+      return controls.concat(this.widgetCustomSecondaryOperations.map(renderOperation));
     },
     widgetRemoveControl() {
       return {
@@ -223,27 +154,40 @@ export default {
     widgetPrimaryOperations() {
       return this.getOperations({ secondaryLevel: false });
     },
-    widgetSecondaryOperations() {
-      return this.getOperations({ secondaryLevel: true });
+    widgetNativeSecondaryOperations() {
+      return this.getOperations({
+        secondaryLevel: true,
+        native: true
+      });
+    },
+    widgetCustomSecondaryOperations() {
+      return this.getOperations({
+        secondaryLevel: true,
+        native: false
+      });
     },
     moduleOptions() {
       return apos.modules[apos.area.widgetManagers[this.modelValue.type]] ?? {};
     }
   },
   methods: {
-    getOperations({ secondaryLevel }) {
+    getOperations({ secondaryLevel, native }) {
       const { widgetOperations = [] } = this.moduleOptions;
       return widgetOperations.filter(operation => {
+        if (
+          typeof native === 'boolean' &&
+          ((native && !operation.native) || (!native && operation.native))
+        ) {
+          return false;
+        }
         if (
           (secondaryLevel && !operation.secondaryLevel) ||
           (!secondaryLevel && operation.secondaryLevel)
         ) {
           return false;
         }
-        if (operation.if) {
-          if (!checkIfConditions(this.modelValue, operation.if)) {
-            return false;
-          }
+        if (operation.if && !checkIfConditions(this.modelValue, operation.if)) {
+          return false;
         }
         return operation;
       }).map(operation => ({

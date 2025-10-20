@@ -301,13 +301,6 @@ module.exports = {
       composeWidgetOperations() {
         self.widgetOperations = Object.entries(self.widgetOperations)
           .map(([ name, operation ]) => {
-            if (!operation.label || (!operation.native && !operation.modal)) {
-              throw self.apos.error('invalid', 'widgetOperations requires label and modal properties.');
-            }
-
-            if (operation.secondaryLevel !== true && !operation.icon) {
-              throw self.apos.error('invalid', 'widgetOperations requires the icon property at primary level.');
-            }
             self.validateWidgetOperation(name, operation);
 
             return {
@@ -596,7 +589,7 @@ module.exports = {
           );
         }
 
-        if (!operation.label || !operation.modal) {
+        if (!operation.label || (!operation.native && !operation.modal)) {
           throw self.apos.error('invalid',
             `widgetOperation "${name}" requires label and modal properties.`
           );
