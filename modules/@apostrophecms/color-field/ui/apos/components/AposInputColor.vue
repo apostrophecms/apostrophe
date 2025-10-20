@@ -16,6 +16,19 @@
           @clear="clear"
         />
         <div class="apos-input-color__ui">
+          <div
+            v-if="presets"
+            class="apos-input-color__preset-buttons"
+          >
+            <button
+              v-for="preset in presets"
+              :key="preset"
+              class="apos-input-color__preset-button"
+              :style="`background-color:${preset}`"
+              @click="update(preset)"
+            />
+          </div>
+
           <AposContextMenu
             :button="buttonOptions"
             menu-placement="bottom-start"
@@ -46,13 +59,23 @@
 <script>
 import AposInputColorLogic from '../logic/AposInputColor';
 import AposColorInfo from '../lib/AposColorInfo.vue';
+const defaultOptions = { ...apos.modules['@apostrophecms/color-field'].defaultOptions };
 
 export default {
   name: 'AposInputColor',
   components: {
     AposColorInfo
   },
-  mixins: [ AposInputColorLogic ]
+  mixins: [ AposInputColorLogic ],
+  computed: {
+    presets() {
+      if (this.options.presetColors) {
+        return this.options.presetColors;
+      } else {
+        return defaultOptions.presetColors;
+      }
+    }
+  }
 };
 </script>
 
@@ -69,6 +92,19 @@ export default {
       margin-right: 5px;
       margin-left: 0;
     }
+  }
+
+  .apos-input-color__preset-buttons {
+    display: flex;
+    gap: $spacing-half;
+  }
+
+  .apos-input-color__preset-button {
+    all: unset;
+    width: 15px;
+    height: 15px;
+    border-radius: 3px;
+    outline: 1px solid var(--a-base-8);
   }
 
 </style>
