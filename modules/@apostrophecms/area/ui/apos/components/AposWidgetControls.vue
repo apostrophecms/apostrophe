@@ -145,7 +145,10 @@ export default {
         }))
       );
 
-      return controls;
+      return controls.filter(control => (
+        !this.widgetSkipControlsMap.get(control.action) &&
+          !this.widgetSkipControlsMap.get(control.name)
+      ));
     },
     widgetSecondaryControls() {
       const controls = [];
@@ -183,7 +186,10 @@ export default {
       // Custom widget operations displayed in the secondary controls
       controls.push(...this.widgetSecondaryOperations);
 
-      return controls;
+      return controls.filter(control => (
+        !this.widgetSkipControlsMap.get(control.action) &&
+          !this.widgetSkipControlsMap.get(control.name)
+      ));
     },
     widgetRemoveControl() {
       return {
@@ -198,17 +204,25 @@ export default {
         action: 'remove'
       };
     },
+    widgetSkipControlsMap() {
+      return new Map(
+        (this.moduleOptions.skipOperations || [])
+          .map(operation => [ operation, true ])
+      );
+    },
     widgetPrimaryOperations() {
       return this.getOperations({ secondaryLevel: false });
     },
     widgetSecondaryOperations() {
       return this.getOperations({ secondaryLevel: true });
+    },
+    moduleOptions() {
+      return apos.modules[apos.area.widgetManagers[this.modelValue.type]] ?? {};
     }
   },
   methods: {
     getOperations({ secondaryLevel }) {
-      const moduleOptions = apos.modules[apos.area.widgetManagers[this.modelValue.type]];
-      const { widgetOperations = [] } = moduleOptions || {};
+      const { widgetOperations = [] } = this.moduleOptions;
       return widgetOperations.filter(operation => {
         if (operation.if) {
           if (!checkIfConditions(this.modelValue, operation.if)) {
