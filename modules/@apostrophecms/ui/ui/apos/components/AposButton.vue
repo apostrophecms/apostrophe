@@ -193,7 +193,7 @@ export default {
           };
         // if not provide a default placeholder
         } else {
-          return {g
+          return {
             backgroundColor: 'transparent'
           };
         }
