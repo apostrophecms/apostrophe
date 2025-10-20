@@ -32,13 +32,24 @@
         v-if="colorStyle"
         class="apos-button__color-preview"
       >
-        <span
-          :style="colorStyle"
-          class="apos-button__color-preview__swatch"
-        />
-        <div class="apos-button__color-preview__checkerboard">
-          <AposColorCheckerboard />
+        <div class="apos-button__color-preview__edit">
+          <AposIndicator
+            class="apos-button__icon"
+            icon="format-color-fill-icon"
+            icon-size="20"
+            icon-color="#000"
+          />
         </div>
+        <div class="apos-button__color-preview__sample">
+          <span
+            :style="colorStyle"
+            class="apos-button__color-preview__swatch"
+          />
+          <div class="apos-button__color-preview__checkerboard">
+            <AposColorCheckerboard />
+          </div>
+        </div>
+
       </span>
       <div class="apos-button__content">
         <AposIndicator
@@ -340,10 +351,10 @@ export default {
   }
 
   .apos-button.apos-button--color {
-    width: 50px;
-    height: 50px;
+    width: 45px;
+    height: 45px;
     padding: 0;
-    border: 0;
+    border: 1px solid var(--a-base-8);
     border-radius: 50%;
     box-shadow: var(--a-box-shadow);
   }
@@ -353,13 +364,39 @@ export default {
     height: 100%;
   }
 
+  .apos-button__color-preview__edit {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    width: 100%;
+    height: 60%;
+    background: white;
+    // border-radius: 0 0 50% 50%;
+    &:deep(.apos-button__icon) {
+      margin-right: 0;
+    }
+    &:deep(svg) {
+      position: relative;
+      top: 5px;
+    }
+  }
+
+  .apos-button__color-preview__sample {
+    position: relative;
+    width: 100%;
+    height: 40%;
+    border-radius: 0 0 50% 50%;
+    overflow: hidden;
+  }
+
   .apos-button__color-preview,
   .apos-button__color-preview__swatch,
   .apos-button__color-preview__checkerboard {
     position: absolute;
     top: 0;
     left: 0;
-    border-radius: 50%;
+    // border-radius: 50%;
   }
 
   .apos-button__color-preview__swatch,

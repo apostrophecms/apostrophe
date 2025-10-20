@@ -16,19 +16,6 @@
           @clear="clear"
         />
         <div class="apos-input-color__ui">
-          <div
-            v-if="presets"
-            class="apos-input-color__preset-buttons"
-          >
-            <button
-              v-for="preset in presets"
-              :key="preset"
-              class="apos-input-color__preset-button"
-              :style="`background-color:${preset}`"
-              @click="update(preset)"
-            />
-          </div>
-
           <AposContextMenu
             :button="buttonOptions"
             menu-placement="bottom-start"
@@ -43,14 +30,27 @@
               @update:model-value="update"
             />
           </AposContextMenu>
+          <!-- TODO guard against inline? -->
+          <div
+            v-if="presets"
+            class="apos-input-color__preset-buttons"
+          >
+            <button
+              v-for="preset in presets"
+              :key="preset"
+              class="apos-input-color__preset-button"
+              :style="`background-color:${preset}`"
+              @click="update(preset)"
+            />
+          </div>
         </div>
-        <AposColorInfo
+        <!-- <AposColorInfo
           v-if="!isInline"
           class="apos-input-color__info"
           :value="next"
           :is-micro="isMicro"
           @clear="clear"
-        />
+        /> -->
       </div>
     </template>
   </AposInputWrapper>
@@ -101,10 +101,14 @@ export default {
 
   .apos-input-color__preset-button {
     all: unset;
-    width: 15px;
-    height: 15px;
-    border-radius: 3px;
+    width: 25px;
+    height: 25px;
+    border-radius: 50%;
     outline: 1px solid var(--a-base-8);
+  }
+
+  .apos-input-color__ui {
+    display: flex;
   }
 
 </style>
