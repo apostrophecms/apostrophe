@@ -77,7 +77,7 @@ export default {
       required: true
     }
   },
-  emits: [ 'remove', 'edit', 'cut', 'copy', 'clone', 'up', 'down', 'update' ],
+  emits: [ 'operation' ],
   computed: {
     widgetDefaultControl() {
       return {
@@ -217,12 +217,16 @@ export default {
           widgetOptions: this.widgetOptions
         });
         if (result && !ignoreResult) {
-          this.$emit('update', result);
+          this.$emit('operation', {
+            name: 'update',
+            payload: result
+          });
         }
-      } else {
-        if (action) {
-          this.$emit(action);
-        }
+        return;
+      }
+
+      if (action) {
+        this.$emit('operation', { name: action });
       }
     }
   }

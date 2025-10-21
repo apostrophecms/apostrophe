@@ -86,7 +86,7 @@
           :is-focused="isFocused"
           @widget-focus="getFocus"
           @update="$emit('update', $event)"
-          @operation="onBreadcrumbOperation"
+          @operation="onOperation"
         />
       </div>
       <div
@@ -136,14 +136,7 @@
           :tabbable="isFocused"
           :model-value="widget"
           :widget-options="widgetOptions"
-          @up="$emit('up', i);"
-          @remove="$emit('remove', i);"
-          @edit="$emit('edit', i);"
-          @cut="$emit('cut', i);"
-          @copy="$emit('copy', i);"
-          @clone="$emit('clone', i);"
-          @down="$emit('down', i);"
-          @update="$emit('update', $event)"
+          @operation="onOperation"
         />
       </div>
 
@@ -527,7 +520,9 @@ export default {
     ...mapActions(useWidgetStore, [ 'setFocusedWidget', 'setHoveredWidget' ]),
     // Emits same actions as the Standard operations,
     // e.g ('edit', i), ('remove', i), etc.
-    onBreadcrumbOperation({ name, payload }) {
+    onOperation({ name, payload }) {
+      console.log('name', name);
+      console.log('payload', payload);
       this.$emit(name, payload);
     },
     updateStickyStyles(newStyles) {
