@@ -26,6 +26,7 @@
       />
 
       <AposButton
+        v-if="widgetRemoveControl"
         v-bind="widgetRemoveControl"
         @click="handleClick({ action: 'remove' })"
       />
@@ -36,6 +37,8 @@
 <script>
 
 import checkIfConditions from 'apostrophe/lib/universal/check-if-conditions.mjs';
+
+const standaloneWidgetOperation = [ 'remove' ];
 
 export default {
   props: {
@@ -100,7 +103,7 @@ export default {
           ...operation,
           disabled,
           tooltip: {
-            content: !disabled && operation.label,
+            content: !disabled && (operation.tooltip || operation.label),
             placement: 'left'
           }
         };
@@ -133,17 +136,27 @@ export default {
       return controls.concat(this.widgetCustomSecondaryOperations.map(renderOperation));
     },
     widgetRemoveControl() {
+      const { widgetOperations = [] } = this.moduleOptions;
+      const removeWidgetOperation = widgetOperations
+        .find((operation) => operation.action === 'remove');
+      if (!removeWidgetOperation) {
+        return null;
+      }
+
       return {
         ...this.widgetDefaultControl,
-        label: 'apostrophe:remove',
-        icon: 'trash-can-outline-icon',
-        disabled: this.disabled,
+        ...removeWidgetOperation,
         tooltip: {
-          content: 'apostrophe:delete',
+          content: removeWidgetOperation.tooltip,
           placement: 'left'
-        },
-        action: 'remove'
+        }
       };
+    },
+    widgetSkipControlsMap() {
+      return new Map(
+        (this.moduleOptions.skipOperations || [])
+          .map(operation => [ operation, true ])
+      );
     },
     widgetPrimaryOperations() {
       return this.getOperations({ secondaryLevel: false });
@@ -168,6 +181,9 @@ export default {
     getOperations({ secondaryLevel, native }) {
       const { widgetOperations = [] } = this.moduleOptions;
       return widgetOperations.filter(operation => {
+        if (standaloneWidgetOperation.includes(operation.name)) {
+          return false;
+        }
         if (
           typeof native === 'boolean' &&
           ((native && !operation.native) || (!native && operation.native))

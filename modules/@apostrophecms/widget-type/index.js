@@ -247,6 +247,14 @@ module.exports = {
             native: true
           }
         },
+        remove: {
+          label: 'apostrophe:remove',
+          icon: 'trash-can-outline-icon',
+          disabled: this.disabled,
+          tooltip: 'apostrophe:delete',
+          action: 'remove',
+          native: true
+        },
         cut: {
           label: 'apostrophe:cut',
           icon: 'content-cut-icon',
