@@ -145,12 +145,6 @@ export default {
         action: 'remove'
       };
     },
-    widgetSkipControlsMap() {
-      return new Map(
-        (this.moduleOptions.skipOperations || [])
-          .map(operation => [ operation, true ])
-      );
-    },
     widgetPrimaryOperations() {
       return this.getOperations({ secondaryLevel: false });
     },

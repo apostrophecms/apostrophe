@@ -7,7 +7,6 @@ module.exports = {
     label: 'apostrophe:layout',
     icon: 'view-column-icon',
     initialModal: false,
-    skipOperations: [ 'edit' ],
     columns: 12,
     minSpan: 2,
     defaultSpan: 6,
