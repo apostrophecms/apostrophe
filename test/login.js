@@ -892,7 +892,7 @@ describe('Login', function () {
     }
   });
 
-  it('should return user data at GET login/whoami when user is logged in', async function () {
+  it('should return user data at POST login/whoami when user is logged in', async function () {
 
     const jar = apos.http.jar();
     await apos.http.get(
@@ -997,5 +997,62 @@ describe('Login', function () {
       jar
     });
     assert.ok(!('role' in whoamiResponse));
+  });
+
+  describe('localLogin: false', function () {
+    let apos2;
+
+    this.timeout(20000);
+
+    before(async function () {
+      apos2 = await t.create({
+        root: module,
+        modules: {
+          '@apostrophecms/express': {
+            options: {
+              apiKeys: {
+                adminApiKey: {
+                  role: 'admin'
+                }
+              }
+            }
+          },
+          '@apostrophecms/login': {
+            options: {
+              localLogin: false,
+              passwordReset: true,
+              environmentLabel: 'test'
+            }
+          }
+        }
+      });
+    });
+
+    after(function () {
+      return t.destroy(apos2);
+    });
+
+    it('should return user data at POST login/whoami when user is logged in', async function () {
+      const actual = apos2.modules['@apostrophecms/login']._routes.map(({ method, url }) => ({
+        method,
+        url
+      }));
+      const expected = [
+        {
+          method: 'post',
+          url: '/api/v1/@apostrophecms/login/logout'
+        },
+        {
+          method: 'post',
+          url: '/api/v1/@apostrophecms/login/whoami'
+        },
+        {
+          method: 'get',
+          url: '/api/v1/@apostrophecms/login/whoami'
+        }
+      ];
+
+      assert.deepEqual(actual, expected);
+    });
   });
 });
