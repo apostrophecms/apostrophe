@@ -1,10 +1,12 @@
 // Pages manager (tree) modal business logic.
 
+import { mapActions } from 'pinia';
+import { klona } from 'klona';
 import AposModifiedMixin from 'Modules/@apostrophecms/ui/mixins/AposModifiedMixin';
 import AposArchiveMixin from 'Modules/@apostrophecms/ui/mixins/AposArchiveMixin';
 import AposPublishMixin from 'Modules/@apostrophecms/ui/mixins/AposPublishMixin';
 import AposDocsManagerMixin from 'Modules/@apostrophecms/modal/mixins/AposDocsManagerMixin';
-import { klona } from 'klona';
+import { useModalStore } from 'Modules/@apostrophecms/ui/stores/modal';
 import { debounce, asyncTaskQueue } from 'Modules/@apostrophecms/ui/utils';
 
 export default {
@@ -67,7 +69,8 @@ export default {
       allPiecesSelection: {
         isSelected: false,
         total: 0
-      }
+      },
+      localeSwitched: this.modalData.hasContextLocale
     };
   },
   computed: {
@@ -171,6 +174,7 @@ export default {
     apos.bus.$off('command-menu-manager-close', this.confirmAndCancel);
   },
   methods: {
+    ...mapActions(useModalStore, [ 'updateModalData' ]),
     async create() {
       const doc = await apos.modal.execute(this.moduleOptions.components.editorModal, {
         moduleName: this.moduleName,
@@ -582,6 +586,18 @@ export default {
           this.checked = this.checked.filter(checkedId => doc._id !== checkedId);
         }
       }
+    },
+    async switchLocale({ locale, localized }) {
+      this.updateModalData(this.modalData.id, { locale });
+      this.localeSwitched = locale !== apos.i18n.locale;
+
+      this.currentPage = 1;
+
+      await this.getPages();
+      this.getAllPagesTotal();
+      this.headers = this.computeHeaders();
+
+      this.setCheckedDocs([]);
     }
   }
 };

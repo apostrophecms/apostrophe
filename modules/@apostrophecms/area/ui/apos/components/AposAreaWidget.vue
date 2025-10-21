@@ -62,15 +62,13 @@
             class="apos-area-widget__breadcrumb"
             data-apos-widget-breadcrumb="0"
           >
-            <!-- FIXME: Label double click still executes widget editor
-             when edit disabled. Fix when the disable routine is in final state. -->
             <AposButton
               type="quiet"
               :label="foreign ? {
                 key: 'apostrophe:editWidgetType',
                 label: $t(widgetLabel)
               } : widgetLabel"
-              :tooltip="!isContextual && 'apostrophe:editWidgetForeignTooltip'"
+              :tooltip="(foreign && !isContextual) && 'apostrophe:editWidgetForeignTooltip'"
               :icon-size="11"
               :modifiers="['no-motion']"
               :disable-focus="!(isHovered || isFocused)"
@@ -498,6 +496,11 @@ export default {
       // menu, for example), and this widget was created, give the new widget
       // focus.
       this.setFocusedWidget(this.widget._id, this.areaId);
+    }
+
+    // Do not set up sticky controls if they are disabled
+    if (this.controlsDisabled) {
+      return;
     }
 
     this.$nextTick(() => {
