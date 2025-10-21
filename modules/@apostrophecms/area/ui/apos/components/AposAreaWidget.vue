@@ -404,7 +404,8 @@ export default {
       return (this.widgetModuleOptions.widgetBreadcrumbOperations || []);
     },
     shouldSkipEdit() {
-      return this.widgetModuleOptions.skipOperations?.includes('edit') ?? false;
+      return !this.widgetModuleOptions.widgetOperations
+        .some((op) => op.action === 'edit');
     },
     isFocused() {
       return this.focusedWidget === this.widget._id;

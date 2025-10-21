@@ -46,7 +46,8 @@ module.exports = {
           icon: 'information-outline-icon',
           tooltip: 'apostrophe:layoutTogggleTooltip'
         }
-      }
+      },
+      remove: [ 'edit' ]
     };
   },
   fields(self, options) {
