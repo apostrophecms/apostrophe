@@ -1,6 +1,84 @@
 const t = require('../test-lib/test.js');
 const assert = require('assert');
 
+const rteArea = {
+  _id: 'ckjyva89o000k2a67vcgl914k',
+  items: [
+    {
+      _id: 'ckjyvagy9000p2a67fbf8nwd3',
+      metaType: 'widget',
+      type: '@apostrophecms/rich-text',
+      content: '<p>Perhaps its fate that today is the 4th of July, and you will once again be fighting for our freedom, not from tyranny, oppression, or persecution -- but from annihilation.</p><p>We\'re fighting for our right to live, to exist.</p>'
+    }
+  ],
+  metaType: 'area'
+};
+const mixedArea = {
+  _id: 'ckjyv67wt001a2a67wibekp0c',
+  items: [
+    {
+      _id: 'ckjyv6ezu001f2a67s572cvn2',
+      metaType: 'widget',
+      type: '@apostrophecms/rich-text',
+      content: '<p>Good morning. In less than an hour, aircraft from here will join others from around the world. And you will be launching the largest aerial battle in this history of mankind.</p>'
+    },
+    {
+      _id: 'ckk32go3e00152a67tbbgzcf9',
+      code: '<marquee>The HTML <code>&lt;marquee&gt;</code> element is used to insert a scrolling area of text. You can control what happens when the text reaches the edges of its content area using its attributes.</marquee>',
+      metaType: 'widget',
+      type: '@apostrophecms/html'
+    }
+  ],
+  metaType: 'area'
+};
+
+let areaDocs = [
+  {
+    title: '1: Nested article bits',
+    slug: 'nested-article-bits',
+    type: 'article',
+    metaType: 'doc',
+    main: rteArea
+  },
+  {
+    title: '2: Fresh article',
+    slug: 'fresh-article',
+    type: 'article',
+    metaType: 'doc',
+    main: mixedArea,
+    moreAreas: [
+      {
+        _id: 'ckk4746rp004i2a67iiw024yl',
+        someWidgets: {
+          _id: 'ckk4746s7004k2a67of8ra2zn',
+          items: [
+            {
+              _id: 'ckk474uzf004q2a67fy06gwba',
+              code: '<h1>🌝</h1>',
+              metaType: 'widget',
+              type: '@apostrophecms/html'
+            },
+            {
+              _id: '32l474uzf004q2adddy06gwba',
+              code: '<h2>🌚</h2>',
+              metaType: 'widget',
+              type: '@apostrophecms/html'
+            }
+          ],
+          metaType: 'area'
+        }
+      }, {
+        _id: 'ckk4763vq00642a67udf3hqbx',
+        someWidgets: {
+          _id: 'ckk477sm0000qw43r94lpmn2m',
+          items: [],
+          metaType: 'area'
+        }
+      }
+    ]
+  }
+];
+
 describe('Areas', function() {
   let apos;
 
@@ -14,7 +92,7 @@ describe('Areas', function() {
         article: {
           extend: '@apostrophecms/piece-type',
           options: {
-            alias: 'articles',
+            alias: 'article',
             name: 'article',
             label: 'Article'
           },
@@ -219,6 +297,19 @@ describe('Areas', function() {
     }, { limit: 15 }), 'So cool...');
   });
 
+  it('can insert area docs', async function() {
+    const req = apos.task.getReq({ mode: 'draft' });
+    const ids = [];
+    for (const doc of areaDocs) {
+      const inserted = await apos.article.insert(req, doc);
+      ids.push(inserted.aposDocId);
+      await apos.article.publish(req, inserted);
+    }
+    areaDocs = await apos.article.find(req.clone({ mode: 'published' }), {
+      aposDocId: { $in: ids }
+    }).sort({ title: 1 }).toArray();
+  });
+
   it('can populate an area object with required properties using the prepForRender method', async function () {
     apos.area.prepForRender(rteArea, areaDocs[0], 'main');
 
@@ -234,8 +325,10 @@ describe('Areas', function() {
     const req = apos.task.getReq();
     firstRendered = await apos.area.renderArea(req, rteArea, areaDocs[0]);
     assert(firstRendered);
-    assert.equal(firstRendered.trim(), `
-<div class="apos-area">
+    assert.equal(firstRendered.trim(),
+`<div 
+  class="apos-area"
+  >
 <div data-rich-text>
   <p>Perhaps its fate that today is the 4th of July, and you will once again be fighting for our freedom, not from tyranny, oppression, or persecution -- but from annihilation.</p><p>We're fighting for our right to live, to exist.</p>
 </div>
@@ -424,89 +517,3 @@ describe('Areas', function() {
     );
   });
 });
-
-const rteArea = {
-  _id: 'ckjyva89o000k2a67vcgl914k',
-  items: [
-    {
-      _id: 'ckjyvagy9000p2a67fbf8nwd3',
-      metaType: 'widget',
-      type: '@apostrophecms/rich-text',
-      content: '<p>Perhaps its fate that today is the 4th of July, and you will once again be fighting for our freedom, not from tyranny, oppression, or persecution -- but from annihilation.</p><p>We\'re fighting for our right to live, to exist.</p>'
-    }
-  ],
-  metaType: 'area'
-};
-const mixedArea = {
-  _id: 'ckjyv67wt001a2a67wibekp0c',
-  items: [
-    {
-      _id: 'ckjyv6ezu001f2a67s572cvn2',
-      metaType: 'widget',
-      type: '@apostrophecms/rich-text',
-      content: '<p>Good morning. In less than an hour, aircraft from here will join others from around the world. And you will be launching the largest aerial battle in this history of mankind.</p>'
-    },
-    {
-      _id: 'ckk32go3e00152a67tbbgzcf9',
-      code: '<marquee>The HTML <code>&lt;marquee&gt;</code> element is used to insert a scrolling area of text. You can control what happens when the text reaches the edges of its content area using its attributes.</marquee>',
-      metaType: 'widget',
-      type: '@apostrophecms/html'
-    }
-  ],
-  metaType: 'area'
-};
-
-const areaDocs = [
-  {
-    _id: 'ckjyvbpgb000mki3rbtar64y7:en:published',
-    _edit: true,
-    aposDocId: 'ckjyvbpgb000mki3rbtar64y7',
-    aposLocale: 'en:published',
-    title: 'Nested article bits',
-    slug: 'nested-article-bits',
-    type: 'article',
-    metaType: 'doc',
-    main: rteArea
-  },
-  {
-    _id: 'ckjyv9oyv000bki3r0007oajd:en:published',
-    _edit: true,
-    aposDocId: 'ckjyv9oyv000bki3r0007oajd',
-    aposLocale: 'en:published',
-    title: 'Fresh article',
-    slug: 'fresh-article',
-    type: 'article',
-    metaType: 'doc',
-    main: mixedArea,
-    moreAreas: [
-      {
-        _id: 'ckk4746rp004i2a67iiw024yl',
-        someWidgets: {
-          _id: 'ckk4746s7004k2a67of8ra2zn',
-          items: [
-            {
-              _id: 'ckk474uzf004q2a67fy06gwba',
-              code: '<h1>🌝</h1>',
-              metaType: 'widget',
-              type: '@apostrophecms/html'
-            },
-            {
-              _id: '32l474uzf004q2adddy06gwba',
-              code: '<h2>🌚</h2>',
-              metaType: 'widget',
-              type: '@apostrophecms/html'
-            }
-          ],
-          metaType: 'area'
-        }
-      }, {
-        _id: 'ckk4763vq00642a67udf3hqbx',
-        someWidgets: {
-          _id: 'ckk477sm0000qw43r94lpmn2m',
-          items: [],
-          metaType: 'area'
-        }
-      }
-    ]
-  }
-];

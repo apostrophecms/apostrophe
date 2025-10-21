@@ -168,6 +168,7 @@ module.exports = {
     self.trustProxy();
     self.options.externalFrontKey = process.env.APOS_EXTERNAL_FRONT_KEY ||
       self.options.externalFrontKey;
+    self.apos.externalFrontKey = self.options.externalFrontKey;
 
     await self.getSessionOptions();
     if (self.options.baseUrl && !self.apos.baseUrl) {
