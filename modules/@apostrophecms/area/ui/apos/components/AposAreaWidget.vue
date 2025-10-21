@@ -68,7 +68,7 @@
                 key: 'apostrophe:editWidgetType',
                 label: $t(widgetLabel)
               } : widgetLabel"
-              :tooltip="foreign && 'apostrophe:editWidgetForeignTooltip'"
+              :tooltip="(foreign && !isContextual) && 'apostrophe:editWidgetForeignTooltip'"
               :icon-size="11"
               :modifiers="['no-motion']"
               :disable-focus="!(isHovered || isFocused)"
