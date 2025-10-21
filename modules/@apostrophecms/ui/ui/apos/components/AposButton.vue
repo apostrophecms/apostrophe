@@ -36,8 +36,8 @@
           <AposIndicator
             class="apos-button__icon"
             icon="format-color-fill-icon"
-            icon-size="20"
-            icon-color="#000"
+            icon-size="22"
+            icon-color="var(--a-base-6)"
           />
         </div>
         <div class="apos-button__color-preview__sample">
@@ -351,12 +351,13 @@ export default {
   }
 
   .apos-button.apos-button--color {
-    width: 45px;
-    height: 45px;
+    width: 40px;
+    height: 40px;
     padding: 0;
     border: 1px solid var(--a-base-8);
-    border-radius: 50%;
-    box-shadow: var(--a-box-shadow);
+    // border-radius: 50%;
+    border-radius: 3px;
+    // box-shadow: var(--a-box-shadow);
   }
 
   .apos-button__color-preview {
@@ -370,7 +371,7 @@ export default {
     justify-content: center;
     position: relative;
     width: 100%;
-    height: 60%;
+    height: 70%;
     background: white;
     // border-radius: 0 0 50% 50%;
     &:deep(.apos-button__icon) {
@@ -378,15 +379,15 @@ export default {
     }
     &:deep(svg) {
       position: relative;
-      top: 5px;
+      top: 2px;
     }
   }
 
   .apos-button__color-preview__sample {
     position: relative;
     width: 100%;
-    height: 40%;
-    border-radius: 0 0 50% 50%;
+    height: 30%;
+    // border-radius: 0 0 50% 50%;
     overflow: hidden;
   }
 

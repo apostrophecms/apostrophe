@@ -12,7 +12,8 @@ export default {
   data() {
     return {
       active: false,
-      tinyColorObj: null
+      tinyColorObj: null,
+      swatchSelected: null
     };
   },
   computed: {
@@ -79,6 +80,10 @@ export default {
     },
     clear() {
       this.next = '';
+    },
+    selectSwatch(value) {
+      this.swatchSelected = value;
+      this.update(value);
     }
   }
 };
