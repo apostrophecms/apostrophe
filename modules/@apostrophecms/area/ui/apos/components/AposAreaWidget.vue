@@ -499,6 +499,11 @@ export default {
       this.setFocusedWidget(this.widget._id, this.areaId);
     }
 
+    // Do not set up sticky controls if they are disabled
+    if (this.controlsDisabled) {
+      return;
+    }
+
     this.$nextTick(() => {
       this.adminBarHeight = window.apos.adminBar.height;
       this.controlsHeight = this.$refs.modifyControls.getBoundingClientRect().height;
