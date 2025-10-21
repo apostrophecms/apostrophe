@@ -43,6 +43,14 @@ export default {
     name: {
       type: String,
       required: true
+    },
+    disabled: {
+      type: Boolean,
+      default: false
+    },
+    tooltip: {
+      type: String,
+      default: null
     }
   },
   emits: [
