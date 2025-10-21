@@ -13,6 +13,7 @@
 
 ### Changes
 
+* Enable `/api/v1/@apostrophecms/login/logout` and `/api/v1/@apostrophecms/login/whoami` routes when `localLogin` is `false`.
 * Refactored complex logic regarding data updates in `AposSchema`.
 * Cleaned up `annotateAreaForExternalFront` logic and added context so developers understand the reason if it fails due to a widget type with no matching module in the project.
 
