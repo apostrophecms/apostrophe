@@ -2,10 +2,25 @@
 
 ## UNRELEASED
 
+### Adds
+
+* Add locale picker in the page and piece manager modals.
+* Support for the `render-areas` query parameter in the REST API when using Astro as an external frontend, provided the Astro project has the corresponding route. This allows section template library previews to work in Astro projects. For ease of migration, if Astro cannot satisfy the request, ApostropheCMS will also attempt to render the widget natively.
+* Made `self.apos.externalFrontKey` available, simplifying API calls back to Astro.
+* Layout widget for dynamic grid layouts.
+* `widgetOperations` support for `placement: 'breadcrumb'` to add operations to the breadcrumb menu of widgets. Extend the widget operations configuration to support various features when in the breadcrumb menu.
+* Area template (Nunjucks) support for `aposStyle`, `aposClassName`, `aposParentOptions` and `aposAttrs` contextual named variables (`with {}` syntax).
+
 ### Changes
 
-* Refactors complex logic from `AposSchema` that handle data updates to simplifies it.
 * Enable `/api/v1/@apostrophecms/login/logout` and `/api/v1/@apostrophecms/login/whoami` routes when `localLogin` is `false`.
+* Refactored complex logic regarding data updates in `AposSchema`.
+* Cleaned up `annotateAreaForExternalFront` logic and added context so developers understand the reason if it fails due to a widget type with no matching module in the project.
+
+### Fixes
+
+* The `render-areas` query parameter now works correctly with areas nested in array items.
+* Fix min size calculation for image widgets configured with an aspect ratio.
 
 ## 4.22.0 (2025-10-01)
 

@@ -57,6 +57,7 @@
 import {
   ref, inject, useTemplateRef, onMounted, onUnmounted, computed, onBeforeUnmount
 } from 'vue';
+import { computeMinSizes } from 'apostrophe/lib/image.js';
 
 const $t = inject('i18n');
 const props = defineProps({
@@ -69,6 +70,10 @@ const props = defineProps({
     default: false
   },
   minSize: {
+    type: Array,
+    default: null
+  },
+  aspectRatio: {
     type: Array,
     default: null
   },
@@ -93,10 +98,26 @@ const instructionsTranslation = $t('apostrophe:imageUploadMsg', {
   mediaLibrary: `<button class="apos-media-uploader__btn" data-apos-click="openMedia">${mediaLibraryTranslation}</button>`,
   yourDevice: `<button class="apos-media-uploader__btn" data-apos-click="searchFile">${yourDeviceTranslation}</button>`
 });
-const minSizeTranslation = props.minSize && $t('apostrophe:minimumSize', {
-  width: props.minSize[0] || '_',
-  height: props.minSize[1] || '_'
-});
+
+let minSizeTranslation;
+
+if (props.minSize) {
+  const { minWidth, minHeight } = computeMinSizes(
+    props.minSize,
+    props.aspectRatio
+  );
+
+  minSizeTranslation = $t('apostrophe:minimumSize', {
+    width: Math.round(minWidth),
+    height: Math.round(minHeight)
+  });
+} else {
+  minSizeTranslation = $t('apostrophe:minimumSize', {
+    width: '-',
+    height: '-'
+  });
+}
+
 const formattedAccept = props.accept
   .replace(/\s+|\.+/g, '')
   .split(',')
