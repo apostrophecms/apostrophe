@@ -4,6 +4,7 @@
 
 ### Adds
 
+* Add locale picker in the page and piece manager modals.
 * Support for the `render-areas` query parameter in the REST API when using Astro as an external frontend, provided the Astro project has the corresponding route. This allows section template library previews to work in Astro projects. For ease of migration, if Astro cannot satisfy the request, ApostropheCMS will also attempt to render the widget natively.
 * Made `self.apos.externalFrontKey` available, simplifying API calls back to Astro.
 * Layout widget for dynamic grid layouts.
