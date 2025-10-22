@@ -203,11 +203,10 @@
 
     .apos-input-color__info {
       position: absolute;
-      display: flex;
       right: 0;
+      display: flex;
+      place-content: center;
       height: 17px;
-      align-content: center;
-      justify-content: center;
       margin-left: 0;
       font-size: var(--a-type-base);
       white-space: nowrap;

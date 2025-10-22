@@ -370,17 +370,18 @@ export default {
   }
 
   .apos-button__color-preview__edit {
+    position: relative;
     display: flex;
     align-items: center;
     justify-content: center;
-    position: relative;
     width: 100%;
     height: 70%;
-    background: white;
-    // border-radius: 0 0 50% 50%;
+    background: var(--a-white);
+
     &:deep(.apos-button__icon) {
       margin-right: 0;
     }
+
     &:deep(svg) {
       position: relative;
       top: 2px;
@@ -389,10 +390,9 @@ export default {
 
   .apos-button__color-preview__sample {
     position: relative;
+    overflow: hidden;
     width: 100%;
     height: 30%;
-    // border-radius: 0 0 50% 50%;
-    overflow: hidden;
   }
 
   .apos-button__color-preview,
@@ -401,7 +401,6 @@ export default {
     position: absolute;
     top: 0;
     left: 0;
-    // border-radius: 50%;
   }
 
   .apos-button__color-preview__swatch,

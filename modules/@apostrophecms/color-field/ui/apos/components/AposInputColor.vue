@@ -68,9 +68,6 @@ export default {
       return this.next && !this.finalOptions.presetColors.includes(this.next);
     }
   },
-  mounted() {
-    // console.log(finalOptions);
-  },
   methods: {
     getColorStyle(str) {
       return str.startsWith('--')
