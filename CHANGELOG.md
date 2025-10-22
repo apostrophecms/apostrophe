@@ -21,6 +21,7 @@
 
 * The `render-areas` query parameter now works correctly with areas nested in array items.
 * Fix min size calculation for image widgets configured with an aspect ratio.
+* Added missing `await` in helper library function for the asset module, ensuring JS assets build reliably.
 
 ## 4.22.0 (2025-10-01)
 
