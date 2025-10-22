@@ -76,8 +76,10 @@ module.exports = {
       self.__meta.name === '@apostrophecms/layout-widget' &&
       self.options.injectStyles !== false
     ) {
-      self.stylesContent = await self.loadAndProcessStyles();
+      self.publicStylesContent = await self.loadAndProcessPublicStyles();
+      self.aposStylesContent = await self.loadAndProcessAposStyles();
       self.appendNodes('head', 'publicCssNodes');
+      self.appendNodes('head', 'aposCssNodes');
     }
   },
   handlers(self) {
@@ -123,12 +125,35 @@ module.exports = {
             attrs: { type: 'text/css' },
             body: [
               {
-                raw: self.stylesContent[req.scene] || self.stylesContent.public
+                raw: self.publicStylesContent[req.scene] ||
+                  self.publicStylesContent.public
               }
             ]
           },
           {
             comment: ' End Layout styles '
+          }
+        ];
+      },
+      aposCssNodes(req) {
+        if (req.scene !== 'apos') {
+          return [];
+        }
+        return [
+          {
+            comment: ' Admin Layout styles '
+          },
+          {
+            name: 'style',
+            attrs: { type: 'text/css' },
+            body: [
+              {
+                raw: self.aposStylesContent.apos
+              }
+            ]
+          },
+          {
+            comment: ' End Admin Layout styles '
           }
         ];
       },
@@ -202,8 +227,18 @@ module.exports = {
           column: hasTypes[self.columnWidgetName]
         };
       },
-      async loadAndProcessStyles() {
-        const cssFilePath = path.join(__dirname, 'ui', 'src', 'layout.css');
+      async loadAndProcessPublicStyles() {
+        return self.loadAndProcessStylesFromScene({ build: 'src' });
+      },
+      async loadAndProcessAposStyles() {
+        return self.loadAndProcessStylesFromScene({
+          build: 'apos',
+          scene: 'apos'
+        });
+      },
+      async loadAndProcessStylesFromScene({ build, scene }) {
+        const pathSegments = [ 'ui', build, 'layout.css' ];
+        const cssFilePath = path.join(__dirname, ...pathSegments);
         let cssContent = fs.readFileSync(cssFilePath, 'utf8');
         const mobileBreakpoint = self.options.mobile?.breakpoint || 600;
         const mobileBreakpointPlus = mobileBreakpoint + 1;
@@ -215,9 +250,9 @@ module.exports = {
           .replace(/\{\$tablet\}/g, tabletBreakpoint)
           .replace(/\{\$tablet-plus\}/g, tabletBreakpointPlus);
 
-        return self.processCss(cssContent);
+        return self.processCss(cssContent, scene);
       },
-      async processCss(cssContent) {
+      async processCss(cssContent, scene = null) {
         try {
           const postcss = require('postcss');
           const cssnano = require('cssnano');
@@ -234,10 +269,14 @@ module.exports = {
           }
 
           if (options.enable !== true) {
-            return {
-              apos: resultPublic.css,
-              public: resultPublic.css
-            };
+            return scene
+              ? {
+                [scene]: resultPublic.css
+              }
+              : {
+                apos: resultPublic.css,
+                public: resultPublic.css
+              };
           }
 
           const mobilePreview = require('postcss-viewport-to-container-toggle');
@@ -260,10 +299,14 @@ module.exports = {
             )
           ]).process(cssContent, { from: undefined });
 
-          return {
-            apos: resultApos.css,
-            public: resultPublic.css
-          };
+          return scene
+            ? {
+              [scene]: scene === 'apos' ? resultApos.css : resultPublic.css
+            }
+            : {
+              apos: resultApos.css,
+              public: resultPublic.css
+            };
         } catch (error) {
           const errorTrace = error.stack
             ? error.stack
