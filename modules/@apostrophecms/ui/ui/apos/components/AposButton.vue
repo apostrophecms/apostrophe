@@ -36,8 +36,8 @@
           <AposIndicator
             class="apos-button__icon"
             icon="format-color-fill-icon"
-            icon-size="22"
-            icon-color="var(--a-base-6)"
+            :icon-size="type === 'color-micro' ? 18 : 22"
+            :icon-color="type === 'color-micro' ? 'var(--a-base-2)' : 'var(--a-base-6)'"
           />
         </div>
         <div class="apos-button__color-preview__sample">
@@ -63,7 +63,7 @@
         <slot name="label">
           <span
             class="apos-button__label"
-            :class="{ 'apos-sr-only' : (iconOnly || type === 'color') }"
+            :class="{ 'apos-sr-only' : (iconOnly || type?.includes('color')) }"
           >
             {{ $t(label, interpolate) }}
           </span>
@@ -189,7 +189,7 @@ export default {
       return this.disableFocus ? '-1' : '0';
     },
     colorStyle() {
-      if (this.type === 'color') {
+      if (this.type?.includes('color')) {
         // if color exists, use it
         if (this.color) {
 
@@ -350,14 +350,18 @@ export default {
     background-color: transparent;
   }
 
-  .apos-button.apos-button--color {
+  .apos-button.apos-button--color,
+  .apos-button.apos-button--color-micro {
     width: 40px;
     height: 40px;
     padding: 0;
     border: 1px solid var(--a-base-8);
-    // border-radius: 50%;
     border-radius: 3px;
-    // box-shadow: var(--a-box-shadow);
+  }
+
+  .apos-button.apos-button--color-micro {
+    width: 20px;
+    height: 20px;
   }
 
   .apos-button__color-preview {

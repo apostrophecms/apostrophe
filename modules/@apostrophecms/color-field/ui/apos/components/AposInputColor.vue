@@ -9,19 +9,24 @@
     <template #body>
       <div class="apos-input-color">
         <AposColorInfo
-          class="apos-input-color__info apos-input-color__info--inline"
+          class="apos-input-color__info"
           :value="next"
-          :is-micro="isMicro"
           @clear="clear"
         />
-        <div class="apos-input-color__ui">
+        <div
+          class="apos-input-color__ui"
+          :class="{'apos-input-color__ui--micro': isMicro }"
+        >
           <AposContextMenu
             :button="buttonOptions"
             menu-placement="bottom-start"
             :disabled="field.readOnly"
             :tooltip="tooltip"
             class="apos-input-color__sample-picker"
-            :class="{'apos-input-color__sample-picker--selected': customSelected}"
+            :class="[
+              { 'apos-input-color__sample-picker--selected': customSelected },
+              { 'apos-input-color__sample-picker--no-value': !next }
+            ]"
             @open="open"
             @close="close"
           >
@@ -31,14 +36,13 @@
               @update:model-value="update"
             />
           </AposContextMenu>
-          <!-- TODO guard against inline? -->
           <button
-            v-for="preset in presets"
+            v-for="preset in finalOptions.presetColors"
             :key="preset"
-            v-apos-tooltip="preset"
+            v-apos-tooltip="$t('apostrophe:colorFieldColorValue', { color: preset })"
             class="apos-input-color__preset-button"
             role="button"
-            :aria-label="$t('apostrophe:colorFieldSelectSwatch', { color: preset })"
+            :aria-label="$t('apostrophe:colorFieldColorValue', { color: preset })"
             :class="{'apos-input-color__preset-button--selected': next === preset}"
             :style="`background-color: ${getColorStyle(preset)}`"
             @click="update(preset)"
@@ -52,7 +56,6 @@
 <script>
 import AposInputColorLogic from '../logic/AposInputColor';
 import AposColorInfo from '../lib/AposColorInfo.vue';
-const defaultOptions = { ...apos.modules['@apostrophecms/color-field'].defaultOptions };
 
 export default {
   name: 'AposInputColor',
@@ -61,16 +64,12 @@ export default {
   },
   mixins: [ AposInputColorLogic ],
   computed: {
-    presets() {
-      if (this.options.presetColors) {
-        return this.options.presetColors;
-      } else {
-        return defaultOptions.presetColors;
-      }
-    },
     customSelected() {
-      return this.next && !this.presets.includes(this.next);
+      return this.next && !this.finalOptions.presetColors.includes(this.next);
     }
+  },
+  mounted() {
+    // console.log(finalOptions);
   },
   methods: {
     getColorStyle(str) {
@@ -87,16 +86,6 @@ export default {
     display: flex;
     flex-direction: column;
     gap: $spacing-base;
-    // align-items: center;
-  }
-
-  .apos-input-color__info {
-    margin-left: 15px;
-
-    &--inline {
-      margin-right: 5px;
-      margin-left: 0;
-    }
   }
 
   .apos-input-color__preset-buttons {
@@ -110,27 +99,61 @@ export default {
     height: 40px;
     border-radius: 3px;
     border: 1px solid var(--a-base-8);
+  }
 
+  .apos-input-color__preset-button:active,
+  .apos-input-color__preset-button:focus,
+  .apos-input-color__sample-picker--selected:deep(.apos-button),
+  .apos-input-color__preset-button--selected {
+    outline: 2px solid var(--a-primary-transparent-50);
+    outline-offset: 2px;
+  }
+
+  .apos-input-color__ui--micro .apos-input-color__preset-button,
+  .apos-input-color__ui--micro .apos-input-color__sample-picker--selected {
+    &:deep(.apos-button),
+    &.apos-input-color__preset-button--selected,
     &:active, &:focus {
-      outline: 2px solid var(--a-primary-transparent-50);
-      outline-offset: 2px;
-
-      &--selected {
-        box-shadow: var(--a-box-shadow);
-      }
+      outline-width: 2px;
+      outline-offset: 0;
     }
   }
 
-  .apos-input-color__sample-picker--selected:deep(.apos-button--color),
-  .apos-input-color__preset-button--selected {
-    outline: 2px solid var(--a-primary);
-    outline-offset: 2px;
+  .apos-input-color__sample-picker--no-value:deep(.apos-button__color-preview__sample) {
+    display: none;
+  }
+
+  .apos-input-color__sample-picker--no-value:deep(.apos-button__color-preview__edit) {
+    height: 100%;
   }
 
   .apos-input-color__ui {
     display: flex;
     flex-wrap: wrap;
     gap: $spacing-base;
+  }
+
+  .apos-input-color__preset-wrapper {
+    display: contents;
+  }
+
+  .apos-input-color__ui--micro .apos-input-color__preset-wrapper {
+    display: flex;
+  }
+
+  .apos-field--micro {
+    .apos-input-color__preset-button {
+      width: 20px;
+      height: 20px;
+    }
+
+    .apos-input-color {
+      gap: $spacing-half;
+    }
+
+    .apos-input-color__ui {
+      gap: 3px;
+    }
   }
 
 </style>
