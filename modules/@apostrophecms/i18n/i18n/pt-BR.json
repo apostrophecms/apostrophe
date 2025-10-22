@@ -85,6 +85,8 @@
   "clearSelection": "Limpar Seleção",
   "close": "Fechar",
   "closeGlobal": "Fechar Configurações Globais do Site",
+  "colorFieldClickToSelect": "Clique para selecionar uma cor",
+  "colorFieldColorValue": "Cor {{ color }}.",
   "collapseAll": "Colapsar todos",
   "commandMenuArchiveSelected": "Arquivo selecionado",
   "commandMenuContent": "Conteúdo",
