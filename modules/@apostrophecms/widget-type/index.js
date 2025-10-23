@@ -223,7 +223,7 @@ module.exports = {
           icon: 'arrow-up-icon',
           tooltip: 'apostrophe:nudgeUp',
           nativeAction: 'up',
-          disabledIfData: {
+          disabledIfProps: {
             first: true
           }
         },
@@ -232,7 +232,7 @@ module.exports = {
           icon: 'arrow-down-icon',
           tooltip: 'apostrophe:nudgeDown',
           nativeAction: 'down',
-          disabledIfData: {
+          disabledIfProps: {
             last: true
           }
         },
@@ -270,7 +270,7 @@ module.exports = {
           label: 'apostrophe:duplicate',
           icon: 'content-duplicate-icon',
           nativeAction: 'clone',
-          disabledIfData: {
+          disabledIfProps: {
             maxReached: true
           },
           secondaryLevel: true

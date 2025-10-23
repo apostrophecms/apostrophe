@@ -99,8 +99,8 @@ export default {
       // Custom widget operations displayed in the primary controls
       return this.widgetPrimaryOperations.map(operation => {
         const disabled = this.disabled ||
-            (operation.disabledIfData &&
-              checkIfConditions(this.$props, operation.disabledIfData));
+            (operation.disabledIfProps &&
+              checkIfConditions(this.$props, operation.disabledIfProps));
 
         return {
           ...this.widgetDefaultControl,
@@ -116,8 +116,8 @@ export default {
     widgetSecondaryControls() {
       const renderOperation = (operation) => {
         const disabled = this.disabled ||
-            (operation.disabledIfData &&
-            checkIfConditions(this.$props, operation.disabledIfData));
+            (operation.disabledIfProps &&
+            checkIfConditions(this.$props, operation.disabledIfProps));
 
         return {
           ...operation,

@@ -49,6 +49,7 @@
 
 <script>
 import { useWidgetStore } from 'Modules/@apostrophecms/ui/stores/widget';
+import checkIfConditions from 'apostrophe/lib/universal/check-if-conditions.mjs';
 import { mapActions } from 'pinia';
 
 export default {
@@ -57,6 +58,10 @@ export default {
     i: {
       type: Number,
       required: true
+    },
+    tinyWidgetContainer: {
+      type: Boolean,
+      default: false
     },
     options: {
       type: Object,
@@ -159,21 +164,36 @@ export default {
       return 'AposButton';
     },
     getOperationProps(operation) {
+      const disabled = this.disabled ||
+            (operation.disabledIfProps &&
+              checkIfConditions(this.$props, operation.disabledIfProps));
+
       if (operation.type === 'info') {
         return {
           fillColor: 'var(--a-primary)',
           icon: operation.icon,
-          tooltip: operation.tooltip
+          tooltip: operation.tooltip,
+          disabled
         };
       }
 
       if (operation.type === 'switch') {
+        const choices = operation.choices.map((choice) => {
+          const disabled = choice.disabledIfProps &&
+              checkIfConditions(this.$props, choice.disabledIfProps);
+
+          return {
+            ...choice,
+            disabled
+          };
+        });
         return {
           widgetId: this.widget._id,
           name: operation.name,
-          choices: operation.choices,
+          choices,
           value: operation.def,
-          class: 'apos-area-widget--switch'
+          class: 'apos-area-widget--switch',
+          disabled
         };
       }
 
@@ -184,7 +204,8 @@ export default {
             icon: operation.icon
           },
           tooltip: operation.tooltip || null,
-          teleportContent: this.teleportModals
+          teleportContent: this.teleportModals,
+          disabled
         };
       }
 

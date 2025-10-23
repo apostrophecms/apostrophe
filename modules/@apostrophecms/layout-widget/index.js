@@ -36,10 +36,10 @@ module.exports = {
             {
               label: 'apostrophe:editColumns',
               value: 'layout',
-              disabledIfData: {
-                isMobile: true
+              disabledIfProps: {
+                tinyWidgetContainer: true
               },
-              disableTooltip: 'test'
+              disabledTooltip: 'Cannot edit layout on little screen'
             }
           ],
           action: 'apos-switch-layout-mode',

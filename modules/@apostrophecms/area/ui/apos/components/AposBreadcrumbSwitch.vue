@@ -4,6 +4,7 @@
       <label
         v-for="choice in enhancedChoices"
         :key="choice.value"
+        v-apos-tooltip="choice.tooltip"
         :for="choice.id"
         :data-apos-test="`bcswitch:${choice.value}`"
       >
@@ -13,6 +14,7 @@
           :value="choice.value"
           type="radio"
           :name="uniqueName"
+          :disabled="choice.disabled"
           @input="update"
         >
         <span>{{ $t(choice.label) }}</span>
@@ -66,14 +68,26 @@ export default {
     };
   },
   computed: {
+    choiceTooltip() {
+      const current = this.choices.find((choice) => choice.value === this.next);
+      if (current.disabled && current.disabledTooltip) {
+        return current.disabledTooltip;
+      }
+
+      return null;
+    },
     uniqueName() {
       return `${this.name}-${this.widgetId}`;
     },
     enhancedChoices() {
-      return this.choices.map(choice => ({
-        ...choice,
-        id: `${this.uniqueName}-${choice.value}`
-      }));
+      return this.choices.map(choice => {
+        const tooltip = choice.disabled && choice.disabledTooltip;
+        return {
+          ...choice,
+          id: `${this.uniqueName}-${choice.value}`,
+          tooltip
+        };
+      });
     }
   },
   unmounted() {

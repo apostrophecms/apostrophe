@@ -254,7 +254,7 @@ export default {
     // While switching to Edit mode, areaEditors are mounted twice in a quick
     // succession. This leads to duplicate event listeners on the bus.
     // See the little trick below to avoid that.
-    switchLayoutMode({ widgetId, data }) {
+    cleanRemovedWidget() {
       // isConnected is supported in all modern browsers (2020+).
       // It's the easiest way to check if the component is still in the DOM.
       // Here we eliminate leftover bus listeners from unmounted components, that happens
@@ -263,15 +263,18 @@ export default {
       if (this.$el?.isConnected === false) {
         apos.bus.$off('apos-switch-layout-mode', this.switchLayoutMode);
         this.unbindEventListeners();
-        return;
-      }
 
+      }
+    },
+    switchLayoutMode({ widgetId, data }) {
+      this.cleanRemovedWidget();
       if (!widgetId || widgetId !== this.parentOptions?.widgetId) {
         return;
       }
       this.layoutMode = data.value;
     },
     onRemoveLayoutColumn({ widgetId }) {
+      this.cleanRemovedWidget();
       const index = this.next.findIndex(w => w._id === widgetId);
       if (
         index < 0 ||

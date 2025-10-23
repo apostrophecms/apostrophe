@@ -80,6 +80,7 @@
         <AposBreadcrumbOperations
           v-if="widgetBreadcrumbOperations.length > 0"
           :i="i"
+          :tiny-widget-container="tinyWidgetContainer"
           :widget="widget"
           :options="options"
           :disabled="disabled"
@@ -342,7 +343,8 @@ export default {
         bottom: `${controlsMargin * 2}px`,
         top: 'auto',
         right: `${controlsMargin}px`
-      }
+      },
+      tinyWidgetContainer: false
     };
   },
   computed: {
@@ -493,6 +495,7 @@ export default {
       this.setFocusedWidget(this.widget._id, this.areaId);
     }
 
+    this.setTinyWidgetContainer();
     // Do not set up sticky controls if they are disabled
     if (this.controlsDisabled) {
       return;
@@ -524,6 +527,15 @@ export default {
     // e.g ('edit', { index }), ('remove', { index }), etc.
     onOperation({ name, payload }) {
       this.$emit(name, payload);
+    },
+    setTinyWidgetContainer() {
+      const wrapperEl = this.$refs.wrapper;
+      if (!wrapperEl) {
+        return;
+      }
+      // abstract value for now
+      this.tinyWidgetContainer = wrapperEl.clientWidth < 900;
+
     },
     updateStickyStyles(newStyles) {
       // Only update if styles changed
