@@ -150,12 +150,12 @@
   &.apos-field--radio {
     .apos-radio-wrapper--buttons {
       width: 100%;
+    }
 
-      .apos-choice-label {
-        flex: 1;
-        height: 27px;
-        place-content: center;
-      }
+    .apos-radio-wrapper--buttons .apos-choice-label {
+      flex: 1;
+      height: 27px;
+      place-content: center;
     }
   }
 

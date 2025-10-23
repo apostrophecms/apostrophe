@@ -11,11 +11,11 @@
         class="apos-radio-wrapper"
         :class="{'apos-radio-wrapper--buttons': field.buttons }"
       >
-        <component
-          :is="field.buttons ? 'button' : 'label'"
+        <label
           v-for="{label, value, tooltip, icon} in choices"
           :key="value"
           v-apos-tooltip="(field.buttons && !!tooltip) ? $t(tooltip) : null"
+          :aria-label="label"
           class="apos-choice-label"
           :for="getChoiceId(uid, value)"
           :class="[
@@ -23,7 +23,6 @@
             { 'apos-choice-label--checked': next === value }
           ]"
           tabindex="0"
-          @click="next = value"
           @keydown.space="next = value"
         >
           <input
@@ -57,7 +56,10 @@
               :icon="icon"
             />
           </span>
-          <span class="apos-choice-label-text">
+          <span
+            v-if="label"
+            class="apos-choice-label-text"
+          >
             {{ $t(label) }}
             <AposIndicator
               v-if="tooltip && !field.buttons"
@@ -67,7 +69,7 @@
               icon="information-icon"
             />
           </span>
-        </component>
+        </label>
       </div>
     </template>
   </AposInputWrapper>
@@ -103,14 +105,6 @@ export default {
     gap: $spacing-base;
   }
 
-  button.apos-choice-label {
-    @include apos-button-reset();
-    &:focus,
-    &:active {
-      outline-offset: -1px;
-    }
-  }
-
   .apos-choice-label {
     &:focus,
     &:active {
@@ -141,8 +135,8 @@ export default {
         content: '';
         position: absolute;
         left: -0.5px;
-        height: 50%;
         width: 1px;
+        height: 50%;
         background-color: var(--a-base-7);
       }
     }
@@ -155,15 +149,21 @@ export default {
     .apos-choice-label {
       position: relative;
       height: 34px;
+      padding: 0 $spacing-base;
       border-top: 1px solid var(--a-base-8);
       border-bottom: 1px solid var(--a-base-8);
       background-color: var(--a-base-9);
-      padding: 0 $spacing-base;
+
+      &:focus,
+      &:active {
+        outline-offset: -1px;
+      }
 
       &:hover,
       &--checked {
         background-color: var(--a-base-8);
 
+        // stylelint-disable max-nesting-depth
         .apos-choice-label-icon {
           color: var(--a-black);
         }
