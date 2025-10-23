@@ -440,7 +440,14 @@ async function apostrophe(options, telemetry, rootSpan) {
       const { default: apostropheModule } = await importFresh(npmPath);
       const bundle = apostropheModule.bundle;
       if (bundle) {
-        self.options.bundles =  [...new Set([...(self.options.bundles || []), apostropheModuleName])];
+        self.options.bundles = [
+          ...new Set(
+            [
+              ...(self.options.bundles || []),
+              apostropheModuleName
+            ]
+          )
+        ];
         const bundleModules = bundle.modules;
         for (const bundleModuleName of bundleModules) {
           if (!apostropheModules.includes(bundleModuleName)) {
