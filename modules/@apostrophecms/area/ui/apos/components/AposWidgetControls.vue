@@ -139,10 +139,11 @@ export default {
       // Custom widget operations displayed in the secondary controls
       return controls.concat(this.widgetCustomSecondaryOperations.map(renderOperation));
     },
+    /* TODO: fix */
     widgetRemoveControl() {
       const { widgetOperations = [] } = this.moduleOptions;
       const removeWidgetOperation = widgetOperations
-        .find((operation) => operation.action === 'remove');
+        .find((operation) => operation.name === 'remove');
       if (!removeWidgetOperation) {
         return null;
       }
