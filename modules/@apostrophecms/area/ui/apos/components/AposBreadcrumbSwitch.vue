@@ -64,14 +64,6 @@ export default {
     };
   },
   computed: {
-    choiceTooltip() {
-      const current = this.choices.find((choice) => choice.value === this.next);
-      if (current.disabled && current.disabledTooltip) {
-        return current.disabledTooltip;
-      }
-
-      return null;
-    },
     uniqueName() {
       return `${this.name}-${this.widgetId}`;
     },
