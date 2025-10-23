@@ -147,6 +147,18 @@
     font-size: var(--a-type-smaller);
   }
 
+  &.apos-field--radio {
+    .apos-radio-wrapper--buttons {
+      width: 100%;
+
+      .apos-choice-label {
+        flex: 1;
+        height: 27px;
+        place-content: center;
+      }
+    }
+  }
+
   &.apos-field--relationship {
     .apos-input-relationship__button {
       top: 1px;
@@ -311,12 +323,21 @@
   display: flex;
 }
 
+.apos-choice-label-icon {
+  margin-left: $spacing-half;
+  line-height: 0;
+}
+
 .apos-choice-label-text {
   @include type-base;
 
   & {
     margin-left: $spacing-base;
   }
+}
+
+.apos-choice-label-icon + .apos-choice-label-text {
+  margin-left: $spacing-half;
 }
 
 .apos-input-indicator {
