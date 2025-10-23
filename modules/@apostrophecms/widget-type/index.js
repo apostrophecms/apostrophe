@@ -222,29 +222,26 @@ module.exports = {
           label: 'apostrophe:nudgeUp',
           icon: 'arrow-up-icon',
           tooltip: 'apostrophe:nudgeUp',
-          action: 'up',
+          nativeAction: 'up',
           disabledIfData: {
             first: true
-          },
-          native: true
+          }
         },
         nudgeDown: {
           label: 'apostrophe:nudgeDown',
           icon: 'arrow-down-icon',
           tooltip: 'apostrophe:nudgeDown',
-          action: 'down',
+          nativeAction: 'down',
           disabledIfData: {
             last: true
-          },
-          native: true
+          }
         },
         ...!options.contextual && {
           edit: {
             label: 'apostrophe:edit',
             icon: 'pencil-icon',
             tootip: 'apostrophe:editWidget',
-            action: 'edit',
-            native: true
+            nativeAction: 'edit'
           }
         },
         remove: {
@@ -252,32 +249,32 @@ module.exports = {
           icon: 'trash-can-outline-icon',
           disabled: this.disabled,
           tooltip: 'apostrophe:delete',
-          action: 'remove',
-          native: true
+          nativeAction: 'remove'
+
         },
         cut: {
           label: 'apostrophe:cut',
           icon: 'content-cut-icon',
-          action: 'cut',
-          secondaryLevel: true,
-          native: true
+          nativeAction: 'cut',
+          secondaryLevel: true
+
         },
         copy: {
           label: 'apostrophe:copy',
           icon: 'content-copy-icon',
-          action: 'copy',
-          secondaryLevel: true,
-          native: true
+          nativeAction: 'copy',
+          secondaryLevel: true
+
         },
         clone: {
           label: 'apostrophe:duplicate',
           icon: 'content-duplicate-icon',
-          action: 'clone',
+          nativeAction: 'clone',
           disabledIfData: {
             maxReached: true
           },
-          secondaryLevel: true,
-          native: true
+          secondaryLevel: true
+
         }
       }
     };
@@ -593,15 +590,21 @@ module.exports = {
           );
         }
 
-        if (!operation.label || (!operation.native && !operation.modal)) {
+        if (!operation.nativeAction && !operation.action && !operation.modal) {
           throw self.apos.error('invalid',
-            `widgetOperation "${name}" requires label and modal properties.`
+            `widgetOperation "${name}" needs either modal, action or nativeAction to be set.`
           );
         }
 
         if (operation.secondaryLevel !== true && !operation.icon) {
           throw self.apos.error('invalid',
             `widgetOperation "${name}" requires the icon property at primary level.`
+          );
+        }
+
+        if (operation.secondaryLevel && !operation.label) {
+          throw self.apos.error('invalid',
+            `widgetOperation "${name}" requires the label property at secondary level.`
           );
         }
       },
