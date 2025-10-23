@@ -38,6 +38,7 @@ module.exports = {
               value: 'layout'
             }
           ],
+          action: 'apos-switch-layout-mode',
           def: 'content'
         },
         layoutHelp: {
