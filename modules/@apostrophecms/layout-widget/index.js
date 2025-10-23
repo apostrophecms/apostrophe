@@ -35,7 +35,11 @@ module.exports = {
             },
             {
               label: 'apostrophe:editColumns',
-              value: 'layout'
+              value: 'layout',
+              disabledIfData: {
+                isMobile: true
+              },
+              disableTooltip: 'test'
             }
           ],
           action: 'apos-switch-layout-mode',
