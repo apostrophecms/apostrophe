@@ -9,7 +9,7 @@
 * Layout widget for dynamic grid layouts.
 * `widgetOperations` support for `placement: 'breadcrumb'` to add operations to the breadcrumb menu of widgets. Extend the widget operations configuration to support various features when in the breadcrumb menu.
 * Area template (Nunjucks) support for `aposStyle`, `aposClassName`, `aposParentOptions` and `aposAttrs` contextual named variables (`with {}` syntax).
-* New login option `caseInsensitive` to force login usernames and emails to be case insensitive. New task `login-case-insensitive` udpating all login names / email to lowercase, used by a new migration when switching ton `caseInsensitive`.
+* New login option `caseInsensitive` to force login usernames and emails to be case insensitive. New task `login-case-insensitive` updating all login names / email to lowercase, used by a new migration when switching to `caseInsensitive`.
 
 ### Changes
 
