@@ -53,16 +53,15 @@ export default {
       default: null
     }
   },
-  emits: [
-    'update'
-  ],
+  emits: [ 'update' ],
   data() {
     const name = `${this.name}:switch`;
     const widgetStore = useWidgetStore();
+    const next = this.value || this.choices[0].value;
     return {
-      next: this.value || null,
+      next,
       storeRemove: widgetStore.remove,
-      store: widgetStore.getOrSet(this.widgetId, name, this.value || null),
+      store: widgetStore.getOrSet(this.widgetId, name, next),
       namespace: name
     };
   },
