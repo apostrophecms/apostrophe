@@ -218,14 +218,16 @@ export default {
     }
   },
   mounted() {
-    apos.bus.$on('widget-breadcrumb-operation', this.executeWidgetOperation);
+    apos.bus.$on('apos-switch-layout-mode', this.switchLayoutMode);
+    apos.bus.$on('apos-layout-col-delete', this.onRemoveLayoutColumn);
     if (!this.hasLayoutColumnWidgets) {
       this.onCreateProvision();
     }
     this.updateWidget(this.parentOptions?.widgetId, 'layout:switch', this.layoutMode);
   },
   beforeUnmount() {
-    apos.bus.$off('widget-breadcrumb-operation', this.executeWidgetOperation);
+    apos.bus.$off('apos-switch-layout-mode', this.switchLayoutMode);
+    apos.bus.$off('apos-layout-col-delete', this.onRemoveLayoutColumn);
   },
   methods: {
     ...mapActions(useWidgetStore, [
@@ -252,43 +254,32 @@ export default {
     // While switching to Edit mode, areaEditors are mounted twice in a quick
     // succession. This leads to duplicate event listeners on the bus.
     // See the little trick below to avoid that.
-    executeWidgetOperation(update) {
+    switchLayoutMode({ widgetId, data }) {
       // isConnected is supported in all modern browsers (2020+).
       // It's the easiest way to check if the component is still in the DOM.
       // Here we eliminate leftover bus listeners from unmounted components, that happens
       // sometimes (mostly in development mode) when entering Edit mode with existing
       // area editors on the page.
       if (this.$el?.isConnected === false) {
-        apos.bus.$off('widget-breadcrumb-operation', this.executeWidgetOperation);
+        apos.bus.$off('apos-switch-layout-mode', this.switchLayoutMode);
         this.unbindEventListeners();
         return;
       }
-      switch (update.name) {
-        case 'layout':
-          this.onToggleLayoutMode(update);
-          break;
-        case 'layoutColDelete':
-          this.onRemoveLayoutColumn(update);
-          break;
-        default:
-          break;
-      }
-    },
-    onToggleLayoutMode(update) {
-      if (!update._id || update._id !== this.parentOptions?.widgetId) {
+
+      if (!widgetId || widgetId !== this.parentOptions?.widgetId) {
         return;
       }
-      this.layoutMode = update.value;
+      this.layoutMode = data.value;
     },
-    onRemoveLayoutColumn({ _id }) {
-      const widgetIndex = this.next.findIndex(w => w._id === _id);
+    onRemoveLayoutColumn({ widgetId }) {
+      const index = this.next.findIndex(w => w._id === widgetId);
       if (
-        widgetIndex < 0 ||
-        this.next[widgetIndex].type !== this.layoutColumnWidgetName
+        index < 0 ||
+        this.next[index].type !== this.layoutColumnWidgetName
       ) {
         return;
       }
-      return this.remove(widgetIndex);
+      return this.remove({ index });
     },
     async onCreateProvision() {
       if (this.hasLayoutColumnWidgets) {
