@@ -49,10 +49,6 @@ export default {
     disabled: {
       type: Boolean,
       default: false
-    },
-    tooltip: {
-      type: String,
-      default: null
     }
   },
   emits: [ 'update' ],
