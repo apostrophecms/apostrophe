@@ -128,6 +128,7 @@
       >
         <AposWidgetControls
           v-if="!foreign"
+          :index="i"
           :first="i === 0"
           :last="i === next.length - 1"
           :options="{ contextual: isContextual }"
@@ -136,6 +137,7 @@
           :tabbable="isFocused"
           :model-value="widget"
           :widget-options="widgetOptions"
+          @update="$emit('update', $event)"
           @operation="onOperation"
         />
       </div>
@@ -518,11 +520,9 @@ export default {
   },
   methods: {
     ...mapActions(useWidgetStore, [ 'setFocusedWidget', 'setHoveredWidget' ]),
-    // Emits same actions as the Standard operations,
-    // e.g ('edit', i), ('remove', i), etc.
+    // Emits same actions as the native operations,
+    // e.g ('edit', { index }), ('remove', { index }), etc.
     onOperation({ name, payload }) {
-      console.log('name', name);
-      console.log('payload', payload);
       this.$emit(name, payload);
     },
     updateStickyStyles(newStyles) {

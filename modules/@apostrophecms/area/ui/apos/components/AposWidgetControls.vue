@@ -46,6 +46,10 @@ export default {
       type: Object,
       required: true
     },
+    index: {
+      type: Number,
+      required: true
+    },
     first: {
       type: Boolean,
       required: true
@@ -77,7 +81,7 @@ export default {
       required: true
     }
   },
-  emits: [ 'operation' ],
+  emits: [ 'update', 'operation' ],
   computed: {
     widgetDefaultControl() {
       return {
@@ -152,12 +156,6 @@ export default {
         }
       };
     },
-    widgetSkipControlsMap() {
-      return new Map(
-        (this.moduleOptions.skipOperations || [])
-          .map(operation => [ operation, true ])
-      );
-    },
     widgetPrimaryOperations() {
       return this.getOperations({ secondaryLevel: false });
     },
@@ -206,7 +204,7 @@ export default {
       }));
     },
     async handleClick({
-      action, modal, ignoreResult = false
+      modal, action, nativeAction, ignoreResult = false
     }) {
       if (modal) {
         const result = await apos.modal.execute(modal, {
@@ -217,16 +215,20 @@ export default {
           widgetOptions: this.widgetOptions
         });
         if (result && !ignoreResult) {
-          this.$emit('operation', {
-            name: 'update',
-            payload: result
-          });
+          this.$emit('update', result);
         }
+        return;
+      }
+      if (nativeAction) {
+        this.$emit('operation', {
+          name: nativeAction,
+          payload: { index: this.index }
+        });
         return;
       }
 
       if (action) {
-        this.$emit('operation', { name: action });
+        apos.bus.$emit(action);
       }
     }
   }

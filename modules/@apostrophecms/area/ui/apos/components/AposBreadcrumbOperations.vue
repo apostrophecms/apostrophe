@@ -255,23 +255,23 @@ export default {
 
       this.emitOperation(operation);
     },
-    emitOperation(operation, payload = {}) {
-      if (operation.action || operation.rawEvents?.length) {
+    emitOperation(operation, data = {}) {
+      const payload = {
+        widgetId: this.widget._id,
+        index: this.i,
+        data
+      };
+
+      if (operation.nativeAction) {
         this.$emit('operation', {
-          name: operation.action,
-          payload: this.i,
-          data: {
-            ...payload,
-            ...operation,
-            _id: this.widget._id
-          }
+          name: operation.nativeAction,
+          payload
         });
-      } else {
-        apos.bus.$emit('widget-breadcrumb-operation', {
-          ...payload,
-          ...operation,
-          _id: this.widget._id
-        });
+        return;
+      }
+
+      if (operation.action) {
+        apos.bus.$emit(operation.action, payload);
       }
     },
 
