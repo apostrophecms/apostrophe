@@ -159,16 +159,6 @@ export default {
     };
   },
   computed: {
-    // managerMaxWidthStyles() {
-    //   return {
-    //     left: 'auto',
-    //     right: 'auto',
-    //     width: `${this.maxWidth}px`,
-    //     marginRight: 'auto',
-    //     marginLeft: 'auto',
-    //     boxSizing: 'border-box'
-    //   };
-    // },
     gridState() {
       return itemsToState({
         items: this.items,

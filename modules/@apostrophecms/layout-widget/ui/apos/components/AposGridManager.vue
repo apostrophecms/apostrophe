@@ -441,7 +441,6 @@ export default {
     }
   },
   async mounted() {
-    console.log('start layout mode');
     document.addEventListener('keydown', this.onGlobalKeyDown);
     document.addEventListener('mouseup', this.onMouseUp);
     document.addEventListener('touchend', this.onMouseUp);
