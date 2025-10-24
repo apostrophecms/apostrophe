@@ -18,9 +18,13 @@
 * Refactored complex logic regarding data updates in `AposSchema`.
 * Cleaned up `annotateAreaForExternalFront` logic and added context so developers understand the reason if it fails due to a widget type with no matching module in the project.
 * Color fields now display their preset color swatches in the field UI rather than just the color picker popup
+* When the user chooses to create a new document while selecting pieces and pages to populate a relationship, the "save draft and preview" and "publish and view" options are no longer offered. This ensures that the user is able to complete the selection process. The page or piece can still be edited in context later.
+* When selecting pieces or pages to populate a relationship, the "New Piece" / "New Page" buttons are easier to find. They are no longer hidden away in a context menu.
 
 ### Fixes
 
+* When creating a link or adding an image in the rich text editor, it is now possible to create or edit a page or piece as part of that process without losing the ability to finish creating the link or adding the image.
+* Context menus and other controls lower in the modal stack no longer close themselves prematurely based on events in the top modal, e.g. escape key, outside clicks, clicks on context menus in the top modal, clicks on notifications, etc. These fixes also facilitate the flow of creating a new document as part of selecting a document.
 * The `render-areas` query parameter now works correctly with areas nested in array items.
 * Fix min size calculation for image widgets configured with an aspect ratio.
 * Added missing `await` in helper library function for the asset module, ensuring JS assets build reliably.
@@ -152,11 +156,13 @@ Switch body attributes to this new div to keep supporting body styles in breakpo
 
 * Set the `Cache-Control` header to `no-store` for error pages in order to prevent the risk of serving stale error pages to users.
 * Updates rich-text default configuration.
+* For added convenience, the "New" button is no longer hidden away in the kebab menu when selecting a page or piece.
 
 ### Fixes
 
 * The Download links in the media library now immediately download the file as expected, rather than navigating to the image in the current tab. `AposButton` now supports the `:download="true"` prop as expected.
 * Using an API key with the editor, contributor or guest role now have a `req` object with the corresponding rights. The old behavior gave non-admin API keys less access than expected.
+* The `button: true` option for utility operations now works as expected.
 
 ## 4.17.1 (2025-05-16)
 
