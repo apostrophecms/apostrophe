@@ -14,6 +14,8 @@ const glob = require('./lib/glob.js');
 const moogRequire = require('./lib/moog-require');
 let defaults = require('./defaults.js');
 
+const importFresh = moduleName => import(`${moduleName}?${Date.now()}`);
+
 // ## Top-level options
 //
 // `cluster`
@@ -435,16 +437,24 @@ async function apostrophe(options, telemetry, rootSpan) {
         continue;
       }
 
-      const apostropheModule = await self.root.import(npmPath);
-      if (apostropheModule.bundle) {
-        self.options.bundles = (self.options.bundles || []).concat(apostropheModuleName);
-        const bundleModules = apostropheModule.bundle.modules;
+      const { default: apostropheModule } = await importFresh(npmPath);
+      const bundle = apostropheModule.bundle;
+      if (bundle) {
+        self.options.bundles = [
+          ...new Set(
+            [
+              ...(self.options.bundles || []),
+              apostropheModuleName
+            ]
+          )
+        ];
+        const bundleModules = bundle.modules;
         for (const bundleModuleName of bundleModules) {
           if (!apostropheModules.includes(bundleModuleName)) {
-            const bundledModule = await self.root.import(
+            const { default: bundledModule } = await importFresh(
               path.resolve(
                 path.dirname(npmPath),
-                apostropheModule.bundle.directory,
+                bundle.directory,
                 bundleModuleName,
                 'index.js'
               )
