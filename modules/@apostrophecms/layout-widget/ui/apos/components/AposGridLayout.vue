@@ -2,7 +2,7 @@
   <div
     ref="root"
     class="apos-layout"
-    :style="rootCssVars"
+    :style="rootStyles"
   >
     <TransitionGroup
       ref="grid"
@@ -134,6 +134,7 @@ export default {
     'remove-item'
   ],
   data() {
+    const maxWidthMargin = 20;
     return {
       isResizing: false,
       isMoving: false,
@@ -141,6 +142,19 @@ export default {
       preview: {
         patches: null,
         key: null
+      },
+      maxWidthMargin,
+      maxWidth:
+        Math.max(
+          document.documentElement.clientWidth || 0,
+          window.innerWidth || 0
+        ) - (maxWidthMargin * 2),
+      maxWidthStyles: {
+        left: 'auto',
+        right: 'auto',
+        marginRight: 'auto',
+        marginLeft: 'auto',
+        boxSizing: 'border-box'
       }
     };
   },
@@ -154,14 +168,24 @@ export default {
         deviceMode: this.deviceMode
       });
     },
-    rootCssVars() {
+    rootStyles() {
+      let styles = {};
       // Escape quotes and backslashes for CSS content property
       const text = this.$t('apostrophe:layoutColumnEmptyArea')
         .replace(/\\/g, '\\\\')
         .replace(/'/g, '\\\'');
-      return {
-        '--empty-area-text': `'${text}'`
-      };
+
+      styles['--empty-area-text'] = `'${text}'`;
+
+      if (this.isManageMode) {
+        styles = {
+          ...styles,
+          ...this.maxWidthStyles,
+          maxWidth: `${this.maxWidth}px`
+        };
+      }
+
+      return styles;
     },
     syntheticItems() {
       if (!this.isManageMode) {
@@ -221,7 +245,18 @@ export default {
       };
     }
   },
+  mounted() {
+    window.addEventListener('resize', this.updateMaxWidth);
+  },
+  unmounted() {
+    window.removeEventListener('resize', this.updateMaxWidth);
+  },
   methods: {
+    updateMaxWidth() {
+      const vw =
+        Math.max(document.documentElement.clientWidth || 0, window.innerWidth || 0);
+      this.maxWidth = vw - this.maxWidthMargin * 2;
+    },
     onResizeStart() {
       this.isResizing = true;
       this.$emit('resize-start');
