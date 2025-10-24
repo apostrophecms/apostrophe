@@ -85,6 +85,8 @@
   "clearSelection": "Vymazať Výber",
   "close": "Zavrieť",
   "closeGlobal": " Zatvorte globálne nastavenia webu",
+  "colorFieldClickToSelect": "Kliknite pre výber farby",
+  "colorFieldColorValue": "Farba {{ color }}.",
   "collapseAll": "Zbaliť všetko",
   "commandMenuArchiveSelected": "Vybratý archív",
   "commandMenuContent": "Obsah",

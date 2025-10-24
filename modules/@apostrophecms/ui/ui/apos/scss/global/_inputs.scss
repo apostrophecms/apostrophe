@@ -193,16 +193,25 @@
   }
 
   &.apos-field--color {
+    position: relative;
+
     .apos-button.apos-button--color {
-      width: 25px;
-      height: 25px;
+      width: 30px;
+      height: 30px;
       padding: 0;
     }
 
     .apos-input-color__info {
-      margin-left: 5px;
-      font-size: var(--a-type-small);
+      position: absolute;
+      right: 0;
+      display: flex;
+      place-content: center;
+      height: 17px;
+      margin-left: 0;
+      font-size: var(--a-type-base);
       white-space: nowrap;
+      transform: translateY(-25px);
+      line-height: 1.3;
     }
   }
 

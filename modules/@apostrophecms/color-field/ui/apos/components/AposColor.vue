@@ -134,6 +134,7 @@ import editableInput from '../lib/AposColorEditableInput.vue';
 import saturation from '../lib/AposColorSaturation.vue';
 import hue from '../lib/AposColorHue.vue';
 import alpha from '../lib/AposColorAlpha.vue';
+import { finalOptions } from '../logic/finalOptions.js';
 
 const defaultOptions = { ...apos.modules['@apostrophecms/color-field'].defaultOptions };
 
@@ -159,32 +160,7 @@ export default {
       return defaultOptions;
     },
     finalOptions() {
-      let final = { ...this.options };
-
-      // Handle BC `pickerOptions` sub object.
-      // Modern API wins out over BC conflicts
-      if (final.pickerOptions) {
-        final = {
-          ...final.pickerOptions,
-          ...final
-        };
-        delete final.pickerOptions;
-      }
-
-      // Normalize disabling presetColors
-      if (
-        Array.isArray(final.presetColors) &&
-        final.presetColors.length === 0
-      ) {
-        final.presetColors = false;
-      }
-
-      // If `true`, let defaults through
-      if (final.presetColors === true) {
-        delete final.presetColors;
-      }
-
-      return Object.assign({ ...this.defaultOptions }, final);
+      return finalOptions(this.defaultOptions, this.options);
     },
     presetColors() {
       return this.finalOptions.presetColors;

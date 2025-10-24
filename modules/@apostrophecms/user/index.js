@@ -194,12 +194,16 @@ module.exports = {
             doc.password = self.apos.util.generateId();
           }
         },
+        normalizeLoginNames(req, doc, options) {
+          self.normalizeUserLoginInfo(doc);
+        },
         async insertSafe(req, doc, options) {
           return self.insertOrUpdateSafe(req, doc, 'insert');
         }
       },
       beforeUpdate: {
         async updateSafe(req, doc, options) {
+          self.normalizeUserLoginInfo(doc);
           return self.insertOrUpdateSafe(req, doc, 'update');
         }
       },
@@ -230,6 +234,7 @@ module.exports = {
       // Reflect email and username changes in the safe after deduplicating in
       // the piece
       afterArchive: {
+
         async updateSafe(req, piece) {
           await self.insertOrUpdateSafe(req, piece, 'update');
         }
@@ -238,6 +243,7 @@ module.exports = {
         // Reflect email and username changes in the safe after deduplicating
         // in the piece
         async updateSafe(req, piece) {
+          self.normalizeUserLoginInfo(piece);
           await self.insertOrUpdateSafe(req, piece, 'update');
         }
       }
@@ -580,6 +586,14 @@ module.exports = {
         user.password = password;
         return self.update(req, user);
       },
+
+      normalizeUserLoginInfo(doc) {
+        doc.username = self.apos.login.normalizeLoginName(doc.username);
+        if (doc.email) {
+          doc.email = self.apos.login.normalizeLoginName(doc.email);
+        }
+      },
+
       ...require('./lib/legacy-migrations')(self)
     };
   },

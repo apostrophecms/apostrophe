@@ -89,6 +89,11 @@ export default {
     },
     manuallyPublished() {
       return this.moduleOptions.localized && !this.moduleOptions.autopublish;
+    },
+    showLocalePicker() {
+      return Object.keys(window.apos.i18n.locales).length > 1 &&
+        this.moduleOptions.localized !== false &&
+        !this.modalData.hasContextLocale;
     }
   },
   mounted() {
