@@ -271,79 +271,79 @@ export default {
         apos.bus.$emit('widget-focus-parent', this.focusedWidget);
       }
     },
-    async up(i) {
+    async up({ index }) {
       if (this.docId === window.apos.adminBar.contextId) {
         apos.bus.$emit('context-edited', {
           $move: {
             [`@${this.id}.items`]: {
-              $item: this.next[i]._id,
-              $before: this.next[i - 1]._id
+              $item: this.next[index]._id,
+              $before: this.next[index - 1]._id
             }
           }
         });
       }
       this.next = [
-        ...this.next.slice(0, i - 1),
-        this.next[i],
-        this.next[i - 1],
-        ...this.next.slice(i + 1)
+        ...this.next.slice(0, index - 1),
+        this.next[index],
+        this.next[index - 1],
+        ...this.next.slice(index + 1)
       ];
     },
-    async down(i) {
+    async down({ index }) {
       if (this.docId === window.apos.adminBar.contextId) {
         apos.bus.$emit('context-edited', {
           $move: {
             [`@${this.id}.items`]: {
-              $item: this.next[i]._id,
-              $after: this.next[i + 1]._id
+              $item: this.next[index]._id,
+              $after: this.next[index + 1]._id
             }
           }
         });
       }
       this.next = [
-        ...this.next.slice(0, i),
-        this.next[i + 1],
-        this.next[i],
-        ...this.next.slice(i + 2)
+        ...this.next.slice(0, index),
+        this.next[index + 1],
+        this.next[index],
+        ...this.next.slice(index + 2)
       ];
     },
-    async remove(i, { autosave = true } = {}) {
+    async remove({ index }, { autosave = true } = {}) {
       if (autosave && (this.docId === window.apos.adminBar.contextId)) {
         apos.bus.$emit('context-edited', {
           $pullAllById: {
-            [`@${this.id}.items`]: [ this.next[i]._id ]
+            [`@${this.id}.items`]: [ this.next[index]._id ]
           }
         });
       }
       this.next = [
-        ...this.next.slice(0, i),
-        ...this.next.slice(i + 1)
+        ...this.next.slice(0, index),
+        ...this.next.slice(index + 1)
       ];
 
-      const focusNext = this.next[i - 1] || this.next[i];
+      const focusNext = this.next[index - 1] || this.next[index];
 
       if (focusNext) {
         this.setFocusedWidget(focusNext._id, this.areaId, { scrollTo: true });
       }
     },
-    async cut(i) {
-      apos.area.widgetClipboard.set(this.next[i]);
-      await this.remove(i);
+    async cut({ index }) {
+      apos.area.widgetClipboard.set(this.next[index]);
+      await this.remove(index);
       apos.notify('Widget cut to clipboard', {
         type: 'success',
         icon: 'content-cut-icon',
         dismiss: true
       });
     },
-    async copy(i) {
-      apos.area.widgetClipboard.set(this.next[i]);
+    async copy({ index }) {
+      apos.area.widgetClipboard.set(this.next[index]);
       apos.notify('Widget copied to clipboard', {
         type: 'success',
         icon: 'content-copy-icon',
         dismiss: true
       });
     },
-    async edit(i) {
+    async edit({ index }) {
       if (this.foreign) {
         try {
           const doc = await apos.http.get(
@@ -385,13 +385,13 @@ export default {
         }
       }
 
-      const widget = this.next[i];
+      const widget = this.next[index];
 
       if (!this.widgetIsContextual(widget.type)) {
         const componentName = this.widgetEditorComponent(widget.type);
         apos.area.activeEditor = this;
         apos.bus.$on('apos-refreshing', cancelRefresh);
-        const preview = this.widgetPreview(widget.type, i, false);
+        const preview = this.widgetPreview(widget.type, index, false);
         const result = await apos.modal.execute(componentName, {
           modelValue: widget,
           options: this.widgetOptionsByType(widget.type),
@@ -614,6 +614,7 @@ export default {
         return this.renderings[widget._id];
       }
     },
+
     getValidItems() {
       return this.items.filter(item => {
         if (!window.apos.modules[`${item.type}-widget`]) {

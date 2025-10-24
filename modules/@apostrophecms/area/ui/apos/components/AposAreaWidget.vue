@@ -80,13 +80,14 @@
         <AposBreadcrumbOperations
           v-if="widgetBreadcrumbOperations.length > 0"
           :i="i"
+          :tiny-widget-container="tinyWidgetContainer"
           :widget="widget"
           :options="options"
           :disabled="disabled"
           :is-focused="isFocused"
           @widget-focus="getFocus"
           @update="$emit('update', $event)"
-          @operation="onBreadcrumbOperation"
+          @operation="onOperation"
         />
       </div>
       <div
@@ -128,6 +129,7 @@
       >
         <AposWidgetControls
           v-if="!foreign"
+          :index="i"
           :first="i === 0"
           :last="i === next.length - 1"
           :options="{ contextual: isContextual }"
@@ -136,14 +138,8 @@
           :tabbable="isFocused"
           :model-value="widget"
           :widget-options="widgetOptions"
-          @up="$emit('up', i);"
-          @remove="$emit('remove', i);"
-          @edit="$emit('edit', i);"
-          @cut="$emit('cut', i);"
-          @copy="$emit('copy', i);"
-          @clone="$emit('clone', i);"
-          @down="$emit('down', i);"
           @update="$emit('update', $event)"
+          @operation="onOperation"
         />
       </div>
 
@@ -347,7 +343,8 @@ export default {
         bottom: `${controlsMargin * 2}px`,
         top: 'auto',
         right: `${controlsMargin}px`
-      }
+      },
+      tinyWidgetContainer: false
     };
   },
   computed: {
@@ -402,7 +399,8 @@ export default {
       return (this.widgetModuleOptions.widgetBreadcrumbOperations || []);
     },
     shouldSkipEdit() {
-      return this.widgetModuleOptions.skipOperations?.includes('edit') ?? false;
+      return !this.widgetModuleOptions.widgetOperations
+        .some((op) => op.action === 'edit');
     },
     isFocused() {
       return this.focusedWidget === this.widget._id;
@@ -497,6 +495,7 @@ export default {
       this.setFocusedWidget(this.widget._id, this.areaId);
     }
 
+    this.setTinyWidgetContainer();
     // Do not set up sticky controls if they are disabled
     if (this.controlsDisabled) {
       return;
@@ -524,10 +523,19 @@ export default {
   },
   methods: {
     ...mapActions(useWidgetStore, [ 'setFocusedWidget', 'setHoveredWidget' ]),
-    // Emits same actions as the Standard operations,
-    // e.g ('edit', i), ('remove', i), etc.
-    onBreadcrumbOperation({ name, payload }) {
+    // Emits same actions as the native operations,
+    // e.g ('edit', { index }), ('remove', { index }), etc.
+    onOperation({ name, payload }) {
       this.$emit(name, payload);
+    },
+    setTinyWidgetContainer() {
+      const wrapperEl = this.$refs.wrapper;
+      if (!wrapperEl) {
+        return;
+      }
+      // abstract value for now
+      this.tinyWidgetContainer = wrapperEl.clientWidth < 900;
+
     },
     updateStickyStyles(newStyles) {
       // Only update if styles changed

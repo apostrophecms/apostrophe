@@ -521,14 +521,17 @@ describe('Widgets', function() {
         modal: 'FakeModal',
         tooltip: 'tooltip'
       } ];
+
+      const filterNativeOperations = (operations) => operations
+        .filter((operation) => !operation.native);
+
       const expected = {
         test1: expectedOperations,
         test2: expectedOperations
       };
-
       const actual = {
-        test1: test1Widget.widgetOperations,
-        test2: test2Widget.widgetOperations
+        test1: filterNativeOperations(test1Widget.widgetOperations),
+        test2: filterNativeOperations(test2Widget.widgetOperations)
       };
 
       assert.deepEqual(actual, expected);
@@ -552,9 +555,12 @@ describe('Widgets', function() {
         _apos.task.getContributorReq()
       );
 
+      const filterNativeOperations = (operations) => operations
+        .filter((operation) => !operation.native);
+
       const actual = {
-        admin: adminBrowserData.widgetOperations,
-        contributor: contribBrowserData.widgetOperations
+        admin: filterNativeOperations(adminBrowserData.widgetOperations),
+        contributor: filterNativeOperations(contribBrowserData.widgetOperations)
       };
 
       const expected = {

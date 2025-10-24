@@ -67,6 +67,7 @@ module.exports = {
           modal: 'AposLayoutColControlDialog'
         },
         layoutColDelete: {
+          action: 'apos-layout-col-delete',
           placement: 'breadcrumb',
           icon: 'delete-icon',
           tooltip: 'apostrophe:delete'

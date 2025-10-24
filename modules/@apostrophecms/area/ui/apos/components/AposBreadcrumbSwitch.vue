@@ -4,6 +4,7 @@
       <label
         v-for="choice in enhancedChoices"
         :key="choice.value"
+        v-apos-tooltip="choice.tooltip"
         :for="choice.id"
         :data-apos-test="`bcswitch:${choice.value}`"
       >
@@ -13,6 +14,7 @@
           :value="choice.value"
           type="radio"
           :name="uniqueName"
+          :disabled="choice.disabled"
           @input="update"
         >
         <span>{{ $t(choice.label) }}</span>
@@ -43,18 +45,21 @@ export default {
     name: {
       type: String,
       required: true
+    },
+    disabled: {
+      type: Boolean,
+      default: false
     }
   },
-  emits: [
-    'update'
-  ],
+  emits: [ 'update' ],
   data() {
     const name = `${this.name}:switch`;
     const widgetStore = useWidgetStore();
+    const next = this.value || this.choices[0].value;
     return {
-      next: this.value || null,
+      next,
       storeRemove: widgetStore.remove,
-      store: widgetStore.getOrSet(this.widgetId, name, this.value || null),
+      store: widgetStore.getOrSet(this.widgetId, name, next),
       namespace: name
     };
   },
@@ -63,10 +68,14 @@ export default {
       return `${this.name}-${this.widgetId}`;
     },
     enhancedChoices() {
-      return this.choices.map(choice => ({
-        ...choice,
-        id: `${this.uniqueName}-${choice.value}`
-      }));
+      return this.choices.map(choice => {
+        const tooltip = choice.disabled && choice.disabledTooltip;
+        return {
+          ...choice,
+          id: `${this.uniqueName}-${choice.value}`,
+          tooltip
+        };
+      });
     }
   },
   unmounted() {
