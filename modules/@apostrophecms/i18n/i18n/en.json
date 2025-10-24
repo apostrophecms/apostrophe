@@ -87,6 +87,8 @@
   "clearSelection": "Clear Selection",
   "close": "Close",
   "closeGlobal": "Close Global Site Settings",
+  "colorFieldClickToSelect": "Click to select a color",
+  "colorFieldColorValue": "Color {{ color }}.",
   "collapseAll": "Collapse all",
   "commandMenuArchiveSelected": "Archive selected",
   "commandMenuContent": "Content",

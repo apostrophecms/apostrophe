@@ -2,6 +2,9 @@
 import AposInputMixin from 'Modules/@apostrophecms/schema/mixins/AposInputMixin';
 import AposColor from '../components/AposColor.vue';
 import { TinyColor } from '@ctrl/tinycolor';
+import { finalOptions } from './finalOptions.js';
+
+const defaultOptions = { ...apos.modules['@apostrophecms/color-field'].defaultOptions };
 
 export default {
   name: 'AposInputColor',
@@ -16,6 +19,13 @@ export default {
     };
   },
   computed: {
+    tooltip() {
+      let tooltip = this.$t('apostrophe:colorFieldClickToSelect');
+      if (this.next) {
+        tooltip = `${this.$t('apostrophe:colorFieldColorValue', { color: this.next })} ${tooltip}`;
+      }
+      return tooltip;
+    },
     isMicro() {
       return this.modifiers.includes('micro');
     },
@@ -32,7 +42,7 @@ export default {
     buttonOptions() {
       return {
         label: this.field.label,
-        type: 'color',
+        type: this.isMicro ? 'color-micro' : 'color',
         color: this.modelValue.data || ''
       };
     },
@@ -44,6 +54,9 @@ export default {
         'apos-input-wrapper',
         'apos-color'
       ];
+    },
+    finalOptions() {
+      return finalOptions(defaultOptions, this.options);
     }
   },
   mounted() {

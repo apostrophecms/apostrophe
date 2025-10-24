@@ -85,6 +85,8 @@
   "clearSelection": "Auswahl löschen",
   "close": "Schliessen",
   "closeGlobal": "Globale Einstellungen schliessen",
+  "colorFieldClickToSelect": "Klicken, um eine Farbe auszuwählen",
+  "colorFieldColorValue": "Farbe {{ color }}.",
   "collapseAll": "Alles einklappen",
   "commandMenuArchiveSelected": "Archiv ausgewählt",
   "commandMenuContent": "Inhalt",
