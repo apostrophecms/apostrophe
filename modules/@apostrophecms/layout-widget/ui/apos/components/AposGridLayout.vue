@@ -337,12 +337,12 @@ export default {
   position: relative;
 
   &--max-width {
-    left: auto;
     right: auto;
+    left: auto;
     max-width: calc(100vw - 40px);
+    box-sizing: border-box;
     margin-right: auto;
     margin-left: auto;
-    box-sizing: border-box;
   }
 
   &__grid.manage :deep(.apos-area),
