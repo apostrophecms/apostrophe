@@ -2,7 +2,8 @@
   <div
     ref="root"
     class="apos-layout"
-    :style="rootStyles"
+    :class="{'apos-layout--max-width': isManageMode }"
+    :style="rootCssVars"
   >
     <TransitionGroup
       ref="grid"
@@ -134,7 +135,6 @@ export default {
     'remove-item'
   ],
   data() {
-    const maxWidthMargin = 20;
     return {
       isResizing: false,
       isMoving: false,
@@ -142,19 +142,6 @@ export default {
       preview: {
         patches: null,
         key: null
-      },
-      maxWidthMargin,
-      maxWidth:
-        Math.max(
-          document.documentElement.clientWidth || 0,
-          window.innerWidth || 0
-        ) - (maxWidthMargin * 2),
-      maxWidthStyles: {
-        left: 'auto',
-        right: 'auto',
-        marginRight: 'auto',
-        marginLeft: 'auto',
-        boxSizing: 'border-box'
       }
     };
   },
@@ -168,24 +155,14 @@ export default {
         deviceMode: this.deviceMode
       });
     },
-    rootStyles() {
-      let styles = {};
+    rootCssVars() {
       // Escape quotes and backslashes for CSS content property
       const text = this.$t('apostrophe:layoutColumnEmptyArea')
         .replace(/\\/g, '\\\\')
         .replace(/'/g, '\\\'');
-
-      styles['--empty-area-text'] = `'${text}'`;
-
-      if (this.isManageMode) {
-        styles = {
-          ...styles,
-          ...this.maxWidthStyles,
-          maxWidth: `${this.maxWidth}px`
-        };
-      }
-
-      return styles;
+      return {
+        '--empty-area-text': `'${text}'`
+      };
     },
     syntheticItems() {
       if (!this.isManageMode) {
@@ -245,18 +222,7 @@ export default {
       };
     }
   },
-  mounted() {
-    window.addEventListener('resize', this.updateMaxWidth);
-  },
-  unmounted() {
-    window.removeEventListener('resize', this.updateMaxWidth);
-  },
   methods: {
-    updateMaxWidth() {
-      const vw =
-        Math.max(document.documentElement.clientWidth || 0, window.innerWidth || 0);
-      this.maxWidth = vw - this.maxWidthMargin * 2;
-    },
     onResizeStart() {
       this.isResizing = true;
       this.$emit('resize-start');
@@ -369,6 +335,15 @@ export default {
 */
 .apos-layout {
   position: relative;
+
+  &--max-width {
+    left: auto;
+    right: auto;
+    max-width: calc(100vw - 40px);
+    margin-right: auto;
+    margin-left: auto;
+    box-sizing: border-box;
+  }
 
   &__grid.manage :deep(.apos-area),
   &__grid.manage :deep(.apos-empty-area) {
