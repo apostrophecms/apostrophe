@@ -588,9 +588,9 @@ export default {
           this.checked = this.checked.filter(checkedId => doc._id !== checkedId);
         }
         if (this.relationshipField && (action === 'insert') && this.modalStore.isTopManager(this)) {
-          this.checkedDocs.push(doc);
-          const limit = this.relationshipField?.max || checked.length;
-          this.setCheckedDocs(this.checkedDocs.slice(0, limit));
+          const newDocs = [ ...this.checkedDocs, doc ];
+          const limit = this.relationshipField?.max || newDocs.length;
+          this.setCheckedDocs(newDocs.slice(0, limit));
         }
       }
     },

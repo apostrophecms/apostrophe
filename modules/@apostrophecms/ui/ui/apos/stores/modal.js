@@ -183,8 +183,9 @@ export const useModalStore = defineStore('modal', () => {
   }
 
   function isTopManager(component) {
-    // The stack doesn't contain actual components, it contains records of information about them.
-    // Locate the right record in the stack by its modalEl
+    // The stack doesn't contain actual components, it contains records of
+    // information about them. Locate the right record in the stack by
+    // its modalEl
     const manager = stack.value.find(c => c.modalEl === component.$el);
     const topManager = stack.value.findLast(c => {
       return (c.componentName || '').endsWith('Manager');
