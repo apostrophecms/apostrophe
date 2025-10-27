@@ -182,6 +182,16 @@ export const useModalStore = defineStore('modal', () => {
     });
   }
 
+  function isTopManager(component) {
+    // The stack doesn't contain actual components, it contains records of information about them.
+    // Locate the right record in the stack by its modalEl
+    const manager = stack.value.find(c => c.modalEl === component.$el);
+    const topManager = stack.value.findLast(c => {
+      return (c.componentName || '').endsWith('Manager');
+    });
+    return manager?.id === topManager?.id;
+  }
+
   // Returns true if el1 is "on top of" el2 in the
   // modal stack, as viewed by the user. If el1 is a
   // modal that appears later in the stack than el2
@@ -256,6 +266,7 @@ export const useModalStore = defineStore('modal', () => {
     report,
     onTopOf,
     onKeyDown,
-    offKeyDown
+    offKeyDown,
+    isTopManager
   };
 });

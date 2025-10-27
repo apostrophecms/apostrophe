@@ -20,6 +20,7 @@
 * Color fields now display their preset color swatches in the field UI rather than just the color picker popup
 * When the user chooses to create a new document while selecting pieces and pages to populate a relationship, the "save draft and preview" and "publish and view" options are no longer offered. This ensures that the user is able to complete the selection process. The page or piece can still be edited in context later.
 * When selecting pieces or pages to populate a relationship, the "New Piece" / "New Page" buttons are easier to find. They are no longer hidden away in a context menu.
+* When you create a new item while editing a relationship, that item is automatically selected, as long as you have not already reached `max` for that relationship.
 
 ### Fixes
 

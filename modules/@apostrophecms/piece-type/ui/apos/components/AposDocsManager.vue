@@ -194,7 +194,7 @@ export default {
     };
   },
   computed: {
-    ...mapState(useModalStore, [ 'activeModal', 'updateModalData' ]),
+    ...mapState(useModalStore, [ 'activeModal' ]),
     moduleOptions() {
       return window.apos.modules[this.moduleName];
     },
@@ -281,7 +281,9 @@ export default {
     await this.manageAllPiecesTotal();
     this.modal.triggerFocusRefresh++;
 
-    apos.bus.$on('content-changed', this.onContentChanged);
+    apos.bus.$on('content-changed', (e) => {
+      this.onContentChanged(e);
+    });
     apos.bus.$on('command-menu-manager-create-new', this.create);
     apos.bus.$on('command-menu-manager-close', this.confirmAndCancel);
   },
@@ -573,6 +575,11 @@ export default {
       const types = this.getContentChangedTypes(doc, docTypes);
       if (!types.includes(this.moduleName)) {
         return;
+      }
+      if (this.relationshipField && (action === 'insert') && this.modalStore.isTopManager(this)) {
+        this.checkedDocs.push(doc);
+        const limit = this.relationshipField?.max || checked.length;
+        this.setCheckedDocs(this.checkedDocs.slice(0, limit));
       }
       if (
         docIds ||
