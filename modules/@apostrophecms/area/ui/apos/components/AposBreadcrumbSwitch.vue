@@ -55,7 +55,7 @@ export default {
   data() {
     const name = `${this.name}:switch`;
     const widgetStore = useWidgetStore();
-    const next = this.value || this.choices[0].value;
+    const next = this.value || null;
     return {
       next,
       storeRemove: widgetStore.remove,
