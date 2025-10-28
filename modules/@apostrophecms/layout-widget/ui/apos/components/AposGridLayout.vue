@@ -302,7 +302,7 @@ export default {
 };
 </script>
 
-<style lang="scss" scoped>
+<style lang="scss">
 /* The base grid styles, mimicking the default public behavior */
 .apos-layout__grid {
   display: grid;
