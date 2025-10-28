@@ -144,14 +144,12 @@ export default {
 
       const disabled = this.IsOperationDisabled(removeWidgetOperation);
       const tooltip = this.getOperationTooltip(removeWidgetOperation, disabled);
-      const removeOp = {
+      return {
         ...this.widgetDefaultControl,
         ...removeWidgetOperation,
         disabled,
         tooltip
       };
-      console.log('removeOp', removeOp);
-      return removeOp;
     },
     widgetPrimaryOperations() {
       return this.getOperations({ secondaryLevel: false });
@@ -222,7 +220,6 @@ export default {
     async handleClick({
       modal, action, nativeAction, ignoreResult = false
     }) {
-      console.log('nativeAction', nativeAction);
       if (modal) {
         const result = await apos.modal.execute(modal, {
           widget: this.modelValue,
