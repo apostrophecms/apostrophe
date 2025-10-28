@@ -28,7 +28,7 @@
       <AposButton
         v-if="widgetRemoveControl"
         v-bind="widgetRemoveControl"
-        @click="handleClick({ action: 'remove' })"
+        @click="handleClick(widgetRemoveControl)"
       />
     </AposButtonGroup>
   </div>
@@ -98,18 +98,13 @@ export default {
     widgetPrimaryControls() {
       // Custom widget operations displayed in the primary controls
       return this.widgetPrimaryOperations.map(operation => {
-        const disabled = this.disabled ||
-            (operation.disabledIfProps &&
-              checkIfConditions(this.$props, operation.disabledIfProps));
-
+        const disabled = this.IsOperationDisabled(operation);
+        const tooltip = this.getOperationTooltip(operation, disabled);
         return {
           ...this.widgetDefaultControl,
           ...operation,
           disabled,
-          tooltip: {
-            content: !disabled && (operation.tooltip || operation.label),
-            placement: 'left'
-          }
+          tooltip
         };
       });
     },
@@ -139,7 +134,6 @@ export default {
       // Custom widget operations displayed in the secondary controls
       return controls.concat(this.widgetCustomSecondaryOperations.map(renderOperation));
     },
-    /* TODO: fix */
     widgetRemoveControl() {
       const { widgetOperations = [] } = this.moduleOptions;
       const removeWidgetOperation = widgetOperations
@@ -148,14 +142,16 @@ export default {
         return null;
       }
 
-      return {
+      const disabled = this.IsOperationDisabled(removeWidgetOperation);
+      const tooltip = this.getOperationTooltip(removeWidgetOperation, disabled);
+      const removeOp = {
         ...this.widgetDefaultControl,
         ...removeWidgetOperation,
-        tooltip: {
-          content: removeWidgetOperation.tooltip,
-          placement: 'left'
-        }
+        disabled,
+        tooltip
       };
+      console.log('removeOp', removeOp);
+      return removeOp;
     },
     widgetPrimaryOperations() {
       return this.getOperations({ secondaryLevel: false });
@@ -177,6 +173,25 @@ export default {
     }
   },
   methods: {
+    IsOperationDisabled(operation) {
+      if (this.disabled) {
+        return true;
+      }
+      if (operation.disabledIfProps) {
+        return checkIfConditions(this.$props, operation.disabledIfProps) || false;
+      }
+      return false;
+    },
+    getOperationTooltip(operation, isDisabled = false) {
+      const content = isDisabled && operation.disabledTooltip
+        ? operation.disabledTooltip
+        : operation.tooltip;
+
+      return {
+        content,
+        placement: 'left'
+      };
+    },
     getOperations({ secondaryLevel, native }) {
       const { widgetOperations = [] } = this.moduleOptions;
       return widgetOperations.filter(operation => {
@@ -207,6 +222,7 @@ export default {
     async handleClick({
       modal, action, nativeAction, ignoreResult = false
     }) {
+      console.log('nativeAction', nativeAction);
       if (modal) {
         const result = await apos.modal.execute(modal, {
           widget: this.modelValue,
@@ -223,7 +239,10 @@ export default {
       if (nativeAction) {
         this.$emit('operation', {
           name: nativeAction,
-          payload: { index: this.index }
+          payload: {
+            widgetId: this.modelValue._id,
+            index: this.index
+          }
         });
         return;
       }
