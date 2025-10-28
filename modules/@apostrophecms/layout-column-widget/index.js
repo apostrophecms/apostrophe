@@ -49,7 +49,11 @@ module.exports = {
   extend: '@apostrophecms/widget-type',
   options: {
     label: 'apostrophe:layoutColumn',
-    operationsInBreadcrumb: true
+    operationsInBreadcrumb: true,
+    breakpoints: {
+      tablet: 1024,
+      mobile: 414
+    }
   },
   widgetOperations(self, options) {
     return {
@@ -129,7 +133,7 @@ module.exports = {
               show: {
                 type: 'boolean',
                 label: 'apostrophe:layoutTabletShow',
-                help: `Less than ${options?.breakpoints?.tablet || 900}px`,
+                help: `Less than ${options?.breakpoints?.tablet || 1024}px`,
                 def: true
               },
               ...alignSchema
@@ -160,7 +164,7 @@ module.exports = {
               show: {
                 type: 'boolean',
                 label: 'apostrophe:layoutMobileShow',
-                help: `Less than ${options?.breakpoints?.mobile || 600}px`,
+                help: `Less than ${options?.breakpoints?.mobile || 414}px`,
                 def: true
               },
               ...alignSchema
