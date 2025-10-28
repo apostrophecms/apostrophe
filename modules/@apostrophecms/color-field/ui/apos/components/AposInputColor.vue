@@ -20,6 +20,7 @@
           <AposContextMenu
             :button="buttonOptions"
             menu-placement="bottom-start"
+            identifier="color-button"
             :disabled="field.readOnly"
             :tooltip="tooltip"
             class="apos-input-color__sample-picker"
