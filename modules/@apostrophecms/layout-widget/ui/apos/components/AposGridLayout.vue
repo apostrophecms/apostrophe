@@ -302,7 +302,10 @@ export default {
 };
 </script>
 
-<style lang="scss" scoped>
+<style lang="scss">
+/* This style block is deliberately unscoped so that our generated container queries
+  have the needed specificity to override it when previewing responsive breakpoints */
+
 /* The base grid styles, mimicking the default public behavior */
 .apos-layout__grid {
   display: grid;
