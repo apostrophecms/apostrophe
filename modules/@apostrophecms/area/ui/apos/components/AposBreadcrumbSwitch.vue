@@ -88,7 +88,6 @@ export default {
         return;
       }
 
-      console.log('this.store', this.store);
       const nonDisabledChoice = choices.find(choice => !choice.disabled);
       if (nonDisabledChoice) {
         this.update(nonDisabledChoice.value);
@@ -112,7 +111,6 @@ export default {
         ...payload,
         name: this.name
       });
-      console.log('store.data.value', this.store.data.value);
     }
   }
 };
@@ -157,10 +155,6 @@ export default {
   display: flex;
   align-items: center;
 
-  &:hover .apos-breadcrumb-switch__input:not(:checked) + .apos-breadcrumb-switch__input-text {
-    background-color: var(--a-base-9);
-  }
-
   &:first-child .apos-breadcrumb-switch__input-text {
     left: -1px;
   }
@@ -169,6 +163,10 @@ export default {
     right: -1px;
   }
 }
+
+  .apos-breadcrumb-switch__input:not(:checked) + .apos-breadcrumb-switch__input-text:hover {
+    background-color: var(--a-base-9);
+  }
 
 .apos-breadcrumb-switch__input {
   position: absolute;
@@ -186,10 +184,14 @@ export default {
     color: var(--a-text-inverted);
   }
 
-  &:disabled + .apos-breadcrumb-switch__input-text {
-    box-shadow: 0 0 0 1px var(--a-base-5);
-    background-color: var(--a-base-5);
-    color: var(--a-text-primary);
+  &:disabled {
+    + .apos-breadcrumb-switch__input-text {
+      opacity: 0.5;
+
+      &:hover {
+        background-color: inherit;
+      }
+    }
   }
 }
 
