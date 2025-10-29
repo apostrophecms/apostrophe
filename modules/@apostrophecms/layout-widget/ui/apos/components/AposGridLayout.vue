@@ -2,6 +2,7 @@
   <div
     ref="root"
     class="apos-layout"
+    :class="{'apos-layout--max-width': isManageMode }"
     :style="rootCssVars"
   >
     <TransitionGroup
@@ -301,7 +302,10 @@ export default {
 };
 </script>
 
-<style lang="scss" scoped>
+<style lang="scss">
+/* This style block is deliberately unscoped so that our generated container queries
+  have the needed specificity to override it when previewing responsive breakpoints */
+
 /* The base grid styles, mimicking the default public behavior */
 .apos-layout__grid {
   display: grid;
@@ -334,6 +338,15 @@ export default {
 */
 .apos-layout {
   position: relative;
+
+  &--max-width {
+    right: auto;
+    left: auto;
+    max-width: calc(100vw - 40px);
+    box-sizing: border-box;
+    margin-right: auto;
+    margin-left: auto;
+  }
 
   &__grid.manage :deep(.apos-area),
   &__grid.manage :deep(.apos-empty-area) {
@@ -390,77 +403,6 @@ export default {
   .apos-grid-enter-from,
   .apos-grid-leave-to {
     opacity: 0.01;
-  }
-}
-
-/* stylelint-disable-next-line media-feature-name-allowed-list */
-@media screen and (width >= 601px) and (width <= 1024px) {
-  .apos-layout__grid:not(.manage)[data-tablet-auto="true"] {
-    grid-template-columns: repeat(2, 1fr);
-
-    --grid-rows: auto;
-  }
-
-  .apos-layout__grid:not(.manage)[data-tablet-auto="true"] > .apos-layout__item {
-    grid-column: auto / span 1;
-    grid-row: auto / span 1;
-    order: var(--order, 0);
-  }
-
-  .apos-layout__grid:not(.manage)[data-tablet-auto="true"] > .apos-layout__item[data-tablet-full="true"] {
-    grid-column: 1 / span 2;
-  }
-
-  .apos-layout__grid:not(.manage)[data-tablet-auto="false"] {
-    --grid-rows: var(--tablet-rows, var(--grid-rows));
-  }
-
-  .apos-layout__grid:not(.manage)[data-tablet-auto="false"] > .apos-layout__item {
-    grid-column: var(--tablet-colstart, auto) / span var(--tablet-colspan, 1);
-    grid-row: var(--tablet-rowstart, auto) / span var(--tablet-rowspan, 1);
-    justify-self: var(--tablet-justify);
-    /* stylelint-disable-next-line declaration-block-no-redundant-longhand-properties */
-    align-self: var(--tablet-align);
-    order: var(--tablet-order, var(--order, 0));
-  }
-
-  /* Hide items not visible on tablet */
-  .apos-layout__grid:not(.manage) > .apos-layout__item[data-visible-tablet="false"] {
-    display: none;
-  }
-}
-
-/* stylelint-disable-next-line media-feature-name-allowed-list */
-@media screen and (width <= 600px) {
-  .apos-layout__grid:not(.manage) {
-    grid-template-columns: 1fr;
-
-    --grid-rows: auto;
-  }
-
-  .apos-layout__grid:not(.manage)[data-mobile-auto="true"] > .apos-layout__item {
-    grid-column: auto / span 1;
-    grid-row: auto / span 1;
-    order: var(--order, 0);
-  }
-
-  /* Manual mode: use configured columns and device vars */
-  .apos-layout__grid:not(.manage)[data-mobile-auto="false"] {
-    --grid-rows: var(--mobile-rows, var(--grid-rows));
-  }
-
-  .apos-layout__grid:not(.manage)[data-mobile-auto="false"] > .apos-layout__item {
-    grid-column: var(--mobile-colstart, auto) / span var(--mobile-colspan, 1);
-    grid-row: var(--mobile-rowstart, auto) / span var(--mobile-rowspan, 1);
-    justify-self: var(--mobile-justify);
-    /* stylelint-disable-next-line declaration-block-no-redundant-longhand-properties */
-    align-self: var(--mobile-align);
-    order: var(--mobile-order, var(--order, 0));
-  }
-
-  /* Hide items not visible on mobile */
-  .apos-layout__grid:not(.manage) > .apos-layout__item[data-visible-mobile="false"] {
-    display: none;
   }
 }
 </style>

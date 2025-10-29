@@ -196,10 +196,16 @@ export default {
   watch: {
     // Intercept the columns focus, and emphasize the layout widget instead.
     async focusedWidget(widgetId) {
-      if (!this.parentOptions.widgetId) {
+      if (!widgetId || !this.parentOptions.widgetId) {
         return;
       }
+
       await this.$nextTick();
+      if (widgetId === this.parentOptions.widgetId && this.layoutMode === 'layout') {
+        this.setFocusedWidget(null, this.areaId);
+        this.emphasizeGrid();
+        return;
+      }
 
       if (this.layoutColumnWidgetDeepIds.includes(widgetId)) {
         this.emphasizeGrid();
@@ -214,6 +220,15 @@ export default {
         this.layoutColumnWidgetIds.includes(widgetId)
       ) {
         this.setHoveredWidget(this.parentOptions.widgetId, this.areaId);
+      }
+    },
+    layoutMode(newMode) {
+      if (newMode === 'layout') {
+        this.setFocusedWidget(null, this.areaId);
+        this.emphasizeGrid();
+      } else {
+        this.setFocusedWidget(this.parentOptions.widgetId, this.areaId);
+        this.deEmphasizeGrid();
       }
     }
   },

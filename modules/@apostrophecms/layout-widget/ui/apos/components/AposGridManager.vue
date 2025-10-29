@@ -920,6 +920,7 @@ export default {
 $resize-ui-width: 12px;
 $resize-ui-height: 32px;
 $resize-button-width: 4px;
+$resize-ui-z-index: 2;
 
 /* The base grid styles, mimicking the default public behavior */
 .apos-layout__item {
@@ -1164,8 +1165,8 @@ $resize-button-width: 4px;
     position: absolute;
     width: $anchor-size;
     height: $anchor-size;
-    outline: 1px solid var(--a-primary);
-    background-color: var(--a-primary-light-80);
+    outline: 1px solid var(--a-base-5);
+    background-color: var(--a-base-10);
     pointer-events: none;
   }
 
@@ -1243,6 +1244,7 @@ $resize-button-width: 4px;
 }
 
 .apos-layout__item-resize-handle-icon {
+  z-index: $resize-ui-z-index;
   pointer-events: none;
   position: absolute;
   top: 0;

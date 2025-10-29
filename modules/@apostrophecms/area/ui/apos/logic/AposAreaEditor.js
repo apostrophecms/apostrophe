@@ -463,6 +463,7 @@ export default {
       clipboard
     }) {
       if (clipboard) {
+        clipboard = cloneWidget(clipboard);
         return this.insert({
           widget: clipboard,
           index

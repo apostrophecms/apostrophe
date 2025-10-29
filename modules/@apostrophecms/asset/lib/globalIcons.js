@@ -68,6 +68,7 @@ module.exports = {
   'format-align-left-icon': 'FormatAlignLeft',
   'format-align-right-icon': 'FormatAlignRight',
   'format-bold-icon': 'FormatBold',
+  'format-color-fill-icon': 'FormatColorFill',
   'format-font-icon': 'FormatFont',
   'format-italic-icon': 'FormatItalic',
   'format-list-bulleted-icon': 'FormatListBulleted',
