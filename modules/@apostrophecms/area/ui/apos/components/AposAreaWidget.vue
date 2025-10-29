@@ -467,7 +467,10 @@ export default {
       if (!layoutWidgetGrid) {
         return false;
       }
-      const tinyScreenStart = Math.max(layoutWidgetGrid.tablet.breakpoint, layoutWidgetGrid.mobile.breakpoint);
+      const tinyScreenStart = Math.max(
+        layoutWidgetGrid.tablet?.breakpoint,
+        layoutWidgetGrid.mobile?.breakpoint
+      );
       return screenWidth <= tinyScreenStart;
     }
   },
