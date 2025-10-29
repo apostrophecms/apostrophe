@@ -80,7 +80,7 @@
         <AposBreadcrumbOperations
           v-if="widgetBreadcrumbOperations.length > 0"
           :i="i"
-          :tiny-widget-container="tinyWidgetContainer"
+          :tiny-screen="tinyScreen"
           :widget="widget"
           :options="options"
           :disabled="disabled"
@@ -207,7 +207,7 @@
 <script>
 import { mapState, mapActions } from 'pinia';
 import { useWidgetStore } from 'Modules/@apostrophecms/ui/stores/widget';
-
+import { useBreakpointPreviewStore } from 'Modules/@apostrophecms/ui/stores/breakpointPreview.js';
 export default {
   name: 'AposAreaWidget',
   props: {
@@ -343,8 +343,7 @@ export default {
         bottom: `${controlsMargin * 2}px`,
         top: 'auto',
         right: `${controlsMargin}px`
-      },
-      tinyWidgetContainer: false
+      }
     };
   },
   computed: {
@@ -354,6 +353,7 @@ export default {
       'hoveredNonForeignWidget',
       'emphasizedWidgets'
     ]),
+    ...mapState(useBreakpointPreviewStore, { breakpointPreviewMode: 'mode' }),
     // Passed only to the preview layer (custom preview components).
     followingValuesWithParent() {
       return Object.entries(this.followingValues || {})
@@ -449,7 +449,21 @@ export default {
     },
     foreign() {
       // Cast to boolean is necessary to satisfy prop typing
-      return !!(this.docId && (window.apos.adminBar.contextId !== this.docId));
+      return !!(this.docId && (apos.adminBar.contextId !== this.docId));
+    },
+    tinyScreen() {
+      if (!this.breakpointPreviewMode) {
+        return false;
+      }
+      // How to detect mobile if users have their own screen names..
+      // Should we consider the tinier the mobile, or should we degine an abstract value?
+      const [ _, curScreen ] = Object.entries(apos.adminBar.breakpointPreviewMode.screens)
+        .find(([ screen, _ ]) => screen === this.breakpointPreviewMode) || [ null, null ];
+      if (!curScreen) {
+        return false;
+      }
+      const screenWidth = parseInt(curScreen.width);
+      return screenWidth < 700;
     }
   },
   watch: {
@@ -495,14 +509,13 @@ export default {
       this.setFocusedWidget(this.widget._id, this.areaId);
     }
 
-    this.setTinyWidgetContainer();
     // Do not set up sticky controls if they are disabled
     if (this.controlsDisabled) {
       return;
     }
 
     this.$nextTick(() => {
-      this.adminBarHeight = window.apos.adminBar.height;
+      this.adminBarHeight = apos.adminBar.height;
       this.controlsHeight = this.$refs.modifyControls.getBoundingClientRect().height;
 
       // The height of elements we need to account for when re-attaching the controls
@@ -527,15 +540,6 @@ export default {
     // e.g ('edit', { index }), ('remove', { index }), etc.
     onOperation({ name, payload }) {
       this.$emit(name, payload);
-    },
-    setTinyWidgetContainer() {
-      const wrapperEl = this.$refs.wrapper;
-      if (!wrapperEl) {
-        return;
-      }
-      // abstract value for now
-      this.tinyWidgetContainer = wrapperEl.clientWidth < 900;
-
     },
     updateStickyStyles(newStyles) {
       // Only update if styles changed

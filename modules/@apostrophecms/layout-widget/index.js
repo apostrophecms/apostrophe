@@ -28,6 +28,9 @@ module.exports = {
         layout: {
           placement: 'breadcrumb',
           type: 'switch',
+          /* disabledIfProps: { */
+          /*   tinyScreen: true */
+          /* }, */
           choices: [
             {
               label: 'apostrophe:editContent',
@@ -37,9 +40,9 @@ module.exports = {
               label: 'apostrophe:editColumns',
               value: 'layout',
               disabledIfProps: {
-                tinyWidgetContainer: true
+                tinyScreen: true
               },
-              disabledTooltip: 'Cannot edit layout on little screen'
+              disabledTooltip: 'apostrophe:editColumnsDisabledTinyScreen'
             }
           ],
           action: 'apos-switch-layout-mode',

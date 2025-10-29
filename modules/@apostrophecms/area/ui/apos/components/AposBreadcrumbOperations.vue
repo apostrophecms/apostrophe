@@ -59,7 +59,7 @@ export default {
       type: Number,
       required: true
     },
-    tinyWidgetContainer: {
+    tinyScreen: {
       type: Boolean,
       default: false
     },
