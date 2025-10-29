@@ -51,14 +51,15 @@ module.exports = {
     label: 'apostrophe:layoutColumn',
     operationsInBreadcrumb: true,
     breakpoints: {
-      tablet: 1024,
-      mobile: 414
+      tablet: 900,
+      mobile: 600
     }
   },
   widgetOperations(self, options) {
     return {
       add: {
         layoutColMove: {
+          // to fix
           action: 'move',
           placement: 'breadcrumb',
           icon: 'cursor-move-icon',
@@ -133,7 +134,7 @@ module.exports = {
               show: {
                 type: 'boolean',
                 label: 'apostrophe:layoutTabletShow',
-                help: `Less than ${options?.breakpoints?.tablet || 1024}px`,
+                help: `Less than ${options?.breakpoints?.tablet || 900}px`,
                 def: true
               },
               ...alignSchema
@@ -164,7 +165,7 @@ module.exports = {
               show: {
                 type: 'boolean',
                 label: 'apostrophe:layoutMobileShow',
-                help: `Less than ${options?.breakpoints?.mobile || 414}px`,
+                help: `Less than ${options?.breakpoints?.mobile || 600}px`,
                 def: true
               },
               ...alignSchema
