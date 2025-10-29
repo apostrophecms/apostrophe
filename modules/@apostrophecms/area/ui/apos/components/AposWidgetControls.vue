@@ -180,7 +180,7 @@ export default {
         }
         if (
           typeof native === 'boolean' &&
-          ((native && !operation.native) || (!native && operation.native))
+          ((native && !operation.nativeAction) || (!native && operation.nativeAction))
         ) {
           return false;
         }
