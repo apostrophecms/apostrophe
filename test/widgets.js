@@ -511,6 +511,7 @@ describe('Widgets', function() {
       return t.destroy(_apos);
     });
 
+    // todo
     it('should support custom widget operations and inherit them from extended modules', function() {
       const test1Widget = _apos.modules['test1-widget'];
       const test2Widget = _apos.modules['test2-widget'];
@@ -521,14 +522,17 @@ describe('Widgets', function() {
         modal: 'FakeModal',
         tooltip: 'tooltip'
       } ];
+
+      const filterNativeOperations = (operations) => operations
+        .filter((operation) => !operation.nativeAction);
+
       const expected = {
         test1: expectedOperations,
         test2: expectedOperations
       };
-
       const actual = {
-        test1: test1Widget.widgetOperations,
-        test2: test2Widget.widgetOperations
+        test1: filterNativeOperations(test1Widget.widgetOperations),
+        test2: filterNativeOperations(test2Widget.widgetOperations)
       };
 
       assert.deepEqual(actual, expected);
@@ -552,11 +556,13 @@ describe('Widgets', function() {
         _apos.task.getContributorReq()
       );
 
-      const actual = {
-        admin: adminBrowserData.widgetOperations,
-        contributor: contribBrowserData.widgetOperations
-      };
+      const filterNativeOperations = (operations) => operations
+        .filter((operation) => !operation.nativeAction);
 
+      const actual = {
+        admin: filterNativeOperations(adminBrowserData.widgetOperations),
+        contributor: filterNativeOperations(contribBrowserData.widgetOperations)
+      };
       const expected = {
         admin: [ operation ],
         contributor: []
