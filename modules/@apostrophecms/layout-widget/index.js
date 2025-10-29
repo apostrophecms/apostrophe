@@ -22,15 +22,12 @@ module.exports = {
     injectStyles: true,
     minifyStyles: true
   },
-  widgetOperations(self, options) {
+  widgetOperations(self) {
     return {
       add: {
         layout: {
           placement: 'breadcrumb',
           type: 'switch',
-          /* disabledIfProps: { */
-          /*   tinyScreen: true */
-          /* }, */
           choices: [
             {
               label: 'apostrophe:editContent',
@@ -58,7 +55,7 @@ module.exports = {
       remove: [ 'edit' ]
     };
   },
-  fields(self, options) {
+  fields(self) {
     return {
       add: {
         columns: {
