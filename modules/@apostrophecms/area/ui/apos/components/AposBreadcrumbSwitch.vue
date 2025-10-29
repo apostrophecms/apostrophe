@@ -16,7 +16,7 @@
         type="radio"
         :name="uniqueName"
         :disabled="choice.disabled"
-        @input="update"
+        @input="input"
       >
       <span class="apos-breadcrumb-switch__input-text">{{ $t(choice.label) }}</span>
     </label>
@@ -78,17 +78,38 @@ export default {
       });
     }
   },
+  watch: {
+    enhancedChoices(choices) {
+      const curChoice = choices.find(({ value }) => this.next === value);
+      if (!curChoice.disabled) {
+        return;
+      }
+
+      console.log('this.store', this.store)
+      const nonDisabledChoice = choices.find(choice => !choice.disabled);
+      if (nonDisabledChoice) {
+        this.update(nonDisabledChoice.value);
+        return;
+      }
+
+      this.$emit('update', null);
+    }
+  },
   unmounted() {
     this.storeRemove(this.widgetId, this.namespace);
   },
   methods: {
-    update(event) {
+    input(event) {
       this.next = event.target.value;
-      const payload = this.choices.find(choice => choice.value === this.next);
+      this.update(this.next);
+    },
+    update(value) {
+      const payload = this.choices.find((choice) => choice.value === value);
       this.$emit('update', {
         ...payload,
         name: this.name
       });
+      console.log('store.data.value', this.store.data.value);
     }
   }
 };
@@ -114,7 +135,7 @@ export default {
   display: flex;
   align-items: center;
 
-  &:hover input:not(:checked) + span {
+  &:hover .apos-breadcrumb-switch__input:not(:checked) + .apos-breadcrumb-switch__input-text {
     background-color: var(--a-base-9);
   }
 
