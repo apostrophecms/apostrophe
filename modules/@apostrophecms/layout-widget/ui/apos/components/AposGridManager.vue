@@ -493,12 +493,12 @@ export default {
     this.lastEvent = null;
   },
   methods: {
-    onBreadcrumbOperation(item, operation) {
+    onBreadcrumbOperation(item, { name, payload }) {
       if (
-        operation.name === 'move' &&
-        [ 'mousedown', 'touchstart' ].includes(operation.data.eventName)
+        name === 'move' &&
+        [ 'mousedown', 'touchstart' ].includes(payload.data.eventName)
       ) {
-        this.onStartMove(item, operation.data.event);
+        this.onStartMove(item, payload.data.event);
       }
     },
     onAddSynthetic(slot) {

@@ -60,7 +60,7 @@ module.exports = {
       add: {
         layoutColMove: {
           // to fix
-          action: 'move',
+          nativeAction: 'move',
           placement: 'breadcrumb',
           icon: 'cursor-move-icon',
           rawEvents: [ 'mousedown', 'touchstart' ]
