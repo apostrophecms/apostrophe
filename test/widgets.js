@@ -511,6 +511,7 @@ describe('Widgets', function() {
       return t.destroy(_apos);
     });
 
+    // todo
     it('should support custom widget operations and inherit them from extended modules', function() {
       const test1Widget = _apos.modules['test1-widget'];
       const test2Widget = _apos.modules['test2-widget'];
@@ -523,7 +524,7 @@ describe('Widgets', function() {
       } ];
 
       const filterNativeOperations = (operations) => operations
-        .filter((operation) => !operation.native);
+        .filter((operation) => !operation.nativeAction);
 
       const expected = {
         test1: expectedOperations,
@@ -556,13 +557,12 @@ describe('Widgets', function() {
       );
 
       const filterNativeOperations = (operations) => operations
-        .filter((operation) => !operation.native);
+        .filter((operation) => !operation.nativeAction);
 
       const actual = {
         admin: filterNativeOperations(adminBrowserData.widgetOperations),
         contributor: filterNativeOperations(contribBrowserData.widgetOperations)
       };
-
       const expected = {
         admin: [ operation ],
         contributor: []
