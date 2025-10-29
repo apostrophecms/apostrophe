@@ -48,9 +48,10 @@
 </template>
 
 <script>
+import { mapActions } from 'pinia';
 import { useWidgetStore } from 'Modules/@apostrophecms/ui/stores/widget';
 import checkIfConditions from 'apostrophe/lib/universal/check-if-conditions.mjs';
-import { mapActions } from 'pinia';
+import { isOperationDisabled, getOperationTooltip } from '../lib/operations.js';
 
 export default {
   name: 'AposBreadcrumbOperations',
@@ -164,9 +165,11 @@ export default {
       return 'AposButton';
     },
     getOperationProps(operation) {
-      const disabled = this.disabled ||
-            (operation.disabledIfProps &&
-              checkIfConditions(this.$props, operation.disabledIfProps));
+      const disabled = this.disabled || isOperationDisabled(operation, this.$props);
+      const tooltip = getOperationTooltip(operation, {
+        disabled,
+        placement: 'bottom'
+      });
 
       if (operation.type === 'info') {
         return {
@@ -179,12 +182,15 @@ export default {
 
       if (operation.type === 'switch') {
         const choices = operation.choices.map((choice) => {
-          const disabled = choice.disabledIfProps &&
-              checkIfConditions(this.$props, choice.disabledIfProps);
-
+          const disabled = isOperationDisabled(choice, this.$props);
+          const tooltip = getOperationTooltip(choice, {
+            disabled,
+            placement: 'bottom'
+          });
           return {
             ...choice,
-            disabled
+            disabled,
+            tooltip
           };
         });
         return {
@@ -193,7 +199,8 @@ export default {
           choices,
           value: operation.def,
           class: 'apos-area-widget--switch',
-          disabled
+          disabled,
+          tooltip
         };
       }
 

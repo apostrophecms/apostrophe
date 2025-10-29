@@ -1,5 +1,6 @@
 <template>
   <fieldset
+    v-apos-tooltip="tooltip"
     class="apos-breadcrumb-switch"
     :class="{'apos-breadcrumb-switch--disabled': isDisabled}"
   >
@@ -18,7 +19,7 @@
         :value="choice.value"
         type="radio"
         :name="uniqueName"
-        :disabled="choice.disabled"
+        :disabled="isDisabled"
         @input="input"
       >
       <span class="apos-breadcrumb-switch__input-text">{{ $t(choice.label) }}</span>
@@ -49,6 +50,10 @@ export default {
       type: String,
       required: true
     },
+    tooltip: {
+      type: String,
+      default: null
+    },
     disabled: {
       type: Boolean,
       default: false
@@ -75,11 +80,9 @@ export default {
     },
     enhancedChoices() {
       return this.choices.map(choice => {
-        const tooltip = choice.disabled && choice.disabledTooltip;
         return {
           ...choice,
-          id: `${this.uniqueName}-${choice.value}`,
-          tooltip
+          id: `${this.uniqueName}-${choice.value}`
         };
       });
     }
@@ -152,7 +155,6 @@ export default {
     }
 
     .apos-breadcrumb-switch__label {
-      /* pointer-events: none; */
       opacity: 0.5
     }
   }

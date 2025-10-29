@@ -37,6 +37,7 @@
 <script>
 
 import checkIfConditions from 'apostrophe/lib/universal/check-if-conditions.mjs';
+import { isOperationDisabled, getOperationTooltip } from '../lib/operations.js';
 
 const standaloneWidgetOperation = [ 'remove' ];
 
@@ -98,8 +99,8 @@ export default {
     widgetPrimaryControls() {
       // Custom widget operations displayed in the primary controls
       return this.widgetPrimaryOperations.map(operation => {
-        const disabled = this.IsOperationDisabled(operation);
-        const tooltip = this.getOperationTooltip(operation, disabled);
+        const disabled = this.disabled || isOperationDisabled(operation, this.$props);
+        const tooltip = getOperationTooltip(operation, { disabled });
         return {
           ...this.widgetDefaultControl,
           ...operation,
@@ -142,8 +143,8 @@ export default {
         return null;
       }
 
-      const disabled = this.IsOperationDisabled(removeWidgetOperation);
-      const tooltip = this.getOperationTooltip(removeWidgetOperation, disabled);
+      const disabled = this.disabled || isOperationDisabled(removeWidgetOperation);
+      const tooltip = getOperationTooltip(removeWidgetOperation, { disabled });
       return {
         ...this.widgetDefaultControl,
         ...removeWidgetOperation,
@@ -171,25 +172,6 @@ export default {
     }
   },
   methods: {
-    IsOperationDisabled(operation) {
-      if (this.disabled) {
-        return true;
-      }
-      if (operation.disabledIfProps) {
-        return checkIfConditions(this.$props, operation.disabledIfProps) || false;
-      }
-      return false;
-    },
-    getOperationTooltip(operation, isDisabled = false) {
-      const content = isDisabled && operation.disabledTooltip
-        ? operation.disabledTooltip
-        : operation.tooltip;
-
-      return {
-        content,
-        placement: 'left'
-      };
-    },
     getOperations({ secondaryLevel, native }) {
       const { widgetOperations = [] } = this.moduleOptions;
       return widgetOperations.filter(operation => {
