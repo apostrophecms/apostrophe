@@ -1,5 +1,8 @@
 <template>
-  <fieldset class="apos-breadcrumb-switch">
+  <fieldset
+    class="apos-breadcrumb-switch"
+    :class="{'apos-breadcrumb-switch--disabled': disabled}"
+  >
     <label
       v-for="choice in enhancedChoices"
       :key="choice.value"
@@ -85,7 +88,7 @@ export default {
         return;
       }
 
-      console.log('this.store', this.store)
+      console.log('this.store', this.store);
       const nonDisabledChoice = choices.find(choice => !choice.disabled);
       if (nonDisabledChoice) {
         this.update(nonDisabledChoice.value);
@@ -129,6 +132,25 @@ export default {
     outline: 0;
     box-shadow: 0 0 0 4px #b5c9fc;
   }
+
+  &--disabled {
+    .apos-breadcrumb-switch__input:not(:checked) + .apos-breadcrumb-switch__input-text {
+      background-color: var(--a-white);
+      border: none;
+      box-shadow: none;
+    }
+
+    .apos-breadcrumb-switch__input:checked + .apos-breadcrumb-switch__input-text {
+      box-shadow: 0 0 0 1px var(--a-base-5);
+      background-color: var(--a-base-5);
+      color: var(--a-text-primary);
+    }
+
+    .apos-breadcrumb-switch__label {
+      pointer-events: none;
+      opacity: 0.5
+    }
+  }
 }
 
 .apos-breadcrumb-switch__label {
@@ -162,6 +184,12 @@ export default {
     background-color: var(--a-primary-transparent-90);
     z-index: $z-index-default;
     color: var(--a-text-inverted);
+  }
+
+  &:disabled + .apos-breadcrumb-switch__input-text {
+    box-shadow: 0 0 0 1px var(--a-base-5);
+    background-color: var(--a-base-5);
+    color: var(--a-text-primary);
   }
 }
 
