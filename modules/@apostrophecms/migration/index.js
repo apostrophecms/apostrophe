@@ -310,7 +310,7 @@ module.exports = {
         // must be done
         task: () => {}
       },
-      addMissingSchemaFields: {
+      'add-missing-schema-fields': {
         usage: 'Add missing schema fields to existing database documents',
         task: async () => {
           self.apos.skipMigration = true;
