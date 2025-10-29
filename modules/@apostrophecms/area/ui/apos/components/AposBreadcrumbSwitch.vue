@@ -1,25 +1,25 @@
 <template>
   <fieldset class="apos-breadcrumb-switch">
-    <div>
-      <label
-        v-for="choice in enhancedChoices"
-        :key="choice.value"
-        v-apos-tooltip="choice.tooltip"
-        :for="choice.id"
-        :data-apos-test="`bcswitch:${choice.value}`"
+    <label
+      v-for="choice in enhancedChoices"
+      :key="choice.value"
+      v-apos-tooltip="choice.tooltip"
+      class="apos-breadcrumb-switch__label"
+      :for="choice.id"
+      :data-apos-test="`bcswitch:${choice.value}`"
+    >
+      <input
+        :id="choice.id"
+        v-model="store.data.value"
+        class="apos-breadcrumb-switch__input"
+        :value="choice.value"
+        type="radio"
+        :name="uniqueName"
+        :disabled="choice.disabled"
+        @input="update"
       >
-        <input
-          :id="choice.id"
-          v-model="store.data.value"
-          :value="choice.value"
-          type="radio"
-          :name="uniqueName"
-          :disabled="choice.disabled"
-          @input="update"
-        >
-        <span>{{ $t(choice.label) }}</span>
-      </label>
-    </div>
+      <span class="apos-breadcrumb-switch__input-text">{{ $t(choice.label) }}</span>
+    </label>
   </fieldset>
 </template>
 
@@ -97,6 +97,9 @@ export default {
 <style lang="scss" scoped>
 .apos-breadcrumb-switch {
   position: relative;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
   margin: 0;
   padding: 0;
   border: none;
@@ -105,61 +108,55 @@ export default {
     outline: 0;
     box-shadow: 0 0 0 4px #b5c9fc;
   }
+}
 
-  div {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: center;
+.apos-breadcrumb-switch__label {
+  display: flex;
+  align-items: center;
 
-    label:first-child span {
-      left: -1px;
-    }
-
-    label:last-child span {
-      right: -1px;
-    }
+  &:hover input:not(:checked) + span {
+    background-color: var(--a-base-9);
   }
 
-  input[type="radio"] {
-    position: absolute;
-    overflow: hidden;
-    width: 1px;
-    height: 1px;
-    clip: rect(0 0 0 0);
-    clip-path: inset(100%);
-    white-space: nowrap;
-
-    &:checked + span {
-      box-shadow: 0 0 0 1px var(--a-primary-dark-15);
-      background-color: var(--a-primary-transparent-90);
-      z-index: $z-index-default;
-      color: var(--a-text-inverted);
-    }
+  &:first-child .apos-breadcrumb-switch__input-text {
+    left: -1px;
   }
 
-  label {
-    display: flex;
-    align-items: center;
-
-    &:hover input:not(:checked) + span {
-      background-color: var(--a-base-9);
-    }
-
-    span {
-      position: relative;
-      display: inline-flex;
-      box-sizing: border-box;
-      align-items: center;
-      height: 100%;
-      margin-left: .063em;
-      padding: 0 8px;
-      color: var(--a-base-1);
-      text-align: center;
-      transition: background-color 500ms ease;
-      cursor: pointer;
-      letter-spacing: 0.5px;
-      border-radius: 4px;
-    }
+  &:last-child .apos-breadcrumb-switch__input-text {
+    right: -1px;
   }
+}
+
+.apos-breadcrumb-switch__input {
+  position: absolute;
+  overflow: hidden;
+  width: 1px;
+  height: 1px;
+  clip: rect(0 0 0 0);
+  clip-path: inset(100%);
+  white-space: nowrap;
+
+  &:checked + .apos-breadcrumb-switch__input-text {
+    box-shadow: 0 0 0 1px var(--a-primary-dark-15);
+    background-color: var(--a-primary-transparent-90);
+    z-index: $z-index-default;
+    color: var(--a-text-inverted);
+  }
+}
+
+.apos-breadcrumb-switch__input-text {
+  position: relative;
+  display: inline-flex;
+  box-sizing: border-box;
+  align-items: center;
+  height: 100%;
+  margin-left: .063em;
+  padding: 0 8px;
+  color: var(--a-base-1);
+  text-align: center;
+  transition: background-color 500ms ease;
+  cursor: pointer;
+  letter-spacing: 0.5px;
+  border-radius: 4px;
 }
 </style>
