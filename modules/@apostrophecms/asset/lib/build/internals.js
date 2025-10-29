@@ -317,7 +317,7 @@ module.exports = (self) => {
           if (seen[file]) {
             continue;
           }
-          copy(file, root);
+          await copy(file, root);
           seen[file] = true;
         }
       }

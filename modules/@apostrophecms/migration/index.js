@@ -67,16 +67,14 @@ module.exports = {
       // migration, wrap them with the `await apos.global.busy(myFunction)` API.
       // Note that this API involves a significant startup delay to allow
       // existing requests to terminate.
-      add(name, migrationFn, options) {
-        if (!options) {
-          options = {};
-        }
+      add(name, migrationFn, options = {}) {
         self.migrations.push({
           name,
           options,
           fn: migrationFn
         });
       },
+
       // Invoke the iterator function once for each doc in the aposDocs
       // collection. If only two arguments are given, `limit` is assumed to be 1
       // (only one doc may be processed at a time).

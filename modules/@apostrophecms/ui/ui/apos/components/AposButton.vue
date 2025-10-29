@@ -32,13 +32,24 @@
         v-if="colorStyle"
         class="apos-button__color-preview"
       >
-        <span
-          :style="colorStyle"
-          class="apos-button__color-preview__swatch"
-        />
-        <div class="apos-button__color-preview__checkerboard">
-          <AposColorCheckerboard />
+        <div class="apos-button__color-preview__edit">
+          <AposIndicator
+            class="apos-button__icon"
+            icon="format-color-fill-icon"
+            :icon-size="type === 'color-micro' ? 18 : 22"
+            :icon-color="type === 'color-micro' ? 'var(--a-base-2)' : 'var(--a-base-6)'"
+          />
         </div>
+        <div class="apos-button__color-preview__sample">
+          <span
+            :style="colorStyle"
+            class="apos-button__color-preview__swatch"
+          />
+          <div class="apos-button__color-preview__checkerboard">
+            <AposColorCheckerboard />
+          </div>
+        </div>
+
       </span>
       <div class="apos-button__content">
         <AposIndicator
@@ -52,7 +63,7 @@
         <slot name="label">
           <span
             class="apos-button__label"
-            :class="{ 'apos-sr-only' : (iconOnly || type === 'color') }"
+            :class="{ 'apos-sr-only' : (iconOnly || type?.includes('color')) }"
           >
             {{ $t(label, interpolate) }}
           </span>
@@ -178,7 +189,7 @@ export default {
       return this.disableFocus ? '-1' : '0';
     },
     colorStyle() {
-      if (this.type === 'color') {
+      if (this.type?.includes('color')) {
         // if color exists, use it
         if (this.color) {
 
@@ -339,18 +350,49 @@ export default {
     background-color: transparent;
   }
 
-  .apos-button.apos-button--color {
-    width: 50px;
-    height: 50px;
+  .apos-button.apos-button--color,
+  .apos-button.apos-button--color-micro {
+    width: 40px;
+    height: 40px;
     padding: 0;
-    border: 0;
-    border-radius: 50%;
-    box-shadow: var(--a-box-shadow);
+    border: 1px solid var(--a-base-8);
+    border-radius: 3px;
+  }
+
+  .apos-button.apos-button--color-micro {
+    width: 20px;
+    height: 20px;
   }
 
   .apos-button__color-preview {
     width: 100%;
     height: 100%;
+  }
+
+  .apos-button__color-preview__edit {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 70%;
+    background: var(--a-white);
+
+    &:deep(.apos-button__icon) {
+      margin-right: 0;
+    }
+
+    &:deep(svg) {
+      position: relative;
+      top: 2px;
+    }
+  }
+
+  .apos-button__color-preview__sample {
+    position: relative;
+    overflow: hidden;
+    width: 100%;
+    height: 30%;
   }
 
   .apos-button__color-preview,
@@ -359,7 +401,6 @@ export default {
     position: absolute;
     top: 0;
     left: 0;
-    border-radius: 50%;
   }
 
   .apos-button__color-preview__swatch,

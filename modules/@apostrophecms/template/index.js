@@ -1314,11 +1314,14 @@ module.exports = {
           // Annotate each individual widget with its options
           // Each widget must elect into this by creating an
           // `annotateWidgetForExternalFront() method.
-          const manager = self.apos.area.getManager?.(item.type) ||
-            self.apos.area.widgetManagers?.[item.type];
-
-          const widgetOptions = manager.annotateWidgetForExternalFront() || {};
-          item._options = widgetOptions;
+          const manager = self.apos.area.getWidgetManager(item.type);
+          if (manager) {
+            const widgetOptions = manager.annotateWidgetForExternalFront();
+            item._options = widgetOptions;
+          } else {
+            self.apos.area.warnMissingWidgetType(item.type);
+            throw self.apos.error('invalid', 'Missing widget type');
+          }
         }
       }
     };

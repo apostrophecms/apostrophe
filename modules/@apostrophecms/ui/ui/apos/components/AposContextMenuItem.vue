@@ -14,6 +14,7 @@
       :tabindex="tabindex"
       role="menuitem"
       data-apos-test="context-menu-item"
+      :data-apos-test-context-menu-button="$t(label)"
       :data-apos-test-selected="selected"
       :data-apos-test-danger="danger"
       :data-apos-test-disabled="disabled"

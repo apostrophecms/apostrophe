@@ -1,5 +1,6 @@
 const _ = require('lodash');
 const { stripIndent } = require('common-tags');
+const cheerio = require('cheerio');
 
 // An area is a series of zero or more widgets, in which users can add
 // and remove widgets and drag them to reorder them. This module implements
@@ -270,7 +271,9 @@ module.exports = {
           self.missingWidgetTypes = {};
         }
         if (!self.missingWidgetTypes[name]) {
-          self.apos.util.error('WARNING: widget type ' + name + ' exists in content but is not configured');
+          self.apos.util.error(`WARNING: widget type ${name} exists in your database but is not configured.\n` +
+            `You probably do not have a ${name}-widget module in your project.`
+          );
           self.missingWidgetTypes[name] = true;
         }
       },
@@ -292,6 +295,10 @@ module.exports = {
       // If `inline` is true then the rendering of each widget is attached
       // to the widget as a `_rendered` property, bypassing normal full-area
       // HTML responses, and the return value of this method is `null`.
+      //
+      // If an external front key is configured, ApostropheCMS will attempt
+      // to render the widget via Astro before attempting to render it
+      // natively.
       async renderArea(req, area, _with, { inline = false } = {}) {
         if (!area._id) {
           throw new Error('All areas must have an _id property in A3.x. Area details:\n\n' + JSON.stringify(area));
@@ -337,27 +344,86 @@ module.exports = {
           // just use the helpers
           self.apos.attachment.all(area, { annotate: true });
         }
-        if (inline) {
-          for (const item of area.items) {
-            item._rendered = await self.renderWidget(
-              req,
-              item.type,
-              item,
-              widgets[item.type]
-            );
-          }
-          return null;
+
+        let externalError = null;
+        if (!self.apos.externalFrontKey) {
+          return renderNatively();
         }
-        return self.render(req, 'area', {
-          // TODO filter area to exclude big relationship objects, but
-          // not so sloppy this time please
-          area,
-          field,
-          options,
-          choices,
-          _with,
-          canEdit
-        });
+
+        try {
+          return await renderViaExternalFront();
+        } catch (e) {
+          externalError = e;
+        }
+        try {
+          return await renderNatively();
+        } catch (e) {
+          throw new Error('Could not render area for API, neither via the external frontend nor natively.\n\n' +
+            'Check your Astro server logs as well.\n\n' +
+            niceError(externalError) + '\n\n' +
+            niceError(e)
+          );
+        }
+
+        async function renderViaExternalFront() {
+          if (!self.apos.baseUrl && self.apos.externalFrontKey) {
+            throw new Error('APOS_BASE_URL and APOS_EXTERNAL_FRONT_KEY must both be set in order to render\nvia the external frontend');
+          }
+          // Astro can render components or return JSON but not both, at least not without
+          // using its experimental container API which would potentially not have
+          // the same configuration as the main Astro project. So we let Astro be Astro,
+          // then we pull out the individual renderings with Cheerio. -Tom
+          const response = await fetch(`${self.apos.baseUrl}/api/apos-external-front/render-area`, {
+            method: 'POST',
+            headers: {
+              'apos-external-front-key': self.apos.externalFrontKey
+            },
+            body: JSON.stringify({
+              area
+            })
+          });
+          if (response.status >= 400) {
+            throw response;
+          }
+          const html = await response.text();
+          const $ = cheerio.load(`<div id="root">${html}</div>`);
+          if (inline) {
+            for (let i = 0; (i < area.items.length); i++) {
+              area.items[i]._rendered = $(`#root [data-widget-id="${area.items[i]._id}"]`).html() || '';
+            }
+            return null;
+          } else {
+            const $children = $('#root [data-widget-id]');
+            return $children.map(function() {
+              return $(this).html();
+            }).join('\n');
+          }
+        }
+
+        async function renderNatively() {
+          if (inline) {
+            for (const item of area.items) {
+              item._rendered = await self.renderWidget(
+                req,
+                item.type,
+                item,
+                widgets[item.type]
+              );
+            }
+            return null;
+          } else {
+            return self.render(req, 'area', {
+              // TODO filter area to exclude big relationship objects, but
+              // not so sloppy this time please
+              area,
+              field,
+              options,
+              choices,
+              _with,
+              canEdit
+            });
+          }
+        }
       },
       // Replace documents' area objects with rendered HTML for each area.
       // This is used by GET requests including the `render-areas` query
@@ -373,6 +439,10 @@ module.exports = {
         let index = 0;
         // Loop over the docs in the array passed in.
         for (const doc of within) {
+          if (self.apos.externalFrontKey) {
+            self.apos.template.annotateDocForExternalFront(doc);
+          }
+
           const rendered = [];
 
           const areasToRender = {};
@@ -409,8 +479,8 @@ module.exports = {
           index++;
         }
 
-        async function render(area, path, context, opts) {
-          const preppedArea = self.prepForRender(area, context, path);
+        async function render(area, path, context) {
+          const preppedArea = self.prepForRender(area, context, path.split('.').at(-1));
 
           const areaRendered = await self.apos.area.renderArea(
             req,
@@ -903,3 +973,9 @@ module.exports = {
     };
   }
 };
+
+function niceError(e) {
+  // Node.js includes the error message in the stack property, it's
+  // actually a complete rendering plus the stack 🤷
+  return e.stack;
+}
