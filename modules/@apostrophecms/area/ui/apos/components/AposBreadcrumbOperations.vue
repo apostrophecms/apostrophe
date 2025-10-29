@@ -210,9 +210,9 @@ export default {
             ...this.operationButtonDefault,
             icon: operation.icon
           },
-          tooltip: operation.tooltip || null,
           teleportContent: this.teleportModals,
-          disabled
+          disabled,
+          tooltip
         };
       }
 
