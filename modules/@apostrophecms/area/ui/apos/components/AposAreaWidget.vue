@@ -463,7 +463,12 @@ export default {
         return false;
       }
       const screenWidth = parseInt(curScreen.width);
-      return screenWidth < 700;
+      const layoutWidgetGrid = apos.modules['@apostrophecms/layout-widget'].grid;
+      if (!layoutWidgetGrid) {
+        return false;
+      }
+      const tinyScreenStart = Math.max(layoutWidgetGrid.tablet.breakpoint, layoutWidgetGrid.mobile.breakpoint);
+      return screenWidth <= tinyScreenStart;
     }
   },
   watch: {
