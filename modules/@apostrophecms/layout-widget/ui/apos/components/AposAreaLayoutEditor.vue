@@ -272,6 +272,7 @@ export default {
         return;
       }
       this.layoutMode = data.value;
+      this.updateWidget(widgetId, 'layout:switch', this.layoutMode);
     },
     onRemoveLayoutColumn({ widgetId }) {
       this.cleanRemovedWidget();
