@@ -1,7 +1,7 @@
 <template>
   <fieldset
     class="apos-breadcrumb-switch"
-    :class="{'apos-breadcrumb-switch--disabled': disabled}"
+    :class="{'apos-breadcrumb-switch--disabled': isDisabled}"
   >
     <label
       v-for="choice in enhancedChoices"
@@ -67,6 +67,9 @@ export default {
     };
   },
   computed: {
+    isDisabled() {
+      return this.disabled || this.enhancedChoices.some((choice) => choice.disabled);
+    },
     uniqueName() {
       return `${this.name}-${this.widgetId}`;
     },
@@ -132,6 +135,10 @@ export default {
   }
 
   &--disabled {
+    .apos-breadcrumb-switch__input:not(:checked) + .apos-breadcrumb-switch__input-text:hover {
+      background-color: inherit;
+    }
+
     .apos-breadcrumb-switch__input:not(:checked) + .apos-breadcrumb-switch__input-text {
       background-color: var(--a-white);
       border: none;
@@ -145,7 +152,7 @@ export default {
     }
 
     .apos-breadcrumb-switch__label {
-      pointer-events: none;
+      /* pointer-events: none; */
       opacity: 0.5
     }
   }
@@ -182,16 +189,6 @@ export default {
     background-color: var(--a-primary-transparent-90);
     z-index: $z-index-default;
     color: var(--a-text-inverted);
-  }
-
-  &:disabled {
-    + .apos-breadcrumb-switch__input-text {
-      opacity: 0.5;
-
-      &:hover {
-        background-color: inherit;
-      }
-    }
   }
 }
 
