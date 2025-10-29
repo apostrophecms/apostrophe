@@ -50,7 +50,6 @@
 <script>
 import { mapActions } from 'pinia';
 import { useWidgetStore } from 'Modules/@apostrophecms/ui/stores/widget';
-import checkIfConditions from 'apostrophe/lib/universal/check-if-conditions.mjs';
 import { isOperationDisabled, getOperationTooltip } from '../lib/operations.js';
 
 export default {
