@@ -529,9 +529,9 @@ module.exports = {
       },
 
       validateWidgetBreadcrumbOperation(name, operation) {
-        if (operation.type === 'switch' && !operation.choices?.length) {
+        if (operation.type === 'switch' && operation.choices?.length !== 2) {
           throw self.apos.error('invalid',
-            `widgetOperation "${name}" of type "switch" requires a non-empty choices array.`
+            `widgetOperation "${name}" of type "switch" requires a non-empty choices array and supports only two choices.`
           );
         }
         if (operation.type === 'info' && operation.modal) {
