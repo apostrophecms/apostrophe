@@ -39,7 +39,7 @@ module.exports = {
               disabledIfProps: {
                 tinyScreen: true
               },
-              disabledTooltip: 'apostrophe:editColumnsDisabledTinyScreen'
+              disabledTooltip: 'apostrophe:editColumnsDisabledSmallScreen'
             }
           ],
           action: 'apos-switch-layout-mode',
