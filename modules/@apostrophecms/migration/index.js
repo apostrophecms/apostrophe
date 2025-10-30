@@ -325,9 +325,9 @@ module.exports = {
       },
       'add-missing-schema-fields': {
         usage: 'Add missing schema fields to existing database documents',
-        task: async () => {
-          await self.addMissingSchemaFields();
-        }
+        // self.addMissingSchemaFields is actually run as a before handler
+        // on every invocation
+        task: async () => {}
       }
     };
   }

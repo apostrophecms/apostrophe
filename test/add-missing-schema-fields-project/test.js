@@ -53,6 +53,8 @@ describe('Apostrophe - add-missing-schema-fields task', function() {
       migrations: migrations.map(migration => migration._id)
     };
     const expected = {
+      // NOTE: *lastPropLists is there because it always run
+      // cf. before handler in the migration module
       migrations: [ '*lastPropLists' ]
     };
 
