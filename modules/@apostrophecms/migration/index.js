@@ -328,12 +328,7 @@ module.exports = {
       'add-missing-schema-fields': {
         usage: 'Add missing schema fields to existing database documents',
         task: async () => {
-          const result = await self.addMissingSchemaFields();
-          const migrations = await self.db.find().toArray();
-          console.log({
-            result,
-            migrations
-          });
+          await self.addMissingSchemaFields();
         }
       }
     };
