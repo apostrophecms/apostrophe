@@ -2,6 +2,16 @@
 
 ## UNRELEASED
 
+### Add
+
+* Add `@apostrophecms/migration:add-missing-schema-fields` task. This task does not run database migrations.
+
+### Changes
+
+### Fixes
+
+## UNRELEASED
+
 ### Adds
 
 * Add locale picker in the page and piece manager modals.
