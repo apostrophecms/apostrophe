@@ -26,16 +26,6 @@ module.exports = {
   },
   handlers(self) {
     return {
-      [`${self.__meta.name}:before`]: {
-        setSkipMigration() {
-          if (
-            self.apos.isTask() &&
-            self.options.skipMigrationTasks.includes(self.apos.argv._.at(0))
-          ) {
-            self.apos.skipMigration = true;
-          }
-        }
-      },
       'apostrophe:ready': {
         addSortifyMigrations() {
           const managers = self.apos.doc.managers;
@@ -58,6 +48,14 @@ module.exports = {
         }
       },
       before: {
+        setSkipMigration() {
+          if (
+            self.apos.isTask() &&
+            self.options.skipMigrationTasks.includes(self.apos.argv._.at(0))
+          ) {
+            self.apos.skipMigration = true;
+          }
+        },
         async addMissingSchemaFields() {
           await self.addMissingSchemaFields();
         }
