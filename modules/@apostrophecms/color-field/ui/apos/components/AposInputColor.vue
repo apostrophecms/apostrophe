@@ -139,19 +139,4 @@ export default {
     display: flex;
   }
 
-  .apos-field--micro {
-    .apos-input-color__preset-button {
-      width: 20px;
-      height: 20px;
-    }
-
-    .apos-input-color {
-      gap: $spacing-half;
-    }
-
-    .apos-input-color__ui {
-      gap: 3px;
-    }
-  }
-
 </style>
