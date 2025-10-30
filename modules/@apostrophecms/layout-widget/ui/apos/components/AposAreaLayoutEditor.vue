@@ -367,7 +367,7 @@ export default {
     onRemoveItem({ _id, patches }) {
       const index = this.next.findIndex(w => w._id === _id);
       if (index !== -1 && this.next[index].type === this.layoutColumnWidgetName) {
-        this.remove(index);
+        this.remove({ index });
       }
       this.layoutPatchMany(patches);
     },

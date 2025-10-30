@@ -215,19 +215,20 @@ export default {
         }
         return;
       }
+      const payload = {
+        widgetId: this.modelValue._id,
+        index: this.index
+      };
       if (nativeAction) {
         this.$emit('operation', {
           name: nativeAction,
-          payload: {
-            widgetId: this.modelValue._id,
-            index: this.index
-          }
+          payload
         });
         return;
       }
 
       if (action) {
-        apos.bus.$emit(action);
+        apos.bus.$emit(action, payload);
       }
     }
   }
