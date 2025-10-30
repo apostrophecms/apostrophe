@@ -137,7 +137,7 @@ export default {
           listeners: this.getOperationListeners(operation),
           name: operation.name || null,
           action: operation.action || null,
-          key: operation.action || operation.name,
+          key: operation.name,
           type: operation.type,
           modal: operation.modal || null
         }));

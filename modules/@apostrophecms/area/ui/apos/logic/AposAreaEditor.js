@@ -212,7 +212,7 @@ export default {
         return;
       }
 
-      this.copy(this.focusedWidgetIndex);
+      this.copy({ index: this.focusedWidgetIndex });
     },
     handleCut() {
       if (
@@ -223,7 +223,7 @@ export default {
         return;
       }
 
-      this.cut(this.focusedWidgetIndex);
+      this.cut({ index: this.focusedWidgetIndex });
     },
     handleDuplicate() {
       if (
@@ -234,7 +234,7 @@ export default {
         return;
       }
 
-      this.clone(this.focusedWidgetIndex);
+      this.clone({ index: this.focusedWidgetIndex });
     },
     handlePaste() {
       if (
@@ -245,7 +245,7 @@ export default {
         return;
       }
 
-      this.paste(Math.max(this.focusedWidgetIndex, 0));
+      this.paste({ index: Math.max(this.focusedWidgetIndex, 0) });
     },
     handleRemove() {
       if (
@@ -256,7 +256,7 @@ export default {
         return;
       }
 
-      this.remove(this.focusedWidgetIndex);
+      this.remove({ index: this.focusedWidgetIndex });
     },
     areaUpdatedHandler(area) {
       for (const item of this.next) {
@@ -328,7 +328,7 @@ export default {
     },
     async cut({ index }) {
       apos.area.widgetClipboard.set(this.next[index]);
-      await this.remove(index);
+      await this.remove({ index });
       apos.notify('Widget cut to clipboard', {
         type: 'success',
         icon: 'content-cut-icon',
@@ -409,14 +409,14 @@ export default {
         }
       }
     },
-    clone(index) {
+    clone({ index }) {
       const widget = cloneWidget(this.next[index]);
       this.insert({
         widget,
         index: index + 1
       });
     },
-    async paste(index) {
+    async paste({ index }) {
       const clipboard = apos.area.widgetClipboard.get();
       if (clipboard) {
         const widget = clipboard;
@@ -559,7 +559,7 @@ export default {
         ...this.next.slice(index)
       ];
       if (this.widgetIsContextual(widget.type)) {
-        this.edit(index);
+        this.edit({ index });
       }
       this.setFocusedWidget(widget._id, this.areaId, { scrollTo: true });
     },

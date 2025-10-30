@@ -219,6 +219,7 @@ module.exports = {
     return {
       add: {
         nudgeUp: {
+          label: 'apostrophe:nudgeUp',
           icon: 'arrow-up-icon',
           tooltip: 'apostrophe:nudgeUp',
           nativeAction: 'up',
@@ -227,6 +228,7 @@ module.exports = {
           }
         },
         nudgeDown: {
+          label: 'apostrophe:nudgeDown',
           icon: 'arrow-down-icon',
           tooltip: 'apostrophe:nudgeDown',
           nativeAction: 'down',
@@ -236,12 +238,14 @@ module.exports = {
         },
         ...!options.contextual && {
           edit: {
+            label: 'apostrophe:edit',
             icon: 'pencil-icon',
             tootip: 'apostrophe:editWidget',
             nativeAction: 'edit'
           }
         },
         remove: {
+          label: 'apostrophe:remove',
           icon: 'trash-can-outline-icon',
           tooltip: 'apostrophe:delete',
           nativeAction: 'remove'
