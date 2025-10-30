@@ -14,7 +14,12 @@ const addMissingSchemaFields = require('./lib/addMissingSchemaFields.js');
 // is difficult to guarantee, you may wish to write a task instead.
 
 module.exports = {
-  options: { alias: 'migration' },
+  options: {
+    alias: 'migration',
+    skipMigrationTasks: [
+      '@apostrophecms/migration:add-missing-schema-fields'
+    ]
+  },
   async init(self) {
     self.migrations = [];
     await self.enableCollection();
@@ -43,6 +48,14 @@ module.exports = {
         }
       },
       before: {
+        setSkipMigration() {
+          if (
+            self.apos.isTask() &&
+            self.options.skipMigrationTasks.includes(self.apos.argv._.at(0))
+          ) {
+            self.apos.skipMigration = true;
+          }
+        },
         async addMissingSchemaFields() {
           await self.addMissingSchemaFields();
         }
@@ -237,6 +250,10 @@ module.exports = {
       // the @apostrophecms/migration:migrate task
       async migrate(options) {
         await self.emit('before');
+        if (self.apos.skipMigration === true) {
+          return;
+        }
+
         if (self.apos.isNew) {
           // Since the site is brand new (zero documents), we may assume
           // it requires no migrations. Mark them all as "done" but note
@@ -305,6 +322,12 @@ module.exports = {
         // and automatically detect whether any work
         // must be done
         task: () => {}
+      },
+      'add-missing-schema-fields': {
+        usage: 'Add missing schema fields to existing database documents',
+        // self.addMissingSchemaFields is actually run as a before handler
+        // on every invocation
+        task: async () => {}
       }
     };
   }
