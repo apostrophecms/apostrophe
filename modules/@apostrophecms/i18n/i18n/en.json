@@ -175,7 +175,7 @@
   "duplicateOf": "Duplicate of",
   "edit": "Edit",
   "editColumns": "Edit Columns",
-  "editColumnsDisabledTinyScreen": "Edit Columns is disabled on tiny screen",
+  "editColumnsDisabledSmallScreen": "Disabled on small screens",
   "editContent": "Edit Content",
   "editImageAdjustments": "Image Adjustments",
   "editImageRelationshipTitle": "Adjust Image",
