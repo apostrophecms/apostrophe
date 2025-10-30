@@ -1,13 +1,4 @@
-module.exports = {
-  root: module,
-  shortName: 'add-missing-schema-fields-project',
-  baseUrl: 'http://localhost:3000',
-  modules: {
-    '@apostrophecms/express': {
-      options: {
-        address: '127.0.0.1'
-      }
-    },
-    product: {}
-  }
-};
+import config from './config.js';
+import apostrophe from '../../index.js';
+
+export default apostrophe(config);

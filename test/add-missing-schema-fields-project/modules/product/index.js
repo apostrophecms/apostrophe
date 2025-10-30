@@ -1,4 +1,4 @@
-module.exports = {
+export default {
   extend: '@apostrophecms/piece-type',
   options: {
     label: 'Product',

@@ -1,9 +1,10 @@
 import { strict as assert } from 'node:assert';
+import process from 'node:process';
 import path from 'node:path';
 import util from 'node:util';
 import { exec } from 'node:child_process';
 import t from '../../test-lib/test.js';
-import app from './app.js';
+import config from './config.js';
 
 describe('Apostrophe - add-missing-schema-fields task', function() {
   this.timeout(t.timeout);
@@ -11,44 +12,39 @@ describe('Apostrophe - add-missing-schema-fields task', function() {
   let apos;
 
   before(async function() {
-    await util.promisify(exec)('npm install', { cwd: path.resolve(process.cwd(), 'test/add-missing-schema-fields-project') });
+    await util.promisify(exec)(
+      'npm install',
+      { cwd: path.resolve(process.cwd(), 'test/add-missing-schema-fields-project/') }
+    );
   });
 
   afterEach(function() {
     return t.destroy(apos);
   });
 
-  it.only('should not run migrations when running the task', async function() {
-    await util.promisify(exec)('node app.js @apostrohecms/migration:add-missing-schema-fields', { cwd: path.resolve(process.cwd(), 'test/add-missing-schema-fields-project') });
+  it('should not run migrations when running the task', async function() {
+    await util.promisify(exec)(
+      'node app.js @apostrophecms/migration:add-missing-schema-fields',
+      { cwd: path.resolve(process.cwd(), 'test/add-missing-schema-fields-project/') }
+    );
 
     apos = await t.create({
-      ...app,
-      argv: {
-        _: [ '@apostrophecms/migration:add-missing-schema-fields' ]
-        // _: [ '@apostrophecms/migration:force-skip-migration' ]
-      },
-      root: import.meta
-      // modules: {
-      //   ...app.modules
-      //   // '@apostrophecms/migration': {
-      //   //   async init(self) {
-      //   //     self.apos.skipMigration = true;
-      //   //     console.log('skip true');
-      //   //   },
-      //   //   tasks(self) {
-      //   //     return {
-      //   //       'force-skip-migration': {
-      //   //         usage: 'Force skip migration',
-      //   //         task: async () => {
-      //   //           self.apos.skipMigration = true;
-      //   //           const migrations = await self.apos.migration.db.find().toArray();
-      //   //           console.log({ migrations });
-      //   //         }
-      //   //       }
-      //   //     };
-      //   //   }
-      //   // }
-      // }
+      ...config,
+      root: import.meta,
+      modules: {
+        ...config.modules,
+        debug: {
+          handlers(self) {
+            return {
+              '@apostrophecms/migration:before': {
+                forceSkipMigration() {
+                  self.apos.skipMigration = true;
+                }
+              }
+            };
+          }
+        }
+      }
     });
 
     const migrations = await apos.migration.db.find().toArray();
@@ -57,22 +53,35 @@ describe('Apostrophe - add-missing-schema-fields task', function() {
       migrations: migrations.map(migration => migration._id)
     };
     const expected = {
-      migrations: []
+      migrations: [ '*lastPropLists' ]
     };
 
     assert.deepEqual(actual, expected);
   });
 
   it('should run migrations when running @apostrophecms/migration:migrate task', async function() {
-    await util.promisify(exec)('node app.js @apostrohecms/migration:migrate', { cwd: path.resolve(process.cwd(), 'test/add-missing-schema-fields-project') });
+    await util.promisify(exec)(
+      'node app.js @apostrophecms/migration:migrate',
+      { cwd: path.resolve(process.cwd(), 'test/add-missing-schema-fields-project/') }
+    );
 
     apos = await t.create({
-      ...app,
-      isTask() {
-        return true;
-      },
-      skipMigration: true,
-      root: import.meta
+      ...config,
+      root: import.meta,
+      modules: {
+        ...config.modules,
+        debug: {
+          handlers(self) {
+            return {
+              '@apostrophecms/migration:before': {
+                forceSkipMigration() {
+                  self.apos.skipMigration = true;
+                }
+              }
+            };
+          }
+        }
+      }
     });
 
     const migrations = await apos.migration.db.find().toArray();
@@ -81,35 +90,9 @@ describe('Apostrophe - add-missing-schema-fields task', function() {
       migrations: migrations.map(migration => migration._id)
     };
     const expected = {
-      migrations: [
-        '*lastPropLists',
-        'fix-length-property',
-        '@apostrophecms/attachment.docReferencesContained',
-        'svg-sanitization',
-        'retire-published-field',
-        'duplicate-or-missing-widget-id',
-        'add-draft-published',
-        'add lastPublishedAt to all published drafts without it',
-        'add-last-published-to-published-docs',
-        'add-apos-mode',
-        'store-relationship-ids-as-apos-doc-ids',
-        'add-cache-invalidated-at-field',
-        'set-previous-docs-apos-mode',
-        'set-document-modes',
-        'remove-polymorphic-type-alias',
-        'deduplicate-archive-rank',
-        'fix-home-page-path',
-        'rename-trash-to-archived',
-        'misreplicated-parked-pages',
-        'duplicate-parked-pages',
-        'deduplicateRanks2',
-        'missingLastPublishedAt',
-        'search-index-fix',
-        'deduplicate-widget-ids',
-        'add-role-to-user',
-        'add-first-product',
-        'add-copyright-notice'
-      ]
+      migrations: [ '*lastPropLists' ].concat(
+        apos.migration.migrations.map(migration => migration.name)
+      )
     };
 
     assert.deepEqual(actual, expected);
@@ -117,7 +100,7 @@ describe('Apostrophe - add-missing-schema-fields task', function() {
 
   it('should run migrations when starting apostrophe', async function() {
     apos = await t.create({
-      ...app,
+      ...config,
       root: import.meta
     });
 
@@ -127,35 +110,9 @@ describe('Apostrophe - add-missing-schema-fields task', function() {
       migrations: migrations.map(migration => migration._id)
     };
     const expected = {
-      migrations: [
-        '*lastPropLists',
-        'fix-length-property',
-        '@apostrophecms/attachment.docReferencesContained',
-        'svg-sanitization',
-        'retire-published-field',
-        'duplicate-or-missing-widget-id',
-        'add-draft-published',
-        'add lastPublishedAt to all published drafts without it',
-        'add-last-published-to-published-docs',
-        'add-apos-mode',
-        'store-relationship-ids-as-apos-doc-ids',
-        'add-cache-invalidated-at-field',
-        'set-previous-docs-apos-mode',
-        'set-document-modes',
-        'remove-polymorphic-type-alias',
-        'deduplicate-archive-rank',
-        'fix-home-page-path',
-        'rename-trash-to-archived',
-        'misreplicated-parked-pages',
-        'duplicate-parked-pages',
-        'deduplicateRanks2',
-        'missingLastPublishedAt',
-        'search-index-fix',
-        'deduplicate-widget-ids',
-        'add-role-to-user',
-        'add-first-product',
-        'add-copyright-notice'
-      ]
+      migrations: [ '*lastPropLists' ].concat(
+        apos.migration.migrations.map(migration => migration.name)
+      )
     };
 
     assert.deepEqual(actual, expected);
