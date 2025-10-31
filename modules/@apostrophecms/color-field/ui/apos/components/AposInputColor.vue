@@ -20,6 +20,7 @@
           <AposContextMenu
             :button="buttonOptions"
             menu-placement="bottom-start"
+            identifier="color-button"
             :disabled="field.readOnly"
             :tooltip="tooltip"
             class="apos-input-color__sample-picker"
@@ -136,21 +137,6 @@ export default {
 
   .apos-input-color__ui--micro .apos-input-color__preset-wrapper {
     display: flex;
-  }
-
-  .apos-field--micro {
-    .apos-input-color__preset-button {
-      width: 20px;
-      height: 20px;
-    }
-
-    .apos-input-color {
-      gap: $spacing-half;
-    }
-
-    .apos-input-color__ui {
-      gap: 3px;
-    }
   }
 
 </style>

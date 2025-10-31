@@ -80,11 +80,12 @@ export const useWidgetStore = defineStore('widget', () => {
   }
 
   function updateWidget(id, namespace, data) {
-    if (!refs.value[toId(id, namespace)]) {
+    const widget = refs.value[toId(id, namespace)];
+    if (!widget) {
       return null;
     }
-    refs.value[toId(id, namespace)].data.value = data;
-    return refs.value[toId(id, namespace)];
+    widget.data.value = data;
+    return widget;
   }
 
   function remove(id, namespace) {

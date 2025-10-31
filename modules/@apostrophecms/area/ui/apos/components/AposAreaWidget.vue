@@ -80,13 +80,14 @@
         <AposBreadcrumbOperations
           v-if="widgetBreadcrumbOperations.length > 0"
           :i="i"
+          :tiny-screen="tinyScreen"
           :widget="widget"
           :options="options"
           :disabled="disabled"
           :is-focused="isFocused"
           @widget-focus="getFocus"
           @update="$emit('update', $event)"
-          @operation="onBreadcrumbOperation"
+          @operation="onOperation"
         />
       </div>
       <div
@@ -128,6 +129,7 @@
       >
         <AposWidgetControls
           v-if="!foreign"
+          :index="i"
           :first="i === 0"
           :last="i === next.length - 1"
           :options="{ contextual: isContextual }"
@@ -136,14 +138,8 @@
           :tabbable="isFocused"
           :model-value="widget"
           :widget-options="widgetOptions"
-          @up="$emit('up', i);"
-          @remove="$emit('remove', i);"
-          @edit="$emit('edit', i);"
-          @cut="$emit('cut', i);"
-          @copy="$emit('copy', i);"
-          @clone="$emit('clone', i);"
-          @down="$emit('down', i);"
           @update="$emit('update', $event)"
+          @operation="onOperation"
         />
       </div>
 
@@ -211,7 +207,7 @@
 <script>
 import { mapState, mapActions } from 'pinia';
 import { useWidgetStore } from 'Modules/@apostrophecms/ui/stores/widget';
-
+import { useBreakpointPreviewStore } from 'Modules/@apostrophecms/ui/stores/breakpointPreview.js';
 export default {
   name: 'AposAreaWidget',
   props: {
@@ -357,6 +353,7 @@ export default {
       'hoveredNonForeignWidget',
       'emphasizedWidgets'
     ]),
+    ...mapState(useBreakpointPreviewStore, { breakpointPreviewMode: 'mode' }),
     // Passed only to the preview layer (custom preview components).
     followingValuesWithParent() {
       return Object.entries(this.followingValues || {})
@@ -402,7 +399,8 @@ export default {
       return (this.widgetModuleOptions.widgetBreadcrumbOperations || []);
     },
     shouldSkipEdit() {
-      return this.widgetModuleOptions.skipOperations?.includes('edit') ?? false;
+      return !this.widgetModuleOptions.widgetOperations
+        .some((op) => op.action === 'edit');
     },
     isFocused() {
       return this.focusedWidget === this.widget._id;
@@ -451,7 +449,29 @@ export default {
     },
     foreign() {
       // Cast to boolean is necessary to satisfy prop typing
-      return !!(this.docId && (window.apos.adminBar.contextId !== this.docId));
+      return !!(this.docId && (apos.adminBar.contextId !== this.docId));
+    },
+    tinyScreen() {
+      if (!this.breakpointPreviewMode) {
+        return false;
+      }
+      // How to detect mobile if users have their own screen names..
+      // Should we consider the tinier the mobile, or should we degine an abstract value?
+      const [ _, curScreen ] = Object.entries(apos.adminBar.breakpointPreviewMode.screens)
+        .find(([ screen, _ ]) => screen === this.breakpointPreviewMode) || [ null, null ];
+      if (!curScreen) {
+        return false;
+      }
+      const screenWidth = parseInt(curScreen.width);
+      const layoutWidgetGrid = apos.modules['@apostrophecms/layout-widget'].grid;
+      if (!layoutWidgetGrid) {
+        return false;
+      }
+      const tinyScreenStart = Math.max(
+        layoutWidgetGrid.tablet?.breakpoint,
+        layoutWidgetGrid.mobile?.breakpoint
+      );
+      return screenWidth <= tinyScreenStart;
     }
   },
   watch: {
@@ -503,7 +523,7 @@ export default {
     }
 
     this.$nextTick(() => {
-      this.adminBarHeight = window.apos.adminBar.height;
+      this.adminBarHeight = apos.adminBar.height;
       this.controlsHeight = this.$refs.modifyControls.getBoundingClientRect().height;
 
       // The height of elements we need to account for when re-attaching the controls
@@ -524,9 +544,9 @@ export default {
   },
   methods: {
     ...mapActions(useWidgetStore, [ 'setFocusedWidget', 'setHoveredWidget' ]),
-    // Emits same actions as the Standard operations,
-    // e.g ('edit', i), ('remove', i), etc.
-    onBreadcrumbOperation({ name, payload }) {
+    // Emits same actions as the native operations,
+    // e.g ('edit', { index }), ('remove', { index }), etc.
+    onOperation({ name, payload }) {
       this.$emit(name, payload);
     },
     updateStickyStyles(newStyles) {
