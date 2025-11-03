@@ -862,7 +862,6 @@ export default {
     async switchLocale({
       locale, save, localized, toLocalize
     }) {
-      console.log('=====> switch locale in doc editor <=====');
       if (save) {
         const saved = await this.saveHandler('onSave', {
           keepOpen: true,
@@ -896,8 +895,6 @@ export default {
           locale
         }
       });
-
-      console.log('=====> UPDATINGLOCALEDATA <=====');
       this.switchModalLocale(locale.name);
     },
     switchModalLocale(locale) {
