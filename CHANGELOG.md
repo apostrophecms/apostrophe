@@ -2,6 +2,14 @@
 
 ## UNRELEASED
 
+### Changes
+
+* When selecting pieces or pages to populate a relationship, the "New Piece" / "New Page" buttons are easier to find. They are no longer hidden away in a context menu.
+* When you create a new item while editing a relationship, that item is automatically selected, as long as you have not already reached `max` for that relationship.
+* When the user chooses to create a new document while selecting pieces or pages to populate a relationship, the "save draft and preview" and "publish and view" options are no longer offered. This ensures that the user is able to complete the selection process. The page or piece can still be edited in context later.
+
+## 4.23.0 (2025-10-30)
+
 ### Adds
 
 * Add locale picker in the page and piece manager modals.
@@ -11,6 +19,7 @@
 * `widgetOperations` support for `placement: 'breadcrumb'` to add operations to the breadcrumb menu of widgets. Extend the widget operations configuration to support various features when in the breadcrumb menu.
 * Area template (Nunjucks) support for `aposStyle`, `aposClassName`, `aposParentOptions` and `aposAttrs` contextual named variables (`with {}` syntax).
 * New login option `caseInsensitive` to force login usernames and emails to be case insensitive. New task `login-case-insensitive` updating all login names / email to lowercase, used by a new migration when switching to `caseInsensitive`.
+* Adds `disableIfProps` and `disableTooltip` to widget operations and breadcrumb operations.
 
 ### Changes
 
@@ -18,9 +27,11 @@
 * Refactored complex logic regarding data updates in `AposSchema`.
 * Cleaned up `annotateAreaForExternalFront` logic and added context so developers understand the reason if it fails due to a widget type with no matching module in the project.
 * Color fields now display their preset color swatches in the field UI rather than just the color picker popup
-* When the user chooses to create a new document while selecting pieces and pages to populate a relationship, the "save draft and preview" and "publish and view" options are no longer offered. This ensures that the user is able to complete the selection process. The page or piece can still be edited in context later.
-* When selecting pieces or pages to populate a relationship, the "New Piece" / "New Page" buttons are easier to find. They are no longer hidden away in a context menu.
-* When you create a new item while editing a relationship, that item is automatically selected, as long as you have not already reached `max` for that relationship.
+<<<<<<< HEAD
+=======
+* Moves widget operations to backend with new `action` and `nativeAction` properties.
+* Moves `mode` from breakpoint preview to it's own store (to be used by layout).
+>>>>>>> main
 
 ### Fixes
 

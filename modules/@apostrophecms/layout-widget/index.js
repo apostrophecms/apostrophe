@@ -7,7 +7,6 @@ module.exports = {
     label: 'apostrophe:layout',
     icon: 'view-column-icon',
     initialModal: false,
-    skipOperations: [ 'edit' ],
     columns: 12,
     minSpan: 2,
     defaultSpan: 6,
@@ -23,7 +22,7 @@ module.exports = {
     injectStyles: true,
     minifyStyles: true
   },
-  widgetOperations(self, options) {
+  widgetOperations(self) {
     return {
       add: {
         layout: {
@@ -36,9 +35,14 @@ module.exports = {
             },
             {
               label: 'apostrophe:editColumns',
-              value: 'layout'
+              value: 'layout',
+              disabledIfProps: {
+                tinyScreen: true
+              },
+              disabledTooltip: 'apostrophe:editColumnsDisabledSmallScreen'
             }
           ],
+          action: 'apos-switch-layout-mode',
           def: 'content'
         },
         layoutHelp: {
@@ -47,10 +51,11 @@ module.exports = {
           icon: 'information-outline-icon',
           tooltip: 'apostrophe:layoutTogggleTooltip'
         }
-      }
+      },
+      remove: [ 'edit' ]
     };
   },
-  fields(self, options) {
+  fields(self) {
     return {
       add: {
         columns: {

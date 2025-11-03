@@ -154,9 +154,6 @@
 // - `rawEvents`: An array of raw DOM events to listen for and emit to the parent
 // component. In effect only if no type and an action is specified. See layout
 // widget for an example. This option works only for breadcrumb operations.
-//
-// See also `skipOperations` option for a way to disable core operations
-// such as edit or remove.
 
 const _ = require('lodash');
 
@@ -168,7 +165,6 @@ module.exports = {
     // Disable (core) widget actions that are not relevant to this widget type.
     // Available operations are 'edit', 'remove',
     // 'up', 'down', 'cut', 'copy', 'clone'.
-    skipOperations: [],
     placeholder: false,
     placeholderClass: 'apos-placeholder',
     // two-thirds, half or full:
@@ -218,6 +214,69 @@ module.exports = {
       self.neverLoad = [ ...new Set(self.neverLoad) ];
     }
   },
+
+  widgetOperations(self, options) {
+    return {
+      add: {
+        nudgeUp: {
+          label: 'apostrophe:nudgeUp',
+          icon: 'arrow-up-icon',
+          tooltip: 'apostrophe:nudgeUp',
+          nativeAction: 'up',
+          disabledIfProps: {
+            first: true
+          }
+        },
+        nudgeDown: {
+          label: 'apostrophe:nudgeDown',
+          icon: 'arrow-down-icon',
+          tooltip: 'apostrophe:nudgeDown',
+          nativeAction: 'down',
+          disabledIfProps: {
+            last: true
+          }
+        },
+        ...!options.contextual && {
+          edit: {
+            label: 'apostrophe:edit',
+            icon: 'pencil-icon',
+            tootip: 'apostrophe:editWidget',
+            nativeAction: 'edit'
+          }
+        },
+        remove: {
+          label: 'apostrophe:remove',
+          icon: 'trash-can-outline-icon',
+          tooltip: 'apostrophe:delete',
+          nativeAction: 'remove'
+        },
+        cut: {
+          label: 'apostrophe:cut',
+          icon: 'content-cut-icon',
+          nativeAction: 'cut',
+          secondaryLevel: true
+
+        },
+        copy: {
+          label: 'apostrophe:copy',
+          icon: 'content-copy-icon',
+          nativeAction: 'copy',
+          secondaryLevel: true
+
+        },
+        clone: {
+          label: 'apostrophe:duplicate',
+          icon: 'content-duplicate-icon',
+          nativeAction: 'clone',
+          disabledIfProps: {
+            maxReached: true
+          },
+          secondaryLevel: true
+        }
+      }
+    };
+  },
+
   methods(self) {
     return {
 
@@ -474,9 +533,9 @@ module.exports = {
       },
 
       validateWidgetBreadcrumbOperation(name, operation) {
-        if (operation.type === 'switch' && !operation.choices?.length) {
+        if (operation.type === 'switch' && operation.choices?.length !== 2) {
           throw self.apos.error('invalid',
-            `widgetOperation "${name}" of type "switch" requires a non-empty choices array.`
+            `widgetOperation "${name}" of type "switch" requires a non-empty choices array and supports only two choices.`
           );
         }
         if (operation.type === 'info' && operation.modal) {
@@ -528,15 +587,21 @@ module.exports = {
           );
         }
 
-        if (!operation.label || !operation.modal) {
+        if (!operation.nativeAction && !operation.action && !operation.modal) {
           throw self.apos.error('invalid',
-            `widgetOperation "${name}" requires label and modal properties.`
+            `widgetOperation "${name}" needs either modal, action or nativeAction to be set.`
           );
         }
 
         if (operation.secondaryLevel !== true && !operation.icon) {
           throw self.apos.error('invalid',
             `widgetOperation "${name}" requires the icon property at primary level.`
+          );
+        }
+
+        if (operation.secondaryLevel && !operation.label) {
+          throw self.apos.error('invalid',
+            `widgetOperation "${name}" requires the label property at secondary level.`
           );
         }
       },
@@ -598,8 +663,7 @@ module.exports = {
           preview: self.options.preview,
           isExplicitOrigin: self.isExplicitOrigin,
           widgetOperations: self.getWidgetOperations(req),
-          widgetBreadcrumbOperations: self.getWidgetBreadcrumbOperations(req),
-          skipOperations: self.options.skipOperations
+          widgetBreadcrumbOperations: self.getWidgetBreadcrumbOperations(req)
         });
         return result;
       }

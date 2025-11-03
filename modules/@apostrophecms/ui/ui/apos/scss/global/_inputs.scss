@@ -195,10 +195,27 @@
   &.apos-field--color {
     position: relative;
 
+    .apos-input-color__preset-button {
+      width: 20px;
+      height: 20px;
+    }
+
+    .apos-input-color {
+      gap: $spacing-half;
+    }
+
+    .apos-input-color__ui {
+      gap: 3px;
+    }
+
     .apos-button.apos-button--color {
       width: 30px;
       height: 30px;
       padding: 0;
+    }
+
+    .apos-field__label {
+      max-width: 200px;
     }
 
     .apos-input-color__info {
@@ -206,11 +223,10 @@
       right: 0;
       display: flex;
       place-content: center;
-      height: 17px;
       margin-left: 0;
       font-size: var(--a-type-base);
       white-space: nowrap;
-      transform: translateY(-25px);
+      transform: translateY(-23.5px);
       line-height: 1.3;
     }
   }

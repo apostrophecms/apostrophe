@@ -26,8 +26,9 @@
       />
 
       <AposButton
+        v-if="widgetRemoveControl"
         v-bind="widgetRemoveControl"
-        @click="handleClick({ action: 'remove' })"
+        @click="handleClick(widgetRemoveControl)"
       />
     </AposButtonGroup>
   </div>
@@ -36,11 +37,18 @@
 <script>
 
 import checkIfConditions from 'apostrophe/lib/universal/check-if-conditions.mjs';
+import { isOperationDisabled, getOperationTooltip } from '../lib/operations.js';
+
+const standaloneWidgetOperation = [ 'remove' ];
 
 export default {
   props: {
     modelValue: {
       type: Object,
+      required: true
+    },
+    index: {
+      type: Number,
       required: true
     },
     first: {
@@ -74,7 +82,7 @@ export default {
       required: true
     }
   },
-  emits: [ 'remove', 'edit', 'cut', 'copy', 'clone', 'up', 'down', 'update' ],
+  emits: [ 'update', 'operation' ],
   computed: {
     widgetDefaultControl() {
       return {
@@ -89,157 +97,110 @@ export default {
       };
     },
     widgetPrimaryControls() {
-      const controls = [];
-
-      // Move up
-      controls.push({
-        ...this.widgetDefaultControl,
-        label: 'apostrophe:nudgeUp',
-        icon: 'arrow-up-icon',
-        disabled: this.first || this.disabled,
-        tooltip: {
-          content: this.first || this.disabled ? null : 'apostrophe:nudgeUp',
-          placement: 'left'
-        },
-        action: 'up'
-      });
-
-      // Move down
-      controls.push({
-        ...this.widgetDefaultControl,
-        label: 'apostrophe:nudgeDown',
-        icon: 'arrow-down-icon',
-        disabled: this.last || this.disabled,
-        tooltip: {
-          content: this.last || this.disabled ? null : 'apostrophe:nudgeDown',
-          placement: 'left'
-        },
-        action: 'down'
-      });
-
-      // Edit
-      if (!this.options.contextual) {
-        controls.push({
-          ...this.widgetDefaultControl,
-          label: 'apostrophe:edit',
-          icon: 'pencil-icon',
-          disabled: this.disabled,
-          tooltip: {
-            content: 'apostrophe:editWidget',
-            placement: 'left'
-          },
-          action: 'edit'
-        });
-      }
-
       // Custom widget operations displayed in the primary controls
-      controls.push(
-        ...this.widgetPrimaryOperations.map(operation => ({
+      return this.widgetPrimaryOperations.map(operation => {
+        const disabled = this.disabled || isOperationDisabled(operation, this.$props);
+        const tooltip = getOperationTooltip(operation, { disabled });
+        return {
           ...this.widgetDefaultControl,
           ...operation,
-          disabled: this.disabled,
-          tooltip: {
-            content: operation.label,
-            placement: 'left'
-          }
-        }))
-      );
-
-      return controls.filter(control => (
-        !this.widgetSkipControlsMap.get(control.action) &&
-          !this.widgetSkipControlsMap.get(control.name)
-      ));
+          disabled,
+          tooltip
+        };
+      });
     },
     widgetSecondaryControls() {
-      const controls = [];
+      const renderOperation = (operation) => {
+        const disabled = this.disabled ||
+            (operation.disabledIfProps &&
+            checkIfConditions(this.$props, operation.disabledIfProps));
 
-      // Cut
-      controls.push({
-        label: 'apostrophe:cut',
-        icon: 'content-cut-icon',
-        action: 'cut'
-      });
+        return {
+          ...operation,
+          modifiers: [
+            ...disabled ? [ 'disabled' ] : []
+          ]
+        };
+      };
+      const controls = this.widgetNativeSecondaryOperations.map(renderOperation);
 
-      // Copy
-      controls.push({
-        label: 'apostrophe:copy',
-        icon: 'content-copy-icon',
-        action: 'copy'
-      });
-
-      // Clone
-      controls.push({
-        label: 'apostrophe:duplicate',
-        icon: 'content-duplicate-icon',
-        action: 'clone',
-        modifiers: [
-          ...(this.disabled || this.maxReached) ? [ 'disabled' ] : []
-        ]
-      });
-
-      if (this.widgetSecondaryOperations.length) {
-        controls.push({
-          separator: true
-        });
+      if (!this.widgetCustomSecondaryOperations.length) {
+        return controls;
       }
 
-      // Custom widget operations displayed in the secondary controls
-      controls.push(...this.widgetSecondaryOperations);
+      controls.push({
+        separator: true
+      });
 
-      return controls.filter(control => (
-        !this.widgetSkipControlsMap.get(control.action) &&
-          !this.widgetSkipControlsMap.get(control.name)
-      ));
+      // Custom widget operations displayed in the secondary controls
+      return controls.concat(this.widgetCustomSecondaryOperations.map(renderOperation));
     },
     widgetRemoveControl() {
+      const { widgetOperations = [] } = this.moduleOptions;
+      const removeWidgetOperation = widgetOperations
+        .find((operation) => operation.name === 'remove');
+      if (!removeWidgetOperation) {
+        return null;
+      }
+
+      const disabled = this.disabled || isOperationDisabled(removeWidgetOperation);
+      const tooltip = getOperationTooltip(removeWidgetOperation, { disabled });
       return {
         ...this.widgetDefaultControl,
-        label: 'apostrophe:remove',
-        icon: 'trash-can-outline-icon',
-        disabled: this.disabled,
-        tooltip: {
-          content: 'apostrophe:delete',
-          placement: 'left'
-        },
-        action: 'remove'
+        ...removeWidgetOperation,
+        disabled,
+        tooltip
       };
-    },
-    widgetSkipControlsMap() {
-      return new Map(
-        (this.moduleOptions.skipOperations || [])
-          .map(operation => [ operation, true ])
-      );
     },
     widgetPrimaryOperations() {
       return this.getOperations({ secondaryLevel: false });
     },
-    widgetSecondaryOperations() {
-      return this.getOperations({ secondaryLevel: true });
+    widgetNativeSecondaryOperations() {
+      return this.getOperations({
+        secondaryLevel: true,
+        native: true
+      });
+    },
+    widgetCustomSecondaryOperations() {
+      return this.getOperations({
+        secondaryLevel: true,
+        native: false
+      });
     },
     moduleOptions() {
       return apos.modules[apos.area.widgetManagers[this.modelValue.type]] ?? {};
     }
   },
   methods: {
-    getOperations({ secondaryLevel }) {
+    getOperations({ secondaryLevel, native }) {
       const { widgetOperations = [] } = this.moduleOptions;
       return widgetOperations.filter(operation => {
-        if (operation.if) {
-          if (!checkIfConditions(this.modelValue, operation.if)) {
-            return false;
-          }
+        if (standaloneWidgetOperation.includes(operation.name)) {
+          return false;
         }
-        if (secondaryLevel) {
-          return operation.secondaryLevel;
+        if (
+          typeof native === 'boolean' &&
+          ((native && !operation.nativeAction) || (!native && operation.nativeAction))
+        ) {
+          return false;
         }
-        return !operation.secondaryLevel;
+        if (
+          (secondaryLevel && !operation.secondaryLevel) ||
+          (!secondaryLevel && operation.secondaryLevel)
+        ) {
+          return false;
+        }
+        if (operation.if && !checkIfConditions(this.modelValue, operation.if)) {
+          return false;
+        }
+        return operation;
       }).map(operation => ({
         action: operation.action || operation.name,
         ...operation
       }));
     },
     async handleClick({
-      action, modal, ignoreResult = false
+      modal, action, nativeAction, ignoreResult = false
     }) {
       if (modal) {
         const result = await apos.modal.execute(modal, {
@@ -252,10 +213,22 @@ export default {
         if (result && !ignoreResult) {
           this.$emit('update', result);
         }
-      } else {
-        if (action) {
-          this.$emit(action);
-        }
+        return;
+      }
+      const payload = {
+        widgetId: this.modelValue._id,
+        index: this.index
+      };
+      if (nativeAction) {
+        this.$emit('operation', {
+          name: nativeAction,
+          payload
+        });
+        return;
+      }
+
+      if (action) {
+        apos.bus.$emit(action, payload);
       }
     }
   }
