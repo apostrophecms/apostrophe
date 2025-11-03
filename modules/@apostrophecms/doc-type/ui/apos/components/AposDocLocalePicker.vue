@@ -20,7 +20,7 @@
         :forbidden="forbidden"
         :forbidden-tooltip="forbiddenTooltip"
         :is-open="isOpen"
-        :show-localized="showLocalized"
+        :show-localized="!isManager"
         @switch-locale="switchLocale"
       />
     </AposContextMenu>
@@ -53,9 +53,9 @@ const props = defineProps({
     type: Boolean,
     required: true
   },
-  showLocalized: {
+  isManager: {
     type: Boolean,
-    default: true
+    default: false
   }
 });
 
@@ -127,6 +127,11 @@ async function switchLocale(locale) {
 
   menu.value.hide();
   if (locale.name === props.locale) {
+    return;
+  }
+
+  if (props.isManager) {
+    emit('switch-locale', { locale });
     return;
   }
 
