@@ -151,7 +151,7 @@ async function switchLocale(locale) {
   }
 
   const isDocLocalized = docLocalized.value[locale.name];
-  const shouldLocalize = !isDocLocalized
+  const toLocalize = !isDocLocalized
     ? await apos.confirm({
       heading: 'apostrophe:switchLocalesAndLocalizeDoc',
       description: 'apostrophe:notInLocaleDoc',
@@ -169,9 +169,9 @@ async function switchLocale(locale) {
     : false;
 
   emit('switch-locale', {
-    locale: locale.name,
+    locale,
     localized: docLocalized.value[locale.name],
-    shouldLocalize,
+    toLocalize,
     save
   });
 }
