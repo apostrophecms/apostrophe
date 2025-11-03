@@ -860,8 +860,9 @@ export default {
       this.modal.showModal = false;
     },
     async switchLocale({
-      locale, localized, save
+      locale, save, localized, toLocalize
     }) {
+      console.log('=====> switch locale in doc editor <=====');
       if (save) {
         const saved = await this.saveHandler('onSave', {
           keepOpen: true,
@@ -874,17 +875,36 @@ export default {
           this.referenceDocId = saved._id;
         }
       }
-      this.updateModalData(this.modalData.id, { locale });
-      this.localeSwitched = locale !== apos.i18n.locale;
-      this.published = null;
       if (localized) {
         this.currentId = localized._id;
         await this.instantiateExistingDoc();
-      } else {
+        this.switchModalLocale(locale.name);
+        return;
+      }
+      if (!toLocalize) {
         this.currentId = '';
         this.docType = this.moduleName;
         await this.instantiateNewDoc();
+        this.switchModalLocale(locale.name);
+        return;
       }
+
+      await apos.bus.$emit('admin-menu-click', {
+        itemName: '@apostrophecms/i18n:localize',
+        props: {
+          doc: this.docFields.data,
+          locale
+        }
+      });
+
+      console.log('=====> UPDATINGLOCALEDATA <=====');
+      this.switchModalLocale(locale.name);
+    },
+    switchModalLocale(locale) {
+      console.log('locale', locale);
+      this.updateModalData(this.modalData.id, { locale });
+      this.localeSwitched = locale !== apos.i18n.locale;
+      this.published = null;
     },
     getRequestBody({ newInstance = false, update = false }) {
       const body = newInstance
