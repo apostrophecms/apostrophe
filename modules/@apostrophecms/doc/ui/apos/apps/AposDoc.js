@@ -16,6 +16,10 @@ export default () => {
   // `copyOf` is an optional, existing document from which properties should be
   // copied. It is present for BC.
   //
+  // `hasRelationshipField` is a hint indicating the document is being
+  // edited or created as part of selecting documents of its type for
+  // a relationship.
+  //
   // For new documents, a `values` object may optionally be passed. Its properties
   // override the defaults for any matching schema fields.
   //
@@ -26,6 +30,7 @@ export default () => {
     _id,
     copyOfId,
     copyOf,
+    hasRelationshipField,
     values
   }) => {
     if (!type) {
@@ -46,6 +51,7 @@ export default () => {
       moduleName: type,
       docId: _id,
       copyOfId,
+      hasRelationshipField,
       values
     });
   };
