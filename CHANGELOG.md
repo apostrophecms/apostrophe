@@ -1,5 +1,15 @@
 # Changelog
 
+## UNRELEASED
+
+### Adds
+
+* Translation strings added for the layout- and layout-column-widgets.
+
+### Changes
+
+### Fixes
+
 ## 4.23.0 (2025-10-30)
 
 ### Adds
