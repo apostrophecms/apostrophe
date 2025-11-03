@@ -16,7 +16,7 @@
     >
       <AposLocalePicker
         :current-locale="locale"
-        :localized="localized"
+        :localized="docLocalized"
         :forbidden="forbidden"
         :forbidden-tooltip="forbiddenTooltip"
         :is-open="isOpen"
@@ -61,11 +61,10 @@ const props = defineProps({
 
 const $t = inject('i18n');
 const i18nAction = apos.modules['@apostrophecms/i18n'].action;
-const forbiddenTooltip = $t('apostrophe:localeSwitcherPermissionToCreate', {
-  docType: props.moduleOptions.label.toLowerCase()
-});
+const docType = props.moduleOptions.label.toLowerCase();
+const forbiddenTooltip = $t('apostrophe:localeSwitcherPermissionToCreate', { docType });
 const menu = ref(null);
-const localized = ref({});
+const docLocalized = ref({});
 const forbidden = ref([]);
 const isOpen = ref(false);
 const button = computed(() => {
@@ -91,7 +90,7 @@ async function open() {
     const docs = await apos.http.get(
     `${props.moduleOptions.action}/${props.docId}/locales`, { busy: true }
     );
-    localized.value = Object.fromEntries(
+    docLocalized.value = Object.fromEntries(
       docs.results
         .filter(doc => doc.aposLocale.endsWith(':draft'))
         .map(doc => [ doc.aposLocale.split(':')[0], doc ])
@@ -106,7 +105,7 @@ async function open() {
 
 async function checkCreatePermission() {
   const localesWithNoDocs = Object.keys(apos.i18n.locales)
-    .filter((locale) => !localized.value[locale]);
+    .filter((locale) => !docLocalized.value[locale]);
 
   const allowed = await apos.http.get(`${i18nAction}/locales-permissions`, {
     qs: {
@@ -134,16 +133,16 @@ async function switchLocale(locale) {
   const save = props.isModified
     ? await apos.confirm({
       heading: 'apostrophe:unsavedChanges',
-      description: $t(
-        'apostrophe:localeSwitcherDiscardChangesPrompt',
-        { docType: props.moduleOptions.label.toLowerCase() }
-      ),
+      description: 'apostrophe:localeSwitcherDiscardChangesPrompt',
       negativeLabel: 'apostrophe:localeSwitcherDiscardChangesNegative',
       affirmativeLabel: 'apostrophe:localeSwitcherDiscardChangesAffirmative',
       icon: false
     }, {
       hasCloseButton: true,
-      tiny: true
+      tiny: true,
+      interpolate: {
+        docType
+      }
     })
     : false;
 
@@ -151,9 +150,28 @@ async function switchLocale(locale) {
     return;
   }
 
+  const isDocLocalized = docLocalized.value[locale.name];
+  const shouldLocalize = !isDocLocalized
+    ? await apos.confirm({
+      heading: 'apostrophe:switchLocalesAndLocalizeDoc',
+      description: 'apostrophe:notInLocaleDoc',
+      negativeLabel: 'apostrophe:noCreateBlankDoc',
+      affirmativeLabel: 'apostrophe:yesLocalizeAndSwitchLocalesDoc'
+    }, {
+      hasCloseButton: true,
+      tiny: true,
+      interpolate: {
+        docType,
+        label: locale.label,
+        currentLocale: props.locale
+      }
+    })
+    : false;
+
   emit('switch-locale', {
     locale: locale.name,
-    localized: localized.value[locale.name],
+    localized: docLocalized.value[locale.name],
+    shouldLocalize,
     save
   });
 }
