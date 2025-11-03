@@ -27,11 +27,8 @@
 * Refactored complex logic regarding data updates in `AposSchema`.
 * Cleaned up `annotateAreaForExternalFront` logic and added context so developers understand the reason if it fails due to a widget type with no matching module in the project.
 * Color fields now display their preset color swatches in the field UI rather than just the color picker popup
-<<<<<<< HEAD
-=======
 * Moves widget operations to backend with new `action` and `nativeAction` properties.
 * Moves `mode` from breakpoint preview to it's own store (to be used by layout).
->>>>>>> main
 
 ### Fixes
 
