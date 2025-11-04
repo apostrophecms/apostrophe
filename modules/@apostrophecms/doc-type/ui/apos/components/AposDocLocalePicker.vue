@@ -173,6 +173,10 @@ async function switchLocale(locale) {
     })
     : false;
 
+  if (toLocalize === null) {
+    return;
+  }
+
   emit('switch-locale', {
     locale,
     localized: docLocalized.value[locale.name],
