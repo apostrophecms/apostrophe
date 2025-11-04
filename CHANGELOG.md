@@ -1,5 +1,11 @@
 # Changelog
 
+## UNRELEASED
+
+### Adds
+
+* When switching locale from the doc editor, ask the user if he wants to localize the current one in the target locale or want to start a blank document.
+
 ## 4.23.0 (2025-10-30)
 
 ### Adds
