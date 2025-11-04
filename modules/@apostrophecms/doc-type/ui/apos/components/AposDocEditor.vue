@@ -863,8 +863,9 @@ export default {
     async switchLocale({
       locale, save, localized, toLocalize
     }) {
+      let saved;
       if (save) {
-        const saved = await this.saveHandler('onSave', {
+        saved = await this.saveHandler('onSave', {
           keepOpen: true,
           andPublish: false
         });
@@ -876,6 +877,7 @@ export default {
         }
       }
       if (localized) {
+        this.currentId = localized._id;
         this.switchModalLocale(locale.name);
         await this.instantiateExistingDoc();
         return;
@@ -888,10 +890,10 @@ export default {
         return;
       }
 
-      const doc = save ? this.docFields.data : this.original;
       const isLocalized = await apos.modal.execute('AposI18nLocalize', {
-        doc,
+        doc: saved || this.original,
         locale,
+        moduleName: this.moduleName,
         redirect: false
       });
 
