@@ -4,7 +4,7 @@
     :class="{ 'apos-wizard-busy': wizard.busy }"
     :modal="modal"
     :modal-data="modalData"
-    @esc="close"
+    @esc="close(false)"
     @inactive="modal.active = false"
     @show-modal="modal.showModal = true"
   >
@@ -28,7 +28,7 @@
               type="default"
               label="apostrophe:cancel"
               :modifiers="[ 'block' ]"
-              @click="close"
+              @click="close(false)"
             />
           </div>
         </template>
@@ -329,6 +329,10 @@ export default {
     modalData: {
       type: Object,
       required: true
+    },
+    redirect: {
+      type: Boolean,
+      default: true
     }
   },
   emits: [ 'modal-result' ],
@@ -660,9 +664,10 @@ export default {
         this.toLocalizeChoices = this.toLocalizeChoicesStandalone;
       }
     },
-    close() {
+    close(hasBeenSubmitted = false) {
       if (!this.modal.busy) {
         this.modal.showModal = false;
+        this.$emit('modal-result', hasBeenSubmitted);
       }
     },
     goTo(name) {
@@ -849,7 +854,7 @@ export default {
                   locale: locale.name
                 }
               });
-              if (result.redirectTo) {
+              if (this.redirect && result.redirectTo) {
                 window.location.assign(result.redirectTo);
               }
             }
@@ -876,7 +881,7 @@ export default {
 
       if (notifications.some(({ type }) => type === 'error')) {
         this.modal.busy = false;
-        this.close();
+        this.close(true);
 
         await apos.report(
           {
@@ -938,7 +943,7 @@ export default {
       // Prevent flashing of the UI if the request returns quickly
       setTimeout(() => {
         this.modal.busy = false;
-        this.close();
+        this.close(true);
       }, 250);
     },
     async submitBatch() {
