@@ -1843,8 +1843,113 @@ module.exports = {
         return existing?.aposDocId || self.apos.util.generateId();
       },
 
+      async getAposDocId({
+        id, slug, locale
+      }) {
+        if (!id && !slug) {
+          throw self.apos.error('invalid', 'Either id or slug must be provided');
+        }
+        if (!locale) {
+          throw self.apos.error('invalid', 'Missing locale');
+        }
+
+        const req = self.apos.task.getReq({ mode: 'draft' });
+
+        const criteria = id
+          ? { _id: self.apos.i18n.inferIdLocaleAndMode(req, id) }
+          : { slug };
+
+        const doc = await self.find(
+          req,
+          {
+            ...criteria,
+            aposLocale: new RegExp(`^${self.apos.util.regExpQuote(locale)}:`)
+          }
+        )
+          .project({ aposDocId: 1 })
+          .toObject();
+        if (!doc || !doc.aposDocId) {
+          throw self.apos.error('notfound');
+        }
+
+        return doc.aposDocId;
+      },
+      async setAposDocId({
+        newId, oldId, slug, locale
+      }) {
+        if (!newId) {
+          throw self.apos.error('invalid', 'Missing newId');
+        }
+        if (!oldId && !slug) {
+          throw self.apos.error('invalid', 'Either oldId or slug must be provided');
+        }
+        if (!locale) {
+          throw self.apos.error('invalid', 'Missing locale');
+        }
+
+        const originalId = (slug && !oldId)
+          ? await self.getAposDocId({
+            slug,
+            locale
+          })
+          : oldId;
+
+        const modes = [ 'draft', 'published' ];
+        const pairs = modes.map(mode =>
+          [
+            `${originalId}:${locale}:${mode}`,
+            `${newId}:${locale}:${mode}`
+          ]
+        );
+        const { renamed } = await self.changeDocIds(pairs, { keep: false });
+
+        return {
+          oldId: originalId,
+          newId,
+          locale,
+          renamed
+        };
+      },
+
       ...require('./lib/legacy-migrations')(self),
       ...require('./lib/migrations')(self)
+    };
+  },
+  tasks(self) {
+    return {
+      'get-apos-doc-id': {
+        usage: '',
+        task: async (argv) => {
+          const {
+            id, slug, locale
+          } = argv;
+
+          const aposDocId = await self.getAposDocId({
+            id,
+            slug,
+            locale
+          });
+
+          self.apos.util.info(aposDocId);
+        }
+      },
+      'set-apos-doc-id': {
+        usage: '',
+        task: async (argv) => {
+          const {
+            'new-id': newId, 'old-id': oldId, slug, locale
+          } = argv;
+
+          const result = await self.setAposDocId({
+            newId,
+            oldId,
+            slug,
+            locale
+          });
+
+          self.apos.util.info(`"${result.oldId}" has been changed to "${result.newId}" for locale "${result.locale}", ${result.renamed} documents changed.`);
+        }
+      }
     };
   }
 };
