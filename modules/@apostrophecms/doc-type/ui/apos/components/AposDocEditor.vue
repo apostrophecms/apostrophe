@@ -533,7 +533,7 @@ export default {
         }
         const canEdit = docData._edit || this.moduleOptions.canEdit;
         this.readOnly = canEdit === false;
-        if (canEdit && !await this.lock(this.getOnePath, this.currentId)) {
+        if (canEdit && !await this.lock(this.getOnePath, docData._id)) {
           this.lockNotAvailable();
         }
       } catch {
@@ -548,6 +548,7 @@ export default {
           if (docData.type !== this.docType) {
             this.docType = docData.type;
           }
+          this.currentId = docData._id;
           this.original = klona(docData);
           this.docFields.data = docData;
           // TODO: Is this block even useful since published is fetched after
@@ -875,30 +876,32 @@ export default {
         }
       }
       if (localized) {
-        this.currentId = localized._id;
-        await this.instantiateExistingDoc();
         this.switchModalLocale(locale.name);
+        await this.instantiateExistingDoc();
         return;
       }
       if (!toLocalize) {
+        this.switchModalLocale(locale.name);
         this.currentId = '';
         this.docType = this.moduleName;
         await this.instantiateNewDoc();
-        this.switchModalLocale(locale.name);
         return;
       }
 
-      await apos.bus.$emit('admin-menu-click', {
-        itemName: '@apostrophecms/i18n:localize',
-        props: {
-          doc: this.docFields.data,
-          locale
-        }
+      const doc = save ? this.docFields.data : this.original;
+      const isLocalized = await apos.modal.execute('AposI18nLocalize', {
+        doc,
+        locale,
+        redirect: false
       });
-      this.switchModalLocale(locale.name);
+
+      if (isLocalized) {
+        this.switchModalLocale(locale.name);
+        await this.$nextTick();
+        await this.instantiateExistingDoc();
+      }
     },
     switchModalLocale(locale) {
-      console.log('locale', locale);
       this.updateModalData(this.modalData.id, { locale });
       this.localeSwitched = locale !== apos.i18n.locale;
       this.published = null;
