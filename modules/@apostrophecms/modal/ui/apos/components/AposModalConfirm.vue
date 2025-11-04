@@ -128,7 +128,7 @@ export default {
           this.localize(this.content.affirmativeLabel) || this.$t('apostrophe:confirm')
         );
       }
-      return this.localize(this.content.affirmativeLabel) || this.$t('apostrohe:ok');
+      return this.localize(this.content.affirmativeLabel) || this.$t('apostrophe:ok');
     },
     negativeLabel() {
       return this.localize(this.content.negativeLabel) || this.$t('apostrophe:cancel');
