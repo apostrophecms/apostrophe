@@ -194,7 +194,7 @@ export default {
     };
   },
   computed: {
-    ...mapState(useModalStore, [ 'activeModal', 'updateModalData' ]),
+    ...mapState(useModalStore, [ 'activeModal' ]),
     moduleOptions() {
       return window.apos.modules[this.moduleName];
     },
