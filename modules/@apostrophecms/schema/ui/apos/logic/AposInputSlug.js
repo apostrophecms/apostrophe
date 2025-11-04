@@ -3,6 +3,7 @@
 // errors.
 import { klona } from 'klona';
 import sluggo from 'sluggo';
+import { deburr } from 'lodash';
 import AposInputMixin from 'Modules/@apostrophecms/schema/mixins/AposInputMixin';
 import { debounceAsync } from 'Modules/@apostrophecms/ui/utils';
 
@@ -48,6 +49,9 @@ export default {
     },
     localePrefix() {
       return this.field.page && apos.i18n.locales[apos.i18n.locale].prefix;
+    },
+    stripAccents() {
+      return apos.i18n.stripUrlAccents === true;
     }
   },
   watch: {
@@ -192,6 +196,9 @@ export default {
       }
 
       let slug = sluggo(s, options);
+      if (this.stripAccents) {
+        slug = deburr(slug);
+      }
       if (preserveDash) {
         slug += '-';
       }

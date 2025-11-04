@@ -1,6 +1,8 @@
-const t = require('../test-lib/test.js');
-const assert = require('assert');
 const cheerio = require('cheerio');
+const assert = require('node:assert/strict');
+const path = require('node:path');
+
+const t = require('../test-lib/test.js');
 
 describe('static i18n', function() {
   this.timeout(t.timeout);
@@ -286,6 +288,100 @@ describe('static i18n', function() {
     const browserData = apos.i18n.getBrowserData(apos.task.getReq());
     assert.strictEqual(browserData.locale, 'en');
     assert.strictEqual(browserData.adminLocale, 'fr');
+  });
+
+  it('should replace accented characters in slugs and attachment names when configured', async function () {
+    await t.destroy(apos);
+    apos = await t.create({
+      root: module,
+      modules: {
+        '@apostrophecms/i18n': {
+          options: {
+            stripUrlAccents: true,
+            locales: {
+              en: {},
+              fr: {
+                prefix: '/fr'
+              }
+            }
+          }
+        },
+        'default-page': {
+          extend: '@apostrophecms/page-type'
+        },
+        'test-piece': {
+          extend: '@apostrophecms/piece-type'
+        }
+      }
+    });
+    // Create content while accents are NOT stripped so we have accented slugs
+    apos.i18n.options.stripUrlAccents = false;
+
+    const req = apos.task.getReq();
+
+    // Add attachment with accented characters in the name
+    const uploadSource = path.join(__dirname, 'data', 'upload_tests');
+    const accentedAttachment = await apos.attachment.insert(req, {
+      name: 'été-image.png',
+      path: path.join(uploadSource, 'upload_image.png')
+    });
+
+    // Add a page with accented characters in its title so slug preserves accents
+    await apos.doc.insert(req, {
+      type: 'default-page',
+      visibility: 'public',
+      title: 'C\'est déjà l\'été'
+    });
+
+    // Add a piece with accented characters in its title so slug preserves accents
+    await apos.doc.insert(req, {
+      type: 'test-piece',
+      visibility: 'public',
+      title: 'Café au lait'
+    });
+
+    // Sanity check: created content has accented slugs/names
+    const pageBefore = await apos.doc.db.findOne({
+      type: 'default-page',
+      title: 'C\'est déjà l\'été'
+    });
+    assert(pageBefore);
+    assert.equal(pageBefore.slug, '/c-est-déjà-l-été');
+
+    const pieceBefore = await apos.doc.db.findOne({
+      type: 'test-piece',
+      title: 'Café au lait'
+    });
+    assert(pieceBefore);
+    assert.equal(pieceBefore.slug, 'café-au-lait');
+
+    const attachmentBefore = await apos.attachment.db.findOne({
+      _id: accentedAttachment._id
+    });
+    assert(attachmentBefore);
+    assert.equal(attachmentBefore.name, 'été-image');
+
+    // Now enable accent stripping and run the task to update existing content
+    apos.i18n.options.stripUrlAccents = true;
+    await apos.task.invoke('@apostrophecms/i18n:strip-slug-accents');
+
+    // Verify that the slugs and attachment names have been updated correctly
+    const pageAfter = await apos.doc.db.findOne({ _id: pageBefore._id });
+    assert(pageAfter);
+    assert.equal(pageAfter.slug, '/c-est-deja-l-ete');
+
+    const pieceAfter = await apos.doc.db.findOne({ _id: pieceBefore._id });
+    assert(pieceAfter);
+    assert.equal(pieceAfter.slug, 'cafe-au-lait');
+
+    const attachmentAfter = await apos.attachment.db.findOne({
+      _id: accentedAttachment._id
+    });
+    assert(attachmentAfter);
+    assert.equal(attachmentAfter.name, 'ete-image');
+
+    // Restore default for other tests
+    apos.i18n.options.stripUrlAccents = false;
   });
 });
 

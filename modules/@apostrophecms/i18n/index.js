@@ -70,7 +70,9 @@ module.exports = {
     i18n: {
       ns: 'apostrophe',
       browser: true
-    }
+    },
+    // If true, slugifying will strip accents from Latin characters
+    stripUrlAccents: false
   },
   async init(self) {
     self.defaultNamespace = 'default';
@@ -677,7 +679,8 @@ module.exports = {
           debug: self.debug,
           show: self.show,
           action: self.action,
-          crossDomainClipboard: req.session && req.session.aposCrossDomainClipboard
+          crossDomainClipboard: req.session && req.session.aposCrossDomainClipboard,
+          stripUrlAccents: self.options.stripUrlAccents
         };
         if (req.session && req.session.aposCrossDomainClipboard) {
           req.session.aposCrossDomainClipboard = null;
@@ -734,6 +737,9 @@ module.exports = {
         }
         return locale;
       },
+      shouldStripAccents(req) {
+        return self.options.stripUrlAccents === true;
+      },
       addLocalizeModal() {
         self.apos.modal.add(
           `${self.__meta.name}:localize`,
@@ -757,7 +763,7 @@ module.exports = {
         }
         req.baseUrlWithPrefix = `${req.baseUrl}${self.apos.prefix}`;
         req.absoluteUrl = req.baseUrlWithPrefix + req.url;
-        req.prefix = `${req.baseUrlWithPrefix}${self.locales[req.locale].prefix || ''}`;
+        req.prefix = `${req.baseUrlWithPrefix}${self.locales[req.locale]?.prefix || ''}`;
         if (!req.baseUrl) {
           // Always set for bc, but in the absence of locale hostnames we
           // set it later so it is not part of req.prefix
@@ -1250,6 +1256,53 @@ module.exports = {
           if (keep) {
             console.log(`Due to conflicts, kept ${kept} documents from ${keep}`);
           }
+        }
+      },
+      'strip-slug-accents': {
+        usage: 'Remove Latin accent characters from all document slugs and attachment names. Usage: node app @apostrophecms/i18n:strip-slug-accents',
+        async task() {
+          let docChanged = 0;
+          let attachmentChanged = 0;
+
+          await self.apos.migration.eachDoc({}, 5, async doc => {
+            const slug = doc.slug;
+            const req = self.apos.task.getAdminReq({
+              locale: doc.aposLocale?.split(':')[0] || 'en'
+            });
+            if (!self.shouldStripAccents(req)) {
+              return;
+            }
+
+            doc.slug = self.apos.util.slugify(doc.slug, {
+              stripAccents: true,
+              allow: '/'
+            });
+            if (slug !== doc.slug) {
+              await self.apos.doc.update(req, doc, { permissins: false });
+              docChanged++;
+              self.apos.util.log(`Updated doc [${req.locale}] "${slug}" -> "${doc.slug}"`);
+            }
+          });
+
+          const req = self.apos.task.getAdminReq();
+          await self.apos.attachment.each({}, 10, async (attachment) => {
+            if (!self.shouldStripAccents(req)) {
+              return;
+            }
+            const slug = self.apos.util.slugify(attachment.name, { stripAccents: true });
+            if (slug !== attachment.name) {
+              await self.apos.attachment.db.updateOne(
+                { _id: attachment._id },
+                { $set: { name: slug } }
+              );
+              attachmentChanged++;
+              self.apos.util.log(`Updated attachment "${attachment.name}" -> "${slug}"`);
+            }
+          });
+
+          self.apos.util.log(
+            `Updated ${docChanged} document slug(s) and ${attachmentChanged} attachment name(s).`
+          );
         }
       }
     };

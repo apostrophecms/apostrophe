@@ -468,14 +468,14 @@ module.exports = {
       },
       // If the page does not yet have a slug, add one based on the
       // title; throw an error if there is no title
-      ensureSlug(page) {
+      ensureSlug(page, { stripAccents } = {}) {
         if (!page.slug || (!page.slug.match(/^\//))) {
           if (page.title) {
             // Parent-based slug would be better, but this is not an
             // async function and callers will typically have done
             // that already, so skip the overhead. This is just a fallback
             // for naive use of the APIs
-            page.slug = '/' + self.apos.util.slugify(page.title);
+            page.slug = '/' + self.apos.util.slugify(page.title, { stripAccents });
           } else {
             throw self.apos.error('invalid', 'Page has neither a slug beginning with / or a title, giving up');
           }
