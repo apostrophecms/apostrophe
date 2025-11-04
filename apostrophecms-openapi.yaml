@@ -2,7 +2,7 @@ openapi: 3.1.0
 info:
   title: ApostropheCMS REST API
   description: |
-    **🚀 Developer freedom. Editor happiness. Intentional design.**
+    **🚀 Developer freedom. Editor happiness. It just works.**
 
     **For production use:** Download this YAML file and update the server URL
     and cookie names to match your setup.
@@ -155,7 +155,7 @@ components:
       description: |
         Bearer token authentication (recommended for API clients).
 
-        **Step 1:** Use the `POST /@apostrophecms/login/login` endpoint below with:
+        **Step 1:** Close this dialog box and generate a bearer token using the `POST /@apostrophecms/login/login` endpoint below with:
         ```json
         {
           "username": "your-username",
@@ -167,6 +167,8 @@ components:
         Example: if response is `{"token": "abc123"}`, paste only `abc123`
         The token will be sent as: Authorization: Bearer {your-token}
 
+        **Step 3:** Reopen this dialog and paste the token value into the value field.
+
     SessionAuth:
       type: apiKey
       in: cookie
@@ -177,7 +179,7 @@ components:
         💡 This authentication won't work when testing in the online ApostropheCMS sandbox. However, you can use the login route to set a cookie you can examine in your browser DevTools.
         It will be named `project-shortname.sid`.
 
-        **Step 1:** Use the `POST /@apostrophecms/login/login` endpoint below with:
+        **Step 1:** Close this dialog and use the `POST /@apostrophecms/login/login` endpoint below with:
         ```json
         {
           "username": "your-username",
@@ -187,7 +189,7 @@ components:
         ```
 
         **Step 2:** Copy the session cookie value from your browser's dev tools
-        and paste it into the "Value" field above.
+        and paste it into the "Value" field.
 
   parameters:
     Page:
@@ -275,10 +277,10 @@ components:
       name: _id
       in: path
       required: true
-      description: Computed document ID (can include mode and locale, e.g., id:en:published)
+      description: Computed document ID (can optionally include mode and locale, e.g., id:en:published)
       schema:
         type: string
-        pattern: '^[a-zA-Z0-9]+:[a-z]{2}(-[A-Z]{2})?:(draft|published)$'
+        pattern: '^\S+$'
         example: "ckitdo5oq004pu69kr6oxo6fr:en:published"
 
     AposDocId:
