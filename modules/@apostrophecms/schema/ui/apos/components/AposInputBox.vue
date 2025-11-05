@@ -17,6 +17,7 @@
             type="number"
             placeholder="--"
             class="apos-input-box__shorthand-input apos-input apos-input--number"
+            data-apos-test="box-input-all"
             :aria-label="`${$t(field.label)} ${$t('apostrophe:boxFieldAriaLabelAll')}`"
             :disabled="field.readOnly || field.disabled || mode === 'individual'"
             :required="field.required"
@@ -32,6 +33,7 @@
               class="apos-input-box__switch__button apos-input-box__switch__button--shorthand"
               :class="{'active': mode === 'shorthand'}"
               aria-label="Edit all values"
+              data-apos-test="box-mode-button-all"
               @click="mode = 'shorthand'"
             >
               <span class="apos-input-box__switch__box-diagram" />
@@ -41,6 +43,7 @@
               class="apos-input-box__switch__button apos-input-box__switch__button--individual"
               :class="{'active': mode === 'individual'}"
               aria-label="Edit individual values"
+              data-apos-test="box-mode-button-individual"
               @click="mode = 'individual'"
             >
               <span
@@ -64,6 +67,7 @@
             class="apos-input-box__reset"
             :aria-label="hasCustomDef ? $t('apostrophe:reset') : $t('apostrophe:clear')"
             :label="hasCustomDef ? $t('apostrophe:reset') : $t('apostrophe:clear')"
+            :action="hasCustomDef ? $t('apostrophe:reset') : $t('apostrophe:clear')"
             :modifiers="['no-motion']"
             @click="clearOrReset"
           />
@@ -84,6 +88,7 @@
               type="number"
               placeholder="--"
               class="apos-input-box__individual-input apos-input apos-input--number"
+              :data-apos-test="`box-input-side-${side}`"
               :aria-label="`${$t(field.label)} ${$t('apostrophe:boxFieldAriaLabelIndividual', { side })}`"
               :class="`apos-input-box__individual-input--${side}`"
               :disabled="field.readOnly || field.disabled"
@@ -175,7 +180,7 @@ export default {
   .apos-input-box__switch {
     display: flex;
     background-color: var(--a-base-9);
-    padding: 5px;
+    padding: 3px;
     gap: 5px;
     height: 36px;
     box-sizing: border-box;
@@ -197,16 +202,20 @@ export default {
     transition: all 0.3s ease;
 
     &:active, &:focus {
-      outline: 2px solid var(--a-primary-transparent-50);
+      outline: 2px solid var(--a-primary-transparent-25);
+      background-color: var(--a-base-9)
     }
 
     &:hover:not(.active) {
-      background-color: var(--a-base-8)
+      background-color: var(--a-base-10);
+      border: 1px solid var(--a-base-6);
     }
 
     &.active {
-      background-color: var(--a-base-1);
-      color: var(--a-base-10);
+      background-color: var(--a-base-10);
+      color: var(--a-primary);
+      box-shadow: rgba(50, 50, 93, 0.25) 0px 13px 27px -5px, rgba(0, 0, 0, 0.3) 0px 8px 16px -8px;
+      border: 1px solid var(--a-base-7);
     }
   }
 
@@ -233,9 +242,9 @@ export default {
   }
 
   .apos-input-box__switch__individual-diagram.has-active [class^='apos-input-box__switch__individual-diagram-'] {
-    background-color: var(--a-base-3);
+    background-color: var(--a-base-7);
     &.active {
-      background-color: var(--a-base-10);
+      background-color: var(--a-primary);
     }
   }
 
