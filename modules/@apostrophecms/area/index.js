@@ -376,7 +376,9 @@ module.exports = {
           const response = await fetch(`${self.apos.baseUrl}/api/apos-external-front/render-area`, {
             method: 'POST',
             headers: {
-              'apos-external-front-key': self.apos.externalFrontKey
+              'apos-external-front-key': self.apos.externalFrontKey,
+              // Without this Astro enforces CSRF protection starting in version 5.9.0
+              'content-type': 'application-json'
             },
             body: JSON.stringify({
               area
