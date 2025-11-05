@@ -10,7 +10,7 @@
 
 ### Fixes
 
-* Fixes `AposBreadcrumbSwith` tooltip prop that is supposed to be an object, not a string. Object returned from the shared method `getOperationTooltip`.
+* Fixes `AposBreadcrumbSwitch` tooltip prop that is supposed to be an object, not a string. Object returned from the shared method `getOperationTooltip`.
 
 ## 4.23.0 (2025-10-30)
 
