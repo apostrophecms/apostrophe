@@ -43,10 +43,9 @@
     </template>
     <template #leftRail>
       <AposModalRail>
-        <AposTagList
-          title="apostrophe:filterByTag"
-          :tags="tagList"
-          @update="filter('_tags', $event)"
+        <AposFolders
+          :folders="folders"
+          @update="filter('_folders', $event)"
         />
       </AposModalRail>
     </template>

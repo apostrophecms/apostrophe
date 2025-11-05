@@ -19,7 +19,7 @@ module.exports = {
     // (null means "no opinion"). If set to `true` in your
     // subclass it is selected by default, if set to `false`
     // it is not offered at all
-    relatedDocument: null
+    relatedDocument: null,
     // By default there is no public REST API, but you can configure a
     // projection to enable one:
     // publicApiProjection: {
@@ -42,8 +42,12 @@ module.exports = {
     // plus any fields you’ve added via your `columns()` definitions.
     // To customize or narrow this, supply your own projection in:
     //   options.managerApiProjection = { /* desired fields here */ }
+    //
+    // If you enable this then you must have a corresponding -folder module,
+    // extending @apostrophecms/piece-folder-type
+    folders: false
   },
-  fields(self) {
+  fields(self, options) {
     return {
       add: {
         slug: {
@@ -51,6 +55,12 @@ module.exports = {
           label: 'apostrophe:slug',
           following: [ 'title', 'archived' ],
           required: true
+        },
+        ...options.folders && {
+          _folder: {
+            type: 'relationship',
+            withType: `${self.__meta.name}-folder`
+          }
         }
       },
       remove: self.options.singletonAuto
