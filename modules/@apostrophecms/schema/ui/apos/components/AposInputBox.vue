@@ -144,7 +144,9 @@ export default {
 
   :deep(.apos-field__label) {
     flex-direction: column;
+    /* stylelint-disable-next-line declaration-no-important */
     align-items: flex-start !important;
+    /* stylelint-disable-next-line declaration-no-important */
     gap: 2px !important;
   }
 
@@ -164,8 +166,8 @@ export default {
   }
 
   .apos-input--number {
-    padding: 10px 3px 10px 10px;
     height: 36px;
+    padding: 10px 3px 10px 10px;
   }
 
   .apos-input-box__shorthand {
@@ -179,70 +181,76 @@ export default {
 
   .apos-input-box__switch {
     display: flex;
-    background-color: var(--a-base-9);
-    padding: 3px;
-    gap: 5px;
-    height: 36px;
     box-sizing: border-box;
+    height: 36px;
+    padding: 3px;
+    background-color: var(--a-base-9);
+    gap: 5px;
     border-radius: var(--a-border-radius);
   }
 
   .apos-input-box__switch__button {
-    display: flex;
-    box-sizing: border-box;
-    align-items: center;
-    justify-content: center;
-    height: 100%;
-    aspect-ratio: 1 / 1;
-    border: none;
-    border-radius: var(--a-border-radius);
-    cursor: pointer;
-    color: var(--a-base-4);
-    background-color: transparent;
-    transition: all 0.3s ease;
+    @include apos-transition();
 
-    &:active, &:focus {
-      outline: 2px solid var(--a-primary-transparent-25);
-      background-color: var(--a-base-9)
-    }
+    & {
+      display: flex;
+      box-sizing: border-box;
+      align-items: center;
+      justify-content: center;
+      height: 100%;
+      aspect-ratio: 1 / 1;
+      border: none;
+      border-radius: var(--a-border-radius);
+      cursor: pointer;
+      color: var(--a-base-4);
+      background-color: transparent;
 
-    &:hover:not(.active) {
-      background-color: var(--a-base-10);
-      border: 1px solid var(--a-base-6);
-    }
+      &:active, &:focus {
+        outline: 2px solid var(--a-primary-transparent-25);
+        background-color: var(--a-base-9)
+      }
 
-    &.active {
-      background-color: var(--a-base-10);
-      color: var(--a-primary);
-      box-shadow: rgba(50, 50, 93, 0.25) 0px 13px 27px -5px, rgba(0, 0, 0, 0.3) 0px 8px 16px -8px;
-      border: 1px solid var(--a-base-7);
+      &:hover:not(.active) {
+        background-color: var(--a-base-10);
+        border: 1px solid var(--a-base-6);
+      }
+
+      &.active {
+        border: 1px solid var(--a-base-7);
+        color: var(--a-primary);
+        background-color: var(--a-base-10);
+        box-shadow: rgb(50 50 93 / 25%) 0 13px 27px -5px, rgb(0 0 0 / 30%) 0 8px 16px -8px;
+      }
     }
   }
 
   .apos-input-box__switch__box-diagram {
     display: block;
-    border: 2px solid currentColor;
+    box-sizing: border-box;
     width: $diagram-dims;
     height: $diagram-dims;
+    /* stylelint-disable-next-line scale-unlimited/declaration-strict-value */
+    border: 2px solid currentcolor;
     border-radius: 3px;
-    box-sizing: border-box;
   }
 
   .apos-input-box__switch__individual-diagram {
-    width: $diagram-dims;
-    height: $diagram-dims;
     position: relative;
     overflow: hidden;
+    width: $diagram-dims;
+    height: $diagram-dims;
   }
 
   [class^='apos-input-box__switch__individual-diagram-'] {
     position: absolute;
-    background-color: currentColor;
+    /* stylelint-disable-next-line scale-unlimited/declaration-strict-value */
+    background-color: currentcolor;
     margin: auto;
   }
 
   .apos-input-box__switch__individual-diagram.has-active [class^='apos-input-box__switch__individual-diagram-'] {
     background-color: var(--a-base-7);
+
     &.active {
       background-color: var(--a-primary);
     }
@@ -250,18 +258,18 @@ export default {
 
   .apos-input-box__switch__individual-diagram-top,
   .apos-input-box__switch__individual-diagram-bottom {
+    right: 0;
+    left: 0;
     width: 50%;
     height: 2px;
-    left: 0;
-    right: 0;
   }
 
   .apos-input-box__switch__individual-diagram-right,
   .apos-input-box__switch__individual-diagram-left {
-    width: 2px;
-    height: 50%;
     top: 0;
     bottom: 0;
+    width: 2px;
+    height: 50%;
   }
 
   .apos-input-box__switch__individual-diagram-top {
