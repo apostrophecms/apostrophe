@@ -8,6 +8,8 @@
 
 ### Changes
 
+* Bump nodemailer to v7.x.
+
 ### Fixes
 
 ## 4.23.0 (2025-10-30)
