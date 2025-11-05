@@ -1445,76 +1445,101 @@ module.exports = (self) => {
   self.addFieldType({
     name: 'box',
     convert(req, field, data, destination) {
-      console.log(data[field.name]);
-      destination[field.name] = field.def;
-      // destination[field.name] = checkStringLength(
-      //   destination[field.name],
-      //   field.min,
-      //   field.max
-      // );
-      // If field is required but empty (and client side didn't catch that)
-      // This is new and until now if JS client side failed, then it would
-      // allow the save with empty values -Lars
-      // if (
-      //   field.required &&
-      //   (_.isUndefined(data[field.name]) || !data[field.name].toString().length)
-      // ) {
-      //   throw self.apos.error('required');
-      // }
+      const defProps = [ 'top', 'right', 'bottom', 'left' ];
+      const temp = {};
+      const min = self.apos.launder.integer(field.min);
+      let max = null;
 
-      // if (field.pattern) {
-      //   const regex = new RegExp(field.pattern);
+      if ('max' in field) {
+        max = self.apos.launder.integer(field.max);
+      }
 
-      //   if (!regex.test(destination[field.name])) {
-      //     throw self.apos.error('invalid');
-      //   }
-      // }
-    },
-    index(value, field, texts) {
-      // const silent = field.silent === undefined ? true : field.silent;
-      // texts.push({
-      //   weight: field.weight || 15,
-      //   text: value,
-      //   silent
-      // });
-    },
-    isEmpty(field, value) {
-      // return !value.length;
-    },
-    validate(field, options, warn, fail) {
-      // if (!field.pattern) {
-      //   return;
-      // }
-
-      // const isRegexInstance = field.pattern instanceof RegExp;
-      // if (!isRegexInstance && typeof field.pattern !== 'string') {
-      //   fail('The pattern property must be a RegExp or a String');
-      // }
-
-      // field.pattern = isRegexInstance ? field.pattern.source : field.pattern;
-    },
-    addQueryBuilder(field, query) {
-      query.addBuilder(field.name, {
-        finalize: function () {
-          // if (self.queryBuilderInterested(query, field.name)) {
-          //   const criteria = {};
-          //   criteria[field.name] = new RegExp(self.apos.util.regExpQuote(query.get(field.name)), 'i');
-          //   query.and(criteria);
-          // }
-        },
-        launder: function (s) {
-          // return self.apos.launder.string(s);
-        },
-        choices: async function () {
-          // return self.sortedDistinct(field.name, query);
+      // All values to numbers or null
+      defProps.forEach(side => {
+        const int = parseInt(data[field.name][side]);
+        if (int || int === 0) {
+          temp[side] = int;
+        } else {
+          temp[side] = null;
         }
       });
+
+      // One non-null value if required
+      if (field.required) {
+        const unique = [ ...new Set(Object.values(temp)) ];
+        if (unique.length === 1 && unique[0] === null) {
+          throw self.apos.error('required');
+        }
+      }
+
+      // Minimum values in range
+      for (const key of defProps) {
+        if (temp[key] && temp < min) {
+          throw self.apos.error(`${key} is below the min ${field.min}, is ${temp[key]}`);
+        }
+      }
+
+      // Maximum values in range
+      if (max) {
+        for (const key of defProps) {
+          if (temp[key] && temp[key] > field.max) {
+            throw self.apos.error(`${key} is greater than the max ${field.max}, is ${temp[key]}`);
+          }
+        }
+      }
+
+      // Copy values to destination
+      destination[field.name] = temp;
+    },
+    validate(field, options, warn, fail) {
+      const defProps = [ 'top', 'right', 'bottom', 'left' ];
+      let defMin = 0;
+
+      if (field.max && typeof field.max !== 'number') {
+        fail('Property "max" must be a number');
+      }
+
+      if (field.step && typeof field.step !== 'number') {
+        fail('Property "step" must be a number');
+      }
+
+      if (field.def) {
+        const fieldDefProps = Object.keys(field.def);
+        if (
+          !(fieldDefProps.length === defProps.length &&
+          fieldDefProps.every(k => defProps.includes(k)))
+        ) {
+          fail('Def must be an object with only "top", "right", "bottom", and "left" keys');
+        }
+
+        for (const key in field.def) {
+          if (!Number.isFinite(field.def[key])) {
+            fail(`Default property "${key}" must be a number`);
+          }
+        }
+      }
+
+      if (field.min) {
+        if (typeof field.min !== 'number') {
+          fail('Property "min" must be a number');
+        }
+      } else {
+        if (field.def) {
+          // if def has a negative value, it needs to be the min
+          const fieldDefMin = Math.min(...Object.values(field.def));
+          if (defMin > fieldDefMin) {
+            defMin = fieldDefMin;
+          }
+        }
+        field.min = defMin;
+      }
+
     },
     def: {
-      top: 0,
-      right: 0,
-      bottom: 0,
-      left: 0
+      top: null,
+      right: null,
+      bottom: null,
+      left: null
     }
   });
 
