@@ -2,6 +2,8 @@ const _ = require('lodash');
 const { createId } = require('@paralleldrive/cuid2');
 const { SemanticAttributes } = require('@opentelemetry/semantic-conventions');
 const { klona } = require('klona');
+const legacyMigrations = require('./lib/legacy-migrations.js');
+const migrations = require('./lib/migrations.js');
 
 // This module is responsible for managing all of the documents (apostrophe
 // "docs") in the `aposDocs` mongodb collection.
@@ -1911,8 +1913,8 @@ module.exports = {
         };
       },
 
-      ...require('./lib/legacy-migrations')(self),
-      ...require('./lib/migrations')(self)
+      ...legacyMigrations(self),
+      ...migrations(self)
     };
   },
   tasks(self) {
