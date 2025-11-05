@@ -61,7 +61,7 @@ const props = defineProps({
 
 const $t = inject('i18n');
 const i18nAction = apos.modules['@apostrophecms/i18n'].action;
-const docType = props.moduleOptions.label.toLowerCase();
+const docType = $t(props.moduleOptions.label)?.toLowerCase();
 const forbiddenTooltip = $t('apostrophe:localeSwitcherPermissionToCreate', { docType });
 const menu = ref(null);
 const docLocalized = ref({});
