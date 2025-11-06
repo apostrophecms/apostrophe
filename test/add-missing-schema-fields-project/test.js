@@ -36,7 +36,7 @@ describe('Apostrophe - add-missing-schema-fields task', function() {
         debug: {
           handlers(self) {
             return {
-              '@apostrophecms/migration:before': {
+              'apostrophe:modulesRegistered': {
                 forceSkipMigration() {
                   self.apos.skipMigration = true;
                 }
@@ -75,7 +75,7 @@ describe('Apostrophe - add-missing-schema-fields task', function() {
         debug: {
           handlers(self) {
             return {
-              '@apostrophecms/migration:before': {
+              'apostrophe:modulesRegistered': {
                 forceSkipMigration() {
                   self.apos.skipMigration = true;
                 }
