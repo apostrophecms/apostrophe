@@ -421,10 +421,7 @@ module.exports = {
           _id: options.attachmentId ?? self.apos.util.generateId(),
           group: group.name,
           createdAt: new Date(),
-          name: self.apos.util.slugify(
-            path.basename(fileName, path.extname(fileName)),
-            { stripAccents: self.apos.i18n.shouldStripAccents(req) }
-          ),
+          name: self.apos.util.slugify(path.basename(fileName, path.extname(fileName))),
           title: self.apos.util.sortify(
             path.basename(fileName, path.extname(fileName))
           ),

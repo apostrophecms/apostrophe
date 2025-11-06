@@ -186,7 +186,6 @@ module.exports = (self) => {
     // (no slashes at all)
     convert (req, field, data, destination) {
       const options = self.getSlugFieldOptions(field, data);
-      options.stripAccents = self.apos.i18n.shouldStripAccents(req);
 
       destination[field.name] = self.apos.util.slugify(
         self.apos.launder.string(data[field.name]),

@@ -218,12 +218,7 @@ module.exports = {
       '@apostrophecms/doc-type:beforeSave': {
         ensureSlugSortifyAndUpdatedAt(req, doc, options) {
           const manager = self.getManager(doc.type);
-          manager.ensureSlug(
-            doc,
-            {
-              stripAccents: self.apos.i18n.shouldStripAccents(req)
-            }
-          );
+          manager.ensureSlug(doc);
           _.each(manager.schema, function (field) {
             if (field.sortify) {
               doc[field.name + 'Sortified'] = self.apos.util.sortify(
