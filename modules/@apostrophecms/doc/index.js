@@ -207,7 +207,8 @@ module.exports = {
           if (info.options.permissions !== false) {
             if (!self.apos.permission.can(
               req,
-              info.options.autopublishing ? 'edit' : 'publish', info.draft
+              info.options.autopublishing ? 'edit' : 'publish',
+              info.draft
             )) {
               throw self.apos.error('forbidden');
             }
