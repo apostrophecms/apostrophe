@@ -1267,18 +1267,19 @@ module.exports = {
           await self.apos.migration.eachDoc({}, 5, async doc => {
             const slug = doc.slug;
             const req = self.apos.task.getAdminReq({
-              locale: doc.aposLocale?.split(':')[0] || 'en'
+              locale: doc.aposLocale?.split(':')[0] || self.defaultLocale
             });
             if (!self.shouldStripAccents(req)) {
               return;
             }
 
-            doc.slug = self.apos.util.slugify(doc.slug, {
-              stripAccents: true,
-              allow: '/'
-            });
+            doc.slug = _.deburr(doc.slug);
             if (slug !== doc.slug) {
-              await self.apos.doc.update(req, doc, { permissins: false });
+              const manager = self.apos.doc.getManager(doc.type);
+              if (!manager) {
+                return;
+              }
+              await manager.update(req, doc, { permissions: false });
               docChanged++;
               self.apos.util.log(`Updated doc [${req.locale}] "${slug}" -> "${doc.slug}"`);
             }
@@ -1289,7 +1290,7 @@ module.exports = {
             if (!self.shouldStripAccents(req)) {
               return;
             }
-            const slug = self.apos.util.slugify(attachment.name, { stripAccents: true });
+            const slug = _.deburr(attachment.name);
             if (slug !== attachment.name) {
               await self.apos.attachment.db.updateOne(
                 { _id: attachment._id },
