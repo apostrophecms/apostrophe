@@ -1,5 +1,11 @@
 # Changelog
 
+## 4.23.1 (2025-11-06)
+
+### Fixes
+
+* Hotfix: specify the content type when calling back to Astro with JSON to render an area. This is required starting in Astro 4.9.0 and up, otherwise the request is blocked by CSRF protection. This fix allows [section-template-library](https://apostrophecms.com/extensions/section-template-library) previews to work.
+
 ## 4.23.0 (2025-10-30)
 
 ### Adds
