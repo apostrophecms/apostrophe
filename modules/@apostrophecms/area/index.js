@@ -378,7 +378,7 @@ module.exports = {
             headers: {
               'apos-external-front-key': self.apos.externalFrontKey,
               // Without this Astro enforces CSRF protection starting in version 4.9.0
-              'content-type': 'application-json'
+              'content-type': 'application/json'
             },
             body: JSON.stringify({
               area
