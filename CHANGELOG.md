@@ -5,6 +5,7 @@
 ### Adds
 
 * Translation strings added for the layout- and layout-column-widgets.
+* New `box` schema field type
 
 ### Changes
 
