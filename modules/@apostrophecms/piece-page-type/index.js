@@ -37,6 +37,7 @@ module.exports = {
     self.piecesCssName = self.apos.util.cssName(self.pieces.name);
 
     self.piecesFilters = self.options.piecesFilters || [];
+    console.log(`>> ${self.__meta.name}`);
 
     self.enableAddUrlsToPieces();
   },
@@ -204,6 +205,9 @@ module.exports = {
             req.query.page = req.params.page;
             return self.indexPage(req);
           });
+          console.log(self.options.piecesFilters);
+          console.log(`** ${self.__meta.name}`);
+          console.log(self.piecesFilters);
           for (const filter of self.piecesFilters) {
             self.dispatch(`/${filter.name}/:filterValue`, req => {
               req.query[filter.name] = req.params.filterValue;
@@ -357,15 +361,33 @@ module.exports = {
 
       async populatePiecesFilters(query) {
         const req = query.req;
-        req.data.piecesFilters = req.data.piecesFilters || {};
+        const filtersWithChoices = await self.getFiltersWithChoices(query);
+        req.data.filters = filtersWithChoices;
+        // for bc (less useful)
+        req.data.piecesFilters = {};
+        for (const filter of filtersWithChoices) {
+          req.data.piecesFilters[filter.name] = filter.choices;
+        }
+      },
+
+      async getFiltersWithChoices(query, { allCounts = false } = {}) {
+        const results = [];
         for (const filter of self.piecesFilters) {
           // The choices for each filter should reflect the effect of all
           // filters except this one (filtering by topic pares down the list of
           // categories and vice versa)
           const _query = query.clone();
           _query[filter.name](undefined);
-          req.data.piecesFilters[filter.name] = await _query.toChoices(filter.name, _.pick(filter, 'counts'));
+          const choices = await _query.toChoices(filter.name, allCounts || _.pick(filter, 'counts'));
+          for (const choice of choices) {
+            choice._url = query.req.data.page._url + self.apos.url.getChoiceFilter(filter.name, choice.value, 1);
+          }
+          results.push({
+            ...filter,
+            choices
+          });
         }
+        return results;
       }
     };
 
@@ -392,26 +414,19 @@ module.exports = {
           return metadata;
         }
         const query = self.indexQuery(req);
-        for (const filter of self.piecesFilters) {
-          // The choices for each filter should reflect the effect of all
-          // filters except this one (filtering by topic pares down the list of
-          // categories and vice versa)
-          const _query = query.clone();
-          _query[filter.name](undefined);
-          // Make sure we get the count for each choice so we can paginate
-          const choices = await _query.toChoices(filter.name, true);
-          for (const choice of choices) {
+        const filters = await self.getFiltersWithChoices(query, { allCounts: true });
+        for (const filter of filters) {
+          for (const choice of filter.choices) {
             const pages = Math.min(1, Math.ceil(choice.count / self.perPage));
             for (let page = 1; (page <= pages); page++) {
               metadata.push({
                 ...metadata[0],
-                i18nId: `${metadata[0].i18nId}.${self.apos.util.slugify(choice.value)}.${page}`,
-                _url: metadata[0]._url + self.apos.url.getChoiceFilter(choice.name, choice.value, page)
+                i18nId: `${metadata[0].i18nId}.${self.apos.util.slugify(filter.name)}.${self.apos.util.slugify(choice.value)}.${page}`,
+                _url: metadata[0]._url + self.apos.url.getChoiceFilter(filter.name, choice.value, page)
               });
             }
           }
         }
-        const filters = await self.getPiecesFilters(query);
         await query.toCount();
         const pages = query.get('totalPages');
         for (let page = 2; (2 <= pages); page++) {
@@ -422,29 +437,6 @@ module.exports = {
           });
         }
         return metadata;
-      },
-      // Returns a string suitable to append to the original page URL when we're
-      // specifying a particular filter and a page number. Pages start with 1
-      getChoiceFilter(name, value) {
-        name = encodeURIComponent(name);
-        value = encodeURIComponent(value);
-        if (self.apos.url.options.static) {
-          return `/${name}/${value}${page > 1 ? `/page/${page}` : ''}`;
-        } else {
-          return `?${name}=${value}${page > 1 ? `&page=${page}` : ''}`;
-        }
-      },
-      // Returns a string suitable to append to the original page URL when all we're
-      // adding is a page number. Pages start with 1
-      getPageFilter(page) {
-        if (page <= 1) {
-          return '';
-        }
-        if (self.apos.url.options.static) {
-          return `/page/${page}`;
-        } else {
-          return `?page=${page}`;
-        }
       }
     };
   }

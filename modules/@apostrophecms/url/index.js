@@ -11,7 +11,10 @@ const waitOn = require('wait-on');
 
 module.exports = {
 
-  options: { alias: 'url' },
+  options: {
+    alias: 'url',
+    static: false
+  },
 
   tasks(self) {
     return {
@@ -336,6 +339,32 @@ module.exports = {
             throw self.apos.error('invalid', `The path ${path} did not produce a 200 status`);
           }
           return result.text();
+        }
+      },
+      // Returns a string suitable to append to the original page URL when we're
+      // specifying a particular filter and a page number. Pages start with 1
+      getChoiceFilter(name, value, page) {
+        if (value === null) {
+          return '';
+        }
+        name = encodeURIComponent(name);
+        value = encodeURIComponent(value);
+        if (self.options.static) {
+          return `/${name}/${value}${page > 1 ? `/page/${page}` : ''}`;
+        } else {
+          return `?${name}=${value}${page > 1 ? `&page=${page}` : ''}`;
+        }
+      },
+      // Returns a string suitable to append to the original page URL when all we're
+      // adding is a page number. Pages start with 1
+      getPageFilter(page) {
+        if (page <= 1) {
+          return '';
+        }
+        if (self.options.static) {
+          return `/page/${page}`;
+        } else {
+          return `?page=${page}`;
         }
       }
     };
