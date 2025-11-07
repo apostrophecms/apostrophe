@@ -301,7 +301,7 @@ export default {
   data() {
     return {
       manager: new GridManager(),
-      // The inital ghost data for resizing.
+      // The initial ghost data for resizing.
       // Only ghost related data can be written (such as top, left, width, height).
       ghostData: {
         isResizing: false,
