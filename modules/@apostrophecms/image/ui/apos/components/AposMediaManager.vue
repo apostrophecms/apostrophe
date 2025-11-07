@@ -451,7 +451,7 @@ export default {
         // We want to load more items if we skipped some due to duplicates
         // (items that were added to the list without being requested from
         // the server index route).
-        // This ensures that the inifinite scroll will work as expected.
+        // This ensures that the infinite scroll will work as expected.
         await this.loadWhenIntersecting(options.lock);
       }
 
@@ -693,7 +693,7 @@ export default {
       }
     },
 
-    // Keep it for later when we will be able to udpate the UI without
+    // Keep it for later when we will be able to update the UI without
     // refreshing existing because it would break pagination.
     removeStateDoc(doc) {
       const index = this.items.findIndex(item => item._id === doc._id);
