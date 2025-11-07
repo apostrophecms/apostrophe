@@ -381,7 +381,7 @@ module.exports = {
           const bearer = await self.apos.login.bearerTokens.findOne({
             _id: req.token,
             expires: { $gte: new Date() },
-            // requirementsToVerify array should be empty or inexistant
+            // requirementsToVerify array should be empty or inexistent
             // for the token to be usable to log in.
             $or: [
               { requirementsToVerify: { $exists: false } },
