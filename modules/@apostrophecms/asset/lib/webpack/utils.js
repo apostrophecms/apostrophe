@@ -284,7 +284,7 @@ async function verifyBundlesEntryPoints (bundles) {
       // already verified it's unique for the given module
       if (!remapping.source) {
         // Bundle name for "main" "doesn't matter - it will be ignored and
-        // never built, we want to achieve a free from colision name. What
+        // never built, we want to achieve a free from collision name. What
         // matters is main = true. Target is 'main' by convention:
         // `main.bundleName`
         bundleName = `${remapping.target}.${bundleName}`;
