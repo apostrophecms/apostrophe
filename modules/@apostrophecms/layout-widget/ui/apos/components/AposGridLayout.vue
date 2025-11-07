@@ -390,7 +390,7 @@ export default {
 /* stylelint-disable-next-line media-feature-name-allowed-list */
 @media (prefers-reduced-motion: no-preference) {
   /* TransitionGroup move/enter/leave animations for grid items */
-  // FIXME: casues issues on item resizing/re-rendering, works fine when moving
+  // FIXME: causes issues on item resizing/re-rendering, works fine when moving
   .apos-grid-move {
     transition: transform 200ms ease;
   }
