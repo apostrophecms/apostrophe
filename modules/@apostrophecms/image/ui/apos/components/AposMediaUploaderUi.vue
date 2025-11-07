@@ -65,7 +65,7 @@ const props = defineProps({
     type: String,
     default: 'image-icon'
   },
-  diabled: {
+  disabled: {
     type: Boolean,
     default: false
   },
