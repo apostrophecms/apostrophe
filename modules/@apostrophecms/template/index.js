@@ -971,7 +971,7 @@ module.exports = {
       // include an argument separated by `:`. E.g. `hmr:apos`, `hmr:public`. If
       // the condition handler does not support arguments, it's ignored. -
       // `bundler`: (optional) string, the alias of the currently registered
-      // asset external build module. The bundler condition is not parth of the
+      // asset external build module. The bundler condition is not path of the
       // actual inject data. It's evaluated just on the registration data.
 
       insert(end, location, componentName, conditions) {
