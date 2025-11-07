@@ -7,7 +7,7 @@
  * `schema()` (computed) prop is required in the
  * component implementing this mixin (typically `this.field.schema`).
  *
- * This mixin is designed to detect field visibility withing components
+ * This mixin is designed to detect field visibility within components
  * having sub-schema (like `AposInputObject`).
  */
 
