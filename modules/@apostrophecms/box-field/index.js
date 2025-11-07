@@ -122,7 +122,7 @@ module.exports = {
   },
   helpers() {
     return {
-      toCss(property, unit = 'px', value) {
+      toCss(value, property, unit = 'px') {
         const {
           top, right, bottom, left
         } = value;
