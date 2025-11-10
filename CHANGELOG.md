@@ -1,6 +1,6 @@
 # Changelog
 
-## UNRELEASED
+## 4.23.1-alpha.1 (2025-11-10)
 
 ### Adds
 
