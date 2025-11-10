@@ -12,9 +12,8 @@ const process = require('process');
 const npmResolve = require('resolve');
 const glob = require('./lib/glob.js');
 const moogRequire = require('./lib/moog-require');
+const importFresh = require('./lib/import-fresh');
 let defaults = require('./defaults.js');
-
-const importFresh = moduleName => import(`${moduleName}?${Date.now()}`);
 
 // ## Top-level options
 //
