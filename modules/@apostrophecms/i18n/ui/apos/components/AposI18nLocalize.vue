@@ -1166,7 +1166,7 @@ export default {
         this.wizard.values.translateTargets.data = [];
         return;
       }
-      const sourceLocale = this.currentLocale;
+      const sourceLocale = this.modalData.locale;
       const targets = this.wizard.values.toLocales.data;
 
       let response;
