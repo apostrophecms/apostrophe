@@ -127,11 +127,13 @@ module.exports = (self) => {
     // Get the component name from a file path. The `enumerate` option allows
     // to append a number to the component name.
     getComponentNameByPath(componentPath, { enumerate } = {}) {
-      return path
+      const result = path
         .basename(componentPath)
         .replace(/-/g, '_')
         .replace(/\s+/g, '')
         .replace(/\.\w+/, '') + (typeof enumerate === 'number' ? `_${enumerate}` : '');
+      console.log(`*** GCBP ${componentPath} ${result}`);
+      return result;
     },
 
     // Return the reported by the external module during build dev server URL.
