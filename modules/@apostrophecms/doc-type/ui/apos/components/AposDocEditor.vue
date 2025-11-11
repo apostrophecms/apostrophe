@@ -899,7 +899,6 @@ export default {
 
       if (isLocalized) {
         this.switchModalLocale(locale.name);
-        await this.$nextTick();
         await this.instantiateExistingDoc();
       }
     },
