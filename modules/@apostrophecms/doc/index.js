@@ -1933,6 +1933,8 @@ module.exports = {
           });
 
           self.apos.util.info(aposDocId);
+
+          return aposDocId;
         }
       },
       'set-apos-doc-id': {

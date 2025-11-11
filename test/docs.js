@@ -1,6 +1,6 @@
-const t = require('../test-lib/test.js');
-const assert = require('assert');
+const { strict: assert } = require('node:assert');
 const _ = require('lodash');
+const t = require('../test-lib/test.js');
 
 describe('Docs', function() {
   const apiKey = 'this is a test api key';
@@ -1234,8 +1234,163 @@ describe('Docs', function() {
 
 });
 
+describe.only('tasks', function () {
+
+  before(async function() {
+    apos = await t.create({
+      root: module,
+      modules: {
+        '@apostrophecms/i18n': {
+          options: {
+            locales: {
+              en: {},
+              fr: {
+                prefix: '/fr'
+              }
+            }
+          }
+        },
+        'test-people': {
+          extend: '@apostrophecms/piece-type',
+          fields: {
+            add: {
+              _friends: {
+                type: 'relationship',
+                max: 1,
+                withType: 'test-people',
+                label: 'Friends'
+              }
+            }
+          }
+        },
+        unlocalized: {
+          extend: '@apostrophecms/piece-type',
+          options: {
+            localized: false
+          },
+          fields: {
+            add: {
+              _friends: {
+                type: 'relationship',
+                max: 1,
+                withType: 'test-people',
+                label: 'Friends'
+              }
+            }
+          }
+        },
+        '@apostrophecms/page': {
+          options: {
+            park: [],
+            types: [
+              {
+                name: 'test-page',
+                label: 'Test Page'
+              }
+            ]
+          }
+        },
+        'test-page': {
+          extend: '@apostrophecms/page-type'
+        }
+
+      }
+    });
+  });
+
+  it('should get the aposDocId when calling @apostrophecms/doc:get-apos-doc-id task with a slug', async function() {
+    await insertPeople(apos);
+
+    const req = apos.task.getReq();
+    const doc = await apos.doc.find(req, {
+      type: 'test-people',
+      slug: 'carl'
+    }).toObject();
+
+    const actual = await apos.task.invoke(
+      '@apostrophecms/doc:get-apos-doc-id',
+      {
+        slug: doc.slug,
+        locale: 'en'
+      }
+    );
+    const expected = doc.aposDocId;
+
+    assert.equal(actual, expected);
+  });
+
+  it('should get the aposDocId when calling @apostrophecms/doc:get-apos-doc-id task with an _id', async function() {
+    await insertPeople(apos);
+
+    const req = apos.task.getReq();
+    const doc = await apos.doc.find(req, {
+      type: 'test-people',
+      slug: 'carl'
+    }).toObject();
+
+    const actual = await apos.task.invoke(
+      '@apostrophecms/doc:get-apos-doc-id',
+      {
+        id: doc._id,
+        locale: 'en'
+      }
+    );
+    const expected = doc.aposDocId;
+
+    assert.equal(actual, expected);
+  });
+});
+
 async function insertPeople(apos) {
   return apos.doc.db.insertMany([
+    {
+      _id: 'lori:en:draft',
+      aposDocId: 'lori',
+      aposLocale: 'en:draft',
+      slug: 'lori',
+      visibility: 'public',
+      type: 'test-people',
+      firstName: 'Lori',
+      lastName: 'Pizzaroni',
+      age: 32,
+      alive: true
+    },
+    {
+      _id: 'larry:en:draft',
+      aposDocId: 'larry',
+      aposLocale: 'en:draft',
+      slug: 'larry',
+      visibility: 'public',
+      type: 'test-people',
+      firstName: 'Larry',
+      lastName: 'Cherber',
+      age: 28,
+      alive: true
+    },
+    {
+      _id: 'carl:en:draft',
+      aposDocId: 'carl',
+      aposLocale: 'en:draft',
+      slug: 'carl',
+      visibility: 'public',
+      type: 'test-people',
+      firstName: 'Carl',
+      lastName: 'Sagan',
+      age: 62,
+      alive: false,
+      friendsIds: [ 'larry' ]
+    },
+    {
+      _id: 'peter:en:draft',
+      aposDocId: 'peter',
+      aposLocale: 'en:draft',
+      type: 'test-people',
+      visibility: 'loginRequired',
+      firstName: 'Peter',
+      lastName: 'Pan',
+      age: 70,
+      slug: 'peter'
+    },
     {
       _id: 'lori:en:published',
       aposDocId: 'lori',
