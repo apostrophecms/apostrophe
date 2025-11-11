@@ -379,8 +379,13 @@ module.exports = {
           const _query = query.clone();
           _query[filter.name](undefined);
           const choices = await _query.toChoices(filter.name, allCounts || _.pick(filter, 'counts'));
+          console.log(query.req.params, filter.name);
           for (const choice of choices) {
             choice._url = query.req.data.page._url + self.apos.url.getChoiceFilter(filter.name, choice.value, 1);
+            if (query.req.query[filter.name] === choice.value) {
+              choice.active = true;
+              console.log('MATCH');
+            }
           }
           results.push({
             ...filter,
