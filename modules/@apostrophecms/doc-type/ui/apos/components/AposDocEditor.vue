@@ -526,6 +526,7 @@ export default {
           draft: true
         });
 
+        this.currentId = docData._id;
         if (docData.archived) {
           this.restoreOnly = true;
         } else {
@@ -533,7 +534,7 @@ export default {
         }
         const canEdit = docData._edit || this.moduleOptions.canEdit;
         this.readOnly = canEdit === false;
-        if (canEdit && !await this.lock(this.getOnePath, docData._id)) {
+        if (canEdit && !await this.lock(this.getOnePath)) {
           this.lockNotAvailable();
         }
       } catch {
@@ -548,7 +549,6 @@ export default {
           if (docData.type !== this.docType) {
             this.docType = docData.type;
           }
-          this.currentId = docData._id;
           this.original = klona(docData);
           this.docFields.data = docData;
           // TODO: Is this block even useful since published is fetched after
