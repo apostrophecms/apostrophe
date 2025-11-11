@@ -1235,6 +1235,9 @@ describe('Docs', function() {
 });
 
 describe.only('tasks', function () {
+  let apos;
+
+  this.timeout(t.timeout);
 
   before(async function() {
     apos = await t.create({
@@ -1256,7 +1259,6 @@ describe.only('tasks', function () {
             add: {
               _friends: {
                 type: 'relationship',
-                max: 1,
                 withType: 'test-people',
                 label: 'Friends'
               }
@@ -1298,10 +1300,63 @@ describe.only('tasks', function () {
     });
   });
 
-  it('should get the aposDocId when calling @apostrophecms/doc:get-apos-doc-id task with a slug', async function() {
-    await insertPeople(apos);
+  after(async function() {
+    await t.destroy(apos);
+  });
 
-    const req = apos.task.getReq();
+  beforeEach(async function() {
+    await apos.doc.db.deleteMany({});
+    await apos.lock.db.deleteMany({});
+  });
+
+  it('should require the id or slug when calling @apostrophecms/doc:get-apos-doc-id task', async function() {
+    await insertI18nFixtures(apos);
+
+    const actual = async () => {
+      await apos.task.invoke(
+        '@apostrophecms/doc:get-apos-doc-id',
+        {
+          locale: 'fr'
+        }
+      );
+    };
+    const expected = {
+      message: 'Either id or slug must be provided',
+      name: 'invalid'
+    };
+
+    await assert.rejects(actual, expected);
+  });
+
+  it('should require the locale when calling @apostrophecms/doc:get-apos-doc-id task', async function() {
+    await insertI18nFixtures(apos);
+
+    const req = apos.task.getReq({ locale: 'en' });
+    const doc = await apos.doc.find(req, {
+      type: 'test-people',
+      slug: 'carl'
+    }).toObject();
+
+    const actual = async () => {
+      await apos.task.invoke(
+        '@apostrophecms/doc:get-apos-doc-id',
+        {
+          slug: doc.slug
+        }
+      );
+    };
+    const expected = {
+      message: 'Missing locale',
+      name: 'invalid'
+    };
+
+    await assert.rejects(actual, expected);
+  });
+
+  it('should get the aposDocId when calling @apostrophecms/doc:get-apos-doc-id task with a slug', async function() {
+    await insertI18nFixtures(apos);
+
+    const req = apos.task.getReq({ locale: 'en' });
     const doc = await apos.doc.find(req, {
       type: 'test-people',
       slug: 'carl'
@@ -1316,13 +1371,13 @@ describe.only('tasks', function () {
     );
     const expected = doc.aposDocId;
 
-    assert.equal(actual, expected);
+    assert.deepEqual(actual, expected);
   });
 
   it('should get the aposDocId when calling @apostrophecms/doc:get-apos-doc-id task with an _id', async function() {
-    await insertPeople(apos);
+    await insertI18nFixtures(apos);
 
-    const req = apos.task.getReq();
+    const req = apos.task.getReq({ locale: 'en' });
     const doc = await apos.doc.find(req, {
       type: 'test-people',
       slug: 'carl'
@@ -1337,7 +1392,181 @@ describe.only('tasks', function () {
     );
     const expected = doc.aposDocId;
 
-    assert.equal(actual, expected);
+    assert.deepEqual(actual, expected);
+  });
+
+  it('should require a new ID when calling @apostrophecms/doc:set-apos-doc-id task', async function() {
+    await insertI18nFixtures(apos);
+
+    const req = apos.task.getReq({ locale: 'fr' });
+    const doc = await apos.doc.find(req, {
+      type: 'test-people',
+      slug: 'carl'
+    }).toObject();
+
+    const actual = async () => {
+      await apos.task.invoke(
+        '@apostrophecms/doc:set-apos-doc-id',
+        {
+          'old-id': doc.aposDocId,
+          locale: 'fr'
+        }
+      );
+    };
+    const expected = {
+      message: 'Missing newId',
+      name: 'invalid'
+    };
+
+    await assert.rejects(actual, expected);
+  });
+
+  it('should require an old-id or slug when calling @apostrophecms/doc:set-apos-doc-id task', async function() {
+    await insertI18nFixtures(apos);
+
+    const actual = async () => {
+      await apos.task.invoke(
+        '@apostrophecms/doc:set-apos-doc-id',
+        {
+          'new-id': 'carl',
+          locale: 'fr'
+        }
+      );
+    };
+    const expected = {
+      message: 'Either oldId or slug must be provided',
+      name: 'invalid'
+    };
+
+    await assert.rejects(actual, expected);
+  });
+
+  it('should require a locale when calling @apostrophecms/doc:set-apos-doc-id task', async function() {
+    await insertI18nFixtures(apos);
+
+    const req = apos.task.getReq({ locale: 'fr' });
+    const doc = await apos.doc.find(req, {
+      type: 'test-people',
+      slug: 'carl'
+    }).toObject();
+
+    const actual = async () => {
+      await apos.task.invoke(
+        '@apostrophecms/doc:set-apos-doc-id',
+        {
+          'new-id': 'carl',
+          'old-id': doc.aposDocId
+        }
+      );
+    };
+    const expected = {
+      message: 'Missing locale',
+      name: 'invalid'
+    };
+
+    await assert.rejects(actual, expected);
+  });
+
+  it('should update the aposDocId when calling @apostrophecms/doc:set-apos-doc-id task with a new slug', async function() {
+    await insertI18nFixtures(apos);
+
+    const req = apos.task.getReq({ locale: 'fr' });
+    const doc = await apos.doc.find(req, {
+      type: 'test-people',
+      slug: 'carl'
+    }).toObject();
+
+    await apos.task.invoke(
+      '@apostrophecms/doc:set-apos-doc-id',
+      {
+        'new-id': 'carl',
+        slug: doc.slug,
+        locale: 'fr'
+      }
+    );
+
+    const paul = await apos.doc.find(
+      apos.task.getReq({ locale: 'fr' }),
+      { slug: 'paul' }
+    ).toObject();
+    const carl = await apos.doc.find(
+      apos.task.getReq({ locale: 'fr' }),
+      { slug: 'carl' }
+    ).toObject();
+
+    const actual = {
+      carl: {
+        _id: carl._id,
+        aposDocId: carl.aposDocId,
+        aposLocale: carl.aposLocale
+      },
+      paul: {
+        friendsIds: paul.friendsIds
+      }
+    };
+    const expected = {
+      carl: {
+        _id: 'carl:fr:published',
+        aposDocId: 'carl',
+        aposLocale: 'fr:published'
+      },
+      paul: {
+        friendsIds: [ 'carl', 'test-people-larry' ]
+      }
+    };
+
+    assert.deepEqual(actual, expected);
+  });
+
+  it('should update the aposDocId when calling @apostrophecms/doc:set-apos-doc-id task with a new slug', async function() {
+    await insertI18nFixtures(apos);
+
+    const req = apos.task.getReq({ locale: 'fr' });
+    const doc = await apos.doc.find(req, {
+      type: 'test-people',
+      slug: 'carl'
+    }).toObject();
+
+    await apos.task.invoke(
+      '@apostrophecms/doc:set-apos-doc-id',
+      {
+        'new-id': 'carl',
+        'old-id': doc.aposDocId,
+        locale: 'fr'
+      }
+    );
+
+    const paul = await apos.doc.find(
+      apos.task.getReq({ locale: 'fr' }),
+      { slug: 'paul' }
+    ).toObject();
+    const carl = await apos.doc.find(
+      apos.task.getReq({ locale: 'fr' }),
+      { slug: 'carl' }
+    ).toObject();
+
+    const actual = {
+      carl: {
+        _id: carl._id,
+        aposDocId: carl.aposDocId,
+        aposLocale: carl.aposLocale
+      },
+      paul: {
+        friendsIds: paul.friendsIds
+      }
+    };
+    const expected = {
+      carl: {
+        _id: 'carl:fr:published',
+        aposDocId: 'carl',
+        aposLocale: 'fr:published'
+      },
+      paul: {
+        friendsIds: [ 'carl', 'test-people-larry' ]
+      }
+    };
+
+    assert.deepEqual(actual, expected);
   });
 });
 
@@ -1475,4 +1704,139 @@ async function archiveDoc(apos, doc) {
     ...doc,
     archived: true
   });
+}
+
+async function insertI18nFixtures(apos) {
+  const larry = await apos.modules['test-people'].insert(
+    apos.task.getReq({
+      locale: 'en',
+      mode: 'published'
+    }),
+    {
+      ...apos.modules['test-people'].newInstance(),
+      // _id: 'larry:en:published',
+      aposDocId: 'larry',
+      aposLocale: 'en:published',
+      slug: 'larry',
+      visibility: 'public',
+      type: 'test-people',
+      firstName: 'Larry',
+      lastName: 'Cherber',
+      age: 28,
+      alive: true
+    }
+  );
+
+  const carl = await apos.modules['test-people'].insert(
+    apos.task.getReq({
+      locale: 'en',
+      mode: 'published'
+    }),
+    {
+      ...apos.modules['test-people'].newInstance(),
+      // _id: 'carl:en:published',
+      aposDocId: 'carl',
+      aposLocale: 'en:published',
+      slug: 'carl',
+      visibility: 'public',
+      type: 'test-people',
+      firstName: 'Carl',
+      lastName: 'Sagan',
+      age: 62,
+      alive: false,
+      _friends: [ larry ]
+    }
+  );
+
+  const paul = await apos.modules['test-people'].insert(
+    apos.task.getReq({
+      locale: 'en',
+      mode: 'published'
+    }),
+    {
+      ...apos.modules['test-people'].newInstance(),
+      // _id: 'paul:en:published',
+      aposDocId: 'paul',
+      aposLocale: 'en:published',
+      slug: 'paul',
+      visibility: 'public',
+      type: 'test-people',
+      firstName: 'Paul',
+      lastName: 'McCartney',
+      age: 24,
+      alive: false,
+      _friends: [ carl, larry ]
+    }
+  );
+
+  const larryFr = await apos.modules['test-people'].insert(
+    apos.task.getReq({
+      locale: 'fr',
+      mode: 'published'
+    }),
+    {
+      ...apos.modules['test-people'].newInstance(),
+      // _id: 'larry:fr:published',
+      aposDocId: 'test-people-larry',
+      aposLocale: 'fr:published',
+      slug: 'larry',
+      visibility: 'public',
+      type: 'test-people',
+      firstName: 'Larry',
+      lastName: 'Cherber',
+      age: 28,
+      alive: true
+    }
+  );
+
+  const carlFr = await apos.modules['test-people'].insert(
+    apos.task.getReq({
+      locale: 'fr',
+      mode: 'published'
+    }),
+    {
+      ...apos.modules['test-people'].newInstance(),
+      // _id: 'carl:fr:published',
+      aposDocId: 'test-people-carl',
+      aposLocale: 'fr:published',
+      slug: 'carl',
+      visibility: 'public',
+      type: 'test-people',
+      firstName: 'Carl',
+      lastName: 'Sagan',
+      age: 62,
+      alive: false,
+      _friends: [ larryFr ]
+    }
+  );
+
+  const paulFr = await apos.modules['test-people'].insert(
+    apos.task.getReq({
+      locale: 'fr',
+      mode: 'published'
+    }),
+    {
+      ...apos.modules['test-people'].newInstance(),
+      // _id: 'paul:fr:published',
+      aposDocId: 'test-people-paul',
+      aposLocale: 'fr:published',
+      slug: 'paul',
+      visibility: 'public',
+      type: 'test-people',
+      firstName: 'Paul',
+      lastName: 'McCartney',
+      age: 24,
+      alive: false,
+      _friends: [ carlFr, larryFr ]
+    }
+  );
+
+  return {
+    larry,
+    carl,
+    paul,
+    larryFr,
+    carlFr,
+    paulFr
+  };
 }
