@@ -35,7 +35,7 @@ export default {
      * match a value if a key and value are provided. If no key is provided,
      * the namespace is matched.
      * Meta keys (inside `metaObject`) starting with '@' are ignored,
-     * if not explicitely set otherwise, as they are absolute paths
+     * if not explicitly set otherwise, as they are absolute paths
      * and will be yielding false positives.
      *
      * @param {object} metaObject the meta object or any object inside it
