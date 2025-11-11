@@ -1234,7 +1234,7 @@ describe('Docs', function() {
 
 });
 
-describe.only('tasks', function () {
+describe('Docs: tasks', function () {
   let apos;
 
   this.timeout(t.timeout);
