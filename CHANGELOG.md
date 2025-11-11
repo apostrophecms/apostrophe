@@ -2,17 +2,22 @@
 
 ## UNRELEASED
 
-### Add
+### Adds
 
 * Add `@apostrophecms/migration:add-missing-schema-fields` task. This task does not run database migrations.
+* Translation strings added for the layout- and layout-column-widgets.
 
 ### Changes
 
 * `@apostrophecms/migration:requirements` handler now runs the migration requirements like `insertIfMissing`, `implementParkAllInDefaultLocale`, `replicate` and `implementParkAllInOtherLocales`.
+* Bump nodemailer to v7.x.
 
 ### Fixes
 
-## UNRELEASED
+* Specify the content type when calling back to Astro with JSON to render an area. This is required starting in Astro 4.9.0 and up, otherwise the request is blocked by CSRF protection.
+* Fixes `AposBreadcrumbSwitch` tooltip prop that is supposed to be an object, not a string. Object returned from the shared method `getOperationTooltip`.
+
+## 4.23.0 (2025-10-30)
 
 ### Adds
 
@@ -23,6 +28,7 @@
 * `widgetOperations` support for `placement: 'breadcrumb'` to add operations to the breadcrumb menu of widgets. Extend the widget operations configuration to support various features when in the breadcrumb menu.
 * Area template (Nunjucks) support for `aposStyle`, `aposClassName`, `aposParentOptions` and `aposAttrs` contextual named variables (`with {}` syntax).
 * New login option `caseInsensitive` to force login usernames and emails to be case insensitive. New task `login-case-insensitive` updating all login names / email to lowercase, used by a new migration when switching to `caseInsensitive`.
+* Adds `disableIfProps` and `disableTooltip` to widget operations and breadcrumb operations.
 
 ### Changes
 
@@ -30,6 +36,8 @@
 * Refactored complex logic regarding data updates in `AposSchema`.
 * Cleaned up `annotateAreaForExternalFront` logic and added context so developers understand the reason if it fails due to a widget type with no matching module in the project.
 * Color fields now display their preset color swatches in the field UI rather than just the color picker popup
+* Moves widget operations to backend with new `action` and `nativeAction` properties.
+* Moves `mode` from breakpoint preview to it's own store (to be used by layout).
 
 ### Fixes
 

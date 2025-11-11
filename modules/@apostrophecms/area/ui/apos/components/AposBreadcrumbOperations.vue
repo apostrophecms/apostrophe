@@ -48,8 +48,9 @@
 </template>
 
 <script>
-import { useWidgetStore } from 'Modules/@apostrophecms/ui/stores/widget';
 import { mapActions } from 'pinia';
+import { useWidgetStore } from 'Modules/@apostrophecms/ui/stores/widget';
+import { isOperationDisabled, getOperationTooltip } from '../lib/operations.js';
 
 export default {
   name: 'AposBreadcrumbOperations',
@@ -57,6 +58,10 @@ export default {
     i: {
       type: Number,
       required: true
+    },
+    tinyScreen: {
+      type: Boolean,
+      default: false
     },
     options: {
       type: Object,
@@ -132,7 +137,7 @@ export default {
           listeners: this.getOperationListeners(operation),
           name: operation.name || null,
           action: operation.action || null,
-          key: operation.action || operation.name,
+          key: operation.name,
           type: operation.type,
           modal: operation.modal || null
         }));
@@ -159,21 +164,42 @@ export default {
       return 'AposButton';
     },
     getOperationProps(operation) {
+      const disabled = this.disabled || isOperationDisabled(operation, this.$props);
+      const tooltip = getOperationTooltip(operation, {
+        disabled,
+        placement: 'bottom'
+      });
+
       if (operation.type === 'info') {
         return {
           fillColor: 'var(--a-primary)',
           icon: operation.icon,
-          tooltip: operation.tooltip
+          tooltip: operation.tooltip,
+          disabled
         };
       }
 
       if (operation.type === 'switch') {
+        const choices = operation.choices.map((choice) => {
+          const disabled = isOperationDisabled(choice, this.$props);
+          const tooltip = getOperationTooltip(choice, {
+            disabled,
+            placement: 'bottom'
+          });
+          return {
+            ...choice,
+            disabled,
+            tooltip
+          };
+        });
         return {
           widgetId: this.widget._id,
           name: operation.name,
-          choices: operation.choices,
+          choices,
           value: operation.def,
-          class: 'apos-area-widget--switch'
+          class: 'apos-area-widget--switch',
+          disabled,
+          tooltip
         };
       }
 
@@ -183,8 +209,9 @@ export default {
             ...this.operationButtonDefault,
             icon: operation.icon
           },
-          tooltip: operation.tooltip || null,
-          teleportContent: this.teleportModals
+          teleportContent: this.teleportModals,
+          disabled,
+          tooltip
         };
       }
 
@@ -255,23 +282,23 @@ export default {
 
       this.emitOperation(operation);
     },
-    emitOperation(operation, payload = {}) {
-      if (operation.action || operation.rawEvents?.length) {
+    emitOperation(operation, data = {}) {
+      const payload = {
+        widgetId: this.widget._id,
+        index: this.i,
+        data
+      };
+
+      if (operation.nativeAction) {
         this.$emit('operation', {
-          name: operation.action,
-          payload: this.i,
-          data: {
-            ...payload,
-            ...operation,
-            _id: this.widget._id
-          }
+          name: operation.nativeAction,
+          payload
         });
-      } else {
-        apos.bus.$emit('widget-breadcrumb-operation', {
-          ...payload,
-          ...operation,
-          _id: this.widget._id
-        });
+        return;
+      }
+
+      if (operation.action) {
+        apos.bus.$emit(operation.action, payload);
       }
     },
 

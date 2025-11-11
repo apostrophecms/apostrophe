@@ -986,7 +986,7 @@ module.exports = {
         });
       },
       // Set meta data for a given field, that will be live under `aposMeta`
-      // doc property. It returns the path to the meta property withouth the
+      // doc property. It returns the path to the meta property without the
       // key. See `getMetaPath` method for more information.
       //
       // Signature:
@@ -1194,7 +1194,7 @@ module.exports = {
       // See `setMeta` for more information about `subobject` and
       // `pathComponents` arguments.
       //
-      // Returns the path to the meta property withouth the namespace and key.
+      // Returns the path to the meta property without the namespace and key.
       // The returned path can be directly used to access or modify the meta
       // property. It's supported by all meta API methods.
       //
@@ -1514,7 +1514,7 @@ module.exports = {
       // the menu will be shown only for docs which have `autopublish: false`
       // and `localized: true` options.
       //
-      // `conditions` defines the circumstances under which the opetion should
+      // `conditions` defines the circumstances under which the option should
       // be displayed. If all `conditions` are not met, the item is not
       // displayed for this particular document.
       //

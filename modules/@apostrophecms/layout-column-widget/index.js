@@ -49,13 +49,18 @@ module.exports = {
   extend: '@apostrophecms/widget-type',
   options: {
     label: 'apostrophe:layoutColumn',
-    operationsInBreadcrumb: true
+    operationsInBreadcrumb: true,
+    breakpoints: {
+      tablet: 900,
+      mobile: 600
+    }
   },
   widgetOperations(self, options) {
     return {
       add: {
         layoutColMove: {
-          action: 'move',
+          // to fix
+          nativeAction: 'move',
           placement: 'breadcrumb',
           icon: 'cursor-move-icon',
           rawEvents: [ 'mousedown', 'touchstart' ]
@@ -67,6 +72,7 @@ module.exports = {
           modal: 'AposLayoutColControlDialog'
         },
         layoutColDelete: {
+          action: 'apos-layout-col-delete',
           placement: 'breadcrumb',
           icon: 'delete-icon',
           tooltip: 'apostrophe:delete'

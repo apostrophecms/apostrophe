@@ -56,6 +56,9 @@
   </div>
 </template>
 <script>
+import { mapState, mapActions } from 'pinia';
+import { useBreakpointPreviewStore } from 'Modules/@apostrophecms/ui/stores/breakpointPreview.js';
+
 export default {
   name: 'TheAposContextBreakpointPreviewMode',
   props: {
@@ -83,7 +86,6 @@ export default {
   emits: [ 'switch-breakpoint-preview-mode', 'reset-breakpoint-preview-mode' ],
   data() {
     return {
-      mode: null,
       originalBodyBackground: null,
       shortcuts: this.getShortcuts(),
       breakpoints: this.getBreakpointItems(),
@@ -94,6 +96,7 @@ export default {
     };
   },
   computed: {
+    ...mapState(useBreakpointPreviewStore, [ 'mode' ]),
     activeScreen() {
       return this.mode && this.screens[this.mode];
     },
@@ -154,6 +157,7 @@ export default {
     );
   },
   methods: {
+    ...mapActions(useBreakpointPreviewStore, [ 'setMode' ]),
     observerCallback(mutationList, observer) {
       for (const mutation of mutationList) {
         if (
@@ -205,7 +209,7 @@ export default {
       refreshableEl.style.width = width;
       refreshableEl.style.height = height;
 
-      this.mode = mode;
+      this.setMode(mode);
       this.$emit('switch-breakpoint-preview-mode', {
         mode,
         label,
@@ -249,7 +253,7 @@ export default {
       refreshableEl.style.removeProperty('width');
       refreshableEl.style.removeProperty('height');
 
-      this.mode = null;
+      this.setMode(null);
       this.$emit('reset-breakpoint-preview-mode');
       this.saveState({ mode: this.mode });
     },
