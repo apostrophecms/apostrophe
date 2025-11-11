@@ -13,6 +13,7 @@
 ### Fixes
 
 * Specify the content type when calling back to Astro with JSON to render an area. This is required starting in Astro 4.9.0 and up, otherwise the request is blocked by CSRF protection.
+* Fixes `AposBreadcrumbSwitch` tooltip prop that is supposed to be an object, not a string. Object returned from the shared method `getOperationTooltip`.
 
 ## 4.23.0 (2025-10-30)
 
