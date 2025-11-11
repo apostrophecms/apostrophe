@@ -41,8 +41,8 @@ module.exports = {
           await self.addMissingSchemaFields();
         }
       },
-      after: {
-        async requirements() {
+      requirements: {
+        async insertRequired() {
           // Inserts the global doc in the default locale if it does not exist;
           // same for other singleton piece types registered by other modules
           for (const apostropheModule of Object.values(self.apos.modules)) {
@@ -54,7 +54,8 @@ module.exports = {
             }
           }
           await self.apos.page.implementParkAllInDefaultLocale();
-          await self.apos.doc.replicate(); // emits beforeReplicate and afterReplicate events
+          await self.apos.doc.replicate();
+          // emits beforeReplicate and afterReplicate events
           // Replicate will have created the parked pages across locales if needed,
           // but we may still need to reset parked properties
           await self.apos.page.implementParkAllInOtherLocales();
@@ -314,6 +315,8 @@ module.exports = {
           // database is guaranteed to be in a stable state, whether because the
           // site is new or because migrations ran successfully.
           await self.emit('after');
+
+          await self.emit('requirements');
         });
       },
       async runOne(migration) {
