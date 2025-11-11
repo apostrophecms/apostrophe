@@ -894,7 +894,7 @@ export default {
         doc: saved || this.original,
         locale,
         moduleName: this.moduleName,
-        redirect: false
+        shouldRedirect: false
       });
 
       if (isLocalized) {

@@ -4,7 +4,7 @@
     :class="{ 'apos-wizard-busy': wizard.busy }"
     :modal="modal"
     :modal-data="modalData"
-    @esc="close(false)"
+    @esc="close()"
     @inactive="modal.active = false"
     @show-modal="modal.showModal = true"
   >
@@ -28,7 +28,7 @@
               type="default"
               label="apostrophe:cancel"
               :modifiers="[ 'block' ]"
-              @click="close(false)"
+              @click="cancel()"
             />
           </div>
         </template>
@@ -330,7 +330,7 @@ export default {
       type: Object,
       required: true
     },
-    redirect: {
+    shouldRedirect: {
       type: Boolean,
       default: true
     }
@@ -664,10 +664,22 @@ export default {
         this.toLocalizeChoices = this.toLocalizeChoicesStandalone;
       }
     },
-    close(hasBeenSubmitted = false) {
+    confirm() {
       if (!this.modal.busy) {
         this.modal.showModal = false;
-        this.$emit('modal-result', hasBeenSubmitted);
+        this.$emit('modal-result', true);
+      }
+    },
+    cancel() {
+      if (!this.modal.busy) {
+        this.modal.showModal = false;
+        this.$emit('modal-result', false);
+      }
+    },
+    close() {
+      if (!this.modal.busy) {
+        this.modal.showModal = false;
+        this.$emit('modal-result', null);
       }
     },
     goTo(name) {
@@ -845,7 +857,7 @@ export default {
               relationship: doc._id === this.fullDoc._id
             });
 
-            if (this.locale) {
+            if (this.locale && this.shouldRedirect) {
               // Ask for the redirect URL, this way it still works if we
               // need to carry a session across hostnames
               const result = await apos.http.post(`${this.moduleOptions.action}/locale`, {
@@ -854,7 +866,7 @@ export default {
                   locale: locale.name
                 }
               });
-              if (this.redirect && result.redirectTo) {
+              if (result.redirectTo) {
                 window.location.assign(result.redirectTo);
               }
             }
@@ -881,7 +893,7 @@ export default {
 
       if (notifications.some(({ type }) => type === 'error')) {
         this.modal.busy = false;
-        this.close(true);
+        this.close();
 
         await apos.report(
           {
@@ -943,7 +955,7 @@ export default {
       // Prevent flashing of the UI if the request returns quickly
       setTimeout(() => {
         this.modal.busy = false;
-        this.close(true);
+        this.confirm();
       }, 250);
     },
     async submitBatch() {
@@ -975,7 +987,7 @@ export default {
         });
       } finally {
         this.modal.busy = false;
-        this.close();
+        this.confirm();
       }
     },
     getRelatedSchemaTypes(types) {
