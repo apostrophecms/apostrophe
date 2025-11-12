@@ -61,7 +61,7 @@
               v-if="mode !== 'alert'"
               :attrs="{'data-apos-focus-priority': mode !== 'alert' ? true : null}"
               class="apos-confirm__btn"
-              :label="content.negativeLabel || 'apostrophe:cancel'"
+              :label="negativeLabel"
               @click="cancel"
             />
             <AposButton
@@ -125,11 +125,13 @@ export default {
     affirmativeLabel() {
       if (this.mode === 'confirm') {
         return (
-          this.localize(this.content.affirmativeLabel) || this.$t('Confirm')
+          this.localize(this.content.affirmativeLabel) || this.$t('apostrophe:confirm')
         );
-      } else {
-        return this.localize(this.content.affirmativeLabel) || this.$t('OK');
       }
+      return this.localize(this.content.affirmativeLabel) || this.$t('apostrophe:ok');
+    },
+    negativeLabel() {
+      return this.localize(this.content.negativeLabel) || this.$t('apostrophe:cancel');
     },
     isDisabled() {
       if (!this.formValues) {

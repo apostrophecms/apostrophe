@@ -526,6 +526,7 @@ export default {
           draft: true
         });
 
+        this.currentId = docData._id;
         if (docData.archived) {
           this.restoreOnly = true;
         } else {
@@ -533,7 +534,7 @@ export default {
         }
         const canEdit = docData._edit || this.moduleOptions.canEdit;
         this.readOnly = canEdit === false;
-        if (canEdit && !await this.lock(this.getOnePath, this.currentId)) {
+        if (canEdit && !await this.lock(this.getOnePath)) {
           this.lockNotAvailable();
         }
       } catch {
@@ -860,10 +861,11 @@ export default {
       this.modal.showModal = false;
     },
     async switchLocale({
-      locale, localized, save
+      locale, save, localized, toLocalize
     }) {
+      let saved;
       if (save) {
-        const saved = await this.saveHandler('onSave', {
+        saved = await this.saveHandler('onSave', {
           keepOpen: true,
           andPublish: false
         });
@@ -874,17 +876,36 @@ export default {
           this.referenceDocId = saved._id;
         }
       }
-      this.updateModalData(this.modalData.id, { locale });
-      this.localeSwitched = locale !== apos.i18n.locale;
-      this.published = null;
       if (localized) {
         this.currentId = localized._id;
+        this.switchModalLocale(locale.name);
         await this.instantiateExistingDoc();
-      } else {
+        return;
+      }
+      if (!toLocalize) {
+        this.switchModalLocale(locale.name);
         this.currentId = '';
         this.docType = this.moduleName;
         await this.instantiateNewDoc();
+        return;
       }
+
+      const isLocalized = await apos.modal.execute('AposI18nLocalize', {
+        doc: saved || this.original,
+        locale,
+        moduleName: this.moduleName,
+        shouldRedirect: false
+      });
+
+      if (isLocalized) {
+        this.switchModalLocale(locale.name);
+        await this.instantiateExistingDoc();
+      }
+    },
+    switchModalLocale(locale) {
+      this.updateModalData(this.modalData.id, { locale });
+      this.localeSwitched = locale !== apos.i18n.locale;
+      this.published = null;
     },
     getRequestBody({ newInstance = false, update = false }) {
       const body = newInstance
