@@ -29,7 +29,7 @@
         :locale="modalData.locale"
         :module-options="moduleOptions"
         :is-modified="false"
-        :show-localized="false"
+        :is-manager="true"
         @switch-locale="switchLocale"
       />
     </template>

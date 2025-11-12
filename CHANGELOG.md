@@ -6,6 +6,7 @@
 
 * Translation strings added for the layout- and layout-column-widgets.
 * Adds `@apostrophecms/doc:get-apos-doc-id` and `@apostrophecms/doc:set-apos-doc-id` tasks.
+* When switching locale from the doc editor, ask if the user wants to localize the current document in the target locale or want to start a blank document.
 
 ### Changes
 
