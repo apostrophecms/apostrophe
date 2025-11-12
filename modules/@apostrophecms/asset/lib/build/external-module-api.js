@@ -574,6 +574,7 @@ function invoke() {
         return null;
       }
       const component = sourcePath.replace(entry.dirname + '/', '');
+      console.log(`FILE: ${component}\n\nFILES:\n${entry.files.join('\n')}`);
       if (entry.files.includes(component)) {
         return {
           component: pathComposer(component, entry),
