@@ -3,8 +3,7 @@
     class="apos-wizard apos-i18n-localize"
     :class="{ 'apos-wizard-busy': wizard.busy }"
     :modal="modal"
-    :modal-data="modalData"
-    @esc="close()"
+    @esc="close"
     @inactive="modal.active = false"
     @show-modal="modal.showModal = true"
   >
@@ -28,7 +27,7 @@
               type="default"
               label="apostrophe:cancel"
               :modifiers="[ 'block' ]"
-              @click="cancel()"
+              @click="cancel"
             />
           </div>
         </template>
@@ -326,10 +325,6 @@ export default {
       required: true,
       type: String
     },
-    modalData: {
-      type: Object,
-      required: true
-    },
     shouldRedirect: {
       type: Boolean,
       default: true
@@ -492,6 +487,13 @@ export default {
     },
     isBatchMode() {
       return this.batchOptions.enabled;
+    },
+    currentLocale() {
+      // We need to grab the locale from the modal data, because it can change
+      // while in modal (switch locale in editor modal).
+      // Exposing `modalData` property breaks the internally used AposModal
+      // component for some unknown reason, so we need to use the attrs.
+      return this.$attrs['modal-data']?.locale ?? this.moduleOptions.locale;
     },
     action() {
       return this.doc.slug.startsWith('/')
@@ -708,7 +710,7 @@ export default {
       return this.wizard.step === name;
     },
     isCurrentLocale(locale) {
-      return this.modalData.locale === locale.name;
+      return this.currentLocale === locale.name;
     },
     canEditLocale(locale) {
       return !!locale._edit;
@@ -1178,7 +1180,7 @@ export default {
         this.wizard.values.translateTargets.data = [];
         return;
       }
-      const sourceLocale = this.modalData.locale;
+      const sourceLocale = this.currentLocale;
       const targets = this.wizard.values.toLocales.data;
 
       let response;
