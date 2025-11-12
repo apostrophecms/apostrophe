@@ -1933,7 +1933,7 @@ module.exports = {
   tasks(self) {
     return {
       'get-apos-doc-id': {
-        usage: '',
+        usage: 'Retrieve the aposDocId from the _id or slug, and the locale. Usage: "node app.js @apostrophecms/doc:get-apos-doc-id --_id=pfh0haxfpzowht3oi213cqos:fr:draft --locale=fr" or "node app.js @apostrophecms/doc:get-apos-doc-id --slug=test --locale=fr"',
         task: async (argv) => {
           const {
             _id, slug, locale
@@ -1951,7 +1951,7 @@ module.exports = {
         }
       },
       'set-apos-doc-id': {
-        usage: '',
+        usage: 'Change the aposDocId of an existing document. You need the new aposDocId (new-id), the old aposDocId (old-id) or the slug, and the locale. Usage: "node app.js @apostrophecms/doc:set-apos-doc-id --new-id=tz4a98xxat96iws9zmbrgj3a --old-id=pfh0haxfpzowht3oi213cqos --locale=fr" or "node app.js @apostrophecms/doc:set-apos-doc-id --new-id=tz4a98xxat96iws9zmbrgj3a --slug=test --locale=fr"',
         task: async (argv) => {
           const {
             'new-id': newId, 'old-id': oldId, slug, locale
