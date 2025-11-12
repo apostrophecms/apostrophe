@@ -5,7 +5,7 @@
 ### Adds
 
 * Translation strings added for the layout- and layout-column-widgets.
-* Adds `@apostrophecms/doc:get-apos-doc-id` and `@apostrophecms/doc-set-apos-doc-id` tasks.
+* Adds `@apostrophecms/doc:get-apos-doc-id` and `@apostrophecms/doc:set-apos-doc-id` tasks.
 
 ### Changes
 

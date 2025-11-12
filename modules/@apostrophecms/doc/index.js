@@ -1846,30 +1846,29 @@ module.exports = {
       },
 
       async getAposDocId({
-        id, slug, locale
+        _id, slug, locale
       }) {
-        if (!id && !slug) {
-          throw self.apos.error('invalid', 'Either id or slug must be provided');
+        if (!_id && !slug) {
+          throw self.apos.error('invalid', 'Either _id or slug must be provided');
         }
         if (!locale) {
           throw self.apos.error('invalid', 'Missing locale');
         }
 
-        const req = self.apos.task.getReq({ mode: 'draft' });
-
-        const criteria = id
-          ? { _id: self.apos.i18n.inferIdLocaleAndMode(req, id) }
-          : { slug };
-
-        const doc = await self.find(
-          req,
-          {
-            ...criteria,
-            aposLocale: new RegExp(`^${self.apos.util.regExpQuote(locale)}:`)
+        // const req = self.apos.task.getReq({ mode: 'draft', locale });
+        const aposLocale = new RegExp(`^${self.apos.util.regExpQuote(locale)}:`);
+        const criteria = _id
+          ? {
+            _id,
+            aposLocale
           }
-        )
-          .project({ aposDocId: 1 })
-          .toObject();
+          : {
+            slug,
+            aposLocale
+          };
+
+        const doc = await self.apos.doc.db
+          .findOne(criteria, { projection: { aposDocId: 1 } });
         if (!doc || !doc.aposDocId) {
           throw self.apos.error('notfound');
         }
@@ -1896,14 +1895,28 @@ module.exports = {
           })
           : oldId;
 
-        const modes = [ 'draft', 'published' ];
+        const modes = [ 'previous', 'draft', 'published' ];
         const pairs = modes.map(mode =>
           [
             `${originalId}:${locale}:${mode}`,
             `${newId}:${locale}:${mode}`
           ]
         );
-        const { renamed } = await self.changeDocIds(pairs, { keep: false });
+
+        // Filter non existing from _id from the list
+        const existing = (
+          await self.apos.doc.db
+            .find(
+              { _id: { $in: pairs.map(([ from ]) => from) } },
+              { projection: { _id: 1 } }
+            )
+            .toArray()
+        )
+          .map(({ _id }) => _id);
+        const { renamed } = await self.changeDocIds(
+          pairs.filter(([ from ]) => existing.includes(from)),
+          { keep: false }
+        );
 
         return {
           oldId: originalId,
@@ -1923,11 +1936,11 @@ module.exports = {
         usage: '',
         task: async (argv) => {
           const {
-            id, slug, locale
+            _id, slug, locale
           } = argv;
 
           const aposDocId = await self.getAposDocId({
-            id,
+            _id,
             slug,
             locale
           });
@@ -1952,6 +1965,8 @@ module.exports = {
           });
 
           self.apos.util.info(`"${result.oldId}" has been changed to "${result.newId}" for locale "${result.locale}", ${result.renamed} documents changed.`);
+
+          return result;
         }
       }
     };

@@ -1321,7 +1321,7 @@ describe('Docs: tasks', function () {
       );
     };
     const expected = {
-      message: 'Either id or slug must be provided',
+      message: 'Either _id or slug must be provided',
       name: 'invalid'
     };
 
@@ -1386,7 +1386,7 @@ describe('Docs: tasks', function () {
     const actual = await apos.task.invoke(
       '@apostrophecms/doc:get-apos-doc-id',
       {
-        id: doc._id,
+        _id: doc._id,
         locale: 'en'
       }
     );
@@ -1467,7 +1467,7 @@ describe('Docs: tasks', function () {
     await assert.rejects(actual, expected);
   });
 
-  it('should update the aposDocId when calling @apostrophecms/doc:set-apos-doc-id task with a new slug', async function() {
+  it('should update the aposDocId when calling @apostrophecms/doc:set-apos-doc-id task with a slug and a new aposDocId', async function() {
     await insertI18nFixtures(apos);
 
     const req = apos.task.getReq({ locale: 'fr' });
@@ -1518,7 +1518,7 @@ describe('Docs: tasks', function () {
     assert.deepEqual(actual, expected);
   });
 
-  it('should update the aposDocId when calling @apostrophecms/doc:set-apos-doc-id task with a new slug', async function() {
+  it('should update the aposDocId when calling @apostrophecms/doc:set-apos-doc-id task with an old and new aposDocId', async function() {
     await insertI18nFixtures(apos);
 
     const req = apos.task.getReq({ locale: 'fr' });
