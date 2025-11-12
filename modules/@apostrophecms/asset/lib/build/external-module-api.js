@@ -3,6 +3,7 @@ const path = require('node:path');
 const { glob } = require('glob');
 const { stripIndent } = require('common-tags');
 
+console.log('===> EMA');
 // High and Low level public API for external modules.
 module.exports = (self) => {
   const getBuildManager = require('./managers')(self);
