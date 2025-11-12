@@ -132,7 +132,6 @@ module.exports = (self) => {
         .replace(/-/g, '_')
         .replace(/\s+/g, '')
         .replace(/\.\w+/, '') + (typeof enumerate === 'number' ? `_${enumerate}` : '');
-      console.log(`*** GCBP ${componentPath} ${result}`);
       return result;
     },
 
