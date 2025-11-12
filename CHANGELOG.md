@@ -5,6 +5,7 @@
 ### Adds
 
 * Translation strings added for the layout- and layout-column-widgets.
+* When switching locale from the doc editor, ask if the user wants to localize the current document in the target locale or want to start a blank document.
 
 ### Changes
 
@@ -14,6 +15,7 @@
 
 * Specify the content type when calling back to Astro with JSON to render an area. This is required starting in Astro 4.9.0 and up, otherwise the request is blocked by CSRF protection.
 * Improved support for Node.js on "plain vanilla" Windows, e.g. without WSL. We suggest working with NVM for Windows and Git Bash.
+* Fixes `AposBreadcrumbSwitch` tooltip prop that is supposed to be an object, not a string. Object returned from the shared method `getOperationTooltip`.
 
 ## 4.23.0 (2025-10-30)
 

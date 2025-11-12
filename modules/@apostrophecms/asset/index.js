@@ -31,7 +31,7 @@ module.exports = {
     // If false no UI assets sources will be watched in development.
     // This option has no effect in production (watch disabled).
     watch: true,
-    // Miliseconds to wait between asset sources changes before
+    // Milliseconds to wait between asset sources changes before
     // performing a build.
     watchDebounceMs: 1000,
     // Object containing instructions for remapping existing bundles.

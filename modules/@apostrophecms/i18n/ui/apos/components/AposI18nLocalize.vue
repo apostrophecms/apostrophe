@@ -27,7 +27,7 @@
               type="default"
               label="apostrophe:cancel"
               :modifiers="[ 'block' ]"
-              @click="close"
+              @click="cancel"
             />
           </div>
         </template>
@@ -324,6 +324,10 @@ export default {
     moduleName: {
       required: true,
       type: String
+    },
+    shouldRedirect: {
+      type: Boolean,
+      default: true
     }
   },
   emits: [ 'modal-result' ],
@@ -662,9 +666,22 @@ export default {
         this.toLocalizeChoices = this.toLocalizeChoicesStandalone;
       }
     },
+    confirm() {
+      if (!this.modal.busy) {
+        this.modal.showModal = false;
+        this.$emit('modal-result', true);
+      }
+    },
+    cancel() {
+      if (!this.modal.busy) {
+        this.modal.showModal = false;
+        this.$emit('modal-result', false);
+      }
+    },
     close() {
       if (!this.modal.busy) {
         this.modal.showModal = false;
+        this.$emit('modal-result', null);
       }
     },
     goTo(name) {
@@ -842,7 +859,7 @@ export default {
               relationship: doc._id === this.fullDoc._id
             });
 
-            if (this.locale) {
+            if (this.locale && this.shouldRedirect) {
               // Ask for the redirect URL, this way it still works if we
               // need to carry a session across hostnames
               const result = await apos.http.post(`${this.moduleOptions.action}/locale`, {
@@ -940,7 +957,7 @@ export default {
       // Prevent flashing of the UI if the request returns quickly
       setTimeout(() => {
         this.modal.busy = false;
-        this.close();
+        this.confirm();
       }, 250);
     },
     async submitBatch() {
@@ -972,7 +989,7 @@ export default {
         });
       } finally {
         this.modal.busy = false;
-        this.close();
+        this.confirm();
       }
     },
     getRelatedSchemaTypes(types) {

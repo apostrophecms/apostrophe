@@ -48,6 +48,7 @@ module.exports = {
     '@apostrophecms/color-field': {},
     '@apostrophecms/oembed-field': {},
     '@apostrophecms/video-widget': {},
+    '@apostrophecms/file-widget': {},
     '@apostrophecms/ui': {},
     '@apostrophecms/user': {},
     '@apostrophecms/settings': {},

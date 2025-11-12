@@ -202,7 +202,7 @@ module.exports = (self) => {
     // return a list of all bundle files.
     //
     // The `bundles` (Set) property added to the entrypoints configuration
-    // contans the bundle files used later when injecting the scripts and
+    // contains the bundle files used later when injecting the scripts and
     // stylesheets in the browser. The `metadata` is the return value of the
     // external build module build method (see `self.build()` and
     // `configureBuildModule()`).
