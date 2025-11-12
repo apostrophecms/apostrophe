@@ -378,6 +378,7 @@
   "no": "Nein",
   "noCreateBlankDoc": "Nein, leeres {{ docType }} erstellen",
   "noDraftSubmissions": "Keine Entwürfe",
+  "noFileSelected": "Keine Datei ausgewählt",
   "noItemsAdded": "Keine Elemente hinzugefügt",
   "noItemsSelected": "Keine Elemente ausgewählt",
   "noJustSwitchLocales": "Nein, nur die Sprache wechseln",

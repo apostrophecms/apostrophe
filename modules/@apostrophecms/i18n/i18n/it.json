@@ -378,6 +378,7 @@
   "no": "No",
   "noCreateBlankDoc": "No, crea un {{ docType }} vuoto",
   "noDraftSubmissions": "Nessuna proposta in bozza da gestire",
+  "noFileSelected": "Nessun file selezionato",
   "noItemsAdded": "Nessun elemento aggiunto",
   "noItemsSelected": "Nessun elemento selezionato",
   "noJustSwitchLocales": "No, cambia solo il locale",

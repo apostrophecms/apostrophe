@@ -378,6 +378,7 @@
   "no": "Non",
   "noCreateBlankDoc": "Non, créer un {{ docType }} vierge",
   "noDraftSubmissions": "Pas de soumission de brouillon à gérer",
+  "noFileSelected": "Aucun fichier sélectionné",
   "noItemsAdded": "Aucun élément ajouté",
   "noItemsSelected": "Pas d'élément sélectionné",
   "noJustSwitchLocales": "Non, changer seulement de paramètre régional",

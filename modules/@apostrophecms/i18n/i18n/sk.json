@@ -378,6 +378,7 @@
   "no": "Nie",
   "noCreateBlankDoc": "Nie, vytvoriť prázdny {{ docType }}",
   "noDraftSubmissions": "Žiadne návrhy, ktoré by bolo možné spravovať",
+  "noFileSelected": "Nie je vybraný žiadny súbor",
   "noItemsAdded": "Nebol pridaný žiadny prvok",
   "noItemsSelected": "Nie sú vybraté žiadne položky",
   "noJustSwitchLocales": "Nie, stačí zmeniť jazykovú mutáciu",
