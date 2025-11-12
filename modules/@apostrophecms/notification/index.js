@@ -81,9 +81,9 @@ module.exports = {
 
         async function attempt() {
           if (
-              self.options.longPolling &&
+            self.options.longPolling &&
               (Date.now() - start >= self.options.longPollingTimeout)
-            ) {
+          ) {
             return {
               notifications: [],
               dismissed: []

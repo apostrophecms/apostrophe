@@ -110,7 +110,9 @@ export const useNotificationStore = defineStore('notification', () => {
         // If using long polling we should reconnect promptly, the server
         // is responsible for keeping that request open for a reasonable
         // amount of time if there are no new messages, not us
-        const timeout = apos.notification.longPolling ? 50 : apos.notification.pollingInterval;
+        const timeout = apos.notification.longPolling
+          ? 50
+          : apos.notification.pollingInterval;
         setTimeout(poll, timeout);
       }
     } catch (err) {
