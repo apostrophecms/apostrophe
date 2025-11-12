@@ -171,8 +171,6 @@ const props = defineProps({
   }
 });
 
-console.log('props.modalData', props.modalData);
-
 const store = useModalStore();
 
 const slots = useSlots();
