@@ -1,7 +1,7 @@
 const fs = require('fs-extra');
 const path = require('node:path');
 const util = require('node:util');
-const { glob } = require('glob');
+const { glob } = require('../../lib/path');
 const { getBuildExtensions, fillExtraBundles } = require('./utils');
 
 // Internal build interface.

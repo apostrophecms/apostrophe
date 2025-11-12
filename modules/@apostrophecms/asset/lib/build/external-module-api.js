@@ -1,9 +1,8 @@
 const fs = require('fs-extra');
 const path = require('node:path');
-const { glob } = require('glob');
+const { glob } = require('../../lib/path');
 const { stripIndent } = require('common-tags');
 
-console.log('===> EMA');
 // High and Low level public API for external modules.
 module.exports = (self) => {
   const getBuildManager = require('./managers')(self);
