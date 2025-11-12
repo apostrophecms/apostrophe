@@ -306,29 +306,31 @@ components:
     AllPages:
       name: all
       in: query
-      description: Include entire page tree regardless of depth (use with caution for large sites)
+      description: Return all pages the requester can see (system/orphan pages included). Use with caution for large sites. Default is 0.
       schema:
-        type: string
-        enum: ["1"]
-      example: "1"
+        type: integer
+        enum: [0,1]
+        default: 0
+      example: 1
 
     FlatResponse:
       name: flat
       in: query
-      description: 💡 Return pages in flat array instead of tree structure - easier for some use cases
+      description: 💡 Return pages in flat array instead of tree structure - easier for some use cases. Default is 0 (nested).
       schema:
-        type: string
-        enum: ["1"]
-      example: "1"
+        type: integer
+        enum: [0,1]
+        default: 0
+      example: 1
 
     ChildrenParam:
       name: children
       in: query
-      description: Include children array in response (set to 'false' to exclude)
+      description: Include children array in response (set to 'false' to exclude). Default is true.
       schema:
-        type: string
-        enum: ["false"]
-      example: "false"
+        type: boolean
+        default: true
+      example: false
 
   schemas:
     _Overview_Fields:
