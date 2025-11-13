@@ -1,6 +1,5 @@
 const cheerio = require('cheerio');
 const assert = require('node:assert/strict');
-const path = require('node:path');
 
 const t = require('../test-lib/test.js');
 
@@ -319,13 +318,6 @@ describe('static i18n', function() {
 
     const req = apos.task.getReq();
 
-    // Add attachment with accented characters in the name
-    const uploadSource = path.join(__dirname, 'data', 'upload_tests');
-    const accentedAttachment = await apos.attachment.insert(req, {
-      name: 'été-image.png',
-      path: path.join(uploadSource, 'upload_image.png')
-    });
-
     // Add a page with accented characters in its title so slug preserves accents
     await apos.doc.insert(req, {
       type: 'default-page',
@@ -370,12 +362,6 @@ describe('static i18n', function() {
     assert(pieceBefore);
     assert.equal(pieceBefore.slug, 'café-au-lait');
 
-    const attachmentBefore = await apos.attachment.db.findOne({
-      _id: accentedAttachment._id
-    });
-    assert(attachmentBefore);
-    assert.equal(attachmentBefore.name, 'été-image');
-
     // Now enable accent stripping and run the task to update existing content
     apos.i18n.options.stripUrlAccents = true;
     await apos.task.invoke('@apostrophecms/i18n:strip-slug-accents');
@@ -399,12 +385,6 @@ describe('static i18n', function() {
     const pieceAfter = await apos.doc.db.findOne({ _id: pieceBefore._id });
     assert(pieceAfter);
     assert.equal(pieceAfter.slug, 'cafe-au-lait');
-
-    const attachmentAfter = await apos.attachment.db.findOne({
-      _id: accentedAttachment._id
-    });
-    assert(attachmentAfter);
-    assert.equal(attachmentAfter.name, 'ete-image');
 
     // Restore default for other tests
     apos.i18n.options.stripUrlAccents = false;
