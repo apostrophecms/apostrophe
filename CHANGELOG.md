@@ -12,6 +12,7 @@
 ### Changes
 
 * Bump nodemailer to v7.x.
+* Improves client error log when unable to render a widget.
 
 ### Fixes
 
