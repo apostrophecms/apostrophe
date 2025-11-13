@@ -424,6 +424,7 @@ export default {
       allRelatedDocs: [],
       allRelatedDocsKnown: false,
       docTypesSeen: [],
+      relatedDocTypes: [],
       searchField: {
         label: this.$t('apostrophe:searchLocales'),
         placeholder: `${this.$t('apostrophe:searchLocales')}...`
@@ -516,32 +517,6 @@ export default {
         .filter(locale => !this.isCurrentLocale(locale) && this.canEditLocale(locale))
         .length;
     },
-    relatedDocTypes() {
-      if (this.isBatchMode) {
-        return this.getRelatedSchemaTypes(this.batchOptions.checkedTypes);
-      }
-
-      const types = {};
-      for (const doc of this.relatedDocs) {
-        if (!types[doc.type]) {
-          types[doc.type] = {
-            value: doc.type,
-            count: 0,
-            readOnly: false
-          };
-        }
-        types[doc.type].count++;
-      }
-      for (const type of Object.values(types)) {
-        const baseLabel = this.plural(type.value);
-        type.label = {
-          key: 'apostrophe:typeWithCount',
-          type: this.$t(baseLabel),
-          count: type.count
-        };
-      }
-      return Object.values(types);
-    },
     relatedDocTypesField() {
       return {
         name: 'related-doc-types-to-localize',
@@ -609,17 +584,6 @@ export default {
           }
         }
       }
-    },
-    relatedDocTypes(newVal) {
-      if (!this.isBatchMode) {
-        return;
-      }
-      for (const item of newVal) {
-        if (!this.docTypesSeen.includes(item.value)) {
-          this.docTypesSeen.push(item.value);
-          this.wizard.values.relatedDocTypesToLocalize.data.push(item.value);
-        }
-      }
     }
   },
   async mounted() {
@@ -629,6 +593,7 @@ export default {
     if (this.isBatchMode) {
       this.wizard.step = this.visibleStepNames[0];
       this.wizard.busy = false;
+      this.setRelatedDocTypes();
     } else {
       try {
         this.fullDoc = await apos.http.get(
@@ -657,6 +622,40 @@ export default {
     }
   },
   methods: {
+    setRelatedDocTypes() {
+      if (this.isBatchMode) {
+        this.relatedDocTypes = this.getRelatedSchemaTypes(this.batchOptions.checkedTypes);
+        for (const item of this.relatedDocTypes) {
+          if (!this.docTypesSeen.includes(item.value)) {
+            this.docTypesSeen.push(item.value);
+            this.wizard.values.relatedDocTypesToLocalize.data.push(item.value);
+          }
+        }
+        return;
+      }
+
+      const types = {};
+      for (const doc of this.relatedDocs) {
+        if (!types[doc.type]) {
+          types[doc.type] = {
+            value: doc.type,
+            count: 0,
+            readOnly: false
+          };
+        }
+        types[doc.type].count++;
+      }
+      for (const type of Object.values(types)) {
+        const baseLabel = this.plural(type.value);
+        type.label = {
+          key: 'apostrophe:typeWithCount',
+          type: this.$t(baseLabel),
+          count: type.count
+        };
+      }
+      this.relatedDocTypes = Object.values(types);
+
+    },
     normalizeConfig() {
       if (this.isBatchMode) {
         this.toLocalizeChoices = this.toLocalizeChoicesBatch;
@@ -1156,6 +1155,17 @@ export default {
       }
       this.relatedDocs = relatedDocs;
       this.wizard.busy = status;
+
+      for (const doc of this.relatedDocs) {
+        if (!this.docTypesSeen.includes(doc.type)) {
+          this.docTypesSeen.push(doc.type);
+          if (apos.modules[doc.type].relatedDocument) {
+            this.wizard.values.relatedDocTypesToLocalize.data.push(doc.type);
+          }
+        }
+      }
+
+      this.setRelatedDocTypes();
     },
     wait(time) {
       return new Promise((resolve) => {
