@@ -158,6 +158,7 @@ module.exports = {
             await self.end(job, good, results);
             // Trigger the completed notification.
             await self.triggerNotification(req, 'completed', {
+              job,
               dismiss: true
             });
             // Dismiss the progress notification. It will delay 4 seconds
@@ -247,6 +248,7 @@ module.exports = {
 
             // Trigger the completed notification.
             await self.triggerNotification(req, 'completed', {
+              job,
               count: total,
               dismiss: true
             }, results);
@@ -269,7 +271,7 @@ module.exports = {
       // No messages are required, but they provide helpful information to
       // end users.
       async triggerNotification(req, stage, options = {}, results) {
-        if (!req.body || !req.body.messages || !req.body.messages[stage]) {
+        if (!req?.body?.messages?.[stage]) {
           return {};
         }
 
@@ -280,9 +282,24 @@ module.exports = {
           }
           : null;
 
-        return self.apos.notification.trigger(req, req.body.messages[stage], {
+        const {
+          good, bad, processed, total
+        } = options.job || {};
+
+        let message = req.body.messages[stage];
+        if (stage === 'completed' && req.body.messages.failed && bad > 0 && good === 0) {
+          message = req.body.messages.failed;
+        } else if (stage === 'completed' && req.body.messages.completedWithFailures && bad > 0 && good > 0) {
+          message = req.body.messages.completedWithFailures;
+        }
+
+        return self.apos.notification.trigger(req, message, {
           interpolate: {
+            bad,
             count: options.count || (req.body._ids && req.body._ids.length),
+            good,
+            processed,
+            total,
             type: req.t(req.body.type) || req.t('apostrophe:document')
           },
           dismiss: options.dismiss,
