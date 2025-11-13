@@ -16,6 +16,7 @@
 
 * Specify the content type when calling back to Astro with JSON to render an area. This is required starting in Astro 4.9.0 and up, otherwise the request is blocked by CSRF protection.
 * Fixes `AposBreadcrumbSwitch` tooltip prop that is supposed to be an object, not a string. Object returned from the shared method `getOperationTooltip`.
+* Uses `modalData.locale` in `AposI18nLocalize` component. Fixes watcher on `relatedDocTypes` not being properly triggered (uses data and methods for more control instead).
 
 ## 4.23.0 (2025-10-30)
 
