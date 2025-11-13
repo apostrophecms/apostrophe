@@ -399,7 +399,24 @@ describe('Utils', async function() {
       );
     });
 
-    it('should slugify and strip accents', function () {
+    it('should slugify and strip accents (implicit)', function () {
+      apos.i18n.options.stripUrlAccents = true;
+      assert.equal(
+        apos.util.slugify('C\'est déjà l\'été'),
+        'c-est-deja-l-ete',
+        'failed to slugify and strip accents'
+      );
+      assert.equal(
+        apos.util.slugify('/C\'est déjà l\'été', {
+          allow: '/'
+        }),
+        '/c-est-deja-l-ete',
+        'failed to slugify and strip accents with slug options'
+      );
+      apos.i18n.options.stripUrlAccents = false;
+    });
+
+    it('should slugify and strip accents (explicit)', function () {
       assert.equal(
         apos.util.slugify('C\'est déjà l\'été', { stripAccents: true }),
         'c-est-deja-l-ete',
@@ -413,6 +430,24 @@ describe('Utils', async function() {
         '/c-est-deja-l-ete',
         'failed to slugify and strip accents with slug options'
       );
+    });
+
+    it('should override the global setting when slugifying', function () {
+      apos.i18n.options.stripUrlAccents = true;
+      assert.equal(
+        apos.util.slugify('C\'est déjà l\'été', { stripAccents: false }),
+        'c-est-déjà-l-été',
+        'failed to slugify and strip accents'
+      );
+      assert.equal(
+        apos.util.slugify('/C\'est déjà l\'été', {
+          stripAccents: false,
+          allow: '/'
+        }),
+        '/c-est-déjà-l-été',
+        'failed to slugify and strip accents with slug options'
+      );
+      apos.i18n.options.stripUrlAccents = false;
     });
 
     it('can debounce functions and should be be awaitable with promises', async function () {

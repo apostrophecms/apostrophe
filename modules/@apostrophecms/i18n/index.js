@@ -763,7 +763,7 @@ module.exports = {
         }
         req.baseUrlWithPrefix = `${req.baseUrl}${self.apos.prefix}`;
         req.absoluteUrl = req.baseUrlWithPrefix + req.url;
-        req.prefix = `${req.baseUrlWithPrefix}${self.locales[req.locale]?.prefix || ''}`;
+        req.prefix = `${req.baseUrlWithPrefix}${self.locales[req.locale].prefix || ''}`;
         if (!req.baseUrl) {
           // Always set for bc, but in the absence of locale hostnames we
           // set it later so it is not part of req.prefix
@@ -1259,10 +1259,9 @@ module.exports = {
         }
       },
       'strip-slug-accents': {
-        usage: 'Remove Latin accent characters from all document slugs and attachment names. Usage: node app @apostrophecms/i18n:strip-slug-accents',
+        usage: 'Remove Latin accent characters from all document slugs. Usage: node app @apostrophecms/i18n:strip-slug-accents',
         async task() {
           let docChanged = 0;
-          let attachmentChanged = 0;
 
           await self.apos.migration.eachDoc({}, 5, async doc => {
             const slug = doc.slug;
@@ -1274,35 +1273,20 @@ module.exports = {
             }
 
             doc.slug = _.deburr(doc.slug);
-            if (slug !== doc.slug) {
-              const manager = self.apos.doc.getManager(doc.type);
-              if (!manager) {
-                return;
-              }
-              await manager.update(req, doc, { permissions: false });
-              docChanged++;
-              self.apos.util.log(`Updated doc [${req.locale}] "${slug}" -> "${doc.slug}"`);
-            }
-          });
-
-          const req = self.apos.task.getAdminReq();
-          await self.apos.attachment.each({}, 10, async (attachment) => {
-            if (!self.shouldStripAccents(req)) {
+            if (slug === doc.slug) {
               return;
             }
-            const slug = _.deburr(attachment.name);
-            if (slug !== attachment.name) {
-              await self.apos.attachment.db.updateOne(
-                { _id: attachment._id },
-                { $set: { name: slug } }
-              );
-              attachmentChanged++;
-              self.apos.util.log(`Updated attachment "${attachment.name}" -> "${slug}"`);
+            const manager = self.apos.doc.getManager(doc.type);
+            if (!manager) {
+              return;
             }
+            await manager.update(req, doc, { permissions: false });
+            docChanged++;
+            self.apos.util.log(`Updated doc [${req.locale}] "${slug}" -> "${doc.slug}"`);
           });
 
           self.apos.util.log(
-            `Updated ${docChanged} document slug(s) and ${attachmentChanged} attachment name(s).`
+            `Updated ${docChanged} document slug(s).`
           );
         }
       }
