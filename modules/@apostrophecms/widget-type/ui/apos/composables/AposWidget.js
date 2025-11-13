@@ -84,11 +84,11 @@ export async function _renderContent(props) {
       widgetTitle: widget.title,
       widgetType: props.type,
       documentId: props.docId,
-      errors: e.body.data?.errors
+      errors: e.body.data?.errors || []
     };
 
     // eslint-disable-next-line no-console
-    console.error('Unable to render widget', errData);
+    console.error('Unable to render widget', errData, e);
     return {
       data: '<p>Unable to render this widget.</p>',
       error: true
