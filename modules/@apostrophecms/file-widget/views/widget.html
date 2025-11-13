@@ -1,0 +1,16 @@
+{% if data.options.className %}
+  {% set className = data.options.className %}
+{% elif data.manager.options.className %}
+  {% set className = data.manager.options.className %}
+{% endif %}
+
+{% set file = data.widget._file[0] %}
+<div
+  {% if className %} class="{{ className }}"{% endif %}
+>
+  {% if file %}
+    <a href="{{ file._url }}" download>{{ file.title }}</a>
+  {% else %}
+    {{ __t('apostrophe:noFileSelected') }}
+  {% endif %}
+</div>

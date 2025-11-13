@@ -4,6 +4,12 @@
 //
 // ## Options
 //
+// ### `longPolling`: by default, to provide a swift response, ApostropheCMS
+// keeps a request for new notifications alive until the long polling
+// timeout expires (see below). However, `longPolling: false` can be used
+// to give an immediate response, in which case the front end will poll
+// the old-fashioned way, respecting the `pollingInterval`.
+//
 // ### `queryInterval`: interval in milliseconds between MongoDB
 // queries while long polling for notifications. Defaults to 500
 // (1/2 second). Set it longer if you prefer fewer queries, however
@@ -15,12 +21,22 @@
 // Defaults to 10000 (10 seconds) to avoid typical proxy server timeouts.
 // Until it times out the request will keep making MongoDB queries to
 // see if any new notifications are available (long polling).
+//
+// ### `pollingInterval`: when `longPolling` is set to `false`, this
+// option determines how often the browser polls for new notifications.
+// Not used when `longPolling` is `true` (the default).
+// `pollingInterval` defaults to 5000 (5 seconds).
 
 const delay = require('bluebird').delay;
 
 module.exports = {
   options: {
-    alias: 'notification'
+    alias: 'notification',
+    longPolling: true,
+    longPollingTimeout: 10000,
+    queryInterval: 1000,
+    // Used only when longPolling is false
+    pollingInterval: 5000
   },
   extend: '@apostrophecms/module',
   async init(self) {
@@ -64,7 +80,10 @@ module.exports = {
         return await attempt();
 
         async function attempt() {
-          if (Date.now() - start >= (self.options.longPollingTimeout || 10000)) {
+          if (
+            self.options.longPolling &&
+              (Date.now() - start >= self.options.longPollingTimeout)
+          ) {
             return {
               notifications: [],
               dismissed: []
@@ -75,11 +94,10 @@ module.exports = {
             modifiedOnOrSince,
             seenIds
           });
-          if (!notifications.length && !dismissed.length) {
+          if (self.options.longPolling && !notifications.length && !dismissed.length) {
             await delay(self.options.queryInterval || 1000);
             return attempt();
           }
-
           return {
             notifications,
             dismissed
@@ -208,7 +226,9 @@ module.exports = {
     return {
       getBrowserData(req) {
         return {
-          action: self.action
+          action: self.action,
+          longPolling: self.options.longPolling,
+          pollingInterval: self.options.pollingInterval
         };
       },
       // When used server-side, call with `req` as the first argument,

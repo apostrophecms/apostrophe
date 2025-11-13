@@ -49,6 +49,7 @@ module.exports = {
     '@apostrophecms/box-field': {},
     '@apostrophecms/oembed-field': {},
     '@apostrophecms/video-widget': {},
+    '@apostrophecms/file-widget': {},
     '@apostrophecms/ui': {},
     '@apostrophecms/user': {},
     '@apostrophecms/settings': {},
