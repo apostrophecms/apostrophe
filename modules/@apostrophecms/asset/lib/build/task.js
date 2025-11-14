@@ -5,6 +5,7 @@ const fs = require('fs-extra');
 const { stripIndent } = require('common-tags');
 const webpackModule = require('webpack');
 const { mergeWithCustomize: webpackMerge } = require('webpack-merge');
+const { pathToFileURL } = require('node:url');
 const {
   getBundlesNames,
   writeBundlesImportFiles,
@@ -488,7 +489,7 @@ module.exports = (self) => ({
         if (!importIndex.includes(importFrom)) {
           if (importFrom.substring(0, 1) === '~') {
             importName = self.apos.util.slugify(importFrom).replaceAll('-', '');
-            output.importCode += `import ${importName}Icon from '${importFrom.substring(1)}';\n`;
+            output.importCode += `import ${importName}Icon from '${pathToFileURL(importFrom.substring(1))}';\n`;
           } else {
             output.importCode += `import ${importName}Icon from '@apostrophecms/vue-material-design-icons/${importFrom}.vue';\n`;
           }
@@ -680,7 +681,7 @@ module.exports = (self) => ({
         const jsName = JSON.stringify(name);
         const importName = `${name}${options.importSuffix || ''}`;
         const importCode = `
-              import ${importName} from ${jsFilename};
+              import ${importName} from ${pathToFileURL(jsFilename)};
               `;
 
         output.paths.push(component);

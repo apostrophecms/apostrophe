@@ -2,6 +2,7 @@ const fs = require('fs-extra');
 const path = require('node:path');
 const { glob } = require('../../lib/path');
 const { stripIndent } = require('common-tags');
+const { pathToFileURL } = require('node:url');
 
 // High and Low level public API for external modules.
 module.exports = (self) => {
@@ -661,8 +662,8 @@ function invoke() {
         const jsName = JSON.stringify(name);
         const importName = `${name}${options.importSuffix || ''}`;
         const importCode = options.importName === false
-          ? `import ${jsFilename};\n`
-          : `import ${importName} from ${jsFilename};\n`;
+          ? `import ${pathToFileURL(jsFilename)};\n`
+          : `import ${importName} from ${pathToFileURL(jsFilename)};\n`;
 
         output.importCode += `${importCode}`;
 
@@ -721,7 +722,7 @@ function invoke() {
         if (!importIndex.includes(importFrom)) {
           if (importFrom.substring(0, 1) === '~') {
             importName = self.apos.util.slugify(importFrom).replaceAll('-', '');
-            output.importCode += `import ${importName}Icon from '${importFrom.substring(1)}';\n`;
+            output.importCode += `import ${importName}Icon from '${pathToFileURL(importFrom.substring(1))}';\n`;
           } else {
             output.importCode +=
                 `import ${importName}Icon from '@apostrophecms/vue-material-design-icons/${importFrom}.vue';\n`;
