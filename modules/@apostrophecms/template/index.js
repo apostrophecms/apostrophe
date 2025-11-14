@@ -1185,6 +1185,7 @@ module.exports = {
 
             return `<${name}${attrs}>${body}</${name}>`;
           }
+          console.trace(node);
           self.logError(
             'render-nodes',
             'Invalid node object passed to apos.template.renderNodes()',
