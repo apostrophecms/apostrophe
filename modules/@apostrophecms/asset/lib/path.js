@@ -2,7 +2,7 @@ const { glob: globOriginal } = require('glob');
 const {
   resolve: resolveOriginal,
   dirname: dirnameOriginal
- } = require('path');
+} = require('path');
 
 module.exports = {
   glob,
