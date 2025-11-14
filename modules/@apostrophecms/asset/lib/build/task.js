@@ -676,12 +676,12 @@ module.exports = (self) => ({
                   `);
           }
         }
-        const jsFilename = JSON.stringify(component);
+        const importUrl = pathToFileURL(JSON.stringify(component));
         const name = getComponentName(component, options, i);
         const jsName = JSON.stringify(name);
         const importName = `${name}${options.importSuffix || ''}`;
         const importCode = `
-              import ${importName} from '${pathToFileURL(jsFilename)}';
+              import ${importName} from ${importUrl};
               `;
 
         output.paths.push(component);

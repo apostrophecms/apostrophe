@@ -654,7 +654,7 @@ function invoke() {
             }
           }
         }
-        const jsFilename = JSON.stringify(component);
+        const importUrl = JSON.stringify(pathToFileURL(component));
         const name = self.getComponentNameByPath(
           component,
           { enumerate: options.enumerateImports === true ? i : false }
@@ -662,8 +662,8 @@ function invoke() {
         const jsName = JSON.stringify(name);
         const importName = `${name}${options.importSuffix || ''}`;
         const importCode = options.importName === false
-          ? `import '${pathToFileURL(jsFilename)}';\n`
-          : `import ${importName} from '${pathToFileURL(jsFilename)}';\n`;
+          ? `import ${importUrl};\n`
+          : `import ${importName} from ${importUrl};\n`;
 
         output.importCode += `${importCode}`;
 
