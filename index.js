@@ -377,7 +377,7 @@ async function apostrophe(options, telemetry, rootSpan) {
     const reallyLocalPath = self.rootDir + localPath;
 
     if (fs.existsSync(reallyLocalPath)) {
-      local = await self.root.import(pathToFileURL(reallyLocalPath).toString());
+      local = await self.root.import(pathToFileURL(reallyLocalPath));
     }
 
     // Otherwise making a second apos instance
