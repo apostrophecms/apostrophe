@@ -3,6 +3,7 @@
 # Ignore unison sync files
 .unison*
 package-lock.json
+pnpm-lock.yaml
 npm-debug.log
 *.DS_Store
 *.npmignore
