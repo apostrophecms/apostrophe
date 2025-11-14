@@ -16,6 +16,7 @@
 * Specify the content type when calling back to Astro with JSON to render an area. This is required starting in Astro 4.9.0 and up, otherwise the request is blocked by CSRF protection.
 * Improved support for Node.js on "plain vanilla" Windows, e.g. without WSL. We suggest working with NVM for Windows and Git Bash.
 * Fixes `AposBreadcrumbSwitch` tooltip prop that is supposed to be an object, not a string. Object returned from the shared method `getOperationTooltip`.
+* Empty text nodes are output properly without a warning.
 
 ## 4.23.0 (2025-10-30)
 
