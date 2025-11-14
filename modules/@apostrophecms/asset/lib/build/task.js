@@ -489,7 +489,7 @@ module.exports = (self) => ({
         if (!importIndex.includes(importFrom)) {
           if (importFrom.substring(0, 1) === '~') {
             importName = self.apos.util.slugify(importFrom).replaceAll('-', '');
-            output.importCode += `import ${importName}Icon from '${pathToFileURL(importFrom.substring(1))}';\n`;
+            output.importCode += `import ${importName}Icon from '${importFrom.substring(1)}';\n`;
           } else {
             output.importCode += `import ${importName}Icon from '@apostrophecms/vue-material-design-icons/${importFrom}.vue';\n`;
           }
@@ -676,7 +676,8 @@ module.exports = (self) => ({
                   `);
           }
         }
-        const importUrl = pathToFileURL(JSON.stringify(component));
+        // We know component is a file path at this point
+        const importUrl = JSON.stringify(pathToFileURL(component));
         const name = getComponentName(component, options, i);
         const jsName = JSON.stringify(name);
         const importName = `${name}${options.importSuffix || ''}`;

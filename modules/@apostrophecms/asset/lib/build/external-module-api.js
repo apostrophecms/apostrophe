@@ -654,7 +654,8 @@ function invoke() {
             }
           }
         }
-        const importUrl = JSON.stringify(pathToFileURL(component));
+        // We know realPath is a file path at this point
+        const importUrl = JSON.stringify(pathToFileURL(realPath));
         const name = self.getComponentNameByPath(
           component,
           { enumerate: options.enumerateImports === true ? i : false }
@@ -721,8 +722,9 @@ function invoke() {
         let importName = importFrom;
         if (!importIndex.includes(importFrom)) {
           if (importFrom.substring(0, 1) === '~') {
+            // An npm module name
             importName = self.apos.util.slugify(importFrom).replaceAll('-', '');
-            output.importCode += `import ${importName}Icon from '${pathToFileURL(importFrom.substring(1))}';\n`;
+            output.importCode += `import ${importName}Icon from '${importFrom.substring(1)}';\n`;
           } else {
             output.importCode +=
                 `import ${importName}Icon from '@apostrophecms/vue-material-design-icons/${importFrom}.vue';\n`;
