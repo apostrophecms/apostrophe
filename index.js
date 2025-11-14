@@ -377,7 +377,7 @@ async function apostrophe(options, telemetry, rootSpan) {
     const reallyLocalPath = self.rootDir + localPath;
 
     if (fs.existsSync(reallyLocalPath)) {
-      local = await self.root.import(pathToFileURL(reallyLocalPath));
+      local = await self.root.import(pathToFileURL(reallyLocalPath).toString());
     }
 
     // Otherwise making a second apos instance
@@ -915,7 +915,16 @@ function getRoot(options) {
   if (root?.filename && root?.require) {
     return {
       filename: root.filename,
-      import: async (id) => root.require(id),
+      import: async (id) => {
+        // Must accept URL objects
+        id = id.toString();
+        // To accurately simulate ES import, we need to
+        // accept file:// URLs like it can
+        if (id.startsWith('file://')) {
+          id = id.substring('file://'.length);
+        }
+        return root.require(id);
+      },
       require: (id) => root.require(id)
     };
   }
