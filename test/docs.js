@@ -77,6 +77,7 @@ describe('Docs', function() {
 
   afterEach(async function () {
     await apos.doc.db.deleteMany({ type: 'test-people' });
+    await apos.doc.db.deleteMany({ type: 'test-page' });
     await apos.lock.db.deleteMany({});
   });
 
@@ -1034,6 +1035,126 @@ describe('Docs', function() {
     };
 
     assert(timestamps.doc === timestamps.expected);
+  });
+
+  it('should preserve latin accents by default (piece)', async function () {
+    const req = apos.task.getReq();
+    const object = {
+      title: 'C\'est déjà l\'été',
+      visibility: 'public',
+      type: 'test-people',
+      firstName: 'Janis',
+      lastName: 'Joplin',
+      age: 27,
+      alive: false,
+      updatedAt: '2018-08-29T12:57:03.685Z',
+      cacheInvalidatedAt: '2019-08-29T12:57:03.685Z'
+    };
+
+    await apos.doc.insert(req, object);
+
+    const doc = await apos.doc.db.findOne({ title: 'C\'est déjà l\'été' });
+    assert.equal(doc.slug, 'c-est-déjà-l-été');
+  });
+
+  it('should remove latin accents when configured to do so (piece)', async function () {
+    const req = apos.task.getReq();
+    const object = {
+      title: 'C\'est déjà l\'été',
+      visibility: 'public',
+      type: 'test-people',
+      firstName: 'Janis',
+      lastName: 'Joplin',
+      age: 27,
+      alive: false,
+      updatedAt: '2018-08-29T12:57:03.685Z',
+      cacheInvalidatedAt: '2019-08-29T12:57:03.685Z'
+    };
+    const originalSetting = apos.i18n.options.stripUrlAccents;
+    apos.i18n.options.stripUrlAccents = true;
+
+    await apos.doc.insert(req, object);
+
+    const doc = await apos.doc.db.findOne({ title: 'C\'est déjà l\'été' });
+    apos.i18n.options.stripUrlAccents = originalSetting;
+
+    assert.equal(doc.slug, 'c-est-deja-l-ete');
+  });
+
+  it('should remove latin accents when converting schema fields (piece)', async function () {
+    const req = apos.task.getReq();
+    const input = {
+      title: 'C\'est déjà l\'été',
+      slug: 'c-est-déjà-l-été',
+      visibility: 'public',
+      type: 'test-people',
+      firstName: 'Janis',
+      lastName: 'Joplin',
+      age: 27,
+      alive: false,
+      updatedAt: '2018-08-29T12:57:03.685Z',
+      cacheInvalidatedAt: '2019-08-29T12:57:03.685Z'
+    };
+    const originalSetting = apos.i18n.options.stripUrlAccents;
+    apos.i18n.options.stripUrlAccents = true;
+
+    const manager = apos.doc.getManager('test-people');
+    const page = manager.newInstance();
+    await manager.convert(req, input, page);
+    apos.i18n.options.stripUrlAccents = originalSetting;
+
+    assert.equal(page.slug, 'c-est-deja-l-ete');
+  });
+
+  it('should preserve latin accents by default (page)', async function () {
+    const req = apos.task.getReq();
+    const object = {
+      title: 'C\'est déjà l\'été',
+      visibility: 'public',
+      type: 'test-page'
+    };
+
+    await apos.doc.insert(req, object);
+
+    const doc = await apos.doc.db.findOne({ title: 'C\'est déjà l\'été' });
+    assert.equal(doc.slug, '/c-est-déjà-l-été');
+  });
+
+  it('should remove latin accents when configured to do so (page)', async function () {
+    const req = apos.task.getReq();
+    const object = {
+      title: 'C\'est déjà l\'été',
+      visibility: 'public',
+      type: 'test-page'
+    };
+    const originalSetting = apos.i18n.options.stripUrlAccents;
+    apos.i18n.options.stripUrlAccents = true;
+
+    await apos.doc.insert(req, object);
+
+    const doc = await apos.doc.db.findOne({ title: 'C\'est déjà l\'été' });
+    apos.i18n.options.stripUrlAccents = originalSetting;
+
+    assert.equal(doc.slug, '/c-est-deja-l-ete');
+  });
+
+  it('should remove latin accents when converting schema fields (page)', async function () {
+    const req = apos.task.getReq();
+    const input = {
+      title: 'C\'est déjà l\'été',
+      slug: '/c-est-déjà-l-été',
+      visibility: 'public',
+      type: 'test-page'
+    };
+    const originalSetting = apos.i18n.options.stripUrlAccents;
+    apos.i18n.options.stripUrlAccents = true;
+
+    const manager = apos.doc.getManager('test-page');
+    const page = manager.newInstance();
+    await manager.convert(req, input, page);
+    apos.i18n.options.stripUrlAccents = originalSetting;
+
+    assert.equal(page.slug, '/c-est-deja-l-ete');
   });
 
   /// ///

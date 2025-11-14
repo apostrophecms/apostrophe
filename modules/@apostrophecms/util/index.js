@@ -291,8 +291,18 @@ module.exports = {
       // ONE punctuation character normally forbidden in slugs may
       // optionally be permitted by specifying it via options.allow.
       // The separator may be changed via options.separator.
+      // By default, the i18n.options.stripUrlAccents option is honored;
+      // having stripAccents passed as an option takes precedence.
       slugify(s, options) {
-        return require('sluggo')(s, options);
+        const { stripAccents, ...opts } = options || {};
+        const slug = require('sluggo')(s, opts);
+        const shouldStripAccents = (typeof stripAccents !== 'undefined')
+          ? stripAccents
+          : self.apos.i18n.options.stripUrlAccents;
+        if (shouldStripAccents) {
+          return _.deburr(slug);
+        }
+        return slug;
       },
       // Returns a string that, when used for indexes, behaves
       // similarly to MySQL's default behavior for sorting, plus a little
@@ -938,7 +948,8 @@ module.exports = {
       // ONE punctuation character normally forbidden in slugs may
       // optionally be permitted by specifying it via options.allow.
       // The separator may be changed via options.separator.
-
+      // By default, the i18n.options.stripUrlAccents option is honored;
+      // having stripAccents passed as an option takes precedence.
       slugify: function(string, options) {
         return self.slugify(string, options);
       },
