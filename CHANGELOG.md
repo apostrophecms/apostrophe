@@ -4,6 +4,7 @@
 
 ### Adds
 
+* Add `@apostrophecms/migration:add-missing-schema-fields` task. This task does not run database migrations.
 * Translation strings added for the layout- and layout-column-widgets.
 * New `box` schema field type
 * When switching locale from the doc editor, ask if the user wants to localize the current document in the target locale or want to start a blank document.
@@ -11,6 +12,7 @@
 
 ### Changes
 
+* `@apostrophecms/migration:requirements` handler now runs the migration requirements like `insertIfMissing`, `implementParkAllInDefaultLocale`, `replicate` and `implementParkAllInOtherLocales`.
 * Bump nodemailer to v7.x.
 
 ### Fixes

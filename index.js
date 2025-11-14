@@ -323,21 +323,7 @@ async function apostrophe(options, telemetry, rootSpan) {
     await self.emit('modulesRegistered'); // formerly modulesReady
     self.apos.schema.validateAllSchemas();
     self.apos.schema.registerAllSchemas();
-    await self.apos.lock.withLock('@apostrophecms/migration:migrate', async () => {
-      await self.apos.migration.migrate(self.argv);
-      // Inserts the global doc in the default locale if it does not exist;
-      // same for other singleton piece types registered by other modules
-      for (const apostropheModule of Object.values(self.modules)) {
-        if (self.instanceOf(apostropheModule, '@apostrophecms/piece-type') && apostropheModule.options.singletonAuto) {
-          await apostropheModule.insertIfMissing();
-        }
-      }
-      await self.apos.page.implementParkAllInDefaultLocale();
-      await self.apos.doc.replicate(); // emits beforeReplicate and afterReplicate events
-      // Replicate will have created the parked pages across locales if needed,
-      // but we may still need to reset parked properties
-      await self.apos.page.implementParkAllInOtherLocales();
-    });
+    await self.apos.migration.migrate(self.argv);
     await self.emit('ready'); // formerly afterInit
 
     if (self.taskRan) {

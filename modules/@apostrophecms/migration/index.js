@@ -14,13 +14,53 @@ const addMissingSchemaFields = require('./lib/addMissingSchemaFields.js');
 // is difficult to guarantee, you may wish to write a task instead.
 
 module.exports = {
-  options: { alias: 'migration' },
+  options: {
+    alias: 'migration',
+    skipMigrationTasks: [
+      '@apostrophecms/migration:add-missing-schema-fields'
+    ]
+  },
   async init(self) {
     self.migrations = [];
     await self.enableCollection();
   },
   handlers(self) {
     return {
+      'apostrophe:modulesRegistered': {
+        setSkipMigration() {
+          if (
+            self.apos.isTask() &&
+            self.options.skipMigrationTasks.includes(self.apos.argv._.at(0))
+          ) {
+            self.apos.skipMigration = true;
+          }
+        }
+      },
+      before: {
+        async addMissingSchemaFields() {
+          await self.addMissingSchemaFields();
+        }
+      },
+      requirements: {
+        async insertRequired() {
+          // Inserts the global doc in the default locale if it does not exist;
+          // same for other singleton piece types registered by other modules
+          for (const apostropheModule of Object.values(self.apos.modules)) {
+            if (
+              self.apos.instanceOf(apostropheModule, '@apostrophecms/piece-type') &&
+              apostropheModule.options.singletonAuto
+            ) {
+              await apostropheModule.insertIfMissing();
+            }
+          }
+          await self.apos.page.implementParkAllInDefaultLocale();
+          await self.apos.doc.replicate();
+          // emits beforeReplicate and afterReplicate events
+          // Replicate will have created the parked pages across locales if needed,
+          // but we may still need to reset parked properties
+          await self.apos.page.implementParkAllInOtherLocales();
+        }
+      },
       'apostrophe:ready': {
         addSortifyMigrations() {
           const managers = self.apos.doc.managers;
@@ -40,11 +80,6 @@ module.exports = {
               manager.addSortifyMigration(field.name);
             });
           });
-        }
-      },
-      before: {
-        async addMissingSchemaFields() {
-          await self.addMissingSchemaFields();
         }
       }
     };
@@ -236,43 +271,53 @@ module.exports = {
       // Perform the actual migrations. Implementation of
       // the @apostrophecms/migration:migrate task
       async migrate(options) {
-        await self.emit('before');
-        if (self.apos.isNew) {
+        await self.apos.lock.withLock('@apostrophecms/migration:migrate', async () => {
+          if (self.apos.skipMigration === true) {
+            return;
+          }
+
+          await self.emit('before');
+
+          if (self.apos.isNew) {
           // Since the site is brand new (zero documents), we may assume
           // it requires no migrations. Mark them all as "done" but note
           // that they were skipped, just in case we decide that's an issue
           // later
-          const at = new Date();
-          // Just in case the db has no documents but did
-          // start to run migrations on a previous attempt,
-          // which causes an occasional unique key error if not
-          // corrected for here.
-          //
-          // Other migration-related facts that are not migration
-          // names are stored with a leading *, leave them alone
-          await self.db.removeMany({
-            _id: /^[^*]/
-          });
-          await self.db.insertMany(self.migrations.map(migration => ({
-            _id: migration.name,
-            at,
-            skipped: true
-          })));
-        } else {
-          for (const migration of self.migrations) {
-            await self.runOne(migration);
+            const at = new Date();
+            // Just in case the db has no documents but did
+            // start to run migrations on a previous attempt,
+            // which causes an occasional unique key error if not
+            // corrected for here.
+            //
+            // Other migration-related facts that are not migration
+            // names are stored with a leading *, leave them alone
+            await self.db.removeMany({
+              _id: /^[^*]/
+            });
+            await self.db.insertMany(self.migrations.map(migration => ({
+              _id: migration.name,
+              at,
+              skipped: true
+            })));
+          } else {
+            for (const migration of self.migrations) {
+              await self.runOne(migration);
+            }
           }
-        }
-        // In production, this event is emitted only at the end of the migrate
-        // command line task. In dev it is emitted at every startup after the
-        // automatic migration.
-        //
-        // Intentionally emitted regardless of whether the site is new or not.
-        //
-        // This is the right time to park pages, for instance, because the
-        // database is guaranteed to be in a stable state, whether because the
-        // site is new or because migrations ran successfully.
-        await self.emit('after');
+
+          // In production, this event is emitted only at the end of the migrate
+          // command line task. In dev it is emitted at every startup after the
+          // automatic migration.
+          //
+          // Intentionally emitted regardless of whether the site is new or not.
+          //
+          // This is the right time to park pages, for instance, because the
+          // database is guaranteed to be in a stable state, whether because the
+          // site is new or because migrations ran successfully.
+          await self.emit('after');
+
+          await self.emit('requirements');
+        });
       },
       async runOne(migration) {
         const info = await self.db.findOne({ _id: migration.name });
@@ -305,6 +350,12 @@ module.exports = {
         // and automatically detect whether any work
         // must be done
         task: () => {}
+      },
+      'add-missing-schema-fields': {
+        usage: 'Add missing schema fields to existing database documents',
+        task: async () => {
+          await self.addMissingSchemaFields();
+        }
       }
     };
   }
