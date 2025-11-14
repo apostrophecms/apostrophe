@@ -13,6 +13,7 @@ const npmResolve = require('resolve');
 const glob = require('./lib/glob.js');
 const moogRequire = require('./lib/moog-require');
 const importFresh = require('./lib/import-fresh');
+const { pathToFileUrl } = require('node:url');
 let defaults = require('./defaults.js');
 
 // ## Top-level options
@@ -376,7 +377,7 @@ async function apostrophe(options, telemetry, rootSpan) {
     const reallyLocalPath = self.rootDir + localPath;
 
     if (fs.existsSync(reallyLocalPath)) {
-      local = await self.root.import(reallyLocalPath);
+      local = await self.root.import(pathToFileUrl(reallyLocalPath));
     }
 
     // Otherwise making a second apos instance
@@ -408,7 +409,7 @@ async function apostrophe(options, telemetry, rootSpan) {
     const configs = glob(self.localModules + '/**/modules.js', { follow: true });
     for (const config of configs) {
       try {
-        _.merge(self.options.modules, await self.root.import(config));
+        _.merge(self.options.modules, await self.root.import(pathToFileUrl(config)));
       } catch (e) {
         console.error(stripIndent`
           When nestedModuleSubdirs is active, any modules.js file beneath:
@@ -734,7 +735,7 @@ async function apostrophe(options, telemetry, rootSpan) {
           if (fs.existsSync(path.resolve(self.localModules, name, 'modules.js'))) {
             return;
           }
-          const submodule = await self.root.import(path.resolve(self.localModules, name, 'index.js'));
+          const submodule = await self.root.import(pathToFileUrl(path.resolve(self.localModules, name, 'index.js')));
           if (
             submodule &&
             submodule.options &&
