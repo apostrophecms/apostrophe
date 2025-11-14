@@ -662,8 +662,8 @@ function invoke() {
         const jsName = JSON.stringify(name);
         const importName = `${name}${options.importSuffix || ''}`;
         const importCode = options.importName === false
-          ? `import ${pathToFileURL(jsFilename)};\n`
-          : `import ${importName} from ${pathToFileURL(jsFilename)};\n`;
+          ? `import '${pathToFileURL(jsFilename)}';\n`
+          : `import ${importName} from '${pathToFileURL(jsFilename)}';\n`;
 
         output.importCode += `${importCode}`;
 
