@@ -977,7 +977,7 @@ function getRoot(options) {
       if (id.startsWith('file://')) {
         id = id.substring('file://'.length);
       }
-      return root.require(id);
+      return legacyRoot.require(id);
     },
     require(id) {
       return legacyRoot.require(id)
