@@ -6,7 +6,7 @@ const { stripIndent } = require('common-tags');
 const { createId } = require('@paralleldrive/cuid2');
 const chokidar = require('chokidar');
 const _ = require('lodash');
-const { glob } = require('glob');
+const { glob } = require('./lib/path');
 const globalIcons = require('./lib/globalIcons');
 const {
   checkModulesWebpackConfig,

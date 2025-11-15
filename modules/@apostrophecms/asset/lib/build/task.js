@@ -5,6 +5,7 @@ const fs = require('fs-extra');
 const { stripIndent } = require('common-tags');
 const webpackModule = require('webpack');
 const { mergeWithCustomize: webpackMerge } = require('webpack-merge');
+const { pathToFileURL } = require('node:url');
 const {
   getBundlesNames,
   writeBundlesImportFiles,
@@ -675,12 +676,13 @@ module.exports = (self) => ({
                   `);
           }
         }
-        const jsFilename = JSON.stringify(component);
+        // We know component is a file path at this point
+        const importUrl = JSON.stringify(pathToFileURL(component));
         const name = getComponentName(component, options, i);
         const jsName = JSON.stringify(name);
         const importName = `${name}${options.importSuffix || ''}`;
         const importCode = `
-              import ${importName} from ${jsFilename};
+              import ${importName} from ${importUrl};
               `;
 
         output.paths.push(component);

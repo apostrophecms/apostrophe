@@ -5,12 +5,12 @@ const setupPackages = ({ folder = 'test' }) => {
   const testNodeModules = path.join(__dirname, '../', folder, 'node_modules/');
   fs.removeSync(testNodeModules);
   fs.mkdirSync(testNodeModules);
-  fs.symlinkSync(path.join(__dirname, '../'), path.join(testNodeModules, 'apostrophe'), 'dir');
+  fs.symlinkSync(path.join(__dirname, '../'), path.join(testNodeModules, 'apostrophe'), 'junction');
 
   const extras = path.join(__dirname, '../', folder, 'extra_node_modules/');
   const dirs = fs.existsSync(extras) ? fs.readdirSync(extras) : [];
   for (const dir of dirs) {
-    fs.symlinkSync(path.join(extras, dir), path.join(testNodeModules, dir), 'dir');
+    fs.symlinkSync(path.join(extras, dir), path.join(testNodeModules, dir), 'junction');
   }
 
   // Need a "project level" package.json for functionality that checks

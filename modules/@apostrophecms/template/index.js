@@ -1151,16 +1151,16 @@ module.exports = {
           return '';
         }
         return nodes.map(node => {
-          if (node.text) {
+          if (node.text != null) {
             return self.apos.util.escapeHtml(node.text);
           }
-          if (node.comment) {
+          if (node.comment != null) {
             return `\n<!-- ${self.apos.util.escapeHtml(node.comment)} -->\n`;
           }
-          if (node.raw) {
+          if (node.raw != null) {
             return node.raw;
           }
-          if (node.name) {
+          if (node.name != null) {
             const name = self.apos.util.escapeHtml(node.name);
             const attrs = Object.entries(node.attrs || {})
               .map(([ key, value ]) => {

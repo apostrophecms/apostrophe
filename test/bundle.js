@@ -11,7 +11,7 @@ describe('Bundle', function() {
   before(function() {
     // bundles work only in node_modules, symlink our test bundle
     if (!fs.existsSync(path.join(__dirname, '/node_modules/test-bundle'))) {
-      fs.symlinkSync(path.join(__dirname, '/test-bundle'), path.join(__dirname, '/node_modules/test-bundle'), 'dir');
+      fs.symlinkSync(path.join(__dirname, '/test-bundle'), path.join(__dirname, '/node_modules/test-bundle'), 'junction');
     }
     // Simulate presence of a transitive dependency (a dependency of a
     // dependency) in node_modules that has the same name as a project level

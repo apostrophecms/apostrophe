@@ -12,9 +12,9 @@ const process = require('process');
 const npmResolve = require('resolve');
 const glob = require('./lib/glob.js');
 const moogRequire = require('./lib/moog-require');
+const importFresh = require('./lib/import-fresh');
+const { pathToFileURL } = require('node:url');
 let defaults = require('./defaults.js');
-
-const importFresh = moduleName => import(`${moduleName}?${Date.now()}`);
 
 // ## Top-level options
 //
@@ -377,7 +377,8 @@ async function apostrophe(options, telemetry, rootSpan) {
     const reallyLocalPath = self.rootDir + localPath;
 
     if (fs.existsSync(reallyLocalPath)) {
-      local = await self.root.import(reallyLocalPath);
+      console.log(`*** ${reallyLocalPath}`);
+      local = await self.root.import(pathToFileURL(reallyLocalPath));
     }
 
     // Otherwise making a second apos instance
@@ -409,7 +410,7 @@ async function apostrophe(options, telemetry, rootSpan) {
     const configs = glob(self.localModules + '/**/modules.js', { follow: true });
     for (const config of configs) {
       try {
-        _.merge(self.options.modules, await self.root.import(config));
+        _.merge(self.options.modules, await self.root.import(pathToFileURL(config)));
       } catch (e) {
         console.error(stripIndent`
           When nestedModuleSubdirs is active, any modules.js file beneath:
@@ -541,7 +542,7 @@ async function apostrophe(options, telemetry, rootSpan) {
 
     if (!fs.existsSync(testDir + '/node_modules')) {
       fs.mkdirSync(testDir + '/node_modules' + pkgNamespace, { recursive: true });
-      fs.symlinkSync(moduleDir, testDir + '/node_modules/' + pkgName, 'dir');
+      fs.symlinkSync(moduleDir, testDir + '/node_modules/' + pkgName, 'junction');
     }
     // Makes sure we encounter mocha along the way
     // and throws an exception if we don't
@@ -735,7 +736,7 @@ async function apostrophe(options, telemetry, rootSpan) {
           if (fs.existsSync(path.resolve(self.localModules, name, 'modules.js'))) {
             return;
           }
-          const submodule = await self.root.import(path.resolve(self.localModules, name, 'index.js'));
+          const submodule = await self.root.import(pathToFileURL(path.resolve(self.localModules, name, 'index.js')));
           if (
             submodule &&
             submodule.options &&
@@ -915,8 +916,19 @@ function getRoot(options) {
   if (root?.filename && root?.require) {
     return {
       filename: root.filename,
-      import: async (id) => root.require(id),
-      require: (id) => root.require(id)
+      async import(id) {
+        // Must accept URL objects
+        id = id.toString();
+        // To accurately simulate ES import, we need to
+        // accept file:// URLs like it can
+        if (id.startsWith('file:')) {
+          id = url.fileURLToPath(id);
+        }
+        return root.require(id);
+      },
+      require(id) {
+        return root.require(id);
+      }
     };
   }
 
@@ -958,8 +970,19 @@ function getRoot(options) {
   const legacyRoot = getLegacyRoot();
   return {
     filename: legacyRoot.filename,
-    import: async (id) => legacyRoot.require(id),
-    require: (id) => legacyRoot.require(id)
+    async import(id) {
+      // Must accept URL objects
+      id = id.toString();
+      // To accuratesly simulate ES import, we need to
+      // accept file:// URLs like it can
+      if (id.startsWith('file:')) {
+        id = url.fileURLToPath(id);
+      }
+      return legacyRoot.require(id);
+    },
+    require(id) {
+      return legacyRoot.require(id);
+    }
   };
 };
 

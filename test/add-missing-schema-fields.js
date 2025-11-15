@@ -1,8 +1,10 @@
 const t = require('../test-lib/test.js');
 const assert = require('assert');
 const _ = require('lodash');
-
+const { createId } = require('@paralleldrive/cuid2');
 const cleanup = [];
+
+const shortName = `test-${createId()}`;
 
 after(async () => {
   for (const apos of cleanup) {
@@ -17,7 +19,7 @@ describe('add missing schema fields', function() {
   it('first generation & sanity checks', async function() {
     const apos = await t.create({
       root: module,
-      shortName: 'test-amsf',
+      shortName,
       modules: {
         product: {
           extend: '@apostrophecms/piece-type',
@@ -90,7 +92,7 @@ describe('add missing schema fields', function() {
     const apos = await t.create({
       root: module,
       // Same on purpose so we reuse the database
-      shortName: 'test-amsf',
+      shortName,
       modules: {
         product: {
           extend: '@apostrophecms/piece-type',
@@ -213,7 +215,7 @@ describe('add missing schema fields', function() {
     const apos = await t.create({
       root: module,
       // Same on purpose so we reuse the database
-      shortName: 'test-amsf',
+      shortName,
       modules: {
         product: {
           extend: '@apostrophecms/piece-type',
