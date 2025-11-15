@@ -377,6 +377,7 @@ async function apostrophe(options, telemetry, rootSpan) {
     const reallyLocalPath = self.rootDir + localPath;
 
     if (fs.existsSync(reallyLocalPath)) {
+      console.log(`*** ${reallyLocalPath}`);
       local = await self.root.import(pathToFileURL(reallyLocalPath));
     }
 
@@ -920,8 +921,8 @@ function getRoot(options) {
         id = id.toString();
         // To accurately simulate ES import, we need to
         // accept file:// URLs like it can
-        if (id.startsWith('file://')) {
-          id = id.substring('file://'.length);
+        if (id.startsWith('file:')) {
+          id = url.fileURLToPath(id);
         }
         return root.require(id);
       },
