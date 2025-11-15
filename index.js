@@ -975,8 +975,8 @@ function getRoot(options) {
       id = id.toString();
       // To accuratesly simulate ES import, we need to
       // accept file:// URLs like it can
-      if (id.startsWith('file://')) {
-        id = id.substring('file://'.length);
+      if (id.startsWith('file:')) {
+        id = url.fileURLToPath(id);
       }
       return legacyRoot.require(id);
     },
