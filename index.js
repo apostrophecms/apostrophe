@@ -980,7 +980,7 @@ function getRoot(options) {
       return legacyRoot.require(id);
     },
     require(id) {
-      return legacyRoot.require(id)
+      return legacyRoot.require(id);
     }
   };
 };
