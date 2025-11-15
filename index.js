@@ -541,7 +541,7 @@ async function apostrophe(options, telemetry, rootSpan) {
 
     if (!fs.existsSync(testDir + '/node_modules')) {
       fs.mkdirSync(testDir + '/node_modules' + pkgNamespace, { recursive: true });
-      fs.symlinkSync(moduleDir, testDir + '/node_modules/' + pkgName, 'dir');
+      fs.symlinkSync(moduleDir, testDir + '/node_modules/' + pkgName, 'junction');
     }
     // Makes sure we encounter mocha along the way
     // and throws an exception if we don't
