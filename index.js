@@ -915,7 +915,7 @@ function getRoot(options) {
   if (root?.filename && root?.require) {
     return {
       filename: root.filename,
-      import: async (id) => {
+      async import(id) {
         // Must accept URL objects
         id = id.toString();
         // To accurately simulate ES import, we need to
@@ -925,7 +925,9 @@ function getRoot(options) {
         }
         return root.require(id);
       },
-      require: (id) => root.require(id)
+      require(id) {
+        return root.require(id);
+      }
     };
   }
 
@@ -967,8 +969,19 @@ function getRoot(options) {
   const legacyRoot = getLegacyRoot();
   return {
     filename: legacyRoot.filename,
-    import: async (id) => legacyRoot.require(id),
-    require: (id) => legacyRoot.require(id)
+    async import(id) {
+      // Must accept URL objects
+      id = id.toString();
+      // To accuratesly simulate ES import, we need to
+      // accept file:// URLs like it can
+      if (id.startsWith('file://')) {
+        id = id.substring('file://'.length);
+      }
+      return root.require(id);
+    },
+    require(id) {
+      return legacyRoot.require(id)
+    }
   };
 };
 
