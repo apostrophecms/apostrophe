@@ -279,6 +279,10 @@ module.exports = {
         } else {
           throw new Error('renderBody does not support the type ' + type);
         }
+        if (process.platform === 'win32') {
+          // CR/LF is a waste of space in HTML and breaks unit tests
+          result = result.replaceAll('\r', '');		  
+        }
         return result;
       },
 
