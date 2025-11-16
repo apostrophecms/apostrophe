@@ -37,7 +37,9 @@ describe('Attachment', function() {
             // Mandatory in Windows (and present in our starter kits),
             // otherwise apostrophe tries to use chmod which can't
             // control read permissions in Windows
-            disabledFileKey: 'testkey'
+            uploadfs: {
+              disabledFileKey: 'testkey'
+            }
           }
         }
       }
