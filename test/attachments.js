@@ -30,7 +30,17 @@ describe('Attachment', function() {
     this.slow(2000);
 
     apos = await t.create({
-      root: module
+      root: module,
+      modules: {
+        '@apostrophecms/uploadfs': {
+          options: {
+            // Mandatory in Windows (and present in our starter kits),
+            // otherwise apostrophe tries to use chmod which can't
+            // control read permissions in Windows
+            disabledFileKey: 'testkey'
+          }
+        }
+      }
     });
     assert(apos.attachment);
   });
