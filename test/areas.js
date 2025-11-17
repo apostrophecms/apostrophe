@@ -132,6 +132,24 @@ describe('Areas', function() {
                     }
                   }
                 }
+              },
+              withDefaults: {
+                type: 'area',
+                options: {
+                  widgets: {
+                    '@apostrophecms/rich-text': {},
+                    '@apostrophecms/image': {},
+                    '@apostrophecms/video': {},
+                    '@apostrophecms/html': {}
+                  }
+                },
+                def: [
+                  '@apostrophecms/rich-text',
+                  '@apostrophecms/image',
+                  '@apostrophecms/video',
+                  '@apostrophecms/html',
+                  'nonexistent-widget'
+                ]
               }
             }
           }
@@ -515,5 +533,62 @@ describe('Areas', function() {
         name: 'test'
       }, 0)
     );
+  });
+
+  it('area with default widgets gets populated correctly', async function() {
+    const doc = await apos.article.newInstance();
+    assert(doc.withDefaults);
+    assert(doc.withDefaults.items);
+    assert.strictEqual(doc.withDefaults.items.length, 4);
+
+    const types = doc.withDefaults.items.map(item => item.type);
+    assert(types.includes('@apostrophecms/rich-text'));
+    assert(types.includes('@apostrophecms/image'));
+    assert(types.includes('@apostrophecms/video'));
+    assert(types.includes('@apostrophecms/html'));
+
+    const actual = doc.withDefaults.items.map(item => {
+      const {
+        type, metaType, _autofocus, content, aposPlaceholder
+      } = item;
+      return {
+        type,
+        metaType,
+        _autofocus,
+        content,
+        aposPlaceholder
+      };
+    });
+    const expected = [
+      {
+        type: '@apostrophecms/rich-text',
+        metaType: 'widget',
+        _autofocus: false,
+        content: '',
+        aposPlaceholder: undefined
+      },
+      {
+        type: '@apostrophecms/image',
+        metaType: 'widget',
+        aposPlaceholder: true,
+        _autofocus: undefined,
+        content: undefined
+      },
+      {
+        type: '@apostrophecms/video',
+        metaType: 'widget',
+        aposPlaceholder: true,
+        _autofocus: undefined,
+        content: undefined
+      },
+      {
+        type: '@apostrophecms/html',
+        metaType: 'widget',
+        _autofocus: undefined,
+        content: undefined,
+        aposPlaceholder: undefined
+      }
+    ];
+    assert.deepEqual(actual, expected);
   });
 });

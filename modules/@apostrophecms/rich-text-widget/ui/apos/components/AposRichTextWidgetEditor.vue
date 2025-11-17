@@ -297,8 +297,10 @@ export default {
       return activeOptions;
     },
     autofocus() {
-      // Only true for a new rich text widget
-      return !this.modelValue.content.length;
+      // Only true for a new rich text widget.
+      // `_autofocus: false` can be set during default instance creation to avoid
+      // focusing the **last** inserted rich text widget
+      return !this.modelValue.content.length && this.modelValue._autofocus !== false;
     },
     initialContent() {
       const content = this.transformNamedAnchors(this.modelValue.content);
@@ -344,7 +346,7 @@ export default {
         // We are interested in different than the default `p` wrappers
         // when the innerHTML is empty.
         hasSomeContent = !!editorJSON?.content
-          .filter(c => ![ 'paragraph' ].includes(c.type)).length;
+          .filter(c => ![ 'defaultNode' ].includes(c.type)).length;
       }
       return (!div.textContent && !hasSomeContent);
     },
@@ -444,7 +446,6 @@ export default {
       .concat(this.aposTiptapExtensions());
 
     this.ensureExtensionsPriority(extensions);
-
     this.editor = new Editor({
       content: this.initialContent,
       autofocus: this.autofocus,
@@ -460,6 +461,10 @@ export default {
       // The proper thing would be to call nextTick inside the placeholder
       // function so that it can rely on the focus state set by these event
       // listeners, but the placeholder function is called synchronously...
+      // When not autofocusing, we want to show the "Empty" placeholder right away.
+      onCreate: () => {
+        this.showPlaceholder = true;
+      },
       onFocus: () => {
         this.isFocused = true;
         this.$nextTick(() => {
