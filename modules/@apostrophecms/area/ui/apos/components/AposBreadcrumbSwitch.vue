@@ -51,7 +51,7 @@ export default {
       required: true
     },
     tooltip: {
-      type: String,
+      type: Object,
       default: null
     },
     disabled: {

@@ -2566,7 +2566,7 @@ module.exports = {
             baseQuery.set('choices-query-prefinalize', null);
             for (const filter of filters) {
               // The choices for each filter should reflect the effect of all
-              // filters except this one (filtering by topic pares down the list
+              // filters except this one (filtering by topic pairs down the list
               // of categories and vice versa)
               const _query = baseQuery.clone();
               // Make sure this is a legitimate builder before attempting to

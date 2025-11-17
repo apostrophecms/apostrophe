@@ -7,6 +7,20 @@
 * When selecting pieces or pages to populate a relationship, the "New Piece" / "New Page" buttons are easier to find. They are no longer hidden away in a context menu.
 * When you create a new item while editing a relationship, that item is automatically selected, as long as you have not already reached `max` for that relationship.
 * When the user chooses to create a new document while selecting pieces or pages to populate a relationship, the "save draft and preview" and "publish and view" options are no longer offered. This ensures that the user is able to complete the selection process. The page or piece can still be edited in context later.
+* Bump nodemailer to v7.x.
+
+### Adds
+
+* Translation strings added for the layout- and layout-column-widgets.
+* New `box` schema field type
+* When switching locale from the doc editor, ask if the user wants to localize the current document in the target locale or want to start a blank document.
+* Introduced a new `longPolling: false` option for the `@apostrophecms/notification` module. This eliminates long-pending requests when logged in, but also slows down the delivery of notifications. The behavior can be tuned further via the `pollingInterval` option, which defaults to `5000` milliseconds.
+
+### Fixes
+
+* Specify the content type when calling back to Astro with JSON to render an area. This is required starting in Astro 4.9.0 and up, otherwise the request is blocked by CSRF protection.
+* Fixes `AposBreadcrumbSwitch` tooltip prop that is supposed to be an object, not a string. Object returned from the shared method `getOperationTooltip`.
+* Uses `modalData.locale` in `AposI18nLocalize` component. Fixes watcher on `relatedDocTypes` not being properly triggered (uses data and methods for more control instead).
 
 ## 4.23.0 (2025-10-30)
 

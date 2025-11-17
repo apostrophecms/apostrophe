@@ -594,9 +594,9 @@ export default {
         }
       }
     },
-    async switchLocale({ locale, localized }) {
-      this.updateModalData(this.modalData.id, { locale });
-      this.localeSwitched = locale !== apos.i18n.locale;
+    async switchLocale({ locale }) {
+      this.updateModalData(this.modalData.id, { locale: locale.name });
+      this.localeSwitched = locale.name !== apos.i18n.locale;
 
       this.currentPage = 1;
 
