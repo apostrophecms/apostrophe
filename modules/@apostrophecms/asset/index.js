@@ -939,7 +939,8 @@ module.exports = {
         const pulledChanges = [];
         let change = changes.pop();
         while (change) {
-          pulledChanges.push(change);
+          // Fix windows paths
+          pulledChanges.push(change.replace(/\\/g, '/'));
           change = changes.pop();
         }
         // No changes - should never happen.
