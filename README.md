@@ -53,8 +53,7 @@
 - Node.js 22+
 - For SDK generation:
   - **Java 8+** (required for npx or global usage)
-  - **npx** — used automatically by default, downloads the generator on first run
-  - **Optional:** global installation of `@openapitools/openapi-generator-cli` for faster repeat runs
+  - **Optional:** global installation of `@openapitools/openapi-generator-cli` for faster repeat runs (uses `npx` by default)
   - **Optional:** Docker (if you prefer not to install Java). The generator will use the official `openapitools/openapi-generator-cli` image, which is pulled automatically the first time you run it.
 
 ## Installation
@@ -187,6 +186,13 @@ node app openapi-generator:generate --verbose
 ```
 
 ### File Validation
+Once you have an OpenAPI file on disk, you can use the `validate` task to confirm that it is still a **valid OpenAPI 3.1 specification**.
+
+This command does **not** regenerate or modify your spec — it only runs validation against an existing file, which is useful when:
+
+- You manually edited the generated spec (e.g., added custom descriptions or examples).
+- You renamed/moved the spec file and want to be sure it’s still valid before publishing it to Postman, Redoc, or other tooling.
+- You want a quick check in CI to fail the build if someone introduces an invalid change.
 
 ```bash
 # Validate existing specification using either the default
@@ -226,7 +232,6 @@ The generator tries multiple approaches in order of convenience:
    - Runs `npx @openapitools/openapi-generator-cli` automatically
    - Downloads the generator each time you use it
    - Works out of the box with Java 8+ installed
-   - No manual installation needed
 
 2. **Global install (optional)** — *faster repeat runs*
    - Install once with:
@@ -334,6 +339,7 @@ cd ../my-php-app && composer install
 3. **Use in your application:**
 
 **TypeScript/JavaScript Example:**
+**TypeScript/JavaScript Example:**
 ```typescript
 import 'dotenv/config';
 import { Configuration, ArticlesApi, UsersApi, EventsApi } from './generated-client';
@@ -374,9 +380,11 @@ async function run() {
   console.log('Users:', userList.data);
 }
 
-run().catch(err => {
+try {
+  await run();
+} catch (err: any) {
   console.error(err?.response?.data ?? err.message);
-});
+}
 ```
 
 **Python Example:**
