@@ -527,7 +527,7 @@ async function apostrophe(options, telemetry, rootSpan) {
     checkTestModule();
     // Allow tests to be in test/ or in tests/
     const testDir = path.dirname(m.filename);
-    const moduleDir = testDir.replace(/\/tests?$/, '');
+    const moduleDir = testDir.replace(/\/tests?$/, '').replace(/\\tests?$/, '');
     if (testDir === moduleDir) {
       throw new Error('Test file must be in test/ or tests/ subdirectory of module');
     }
