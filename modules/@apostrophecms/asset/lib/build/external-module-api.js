@@ -196,7 +196,7 @@ function invoke() {
 }` + '\n'
         : '';
 
-      // Remove the identation per line.
+      // Remove the indentation per line.
       // It may look weird, but the result is nice and formatted import file.
       output += (js && js.invokeCode.trim().split('\n').map(l => l.trim()).join('\n') + '\n') || '';
 
