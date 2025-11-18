@@ -326,9 +326,9 @@ export default {
       // If its only value is an array, we assume it's an array of arrays,
       // one per column, and distribute accordingly. This can allow multiple
       // array values in the future, when we support multiple rows.
-      let constentFieldDefPerColumn = [];
+      let contentFieldDefPerColumn = [];
       if (contentFieldDef.length === 1 && Array.isArray(contentFieldDef[0])) {
-        constentFieldDefPerColumn = items.map((_, index) => {
+        contentFieldDefPerColumn = items.map((_, index) => {
           return [ {
             name: 'content',
             def: [
@@ -342,7 +342,7 @@ export default {
       for (const [ index, item ] of items.entries()) {
         const widget = this.newWidget(
           this.layoutColumnWidgetName,
-          constentFieldDefPerColumn[index]
+          contentFieldDefPerColumn[index]
         );
         Object.assign(widget[this.layoutDeviceMode], {
           colspan: item.colspan,
