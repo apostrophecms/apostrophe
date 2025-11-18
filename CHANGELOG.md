@@ -14,6 +14,7 @@
 
 * `@apostrophecms/migration:requirements` handler now runs the migration requirements like `insertIfMissing`, `implementParkAllInDefaultLocale`, `replicate` and `implementParkAllInOtherLocales`.
 * Bump nodemailer to v7.x.
+* Improves client error log when unable to render a widget.
 
 ### Fixes
 
