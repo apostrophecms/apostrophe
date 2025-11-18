@@ -737,7 +737,7 @@ module.exports = {
         }
         return locale;
       },
-      shouldStripAccents(req) {
+      shouldStripAccents() {
         return self.options.stripUrlAccents === true;
       },
       addLocalizeModal() {
@@ -1268,7 +1268,7 @@ module.exports = {
             const req = self.apos.task.getAdminReq({
               locale: doc.aposLocale?.split(':')[0] || self.defaultLocale
             });
-            if (!self.shouldStripAccents(req)) {
+            if (!self.shouldStripAccents()) {
               return;
             }
 
