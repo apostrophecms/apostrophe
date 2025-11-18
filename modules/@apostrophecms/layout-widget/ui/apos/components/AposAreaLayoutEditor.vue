@@ -329,12 +329,11 @@ export default {
       let contentFieldDefPerColumn = [];
       if (contentFieldDef.length === 1 && Array.isArray(contentFieldDef[0])) {
         contentFieldDefPerColumn = items.map((_, index) => {
+          const def = contentFieldDef[0][index] ||
+            contentFieldDef[0][contentFieldDef[0].length - 1];
           return [ {
             name: 'content',
-            def: [
-              contentFieldDef[0][index] ||
-                contentFieldDef[0][contentFieldDef[0].length - 1]
-            ]
+            def: Array.isArray(def) ? def : [ def ]
           } ];
         });
       }
