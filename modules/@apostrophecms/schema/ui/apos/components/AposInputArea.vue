@@ -11,7 +11,7 @@
     <template #body>
       <div
         class="apos-input-wrapper"
-        :class="!next.items.length ? 'apos-is-empty' : null"
+        :class="!next.items?.length ? 'apos-is-empty' : null"
         data-apos-schema-area
       >
         <!-- We do not pass docId here because it is solely for
