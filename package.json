@@ -123,7 +123,7 @@
     "tiny-emitter": "^2.1.0",
     "tough-cookie": "^4.0.0",
     "underscore.string": "^3.3.4",
-    "uploadfs": "^1.25.1",
+    "uploadfs": "apostrophecms/uploadfs#npm-errors",
     "void-elements": "^3.1.0",
     "vue": "^3.5.20",
     "vue-advanced-cropper": "^2.8.8",
