@@ -84,7 +84,7 @@ export async function _renderContent(props) {
       widgetTitle: widget.title,
       widgetType: props.type,
       documentId: props.docId,
-      errors: e.body.data?.errors || []
+      errors: e.body?.data?.errors || []
     };
 
     // eslint-disable-next-line no-console
