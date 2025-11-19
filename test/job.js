@@ -1,23 +1,19 @@
+const { strict: assert } = require('node:assert');
 const t = require('../test-lib/test.js');
-const assert = require('assert');
-const Promise = require('bluebird');
 
 describe('Job module', function() {
-
+  const logged = [];
   let apos;
+  let jar;
+  let jobModule;
+  let jobOne;
+  let jobThree;
+  let jobTwo;
 
   this.timeout(t.timeout);
+  this.slow(2000);
 
-  after(async function() {
-    return t.destroy(apos);
-  });
-
-  let jobModule;
-
-  it('should be a property of the apos object', async function() {
-    this.timeout(t.timeout);
-    this.slow(2000);
-
+  before(async function() {
     apos = await t.create({
       root: module,
       modules: {
@@ -26,15 +22,25 @@ describe('Job module', function() {
         }
       }
     });
+
     jobModule = apos.modules['@apostrophecms/job'];
-    assert(apos.modules['@apostrophecms/job']);
+
+    await t.createAdmin(apos);
+    jar = await t.getUserJar(apos);
+  });
+
+  after(function() {
+    return t.destroy(apos);
+  });
+
+  afterEach(async function () {
+    await apos.doc.db.deleteMany({ type: 'article' });
+    await apos.lock.db.deleteMany({});
   });
 
   it('has a related database collection', async function () {
     assert(jobModule.db);
   });
-
-  let jobOne;
 
   it('should create a new job', async function () {
     jobOne = await jobModule.start({});
@@ -59,13 +65,75 @@ describe('Job module', function() {
     assert(found.status === 'completed');
     assert(found.ended === true);
   });
-  let jar;
-  it('should get admin jar', async function() {
-    await t.createAdmin(apos);
 
-    jar = await t.getUserJar(apos);
+  it.only('should add a notification when the job finished with some failures', async function () {
+    const articleIds = await insertArticles(500);
 
-    assert(jar);
+    const req = apos.task.getReq({
+      body: {
+        messages: {
+          completed: 'Tested {{ count }} {{ type }}.',
+          completedWithFailures: 'Tested {{ count }} {{ type }} ({{ bad }} of {{ total }} failed).',
+          failed: 'Testing {{ type }} failed.',
+          progress: 'Testing {{ type }}...'
+        }
+      }
+    });
+    const { jobId } = await jobModule.runBatch(
+      req,
+      articleIds,
+      async function(_req, id) {
+        const article = await apos.doc.db.findOne({ _id: id });
+        if (article.title.endsWith('5')) {
+          throw new Error('It ends with a 5');
+        }
+
+        await apos.doc.db.updateOne(
+          {
+            _id: id
+          },
+          {
+            $set: {
+              checked: true
+            }
+          }
+        );
+      }
+    );
+
+    const { completed } = await pollJob(
+      { route: `${jobModule.action}/${jobId}` },
+      { jar }
+    );
+    const job = await jobModule.db.findOne({ _id: jobId });
+
+    const notifications = await apos.notification.db
+      .find({
+        'job._id': job._id,
+        message: /^Tested/
+      })
+      .toArray();
+
+    const actual = {
+      job: {
+        ...job,
+        results: [ '...' ]
+      },
+      notifications: notifications.map(notification => ({
+        ...notification,
+        job: {
+          ...notification.job,
+          ids: [ '... ' ]
+        }
+      }))
+    };
+    const expected = {
+      notifications: [
+
+      ]
+    };
+
+    assert.deepEqual(actual, expected);
   });
 
   it('should access a job via REST API GET request', async function () {
@@ -76,26 +144,9 @@ describe('Job module', function() {
     assert(job._id === jobOne._id);
   });
 
-  let articleIds;
-
-  it('can insert many test articles', async function () {
-    const req = apos.task.getReq();
-
-    const promises = [];
-
-    for (let i = 1; i <= 500; i++) {
-      promises.push(insert(req, apos.modules.article, 'article', {}, i));
-    }
-
-    const inserted = await Promise.all(promises);
-    articleIds = inserted.map(doc => doc._id);
-
-    assert(inserted.length === 500);
-    assert(!!inserted[0]._id);
-  });
-
-  let jobTwo;
   it('can run a batch job', async function () {
+    const articleIds = await insertArticles(500);
+
     const req = apos.task.getReq();
 
     jobTwo = await jobModule.runBatch(
@@ -132,11 +183,9 @@ describe('Job module', function() {
     assert(article.checked === true);
   });
 
-  const logged = [];
-
-  let jobThree;
-
   it('can run a generic job', async function () {
+    const articleIds = await insertArticles(500);
+
     const req = apos.task.getReq();
 
     jobThree = await jobModule.run(
@@ -146,7 +195,7 @@ describe('Job module', function() {
         reporters.setTotal(articleIds.length);
 
         for (const id of articleIds) {
-          await Promise.delay(3);
+          await delay(3);
           logged.push(id);
           if (count % 2) {
             reporters.success();
@@ -162,6 +211,8 @@ describe('Job module', function() {
   });
 
   it('can follow the third job as it works', async function () {
+    // const articleIds = await insertArticles(500);
+
     const route = `${jobModule.action}/${jobThree.jobId}`;
     const { total } = await apos.http.get(route, { jar });
     // Tests setTotal()
@@ -183,6 +234,7 @@ describe('Job module', function() {
     // Tests failure()
     assert(bad === (articleIds.length / 2));
   });
+
   function padInteger (i, places) {
     let s = i + '';
     while (s.length < places) {
@@ -191,14 +243,29 @@ describe('Job module', function() {
     return s;
   }
 
-  async function insert (req, pieceModule, title, data, i) {
-    const docData = Object.assign(pieceModule.newInstance(), {
-      title: `${title} #${padInteger(i, 5)}`,
-      slug: `${title}-${padInteger(i, 5)}`,
-      ...data
-    });
+  async function insertArticles(count = 500) {
+    const req = apos.task.getReq();
+    const promises = [];
 
-    return pieceModule.insert(req, docData);
+    for (let i = 1; i <= count; i++) {
+      promises.push(
+        apos.modules.article.insert(
+          req,
+          {
+            ...apos.modules.article.newInstance(),
+            title: `article #${padInteger(i, 5)}`,
+            slug: `article-${padInteger(i, 5)}`
+          }
+        )
+      );
+    }
+
+    const inserted = await Promise.all(promises);
+    const articleIds = inserted.map(doc => doc._id);
+
+    assert.equal(inserted.length, 500);
+
+    return articleIds;
   };
 
   async function pollJob(job, { jar }) {
@@ -210,7 +277,7 @@ describe('Job module', function() {
     } = await apos.http.get(job.route, { jar });
 
     if (processed < total) {
-      Promise.delay(100);
+      await delay(100);
 
       return await pollJob(job, { jar });
     } else {
@@ -220,5 +287,11 @@ describe('Job module', function() {
         bad
       };
     }
+  }
+
+  function delay(ms) {
+    return new Promise(function(resolve, reject) {
+      setTimeout(() => resolve(true), ms);
+    });
   }
 });

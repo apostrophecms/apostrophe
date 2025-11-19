@@ -158,7 +158,7 @@ module.exports = {
             await self.end(job, good, results);
             // Trigger the completed notification.
             await self.triggerNotification(req, 'completed', {
-              job,
+              jobId: job._id,
               dismiss: true
             });
             // Dismiss the progress notification. It will delay 4 seconds
@@ -248,7 +248,7 @@ module.exports = {
 
             // Trigger the completed notification.
             await self.triggerNotification(req, 'completed', {
-              job,
+              jobId: job._id,
               count: total,
               dismiss: true
             }, results);
@@ -284,7 +284,9 @@ module.exports = {
 
         const {
           good, bad, processed, total
-        } = options.job || {};
+        } = stage === 'completed' && options.jobId
+          ? await self.db.findOne({ _id: options.jobId })
+          : {};
 
         let message = req.body.messages[stage];
         if (stage === 'completed' && req.body.messages.failed && bad > 0 && good === 0) {
