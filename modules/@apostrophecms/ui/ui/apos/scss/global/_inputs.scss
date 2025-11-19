@@ -105,6 +105,23 @@
 }
 
 .apos-field.apos-field--micro {
+  &.apos-field--box {
+    .apos-input-box__shorthand-input[disabled] {
+      background: var(--a-base-7);
+      opacity: 0.5;
+    }
+
+    .apos-input-box__shorthand-input,
+    .apos-input-box__individual-input-wrapper {
+      flex: 1;
+    }
+
+    .apos-input-box__individual-input {
+      min-width: 100%;
+      max-width: 100%;
+    }
+  }
+
   .apos-input {
     padding: $spacing-three-quarters;
     font-size: var(--a-type-small);

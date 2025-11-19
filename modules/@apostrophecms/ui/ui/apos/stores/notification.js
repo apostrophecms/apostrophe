@@ -107,10 +107,13 @@ export const useNotificationStore = defineStore('notification', () => {
             return !res.dismissed.some((element) => notif._id === element._id);
           });
         }
-        // Long polling, we should reconnect promptly, the server
+        // If using long polling we should reconnect promptly, the server
         // is responsible for keeping that request open for a reasonable
         // amount of time if there are no new messages, not us
-        setTimeout(poll, 50);
+        const timeout = apos.notification.longPolling
+          ? 50
+          : apos.notification.pollingInterval;
+        setTimeout(poll, timeout);
       }
     } catch (err) {
       // eslint-disable-next-line no-console
