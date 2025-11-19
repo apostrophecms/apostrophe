@@ -143,19 +143,22 @@ module.exports = {
         }
         async function run() {
           let good = false;
+          const promises = [];
           try {
             for (const id of ids) {
               try {
                 const result = await change(req, id);
-                self.success(job);
+                promises.push(self.success(job));
                 results[id] = result;
               } catch (err) {
-                self.failure(job);
+                promises.push(self.failure(job));
               }
             }
             good = true;
           } finally {
             await self.end(job, good, results);
+            // Wait for increments to be updated in DB
+            await Promise.all(promises);
             // Trigger the completed notification.
             await self.triggerNotification(req, 'completed', {
               jobId: job._id,
@@ -224,15 +227,20 @@ module.exports = {
         async function run(info) {
           let results;
           let good = false;
+          const promises = [];
           try {
             await doTheWork(req, {
               success (n) {
                 n = n || 1;
-                return self.success(job, n);
+                const result = self.success(job, n);
+                promises.push(result);
+                return result;
               },
               failure (n) {
                 n = n || 1;
-                return self.failure(job, n);
+                const result = self.failure(job, n);
+                promises.push(result);
+                return result;
               },
               setTotal (n) {
                 total = n;
@@ -245,7 +253,8 @@ module.exports = {
             good = true;
           } finally {
             await self.end(job, good, results);
-
+            // Wait for increments to be updated in DB
+            await Promise.all(promises);
             // Trigger the completed notification.
             await self.triggerNotification(req, 'completed', {
               jobId: job._id,
@@ -281,6 +290,20 @@ module.exports = {
             data: { ...results }
           }
           : null;
+
+        const waitForJobStats = async function(jobId) {
+          const {
+            good, bad, processed, total
+          } = await self.db.findOne({ _id: jobId });
+
+          if (processed !== total) {
+
+          }
+        };
+
+        if (stage === 'completed' && options.jobId) {
+
+        }
 
         const {
           good, bad, processed, total
@@ -357,42 +380,36 @@ module.exports = {
       //
       // If the second argument is completely omitted,
       // the default is `1`.
-      //
-      // No promise is returned as this method just updates
-      // the job tracking information in the background.
-      success(job, n) {
+      async success(job, n) {
         n = n === undefined ? 1 : n;
-        self.db.updateOne({ _id: job._id }, {
-          $inc: {
-            good: n,
-            processed: n
-          }
-        }, function (err) {
-          if (err) {
-            self.apos.util.error(err);
-          }
-        });
+        try {
+          await self.db.updateOne({ _id: job._id }, {
+            $inc: {
+              good: n,
+              processed: n
+            }
+          });
+        } catch (err) {
+          self.apos.util.error(err);
+        }
       },
       // Call this to report that n items were bad
       // (not successfully processed).
       //
       // If the second argument is completely omitted,
       // the default is 1.
-      //
-      // No promise is returned as this method just updates
-      // the job tracking information in the background.
-      failure(job, n) {
+      async failure(job, n) {
         n = n === undefined ? 1 : n;
-        self.db.updateOne({ _id: job._id }, {
-          $inc: {
-            bad: n,
-            processed: n
-          }
-        }, function (err) {
-          if (err) {
-            self.apos.util.error(err);
-          }
-        });
+        try {
+          await self.db.updateOne({ _id: job._id }, {
+            $inc: {
+              bad: n,
+              processed: n
+            }
+          });
+        } catch (err) {
+          self.apos.util.error(err);
+        };
       },
       // Call this to indicate the total number
       // of items expected. Until and unless this is called
