@@ -13,6 +13,7 @@
         class="apos-admin-bar__btn"
         :modifiers="['no-motion']"
         role="menuitem"
+        action-test-label="page-manager-button"
         @click="emitEvent({ action: '@apostrophecms/page:manager' })"
       />
     </li>
@@ -25,6 +26,7 @@
         v-if="item.items"
         class="apos-admin-bar__sub"
         :menu="item.items"
+        :identifier="`${item.name || item.label.toLowerCase()}-dropdown`"
         :button="{
           label: item.label,
           modifiers: ['no-motion'],
@@ -41,6 +43,7 @@
         :label="item.label"
         :modifiers="['no-motion']"
         class="apos-admin-bar__btn"
+        :action-test-label="`${item.name}-manager-button`"
         role="menuitem"
         @click="emitEvent(item)"
       />
