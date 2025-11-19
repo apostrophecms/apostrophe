@@ -3,6 +3,7 @@
     class="apos-wizard apos-i18n-localize"
     :class="{ 'apos-wizard-busy': wizard.busy }"
     :modal="modal"
+    :modal-data="modalData"
     @esc="close"
     @inactive="modal.active = false"
     @show-modal="modal.showModal = true"
@@ -325,6 +326,10 @@ export default {
       required: true,
       type: String
     },
+    modalData: {
+      required: true,
+      type: Object
+    },
     shouldRedirect: {
       type: Boolean,
       default: true
@@ -419,6 +424,7 @@ export default {
       allRelatedDocs: [],
       allRelatedDocsKnown: false,
       docTypesSeen: [],
+      relatedDocTypes: [],
       searchField: {
         label: this.$t('apostrophe:searchLocales'),
         placeholder: `${this.$t('apostrophe:searchLocales')}...`
@@ -488,13 +494,6 @@ export default {
     isBatchMode() {
       return this.batchOptions.enabled;
     },
-    currentLocale() {
-      // We need to grab the locale from the modal data, because it can change
-      // while in modal (switch locale in editor modal).
-      // Exposing `modalData` property breaks the internally used AposModal
-      // component for some unknown reason, so we need to use the attrs.
-      return this.$attrs['modal-data']?.locale ?? this.moduleOptions.locale;
-    },
     action() {
       return this.doc.slug.startsWith('/')
         ? apos.page.action
@@ -517,32 +516,6 @@ export default {
       return this.selectedLocales.length === this.locales
         .filter(locale => !this.isCurrentLocale(locale) && this.canEditLocale(locale))
         .length;
-    },
-    relatedDocTypes() {
-      if (this.isBatchMode) {
-        return this.getRelatedSchemaTypes(this.batchOptions.checkedTypes);
-      }
-
-      const types = {};
-      for (const doc of this.relatedDocs) {
-        if (!types[doc.type]) {
-          types[doc.type] = {
-            value: doc.type,
-            count: 0,
-            readOnly: false
-          };
-        }
-        types[doc.type].count++;
-      }
-      for (const type of Object.values(types)) {
-        const baseLabel = this.plural(type.value);
-        type.label = {
-          key: 'apostrophe:typeWithCount',
-          type: this.$t(baseLabel),
-          count: type.count
-        };
-      }
-      return Object.values(types);
     },
     relatedDocTypesField() {
       return {
@@ -611,17 +584,6 @@ export default {
           }
         }
       }
-    },
-    relatedDocTypes(newVal) {
-      if (!this.isBatchMode) {
-        return;
-      }
-      for (const item of newVal) {
-        if (!this.docTypesSeen.includes(item.value)) {
-          this.docTypesSeen.push(item.value);
-          this.wizard.values.relatedDocTypesToLocalize.data.push(item.value);
-        }
-      }
     }
   },
   async mounted() {
@@ -631,6 +593,7 @@ export default {
     if (this.isBatchMode) {
       this.wizard.step = this.visibleStepNames[0];
       this.wizard.busy = false;
+      this.setRelatedDocTypes();
     } else {
       try {
         this.fullDoc = await apos.http.get(
@@ -659,6 +622,40 @@ export default {
     }
   },
   methods: {
+    setRelatedDocTypes() {
+      if (this.isBatchMode) {
+        this.relatedDocTypes = this.getRelatedSchemaTypes(this.batchOptions.checkedTypes);
+        for (const item of this.relatedDocTypes) {
+          if (!this.docTypesSeen.includes(item.value)) {
+            this.docTypesSeen.push(item.value);
+            this.wizard.values.relatedDocTypesToLocalize.data.push(item.value);
+          }
+        }
+        return;
+      }
+
+      const types = {};
+      for (const doc of this.relatedDocs) {
+        if (!types[doc.type]) {
+          types[doc.type] = {
+            value: doc.type,
+            count: 0,
+            readOnly: false
+          };
+        }
+        types[doc.type].count++;
+      }
+      for (const type of Object.values(types)) {
+        const baseLabel = this.plural(type.value);
+        type.label = {
+          key: 'apostrophe:typeWithCount',
+          type: this.$t(baseLabel),
+          count: type.count
+        };
+      }
+      this.relatedDocTypes = Object.values(types);
+
+    },
     normalizeConfig() {
       if (this.isBatchMode) {
         this.toLocalizeChoices = this.toLocalizeChoicesBatch;
@@ -710,7 +707,7 @@ export default {
       return this.wizard.step === name;
     },
     isCurrentLocale(locale) {
-      return this.currentLocale === locale.name;
+      return this.modalData.locale === locale.name;
     },
     canEditLocale(locale) {
       return !!locale._edit;
@@ -1158,6 +1155,17 @@ export default {
       }
       this.relatedDocs = relatedDocs;
       this.wizard.busy = status;
+
+      for (const doc of this.relatedDocs) {
+        if (!this.docTypesSeen.includes(doc.type)) {
+          this.docTypesSeen.push(doc.type);
+          if (apos.modules[doc.type].relatedDocument) {
+            this.wizard.values.relatedDocTypesToLocalize.data.push(doc.type);
+          }
+        }
+      }
+
+      this.setRelatedDocTypes();
     },
     wait(time) {
       return new Promise((resolve) => {
@@ -1180,7 +1188,7 @@ export default {
         this.wizard.values.translateTargets.data = [];
         return;
       }
-      const sourceLocale = this.currentLocale;
+      const sourceLocale = this.modalData.locale;
       const targets = this.wizard.values.toLocales.data;
 
       let response;
