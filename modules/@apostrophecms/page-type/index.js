@@ -416,8 +416,12 @@ module.exports = {
           mode: 'published'
         });
         if (doc.level > 0) {
-          const { lastTargetId, lastPosition } = await self.apos.page
-            .inferLastTargetIdAndPosition(doc);
+          const { lastTargetId, lastPosition } = options.targetId
+            ? {
+              lastTargetId: options.targetId,
+              lastPosition: options.position
+            }
+            : await self.apos.page.inferLastTargetIdAndPosition(doc);
           // Replay the high level positioning used to place it in the draft
           // locale
           return self.apos.page.insert(
