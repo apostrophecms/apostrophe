@@ -14,7 +14,7 @@
     @click="setFocusedArea(areaId, $event)"
   >
     <div
-      v-if="next.length === 0 && !foreign && layoutMode === 'content'"
+      v-if="next.length === 0 && !foreign && layoutMode === 'debug'"
       class="apos-empty-area"
       tabindex="0"
       @paste="paste(0)"
