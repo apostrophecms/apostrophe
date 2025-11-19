@@ -1855,13 +1855,9 @@ module.exports = {
           throw self.apos.error('invalid', 'Missing locale');
         }
 
-        // const req = self.apos.task.getReq({ mode: 'draft', locale });
         const aposLocale = new RegExp(`^${self.apos.util.regExpQuote(locale)}:`);
         const criteria = _id
-          ? {
-            _id,
-            aposLocale
-          }
+          ? { _id }
           : {
             slug,
             aposLocale
