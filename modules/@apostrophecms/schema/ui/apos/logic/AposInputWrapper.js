@@ -144,7 +144,7 @@ export default {
         });
     },
     hasExtraInfo() {
-      return this.$slots.info;
+      return !!this.$slots.info;
     }
   },
   mounted: function () {

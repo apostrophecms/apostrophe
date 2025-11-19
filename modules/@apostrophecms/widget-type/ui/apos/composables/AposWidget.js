@@ -80,8 +80,15 @@ export async function _renderContent(props) {
     }
     return {};
   } catch (e) {
+    const errData = {
+      widgetTitle: widget.title,
+      widgetType: props.type,
+      documentId: props.docId,
+      errors: e.body?.data?.errors || []
+    };
+
     // eslint-disable-next-line no-console
-    console.error('Unable to render widget. Possibly the schema has been changed and the existing widget does not pass validation.', e);
+    console.error('Unable to render widget', errData, e);
     return {
       data: '<p>Unable to render this widget.</p>',
       error: true

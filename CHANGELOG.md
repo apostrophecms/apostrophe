@@ -4,18 +4,25 @@
 
 ### Adds
 
+* Add `@apostrophecms/migration:add-missing-schema-fields` task. This task does not run database migrations.
 * Translation strings added for the layout- and layout-column-widgets.
+* New `box` schema field type
 * When switching locale from the doc editor, ask if the user wants to localize the current document in the target locale or want to start a blank document.
 * Adds batch failure notifications.
+* Introduced a new `longPolling: false` option for the `@apostrophecms/notification` module. This eliminates long-pending requests when logged in, but also slows down the delivery of notifications. The behavior can be tuned further via the `pollingInterval` option, which defaults to `5000` milliseconds.
 
 ### Changes
 
+* `@apostrophecms/migration:requirements` handler now runs the migration requirements like `insertIfMissing`, `implementParkAllInDefaultLocale`, `replicate` and `implementParkAllInOtherLocales`.
 * Bump nodemailer to v7.x.
+* Improves client error log when unable to render a widget.
+* Rich text `styles` are once again available to insert menu items, such as our optional `@apostrophecms/ai-helper` module.
 
 ### Fixes
 
 * Specify the content type when calling back to Astro with JSON to render an area. This is required starting in Astro 4.9.0 and up, otherwise the request is blocked by CSRF protection.
 * Fixes `AposBreadcrumbSwitch` tooltip prop that is supposed to be an object, not a string. Object returned from the shared method `getOperationTooltip`.
+* Uses `modalData.locale` in `AposI18nLocalize` component. Fixes watcher on `relatedDocTypes` not being properly triggered (uses data and methods for more control instead).
 
 ## 4.23.0 (2025-10-30)
 
