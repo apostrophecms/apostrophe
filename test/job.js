@@ -6,9 +6,6 @@ describe('Job module', function() {
   let apos;
   let jar;
   let jobModule;
-  let jobOne;
-  let jobThree;
-  let jobTwo;
 
   this.timeout(t.timeout);
   this.slow(2000);
@@ -43,31 +40,57 @@ describe('Job module', function() {
     assert(jobModule.db);
   });
 
-  it('should create a new job', async function () {
-    jobOne = await jobModule.start({});
+  it('jobOne: should create a new job + end a job and mark it as successful + should access a job via REST API GET request', async function () {
+    const jobOne = await jobModule.start({});
 
-    assert(jobOne._id);
+    {
+      const found = await jobModule.db.findOne({ _id: jobOne._id });
 
-    const found = await jobModule.db.findOne({ _id: jobOne._id });
+      const actual = found;
+      const expected = {
+        ...found,
+        _id: jobOne._id,
+        status: 'running',
+        ended: false
+      };
 
-    assert(found);
-    assert(found.status === 'running');
-    assert(found.ended === false);
+      assert.deepEqual(actual, expected, 'should create a new job');
+    }
+
+    {
+      const result = await jobModule.end(jobOne, 'success', { testing: 'testing' });
+
+      const found = await jobModule.db.findOne({ _id: jobOne._id });
+
+      const actual = {
+        count: result.result.nModified,
+        job: found
+      };
+      const expected = {
+        count: 1,
+        job: {
+          ...found,
+          status: 'completed',
+          ended: true
+        }
+      };
+
+      assert.deepEqual(actual, expected, 'end a job and mark it as successful');
+    }
+
+    {
+      const job = await apos.http.get(`/api/v1/@apostrophecms/job/${jobOne._id}`, {
+        jar
+      });
+
+      const actual = job._id;
+      const expected = jobOne._id;
+
+      assert.equal(actual, expected, 'should access a job via REST API GET request');
+    }
   });
 
-  it('should end a job and mark it as successful', async function () {
-    const result = await jobModule.end(jobOne, 'success', { testing: 'testing' });
-
-    assert(result.result.nModified === 1);
-
-    const found = await jobModule.db.findOne({ _id: jobOne._id });
-
-    assert(found);
-    assert(found.status === 'completed');
-    assert(found.ended === true);
-  });
-
-  it.only('should add a notification when the job finished with some failures', async function () {
+  it('should add a notification when the job finished with some failures', async function () {
     const articleIds = await insertArticles(500);
 
     const req = apos.task.getReq({
@@ -154,7 +177,7 @@ describe('Job module', function() {
     assert.deepEqual(actual, expected);
   });
 
-  it.only('should add a notification when the job finished with failures only', async function () {
+  it('should add a notification when the job finished with failures only', async function () {
     const articleIds = await insertArticles(50);
 
     const req = apos.task.getReq({
@@ -227,18 +250,11 @@ describe('Job module', function() {
     assert.deepEqual(actual, expected);
   });
 
-  it('should access a job via REST API GET request', async function () {
-    const job = await apos.http.get(`/api/v1/@apostrophecms/job/${jobOne._id}`, {
-      jar
-    });
-
-    assert(job._id === jobOne._id);
-  });
-
-  describe('jobTwo', async function() {
+  describe('jobTwo: can run a batch job + ', async function() {
     const articleIds = await insertArticles(500);
+    let jobTwo;
 
-    it('can run a batch job', async function () {
+    {
       const req = apos.task.getReq();
 
       jobTwo = await jobModule.runBatch(
@@ -255,31 +271,40 @@ describe('Job module', function() {
         }
       );
 
-      assert(!!jobTwo.jobId);
-    });
+      assert(!!jobTwo.jobId, 'can run a batch job');
+    };
 
-    it('can follow the second job as it works', async function () {
+    {
       const { completed } = await pollJob({
         route: `${jobModule.action}/${jobTwo.jobId}`
       }, {
         jar
       });
 
-      assert(completed === articleIds.length);
       const index = Math.floor(Math.random() * (articleIds.length - 1));
 
       const article = await apos.http.get(`/api/v1/article/${articleIds[index]}`, {
         jar
       });
 
-      assert(article.checked === true);
-    });
+      const actual = {
+        checked: article.checked,
+        count: completed
+      };
+      const expected = {
+        checked: true,
+        count: articleIds.length
+      };
+
+      assert.deepEqual(actual, expected, 'can follow the second job as it works');
+    };
   });
 
-  describe('jobThree', async function() {
+  it('jobThree: can run a generic job + can follow the third job as it works', async function() {
     const articleIds = await insertArticles(500);
+    let jobThree;
 
-    it('can run a generic job', async function () {
+    {
       const req = apos.task.getReq();
 
       jobThree = await jobModule.run(
@@ -301,14 +326,12 @@ describe('Job module', function() {
         }
       );
 
-      assert(!!jobThree.jobId);
-    });
+      assert(!!jobThree.jobId, 'can run a generic job');
+    };
 
-    it('can follow the third job as it works', async function () {
+    {
       const route = `${jobModule.action}/${jobThree.jobId}`;
       const { total } = await apos.http.get(route, { jar });
-      // Tests setTotal()
-      assert(total === articleIds.length);
 
       const {
         completed,
@@ -320,12 +343,21 @@ describe('Job module', function() {
         jar
       });
 
-      assert(completed === articleIds.length);
-      // Tests success()
-      assert(good === (articleIds.length / 2));
-      // Tests failure()
-      assert(bad === (articleIds.length / 2));
-    });
+      const actual = {
+        total,
+        completed,
+        good,
+        bad
+      };
+      const expected = {
+        total: articleIds.length, // Tests setTotal()
+        completed: articleIds.length,
+        good: articleIds.length / 2, // Tests success()
+        bad: articleIds.length / 2 // Tests failure()
+      };
+
+      assert.deepEqual(actual, expected, 'can follow the third job as it works');
+    };
   });
 
   function padInteger (i, places) {
@@ -369,12 +401,6 @@ describe('Job module', function() {
       bad
     } = await apos.http.get(job.route, { jar });
 
-    console.log({
-      processed,
-      bad,
-      good,
-      total
-    });
     if (processed < total) {
       await delay(100);
 
