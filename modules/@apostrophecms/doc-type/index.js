@@ -308,9 +308,7 @@ module.exports = {
           if (doc.aposLocale.includes(':draft')) {
             return self.publish(req, doc, {
               ...options,
-              autopublishing: true,
-              targetId: req.body?._targetId,
-              position: req.body?._position
+              autopublishing: true
             });
           }
         }

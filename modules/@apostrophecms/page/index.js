@@ -3241,10 +3241,7 @@ database.`);
           : parentAposDocId;
         const peerCriteria = {
           path: self.matchDescendants(parentPath),
-          level: doc.level,
-          type: {
-            $nin: [ '@apostrophecms/archive-page', '@apostrophecms/search' ]
-          }
+          level: doc.level
         };
         if (doc.aposLocale) {
           peerCriteria.aposLocale = doc.aposLocale;
