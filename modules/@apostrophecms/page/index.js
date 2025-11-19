@@ -447,10 +447,10 @@ module.exports = {
       getOne: [
         ...self.apos.expressCacheOnDemand ? [ self.apos.expressCacheOnDemand ] : [],
         async (req, _id) => {
-          _id = self.inferIdLocaleAndMode(req, _id);
+          const inferredId = self.inferIdLocaleAndMode(req, _id);
           // Edit access to draft is sufficient to fetch either
           await self.publicApiCheckAsync(req);
-          const criteria = self.getIdCriteria(_id);
+          const criteria = self.getIdCriteria(inferredId);
           const result = await self
             .getRestQuery(req)
             .permission(false)
@@ -3241,16 +3241,20 @@ database.`);
           : parentAposDocId;
         const peerCriteria = {
           path: self.matchDescendants(parentPath),
-          level: doc.level
+          level: doc.level,
+          type: {
+            $nin: [ '@apostrophecms/archive-page', '@apostrophecms/search' ]
+          }
         };
         if (doc.aposLocale) {
           peerCriteria.aposLocale = doc.aposLocale;
         }
-        const peers = await self.apos.doc.db.find(peerCriteria).sort({
-          rank: 1
-        }).project({
-          _id: 1
-        }).toArray();
+        const peers = await self.apos.doc.db
+          .find(peerCriteria)
+          .sort({ rank: 1 })
+          .project({ _id: 1 })
+          .toArray();
+
         let targetId;
         let position;
         const index = peers.findIndex(peer => peer._id === doc._id);
