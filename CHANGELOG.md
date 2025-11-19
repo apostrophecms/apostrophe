@@ -8,9 +8,13 @@
 * When you create a new item while editing a relationship, that item is automatically selected, as long as you have not already reached `max` for that relationship.
 * When the user chooses to create a new document while selecting pieces or pages to populate a relationship, the "save draft and preview" and "publish and view" options are no longer offered. This ensures that the user is able to complete the selection process. The page or piece can still be edited in context later.
 * Bump nodemailer to v7.x.
+* `@apostrophecms/migration:requirements` handler now runs the migration requirements like `insertIfMissing`, `implementParkAllInDefaultLocale`, `replicate` and `implementParkAllInOtherLocales`.
+* Improves client error log when unable to render a widget.
+* Rich text `styles` are once again available to insert menu items, such as our optional `@apostrophecms/ai-helper` module.
 
 ### Adds
 
+* Add `@apostrophecms/migration:add-missing-schema-fields` task. This task does not run database migrations.
 * Translation strings added for the layout- and layout-column-widgets.
 * New `box` schema field type
 * When switching locale from the doc editor, ask if the user wants to localize the current document in the target locale or want to start a blank document.

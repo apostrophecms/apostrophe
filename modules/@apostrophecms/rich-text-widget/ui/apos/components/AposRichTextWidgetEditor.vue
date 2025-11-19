@@ -73,7 +73,7 @@
             :name="item"
             :menu-item="insertMenu[item]"
             :editor="editor"
-            :editor-options="editorOptions"
+            :editor-options="getOptionsForInsertItem()"
             @done="doSuppressInsertMenu"
             @set-active-insert-menu="setActiveInsertMenu"
           />
@@ -242,59 +242,7 @@ export default {
       return this.moduleOptions.defaultOptions;
     },
     editorOptions() {
-      // Deep clone to prevent runaway recursive rendering
-      // as the subproperties are mutated in several places
-      // by this code and its dependencies
-      let activeOptions = klona(this.options);
-
-      activeOptions = {
-        ...activeOptions,
-        ...this.enhanceStyles(
-          activeOptions.styles?.length
-            ? activeOptions.styles
-            : this.defaultOptions.styles
-        )
-      };
-      delete activeOptions.styles;
-
-      // Allow default options to pass through if `false`
-      Object.keys(this.defaultOptions).forEach((option) => {
-        if (option !== 'styles') {
-          activeOptions[option] = (activeOptions[option] !== undefined)
-            ? activeOptions[option]
-            : this.defaultOptions[option];
-        }
-      });
-
-      activeOptions.className = (activeOptions.className !== undefined)
-        ? activeOptions.className
-        : this.moduleOptions.className;
-
-      if (activeOptions.toolbar.includes('styles')) {
-        activeOptions.toolbar = activeOptions.toolbar.filter(t => t !== 'styles');
-        if (activeOptions.marks.length) {
-          activeOptions.toolbar = [ 'marks', ...activeOptions.toolbar ];
-        }
-        if (activeOptions.nodes.length) {
-          activeOptions.toolbar = [ 'nodes', ...activeOptions.toolbar ];
-        }
-      }
-
-      // The table tool is no longer part of the toolbar but will
-      // automatically appear when interacting with a table element,
-      // no configuration needed. If:
-      // 1. The table is configured for the toolbar but not insert, move it
-      // 2. remove the table tool from the toolbar
-      if (activeOptions.toolbar?.some(tool => tool === 'table')) {
-        if (!activeOptions.insert?.some(tool => tool === 'table')) {
-          activeOptions.insert = [
-            ...(activeOptions.insert || []),
-            'table'
-          ];
-        }
-        activeOptions.toolbar = activeOptions.toolbar.filter(tool => tool !== 'table');
-      }
-      return activeOptions;
+      return this.getOptionsForEditor();
     },
     autofocus() {
       // Only true for a new rich text widget
@@ -488,6 +436,70 @@ export default {
     apos.bus.$off('apos-refreshing', this.onAposRefreshing);
   },
   methods: {
+    // Insert menu items just want to know what the original options were,
+    // while "editorOptions" has morphed into a different, internal
+    // representation
+    getOptionsForInsertItem() {
+      return klona({
+        ...this.defaultOptions,
+        ...this.options
+      });
+    },
+    getOptionsForEditor() {
+      // Deep clone to prevent runaway recursive rendering
+      // as the subproperties are mutated in several places
+      // by this code and its dependencies
+      let activeOptions = klona(this.options);
+
+      activeOptions = {
+        ...activeOptions,
+        ...this.enhanceStyles(
+          activeOptions.styles?.length
+            ? activeOptions.styles
+            : klona(this.defaultOptions.styles)
+        )
+      };
+      delete activeOptions.styles;
+
+      // Allow default options to pass through if `false`
+      Object.keys(this.defaultOptions).forEach((option) => {
+        if (option !== 'styles') {
+          activeOptions[option] = (activeOptions[option] !== undefined)
+            ? activeOptions[option]
+            : this.defaultOptions[option];
+        }
+      });
+
+      activeOptions.className = (activeOptions.className !== undefined)
+        ? activeOptions.className
+        : this.moduleOptions.className;
+
+      if (activeOptions.toolbar.includes('styles')) {
+        activeOptions.toolbar = activeOptions.toolbar.filter(t => t !== 'styles');
+        if (activeOptions.marks.length) {
+          activeOptions.toolbar = [ 'marks', ...activeOptions.toolbar ];
+        }
+        if (activeOptions.nodes.length) {
+          activeOptions.toolbar = [ 'nodes', ...activeOptions.toolbar ];
+        }
+      }
+
+      // The table tool is no longer part of the toolbar but will
+      // automatically appear when interacting with a table element,
+      // no configuration needed. If:
+      // 1. The table is configured for the toolbar but not insert, move it
+      // 2. remove the table tool from the toolbar
+      if (activeOptions.toolbar?.some(tool => tool === 'table')) {
+        if (!activeOptions.insert?.some(tool => tool === 'table')) {
+          activeOptions.insert = [
+            ...(activeOptions.insert || []),
+            'table'
+          ];
+        }
+        activeOptions.toolbar = activeOptions.toolbar.filter(tool => tool !== 'table');
+      }
+      return activeOptions;
+    },
     showTableControls() {
       return this.editor?.isActive('table') ?? false;
     },
