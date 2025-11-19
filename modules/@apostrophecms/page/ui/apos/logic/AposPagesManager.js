@@ -240,17 +240,24 @@ export default {
           // as a consequence.
           const currentSlug = window.apos.page.page?.slug;
           const currentId = window.apos.page.page?.aposDocId;
-          const currentPage = this.pagesFlat.find(page => page.aposDocId === currentId);
+          const currentPage = this.pagesFlat
+            .find(({ aposDocId }) => aposDocId === currentId);
           if (currentPage && currentPage.slug !== currentSlug) {
             location.assign(currentPage._url);
           }
         } catch (error) {
-          await apos.notify(error.body.message || this.$t('apostrophe:treeError'), {
-            type: 'danger',
-            icon: 'alert-circle-icon',
-            dismiss: true,
-            localize: false
-          });
+          const updatedPage = this.pagesFlat.find(({ _id }) => page.changedId === _id);
+          const notPublishedNotFoundErr = error.status !== 404 ||
+              updatedPage._publishedDoc;
+
+          if (notPublishedNotFoundErr) {
+            await apos.notify(error.body.message || this.$t('apostrophe:treeError'), {
+              type: 'danger',
+              icon: 'alert-circle-icon',
+              dismiss: true,
+              localize: false
+            });
+          }
           // If the update fails, we need to refresh the tree
           // to avoid inconsistant state. This won't stop the rest of the
           // tasks in the queue, but will reset the scroll position. A small
