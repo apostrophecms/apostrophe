@@ -1309,7 +1309,7 @@ describe('Docs: tasks', function () {
     await apos.lock.db.deleteMany({});
   });
 
-  it('should require the id or slug when calling @apostrophecms/doc:get-apos-doc-id task', async function() {
+  it('should require the _id or slug when calling @apostrophecms/doc:get-apos-doc-id task', async function() {
     await insertI18nFixtures(apos);
 
     const actual = async () => {
@@ -1328,7 +1328,27 @@ describe('Docs: tasks', function () {
     await assert.rejects(actual, expected);
   });
 
-  it('should require the locale when calling @apostrophecms/doc:get-apos-doc-id task', async function() {
+  it('should not require the locale when calling @apostrophecms/doc:get-apos-doc-id task with _id', async function() {
+    await insertI18nFixtures(apos);
+
+    const req = apos.task.getReq({ locale: 'en' });
+    const doc = await apos.doc.find(req, {
+      type: 'test-people',
+      slug: 'carl'
+    }).toObject();
+
+    const actual = await apos.task.invoke(
+      '@apostrophecms/doc:get-apos-doc-id',
+      {
+        _id: doc._id
+      }
+    );
+    const expected = doc.aposDocId;
+
+    assert.equal(actual, expected);
+  });
+
+  it('should require the locale when calling @apostrophecms/doc:get-apos-doc-id task with slug', async function() {
     await insertI18nFixtures(apos);
 
     const req = apos.task.getReq({ locale: 'en' });
@@ -1371,7 +1391,7 @@ describe('Docs: tasks', function () {
     );
     const expected = doc.aposDocId;
 
-    assert.deepEqual(actual, expected);
+    assert.equal(actual, expected);
   });
 
   it('should get the aposDocId when calling @apostrophecms/doc:get-apos-doc-id task with an _id', async function() {
@@ -1392,7 +1412,7 @@ describe('Docs: tasks', function () {
     );
     const expected = doc.aposDocId;
 
-    assert.deepEqual(actual, expected);
+    assert.equal(actual, expected);
   });
 
   it('should require a new ID when calling @apostrophecms/doc:set-apos-doc-id task', async function() {

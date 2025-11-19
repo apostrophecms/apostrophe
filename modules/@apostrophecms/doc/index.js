@@ -1851,16 +1851,15 @@ module.exports = {
         if (!_id && !slug) {
           throw self.apos.error('invalid', 'Either _id or slug must be provided');
         }
-        if (!locale) {
+        if (!_id && !locale) {
           throw self.apos.error('invalid', 'Missing locale');
         }
 
-        const aposLocale = new RegExp(`^${self.apos.util.regExpQuote(locale)}:`);
         const criteria = _id
           ? { _id }
           : {
             slug,
-            aposLocale
+            aposLocale: new RegExp(`^${self.apos.util.regExpQuote(locale)}:`)
           };
 
         const doc = await self.apos.doc.db
@@ -1929,7 +1928,7 @@ module.exports = {
   tasks(self) {
     return {
       'get-apos-doc-id': {
-        usage: 'Retrieve the aposDocId from the _id or slug, and the locale. Usage: "node app.js @apostrophecms/doc:get-apos-doc-id --_id=pfh0haxfpzowht3oi213cqos:fr:draft --locale=fr" or "node app.js @apostrophecms/doc:get-apos-doc-id --slug=test --locale=fr"',
+        usage: 'Retrieve the aposDocId from the _id or slug, and the locale. Usage: "node app.js @apostrophecms/doc:get-apos-doc-id --_id=pfh0haxfpzowht3oi213cqos:fr:draft" or "node app.js @apostrophecms/doc:get-apos-doc-id --slug=test --locale=fr"',
         task: async (argv) => {
           const {
             _id, slug, locale
