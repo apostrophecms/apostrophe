@@ -6,7 +6,7 @@ const { stripIndent } = require('common-tags');
 const { createId } = require('@paralleldrive/cuid2');
 const chokidar = require('chokidar');
 const _ = require('lodash');
-const { glob } = require('glob');
+const { glob } = require('./lib/path');
 const globalIcons = require('./lib/globalIcons');
 const {
   checkModulesWebpackConfig,
@@ -939,7 +939,8 @@ module.exports = {
         const pulledChanges = [];
         let change = changes.pop();
         while (change) {
-          pulledChanges.push(change);
+          // Fix windows paths
+          pulledChanges.push(change.replace(/\\/g, '/'));
           change = changes.pop();
         }
         // No changes - should never happen.
