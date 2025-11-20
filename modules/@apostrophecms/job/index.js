@@ -291,20 +291,6 @@ module.exports = {
           }
           : null;
 
-        const waitForJobStats = async function(jobId) {
-          const {
-            good, bad, processed, total
-          } = await self.db.findOne({ _id: jobId });
-
-          if (processed !== total) {
-
-          }
-        };
-
-        if (stage === 'completed' && options.jobId) {
-
-        }
-
         const {
           good, bad, processed, total
         } = stage === 'completed' && options.jobId
