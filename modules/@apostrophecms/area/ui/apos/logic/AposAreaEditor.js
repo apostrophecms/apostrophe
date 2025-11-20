@@ -626,10 +626,24 @@ export default {
     },
     // Return a new widget object in which defaults are fully populated,
     // especially valid sub-area objects, so that nested edits work on the page
-    newWidget(type) {
+    // Optional schemaOverride array can be provided to override any fields from
+    // the base schema. Useful for e.g. per-instance defaults.
+    newWidget(type, schemaOverride) {
       const schema = apos.modules[apos.area.widgetManagers[type]].schema;
+      const finalSchema = Array.isArray(schemaOverride)
+        ? schema.map(field => {
+          const _field = schemaOverride.find(f => f.name === field.name);
+          if (_field) {
+            return {
+              ...field,
+              ..._field
+            };
+          }
+          return field;
+        })
+        : schema;
       const widget = {
-        ...newInstance(schema),
+        ...newInstance(finalSchema),
         type
       };
       return widget;

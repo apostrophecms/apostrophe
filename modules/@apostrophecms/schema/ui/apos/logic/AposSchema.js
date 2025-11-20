@@ -1,3 +1,5 @@
+// HAS to be module import, because it's universal CJS code.
+import newInstance from 'apostrophe/modules/@apostrophecms/schema/lib/newInstance.js';
 import { getConditionTypesObject } from '../lib/conditionalFields';
 
 export default {
@@ -237,6 +239,7 @@ export default {
       };
 
       const fieldState = {};
+      const instance = newInstance(this.schema);
 
       // Though not in the schema, keep track of the _id field.
       if (this.modelValue.data._id) {
@@ -253,7 +256,7 @@ export default {
         const value = this.modelValue.data[field.name];
         fieldState[field.name] = {
           error: false,
-          data: (value === undefined) ? field.def : value
+          data: (value === undefined) ? instance[field.name] : value
         };
         next.data[field.name] = fieldState[field.name].data;
       });

@@ -388,7 +388,7 @@ module.exports = {
       // Return a new object with all default settings
       // defined in the schema
       newInstance(schema) {
-        return newInstance(schema);
+        return newInstance(schema, self);
       },
 
       subsetInstance(schema, instance) {

@@ -191,6 +191,11 @@ export default {
     },
     layoutColumnWidgetName() {
       return this.layoutModuleOptions.columnWidgetName;
+    },
+    layoutColumnWidgetSchema() {
+      return apos.modules[
+        apos.area.widgetManagers[this.layoutColumnWidgetName]
+      ].schema || [];
     }
   },
   watch: {
@@ -305,6 +310,9 @@ export default {
         return;
       }
 
+      const contentFieldDef = this.layoutColumnWidgetSchema
+        .find(field => field.name === 'content')?.def || [];
+
       this.layoutMode = 'content';
       this.updateWidget(this.parentOptions?.widgetId, 'layout:switch', 'content');
 
@@ -314,8 +322,27 @@ export default {
         row: 1
       });
 
+      // Detect the `def` prop of the content field.
+      // If its only value is an array, we assume it's an array of arrays,
+      // one per column, and distribute accordingly. This can allow multiple
+      // array values in the future, when we support multiple rows.
+      let contentFieldDefPerColumn = [];
+      if (contentFieldDef.length === 1 && Array.isArray(contentFieldDef[0])) {
+        contentFieldDefPerColumn = items.map((_, index) => {
+          const def = contentFieldDef[0][index] ||
+            contentFieldDef[0][contentFieldDef[0].length - 1];
+          return [ {
+            name: 'content',
+            def: Array.isArray(def) ? def : [ def ]
+          } ];
+        });
+      }
+
       for (const [ index, item ] of items.entries()) {
-        const widget = this.newWidget(this.layoutColumnWidgetName);
+        const widget = this.newWidget(
+          this.layoutColumnWidgetName,
+          contentFieldDefPerColumn[index]
+        );
         Object.assign(widget[this.layoutDeviceMode], {
           colspan: item.colspan,
           colstart: item.colstart,
