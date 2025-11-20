@@ -2379,4 +2379,112 @@ describe('Pages', function() {
       assert.deepEqual(actual, expected);
     });
   });
+
+  describe.only('autopublish', function() {
+    before(async () => {
+      await t.destroy(apos);
+      apos = await t.create({
+        root: module,
+        modules: {
+          '@apostrophecms/express': {
+            options: {
+              apiKeys: {
+                [apiKey]: {
+                  role: 'admin'
+                }
+              }
+            }
+          },
+          '@apostrophecms/page': {
+            options: {
+              park: [],
+              types: [
+                {
+                  name: '@apostrophecms/home-page',
+                  label: 'Home'
+                },
+                {
+                  name: 'test-page',
+                  label: 'Test Page'
+                },
+                {
+                  name: 'autopublished-page',
+                  label: 'Autopublished Pages'
+                }
+              ],
+              publicApiProjection: {
+                title: 1,
+                _url: 1
+              }
+            }
+          },
+          'test-page': {
+            extend: '@apostrophecms/page-type'
+          },
+          'autopublished-page': {
+            extend: '@apostrophecms/page-type',
+            options: {
+              autopublish: true
+            }
+          }
+        }
+      });
+      await t.createAdmin(apos);
+    });
+
+    beforeEach(async function() {
+      await apos.doc.db.deleteMany({ type: { $in: [ 'test-page', 'autopublished-page' ] } });
+    });
+
+    it('should properly autopublish a page even if its page tree target is draft only', async function() {
+      const jar = await t.loginAs(apos, 'admin');
+      await apos.http.get('/', { jar });
+      const testItems = [
+        {
+          title: 'Page 1',
+          type: 'test-page',
+          slug: '/page1'
+        },
+        {
+          title: 'Page 2',
+          type: 'test-page',
+          slug: '/page2'
+        }
+      ];
+
+      for (const page of testItems) {
+        await postPage(page);
+      }
+
+      const body = {
+        title: 'Autopublished',
+        type: 'autopublished-page',
+        slug: '/autopublished'
+      };
+
+      const [ _, err ] = await postPage(body);
+
+      const actual = {
+        autopublishStatus: err.status
+      };
+
+      const expected = {
+        autopublishStatus: 200
+      };
+
+      assert.deepEqual(actual, expected);
+
+      async function postPage(body) {
+        try {
+          const res = await apos.http.post('/api/v1/@apostrophecms/page?aposMode=draft&aposLocale=en', {
+            jar,
+            body
+          });
+          return [ res, null ];
+        } catch (err) {
+          return [ null, err ];
+        }
+      }
+    });
+  });
 });
