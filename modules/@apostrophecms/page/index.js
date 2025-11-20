@@ -3256,7 +3256,6 @@ database.`);
           rank: 1
         }).project({
           _id: 1,
-          title: 1,
           lastPublishedAt: 1
         }).toArray();
         const peers = publishedTargetsOnly
