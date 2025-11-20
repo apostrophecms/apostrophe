@@ -1664,11 +1664,16 @@ describe('Pages', function() {
 
       // Publish and assert.
       // Obviously, should not throw an error.
+      // Publish them in reverse order, then verify the published ranks
+      // still respect the original draft order.
       await apos.page.publish(req, page3);
+      await apos.page.publish(req, page2);
       {
         const pages = await apos.doc.db.find({
           type: 'test-page'
         }).sort({ rank: 1 }).toArray();
+
+        console.log(pages.filter(page => page.aposMode === 'published').map(page => `${page.title}: ${page.rank}`));
 
         const p1Idx = pages.findIndex(p => p._id === page1._id);
         assert(p1Idx !== -1);
@@ -1676,13 +1681,15 @@ describe('Pages', function() {
         assert(p2Idx !== -1);
         const p3Idx = pages.findIndex(p => p._id === page3._id);
         assert(p3Idx !== -1);
+        const p2IdxPublished = pages.findIndex(p => p._id === page2._id.replace(':draft', ':published'));
+        assert(p2IdxPublished !== -1);
         const p3IdxPublished = pages.findIndex(p => p._id === page3._id.replace(':draft', ':published'));
         assert(p3IdxPublished !== -1);
 
         // first, second, third/third-published
         assert(p1Idx < p2Idx);
         assert(p2Idx < p3Idx);
-        assert(p2Idx < p3IdxPublished);
+        assert(p2IdxPublished < p3IdxPublished);
       }
 
       // Move and assert.
@@ -1733,7 +1740,10 @@ describe('Pages', function() {
 
       // Publish and assert.
       // Obviously, should not throw an error.
+      // Publish two pages in reverse order then verify the
+      // original relative order is preserved among published pages.
       await apos.page.publish(req, page3);
+      await apos.page.publish(req, page2);
       {
         const pages = await apos.doc.db.find({
           type: 'test-page',
@@ -1752,6 +1762,9 @@ describe('Pages', function() {
         const p3Idx = pages.findIndex(p => p._id === page3._id);
         assert(p3Idx !== -1);
         assert.equal(pages[p3Idx].path, `${root.path}/${page3.aposDocId}`);
+        const p2IdxPublished = pages.findIndex(p => p._id === page2._id.replace(':draft', ':published'));
+        assert(p2IdxPublished !== -1);
+        assert.equal(pages[p2IdxPublished].path, `${root.path}/${page2.aposDocId}`);
         const p3IdxPublished = pages.findIndex(p => p._id === page3._id.replace(':draft', ':published'));
         assert(p3IdxPublished !== -1);
         assert.equal(pages[p3IdxPublished].path, `${root.path}/${page3.aposDocId}`);
@@ -1759,7 +1772,7 @@ describe('Pages', function() {
         // first, second, third/third-published
         assert(p1Idx < p2Idx);
         assert(p2Idx < p3Idx);
-        assert(p2Idx < p3IdxPublished);
+        assert(p2IdxPublished < p3IdxPublished);
       }
 
       // Move and assert.
@@ -1789,8 +1802,10 @@ describe('Pages', function() {
         assert(p3IdxPublished < p2Idx);
       }
 
-      // Publish the last draft and assert it's sorted right.
+      // Publish the pages and verify the published order is correct.
+      await apos.page.publish(req, page1);
       await apos.page.publish(req, page2);
+      await apos.page.publish(req, page3);
       {
         const pages = await apos.doc.db.find({
           type: 'test-page',
@@ -1799,6 +1814,9 @@ describe('Pages', function() {
           level: 1,
           rank: 1
         }).toArray();
+
+        console.log(`draft: ${pages.filter(page => page.aposMode === 'draft').map(page => `${page.title}: ${page.rank}`).join('\n')}`);
+        console.log(`published: ${pages.filter(page => page.aposMode === 'published').map(page => `${page.title}: ${page.rank}`).join('\n')}`);
 
         const p1Idx = pages.findIndex(p => p._id === page1._id);
         assert(p1Idx !== -1);
@@ -2377,6 +2395,115 @@ describe('Pages', function() {
       };
 
       assert.deepEqual(actual, expected);
+    });
+  });
+
+  // We do not support autopublished page types per se, especially
+  // given the rule against a page with an unpublished parent becoming published,
+  // which is a very good rule!
+  // 
+  // However the doc template library does create autopublished pages as children of
+  // the home page, which is always published, so we need to handle
+  // them successfully at a low level. -Tom
+
+  describe('autopublish', function() {
+    before(async () => {
+      await t.destroy(apos);
+      apos = await t.create({
+        root: module,
+        modules: {
+          '@apostrophecms/express': {
+            options: {
+              apiKeys: {
+                [apiKey]: {
+                  role: 'admin'
+                }
+              }
+            }
+          },
+          '@apostrophecms/page': {
+            options: {
+              park: [],
+              types: [
+                {
+                  name: '@apostrophecms/home-page',
+                  label: 'Home'
+                },
+                {
+                  name: 'test-page',
+                  label: 'Test Page'
+                },
+                {
+                  name: 'autopublished-page',
+                  label: 'Autopublished Pages'
+                }
+              ],
+              publicApiProjection: {
+                title: 1,
+                _url: 1
+              }
+            }
+          },
+          'test-page': {
+            extend: '@apostrophecms/page-type'
+          },
+          'autopublished-page': {
+            extend: '@apostrophecms/page-type',
+            options: {
+              autopublish: true
+            }
+          }
+        }
+      });
+      await t.createAdmin(apos);
+    });
+
+    beforeEach(async function() {
+      await apos.doc.db.deleteMany({ type: { $in: [ 'test-page', 'autopublished-page' ] } });
+    });
+
+    it('should properly autopublish a page even if its page tree target is draft only', async function() {
+      const jar = await t.loginAs(apos, 'admin');
+      await apos.http.get('/', { jar });
+
+      await autopublishedPage('First Child');
+
+      const testItems = [
+        {
+          title: 'Page 1',
+          type: 'test-page',
+          slug: '/page1'
+        },
+        {
+          title: 'Page 2',
+          type: 'test-page',
+          slug: '/page2'
+        }
+      ];
+
+      for (const page of testItems) {
+        await postPage(page);
+      }
+
+      await autopublishedPage('Last Child');
+
+      async function autopublishedPage(title) {
+        const body = {
+          title,
+          type: 'autopublished-page',
+          slug: '/autopublished'
+        };
+
+        // Throws on failure, does not on success
+        await postPage(body);
+      }
+
+      async function postPage(body) {
+        await apos.http.post('/api/v1/@apostrophecms/page?aposMode=draft&aposLocale=en', {
+          jar,
+          body
+        });
+      }
     });
   });
 });

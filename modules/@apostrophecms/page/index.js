@@ -1361,8 +1361,8 @@ database.`);
         return query;
       },
       // Insert a page. `targetId` must be an existing page id, `_archive` or
-      // `_home`, and `position` may be `before`, `inside` or `after`.
-      // Alternatively `position` may be a zero-based offset for the new child
+      // `_home`, and `position` may be `before`, `after`, `firstChild` or `lastChild`.
+      // Alternatively `position` may be a zero-based offset for a new child
       // of `targetId` (note that the `rank` property of sibling pages is not
       // strictly ascending, so use an array index into `_children` to determine
       // this parameter instead).
@@ -3233,12 +3233,18 @@ database.`);
           });
         });
       },
-      async inferLastTargetIdAndPosition(doc) {
+      async inferLastTargetIdAndPosition(doc, { publishedTargetsOnly = false } = {}) {
         const parentPath = self.getParentPath(doc);
         const parentAposDocId = parentPath.split('/').pop();
         const parentId = doc.aposLocale
           ? `${parentAposDocId}:${doc.aposLocale}`
           : parentAposDocId;
+        if (publishedTargetsOnly) {
+          const parent = await self.apos.doc.db.findOne({ _id: parentId });
+          if (!parent?.lastPublishedAt) {
+            throw self.apos.error('notfound');
+          }
+        }
         const peerCriteria = {
           path: self.matchDescendants(parentPath),
           level: doc.level
@@ -3246,11 +3252,16 @@ database.`);
         if (doc.aposLocale) {
           peerCriteria.aposLocale = doc.aposLocale;
         }
-        const peers = await self.apos.doc.db.find(peerCriteria).sort({
+        const allPeers = await self.apos.doc.db.find(peerCriteria).sort({
           rank: 1
         }).project({
-          _id: 1
+          _id: 1,
+          title: 1,
+          lastPublishedAt: 1
         }).toArray();
+        const peers = publishedTargetsOnly ?
+          allPeers.filter(peer => (peer._id === doc._id) || peer.lastPublishedAt) :
+          allPeers;
         let targetId;
         let position;
         const index = peers.findIndex(peer => peer._id === doc._id);
@@ -3266,6 +3277,9 @@ database.`);
         } else {
           targetId = peers[index - 1]._id;
           position = 'after';
+        }
+        if (publishedTargetsOnly) {
+          targetId = targetId.replace(':draft', ':published');
         }
         return {
           lastTargetId: targetId,

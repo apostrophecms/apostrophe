@@ -417,13 +417,11 @@ module.exports = {
         });
         if (doc.level > 0) {
           const { lastTargetId, lastPosition } = await self.apos.page
-            .inferLastTargetIdAndPosition(doc);
+            .inferLastTargetIdAndPosition(doc, { publishedTargetsOnly: true });
           // Replay the high level positioning used to place it in the draft
           // locale
           return self.apos.page.insert(
             _req,
-            // do not force published doc as it might not exist, lastTargetId
-            // existance is granted (see `inferLastTargetIdAndPosition`).
             lastTargetId,
             lastPosition,
             published,
