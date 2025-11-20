@@ -173,7 +173,7 @@ module.exports = {
           });
           if (published && (doc.level > 0)) {
             const { lastTargetId, lastPosition } = await self.apos.page
-              .inferLastTargetIdAndPosition(doc);
+              .inferLastTargetIdAndPosition(doc, { publishedTargetsOnly: true });
             return self.apos.page.move(
               req.clone({
                 mode: 'published'
