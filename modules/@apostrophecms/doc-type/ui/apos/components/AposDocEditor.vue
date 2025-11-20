@@ -183,6 +183,12 @@ export default {
       type: Object,
       required: true
     },
+    // If true, we're creating this document to be included
+    // in a relationship
+    hasRelationshipField: {
+      type: Boolean,
+      default: false
+    },
     // Optional. If present, properties of this object
     // override the defaults for the corresponding fields.
     // Currently supported only for new instances, not
@@ -776,7 +782,7 @@ export default {
           def: true
         }
       ];
-      if (canPreview) {
+      if (canPreview && !this.hasRelationshipField) {
         menu.push({
           label: {
             key: 'apostrophe:takeActionAndView',
@@ -789,7 +795,7 @@ export default {
           }
         });
       }
-      if (canNew) {
+      if (canNew && !this.hasRelationshipField) {
         menu.push({
           label: {
             key: 'apostrophe:takeActionAndCreateNew',
@@ -810,7 +816,7 @@ export default {
           description: 'apostrophe:saveDraftDescription'
         });
       }
-      if (this.manuallyPublished && canPreview) {
+      if (this.manuallyPublished && canPreview && !this.hasRelationshipField) {
         menu.push({
           label: {
             key: 'apostrophe:saveDraftAndPreview',
@@ -823,7 +829,7 @@ export default {
           }
         });
       };
-      if (this.manuallyPublished && canNew) {
+      if (this.manuallyPublished && canNew && !this.hasRelationshipField) {
         menu.push({
           label: 'apostrophe:saveDraftAndCreateNew',
           action: 'onSaveDraftAndNew',

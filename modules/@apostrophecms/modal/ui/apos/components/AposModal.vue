@@ -265,16 +265,18 @@ onMounted(async () => {
     renderingElements.value = false;
   }
   store.updateModalData(props.modalData.id, { modalEl: modalEl.value });
-  window.addEventListener('keydown', onKeydown);
+  store.onKeyDown(modalEl.value, onKeydown);
 });
 
 onUnmounted(() => {
-  window.removeEventListener('keydown', onKeydown);
+  store.offKeyDown(onKeydown);
 });
 
 function onKeydown(e) {
-  const hasPressedEsc = e.keyCode === 27;
+  const hasPressedEsc = e.key === 'Escape';
   if (hasPressedEsc) {
+    // Don't confuse escape key handlers in other modal layers etc.
+    e.stopPropagation();
     close(e);
   }
 }
