@@ -2385,7 +2385,7 @@ describe('Pages', function() {
   // We do not support autopublished page types per se, especially
   // given the rule against a page with an unpublished parent becoming published,
   // which is a very good rule!
-  // 
+  //
   // However the doc template library does create autopublished pages as children of
   // the home page, which is always published, so we need to handle
   // them successfully at a low level. -Tom
@@ -2495,9 +2495,11 @@ describe('Pages', function() {
 function getIndexes(all, mode, pages) {
   const result = {};
   for (const [ name, page ] of Object.entries(pages)) {
-    const index = all.findIndex(_page => (_page.aposMode === mode) && (_page.aposDocId === page.aposDocId));
+    const index = all.findIndex(_page => (_page.aposMode === mode) &&
+      (_page.aposDocId === page.aposDocId)
+    );
     if (index === -1) {
-      assert(false, `${namee} not returned by query`);
+      assert(false, `${name} not returned by query`);
     }
     result[name] = index;
   }

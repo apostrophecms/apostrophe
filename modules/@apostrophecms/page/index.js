@@ -3259,9 +3259,9 @@ database.`);
           title: 1,
           lastPublishedAt: 1
         }).toArray();
-        const peers = publishedTargetsOnly ?
-          allPeers.filter(peer => (peer._id === doc._id) || peer.lastPublishedAt) :
-          allPeers;
+        const peers = publishedTargetsOnly
+          ? allPeers.filter(peer => (peer._id === doc._id) || peer.lastPublishedAt)
+          : allPeers;
         let targetId;
         let position;
         const index = peers.findIndex(peer => peer._id === doc._id);
