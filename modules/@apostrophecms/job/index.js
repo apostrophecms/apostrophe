@@ -158,7 +158,7 @@ module.exports = {
           } finally {
             await self.end(job, good, results);
             // Wait for increments to be updated in DB
-            await Promise.all(promises);
+            await Promise.allSettled(promises);
             // Trigger the completed notification.
             await self.triggerNotification(req, 'completed', {
               jobId: job._id,
@@ -254,7 +254,7 @@ module.exports = {
           } finally {
             await self.end(job, good, results);
             // Wait for increments to be updated in DB
-            await Promise.all(promises);
+            await Promise.allSettled(promises);
             // Trigger the completed notification.
             await self.triggerNotification(req, 'completed', {
               jobId: job._id,
