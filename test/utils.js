@@ -1,6 +1,6 @@
 /* eslint-disable no-console */
 const t = require('../test-lib/test.js');
-const assert = require('assert/strict');
+const assert = require('node:assert/strict');
 const _ = require('lodash');
 
 const getUtils = async () => import('../modules/@apostrophecms/ui/ui/apos/utils/index.js');
@@ -10,15 +10,16 @@ describe('Utils', async function() {
 
   let apos;
 
-  after(function() {
-    return t.destroy(apos);
-  });
-
-  it('should exist on the apos object', async function() {
+  before(async function () {
     apos = await t.create({
       root: module
     });
     assert(apos.util);
+  });
+
+  after(async function() {
+    await t.destroy(apos);
+    apos = null;
   });
 
   // UTIL METHODS ------------------------------------------------------- //
@@ -369,6 +370,84 @@ describe('Utils', async function() {
         size: 8
       });
       assert(data.shoes[0].size === 8);
+    });
+
+    it('should slugify', function () {
+      // Basic
+      assert.equal(
+        apos.util.slugify('This is a Test String!'),
+        'this-is-a-test-string',
+        'failed to slugify basic string'
+      );
+      // With slashes
+      assert.equal(
+        apos.util.slugify('/path-to My File.html', { allow: '/' }),
+        '/path-to-my-file-html',
+        'failed to slugify string with slashes'
+      );
+      // Accents
+      assert.equal(
+        apos.util.slugify('C\'est déjà l\'été'),
+        'c-est-déjà-l-été',
+        'failed to slugify and keep accents'
+      );
+      // Cyrillic
+      assert.equal(
+        apos.util.slugify('Това е тест'),
+        'това-е-тест',
+        'failed to slugify cyrillic string'
+      );
+    });
+
+    it('should slugify and strip accents (implicit)', function () {
+      apos.i18n.options.stripUrlAccents = true;
+      assert.equal(
+        apos.util.slugify('C\'est déjà l\'été'),
+        'c-est-deja-l-ete',
+        'failed to slugify and strip accents'
+      );
+      assert.equal(
+        apos.util.slugify('/C\'est déjà l\'été', {
+          allow: '/'
+        }),
+        '/c-est-deja-l-ete',
+        'failed to slugify and strip accents with slug options'
+      );
+      apos.i18n.options.stripUrlAccents = false;
+    });
+
+    it('should slugify and strip accents (explicit)', function () {
+      assert.equal(
+        apos.util.slugify('C\'est déjà l\'été', { stripAccents: true }),
+        'c-est-deja-l-ete',
+        'failed to slugify and strip accents'
+      );
+      assert.equal(
+        apos.util.slugify('/C\'est déjà l\'été', {
+          stripAccents: true,
+          allow: '/'
+        }),
+        '/c-est-deja-l-ete',
+        'failed to slugify and strip accents with slug options'
+      );
+    });
+
+    it('should override the global setting when slugifying', function () {
+      apos.i18n.options.stripUrlAccents = true;
+      assert.equal(
+        apos.util.slugify('C\'est déjà l\'été', { stripAccents: false }),
+        'c-est-déjà-l-été',
+        'failed to slugify and strip accents'
+      );
+      assert.equal(
+        apos.util.slugify('/C\'est déjà l\'été', {
+          stripAccents: false,
+          allow: '/'
+        }),
+        '/c-est-déjà-l-été',
+        'failed to slugify and strip accents with slug options'
+      );
+      apos.i18n.options.stripUrlAccents = false;
     });
 
     it('can debounce functions and should be be awaitable with promises', async function () {

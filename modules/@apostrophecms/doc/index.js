@@ -205,7 +205,11 @@ module.exports = {
       '@apostrophecms/doc-type:beforePublish': {
         testPermissions(req, info) {
           if (info.options.permissions !== false) {
-            if (!self.apos.permission.can(req, info.options.autopublishing ? 'edit' : 'publish', info.draft)) {
+            if (!self.apos.permission.can(
+              req,
+              info.options.autopublishing ? 'edit' : 'publish',
+              info.draft
+            )) {
               throw self.apos.error('forbidden');
             }
           }
@@ -217,7 +221,11 @@ module.exports = {
           manager.ensureSlug(doc);
           _.each(manager.schema, function (field) {
             if (field.sortify) {
-              doc[field.name + 'Sortified'] = self.apos.util.sortify(doc[field.name] ? doc[field.name] : '');
+              doc[field.name + 'Sortified'] = self.apos.util.sortify(
+                doc[field.name]
+                  ? doc[field.name]
+                  : ''
+              );
             }
           });
           if (options.setUpdatedAtAndBy !== false) {

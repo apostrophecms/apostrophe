@@ -4,6 +4,7 @@
 
 ### Adds
 
+* Adds `stripUrlAccents` option in `@apostrophecms/i18n` module to globally control whether accents are stripped from URLs. When set to `true`, all URLs (slugs) will have accents from Latin characters removed on document creation and updates. No existing documents are modified automatically; this only affects new or updated documents. A new task `node app @apostrophecms/i18n:strip-slug-accents` is provided to update existing document slugs in the database when needed.
 * Add `@apostrophecms/migration:add-missing-schema-fields` task. This task does not run database migrations.
 * Translation strings added for the layout- and layout-column-widgets.
 * New `box` schema field type

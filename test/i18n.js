@@ -1,6 +1,7 @@
-const t = require('../test-lib/test.js');
-const assert = require('assert');
 const cheerio = require('cheerio');
+const assert = require('node:assert/strict');
+
+const t = require('../test-lib/test.js');
 
 describe('static i18n', function() {
   this.timeout(t.timeout);
@@ -286,6 +287,107 @@ describe('static i18n', function() {
     const browserData = apos.i18n.getBrowserData(apos.task.getReq());
     assert.strictEqual(browserData.locale, 'en');
     assert.strictEqual(browserData.adminLocale, 'fr');
+  });
+
+  it('should replace accented characters in slugs and attachment names when configured', async function () {
+    await t.destroy(apos);
+    apos = await t.create({
+      root: module,
+      modules: {
+        '@apostrophecms/i18n': {
+          options: {
+            stripUrlAccents: true,
+            locales: {
+              en: {},
+              fr: {
+                prefix: '/fr'
+              }
+            }
+          }
+        },
+        'default-page': {
+          extend: '@apostrophecms/page-type'
+        },
+        'test-piece': {
+          extend: '@apostrophecms/piece-type'
+        }
+      }
+    });
+    // Create content while accents are NOT stripped so we have accented slugs
+    apos.i18n.options.stripUrlAccents = false;
+
+    const req = apos.task.getReq();
+
+    // Add a page with accented characters in its title so slug preserves accents
+    await apos.doc.insert(req, {
+      type: 'default-page',
+      visibility: 'public',
+      title: 'C\'est déjà l\'été'
+    });
+
+    // Also add a page that already uses the non-accented slug to verify
+    // that the accent-stripping task de-duplicates slugs appropriately
+    const nonAccentedExisting = await apos.doc.insert(req, {
+      type: 'default-page',
+      visibility: 'public',
+      title: 'C\'est deja l\'ete',
+      slug: '/c-est-deja-l-ete'
+    });
+
+    // Add a piece with accented characters in its title so slug preserves accents
+    await apos.doc.insert(req, {
+      type: 'test-piece',
+      visibility: 'public',
+      title: 'Café au lait'
+    });
+
+    // Sanity check: created content has accented slugs/names
+    const pageBefore = await apos.doc.db.findOne({
+      type: 'default-page',
+      title: 'C\'est déjà l\'été'
+    });
+    assert(pageBefore);
+    assert.equal(pageBefore.slug, '/c-est-déjà-l-été');
+
+    const nonAccentedPageBefore = await apos.doc.db.findOne({
+      _id: nonAccentedExisting._id
+    });
+    assert(nonAccentedPageBefore);
+    assert.equal(nonAccentedPageBefore.slug, '/c-est-deja-l-ete');
+
+    const pieceBefore = await apos.doc.db.findOne({
+      type: 'test-piece',
+      title: 'Café au lait'
+    });
+    assert(pieceBefore);
+    assert.equal(pieceBefore.slug, 'café-au-lait');
+
+    // Now enable accent stripping and run the task to update existing content
+    apos.i18n.options.stripUrlAccents = true;
+    await apos.task.invoke('@apostrophecms/i18n:strip-slug-accents');
+
+    // Verify that the slugs and attachment names have been updated correctly
+    const pageAfter = await apos.doc.db.findOne({ _id: pageBefore._id });
+    assert(pageAfter);
+    // After stripping accents, this page's slug would conflict with the
+    // existing non-accented page. Ensure de-duplication added a suffix.
+    assert(pageAfter.slug.startsWith('/c-est-deja-l-ete'));
+    assert.notEqual(pageAfter.slug, '/c-est-deja-l-ete');
+    assert(/\/c-est-deja-l-ete\d+$/.test(pageAfter.slug));
+
+    // Verify the pre-existing non-accented page kept its slug unchanged
+    const nonAccentedPageAfter = await apos.doc.db.findOne({
+      _id: nonAccentedPageBefore._id
+    });
+    assert(nonAccentedPageAfter);
+    assert.equal(nonAccentedPageAfter.slug, '/c-est-deja-l-ete');
+
+    const pieceAfter = await apos.doc.db.findOne({ _id: pieceBefore._id });
+    assert(pieceAfter);
+    assert.equal(pieceAfter.slug, 'cafe-au-lait');
+
+    // Restore default for other tests
+    apos.i18n.options.stripUrlAccents = false;
   });
 });
 

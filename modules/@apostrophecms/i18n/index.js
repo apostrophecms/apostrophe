@@ -70,7 +70,9 @@ module.exports = {
     i18n: {
       ns: 'apostrophe',
       browser: true
-    }
+    },
+    // If true, slugifying will strip accents from Latin characters
+    stripUrlAccents: false
   },
   async init(self) {
     self.defaultNamespace = 'default';
@@ -677,7 +679,8 @@ module.exports = {
           debug: self.debug,
           show: self.show,
           action: self.action,
-          crossDomainClipboard: req.session && req.session.aposCrossDomainClipboard
+          crossDomainClipboard: req.session && req.session.aposCrossDomainClipboard,
+          stripUrlAccents: self.options.stripUrlAccents
         };
         if (req.session && req.session.aposCrossDomainClipboard) {
           req.session.aposCrossDomainClipboard = null;
@@ -733,6 +736,9 @@ module.exports = {
           return null;
         }
         return locale;
+      },
+      shouldStripAccents() {
+        return self.options.stripUrlAccents === true;
       },
       addLocalizeModal() {
         self.apos.modal.add(
@@ -1250,6 +1256,38 @@ module.exports = {
           if (keep) {
             console.log(`Due to conflicts, kept ${kept} documents from ${keep}`);
           }
+        }
+      },
+      'strip-slug-accents': {
+        usage: 'Remove Latin accent characters from all document slugs. Usage: node app @apostrophecms/i18n:strip-slug-accents',
+        async task() {
+          let docChanged = 0;
+
+          await self.apos.migration.eachDoc({}, 5, async doc => {
+            const slug = doc.slug;
+            const req = self.apos.task.getAdminReq({
+              locale: doc.aposLocale?.split(':')[0] || self.defaultLocale
+            });
+            if (!self.shouldStripAccents()) {
+              return;
+            }
+
+            doc.slug = _.deburr(doc.slug);
+            if (slug === doc.slug) {
+              return;
+            }
+            const manager = self.apos.doc.getManager(doc.type);
+            if (!manager) {
+              return;
+            }
+            await manager.update(req, doc, { permissions: false });
+            docChanged++;
+            self.apos.util.log(`Updated doc [${req.locale}] "${slug}" -> "${doc.slug}"`);
+          });
+
+          self.apos.util.log(
+            `Updated ${docChanged} document slug(s).`
+          );
         }
       }
     };
