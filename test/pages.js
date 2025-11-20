@@ -1664,25 +1664,27 @@ describe('Pages', function() {
 
       // Publish and assert.
       // Obviously, should not throw an error.
+      // Publish them in reverse order, then verify the published ranks
+      // still respect the original draft order.
       await apos.page.publish(req, page3);
+      await apos.page.publish(req, page2);
       {
         const pages = await apos.doc.db.find({
           type: 'test-page'
         }).sort({ rank: 1 }).toArray();
 
-        const p1Idx = pages.findIndex(p => p._id === page1._id);
-        assert(p1Idx !== -1);
-        const p2Idx = pages.findIndex(p => p._id === page2._id);
-        assert(p2Idx !== -1);
-        const p3Idx = pages.findIndex(p => p._id === page3._id);
-        assert(p3Idx !== -1);
-        const p3IdxPublished = pages.findIndex(p => p._id === page3._id.replace(':draft', ':published'));
-        assert(p3IdxPublished !== -1);
-
-        // first, second, third/third-published
-        assert(p1Idx < p2Idx);
-        assert(p2Idx < p3Idx);
-        assert(p2Idx < p3IdxPublished);
+        const draftIndexes = getIndexes(pages, 'draft', {
+          page1,
+          page2,
+          page3
+        });
+        const publishedIndexes = getIndexes(pages, 'published', {
+          page2,
+          page3
+        });
+        assert(draftIndexes.page1 < draftIndexes.page2);
+        assert(draftIndexes.page2 < draftIndexes.page3);
+        assert(publishedIndexes.page2 < publishedIndexes.page3);
       }
 
       // Move and assert.
@@ -1692,20 +1694,18 @@ describe('Pages', function() {
           type: 'test-page'
         }).sort({ rank: 1 }).toArray();
 
-        const p1Idx = pages.findIndex(p => p._id === page1._id);
-        assert(p1Idx !== -1);
-        const p2Idx = pages.findIndex(p => p._id === page2._id);
-        assert(p2Idx !== -1);
-        const p3Idx = pages.findIndex(p => p._id === page3._id);
-        assert(p3Idx !== -1);
-        const p3IdxPublished = pages.findIndex(p => p._id === page3._id.replace(':draft', ':published'));
-        assert(p3IdxPublished !== -1);
-
-        // first, third/third-published, second
-        assert(p1Idx < p3Idx);
-        assert(p1Idx < p3IdxPublished);
-        assert(p3Idx < p2Idx);
-        assert(p3IdxPublished < p2Idx);
+        const draftIndexes = getIndexes(pages, 'draft', {
+          page1,
+          page2,
+          page3
+        });
+        const publishedIndexes = getIndexes(pages, 'published', {
+          page2,
+          page3
+        });
+        assert(draftIndexes.page1 < draftIndexes.page3);
+        assert(draftIndexes.page3 < draftIndexes.page2);
+        assert(publishedIndexes.page3 < publishedIndexes.page2);
       }
     });
 
@@ -1733,7 +1733,10 @@ describe('Pages', function() {
 
       // Publish and assert.
       // Obviously, should not throw an error.
+      // Publish two pages in reverse order then verify the
+      // original relative order is preserved among published pages.
       await apos.page.publish(req, page3);
+      await apos.page.publish(req, page2);
       {
         const pages = await apos.doc.db.find({
           type: 'test-page',
@@ -1743,23 +1746,24 @@ describe('Pages', function() {
           rank: 1
         }).toArray();
 
-        const p1Idx = pages.findIndex(p => p._id === page1._id);
-        assert(p1Idx !== -1);
-        assert.equal(pages[p1Idx].path, `${root.path}/${page1.aposDocId}`);
-        const p2Idx = pages.findIndex(p => p._id === page2._id);
-        assert(p2Idx !== -1);
-        assert.equal(pages[p2Idx].path, `${root.path}/${page2.aposDocId}`);
-        const p3Idx = pages.findIndex(p => p._id === page3._id);
-        assert(p3Idx !== -1);
-        assert.equal(pages[p3Idx].path, `${root.path}/${page3.aposDocId}`);
-        const p3IdxPublished = pages.findIndex(p => p._id === page3._id.replace(':draft', ':published'));
-        assert(p3IdxPublished !== -1);
-        assert.equal(pages[p3IdxPublished].path, `${root.path}/${page3.aposDocId}`);
+        const draftIndexes = getIndexes(pages, 'draft', {
+          page1,
+          page2,
+          page3
+        });
+        const publishedIndexes = getIndexes(pages, 'published', {
+          page2,
+          page3
+        });
 
-        // first, second, third/third-published
-        assert(p1Idx < p2Idx);
-        assert(p2Idx < p3Idx);
-        assert(p2Idx < p3IdxPublished);
+        assert.equal(pages[draftIndexes.page1].path, `${root.path}/${page1.aposDocId}`);
+        assert.equal(pages[draftIndexes.page2].path, `${root.path}/${page2.aposDocId}`);
+        assert.equal(pages[draftIndexes.page3].path, `${root.path}/${page3.aposDocId}`);
+        assert(draftIndexes.page1 < draftIndexes.page2);
+        assert(draftIndexes.page2 < draftIndexes.page3);
+        assert.equal(pages[publishedIndexes.page2].path, `${root.path}/${page2.aposDocId}`);
+        assert.equal(pages[publishedIndexes.page3].path, `${root.path}/${page3.aposDocId}`);
+        assert(publishedIndexes.page2 < publishedIndexes.page3);
       }
 
       // Move and assert.
@@ -1773,24 +1777,25 @@ describe('Pages', function() {
           rank: 1
         }).toArray();
 
-        const p1Idx = pages.findIndex(p => p._id === page1._id);
-        assert(p1Idx !== -1);
-        const p2Idx = pages.findIndex(p => p._id === page2._id);
-        assert(p2Idx !== -1);
-        const p3Idx = pages.findIndex(p => p._id === page3._id);
-        assert(p3Idx !== -1);
-        const p3IdxPublished = pages.findIndex(p => p._id === page3._id.replace(':draft', ':published'));
-        assert(p3IdxPublished !== -1);
+        const draftIndexes = getIndexes(pages, 'draft', {
+          page1,
+          page2,
+          page3
+        });
+        const publishedIndexes = getIndexes(pages, 'published', {
+          page2,
+          page3
+        });
 
-        // first, third/third-published, second
-        assert(p1Idx < p3Idx);
-        assert(p1Idx < p3IdxPublished);
-        assert(p3Idx < p2Idx);
-        assert(p3IdxPublished < p2Idx);
+        assert(draftIndexes.page1 < draftIndexes.page3);
+        assert(draftIndexes.page3 < draftIndexes.page2);
+        assert(publishedIndexes.page3 < publishedIndexes.page2);
       }
 
-      // Publish the last draft and assert it's sorted right.
+      // Publish the pages and verify the published order is correct.
+      await apos.page.publish(req, page1);
       await apos.page.publish(req, page2);
+      await apos.page.publish(req, page3);
       {
         const pages = await apos.doc.db.find({
           type: 'test-page',
@@ -1800,22 +1805,19 @@ describe('Pages', function() {
           rank: 1
         }).toArray();
 
-        const p1Idx = pages.findIndex(p => p._id === page1._id);
-        assert(p1Idx !== -1);
-        const p2Idx = pages.findIndex(p => p._id === page2._id);
-        assert(p2Idx !== -1);
-        const p2IdxPublished = pages.findIndex(p => p._id === page2._id.replace(':draft', ':published'));
-        assert(p2IdxPublished !== -1);
-        const p3Idx = pages.findIndex(p => p._id === page3._id);
-        assert(p3Idx !== -1);
-        const p3IdxPublished = pages.findIndex(p => p._id === page3._id.replace(':draft', ':published'));
-        assert(p3IdxPublished !== -1);
+        const draftIndexes = getIndexes(pages, 'draft', {
+          page1,
+          page2,
+          page3
+        });
+        const publishedIndexes = getIndexes(pages, 'published', {
+          page2,
+          page3
+        });
 
-        // first, third/third-published, second
-        assert(p1Idx < p3Idx);
-        assert(p1Idx < p3IdxPublished);
-        assert(p3Idx < p2Idx);
-        assert(p3IdxPublished < p2IdxPublished);
+        assert(draftIndexes.page1 < draftIndexes.page3);
+        assert(draftIndexes.page3 < draftIndexes.page2);
+        assert(publishedIndexes.page3 < publishedIndexes.page2);
       }
     });
 
@@ -2112,7 +2114,7 @@ describe('Pages', function() {
           slug: '/level-1-page-2',
           path: `${home.aposDocId}/${level1Page2.aposDocId}`,
           level: 1,
-          rank: 4,
+          rank: 3,
           archived: false,
           aposDocId: level1Page2.aposDocId,
           _children: []
@@ -2132,7 +2134,7 @@ describe('Pages', function() {
           slug: '/level-2-page-1',
           path: `${home.aposDocId}/${level2Page1.aposDocId}`,
           level: 1,
-          rank: 2,
+          rank: 1,
           archived: false,
           aposDocId: level2Page1.aposDocId,
           _children: [
@@ -2156,7 +2158,7 @@ describe('Pages', function() {
           slug: '/level-2-page-1/level-4-page-1',
           path: `${home.aposDocId}/${level2Page1.aposDocId}/${level4Page1.aposDocId}`,
           level: 2,
-          rank: 2,
+          rank: 1,
           archived: false,
           aposDocId: level4Page1.aposDocId,
           _children: [
@@ -2180,7 +2182,7 @@ describe('Pages', function() {
           slug: '/level-2-page-1/level-4-page-1/level-5-page-2',
           path: `${home.aposDocId}/${level2Page1.aposDocId}/${level4Page1.aposDocId}/${level5Page2.aposDocId}`,
           level: 3,
-          rank: 2,
+          rank: 1,
           archived: false,
           aposDocId: level5Page2.aposDocId,
           _children: []
@@ -2301,7 +2303,7 @@ describe('Pages', function() {
           slug: '/level-1-page-2',
           path: `${home.aposDocId}/${level1Page2.aposDocId}`,
           level: 1,
-          rank: 5,
+          rank: 4,
           archived: false,
           aposDocId: level1Page2.aposDocId,
           _children: []
@@ -2321,7 +2323,7 @@ describe('Pages', function() {
           slug: '/level-2-page-1',
           path: `${home.aposDocId}/${level2Page1.aposDocId}`,
           level: 1,
-          rank: 3,
+          rank: 2,
           archived: false,
           aposDocId: level2Page1.aposDocId,
           _children: [
@@ -2345,7 +2347,7 @@ describe('Pages', function() {
           slug: '/level-2-page-1/level-4-page-1',
           path: `${home.aposDocId}/${level2Page1.aposDocId}/${level4Page1.aposDocId}`,
           level: 2,
-          rank: 2,
+          rank: 1,
           archived: false,
           aposDocId: level4Page1.aposDocId,
           _children: [
@@ -2369,7 +2371,7 @@ describe('Pages', function() {
           slug: '/level-2-page-1/level-4-page-1/level-5-page-2',
           path: `${home.aposDocId}/${level2Page1.aposDocId}/${level4Page1.aposDocId}/${level5Page2.aposDocId}`,
           level: 3,
-          rank: 2,
+          rank: 1,
           archived: false,
           aposDocId: level5Page2.aposDocId,
           _children: []
@@ -2379,4 +2381,127 @@ describe('Pages', function() {
       assert.deepEqual(actual, expected);
     });
   });
+
+  // We do not support autopublished page types per se, especially
+  // given the rule against a page with an unpublished parent becoming published,
+  // which is a very good rule!
+  //
+  // However the doc template library does create autopublished pages as children of
+  // the home page, which is always published, so we need to handle
+  // them successfully at a low level. -Tom
+
+  describe('autopublish', function() {
+    before(async () => {
+      await t.destroy(apos);
+      apos = await t.create({
+        root: module,
+        modules: {
+          '@apostrophecms/express': {
+            options: {
+              apiKeys: {
+                [apiKey]: {
+                  role: 'admin'
+                }
+              }
+            }
+          },
+          '@apostrophecms/page': {
+            options: {
+              park: [],
+              types: [
+                {
+                  name: '@apostrophecms/home-page',
+                  label: 'Home'
+                },
+                {
+                  name: 'test-page',
+                  label: 'Test Page'
+                },
+                {
+                  name: 'autopublished-page',
+                  label: 'Autopublished Pages'
+                }
+              ],
+              publicApiProjection: {
+                title: 1,
+                _url: 1
+              }
+            }
+          },
+          'test-page': {
+            extend: '@apostrophecms/page-type'
+          },
+          'autopublished-page': {
+            extend: '@apostrophecms/page-type',
+            options: {
+              autopublish: true
+            }
+          }
+        }
+      });
+      await t.createAdmin(apos);
+    });
+
+    beforeEach(async function() {
+      await apos.doc.db.deleteMany({ type: { $in: [ 'test-page', 'autopublished-page' ] } });
+    });
+
+    it('should properly autopublish a page even if its page tree target is draft only', async function() {
+      const jar = await t.loginAs(apos, 'admin');
+      await apos.http.get('/', { jar });
+
+      await autopublishedPage('First Child');
+
+      const testItems = [
+        {
+          title: 'Page 1',
+          type: 'test-page',
+          slug: '/page1'
+        },
+        {
+          title: 'Page 2',
+          type: 'test-page',
+          slug: '/page2'
+        }
+      ];
+
+      for (const page of testItems) {
+        await postPage(page);
+      }
+
+      await autopublishedPage('Last Child');
+
+      async function autopublishedPage(title) {
+        const body = {
+          title,
+          type: 'autopublished-page',
+          slug: '/autopublished'
+        };
+
+        // Throws on failure, does not on success
+        await postPage(body);
+      }
+
+      async function postPage(body) {
+        await apos.http.post('/api/v1/@apostrophecms/page?aposMode=draft&aposLocale=en', {
+          jar,
+          body
+        });
+      }
+    });
+  });
 });
+
+function getIndexes(all, mode, pages) {
+  const result = {};
+  for (const [ name, page ] of Object.entries(pages)) {
+    const index = all.findIndex(_page => (_page.aposMode === mode) &&
+      (_page.aposDocId === page.aposDocId)
+    );
+    if (index === -1) {
+      assert(false, `${name} not returned by query`);
+    }
+    result[name] = index;
+  }
+  return result;
+}
