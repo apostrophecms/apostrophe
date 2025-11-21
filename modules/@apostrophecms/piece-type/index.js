@@ -151,7 +151,9 @@ module.exports = {
         label: 'apostrophe:publish',
         messages: {
           progress: 'apostrophe:batchPublishProgress',
-          completed: 'apostrophe:batchPublishCompleted'
+          completed: 'apostrophe:batchPublishCompleted',
+          completedWithFailures: 'apostrophe:batchPublishCompletedWithFailures',
+          failed: 'apostrophe:batchPublishFailed'
         },
         icon: 'earth-icon',
         modalOptions: {
@@ -165,7 +167,9 @@ module.exports = {
         label: 'apostrophe:archive',
         messages: {
           progress: 'apostrophe:batchArchiveProgress',
-          completed: 'apostrophe:batchArchiveCompleted'
+          completed: 'apostrophe:batchArchiveCompleted',
+          completedWithFailures: 'apostrophe:batchArchiveCompletedWithFailures',
+          failed: 'apostrophe:batchPublishFailed'
         },
         icon: 'archive-arrow-down-icon',
         if: {
@@ -182,7 +186,9 @@ module.exports = {
         label: 'apostrophe:restore',
         messages: {
           progress: 'apostrophe:batchRestoreProgress',
-          completed: 'apostrophe:batchRestoreCompleted'
+          completed: 'apostrophe:batchRestoreCompleted',
+          completedWithFailures: 'apostrophe:batchRestoreCompletedWithFailures',
+          failed: 'apostrophe:batchPublishFailed'
         },
         icon: 'archive-arrow-up-icon',
         if: {
@@ -201,6 +207,8 @@ module.exports = {
           icon: 'translate-icon',
           progress: 'apostrophe:localizingBatch',
           completed: 'apostrophe:localizedBatch',
+          completedWithFailures: 'apostrophe:localizedBatchWithFailures',
+          failed: 'apostrophe:localizedBatchFailed',
           resultsEventName: 'apos-localize-batch-results'
         },
         if: {
