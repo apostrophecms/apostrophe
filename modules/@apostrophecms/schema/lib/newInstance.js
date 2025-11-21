@@ -45,11 +45,13 @@ function newInstance(schema, self = null) {
             Object.keys(widgets)).flat();
         const widgets = field.def.map(type => {
           if (!available.includes(type)) {
-            throw new Error(`${type} is not allowed in ${field.name}`);
+            console.warn(`${type} is not allowed in ${field.name} but is used in def`);
+            return null;
           }
           const manager = getManager(type, self);
           if (!manager) {
-            throw new Error(`${type} is not a configured widget type`);
+            console.warn(`${type} is not a configured widget type but is used in def`);
+            return null;
           }
           const wInstance = newInstance(
             manager.schema || []
@@ -58,7 +60,7 @@ function newInstance(schema, self = null) {
           wInstance.type = type;
           wInstance.metaType = 'widget';
           return normalizeWidget(wInstance, self);
-        });
+        }).filter(Boolean);
         instance[field.name].items = widgets;
       }
     }

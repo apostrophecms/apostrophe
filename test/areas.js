@@ -625,12 +625,12 @@ describe('Areas', function() {
     const field = apos.article.schema.find(field => field.name === 'withDefaults');
     const saveDef = field.def;
     field.def.push('nonexistent-widget');
-    try {
-      await apos.article.newInstance();
-      assert(false, 'should not succeed');
-    } catch (e) {
-      assert(e.toString().includes('not allowed'));
-    }
+    const doc = await apos.article.newInstance();
+    assert.strictEqual(doc.expandedWithDefaults.items.length, 2);
+
+    const types = doc.expandedWithDefaults.items.map(item => item.type);
+    assert(types.includes('@apostrophecms/rich-text'));
+    assert(types.includes('@apostrophecms/image'));
     field.def = saveDef;
   });
 });
