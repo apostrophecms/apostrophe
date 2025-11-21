@@ -39,24 +39,28 @@ function newInstance(schema, self = null) {
 
       // Support for area defaults
       if (Array.isArray(field.def) && field.def.length > 0) {
-        const available = Object.keys(
-          field.options.widgets || field.options.groups || {}
-        );
-        const widgets = field.def.filter(type => available.includes(type))
-          .map(type => {
-            const manager = getManager(type, self);
-            if (!manager) {
-              return null;
-            }
-            const wInstance = newInstance(
-              manager.schema || []
-            );
-            wInstance._id = createId();
-            wInstance.type = type;
-            wInstance.metaType = 'widget';
-            return normalizeWidget(wInstance, self);
-          })
-          .filter(Boolean);
+        const available = field.options.widgets
+          ? Object.keys(field.options.widgets)
+          : Object.values(field.options.groups).map(({ widgets }) =>
+            Object.keys(widgets)).flat();
+        const widgets = field.def.map(type => {
+          if (!available.includes(type)) {
+            console.warn(`${type} is not allowed in ${field.name} but is used in def`);
+            return null;
+          }
+          const manager = getManager(type, self);
+          if (!manager) {
+            console.warn(`${type} is not a configured widget type but is used in def`);
+            return null;
+          }
+          const wInstance = newInstance(
+            manager.schema || []
+          );
+          wInstance._id = createId();
+          wInstance.type = type;
+          wInstance.metaType = 'widget';
+          return normalizeWidget(wInstance, self);
+        }).filter(Boolean);
         instance[field.name].items = widgets;
       }
     }
