@@ -147,8 +147,28 @@ describe('Areas', function() {
                   '@apostrophecms/rich-text',
                   '@apostrophecms/image',
                   '@apostrophecms/video',
-                  '@apostrophecms/html',
-                  'nonexistent-widget'
+                  '@apostrophecms/html'
+                ]
+              },
+              expandedWithDefaults: {
+                type: 'area',
+                options: {
+                  groups: {
+                    content: {
+                      widgets: {
+                        '@apostrophecms/rich-text': {}
+                      }
+                    },
+                    media: {
+                      widgets: {
+                        '@apostrophecms/image': {}
+                      }
+                    }
+                  }
+                },
+                def: [
+                  '@apostrophecms/rich-text',
+                  '@apostrophecms/image'
                 ]
               }
             }
@@ -590,5 +610,27 @@ describe('Areas', function() {
       }
     ];
     assert.deepEqual(actual, expected);
+  });
+
+  it('expanded menu area with default widgets gets populated correctly', async function() {
+    const doc = await apos.article.newInstance();
+    assert.strictEqual(doc.expandedWithDefaults.items.length, 2);
+
+    const types = doc.expandedWithDefaults.items.map(item => item.type);
+    assert(types.includes('@apostrophecms/rich-text'));
+    assert(types.includes('@apostrophecms/image'));
+  });
+
+  it('nonexistent widget types are rejected in defaults', async function() {
+    const field = apos.article.schema.find(field => field.name === 'withDefaults');
+    const saveDef = field.def;
+    field.def.push('nonexistent-widget');
+    try {
+      await apos.article.newInstance();
+      assert(false, 'should not succeed');
+    } catch (e) {
+      assert(e.toString().includes('not allowed'));
+    }
+    field.def = saveDef;
   });
 });
