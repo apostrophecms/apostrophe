@@ -36,14 +36,16 @@ function newInstance(schema, self = null) {
       if (!instance[field.name]._id) {
         instance[field.name]._id = createId();
       }
-
+      console.log('before area defaults');
       // Support for area defaults
       if (Array.isArray(field.def) && field.def.length > 0) {
+        console.log('area defaults here');
         const available = field.options.widgets
           ? Object.keys(field.options.widgets)
           : Object.values(field.options.groups).map(({ widgets }) =>
             Object.keys(widgets)).flat();
-        const widgets = field.def.map(type => {
+        const widgets = field.def.map(item => {
+          const type = ((typeof item) === 'string') ? item : item.type;
           if (!available.includes(type)) {
             console.warn(`${type} is not allowed in ${field.name} but is used in def`);
             return null;
@@ -56,9 +58,13 @@ function newInstance(schema, self = null) {
           const wInstance = newInstance(
             manager.schema || []
           );
+          if ((typeof item) === 'object') {
+            Object.assign(wInstance, klona(item));
+          }
           wInstance._id = createId();
           wInstance.type = type;
           wInstance.metaType = 'widget';
+          console.log('now the instance is:', wInstance);
           return normalizeWidget(wInstance, self);
         }).filter(Boolean);
         instance[field.name].items = widgets;

@@ -3,6 +3,7 @@ const dayjs = require('dayjs');
 const { klona } = require('klona');
 const { stripIndents } = require('common-tags');
 const joinr = require('./joinr');
+const newInstance = require('./newInstance.js');
 
 const dateRegex = /^\d{4}-(0[1-9]|1[012])-(0[1-9]|[12][0-9]|3[01])$/;
 
@@ -66,19 +67,51 @@ module.exports = (self) => {
           Otherwise, "widgets" has no effect.
         `);
       }
-      let widgets = (field.options && field.options.widgets) || {};
+      console.log(field);
+      let widgets = field.options?.widgets && field.options.widgets || {};
 
-      if (field.options && field.options.groups) {
-        for (const group of Object.keys(field.options.groups)) {
+      if (field.options?.groups) {
+        for (const group of Object.values(field.options.groups)) {
           widgets = {
             ...widgets,
             ...group.widgets
           };
         }
       }
+      console.log('-->', widgets);
 
       for (const name of Object.keys(widgets)) {
         check(name);
+      }
+
+      if (field.def) {
+        if (!Array.isArray(field.def)) {
+          fail(stripIndents`
+            If an area has a "def" property it must be an array. Each
+            item in the array may be a widget type name, with no
+            -widget suffix, or an object with a "type" property containing
+            such a widget type name.
+          `);
+        }
+        for (let item of field.def) {
+          if ((typeof item) === 'string') {
+            item = {
+              type: item
+            };
+          } else if ((typeof item) !== 'object') {
+            fail(stripIndents`
+              Items in the def array of an area must be widget type names,
+              or objects with a "type" property containing a widget type name.
+              Do not include the -widget suffix from the module name.
+            `);
+          }
+          if (!Object.keys(widgets).includes(item.type)) {
+            fail(
+              `Widget type ${item.type} appears in def but is not ` +
+              'allowed in area.'
+            );
+          }
+        }
       }
 
       function check(name) {
