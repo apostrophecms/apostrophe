@@ -5,7 +5,7 @@ const fs = require('fs-extra');
 const { stripIndent } = require('common-tags');
 const webpackModule = require('webpack');
 const { mergeWithCustomize: webpackMerge } = require('webpack-merge');
-const { pathToFileURL } = require('node:url');
+const { pathToFileURL } = require('../path');
 const {
   getBundlesNames,
   writeBundlesImportFiles,

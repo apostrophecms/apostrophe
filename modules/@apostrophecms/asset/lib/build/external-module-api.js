@@ -1,8 +1,7 @@
 const fs = require('fs-extra');
 const path = require('node:path');
-const { glob } = require('../../lib/path');
+const { glob, pathToFileURL } = require('../path');
 const { stripIndent } = require('common-tags');
-const { pathToFileURL } = require('node:url');
 
 // High and Low level public API for external modules.
 module.exports = (self) => {
