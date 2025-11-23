@@ -26,15 +26,13 @@ function dirname(path) {
   return dirnameOriginal(path).replaceAll('\\', '/');
 }
 
-// Don't make the URL protocol-absolute unless we
-// have to (for Windows paths with a drive letter). Allows
-// vite and webpack to still work with "npm link". For server
-// side purposes, standard pathToFileURL is fine
-
 function pathToFileURL(path) {
-  if (path.match(/^[a-zA-Z]:/)) {
+  if (process.platform === 'win32') {
+    // On Windows this is the only reliable option
     return pathToFileURLOriginal(path);
   } else {
+    // On non-Windows wrapping it as a protocol-absolute URL
+    // is never necessary and breaks "npm link"
     return path;
   }
 }
