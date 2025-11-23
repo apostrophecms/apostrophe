@@ -5,9 +5,33 @@
 
 const _ = require('lodash');
 const qs = require('qs');
+const fs = require('fs');
+const cp = require('child_process');
+const waitOn = require('wait-on');
 
 module.exports = {
-  options: { alias: 'url' },
+
+  options: {
+    alias: 'url',
+    static: false
+  },
+
+  tasks(self) {
+    return {
+      'build-static-site': {
+        usage: 'Build a static site at a specified directory path',
+
+        async task(argv) {
+          self.apos.url.options.static = true;
+          if (argv._.length !== 2) {
+            throw new Error('A directory path for the static site must be given.');
+          }
+          await self.buildStaticSite(argv._[1]);
+        }
+      }
+    };
+  },
+
   methods(self) {
     return {
 
@@ -210,7 +234,145 @@ module.exports = {
         } else {
           return restoreHash(base);
         }
+      },
+
+      // Generate a list of all URLs reachable with the given req object.
+      // Used internally to implement static site generation and sitemaps. Usually called
+      // in a loop, once for each locale.
+      //
+      // Returns a list of objects with `url`, `type`, `_id`, `aposDocId` and `i18nId` properties.
+      //  `type`, `_id` and `aposDocId` are only present if the URL is a representation
+      // of a particular document in ApostropheCMS, but `i18nId` should always be present
+      // and should be consistent across localized versions of the same URL. If the URL is
+      // the main view of a document (e.g. an ordinary page URL or piece URL) it will be
+      // equal to `aposDocId`.
+      //
+      // To accommodate requirements such as `changefreq` and `priority` for sitemaps,
+      // additional such properties may be returned, although as of this writing
+      // Google explicitly states they are not expected or honored.
+      //
+      // This method emits the `@apostrophecms/url:getAllUrlMetadata` event, so that handlers in any module
+      // can add URLs to the results. The default implementation already calls `getAllUrlMetadata` on every
+      // doc type manager that has at least one doc in the database, so listening for the event is only
+      // for edge cases that can't be covered by extending `getAllUrlMetadata` or `getUrlMetadata` on
+      // such a manager.
+      //
+      // Handlers should respect `excludeTypes`.
+      async getAll(req, { excludeTypes = [] } = {}) {
+        let results = [];
+        const types = await self.apos.doc.db.distinct('type');
+        for (const type of types) {
+          if (!excludeTypes.includes(type)) {
+            results = [...results, ...await self.apos.doc.getManager(type).getAllUrlMetadata(req)];
+          }
+        }
+        await self.emit('getAllUrlMetadata', req, results, { excludeTypes });
+        return results;
+      },
+
+      // Build a static site in the directory specified by `dir`. 
+      // This is an implementation detail of the task. This method will
+      // listen on port 3123 and is not designed to be run in parallel.
+      // After execution the server on port 3123 remains open
+
+      async buildStaticSite(dir) {
+        process.env.NODE_ENV = 'production';
+        const baseUrl = self.apos.baseUrl;
+        if (!self.apos.baseUrl) {
+          throw new Error('The top-level baseUrl option must be set for static site builds');
+        }
+        const releaseId = self.apos.util.generateId();
+        console.log('Building assets for static site...');
+        cp.execSync(`APOS_RELEASE_ID=${releaseId} NODE_ENV=production node app @apostrophecms/asset:build`, {
+          stdio: 'inherit'
+        });
+        console.log('Copying assets into static site...');
+        const assetsFrom = `${self.apos.rootDir}/public/apos-frontend/releases/${releaseId}`;
+        const assetsTo = `${dir}/apos-frontend/releases`;
+        fs.mkdirSync(assetsTo, { recursive: true });
+        cp.execSync(`cp -r ${assetsFrom} ${assetsTo}`);
+        console.log('Launching temporary server for static site page generation...');
+        const child = cp.spawn('node app', {
+          cwd: self.apos.rootDir,
+          shell: '/bin/bash',
+          stdio: 'inherit',
+          env: {
+            ...process.env,
+            APOS_RELEASE_ID: releaseId,
+            NODE_ENV: 'production',
+            PORT: '3123',
+            ADDRESS: '127.0.0.1'        
+          }
+        });
+        await waitOn({
+          resources: [
+            'tcp:127.0.0.1:3123'
+          ]
+        });
+        const locales = Object.keys(self.apos.i18n.getLocales());
+        for (const locale of locales) {
+          console.log(`Generating pages for locale ${locale}...`);
+          const req = self.apos.task.getAnonReq({
+            locale,
+            mode: 'published'
+          });
+          const urls = await self.getAll(req);
+          for (const { url } of urls) {
+            let path = url.substring(baseUrl.length);
+            if (path.includes('?')) {
+              console.log(`Ignoring ${path}, not suitable for inclusion in a static site`);
+              continue;
+            }
+            let file = `${path}/index.html`;
+            const body = await getBody(path);
+            fs.mkdirSync(`${dir}${path}`, { recursive: true });
+            fs.writeFileSync(`${dir}${file}`, body);
+          }
+        }
+        // flush I/O for debugging
+        child.kill();
+        console.log('Static site built.');
+
+        async function getBody(path) {
+          const result = await fetch(`http://127.0.0.1:3123${path}`);
+          if (result.status !== 200) {
+            throw self.apos.error('invalid', `The path ${path} did not produce a 200 status`);
+          }
+          return result.text();
+        }
+      },
+      // Returns a string suitable to append to the original page URL when we're
+      // specifying a particular filter and a page number. Pages start with 1
+      getChoiceFilter(name, value, page) {
+        if (value === null) {
+          return '';
+        }
+        name = encodeURIComponent(name);
+        value = encodeURIComponent(value);
+        if (self.options.static) {
+          return `/${name}/${value}${page > 1 ? `/page/${page}` : ''}`;
+        } else {
+          return `?${name}=${value}${page > 1 ? `&page=${page}` : ''}`;
+        }
+      },
+      // Returns a string suitable to append to the original page URL when all we're
+      // adding is a page number. Pages start with 1
+      getPageFilter(page) {
+        if (page <= 1) {
+          return '';
+        }
+        if (self.options.static) {
+          return `/page/${page}`;
+        } else {
+          return `?page=${page}`;
+        }
       }
     };
   }
 };
+
+function pause(ms) {
+  return new Promise((resolve, reject) => {
+    setTimeout(() => resolve(null), ms);
+  });
+}

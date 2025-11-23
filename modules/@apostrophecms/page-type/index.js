@@ -107,12 +107,17 @@ module.exports = {
       'slug'
     ]);
     self.rules = {};
-    self.dispatchAll();
     self.composeFilters();
     self.composeColumns();
   },
   handlers(self) {
     return {
+      'apostrophe:modulesRegistered': {
+        dispatchAll() {
+          // Late enough that all subclasses have contributed things to self
+          self.dispatchAll();
+        }
+      },
       '@apostrophecms/page:serve': {
         async dispatchPage(req) {
           if (!req.data.bestPage) {
