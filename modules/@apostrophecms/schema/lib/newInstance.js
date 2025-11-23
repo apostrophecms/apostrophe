@@ -36,10 +36,8 @@ function newInstance(schema, self = null) {
       if (!instance[field.name]._id) {
         instance[field.name]._id = createId();
       }
-      console.log('before area defaults');
       // Support for area defaults
       if (Array.isArray(field.def) && field.def.length > 0) {
-        console.log('area defaults here');
         const available = field.options.widgets
           ? Object.keys(field.options.widgets)
           : Object.values(field.options.groups).map(({ widgets }) =>
@@ -64,7 +62,6 @@ function newInstance(schema, self = null) {
           wInstance._id = createId();
           wInstance.type = type;
           wInstance.metaType = 'widget';
-          console.log('now the instance is:', wInstance);
           return normalizeWidget(wInstance, self);
         }).filter(Boolean);
         instance[field.name].items = widgets;
