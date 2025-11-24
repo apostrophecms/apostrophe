@@ -54,6 +54,7 @@
 </template>
 
 <script>
+import { mapActions } from 'pinia';
 import AposEditorMixin from 'Modules/@apostrophecms/modal/mixins/AposEditorMixin';
 import { useModalStore } from 'Modules/@apostrophecms/ui/stores/modal';
 
@@ -148,10 +149,10 @@ export default {
     }
   },
   async mounted() {
-    this.modalStore = useModalStore();
     await this.evaluateExternalConditions();
   },
   methods: {
+    ...mapActions(useModalStore, [ 'isOnTop' ]),
     removeLink() {
       this.docFields.data = {};
       this.editor.commands.unsetLink();
@@ -221,6 +222,10 @@ export default {
       this.close();
     },
     keyboardHandler(e) {
+      if (!this.isOnTop(this.$el)) {
+        return;
+      }
+
       if (e.key === 'Escape') {
         // Don't confuse escape key handlers in other modal layers etc.
         e.stopPropagation();
@@ -302,13 +307,13 @@ export default {
     },
     async openPopover() {
       this.hasLinkOnOpen = Boolean(this.attributes.href);
-      this.modalStore.onKeyDown(this.$el, this.keyboardHandler);
+      window.addEventListener('keydown', this.keyboardHandler);
       await this.populateFields();
       this.evaluateConditions();
       this.$emit('open-popover');
     },
     closePopover() {
-      this.modalStore.offKeyDown(this.keyboardHandler);
+      window.removeEventListener('keydown', this.keyboardHandler);
       this.$emit('close');
     }
   }

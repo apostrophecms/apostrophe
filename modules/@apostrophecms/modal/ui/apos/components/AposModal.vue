@@ -265,14 +265,18 @@ onMounted(async () => {
     renderingElements.value = false;
   }
   store.updateModalData(props.modalData.id, { modalEl: modalEl.value });
-  store.onKeyDown(modalEl.value, onKeydown);
+  window.addEventListener('keydown', onKeydown);
 });
 
 onUnmounted(() => {
-  store.offKeyDown(onKeydown);
+  window.addEventListener('keydown', onKeydown);
 });
 
 function onKeydown(e) {
+  if (!store.isOnTop(modalEl.value)) {
+    return;
+  }
+
   const hasPressedEsc = e.key === 'Escape';
   if (hasPressedEsc) {
     // Don't confuse escape key handlers in other modal layers etc.

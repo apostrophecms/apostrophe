@@ -272,7 +272,6 @@ export default {
     });
   },
   async mounted() {
-    this.modalStore = useModalStore();
     this.bindShortcuts();
     this.headers = this.computeHeaders();
     // Get the data. This will be more complex in actuality.
@@ -281,9 +280,7 @@ export default {
     await this.manageAllPiecesTotal();
     this.modal.triggerFocusRefresh++;
 
-    apos.bus.$on('content-changed', (e) => {
-      this.onContentChanged(e);
-    });
+    apos.bus.$on('content-changed', this.onContentChanged);
     apos.bus.$on('command-menu-manager-create-new', this.create);
     apos.bus.$on('command-menu-manager-close', this.confirmAndCancel);
   },
@@ -297,7 +294,7 @@ export default {
     apos.bus.$off('command-menu-manager-close', this.confirmAndCancel);
   },
   methods: {
-    ...mapActions(useModalStore, [ 'updateModalData' ]),
+    ...mapActions(useModalStore, [ 'updateModalData', 'isTopManager', 'isOnTop' ]),
     async create() {
       await this.edit(null);
     },
@@ -483,6 +480,10 @@ export default {
       this.setCheckedDocs([]);
     },
     shortcutNew(event) {
+      if (!this.isOnTop(this.$el)) {
+        return;
+      }
+
       const interesting = event.keyCode === 78; // N(ew)
       if (
         interesting &&
@@ -493,10 +494,10 @@ export default {
       }
     },
     bindShortcuts() {
-      this.modalStore.onKeyDown(this.$el, this.shortcutNew);
+      window.addEventListener('keydown', this.shortcutNew);
     },
     destroyShortcuts() {
-      this.modalStore.offKeyDown(this.shortcutNew);
+      window.removeEventListener('keydown', this.shortcutNew);
     },
     computeHeaders() {
       let headers = this.moduleOptions.columns || [];
@@ -576,7 +577,7 @@ export default {
       if (!types.includes(this.moduleName)) {
         return;
       }
-      if (this.relationshipField && (action === 'insert') && this.modalStore.isTopManager(this)) {
+      if (this.relationshipField && (action === 'insert') && this.isTopManager(this)) {
         const newDocs = [ ...this.checkedDocs, doc ];
         const limit = this.relationshipField?.max || newDocs.length;
         this.setCheckedDocs(newDocs.slice(0, limit));

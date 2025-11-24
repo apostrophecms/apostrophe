@@ -33,6 +33,7 @@
 </template>
 
 <script>
+import { mapActions } from 'pinia';
 import AposEditorMixin from 'Modules/@apostrophecms/modal/mixins/AposEditorMixin';
 import { klona } from 'klona';
 import { useModalStore } from 'Modules/@apostrophecms/ui/stores/modal';
@@ -151,16 +152,16 @@ export default {
     }
   },
   async mounted() {
-    this.modalStore = useModalStore();
     this.populateFields();
     await this.evaluateExternalConditions();
     this.evaluateConditions();
-    this.modalStore.onKeyDown(this.$el, this.keyboardHandler);
+    window.addEventListener('keydown', this.keyboardHandler);
   },
   beforeUnmount() {
-    this.modalStore.offKeyDown(this.keyboardHandler);
+    window.removeEventListener('keydown', this.keyboardHandler);
   },
   methods: {
+    ...mapActions(useModalStore, [ 'isOnTop' ]),
     close() {
       this.$emit('close');
     },
@@ -249,6 +250,10 @@ export default {
       return attrs;
     },
     keyboardHandler(e) {
+      if (!this.isOnTop(this.$el)) {
+        return;
+      }
+
       if (e.key === 'Escape') {
         // Don't confuse escape key handlers in other modal layers etc.
         e.stopPropagation();

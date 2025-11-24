@@ -5,9 +5,6 @@ import { createId } from '@paralleldrive/cuid2';
 export const useModalStore = defineStore('modal', () => {
   const stack = ref([]);
   const activeId = ref(null);
-  let keyDownListeners = [];
-
-  window.addEventListener('keydown', handleKeyDown);
 
   const activeModal = computed(() => {
     return stack.value.find(modal => activeId.value === modal.id);
@@ -48,40 +45,6 @@ export const useModalStore = defineStore('modal', () => {
 
   function getDepth() {
     return stack.value.length;
-  }
-
-  // Listens for keystrokes globally, but delivers them only
-  // if "el" is currently in the topmost modal (if any)
-  function onKeyDown(el, fn) {
-    if (!(
-      (el instanceof Element) &&
-        ((typeof fn) === 'function')
-    )
-    ) {
-      throw new Error('pass el, fn where el is your DOM element');
-    }
-    keyDownListeners.push({
-      el,
-      fn
-    });
-  }
-
-  // Reverse of onKeyDown. Note you call it with just fn
-  function offKeyDown(fn) {
-    if ((typeof fn) !== 'function') {
-      throw new Error('Call offKeyDown with just fn');
-    }
-    keyDownListeners = keyDownListeners.filter(({ fn: fnFound }) => fnFound !== fn);
-  }
-
-  function handleKeyDown(e) {
-    const top = stack.value.at(-1)?.modalEl;
-    for (const { el, fn } of keyDownListeners) {
-      if (top && (getDepthOf(el) < getDepthOf(top))) {
-        continue;
-      }
-      fn(e);
-    }
   }
 
   function getAt(index) {
@@ -254,6 +217,12 @@ export const useModalStore = defineStore('modal', () => {
     return stack.value.findIndex(modal => modal.modalEl === el);
   }
 
+  function isOnTop(el) {
+    const top = stack.value.at(-1)?.modalEl;
+
+    return top && getDepthOf(el) === getDepthOf(top);
+  }
+
   return {
     stack,
     activeId,
@@ -273,8 +242,7 @@ export const useModalStore = defineStore('modal', () => {
     alert,
     report,
     onTopOf,
-    onKeyDown,
-    offKeyDown,
+    isOnTop,
     isTopManager
   };
 });
