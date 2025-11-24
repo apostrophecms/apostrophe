@@ -313,6 +313,9 @@ module.exports = {
             total,
             type: req.t(req.body.type) || req.t('apostrophe:document')
           },
+          context: {
+            _id: options.contextId
+          },
           dismiss: options.dismiss,
           job: {
             // NOTE: if options.jobId is present, the notification will be a progress bar

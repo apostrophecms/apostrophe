@@ -133,7 +133,7 @@ describe('Job module', function() {
 
     const notifications = await apos.notification.db
       .find({
-        'job._id': job._id,
+        'context._id': job._id,
         message: /^Tested/
       })
       .toArray();
@@ -206,7 +206,7 @@ describe('Job module', function() {
 
     const notifications = await apos.notification.db
       .find({
-        'job._id': job._id,
+        'context._id': job._id,
         message: /^Testing.*failed\.$/
       })
       .toArray();
