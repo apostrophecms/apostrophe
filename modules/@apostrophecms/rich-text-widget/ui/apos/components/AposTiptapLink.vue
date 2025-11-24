@@ -305,12 +305,10 @@ export default {
       this.modalStore.onKeyDown(this.$el, this.keyboardHandler);
       await this.populateFields();
       this.evaluateConditions();
-      apos.adminBar.disableRefresh();
       this.$emit('open-popover');
     },
     closePopover() {
       this.modalStore.offKeyDown(this.keyboardHandler);
-      apos.adminBar.enableRefresh();
       this.$emit('close');
     }
   }

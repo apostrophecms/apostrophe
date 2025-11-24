@@ -13,6 +13,12 @@ export const useModalStore = defineStore('modal', () => {
     return stack.value.find(modal => activeId.value === modal.id);
   });
 
+  const hasChooserModal = computed(() => {
+    return stack.value.some(modal =>
+      modal.props.hasRelationshipField === true || !!modal.props.relationshipField
+    );
+  });
+
   function add(modal) {
     stack.value.push(modal);
   }
@@ -252,6 +258,7 @@ export const useModalStore = defineStore('modal', () => {
     stack,
     activeId,
     activeModal,
+    hasChooserModal,
     getActiveLocale,
     add,
     remove,

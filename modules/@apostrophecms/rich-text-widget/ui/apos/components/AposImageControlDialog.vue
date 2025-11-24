@@ -152,14 +152,12 @@ export default {
   },
   async mounted() {
     this.modalStore = useModalStore();
-    apos.adminBar.disableRefresh();
     this.populateFields();
     await this.evaluateExternalConditions();
     this.evaluateConditions();
     this.modalStore.onKeyDown(this.$el, this.keyboardHandler);
   },
   beforeUnmount() {
-    apos.adminBar.enableRefresh();
     this.modalStore.offKeyDown(this.keyboardHandler);
   },
   methods: {
