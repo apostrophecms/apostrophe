@@ -2,7 +2,6 @@ const fs = require('fs-extra');
 const path = require('node:path');
 const { glob } = require('../../lib/path');
 const { stripIndent } = require('common-tags');
-const { pathToFileURL } = require('node:url');
 
 // High and Low level public API for external modules.
 module.exports = (self) => {
@@ -654,8 +653,9 @@ function invoke() {
             }
           }
         }
-        // We know realPath is a file path at this point
-        const importUrl = JSON.stringify(pathToFileURL(realPath));
+        // You would think we should run pathToFileURL over realPath,
+        // but that actually breaks both Windows and Linux with Vite. -Tom
+        const importPath = JSON.stringify(realPath);
         const name = self.getComponentNameByPath(
           component,
           { enumerate: options.enumerateImports === true ? i : false }
@@ -663,8 +663,8 @@ function invoke() {
         const jsName = JSON.stringify(name);
         const importName = `${name}${options.importSuffix || ''}`;
         const importCode = options.importName === false
-          ? `import ${importUrl};\n`
-          : `import ${importName} from ${importUrl};\n`;
+          ? `import ${importPath};\n`
+          : `import ${importName} from ${importPath};\n`;
 
         output.importCode += `${importCode}`;
 
