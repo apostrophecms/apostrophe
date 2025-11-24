@@ -143,21 +143,25 @@ module.exports = {
         }
         async function run() {
           let good = false;
+          const promises = [];
           try {
             for (const id of ids) {
               try {
                 const result = await change(req, id);
-                self.success(job);
+                promises.push(self.success(job));
                 results[id] = result;
               } catch (err) {
-                self.failure(job);
+                promises.push(self.failure(job));
               }
             }
             good = true;
           } finally {
             await self.end(job, good, results);
+            // Wait for increments to be updated in DB
+            await Promise.allSettled(promises);
             // Trigger the completed notification.
             await self.triggerNotification(req, 'completed', {
+              contextId: job._id,
               dismiss: true
             });
             // Dismiss the progress notification. It will delay 4 seconds
@@ -223,15 +227,20 @@ module.exports = {
         async function run(info) {
           let results;
           let good = false;
+          const promises = [];
           try {
             await doTheWork(req, {
               success (n) {
                 n = n || 1;
-                return self.success(job, n);
+                const result = self.success(job, n);
+                promises.push(result);
+                return result;
               },
               failure (n) {
                 n = n || 1;
-                return self.failure(job, n);
+                const result = self.failure(job, n);
+                promises.push(result);
+                return result;
               },
               setTotal (n) {
                 total = n;
@@ -244,9 +253,11 @@ module.exports = {
             good = true;
           } finally {
             await self.end(job, good, results);
-
+            // Wait for increments to be updated in DB
+            await Promise.allSettled(promises);
             // Trigger the completed notification.
             await self.triggerNotification(req, 'completed', {
+              contextId: job._id,
               count: total,
               dismiss: true
             }, results);
@@ -269,7 +280,7 @@ module.exports = {
       // No messages are required, but they provide helpful information to
       // end users.
       async triggerNotification(req, stage, options = {}, results) {
-        if (!req.body || !req.body.messages || !req.body.messages[stage]) {
+        if (!req?.body?.messages?.[stage]) {
           return {};
         }
 
@@ -280,13 +291,34 @@ module.exports = {
           }
           : null;
 
-        return self.apos.notification.trigger(req, req.body.messages[stage], {
+        const {
+          good, bad, processed, total
+        } = stage === 'completed' && options.contextId
+          ? await self.db.findOne({ _id: options.contextId })
+          : {};
+
+        let message = req.body.messages[stage];
+        if (stage === 'completed' && req.body.messages.failed && bad > 0 && good === 0) {
+          message = req.body.messages.failed;
+        } else if (stage === 'completed' && req.body.messages.completedWithFailures && bad > 0 && good > 0) {
+          message = req.body.messages.completedWithFailures;
+        }
+
+        return self.apos.notification.trigger(req, message, {
           interpolate: {
+            bad,
             count: options.count || (req.body._ids && req.body._ids.length),
+            good,
+            processed,
+            total,
             type: req.t(req.body.type) || req.t('apostrophe:document')
+          },
+          context: {
+            _id: options.contextId
           },
           dismiss: options.dismiss,
           job: {
+            // NOTE: if options.jobId is present, the notification will be a progress bar
             _id: options.jobId,
             action: options.action,
             ids: options.ids,
@@ -338,42 +370,36 @@ module.exports = {
       //
       // If the second argument is completely omitted,
       // the default is `1`.
-      //
-      // No promise is returned as this method just updates
-      // the job tracking information in the background.
-      success(job, n) {
+      async success(job, n) {
         n = n === undefined ? 1 : n;
-        self.db.updateOne({ _id: job._id }, {
-          $inc: {
-            good: n,
-            processed: n
-          }
-        }, function (err) {
-          if (err) {
-            self.apos.util.error(err);
-          }
-        });
+        try {
+          await self.db.updateOne({ _id: job._id }, {
+            $inc: {
+              good: n,
+              processed: n
+            }
+          });
+        } catch (err) {
+          self.apos.util.error(err);
+        }
       },
       // Call this to report that n items were bad
       // (not successfully processed).
       //
       // If the second argument is completely omitted,
       // the default is 1.
-      //
-      // No promise is returned as this method just updates
-      // the job tracking information in the background.
-      failure(job, n) {
+      async failure(job, n) {
         n = n === undefined ? 1 : n;
-        self.db.updateOne({ _id: job._id }, {
-          $inc: {
-            bad: n,
-            processed: n
-          }
-        }, function (err) {
-          if (err) {
-            self.apos.util.error(err);
-          }
-        });
+        try {
+          await self.db.updateOne({ _id: job._id }, {
+            $inc: {
+              bad: n,
+              processed: n
+            }
+          });
+        } catch (err) {
+          self.apos.util.error(err);
+        };
       },
       // Call this to indicate the total number
       // of items expected. Until and unless this is called

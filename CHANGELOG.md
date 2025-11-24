@@ -10,6 +10,7 @@
 * Adds `@apostrophecms/doc:get-apos-doc-id` and `@apostrophecms/doc:set-apos-doc-id` tasks.
 * New `box` schema field type
 * When switching locale from the doc editor, ask if the user wants to localize the current document in the target locale or want to start a blank document.
+* Adds batch failure notifications.
 * Introduced a new `longPolling: false` option for the `@apostrophecms/notification` module. This eliminates long-pending requests when logged in, but also slows down the delivery of notifications. The behavior can be tuned further via the `pollingInterval` option, which defaults to `5000` milliseconds.
 * Add support for `def` in area fields - array of widget names to use as defaults when the area is created.
 
