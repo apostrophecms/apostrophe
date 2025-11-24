@@ -653,8 +653,8 @@ function invoke() {
             }
           }
         }
-        // You would think we should run pathToFileURL over realPath, but that actually breaks
-        // both Windows and Linux with Vite. -Tom
+        // You would think we should run pathToFileURL over realPath,
+        // but that actually breaks both Windows and Linux with Vite. -Tom
         const importPath = JSON.stringify(realPath);
         const name = self.getComponentNameByPath(
           component,
