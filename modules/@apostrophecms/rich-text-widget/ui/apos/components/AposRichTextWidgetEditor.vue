@@ -524,8 +524,6 @@ export default {
     },
     handleUIKeydown(e) {
       if (e.key === 'Escape') {
-        // Don't confuse escape key handlers in other modal layers etc.
-        e.stopPropagation();
         this.doSuppressInsertMenu();
       } else {
         this.suppressInsertMenu = false;
