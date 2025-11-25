@@ -1,6 +1,6 @@
 {
   "name": "apostrophe",
-  "version": "4.23.0",
+  "version": "4.24.0",
   "description": "The Apostrophe Content Management System.",
   "main": "index.js",
   "scripts": {
