@@ -538,7 +538,6 @@ export default {
     doSuppressInsertMenu() {
       this.suppressInsertMenu = true;
       this.activeInsertMenuComponent = false;
-      this.insertMenuKey = this.generateKey();
       this.editor.commands.focus();
     },
     onAposRefreshing(refreshOptions) {
