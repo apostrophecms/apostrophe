@@ -549,8 +549,54 @@ export default {
           if (docData.type !== this.docType) {
             this.docType = docData.type;
           }
+          console.log('Loaded doc data:', docData);
+          console.log('Schema:', this.schema);
           this.original = klona(docData);
           this.docFields.data = docData;
+
+          resetUnexistantValuesFromSchema(this.schema, docData);
+
+          function resetUnexistantValuesFromSchema(schema, object) {
+            for (const field of schema) {
+              if (field.type === 'array') {
+                for (const item of (object[field.name] || [])) {
+                  resetUnexistantValuesFromSchema(field.schema, item);
+                }
+                continue;
+              }
+              if (field.type === 'object') {
+                resetUnexistantValuesFromSchema(field.schema, object[field.name] || {});
+                continue;
+              }
+
+              if (
+                !field.choices ||
+                !Array.isArray(field.choices) ||
+                !field.choices.length
+              ) {
+                continue;
+              }
+
+              const validChoices = field.choices.map(choice => choice.value);
+
+              if (field.type === 'select' || field.type === 'radio') {
+                if (!validChoices.includes(object[field.name])) {
+                  object[field.name] = field.def || null;
+                }
+                continue;
+              }
+
+              if (field.type === 'checkboxes') {
+                if (!Array.isArray(object[field.name])) {
+                  object[field.name] = field.def || [];
+                  continue;
+                }
+                object[field.name] = object[field.name].filter(
+                  value => validChoices.includes(value)
+                );
+              }
+            }
+          }
           // TODO: Is this block even useful since published is fetched after
           // loadDoc?
           if (this.published) {
