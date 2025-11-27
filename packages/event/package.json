@@ -16,13 +16,6 @@
   "homepage": "https://github.com/apostrophecms/apostrophe/tree/main/packages/event#readme",
   "author": "Apostrophe Technologies",
   "license": "MIT",
-  "prettier": {
-    "trailingComma": "none",
-    "tabWidth": 2,
-    "semi": true,
-    "singleQuote": true,
-    "bracketSpacing": true
-  },
   "publishConfig": {
     "access": "public"
   },

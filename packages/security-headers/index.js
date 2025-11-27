@@ -82,7 +82,11 @@ module.exports = {
           if (self.options['Content-Security-Policy'] === true) {
             const hostsString = hosts.join(' ');
             const policies = {};
-            const source = Object.assign({}, self.options.minimumPolicies, self.options.policies || {});
+            const source = Object.assign(
+              {},
+              self.options.minimumPolicies,
+              self.options.policies || {}
+            );
             for (const policy of Object.values(source)) {
               for (const [ key, val ] of Object.entries(policy)) {
                 if (!policy) {
@@ -98,7 +102,8 @@ module.exports = {
             let flatPolicies = [];
             for (const [ key, val ] of Object.entries(policies)) {
               // Merge hosts and permissions from several 'style-src', 'default-src', etc.
-              // spread over different policies like defaultPolicies and googleFontsPolicies
+              // spread over different policies like defaultPolicies
+              // and googleFontsPolicies
               const words = val.split(/\s+/);
               const newWords = [];
               for (const word of words) {

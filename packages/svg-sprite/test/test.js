@@ -141,7 +141,6 @@ describe('SVG Sprites', function () {
       // Importer is running from the URL in the apos2 module configuration.
       await apos2.task.invoke('@apostrophecms/svg-sprite:import');
     } catch (error) {
-      console.error(error);
       assert(!error);
     }
   });
@@ -199,7 +198,6 @@ describe('SVG Sprites', function () {
       // configuration.
       await apos3.task.invoke('@apostrophecms/svg-sprite:import');
     } catch (error) {
-      console.error(error);
       assert(!error);
     }
   });

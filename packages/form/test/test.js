@@ -500,6 +500,7 @@ describe('Forms module', function () {
         savedForm3 = form;
       })
       .catch(function (err) {
+        // eslint-disable-next-line no-console
         console.error(err);
         assert(!err);
       });

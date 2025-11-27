@@ -275,17 +275,22 @@ module.exports = {
               }
 
               // Wildcard match
-              if (redirect.redirectSlugPrefix && pathOnly.startsWith(redirect.redirectSlugPrefix)) {
+              if (
+                redirect.redirectSlugPrefix &&
+                pathOnly.startsWith(redirect.redirectSlugPrefix)
+              ) {
                 const wildcardIndex = redirect.redirectSlug.indexOf('*');
                 const suffixPattern = redirect.redirectSlug.substring(wildcardIndex + 1);
-                const capturedPart = pathOnly.substring(redirect.redirectSlugPrefix.length);
+                const capturedPart = pathOnly
+                  .substring(redirect.redirectSlugPrefix.length);
 
                 // Check if the URL matches the suffix pattern
                 if (suffixPattern) {
                   if (capturedPart.endsWith(suffixPattern)) {
                     redirect.matchType = 'wildcard';
                     redirect.matchLength = redirect.redirectSlugPrefix.length;
-                    redirect.wildcardMatch = capturedPart.substring(0, capturedPart.length - suffixPattern.length);
+                    redirect.wildcardMatch = capturedPart
+                      .substring(0, capturedPart.length - suffixPattern.length);
                     validMatches.push(redirect);
                     continue;
                   }
@@ -305,7 +310,8 @@ module.exports = {
             }
 
             if (validMatches.length > 1) {
-              // Sort by priority: exact matches first, then longer matches, then shorter matches
+              // Sort by priority: exact matches first,
+              // then longer matches, then shorter matches
               validMatches.sort((a, b) => {
                 if (a.matchType === 'exact' && b.matchType !== 'exact') {
                   return -1;
@@ -319,7 +325,8 @@ module.exports = {
 
             const foundTarget = validMatches[0];
             const isWildcardMatch = foundTarget.matchType === 'wildcard';
-            const shouldForwardQueryString = foundTarget.forwardQueryString && !isWildcardMatch;
+            const shouldForwardQueryString = foundTarget.forwardQueryString &&
+              !isWildcardMatch;
 
             const localizedReq = (
               (foundTarget.urlType === 'internal') &&

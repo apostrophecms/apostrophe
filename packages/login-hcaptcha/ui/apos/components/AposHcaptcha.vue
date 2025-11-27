@@ -2,32 +2,27 @@
   <div
     class="h-captcha"
     :data-sitekey="sitekey"
-  >
-  </div>
+  />
 </template>
 
 <script>
 export default {
-  emits: [ 'done', 'block' ],
   props: {
-    sitekey: String,
+    sitekey: {
+      type: String,
+      default: null
+    },
     url: {
       type: String,
       default: 'https://js.hcaptcha.com/1/api.js?render=explicit'
     }
   },
+  emits: [ 'done', 'block' ],
   data() {
     return {
       token: null,
       hcaptcha: null
     };
-  },
-  mounted() {
-    if (!window.hcaptcha) {
-      this.addScript();
-    }
-
-    this.executeHcaptcha();
   },
   watch: {
     token(newVal) {
@@ -38,9 +33,16 @@ export default {
       }
     }
   },
+  mounted() {
+    if (!window.hcaptcha) {
+      this.addScript();
+    }
+
+    this.executeHcaptcha();
+  },
   methods: {
     addScript() {
-      let scriptElem = document.createElement('script');
+      const scriptElem = document.createElement('script');
       scriptElem.setAttribute('src', this.url);
       scriptElem.setAttribute('async', true);
       scriptElem.setAttribute('defer', true);

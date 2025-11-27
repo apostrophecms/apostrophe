@@ -1,7 +1,11 @@
 module.exports = {
   improve: '@apostrophecms/login',
   requirements(self) {
-    if (!self.options.hcaptcha || !self.options.hcaptcha.site || !self.options.hcaptcha.secret) {
+    if (
+      !self.options.hcaptcha ||
+      !self.options.hcaptcha.site ||
+      !self.options.hcaptcha.secret
+    ) {
       throw new Error('The login hCaptcha site key, secret key, or both are not configured');
     }
 

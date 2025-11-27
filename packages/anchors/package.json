@@ -22,7 +22,7 @@
   "license": "MIT",
   "devDependencies": {
     "apostrophe": "workspace:*",
-    "eslint": "^7.9.0",
+    "eslint": "^9.39.1",
     "eslint-config-apostrophe": "workspace:*",
     "mocha": "^7.1.2"
   },

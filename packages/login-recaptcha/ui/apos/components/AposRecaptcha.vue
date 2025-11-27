@@ -1,11 +1,12 @@
-<template></template>
-
 <script>
 export default {
-  emits: [ 'done', 'block' ],
   props: {
-    sitekey: String
+    sitekey: {
+      type: String,
+      default: null
+    }
   },
+  emits: [ 'done', 'block' ],
   data() {
     return {
       token: null
@@ -16,13 +17,6 @@ export default {
       return 'https://www.google.com/recaptcha/api.js?render=' + this.sitekey;
     }
   },
-  mounted() {
-    if (!window.grecaptcha) {
-      this.addScript();
-    }
-
-    this.executeRecaptcha();
-  },
   watch: {
     token(newVal) {
       newVal
@@ -32,7 +26,7 @@ export default {
   },
   methods: {
     addScript() {
-      let scriptElem = document.createElement('script');
+      const scriptElem = document.createElement('script');
       scriptElem.setAttribute('src', this.recaptchaUrl);
       scriptElem.setAttribute('defer', true);
 
@@ -44,8 +38,8 @@ export default {
         return;
       }
 
-      grecaptcha.ready(async () => {
-        this.token = await grecaptcha.execute(this.sitekey, {action: 'submit'});
+      window.grecaptcha.ready(async () => {
+        this.token = await window.grecaptcha.execute(this.sitekey, { action: 'submit' });
       });
     }
   }
