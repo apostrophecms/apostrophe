@@ -1,0 +1,35 @@
+{
+  "name": "@apostrophecms/event",
+  "version": "1.0.2",
+  "description": "Event management for Apostrophe 3 websites",
+  "main": "index.js",
+  "scripts": {
+    "lint": "npm run eslint",
+    "eslint": "eslint .",
+    "test": "npm run lint"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/apostrophecms/apostrophe.git",
+    "directory": "packages/event"
+  },
+  "homepage": "https://github.com/apostrophecms/apostrophe/tree/main/packages/event#readme",
+  "author": "Apostrophe Technologies",
+  "license": "MIT",
+  "dependencies": {
+    "dayjs": "^1.10.7"
+  },
+  "devDependencies": {
+    "eslint-config-apostrophe": "^5.0.0"
+  },
+  "prettier": {
+    "trailingComma": "none",
+    "tabWidth": 2,
+    "semi": true,
+    "singleQuote": true,
+    "bracketSpacing": true
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}

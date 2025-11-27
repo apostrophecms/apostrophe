@@ -1,0 +1,8 @@
+{
+  "rejected": "Vos identifiants n'ont pas été acceptés, votre compte n'est pas affilié à ce site, ou un compte existant a le même nom d'utilisateur ou la même adresse e-mail.",
+  "logInWith": "Connectez-vous avec {{ label }}",
+  "errorHeading": "Une erreur de connexion s'est produite",
+  "errorSubheading": "Une erreur s'est produite lors de la connexion via {{ label }}",
+  "contactAdministrator": "Si vous pensez voir ce message par erreur, veuillez contacter l'administrateur.",
+  "connectionRequest": "Connexion de {{ strategyName }} à {{ site }}"
+}

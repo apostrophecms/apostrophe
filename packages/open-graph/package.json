@@ -1,0 +1,21 @@
+{
+  "name": "@apostrophecms/open-graph",
+  "version": "1.2.3",
+  "description": "Open Graph fields for ApostropheCMS",
+  "main": "index.js",
+  "scripts": {
+    "test": "npm run lint",
+    "lint": "eslint ."
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/apostrophecms/apostrophe.git",
+    "directory": "packages/open-graph"
+  },
+  "homepage": "https://github.com/apostrophecms/apostrophe/tree/main/packages/open-graph#readme",
+  "author": "Apostrophe Technologies",
+  "license": "MIT",
+  "devDependencies": {
+    "eslint-config-apostrophe": "workspace:*"
+  }
+}

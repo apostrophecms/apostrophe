@@ -1,0 +1,32 @@
+{
+  "name": "@apostrophecms/mongodb-snapshot",
+  "version": "1.1.0",
+  "description": "Save and restore mongodb snapshots without mongodump and mongorestore",
+  "main": "index.js",
+  "scripts": {
+    "test": "mocha"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/apostrophecms/apostrophe.git",
+    "directory": "packages/mongodb-snapshot"
+  },
+  "homepage": "https://github.com/apostrophecms/apostrophe/tree/main/packages/mongodb-snapshot#readme",
+  "author": "Apostrophe Technologies",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/apostrophecms/mongodb-snapshot/issues"
+  },
+  "dependencies": {
+    "boring": "^1.1.1",
+    "bson": "^6.10.1",
+    "mongodb": "^6.12.0"
+  },
+  "devDependencies": {
+    "mocha": "^11.0.1"
+  },
+  "bin": {
+    "mongodb-snapshot-write": "./bin/mongodb-snapshot-write",
+    "mongodb-snapshot-read": "./bin/mongodb-snapshot-read"
+  }
+}

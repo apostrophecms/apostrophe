@@ -1,0 +1,3 @@
+{
+  "extends": [ "apostrophe", "plugin:vue/vue3-recommended" ]
+}

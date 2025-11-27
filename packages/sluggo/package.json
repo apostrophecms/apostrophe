@@ -1,0 +1,28 @@
+{
+  "name": "sluggo",
+  "version": "1.0.0",
+  "description": "High-speed, unicode-aware, browser-friendly slug generator",
+  "main": "sluggo.js",
+  "scripts": {
+    "test": "mocha test/test.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/apostrophecms/apostrophe.git",
+    "directory": "packages/sluggo"
+  },
+  "homepage": "https://github.com/apostrophecms/apostrophe/tree/main/packages/sluggo#readme",
+  "keywords": [
+    "slug",
+    "unicode",
+    "slugs"
+  ],
+  "author": "Apostrophe Technologies, Inc.",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/apostrophecms/sluggo/issues"
+  },
+  "devDependencies": {
+    "mocha": "^8.3.2"
+  }
+}

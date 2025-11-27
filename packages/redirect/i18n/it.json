@@ -1,0 +1,18 @@
+{
+  "301": "Permanente (codice di stato 301)",
+  "302": "Temporaneo (codice di stato 302)",
+  "label": "Reindirizza",
+  "pluralLabel": "Reindirizzamenti",
+  "originalSlug": "URL vecchia",
+  "originalSlugHelp": "Formato con barra iniziale (ad es., /vecchia-url)",
+  "title": "Descrizione",
+  "urlType": "Tipo di collegamento",
+  "urlTypeInternal": "Incolla un URL",
+  "urlTypeExternal": "URL",
+  "ignoreQuery": "Ignora la stringa di query durante il matching",
+  "forwardQuery": "Inoltra la stringa di query",
+  "newPage": "Titolo della pagina",
+  "external": "URL",
+  "statusCode": "Tipo di reindirizzamento",
+  "statusCodeHtmlHelp": "<ul><li>Utilizza <strong>\"Temporaneo\"</strong> per reindirizzamenti temporanei o per scopi di test.</li><li>Utilizza <strong>\"Permanente\"</strong> dopo aver effettuato dei test, questa è una buona pratica SEO. ⚠️ I motori di ricerca memorizzeranno questi, quindi controlla attentamente.</li>"
+}

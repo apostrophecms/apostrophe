@@ -1,0 +1,39 @@
+#!/usr/bin/env node
+
+const { MongoClient } = require('mongodb');
+const { erase, read } = require('../index.js');
+const argv = require('boring')();
+const { existsSync } = require('fs');
+
+(async () => {
+  if (!(argv.from && argv.to)) {
+    fail(
+      'Usage: mongodb-snapshot-read --from=filename.snapshot --to=mongodb://localhost:27017/dbname [--erase]\n\n' +
+      'This command will read the snapshot into the database. If --erase is given,\n' +
+      'ALL previous contents of the database are removed first.'
+    );
+  }
+  try {
+    const client = new MongoClient(argv.to);
+    await client.connect();
+    const db = await client.db();
+    const exclude = argv.exclude && argv.exclude.split(',');
+    if (!existsSync(argv.from)) {
+      fail(`${from} does not exist`);
+    }
+    // If you want to replace the current contents and avoid unique key errors and/or duplicate
+    // documents, call erase first
+    if (argv.erase) {
+      await erase(db);
+    }
+    await read(db, argv.from, { exclude });
+    await client.close();
+  } catch (e) {
+    fail(e);
+  }
+})();
+
+function fail(e) {
+  console.error(e);
+  process.exit(1);
+}

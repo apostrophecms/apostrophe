@@ -1,0 +1,20 @@
+{
+  "name": "@apostrophecms/apostrophe-astro",
+  "version": "1.7.1",
+  "type": "module",
+  "description": "Apostrophe integration for Astro",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/apostrophecms/apostrophe.git",
+    "directory": "packages/apostrophe-astro"
+  },
+  "homepage": "https://github.com/apostrophecms/apostrophe/tree/main/packages/apostrophe-astro#readme",
+  "main": "index.js",
+  "author": "Apostrophe Technologies",
+  "license": "MIT",
+  "dependencies": {
+    "lodash.deburr": "^4.1.0",
+    "sluggo": "^1.0.0",
+    "undici": "^6.21.1"
+  }
+}

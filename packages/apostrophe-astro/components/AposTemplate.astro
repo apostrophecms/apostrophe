@@ -1,0 +1,39 @@
+---
+import { templates } from 'virtual:apostrophe-doctypes';
+
+const { aposData } = Astro.props;
+
+// Handle connection and authentication errors
+if (aposData.errorFetchingPage || aposData.page?.type === 'apos-fetch-error') {
+  // Connection refused error
+  if (aposData.errorFetchingPage?.code === 'ECONNREFUSED') {
+    throw new Error(
+      'Unable to connect to Apostrophe CMS server. ' +
+      'Please ensure the Apostrophe server is running and try again.'
+    );
+  }
+
+  // Header key mismatch error
+  if (aposData.errorFetchingPage instanceof SyntaxError &&
+      aposData.errorFetchingPage.message.includes('forbidden')) {
+    throw new Error(
+      'Authentication failed: Header keys do not match between frontend and backend. ' +
+      'Please check your APOS_EXTERNAL_FRONT_KEY environment variables match in both projects.'
+    );
+  }
+
+  // Generic fetch error
+  throw new Error(
+    'Error fetching page from Apostrophe CMS: ' +
+    (aposData.errorFetchingPage?.message || 'Unknown error')
+  );
+}
+
+
+const Template = templates[aposData.template]
+  || templates[aposData.template?.replace(':page', '')]
+  || templates[aposData.module]
+  || templates['apos-no-template'];
+
+---
+{ Template && <Template {aposData} /> }

@@ -1,0 +1,38 @@
+{
+  "name": "cache-on-demand",
+  "version": "1.0.1",
+  "description": "\"On demand\" caching that kicks in only when requests arrive simultaneously.",
+  "main": "index.js",
+  "directories": {
+    "test": "test"
+  },
+  "scripts": {
+    "test": "mocha test"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/apostrophecms/apostrophe.git",
+    "directory": "packages/cache-on-demand"
+  },
+  "homepage": "https://github.com/apostrophecms/apostrophe/tree/main/packages/cache-on-demand#readme",
+  "keywords": [
+    "caching",
+    "on",
+    "demand",
+    "caching",
+    "on",
+    "demand",
+    "async",
+    "apostrophe"
+  ],
+  "author": "P'unk Avenue LLC",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/punkave/cache-on-demand/issues"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "eslint-config-apostrophe": "workspace:*",
+    "mocha": "^9.2.0"
+  }
+}

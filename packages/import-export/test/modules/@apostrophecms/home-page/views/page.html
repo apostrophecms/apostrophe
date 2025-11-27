@@ -1,0 +1,16 @@
+<title>{{ data.page.title }}</title>
+<h4>Home Page Template</h4>
+{# This is necessary to the login.js tests. -Tom #}
+{% if data.user %}
+  logged in as {{ data.user.title }}
+{% else %}
+  logged out
+{% endif %}
+{# Necessary to the @apostrophecms/global tests. #}
+counts: {{ data.global.counts }}
+<h2>Translations</h2>
+<ul>
+  {% for localization in data.localizations %}
+    <li><a href="{{ localization._url or localization.homePageUrl }}">{{ localization.label }} ({{ localization.locale }})</a></li>
+  {% endfor %}
+</ul>

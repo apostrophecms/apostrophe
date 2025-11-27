@@ -1,0 +1,15 @@
+{
+  "label": "Frase i18n Statica",
+  "pluralLabel": "Frasi i18n Statiche",
+  "locale": "Locale",
+  "key": "Chiave",
+  "namespace": "Namespace",
+  "valueSingular": "Singolare",
+  "valuePlural": "Plurale",
+  "valueZero": "Zero",
+  "valuePluralTwo": "Forma Plurale Per \"due\"",
+  "valuePluralFew": "Forma Plurale Per \"pochi\"",
+  "valuePluralMany": "Forma Plurale Per \"molti\"",
+  "localeSpecificsForms": "Forme Specifiche per il Locale",
+  "ifApplicableInThisLocale": "Se applicabile in questo locale"
+}

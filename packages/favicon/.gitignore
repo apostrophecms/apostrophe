@@ -1,0 +1,11 @@
+# Ignore MacOS X metadata forks (fusefs)
+._*
+package-lock.json
+*.DS_Store
+node_modules
+
+# Never commit a CSS map file, anywhere
+*.css.map
+
+# vim swp files
+.*.sw*

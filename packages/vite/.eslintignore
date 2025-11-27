@@ -1,0 +1,4 @@
+public/apos-frontend
+data/temp
+apos-build
+test/modules/**/ui/*

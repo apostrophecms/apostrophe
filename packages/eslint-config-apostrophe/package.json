@@ -1,0 +1,35 @@
+{
+  "name": "eslint-config-apostrophe",
+  "version": "6.0.2",
+  "description": "eslint configuration for apostrophe and related core modules",
+  "main": "index.js",
+  "engines": {
+    "node": ">=16"
+  },
+  "type": "module",
+  "scripts": {
+    "compare": "node ./lib/index",
+    "eslint": "eslint . -c eslintrc.json",
+    "test": "npx mocha"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/apostrophecms/apostrophe.git",
+    "directory": "packages/eslint-config-apostrophe"
+  },
+  "homepage": "https://github.com/apostrophecms/apostrophe/tree/main/packages/eslint-config-apostrophe#readme",
+  "author": "Apostrophe Technologies, Inc.",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/apostrophecms/eslint-config-apostrophe/issues"
+  },
+  "dependencies": {
+    "eslint": "^9.34.0",
+    "eslint-plugin-vue": "^10.4.0",
+    "globals": "^16.3.0",
+    "neostandard": "^0.12.2"
+  },
+  "devDependencies": {
+    "mocha": "^10.2.0"
+  }
+}

@@ -1,0 +1,8 @@
+{
+  "rejected": "Le tue credenziali non sono state accettate, il tuo account non è affiliato a questo sito, oppure esiste già un account con lo stesso nome utente o indirizzo email.",
+  "logInWith": "Accedi con {{ label }}",
+  "errorHeading": "Si è verificato un errore di accesso",
+  "errorSubheading": "Si è verificato un errore durante l'accesso tramite {{ label }}",
+  "contactAdministrator": "Se credi di vedere questo messaggio per errore, ti preghiamo di contattare l'amministratore.",
+  "connectionRequest": "Collegamento di {{ strategyName }} a {{ site }}"
+}

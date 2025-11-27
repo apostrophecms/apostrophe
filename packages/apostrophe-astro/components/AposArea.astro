@@ -1,0 +1,82 @@
+---
+import AposWidget from "./AposWidget.astro";
+
+const {
+  area,
+  aposAttributes,
+  aposStyle,
+  aposClassName,
+  aposParentOptions,
+  widgetComponent,
+  ...props
+} = Astro.props;
+
+let attributes = {};
+
+const widgets = area?.items || [];
+
+const isEdit = area?._edit && Astro.url.searchParams.get("aposEdit");
+const forceWrapper = aposAttributes || aposStyle || aposClassName;
+
+const WidgetComponent = widgetComponent ?? AposWidget;
+
+if (isEdit) {
+  attributes = {
+    "data-apos-area-newly-editable": "",
+    "data-doc-id": area?._docId,
+    "data-area-id": area?._id,
+    "data-field-id": area?.field?._id,
+    "data-module": area?.field?.moduleName,
+    "data-options": JSON.stringify(area?.options),
+    "data-choices": JSON.stringify(area?.choices),
+    "data-parent-options": JSON.stringify(aposParentOptions ?? {}),
+    style: aposStyle ?? "",
+    className: aposClassName ?? "",
+    ...(aposAttributes ?? {}),
+    data: JSON.stringify(area),
+  };
+} else if (forceWrapper) {
+  attributes = {
+    style: aposStyle ?? "",
+    className: aposClassName ?? "",
+    ...(aposAttributes ?? {}),
+  };
+}
+const Wrapper = isEdit || forceWrapper ? "div" : Fragment;
+const widgetOptions = getWidgetOptions(area.options);
+
+function getWidgetOptions(options) {
+  let widgets = options.widgets || {};
+
+  if (options.groups) {
+    for (const group of Object.keys(options.groups)) {
+      widgets = {
+        ...widgets,
+        ...options.groups[group].widgets,
+      };
+    }
+  }
+  return widgets;
+}
+---
+
+<Wrapper {...attributes}>
+  {
+    widgets?.map((item) => {
+      const options = {
+        ...item._options,
+        ...widgetOptions[item.type],
+      };
+      const { _options, ...cleanItem } = item;
+      return (
+        <WidgetComponent
+          widget={cleanItem}
+          options={options}
+          area={area}
+          canEdit={isEdit}
+          {...props}
+        />
+      );
+    })
+  }
+</Wrapper>

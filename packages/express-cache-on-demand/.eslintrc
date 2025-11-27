@@ -1,0 +1,6 @@
+{
+  "extends": [ "apostrophe" ],
+  "rules": {
+    "no-console": "off"
+  }
+}

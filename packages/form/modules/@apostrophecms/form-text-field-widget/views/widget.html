@@ -1,0 +1,33 @@
+{# ids must be unique doc-wide #}
+{% set id = apos.util.generateId() %}
+{% set widget = data.widget %}
+{% set prependIfPrefix = apos.modules['@apostrophecms/form'].prependIfPrefix %}
+{% import "fragments/utility.html" as utils with context %}
+
+<div data-apos-form-text class="apos-form-input-wrapper">
+  <label for="{{ id }}"
+    class="apos-form-label {{ prependIfPrefix('__label') }}"
+  >
+    {{ widget.fieldLabel}}
+    {{ utils.optional(widget.required) }}
+    {{ utils.required(widget.required) }}
+    <span
+      class="apos-form-label-message {{ prependIfPrefix('__label-message') }}"
+      data-apos-input-message="{{ widget.fieldName }}" hidden></span>
+  </label>
+  {% if widget.inputType == 'date' %}
+    <p>
+      <small class="apos-form-help">{{ __t("(YYYY-MM-DD)") }}</small>
+    </p>
+  {% endif %}
+  <input
+    class="apos-form-input {{ prependIfPrefix('__input') }}"
+    type="{{ widget.inputType or "text" }}"
+    placeholder="{{ widget.placeholder }}"
+    id="{{ id }}" name="{{ widget.fieldName }}"
+    {% if widget.inputType == 'date' %}
+      pattern="[0-9]{4}-(0[1-9]|1[012])-(0[1-9]|1[0-9]|2[0-9]|3[01])"
+    {% endif %}
+    {% if widget.required %}required{% endif %}
+  />
+</div>

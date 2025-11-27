@@ -1,0 +1,51 @@
+{
+  "name": "uploadfs",
+  "version": "1.26.0",
+  "description": "Store files in a web-accessible location via a simplified API. Can automatically scale and rotate images. Includes S3, Azure and local filesystem-based backends with the most convenient features of each.",
+  "main": "uploadfs.js",
+  "scripts": {
+    "test": "npm run testAzure && GOOGLE_APPLICATION_CREDENTIALS=gcs-credentials-uploadfstest.json mocha test/ && node test-imagemagick.js && eslint .",
+    "testAzure": "env AZURE_TEST_FILE='test.jpg' mocha test/azure.js",
+    "webp": "./webp-test.js",
+    "lint-be": "eslint --fix 'lib/**/*.js'",
+    "test-sharp": "npm run testAzure && GOOGLE_APPLICATION_CREDENTIALS=gcs-credentials-uploadfstest.json mocha test/ && node test-sharp.js && eslint ."
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/apostrophecms/apostrophe.git",
+    "directory": "packages/uploadfs"
+  },
+  "homepage": "https://github.com/apostrophecms/apostrophe/tree/main/packages/uploadfs",
+  "keywords": [
+    "upload",
+    "files",
+    "s3",
+    "storage"
+  ],
+  "author": "Apostrophe Technologies, Inc.",
+  "license": "MIT",
+  "dependencies": {
+    "async": "^1.0.0",
+    "bluebird": "^3.7.2",
+    "es6-promise": "^4.1.0",
+    "fs-extra": "^5.0.0",
+    "gzipme": "^0.1.1",
+    "lodash": "^4.17.21",
+    "rimraf": "^5.0.7"
+  },
+  "optionalDependencies": {
+    "@aws-sdk/client-s3": "^3.908.0",
+    "@aws-sdk/lib-storage": "^3.908.0",
+    "@azure/storage-blob": "^12.14.0",
+    "@google-cloud/storage": "^7.17.0",
+    "@smithy/node-http-handler": "^4.4.0",
+    "sharp": "^0.32.6"
+  },
+  "devDependencies": {
+    "eslint": "^8.0.0",
+    "eslint-config-apostrophe": "^4.0.0",
+    "mocha": "^10.2.0",
+    "node-fetch": "^2.6.9",
+    "stat-mode": "^0.2.2"
+  }
+}

@@ -1,0 +1,17 @@
+{
+  "extends": [
+    "apostrophe"
+  ],
+  "env": {
+    "mocha": true
+  },
+  "rules": {
+    "no-var": "error",
+    "no-console": 0,
+    "multiline-ternary": "off",
+    "no-unused-vars": [
+      "error",
+      { "varsIgnorePattern": "^_.", "args": "none" }
+    ]
+  }
+}

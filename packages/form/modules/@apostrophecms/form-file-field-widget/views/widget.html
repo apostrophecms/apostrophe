@@ -1,0 +1,26 @@
+{# ids must be unique doc-wide #}
+{% set id = apos.util.generateId() %}
+{% set widget = data.widget %}
+{% set prependIfPrefix = apos.modules['@apostrophecms/form'].prependIfPrefix %}
+{% import "fragments/utility.html" as utils with context %}
+
+<div data-apos-form-file class="apos-form-input-wrapper">
+  <label for="{{ id }}" class="apos-form-label {{ prependIfPrefix('__label') }}">
+    {{ widget.fieldLabel}}
+    {{ utils.optional(widget.required) }}
+    {{ utils.required(widget.required) }}
+    <span
+      class="apos-form-label-message {{ prependIfPrefix('__label-message') }}"
+      data-apos-input-message="{{ widget.fieldName }}" hidden></span>
+  </label>
+  <input
+    class="apos-form-input {{ prependIfPrefix('__input') }}"
+    type="file" id="{{ id }}"
+    {% if widget.allowMultiple %}multiple{% endif %}
+    {% if widget.limitSize and widget.maxSize %}
+      data-max-size="{{ widget.maxSize }}"
+      data-max-size-error="{{ __t('aposForm:fileMaxSizeError') }}"
+      data-file-size-units="{{ widget.fileSizeUnits | jsonAttribute }}"
+    {% endif %}
+    name="{{ widget.fieldName}}" {% if widget.required %}required{% endif %}>
+</div>

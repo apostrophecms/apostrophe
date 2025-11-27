@@ -1,0 +1,27 @@
+{
+  "name": "@apostrophecms/form-submission-google",
+  "version": "1.0.2",
+  "description": "Google spreadsheet submission for the ApostropheCMS form builder.",
+  "main": "index.js",
+  "scripts": {
+    "lint": "npm run eslint",
+    "eslint": "eslint .",
+    "test": "npm run lint"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/apostrophecms/apostrophe.git",
+    "directory": "packages/form-submission-google"
+  },
+  "homepage": "https://github.com/apostrophecms/apostrophe/tree/main/packages/form-submission-google#readme",
+  "author": "Apostrophe Technologies",
+  "license": "MIT",
+  "devDependencies": {
+    "eslint-config-apostrophe": "workspace:*"
+  },
+  "dependencies": {
+    "googleapis": "^88.2.0",
+    "klona": "^2.0.4",
+    "lodash.has": "^4.5.2"
+  }
+}

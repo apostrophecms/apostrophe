@@ -1,0 +1,39 @@
+{
+  "name": "@apostrophecms/svg-sprite",
+  "version": "1.0.2",
+  "description": "Module to power SVG sprite elements as pieces in Apostrophe 3 projects",
+  "main": "index.js",
+  "scripts": {
+    "lint": "npm run eslint",
+    "eslint": "eslint .",
+    "test": "npm run lint && mocha"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/apostrophecms/apostrophe.git",
+    "directory": "packages/svg-sprite"
+  },
+  "homepage": "https://github.com/apostrophecms/apostrophe/tree/main/packages/svg-sprite#readme",
+  "author": "Apostrophe Technologies",
+  "license": "MIT",
+  "devDependencies": {
+    "apostrophe": "github:apostrophecms/apostrophe",
+    "eslint": "^7.9.0",
+    "eslint-config-apostrophe": "^3.4.0",
+    "eslint-config-standard": "^14.1.1",
+    "eslint-plugin-import": "^2.22.0",
+    "eslint-plugin-node": "^11.1.0",
+    "eslint-plugin-promise": "^4.2.1",
+    "eslint-plugin-standard": "^4.0.1",
+    "mocha": "^10.4.0"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "dependencies": {
+    "axios": "^1.6.8",
+    "glob": "^7.2.0",
+    "lodash": "^4.17.21",
+    "xml2js": "^0.6.2"
+  }
+}

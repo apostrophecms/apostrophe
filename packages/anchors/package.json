@@ -1,0 +1,32 @@
+{
+  "name": "@apostrophecms/anchors",
+  "version": "1.1.0",
+  "description": "A module bundle that supports linking to individual Apostrophe widgets.",
+  "main": "index.js",
+  "scripts": {
+    "lint": "npm run eslint",
+    "eslint": "eslint .",
+    "test": "npm run lint && mocha"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/apostrophecms/apostrophe.git",
+    "directory": "packages/anchors"
+  },
+  "keywords": [
+    "apostrophecms",
+    "apostrophe"
+  ],
+  "homepage": "https://github.com/apostrophecms/apostrophe/tree/main/packages/anchors#readme",
+  "author": "Apostrophe Technologies",
+  "license": "MIT",
+  "devDependencies": {
+    "apostrophe": "workspace:*",
+    "eslint": "^7.9.0",
+    "eslint-config-apostrophe": "workspace:*",
+    "mocha": "^7.1.2"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}

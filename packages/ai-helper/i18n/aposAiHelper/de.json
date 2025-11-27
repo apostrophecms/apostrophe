@@ -1,0 +1,15 @@
+{
+  "generateImage": "Bild generieren",
+  "generateTextLabel": "Text generieren",
+  "generateTextDescription": "Text mit KI generieren",
+  "imagePlaceholderText": "Beschreiben Sie das Bild, das Sie erstellen möchten.",
+  "textPromptLabel": "Geben Sie einen Prompt ein, um Text zu generieren. Beispiel: \"100 Wörter über Käse, im Stil von Anthony Bourdain, mit Unterüberschriften\"",
+  "variations": "Varianten",
+  "select": "Auswählen",
+  "delete": "Löschen",
+  "generateTextAction": "Generieren",
+  "rateLimitExceeded": "Die Ratebegrenzung wurde überschritten, versuchen Sie es später erneut",
+  "invalidRequest": "Ungültige Anfrage, bitte überprüfen Sie die Regeln von OpenAI",
+  "utilityOperationLabel": "Ein Bild mit KI generieren",
+  "errorMessage": "Ein Fehler ist aufgetreten."
+}

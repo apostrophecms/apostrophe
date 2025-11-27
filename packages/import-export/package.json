@@ -1,0 +1,39 @@
+{
+  "name": "@apostrophecms/import-export",
+  "version": "3.5.0",
+  "description": "Import Export Documents for ApostropheCMS",
+  "main": "index.js",
+  "scripts": {
+    "eslint": "eslint --ext .js,.vue .",
+    "stylelint": "stylelint ui/**/*.{scss,vue}",
+    "lint": "npm run eslint && npm run stylelint",
+    "mocha": "mocha",
+    "test": "npm run lint && mocha --ignore=test/import-page.js && mocha test/import-page.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/apostrophecms/apostrophe.git",
+    "directory": "packages/import-export"
+  },
+  "homepage": "https://github.com/apostrophecms/apostrophe/tree/main/import-export#readme",
+  "author": "Apostrophe Technologies",
+  "license": "UNLICENSED",
+  "devDependencies": {
+    "@apostrophecms-pro/automatic-translation": "github:apostrophecms/automatic-translation",
+    "apostrophe": "workspace:*",
+    "eslint-config-apostrophe": "workspace:*",
+    "form-data": "^4.0.0",
+    "mocha": "^10.2.0",
+    "stylelint": "^16.0.0",
+    "stylelint-config-apostrophe": "workspace:*"
+  },
+  "dependencies": {
+    "bluebird": "^3.7.2",
+    "bson": "^6.0.0",
+    "csv-parse": "^5.5.5",
+    "csv-stringify": "^6.4.6",
+    "dayjs": "^1.9.8",
+    "lodash": "^4.17.21",
+    "tar-stream": "^3.1.6"
+  }
+}

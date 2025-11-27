@@ -1,0 +1,8 @@
+{
+  "rejected": "Your credentials were not accepted, your account is not affiliated with this site, or an existing account has the same username or email address.",
+  "logInWith": "Log in with {{ label }}",
+  "errorHeading": "A login error occurred",
+  "errorSubheading": "An error occurred while logging in via {{ label }}",
+  "contactAdministrator": "If you believe you are seeing this message in error please contact the administrator.",
+  "connectionRequest": "Connecting {{ strategyName }} to {{ site }}"  
+}

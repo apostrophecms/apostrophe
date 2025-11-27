@@ -1,0 +1,28 @@
+{
+  "name": "@apostrophecms/vue-material-design-icons",
+  "version": "1.0.0",
+  "description": "Apostrophe material design icons",
+  "main": "build.js",
+  "scripts": {
+    "prebuild": "rm -rf dist/",
+    "build": "./build.js",
+    "postbuild": "cp styles.css package.json README.md dist/",
+    "test": "eslint ."
+  },
+  "engines": {
+    "node": ">=16.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/apostrophecms/apostrophe.git",
+    "directory": "packages/vue-material-design-icons"
+  },
+  "homepage": "https://github.com/apostrophecms/apostrophe/tree/main/packages/vue-material-design-icons#readme",
+  "author": "Apostrophe Technologies, Inc.",
+  "license": "MIT",
+  "devDependencies": {
+    "@mdi/js": "^5.9.55",
+    "eslint-config-apostrophe": "workspace:*",
+    "p-map": "^4.0.0"
+  }
+}

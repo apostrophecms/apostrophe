@@ -1,0 +1,37 @@
+{
+  "name": "@apostrophecms/form",
+  "version": "1.5.2",
+  "description": "Build forms for ApostropheCMS in a simple user interface.",
+  "main": "index.js",
+  "scripts": {
+    "lint": "npm run eslint && npm run stylelint",
+    "eslint": "eslint .",
+    "stylelint": "stylelint --custom-syntax postcss-scss **/*.scss",
+    "test": "npm run lint && npx mocha"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/apostrophecms/apostrophe.git",
+    "directory": "packages/form"
+  },
+  "homepage": "https://github.com/apostrophecms/apostrophe/tree/main/packages/form",
+  "author": "Apostrophe Technologies",
+  "license": "MIT",
+  "keywords": [
+    "apostrophe",
+    "apostrophecms",
+    "forms",
+    "form builder"
+  ],
+  "devDependencies": {
+    "apostrophe": "workspace:*",
+    "eslint": "^8.50.0",
+    "eslint-config-apostrophe": "workspace:*",
+    "mocha": "^10.2.0",
+    "stylelint": "^15.10.3",
+    "stylelint-config-apostrophe": "workspace:*"
+  },
+  "dependencies": {
+    "multer": "^2.0.2"
+  }
+}

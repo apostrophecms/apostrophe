@@ -1,0 +1,81 @@
+@mixin flat-1 {
+  display: block;
+  clear: both;
+}
+
+@mixin flat-2 {
+  display: block;
+  clear: both;
+}
+
+@mixin scoped {
+  &__scoped {
+    font-weight: bold;
+  }
+}
+
+@mixin mixed-1 {
+  display: block;
+  clear: both;
+
+  & {
+    font-weight: bold;
+  }
+
+  .nested {
+    font-weight: normal;
+  }
+
+  color: red;
+  font-weight: bold;
+}
+
+@mixin mixed-2 {
+  display: block;
+  clear: both;
+
+  & {
+    font-weight: bold;
+  }
+
+  .nested {
+    font-weight: normal;
+  }
+
+  color: red;
+  font-weight: bold;
+}
+
+.a {
+  color: red;
+
+  &--serious {
+    font-weight: bold;
+  }
+
+  font-weight: normal;
+  text-decoration: underline;
+}
+
+.b {
+  @include flat-1;
+  color: red;
+  @include mixed-1;
+  font-size: 16px;
+  @include scoped;
+}
+
+.c {
+  @include scoped;
+  color: red;
+  @include flat-2;
+  @include mixed-2;
+}
+
+// This is bad because the mixin is known to contain nested rules,
+// therefore the rule that comes after it should be wrapped.
+.d {
+  @include external-mixin-known-to-contain-nested-rules;
+
+  color: red;
+}
