@@ -4,8 +4,7 @@
   "description": "AI helpers for content creation",
   "main": "index.js",
   "scripts": {
-    "test": "npm run lint",
-    "lint": "eslint --ext .js,.vue ."
+    "test": "npm run lint"
   },
   "repository": {
     "type": "git",
@@ -23,6 +22,7 @@
     "url": "https://github.com/apostrophecms/ai-helper/issues"
   },
   "devDependencies": {
+    "eslint": "^9.39.1",
     "eslint-config-apostrophe": "workspace:*"
   },
   "dependencies": {

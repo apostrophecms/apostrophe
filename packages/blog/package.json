@@ -30,6 +30,7 @@
     "dayjs": "^1.10.7"
   },
   "devDependencies": {
+    "eslint": "^9.39.1",
     "eslint-config-apostrophe": "workspace:*"
   }
 }

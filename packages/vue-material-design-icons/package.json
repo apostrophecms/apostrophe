@@ -22,6 +22,7 @@
   "license": "MIT",
   "devDependencies": {
     "@mdi/js": "^5.9.55",
+    "eslint": "^9.39.1",
     "eslint-config-apostrophe": "workspace:*",
     "p-map": "^4.0.0"
   }

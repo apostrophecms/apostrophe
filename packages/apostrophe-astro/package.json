@@ -16,5 +16,8 @@
     "lodash.deburr": "^4.1.0",
     "sluggo": "^1.0.0",
     "undici": "^6.21.1"
+  },
+  "devDependencies": {
+    "eslint": "^9.39.1"
   }
 }

@@ -17,6 +17,7 @@
   "author": "Apostrophe Technologies",
   "license": "UNLICENSED",
   "devDependencies": {
+    "eslint": "^9.39.1",
     "eslint-config-apostrophe": "workspace:*",
     "mocha": "^10.2.0",
     "stylelint": "^15.9.0",

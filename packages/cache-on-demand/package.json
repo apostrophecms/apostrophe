@@ -30,8 +30,8 @@
   "bugs": {
     "url": "https://github.com/punkave/cache-on-demand/issues"
   },
-  "dependencies": {},
   "devDependencies": {
+    "eslint": "^9.39.1",
     "eslint-config-apostrophe": "workspace:*",
     "mocha": "^9.2.0"
   }

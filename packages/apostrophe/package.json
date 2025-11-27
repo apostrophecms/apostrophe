@@ -136,6 +136,7 @@
     "xregexp": "^2.0.0"
   },
   "devDependencies": {
+    "eslint": "^9.39.1",
     "eslint-config-apostrophe": "workspace:*",
     "form-data": "^4.0.4",
     "mocha": "^11.7.1",

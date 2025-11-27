@@ -27,5 +27,8 @@
   "dependencies": {
     "csv-parse": "^4.16.3",
     "eslint-config-apostrophe": "workspace:*"
+  },
+  "devDependencies": {
+    "eslint": "^9.39.1"
   }
 }
