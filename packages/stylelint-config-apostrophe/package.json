@@ -34,7 +34,7 @@
     "stylelint-scss": "^6.3.0"
   },
   "devDependencies": {
-    "eslint": "^8.39.0",
+    "eslint": "^9.39.1",
     "eslint-config-apostrophe": "workspace:*",
     "mocha": "^10.2.0",
     "postcss-scss": "^4.0.9"
