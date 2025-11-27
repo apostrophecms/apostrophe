@@ -25,10 +25,9 @@
   ],
   "devDependencies": {
     "apostrophe": "workspace:*",
-    "eslint": "^8.50.0",
     "eslint-config-apostrophe": "workspace:*",
     "mocha": "^10.2.0",
-    "stylelint": "^15.10.3",
+    "stylelint": "^16.5.0",
     "stylelint-config-apostrophe": "workspace:*"
   },
   "dependencies": {
