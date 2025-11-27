@@ -23,7 +23,6 @@
     "url": "https://github.com/apostrophecms/sluggo/issues"
   },
   "devDependencies": {
-    "eslint": "^9.39.1",
     "mocha": "^8.3.2"
   }
 }
