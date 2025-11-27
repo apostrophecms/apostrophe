@@ -550,50 +550,46 @@ export default {
             this.docType = docData.type;
           }
           console.log('Loaded doc data:', docData);
-          console.log('Schema:', this.schema);
           this.original = klona(docData);
           this.docFields.data = docData;
 
-          resetUnexistantValuesFromSchema(this.schema, docData);
+          resetUnexistantValuesFromSchema(this.schema, this.docFields.data);
+          console.log('Object after reset:', this.docFields.data);
 
           function resetUnexistantValuesFromSchema(schema, object) {
+            console.log('schema', schema);
+            console.log('object before reset', object);
             for (const field of schema) {
               if (field.type === 'array') {
                 for (const item of (object[field.name] || [])) {
                   resetUnexistantValuesFromSchema(field.schema, item);
                 }
-                continue;
               }
+
               if (field.type === 'object') {
                 resetUnexistantValuesFromSchema(field.schema, object[field.name] || {});
-                continue;
               }
-
-              if (
-                !field.choices ||
-                !Array.isArray(field.choices) ||
-                !field.choices.length
-              ) {
-                continue;
-              }
-
-              const validChoices = field.choices.map(choice => choice.value);
 
               if (field.type === 'select' || field.type === 'radio') {
+                const validChoices = field.choices.map(choice => choice.value);
+
                 if (!validChoices.includes(object[field.name])) {
-                  object[field.name] = field.def || null;
+                  object[field.name] = field.def
+                    ? validChoices.includes(field.def)
+                      ? field.def
+                      : validChoices[0] || null
+                    : null;
                 }
-                continue;
               }
 
               if (field.type === 'checkboxes') {
-                if (!Array.isArray(object[field.name])) {
-                  object[field.name] = field.def || [];
-                  continue;
-                }
-                object[field.name] = object[field.name].filter(
-                  value => validChoices.includes(value)
-                );
+                const validChoices = field.choices.map(choice => choice.value);
+
+                object[field.name] = Array.isArray(object[field.name])
+                  ? object[field.name].filter(value => validChoices.includes(value))
+                  : field.def && Array.isArray(field.def)
+                    ? field.def.filter(value => validChoices.includes(value))
+                    : [];
               }
             }
           }
