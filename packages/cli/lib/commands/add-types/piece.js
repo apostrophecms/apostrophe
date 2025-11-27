@@ -18,7 +18,6 @@ module.exports = function(moduleName, majorVersion, isEsm, options) {
     modulesDir,
     version,
     pageSuffix,
-    widgetSuffix,
     pageModuleDir
   } = apostropheCurrent;
   const strings = util.getStrings(version, 'add-piece', moduleName);

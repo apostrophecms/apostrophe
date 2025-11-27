@@ -8,7 +8,8 @@
     "index.js"
   ],
   "scripts": {
-    "test": "npx eslint . && mocha test/test.js"
+    "test": "npm run lint && mocha",
+    "lint": "eslint ."
   },
   "repository": {
     "type": "git",

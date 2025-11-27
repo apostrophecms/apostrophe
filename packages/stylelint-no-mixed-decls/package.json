@@ -13,7 +13,8 @@
   ],
   "main": "index.js",
   "scripts": {
-    "pretest": "npx eslint .",
+    "lint": "eslint .",
+    "pretest": "npm run lint",
     "test": "nyc mocha"
   },
   "repository": {

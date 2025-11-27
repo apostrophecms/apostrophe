@@ -4,7 +4,9 @@
   "description": "Emulate the Mongo 3.x nodejs driver on top of the Mongo 6.x nodejs driver, for bc",
   "main": "index.js",
   "scripts": {
-    "test": "npx eslint . && mocha"
+    "test": "npm run lint && mocha",
+    "eslint": "eslint .",
+    "lint": "npm run eslint"
   },
   "repository": {
     "type": "git",

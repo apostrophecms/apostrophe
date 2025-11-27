@@ -10,7 +10,7 @@
   "scripts": {
     "compare": "node ./lib/index",
     "eslint": "eslint . -c eslintrc.json",
-    "test": "npx mocha"
+    "test": "mocha ."
   },
   "repository": {
     "type": "git",

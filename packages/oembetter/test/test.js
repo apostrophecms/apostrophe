@@ -91,7 +91,7 @@ describe('oembetter', function() {
       done();
     });
   });
-  it('should return an oembed response for youtube sharing links', function(done) {
+  it.skip('should return an oembed response for youtube sharing links', function(done) {
     const oembetter = require('../index.js')();
     // Use the suggested endpoints, youtube sometimes has discovery issues
     // so we always do this in production

@@ -25,14 +25,11 @@ const createRuleProcessor = ({ unitConverter }) => {
     let needsConversion = false;
 
     rule.walkDecls(decl => {
-      // Check for fixed position
       if (decl.prop === 'position' && decl.value === 'fixed') {
+      // Check for fixed position
         needsConversion = true;
-      // eslint-disable-next-line brace-style
-      }
-
-      // Check for viewport units
-      else if (Object.keys(units).some(unit => decl.value.includes(unit))) {
+      } else if (Object.keys(units).some(unit => decl.value.includes(unit))) {
+        // Check for viewport units
         needsConversion = true;
       }
     });

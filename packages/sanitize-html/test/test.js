@@ -220,7 +220,7 @@ describe('sanitizeHtml', function() {
           attribs.bar = 'bar';
           return {
             tagName: 'ul',
-            attribs: attribs
+            attribs
           };
         }
       },
@@ -233,8 +233,8 @@ describe('sanitizeHtml', function() {
       transformTags: {
         a: function (tagName, attribs) {
           return {
-            tagName: tagName,
-            attribs: attribs,
+            tagName,
+            attribs,
             text: ''
           };
         }
@@ -246,8 +246,8 @@ describe('sanitizeHtml', function() {
       transformTags: {
         a: function (tagName, attribs) {
           return {
-            tagName: tagName,
-            attribs: attribs,
+            tagName,
+            attribs,
             text: 'some text need"to<be>filtered'
           };
         }
@@ -263,8 +263,8 @@ describe('sanitizeHtml', function() {
       transformTags: {
         a: function (tagName, attribs) {
           return {
-            tagName: tagName,
-            attribs: attribs,
+            tagName,
+            attribs,
             text: 'some good text'
           };
         }
@@ -290,8 +290,8 @@ describe('sanitizeHtml', function() {
       transformTags: {
         a: function (tagName, attribs) {
           return {
-            tagName: tagName,
-            attribs: attribs,
+            tagName,
+            attribs,
             text: 'some new text'
           };
         }
@@ -304,8 +304,8 @@ describe('sanitizeHtml', function() {
       transformTags: {
         a: function (tagName, attribs) {
           return {
-            tagName: tagName,
-            attribs: attribs
+            tagName,
+            attribs
           };
         }
       }
@@ -362,7 +362,7 @@ describe('sanitizeHtml', function() {
       allowedTags: sanitizeHtml.defaults.allowedTags.concat([ 'img' ]),
       exclusiveFilter: function(frame) {
         if (frame.tag === 'a') {
-          // eslint-disable-next-line no-console
+
           assert(frame.mediaChildren.length === 1);
         }
 
@@ -655,6 +655,7 @@ describe('sanitizeHtml', function() {
 
     assert(spy.calledWith(message));
     // Restore the spied-upon method
+    /* eslint-disable-next-line no-console */
     console.warn.restore();
   });
 
@@ -671,6 +672,7 @@ describe('sanitizeHtml', function() {
 
     assert(spy.notCalled);
     // Restore the spied-upon method
+    /* eslint-disable-next-line no-console */
     console.warn.restore();
   });
 
@@ -701,7 +703,7 @@ describe('sanitizeHtml', function() {
                 return false;
               }
               return {
-                tagName: tagName,
+                tagName,
                 attribs: {
                   target: '_blank',
                   href: attribs.href
@@ -730,7 +732,7 @@ describe('sanitizeHtml', function() {
                 return false;
               }
               return {
-                tagName: tagName,
+                tagName,
                 attribs: {
                   target: '_blank',
                   href: attribs.href
@@ -756,7 +758,7 @@ describe('sanitizeHtml', function() {
           transformTags: {
             '*': function (tagName, attribs) {
               return {
-                tagName: tagName,
+                tagName,
                 attribs: {
                   style: 'text-align: center'
                 }
@@ -1454,7 +1456,8 @@ describe('sanitizeHtml', function() {
   // strictly valid pass, at which point decodeEntities: false is safe
   // to use.
   //
-  // it('Should not pass through &0; (a bogus entity) unescaped if decodeEntities is false', function() {
+  // it('Should not pass through &0;
+  // (a bogus entity) unescaped if decodeEntities is false', function() {
   //   assert.equal(sanitizeHtml(
   //     '<img src="<0&0;0.2&" />', {
   //       allowedTags: ['img'],

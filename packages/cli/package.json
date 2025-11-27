@@ -4,8 +4,9 @@
   "description": "Commandline generator and configurator for Apostrophe CMS",
   "main": "bin/apostrophe",
   "scripts": {
-    "test": "npx eslint .",
-    "preuninstall": "node ./scripts/remove-conf"
+    "test": "npm run lint",
+    "preuninstall": "node ./scripts/remove-conf",
+    "lint": "eslint ."
   },
   "author": "Apostrophe Technologies, Inc.",
   "license": "MIT",

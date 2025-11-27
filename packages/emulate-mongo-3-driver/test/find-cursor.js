@@ -7,7 +7,9 @@ describe('find-cursor', function() {
 
   afterEach(async function() {
     const collections = await db.collections();
-    await Promise.all(collections.map(collection => db.dropCollection(collection.collectionName)));
+    await Promise.all(
+      collections.map(collection => db.dropCollection(collection.collectionName))
+    );
     await client.close();
   });
 

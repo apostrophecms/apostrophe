@@ -88,7 +88,8 @@ function sanitizeHtml(html, options, _recursing) {
   }
 
   let result = '';
-  // Used for hot swapping the result variable with an empty string in order to "capture" the text written to it.
+  // Used for hot swapping the result variable with an empty string
+  // in order to "capture" the text written to it.
   let tempResult = '';
 
   function Frame(tag, attribs) {
@@ -119,7 +120,8 @@ function sanitizeHtml(html, options, _recursing) {
   options.parser = Object.assign({}, htmlParserDefaults, options.parser);
 
   const tagAllowed = function (name) {
-    return options.allowedTags === false || (options.allowedTags || []).indexOf(name) > -1;
+    return options.allowedTags === false ||
+      (options.allowedTags || []).indexOf(name) > -1;
   };
 
   // vulnerableTags
@@ -301,7 +303,8 @@ function sanitizeHtml(html, options, _recursing) {
       }
 
       const isBeingEscaped = skip && (options.disallowedTagsMode === 'escape' || options.disallowedTagsMode === 'recursiveEscape');
-      const shouldPreserveEscapedAttributes = isBeingEscaped && options.preserveEscapedAttributes;
+      const shouldPreserveEscapedAttributes = isBeingEscaped &&
+        options.preserveEscapedAttributes;
 
       if (shouldPreserveEscapedAttributes) {
         each(attribs, function(value, a) {
@@ -315,8 +318,10 @@ function sanitizeHtml(html, options, _recursing) {
             delete frame.attribs[a];
             return;
           }
-          // If the value is empty, check if the attribute is in the allowedEmptyAttributes array.
-          // If it is not in the allowedEmptyAttributes array, and it is a known non-boolean attribute, delete it
+          // If the value is empty, check if the attribute is
+          // in the allowedEmptyAttributes array.
+          // If it is not in the allowedEmptyAttributes array,
+          // and it is a known non-boolean attribute, delete it
           // List taken from https://html.spec.whatwg.org/multipage/indices.html#attributes-3
           if (value === '' && (!options.allowedEmptyAttributes.includes(a)) &&
             (options.nonBooleanAttributes.includes(a) || options.nonBooleanAttributes.includes('*'))) {
@@ -327,9 +332,11 @@ function sanitizeHtml(html, options, _recursing) {
           // as necessary if there are specific values defined.
           let passedAllowedAttributesMapCheck = false;
           if (!allowedAttributesMap ||
-            (has(allowedAttributesMap, name) && allowedAttributesMap[name].indexOf(a) !== -1) ||
+            (has(allowedAttributesMap, name) &&
+              allowedAttributesMap[name].indexOf(a) !== -1) ||
             (allowedAttributesMap['*'] && allowedAttributesMap['*'].indexOf(a) !== -1) ||
-            (has(allowedAttributesGlobMap, name) && allowedAttributesGlobMap[name].test(a)) ||
+            (has(allowedAttributesGlobMap, name) &&
+              allowedAttributesGlobMap[name].test(a)) ||
             (allowedAttributesGlobMap['*'] && allowedAttributesGlobMap['*'].test(a))) {
             passedAllowedAttributesMapCheck = true;
           } else if (allowedAttributesMap && allowedAttributesMap[name]) {
@@ -373,12 +380,14 @@ function sanitizeHtml(html, options, _recursing) {
                 const parsed = parseUrl(value);
 
                 if (options.allowedScriptHostnames || options.allowedScriptDomains) {
-                  const allowedHostname = (options.allowedScriptHostnames || []).find(function (hostname) {
-                    return hostname === parsed.url.hostname;
-                  });
-                  const allowedDomain = (options.allowedScriptDomains || []).find(function(domain) {
-                    return parsed.url.hostname === domain || parsed.url.hostname.endsWith(`.${domain}`);
-                  });
+                  const allowedHostname = (options.allowedScriptHostnames || [])
+                    .find(function (hostname) {
+                      return hostname === parsed.url.hostname;
+                    });
+                  const allowedDomain = (options.allowedScriptDomains || [])
+                    .find(function(domain) {
+                      return parsed.url.hostname === domain || parsed.url.hostname.endsWith(`.${domain}`);
+                    });
                   allowed = allowedHostname || allowedDomain;
                 }
               } catch (e) {
@@ -402,13 +411,18 @@ function sanitizeHtml(html, options, _recursing) {
                   allowed = has(options, 'allowIframeRelativeUrls')
                     ? options.allowIframeRelativeUrls
                     : (!options.allowedIframeHostnames && !options.allowedIframeDomains);
-                } else if (options.allowedIframeHostnames || options.allowedIframeDomains) {
-                  const allowedHostname = (options.allowedIframeHostnames || []).find(function (hostname) {
-                    return hostname === parsed.url.hostname;
-                  });
-                  const allowedDomain = (options.allowedIframeDomains || []).find(function(domain) {
-                    return parsed.url.hostname === domain || parsed.url.hostname.endsWith(`.${domain}`);
-                  });
+                } else if (
+                  options.allowedIframeHostnames ||
+                  options.allowedIframeDomains
+                ) {
+                  const allowedHostname = (options.allowedIframeHostnames || [])
+                    .find(function (hostname) {
+                      return hostname === parsed.url.hostname;
+                    });
+                  const allowedDomain = (options.allowedIframeDomains || [])
+                    .find(function(domain) {
+                      return parsed.url.hostname === domain || parsed.url.hostname.endsWith(`.${domain}`);
+                    });
                   allowed = allowedHostname || allowedDomain;
                 }
               } catch (e) {
@@ -462,9 +476,17 @@ function sanitizeHtml(html, options, _recursing) {
                   return t;
                 });
               if (allowedSpecificClasses && allowedWildcardClasses) {
-                value = filterClasses(value, deepmerge(allowedSpecificClasses, allowedWildcardClasses), allowedClassesGlobs);
+                value = filterClasses(
+                  value,
+                  deepmerge(allowedSpecificClasses, allowedWildcardClasses),
+                  allowedClassesGlobs
+                );
               } else {
-                value = filterClasses(value, allowedSpecificClasses || allowedWildcardClasses, allowedClassesGlobs);
+                value = filterClasses(
+                  value,
+                  allowedSpecificClasses || allowedWildcardClasses,
+                  allowedClassesGlobs
+                );
               }
               if (!value.length) {
                 delete frame.attribs[a];
@@ -475,7 +497,10 @@ function sanitizeHtml(html, options, _recursing) {
               if (options.parseStyleAttributes) {
                 try {
                   const abstractSyntaxTree = postcssParse(name + ' {' + value + '}', { map: false });
-                  const filteredAST = filterCss(abstractSyntaxTree, options.allowedStyles);
+                  const filteredAST = filterCss(
+                    abstractSyntaxTree,
+                    options.allowedStyles
+                  );
 
                   value = stringifyStyleAttributes(filteredAST);
 
@@ -608,7 +633,8 @@ function sanitizeHtml(html, options, _recursing) {
             tempResult = '';
           }
           // remove the opening tag from the result
-          result = result.substring(0, frame.tagPosition) + result.substring(frame.tagPosition + frame.openingTagLength);
+          result = result.substring(0, frame.tagPosition) +
+            result.substring(frame.tagPosition + frame.openingTagLength);
           return;
         } else if (filterResult) {
           result = result.substring(0, frame.tagPosition);
@@ -753,8 +779,10 @@ function sanitizeHtml(html, options, _recursing) {
    * Modifies the abstractSyntaxTree object.
    *
    * @param {object} abstractSyntaxTree  - Object representation of CSS attributes.
-   * @property {array[Declaration]} abstractSyntaxTree.nodes[0] - Each object cointains prop and value key, i.e { prop: 'color', value: 'red' }.
-   * @param {object} allowedStyles       - Keys are properties (i.e color), value is list of permitted regex rules (i.e /green/i).
+   * @property {array[Declaration]} abstractSyntaxTree.nodes[0] -
+   * Each object contains prop and value key, i.e { prop: 'color', value: 'red' }.
+   * @param {object} allowedStyles       - Keys are properties (i.e color),
+   * value is list of permitted regex rules (i.e /green/i).
    * @return {object}                    - The modified tree.
    */
   function filterCss(abstractSyntaxTree, allowedStyles) {
@@ -776,7 +804,8 @@ function sanitizeHtml(html, options, _recursing) {
     }
 
     if (selectedRule) {
-      abstractSyntaxTree.nodes[0].nodes = astRules.nodes.reduce(filterDeclarations(selectedRule), []);
+      abstractSyntaxTree.nodes[0].nodes = astRules.nodes
+        .reduce(filterDeclarations(selectedRule), []);
     }
 
     return abstractSyntaxTree;
@@ -787,7 +816,8 @@ function sanitizeHtml(html, options, _recursing) {
    * values in the inline style attribute format.
    *
    * @param  {AbstractSyntaxTree} filteredAST
-   * @return {string}             - Example: "color:yellow;text-align:center !important;font-family:helvetica;"
+   * @return {string}             - Example:
+   * "color:yellow;text-align:center !important;font-family:helvetica;"
    */
   function stringifyStyleAttributes(filteredAST) {
     return filteredAST.nodes[0].nodes
@@ -804,21 +834,25 @@ function sanitizeHtml(html, options, _recursing) {
     * Filters the existing attributes for the given property. Discards any attributes
     * which don't match the allowlist.
     *
-    * @param  {object} selectedRule             - Example: { color: red, font-family: helvetica }
-    * @param  {array} allowedDeclarationsList   - List of declarations which pass the allowlist.
-    * @param  {object} attributeObject          - Object representing the current css property.
-    * @property {string} attributeObject.type   - Typically 'declaration'.
-    * @property {string} attributeObject.prop   - The CSS property, i.e 'color'.
-    * @property {string} attributeObject.value  - The corresponding value to the css property, i.e 'red'.
-    * @return {function}                        - When used in Array.reduce, will return an array of Declaration objects
+    * @param  {object} selectedRule - Example: { color: red, font-family: helvetica }
+    * @param  {array} allowedDeclarationsList - List of declarations
+    * which pass the allowlist.
+    * @param  {object} attributeObject - Object representing the current css property.
+    * @property {string} attributeObject.type - Typically 'declaration'.
+    * @property {string} attributeObject.prop - The CSS property, i.e 'color'.
+    * @property {string} attributeObject.value - The corresponding value to
+    * the css property, i.e 'red'.
+    * @return {function} - When used in Array.reduce,
+    * will return an array of Declaration objects
     */
   function filterDeclarations(selectedRule) {
     return function (allowedDeclarationsList, attributeObject) {
       // If this property is allowlisted...
       if (has(selectedRule, attributeObject.prop)) {
-        const matchesRegex = selectedRule[attributeObject.prop].some(function(regularExpression) {
-          return regularExpression.test(attributeObject.value);
-        });
+        const matchesRegex = selectedRule[attributeObject.prop]
+          .some(function(regularExpression) {
+            return regularExpression.test(attributeObject.value);
+          });
 
         if (matchesRegex) {
           allowedDeclarationsList.push(attributeObject);
@@ -950,7 +984,7 @@ sanitizeHtml.simpleTransform = function(newTagName, newAttribs, merge) {
 
     return {
       tagName: newTagName,
-      attribs: attribs
+      attribs
     };
   };
 };

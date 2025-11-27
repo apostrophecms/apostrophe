@@ -4,9 +4,8 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "npm run eslint && npm run mocha",
-    "mocha": "mocha",
-    "eslint": "eslint --ext .js,.vue ."
+    "test": "npm run lint && mocha",
+    "lint": "eslint --ext .js,.vue ."
   },
   "repository": {
     "type": "git",

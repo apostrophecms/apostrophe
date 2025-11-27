@@ -34,6 +34,7 @@ async function run(plugin, input, output, opts = {}) {
     equal(formattedResult, formattedOutput);
     deepEqual(result.warnings(), []);
   } catch (error) {
+    /* eslint-disable no-console */
     console.log('\n=== Test Failed ===');
     console.log('Input:');
     console.log(input);
@@ -41,6 +42,7 @@ async function run(plugin, input, output, opts = {}) {
     console.log(output);
     console.log('\nActual Output:');
     console.log(result.css);
+    /* eslint-enable no-console */
 
     throw error;
   }
@@ -497,9 +499,9 @@ body[data-breakpoint-preview-mode] {
 }`;
       const output = `
 @media (min-width: 320px) {
-  :where(body:not([data-breakpoint-preview-mode])) .mobile, 
-  :where(body:not([data-breakpoint-preview-mode])).mobile { 
-    width: 90vw; 
+  :where(body:not([data-breakpoint-preview-mode])) .mobile,
+  :where(body:not([data-breakpoint-preview-mode])).mobile {
+    width: 90vw;
   }
 }
 @container (min-width: 320px) {
@@ -510,7 +512,7 @@ body[data-breakpoint-preview-mode] {
 @media (min-width: 768px) {
   :where(body:not([data-breakpoint-preview-mode])) .tablet,
   :where(body:not([data-breakpoint-preview-mode])).tablet {
-    width: 80vw; 
+    width: 80vw;
   }
 }
 @container (min-width: 768px) {
@@ -537,7 +539,7 @@ body[data-breakpoint-preview-mode] {
       const output = `
 @media screen {
   @media (min-width: 768px) {
-    :where(body:not([data-breakpoint-preview-mode])) .nested, 
+    :where(body:not([data-breakpoint-preview-mode])) .nested,
     :where(body:not([data-breakpoint-preview-mode])).nested {
       width: 80vw;
     }

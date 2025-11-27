@@ -42,6 +42,7 @@ describe('UploadFS Azure', function() {
   it('Should connect to Azure cloud successfully', function(done) {
     uploadfs.init(azureOptions, function(e) {
       if (e) {
+        /* eslint-disable-next-line no-console */
         console.log('error', e);
       }
       try {
@@ -90,6 +91,7 @@ describe('UploadFS Azure', function() {
 
     uploadfs.copyIn(srcFile, infile, function(e) {
       if (e) {
+        /* eslint-disable-next-line no-console */
         console.log('test copyIn ERR', e);
       }
       try {
@@ -108,6 +110,7 @@ describe('UploadFS Azure', function() {
   it('Azure disable should work', function(done) {
     uploadfs.disable(infile, function(e, val) {
       if (e) {
+        /* eslint-disable-next-line no-console */
         console.log('error', e);
       }
       try {
@@ -138,6 +141,7 @@ describe('UploadFS Azure', function() {
   it('Azure enable should work', function(done) {
     uploadfs.enable(infile, function(e, val) {
       if (e) {
+        /* eslint-disable-next-line no-console */
         console.log('error', e);
       }
       try {
@@ -177,6 +181,7 @@ describe('UploadFS Azure', function() {
   it('Azure test remove should work', function(done) {
     uploadfs.remove(infile, function(e) {
       if (e) {
+        /* eslint-disable-next-line no-console */
         console.log('error', e);
       }
       try {

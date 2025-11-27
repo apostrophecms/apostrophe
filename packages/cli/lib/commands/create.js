@@ -69,7 +69,7 @@ module.exports = function (program) {
 
       if (fs.existsSync('./lib/modules/apostrophe-express/index.js')) {
         util.replaceInFiles(
-          ['./lib/modules/apostrophe-express/index.js'],
+          [ './lib/modules/apostrophe-express/index.js' ],
           /secret: undefined/,
           `secret: '${secret}'`
         );
@@ -79,7 +79,7 @@ module.exports = function (program) {
       secret = util.secret();
 
       util.replaceInFiles(
-        ['./app.js'],
+        [ './app.js' ],
         /disabledFileKey: undefined/,
         `disabledFileKey: '${secret}'`
       );
@@ -101,7 +101,7 @@ module.exports = function (program) {
         });
       } catch (error) {
         await util.error('create', 'Error installing packages');
-        /* eslint-disable-next-line no-console */
+
         console.error(error);
       }
 
@@ -114,7 +114,7 @@ module.exports = function (program) {
         return false;
       }
       const version = require(`${aposPath}/package.json`).version;
-      const majorVersion = await util.getMajorVersion('create', version);
+      await util.getMajorVersion('create', version);
 
       // Create an admin user (note this will prompt for password)
       util.log('create', 'Creating an admin user [4/4]');
@@ -126,13 +126,13 @@ module.exports = function (program) {
         message: '🔏 Please enter a password:'
       });
 
-      const userTask ='@apostrophecms/user:add';
+      const userTask = '@apostrophecms/user:add';
       let createUserCommand = `node app.js ${userTask} admin admin`;
 
       // Prepend MongoDB URI if provided
       if (options.mongodbUri) {
         // Ensure the URI is properly quoted to handle special characters
-        createUserCommand = `APOS_MONGODB_URI=${quote([options.mongodbUri])} ` + createUserCommand;
+        createUserCommand = `APOS_MONGODB_URI=${quote([ options.mongodbUri ])} ` + createUserCommand;
       }
       util.log('create', `Creating admin user with command: ${createUserCommand}`);
       exec(`echo "${response.pw}" | ${createUserCommand}`);
@@ -144,5 +144,5 @@ module.exports = function (program) {
 };
 
 function replaceInConfig(regex, replacement) {
-  util.replaceInFiles(['./app.js', './package.json'], regex, replacement);
+  util.replaceInFiles([ './app.js', './package.json' ], regex, replacement);
 }

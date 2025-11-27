@@ -7,7 +7,7 @@
     "lint": "npm run eslint && npm run stylelint",
     "eslint": "eslint .",
     "stylelint": "stylelint --custom-syntax postcss-scss **/*.scss",
-    "test": "npm run lint && npx mocha"
+    "test": "npm run lint && mocha"
   },
   "repository": {
     "type": "git",

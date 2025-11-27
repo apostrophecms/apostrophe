@@ -1,4 +1,4 @@
-/* eslint-disable no-console */
+
 require('shelljs/global');
 // Utilities from shelljs
 /* globals exit which */
@@ -17,7 +17,8 @@ module.exports = util;
 const prefix = ' Apostrophe '.black.bgWhite.bold;
 
 util.styleCommand = function(commandName, style) {
-  const bgStyle = style === 'danger' ? 'bgRed'
+  const bgStyle = style === 'danger'
+    ? 'bgRed'
     : style === 'success' ? 'bgGreen' : 'bgBlue';
   return ' '[bgStyle] + commandName[bgStyle].white + ' '[bgStyle];
 };
@@ -110,14 +111,14 @@ util.isEsm = async function(command, path) {
   }
   console.log(`isEsm: ${info.type === 'module'}`);
   return info.type === 'module';
-}
+};
 
 util.esmify = function(code, isEsm) {
   if (!isEsm) {
     return code;
   }
   return code.replace('module.exports =', 'export default');
-}
+};
 
 util.getMajorVersion = async (command, v) => {
   if (!v) {

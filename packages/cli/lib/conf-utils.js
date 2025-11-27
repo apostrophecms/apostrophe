@@ -47,7 +47,6 @@ confUtils.getPath = function () {
 };
 
 async function setupConf () {
-  // eslint-disable-next-line no-console
   console.info('\n👋 It looks like this might be your first time using the Apostrophe CLI on this computer. Run `apos --help` for the available commands.\n');
 
   const uid = uuidv4();
