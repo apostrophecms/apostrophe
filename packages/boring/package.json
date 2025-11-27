@@ -23,7 +23,7 @@
   "author": "Apostrophe Technologies, Inc.",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/apostrophecms/boring/issues"
+    "url": "https://github.com/apostrophecms/apostrophe/issues"
   },
   "devDependencies": {
     "mocha": "^6.2.0"

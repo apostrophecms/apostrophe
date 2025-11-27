@@ -18,7 +18,6 @@
   "license": "MIT",
   "devDependencies": {
     "cssnano": "^7.0.6",
-    "eslint": "^8.57.1",
     "eslint-config-apostrophe": "workspace:*",
     "mocha": "^10.7.3",
     "postcss": "^8.4.47"

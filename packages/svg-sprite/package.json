@@ -17,14 +17,8 @@
   "author": "Apostrophe Technologies",
   "license": "MIT",
   "devDependencies": {
-    "apostrophe": "github:apostrophecms/apostrophe",
-    "eslint": "^7.9.0",
-    "eslint-config-apostrophe": "^3.4.0",
-    "eslint-config-standard": "^14.1.1",
-    "eslint-plugin-import": "^2.22.0",
-    "eslint-plugin-node": "^11.1.0",
-    "eslint-plugin-promise": "^4.2.1",
-    "eslint-plugin-standard": "^4.0.1",
+    "apostrophe": "workspace:*",
+    "eslint-config-apostrophe": "workspace:*",
     "mocha": "^10.4.0"
   },
   "publishConfig": {

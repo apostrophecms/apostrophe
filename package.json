@@ -7,7 +7,8 @@
     "lint": "pnpm --recursive run lint",
     "test": "pnpm --recursive run test",
     "eslint": "pnpm --recursive run eslint",
-    "mocha": "pnpm --recursive run mocha"
+    "mocha": "pnpm --recursive run mocha",
+    "clean": "pnpm -r exec rm -rf node_modules && rm pnpm-lock.yaml"
   },
   "devDependencies": {
     "@changesets/cli": "^2.29.7"
@@ -18,8 +19,5 @@
   "pnpm": {
     "onlyBuiltDependencies": ["sharp"]
   },
-  "packageManager": "pnpm@10.18.0",
-  "dependencies": {
-    "eslint": "8"
-  }
+  "packageManager": "pnpm@10.18.0"
 }

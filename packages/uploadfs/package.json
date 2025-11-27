@@ -42,8 +42,7 @@
     "sharp": "^0.32.6"
   },
   "devDependencies": {
-    "eslint": "^8.0.0",
-    "eslint-config-apostrophe": "^4.0.0",
+    "eslint-config-apostrophe": "workspace:*",
     "mocha": "^10.2.0",
     "node-fetch": "^2.6.9",
     "stat-mode": "^0.2.2"

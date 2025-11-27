@@ -4,7 +4,7 @@
   "description": "Express middleware providing on-demand caching in high traffic situations.",
   "main": "index.js",
   "scripts": {
-    "test": "(cd test; mocha test)",
+    "test": "mocha .",
     "lint": "eslint ."
   },
   "repository": {
@@ -27,7 +27,7 @@
     "url": "https://github.com/punkave/express-cache-on-demand/issues"
   },
   "dependencies": {
-    "cache-on-demand": "^1.0.0",
+    "cache-on-demand": "workspace:*",
     "lodash": "^4.0.0"
   },
   "devDependencies": {
