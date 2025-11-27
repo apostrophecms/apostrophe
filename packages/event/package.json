@@ -16,12 +16,6 @@
   "homepage": "https://github.com/apostrophecms/apostrophe/tree/main/packages/event#readme",
   "author": "Apostrophe Technologies",
   "license": "MIT",
-  "dependencies": {
-    "dayjs": "^1.10.7"
-  },
-  "devDependencies": {
-    "eslint-config-apostrophe": "^5.0.0"
-  },
   "prettier": {
     "trailingComma": "none",
     "tabWidth": 2,
@@ -31,5 +25,11 @@
   },
   "publishConfig": {
     "access": "public"
+  },
+  "dependencies": {
+    "dayjs": "^1.10.7"
+  },
+  "devDependencies": {
+    "eslint-config-apostrophe": "workspace:*"
   }
 }
