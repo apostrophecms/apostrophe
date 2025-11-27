@@ -1,0 +1,26 @@
+{
+  "name": "postcss-viewport-to-container-toggle",
+  "version": "2.1.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "npm run eslint && npm run mocha",
+    "mocha": "mocha",
+    "eslint": "eslint --ext .js,.vue ."
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/apostrophecms/apostrophe.git",
+    "directory": "packages/postcss-viewport-to-container-toggle"
+  },
+  "homepage": "https://github.com/apostrophecms/apostrophe/tree/main/packages/postcss-viewport-to-container-toggle#readme",
+  "author": "Apostrophe Technologies, Inc.",
+  "license": "MIT",
+  "devDependencies": {
+    "cssnano": "^7.0.6",
+    "eslint": "^8.57.1",
+    "eslint-config-apostrophe": "workspace:*",
+    "mocha": "^10.7.3",
+    "postcss": "^8.4.47"
+  }
+}
