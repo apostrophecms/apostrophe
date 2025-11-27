@@ -1,0 +1,31 @@
+{
+  "name": "boring",
+  "version": "1.1.1",
+  "description": "A minimalist command line option parser.",
+  "main": "boring.js",
+  "scripts": {
+    "test": "mocha test/test.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/apostrophecms/apostrophe.git",
+    "directory": "packages/boring"
+  },
+  "homepage": "https://github.com/apostrophecms/apostrophe/tree/main/packages/boring#readme",
+  "keywords": [
+    "minimalist",
+    "command",
+    "line",
+    "options",
+    "argv",
+    "boring"
+  ],
+  "author": "Apostrophe Technologies, Inc.",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/apostrophecms/boring/issues"
+  },
+  "devDependencies": {
+    "mocha": "^6.2.0"
+  }
+}
