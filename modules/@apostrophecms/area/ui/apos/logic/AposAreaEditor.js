@@ -3,8 +3,8 @@ import { mapState, mapActions } from 'pinia';
 import AposThemeMixin from 'Modules/@apostrophecms/ui/mixins/AposThemeMixin';
 import newInstance from 'apostrophe/modules/@apostrophecms/schema/lib/newInstance.js';
 import { useModalStore } from 'Modules/@apostrophecms/ui/stores/modal';
-import cloneWidget from 'Modules/@apostrophecms/area/lib/clone-widget.js';
 import { useWidgetStore } from 'Modules/@apostrophecms/ui/stores/widget';
+import cloneWidget from 'Modules/@apostrophecms/area/lib/clone-widget.js';
 
 export default {
   mixins: [ AposThemeMixin ],
@@ -166,7 +166,6 @@ export default {
     }
   },
   mounted() {
-    this.modalStore = useModalStore();
     this.bindEventListeners();
   },
   beforeUnmount() {
@@ -174,6 +173,7 @@ export default {
   },
   methods: {
     ...mapActions(useWidgetStore, [ 'setFocusedArea', 'setFocusedWidget' ]),
+    ...mapActions(useModalStore, [ 'isOnTop' ]),
     bindEventListeners() {
       apos.bus.$on('area-updated', this.areaUpdatedHandler);
       apos.bus.$on('command-menu-area-copy-widget', this.handleCopy);
@@ -181,7 +181,7 @@ export default {
       apos.bus.$on('command-menu-area-duplicate-widget', this.handleDuplicate);
       apos.bus.$on('command-menu-area-paste-widget', this.handlePaste);
       apos.bus.$on('command-menu-area-remove-widget', this.handleRemove);
-      this.modalStore.onKeyDown(this.$el, this.focusParentEvent);
+      window.addEventListener('keydown', this.focusParentEvent);
     },
     unbindEventListeners() {
       apos.bus.$off('area-updated', this.areaUpdatedHandler);
@@ -190,7 +190,7 @@ export default {
       apos.bus.$off('command-menu-area-duplicate-widget', this.handleDuplicate);
       apos.bus.$off('command-menu-area-paste-widget', this.handlePaste);
       apos.bus.$off('command-menu-area-remove-widget', this.handleRemove);
-      this.modalStore.offKeyDown(this.focusParentEvent);
+      window.removeEventListener('keydown', this.focusParentEvent);
     },
     isInsideContentEditable() {
       return document.activeElement.closest('[contenteditable]') !== null;
@@ -268,6 +268,10 @@ export default {
       }
     },
     focusParentEvent(event) {
+      if (!this.isOnTop(this.$el)) {
+        return;
+      }
+
       if (event.metaKey && event.keyCode === 8) {
         // meta + backspace
         apos.bus.$emit('widget-focus-parent', this.focusedWidget);

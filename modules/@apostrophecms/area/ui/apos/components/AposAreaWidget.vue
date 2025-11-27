@@ -18,8 +18,8 @@
       @mouseover="mouseover($event)"
       @mouseleave="mouseleave"
       @click="getFocus($event, widget._id);"
-      @focus="attachKeyboardFocusHandler"
-      @blur="removeKeyboardFocusHandler"
+      @keydown="handleKeyboardFocus"
+      @blur="unfocus"
     >
       <div
         v-if="!breadcrumbDisabled"
@@ -310,7 +310,6 @@ export default {
       mounted: false, // hack around needing DOM to be rendered for computed classes
       menuOpen: null,
       isSuppressingWidgetControls: false,
-      hasClickOutsideListener: false,
       classes: {
         show: 'apos-is-visible',
         open: 'apos-is-open',
@@ -476,14 +475,9 @@ export default {
   },
   watch: {
     isFocused(newVal) {
-      if (newVal) {
-        this.$refs.wrapper.addEventListener('keydown', this.handleKeyboardUnfocus);
-        this.addClickOutsideListener();
-      } else {
+      if (newVal === false) {
         this.menuOpen = null;
-        this.$refs.wrapper.removeEventListener('keydown', this.handleKeyboardUnfocus);
         this.isSuppressingWidgetControls = false;
-        this.removeClickOutsideListener();
       }
       // Helps get scroll tracking unstuck on new/modified widgets
       this.scrollTicking = false;
@@ -663,14 +657,6 @@ export default {
       return offsetTop - labelHeight < adminBarHeight;
     },
 
-    attachKeyboardFocusHandler() {
-      this.$refs.wrapper?.addEventListener('keydown', this.handleKeyboardFocus);
-    },
-
-    removeKeyboardFocusHandler() {
-      this.$refs.wrapper?.removeEventListener('keydown', this.handleKeyboardFocus);
-    },
-
     // Focus parent, useful for obtrusive UI
     focusParent() {
       // Something above us asked the focused widget to try and focus its parent
@@ -714,33 +700,19 @@ export default {
     },
     unfocus(event) {
       if (!this.$el.contains(event.target)) {
-        this.removeClickOutsideListener();
-
         this.setFocusedWidget(null, null);
       }
     },
 
-    addClickOutsideListener() {
-      if (!this.hasClickOutsideListener) {
-        document.addEventListener('click', this.unfocus);
-        this.hasClickOutsideListener = true;
-      }
-    },
-
-    removeClickOutsideListener() {
-      document.removeEventListener('click', this.unfocus);
-      this.hasClickOutsideListener = false;
-    },
-
     handleKeyboardFocus($event) {
+      if (!this.isFocused) {
+        return;
+      }
       if ($event.key === 'Enter' || $event.code === 'Space') {
         $event.preventDefault();
         this.getFocus($event, this.widget._id);
         this.$refs.wrapper.removeEventListener('keydown', this.handleKeyboardFocus);
       }
-    },
-
-    handleKeyboardUnfocus($event) {
       if ($event.key === 'Escape') {
         this.getFocus($event, null);
         document.activeElement.blur();

@@ -49,10 +49,12 @@
 </template>
 
 <script>
+import { mapState } from 'pinia';
 import { klona } from 'klona';
 import { createId } from '@paralleldrive/cuid2';
 import AposPublishMixin from 'Modules/@apostrophecms/ui/mixins/AposPublishMixin';
 import AposAdvisoryLockMixin from 'Modules/@apostrophecms/ui/mixins/AposAdvisoryLockMixin';
+import { useModalStore } from 'Modules/@apostrophecms/ui/stores/modal';
 
 export default {
   name: 'TheAposContextBar',
@@ -96,6 +98,7 @@ export default {
     };
   },
   computed: {
+    ...mapState(useModalStore, [ 'hasChooserModal' ]),
     contextBarActive() {
       return window.apos.adminBar.contextBar &&
         (this.canEdit || this.moduleOptions.canLocalize);
@@ -508,7 +511,7 @@ export default {
       }
     },
     async onContentChanged(e) {
-      if (apos.adminBar.disabledRefreshCount > 0) {
+      if (this.hasChooserModal) {
         return;
       }
 

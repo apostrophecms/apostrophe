@@ -143,7 +143,7 @@
 // transition.
 
 import {
-  ref, onMounted, onUnmounted, computed, watch, nextTick, useSlots
+  ref, onMounted, onBeforeUnmount, computed, watch, nextTick, useSlots, useTemplateRef
 } from 'vue';
 import { useAposFocus } from 'Modules/@apostrophecms/modal/composables/AposFocus';
 import { useModalStore } from 'Modules/@apostrophecms/ui/stores/modal';
@@ -175,7 +175,7 @@ const store = useModalStore();
 
 const slots = useSlots();
 const emit = defineEmits([ 'inactive', 'esc', 'show-modal', 'no-modal', 'ready' ]);
-const modalEl = ref(null);
+const modalEl = useTemplateRef('modalEl');
 const findPriorityFocusElementRetryMax = ref(3);
 const currentPriorityFocusElementRetry = ref(0);
 const renderingElements = ref(true);
@@ -265,14 +265,18 @@ onMounted(async () => {
     renderingElements.value = false;
   }
   store.updateModalData(props.modalData.id, { modalEl: modalEl.value });
-  store.onKeyDown(modalEl.value, onKeydown);
+  window.addEventListener('keydown', onKeydown);
 });
 
-onUnmounted(() => {
-  store.offKeyDown(onKeydown);
+onBeforeUnmount(() => {
+  window.removeEventListener('keydown', onKeydown);
 });
 
 function onKeydown(e) {
+  if (!store.isOnTop(modalEl.value)) {
+    return;
+  }
+
   const hasPressedEsc = e.key === 'Escape';
   if (hasPressedEsc) {
     // Don't confuse escape key handlers in other modal layers etc.

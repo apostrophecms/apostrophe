@@ -1,7 +1,7 @@
 <template>
   <div
     :aria-controls="`insert-menu-${modelValue._id}`"
-    @keydown="handleUIKeydown"
+    @keydown.stop="handleUIKeydown"
   >
     <bubble-menu
       v-if="editor"
@@ -47,7 +47,6 @@
       v-if="editor"
       :id="`insert-menu-${modelValue._id}`"
       ref="insertMenu"
-      :key="insertMenuKey"
       plugin-key="insertMenu"
       class="apos-rich-text-insert-menu"
       :tippy-options="{ duration: 100, zIndex: 999, placement: 'bottom-start' }"
@@ -211,7 +210,6 @@ export default {
       suppressInsertMenu: false,
       suppressWidgetControls: false,
       hasSelection: false,
-      insertMenuKey: null,
       openedPopover: false
     };
   },
@@ -349,7 +347,6 @@ export default {
     }
   },
   mounted() {
-    this.insertMenuKey = this.generateKey();
     // Cleanly namespace it so we don't conflict with other uses and instances
     const CustomPlaceholder = Placeholder.extend();
     const extensions = [
@@ -518,14 +515,8 @@ export default {
     onBubbleHide() {
       apos.bus.$emit('close-context-menus', 'richText');
     },
-    generateKey() {
-      return Math.random().toString(36).substring(2, 15) +
-        Math.random().toString(36).substring(2, 15);
-    },
     handleUIKeydown(e) {
       if (e.key === 'Escape') {
-        // Don't confuse escape key handlers in other modal layers etc.
-        e.stopPropagation();
         this.doSuppressInsertMenu();
       } else {
         this.suppressInsertMenu = false;
@@ -535,7 +526,6 @@ export default {
     doSuppressInsertMenu() {
       this.suppressInsertMenu = true;
       this.activeInsertMenuComponent = false;
-      this.insertMenuKey = this.generateKey();
       this.editor.commands.focus();
     },
     onAposRefreshing(refreshOptions) {
