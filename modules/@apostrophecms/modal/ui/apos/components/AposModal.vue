@@ -143,7 +143,7 @@
 // transition.
 
 import {
-  ref, onMounted, onUnmounted, computed, watch, nextTick, useSlots
+  ref, onMounted, onBeforeUnmount, computed, watch, nextTick, useSlots, useTemplateRef
 } from 'vue';
 import { useAposFocus } from 'Modules/@apostrophecms/modal/composables/AposFocus';
 import { useModalStore } from 'Modules/@apostrophecms/ui/stores/modal';
@@ -175,7 +175,7 @@ const store = useModalStore();
 
 const slots = useSlots();
 const emit = defineEmits([ 'inactive', 'esc', 'show-modal', 'no-modal', 'ready' ]);
-const modalEl = ref(null);
+const modalEl = useTemplateRef('modalEl');
 const findPriorityFocusElementRetryMax = ref(3);
 const currentPriorityFocusElementRetry = ref(0);
 const renderingElements = ref(true);
@@ -268,8 +268,8 @@ onMounted(async () => {
   window.addEventListener('keydown', onKeydown);
 });
 
-onUnmounted(() => {
-  window.addEventListener('keydown', onKeydown);
+onBeforeUnmount(() => {
+  window.removeEventListener('keydown', onKeydown);
 });
 
 function onKeydown(e) {

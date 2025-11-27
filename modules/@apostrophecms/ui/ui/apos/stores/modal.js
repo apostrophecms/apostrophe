@@ -220,7 +220,7 @@ export const useModalStore = defineStore('modal', () => {
   function isOnTop(el) {
     const top = stack.value.at(-1)?.modalEl;
 
-    return top && getDepthOf(el) === getDepthOf(top);
+    return (top && getDepthOf(el) === getDepthOf(top)) || false;
   }
 
   return {

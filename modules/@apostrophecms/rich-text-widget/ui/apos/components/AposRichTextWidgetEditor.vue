@@ -1,7 +1,7 @@
 <template>
   <div
     :aria-controls="`insert-menu-${modelValue._id}`"
-    @keydown="handleUIKeydown"
+    @keydown.stop="handleUIKeydown"
   >
     <bubble-menu
       v-if="editor"
