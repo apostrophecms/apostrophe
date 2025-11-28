@@ -1,0 +1,73 @@
+name: Monorepo Nightly Tests
+
+on:
+  schedule:
+    - cron: "0 4 * * *"
+  workflow_dispatch:
+    inputs:
+      note:
+        description: Optional note for manual runs
+        required: false
+        default: ""
+        type: string
+
+jobs:
+  setup:
+    name: Collect packages
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.packages.outputs.matrix }}
+      has-packages: ${{ steps.packages.outputs.has_packages }}
+    steps:
+      - name: Git checkout
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Detect packages
+        id: packages
+        run: |
+          node .github/workflows/scripts/detect-impacted-packages.mjs > impact.json
+          cat impact.json | jq '.'
+          echo "matrix=$(jq -c '.matrix' impact.json)" >> "$GITHUB_OUTPUT"
+          echo "has_packages=$(jq -r '.hasPackages' impact.json)" >> "$GITHUB_OUTPUT"
+        env:
+          FORCE_ALL: "true"
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch || 'main' }}
+
+  package-tests:
+    name: Nightly test ${{ matrix.package }}
+    needs: setup
+    if: needs.setup.outputs.has-packages == 'true'
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      # Each matrix entry represents one package so nightly runs cover them all in parallel.
+      matrix: ${{ fromJson(needs.setup.outputs.matrix) }}
+    steps:
+      - name: Git checkout
+        uses: actions/checkout@v5
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - name: Use Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Start MongoDB
+        uses: supercharge/mongodb-github-action@1.12.0
+        with:
+          mongodb-version: 7.0
+
+      - name: Install workspace dependencies
+        run: pnpm install
+
+      - name: Run package tests
+        run: pnpm run --filter "${{ matrix.package }}" --if-present test
+        env:
+          CI: true

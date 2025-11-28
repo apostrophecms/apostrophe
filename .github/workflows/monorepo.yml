@@ -1,0 +1,86 @@
+name: Monorepo Development Tests
+
+on:
+  push:
+    branches:
+      - main
+      - a3
+  pull_request:
+    branches:
+      - "*"
+  workflow_dispatch:
+    inputs:
+      run_all:
+        description: Force tests for every package
+        required: false
+        type: boolean
+        default: false
+
+jobs:
+  setup:
+    name: Determine impacted packages
+    runs-on: ubuntu-latest
+    env:
+      # DEFAULT_BRANCH tells the detector which branch to diff against when calculating impact.
+      DEFAULT_BRANCH: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.ref || github.event.repository.default_branch || 'main' }}
+      # BASE_SHA narrows the diff to the merge-base (PR) or latest push SHA for branch builds.
+      BASE_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || github.event.before || '' }}
+      # FORCE_ALL flips to true when the workflow_dispatch input is toggled so every package runs.
+      FORCE_ALL: ${{ inputs.run_all == 'true' && 'true' || 'false' }}
+    outputs:
+      matrix: ${{ steps.impact.outputs.matrix }}
+      has-packages: ${{ steps.impact.outputs.has_packages }}
+    steps:
+      - name: Git checkout
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Prepare merge-base context
+        run: git fetch origin "$DEFAULT_BRANCH" --depth=1 || true
+
+      - name: Detect impacted packages
+        id: impact
+        run: |
+          node .github/workflows/scripts/detect-impacted-packages.mjs > impact.json
+          echo "matrix=$(jq -c '.matrix' impact.json)" >> "$GITHUB_OUTPUT"
+          echo "has_packages=$(jq -r '.hasPackages' impact.json)" >> "$GITHUB_OUTPUT"
+          cat impact.json | jq '.'
+
+  package-tests:
+    name: Test ${{ matrix.package }}
+    needs: setup
+    if: needs.setup.outputs.has-packages == 'true'
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      # matrix is the JSON object produced by the detector;
+      # each entry maps to a single package job.
+      matrix: ${{ fromJson(needs.setup.outputs.matrix) }}
+    steps:
+      - name: Git checkout
+        uses: actions/checkout@v5
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - name: Use Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Start MongoDB
+        uses: supercharge/mongodb-github-action@1.12.0
+        with:
+          mongodb-version: 7.0
+
+      - name: Install workspace dependencies
+        run: pnpm install
+
+      - name: Run package tests
+        run: pnpm run --filter "${{ matrix.package }}" --if-present test
+        env:
+          CI: true
