@@ -1,45 +1,5 @@
-# Ignore MacOS X metadata forks (fusefs)
-._*
-# Ignore unison sync files
-.unison*
-package-lock.json
-pnpm-lock.yaml
-npm-debug.log
-*.DS_Store
-*.npmignore
-.nyc_output
-.vscode
-.out
-coverage
 node_modules
-
-# We do not commit CSS, only LESS, with the exception of a few vendor CSS files we don't have LESS for
-*/public/css/*.css
-modules/*/public/css/*.css
-*/public/css/*.css
-modules/*/public/css/*.css
-# Never commit a CSS map file, anywhere
-*.css.map
-
-test/public/modules/*
-test/public/css/master-*
-test/locales
-/test/node_modules
-/test/workspaces-project/node_modules
-/test/esm-project/node_modules
-test/package.json
-test/public/apos-frontend
-test/apos-build
-test/workspaces-project/node_modules
-test/esm-project/node_modules
-
-# Dont commit test generated css
-test/public/css/*.css
-test/public/css/master-*.less
-
-# Dont commit test uploads
-test/public/uploads
-
-# vim swp files
-.*.sw*
-
+pnpm-lock.yaml
+package-lock.json
+public/uploads
+public/apos-frontend
