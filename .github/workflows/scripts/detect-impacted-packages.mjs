@@ -42,6 +42,7 @@ const IGNORED_PACKAGE_DIRS = new Set([
 async function main() {
   const packages = await loadPackages();
   const packageNames = [...packages.keys()];
+  const packagesWithTests = packageNames.filter((name) => packages.get(name)?.hasTestScript);
   const dirLookup = buildDirLookup(packages);
 
   const baseSha = baseShaEnv || resolveBaseSha();
@@ -56,10 +57,13 @@ async function main() {
   );
 
   const impactedPackages = shouldForceAll || hasGlobalImpact
-    ? packageNames
+    ? packagesWithTests
     : expandImpactedPackages(changedPackages, packages);
 
-  const uniqueImpacted = [...new Set(impactedPackages)].filter((name) => packages.has(name));
+  const uniqueImpacted = [...new Set(impactedPackages)].filter((name) => {
+    const pkg = packages.get(name);
+    return pkg && pkg.hasTestScript;
+  });
   uniqueImpacted.sort();
 
   const matrix = {
@@ -109,6 +113,9 @@ async function loadPackages() {
         return;
       }
 
+      const scripts = manifest.scripts || {};
+      const hasTestScript = Boolean(scripts.test);
+
       const dependencies = new Set([
         ...Object.keys(manifest.dependencies || {}),
         ...Object.keys(manifest.devDependencies || {}),
@@ -119,7 +126,8 @@ async function loadPackages() {
       map.set(manifest.name, {
         name: manifest.name,
         relativeDir: path.posix.join('packages', entry.name),
-        dependencies
+        dependencies,
+        hasTestScript
       });
     }));
 
