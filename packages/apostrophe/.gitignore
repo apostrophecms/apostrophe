@@ -28,7 +28,7 @@ test/locales
 /test/workspaces-project/node_modules
 /test/esm-project/node_modules
 test/package.json
-test/public
+test/public/apos-frontend
 test/apos-build
 test/workspaces-project/node_modules
 test/esm-project/node_modules
