@@ -36,7 +36,7 @@ jobs:
           DEFAULT_BRANCH: ${{ github.event.repository.default_branch || 'main' }}
 
   package-tests:
-    name: Nightly test ${{ matrix.package }}
+    name: ${{ matrix.package }}
     needs: setup
     if: needs.setup.outputs.has-packages == 'true'
     runs-on: ubuntu-latest

@@ -48,7 +48,7 @@ jobs:
           cat impact.json | jq '.'
 
   package-tests:
-    name: Test ${{ matrix.package }}
+    name: ${{ matrix.package }}
     needs: setup
     if: needs.setup.outputs.has-packages == 'true'
     runs-on: ubuntu-latest
