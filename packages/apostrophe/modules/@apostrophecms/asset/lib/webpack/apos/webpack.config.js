@@ -1,4 +1,3 @@
-const fs = require('fs');
 const path = require('path');
 const merge = require('webpack-merge').merge;
 const scss = require('./webpack.scss');
@@ -76,7 +75,7 @@ module.exports = ({
     resolve: {
       extensions: [ '.*', '.js', '.vue', '.json' ],
       alias: {
-        vue$: getVueAlias(mode),
+        vue$: getVueAlias(mode, apos),
         // resolve apostrophe modules
         Modules: path.resolve(modulesDir)
       },
@@ -100,15 +99,21 @@ module.exports = ({
   return merge(config, ...tasks);
 };
 
-function getVueAlias(mode) {
+function getVueAlias(mode, apos) {
   if (mode !== 'development') {
     return '@vue/runtime-dom';
   }
 
-  const vueProjectLevelPath = path.resolve('./node_modules/@vue/runtime-dom');
-  const vueProjectLevelInstalled = fs.existsSync(vueProjectLevelPath);
+  const candidateRoots = [
+    apos?.rootDir,
+    apos?.npmRootDir,
+    path.resolve(__dirname, '../../../../../../')
+  ].filter(Boolean);
 
-  return vueProjectLevelInstalled
-    ? vueProjectLevelPath
-    : path.resolve(__dirname, '../../../../../../node_modules/@vue/runtime-dom');
+  try {
+    return require.resolve('@vue/runtime-dom', { paths: candidateRoots });
+  } catch (err) {
+    // Fall back to the module name so webpack can still try the default resolver.
+    return '@vue/runtime-dom';
+  }
 }
