@@ -8,7 +8,7 @@
     "test": "pnpm --recursive run test",
     "eslint": "pnpm --recursive run eslint",
     "mocha": "pnpm --recursive run mocha",
-    "clean": "pnpm -r exec rm -rf node_modules && rm pnpm-lock.yaml"
+    "clean": "pnpm -r exec rm -rf node_modules && rm -rf node_modules && rm pnpm-lock.yaml"
   },
   "devDependencies": {
     "@changesets/cli": "^2.29.7"
@@ -16,8 +16,9 @@
   "engines": {
     "node": ">=18"
   },
+
   "pnpm": {
-    "onlyBuiltDependencies": ["sharp"]
+    "onlyBuiltDependencies": ["sharp", "vue-demi", "@parcel/watcher", "esbuild", "unrs-resolver"]
   },
   "packageManager": "pnpm@10.18.0"
 }
