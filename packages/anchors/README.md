@@ -1,4 +1,4 @@
-<div align="center">
+<div align="center"> 
   <img src="https://raw.githubusercontent.com/apostrophecms/apostrophe/main/logo.svg" alt="ApostropheCMS logo" width="80" height="80" />
 
   <h1>Apostrophe Anchors</h1>
