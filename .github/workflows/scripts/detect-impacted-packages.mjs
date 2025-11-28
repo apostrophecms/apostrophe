@@ -18,6 +18,7 @@ const baseShaEnv = (process.env.BASE_SHA || '').trim();
 
 const GLOBAL_IMPACT_PATHS = new Set([
   'package.json',
+  // Keep it, although it's not under version control - be explicit.
   'pnpm-lock.yaml',
   'pnpm-workspace.yaml'
 ]);
