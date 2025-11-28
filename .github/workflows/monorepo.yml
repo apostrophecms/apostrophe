@@ -71,7 +71,6 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 22
-          cache: pnpm
 
       - name: Start MongoDB
         uses: supercharge/mongodb-github-action@1.12.0
