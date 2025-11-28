@@ -51,7 +51,8 @@ jobs:
       - name: Install pnpm
         uses: pnpm/action-setup@v4
         with:
-          version: 10
+          # Keep in sync with root packageManager field in package.json.
+          version: 10.18.0
 
       - name: Use Node.js 22
         uses: actions/setup-node@v4
