@@ -1,4 +1,3 @@
-#!/usr/bin/env node
 // Usage: npx mocha .github/workflows/scripts/test-impacted-packages.mjs
 import assert from 'assert/strict';
 // import { before, beforeEach, after, describe, it } from 'mocha';
@@ -94,9 +93,10 @@ describe('detect-impacted-packages workflow', function () {
     gitAdd(markerPath);
     gitCommit('test: impact scenario 1');
 
-    const result = runDetector({ BASE_SHA: state.baseBranchSha });
+    const actual = runDetector({ BASE_SHA: state.baseBranchSha });
     const expected = new Set(computeImpactedPackages([state.apostrophePackageName]));
-    expectPackages(result, expected);
+    // console.log('Expected impacted packages:', [...expected].sort());
+    expectPackages(actual, expected);
   });
 
   it('only reports anchors when anchors changes', async function () {
@@ -105,14 +105,16 @@ describe('detect-impacted-packages workflow', function () {
     gitAdd(markerPath);
     gitCommit('test: impact scenario 2');
 
-    const result = runDetector({ BASE_SHA: state.baseBranchSha });
+    const actual = runDetector({ BASE_SHA: state.baseBranchSha });
     const expected = new Set(computeImpactedPackages([state.anchorsPackageName]));
-    expectPackages(result, expected);
+    // console.log('Expected impacted packages:', [...expected].sort());
+    expectPackages(actual, expected);
   });
 
   it('forces all packages with tests when FORCE_ALL is true', function () {
-    const result = runDetector({ FORCE_ALL: 'true' });
-    expectPackages(result, new Set(state.packagesWithTests));
+    const actual = runDetector({ FORCE_ALL: 'true' });
+    // console.log('Expected impacted packages:', [...state.packagesWithTests].sort());
+    expectPackages(actual, new Set(state.packagesWithTests));
   });
 });
 
