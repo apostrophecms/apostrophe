@@ -272,6 +272,7 @@ export default {
     });
   },
   async mounted() {
+    this.modalStore = useModalStore();
     this.bindShortcuts();
     this.headers = this.computeHeaders();
     // Get the data. This will be more complex in actuality.
@@ -280,7 +281,9 @@ export default {
     await this.manageAllPiecesTotal();
     this.modal.triggerFocusRefresh++;
 
-    apos.bus.$on('content-changed', this.onContentChanged);
+    apos.bus.$on('content-changed', (e) => {
+      this.onContentChanged(e);
+    });
     apos.bus.$on('command-menu-manager-create-new', this.create);
     apos.bus.$on('command-menu-manager-close', this.confirmAndCancel);
   },
@@ -311,7 +314,8 @@ export default {
       await apos.modal.execute(apos.modules[moduleName].components.editorModal, {
         moduleName,
         docId: piece && piece._id,
-        filterValues: this.filterValues
+        filterValues: this.filterValues,
+        hasRelationshipField: !!this.relationshipField
       });
     },
     async finishSaved() {
@@ -489,10 +493,10 @@ export default {
       }
     },
     bindShortcuts() {
-      window.addEventListener('keydown', this.shortcutNew);
+      this.modalStore.onKeyDown(this.$el, this.shortcutNew);
     },
     destroyShortcuts() {
-      window.removeEventListener('keydown', this.shortcutNew);
+      this.modalStore.offKeyDown(this.shortcutNew);
     },
     computeHeaders() {
       let headers = this.moduleOptions.columns || [];
@@ -571,6 +575,11 @@ export default {
       const types = this.getContentChangedTypes(doc, docTypes);
       if (!types.includes(this.moduleName)) {
         return;
+      }
+      if (this.relationshipField && (action === 'insert') && this.modalStore.isTopManager(this)) {
+        const newDocs = [ ...this.checkedDocs, doc ];
+        const limit = this.relationshipField?.max || newDocs.length;
+        this.setCheckedDocs(newDocs.slice(0, limit));
       }
       if (
         docIds ||

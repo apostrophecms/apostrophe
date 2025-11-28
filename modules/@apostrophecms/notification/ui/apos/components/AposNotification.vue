@@ -2,6 +2,7 @@
   <div
     role="alert"
     :class="classList"
+    data-apos-notification=""
   >
     <span class="apos-notification__indicator">
       <AposIndicator
