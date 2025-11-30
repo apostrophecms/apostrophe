@@ -47,7 +47,8 @@ async function main() {
   const dirLookup = buildDirLookup(packages);
 
   const baseSha = baseShaEnv || resolveBaseSha();
-  const shouldForceAll = forceAll || !baseSha;
+  const hasForceCI = checkForceCI(baseSha);
+  const shouldForceAll = forceAll || !baseSha || hasForceCI;
   const changedFiles = shouldForceAll
     ? []
     : getChangedFiles(baseSha);
@@ -152,6 +153,28 @@ function resolveBaseSha() {
     return mergeBase || '';
   } catch (error) {
     return '';
+  }
+}
+
+function checkForceCI(baseSha) {
+  if (!baseSha) {
+    return false;
+  }
+
+  try {
+    const output = execSync(`git log ${baseSha}..HEAD --pretty=format:%s`, {
+      encoding: 'utf8',
+      stdio: ['ignore', 'pipe', 'ignore']
+    }).trim();
+    
+    if (!output) {
+      return false;
+    }
+    
+    const commitMessages = output.split('\n');
+    return commitMessages.some((msg) => /\[force ci\]/i.test(msg));
+  } catch (error) {
+    return false;
   }
 }
 

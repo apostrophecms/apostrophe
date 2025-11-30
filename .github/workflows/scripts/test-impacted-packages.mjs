@@ -116,6 +116,28 @@ describe('detect-impacted-packages workflow', function () {
     // console.log('Expected impacted packages:', [...state.packagesWithTests].sort());
     expectPackages(actual, new Set(state.packagesWithTests));
   });
+
+  it('forces all packages with tests when commit message contains [force ci]', async function () {
+    const markerPath = path.join(getPackageDir(state.anchorsPackageName), '.impact-test-force-ci');
+    await fs.writeFile(markerPath, `${Date.now()}\n`);
+    gitAdd(markerPath);
+    gitCommit('test: add feature [force ci]');
+
+    const actual = runDetector({ BASE_SHA: state.baseBranchSha });
+    // console.log('Expected impacted packages:', [...state.packagesWithTests].sort());
+    expectPackages(actual, new Set(state.packagesWithTests));
+  });
+
+  it('forces all packages with tests when commit message contains [FORCE CI] (case-insensitive)', async function () {
+    const markerPath = path.join(getPackageDir(state.anchorsPackageName), '.impact-test-force-ci-upper');
+    await fs.writeFile(markerPath, `${Date.now()}\n`);
+    gitAdd(markerPath);
+    gitCommit('test: add feature [FORCE CI]');
+
+    const actual = runDetector({ BASE_SHA: state.baseBranchSha });
+    // console.log('Expected impacted packages:', [...state.packagesWithTests].sort());
+    expectPackages(actual, new Set(state.packagesWithTests));
+  });
 });
 
 function runGit(command) {
