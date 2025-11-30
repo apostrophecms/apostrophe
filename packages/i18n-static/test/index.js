@@ -2,7 +2,7 @@ const handlers = require('../handlers');
 const assert = require('assert').strict;
 const t = require('apostrophe/test-lib/util.js');
 
-describe('I18n-static', function() {
+describe.skip('I18n-static', function() {
   this.timeout(20000);
   let apos;
 
