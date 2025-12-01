@@ -4,6 +4,7 @@ const t = require('apostrophe/test-lib/util.js');
 describe('@apostrophecms/redirect', function () {
   let apos;
   let redirectModule;
+  let server;
 
   this.timeout(t.timeout);
 
@@ -19,6 +20,7 @@ describe('@apostrophecms/redirect', function () {
     });
 
     redirectModule = apos.modules['@apostrophecms/redirect'];
+    server = apos.modules['@apostrophecms/express'].server;
     await insertPages(apos);
   });
 
@@ -34,9 +36,9 @@ describe('@apostrophecms/redirect', function () {
       title: 'external redirect',
       urlType: 'external',
       redirectSlug: '/page-1',
-      externalUrl: 'http://localhost:3000/page-2'
+      externalUrl: `http://localhost:${server.address().port}/page-2`
     });
-    const redirected = await apos.http.get('http://localhost:3000/page-1');
+    const redirected = await apos.http.get(`http://localhost:${server.address().port}/page-1`);
 
     assert.equal(redirected, '<title>page 2</title>\n');
   });
@@ -49,9 +51,9 @@ describe('@apostrophecms/redirect', function () {
       title: 'external redirect',
       urlType: 'external',
       redirectSlug: '/page-✅',
-      externalUrl: 'http://localhost:3000/page-2'
+      externalUrl: `http://localhost:${server.address().port}/page-2`
     });
-    const redirected = await apos.http.get('http://localhost:3000/page-✅');
+    const redirected = await apos.http.get(`http://localhost:${server.address().port}/page-✅`);
 
     assert.equal(redirected, '<title>page 2</title>\n');
   });
@@ -64,10 +66,10 @@ describe('@apostrophecms/redirect', function () {
       title: 'external redirect',
       urlType: 'external',
       redirectSlug: '/page-✅',
-      externalUrl: 'http://localhost:3000/page-2'
+      externalUrl: `http://localhost:${server.address().port}/page-2`
     });
     try {
-      await apos.http.get('http://localhost:3000/page-✅?whatever');
+      await apos.http.get(`http://localhost:${server.address().port}/page-✅?whatever`);
       assert(false);
     } catch (e) {
       // good, should 404
@@ -82,10 +84,10 @@ describe('@apostrophecms/redirect', function () {
       title: 'external redirect',
       urlType: 'external',
       redirectSlug: '/page-✅',
-      externalUrl: 'http://localhost:3000/page-2',
+      externalUrl: `http://localhost:${server.address().port}/page-2`,
       ignoreQueryString: true
     });
-    const redirected = await apos.http.get('http://localhost:3000/page-✅?whatever');
+    const redirected = await apos.http.get(`http://localhost:${server.address().port}/page-✅?whatever`);
     assert.equal(redirected, '<title>page 2</title>\n');
   });
 
@@ -100,7 +102,7 @@ describe('@apostrophecms/redirect', function () {
       redirectSlug: '/page-1',
       _newPage: [ page2 ]
     });
-    const redirected = await apos.http.get('http://localhost:3000/page-1');
+    const redirected = await apos.http.get(`http://localhost:${server.address().port}/page-1`);
 
     assert.equal(redirected, '<title>page 2</title>\n');
   });
@@ -118,7 +120,7 @@ describe('@apostrophecms/redirect', function () {
       _newPage: [ pageFr ]
     });
     assert.strictEqual(inserted.targetLocale, 'fr');
-    const redirected = await apos.http.get('http://localhost:3000/page-1');
+    const redirected = await apos.http.get(`http://localhost:${server.address().port}/page-1`);
     assert.equal(redirected, '<title>page fr</title>\n');
   });
 
@@ -177,7 +179,7 @@ describe('@apostrophecms/redirect', function () {
       externalUrl: '/auto/manufacturers'
     });
 
-    const redirected = await apos.http.get('http://localhost:3000/manufacturers/bmw/k-1100-lt');
+    const redirected = await apos.http.get(`http://localhost:${server.address().port}/manufacturers/bmw/k-1100-lt`);
     assert.equal(redirected, '<title>manufacturers</title>\n');
   });
 
@@ -193,7 +195,7 @@ describe('@apostrophecms/redirect', function () {
       externalUrl: '/auto/manufacturers/mercedes-benz/*'
     });
 
-    const redirected = await apos.http.get('http://localhost:3000/manufacturers/mercedes-benz/cl600');
+    const redirected = await apos.http.get(`http://localhost:${server.address().port}/manufacturers/mercedes-benz/cl600`);
     assert.equal(redirected, '<title>cl600</title>\n');
   });
 
@@ -217,7 +219,7 @@ describe('@apostrophecms/redirect', function () {
       externalUrl: '/auto/manufacturers/mercedes-benz/cl600'
     });
 
-    const redirected = await apos.http.get('http://localhost:3000/manufacturers/mercedes-benz/cl600');
+    const redirected = await apos.http.get(`http://localhost:${server.address().port}/manufacturers/mercedes-benz/cl600`);
     assert.equal(redirected, '<title>cl600</title>\n');
   });
 
@@ -241,7 +243,7 @@ describe('@apostrophecms/redirect', function () {
       externalUrl: '/auto/manufacturers/mercedes-benz/*'
     });
 
-    const redirected = await apos.http.get('http://localhost:3000/manufacturers/mercedes-benz/cl600');
+    const redirected = await apos.http.get(`http://localhost:${server.address().port}/manufacturers/mercedes-benz/cl600`);
     assert.equal(redirected, '<title>cl600</title>\n');
   });
 });
