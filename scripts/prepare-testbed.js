@@ -6,13 +6,10 @@ const packageJsonFiles = glob.sync('packages/*/package.json');
 
 packageJsonFiles.forEach(file => {
   const pkg = JSON.parse(fs.readFileSync(file, 'utf8'));
-
-  // Replace workspace:* with actual versions or file: paths
   ['dependencies', 'devDependencies'].forEach(depType => {
     if (pkg[depType]) {
       Object.keys(pkg[depType]).forEach(dep => {
         if (pkg[depType][dep].startsWith('workspace:')) {
-          // Option A: Use the actual version from the referenced package
           const depPath = dep.startsWith('@apostrophecms/') ? dep.replace('@apostrophecms/', '') : dep
 
           // relative path
