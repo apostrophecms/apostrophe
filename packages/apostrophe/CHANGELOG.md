@@ -1,5 +1,12 @@
 # Changelog
 
+## UNRELEASED
+
+### Fixes
+
+* Fixes an issue where the frontend was caching stale choices for `select`, `radio` and `checkboxes`
+fields that were saved but no longer valid (i.e removed from the schema).
+
 ## 4.24.0 (2025-11-25)
 
 ### Adds
