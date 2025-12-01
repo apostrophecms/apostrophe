@@ -67,7 +67,7 @@ oembetter.addFallback(function(url, options, callback) {
   return callback(null, { html: 'oopsie' });
 });
 
-describe.skip('oembetter', function() {
+describe('oembetter', function() {
   // youtube oembed can be sluggish
   this.timeout(10000);
   it('should be an object', function() {
@@ -96,7 +96,7 @@ describe.skip('oembetter', function() {
     // Use the suggested endpoints, youtube sometimes has discovery issues
     // so we always do this in production
     oembetter.endpoints(oembetter.suggestedEndpoints);
-    oembetter.fetch('https://youtu.be/RRfHbyCQDCo?si=U5yxvQeXgACwajqa', function(err, response) {
+    oembetter.fetch('https://youtu.be/eEe7KrgNBcQ?si=3UAre3eeCqMFJ2xX', function(err, response) {
       assert(!err);
       assert(response);
       assert(response.html);
