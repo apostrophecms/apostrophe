@@ -1,4 +1,4 @@
-# Changelog 
+# Changelog
 
 ## 4.24.0 (2025-11-25)
 
