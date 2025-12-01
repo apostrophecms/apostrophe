@@ -105,7 +105,7 @@ describe('oembetter', function() {
   });
   it('should return an oembed response for youtube with forced use of XML', function(done) {
     require('../oembed.js').setForceXml(true);
-    oembetter.fetch('https://www.youtube.com/watch?v=zsl_auoGuy4', function(err, response) {
+    oembetter.fetch('https://www.youtube.com/watch?v=q6WhjQ5rsl8', function(err, response) {
       require('../oembed.js').setForceXml(false);
       assert(!err);
       assert(response);
@@ -164,7 +164,7 @@ describe('oembetter', function() {
     });
   });
   it('fallback filter for a working oembed service has no effect', function(done) {
-    oembetter.fetch('https://www.youtube.com/watch?v=zsl_auoGuy4', function(err, response) {
+    oembetter.fetch('https://www.youtube.com/watch?v=q6WhjQ5rsl8', function(err, response) {
       assert(!err);
       assert(response);
       assert(response.html !== 'oopsie');
