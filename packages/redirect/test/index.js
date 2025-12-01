@@ -283,8 +283,7 @@ function getAppConfig() {
   return {
     '@apostrophecms/express': {
       options: {
-        session: { secret: 'supersecret' },
-        port: 3000
+        session: { secret: 'supersecret' }
       }
     },
     '@apostrophecms/i18n': {

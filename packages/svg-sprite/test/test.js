@@ -111,7 +111,6 @@ describe('SVG Sprites', function () {
       modules: {
         '@apostrophecms/express': {
           options: {
-            port: 7777,
             session: { secret: 'test-the-svgs-again' }
           }
         },
