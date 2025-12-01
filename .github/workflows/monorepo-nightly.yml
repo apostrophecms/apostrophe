@@ -1,4 +1,4 @@
-name: Monorepo Nightly Tests
+name: Nightly
 
 on:
   schedule:

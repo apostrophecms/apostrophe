@@ -1,4 +1,4 @@
-name: Monorepo Development Tests
+name: Monorepo
 
 on:
   push:
