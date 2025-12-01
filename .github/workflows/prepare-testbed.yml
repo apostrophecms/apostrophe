@@ -1,0 +1,35 @@
+name: Update Canary Branch
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  canary:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          ref: main
+
+      - name: Setup Node
+        uses: actions/setup-node@v3
+        with:
+          node-version: '24'
+
+      - name: Install pnpm
+        run: npm install -g pnpm
+
+      - name: Prepare Testbed
+        run: |
+          pnpm install
+          pnpm run prepare-testbed
+
+      - name: Push to canary branch
+        run: |
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
+          git checkout -B canary
+          git add packages/*/package.json
+          git commit -m "Update canary with resolved workspace deps" || exit 0
+          git push -f origin canary
