@@ -2,7 +2,7 @@ const handlers = require('../handlers');
 const assert = require('assert').strict;
 const t = require('apostrophe/test-lib/util.js');
 
-describe.skip('I18n-static', function() {
+describe('I18n-static', function() {
   this.timeout(20000);
   let apos;
 
@@ -36,6 +36,10 @@ describe.skip('I18n-static', function() {
       {
         label: 'apostrophe',
         value: 'apostrophe'
+      },
+      {
+        label: 'aposMultisite',
+        value: 'aposMultisite'
       },
       {
         label: 'aposI18nStatic',
@@ -125,7 +129,7 @@ describe.skip('I18n-static', function() {
     const actual = await apos.modules['@apostrophecms/i18n-static'].findPiecesAndGroupByNamespace('en:draft');
     const aposI18nStaticNamespace = actual.find(item => item._id === 'aposI18nStatic');
 
-    assert.equal(actual.length, expected.length);
+    assert.equal(actual, expected);
     assert.equal(aposI18nStaticNamespace._id, 'aposI18nStatic');
   });
 

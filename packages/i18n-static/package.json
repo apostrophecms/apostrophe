@@ -4,7 +4,10 @@
   "description": "Translation editable A3 pieces with i18next",
   "main": "index.js",
   "scripts": {
-    "test": "eslint . && mocha --exit"
+    "eslint": "eslint .",
+    "lint": "npm run eslint",
+    "mocha": "mocha --exit",
+    "test": "npm run lint && npm run mocha"
   },
   "repository": {
     "type": "git",
