@@ -1,0 +1,5 @@
+# Exclude the lock file so dependencies stay up-to-date.
+package-lock.json
+npm-debug.log
+*.DS_Store
+node_modules

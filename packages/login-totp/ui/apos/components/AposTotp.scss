@@ -1,0 +1,162 @@
+.apos-totp {
+  $danger-color: #EA433A;
+  $block-width: 530px;
+
+  position: relative;
+  left: calc((330px - $block-width) / 2); // 330 being the login wrapper size
+  width: $block-width;
+
+  &__setup {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding-bottom: 30px;
+    border-bottom: 1px solid #212121;
+  }
+
+  &__title {
+    @include type-display;
+
+    & {
+      margin-top: 0;
+      margin-bottom: 16px;
+      text-align: center;
+    }
+
+    &--success {
+      margin-bottom: 32px;
+    }
+  }
+
+  &__text {
+    @include type-large;
+  }
+
+  &__scan-title {
+    @include type-title;
+  }
+
+  &__qrcode {
+    width: 100%;
+    border-radius: 10px;
+    margin-bottom: 20px;
+  }
+
+  &__text-grey {
+    @include type-large;
+
+    & {
+      margin: 0;
+      color: var(--a-base-5);
+    }
+  }
+
+  &__token-container {
+    position: relative;
+    margin-top: 10px;
+    text-align: right;
+  }
+
+  &__token {
+    @include type-base;
+
+    & {
+      margin: 0 0 5px;
+      padding: 5px;
+      border: solid 1px #414141;
+      color: #F9F9F9;
+      background-color: #0f0f0f;
+    }
+  }
+
+  &__copy-token-btn {
+    display: flex;
+    align-items: center;
+    border: none;
+    background-color: transparent;
+    cursor: pointer;
+    float: right;
+  }
+
+  &__copy-token-text {
+    margin-left: 5px;
+  }
+
+  &__token-copied {
+    position: absolute;
+    right: -20px;
+    bottom: 0;
+  }
+
+  &__login-text {
+    margin-top: 20px;
+    text-align: center;
+  }
+
+  &__login-form {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  &__login-input {
+    box-sizing: border-box;
+    width: 47px;
+    height: 56px;
+    margin-right: 15px;
+    border: solid 1px #8895a7;
+    color: #fff;
+    font-size: var(--a-type-display);
+    text-align: center;
+    border-radius: 5px;
+    background-color: #14171e;
+    caret-color: transparent;
+    appearance: textfield;
+
+    &:focus {
+      border: solid 1px #fff;
+      outline: none;
+    }
+
+    &::-webkit-inner-spin-button {
+      appearance: none;
+      margin: 0;
+    }
+
+    &--filled {
+      border-color: var(--a-success);
+    }
+
+    &--error {
+      border-color: $danger-color;
+    }
+
+  }
+
+  &__login-submit {
+    flex-grow: 1;
+    height: 56px;
+
+    &--disabled {
+      opacity: 0.5;
+    }
+
+    :deep(.apos-button) {
+      height: 100%;
+    }
+  }
+
+  &__error {
+    @include type-large;
+
+    & {
+      height: 15px;
+      color: $danger-color;
+      text-transform: uppercase;
+    }
+  }
+
+  &__success {
+    text-align: center;
+  }
+}

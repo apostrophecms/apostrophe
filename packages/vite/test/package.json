@@ -1,0 +1,9 @@
+{
+  "/**": "This package.json file is not actually installed.",
+  " * ": "Apostrophe requires that all npm modules to be loaded by moog",
+  " */": "exist in package.json at project level, which for a test is here",
+  "dependencies": {
+    "apostrophe": "git+https://github.com/apostrophecms/apostrophe.git",
+    "@apostrophecms/vite": "git+https://github.com/apostrophecms/vite.git"
+  }
+}

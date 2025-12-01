@@ -1,0 +1,11 @@
+{% if data.global.seoGoogleTrackingId %}
+{# Send 404 event to Google Analytics. #}
+  <script>
+    ga('send', {
+      hitType: 'event',
+      eventCategory: '404 Response',
+      eventAction: window.location.href,
+      eventLabel: document.referrer
+    });
+  </script>
+{% endif %}

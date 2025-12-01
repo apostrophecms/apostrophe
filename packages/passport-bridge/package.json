@@ -1,0 +1,30 @@
+{
+  "name": "@apostrophecms/passport-bridge",
+  "version": "1.6.0",
+  "description": "Passport.js authentication for Apostrophe",
+  "main": "index.js",
+  "scripts": {
+    "lint": "npm run eslint",
+    "eslint": "eslint .",
+    "test": "npm run lint"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/apostrophecms/apostrophe.git",
+    "directory": "packages/passport-bridge"
+  },
+  "homepage": "https://github.com/apostrophecms/apostrophe/tree/main/packages/passsport-bridge#readme",
+  "author": "Apostrophe Technologies",
+  "license": "MIT",
+  "devDependencies": {
+    "eslint": "^9.39.1",
+    "eslint-config-apostrophe": "workspace:*",
+    "stylelint": "^16.9.0",
+    "stylelint-config-apostrophe": "workspace:*"
+  },
+  "dependencies": {
+    "humanname": "^0.2.2",
+    "klona": "^2.0.6",
+    "passport-oauth2-refresh": "^2.2.0"
+  }
+}

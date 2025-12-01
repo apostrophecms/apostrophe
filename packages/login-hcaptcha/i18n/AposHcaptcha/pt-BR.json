@@ -1,0 +1,5 @@
+{
+  "captchaErr": "O sistema de verificação hCaptcha pode estar fora do ar ou configurado incorretamente. Por favor, tente novamente ou notifique o proprietário do site.",
+  "invalidToken": "Houve um problema ao validar sua submissão de verificação hCaptcha.",
+  "missingConfig": "O token hCaptcha estava ausente durante a verificação do login."
+}

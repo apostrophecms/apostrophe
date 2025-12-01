@@ -1,0 +1,42 @@
+{
+  "name": "@apostrophecms/stylelint-no-mixed-decls",
+  "version": "1.2.0",
+  "description": "A Stylelint plugin that enforces Sass's `mixed-decls` rule.",
+  "keywords": [
+    "stylelint",
+    "stylelint-plugin",
+    "scss",
+    "sass",
+    "mixed-declarations",
+    "mixed-decls",
+    "apostrophecms"
+  ],
+  "main": "index.js",
+  "scripts": {
+    "lint": "eslint .",
+    "pretest": "npm run lint",
+    "test": "nyc mocha"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/apostrophecms/apostrophe.git",
+    "directory": "packages/stylelint-no-mixed-decls"
+  },
+  "homepage": "https://github.com/apostrophecms/apostrophe/tree/main/packages/stylelint-no-mixed-decls#readme",
+  "author": "Apostrophe Technologies, Inc.",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/apostrophecms/stylelint-no-mixed-decls/issues"
+  },
+  "peerDependencies": {
+    "stylelint": ">= 16.1.0"
+  },
+  "devDependencies": {
+    "eslint": "^9.39.1",
+    "eslint-config-apostrophe": "workspace:*",
+    "mocha": "^11.1.0",
+    "nyc": "^17.1.0",
+    "postcss-scss": "^4.0.9",
+    "stylelint-config-standard-scss": "^14.0.0"
+  }
+}

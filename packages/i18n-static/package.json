@@ -1,0 +1,29 @@
+{
+  "name": "@apostrophecms/i18n-static",
+  "version": "1.1.1",
+  "description": "Translation editable A3 pieces with i18next",
+  "main": "index.js",
+  "scripts": {
+    "test": "eslint . && mocha --exit"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/apostrophecms/apostrophe.git",
+    "directory": "packages/i18n-static"
+  },
+  "homepage": "https://github.com/apostrophecms/apostrophe/tree/main/packages/i18n-static#readme",
+  "author": "Apostrophe Technologies",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/apostrophecms/i18n-static/issues"
+  },
+  "dependencies": {
+    "lodash": "^4.17.21"
+  },
+  "devDependencies": {
+    "apostrophe": "workspace:*",
+    "eslint": "^9.39.1",
+    "eslint-config-apostrophe": "workspace:*",
+    "mocha": "^10.1.0"
+  }
+}

@@ -1,0 +1,20 @@
+# Ignore MacOS X metadata forks (fusefs)
+._*
+package-lock.json
+*.DS_Store
+node_modules
+
+# Never commit a CSS map file, anywhere
+*.css.map
+
+# vim swp files
+.*.sw*
+
+# Dont commit test generated css
+test/public/css/*.css
+test/public/css/master-*.less
+
+# Dont commit test uploads
+/test/data
+/test/public/exports
+/test/public/uploads

@@ -1,0 +1,15 @@
+{
+  "generateImage": "Vygenerovať obrázok",
+  "generateTextLabel": "Vygenerovať text",
+  "generateTextDescription": "Vygenerovať text s AI",
+  "imagePlaceholderText": "Opíšte obrázok, ktorý chcete vytvoriť.",
+  "textPromptLabel": "Zadajte výzvu na vygenerovanie textu. Príklad: \"100 slov o syre, v štýle Anthony Bourdaina, so subnadpismi\"",
+  "variations": "Variácie",
+  "select": "Vybrať",
+  "delete": "Odstrániť",
+  "generateTextAction": "Vygenerovať",
+  "rateLimitExceeded": "Prekročený limit požiadaviek, skúste to znova neskôr",
+  "invalidRequest": "Neplatná požiadavka, prosím skontrolujte pravidlá OpenAI",
+  "utilityOperationLabel": "Vygenerovať obrázok s AI",
+  "errorMessage": "Vyskytla sa chyba."
+}

@@ -1,0 +1,5 @@
+{
+  "invalidToken": "There was a problem validating your reCAPTCHA verification submission.",
+  "missingConfig": "The reCAPTCHA token was missing while verifying login.",
+  "recaptchaErr": "The reCAPTCHA verification system may be down or incorrectly configured. Please try again or notify the site owner."
+}

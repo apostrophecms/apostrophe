@@ -1,0 +1,17 @@
+{# You will almost certainly want to override this template to #}
+{# extend your own project's layout like your pages do, etc. #}
+
+{% extends data.outerLayout %}
+
+{% block main %}
+  <h2>{{ __t('aposPassportBridge:errorHeading') }}</h2>
+  <p>
+    {{ __t('aposPassportBridge:errorSubheading', { label: data.spec.label or data.me }) }}
+  </p>
+  <p>
+    {{ __t(data.message) }}
+  </p>
+  <p>
+    {{ __t('aposPassportBridge:contactAdministrator') }}
+  </p>
+{% endblock %}

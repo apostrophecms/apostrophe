@@ -1,0 +1,10 @@
+{% set prependIfPrefix = apos.modules['@apostrophecms/form'].prependIfPrefix %}
+
+{% set className = '' %}
+{% if data.options.className %}
+  {% set className = data.options.className %}
+{% elif data.manager.options.className %}
+  {% set className = data.manager.options.className %}
+{% endif %}
+
+<hr class="apos-form-input {% if className %}{{ className }}{% endif %} {{ prependIfPrefix('_divider') }}" />

@@ -1,0 +1,54 @@
+---
+import AposRunLayout from "./AposRunLayout.astro";
+import AposEditLayout from "./AposEditLayout.astro";
+import AposRefreshLayout from "./AposRefreshLayout.astro";
+import config from 'virtual:apostrophe-config';
+
+const { aposData } = Astro.props;
+
+// Forward Apostrophe response headers to Astro based on the config
+let headersToInclude = config.includeResponseHeaders;
+if (!headersToInclude && config.forwardHeaders) {
+  console.warn('forwardHeaders is deprecated. Please use includeResponseHeaders instead.');
+  headersToInclude = config.forwardHeaders;
+}
+
+if (headersToInclude && Array.isArray(headersToInclude)) {
+  const headers = aposData.aposResponseHeaders;
+  if (headers) {
+    for (const header of headersToInclude) {
+      let aposHeader = headers.get(header);
+      // Astro is not compatible with nonce in CSP
+      if (aposHeader && header === 'content-security-policy') {
+        aposHeader = aposHeader.replace(/script-src[^;]+/g, (match) => match.replace(/'nonce-[^']+'\s*/g, ''));
+      }
+      if (aposHeader) {
+        Astro.response.headers.set(header, aposHeader);
+      }
+    }
+  }
+}
+
+// Manage the page not found and error fetching page cases
+
+if (aposData.errorFetchingPage) {
+  Astro.response.status = 500;
+}
+
+const LayoutComponent = aposData.user 
+  ? (Astro.url.searchParams.get('aposRefresh') 
+    ? AposRefreshLayout 
+    : AposEditLayout) 
+  : AposRunLayout;
+---
+<LayoutComponent {...Astro.props}>
+  <slot name="startBody" slot="startBody"/>
+  <slot name="startHead" slot="startHead"/>
+  <slot name="standardHead" slot="standardHead"/>
+  <slot name="extraHead" slot="extraHead"/>
+
+  <slot name="beforeMain" slot="beforeMain"/>
+  <slot name="main" slot="main"/>
+  <slot name="afterMain" slot="afterMain"/>
+  <slot name="endBody" slot="endBody"/>
+</LayoutComponent>

@@ -1,0 +1,29 @@
+{
+  "name": "@apostrophecms/blog",
+  "version": "1.0.6",
+  "description": "Blog module for ApostropheCMS websites",
+  "main": "index.js",
+  "scripts": {
+    "lint": "npm run eslint",
+    "eslint": "eslint .",
+    "test": "npm run lint"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/apostrophecms/apostrophe.git",
+    "directory": "packages/blog"
+  },
+  "homepage": "https://github.com/apostrophecms/apostrophe/tree/main/packagesblog#readme",
+  "author": "Apostrophe Technologies",
+  "license": "MIT",
+  "publishConfig": {
+    "access": "public"
+  },
+  "dependencies": {
+    "dayjs": "^1.10.7"
+  },
+  "devDependencies": {
+    "eslint": "^9.39.1",
+    "eslint-config-apostrophe": "workspace:*"
+  }
+}

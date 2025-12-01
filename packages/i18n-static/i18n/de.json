@@ -1,0 +1,15 @@
+{
+  "label": "i18n statische Phrase",
+  "pluralLabel": "i18n statische Phrasen",
+  "locale": "Lokale",
+  "key": "Schlüssel",
+  "namespace": "Namensraum",
+  "valueSingular": "Singular",
+  "valuePlural": "Plural",
+  "valueZero": "Null",
+  "valuePluralTwo": "Pluralform für \"zwei\"",
+  "valuePluralFew": "Pluralform für \"wenige\"",
+  "valuePluralMany": "Pluralform für \"viele\"",
+  "localeSpecificsForms": "Lokalspezifische Formen",
+  "ifApplicableInThisLocale": "Falls in diesem Locale anwendbar"
+}

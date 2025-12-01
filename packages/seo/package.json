@@ -1,0 +1,26 @@
+{
+  "name": "@apostrophecms/seo",
+  "version": "1.3.2",
+  "description": "SEO Tools for ApostropheCMS",
+  "main": "index.js",
+  "scripts": {
+    "lint": "npm run eslint",
+    "eslint": "eslint .",
+    "test": "npm run lint"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/apostrophecms/apostrophe.git",
+    "directory": "packages/seo"
+  },
+  "homepage": "https://github.com/apostrophecms/apostrophe/tree/main/packages/seo",
+  "author": "Apostrophe Technologies",
+  "license": "MIT",
+  "dependencies": {
+    "lodash": "^4.17.21"
+  },
+  "devDependencies": {
+    "eslint": "^9.39.1",
+    "eslint-config-apostrophe": "workspace:*"
+  }
+}

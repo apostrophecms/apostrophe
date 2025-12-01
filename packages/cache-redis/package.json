@@ -1,0 +1,29 @@
+{
+  "name": "@apostrophecms/cache-redis",
+  "version": "1.1.0",
+  "description": "Redis-based cache for the Apostrophe 3",
+  "main": "index.js",
+  "scripts": {
+    "lint": "npm run eslint",
+    "eslint": "eslint .",
+    "test": "npm run lint"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/apostrophecms/apostrophe.git",
+    "directory": "packages/cache-redis"
+  },
+  "homepage": "https://github.com/apostrophecms/apostrophe/tree/main/packages/cache-redis#readme",
+  "author": "Apostrophe Technologies",
+  "license": "MIT",
+  "devDependencies": {
+    "apostrophe": "workspace:*",
+    "eslint": "^9.39.1",
+    "eslint-config-apostrophe": "workspace:*",
+    "lodash.range": "^3.2.0",
+    "mocha": "^8.1.3"
+  },
+  "dependencies": {
+    "redis": "^4.0.1"
+  }
+}

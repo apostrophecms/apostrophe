@@ -1,0 +1,21 @@
+{% macro optional(required) %}
+  {% set disable = apos.modules['@apostrophecms/form'].options.disableOptionalLabel %}
+  {% if not required and not disable %}
+    <span class="apos-form-field-optional"> {{ __t('aposForm:templateOptional') }}</span>
+  {% endif %}
+{% endmacro %}
+
+{% macro required(required) %}
+  {% set disable = apos.modules['@apostrophecms/form'].options.disableOptionalLabel %}
+  {% if required %}
+    <span class="apos-form-field-required"> *</span>
+  {% endif %}
+{% endmacro %}
+
+{% macro checkInput(widget, choice, id) %}
+  {% set prefixer = apos.modules['@apostrophecms/form'].prependIfPrefix %}
+  <input
+    class="{{ prefixer('__input') }}"
+    type="checkbox" id="{{ id }}" name="{{ widget.fieldName }}"
+    value="{{ choice.value }}">
+{% endmacro %}

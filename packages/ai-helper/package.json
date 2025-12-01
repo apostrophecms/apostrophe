@@ -1,0 +1,36 @@
+{
+  "name": "@apostrophecms/ai-helper",
+  "version": "1.0.0-beta.10",
+  "description": "AI helpers for content creation",
+  "main": "index.js",
+  "scripts": {
+    "test": "npm run lint",
+    "lint": "eslint --ext .js,.vue ."
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/apostrophecms/apostrophe.git",
+    "directory": "packages/ai-helper"
+  },
+  "homepage": "https://github.com/apostrophecms/apostrophe/tree/main/packages/ai-helper#readme",
+  "keywords": [
+    "ApostropheCMS",
+    "apostrophe"
+  ],
+  "author": "Apostrophe Technologies, Inc.",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/apostrophecms/ai-helper/issues"
+  },
+  "devDependencies": {
+    "eslint": "^9.39.1",
+    "eslint-config-apostrophe": "workspace:*"
+  },
+  "dependencies": {
+    "@paralleldrive/cuid2": "^3.0.4",
+    "form-data": "^4.0.0",
+    "marked": "^4.3.0",
+    "node-fetch": "^2.6.9",
+    "sharp": "^0.30.7"
+  }
+}

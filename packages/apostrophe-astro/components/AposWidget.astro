@@ -1,0 +1,55 @@
+---
+import { widgets } from 'virtual:apostrophe-doctypes'
+
+const { widget, options, ...props } = Astro.props;
+const isEdit = widget._edit && Astro.url.searchParams.get('aposEdit');
+
+const key = widget.type;
+const componentFound = key in widgets;
+
+let Component;
+
+if (!componentFound) {
+  console.error(`Missing widget mapping for ${key}`);
+} else {
+  Component = widgets[key];
+}
+
+// Handle anchor functionality using backend options
+const hasAnchor = widget?.anchorId;
+const anchorsDisabled = options?.anchors === false;
+const shouldWrapWithAnchor = hasAnchor && !anchorsDisabled;
+
+// Get anchor attribute from backend options (defaults to 'id')
+const anchorAttribute = options?.anchorAttribute || 'id';
+
+// Determine wrapper element and attributes
+let WrapperElement = 'div';
+let wrapperAttributes = {};
+
+if (isEdit) {
+  WrapperElement = 'div';
+  wrapperAttributes['data-apos-widget'] = widget._id;
+  // Also add anchor if present to maintain consistent layout
+  if (shouldWrapWithAnchor) {
+    wrapperAttributes[anchorAttribute] = widget.anchorId;
+  }
+} else if (shouldWrapWithAnchor) {
+  WrapperElement = 'div';
+  wrapperAttributes[anchorAttribute] = widget.anchorId;
+}
+
+const shouldWrap = isEdit || shouldWrapWithAnchor;
+---
+
+{ Component &&
+  <>
+    {shouldWrap ? (
+      <WrapperElement {...wrapperAttributes}>
+        <Component {widget} {options} {...props}/>
+      </WrapperElement>
+    ) : (
+      <Component {widget} {options} {...props}/>
+    )}
+  </>
+}

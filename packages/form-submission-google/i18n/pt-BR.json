@@ -1,0 +1,9 @@
+{
+  "activateGoogleSubmit": "Enviar para o Google Planilhas",
+  "googleSheetId": "ID da Planilha do Google",
+  "googleSheetIdHtmlHelp": "<a href=\"https://developers.google.com/sheets/api/guides/concepts#spreadsheet_id\">O ID pode ser encontrado na URL da planilha</a>: https://docs.google.com/spreadsheets/d/<strong>spreadsheetId</strong>/edit#gid=0",
+  "googleSheetName": "Nome da Aba da Planilha do Google",
+  "googleSheetNameHelp": "O nome da aba na sua planilha do Google onde você deseja que a submissão seja adicionada. Se não fornecido, a primeira folha da planilha será utilizada.",
+  "googleSheetRetrievalError": "Erro ao recuperar informações da Planilha do Google. Por favor, verifique o ID da planilha e as configurações de compartilhamento da planilha.",
+  "googleSheetSubmissionError": "Ocorreu um erro ao enviar para o Google Planilhas."
+}
