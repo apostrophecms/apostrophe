@@ -4,9 +4,10 @@
   "description": "A module bundle that supports linking to individual Apostrophe widgets.",
   "main": "index.js",
   "scripts": {
-    "lint": "npm run eslint",
     "eslint": "eslint .",
-    "test": "npm run lint && mocha"
+    "lint": "npm run eslint",
+    "mocha": "mocha",
+    "test": "npm run lint && npm run mocha"
   },
   "repository": {
     "type": "git",
