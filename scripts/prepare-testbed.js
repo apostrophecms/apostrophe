@@ -14,13 +14,16 @@ packageJsonFiles.forEach(file => {
         if (pkg[depType][dep].startsWith('workspace:')) {
           // Option A: Use the actual version from the referenced package
           const depPath = dep.startsWith('@apostrophecms/') ? dep.replace('@apostrophecms/', '') : dep
-          const depPkgPath = path.join('packages', depPath, 'package.json');
-          if (fs.existsSync(depPkgPath)) {
-            const depPkg = JSON.parse(fs.readFileSync(depPkgPath, 'utf8'));
-            pkg[depType][dep] = `^${depPkg.version}`;
-          }
-          // Option B: Or use relative file: paths
-          // pkg[depType][dep] = `file:../${dep}`;
+
+          // relative path
+          pkg[depType][dep] = `file:../${depPath}`;
+
+          console.log('pkg[depType][dep]',pkg[depType][dep] )
+          /* const depPkgPath = path.join('packages', depPath, 'package.json'); */
+          /* if (fs.existsSync(depPkgPath)) { */
+          /*   const depPkg = JSON.parse(fs.readFileSync(depPkgPath, 'utf8')); */
+          /*   pkg[depType][dep] = `^${depPkg.version}`; */
+          /* } */
         }
       });
     }
