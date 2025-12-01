@@ -13,7 +13,8 @@ packageJsonFiles.forEach(file => {
       Object.keys(pkg[depType]).forEach(dep => {
         if (pkg[depType][dep].startsWith('workspace:')) {
           // Option A: Use the actual version from the referenced package
-          const depPkgPath = path.join('packages', dep, 'package.json');
+          const depPath = dep.startsWith('@apostrophecms/') ? dep.replace('@apostrophecms/', '') : dep
+          const depPkgPath = path.join('packages', depPath, 'package.json');
           if (fs.existsSync(depPkgPath)) {
             const depPkg = JSON.parse(fs.readFileSync(depPkgPath, 'utf8'));
             pkg[depType][dep] = `^${depPkg.version}`;
