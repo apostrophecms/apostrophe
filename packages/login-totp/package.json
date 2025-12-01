@@ -26,12 +26,12 @@
     "url": "https://github.com/apostrophecms/login-totp/issues"
   },
   "devDependencies": {
-    "apostrophe": "workspace:*",
+    "apostrophe": "^4.24.0",
     "eslint": "^9.39.1",
-    "eslint-config-apostrophe": "workspace:*",
+    "eslint-config-apostrophe": "^6.0.2",
     "mocha": "^7.2.0",
     "stylelint": "^16.0.0",
-    "stylelint-config-apostrophe": "workspace:*"
+    "stylelint-config-apostrophe": "^4.4.0"
   },
   "dependencies": {
     "qrcode": "^1.5.0",

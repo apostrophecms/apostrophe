@@ -35,7 +35,7 @@
   },
   "devDependencies": {
     "eslint": "^9.39.1",
-    "eslint-config-apostrophe": "workspace:*",
+    "eslint-config-apostrophe": "^6.0.2",
     "mocha": "^10.2.0",
     "sinon": "^9.0.2"
   }

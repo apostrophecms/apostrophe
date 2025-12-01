@@ -18,10 +18,10 @@
   "license": "UNLICENSED",
   "devDependencies": {
     "eslint": "^9.39.1",
-    "eslint-config-apostrophe": "workspace:*",
+    "eslint-config-apostrophe": "^6.0.2",
     "mocha": "^10.2.0",
     "stylelint": "^15.9.0",
-    "stylelint-config-apostrophe": "workspace:*"
+    "stylelint-config-apostrophe": "^4.4.0"
   },
   "dependencies": {
     "xlsx": "https://cdn.sheetjs.com/xlsx-0.20.2/xlsx-0.20.2.tgz"

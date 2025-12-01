@@ -18,7 +18,7 @@
     "url": "https://github.com/apostrophecms/mongodb-snapshot/issues"
   },
   "dependencies": {
-    "boring": "workspace:*",
+    "boring": "^1.1.1",
     "bson": "^6.10.1",
     "mongodb": "^6.12.0"
   },
