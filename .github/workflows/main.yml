@@ -31,7 +31,6 @@ jobs:
       - name: Install pnpm
         uses: pnpm/action-setup@v4
         with:
-          # Keep in sync with root packageManager field in package.json.
           version: 10.18.0
 
       - name: Use Node.js ${{ matrix.node-version }}
