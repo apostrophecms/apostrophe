@@ -10,7 +10,7 @@
     "name": "Apostrophe Technologies"
   },
   "bugs": {
-    "url": "https://github.com/apostrophecms/moog-require/issues"
+    "url": "https://github.com/apostrophecms/apostrophe/issues"
   },
   "bundleDependencies": false,
   "dependencies": {

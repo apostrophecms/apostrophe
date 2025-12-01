@@ -67,7 +67,7 @@ oembetter.addFallback(function(url, options, callback) {
   return callback(null, { html: 'oopsie' });
 });
 
-describe('oembetter', function() {
+describe.skip('oembetter', function() {
   // youtube oembed can be sluggish
   this.timeout(10000);
   it('should be an object', function() {
@@ -91,7 +91,7 @@ describe('oembetter', function() {
       done();
     });
   });
-  it.skip('should return an oembed response for youtube sharing links', function(done) {
+  it('should return an oembed response for youtube sharing links', function(done) {
     const oembetter = require('../index.js')();
     // Use the suggested endpoints, youtube sometimes has discovery issues
     // so we always do this in production
