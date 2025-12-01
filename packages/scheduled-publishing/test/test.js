@@ -1,7 +1,7 @@
 const assert = require('assert');
 const t = require('apostrophe/test-lib/util');
 
-describe.skip('Apostrophe Scheduled Publishing', function() {
+describe('Apostrophe Scheduled Publishing', function() {
   let apos;
 
   this.timeout(t.timeout);
