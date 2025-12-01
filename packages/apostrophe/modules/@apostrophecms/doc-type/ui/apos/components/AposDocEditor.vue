@@ -549,25 +549,21 @@ export default {
           if (docData.type !== this.docType) {
             this.docType = docData.type;
           }
-          console.log('Loaded doc data:', docData);
           this.original = klona(docData);
           this.docFields.data = docData;
 
-          resetUnexistantValuesFromSchema(this.schema, this.docFields.data);
-          console.log('Object after reset:', this.docFields.data);
+          resetToSchema(this.schema, this.docFields.data);
 
-          function resetUnexistantValuesFromSchema(schema, object) {
-            console.log('schema', schema);
-            console.log('object before reset', object);
+          function resetToSchema(schema, object) {
             for (const field of schema) {
               if (field.type === 'array') {
                 for (const item of (object[field.name] || [])) {
-                  resetUnexistantValuesFromSchema(field.schema, item);
+                  resetToSchema(field.schema, item);
                 }
               }
 
               if (field.type === 'object') {
-                resetUnexistantValuesFromSchema(field.schema, object[field.name] || {});
+                resetToSchema(field.schema, object[field.name] || {});
               }
 
               if (field.type === 'select' || field.type === 'radio') {
@@ -585,11 +581,28 @@ export default {
               if (field.type === 'checkboxes') {
                 const validChoices = field.choices.map(choice => choice.value);
 
-                object[field.name] = Array.isArray(object[field.name])
-                  ? object[field.name].filter(value => validChoices.includes(value))
-                  : field.def && Array.isArray(field.def)
-                    ? field.def.filter(value => validChoices.includes(value))
-                    : [];
+                const filteredValues = object[field.name]
+                  .filter(value => validChoices.includes(value));
+
+                if (filteredValues.length) {
+                  object[field.name] = filteredValues;
+                  continue;
+                }
+
+                if (Array.isArray(field.def) && field.def.length) {
+                  const filteredDefValues = field.def
+                    .filter(value => validChoices.includes(value));
+
+                  if (filteredDefValues.length) {
+                    object[field.name] = filteredDefValues;
+                    continue;
+                  }
+
+                  object[field.name] = [ validChoices[0] || null ].filter(Boolean);
+                  continue;
+                }
+
+                object[field.name] = [];
               }
             }
           }
