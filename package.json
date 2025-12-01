@@ -8,7 +8,8 @@
     "test": "pnpm --recursive run test",
     "eslint": "pnpm --recursive run eslint",
     "mocha": "pnpm --recursive run mocha",
-    "clean": "pnpm -r exec rm -rf node_modules && rm -rf node_modules && rm pnpm-lock.yaml"
+    "clean": "pnpm -r exec rm -rf node_modules && rm -rf node_modules && rm pnpm-lock.yaml",
+    "prepare-testbed": "node scripts/prepare-testbed.js"
   },
   "devDependencies": {
     "@changesets/cli": "^2.29.7"
