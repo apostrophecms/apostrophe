@@ -51,7 +51,7 @@ const getUserConfig = function () {
   };
 };
 
-describe.only('@apostrophecms/login-recaptcha', function () {
+describe('@apostrophecms/login-recaptcha', function () {
   let apos;
 
   this.timeout(25000);
