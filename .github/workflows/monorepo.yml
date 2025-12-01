@@ -1,4 +1,6 @@
 name: Monorepo
+permissions:
+  contents: read
 
 on:
   push:

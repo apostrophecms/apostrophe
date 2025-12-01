@@ -1,4 +1,6 @@
 name: Nightly
+permissions:
+  contents: read
 
 on:
   schedule:
