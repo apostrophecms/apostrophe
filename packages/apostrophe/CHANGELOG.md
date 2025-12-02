@@ -2,10 +2,16 @@
 
 ## UNRELEASED
 
+### Adds
+
+
 ### Fixes
 
-* Fixes an issue where the frontend was caching stale choices for `select`, `radio` and `checkboxes`
-fields that were saved but no longer valid (i.e removed from the schema).
+* Fixes an issue where the frontend was caching stale choices for `select`, `radio` and `checkboxes` fields that were saved but no longer valid (i.e removed from the schema).
+* Fixes soft-redirect module to decode the URL path before matching historic URLs, ensuring proper handling of accents, Cyrillic, and other non-ASCII characters.
+
+### Changes
+
 
 ## 4.24.0 (2025-11-25)
 

@@ -1264,25 +1264,32 @@ module.exports = {
           let docChanged = 0;
 
           await self.apos.migration.eachDoc({}, 5, async doc => {
-            const slug = doc.slug;
-            const req = self.apos.task.getAdminReq({
-              locale: doc.aposLocale?.split(':')[0] || self.defaultLocale
-            });
-            if (!self.shouldStripAccents()) {
-              return;
-            }
+            try {
+              const slug = doc.slug;
+              const req = self.apos.task.getAdminReq({
+                locale: doc.aposLocale?.split(':')[0] || self.defaultLocale
+              });
+              if (!self.shouldStripAccents()) {
+                return;
+              }
 
-            doc.slug = _.deburr(doc.slug);
-            if (slug === doc.slug) {
-              return;
+              doc.slug = _.deburr(doc.slug);
+              if (slug === doc.slug) {
+                return;
+              }
+              const manager = self.apos.doc.getManager(doc.type);
+              if (!manager) {
+                return;
+              }
+              await manager.update(req, doc, { permissions: false });
+              docChanged++;
+              self.apos.util.log(`[${doc.type}] [${doc.aposLocale}] "${slug}" -> "${doc.slug}"`);
+            } catch (e) {
+              self.apos.util.error(
+                `Error updating slug for doc ${doc._id}: ${e.message}`,
+                e.stack.split('\n').slice(1).map(line => line.trim())
+              );
             }
-            const manager = self.apos.doc.getManager(doc.type);
-            if (!manager) {
-              return;
-            }
-            await manager.update(req, doc, { permissions: false });
-            docChanged++;
-            self.apos.util.log(`Updated doc [${req.locale}] "${slug}" -> "${doc.slug}"`);
           });
 
           self.apos.util.log(

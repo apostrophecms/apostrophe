@@ -313,6 +313,14 @@ describe('static i18n', function() {
         }
       }
     });
+    await apos.doc.db.deleteMany({
+      type: {
+        $in: [
+          'default-page',
+          'test-piece'
+        ]
+      }
+    });
     // Create content while accents are NOT stripped so we have accented slugs
     apos.i18n.options.stripUrlAccents = false;
 
@@ -387,6 +395,122 @@ describe('static i18n', function() {
     assert.equal(pieceAfter.slug, 'cafe-au-lait');
 
     // Restore default for other tests
+    apos.i18n.options.stripUrlAccents = false;
+  });
+
+  it('should redirect accent-preserving URLs to their stripped versions after running the accent task', async function () {
+    await t.destroy(apos);
+    apos = await t.create({
+      root: module,
+      modules: {
+        '@apostrophecms/i18n': {
+          options: {
+            stripUrlAccents: true,
+            locales: {
+              en: {},
+              fr: {
+                prefix: '/fr'
+              }
+            }
+          }
+        },
+        'default-page': {
+          extend: '@apostrophecms/page-type'
+        },
+        'test-piece': {
+          extend: '@apostrophecms/piece-type'
+        },
+        'test-piece-page': {
+          extend: '@apostrophecms/piece-page-type',
+          options: {
+            pieceType: 'test-piece'
+          }
+        }
+      }
+    });
+    await apos.doc.db.deleteMany({
+      type: {
+        $in: [
+          'default-page',
+          'test-piece',
+          'test-piece-page'
+        ]
+      }
+    });
+
+    apos.i18n.options.stripUrlAccents = false;
+
+    const req = apos.task.getReq();
+    const jar = apos.http.jar();
+    const parentId = '_home';
+
+    const accentedPage = await apos.page.insert(req, parentId, 'lastChild', {
+      type: 'default-page',
+      visibility: 'public',
+      title: 'C\'est déjà l\'été'
+    });
+
+    const pieceIndexPage = await apos.page.insert(req, parentId, 'lastChild', {
+      type: 'test-piece-page',
+      visibility: 'public',
+      title: 'Test Piece Page',
+      slug: '/test-piece'
+    });
+
+    const piece = await apos.doc.insert(req, {
+      type: 'test-piece',
+      visibility: 'public',
+      title: 'Café au lait'
+    });
+
+    const encodedOldPageUrl = encodeURI(accentedPage.slug);
+    const oldPieceSlug = piece.slug;
+    const pieceIndexSlug = pieceIndexPage.slug;
+    const encodedOldPieceUrl = encodeURI(`${pieceIndexSlug}/${oldPieceSlug}`);
+
+    // Visit the legacy URLs before stripping accents so historic 
+    // redirects exist.
+    await apos.http.get(encodedOldPageUrl, {
+      followRedirect: false,
+      fullResponse: true,
+      redirect: 'manual',
+      jar
+    });
+    await apos.http.get(encodedOldPieceUrl, {
+      followRedirect: false,
+      fullResponse: true,
+      redirect: 'manual',
+      jar
+    });
+
+    apos.i18n.options.stripUrlAccents = true;
+    await apos.task.invoke('@apostrophecms/i18n:strip-slug-accents');
+
+    const updatedPage = await apos.doc.db.findOne({ _id: accentedPage._id });
+    const updatedPiece = await apos.doc.db.findOne({ _id: piece._id });
+    assert(updatedPage);
+    assert(updatedPiece);
+
+    const pageResponse = await apos.http.get(encodedOldPageUrl, {
+      followRedirect: false,
+      fullResponse: true,
+      redirect: 'manual',
+      jar
+    });
+    assert.strictEqual(pageResponse.status, 302);
+    assert.strictEqual(pageResponse.headers.location, `${apos.http.getBase()}${updatedPage.slug}`);
+
+    const pieceResponse = await apos.http.get(encodedOldPieceUrl, {
+      followRedirect: false,
+      fullResponse: true,
+      redirect: 'manual',
+      jar
+    });
+    assert.strictEqual(pieceResponse.status, 302);
+    assert.strictEqual(
+      pieceResponse.headers.location,
+      `${apos.http.getBase()}${pieceIndexSlug}/${updatedPiece.slug}`
+    );
     apos.i18n.options.stripUrlAccents = false;
   });
 });
