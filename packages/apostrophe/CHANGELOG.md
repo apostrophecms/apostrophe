@@ -7,6 +7,10 @@
 * Fixes an issue where the frontend was caching stale choices for `select`, `radio` and `checkboxes`
 fields that were saved but no longer valid (i.e removed from the schema).
 
+### Adds
+
+* Adds a new `isAdmin` method to the `permissions` module.
+
 ## 4.24.0 (2025-11-25)
 
 ### Adds
