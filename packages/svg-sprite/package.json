@@ -4,9 +4,10 @@
   "description": "Module to power SVG sprite elements as pieces in Apostrophe 3 projects",
   "main": "index.js",
   "scripts": {
-    "lint": "npm run eslint",
     "eslint": "eslint .",
-    "test": "npm run lint && mocha"
+    "lint": "npm run eslint",
+    "mocha": "mocha",
+    "test": "npm run lint && npm run mocha"
   },
   "repository": {
     "type": "git",
