@@ -55,7 +55,7 @@ module.exports = self => {
           type: '@apostrophecms/styles'
         },
         {
-          icon: 'styles-icon',
+          icon: 'palette-icon',
           contextUtility: true,
           tooltip: 'apostrophe:stylesOpen'
           // To put back when we support confirmation modal

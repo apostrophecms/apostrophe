@@ -23,9 +23,6 @@ module.exports = {
     // down the UI slightly but allows the use of a custom render function
     serverRendered: false
   },
-  icons: {
-    'styles-icon': 'Palette'
-  },
   commands(self) {
     return {
       add: {
