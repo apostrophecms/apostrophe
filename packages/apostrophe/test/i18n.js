@@ -468,7 +468,7 @@ describe('static i18n', function() {
     const pieceIndexSlug = pieceIndexPage.slug;
     const encodedOldPieceUrl = encodeURI(`${pieceIndexSlug}/${oldPieceSlug}`);
 
-    // Visit the legacy URLs before stripping accents so historic 
+    // Visit the legacy URLs before stripping accents so historic
     // redirects exist.
     await apos.http.get(encodedOldPageUrl, {
       followRedirect: false,
