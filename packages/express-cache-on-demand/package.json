@@ -1,10 +1,10 @@
 {
   "name": "express-cache-on-demand",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "Express middleware providing on-demand caching in high traffic situations.",
   "main": "index.js",
   "scripts": {
-    "test": "mocha .",
+    "test": "pnpm run lint && (cd test; mocha .)",
     "eslint": "eslint .",
     "lint": "pnpm run eslint"
   },
