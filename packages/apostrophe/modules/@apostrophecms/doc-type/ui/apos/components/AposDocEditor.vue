@@ -551,6 +551,61 @@ export default {
           }
           this.original = klona(docData);
           this.docFields.data = docData;
+
+          resetToSchema(this.schema, this.docFields.data);
+
+          function resetToSchema(schema, object) {
+            for (const field of schema) {
+              if (field.type === 'array') {
+                for (const item of (object[field.name] || [])) {
+                  resetToSchema(field.schema, item);
+                }
+              }
+
+              if (field.type === 'object') {
+                resetToSchema(field.schema, object[field.name] || {});
+              }
+
+              if (field.type === 'select' || field.type === 'radio') {
+                const validChoices = field.choices.map(choice => choice.value);
+
+                if (!validChoices.includes(object[field.name])) {
+                  object[field.name] = field.def
+                    ? validChoices.includes(field.def)
+                      ? field.def
+                      : validChoices[0] || null
+                    : null;
+                }
+              }
+
+              if (field.type === 'checkboxes') {
+                const validChoices = field.choices.map(choice => choice.value);
+
+                const filteredValues = object[field.name]
+                  .filter(value => validChoices.includes(value));
+
+                if (filteredValues.length) {
+                  object[field.name] = filteredValues;
+                  continue;
+                }
+
+                if (Array.isArray(field.def) && field.def.length) {
+                  const filteredDefValues = field.def
+                    .filter(value => validChoices.includes(value));
+
+                  if (filteredDefValues.length) {
+                    object[field.name] = filteredDefValues;
+                    continue;
+                  }
+
+                  object[field.name] = [ validChoices[0] || null ].filter(Boolean);
+                  continue;
+                }
+
+                object[field.name] = [];
+              }
+            }
+          }
           // TODO: Is this block even useful since published is fetched after
           // loadDoc?
           if (this.published) {

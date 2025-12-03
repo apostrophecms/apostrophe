@@ -23,6 +23,22 @@ jobs:
         node-version: [20, 22, 24]
         mongodb-version: [6.0, 7.0, 8.0]
 
+    # Service containers to run with `runner-job`
+    services:
+      # Label used to access the service container
+      redis:
+        # Docker Hub image
+        image: redis
+        # Set health checks to wait until redis has started
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          # Maps port 6379 on service container to the host
+          - 6379:6379
+
     # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
       - name: Git checkout

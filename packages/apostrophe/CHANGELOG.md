@@ -1,5 +1,13 @@
 # Changelog
 
+## UNRELEASED
+
+### Fixes
+
+* Fixes an issue where the frontend was caching stale choices for `select`, `radio` and `checkboxes`
+fields that were saved but no longer valid (i.e removed from the schema).
+* Bumped dependency on `express-cache-on-demand` to guarantee installation of recent fixes for edge cases that could share a response between two locales of a single-site project, report errors without a process restart, and correctly handle `res.send('')` with an empty string.
+
 ## 4.24.0 (2025-11-25)
 
 ### Adds
