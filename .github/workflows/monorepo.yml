@@ -64,6 +64,7 @@ jobs:
         # It looks odd, but it's a safety measure for edge cases.
         run: |
           node .github/workflows/scripts/expand-runtime-matrix.mjs --impact impact.json > runtime-matrix.json
+          cat runtime-matrix.json | jq '.'
           matrix_json=$(jq -c '.' runtime-matrix.json)
           matrix_json=${matrix_json//'%'/'%25'}
           matrix_json=${matrix_json//$'\n'/'%0A'}
@@ -160,17 +161,17 @@ jobs:
           name: pnpm-lock
           path: .
 
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.18.0
+
       - name: Use Node.js ${{ matrix.nodeVersion }}
         uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.nodeVersion }}
           cache: pnpm
           cache-dependency-path: pnpm-lock.yaml
-
-      - name: Install pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: 10.18.0
 
       - name: Grant private repositories access
         uses: webfactory/ssh-agent@v0.9.0
