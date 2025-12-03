@@ -153,7 +153,7 @@ jobs:
           docker save redis:7 -o .github/docker-cache/redis-7.tar
 
   package-tests:
-    name: ${{ format('{0} ({1}, {2})', matrix.package, matrix.nodeVersion, matrix.mongodbVersion) }}
+    name: ${{ format('{0} ({1}, {2})', matrix.package, matrix.nodeVersion, matrix.needsMongo && matrix.mongodbVersion || 'n/a') }}
     needs:
       - setup
       - shared-runtime
@@ -167,6 +167,8 @@ jobs:
     steps:
       - name: Git checkout
         uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
 
       - name: Install pnpm
         uses: pnpm/action-setup@v4
@@ -207,20 +209,24 @@ jobs:
           path: .github/docker-cache
           key: ${{ needs.shared-runtime.outputs.docker-cache-key }}
 
-      - name: Load cached docker images
-        if: steps.docker-cache-restore.outputs.cache-hit == 'true'
-        run: |
-          for tar in .github/docker-cache/*.tar; do
-            docker load -i "$tar"
-          done
+      - name: Load cached Mongo image
+        if: steps.docker-cache-restore.outputs.cache-hit == 'true' && matrix.needsMongo
+        run: docker load -i ".github/docker-cache/mongo-${{ matrix.mongodbVersion }}.tar"
 
-      - name: Pull docker images (cache miss)
-        if: steps.docker-cache-restore.outputs.cache-hit != 'true'
-        run: |
-          docker pull mongo:${{ matrix.mongodbVersion }}
-          docker pull redis:7
+      - name: Load cached Redis image
+        if: steps.docker-cache-restore.outputs.cache-hit == 'true' && matrix.needsRedis
+        run: docker load -i .github/docker-cache/redis-7.tar
+
+      - name: Pull Mongo image (cache miss)
+        if: steps.docker-cache-restore.outputs.cache-hit != 'true' && matrix.needsMongo
+        run: docker pull mongo:${{ matrix.mongodbVersion }}
+
+      - name: Pull Redis image (cache miss)
+        if: steps.docker-cache-restore.outputs.cache-hit != 'true' && matrix.needsRedis
+        run: docker pull redis:7
 
       - name: Start MongoDB
+        if: matrix.needsMongo
         run: |
           docker rm -f mongo >/dev/null 2>&1 || true
           docker run -d \
@@ -249,6 +255,7 @@ jobs:
           exit 1
 
       - name: Start Redis
+        if: matrix.needsRedis
         run: |
           docker rm -f redis >/dev/null 2>&1 || true
           docker run -d \
@@ -285,9 +292,9 @@ jobs:
           CI: true
 
       - name: Stop Redis
-        if: always()
+        if: always() && matrix.needsRedis
         run: docker rm -f redis || true
 
       - name: Stop MongoDB
-        if: always()
+        if: always() && matrix.needsMongo
         run: docker rm -f mongo || true

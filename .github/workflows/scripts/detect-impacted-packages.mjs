@@ -71,7 +71,9 @@ async function main() {
   const matrix = {
     include: uniqueImpacted.map((name) => ({
       package: name,
-      directory: packages.get(name).relativeDir
+      directory: packages.get(name).relativeDir,
+      requiresMongo: packages.get(name).requiresMongo !== false,
+      requiresRedis: packages.get(name).requiresRedis === true
     }))
   };
 
@@ -125,11 +127,17 @@ async function loadPackages() {
         ...Object.keys(manifest.optionalDependencies || {})
       ]);
 
+      const testConfig = manifest.apostropheTestConfig || {};
+      const requiresMongo = testConfig.requiresMongo !== false;
+      const requiresRedis = testConfig.requiresRedis === true;
+
       map.set(manifest.name, {
         name: manifest.name,
         relativeDir: path.posix.join('packages', entry.name),
         dependencies,
-        hasTestScript
+        hasTestScript,
+        requiresMongo,
+        requiresRedis
       });
     }));
 

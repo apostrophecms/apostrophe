@@ -41,12 +41,17 @@ const packages = impact?.matrix?.include || [];
 const include = [];
 
 for (const pkg of packages) {
+  const needsMongo = pkg.requiresMongo !== false;
+  const needsRedis = pkg.requiresRedis === true;
+  const mongoTargets = needsMongo ? mongodbVersions : [''];
   for (const nodeVersion of nodeVersions) {
-    for (const mongodbVersion of mongodbVersions) {
+    for (const mongodbVersion of mongoTargets) {
       include.push({
         ...pkg,
         nodeVersion,
-        mongodbVersion
+        mongodbVersion,
+        needsMongo,
+        needsRedis
       });
     }
   }

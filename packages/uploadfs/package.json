@@ -47,5 +47,8 @@
     "mocha": "^10.2.0",
     "node-fetch": "^2.6.9",
     "stat-mode": "^0.2.2"
+  },
+  "apostropheTestConfig": {
+    "requiresMongo": false
   }
 }
