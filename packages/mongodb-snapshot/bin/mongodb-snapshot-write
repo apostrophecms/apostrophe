@@ -1,0 +1,38 @@
+#!/usr/bin/env node
+
+const { MongoClient } = require('mongodb');
+const { write } = require('../index.js');
+const argv = require('boring')();
+
+(async () => {
+  if (!(argv.from && argv.to)) {
+    fail(
+      'Usage: mongodb-snapshot-write --from=mongodb://localhost:27017/dbname --to=some-filename.snapshot\n' +
+      '  [--exclude=collection1,collection2] [--filter-COLLECTION-NAME-HERE=\'{"prop":"value"}\']\n\n' +
+      'This command will write a database snapshot to a file. The filter parameter(s) may contain any\n' +
+      'valid MongoDB query as valid JSON.'
+    );
+  }
+  try {
+    const client = new MongoClient(argv.from);
+    await client.connect();
+    const db = await client.db();
+    const exclude = argv.exclude && argv.exclude.split(',');
+    const filters = Object.fromEntries(Object.entries(argv)
+      .filter(([ name ]) =>
+        name.startsWith('filter-')
+      ).map(([ name, value ]) =>
+        [ name.replace('filter-', ''), JSON.parse(value) ]
+      )
+    );
+    await write(db, argv.to, { exclude, filters });
+    await client.close();
+  } catch (e) {
+    fail(e);
+  }
+})();
+
+function fail(e) {
+  console.error(e);
+  process.exit(1);
+}

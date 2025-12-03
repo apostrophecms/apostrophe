@@ -1,0 +1,74 @@
+{% set widget = data.widget %}
+{% set form = data.widget._form[0] %}
+{% set classPrefix = data.widget.classPrefix %}
+{% set prependIfPrefix = apos.modules['@apostrophecms/form'].prependIfPrefix %}
+{% set recaptchaSite = apos.modules['@apostrophecms/form'].options.recaptchaSite or (data.global.useRecaptcha and data.global.recaptchaSite) %}
+{% set recaptchaReady = form.enableRecaptcha and recaptchaSite %}
+
+<div class="{{ prependIfPrefix('') }}" data-apos-form-wrapper>
+{% if form %}
+  {% set params = false %}
+  {% if form.queryParamList %}
+    {% set params = '' %}
+    {% for param in form.queryParamList %}
+      {% if loop.last %}
+        {% set params = params + param.key %}
+      {% else %}
+        {% set params = params + param.key + ',' %}
+      {% endif %}
+    {% endfor %}
+  {% endif %}
+  <form
+    data-apos-form-form="{{ form._id }}"
+    class="{{ prependIfPrefix('__form') }}" autocomplete="off"
+    {% if form.enableQueryParams %}data-apos-form-params='{{params}}'{% endif %}
+    {% if recaptchaReady %}
+      data-apos-recaptcha-sitekey="{{ recaptchaSite }}"
+    {% endif %}
+  >
+    {% area form, 'contents' %}
+
+    {% if recaptchaReady %}
+      <noscript>
+        <p>{{ __t('aposForm:widgetNoScript') }}</p>
+      </noscript>
+    {% endif %}
+    {% block submitBlock %}
+      <button
+        type="submit" class="{{ prependIfPrefix('__submit') }}"
+        data-apos-form-submit {% if recaptchaReady %}disabled{% endif %}
+      >
+        {{ form.submitLabel or __t('aposForm:widgetSubmit') }}
+      </button>
+    {% endblock %}
+  </form>
+  <p role="alert" data-apos-form-submit-error
+    class="apos-form-hidden apos-form-error {{ prependIfPrefix('__error') }}"
+  >
+    {{ __t('aposForm:widgetSubmitError') }}
+    <span data-apos-form-global-error></span>
+  </p>
+
+  {% if recaptchaSite %}
+    <p role="alert" data-apos-form-recaptcha-error
+      class="apos-form-hidden apos-form-error {{ prependIfPrefix('__error') }}"
+    >
+      {{ __t('aposForm:widgetCaptchaError') }}
+    </p>
+  {% endif %}
+  <p
+    class="apos-form-hidden {{ prependIfPrefix('__spinner') }}"
+    data-apos-form-spinner
+  >
+    {{ __t('aposForm:widgetSubmitting') }}
+  </p>
+  <div role="alert" data-apos-form-thank-you
+    class="apos-form-hidden apos-form-submission-thank-you {{ prependIfPrefix('__submission-thank-you') }}"
+  >
+    <h3>{{ form.thankYouHeading or __t('aposForm:defaultThankYou') }}</h3>
+    {% if not apos.area.isEmpty(form, 'thankYouBody') %}
+      {% area form, 'thankYouBody' %}
+    {% endif %}
+  </div>
+{% endif %}
+</div>

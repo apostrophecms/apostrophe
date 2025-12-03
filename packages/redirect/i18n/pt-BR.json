@@ -1,0 +1,18 @@
+{
+  "301": "Permanente (código de status 301)",
+  "302": "Temporário (código de status 302)",
+  "label": "Redirecionar",
+  "pluralLabel": "Redirecionamentos",
+  "originalSlug": "URL Antiga",
+  "originalSlugHelp": "Formato com barra inicial (por exemplo, /antiga-url)",
+  "title": "Descrição",
+  "urlType": "Tipo de Link",
+  "urlTypeInternal": "Página Interna",
+  "urlTypeExternal": "URL",
+  "ignoreQuery": "Ignorar string de consulta ao combinar",
+  "forwardQuery": "Encaminhar string de consulta",
+  "newPage": "Título da Página",
+  "external": "URL",
+  "statusCode": "Tipo de Redirecionamento",
+  "statusCodeHtmlHelp": "<ul><li>Use <strong>\"Temporário\"</strong> para redirecionamentos temporários ou para fins de teste.</li><li>Use <strong>\"Permanente\"</strong> após os testes, essa é uma boa prática de SEO. ⚠️ Os motores de busca vão armazenar em cache, então verifique com cuidado.</li>"
+}

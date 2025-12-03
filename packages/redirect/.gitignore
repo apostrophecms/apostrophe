@@ -1,0 +1,8 @@
+# Ignore MacOS X metadata forks (fusefs)
+._*
+package-lock.json
+*.DS_Store
+node_modules
+
+# vim swp files
+.*.sw*

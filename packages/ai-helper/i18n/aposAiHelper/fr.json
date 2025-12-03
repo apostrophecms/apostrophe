@@ -1,0 +1,15 @@
+{
+  "generateImage": "Générer une image",
+  "generateTextLabel": "Générer du texte",
+  "generateTextDescription": "Générer du texte avec l'IA",
+  "imagePlaceholderText": "Décrivez l'image que vous souhaitez créer.",
+  "textPromptLabel": "Entrez un prompt pour générer du texte. Exemple : \"100 mots sur le fromage, dans le style d'Anthony Bourdain, avec des sous-titres\"",
+  "variations": "Variations",
+  "select": "Sélectionner",
+  "delete": "Supprimer",
+  "generateTextAction": "Générer",
+  "rateLimitExceeded": "Limite de taux dépassée, réessayez plus tard",
+  "invalidRequest": "Demande invalide, veuillez revoir les règles d'OpenAI",
+  "utilityOperationLabel": "Générer une image avec l'IA",
+  "errorMessage": "Une erreur s'est produite."
+}

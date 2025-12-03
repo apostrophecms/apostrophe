@@ -1,0 +1,4 @@
+include:
+  - project: 'gitlab-ci/ci-templates'
+    ref: $CI_TEMPLATE_VERSION
+    file: 'module-template.yml'

@@ -1,0 +1,9 @@
+{
+  "activateGoogleSubmit": "Invia a Google Fogli",
+  "googleSheetId": "ID del Foglio Google",
+  "googleSheetIdHtmlHelp": "<a href=\"https://developers.google.com/sheets/api/guides/concepts#spreadsheet_id\">L'ID si trova nell'URL del foglio di calcolo</a>: https://docs.google.com/spreadsheets/d/<strong>spreadsheetId</strong>/edit#gid=0",
+  "googleSheetName": "Nome del Foglio Google",
+  "googleSheetNameHelp": "Il nome della scheda del foglio nel tuo foglio di calcolo Google in cui desideri che la sottomissione venga aggiunta. Se non fornito, verrà utilizzato il primo foglio del foglio di calcolo.",
+  "googleSheetRetrievalError": "Errore nel recupero delle informazioni del Foglio Google. Si prega di controllare l'ID del foglio di calcolo e le impostazioni di condivisione del foglio di calcolo.",
+  "googleSheetSubmissionError": "Si è verificato un errore durante l'invio a Google Fogli."
+}

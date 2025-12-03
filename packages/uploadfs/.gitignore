@@ -1,0 +1,15 @@
+*.sw*
+gcs-credentials-uploadfstest.json
+copy-out-test.txt
+npm-debug.log
+.DS_Store
+node_modules
+s3TestOptions.js
+gcsTestOptions.js
+azureTestOptions.js
+public/uploads
+temp
+package-lock.json
+.jshintrc
+# an extra local test in my checkout
+test-jimp.js

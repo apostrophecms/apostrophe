@@ -1,0 +1,23 @@
+{
+  "name": "@apostrophecms/security-headers",
+  "version": "1.0.2",
+  "description": "This module sends the modern HTTP security headers that are expected by various security scanners.",
+  "main": "index.js",
+  "scripts": {
+    "lint": "npm run eslint",
+    "eslint": "eslint .",
+    "test": "npm run lint"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/apostrophecms/apostrophe.git",
+    "directory": "packages/security-headers"
+  },
+  "homepage": "https://github.com/apostrophecms/apostrophe/tree/main/packages/security-headers#readme",
+  "author": "Apostrophe Technologies",
+  "license": "MIT",
+  "devDependencies": {
+    "eslint": "^9.39.1",
+    "eslint-config-apostrophe": "workspace:*"
+  }
+}

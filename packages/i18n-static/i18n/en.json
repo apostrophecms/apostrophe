@@ -1,0 +1,15 @@
+{
+  "label": "i18n Static Phrase",
+  "pluralLabel": "i18n Static Phrases",
+  "locale": "Locale",
+  "key": "Key",
+  "namespace": "Namespace",
+  "valueSingular": "Singular",
+  "valuePlural": "Plural",
+  "valueZero": "Zero",
+  "valuePluralTwo": "Plural Form For \"two\"",
+  "valuePluralFew": "Plural Form For \"few\"",
+  "valuePluralMany": "Plural Form For \"many\"",
+  "localeSpecificsForms":  "Locale Specific Forms",
+  "ifApplicableInThisLocale": "If applicable in this locale"
+}

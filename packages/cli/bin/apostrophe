@@ -1,0 +1,52 @@
+#!/usr/bin/env node
+
+require('shelljs/global');
+require('colors');
+const { program } = require('commander');
+const util = require('../lib/util');
+const confUtils = require('../lib/conf-utils');
+const fs = require('fs');
+
+async function execute () {
+  const versionInfo = getVersionInfo();
+  program.version(versionInfo.message);
+
+  // Check for required shell dependencies.
+  util.checkDependencies();
+
+  require('../lib/commands/create')(program);
+  require('../lib/commands/add')(program, versionInfo.core);
+
+  await confUtils.checkConf();
+
+  program.parseAsync(process.argv);
+
+  if (process.argv.length <= 2) {
+    // This means user passed no args, so display help information.
+    // Needs to come after parse, or command name won't register in help text.
+    program.help();
+  }
+}
+
+execute();
+
+// Get version of Apostrophe CLI and installed Apostrophe (if in a project)
+function getVersionInfo() {
+  require('pkginfo')(module, 'version');
+  const cwd = process.cwd();
+  const response = {};
+  response.cli = module.exports.version;
+  response.message = `Apostrophe CLI: v${response.cli}\n`;
+
+  const aposPath = `${cwd}/node_modules/apostrophe`;
+
+  // Append the installed Apostrophe version, if in an active project.
+  if (fs.existsSync(aposPath)) {
+    const aposPkg = require(`${aposPath}/package.json`);
+
+    response.core = aposPkg.version;
+    response.message += `Apostrophe v${response.core} is installed in this project.`;
+  }
+
+  return response;
+}

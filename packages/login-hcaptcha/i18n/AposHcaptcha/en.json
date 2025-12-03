@@ -1,0 +1,5 @@
+{
+  "captchaErr": "The hCaptcha verification system may be down or incorrectly configured. Please try again or notify the site owner.",
+  "invalidToken": "There was a problem validating your hCaptcha verification submission.",
+  "missingConfig": "The hCaptcha token was missing while verifying login."
+}

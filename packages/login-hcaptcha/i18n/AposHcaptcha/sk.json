@@ -1,0 +1,5 @@
+{
+  "captchaErr": "Systém overovania hCaptcha môže byť nefunkčný alebo nesprávne nakonfigurovaný. Skúste to prosím znova alebo informujte vlastníka stránky.",
+  "invalidToken": "Pri overovaní vašej hCaptcha overovacej žiadosti došlo k problému.",
+  "missingConfig": "Token hCaptcha chýbal počas overovania prihlásenia."
+}

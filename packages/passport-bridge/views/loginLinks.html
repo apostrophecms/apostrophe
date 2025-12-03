@@ -1,0 +1,9 @@
+<ul>
+  {% for link in data.links %}
+    <li>
+      <a href="{{ link.href }}">
+        {{ __t('aposPassportBridge:logInWith', { label: link.label }) }}
+      </a>
+    </li>
+  {% endfor %}
+</ul>

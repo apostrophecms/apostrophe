@@ -1,0 +1,5 @@
+{
+  "label": "SVG Sprite",
+  "pluralLabel": "SVG Sprites",
+  "taskUsage": "Imports sprites from registered SVG maps as pieces"
+}
