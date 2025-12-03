@@ -422,7 +422,7 @@ describe('static i18n', function() {
       type: 'default-page',
       title: 'C\'est déjà l\'été'
     });
-    
+
     assert(pageBefore);
     assert.equal(pageBefore.slug, '/c-est-déjà-l-été');
 
