@@ -440,11 +440,11 @@ export default {
             from: undefined,
             to: undefined
           });
-        document.querySelector('#apos-styles-css').innerHTML = processed.css;
+        document.querySelector('#apos-styles-stylesheet').innerHTML = processed.css;
         return;
       }
 
-      document.querySelector('#apos-styles-css').innerHTML = markup;
+      document.querySelector('#apos-styles-stylesheet').innerHTML = markup;
     },
     resetPosition() {
       localStorage.removeItem('aposStylesPosition');

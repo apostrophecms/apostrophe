@@ -23,7 +23,7 @@ module.exports = self => {
       nodes.push({
         name: 'style',
         attrs: {
-          id: 'apos-styles-styles'
+          id: 'apos-styles-stylesheet'
         },
         body: [
           {
