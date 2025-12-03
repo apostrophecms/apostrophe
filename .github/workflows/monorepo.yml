@@ -148,7 +148,7 @@ jobs:
           docker save redis:7 -o .github/docker-cache/redis-7.tar
 
   package-tests:
-    name: ${{ matrix.package }}
+    name: ${{ format('{0} (Node {1}, Mongo {2})', matrix.package, matrix.nodeVersion, matrix.mongodbVersion) }}
     needs:
       - setup
       - shared-runtime
@@ -158,8 +158,6 @@ jobs:
       PNPM_STORE_PATH: ~/.pnpm-store
     strategy:
       fail-fast: false
-      # matrix is the JSON object produced by the detector;
-      # each entry maps to a single package job.
       matrix: ${{ fromJson(needs.setup.outputs['runtime-matrix']) }}
     steps:
       - name: Git checkout
@@ -168,7 +166,6 @@ jobs:
       - name: Install pnpm
         uses: pnpm/action-setup@v4
         with:
-          # Keep in sync with root packageManager field in package.json.
           version: 10.18.0
 
       - name: Use Node.js ${{ matrix.nodeVersion }}
@@ -226,11 +223,22 @@ jobs:
             --health-timeout 5s \
             --health-retries 12 \
             mongo:${{ matrix.mongodbVersion }}
-          if ! docker wait --condition=healthy --timeout=60 mongo; then
-            echo "MongoDB failed to become healthy" >&2
-            docker logs mongo
-            exit 1
-          fi
+          echo "Waiting for MongoDB to report healthy..."
+          for attempt in $(seq 1 60); do
+            status=$(docker inspect --format='{{.State.Health.Status}}' mongo 2>/dev/null || echo "starting")
+            if [ "$status" = "healthy" ]; then
+              exit 0
+            fi
+            if [ "$status" = "unhealthy" ]; then
+              echo "MongoDB reported unhealthy" >&2
+              docker logs mongo
+              exit 1
+            fi
+            sleep 2
+          done
+          echo "MongoDB failed to become healthy in time" >&2
+          docker logs mongo
+          exit 1
 
       - name: Start Redis
         run: |
@@ -243,10 +251,22 @@ jobs:
             --health-timeout 5s \
             --health-retries 12 \
             redis:7
-          if ! docker wait --condition=healthy --timeout=60 redis; then
-            echo "Redis failed to respond" >&2
-            docker logs redis
-            exit 1
+          echo "Waiting for Redis to report healthy..."
+          for attempt in $(seq 1 60); do
+            status=$(docker inspect --format='{{.State.Health.Status}}' redis 2>/dev/null || echo "starting")
+            if [ "$status" = "healthy" ]; then
+              exit 0
+            fi
+            if [ "$status" = "unhealthy" ]; then
+              echo "Redis reported unhealthy" >&2
+              docker logs redis
+              exit 1
+            fi
+            sleep 2
+          done
+          echo "Redis failed to respond in time" >&2
+          docker logs redis
+          exit 1
 
       - name: Install workspace dependencies
         run: pnpm install --frozen-lockfile
