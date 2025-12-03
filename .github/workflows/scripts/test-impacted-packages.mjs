@@ -1,6 +1,5 @@
 // Usage: npx mocha .github/workflows/scripts/test-impacted-packages.mjs
 import assert from 'assert/strict';
-// import { before, beforeEach, after, describe, it } from 'mocha';
 import path from 'path';
 import { promises as fs } from 'fs';
 import { execFileSync, execSync } from 'child_process';
