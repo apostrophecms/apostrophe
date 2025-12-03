@@ -172,12 +172,31 @@ module.exports = self => {
       ];
 
       const stylesFields = _.difference(Object.keys(self.fields), nonStylesFields);
+      console.dir(stylesFields, { depth: 9 });
       if (!stylesFields.length) {
         return;
       }
 
       await Promise.all(aposLocales.map(async aposLocale => {
         const req = self.apos.task.getReq({ aposLocale });
+
+        // FIXME: singletons are created after migrations run, so this
+        // migration will not find any styles docs to update. We need
+        // to either run this migration later, or create the singleton
+        // docs earlier.
+        // Debug:
+        console.log({
+          type: self.name,
+          aposLocale
+        });
+        const doc = await self.apos.doc.db.findOne({
+          type: self.name,
+          aposLocale
+        });
+        console.log('existing styles doc:');
+        console.dir(doc, { depth: 9 });
+        // end Debug
+
         const stylesDoc = await self.find(req).toObject();
         if (!stylesDoc) {
           return;
@@ -193,7 +212,7 @@ module.exports = self => {
 
         console.info('migrating existing palette into styles for aposLocale', aposLocale);
 
-        for (const fieldName in stylesFields) {
+        for (const fieldName of stylesFields) {
           console.log('fieldName', fieldName);
           stylesDoc[fieldName] = paletteDoc[fieldName];
         }
