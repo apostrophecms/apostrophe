@@ -140,11 +140,11 @@ jobs:
         if: steps.docker-cache.outputs.cache-hit != 'true'
         run: |
           mkdir -p .github/docker-cache
-          docker pull mongodb/mongodb-community-server:7.0
-          docker pull mongodb/mongodb-community-server:8.0
+          docker pull mongo:7.0
+          docker pull mongo:8.0
           docker pull redis:7
-          docker save mongodb/mongodb-community-server:7.0 -o .github/docker-cache/mongo-7.0.tar
-          docker save mongodb/mongodb-community-server:8.0 -o .github/docker-cache/mongo-8.0.tar
+          docker save mongo:7.0 -o .github/docker-cache/mongo-7.0.tar
+          docker save mongo:8.0 -o .github/docker-cache/mongo-8.0.tar
           docker save redis:7 -o .github/docker-cache/redis-7.tar
 
   package-tests:
@@ -212,7 +212,7 @@ jobs:
       - name: Pull docker images (cache miss)
         if: steps.docker-cache-restore.outputs.cache-hit != 'true'
         run: |
-          docker pull mongodb/mongodb-community-server:${{ matrix.mongodbVersion }}
+          docker pull mongo:${{ matrix.mongodbVersion }}
           docker pull redis:7
 
       - name: Start MongoDB
@@ -225,7 +225,7 @@ jobs:
             --health-interval 5s \
             --health-timeout 5s \
             --health-retries 12 \
-            mongodb/mongodb-community-server:${{ matrix.mongodbVersion }}
+            mongo:${{ matrix.mongodbVersion }}
           if ! docker wait --condition=healthy --timeout=60 mongo; then
             echo "MongoDB failed to become healthy" >&2
             docker logs mongo
