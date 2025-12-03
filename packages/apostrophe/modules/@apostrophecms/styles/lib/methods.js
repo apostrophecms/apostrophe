@@ -72,6 +72,7 @@ module.exports = self => {
       self.apos.migration.add('migrate legacy global palette fields', () => {
         self.shouldMigrateLegacyGlobalPaletteFields = true;
       });
+      self.apos.migration.add('migrate palette into styles', self.migratePaletteIntoStyles);
     },
     async removeDuplicatePalettesMigration() {
       // There was formerly a bug that permitted a profusion of palettes
@@ -154,6 +155,120 @@ module.exports = self => {
         // mirror the stylesheet to @apostrophecms/global
         await self.apos.doc.db.updateOne({ _id: globalDocId }, { $set });
       }
+    },
+    async migratePaletteIntoStyles() {
+      const locales = Object.keys(self.apos.i18n.locales);
+      const aposLocales = [
+        ...locales.map(locale => `${locale}:draft`),
+        ...locales.map(locale => `${locale}:previous`),
+        ...locales.map(locale => `${locale}:published`)
+      ];
+
+      const nonStylesFields = [
+        'archived',
+        ...Object
+          .values(self.fieldsGroups)
+          .flatMap(fieldsGroup => fieldsGroup.fields || [])
+      ];
+
+      const stylesFields = _.difference(Object.keys(self.fields), nonStylesFields);
+      if (!stylesFields.length) {
+        return;
+      }
+
+      await Promise.all(aposLocales.map(async aposLocale => {
+        const req = self.apos.task.getReq({ aposLocale });
+        const stylesDoc = await self.find(req).toObject();
+        if (!stylesDoc) {
+          return;
+        }
+
+        const paletteDoc = await self.apos.doc.db.findOne({
+          type: '@apostrophecms-pro/palette',
+          aposLocale
+        });
+        if (!paletteDoc) {
+          return;
+        }
+
+        console.info('migrating existing palette into styles for aposLocale', aposLocale);
+
+        for (const fieldName in stylesFields) {
+          console.log('fieldName', fieldName);
+          stylesDoc[fieldName] = paletteDoc[fieldName];
+        }
+
+        console.dir(stylesDoc, { depth: 9 });
+
+        await self.update(req, stylesDoc);
+      }));
+
+      /* for (const aposLocale of aposLocales) { */
+      /*   const paletteDoc = await self.apos.doc.db.findOne({ */
+      /*     type: '@apostrophecms-pro/palette', */
+      /*     aposLocale */
+      /*   }); */
+      /**/
+      /*   if (!paletteDoc) { */
+      /*     continue; */
+      /*   } */
+      /**/
+      /*   const stylesDoc = await self.apos.doc.db.findOne({ */
+      /*     type: self.name, */
+      /*     aposLocale */
+      /*   }); */
+      /**/
+      /*   if (!stylesDoc) { */
+      /*     continue; */
+      /*   } */
+      /**/
+      /*   const updatedStylesDoc = { ...stylesDoc }; */
+      /**/
+      /*   for (const fieldName in self.fields) { */
+      /*     if (fieldName.startsWith('palette')) { */
+      /*       updatedStylesDoc[fieldName] = paletteDoc[fieldName]; */
+      /*     } */
+      /*   } */
+      /**/
+      /*   await self.apos.doc.db.updateOne( */
+      /*     { _id: stylesDoc._id }, */
+      /*     { $set: updatedStylesDoc } */
+      /*   ); */
+      /* } */
     }
   };
 };
+
+/*   await self.apos.doc.db.updateMany( */
+/*     { type: '@apostrophecms-pro/palette' }, */
+/*     { */
+/*       $set: { */
+/*         type: '@apostrophecms/styles', */
+/*         slug: self.slug, */
+/*         title: 'styles', */
+/*         highSearchText: { */
+/*           $replaceAll: { */
+/*             input: '$highSearchText', */
+/*             find: 'palette', */
+/*             replacement: 'styles' */
+/*           } */
+/*         }, */
+/*         highSearchWords: { */
+/*           $map: { */
+/*             input: '$highSearchWords', */
+/*             as: 'word', */
+/*             in: { $cond: [ { $eq: [ '$$word', 'palette' ] }, 'styles', '$$word' ] } */
+/*           } */
+/*         }, */
+/*         lowSearchText: { */
+/*           $replaceAll: { */
+/*             input: '$lowSearchText', */
+/*             find: 'palette', */
+/*             replacement: 'styles' */
+/*           } */
+/*         } */
+/*       } */
+/*     } */
+/*   ); */
+/* } */
+/**/
