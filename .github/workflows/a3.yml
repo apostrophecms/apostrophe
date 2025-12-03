@@ -2,15 +2,13 @@ name: Tests
 
 # Controls when the action will run.
 on:
-  # trick to disable this workflow from running
-  workflow_call:
-#  push:
-#    branches: ["main", "a3"]
-#  pull_request:
-#    branches: ["*"]
-#
-#  # Allows you to run this workflow manually from the Actions tab
-#  workflow_dispatch:
+  push:
+    branches: ["a3"]
+  pull_request:
+    branches: ["a3"]
+
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
 
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
