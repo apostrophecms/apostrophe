@@ -630,6 +630,18 @@ function invoke() {
         invokeCode: ''
       };
 
+      const useAbsoluteImportPaths = process.platform === 'win32';
+      const toRelativeImportPath = (componentPath) => {
+        const normalized = componentPath.replace(/\\/g, '/');
+        if (normalized.startsWith('./') || normalized.startsWith('../')) {
+          return normalized;
+        }
+        if (normalized.startsWith('/')) {
+          return `.${normalized}`;
+        }
+        return `./${normalized}`;
+      };
+
       components.forEach((entry, i) => {
         const { component, path: realPath } = entry;
         if (options.requireDefaultExport) {
@@ -653,9 +665,13 @@ function invoke() {
             }
           }
         }
-        // You would think we should run pathToFileURL over realPath,
-        // but that actually breaks both Windows and Linux with Vite. -Tom
-        const importPath = JSON.stringify(realPath);
+        // Windows needs absolute paths for native Node.js builds whereas
+        // *nix builds must stay relative to keep Vite's dev server happy.
+        // pathToFileURL breaks both environments, so stick to plain strings.
+        const importTarget = (useAbsoluteImportPaths || !component)
+          ? realPath
+          : toRelativeImportPath(component);
+        const importPath = JSON.stringify(importTarget);
         const name = self.getComponentNameByPath(
           component,
           { enumerate: options.enumerateImports === true ? i : false }
