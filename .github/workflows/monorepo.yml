@@ -20,7 +20,7 @@ on:
 
 jobs:
   setup:
-    name: Determine impacted packages
+    name: Impacted packages
     runs-on: ubuntu-latest
     env:
       # DEFAULT_BRANCH tells the detector which branch to diff against when calculating impact.
@@ -29,8 +29,12 @@ jobs:
       BASE_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || github.event.before || '' }}
       # FORCE_ALL flips to true when the workflow_dispatch input is toggled so every package runs.
       FORCE_ALL: ${{ inputs.run_all == 'true' && 'true' || 'false' }}
+      # Define supported runtime versions for matrix expansion.
+      NODE_VERSIONS_JSON: "[20,22,24]"
+      MONGODB_VERSIONS_JSON: '["7.0","8.0"]'
     outputs:
       matrix: ${{ steps.impact.outputs.matrix }}
+      runtime-matrix: ${{ steps.runtime-matrix.outputs.runtime_matrix }}
       has-packages: ${{ steps.impact.outputs.has_packages }}
     steps:
       - name: Git checkout
@@ -49,16 +53,114 @@ jobs:
           echo "has_packages=$(jq -r '.hasPackages' impact.json)" >> "$GITHUB_OUTPUT"
           cat impact.json | jq '.'
 
-  package-tests:
-    name: ${{ matrix.package }}
+      - name: Expand runtime matrix
+        id: runtime-matrix
+        # Replace "forbidden" characters to prevent GitHub Actions parsing issues.
+        # It looks odd, but it's a safety measure for edge cases.
+        run: |
+          node .github/workflows/scripts/expand-runtime-matrix.mjs --impact impact.json > runtime-matrix.json
+          matrix_json=$(jq -c '.' runtime-matrix.json)
+          matrix_json=${matrix_json//'%'/'%25'}
+          matrix_json=${matrix_json//$'\n'/'%0A'}
+          matrix_json=${matrix_json//$'\r'/'%0D'}
+          echo "runtime_matrix=$matrix_json" >> "$GITHUB_OUTPUT"
+
+  shared-runtime:
+    name: Shared runtime
+    runs-on: ubuntu-latest
     needs: setup
     if: needs.setup.outputs.has-packages == 'true'
+    env:
+      PNPM_STORE_PATH: ~/.pnpm-store
+    outputs:
+      lock-hash: ${{ steps.lock-hash.outputs.hash }}
+      docker-cache-key: ${{ steps.docker-key.outputs.key }}
+    steps:
+      - name: Git checkout
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Use Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.18.0
+
+      - name: Grant private repositories access
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: |
+            ${{ secrets.AUTOMATIC_TRANSLATION_DEPLOYMENT_KEY }}
+
+      - name: Generate pnpm lockfile
+        run: pnpm install --lockfile-only --ignore-scripts
+
+      - name: Record lock hash
+        id: lock-hash
+        run: echo "hash=${{ hashFiles('pnpm-lock.yaml') }}" >> "$GITHUB_OUTPUT"
+
+      - name: Upload pnpm lockfile
+        uses: actions/upload-artifact@v4
+        with:
+          name: pnpm-lock
+          path: pnpm-lock.yaml
+          retention-days: 30
+
+      - name: Cache pnpm store
+        id: pnpm-store
+        uses: actions/cache@v4
+        with:
+          path: ~/.pnpm-store
+          key: pnpm-store-${{ steps.lock-hash.outputs.hash }}
+
+      - name: Warm pnpm store
+        run: pnpm install --frozen-lockfile --ignore-scripts
+
+      - name: Determine cache month
+        id: cache-month
+        run: echo "value=$(date -u +%Y-%m)" >> "$GITHUB_OUTPUT"
+
+      - name: Declare docker cache key
+        id: docker-key
+        run: echo "key=docker-images-${{ steps.cache-month.outputs.value }}-mongo7.0-8.0-redis7" >> "$GITHUB_OUTPUT"
+
+      - name: Restore docker image cache
+        id: docker-cache
+        uses: actions/cache@v4
+        with:
+          path: .github/docker-cache
+          key: ${{ steps.docker-key.outputs.key }}
+
+      - name: Pull and save docker images
+        if: steps.docker-cache.outputs.cache-hit != 'true'
+        run: |
+          mkdir -p .github/docker-cache
+          docker pull mongodb/mongodb-community-server:7.0
+          docker pull mongodb/mongodb-community-server:8.0
+          docker pull redis:7
+          docker save mongodb/mongodb-community-server:7.0 -o .github/docker-cache/mongo-7.0.tar
+          docker save mongodb/mongodb-community-server:8.0 -o .github/docker-cache/mongo-8.0.tar
+          docker save redis:7 -o .github/docker-cache/redis-7.tar
+
+  package-tests:
+    name: ${{ matrix.package }}
+    needs:
+      - setup
+      - shared-runtime
+    if: needs.setup.outputs.has-packages == 'true'
     runs-on: ubuntu-latest
+    env:
+      PNPM_STORE_PATH: ~/.pnpm-store
     strategy:
       fail-fast: false
       # matrix is the JSON object produced by the detector;
       # each entry maps to a single package job.
-      matrix: ${{ fromJson(needs.setup.outputs.matrix) }}
+      matrix: ${{ fromJson(needs.setup.outputs['runtime-matrix']) }}
     steps:
       - name: Git checkout
         uses: actions/checkout@v5
@@ -69,10 +171,10 @@ jobs:
           # Keep in sync with root packageManager field in package.json.
           version: 10.18.0
 
-      - name: Use Node.js 22
+      - name: Use Node.js ${{ matrix.nodeVersion }}
         uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: ${{ matrix.nodeVersion }}
 
       - name: Grant private repositories access
         uses: webfactory/ssh-agent@v0.9.0
@@ -80,15 +182,84 @@ jobs:
           ssh-private-key: |
             ${{ secrets.AUTOMATIC_TRANSLATION_DEPLOYMENT_KEY }}
 
-      - name: Start MongoDB
-        uses: supercharge/mongodb-github-action@1.12.0
+      - name: Download pnpm lockfile
+        uses: actions/download-artifact@v4
         with:
-          mongodb-version: 7.0
+          name: pnpm-lock
+          path: .
+
+      - name: Restore pnpm store cache
+        id: pnpm-store-restore
+        uses: actions/cache/restore@v4
+        with:
+          path: ~/.pnpm-store
+          key: pnpm-store-${{ needs.shared-runtime.outputs.lock-hash }}
+
+      - name: Restore docker image cache
+        id: docker-cache-restore
+        uses: actions/cache/restore@v4
+        with:
+          path: .github/docker-cache
+          key: ${{ needs.shared-runtime.outputs.docker-cache-key }}
+
+      - name: Load cached docker images
+        if: steps.docker-cache-restore.outputs.cache-hit == 'true'
+        run: |
+          for tar in .github/docker-cache/*.tar; do
+            docker load -i "$tar"
+          done
+
+      - name: Pull docker images (cache miss)
+        if: steps.docker-cache-restore.outputs.cache-hit != 'true'
+        run: |
+          docker pull mongodb/mongodb-community-server:${{ matrix.mongodbVersion }}
+          docker pull redis:7
+
+      - name: Start MongoDB
+        run: |
+          docker rm -f mongo >/dev/null 2>&1 || true
+          docker run -d \
+            --name mongo \
+            --publish 27017:27017 \
+            --health-cmd "mongosh --quiet --eval 'db.runCommand({ ping: 1 })'" \
+            --health-interval 5s \
+            --health-timeout 5s \
+            --health-retries 12 \
+            mongodb/mongodb-community-server:${{ matrix.mongodbVersion }}
+          if ! docker wait --condition=healthy --timeout=60 mongo; then
+            echo "MongoDB failed to become healthy" >&2
+            docker logs mongo
+            exit 1
+          fi
+
+      - name: Start Redis
+        run: |
+          docker rm -f redis >/dev/null 2>&1 || true
+          docker run -d \
+            --name redis \
+            --publish 6379:6379 \
+            --health-cmd "redis-cli ping || exit 1" \
+            --health-interval 5s \
+            --health-timeout 5s \
+            --health-retries 12 \
+            redis:7
+          if ! docker wait --condition=healthy --timeout=60 redis; then
+            echo "Redis failed to respond" >&2
+            docker logs redis
+            exit 1
 
       - name: Install workspace dependencies
-        run: pnpm install
+        run: pnpm install --frozen-lockfile
 
       - name: Run package tests
         run: pnpm run --filter "${{ matrix.package }}" --if-present test
         env:
           CI: true
+
+      - name: Stop Redis
+        if: always()
+        run: docker rm -f redis || true
+
+      - name: Stop MongoDB
+        if: always()
+        run: docker rm -f mongo || true
