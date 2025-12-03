@@ -84,6 +84,9 @@ describe('detect-impacted-packages workflow', function () {
     if (state.baseBranchName) {
       runGit(`checkout ${state.baseBranchName}`);
     }
+    if (runGit(`branch --list ${impactBranch}`)) {
+      runGit(`branch -D ${impactBranch}`);
+    }
   });
 
   it('includes apostrophe dependents when apostrophe changes', async function () {
