@@ -2,6 +2,12 @@ name: Monorepo
 permissions:
   contents: read
 
+env:
+  # Define supported runtime versions for matrix expansion once for the workflow.
+  NODE_VERSIONS_JSON: "[20,22,24]"
+  MONGODB_VERSIONS_JSON: '["7","8"]'
+  REDIS_VERSION: "7"
+
 on:
   push:
     branches:
@@ -24,15 +30,13 @@ jobs:
     name: Impacted packages
     runs-on: ubuntu-latest
     env:
+      # DO NOT CHANGE BELOW THIS LINE UNLESS YOU KNOW WHAT YOU ARE DOING
       # DEFAULT_BRANCH tells the detector which branch to diff against when calculating impact.
       DEFAULT_BRANCH: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.ref || github.event.repository.default_branch || 'main' }}
       # BASE_SHA narrows the diff to the merge-base (PR) or latest push SHA for branch builds.
       BASE_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || github.event.before || '' }}
       # FORCE_ALL flips to true when the workflow_dispatch input is toggled so every package runs.
       FORCE_ALL: ${{ (github.event_name == 'schedule' || inputs.run_all == 'true') && 'true' || 'false' }}
-      # Define supported runtime versions for matrix expansion.
-      NODE_VERSIONS_JSON: "[20,22,24]"
-      MONGODB_VERSIONS_JSON: '["7.0","8.0"]'
     outputs:
       matrix: ${{ steps.impact.outputs.matrix }}
       runtime-matrix: ${{ steps.runtime-matrix.outputs.runtime_matrix }}
@@ -131,7 +135,10 @@ jobs:
 
       - name: Declare docker cache key
         id: docker-key
-        run: echo "key=docker-images-${{ steps.cache-month.outputs.value }}-mongo7.0-8.0-redis7" >> "$GITHUB_OUTPUT"
+        run: |
+          month='${{ steps.cache-month.outputs.value }}'
+          mongo_suffix=$(jq -r '.[]' <<< '${{ env.MONGODB_VERSIONS_JSON }}' | paste -sd'-' -)
+          echo "key=docker-images-${month}-mongo${mongo_suffix}-redis${{ env.REDIS_VERSION }}" >> "$GITHUB_OUTPUT"
 
       - name: Restore docker image cache
         id: docker-cache
@@ -144,12 +151,12 @@ jobs:
         if: steps.docker-cache.outputs.cache-hit != 'true'
         run: |
           mkdir -p .github/docker-cache
-          docker pull mongo:7.0
-          docker pull mongo:8.0
-          docker pull redis:7
-          docker save mongo:7.0 -o .github/docker-cache/mongo-7.0.tar
-          docker save mongo:8.0 -o .github/docker-cache/mongo-8.0.tar
-          docker save redis:7 -o .github/docker-cache/redis-7.tar
+          jq -r '.[]' <<< '${{ env.MONGODB_VERSIONS_JSON }}' | while read -r version; do
+            docker pull "mongo:${version}"
+            docker save "mongo:${version}" -o ".github/docker-cache/mongo-${version}.tar"
+          done
+          docker pull "redis:${{ env.REDIS_VERSION }}"
+          docker save "redis:${{ env.REDIS_VERSION }}" -o ".github/docker-cache/redis-${{ env.REDIS_VERSION }}.tar"
 
   package-tests:
     name: ${{ format('{0} ({1}, {2})', matrix.package, matrix.nodeVersion, matrix.needsMongo && matrix.mongodbVersion || 'n/a') }}
@@ -214,7 +221,7 @@ jobs:
 
       - name: Load cached Redis image
         if: steps.docker-cache-restore.outputs.cache-hit == 'true' && matrix.needsRedis
-        run: docker load -i .github/docker-cache/redis-7.tar
+        run: docker load -i .github/docker-cache/redis-${{ env.REDIS_VERSION }}.tar
 
       - name: Pull Mongo image (cache miss)
         if: steps.docker-cache-restore.outputs.cache-hit != 'true' && matrix.needsMongo
@@ -222,7 +229,7 @@ jobs:
 
       - name: Pull Redis image (cache miss)
         if: steps.docker-cache-restore.outputs.cache-hit != 'true' && matrix.needsRedis
-        run: docker pull redis:7
+        run: docker pull redis:${{ env.REDIS_VERSION }}
 
       - name: Start MongoDB
         if: matrix.needsMongo
@@ -264,7 +271,7 @@ jobs:
             --health-interval 5s \
             --health-timeout 5s \
             --health-retries 12 \
-            redis:7
+            redis:${{ env.REDIS_VERSION }}
           echo "Waiting for Redis to report healthy..."
           for attempt in $(seq 1 60); do
             status=$(docker inspect --format='{{.State.Health.Status}}' redis 2>/dev/null || echo "starting")
