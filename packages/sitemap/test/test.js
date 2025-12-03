@@ -1,4 +1,4 @@
-/* eslint-disable no-console */
+
 const assert = require('assert');
 const t = require('apostrophe/test-lib/util');
 
@@ -575,7 +575,6 @@ function getAppConfig (options = {}) {
   return {
     '@apostrophecms/express': {
       options: {
-        port: 7780,
         session: { secret: 'supersecret' }
       }
     },

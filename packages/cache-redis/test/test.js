@@ -18,7 +18,6 @@ describe('Apostrophe cache implementation in Redis', function() {
       modules: {
         '@apostrophecms/express': {
           options: {
-            port: 4242,
             session: { secret: 'test-the-redis' }
           }
         },
