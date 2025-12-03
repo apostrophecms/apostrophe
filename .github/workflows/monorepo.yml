@@ -10,6 +10,8 @@ on:
   pull_request:
     branches:
       - "*"
+  schedule:
+    - cron: "0 0 * * *"
   workflow_dispatch:
     inputs:
       run_all:
@@ -28,7 +30,7 @@ jobs:
       # BASE_SHA narrows the diff to the merge-base (PR) or latest push SHA for branch builds.
       BASE_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || github.event.before || '' }}
       # FORCE_ALL flips to true when the workflow_dispatch input is toggled so every package runs.
-      FORCE_ALL: ${{ inputs.run_all == 'true' && 'true' || 'false' }}
+      FORCE_ALL: ${{ (github.event_name == 'schedule' || inputs.run_all == 'true') && 'true' || 'false' }}
       # Define supported runtime versions for matrix expansion.
       NODE_VERSIONS_JSON: "[20,22,24]"
       MONGODB_VERSIONS_JSON: '["7.0","8.0"]'
@@ -111,6 +113,9 @@ jobs:
           path: pnpm-lock.yaml
           retention-days: 30
 
+      - name: Ensure pnpm store directory exists
+        run: mkdir -p ~/.pnpm-store
+
       - name: Cache pnpm store
         id: pnpm-store
         uses: actions/cache@v4
@@ -148,7 +153,7 @@ jobs:
           docker save redis:7 -o .github/docker-cache/redis-7.tar
 
   package-tests:
-    name: ${{ format('{0} (Node {1}, Mongo {2})', matrix.package, matrix.nodeVersion, matrix.mongodbVersion) }}
+    name: ${{ format('{0} ({1}, {2})', matrix.package, matrix.nodeVersion, matrix.mongodbVersion) }}
     needs:
       - setup
       - shared-runtime
@@ -184,6 +189,9 @@ jobs:
         with:
           name: pnpm-lock
           path: .
+
+      - name: Ensure pnpm store directory exists
+        run: mkdir -p ~/.pnpm-store
 
       - name: Restore pnpm store cache
         id: pnpm-store-restore

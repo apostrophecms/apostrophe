@@ -3,7 +3,7 @@ import assert from 'assert/strict';
 // import { before, beforeEach, after, describe, it } from 'mocha';
 import path from 'path';
 import { promises as fs } from 'fs';
-import { execSync } from 'child_process';
+import { execFileSync, execSync } from 'child_process';
 import { fileURLToPath } from 'url';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -167,7 +167,7 @@ function ensureCleanWorkingTree() {
 }
 
 function runDetector(env = {}) {
-  const output = execSync(`node ${detectorScriptPath}`, {
+  const output = execFileSync(`node`, [detectorScriptPath], {
     cwd: repoRoot,
     encoding: 'utf8',
     env: { ...process.env, ...env },
