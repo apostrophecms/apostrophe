@@ -38,5 +38,8 @@
     "nyc": "^17.1.0",
     "postcss-scss": "^4.0.9",
     "stylelint-config-standard-scss": "^14.0.0"
+  },
+  "apostropheTestConfig": {
+    "requiresMongo": false
   }
 }

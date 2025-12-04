@@ -39,5 +39,8 @@
   "license": "MIT",
   "devDependencies": {
     "mocha": "^5.0.0"
+  },
+  "apostropheTestConfig": {
+    "requiresMongo": false
   }
 }
