@@ -1,5 +1,11 @@
 # Changelog
 
+## 4.24.1 (2025-12-04)
+
+### Fixes
+
+* Fixes soft-redirect module to decode the URL path before matching historic URLs, ensuring proper matching of accents, Cyrillic, and other non-ASCII characters in old URLs. While this was not a new issue, the fix is of new importance now that a migration path to eliminate accent marks in existing slugs has been introduced in version 4.24.0.
+
 ## 4.24.0 (2025-11-25)
 
 ### Adds
