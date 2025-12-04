@@ -79,7 +79,7 @@
 
 <script>
 import AposThemeMixin from 'Modules/@apostrophecms/ui/mixins/AposThemeMixin';
-import renderCss from '../../../utils/render.js';
+import renderCss from 'apostrophe/modules/@apostrophecms/styles/utils/render';
 import { klona } from 'klona';
 import postcss from 'postcss';
 import postcssPlugin from 'postcss-viewport-to-container-toggle';
