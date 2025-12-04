@@ -40,7 +40,12 @@ module.exports = {
     return {
       '@apostrophecms/page:notFound': {
         async notFoundRedirect(req) {
-          const urlPathname = parseurl.original(req).pathname;
+          // Save the raw, encoded path, no change here, only the var name
+          const rawPathname = parseurl.original(req).pathname;
+          // URL decode the pathname for matching historic URLs
+          // so that e.g. accents, Cyrillic, and other non-ASCII characters
+          // are properly handled.
+          const urlPathname = decodeURI(rawPathname);
 
           const doc = await self.apos.doc
             .find(req, {
