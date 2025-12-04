@@ -545,8 +545,8 @@ $padding-unit: 10px;
 $width: 360px;
 $duration: 0.2s;
 $timing: cubic-bezier(.175,.885,.32,1.15);
-$slideDuration: 250ms;
-$slideTiming: cubic-bezier(0.45, 0, 0.55, 1);
+$slide-duration: 250ms;
+$slide-timing: cubic-bezier(0.45, 0, 0.55, 1);
 
 .apos-styles {
   @include type-base;
@@ -645,7 +645,7 @@ $slideTiming: cubic-bezier(0.45, 0, 0.55, 1);
 
 .slide-enter-active,
 .slide-leave-active {
-  transition: all $slideDuration $slideTiming;
+  transition: all $slide-duration $slide-timing;
 }
 
 .slide-enter-to,
@@ -686,17 +686,17 @@ $slideTiming: cubic-bezier(0.45, 0, 0.55, 1);
 /* Modal title animation */
 .btnfade-enter-active,
 .btnfade-leave-active {
-  transition: all $slideDuration $slideTiming;
+  transition: all $slide-duration $slide-timing;
 }
 
 .btnfade-enter-active + .apos-styles__header-title {
   position: absolute;
-  transition: all $slideDuration $slideTiming;
+  transition: all $slide-duration $slide-timing;
   transform: translateX(20px);
 }
 
 .btnfade-leave-to + .apos-styles__header-title {
-  transition: all $slideDuration $slideTiming;
+  transition: all $slide-duration $slide-timing;
   transform: translateX(-20px)
 }
 

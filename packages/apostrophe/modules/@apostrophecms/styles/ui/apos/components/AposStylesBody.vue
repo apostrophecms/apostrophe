@@ -95,8 +95,8 @@ const emit = defineEmits([ 'navigate-right', 'update-data' ]);
 
 <style lang="scss" scoped>
 $padding-unit: 10px;
-$slideDuration: 250ms;
-$slideTiming: cubic-bezier(0.45, 0, 0.55, 1);
+$slide-duration: 250ms;
+$slide-timing: cubic-bezier(0.45, 0, 0.55, 1);
 
 .apos-styles-body {
   padding-bottom: 20px;
@@ -108,6 +108,7 @@ $slideTiming: cubic-bezier(0.45, 0, 0.55, 1);
   margin: 0 0 15px;
   color: var(--a-background-inverted);
   font-family: var(--a-family-default);
+  // stylelint-disable-next-line declaration-property-unit-allowed-list
   font-size: 21px;
   text-align: left;
   line-height: 1;
@@ -155,6 +156,7 @@ $slideTiming: cubic-bezier(0.45, 0, 0.55, 1);
     justify-content: unset;
     color: var(--a-base-1);
     font-family: var(--a-family-default);
+    // stylelint-disable-next-line declaration-property-unit-allowed-list
     font-size: 21px;
     font-weight: 400;
 
@@ -175,11 +177,12 @@ $slideTiming: cubic-bezier(0.45, 0, 0.55, 1);
 }
 
 .apos-styles-body__nav-link-icon {
-  transition: all 0.2s $slideTiming;
+  transition: all 200ms $slide-timing;
 }
 
 .apos-styles-body__inline-label {
   color: var(--a-base-2);
+  // stylelint-disable-next-line declaration-property-unit-allowed-list
   font-size: 12px;
   text-align: left;
   line-height: 1;
