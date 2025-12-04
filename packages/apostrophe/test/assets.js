@@ -119,6 +119,26 @@ describe('Assets', function() {
     assert(apos.asset);
   });
 
+  it('emits relative entrypoint imports on non-Windows systems', async function() {
+    if (process.platform === 'win32') {
+      return this.skip();
+    }
+
+    const componentPath = './modules/example-module/ui/src/index.js';
+    const absolutePath = path.join(
+      process.cwd(),
+      'packages/apostrophe/test/modules/example-module/ui/src/index.js'
+    );
+    const { importCode } = apos.asset.getImportFileOutput([
+      {
+        component: componentPath,
+        path: absolutePath
+      }
+    ]);
+
+    assert(importCode.includes(`from "${componentPath}"`));
+  });
+
   it('should serve static files', async function() {
     const text = await apos.http.get('/static-test.txt');
     assert(text.match(/served/));
