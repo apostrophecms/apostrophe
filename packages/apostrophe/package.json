@@ -15,7 +15,7 @@
     "i18n": "node scripts/lint-i18n",
     "stylelint": "stylelint modules/**/*.{scss,vue}",
     "lint": "npm run eslint && npm run i18n && npm run stylelint",
-    "mocha": "mocha ./test/assets.js"
+    "mocha": "mocha"
   },
   "repository": {
     "type": "git",
