@@ -1,11 +1,11 @@
-/**
- * Custom render functions for fields with nuanced data structures
- * @param {object} field - the original schema field
- * @param {*} value - the value of the schema field
- * @returns {{ field: object, rule: string }}
- *  - object containing the (un)modified field and CSS rules
- */
-module.exports = {
+export default {
+  /**
+   * Custom render functions for fields with nuanced data structures
+   * @param {object} field - the original schema field
+   * @param {*} value - the value of the schema field
+   * @returns {{ field: object, rule: string }}
+   *  - object containing the (un)modified field and CSS rules
+   */
   box: function(field, value) {
     let rule;
     const {

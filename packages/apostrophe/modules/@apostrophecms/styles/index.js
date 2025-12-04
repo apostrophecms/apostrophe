@@ -23,6 +23,7 @@ module.exports = {
     // down the UI slightly but allows the use of a custom render function
     serverRendered: false
   },
+  cascades: [ 'styles' ],
   commands(self) {
     return {
       add: {
@@ -55,7 +56,10 @@ module.exports = {
       }
     };
   },
-  init(self, options) {
+  async init(self, options) {
+    const { default: render } = await import('./ui/universal/render.mjs');
+    self.stylesheetRender = render;
+
     self.apos.doc.addContextOperation({
       action: 'reset-styles-position',
       label: 'apostrophe:stylesResetPosition',

@@ -158,7 +158,7 @@
 const _ = require('lodash');
 
 module.exports = {
-  cascades: [ 'fields', 'widgetOperations' ],
+  cascades: [ 'fields', 'styles', 'widgetOperations' ],
   options: {
     neverLoadSelf: true,
     initialModal: true,
