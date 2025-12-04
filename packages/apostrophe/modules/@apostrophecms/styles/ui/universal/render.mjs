@@ -1,8 +1,8 @@
-const customRenderers = require('./customRenderers.js');
+import customRenderers from './customRenderers.mjs';
 // Render a stylesheet from a given schema and doc. Returns
 // a string. No dependencies, so it can be used both front and back end
 
-module.exports = function(schema, doc) {
+export default function(schema, doc) {
   const styles = new Map();
 
   const subset = schema.filter(field => field.selector);

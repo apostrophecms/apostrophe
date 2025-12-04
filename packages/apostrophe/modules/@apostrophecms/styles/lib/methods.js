@@ -1,8 +1,7 @@
 const { createId } = require('@paralleldrive/cuid2');
 const _ = require('lodash');
-const render = require('../utils/render');
 
-module.exports = self => {
+module.exports = (self) => {
   return {
     stylesheet(req) {
       const nodes = [];
@@ -44,7 +43,7 @@ module.exports = self => {
       ];
     },
     getStylesheet(doc) {
-      return render(self.schema, doc);
+      return self.stylesheetRender(self.schema, doc);
     },
     addToAdminBar() {
       self.apos.adminBar.add(

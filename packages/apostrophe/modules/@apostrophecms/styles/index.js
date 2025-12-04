@@ -56,7 +56,10 @@ module.exports = {
       }
     };
   },
-  init(self, options) {
+  async init(self, options) {
+    const { default: render } = await import('./ui/universal/render.mjs');
+    self.stylesheetRender = render;
+
     self.apos.doc.addContextOperation({
       action: 'reset-styles-position',
       label: 'apostrophe:stylesResetPosition',
