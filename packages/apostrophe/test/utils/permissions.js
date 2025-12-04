@@ -135,6 +135,25 @@ const permissionSetsByRole = {
       ]
     },
     {
+      label: 'apostrophe:stylesPluralLabel',
+      name: '@apostrophecms/styles',
+      page: false,
+      piece: true,
+      singleton: true,
+      permissions: [
+        {
+          name: 'edit',
+          label: 'apostrophe:modify',
+          value: true
+        },
+        {
+          name: 'publish',
+          label: 'apostrophe:publish',
+          value: true
+        }
+      ]
+    },
+    {
       label: 'apostrophe:pages',
       name: '@apostrophecms/any-page-type',
       page: true,
@@ -283,6 +302,25 @@ const permissionSetsByRole = {
         {
           name: 'edit',
           label: 'apostrophe:modifyOrDelete',
+          value: true
+        },
+        {
+          name: 'publish',
+          label: 'apostrophe:publish',
+          value: true
+        }
+      ]
+    },
+    {
+      label: 'apostrophe:stylesPluralLabel',
+      name: '@apostrophecms/styles',
+      page: false,
+      piece: true,
+      singleton: true,
+      permissions: [
+        {
+          name: 'edit',
+          label: 'apostrophe:modify',
           value: true
         },
         {
@@ -451,6 +489,25 @@ const permissionSetsByRole = {
       ]
     },
     {
+      label: 'apostrophe:stylesPluralLabel',
+      name: '@apostrophecms/styles',
+      page: false,
+      piece: true,
+      singleton: true,
+      permissions: [
+        {
+          name: 'edit',
+          label: 'apostrophe:modify',
+          value: false
+        },
+        {
+          name: 'publish',
+          label: 'apostrophe:publish',
+          value: false
+        }
+      ]
+    },
+    {
       label: 'apostrophe:pages',
       name: '@apostrophecms/any-page-type',
       page: true,
@@ -599,6 +656,25 @@ const permissionSetsByRole = {
         {
           name: 'edit',
           label: 'apostrophe:modifyOrDelete',
+          value: false
+        },
+        {
+          name: 'publish',
+          label: 'apostrophe:publish',
+          value: false
+        }
+      ]
+    },
+    {
+      label: 'apostrophe:stylesPluralLabel',
+      name: '@apostrophecms/styles',
+      page: false,
+      piece: true,
+      singleton: true,
+      permissions: [
+        {
+          name: 'edit',
+          label: 'apostrophe:modify',
           value: false
         },
         {
