@@ -26,5 +26,8 @@
   },
   "dependencies": {
     "redis": "^4.0.1"
+  },
+  "apostropheTestConfig": {
+    "requiresRedis": true
   }
 }

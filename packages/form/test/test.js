@@ -48,7 +48,6 @@ describe('Forms module', function () {
       modules: {
         '@apostrophecms/express': {
           options: {
-            port: 4242,
             csrfExceptions: [ '/api/v1/@apostrophecms/form-widget/upload' ],
             session: {
               secret: 'test-the-forms'
@@ -328,7 +327,6 @@ describe('Forms module', function () {
       modules: {
         '@apostrophecms/express': {
           options: {
-            port: 5252,
             session: {
               secret: 'test-the-forms-more'
             },
@@ -462,7 +460,6 @@ describe('Forms module', function () {
       modules: {
         '@apostrophecms/express': {
           options: {
-            port: 6000,
             session: {
               secret: 'test-the-forms-more'
             },

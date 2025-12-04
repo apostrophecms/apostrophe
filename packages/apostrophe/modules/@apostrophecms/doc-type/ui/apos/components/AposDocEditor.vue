@@ -567,6 +567,7 @@ export default {
               }
 
               if (field.type === 'select' || field.type === 'radio') {
+                // WARNING: field choices might be a string (dynamic choices)
                 const validChoices = field.choices.map(choice => choice.value);
 
                 if (!validChoices.includes(object[field.name])) {
@@ -579,12 +580,13 @@ export default {
               }
 
               if (field.type === 'checkboxes') {
+                // WARNING: field choices might be a string (dynamic choices)
                 const validChoices = field.choices.map(choice => choice.value);
 
                 const filteredValues = object[field.name]
-                  .filter(value => validChoices.includes(value));
+                  ?.filter(value => validChoices.includes(value));
 
-                if (filteredValues.length) {
+                if (filteredValues?.length) {
                   object[field.name] = filteredValues;
                   continue;
                 }

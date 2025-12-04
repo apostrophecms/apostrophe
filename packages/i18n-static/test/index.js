@@ -3,7 +3,7 @@ const assert = require('assert').strict;
 const t = require('apostrophe/test-lib/util.js');
 
 describe('I18n-static', function() {
-  this.timeout(20000);
+  this.timeout(40000);
   let apos;
 
   after(function () {

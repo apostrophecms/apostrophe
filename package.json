@@ -16,9 +16,17 @@
   "engines": {
     "node": ">=18"
   },
-
   "pnpm": {
-    "onlyBuiltDependencies": ["sharp", "vue-demi", "@parcel/watcher", "esbuild", "unrs-resolver"]
+    "onlyBuiltDependencies": [
+      "sharp",
+      "vue-demi",
+      "@parcel/watcher",
+      "esbuild",
+      "unrs-resolver"
+    ],
+    "ignoredBuiltDependencies": [
+      "protobufjs"
+    ]
   },
   "packageManager": "pnpm@10.18.0"
 }

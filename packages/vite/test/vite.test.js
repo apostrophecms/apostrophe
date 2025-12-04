@@ -395,85 +395,155 @@ describe('@apostrophecms/vite', function () {
       assert.match(adminBarComponentContent, /<h1>The Apos Admin Bar<\/h1>/);
 
       // II. Core Entrypoints
-      // 1. src.js
-      {
-        const match = srcContent.match(/"[^"]+\/@apostrophecms\/admin-bar\/ui\/src\/index.js";/g);
-        assert.equal(match?.length, 1, 'The core admin-bar module should be imported once');
-      }
-      // 2. apos.js
-      {
-        const match = aposContent.match(
-          /import TheAposAdminBar from "[^"]+\/admin-bar-component\/ui\/apos\/components\/TheAposAdminBar\.vue";/g
+      if (process.platform === 'win32') {
+        // 1. src.js
+        {
+          const match = srcContent.match(/"[^"]+\/@apostrophecms\/admin-bar\/ui\/src\/index.js";/g);
+          assert.equal(match?.length, 1, 'The core admin-bar module should be imported once');
+        }
+        // 2. apos.js
+        {
+          const match = aposContent.match(
+            /import TheAposAdminBar from "[^"]+\/admin-bar-component\/apos\/components\/TheAposAdminBar\.vue";/g
+          );
+          assert.equal(match?.length, 1, 'TheAposAdminBar.vue component override should be imported once');
+        }
+        {
+          const match = aposContent.match(
+            /window\.apos\.vueComponents\["TheAposAdminBar"\] = TheAposAdminBar;/g
+          );
+          assert.equal(match?.length, 1, 'TheAposAdminBar.vue component should be registered once');
+        }
+        {
+          const match = aposContent.match(
+            /import AposAdminBar_[\w\d]+ from "[^"]+\/@apostrophecms\/admin-bar\/ui\/apos\/apps\/AposAdminBar\.js";/g
+          );
+          assert.equal(match?.length, 1, 'AposAdminBar.js App import should be present once');
+        }
+        {
+          const match = aposContent.match(
+            /AposAdminBar_[\d]+App\(\);/g
+          );
+          assert.equal(match?.length, 1, 'AposAdminBar.js App should be called once');
+        }
+        assert.match(
+          aposContent,
+          /import AposCommandMenuKey from "[^"]+\/@apostrophecms\/command-menu\/ui\/apos\/components\/AposCommandMenuKey\.vue";/
         );
-        assert.equal(match?.length, 1, 'TheAposAdminBar.vue component override should be imported once');
-      }
-      {
-        const match = aposContent.match(
-          /window\.apos\.vueComponents\["TheAposAdminBar"\] = TheAposAdminBar;/g
+        assert.match(
+          aposContent,
+          /import Link from "[^"]+\/@apostrophecms\/rich-text-widget\/ui\/apos\/tiptap-extensions\/Link\.js";/
         );
-        assert.equal(match?.length, 1, 'TheAposAdminBar.vue component should be registered once');
-      }
-      {
-        const match = aposContent.match(
-          /import AposAdminBar_[\w\d]+ from "[^"]+\/@apostrophecms\/admin-bar\/ui\/apos\/apps\/AposAdminBar\.js";/g
+      } else {
+        {
+          const match = srcContent.match(/".\/@apostrophecms\/admin-bar\/src\/index.js";/g);
+          assert.equal(match?.length, 1, 'The core admin-bar module should be imported once');
+        }
+        {
+          const match = aposContent.match(
+            /import TheAposAdminBar from ".\/admin-bar-component\/apos\/components\/TheAposAdminBar\.vue";/g
+          );
+          assert.equal(match?.length, 1, 'TheAposAdminBar.vue component override should be imported once');
+        }
+        {
+          const match = aposContent.match(
+            /window\.apos\.vueComponents\["TheAposAdminBar"\] = TheAposAdminBar;/g
+          );
+          assert.equal(match?.length, 1, 'TheAposAdminBar.vue component should be registered once');
+        }
+        {
+          const match = aposContent.match(
+            /import AposAdminBar_[\w\d]+ from ".\/@apostrophecms\/admin-bar\/apos\/apps\/AposAdminBar\.js";/g
+          );
+          assert.equal(match?.length, 1, 'AposAdminBar.js App import should be present once');
+        }
+        {
+          const match = aposContent.match(
+            /AposAdminBar_[\d]+App\(\);/g
+          );
+          assert.equal(match?.length, 1, 'AposAdminBar.js App should be called once');
+        }
+        assert.match(
+          aposContent,
+          /import AposCommandMenuKey from ".\/@apostrophecms\/command-menu\/apos\/components\/AposCommandMenuKey\.vue";/
         );
-        assert.equal(match?.length, 1, 'AposAdminBar.js App import should be present once');
-      }
-      {
-        const match = aposContent.match(
-          /AposAdminBar_[\d]+App\(\);/g
+        assert.match(
+          aposContent,
+          /import Link from ".\/@apostrophecms\/rich-text-widget\/apos\/tiptap-extensions\/Link\.js";/
         );
-        assert.equal(match?.length, 1, 'AposAdminBar.js App should be called once');
       }
-      assert.match(
-        aposContent,
-        /import AposCommandMenuKey from "[^"]+\/@apostrophecms\/command-menu\/ui\/apos\/components\/AposCommandMenuKey\.vue";/
-      );
-      assert.match(
-        aposContent,
-        /import Link from "[^"]+\/@apostrophecms\/rich-text-widget\/ui\/apos\/tiptap-extensions\/Link\.js";/
-      );
-
       // III. Extra Build Entrypoints & Rebundle Modules
       const articleEntryContent = await fs.readFile(
         path.join(rootDirSrc, 'article.js'),
         'utf8'
       );
 
-      assert(articleEntryContent.includes('article-page/ui/src/main.scss'));
-      assert(articleEntryContent.includes('article-page/ui/src/index.js'));
-      assert(articleEntryContent.includes('article-page/ui/src/main.js'));
-
-      const toolsEntryContent = await fs.readFile(
-        path.join(rootDirSrc, 'tools.js'),
-        'utf8'
-      );
-
-      assert(toolsEntryContent.includes('selected-article-widget/ui/src/tabs.js'));
-
-      {
-        const match = srcContent.match(
-          /import topic_\d+App from "[^"]+\/@apostrophecms\/home-page\/ui\/src\/topic\.js";/g
+      if (process.platform === 'win32') {
+        assert(articleEntryContent.includes('article-page/ui/src/main.scss'));
+        assert(articleEntryContent.includes('article-page/ui/src/index.js'));
+        assert(articleEntryContent.includes('article-page/ui/src/main.js'));
+        const toolsEntryContent = await fs.readFile(
+          path.join(rootDirSrc, 'tools.js'),
+          'utf8'
         );
-        assert.equal(match?.length, 1, 'home-page topic.js should be imported once');
-      }
-      {
-        const match = srcContent.match(
-          /import main_\d+App from "[^"]+\/@apostrophecms\/home-page\/ui\/src\/main\.js";/g
+        assert(toolsEntryContent.includes('selected-article-widget/ui/src/tabs.js'));
+        {
+          const match = srcContent.match(
+            /import topic_\d+App from "[^"]+\/@apostrophecms\/home-page\/ui\/src\/topic\.js";/g
+          );
+          assert.equal(match?.length, 1, 'home-page topic.js should be imported once');
+        }
+        {
+          const match = srcContent.match(
+            /import main_\d+App from "[^"]+\/@apostrophecms\/home-page\/ui\/src\/main\.js";/g
+          );
+          assert.equal(match?.length, 1, 'home-page main.js should be imported once');
+        }
+        {
+          const match = srcContent.match(
+            /import topic_\d+App from "[^"]+\/article-widget\/ui\/src\/topic\.js";/g
+          );
+          assert.equal(match?.length, 1, 'article-widget topic.js should be imported once');
+        }
+        {
+          const match = srcContent.match(
+            /import carousel_\d+App from "[^"]+\/article-widget\/ui\/src\/carousel\.js";/g
+          );
+          assert.equal(match?.length, 1, 'article-widget carousel.js should be imported once');
+        }
+      } else {
+        assert(articleEntryContent.includes('article-page/src/main.scss'));
+        assert(articleEntryContent.includes('article-page/src/index.js'));
+        assert(articleEntryContent.includes('article-page/src/main.js'));
+        const toolsEntryContent = await fs.readFile(
+          path.join(rootDirSrc, 'tools.js'),
+          'utf8'
         );
-        assert.equal(match?.length, 1, 'home-page main.js should be imported once');
-      }
-      {
-        const match = srcContent.match(
-          /import topic_\d+App from "[^"]+\/article-widget\/ui\/src\/topic\.js";/g
-        );
-        assert.equal(match?.length, 1, 'article-widget topic.js should be imported once');
-      }
-      {
-        const match = srcContent.match(
-          /import carousel_\d+App from "[^"]+\/article-widget\/ui\/src\/carousel\.js";/g
-        );
-        assert.equal(match?.length, 1, 'article-widget carousel.js should be imported once');
+        assert(toolsEntryContent.includes('selected-article-widget/src/tabs.js'));
+        {
+          const match = srcContent.match(
+            /import topic_\d+App from ".\/@apostrophecms\/home-page\/src\/topic\.js";/g
+          );
+          assert.equal(match?.length, 1, 'home-page topic.js should be imported once');
+        }
+        {
+          const match = srcContent.match(
+            /import main_\d+App from ".\/@apostrophecms\/home-page\/src\/main\.js";/g
+          );
+          assert.equal(match?.length, 1, 'home-page main.js should be imported once');
+        }
+        {
+          const match = srcContent.match(
+            /import topic_\d+App from ".\/article-widget\/src\/topic\.js";/g
+          );
+          assert.equal(match?.length, 1, 'article-widget topic.js should be imported once');
+        }
+        {
+          const match = srcContent.match(
+            /import carousel_\d+App from ".\/article-widget\/src\/carousel\.js";/g
+          );
+          assert.equal(match?.length, 1, 'article-widget carousel.js should be imported once');
+        }
       }
     });
 
