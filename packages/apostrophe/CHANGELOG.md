@@ -8,7 +8,6 @@
 ### Fixes
 
 * Fixes an issue where the frontend was caching stale choices for `select`, `radio` and `checkboxes` fields that were saved but no longer valid (i.e removed from the schema).
-* Fixes soft-redirect module to decode the URL path before matching historic URLs, ensuring proper handling of accents, Cyrillic, and other non-ASCII characters.
 
 ### Changes
 
@@ -16,6 +15,12 @@
 fields that were saved but no longer valid (i.e removed from the schema).
 * Bumped dependency on `express-cache-on-demand` to guarantee installation of recent fixes for edge cases that could share a response between two locales of a single-site project, report errors without a process restart, and correctly handle `res.send('')` with an empty string.
 * Restores relative import paths inside Vite-generated entrypoints on *nix builds so dev server HMR works again, while keeping the Windows-specific absolute path workaround.
+
+## 4.24.1 (2025-12-04)
+
+### Fixes
+
+* Fixes soft-redirect module to decode the URL path before matching historic URLs, ensuring proper matching of accents, Cyrillic, and other non-ASCII characters in old URLs. While this was not a new issue, the fix is of new importance now that a migration path to eliminate accent marks in existing slugs has been introduced in version 4.24.0.
 
 ## 4.24.0 (2025-11-25)
 
