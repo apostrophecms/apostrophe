@@ -31,5 +31,8 @@
   "devDependencies": {
     "eslint": "^9.34.0",
     "mocha": "^10.2.0"
+  },
+  "apostropheTestConfig": {
+    "requiresMongo": false
   }
 }

@@ -307,7 +307,6 @@ function getAppModules() {
   return {
     '@apostrophecms/express': {
       options: {
-        port: 7780,
         session: { secret: 'supersecret' }
       }
     },

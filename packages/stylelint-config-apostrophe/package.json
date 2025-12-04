@@ -38,5 +38,8 @@
     "eslint-config-apostrophe": "workspace:*",
     "mocha": "^10.2.0",
     "postcss-scss": "^4.0.9"
+  },
+  "apostropheTestConfig": {
+    "requiresMongo": false
   }
 }
