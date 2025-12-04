@@ -187,7 +187,8 @@ describe('Permissions', function() {
               '@apostrophecms/image',
               '@apostrophecms/image-tag',
               '@apostrophecms/file',
-              '@apostrophecms/file-tag'
+              '@apostrophecms/file-tag',
+              '@apostrophecms/styles'
             ]
           }
         };

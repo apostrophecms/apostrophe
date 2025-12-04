@@ -61,6 +61,7 @@ module.exports = {
     '@apostrophecms/soft-redirect': {},
     '@apostrophecms/submitted-draft': {},
     '@apostrophecms/command-menu': {},
-    '@apostrophecms/translation': {}
+    '@apostrophecms/translation': {},
+    '@apostrophecms/styles': {}
   }
 };
