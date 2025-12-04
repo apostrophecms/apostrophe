@@ -23,6 +23,7 @@ module.exports = {
     // down the UI slightly but allows the use of a custom render function
     serverRendered: false
   },
+  cascades: [ 'styles' ],
   commands(self) {
     return {
       add: {
