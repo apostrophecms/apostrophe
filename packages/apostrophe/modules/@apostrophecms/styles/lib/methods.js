@@ -5,6 +5,11 @@ const render = require('../utils/render');
 module.exports = self => {
   return {
     stylesheet(req) {
+      // Stylesheet node should be created only for logged in users.
+      if (!req.data.global) {
+        return;
+      }
+
       const nodes = [];
       // Only guests can't view drafts. This test is commonly used to
       // distinguish potential editors who might use breakpoint preview
