@@ -279,8 +279,30 @@ module.exports = {
 
   methods(self) {
     return {
-
+      addStylesFields() {
+        if (Object.keys(self.stylesGroups).length) {
+          throw new Error(
+            'Widget "' + self.name + '": "styles" do not support groups. ' +
+            'Please remove "groups" property from the "styles" configuration.'
+          );
+        }
+        const fieldSchema = self.apos.styles.expandStyles(self.styles);
+        const groupFields = [ ...new Set([
+          ...Object.keys(fieldSchema),
+          ...self.fieldsGroups.styles?.fields || []
+        ]) ];
+        const stylesGroup = {
+          label: 'apostrophe:styles',
+          fields: groupFields
+        };
+        self.fields = {
+          ...fieldSchema,
+          ...self.fields
+        };
+        self.fieldsGroups.styles = stylesGroup;
+      },
       composeSchema() {
+        self.addStylesFields();
         self.schema = self.apos.schema.compose({
           addFields: self.apos.schema.fieldsToArray(`Module ${self.__meta.name}`, self.fields),
           arrangeFields: self.apos.schema.groupsToArray(self.fieldsGroups)
