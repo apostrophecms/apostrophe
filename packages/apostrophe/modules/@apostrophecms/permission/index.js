@@ -248,6 +248,15 @@ module.exports = {
         }
       },
 
+      isAdmin(req) {
+        const role = req.user && req.user.role;
+        if (role === 'admin') {
+          return true;
+        }
+
+        return false;
+      },
+
       // For each object in the array, if the user is able to
       // carry out the specified action, a property is added
       // to the object. For instance, if the action is "edit",
