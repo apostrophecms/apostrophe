@@ -1,11 +1,11 @@
-name: Tests
+name: A3 Tests
 
 # Controls when the action will run.
 on:
   push:
-    branches: ["main", "a3"]
+    branches: ["a3"]
   pull_request:
-    branches: ["*"]
+    branches: ["a3"]
 
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:

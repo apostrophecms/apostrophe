@@ -27,5 +27,8 @@
   },
   "devDependencies": {
     "mocha": "^6.2.0"
+  },
+  "apostropheTestConfig": {
+    "requiresMongo": false
   }
 }
