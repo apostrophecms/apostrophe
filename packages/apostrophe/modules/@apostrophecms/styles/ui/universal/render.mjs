@@ -12,6 +12,12 @@ export default function(schema, doc) {
     let fieldValue = doc[field.name];
     const fieldUnit = field.unit || '';
 
+    // FIXME: quick fix to handle render panic.
+    // Follow the tech design to support the style schema spec fully.
+    if (!properties) {
+      continue;
+    }
+
     if (!fieldValue && fieldValue !== 0) {
       continue;
     }
