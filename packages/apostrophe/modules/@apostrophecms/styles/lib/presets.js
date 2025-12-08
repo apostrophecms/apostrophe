@@ -1,8 +1,7 @@
 module.exports = (options) => {
-  // FIXME i18n
   return {
     width: {
-      label: 'Width %',
+      label: 'apostrophe:styleWidth',
       type: 'range',
       min: 0,
       max: 100,
@@ -12,50 +11,50 @@ module.exports = (options) => {
       unit: '%'
     },
     alignment: {
-      label: 'Alignment',
+      label: 'apostrophe:styleAlignment',
       type: 'select',
       class: true,
       def: 'apos-center',
       choices: [
         {
-          label: 'Left',
+          label: 'apostrophe:styleLeft',
           value: 'apos-left'
         },
         {
-          label: 'Center',
+          label: 'apostrophe:styleCenter',
           value: 'apos-center'
         },
         {
-          label: 'Right',
+          label: 'apostrophe:styleRight',
           value: 'apos-right'
         }
       ]
     },
     padding: {
-      label: 'Padding',
+      label: 'apostrophe:stylePadding',
       type: 'box',
       property: 'padding',
       unit: 'px'
     },
     margin: {
-      label: 'Margin',
+      label: 'apostrophe:styleMargin',
       type: 'box',
       property: 'margin',
       unit: 'px'
     },
     // A multi-field preset
     border: {
-      label: 'Border',
+      label: 'apostrophe:styleBorder',
       type: 'object',
       fields: {
         add: {
           active: {
-            label: 'Border',
+            label: 'apostrophe:styleBorder',
             type: 'boolean',
             def: false
           },
           width: {
-            label: 'Width',
+            label: 'apostrophe:styleWidth',
             type: 'box',
             def: {
               top: 1,
@@ -70,7 +69,7 @@ module.exports = (options) => {
             property: 'border-width'
           },
           radius: {
-            label: 'Radius',
+            label: 'apostrophe:styleRadius',
             type: 'range',
             min: 0,
             max: 32,
@@ -82,7 +81,7 @@ module.exports = (options) => {
             unit: 'px'
           },
           color: {
-            label: 'Color',
+            label: 'apostrophe:styleColor',
             type: 'color',
             def: options.borderColor,
             if: {
@@ -91,7 +90,7 @@ module.exports = (options) => {
             property: 'border-color'
           },
           style: {
-            label: 'Style',
+            label: 'apostrophe:styleStyle',
             type: 'select',
             def: 'solid',
             if: {
@@ -99,15 +98,15 @@ module.exports = (options) => {
             },
             choices: [
               {
-                label: 'Solid',
+                label: 'apostrophe:styleSolid',
                 value: 'solid'
               },
               {
-                label: 'Dotted',
+                label: 'apostrophe:styleDotted',
                 value: 'dotted'
               },
               {
-                label: 'Dashed',
+                label: 'apostrophe:styleDashed',
                 value: 'dashed'
               }
             ],
@@ -118,18 +117,18 @@ module.exports = (options) => {
     },
     // A multi-field preset
     boxShadow: {
-      label: 'Shadow',
+      label: 'apostrophe:styleShadow',
       type: 'object',
       valueTemplate: '%x% %y% %blur% %color%',
       fields: {
         add: {
           active: {
-            label: 'Shadow',
+            label: 'apostrophe:styleShadow',
             type: 'boolean',
             def: false
           },
           x: {
-            label: 'X Offset',
+            label: 'apostrophe:styleXOffset',
             type: 'range',
             min: -32,
             max: 32,
@@ -140,7 +139,7 @@ module.exports = (options) => {
             unit: 'px'
           },
           y: {
-            label: 'Y Offset',
+            label: 'apostrophe:styleYOffset',
             type: 'range',
             min: -32,
             max: 32,
@@ -151,7 +150,7 @@ module.exports = (options) => {
             }
           },
           blur: {
-            label: 'Shadow Blur',
+            label: 'apostrophe:styleShadowBlur',
             type: 'range',
             min: 0,
             max: 32,
@@ -162,7 +161,7 @@ module.exports = (options) => {
             unit: 'px'
           },
           color: {
-            label: 'Shadow Color',
+            label: 'apostrophe:styleShadowColor',
             type: 'color',
             def: options.shadowColor,
             if: {
